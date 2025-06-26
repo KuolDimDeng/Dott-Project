@@ -106,7 +106,7 @@ export async function POST(request) {
     const backendData = {
       customer: body.customer_id,  // Backend expects 'customer' not 'customer_id'
       date: body.order_date,       // Backend expects 'date' not 'order_date'
-      due_date: body.due_date,
+      due_date: body.due_date,     // Backend migration 0004 adds this field
       status: body.status || 'pending',
       payment_terms: body.payment_terms,
       discount: body.discount_percentage || 0,

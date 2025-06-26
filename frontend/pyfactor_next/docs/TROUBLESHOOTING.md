@@ -4,6 +4,55 @@
 
 ---
 
+# Database Migration Issues
+
+## Missing Column Error: sales_salesorder.due_date
+
+**Issue**: Creating sales orders fails with database error.
+
+**Error Message**:
+```
+django.db.utils.ProgrammingError: column sales_salesorder.due_date does not exist
+```
+
+**Symptoms**:
+- Sales order creation returns 500 error
+- Backend logs show missing column error
+- Field exists in Django model but not in database
+
+**Root Cause**:
+- Django model was updated to include `due_date` field
+- Database migration was not run to add the column
+
+**Solution**:
+1. Connect to backend shell (Render or local):
+   ```bash
+   python manage.py showmigrations sales
+   ```
+
+2. Apply the migration:
+   ```bash
+   python manage.py migrate sales 0004
+   ```
+
+3. Verify the column was added:
+   ```bash
+   python manage.py dbshell
+   \d sales_salesorder
+   ```
+
+**Migration Details**:
+- File: `/backend/pyfactor/sales/migrations/0004_add_salesorder_due_date.py`
+- Adds `due_date` DateField with default of current date + 30 days
+- All existing records will get the default value
+
+**Prevention**:
+- Always run migrations after model changes
+- Check migration status before deploying
+- Use `python manage.py makemigrations --check` in CI/CD
+
+---
+
 # UI/UX Issues
 
 ## Icon Standardization

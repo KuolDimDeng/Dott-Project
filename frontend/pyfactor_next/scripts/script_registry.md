@@ -763,3 +763,19 @@ This document tracks all scripts used for the pyfactor project, their execution 
   - Purpose: Add History tab to Product Detail Dialog for audit trail
   - Created: 2025-01-24
   - Changes: Added History tab with audit trail integration
+
+## Backend Scripts
+
+### Version0001_fix_salesorder_due_date.py
+- **Date**: 2025-06-26
+- **Purpose**: Add missing due_date column to sales_salesorder table
+- **Status**: 🔄 PENDING EXECUTION
+- **Issue**: SalesOrder model has due_date field but migration is missing
+- **Solution**: 
+  - Created migration file: sales/migrations/0004_add_salesorder_due_date.py
+  - Field: DateField with default of current date + 30 days
+  - Migration ready to apply
+- **Usage**: 
+  - Local: `python manage.py migrate sales 0004`
+  - Render: Run in shell tab
+- **Location**: /backend/pyfactor/scripts/Version0001_fix_salesorder_due_date.py

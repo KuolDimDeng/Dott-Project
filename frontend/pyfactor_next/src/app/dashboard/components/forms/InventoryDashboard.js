@@ -11,9 +11,43 @@ import { getSecureTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
 import { format } from 'date-fns';
 
-const InventoryDashboard = ({ onNavigate }) => {
+const InventoryDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState('month');
+  
+  // Navigation handler following the standard pattern
+  const handleNavigation = useCallback((section) => {
+    console.log(`[InventoryDashboard] Navigating to ${section}`);
+    
+    // Create a unique navigation key
+    const navigationKey = `nav-${Date.now()}`;
+    
+    // Store navigation key in session storage
+    try {
+      window.sessionStorage.setItem('lastNavKey', navigationKey);
+    } catch (error) {
+      console.warn('[InventoryDashboard] Error setting navigation key:', error);
+    }
+    
+    // Create event payload
+    const payload = {
+      item: section,
+      navigationKey,
+      originalItem: section
+    };
+    
+    // Dispatch navigation events
+    window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+    window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+    
+    // Cleanup previous state
+    try {
+      window.sessionStorage.removeItem('inventoryState');
+      window.sessionStorage.removeItem('inventoryFilters');
+    } catch (error) {
+      console.warn('[InventoryDashboard] Error cleaning up state:', error);
+    }
+  }, []);
   
   // Dashboard metrics state
   const [metrics, setMetrics] = useState({
@@ -268,7 +302,7 @@ const InventoryDashboard = ({ onNavigate }) => {
             </svg>
           }
           color="blue"
-          onClick={() => onNavigate && onNavigate('inventory-management')}
+          onClick={() => handleNavigation('inventory-management')}
         />
         <MetricCard
           title="Stock Adjustments"
@@ -280,7 +314,7 @@ const InventoryDashboard = ({ onNavigate }) => {
             </svg>
           }
           color="purple"
-          onClick={() => onNavigate && onNavigate('inventory-stock-adjustments')}
+          onClick={() => handleNavigation('inventory-stock-adjustments')}
         />
         <MetricCard
           title="Locations"
@@ -293,7 +327,7 @@ const InventoryDashboard = ({ onNavigate }) => {
             </svg>
           }
           color="green"
-          onClick={() => onNavigate && onNavigate('inventory-locations')}
+          onClick={() => handleNavigation('inventory-locations')}
         />
         <MetricCard
           title="Suppliers"
@@ -305,7 +339,7 @@ const InventoryDashboard = ({ onNavigate }) => {
             </svg>
           }
           color="yellow"
-          onClick={() => onNavigate && onNavigate('inventory-suppliers')}
+          onClick={() => handleNavigation('inventory-suppliers')}
         />
         <MetricCard
           title="Low Stock Alert"
@@ -487,7 +521,7 @@ const InventoryDashboard = ({ onNavigate }) => {
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <button 
-            onClick={() => onNavigate && onNavigate('inventory-stock-adjustments')}
+            onClick={() => handleNavigation('inventory-stock-adjustments')}
             className="p-4 text-center border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors"
           >
             <svg className="h-8 w-8 text-blue-600 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -496,7 +530,7 @@ const InventoryDashboard = ({ onNavigate }) => {
             <span className="text-sm text-gray-700">Stock Adjustment</span>
           </button>
           <button 
-            onClick={() => onNavigate && onNavigate('inventory-locations')}
+            onClick={() => handleNavigation('inventory-locations')}
             className="p-4 text-center border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition-colors"
           >
             <svg className="h-8 w-8 text-green-600 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -506,7 +540,7 @@ const InventoryDashboard = ({ onNavigate }) => {
             <span className="text-sm text-gray-700">Add Location</span>
           </button>
           <button 
-            onClick={() => onNavigate && onNavigate('inventory-suppliers')}
+            onClick={() => handleNavigation('inventory-suppliers')}
             className="p-4 text-center border-2 border-dashed border-gray-300 rounded-lg hover:border-yellow-500 hover:bg-yellow-50 transition-colors"
           >
             <svg className="h-8 w-8 text-yellow-600 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -523,7 +557,7 @@ const InventoryDashboard = ({ onNavigate }) => {
             <span className="text-sm text-gray-700">Stock Count</span>
           </button>
           <button 
-            onClick={() => onNavigate && onNavigate('inventory-reports')}
+            onClick={() => handleNavigation('inventory-reports')}
             className="p-4 text-center border-2 border-dashed border-gray-300 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition-colors"
           >
             <svg className="h-8 w-8 text-indigo-600 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">

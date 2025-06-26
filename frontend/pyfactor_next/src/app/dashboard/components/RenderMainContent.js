@@ -1606,7 +1606,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
         return (
           <ContentWrapperWithKey>
             <SuspenseWithCleanup componentKey={`${componentKey}-inventory-dashboard`}>
-              <InventoryDashboard onNavigate={onViewChange} />
+              <InventoryDashboard />
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>
         );
