@@ -1,157 +1,177 @@
 import { NextResponse } from 'next/server';
-import { getPool, query } from '@/utils/db/database';
-import { v4 as uuidv4 } from 'uuid';
-import { getTenantId } from '@/lib/tenantUtils';
+import { logger } from '@/utils/logger';
+import { cookies } from 'next/headers';
 
-export async function GET(req) {
+// Helper function to get session cookie
+async function getSessionCookie() {
+  const cookieStore = await cookies();
+  const sidCookie = cookieStore.get('sid');
+  return sidCookie;
+}
+
+// Industry-standard API pattern: Frontend → Local Proxy → Django Backend → PostgreSQL with RLS
+
+export async function GET(request) {
   try {
-    // Extract tenant ID from request headers
-    const tenantId = req.headers.get('x-tenant-id');
+    logger.info('[Invoices API] GET request received');
     
-    if (!tenantId) {
-      console.error('[API] Invoice GET: Missing tenant ID');
-      return NextResponse.json({ error: 'Missing tenant ID' }, { status: 400 });
+    // Get session cookie
+    const sidCookie = await getSessionCookie();
+    if (!sidCookie) {
+      logger.error('[Invoices API] No session cookie found');
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
     
-    console.log(`[API] Retrieving invoices for tenant: ${tenantId}`);
+    // Get query parameters
+    const { searchParams } = new URL(request.url);
+    const queryString = searchParams.toString();
     
-    // Build schema name
-    const schemaName = `tenant_${tenantId.replace(/-/g, '_')}`;
+    // Forward request to Django backend (Django requires trailing slash)
+    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/sales/invoices/${queryString ? `?${queryString}` : ''}`;
+    logger.info('[Invoices API] Forwarding GET to:', backendUrl);
     
-    // Get database connection
-    const pool = await getPool();
+    const response = await fetch(backendUrl, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Session ${sidCookie.value}`,
+      },
+    });
     
-    // Set RLS tenant context
-    await query(
-      `SELECT set_config('app.current_tenant', $1, true)`,
-      [tenantId]
-    );
+    if (!response.ok) {
+      const errorText = await response.text();
+      logger.error('[Invoices API] Backend error:', errorText);
+      return NextResponse.json(
+        { error: 'Failed to fetch invoices', details: errorText },
+        { status: response.status }
+      );
+    }
     
-    // Query invoices with tenant filter
-    const result = await query(
-      `SELECT * FROM invoice WHERE tenant_id = $1 ORDER BY created_at DESC`,
-      [tenantId]
-    );
+    const data = await response.json();
     
-    return NextResponse.json(result.rows || [], { status: 200 });
+    // Transform backend response to match frontend expectations
+    let transformedData = data;
+    
+    // Handle paginated response
+    if (data.results && Array.isArray(data.results)) {
+      transformedData = {
+        ...data,
+        results: data.results.map(invoice => ({
+          ...invoice,
+          customer_id: invoice.customer,
+          issue_date: invoice.date,
+          invoice_number: invoice.invoice_num || invoice.invoice_number || invoice.id,
+          total_amount: invoice.total_amount || invoice.totalAmount || invoice.total
+        }))
+      };
+    } else if (Array.isArray(data)) {
+      // Handle non-paginated array response
+      transformedData = data.map(invoice => ({
+        ...invoice,
+        customer_id: invoice.customer,
+        issue_date: invoice.date,
+        invoice_number: invoice.invoice_num || invoice.invoice_number || invoice.id,
+        total_amount: invoice.total_amount || invoice.totalAmount || invoice.total
+      }));
+    }
+    
+    logger.info('[Invoices API] Successfully fetched and transformed invoices');
+    return NextResponse.json(transformedData);
+    
   } catch (error) {
-    console.error('[API] Error retrieving invoices:', error);
-    return NextResponse.json({ error: 'Failed to retrieve invoices', message: error.message }, { status: 500 });
+    logger.error('[Invoices API] Error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error', message: error.message },
+      { status: 500 }
+    );
   }
 }
 
-export async function POST(req) {
+export async function POST(request) {
   try {
-    // Extract tenant ID from request headers
-    const tenantId = req.headers.get('x-tenant-id');
+    logger.info('[Invoices API] POST request received');
     
-    if (!tenantId) {
-      console.error('[API] Invoice POST: Missing tenant ID');
-      return NextResponse.json({ error: 'Missing tenant ID' }, { status: 400 });
+    // Get session cookie
+    const sidCookie = await getSessionCookie();
+    if (!sidCookie) {
+      logger.error('[Invoices API] No session cookie found');
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
     
-    // Parse request body
-    let invoiceData;
-    try {
-      invoiceData = await req.json();
-    } catch (parseError) {
-      console.error('[API] Invoice POST: Invalid JSON data', parseError);
-      return NextResponse.json({ error: 'Invalid JSON data' }, { status: 400 });
+    // Get request body
+    const body = await request.json();
+    logger.info('[Invoices API] Creating invoice with data:', body);
+    
+    // Transform frontend data to match backend expectations
+    const backendData = {
+      customer: body.customer_id,  // Backend expects 'customer' not 'customer_id'
+      date: body.issue_date || body.invoice_date,
+      due_date: body.due_date,
+      status: body.status || 'draft',
+      totalAmount: body.total_amount || body.subtotal || 0,
+      discount: body.discount_amount || 0,
+      currency: body.currency || 'USD',
+      notes: body.notes || '',
+      terms: body.terms || '',
+      items: body.items?.map(item => ({
+        product: item.item_type === 'product' ? item.product : null,
+        service: item.item_type === 'service' ? item.service : null,
+        description: item.description || 'Item',
+        quantity: item.quantity || 1,
+        unit_price: item.unit_price || 0,
+        tax_rate: item.tax_rate || 0,
+        tax_amount: item.tax_amount || 0,
+        total: item.total || (item.quantity * item.unit_price)
+      })) || []
+    };
+    
+    // Add sales order reference if creating from order
+    if (body.order_id) {
+      backendData.sales_order = body.order_id;
     }
     
-    // Ensure tenant ID is set in the invoice data
-    invoiceData.tenant_id = tenantId;
+    logger.info('[Invoices API] Transformed data for backend:', backendData);
     
-    // Generate an ID if not provided
-    if (!invoiceData.id) {
-      invoiceData.id = uuidv4();
+    // Forward request to Django backend (Django requires trailing slash)
+    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/sales/invoices/`;
+    
+    const response = await fetch(backendUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Session ${sidCookie.value}`,
+      },
+      body: JSON.stringify(backendData),
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      logger.error('[Invoices API] Backend error:', errorText);
+      return NextResponse.json(
+        { error: 'Failed to create invoice', details: errorText },
+        { status: response.status }
+      );
     }
     
-    // Set created_at and updated_at if not provided
-    const now = new Date().toISOString();
-    if (!invoiceData.created_at) {
-      invoiceData.created_at = now;
-    }
-    if (!invoiceData.updated_at) {
-      invoiceData.updated_at = now;
-    }
+    const data = await response.json();
     
-    // Get database connection
-    const pool = await getPool();
+    // Transform backend response to match frontend expectations
+    const transformedData = {
+      ...data,
+      customer_id: data.customer,
+      issue_date: data.date,
+      invoice_number: data.invoice_num || data.invoice_number || data.id,
+      total_amount: data.total_amount || data.totalAmount || data.total
+    };
     
-    // Set RLS tenant context
-    await query(
-      `SELECT set_config('app.current_tenant', $1, true)`,
-      [tenantId]
-    );
+    logger.info('[Invoices API] Invoice created successfully:', transformedData);
+    return NextResponse.json(transformedData, { status: 201 });
     
-    // Insert invoice
-    const result = await query(
-      `INSERT INTO invoice (
-        id, tenant_id, customer_id, customer_name, 
-        invoice_number, issue_date, due_date, 
-        currency, subtotal, tax_total, total, 
-        amount_paid, balance_due, status, 
-        notes, terms, created_at, updated_at
-      ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 
-        $11, $12, $13, $14, $15, $16, $17, $18
-      ) RETURNING *`,
-      [
-        invoiceData.id,
-        tenantId,
-        invoiceData.customer_id,
-        invoiceData.customer_name,
-        invoiceData.invoice_number || `INV-${Date.now()}`,
-        invoiceData.issue_date,
-        invoiceData.due_date,
-        invoiceData.currency || 'USD',
-        invoiceData.subtotal || 0,
-        invoiceData.tax_total || 0,
-        invoiceData.total || 0,
-        invoiceData.amount_paid || 0,
-        invoiceData.balance_due || 0,
-        invoiceData.status || 'draft',
-        invoiceData.notes || '',
-        invoiceData.terms || '',
-        invoiceData.created_at,
-        invoiceData.updated_at
-      ]
-    );
-    
-    // Insert invoice items if provided
-    if (Array.isArray(invoiceData.items) && invoiceData.items.length > 0) {
-      for (const item of invoiceData.items) {
-        await query(
-          `INSERT INTO invoice_item (
-            id, invoice_id, tenant_id, description, 
-            quantity, unit_price, amount,
-            product_id, service_id, created_at, updated_at
-          ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
-          )`,
-          [
-            uuidv4(),
-            invoiceData.id,
-            tenantId,
-            item.description || '',
-            item.quantity || 0,
-            item.unit_price || 0,
-            item.amount || 0,
-            item.product_id || null,
-            item.service_id || null,
-            now,
-            now
-          ]
-        );
-      }
-    }
-    
-    console.log(`[API] Created invoice for tenant ${tenantId} with ID: ${invoiceData.id}`);
-    
-    return NextResponse.json(result.rows[0] || { id: invoiceData.id }, { status: 201 });
   } catch (error) {
-    console.error('[API] Error creating invoice:', error);
-    return NextResponse.json({ error: 'Failed to create invoice', message: error.message }, { status: 500 });
+    logger.error('[Invoices API] Error:', error);
+    return NextResponse.json(
+      { error: 'Failed to create invoice' },
+      { status: 500 }
+    );
   }
-} 
+}
