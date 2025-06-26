@@ -195,6 +195,24 @@
   </h1>
   ```
 
+### [12.0.0] - 2025-06-26 - CURRENT - Django Migration Workflow
+- **Purpose**: Standardize migration process to prevent deployment issues
+- **Workflow**: Always local first, then deploy
+- **Steps**:
+  1. **Generate locally**: `python manage.py makemigrations`
+  2. **Resolve conflicts**: `echo "y" | python manage.py makemigrations --merge`
+  3. **Commit migrations**: `git add backend/pyfactor/*/migrations/`
+  4. **Push to deploy**: `git push origin Dott_Main_Dev_Deploy`
+  5. **Auto-deployment**: Render picks up changes and runs migrations
+- **Benefits**:
+  - Migration files in version control
+  - Team synchronization
+  - No manual production database work
+  - Rollback capability
+- **Local Issues**: Use `--fake` flag for existing columns
+- **Documentation**: Updated TROUBLESHOOTING.md with complete workflow
+- **NEVER**: Run migrations only on production without committing files first
+
 ---
 
 ## DEPRECATED CONFIGURATIONS (Replaced - Do Not Use)
