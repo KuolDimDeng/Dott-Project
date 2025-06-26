@@ -274,6 +274,13 @@ const SalesOrderManagement = () => {
       return;
     }
     
+    // Validate all items have products/services selected
+    const invalidItems = formData.items.filter(item => !item.item_id || item.item_id === '');
+    if (invalidItems.length > 0) {
+      toast.error('Please select a product or service for all items');
+      return;
+    }
+    
     try {
       setIsSubmitting(true);
       
@@ -284,6 +291,9 @@ const SalesOrderManagement = () => {
         subtotal,
         total_amount: total
       };
+      
+      console.log('[SalesOrderManagement] Creating order with data:', orderData);
+      console.log('[SalesOrderManagement] Items detail:', orderData.items);
       
       const newOrder = await orderApi.create(orderData);
       console.log('[SalesOrderManagement] Order created:', newOrder);
@@ -550,24 +560,33 @@ const SalesOrderManagement = () => {
                 <div className="col-span-3">
                   <label className="block text-xs font-medium text-gray-700">Item</label>
                   <select
-                    value={item.item_id}
+                    value={item.item_id || ''}
                     onChange={(e) => {
+                      const selectedValue = e.target.value;
                       const selectedItem = item.type === 'product' 
-                        ? products.find(p => p.id === e.target.value)
-                        : services.find(s => s.id === e.target.value);
+                        ? products.find(p => p.id === selectedValue)
+                        : services.find(s => s.id === selectedValue);
                       
-                      handleItemChange(index, 'item_id', e.target.value);
+                      console.log('[SalesOrderManagement] Selected item:', { 
+                        value: selectedValue, 
+                        type: item.type, 
+                        found: selectedItem,
+                        availableItems: item.type === 'product' ? products : services
+                      });
+                      
+                      handleItemChange(index, 'item_id', selectedValue);
                       if (selectedItem) {
-                        handleItemChange(index, 'description', selectedItem.name);
-                        handleItemChange(index, 'unit_price', selectedItem.price || 0);
+                        handleItemChange(index, 'description', selectedItem.name || selectedItem.description || '');
+                        handleItemChange(index, 'unit_price', selectedItem.price || selectedItem.unit_price || 0);
                       }
                     }}
                     className="mt-1 block w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                    required
                   >
-                    <option value="">Select {item.type}</option>
+                    <option value="">Select {item.type === 'product' ? 'Product' : 'Service'}</option>
                     {(item.type === 'product' ? products : services).map(option => (
                       <option key={option.id} value={option.id}>
-                        {option.name}
+                        {option.name || option.description || 'Unnamed Item'}
                       </option>
                     ))}
                   </select>
