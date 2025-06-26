@@ -2,6 +2,56 @@
 
 *This document contains recurring issues and their proven solutions to prevent re-debugging.*
 
+---
+
+# UI/UX Issues
+
+## Icon Standardization
+
+**Issue**: All page titles should use professional SVG icons from Heroicons instead of emojis, matching the Settings page style.
+
+**Symptoms**:
+- Page titles use emoji icons (📦, 🛠️, 🛒, etc.)
+- Inconsistent styling across pages
+- Not professional appearance
+
+**Solution**:
+1. Import appropriate Heroicon:
+   ```javascript
+   import { IconName } from '@heroicons/react/24/outline';
+   ```
+
+2. Replace emoji with Heroicon in page title:
+   ```jsx
+   // Old (emoji style)
+   <h1 className="text-2xl font-bold text-black mb-4">
+     📦 Product Management
+   </h1>
+   
+   // New (Heroicons style)
+   <h1 className="text-2xl font-bold text-black mb-2 flex items-center">
+     <CubeIcon className="h-6 w-6 text-blue-600 mr-2" />
+     Product Management
+   </h1>
+   ```
+
+3. Add page description below title:
+   ```jsx
+   <p className="text-gray-600 text-sm mb-6">
+     Brief description of page functionality...
+   </p>
+   ```
+
+**Icon Style Requirements**:
+- Size: `h-6 w-6` (24x24 pixels)
+- Color: `text-blue-600`
+- Spacing: `mr-2` (8px right margin)
+- Container: `flex items-center` for alignment
+
+**Icon Mapping Reference**: See `/docs/UI_STANDARDS.md` for complete icon mapping guide.
+
+---
+
 ## 🔧 **Issue: Customer Dropdown Shows Email Instead of Name**
 
 **Symptoms:**

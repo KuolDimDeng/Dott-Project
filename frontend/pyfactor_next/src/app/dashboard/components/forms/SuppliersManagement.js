@@ -5,6 +5,7 @@ import { Dialog, Transition } from '@headlessui/react';
 import { toast } from 'react-hot-toast';
 import { supplierApi } from '@/utils/apiClient';
 import { logger } from '@/utils/logger';
+import { TruckIcon } from '@heroicons/react/24/outline';
 
 const SuppliersManagement = () => {
   // State management
@@ -827,13 +828,11 @@ const SuppliersManagement = () => {
 
   return (
     <div className="p-6 bg-gray-50">
-      <h1 className="text-2xl font-bold text-black mb-4 flex items-center">
-        <svg className="h-6 w-6 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-        </svg>
+      <h1 className="text-2xl font-bold text-black mb-2 flex items-center">
+        <TruckIcon className="h-6 w-6 text-blue-600 mr-2" />
         Suppliers Management
       </h1>
-      <p className="text-gray-600 mb-6">Manage your vendor relationships, track supplier information, and maintain purchase history.</p>
+      <p className="text-gray-600 text-sm mb-6">Manage your vendor relationships, track supplier information, and maintain purchase history.</p>
       
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8">

@@ -221,6 +221,7 @@ const SupplierManagement = enhancedLazy(() => {
     });
 }, 'Supplier Management');
 const InventoryManagement = enhancedLazy(() => import('@/app/inventory/components/InventoryManagement.js'), 'Inventory Management');
+const InventoryDashboard = enhancedLazy(() => import('./forms/InventoryDashboard.js'), 'Inventory Dashboard');
 const InventoryReports = enhancedLazy(() => import('./forms/InventoryReports.js'), 'Inventory Reports');
 const LocationsManagement = enhancedLazy(() => import('./forms/LocationsManagement.js'), 'Locations Management');
 const StockAdjustmentsManagement = enhancedLazy(() => import('./forms/StockAdjustmentsManagement.js'), 'Stock Adjustments Management');
@@ -1605,7 +1606,29 @@ const RenderMainContent = React.memo(function RenderMainContent({
         return (
           <ContentWrapperWithKey>
             <SuspenseWithCleanup componentKey={`${componentKey}-inventory-dashboard`}>
-              <InventoryManagement />
+              <InventoryDashboard onNavigate={onViewChange} />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
+      }
+      
+      if (view === 'inventory-stock-adjustments') {
+        console.log('[RenderMainContent] Rendering inventory-stock-adjustments view');
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup componentKey={`${componentKey}-inventory-stock-adjustments`}>
+              <StockAdjustmentsManagement />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
+      }
+      
+      if (view === 'inventory-locations') {
+        console.log('[RenderMainContent] Rendering inventory-locations view');
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup componentKey={`${componentKey}-inventory-locations`}>
+              <LocationsManagement />
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>
         );

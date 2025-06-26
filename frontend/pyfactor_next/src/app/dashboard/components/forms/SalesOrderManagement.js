@@ -588,11 +588,22 @@ const SalesOrderManagement = () => {
                         availableItems: item.type === 'product' ? products : services
                       });
                       
-                      handleItemChange(index, 'item_id', selectedValue);
-                      if (selectedItem) {
-                        handleItemChange(index, 'description', selectedItem.name || selectedItem.description || '');
-                        handleItemChange(index, 'unit_price', selectedItem.price || selectedItem.unit_price || 0);
-                      }
+                      // Update all fields at once to avoid state conflicts
+                      const newItems = [...formData.items];
+                      newItems[index] = {
+                        ...newItems[index],
+                        item_id: selectedValue,
+                        description: selectedItem ? (selectedItem.name || selectedItem.description || '') : newItems[index].description,
+                        unit_price: selectedItem ? (selectedItem.price || selectedItem.unit_price || 0) : newItems[index].unit_price
+                      };
+                      
+                      // Calculate total
+                      const quantity = parseFloat(newItems[index].quantity) || 0;
+                      const unitPrice = parseFloat(newItems[index].unit_price) || 0;
+                      newItems[index].total = quantity * unitPrice;
+                      
+                      setFormData(prev => ({ ...prev, items: newItems }));
+                      console.log('[SalesOrderManagement] Updated item after selection:', newItems[index]);
                     }}
                     className="mt-1 block w-full px-2 py-1 text-sm border border-gray-300 rounded"
                   >
