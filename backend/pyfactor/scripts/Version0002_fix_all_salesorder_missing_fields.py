@@ -23,9 +23,21 @@ This script documents the migration needed to add all missing fields to the sale
 # - notes
 # - estimate_id
 
+# The sales_salesorderitem table is also missing columns:
+# - item_type
+# - product_id
+# - service_id
+# - item_id
+# - description
+# - quantity
+# - unit_price
+# - tax_rate
+# - tax_amount
+# - total
+
 # SOLUTION:
 # =========
-# Run Django migration 0005_add_missing_salesorder_fields which safely adds all missing columns
+# Run Django migrations 0005 and 0006 which safely add all missing columns
 
 # COMMANDS TO RUN ON BACKEND:
 # ==========================
@@ -39,8 +51,9 @@ python manage.py migrate custom_auth
 # 3. Check current sales migration status:
 python manage.py showmigrations sales
 
-# 4. Apply the comprehensive migration:
+# 4. Apply the comprehensive migrations:
 python manage.py migrate sales 0005
+python manage.py migrate sales 0006
 
 # 5. Verify all columns were added:
 python manage.py dbshell
@@ -48,7 +61,7 @@ python manage.py dbshell
 # In PostgreSQL shell, run:
 \d sales_salesorder
 
-# You should see all these columns:
+# You should see all these columns in sales_salesorder:
 # - payment_terms (character varying(50))
 # - due_date (date)
 # - subtotal (numeric(19,4))
@@ -61,15 +74,34 @@ python manage.py dbshell
 # - notes (text)
 # - estimate_id (uuid)
 
+# Also check sales_salesorderitem:
+\d sales_salesorderitem
+
+# You should see these columns:
+# - item_type (character varying(20))
+# - product_id (uuid)
+# - service_id (uuid)
+# - item_id (character varying(100))
+# - description (character varying(200))
+# - quantity (numeric(10,2))
+# - unit_price (numeric(10,2))
+# - tax_rate (numeric(5,2))
+# - tax_amount (numeric(10,2))
+# - total (numeric(10,2))
+
 # Exit PostgreSQL:
 \q
 """
 
 # MIGRATION DETAILS:
 # ==================
-# File: /backend/pyfactor/sales/migrations/0005_add_missing_salesorder_fields.py
+# File 1: /backend/pyfactor/sales/migrations/0005_add_missing_salesorder_fields.py
+# - Adds all missing columns to sales_salesorder table
 # 
-# This migration uses conditional SQL to check if each column exists before adding it,
+# File 2: /backend/pyfactor/sales/migrations/0006_add_missing_salesorderitem_fields.py
+# - Adds all missing columns to sales_salesorderitem table
+# 
+# Both migrations use conditional SQL to check if each column exists before adding it,
 # making it safe to run multiple times. Each field has appropriate:
 # - Data types matching the Django model
 # - Default values for existing records

@@ -14,6 +14,7 @@
 ```
 django.db.utils.ProgrammingError: column sales_salesorder.due_date does not exist
 django.db.utils.ProgrammingError: column sales_salesorder.payment_terms does not exist
+django.db.utils.ProgrammingError: column "item_type" of relation "sales_salesorderitem" does not exist
 ```
 
 **Symptoms**:
@@ -22,9 +23,10 @@ django.db.utils.ProgrammingError: column sales_salesorder.payment_terms does not
 - Multiple fields exist in Django model but not in database
 
 **Root Cause**:
-- Django SalesOrder model has been updated with new fields
+- Django SalesOrder and SalesOrderItem models have been updated with new fields
 - Database migrations were not run to add the columns
-- Multiple fields are missing: payment_terms, due_date, subtotal, tax_total, tax_rate, discount_percentage, shipping_cost, total, total_amount, notes, estimate_id
+- SalesOrder table missing: payment_terms, due_date, subtotal, tax_total, tax_rate, discount_percentage, shipping_cost, total, total_amount, notes, estimate_id
+- SalesOrderItem table missing: item_type, product_id, service_id, item_id, description, quantity, unit_price, tax_rate, tax_amount, total
 
 **Solution**:
 1. First, resolve any migration conflicts:
@@ -38,9 +40,10 @@ django.db.utils.ProgrammingError: column sales_salesorder.payment_terms does not
    python manage.py showmigrations sales
    ```
 
-3. Apply the comprehensive migration:
+3. Apply the comprehensive migrations:
    ```bash
    python manage.py migrate sales 0005
+   python manage.py migrate sales 0006
    ```
 
 4. Verify all columns were added:
@@ -50,9 +53,11 @@ django.db.utils.ProgrammingError: column sales_salesorder.payment_terms does not
    ```
 
 **Migration Details**:
-- File: `/backend/pyfactor/sales/migrations/0005_add_missing_salesorder_fields.py`
-- Adds ALL missing fields in one migration
-- Uses conditional SQL to safely check if columns exist before adding
+- File 1: `/backend/pyfactor/sales/migrations/0005_add_missing_salesorder_fields.py`
+  - Adds ALL missing fields to sales_salesorder table
+- File 2: `/backend/pyfactor/sales/migrations/0006_add_missing_salesorderitem_fields.py`
+  - Adds ALL missing fields to sales_salesorderitem table
+- Both migrations use conditional SQL to safely check if columns exist before adding
 - Safe to run multiple times
 - Default values provided for all fields
 

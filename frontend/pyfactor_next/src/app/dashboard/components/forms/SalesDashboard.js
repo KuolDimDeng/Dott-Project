@@ -13,6 +13,7 @@ import {
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
 import { format } from 'date-fns';
+import { ChartBarIcon } from '@heroicons/react/24/outline';
 
 const SalesDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -317,8 +318,11 @@ const SalesDashboard = () => {
   return (
     <div className="p-6 bg-gray-50">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-black">📊 Sales Dashboard</h1>
-        <p className="text-gray-600 mt-1">Overview of your sales performance and metrics</p>
+        <h1 className="text-2xl font-bold text-black mb-4 flex items-center">
+          <ChartBarIcon className="h-6 w-6 text-blue-600 mr-2" />
+          Sales Dashboard
+        </h1>
+        <p className="text-gray-600">Overview of your sales performance and metrics</p>
       </div>
 
       {/* Period Selector */}
