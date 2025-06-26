@@ -1,6 +1,6 @@
 # UI/UX Standards Guide
 
-*Last Updated: 2025-01-26*
+*Last Updated: 2025-06-26*
 
 ## Icon Standards for Page Titles
 
@@ -48,6 +48,40 @@ import { IconName } from '@heroicons/react/24/outline';
 | **Inventory** | Location Management | 🏢 → Building | `BuildingOfficeIcon` |
 | **Dashboard** | Main Dashboard | 🏠 → Home | `HomeIcon` |
 | **Analytics** | Analytics Dashboard | 📈 → Chart | `ChartBarIcon` |
+| **Inventory** | Stock Adjustments | 📦 → Arrows Up/Down | `ArrowsUpDownIcon` |
+| **Inventory** | Location Management | 📍 → Map Pin | `MapPinIcon` |
+| **Inventory** | Supplier Management | 📥 → Arrow Down to Box | `ArrowDownTrayIcon` |
+| **Inventory** | Inventory Reports | 📊 → Document Chart | `DocumentChartBarIcon` |
+
+## Page Descriptions
+
+### Overview
+Each page should include a brief description below the title to help users understand the page's purpose and functionality.
+
+### Implementation
+```jsx
+<h1 className="text-2xl font-bold text-black mb-4 flex items-center">
+  <IconName className="h-6 w-6 text-blue-600 mr-2" />
+  Page Title
+</h1>
+<p className="text-gray-600 mb-6">Brief description of what the page does and its main functionality.</p>
+```
+
+### Description Guidelines
+- **Length**: 1-2 sentences (50-100 characters)
+- **Style**: Clear, action-oriented language
+- **Content**: Focus on user benefits and main functionality
+- **Color**: `text-gray-600` for consistency
+
+### Example Descriptions
+| Page | Description |
+|------|-------------|
+| Stock Adjustments | Manage inventory levels by adding or reducing stock quantities with proper documentation and tracking. |
+| Location Management | Define and manage warehouses, stores, and other physical locations where inventory is stored. |
+| Supplier Management | Manage your vendor relationships, track supplier information, and maintain purchase history. |
+| Inventory Reports | Generate comprehensive reports for inventory analysis, stock levels, movements, and valuation insights. |
+| Product Management | Create and manage your product catalog with pricing, categories, and inventory tracking. |
+| Customer Management | Manage customer profiles, contact information, and transaction history in one place. |
 
 ### Example Implementations
 

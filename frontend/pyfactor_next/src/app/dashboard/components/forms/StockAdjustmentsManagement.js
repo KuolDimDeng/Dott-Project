@@ -796,7 +796,13 @@ const StockAdjustmentsManagement = () => {
 
   return (
     <div className="p-6 bg-gray-50">
-      <h1 className="text-2xl font-bold text-black mb-4">Stock Adjustments</h1>
+      <h1 className="text-2xl font-bold text-black mb-4 flex items-center">
+        <svg className="h-6 w-6 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+        </svg>
+        Stock Adjustments
+      </h1>
+      <p className="text-gray-600 mb-6">Manage inventory levels by adding or reducing stock quantities with proper documentation and tracking.</p>
       
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8">

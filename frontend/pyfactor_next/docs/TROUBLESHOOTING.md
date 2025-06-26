@@ -438,6 +438,83 @@ import { CubeIcon } from '@heroicons/react/24/outline';
 
 ---
 
+## 🔧 **Issue: Sales Order Creation - Product Selection and Backend Validation Errors**
+
+**Symptoms:**
+- When selecting a product in sales order form, dropdown shows "Select Product" instead of the selected product name
+- Creating sales order fails with error: `{"items":[{"non_field_errors":["Either product or service must be specified"]}]}`
+- Product is selected but not displayed correctly in the UI
+- Backend rejects order creation even though items appear to be selected
+
+**Root Cause Analysis:**
+1. **UI Issue**: Select element's value binding didn't handle empty/undefined values properly
+   - `value={item.item_id}` would be undefined initially, causing React controlled component issues
+   - Selected value wasn't matching option values due to type/undefined mismatch
+2. **Backend Issue**: Items were submitted without proper product/service IDs
+   - Frontend sends `item_id` but backend expects either `product` or `service` field
+   - API transformation was correct but `item_id` was empty/undefined
+
+**Solution (Proven Fix):**
+```javascript
+// ✅ CORRECT - Handle empty values and add validation
+// In SalesOrderManagement.js
+
+// 1. Fix select element value binding
+<select
+  value={item.item_id || ''}  // Handle undefined/null values
+  onChange={(e) => {
+    const selectedValue = e.target.value;
+    // ... handle selection
+  }}
+  required  // Add HTML5 validation
+>
+  <option value="">Select {item.type === 'product' ? 'Product' : 'Service'}</option>
+  {/* options */}
+</select>
+
+// 2. Add validation before submission
+const invalidItems = formData.items.filter(item => !item.item_id || item.item_id === '');
+if (invalidItems.length > 0) {
+  toast.error('Please select a product or service for all items');
+  return;
+}
+
+// ❌ WRONG - Without proper validation
+<select value={item.item_id}>  // Undefined value causes display issues
+```
+
+**Data Flow Explanation:**
+1. Frontend form uses `item_id` field for both products and services
+2. API proxy (`/api/sales/orders/route.js`) transforms data:
+   ```javascript
+   items: body.items?.map(item => ({
+     item_type: item.type || 'product',
+     product: item.type === 'product' ? item.item_id : null,
+     service: item.type === 'service' ? item.item_id : null,
+     // ... other fields
+   }))
+   ```
+3. Backend expects either `product` or `service` field to be non-null
+
+**Verification Steps:**
+1. Select a product in the dropdown - it should show the product name
+2. Try to create order without selecting items - should show validation error
+3. Create order with selected items - should succeed without backend errors
+4. Check console logs for selected item details during debugging
+
+**Prevention:**
+- Always use `value={field || ''}` for controlled select elements
+- Add validation for required selections before form submission
+- Include `required` attribute on select elements for HTML5 validation
+- Test both empty and populated form states
+
+**Related Issues:**
+- Similar issues may occur in Invoice, Estimate forms with item selection
+- Check all forms with product/service selection dropdowns
+- Backend field name mismatches (frontend vs Django serializer expectations)
+
+---
+
 ## 📋 **Issue Reporting Template**
 
 When documenting new issues, use this format:

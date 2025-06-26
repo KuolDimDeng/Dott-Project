@@ -710,10 +710,15 @@ const CustomerManagement = () => {
 
   return (
     <div className="p-6 bg-gray-50">
-      <h1 className="text-2xl font-bold text-black mb-4 flex items-center">
-        <UserGroupIcon className="h-6 w-6 text-blue-600 mr-2" />
-        Customer Management
-      </h1>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-black mb-2 flex items-center">
+          <UserGroupIcon className="h-6 w-6 text-blue-600 mr-2" />
+          Customer Management
+        </h1>
+        <p className="text-gray-600 text-sm">
+          Maintain your customer database with contact information, billing details, and purchase history. Organize customers by type and track their account status.
+        </p>
+      </div>
       
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8">

@@ -212,6 +212,8 @@ const SalesOrderManagement = () => {
 
   // Handle item changes
   const handleItemChange = (index, field, value) => {
+    console.log('[SalesOrderManagement] handleItemChange called:', { index, field, value });
+    
     const newItems = [...formData.items];
     newItems[index] = { ...newItems[index], [field]: value };
     
@@ -223,6 +225,7 @@ const SalesOrderManagement = () => {
     }
     
     setFormData(prev => ({ ...prev, items: newItems }));
+    console.log('[SalesOrderManagement] Updated item:', newItems[index]);
   };
 
   // Add item to order
@@ -275,10 +278,21 @@ const SalesOrderManagement = () => {
     }
     
     // Validate all items have products/services selected
-    const invalidItems = formData.items.filter(item => !item.item_id || item.item_id === '');
-    if (invalidItems.length > 0) {
-      toast.error('Please select a product or service for all items');
-      return;
+    console.log('[SalesOrderManagement] Validating items:', formData.items);
+    
+    for (let i = 0; i < formData.items.length; i++) {
+      const item = formData.items[i];
+      console.log(`[SalesOrderManagement] Checking item ${i}:`, {
+        item_id: item.item_id,
+        type: item.type,
+        hasItemId: !!item.item_id,
+        itemIdLength: item.item_id ? item.item_id.length : 0
+      });
+      
+      if (!item.item_id || item.item_id === '' || item.item_id === null || item.item_id === undefined) {
+        toast.error(`Please select a ${item.type} for item ${i + 1}`);
+        return;
+      }
     }
     
     try {
@@ -581,7 +595,6 @@ const SalesOrderManagement = () => {
                       }
                     }}
                     className="mt-1 block w-full px-2 py-1 text-sm border border-gray-300 rounded"
-                    required
                   >
                     <option value="">Select {item.type === 'product' ? 'Product' : 'Service'}</option>
                     {(item.type === 'product' ? products : services).map(option => (
@@ -1047,10 +1060,15 @@ const SalesOrderManagement = () => {
   return (
     <div className="p-6 bg-gray-50">
       <div className="bg-white rounded-lg shadow-md p-6">
-        <h1 className="text-2xl font-bold text-black mb-6 flex items-center">
-          <ShoppingCartIcon className="h-6 w-6 text-blue-600 mr-2" />
-          Sales Order Management
-        </h1>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-black mb-2 flex items-center">
+            <ShoppingCartIcon className="h-6 w-6 text-blue-600 mr-2" />
+            Sales Order Management
+          </h1>
+          <p className="text-gray-600 text-sm">
+            Create and manage sales orders from customers. Track order status, add products or services, apply discounts, and monitor fulfillment progress.
+          </p>
+        </div>
         
         {/* Tab Navigation */}
         <div className="border-b border-gray-200 mb-6">

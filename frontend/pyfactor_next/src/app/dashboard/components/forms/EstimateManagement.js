@@ -1119,10 +1119,15 @@ const EstimateManagement = () => {
 
   return (
     <div className="p-6 bg-gray-50">
-      <h1 className="text-2xl font-bold text-black mb-4 flex items-center">
-        <ClipboardDocumentListIcon className="h-6 w-6 text-blue-600 mr-2" />
-        Estimate Management
-      </h1>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-black mb-2 flex items-center">
+          <ClipboardDocumentListIcon className="h-6 w-6 text-blue-600 mr-2" />
+          Estimate Management
+        </h1>
+        <p className="text-gray-600 text-sm">
+          Create detailed quotes and estimates for potential customers. Set validity periods, track approval status, and convert accepted estimates into sales orders or invoices.
+        </p>
+      </div>
       
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8">

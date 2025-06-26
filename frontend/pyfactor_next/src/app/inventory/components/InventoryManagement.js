@@ -32,9 +32,13 @@ function InventoryManagement() {
 
   return (
     <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-      <h1 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">
+      <h1 className="text-2xl font-bold text-black mb-4 flex items-center">
+        <svg className="h-6 w-6 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        </svg>
         Inventory Management
       </h1>
+      <p className="text-gray-600 mb-6">Track products, manage stock levels, and monitor inventory movements across all locations.</p>
       <div className="border-b border-gray-200 dark:border-gray-700">
         <nav className="flex -mb-px" aria-label="inventory management tabs">
           {['Inventory Items', 'Categories', 'Suppliers', 'Locations', 'Transactions'].map((tab, index) => (
