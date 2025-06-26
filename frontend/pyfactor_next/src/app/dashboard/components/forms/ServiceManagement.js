@@ -7,6 +7,7 @@ import { serviceApi } from '@/utils/apiClient';
 import { getCacheValue } from '@/utils/appCache';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
+import { WrenchScrewdriverIcon } from '@heroicons/react/24/outline';
 
 // Tooltip component for field help
 const FieldTooltip = ({ text, position = 'top' }) => {
@@ -888,7 +889,10 @@ const ServiceManagement = () => {
 
   return (
     <div className="p-6 bg-gray-50">
-      <h1 className="text-2xl font-bold text-black mb-4">🛠️ Service Management</h1>
+      <h1 className="text-2xl font-bold text-black mb-4 flex items-center">
+        <WrenchScrewdriverIcon className="h-6 w-6 text-blue-600 mr-2" />
+        Service Management
+      </h1>
       
       {/* Service Error/Maintenance Notice */}
       {serviceError && (

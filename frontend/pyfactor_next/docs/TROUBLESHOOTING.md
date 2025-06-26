@@ -60,6 +60,83 @@
 
 ---
 
+## 🔧 **Issue: Sales Order Creation Fails with Field Errors**
+
+**Symptoms:**
+- Sales order creation returns 400 error
+- Error: `{"customer":["This field is required."],"date":["This field is required."],"items":[{"description":["This field may not be blank."]}]}`
+- Frontend console shows successful data but backend rejects it
+- Works in development but fails in production
+
+**Root Cause Analysis:**
+- Frontend and backend use different field names for the same data
+- Frontend sends `customer_id` but backend expects `customer`
+- Frontend sends `order_date` but backend expects `date`
+- Backend requires item `description` to not be blank
+- Field mapping mismatch between frontend models and Django serializers
+
+**Solution (Proven Fix):**
+```javascript
+// In: /src/app/api/sales/orders/route.js
+
+// ✅ CORRECT - Transform frontend data to backend format
+const backendData = {
+  customer: body.customer_id,  // Backend expects 'customer' not 'customer_id'
+  date: body.order_date,       // Backend expects 'date' not 'order_date'
+  due_date: body.due_date,
+  status: body.status || 'pending',
+  payment_terms: body.payment_terms,
+  discount: body.discount_percentage || 0,
+  shipping_cost: body.shipping_cost || 0,
+  tax_rate: body.tax_rate || 0,
+  notes: body.notes || '',
+  items: body.items?.map(item => ({
+    item_type: item.type || 'product',
+    product: item.type === 'product' ? item.item_id : null,
+    service: item.type === 'service' ? item.item_id : null,
+    description: item.description || item.name || 'Item',  // Never blank
+    quantity: item.quantity || 1,
+    unit_price: item.unit_price || 0
+  })) || []
+};
+
+// ❌ WRONG - Sending frontend format directly to backend
+body: JSON.stringify(body)  // This will fail!
+```
+
+**Also Transform Response Data:**
+```javascript
+// Transform backend response to frontend format
+const transformedData = {
+  ...data,
+  customer_id: data.customer,
+  order_date: data.date,
+  order_number: data.order_number || data.id,
+  total_amount: data.total_amount || data.totalAmount || data.total
+};
+```
+
+**Field Mapping Reference:**
+| Frontend Field | Backend Field | Notes |
+|---------------|---------------|-------|
+| customer_id | customer | UUID of customer |
+| order_date | date | Date field |
+| item_id | product/service | Based on item_type |
+| total_amount | totalAmount/total | Multiple possible names |
+
+**Prevention:**
+- Always check Django serializer field names vs frontend field names
+- Add data transformation layer in API proxy routes
+- Provide default values for required fields
+- Test with actual backend API, not just frontend validation
+
+**Related Files:**
+- `/src/app/api/sales/orders/route.js` - API proxy with transformations
+- `/backend/pyfactor/sales/serializers_new.py` - Django serializer definitions
+- `/src/app/dashboard/components/forms/SalesOrderManagement.js` - Frontend form
+
+---
+
 ## 🔧 **Issue: Module Creates Successfully But Fetching Returns Empty Results**
 
 **Symptoms:**
@@ -300,6 +377,64 @@ const response = await fetch('/api/inventory/products', {...});
 - Auth0 migration incomplete in some utilities
 - Django REST Framework pagination not handled in frontend
 - Inconsistent API endpoint patterns
+
+---
+
+## 🔧 **Issue: Page Titles Using Emoji Icons Instead of Professional SVG Icons**
+
+**Symptoms:**
+- Page titles display emoji icons (📦, 🛠️, 🛒, etc.)
+- Inconsistent with Settings page which uses Heroicons
+- User wants professional SVG icons with blue color styling
+- Affects all management pages in Sales and other modules
+
+**Root Cause Analysis:**
+- Initial implementation used emoji characters for quick visual identification
+- Settings page uses professional Heroicons from `@heroicons/react/24/outline`
+- Inconsistent styling across different modules
+- No established icon standard in documentation
+
+**Solution (Proven Fix):**
+```javascript
+// ❌ OLD - Emoji style
+<h1 className="text-2xl font-bold text-black mb-4">
+  📦 Product Management
+</h1>
+
+// ✅ NEW - Heroicons style (matches Settings page)
+import { CubeIcon } from '@heroicons/react/24/outline';
+
+<h1 className="text-2xl font-bold text-black mb-4 flex items-center">
+  <CubeIcon className="h-6 w-6 text-blue-600 mr-2" />
+  Product Management
+</h1>
+```
+
+**Icon Mapping Reference:**
+| Page | Old Emoji | New Heroicon | Import |
+|------|-----------|--------------|--------|
+| Product Management | 📦 | CubeIcon | `@heroicons/react/24/outline` |
+| Service Management | 🛠️ | WrenchScrewdriverIcon | `@heroicons/react/24/outline` |
+| Sales Order Management | 🛒 | ShoppingCartIcon | `@heroicons/react/24/outline` |
+| Customer Management | 👥 | UserGroupIcon | `@heroicons/react/24/outline` |
+| Invoice Management | 📄 | DocumentTextIcon | `@heroicons/react/24/outline` |
+| Estimate Management | 📋 | ClipboardDocumentListIcon | `@heroicons/react/24/outline` |
+
+**Standard Icon Styling:**
+- Size: `h-6 w-6` (24x24 pixels)
+- Color: `text-blue-600` (blue-600 from Tailwind)
+- Spacing: `mr-2` (8px right margin)
+- Container: `flex items-center` (vertically centered)
+
+**Prevention:**
+- Always use Heroicons for page titles and navigation
+- Follow Settings page pattern for consistency
+- Maintain icon mapping documentation
+- Use blue-600 color for all page title icons
+
+**Related Files:**
+- `/src/app/Settings/components/SettingsManagement.js` - Reference implementation
+- All management pages in `/src/app/dashboard/components/forms/`
 
 ---
 

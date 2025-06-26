@@ -6,6 +6,7 @@ import { toast } from 'react-hot-toast';
 import { orderApi } from '@/utils/apiClient';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
+import { ShoppingCartIcon } from '@heroicons/react/24/outline';
 
 // Tooltip component for field help
 const FieldTooltip = ({ text, position = 'top' }) => {
@@ -1027,7 +1028,10 @@ const SalesOrderManagement = () => {
   return (
     <div className="p-6 bg-gray-50">
       <div className="bg-white rounded-lg shadow-md p-6">
-        <h1 className="text-2xl font-bold text-black mb-6">🛒 Sales Order Management</h1>
+        <h1 className="text-2xl font-bold text-black mb-6 flex items-center">
+          <ShoppingCartIcon className="h-6 w-6 text-blue-600 mr-2" />
+          Sales Order Management
+        </h1>
         
         {/* Tab Navigation */}
         <div className="border-b border-gray-200 mb-6">

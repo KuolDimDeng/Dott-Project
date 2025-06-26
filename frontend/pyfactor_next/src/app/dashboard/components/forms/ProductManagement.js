@@ -17,6 +17,7 @@ import axios from 'axios';
 import { logger } from '@/utils/logger';
 import { extractTenantId, getSecureTenantId } from '@/utils/tenantUtils';
 import { getCacheValue } from '@/utils/appCache';
+import { CubeIcon } from '@heroicons/react/24/outline';
 
 // Tooltip component for field help
 const FieldTooltip = ({ text, position = 'top' }) => {
@@ -2671,8 +2672,9 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
         }
       `}</style>
       
-      <h1 className="text-2xl font-bold text-black mb-4">
-        📦 Product Management
+      <h1 className="text-2xl font-bold text-black mb-4 flex items-center">
+        <CubeIcon className="h-6 w-6 text-blue-600 mr-2" />
+        Product Management
       </h1>
       
       {/* Summary Cards */}

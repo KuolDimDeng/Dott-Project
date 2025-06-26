@@ -7,6 +7,7 @@ import { orderApi, invoiceApi, customerApi, productApi, serviceApi } from '@/uti
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
 import { format } from 'date-fns';
+import { DocumentTextIcon } from '@heroicons/react/24/outline';
 
 // Tooltip component for field help
 const FieldTooltip = ({ text, position = 'top' }) => {
@@ -917,7 +918,10 @@ const InvoiceManagement = () => {
 
   return (
     <div className="w-full">
-      <h1 className="text-2xl font-bold text-black mb-6">📄 Invoice Management</h1>
+      <h1 className="text-2xl font-bold text-black mb-6 flex items-center">
+        <DocumentTextIcon className="h-6 w-6 text-blue-600 mr-2" />
+        Invoice Management
+      </h1>
       
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

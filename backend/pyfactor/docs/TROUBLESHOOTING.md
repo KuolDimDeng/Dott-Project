@@ -71,6 +71,63 @@ class SalesOrderSerializer(serializers.ModelSerializer):
 
 ---
 
+## 🔧 **Issue: Frontend-Backend Field Name Mismatch in Sales Orders**
+
+**Symptoms:**
+- Sales order creation returns 400 Bad Request
+- Error: `{"customer":["This field is required."],"date":["This field is required."]}`
+- Frontend sends data but backend rejects it as missing required fields
+- Logs show data is sent with different field names
+
+**Root Cause Analysis:**
+- Django REST Framework serializers expect specific field names
+- Frontend uses more descriptive names (customer_id, order_date)
+- Backend uses shorter names (customer, date)
+- No data transformation layer between frontend and backend
+
+**Solution (Backend Perspective):**
+```python
+# Option 1: Update serializer to accept both field names
+class SalesOrderSerializer(serializers.ModelSerializer):
+    # Accept both 'customer' and 'customer_id'
+    customer = serializers.PrimaryKeyRelatedField(
+        queryset=Customer.objects.all(),
+        source='customer'
+    )
+    customer_id = serializers.PrimaryKeyRelatedField(
+        queryset=Customer.objects.all(),
+        source='customer',
+        write_only=True
+    )
+    
+    # Accept both 'date' and 'order_date'
+    date = serializers.DateField()
+    order_date = serializers.DateField(source='date', write_only=True)
+
+# Option 2: Transform data in API proxy (Recommended)
+# Let frontend keep its naming, transform in /api/sales/orders/route.js
+```
+
+**Field Mapping Table:**
+| Frontend Name | Backend Model Field | Serializer Field |
+|--------------|--------------------|--------------------|
+| customer_id | customer (FK) | customer |
+| order_date | date | date |
+| total_amount | total_amount | totalAmount or total_amount |
+| item_id | product/service (FK) | product or service |
+
+**Best Practice:**
+- Document field mappings in serializer docstrings
+- Use consistent naming conventions across the project
+- Add field aliases in serializers for backward compatibility
+- Transform data at the API boundary (proxy routes)
+
+**Related Issues:**
+- Similar problems may occur with Invoice, Estimate, and other models
+- Check all serializers when frontend reports "field required" errors
+
+---
+
 ## 🔧 **Issue: OnboardingMiddleware Blocking Module Endpoints**
 
 **Symptoms:**
