@@ -74,11 +74,29 @@ django.db.utils.ProgrammingError: column "item_type" of relation "sales_salesord
 - `notes`: TEXT, nullable
 - `estimate_id`: UUID, nullable
 
+**Migration Workflow (Local vs Production)**:
+```bash
+# 1. Generate migrations locally FIRST
+python manage.py makemigrations
+python manage.py makemigrations sales  # For specific app
+
+# 2. Commit and push migration files
+git add backend/pyfactor/*/migrations/
+git commit -m "Add database migrations"
+git push origin Dott_Main_Dev_Deploy
+
+# 3. THEN run migrations on Render
+python manage.py migrate
+```
+
+**Important**: Never run migrations on production without committing migration files locally first. This ensures version control and team synchronization.
+
 **Prevention**:
 - Always run migrations after model changes
 - Check migration status before deploying
 - Use `python manage.py makemigrations --check` in CI/CD
 - Keep database schema in sync with Django models
+- Generate migrations locally before production deployment
 
 ---
 
