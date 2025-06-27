@@ -722,8 +722,8 @@ const InvoiceManagement = () => {
       
       const newInvoice = await invoiceApi.create(invoiceData);
       
-      // Update order with invoice reference
-      await orderApi.update(item.id, { invoice_id: newInvoice.id });
+      // Note: The invoice already has a reference to the sales order through the sales_order field
+      // No need to update the order since it doesn't have an invoice_id field
       
       toast.success(`Invoice created successfully with ${template} template`);
       await fetchData();
