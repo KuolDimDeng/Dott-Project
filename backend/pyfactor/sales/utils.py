@@ -218,14 +218,40 @@ def generate_invoice_pdf(invoice):
         p.drawRightString(width - 40, height - 90, invoice.status.upper())
         p.setFillColor(colors.black)
 
-        # Draw business info (if available through tenant)
-        # Note: TenantAwareModel stores tenant_id, might need to fetch tenant separately
+        # Draw business info from tenant
         p.setFont("Helvetica", 10)
         y_pos = height - 120
-        # For now, we'll use a placeholder. In production, you might want to fetch tenant details
-        p.drawString(40, y_pos, "Your Business Name")
+        
+        # Try to get tenant information
+        business_name = "Your Business"
+        business_address = None
+        
+        try:
+            # Access tenant through the invoice's tenant relationship
+            if hasattr(invoice, 'tenant') and invoice.tenant:
+                business_name = invoice.tenant.name or "Your Business"
+                logger.debug(f"Using tenant name: {business_name}")
+            elif hasattr(invoice, 'tenant_id') and invoice.tenant_id:
+                # If tenant is not loaded, try to fetch it
+                from custom_auth.models import Tenant
+                tenant = Tenant.objects.filter(id=invoice.tenant_id).first()
+                if tenant:
+                    business_name = tenant.name or "Your Business"
+                    logger.debug(f"Fetched tenant name: {business_name}")
+        except Exception as e:
+            logger.warning(f"Could not fetch tenant information: {e}")
+        
+        # Display business name
+        p.setFont("Helvetica-Bold", 11)
+        p.drawString(40, y_pos, business_name)
         y_pos -= 15
-        # You can extend this to fetch actual tenant/business details if needed
+        
+        # TODO: Add business address fields when available in Tenant or Business model
+        # For now, we'll add placeholder for future enhancement
+        # p.drawString(40, y_pos, business_street)
+        # y_pos -= 15
+        # p.drawString(40, y_pos, f"{business_city}, {business_state} {business_postcode}")
+        # y_pos -= 15
 
         # Draw customer details
         y_pos -= 20
@@ -236,24 +262,61 @@ def generate_invoice_pdf(invoice):
         
         # Check if customer exists
         if hasattr(invoice, 'customer') and invoice.customer:
-            # Format customer name
+            # Format customer name - handle all possible name fields
             customer_name = ""
             if hasattr(invoice.customer, 'business_name') and invoice.customer.business_name:
                 customer_name = invoice.customer.business_name
             elif hasattr(invoice.customer, 'first_name') and invoice.customer.first_name:
-                customer_name = f"{invoice.customer.first_name} {invoice.customer.last_name or ''}"
+                first_name = invoice.customer.first_name or ""
+                last_name = getattr(invoice.customer, 'last_name', "") or ""
+                customer_name = f"{first_name} {last_name}".strip()
+            elif hasattr(invoice.customer, 'name') and invoice.customer.name:
+                customer_name = invoice.customer.name
             else:
                 customer_name = "Customer"
+                
+            # Display customer name
+            p.setFont("Helvetica-Bold", 10)
             p.drawString(40, y_pos, customer_name)
+            p.setFont("Helvetica", 10)
             y_pos -= 15
             
-            if hasattr(invoice.customer, 'street') and invoice.customer.street:
-                p.drawString(40, y_pos, invoice.customer.street)
+            # Display customer address
+            street = getattr(invoice.customer, 'street', None) or getattr(invoice.customer, 'address', None) or ""
+            if street:
+                p.drawString(40, y_pos, street)
                 y_pos -= 15
-            if hasattr(invoice.customer, 'city') and invoice.customer.city:
-                billing_state = getattr(invoice.customer, 'billing_state', '')
-                postcode = getattr(invoice.customer, 'postcode', '')
-                p.drawString(40, y_pos, f"{invoice.customer.city}, {billing_state} {postcode}".strip())
+                
+            # Display city, state, postcode
+            city = getattr(invoice.customer, 'city', "") or ""
+            state = getattr(invoice.customer, 'billing_state', "") or getattr(invoice.customer, 'state', "") or ""
+            postcode = getattr(invoice.customer, 'postcode', "") or getattr(invoice.customer, 'zip_code', "") or ""
+            
+            if city or state or postcode:
+                address_line = []
+                if city:
+                    address_line.append(city)
+                if state:
+                    if city:
+                        address_line.append(f", {state}")
+                    else:
+                        address_line.append(state)
+                if postcode:
+                    address_line.append(f" {postcode}")
+                    
+                p.drawString(40, y_pos, "".join(address_line))
+                y_pos -= 15
+                
+            # Display email if available
+            email = getattr(invoice.customer, 'email', None)
+            if email:
+                p.drawString(40, y_pos, email)
+                y_pos -= 15
+                
+            # Display phone if available
+            phone = getattr(invoice.customer, 'phone', None) or getattr(invoice.customer, 'phone_number', None)
+            if phone:
+                p.drawString(40, y_pos, phone)
                 y_pos -= 15
         else:
             p.drawString(40, y_pos, "No customer information")

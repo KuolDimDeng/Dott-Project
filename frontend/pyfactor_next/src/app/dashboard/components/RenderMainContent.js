@@ -499,6 +499,9 @@ const RenderMainContent = React.memo(function RenderMainContent({
   // Navigation key for component cleanup and remounting
   navigationKey = 'default'
 }) {
+  // Debug log to see what view is being passed
+  console.log('[RenderMainContent] Component rendered with view:', view, 'navigationKey:', navigationKey);
+  
   // Store current view state for cleanup on navigation
   const [lastView, setLastView] = useState(view);
   const [componentKey, setComponentKey] = useState(`component-${Date.now()}`);

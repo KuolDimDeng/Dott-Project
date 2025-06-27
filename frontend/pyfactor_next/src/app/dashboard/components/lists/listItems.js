@@ -586,10 +586,8 @@ const MainListItems = ({
             window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
             window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
             
-            // Load the PaymentsDashboard component
-            if (typeof handlePaymentsClick === 'function') {
-              handlePaymentsClick('payments-dashboard');
-            }
+            // Note: Removed handlePaymentsClick call to prevent double navigation
+            // The menuNavigation event handler in DashboardContent will handle the view update
           }, 
           value: 'payments-dashboard' 
         },
@@ -608,10 +606,8 @@ const MainListItems = ({
             window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
             window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
             
-            // Load the ReceivePayments component
-            if (typeof handlePaymentsClick === 'function') {
-              handlePaymentsClick('receive-payments');
-            }
+            // Note: Removed handlePaymentsClick call to prevent double navigation
+            // The menuNavigation event handler in DashboardContent will handle the view update
           }, 
           value: 'receive-payments' 
         },
@@ -630,10 +626,8 @@ const MainListItems = ({
             window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
             window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
             
-            // Load the MakePayments component
-            if (typeof handlePaymentsClick === 'function') {
-              handlePaymentsClick('make-payments');
-            }
+            // Note: Removed handlePaymentsClick call to prevent double navigation
+            // The menuNavigation event handler in DashboardContent will handle the view update
           }, 
           value: 'make-payments' 
         },
@@ -652,10 +646,8 @@ const MainListItems = ({
             window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
             window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
             
-            // Load the PaymentMethods component
-            if (typeof handlePaymentsClick === 'function') {
-              handlePaymentsClick('payment-methods');
-            }
+            // Note: Removed handlePaymentsClick call to prevent double navigation
+            // The menuNavigation event handler in DashboardContent will handle the view update
           }, 
           value: 'payment-methods' 
         },
@@ -674,10 +666,8 @@ const MainListItems = ({
             window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
             window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
             
-            // Load the RecurringPayments component
-            if (typeof handlePaymentsClick === 'function') {
-              handlePaymentsClick('recurring-payments');
-            }
+            // Note: Removed handlePaymentsClick call to prevent double navigation
+            // The menuNavigation event handler in DashboardContent will handle the view update
           }, 
           value: 'recurring-payments' 
         },
@@ -696,10 +686,8 @@ const MainListItems = ({
             window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
             window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
             
-            // Load the RefundsManagement component
-            if (typeof handlePaymentsClick === 'function') {
-              handlePaymentsClick('refunds');
-            }
+            // Note: Removed handlePaymentsClick call to prevent double navigation
+            // The menuNavigation event handler in DashboardContent will handle the view update
           }, 
           value: 'refunds' 
         },
@@ -718,10 +706,8 @@ const MainListItems = ({
             window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
             window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
             
-            // Load the PaymentReconciliation component
-            if (typeof handlePaymentsClick === 'function') {
-              handlePaymentsClick('payment-reconciliation');
-            }
+            // Note: Removed handlePaymentsClick call to prevent double navigation
+            // The menuNavigation event handler in DashboardContent will handle the view update
           }, 
           value: 'payment-reconciliation' 
         },
@@ -740,10 +726,8 @@ const MainListItems = ({
             window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
             window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
             
-            // Load the PaymentGateways component
-            if (typeof handlePaymentsClick === 'function') {
-              handlePaymentsClick('payment-gateways');
-            }
+            // Note: Removed handlePaymentsClick call to prevent double navigation
+            // The menuNavigation event handler in DashboardContent will handle the view update
           }, 
           value: 'payment-gateways' 
         },
@@ -762,10 +746,8 @@ const MainListItems = ({
             window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
             window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
             
-            // Load the PaymentPlans component
-            if (typeof handlePaymentsClick === 'function') {
-              handlePaymentsClick('payment-plans');
-            }
+            // Note: Removed handlePaymentsClick call to prevent double navigation
+            // The menuNavigation event handler in DashboardContent will handle the view update
           }, 
           value: 'payment-plans' 
         },
@@ -784,10 +766,8 @@ const MainListItems = ({
             window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
             window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
             
-            // Load the PaymentReports component
-            if (typeof handlePaymentsClick === 'function') {
-              handlePaymentsClick('payment-reports');
-            }
+            // Note: Removed handlePaymentsClick call to prevent double navigation
+            // The menuNavigation event handler in DashboardContent will handle the view update
           }, 
           value: 'payment-reports' 
         },
