@@ -271,6 +271,94 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
     { id: '3', name: 'Bob Johnson', email: 'bob@example.com' },
   ];
 
+  // Add item to cart
+  const addToCart = (product, quantity = 1) => {
+    setCartItems(prev => {
+      const existingItem = prev.find(item => item.id === product.id);
+      
+      if (existingItem) {
+        return prev.map(item =>
+          item.id === product.id
+            ? { ...item, quantity: item.quantity + quantity }
+            : item
+        );
+      } else {
+        return [...prev, { ...product, quantity }];
+      }
+    });
+  };
+
+  // Handle product scanning (both USB and camera)
+  const handleProductScan = useCallback((scannedCode) => {
+    safeLogger.info('[POS] Product scanned:', scannedCode);
+    
+    // Clean the scanned code (remove any extra characters like quotes, brackets, etc.)
+    let cleanCode = scannedCode.trim();
+    
+    // Remove common QR code artifacts
+    cleanCode = cleanCode.replace(/[{}"']/g, '');
+    cleanCode = cleanCode.replace(/^\{|\}$/g, ''); // Remove curly braces at start/end
+    
+    console.log('[POS] Original code:', scannedCode);
+    console.log('[POS] Cleaned code:', cleanCode);
+    
+    // Try to parse as JSON if it looks like JSON data
+    let productId = cleanCode;
+    try {
+      if (cleanCode.includes(':')) {
+        const jsonData = JSON.parse(`{${cleanCode}}`);
+        productId = jsonData.id || jsonData.productId || jsonData.sku || cleanCode;
+      }
+    } catch (e) {
+      // Not JSON, use as-is
+      console.log('[POS] Not JSON format, using raw code');
+    }
+    
+    // Find product by ID, SKU, barcode, or name
+    const product = mockProducts.find(p => 
+      p.id === productId || 
+      p.sku === productId ||
+      p.barcode === productId ||
+      p.barcode === cleanCode ||
+      p.id === cleanCode ||
+      p.sku === cleanCode ||
+      p.name.toLowerCase().includes(cleanCode.toLowerCase())
+    );
+
+    if (product) {
+      addToCart(product);
+      toast.success(`Added ${product.name} to cart`, {
+        duration: 3000,
+        position: 'top-center',
+        style: {
+          background: '#10B981',
+          color: 'white',
+        },
+      });
+      setShowScanner(false);
+      
+      // Clear the search field after successful scan
+      setProductSearchTerm('');
+      usbScannerRef.current = '';
+    } else {
+      // Show the scanned code in the error message
+      toast.error(
+        <div>
+          <div>Product not found</div>
+          <div className="text-xs mt-1">Scanned: {cleanCode}</div>
+          <div className="text-xs mt-1">Try searching by product name instead</div>
+        </div>, 
+        {
+          duration: 4000,
+          position: 'top-center',
+        }
+      );
+      
+      // Keep the scanned code in search field so user can modify it
+      // Don't clear immediately - let user try manual search
+    }
+  }, [mockProducts, addToCart]);
+
   // Scanner detection logic
   useEffect(() => {
     let keypressTimer = null;
@@ -386,94 +474,6 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
       }, 100);
     }
   }, [isOpen]);
-
-  // Handle product scanning (both USB and camera)
-  const handleProductScan = useCallback((scannedCode) => {
-    safeLogger.info('[POS] Product scanned:', scannedCode);
-    
-    // Clean the scanned code (remove any extra characters like quotes, brackets, etc.)
-    let cleanCode = scannedCode.trim();
-    
-    // Remove common QR code artifacts
-    cleanCode = cleanCode.replace(/[{}"']/g, '');
-    cleanCode = cleanCode.replace(/^\{|\}$/g, ''); // Remove curly braces at start/end
-    
-    console.log('[POS] Original code:', scannedCode);
-    console.log('[POS] Cleaned code:', cleanCode);
-    
-    // Try to parse as JSON if it looks like JSON data
-    let productId = cleanCode;
-    try {
-      if (cleanCode.includes(':')) {
-        const jsonData = JSON.parse(`{${cleanCode}}`);
-        productId = jsonData.id || jsonData.productId || jsonData.sku || cleanCode;
-      }
-    } catch (e) {
-      // Not JSON, use as-is
-      console.log('[POS] Not JSON format, using raw code');
-    }
-    
-    // Find product by ID, SKU, barcode, or name
-    const product = mockProducts.find(p => 
-      p.id === productId || 
-      p.sku === productId ||
-      p.barcode === productId ||
-      p.barcode === cleanCode ||
-      p.id === cleanCode ||
-      p.sku === cleanCode ||
-      p.name.toLowerCase().includes(cleanCode.toLowerCase())
-    );
-
-    if (product) {
-      addToCart(product);
-      toast.success(`Added ${product.name} to cart`, {
-        duration: 3000,
-        position: 'top-center',
-        style: {
-          background: '#10B981',
-          color: 'white',
-        },
-      });
-      setShowScanner(false);
-      
-      // Clear the search field after successful scan
-      setProductSearchTerm('');
-      usbScannerRef.current = '';
-    } else {
-      // Show the scanned code in the error message
-      toast.error(
-        <div>
-          <div>Product not found</div>
-          <div className="text-xs mt-1">Scanned: {cleanCode}</div>
-          <div className="text-xs mt-1">Try searching by product name instead</div>
-        </div>, 
-        {
-          duration: 4000,
-          position: 'top-center',
-        }
-      );
-      
-      // Keep the scanned code in search field so user can modify it
-      // Don't clear immediately - let user try manual search
-    }
-  }, [mockProducts, addToCart]);
-
-  // Add item to cart
-  const addToCart = (product, quantity = 1) => {
-    setCartItems(prev => {
-      const existingItem = prev.find(item => item.id === product.id);
-      
-      if (existingItem) {
-        return prev.map(item =>
-          item.id === product.id
-            ? { ...item, quantity: item.quantity + quantity }
-            : item
-        );
-      } else {
-        return [...prev, { ...product, quantity }];
-      }
-    });
-  };
 
   // Update item quantity
   const updateQuantity = (productId, newQuantity) => {
