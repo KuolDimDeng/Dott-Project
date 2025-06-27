@@ -241,10 +241,13 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
 
   // Mock product data - replace with actual API call
   const mockProducts = [
-    { id: 'PROD-001', name: 'Widget A', price: 29.99, sku: 'WID-A-001', description: 'Premium widget', stock: 50 },
-    { id: 'PROD-002', name: 'Widget B', price: 39.99, sku: 'WID-B-002', description: 'Deluxe widget', stock: 30 },
-    { id: 'PROD-003', name: 'Gadget X', price: 15.99, sku: 'GAD-X-003', description: 'Compact gadget', stock: 100 },
-    { id: 'PROD-004', name: 'Tool Pro', price: 89.99, sku: 'TOL-P-004', description: 'Professional tool', stock: 25 },
+    { id: 'PROD-001', name: 'Widget A', price: 29.99, sku: 'WID-A-001', barcode: '1234567890123', description: 'Premium widget', stock: 50 },
+    { id: 'PROD-002', name: 'Widget B', price: 39.99, sku: 'WID-B-002', barcode: '9876543210987', description: 'Deluxe widget', stock: 30 },
+    { id: 'PROD-003', name: 'Gadget X', price: 15.99, sku: 'GAD-X-003', barcode: '5555555555555', description: 'Compact gadget', stock: 100 },
+    { id: 'PROD-004', name: 'Tool Pro', price: 89.99, sku: 'TOL-P-004', barcode: '1111111111111', description: 'Professional tool', stock: 25 },
+    // Add some products that match common barcode formats
+    { id: 'PROD-005', name: 'Test Product 1', price: 19.99, sku: 'TEST-001', barcode: '043bb-963d-f5d5b0bc009e"}', description: 'Test item', stock: 10 },
+    { id: 'PROD-006', name: 'Sample Item', price: 9.99, sku: 'SAMPLE-001', barcode: '043bb963df5d5b0bc009e', description: 'Sample product', stock: 15 },
   ];
 
   const mockCustomers = [
@@ -256,7 +259,6 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
   // Scanner detection logic
   useEffect(() => {
     let keypressTimer = null;
-    let scanBuffer = '';
     let scanStartTime = 0;
 
     const detectScanner = (timeDiff) => {
@@ -301,7 +303,7 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
         return;
       }
 
-      console.log('[POSSystem] Key pressed:', event.key, 'Current buffer:', usbScannerRef.current);
+      console.log('[POSSystem] Key pressed:', event.key, 'Current buffer before:', usbScannerRef.current);
 
       // Clear any existing timer
       if (keypressTimer) clearTimeout(keypressTimer);
@@ -309,11 +311,13 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
       // USB scanners typically send data very quickly followed by Enter
       if (event.key === 'Enter' && usbScannerRef.current.length > 0) {
         console.log('[POSSystem] Scanner sent Enter, processing barcode:', usbScannerRef.current);
+        console.log('[POSSystem] Barcode length:', usbScannerRef.current.length);
+        console.log('[POSSystem] Barcode characters:', usbScannerRef.current.split('').map(c => `${c} (${c.charCodeAt(0)})`).join(', '));
+        
         setScannerStatus('active'); // Show scanner is actively being used
         handleProductScan(usbScannerRef.current);
         usbScannerRef.current = '';
         setProductSearchTerm('');
-        scanBuffer = '';
         
         // Reset scanner status after a delay
         setTimeout(() => {
@@ -325,25 +329,28 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
       // Build up the scanned code
       if (event.key.length === 1) {
         // Track scan start time
-        if (scanBuffer === '') {
+        if (usbScannerRef.current === '') {
           scanStartTime = currentTime;
         }
         
-        scanBuffer += event.key;
-        usbScannerRef.current = scanBuffer;
-        setProductSearchTerm(scanBuffer);
+        // Accumulate the scanned characters
+        usbScannerRef.current += event.key;
+        setProductSearchTerm(usbScannerRef.current);
+        
+        console.log('[POSSystem] Buffer after adding:', usbScannerRef.current);
 
         // Set a timer to clear the buffer if no more input
         keypressTimer = setTimeout(() => {
           // If we got a complete scan in under 100ms, it's definitely a scanner
           const scanDuration = Date.now() - scanStartTime;
-          if (scanBuffer.length > 5 && scanDuration < 100) {
+          if (usbScannerRef.current.length > 5 && scanDuration < 100) {
             detectScanner(10); // Force detection
           }
           
           // Don't clear if user is still typing
           if (Date.now() - lastScanTime > 500) {
-            scanBuffer = '';
+            usbScannerRef.current = '';
+            setProductSearchTerm('');
           }
         }, 500);
       }
@@ -354,7 +361,7 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
       window.removeEventListener('keypress', handleKeyPress);
       if (keypressTimer) clearTimeout(keypressTimer);
     };
-  }, [isSearchFocused, isOpen, lastScanTime, scannerDetected]);
+  }, [isSearchFocused, isOpen, lastScanTime, scannerDetected, handleProductScan]);
 
   // Focus on product search when modal opens
   useEffect(() => {
@@ -369,21 +376,72 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
   const handleProductScan = useCallback((scannedCode) => {
     safeLogger.info('[POS] Product scanned:', scannedCode);
     
-    // Find product by ID or SKU
+    // Clean the scanned code (remove any extra characters like quotes, brackets, etc.)
+    let cleanCode = scannedCode.trim();
+    
+    // Remove common QR code artifacts
+    cleanCode = cleanCode.replace(/[{}"']/g, '');
+    cleanCode = cleanCode.replace(/^\{|\}$/g, ''); // Remove curly braces at start/end
+    
+    console.log('[POS] Original code:', scannedCode);
+    console.log('[POS] Cleaned code:', cleanCode);
+    
+    // Try to parse as JSON if it looks like JSON data
+    let productId = cleanCode;
+    try {
+      if (cleanCode.includes(':')) {
+        const jsonData = JSON.parse(`{${cleanCode}}`);
+        productId = jsonData.id || jsonData.productId || jsonData.sku || cleanCode;
+      }
+    } catch (e) {
+      // Not JSON, use as-is
+      console.log('[POS] Not JSON format, using raw code');
+    }
+    
+    // Find product by ID, SKU, barcode, or name
     const product = mockProducts.find(p => 
-      p.id === scannedCode || 
-      p.sku === scannedCode ||
-      p.name.toLowerCase().includes(scannedCode.toLowerCase())
+      p.id === productId || 
+      p.sku === productId ||
+      p.barcode === productId ||
+      p.barcode === cleanCode ||
+      p.id === cleanCode ||
+      p.sku === cleanCode ||
+      p.name.toLowerCase().includes(cleanCode.toLowerCase())
     );
 
     if (product) {
       addToCart(product);
-      toast.success(`Added ${product.name} to cart`);
+      toast.success(`Added ${product.name} to cart`, {
+        duration: 3000,
+        position: 'top-center',
+        style: {
+          background: '#10B981',
+          color: 'white',
+        },
+      });
       setShowScanner(false);
+      
+      // Clear the search field after successful scan
+      setProductSearchTerm('');
+      usbScannerRef.current = '';
     } else {
-      toast.error(`Product not found: ${scannedCode}`);
+      // Show the scanned code in the error message
+      toast.error(
+        <div>
+          <div>Product not found</div>
+          <div className="text-xs mt-1">Scanned: {cleanCode}</div>
+          <div className="text-xs mt-1">Try searching by product name instead</div>
+        </div>, 
+        {
+          duration: 4000,
+          position: 'top-center',
+        }
+      );
+      
+      // Keep the scanned code in search field so user can modify it
+      // Don't clear immediately - let user try manual search
     }
-  }, []);
+  }, [mockProducts, addToCart]);
 
   // Add item to cart
   const addToCart = (product, quantity = 1) => {
@@ -670,26 +728,48 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                       {/* Product Quick Add (if searching) */}
                       {productSearchTerm && !showScanner && (
                         <div className="space-y-2">
-                          <h3 className="text-sm font-medium text-gray-700">Quick Add Products:</h3>
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-sm font-medium text-gray-700">
+                              {mockProducts.filter(product =>
+                                product.name.toLowerCase().includes(productSearchTerm.toLowerCase()) ||
+                                product.sku.toLowerCase().includes(productSearchTerm.toLowerCase()) ||
+                                product.barcode?.includes(productSearchTerm)
+                              ).length > 0 ? 'Search Results:' : 'No products found'}
+                            </h3>
+                            {productSearchTerm.length > 0 && (
+                              <button
+                                onClick={() => {
+                                  setProductSearchTerm('');
+                                  usbScannerRef.current = '';
+                                }}
+                                className="text-xs text-gray-500 hover:text-gray-700"
+                              >
+                                Clear search
+                              </button>
+                            )}
+                          </div>
                           <div className="max-h-64 overflow-y-auto space-y-2">
                             {mockProducts
                               .filter(product =>
                                 product.name.toLowerCase().includes(productSearchTerm.toLowerCase()) ||
-                                product.sku.toLowerCase().includes(productSearchTerm.toLowerCase())
+                                product.sku.toLowerCase().includes(productSearchTerm.toLowerCase()) ||
+                                product.barcode?.includes(productSearchTerm)
                               )
+                              .slice(0, 5) // Show max 5 results
                               .map(product => (
                                 <div
                                   key={product.id}
                                   onClick={() => {
                                     addToCart(product);
                                     setProductSearchTerm('');
+                                    usbScannerRef.current = '';
                                     toast.success(`Added ${product.name} to cart`);
                                   }}
-                                  className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                                  className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors group"
                                 >
                                   <div className="flex justify-between items-center">
                                     <div>
-                                      <p className="font-medium text-gray-900">{product.name}</p>
+                                      <p className="font-medium text-gray-900 group-hover:text-blue-600">{product.name}</p>
                                       <p className="text-sm text-gray-500">SKU: {product.sku}</p>
                                     </div>
                                     <div className="text-right">
