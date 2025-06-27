@@ -1618,27 +1618,342 @@ const MainListItems = ({
       icon: <NavIcons.Reports className="w-5 h-5" />,
       label: 'Reports',
       subItems: [
-        { label: 'Dashboard', onClick: handleReportClick, value: 'reports-dashboard' },
-        { label: 'Profit & Loss Statement', onClick: handleReportClick, value: 'income_statement' },
-        { label: 'Balance Sheet', onClick: handleReportClick, value: 'balance_sheet' },
-        { label: 'Cash Flow', onClick: handleReportClick, value: 'cash_flow' },
-        { label: 'Sales Tax ', onClick: handleReportClick, value: 'sales_tax_report' },
-        { label: 'Payroll Wage Tax', onClick: handleReportClick, value: 'payroll_wage_tax_report' },
-        { label: 'Income by Customer', onClick: handleReportClick, value: 'income_by_customer' },
-        { label: 'Aged Receivables', onClick: handleReportClick, value: 'aged_receivables' },
-        { label: 'Purchases by Vendor', onClick: handleReportClick, value: 'purchases_by_vendor' },
-        { label: 'Aged Payables', onClick: handleReportClick, value: 'aged_payables' },
-        { label: 'Account Balances', onClick: handleReportClick, value: 'account_balances' },
-        { label: 'Trial Balances', onClick: handleReportClick, value: 'trial_balance' },
-        { label: 'General Ledger', onClick: handleReportClick, value: 'general_ledger' },
+        { 
+          label: 'Dashboard', 
+          onClick: (value) => {
+            // Create navigation event for reports dashboard
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'reports-dashboard', 
+              navigationKey,
+              originalItem: 'Dashboard'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the ReportsDashboard component
+            if (typeof handleReportClick === 'function') {
+              handleReportClick('reports-dashboard');
+            }
+          }, 
+          value: 'reports-dashboard' 
+        },
+        { 
+          label: 'Profit & Loss Statement', 
+          onClick: (value) => {
+            // Create navigation event for income statement
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'income-statement', 
+              navigationKey,
+              originalItem: 'Profit & Loss Statement'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the IncomeStatement component
+            if (typeof handleReportClick === 'function') {
+              handleReportClick('income_statement');
+            }
+          }, 
+          value: 'income_statement' 
+        },
+        { 
+          label: 'Balance Sheet', 
+          onClick: (value) => {
+            // Create navigation event for balance sheet
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'balance-sheet', 
+              navigationKey,
+              originalItem: 'Balance Sheet'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the BalanceSheet component
+            if (typeof handleReportClick === 'function') {
+              handleReportClick('balance_sheet');
+            }
+          }, 
+          value: 'balance_sheet' 
+        },
+        { 
+          label: 'Cash Flow', 
+          onClick: (value) => {
+            // Create navigation event for cash flow
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'cash-flow', 
+              navigationKey,
+              originalItem: 'Cash Flow'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the CashFlow component
+            if (typeof handleReportClick === 'function') {
+              handleReportClick('cash_flow');
+            }
+          }, 
+          value: 'cash_flow' 
+        },
+        { 
+          label: 'Sales Tax ', 
+          onClick: (value) => {
+            // Create navigation event for sales tax report
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'sales-tax-report', 
+              navigationKey,
+              originalItem: 'Sales Tax'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the SalesTaxReport component
+            if (typeof handleReportClick === 'function') {
+              handleReportClick('sales_tax_report');
+            }
+          }, 
+          value: 'sales_tax_report' 
+        },
+        { 
+          label: 'Payroll Wage Tax', 
+          onClick: (value) => {
+            // Create navigation event for payroll wage tax report
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'payroll-wage-tax-report', 
+              navigationKey,
+              originalItem: 'Payroll Wage Tax'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the PayrollWageTaxReport component
+            if (typeof handleReportClick === 'function') {
+              handleReportClick('payroll_wage_tax_report');
+            }
+          }, 
+          value: 'payroll_wage_tax_report' 
+        },
+        { 
+          label: 'Income by Customer', 
+          onClick: (value) => {
+            // Create navigation event for income by customer report
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'income-by-customer', 
+              navigationKey,
+              originalItem: 'Income by Customer'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the IncomeByCustomer component
+            if (typeof handleReportClick === 'function') {
+              handleReportClick('income_by_customer');
+            }
+          }, 
+          value: 'income_by_customer' 
+        },
+        { 
+          label: 'Aged Receivables', 
+          onClick: (value) => {
+            // Create navigation event for aged receivables report
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'aged-receivables', 
+              navigationKey,
+              originalItem: 'Aged Receivables'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the AgedReceivables component
+            if (typeof handleReportClick === 'function') {
+              handleReportClick('aged_receivables');
+            }
+          }, 
+          value: 'aged_receivables' 
+        },
+        { 
+          label: 'Purchases by Vendor', 
+          onClick: (value) => {
+            // Create navigation event for purchases by vendor report
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'purchases-by-vendor', 
+              navigationKey,
+              originalItem: 'Purchases by Vendor'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the PurchasesByVendor component
+            if (typeof handleReportClick === 'function') {
+              handleReportClick('purchases_by_vendor');
+            }
+          }, 
+          value: 'purchases_by_vendor' 
+        },
+        { 
+          label: 'Aged Payables', 
+          onClick: (value) => {
+            // Create navigation event for aged payables report
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'aged-payables', 
+              navigationKey,
+              originalItem: 'Aged Payables'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the AgedPayables component
+            if (typeof handleReportClick === 'function') {
+              handleReportClick('aged_payables');
+            }
+          }, 
+          value: 'aged_payables' 
+        },
+        { 
+          label: 'Account Balances', 
+          onClick: (value) => {
+            // Create navigation event for account balances report
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'account-balances', 
+              navigationKey,
+              originalItem: 'Account Balances'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the AccountBalances component
+            if (typeof handleReportClick === 'function') {
+              handleReportClick('account_balances');
+            }
+          }, 
+          value: 'account_balances' 
+        },
+        { 
+          label: 'Trial Balances', 
+          onClick: (value) => {
+            // Create navigation event for trial balance report
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'trial-balance', 
+              navigationKey,
+              originalItem: 'Trial Balances'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the TrialBalance component
+            if (typeof handleReportClick === 'function') {
+              handleReportClick('trial_balance');
+            }
+          }, 
+          value: 'trial_balance' 
+        },
+        { 
+          label: 'General Ledger', 
+          onClick: (value) => {
+            // Create navigation event for general ledger report
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'general-ledger-report', 
+              navigationKey,
+              originalItem: 'General Ledger'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the GeneralLedgerReport component
+            if (typeof handleReportClick === 'function') {
+              handleReportClick('general_ledger');
+            }
+          }, 
+          value: 'general_ledger' 
+        },
       ],
     },
     {
       icon: <NavIcons.Analytics className="w-5 h-5" />,
       label: 'Analytics',
       subItems: [
-        { label: 'Dashboard', onClick: handleAnalysisClick, value: 'analytics-dashboard' },
-        { label: 'A.I Query', onClick: handleAnalysisClick, value: 'ai-query' },
+        { 
+          label: 'Dashboard', 
+          onClick: (value) => {
+            // Create navigation event for analytics dashboard
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'analytics-dashboard', 
+              navigationKey,
+              originalItem: 'Dashboard'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the AnalyticsDashboard component
+            if (typeof handleAnalysisClick === 'function') {
+              handleAnalysisClick('analytics-dashboard');
+            }
+          }, 
+          value: 'analytics-dashboard' 
+        },
+        { 
+          label: 'A.I Query', 
+          onClick: (value) => {
+            // Create navigation event for AI query
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'ai-query', 
+              navigationKey,
+              originalItem: 'A.I Query'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the AIQuery component
+            if (typeof handleAnalysisClick === 'function') {
+              handleAnalysisClick('ai-query');
+            }
+          }, 
+          value: 'ai-query' 
+        },
       ],
     },
   ];

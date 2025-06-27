@@ -40,88 +40,97 @@ export const apiClient = {
   }
 };
 
-// Specific API methods for products
+// Product related API methods - Using local proxy pattern (industry standard)
 export const productApi = {
   async getAll(params = {}) {
-    return fetchWithAuth('/api/hr/employees/');
+    const response = await fetch('/api/inventory/products', {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
+    }
+    
+    return response.json();
   },
   
-  async getCurrent() {
-    // Get the current user's employee information using the custom:employeeid attribute
-    return fetchWithAuth('/api/hr/api/me/');
-  },
-  
-  async getById(id) {
-    return fetchWithAuth(`/api/hr/employees/${id}/`);
+  async getById(id, params = {}) {
+    const response = await fetch(`/api/inventory/products/${id}`, {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
+    }
+    
+    return response.json();
   },
   
   async create(data, params = {}) {
-    try {
-      const tenantId = await getTenantId();
-      const headers = {
-        'X-Tenant-ID': tenantId,
-        'X-Schema-Name': `tenant_${tenantId.replace(/-/g, '_')}`
-      };
-      
-      const response = await backendHrApiInstance.post('/employees', data, {
-        headers,
-        params: { ...params, tenantId }
-      });
-      
-      return response.data;
-    } catch (error) {
-      logger.error('[EmployeeApi] Error creating employee:', error);
-      throw error;
+    logger.info('[ProductApi] Creating product with data:', data);
+    
+    const response = await fetch('/api/inventory/products', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
     }
+    
+    const result = await response.json();
+    logger.info('[ProductApi] Product created successfully:', result);
+    return result;
   },
   
   async update(id, data, params = {}) {
-    try {
-      const tenantId = await getTenantId();
-      const headers = {
-        'X-Tenant-ID': tenantId,
-        'X-Schema-Name': `tenant_${tenantId.replace(/-/g, '_')}`
-      };
-      
-      const response = await backendHrApiInstance.put(`/employees/${id}`, data, {
-        headers,
-        params: { ...params, tenantId }
-      });
-      
-      return response.data;
-    } catch (error) {
-      logger.error(`[EmployeeApi] Error updating employee ${id}:`, error);
-      throw error;
+    const response = await fetch(`/api/inventory/products/${id}`, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
     }
+    
+    return response.json();
   },
   
   async delete(id, params = {}) {
-    try {
-      const tenantId = await getTenantId();
-      const headers = {
-        'X-Tenant-ID': tenantId,
-        'X-Schema-Name': `tenant_${tenantId.replace(/-/g, '_')}`
-      };
-      
-      const response = await backendHrApiInstance.delete(`/employees/${id}`, {
-        headers,
-        params: { ...params, tenantId }
-      });
-      
-      return response.data;
-    } catch (error) {
-      logger.error(`[EmployeeApi] Error deleting employee ${id}:`, error);
-      throw error;
+    const response = await fetch(`/api/inventory/products/${id}`, {
+      method: 'DELETE',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
     }
-  },
-  
-  async getHealth(params = {}) {
-    try {
-      return await apiClient.get('/api/health', params);
-    } catch (error) {
-      logger.error('[ProductApi] Health check failed:', error);
-      throw error;
-    }
+    
+    return response.json();
   }
 };
 
@@ -935,89 +944,121 @@ export const taxApi = {
   }
 };
 
-// Vendor related API methods
+// Vendor related API methods - Using local proxy pattern (industry standard)
 export const vendorApi = {
   async getAll(params = {}) {
-    try {
-      logger.info('[API] Requesting all vendors');
-      return await apiClient.get('/api/inventory/suppliers', params);
-    } catch (error) {
-      logger.error('[VendorApi] Error fetching vendors:', error);
-      throw error;
-    }
+    // Use the existing supplierApi since vendors and suppliers are the same
+    return supplierApi.getAll(params);
+  },
+  
+  async getById(id, params = {}) {
+    return supplierApi.getById(id, params);
   },
   
   async create(data, params = {}) {
-    try {
-      logger.info('[API] Creating new vendor');
-      return await apiClient.post('/api/inventory/suppliers', data, params);
-    } catch (error) {
-      logger.error('[VendorApi] Error creating vendor:', error);
-      throw error;
-    }
+    return supplierApi.create(data, params);
   },
   
   async update(id, data, params = {}) {
-    try {
-      logger.info(`[API] Updating vendor ${id}`);
-      return await apiClient.put(`/api/inventory/suppliers/${id}`, data, params);
-    } catch (error) {
-      logger.error(`[VendorApi] Error updating vendor ${id}:`, error);
-      throw error;
-    }
+    return supplierApi.update(id, data, params);
   },
   
   async delete(id, params = {}) {
-    try {
-      logger.info(`[API] Deleting vendor ${id}`);
-      return await apiClient.delete(`/api/inventory/suppliers/${id}`, params);
-    } catch (error) {
-      logger.error(`[VendorApi] Error deleting vendor ${id}:`, error);
-      throw error;
-    }
+    return supplierApi.delete(id, params);
   }
 };
 
-// Purchase Order related API methods
+// Purchase Order related API methods - Using local proxy pattern (industry standard)
 export const purchaseOrderApi = {
   async getAll(params = {}) {
-    try {
-      logger.info('[API] Requesting all purchase orders');
-      return await apiClient.get('/api/purchases/orders', params);
-    } catch (error) {
-      logger.error('[PurchaseOrderApi] Error fetching purchase orders:', error);
-      throw error;
+    const response = await fetch('/api/purchases/orders', {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
     }
+    
+    return response.json();
+  },
+  
+  async getById(id, params = {}) {
+    const response = await fetch(`/api/purchases/orders/${id}`, {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
+    }
+    
+    return response.json();
   },
   
   async create(data, params = {}) {
-    try {
-      logger.info('[API] Creating new purchase order');
-      return await apiClient.post('/api/purchases/orders', data, params);
-    } catch (error) {
-      logger.error('[PurchaseOrderApi] Error creating purchase order:', error);
-      throw error;
+    logger.info('[PurchaseOrderApi] Creating purchase order with data:', data);
+    
+    const response = await fetch('/api/purchases/orders', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
     }
+    
+    const result = await response.json();
+    logger.info('[PurchaseOrderApi] Purchase order created successfully:', result);
+    return result;
   },
   
   async update(id, data, params = {}) {
-    try {
-      logger.info(`[API] Updating purchase order ${id}`);
-      return await apiClient.put(`/api/purchases/orders/${id}`, data, params);
-    } catch (error) {
-      logger.error(`[PurchaseOrderApi] Error updating purchase order ${id}:`, error);
-      throw error;
+    const response = await fetch(`/api/purchases/orders/${id}`, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
     }
+    
+    return response.json();
   },
   
   async delete(id, params = {}) {
-    try {
-      logger.info(`[API] Deleting purchase order ${id}`);
-      return await apiClient.delete(`/api/purchases/orders/${id}`, params);
-    } catch (error) {
-      logger.error(`[PurchaseOrderApi] Error deleting purchase order ${id}:`, error);
-      throw error;
+    const response = await fetch(`/api/purchases/orders/${id}`, {
+      method: 'DELETE',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
     }
+    
+    return response.json();
   }
 };
 
