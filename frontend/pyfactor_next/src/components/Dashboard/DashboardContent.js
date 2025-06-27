@@ -32,6 +32,7 @@ import { useAuth } from '@/hooks/auth';
 import { ToastProvider } from '@/components/Toast/ToastProvider';
 import DashboardLoader from '@/components/DashboardLoader';
 import { ensureAuthProvider } from '@/utils/refreshUserSession';
+import RecordSaleModal from '../../app/dashboard/components/modals/RecordSaleModal';
 
 // Lazy load components to reduce initial memory usage
 const RenderMainContent = lazy(() =>
@@ -189,6 +190,9 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     
     // Create menu visibility
     showCreateMenu: false,
+    
+    // Modal visibility
+    showRecordSaleModal: false,
   });
   
   // Destructure state for easier access
@@ -199,7 +203,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     products, services, showKPIDashboard, showMainDashboard, showHome,
     showInventoryItems, showInventoryManagement, showForm, formOption,
     showHRDashboard, showEmployeeManagement, showTimesheetManagement, hrSection, showMyAccount, showHelpCenter,
-    showCreateMenu, showCreateOptions, showBenefitsManagement
+    showCreateMenu, showCreateOptions, showBenefitsManagement, showRecordSaleModal
   } = uiState;
   
   // Computed values - memoize these values
@@ -292,6 +296,11 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     updateState({ showCreateMenu: value });
   }, [updateState, uiState.showCreateMenu]);
 
+  const setShowRecordSaleModal = useCallback((value) => {
+    if (value === uiState.showRecordSaleModal) return; // Skip update if unchanged
+    updateState({ showRecordSaleModal: value });
+  }, [updateState, uiState.showRecordSaleModal]);
+
   // Reset all view states for navigation
   const resetAllStates = useCallback(() => {
     console.log('[DashboardContent] Resetting all view states');
@@ -344,6 +353,9 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
       selectedCustomer: null,
       selectedInvoice: null,
       showCustomerDetails: false,
+      
+      // Reset modal states
+      showRecordSaleModal: false,
       showCreateMenu: false,
       isCreating: false,
       isEditing: false
@@ -710,7 +722,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     console.log('[DashboardContent] handleMenuItemClick called with option:', option);
     handleCloseCreateMenu();
     
-    // Handle Product, Service, and Estimate inline like their Sales menu counterparts
+    // Handle Product, Service, Estimate, and Sales inline like their Sales menu counterparts
     if (option === 'Product') {
       console.log('[DashboardContent] Redirecting to Products management');
       handleSalesClick('products');
@@ -720,6 +732,9 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     } else if (option === 'Estimate') {
       console.log('[DashboardContent] Redirecting to Estimates management');
       handleSalesClick('estimates');
+    } else if (option === 'Sales') {
+      console.log('[DashboardContent] Opening Record Sale modal');
+      setShowRecordSaleModal(true);
     } else {
       console.log('[DashboardContent] Showing create options for:', option);
       handleShowCreateOptions(option);
@@ -1312,6 +1327,16 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
           </div>
         </ToastProvider>
       </NotificationProvider>
+
+      {/* Record Sale Modal */}
+      <RecordSaleModal
+        isOpen={showRecordSaleModal}
+        onClose={() => setShowRecordSaleModal(false)}
+        onSaleRecorded={(saleData) => {
+          logger.info('[DashboardContent] Sale recorded:', saleData);
+          // Optionally refresh data or show confirmation
+        }}
+      />
     </ErrorBoundary>
   );
 }
