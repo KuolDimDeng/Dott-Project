@@ -70,7 +70,15 @@ const PaymentForm = ({ invoices, customers }) => {
     customerEmail: ''
   });
 
-  const tenantId = getSecureTenantId();
+  const [tenantId, setTenantId] = useState(null);
+  
+  useEffect(() => {
+    const fetchTenantId = async () => {
+      const id = await getSecureTenantId();
+      setTenantId(id);
+    };
+    fetchTenantId();
+  }, []);
 
   // Payment methods
   const paymentMethods = [
@@ -510,7 +518,15 @@ const PaymentForm = ({ invoices, customers }) => {
 const ReceivePayments = () => {
   const [invoices, setInvoices] = useState([]);
   const [customers, setCustomers] = useState([]);
-  const tenantId = getSecureTenantId();
+  const [tenantId, setTenantId] = useState(null);
+  
+  useEffect(() => {
+    const fetchTenantId = async () => {
+      const id = await getSecureTenantId();
+      setTenantId(id);
+    };
+    fetchTenantId();
+  }, []);
 
   // Fetch customers
   const fetchCustomers = useCallback(async () => {
@@ -553,6 +569,15 @@ const ReceivePayments = () => {
   useEffect(() => {
     fetchCustomers();
   }, [fetchCustomers]);
+  
+  // Wait for tenant ID to load
+  if (!tenantId) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
   return (
     <DynamicStripeProvider>

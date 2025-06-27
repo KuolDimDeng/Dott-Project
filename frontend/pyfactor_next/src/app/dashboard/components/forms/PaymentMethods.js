@@ -45,7 +45,15 @@ const PaymentMethods = () => {
     isActive: true
   });
 
-  const tenantId = getSecureTenantId();
+  const [tenantId, setTenantId] = useState(null);
+  
+  useEffect(() => {
+    const fetchTenantId = async () => {
+      const id = await getSecureTenantId();
+      setTenantId(id);
+    };
+    fetchTenantId();
+  }, []);
 
   // Payment method types
   const methodTypes = [
@@ -109,6 +117,15 @@ const PaymentMethods = () => {
   useEffect(() => {
     fetchPaymentMethods();
   }, [fetchPaymentMethods]);
+  
+  // Wait for tenant ID to load
+  if (!tenantId) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
