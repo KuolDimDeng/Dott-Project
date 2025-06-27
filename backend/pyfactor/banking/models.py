@@ -225,3 +225,97 @@ class BankTransaction(TenantAwareModel):
             
         if self.date and self.date > timezone.now():
             raise ValidationError('Transaction date cannot be in the future')
+
+
+# Additional models for secure CSV processing and banking tools
+class BankingRule(TenantAwareModel):
+    """Auto-categorization rules for transactions"""
+    import uuid
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255)
+    is_active = models.BooleanField(default=True)
+    
+    # Rule conditions
+    CONDITION_CHOICES = [
+        ('contains', 'Contains'),
+        ('equals', 'Equals'),
+        ('starts_with', 'Starts with'),
+        ('ends_with', 'Ends with'),
+        ('amount_equals', 'Amount equals'),
+        ('amount_greater', 'Amount greater than'),
+        ('amount_less', 'Amount less than'),
+        ('amount_between', 'Amount between'),
+    ]
+    condition_type = models.CharField(max_length=50, choices=CONDITION_CHOICES)
+    condition_field = models.CharField(max_length=50, default='description')
+    condition_value = models.CharField(max_length=500)
+    
+    # Actions
+    category = models.CharField(max_length=100)
+    tags = models.JSONField(default=list, blank=True)
+    
+    # Usage tracking
+    times_used = models.IntegerField(default=0)
+    last_used = models.DateTimeField(null=True, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'banking_rules'
+        ordering = ['-times_used', 'name']
+
+    def __str__(self):
+        return f"{self.name} ({self.condition_type}: {self.condition_value})"
+
+
+class BankingAuditLog(TenantAwareModel):
+    """Audit trail for all banking operations - regulatory compliance"""
+    import uuid
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    
+    ACTION_CHOICES = [
+        ('import_csv', 'Imported CSV'),
+        ('create_rule', 'Created Rule'),
+        ('update_rule', 'Updated Rule'),
+        ('delete_rule', 'Deleted Rule'),
+        ('reconcile', 'Reconciled Transactions'),
+        ('export_data', 'Exported Data'),
+        ('view_transactions', 'Viewed Transactions'),
+    ]
+    action = models.CharField(max_length=100, choices=ACTION_CHOICES)
+    
+    # Request details
+    ip_address = models.GenericIPAddressField()
+    user_agent = models.TextField()
+    
+    # Action details
+    affected_records = models.IntegerField(default=0)
+    details = models.JSONField(default=dict)
+    
+    STATUS_CHOICES = [
+        ('success', 'Success'),
+        ('failed', 'Failed'),
+        ('partial', 'Partial Success'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES)
+    error_message = models.TextField(blank=True)
+    
+    # Timing
+    started_at = models.DateTimeField(default=timezone.now)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    duration_ms = models.IntegerField(null=True, blank=True)
+    
+    class Meta:
+        db_table = 'banking_audit_log'
+        ordering = ['-started_at']
+        indexes = [
+            models.Index(fields=['user', 'action']),
+            models.Index(fields=['started_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.user} - {self.action} - {self.started_at}"

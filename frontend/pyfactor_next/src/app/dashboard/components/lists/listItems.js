@@ -1355,6 +1355,28 @@ const MainListItems = ({
           }, 
           value: 'bank-reports' 
         },
+        { 
+          label: 'Banking Tools', 
+          onClick: (value) => {
+            // Create navigation event for banking tools
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'banking-tools', 
+              navigationKey,
+              originalItem: 'Banking Tools'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the BankingTools component
+            if (typeof handleBankingClick === 'function') {
+              handleBankingClick('tools');
+            }
+          }, 
+          value: 'tools' 
+        },
       ],
     },
     {

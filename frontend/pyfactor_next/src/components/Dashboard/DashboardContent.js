@@ -610,6 +610,9 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
       case 'bank-reports':
         updateState({ view: 'bank-report' });
         break;
+      case 'tools':
+        updateState({ view: 'banking-tools' });
+        break;
       default:
         // Default to banking dashboard
         updateState({ view: 'banking' });

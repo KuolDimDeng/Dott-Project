@@ -67,6 +67,7 @@ const TransactionList = enhancedLazy(() => import('./lists/TransactionList.js'),
 const TransactionManagement = enhancedLazy(() => import('./forms/TransactionManagement.js'), 'Transaction Management');
 const ReportDisplay = enhancedLazy(() => import('./forms/ReportDisplay.js'), 'Report Display');
 const BankingDashboard = enhancedLazy(() => import('./forms/BankingDashboard.js'), 'Banking Dashboard');
+const BankingTools = enhancedLazy(() => import('./forms/BankingTools.js'), 'Banking Tools');
 const AnalysisPage = enhancedLazy(() => import('./forms/AnalysisPage.js'), 'Analysis Page');
 const InvoiceDetails = enhancedLazy(() => import('./forms/InvoiceDetails.js'), 'Invoice Details');
 const CustomerDetails = enhancedLazy(() => import('./forms/CustomerDetails.js'), 'Customer Details');
@@ -1407,7 +1408,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
       }
       
       // Handle Banking views
-      if (view && view.startsWith('banking') || view === 'connect-bank' || view === 'bank-transactions' || view === 'bank-reconciliation' || view === 'bank-reports') {
+      if (view && view.startsWith('banking') || view === 'connect-bank' || view === 'bank-transactions' || view === 'bank-reconciliation' || view === 'bank-reports' || view === 'banking-tools') {
         console.log('[RenderMainContent] Rendering banking view:', view);
         
         let BankingComponent = null;
@@ -1447,6 +1448,13 @@ const RenderMainContent = React.memo(function RenderMainContent({
             BankingComponent = lazy(() => import('./forms/BankReport.js').catch(err => {
               console.error('[RenderMainContent] Error loading BankReport:', err);
               return { default: () => <div className="p-4">Error loading Banking Reports</div> };
+            }));
+            break;
+          case 'banking-tools':
+            componentName = 'BankingTools';
+            BankingComponent = lazy(() => import('./forms/BankingTools.js').catch(err => {
+              console.error('[RenderMainContent] Error loading BankingTools:', err);
+              return { default: () => <div className="p-4">Error loading Banking Tools</div> };
             }));
             break;
           default:

@@ -366,12 +366,12 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
       const saleData = {
         items: cartItems,
         customer_id: selectedCustomer,
-        subtotal: totals.subtotal,
-        discount_amount: totals.discountAmount,
+        subtotal: totals?.subtotal || '0.00',
+        discount_amount: totals?.discountAmount || '0.00',
         discount_type: discountType,
-        tax_amount: totals.taxAmount,
+        tax_amount: totals?.taxAmount || '0.00',
         tax_rate: taxRate,
-        total_amount: totals.total,
+        total_amount: totals?.total || '0.00',
         payment_method: paymentMethod,
         notes,
         date: new Date().toISOString().split('T')[0],
@@ -529,7 +529,7 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                             isActive={showScanner && scannerType === 'camera'}
                             onScan={handleProductScan}
                             onError={(error) => {
-                              toast.error(error);
+                              toast.error(error?.message || error?.toString() || 'Scanner error occurred');
                               setShowScanner(false);
                             }}
                           />
@@ -718,23 +718,23 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                         <div className="bg-gray-50 p-4 rounded-lg space-y-2">
                           <div className="flex justify-between text-sm">
                             <span>Subtotal:</span>
-                            <span>${totals.subtotal}</span>
+                            <span>${totals?.subtotal || '0.00'}</span>
                           </div>
-                          {parseFloat(totals.discountAmount) > 0 && (
+                          {parseFloat(totals?.discountAmount || 0) > 0 && (
                             <div className="flex justify-between text-sm text-red-600">
                               <span>Discount:</span>
-                              <span>-${totals.discountAmount}</span>
+                              <span>-${totals?.discountAmount || '0.00'}</span>
                             </div>
                           )}
-                          {parseFloat(totals.taxAmount) > 0 && (
+                          {parseFloat(totals?.taxAmount || 0) > 0 && (
                             <div className="flex justify-between text-sm">
                               <span>Tax:</span>
-                              <span>${totals.taxAmount}</span>
+                              <span>${totals?.taxAmount || '0.00'}</span>
                             </div>
                           )}
                           <div className="flex justify-between text-lg font-bold border-t border-gray-200 pt-2">
                             <span>Total:</span>
-                            <span>${totals.total}</span>
+                            <span>${totals?.total || '0.00'}</span>
                           </div>
                         </div>
 
@@ -755,7 +755,7 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                           ) : (
                             <>
                               <CreditCardIcon className="h-5 w-5 mr-2" />
-                              Process Sale - ${totals.total}
+                              Process Sale - ${totals?.total || '0.00'}
                             </>
                           )}
                         </button>
