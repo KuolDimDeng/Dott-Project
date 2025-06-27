@@ -350,7 +350,7 @@ const PurchaseOrderManagement = () => {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900 mb-2 flex items-center">
-          <DocumentTextIcon className="h-6 w-6 text-purple-600 mr-2" />
+          <DocumentTextIcon className="h-6 w-6 text-blue-600 mr-2" />
           Purchase Order Management
         </h1>
         <p className="text-gray-600 text-sm">
@@ -392,7 +392,7 @@ const PurchaseOrderManagement = () => {
               onClick={() => handleTabChange(0)}
               className={`py-2 px-6 border-b-2 font-medium text-sm ${
                 tabValue === 0
-                  ? 'border-purple-500 text-purple-600'
+                  ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -402,7 +402,7 @@ const PurchaseOrderManagement = () => {
               onClick={() => handleTabChange(1)}
               className={`py-2 px-6 border-b-2 font-medium text-sm ${
                 tabValue === 1
-                  ? 'border-purple-500 text-purple-600'
+                  ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -412,7 +412,7 @@ const PurchaseOrderManagement = () => {
               onClick={() => handleTabChange(2)}
               className={`py-2 px-6 border-b-2 font-medium text-sm ${
                 tabValue === 2
-                  ? 'border-purple-500 text-purple-600'
+                  ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -436,7 +436,7 @@ const PurchaseOrderManagement = () => {
                     value={formData.vendor_id}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select a vendor</option>
                     {vendors.map(vendor => (
@@ -458,7 +458,7 @@ const PurchaseOrderManagement = () => {
                     value={formData.order_date}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
@@ -472,7 +472,7 @@ const PurchaseOrderManagement = () => {
                     name="expected_date"
                     value={formData.expected_date}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
@@ -486,7 +486,7 @@ const PurchaseOrderManagement = () => {
                     name="reference_number"
                     value={formData.reference_number}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
@@ -499,7 +499,7 @@ const PurchaseOrderManagement = () => {
                     name="status"
                     value={formData.status}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="draft">Draft</option>
                     <option value="sent">Sent</option>
@@ -519,7 +519,7 @@ const PurchaseOrderManagement = () => {
                     name="payment_terms"
                     value={formData.payment_terms}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
@@ -530,7 +530,7 @@ const PurchaseOrderManagement = () => {
                   <button
                     type="button"
                     onClick={handleAddItem}
-                    className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700"
+                    className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
                   >
                     <PlusIcon className="h-4 w-4 mr-1" />
                     Add Item
@@ -551,7 +551,7 @@ const PurchaseOrderManagement = () => {
                           <select
                             value={item.product_id}
                             onChange={(e) => handleItemChange(index, 'product_id', e.target.value)}
-                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                           >
                             <option value="">Custom item</option>
                             {products.map(product => (
@@ -569,7 +569,7 @@ const PurchaseOrderManagement = () => {
                               type="text"
                               value={item.description}
                               onChange={(e) => handleItemChange(index, 'description', e.target.value)}
-                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                               placeholder="Item description"
                             />
                           </div>
@@ -582,7 +582,7 @@ const PurchaseOrderManagement = () => {
                             min="1"
                             value={item.quantity}
                             onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
                         </div>
 
@@ -594,7 +594,7 @@ const PurchaseOrderManagement = () => {
                             step="0.01"
                             value={item.unit_price}
                             onChange={(e) => handleItemChange(index, 'unit_price', e.target.value)}
-                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
                         </div>
 
@@ -639,7 +639,7 @@ const PurchaseOrderManagement = () => {
                           onChange={handleInputChange}
                           min="0"
                           step="0.01"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
 
@@ -655,7 +655,7 @@ const PurchaseOrderManagement = () => {
                           onChange={handleInputChange}
                           min="0"
                           step="0.01"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
 
@@ -671,7 +671,7 @@ const PurchaseOrderManagement = () => {
                           onChange={handleInputChange}
                           min="0"
                           step="0.01"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                     </div>
@@ -722,7 +722,7 @@ const PurchaseOrderManagement = () => {
                   value={formData.notes}
                   onChange={handleInputChange}
                   rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
@@ -737,7 +737,7 @@ const PurchaseOrderManagement = () => {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-50"
+                  className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
                 >
                   {isLoading ? 'Saving...' : selectedPurchaseOrder ? 'Update Order' : 'Create Order'}
                 </button>
@@ -871,12 +871,12 @@ const PurchaseOrderManagement = () => {
                     placeholder="Search orders..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <button
                   onClick={() => handleTabChange(0)}
-                  className="ml-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700"
+                  className="ml-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
                 >
                   <PlusIcon className="h-4 w-4 mr-2" />
                   Create Order
@@ -885,7 +885,7 @@ const PurchaseOrderManagement = () => {
 
               {isLoading ? (
                 <div className="flex justify-center items-center h-64">
-                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
                 </div>
               ) : filteredOrders.length === 0 ? (
                 <div className="text-center py-12">
@@ -944,7 +944,7 @@ const PurchaseOrderManagement = () => {
                             </button>
                             <button
                               onClick={() => handleEdit(order)}
-                              className="text-purple-600 hover:text-purple-900"
+                              className="text-indigo-600 hover:text-indigo-900"
                             >
                               <PencilIcon className="h-4 w-4" />
                             </button>

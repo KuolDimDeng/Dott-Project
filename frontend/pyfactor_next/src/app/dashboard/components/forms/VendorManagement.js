@@ -241,7 +241,7 @@ const VendorManagement = ({ newVendor: isNewVendor = false }) => {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900 mb-2 flex items-center">
-          <TruckIcon className="h-6 w-6 text-purple-600 mr-2" />
+          <TruckIcon className="h-6 w-6 text-blue-600 mr-2" />
           Vendor Management
         </h1>
         <p className="text-gray-600 text-sm">
@@ -283,7 +283,7 @@ const VendorManagement = ({ newVendor: isNewVendor = false }) => {
               onClick={() => handleTabChange(0)}
               className={`py-2 px-6 border-b-2 font-medium text-sm ${
                 tabValue === 0
-                  ? 'border-purple-500 text-purple-600'
+                  ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -293,7 +293,7 @@ const VendorManagement = ({ newVendor: isNewVendor = false }) => {
               onClick={() => handleTabChange(1)}
               className={`py-2 px-6 border-b-2 font-medium text-sm ${
                 tabValue === 1
-                  ? 'border-purple-500 text-purple-600'
+                  ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -303,7 +303,7 @@ const VendorManagement = ({ newVendor: isNewVendor = false }) => {
               onClick={() => handleTabChange(2)}
               className={`py-2 px-6 border-b-2 font-medium text-sm ${
                 tabValue === 2
-                  ? 'border-purple-500 text-purple-600'
+                  ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -328,7 +328,7 @@ const VendorManagement = ({ newVendor: isNewVendor = false }) => {
                     value={formData.name}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
@@ -342,7 +342,7 @@ const VendorManagement = ({ newVendor: isNewVendor = false }) => {
                     name="contact_person"
                     value={formData.contact_person}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
@@ -356,7 +356,7 @@ const VendorManagement = ({ newVendor: isNewVendor = false }) => {
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
@@ -370,7 +370,7 @@ const VendorManagement = ({ newVendor: isNewVendor = false }) => {
                     name="phone"
                     value={formData.phone}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
@@ -384,7 +384,7 @@ const VendorManagement = ({ newVendor: isNewVendor = false }) => {
                     name="tax_id"
                     value={formData.tax_id}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
@@ -398,7 +398,7 @@ const VendorManagement = ({ newVendor: isNewVendor = false }) => {
                     name="payment_terms"
                     value={formData.payment_terms}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
@@ -416,7 +416,7 @@ const VendorManagement = ({ newVendor: isNewVendor = false }) => {
                       name="street"
                       value={formData.street}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
 
@@ -430,7 +430,7 @@ const VendorManagement = ({ newVendor: isNewVendor = false }) => {
                       name="city"
                       value={formData.city}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
 
@@ -444,7 +444,7 @@ const VendorManagement = ({ newVendor: isNewVendor = false }) => {
                       name="state"
                       value={formData.state}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
 
@@ -458,7 +458,7 @@ const VendorManagement = ({ newVendor: isNewVendor = false }) => {
                       name="postcode"
                       value={formData.postcode}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
 
@@ -472,7 +472,7 @@ const VendorManagement = ({ newVendor: isNewVendor = false }) => {
                       name="country"
                       value={formData.country}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                 </div>
@@ -499,7 +499,7 @@ const VendorManagement = ({ newVendor: isNewVendor = false }) => {
                     name="is_active"
                     checked={formData.is_active}
                     onChange={handleInputChange}
-                    className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
                   <span className="ml-2 text-sm text-gray-700">Active Vendor</span>
                 </label>
@@ -516,7 +516,7 @@ const VendorManagement = ({ newVendor: isNewVendor = false }) => {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-50"
+                  className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
                 >
                   {isLoading ? 'Saving...' : selectedVendor ? 'Update Vendor' : 'Create Vendor'}
                 </button>
@@ -603,12 +603,12 @@ const VendorManagement = ({ newVendor: isNewVendor = false }) => {
                     placeholder="Search vendors..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <button
                   onClick={() => handleTabChange(0)}
-                  className="ml-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700"
+                  className="ml-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
                 >
                   <PlusIcon className="h-4 w-4 mr-2" />
                   Add Vendor
@@ -617,7 +617,7 @@ const VendorManagement = ({ newVendor: isNewVendor = false }) => {
 
               {isLoading ? (
                 <div className="flex justify-center items-center h-64">
-                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
                 </div>
               ) : filteredVendors.length === 0 ? (
                 <div className="text-center py-12">
@@ -680,7 +680,7 @@ const VendorManagement = ({ newVendor: isNewVendor = false }) => {
                             </button>
                             <button
                               onClick={() => handleEdit(vendor)}
-                              className="text-purple-600 hover:text-purple-900"
+                              className="text-indigo-600 hover:text-indigo-900"
                             >
                               <PencilIcon className="h-4 w-4" />
                             </button>

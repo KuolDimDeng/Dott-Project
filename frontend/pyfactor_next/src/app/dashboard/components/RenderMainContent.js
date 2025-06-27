@@ -88,6 +88,7 @@ const PurchaseOrderManagement = enhancedLazy(() => import('./forms/PurchaseOrder
 const ExpensesManagement = enhancedLazy(() => import('./forms/ExpensesManagement.js'), 'Expenses Management');
 const PurchaseReturnsManagement = enhancedLazy(() => import('./forms/PurchaseReturnsManagement.js'), 'Purchase Returns Management');
 const ProcurementManagement = enhancedLazy(() => import('./forms/ProcurementManagement.js'), 'Procurement Management');
+const PurchasesReports = enhancedLazy(() => import('./forms/PurchasesReports.js'), 'Purchases Reports');
 const EmployeeManagement = enhancedLazy(() => {
   console.log('[RenderMainContent] Attempting to load EmployeeManagement component');
   return import('./forms/EmployeeManagement.js')
@@ -1478,7 +1479,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
       }
       
       // Handle Purchases views
-      if (view && (view === 'purchases-dashboard' || view === 'vendor-management' || view === 'purchase-order-management' || view === 'purchase-returns-management' || view === 'procurement-management' || view === 'expenses-management')) {
+      if (view && (view === 'purchases-dashboard' || view === 'vendor-management' || view === 'purchase-order-management' || view === 'bill-management' || view === 'expenses-management' || view === 'purchase-returns-management' || view === 'procurement-management' || view === 'purchases-reports')) {
         console.log('[RenderMainContent] Rendering purchases view:', view);
         
         let PurchaseComponent = null;
@@ -1520,12 +1521,23 @@ const RenderMainContent = React.memo(function RenderMainContent({
               return { default: () => <div className="p-4">Error loading Procurement Management</div> };
             }));
             break;
+          case 'bill-management':
+            componentName = 'BillManagement';
+            PurchaseComponent = lazy(() => import('./forms/BillManagement.js').catch(err => {
+              console.error('[RenderMainContent] Error loading BillManagement:', err);
+              return { default: () => <div className="p-4">Error loading Bill Management</div> };
+            }));
+            break;
           case 'expenses-management':
             componentName = 'ExpensesManagement';
             PurchaseComponent = lazy(() => import('./forms/ExpensesManagement.js').catch(err => {
               console.error('[RenderMainContent] Error loading ExpensesManagement:', err);
               return { default: () => <div className="p-4">Error loading Expenses Management</div> };
             }));
+            break;
+          case 'purchases-reports':
+            componentName = 'PurchasesReports';
+            PurchaseComponent = PurchasesReports;
             break;
           default:
             console.warn('[RenderMainContent] Unknown purchases view:', view);
