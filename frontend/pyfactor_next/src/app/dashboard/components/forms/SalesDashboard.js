@@ -13,7 +13,20 @@ import {
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
 import { format } from 'date-fns';
-import { ChartBarIcon } from '@heroicons/react/24/outline';
+import { 
+  ChartBar,
+  Package,
+  Wrench,
+  ShoppingCart,
+  FileText,
+  Files,
+  Users,
+  CurrencyDollar,
+  ChartLine,
+  Target,
+  Lightning,
+  Plus
+} from '@phosphor-icons/react';
 
 const SalesDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -258,8 +271,8 @@ const SalesDashboard = () => {
   const MetricCard = ({ title, value, subValue, icon, color, trend }) => (
     <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
       <div className="flex items-center justify-between mb-4">
-        <div className={`p-3 rounded-full bg-${color}-100`}>
-          <span className="text-2xl">{icon}</span>
+        <div className={`p-3 rounded-full bg-${color}-100 text-${color}-600`}>
+          {icon}
         </div>
         {trend !== undefined && (
           <div className={`flex items-center text-sm ${trend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -319,7 +332,7 @@ const SalesDashboard = () => {
     <div className="p-6 bg-gray-50">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-black mb-4 flex items-center">
-          <ChartBarIcon className="h-6 w-6 text-blue-600 mr-2" />
+          <ChartBar className="h-6 w-6 text-blue-600 mr-2" />
           Sales Dashboard
         </h1>
         <p className="text-gray-600">Overview of your sales performance and metrics</p>
@@ -345,42 +358,42 @@ const SalesDashboard = () => {
           title="Products"
           value={metrics.products.total}
           subValue={`${metrics.products.active} active`}
-          icon="📦"
+          icon={<Package size={28} weight="duotone" />}
           color="blue"
         />
         <MetricCard
           title="Services"
           value={metrics.services.total}
           subValue={`${metrics.services.recurring} recurring`}
-          icon="🛠️"
+          icon={<Wrench size={28} weight="duotone" />}
           color="purple"
         />
         <MetricCard
           title="Orders"
           value={metrics.orders.total}
           subValue={formatCurrency(metrics.orders.totalValue)}
-          icon="🛒"
+          icon={<ShoppingCart size={28} weight="duotone" />}
           color="green"
         />
         <MetricCard
           title="Invoices"
           value={metrics.invoices.total}
           subValue={`${metrics.invoices.unpaid} unpaid`}
-          icon="📄"
+          icon={<FileText size={28} weight="duotone" />}
           color="yellow"
         />
         <MetricCard
           title="Estimates"
           value={metrics.estimates.total}
           subValue={`${metrics.estimates.sent} sent`}
-          icon="📋"
+          icon={<Files size={28} weight="duotone" />}
           color="indigo"
         />
         <MetricCard
           title="Customers"
           value={metrics.customers.total}
           subValue={`${metrics.customers.new} new`}
-          icon="👥"
+          icon={<Users size={28} weight="duotone" />}
           color="pink"
         />
       </div>
@@ -388,7 +401,10 @@ const SalesDashboard = () => {
       {/* Financial Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">💰 Revenue Overview</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <CurrencyDollar size={24} weight="duotone" className="mr-2 text-green-600" />
+            Revenue Overview
+          </h3>
           <div className="space-y-4">
             <div>
               <p className="text-sm text-gray-600">Total Orders Value</p>
@@ -408,7 +424,10 @@ const SalesDashboard = () => {
         </div>
 
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">📊 Quick Stats</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <ChartLine size={24} weight="duotone" className="mr-2 text-blue-600" />
+            Quick Stats
+          </h3>
           <div className="space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Pending Orders</span>
@@ -430,7 +449,10 @@ const SalesDashboard = () => {
         </div>
 
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">🎯 Conversion Rates</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <Target size={24} weight="duotone" className="mr-2 text-purple-600" />
+            Conversion Rates
+          </h3>
           <div className="space-y-3">
             <div>
               <div className="flex justify-between items-center mb-1">
@@ -471,22 +493,22 @@ const SalesDashboard = () => {
       {/* Recent Items */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
         <RecentItemsList 
-          title="🛒 Recent Orders" 
+          title={<span className="flex items-center"><ShoppingCart size={20} weight="duotone" className="mr-2 text-green-600" />Recent Orders</span>} 
           items={recentItems.orders} 
           type="orders"
         />
         <RecentItemsList 
-          title="📄 Recent Invoices" 
+          title={<span className="flex items-center"><FileText size={20} weight="duotone" className="mr-2 text-yellow-600" />Recent Invoices</span>} 
           items={recentItems.invoices} 
           type="invoices"
         />
         <RecentItemsList 
-          title="📋 Recent Estimates" 
+          title={<span className="flex items-center"><Files size={20} weight="duotone" className="mr-2 text-indigo-600" />Recent Estimates</span>} 
           items={recentItems.estimates} 
           type="estimates"
         />
         <RecentItemsList 
-          title="👥 New Customers" 
+          title={<span className="flex items-center"><Users size={20} weight="duotone" className="mr-2 text-pink-600" />New Customers</span>} 
           items={recentItems.customers} 
           type="customers"
         />
@@ -494,30 +516,33 @@ const SalesDashboard = () => {
 
       {/* Quick Actions */}
       <div className="mt-8 bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">⚡ Quick Actions</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <Lightning size={24} weight="duotone" className="mr-2 text-yellow-600" />
+          Quick Actions
+        </h3>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          <button className="p-4 text-center border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors">
-            <span className="text-2xl mb-2 block">📦</span>
+          <button className="p-4 text-center border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors group">
+            <Package size={32} weight="duotone" className="mb-2 mx-auto text-gray-400 group-hover:text-blue-600 transition-colors" />
             <span className="text-sm text-gray-700">Add Product</span>
           </button>
-          <button className="p-4 text-center border-2 border-dashed border-gray-300 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-colors">
-            <span className="text-2xl mb-2 block">🛠️</span>
+          <button className="p-4 text-center border-2 border-dashed border-gray-300 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-colors group">
+            <Wrench size={32} weight="duotone" className="mb-2 mx-auto text-gray-400 group-hover:text-purple-600 transition-colors" />
             <span className="text-sm text-gray-700">Add Service</span>
           </button>
-          <button className="p-4 text-center border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition-colors">
-            <span className="text-2xl mb-2 block">🛒</span>
+          <button className="p-4 text-center border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition-colors group">
+            <ShoppingCart size={32} weight="duotone" className="mb-2 mx-auto text-gray-400 group-hover:text-green-600 transition-colors" />
             <span className="text-sm text-gray-700">New Order</span>
           </button>
-          <button className="p-4 text-center border-2 border-dashed border-gray-300 rounded-lg hover:border-yellow-500 hover:bg-yellow-50 transition-colors">
-            <span className="text-2xl mb-2 block">📄</span>
+          <button className="p-4 text-center border-2 border-dashed border-gray-300 rounded-lg hover:border-yellow-500 hover:bg-yellow-50 transition-colors group">
+            <FileText size={32} weight="duotone" className="mb-2 mx-auto text-gray-400 group-hover:text-yellow-600 transition-colors" />
             <span className="text-sm text-gray-700">Create Invoice</span>
           </button>
-          <button className="p-4 text-center border-2 border-dashed border-gray-300 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition-colors">
-            <span className="text-2xl mb-2 block">📋</span>
+          <button className="p-4 text-center border-2 border-dashed border-gray-300 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition-colors group">
+            <Files size={32} weight="duotone" className="mb-2 mx-auto text-gray-400 group-hover:text-indigo-600 transition-colors" />
             <span className="text-sm text-gray-700">New Estimate</span>
           </button>
-          <button className="p-4 text-center border-2 border-dashed border-gray-300 rounded-lg hover:border-pink-500 hover:bg-pink-50 transition-colors">
-            <span className="text-2xl mb-2 block">👥</span>
+          <button className="p-4 text-center border-2 border-dashed border-gray-300 rounded-lg hover:border-pink-500 hover:bg-pink-50 transition-colors group">
+            <Users size={32} weight="duotone" className="mb-2 mx-auto text-gray-400 group-hover:text-pink-600 transition-colors" />
             <span className="text-sm text-gray-700">Add Customer</span>
           </button>
         </div>
