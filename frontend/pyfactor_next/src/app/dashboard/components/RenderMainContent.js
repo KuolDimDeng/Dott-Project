@@ -229,6 +229,8 @@ const SuppliersManagement = enhancedLazy(() => import('./forms/SuppliersManageme
 const MainDashboard = enhancedLazy(() => import('./dashboards/MainDashboard'), 'Main Dashboard');
 const BankTransactions = enhancedLazy(() => import('./forms/BankTransactionPage'), 'Bank Transactions');
 const HRDashboard = enhancedLazy(() => import('./forms/HRDashboard.js'), 'HR Dashboard');
+const SalesDashboard = enhancedLazy(() => import('./forms/SalesDashboard.js'), 'Sales Dashboard');
+const PurchasesDashboard = enhancedLazy(() => import('./forms/PurchasesDashboard.js'), 'Purchases Dashboard');
 const TaxManagement = enhancedLazy(() => {
   console.log('[RenderMainContent] Attempting to load TaxManagement component');
   return import('./forms/TaxManagement.js')
@@ -1477,13 +1479,20 @@ const RenderMainContent = React.memo(function RenderMainContent({
       }
       
       // Handle Purchases views
-      if (view && (view === 'vendor-management' || view === 'purchase-order-management' || view === 'purchase-returns-management' || view === 'procurement-management' || view === 'expenses-management')) {
+      if (view && (view === 'purchases-dashboard' || view === 'vendor-management' || view === 'purchase-order-management' || view === 'purchase-returns-management' || view === 'procurement-management' || view === 'expenses-management')) {
         console.log('[RenderMainContent] Rendering purchases view:', view);
         
         let PurchaseComponent = null;
         let componentName = '';
         
         switch(view) {
+          case 'purchases-dashboard':
+            componentName = 'PurchasesDashboard';
+            PurchaseComponent = lazy(() => import('./forms/PurchasesDashboard.js').catch(err => {
+              console.error('[RenderMainContent] Error loading PurchasesDashboard:', err);
+              return { default: () => <div className="p-4">Error loading Purchases Dashboard</div> };
+            }));
+            break;
           case 'vendor-management':
             componentName = 'VendorManagement';
             PurchaseComponent = lazy(() => import('./forms/VendorManagement.js').catch(err => {

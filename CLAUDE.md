@@ -170,11 +170,29 @@
   - Example: Cost field explains to include delivery, taxes, and divide by quantity if bulk
   - Follow industry standards (QuickBooks, Shopify style)
 - **Icon Standards**:
-  - Use Heroicons from `@heroicons/react/24/outline` for ALL page titles
-  - Standard styling: `className="h-6 w-6 text-blue-600 mr-2"`
-  - Title wrapper: `className="flex items-center"`
-  - Reference: Settings page implementation
-  - Icon mapping:
+  - **Dashboard Pages**: Use Phosphor Icons from `@phosphor-icons/react` with duotone weight
+    - Standard import: `import { IconName } from '@phosphor-icons/react';`
+    - Usage: `<IconName size={24} weight="duotone" className="text-color-600" />`
+    - Benefits: Modern appearance, 6 weight options, better cross-platform rendering
+    - Reference: SalesDashboard, InventoryDashboard, PaymentsDashboard
+  - **Other Pages**: Use Heroicons from `@heroicons/react/24/outline` for page titles
+    - Standard styling: `className="h-6 w-6 text-blue-600 mr-2"`
+    - Title wrapper: `className="flex items-center"`
+  - **Icon Mapping (Phosphor for Dashboards)**:
+    - Products: Package
+    - Services: Wrench
+    - Sales/Orders: ShoppingCart
+    - Customers: Users
+    - Invoices: FileText
+    - Estimates: Files
+    - Payments: CreditCard
+    - Inventory: Package
+    - Reports: ChartBar, ChartLine
+    - Settings: Gear
+    - Quick Actions: Lightning
+    - Revenue: CurrencyDollar
+    - Targets: Target
+  - **Icon Mapping (Heroicons for Regular Pages)**:
     - Products: CubeIcon
     - Services: WrenchScrewdriverIcon
     - Sales/Orders: ShoppingCartIcon

@@ -10,6 +10,19 @@ import {
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
 import { format } from 'date-fns';
+import {
+  Package,
+  ArrowsDownUp,
+  MapPin,
+  Truck,
+  Warning,
+  ChartBar,
+  ShoppingBag,
+  CheckCircle,
+  Lightning,
+  Plus,
+  ClipboardText
+} from '@phosphor-icons/react';
 
 const InventoryDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -268,9 +281,7 @@ const InventoryDashboard = () => {
     <div className="p-6 bg-gray-50">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-black mb-4 flex items-center">
-          <svg className="h-6 w-6 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-          </svg>
+          <Package weight="duotone" className="h-6 w-6 text-blue-600 mr-2" />
           Inventory Dashboard
         </h1>
         <p className="text-gray-600">Monitor stock levels, track movements, and manage your inventory efficiently across all locations.</p>
@@ -296,11 +307,7 @@ const InventoryDashboard = () => {
           title="Total Inventory"
           value={metrics.inventory.totalItems}
           subValue={formatCurrency(metrics.inventory.totalValue)}
-          icon={
-            <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-            </svg>
-          }
+          icon={<Package weight="duotone" className="h-6 w-6 text-blue-600" />}
           color="blue"
           onClick={() => handleNavigation('inventory-management')}
         />
@@ -308,11 +315,7 @@ const InventoryDashboard = () => {
           title="Stock Adjustments"
           value={metrics.stockAdjustments.total}
           subValue={`${metrics.stockAdjustments.thisMonth} this month`}
-          icon={
-            <svg className="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-            </svg>
-          }
+          icon={<ArrowsDownUp weight="duotone" className="h-6 w-6 text-purple-600" />}
           color="purple"
           onClick={() => handleNavigation('inventory-stock-adjustments')}
         />
@@ -320,12 +323,7 @@ const InventoryDashboard = () => {
           title="Locations"
           value={metrics.locations.total}
           subValue={`${metrics.locations.active} active`}
-          icon={
-            <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-          }
+          icon={<MapPin weight="duotone" className="h-6 w-6 text-green-600" />}
           color="green"
           onClick={() => handleNavigation('inventory-locations')}
         />
@@ -333,11 +331,7 @@ const InventoryDashboard = () => {
           title="Suppliers"
           value={metrics.suppliers.total}
           subValue={`${metrics.suppliers.active} active`}
-          icon={
-            <svg className="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-            </svg>
-          }
+          icon={<Truck weight="duotone" className="h-6 w-6 text-yellow-600" />}
           color="yellow"
           onClick={() => handleNavigation('inventory-suppliers')}
         />
@@ -345,11 +339,7 @@ const InventoryDashboard = () => {
           title="Low Stock Alert"
           value={metrics.inventory.lowStock}
           subValue={`${metrics.inventory.outOfStock} out of stock`}
-          icon={
-            <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-          }
+          icon={<Warning weight="duotone" className="h-6 w-6 text-red-600" />}
           color="red"
         />
       </div>
@@ -358,9 +348,7 @@ const InventoryDashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow-md p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <svg className="h-5 w-5 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
+            <ChartBar weight="duotone" className="h-5 w-5 text-blue-600 mr-2" />
             Stock Overview
           </h3>
           <div className="space-y-4">
@@ -383,9 +371,7 @@ const InventoryDashboard = () => {
 
         <div className="bg-white rounded-lg shadow-md p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <svg className="h-5 w-5 text-purple-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-            </svg>
+            <ShoppingBag weight="duotone" className="h-5 w-5 text-purple-600 mr-2" />
             Stock Movements
           </h3>
           <div className="space-y-3">
@@ -410,9 +396,7 @@ const InventoryDashboard = () => {
 
         <div className="bg-white rounded-lg shadow-md p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <svg className="h-5 w-5 text-green-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <CheckCircle weight="duotone" className="h-5 w-5 text-green-600 mr-2" />
             Stock Health
           </h3>
           <div className="space-y-3">
@@ -514,9 +498,7 @@ const InventoryDashboard = () => {
       {/* Quick Actions */}
       <div className="mt-8 bg-white rounded-lg shadow-md p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-          <svg className="h-5 w-5 text-yellow-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
+          <Lightning weight="duotone" className="h-5 w-5 text-yellow-600 mr-2" />
           Quick Actions
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -524,45 +506,34 @@ const InventoryDashboard = () => {
             onClick={() => handleNavigation('inventory-stock-adjustments')}
             className="p-4 text-center border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors"
           >
-            <svg className="h-8 w-8 text-blue-600 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-            </svg>
+            <ArrowsDownUp weight="duotone" className="h-8 w-8 text-blue-600 mx-auto mb-2" />
             <span className="text-sm text-gray-700">Stock Adjustment</span>
           </button>
           <button 
             onClick={() => handleNavigation('inventory-locations')}
             className="p-4 text-center border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition-colors"
           >
-            <svg className="h-8 w-8 text-green-600 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
+            <MapPin weight="duotone" className="h-8 w-8 text-green-600 mx-auto mb-2" />
             <span className="text-sm text-gray-700">Add Location</span>
           </button>
           <button 
             onClick={() => handleNavigation('inventory-suppliers')}
             className="p-4 text-center border-2 border-dashed border-gray-300 rounded-lg hover:border-yellow-500 hover:bg-yellow-50 transition-colors"
           >
-            <svg className="h-8 w-8 text-yellow-600 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-            </svg>
+            <Truck weight="duotone" className="h-8 w-8 text-yellow-600 mx-auto mb-2" />
             <span className="text-sm text-gray-700">New Supplier</span>
           </button>
           <button 
             className="p-4 text-center border-2 border-dashed border-gray-300 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-colors"
           >
-            <svg className="h-8 w-8 text-purple-600 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-            </svg>
+            <ClipboardText weight="duotone" className="h-8 w-8 text-purple-600 mx-auto mb-2" />
             <span className="text-sm text-gray-700">Stock Count</span>
           </button>
           <button 
             onClick={() => handleNavigation('inventory-reports')}
             className="p-4 text-center border-2 border-dashed border-gray-300 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition-colors"
           >
-            <svg className="h-8 w-8 text-indigo-600 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
+            <ChartBar weight="duotone" className="h-8 w-8 text-indigo-600 mx-auto mb-2" />
             <span className="text-sm text-gray-700">View Reports</span>
           </button>
         </div>
