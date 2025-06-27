@@ -136,16 +136,14 @@ const BankReconciliation = () => {
   return (
     <div className="bg-white p-6 rounded-lg shadow">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6">
-        <div className="flex items-center">
-          <div className="mr-4 text-blue-600">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+        <div>
+          <h1 className="text-2xl font-bold mb-2 flex items-center">
+            <svg className="h-6 w-6 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
             </svg>
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold">Bank Reconciliation</h1>
-            <p className="text-gray-600">Manage your bank reconciliation</p>
-          </div>
+            Bank Reconciliation
+          </h1>
+          <p className="text-gray-600 text-sm">Match bank statements with book records to ensure accurate financial reporting and identify discrepancies.</p>
         </div>
         <div className="mt-4 md:mt-0">
           <Image

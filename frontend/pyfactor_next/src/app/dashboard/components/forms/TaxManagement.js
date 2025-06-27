@@ -604,8 +604,13 @@ const TaxManagement = () => {
       {loading && <LoadingOverlay />}
       
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">Tax Management</h1>
-        <p className="text-gray-600">Manage employee tax information and forms</p>
+        <h1 className="text-2xl font-bold mb-2 flex items-center">
+          <svg className="h-6 w-6 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+          </svg>
+          Tax Management
+        </h1>
+        <p className="text-gray-600 text-sm">Manage tax compliance, forms, withholdings, and reporting for federal, state, and local jurisdictions.</p>
       </div>
       
       {activeTab === 'employee-select' ? (
