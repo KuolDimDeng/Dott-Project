@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { reportsApi } from '@/services/api/reports';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
+import { ChartBarIcon } from '@heroicons/react/24/outline';
 
 const ReportsDashboard = () => {
   const [loading, setLoading] = useState(true);
@@ -130,8 +131,11 @@ const ReportsDashboard = () => {
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Reports Dashboard</h1>
-        <p className="text-gray-600 mt-2">Generate and view financial, tax, and business reports</p>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2 flex items-center">
+          <ChartBarIcon className="h-6 w-6 text-blue-600 mr-2" />
+          Reports Dashboard
+        </h1>
+        <p className="text-gray-600 text-sm">Generate and view financial, tax, and business reports including profit & loss, balance sheets, cash flow statements, and tax summaries.</p>
       </div>
 
       {/* Quick Stats */}

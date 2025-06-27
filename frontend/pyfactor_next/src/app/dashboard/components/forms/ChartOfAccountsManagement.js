@@ -99,9 +99,15 @@ const ChartOfAccountsManagement = () => {
   return (
     <div className="bg-white p-6 rounded-lg shadow">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">
-          Chart of Accounts
-        </h1>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800 mb-2 flex items-center">
+            <svg className="h-6 w-6 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Chart of Accounts
+          </h1>
+          <p className="text-gray-600 text-sm">Manage your accounting structure with categories, accounts, and hierarchical organization.</p>
+        </div>
         <div className="flex space-x-2">
           <button 
             onClick={handleSubmit}
