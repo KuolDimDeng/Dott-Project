@@ -1117,4 +1117,301 @@ export const createAxiosInstance = async () => {
  */
 export const getApiClient = async () => {
   return await createAxiosInstance();
+};
+
+// HR related API methods - Using local proxy pattern (industry standard)
+export const hrApi = {
+  // Employee management
+  employees: {
+    async getAll(params = {}) {
+      const response = await fetch('/api/hr/employees', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+    
+    async getById(id, params = {}) {
+      const response = await fetch(`/api/hr/employees/${id}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+    
+    async create(data, params = {}) {
+      logger.info('[HRApi] Creating employee with data:', data);
+      
+      const response = await fetch('/api/hr/employees', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      const result = await response.json();
+      logger.info('[HRApi] Employee created successfully:', result);
+      return result;
+    },
+    
+    async update(id, data, params = {}) {
+      const response = await fetch(`/api/hr/employees/${id}`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+    
+    async delete(id, params = {}) {
+      const response = await fetch(`/api/hr/employees/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async getStats(params = {}) {
+      const response = await fetch('/api/hr/employees/stats', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    }
+  },
+
+  // Department management
+  departments: {
+    async getAll(params = {}) {
+      const response = await fetch('/api/hr/departments', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async getStats(params = {}) {
+      const response = await fetch('/api/hr/departments/stats', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    }
+  },
+
+  // Benefits management
+  benefits: {
+    async getAll(params = {}) {
+      const response = await fetch('/api/hr/benefits', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+    
+    async create(data, params = {}) {
+      const response = await fetch('/api/hr/benefits', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+    
+    async update(id, data, params = {}) {
+      const response = await fetch(`/api/hr/benefits/${id}`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+    
+    async delete(id, params = {}) {
+      const response = await fetch(`/api/hr/benefits/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    }
+  },
+
+  // Payroll management
+  payroll: {
+    async getAll(params = {}) {
+      const response = await fetch('/api/hr/payroll', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+    
+    async create(data, params = {}) {
+      const response = await fetch('/api/hr/payroll', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+    
+    async getStats(params = {}) {
+      const response = await fetch('/api/hr/payroll/stats', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    }
+  },
+
+  // HR metrics and analytics
+  async getMetrics(params = {}) {
+    const response = await fetch('/api/hr/metrics/summary', {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
+    }
+    
+    return response.json();
+  }
 }; 
