@@ -3,7 +3,7 @@ from django.db import connections, transaction as db_transaction
 from rest_framework import serializers
 from .utils import get_or_create_account, calculate_due_date
 from finance.models import Account, FinanceTransaction
-from .models import Refund, RefundItem, SaleItem, Invoice, Estimate, SalesOrder, SalesOrderItem, default_due_datetime, EstimateItem, EstimateAttachment, InvoiceItem, Sale
+from .models import Refund, RefundItem, SaleItem, Invoice, Estimate, SalesOrder, SalesOrderItem, default_due_datetime, EstimateItem, EstimateAttachment, InvoiceItem, Sale, POSTransaction, POSTransactionItem, POSRefund, POSRefundItem
 from inventory.models import Product, Service, CustomChargePlan, Department
 from crm.models import Customer
 from pyfactor.logging_config import get_logger
@@ -752,3 +752,390 @@ class RefundSerializer(serializers.ModelSerializer):
         for item_data in items_data:
             RefundItem.objects.create(refund=refund, **item_data)
         return refund
+
+
+# ===== POS SERIALIZERS =====
+
+class POSTransactionItemSerializer(serializers.ModelSerializer):
+    """
+    Serializer for POS transaction line items.
+    """
+    product_id = serializers.UUIDField(write_only=True, required=False, allow_null=True)
+    service_id = serializers.UUIDField(write_only=True, required=False, allow_null=True)
+    
+    # Read-only fields for display
+    product_name = serializers.CharField(source='product.name', read_only=True)
+    service_name = serializers.CharField(source='service.name', read_only=True)
+    
+    class Meta:
+        model = POSTransactionItem
+        fields = [
+            'id', 'product_id', 'service_id', 'product_name', 'service_name',
+            'item_name', 'item_sku', 'quantity', 'unit_price', 
+            'line_discount', 'line_discount_percentage',
+            'tax_rate', 'tax_amount', 'tax_inclusive',
+            'line_total', 'cost_price'
+        ]
+        read_only_fields = ['id', 'line_total', 'tax_amount']
+    
+    def validate(self, data):
+        """Ensure either product or service is provided, but not both"""
+        product_id = data.get('product_id')
+        service_id = data.get('service_id')
+        
+        if not product_id and not service_id:
+            raise serializers.ValidationError("Either product_id or service_id must be provided")
+        
+        if product_id and service_id:
+            raise serializers.ValidationError("Cannot specify both product_id and service_id")
+        
+        return data
+    
+    def validate_product_id(self, value):
+        """Validate that the product exists and has sufficient stock"""
+        if value:
+            try:
+                product = Product.objects.get(pk=value)
+                return product
+            except Product.DoesNotExist:
+                raise serializers.ValidationError(f"Product with id {value} does not exist")
+        return value
+    
+    def validate_service_id(self, value):
+        """Validate that the service exists"""
+        if value:
+            try:
+                service = Service.objects.get(pk=value)
+                return service
+            except Service.DoesNotExist:
+                raise serializers.ValidationError(f"Service with id {value} does not exist")
+        return value
+
+
+class POSTransactionCreateSerializer(serializers.ModelSerializer):
+    """
+    Serializer for creating POS transactions.
+    """
+    items = POSTransactionItemSerializer(many=True)
+    customer_id = serializers.UUIDField(write_only=True, required=False, allow_null=True)
+    
+    # Display fields
+    customer_name = serializers.CharField(source='customer.customerName', read_only=True)
+    total_items_count = serializers.IntegerField(source='total_items', read_only=True)
+    
+    class Meta:
+        model = POSTransaction
+        fields = [
+            'id', 'transaction_number', 'customer_id', 'customer_name',
+            'subtotal', 'discount_amount', 'discount_percentage',
+            'tax_total', 'total_amount', 'payment_method',
+            'amount_tendered', 'change_due', 'status', 'notes',
+            'items', 'total_items_count', 'created_at', 'created_by'
+        ]
+        read_only_fields = [
+            'id', 'transaction_number', 'subtotal', 'tax_total', 
+            'change_due', 'created_at', 'created_by'
+        ]
+    
+    def validate_customer_id(self, value):
+        """Validate customer exists if provided"""
+        if value:
+            try:
+                customer = Customer.objects.get(pk=value)
+                return customer
+            except Customer.DoesNotExist:
+                raise serializers.ValidationError(f"Customer with id {value} does not exist")
+        return value
+    
+    def validate_items(self, value):
+        """Validate that at least one item is provided"""
+        if not value:
+            raise serializers.ValidationError("At least one item is required")
+        return value
+    
+    def validate_amount_tendered(self, value):
+        """Validate amount tendered for cash payments"""
+        payment_method = self.initial_data.get('payment_method')
+        if payment_method == 'cash' and (not value or value <= 0):
+            raise serializers.ValidationError("Amount tendered is required for cash payments")
+        return value
+    
+    def validate(self, data):
+        """Additional validation for the entire transaction"""
+        items = data.get('items', [])
+        
+        # Check inventory for products
+        for item_data in items:
+            product = item_data.get('product_id')
+            if product and hasattr(product, 'quantity'):
+                requested_qty = item_data.get('quantity', 0)
+                if product.quantity < requested_qty:
+                    raise serializers.ValidationError(
+                        f"Insufficient stock for {product.name}. "
+                        f"Available: {product.quantity}, Requested: {requested_qty}"
+                    )
+        
+        return data
+    
+    def create(self, validated_data):
+        """Create POS transaction with all related records"""
+        items_data = validated_data.pop('items')
+        customer = validated_data.pop('customer_id', None)
+        validated_data['customer'] = customer
+        validated_data['created_by'] = self.context['request'].user
+        
+        with db_transaction.atomic():
+            # Create the transaction
+            transaction = POSTransaction.objects.create(**validated_data)
+            
+            # Create transaction items
+            for item_data in items_data:
+                product = item_data.pop('product_id', None)
+                service = item_data.pop('service_id', None)
+                
+                # Set item name and SKU from product/service
+                if product:
+                    item_data['product'] = product
+                    item_data['item_name'] = product.name
+                    item_data['item_sku'] = getattr(product, 'sku', '')
+                    item_data['cost_price'] = getattr(product, 'cost', 0)
+                elif service:
+                    item_data['service'] = service
+                    item_data['item_name'] = service.name
+                    item_data['item_sku'] = getattr(service, 'service_code', '')
+                
+                POSTransactionItem.objects.create(
+                    transaction=transaction,
+                    **item_data
+                )
+            
+            # Recalculate totals
+            transaction.calculate_totals()
+            transaction.save()
+            
+            return transaction
+
+
+class POSTransactionListSerializer(serializers.ModelSerializer):
+    """
+    Simplified serializer for listing POS transactions.
+    """
+    customer_name = serializers.CharField(source='customer.customerName', read_only=True)
+    total_items_count = serializers.IntegerField(source='total_items', read_only=True)
+    
+    class Meta:
+        model = POSTransaction
+        fields = [
+            'id', 'transaction_number', 'customer_name',
+            'total_amount', 'payment_method', 'status',
+            'total_items_count', 'created_at'
+        ]
+
+
+class POSTransactionDetailSerializer(serializers.ModelSerializer):
+    """
+    Detailed serializer for retrieving POS transactions.
+    """
+    items = POSTransactionItemSerializer(many=True, read_only=True)
+    customer_name = serializers.CharField(source='customer.customerName', read_only=True)
+    customer_email = serializers.CharField(source='customer.email', read_only=True)
+    created_by_name = serializers.CharField(source='created_by.username', read_only=True)
+    
+    class Meta:
+        model = POSTransaction
+        fields = [
+            'id', 'transaction_number', 'customer_name', 'customer_email',
+            'subtotal', 'discount_amount', 'discount_percentage',
+            'tax_total', 'total_amount', 'payment_method',
+            'amount_tendered', 'change_due', 'status', 'notes',
+            'items', 'created_at', 'created_by_name'
+        ]
+
+
+class POSRefundItemSerializer(serializers.ModelSerializer):
+    """
+    Serializer for POS refund line items.
+    """
+    original_item_name = serializers.CharField(source='original_item.item_name', read_only=True)
+    original_quantity = serializers.DecimalField(source='original_item.quantity', max_digits=10, decimal_places=3, read_only=True)
+    
+    class Meta:
+        model = POSRefundItem
+        fields = [
+            'id', 'original_item', 'original_item_name', 'original_quantity',
+            'quantity_returned', 'unit_refund_amount', 'total_refund_amount',
+            'condition'
+        ]
+        read_only_fields = ['id', 'total_refund_amount']
+
+
+class POSRefundCreateSerializer(serializers.ModelSerializer):
+    """
+    Serializer for creating POS refunds.
+    """
+    items = POSRefundItemSerializer(many=True)
+    
+    class Meta:
+        model = POSRefund
+        fields = [
+            'id', 'refund_number', 'original_transaction',
+            'refund_type', 'total_amount', 'tax_amount',
+            'status', 'reason', 'notes', 'items'
+        ]
+        read_only_fields = ['id', 'refund_number']
+    
+    def validate_items(self, value):
+        """Validate refund items"""
+        if not value:
+            raise serializers.ValidationError("At least one item is required for refund")
+        
+        for item_data in value:
+            original_item = item_data.get('original_item')
+            quantity_returned = item_data.get('quantity_returned', 0)
+            
+            if not original_item:
+                raise serializers.ValidationError("Original item is required")
+            
+            if quantity_returned <= 0:
+                raise serializers.ValidationError("Quantity returned must be greater than 0")
+            
+            if quantity_returned > original_item.quantity:
+                raise serializers.ValidationError(
+                    f"Cannot refund more than original quantity. "
+                    f"Original: {original_item.quantity}, Requested: {quantity_returned}"
+                )
+        
+        return value
+    
+    def create(self, validated_data):
+        """Create POS refund with all related records"""
+        items_data = validated_data.pop('items')
+        validated_data['created_by'] = self.context['request'].user
+        
+        with db_transaction.atomic():
+            # Create the refund
+            refund = POSRefund.objects.create(**validated_data)
+            
+            # Create refund items
+            for item_data in items_data:
+                POSRefundItem.objects.create(
+                    refund=refund,
+                    **item_data
+                )
+            
+            return refund
+
+
+class POSRefundListSerializer(serializers.ModelSerializer):
+    """
+    Simplified serializer for listing POS refunds.
+    """
+    original_transaction_number = serializers.CharField(source='original_transaction.transaction_number', read_only=True)
+    
+    class Meta:
+        model = POSRefund
+        fields = [
+            'id', 'refund_number', 'original_transaction_number',
+            'refund_type', 'total_amount', 'status', 'created_at'
+        ]
+
+
+class POSSaleCompletionSerializer(serializers.Serializer):
+    """
+    Serializer for the complete POS sale endpoint that handles everything:
+    - Transaction creation
+    - Inventory reduction
+    - Accounting entries
+    """
+    # Customer information
+    customer_id = serializers.UUIDField(required=False, allow_null=True)
+    
+    # Transaction items
+    items = serializers.ListField(
+        child=serializers.DictField(
+            child=serializers.CharField()
+        ),
+        min_length=1
+    )
+    
+    # Payment information
+    payment_method = serializers.ChoiceField(choices=POSTransaction.PAYMENT_METHOD_CHOICES)
+    amount_tendered = serializers.DecimalField(max_digits=15, decimal_places=4, required=False, allow_null=True)
+    
+    # Discounts and tax
+    discount_percentage = serializers.DecimalField(max_digits=5, decimal_places=2, default=0, required=False)
+    tax_rate = serializers.DecimalField(max_digits=5, decimal_places=2, default=0, required=False)
+    
+    # Optional fields
+    notes = serializers.CharField(required=False, allow_blank=True)
+    
+    def validate_customer_id(self, value):
+        """Validate customer exists if provided"""
+        if value:
+            try:
+                return Customer.objects.get(pk=value)
+            except Customer.DoesNotExist:
+                raise serializers.ValidationError(f"Customer with id {value} does not exist")
+        return None
+    
+    def validate_items(self, value):
+        """Validate and normalize items data"""
+        validated_items = []
+        
+        for item in value:
+            # Required fields
+            if 'id' not in item:
+                raise serializers.ValidationError("Item 'id' is required")
+            if 'quantity' not in item:
+                raise serializers.ValidationError("Item 'quantity' is required")
+            if 'type' not in item or item['type'] not in ['product', 'service']:
+                raise serializers.ValidationError("Item 'type' must be 'product' or 'service'")
+            
+            # Validate quantity
+            try:
+                quantity = Decimal(str(item['quantity']))
+                if quantity <= 0:
+                    raise serializers.ValidationError("Item quantity must be greater than 0")
+            except (ValueError, TypeError):
+                raise serializers.ValidationError("Invalid item quantity")
+            
+            # Validate item exists
+            item_id = item['id']
+            if item['type'] == 'product':
+                try:
+                    product = Product.objects.get(pk=item_id)
+                    # Check stock availability
+                    if hasattr(product, 'quantity') and product.quantity < quantity:
+                        raise serializers.ValidationError(
+                            f"Insufficient stock for {product.name}. "
+                            f"Available: {product.quantity}, Requested: {quantity}"
+                        )
+                    validated_items.append({
+                        'type': 'product',
+                        'item': product,
+                        'quantity': quantity,
+                        'unit_price': item.get('unit_price', product.price or 0),
+                    })
+                except Product.DoesNotExist:
+                    raise serializers.ValidationError(f"Product with id {item_id} does not exist")
+            
+            elif item['type'] == 'service':
+                try:
+                    service = Service.objects.get(pk=item_id)
+                    validated_items.append({
+                        'type': 'service',
+                        'item': service,
+                        'quantity': quantity,
+                        'unit_price': item.get('unit_price', service.price or 0),
+                    })
+                except Service.DoesNotExist:
+                    raise serializers.ValidationError(f"Service with id {item_id} does not exist")
+        
+        return validated_items
+    
+    def validate_amount_tendered(self, value):
+        """Validate amount tendered for cash payments"""
+        payment_method = self.initial_data.get('payment_method')
+        if payment_method == 'cash' and (not value or value <= 0):
+            raise serializers.ValidationError("Amount tendered is required for cash payments")
+        return value

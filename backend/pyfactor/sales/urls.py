@@ -1,6 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .viewsets import SalesOrderViewSet, InvoiceViewSet, EstimateViewSet
+from .pos_viewsets import POSTransactionViewSet, POSRefundViewSet
 from .views import (
     # Keep existing views that work
     create_customer,
@@ -30,6 +31,10 @@ router = DefaultRouter()
 router.register(r'orders', SalesOrderViewSet, basename='salesorder')
 router.register(r'invoices', InvoiceViewSet, basename='invoice')
 router.register(r'estimates', EstimateViewSet, basename='estimate')
+
+# POS-specific routes
+router.register(r'pos/transactions', POSTransactionViewSet, basename='pos-transaction')
+router.register(r'pos/refunds', POSRefundViewSet, basename='pos-refund')
 
 urlpatterns = [
     # Include ViewSet routes

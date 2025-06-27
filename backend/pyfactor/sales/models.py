@@ -424,7 +424,210 @@ class SalesOrderItem(TenantAwareModel):
         return self.quantity * self.unit_price
 
 
+class POSTransaction(TenantAwareModel):
+    """
+    POS Transaction model for Point of Sale operations.
+    This represents the main transaction record with multiple items.
+    """
+    PAYMENT_METHOD_CHOICES = [
+        ('cash', 'Cash'),
+        ('card', 'Credit/Debit Card'), 
+        ('mobile_money', 'Mobile Money'),
+        ('bank_transfer', 'Bank Transfer'),
+        ('check', 'Check'),
+        ('store_credit', 'Store Credit'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('completed', 'Completed'),
+        ('voided', 'Voided'),
+        ('refunded', 'Refunded'),
+        ('partial_refund', 'Partially Refunded'),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    transaction_number = models.CharField(max_length=50, editable=False, unique=True)
+    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, blank=True, related_name='pos_transactions')
+    subtotal = models.DecimalField(max_digits=15, decimal_places=4, default=0)
+    discount_amount = models.DecimalField(max_digits=15, decimal_places=4, default=0)
+    discount_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    tax_total = models.DecimalField(max_digits=15, decimal_places=4, default=0)
+    total_amount = models.DecimalField(max_digits=15, decimal_places=4)
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES)
+    amount_tendered = models.DecimalField(max_digits=15, decimal_places=4, null=True, blank=True)
+    change_due = models.DecimalField(max_digits=15, decimal_places=4, default=0)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='completed')
+    notes = models.TextField(blank=True, null=True)
+    
+    # Relationships
+    invoice = models.OneToOneField('Invoice', on_delete=models.SET_NULL, null=True, blank=True, related_name='pos_transaction')
+    journal_entry = models.OneToOneField('finance.JournalEntry', on_delete=models.SET_NULL, null=True, blank=True)
+    
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(get_user_model(), on_delete=models.SET_NULL, null=True, related_name='pos_transactions_created')
+    voided_by = models.ForeignKey(get_user_model(), on_delete=models.SET_NULL, null=True, blank=True, related_name='pos_transactions_voided')
+    voided_at = models.DateTimeField(null=True, blank=True)
+    void_reason = models.TextField(null=True, blank=True)
+    
+    # Add tenant-aware manager
+    objects = TenantManager()
+    all_objects = models.Manager()
+    
+    class Meta:
+        db_table = 'sales_pos_transaction'
+        indexes = [
+            models.Index(fields=['tenant_id', 'transaction_number']),
+            models.Index(fields=['tenant_id', 'customer']),
+            models.Index(fields=['tenant_id', 'payment_method']),
+            models.Index(fields=['tenant_id', 'status']),
+            models.Index(fields=['tenant_id', 'created_at']),
+        ]
+        constraints = [
+            models.UniqueConstraint(fields=['tenant_id', 'transaction_number'], name='unique_pos_transaction_number_per_tenant'),
+        ]
+    
+    def save(self, *args, **kwargs):
+        if not self.transaction_number:
+            # Generate unique transaction number
+            prefix = "POS"
+            year = timezone.now().year
+            month = timezone.now().month
+            # Count transactions today for sequence
+            today = timezone.now().date()
+            daily_count = POSTransaction.objects.filter(
+                tenant_id=self.tenant_id,
+                created_at__date=today
+            ).count() + 1
+            
+            self.transaction_number = f"{prefix}-{year}{month:02d}-{daily_count:04d}"
+            
+            # Ensure uniqueness (handle race conditions)
+            original_number = self.transaction_number
+            counter = 1
+            while POSTransaction.objects.filter(tenant_id=self.tenant_id, transaction_number=self.transaction_number).exists():
+                self.transaction_number = f"{original_number}-{counter}"
+                counter += 1
+                
+        super().save(*args, **kwargs)
+    
+    def __str__(self):
+        return f"POS Transaction {self.transaction_number}"
+    
+    @property
+    def total_items(self):
+        return sum(item.quantity for item in self.items.all())
+    
+    @property
+    def refund_amount(self):
+        """Calculate total refunded amount"""
+        return sum(refund.amount for refund in self.refunds.all())
+    
+    def calculate_totals(self):
+        """Recalculate all totals based on line items"""
+        items = self.items.all()
+        
+        # Calculate subtotal
+        self.subtotal = sum(item.line_total for item in items)
+        
+        # Apply discount
+        if self.discount_percentage > 0:
+            self.discount_amount = (self.subtotal * self.discount_percentage / 100)
+        
+        # Calculate after discount
+        after_discount = self.subtotal - self.discount_amount
+        
+        # Calculate tax
+        self.tax_total = sum(item.tax_amount for item in items)
+        
+        # Calculate total
+        self.total_amount = after_discount + self.tax_total
+        
+        # Calculate change
+        if self.amount_tendered:
+            self.change_due = max(0, self.amount_tendered - self.total_amount)
+
+
+class POSTransactionItem(TenantAwareModel):
+    """
+    Individual line items within a POS transaction.
+    """
+    transaction = models.ForeignKey(POSTransaction, on_delete=models.CASCADE, related_name='items')
+    product = models.ForeignKey(Product, on_delete=models.PROTECT, null=True, blank=True)
+    service = models.ForeignKey(Service, on_delete=models.PROTECT, null=True, blank=True)
+    
+    # Item details (captured at time of sale for historical accuracy)
+    item_name = models.CharField(max_length=255)
+    item_sku = models.CharField(max_length=100, blank=True, null=True)
+    quantity = models.DecimalField(max_digits=10, decimal_places=3)
+    unit_price = models.DecimalField(max_digits=15, decimal_places=4)
+    line_discount = models.DecimalField(max_digits=15, decimal_places=4, default=0)
+    line_discount_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    
+    # Tax information
+    tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    tax_amount = models.DecimalField(max_digits=15, decimal_places=4, default=0)
+    tax_inclusive = models.BooleanField(default=False)
+    
+    # Calculated fields
+    line_total = models.DecimalField(max_digits=15, decimal_places=4, default=0)
+    cost_price = models.DecimalField(max_digits=15, decimal_places=4, null=True, blank=True)
+    
+    # Add tenant-aware manager
+    objects = TenantManager()
+    all_objects = models.Manager()
+    
+    class Meta:
+        db_table = 'sales_pos_transaction_item'
+        indexes = [
+            models.Index(fields=['tenant_id', 'transaction']),
+            models.Index(fields=['tenant_id', 'product']),
+            models.Index(fields=['tenant_id', 'service']),
+        ]
+    
+    def clean(self):
+        # Ensure either product or service is selected, but not both
+        if self.product and self.service:
+            raise ValidationError('Item cannot be both a product and a service')
+        if not self.product and not self.service:
+            raise ValidationError('Item must be either a product or a service')
+    
+    def calculate_totals(self):
+        """Calculate line totals including discounts and tax"""
+        # Base amount
+        base_amount = self.quantity * self.unit_price
+        
+        # Apply line discount
+        if self.line_discount_percentage > 0:
+            self.line_discount = base_amount * self.line_discount_percentage / 100
+        
+        # Amount after discount
+        discounted_amount = base_amount - self.line_discount
+        
+        # Calculate tax
+        if self.tax_inclusive:
+            # Tax is included in the price
+            self.tax_amount = discounted_amount * self.tax_rate / (100 + self.tax_rate)
+            self.line_total = discounted_amount
+        else:
+            # Tax is added to the price
+            self.tax_amount = discounted_amount * self.tax_rate / 100
+            self.line_total = discounted_amount + self.tax_amount
+    
+    def save(self, *args, **kwargs):
+        self.calculate_totals()
+        super().save(*args, **kwargs)
+    
+    def __str__(self):
+        return f"{self.item_name} x {self.quantity} @ {self.unit_price}"
+
+
 class Sale(TenantAwareModel):
+    """
+    Legacy Sale model - maintained for backward compatibility.
+    New POS transactions should use POSTransaction model.
+    """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
@@ -470,7 +673,123 @@ class SaleItem(TenantAwareModel):
         super().save(*args, **kwargs)
         
 
+class POSRefund(TenantAwareModel):
+    """
+    POS Refund model for handling returns and refunds.
+    """
+    REFUND_TYPE_CHOICES = [
+        ('full', 'Full Refund'),
+        ('partial', 'Partial Refund'),
+        ('exchange', 'Exchange'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('processed', 'Processed'),
+        ('cancelled', 'Cancelled'),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    refund_number = models.CharField(max_length=50, editable=False)
+    original_transaction = models.ForeignKey(POSTransaction, on_delete=models.PROTECT, related_name='refunds')
+    refund_type = models.CharField(max_length=10, choices=REFUND_TYPE_CHOICES)
+    total_amount = models.DecimalField(max_digits=15, decimal_places=4)
+    tax_amount = models.DecimalField(max_digits=15, decimal_places=4, default=0)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    reason = models.TextField()
+    notes = models.TextField(blank=True, null=True)
+    
+    # Relationships
+    journal_entry = models.OneToOneField('finance.JournalEntry', on_delete=models.SET_NULL, null=True, blank=True)
+    
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(get_user_model(), on_delete=models.SET_NULL, null=True, related_name='pos_refunds_created')
+    approved_by = models.ForeignKey(get_user_model(), on_delete=models.SET_NULL, null=True, blank=True, related_name='pos_refunds_approved')
+    approved_at = models.DateTimeField(null=True, blank=True)
+    processed_at = models.DateTimeField(null=True, blank=True)
+    
+    # Add tenant-aware manager
+    objects = TenantManager()
+    all_objects = models.Manager()
+    
+    class Meta:
+        db_table = 'sales_pos_refund'
+        indexes = [
+            models.Index(fields=['tenant_id', 'refund_number']),
+            models.Index(fields=['tenant_id', 'original_transaction']),
+            models.Index(fields=['tenant_id', 'status']),
+            models.Index(fields=['tenant_id', 'created_at']),
+        ]
+        constraints = [
+            models.UniqueConstraint(fields=['tenant_id', 'refund_number'], name='unique_pos_refund_number_per_tenant'),
+        ]
+    
+    def save(self, *args, **kwargs):
+        if not self.refund_number:
+            # Generate unique refund number
+            prefix = "REF"
+            year = timezone.now().year
+            month = timezone.now().month
+            # Count refunds today for sequence
+            today = timezone.now().date()
+            daily_count = POSRefund.objects.filter(
+                tenant_id=self.tenant_id,
+                created_at__date=today
+            ).count() + 1
+            
+            self.refund_number = f"{prefix}-{year}{month:02d}-{daily_count:04d}"
+            
+            # Ensure uniqueness
+            original_number = self.refund_number
+            counter = 1
+            while POSRefund.objects.filter(tenant_id=self.tenant_id, refund_number=self.refund_number).exists():
+                self.refund_number = f"{original_number}-{counter}"
+                counter += 1
+                
+        super().save(*args, **kwargs)
+    
+    def __str__(self):
+        return f"Refund {self.refund_number} for {self.original_transaction.transaction_number}"
+
+
+class POSRefundItem(TenantAwareModel):
+    """
+    Individual items being refunded within a POS refund.
+    """
+    refund = models.ForeignKey(POSRefund, on_delete=models.CASCADE, related_name='items')
+    original_item = models.ForeignKey(POSTransactionItem, on_delete=models.PROTECT)
+    quantity_returned = models.DecimalField(max_digits=10, decimal_places=3)
+    unit_refund_amount = models.DecimalField(max_digits=15, decimal_places=4)
+    total_refund_amount = models.DecimalField(max_digits=15, decimal_places=4)
+    condition = models.CharField(max_length=50, blank=True, null=True)  # e.g., 'damaged', 'defective', 'unused'
+    
+    # Add tenant-aware manager
+    objects = TenantManager()
+    all_objects = models.Manager()
+    
+    class Meta:
+        db_table = 'sales_pos_refund_item'
+        indexes = [
+            models.Index(fields=['tenant_id', 'refund']),
+            models.Index(fields=['tenant_id', 'original_item']),
+        ]
+    
+    def save(self, *args, **kwargs):
+        # Calculate total refund amount
+        self.total_refund_amount = self.quantity_returned * self.unit_refund_amount
+        super().save(*args, **kwargs)
+    
+    def __str__(self):
+        return f"Refund {self.quantity_returned} x {self.original_item.item_name}"
+
+
 class Refund(TenantAwareModel):
+    """
+    Legacy Refund model - maintained for backward compatibility.
+    New refunds should use POSRefund model.
+    """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     sale = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='refunds')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
