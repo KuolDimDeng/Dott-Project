@@ -959,29 +959,298 @@ const MainListItems = ({
       icon: <NavIcons.Bank className="w-5 h-5" />,
       label: 'Accounting',
       subItems: [
-        { label: 'Dashboard', onClick: handleAccountingClick, value: 'dashboard' },
-        { label: 'Chart of Accounts', onClick: handleAccountingClick, value: 'chart-of-accounts' },
-        { label: 'Journal Entries', onClick: handleAccountingClick, value: 'journal-entries' },
-        { label: 'General Ledger', onClick: handleAccountingClick, value: 'general-ledger' },
-        { label: 'Reconciliation', onClick: handleAccountingClick, value: 'reconciliation' },
+        { 
+          label: 'Dashboard', 
+          onClick: (value) => {
+            // Create navigation event for accounting dashboard
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'accounting-dashboard', 
+              navigationKey,
+              originalItem: 'Dashboard'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the AccountingDashboard component
+            if (typeof handleAccountingClick === 'function') {
+              handleAccountingClick('dashboard');
+            }
+          }, 
+          value: 'dashboard' 
+        },
+        { 
+          label: 'Chart of Accounts', 
+          onClick: (value) => {
+            // Create navigation event for chart of accounts
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'chart-of-accounts', 
+              navigationKey,
+              originalItem: 'Chart of Accounts'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the ChartOfAccounts component
+            if (typeof handleAccountingClick === 'function') {
+              handleAccountingClick('chart-of-accounts');
+            }
+          }, 
+          value: 'chart-of-accounts' 
+        },
+        { 
+          label: 'Journal Entries', 
+          onClick: (value) => {
+            // Create navigation event for journal entries
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'journal-entries', 
+              navigationKey,
+              originalItem: 'Journal Entries'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the JournalEntries component
+            if (typeof handleAccountingClick === 'function') {
+              handleAccountingClick('journal-entries');
+            }
+          }, 
+          value: 'journal-entries' 
+        },
+        { 
+          label: 'General Ledger', 
+          onClick: (value) => {
+            // Create navigation event for general ledger
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'general-ledger', 
+              navigationKey,
+              originalItem: 'General Ledger'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the GeneralLedger component
+            if (typeof handleAccountingClick === 'function') {
+              handleAccountingClick('general-ledger');
+            }
+          }, 
+          value: 'general-ledger' 
+        },
+        { 
+          label: 'Reconciliation', 
+          onClick: (value) => {
+            // Create navigation event for reconciliation
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'reconciliation', 
+              navigationKey,
+              originalItem: 'Reconciliation'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the Reconciliation component
+            if (typeof handleAccountingClick === 'function') {
+              handleAccountingClick('reconciliation');
+            }
+          }, 
+          value: 'reconciliation' 
+        },
         {
           label: 'Financial Statements',
-          onClick: handleAccountingClick,
+          onClick: (value) => {
+            // Create navigation event for financial statements
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'financial-statements', 
+              navigationKey,
+              originalItem: 'Financial Statements'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the FinancialStatements component
+            if (typeof handleAccountingClick === 'function') {
+              handleAccountingClick('financial-statements');
+            }
+          },
           value: 'financial-statements',
         },
-        { label: 'Fixed Assets', onClick: handleAccountingClick, value: 'fixed-assets' },
-        { label: 'Reports', onClick: handleAccountingClick, value: 'reports' },
+        { 
+          label: 'Fixed Assets', 
+          onClick: (value) => {
+            // Create navigation event for fixed assets
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'fixed-assets', 
+              navigationKey,
+              originalItem: 'Fixed Assets'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the FixedAssets component
+            if (typeof handleAccountingClick === 'function') {
+              handleAccountingClick('fixed-assets');
+            }
+          }, 
+          value: 'fixed-assets' 
+        },
+        { 
+          label: 'Reports', 
+          onClick: (value) => {
+            // Create navigation event for accounting reports
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'accounting-reports', 
+              navigationKey,
+              originalItem: 'Reports'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the AccountingReports component
+            if (typeof handleAccountingClick === 'function') {
+              handleAccountingClick('reports');
+            }
+          }, 
+          value: 'reports' 
+        },
       ],
     },
     {
       icon: <NavIcons.Wallet className="w-5 h-5" />,
       label: 'Banking',
       subItems: [
-        { label: 'Dashboard', onClick: handleBankingClick, value: 'dashboard' },
-        { label: 'Connect to Bank', onClick: handleBankingClick, value: 'connect' },
-        { label: 'Bank Transactions', onClick: handleBankingClick, value: 'transactions' },
-        { label: 'Bank Reconciliation', onClick: handleBankingClick, value: 'reconciliation' },
-        { label: 'Reports', onClick: handleBankingClick, value: 'bank-reports' },
+        { 
+          label: 'Dashboard', 
+          onClick: (value) => {
+            // Create navigation event for banking dashboard
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'banking-dashboard', 
+              navigationKey,
+              originalItem: 'Dashboard'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the BankingDashboard component
+            if (typeof handleBankingClick === 'function') {
+              handleBankingClick('dashboard');
+            }
+          }, 
+          value: 'dashboard' 
+        },
+        { 
+          label: 'Connect to Bank', 
+          onClick: (value) => {
+            // Create navigation event for bank connection
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'bank-connect', 
+              navigationKey,
+              originalItem: 'Connect to Bank'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the BankConnect component
+            if (typeof handleBankingClick === 'function') {
+              handleBankingClick('connect');
+            }
+          }, 
+          value: 'connect' 
+        },
+        { 
+          label: 'Bank Transactions', 
+          onClick: (value) => {
+            // Create navigation event for bank transactions
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'bank-transactions', 
+              navigationKey,
+              originalItem: 'Bank Transactions'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the BankTransactions component
+            if (typeof handleBankingClick === 'function') {
+              handleBankingClick('transactions');
+            }
+          }, 
+          value: 'transactions' 
+        },
+        { 
+          label: 'Bank Reconciliation', 
+          onClick: (value) => {
+            // Create navigation event for bank reconciliation
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'bank-reconciliation', 
+              navigationKey,
+              originalItem: 'Bank Reconciliation'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the BankReconciliation component
+            if (typeof handleBankingClick === 'function') {
+              handleBankingClick('reconciliation');
+            }
+          }, 
+          value: 'reconciliation' 
+        },
+        { 
+          label: 'Reports', 
+          onClick: (value) => {
+            // Create navigation event for banking reports
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'banking-reports', 
+              navigationKey,
+              originalItem: 'Reports'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the BankingReports component
+            if (typeof handleBankingClick === 'function') {
+              handleBankingClick('bank-reports');
+            }
+          }, 
+          value: 'bank-reports' 
+        },
       ],
     },
     {
@@ -1095,23 +1364,254 @@ const MainListItems = ({
       icon: <NavIcons.Payments className="w-5 h-5" />,
       label: 'Payroll',
       subItems: [
-        { label: 'Dashboard', onClick: handlePayrollClick, value: 'dashboard' },
-        { label: 'Run Payroll', onClick: handlePayrollClick, value: 'run-payroll' },
-        { label: 'Payroll Transactions', onClick: handlePayrollClick, value: 'transactions' },
-        { label: 'Reports', onClick: handlePayrollClick, value: 'reports' },
+        { 
+          label: 'Dashboard', 
+          onClick: (value) => {
+            // Create navigation event for payroll dashboard
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'payroll-dashboard', 
+              navigationKey,
+              originalItem: 'Dashboard'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the PayrollDashboard component
+            if (typeof handlePayrollClick === 'function') {
+              handlePayrollClick('dashboard');
+            }
+          }, 
+          value: 'dashboard' 
+        },
+        { 
+          label: 'Run Payroll', 
+          onClick: (value) => {
+            // Create navigation event for run payroll
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'run-payroll', 
+              navigationKey,
+              originalItem: 'Run Payroll'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the RunPayroll component
+            if (typeof handlePayrollClick === 'function') {
+              handlePayrollClick('run-payroll');
+            }
+          }, 
+          value: 'run-payroll' 
+        },
+        { 
+          label: 'Payroll Transactions', 
+          onClick: (value) => {
+            // Create navigation event for payroll transactions
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'payroll-transactions', 
+              navigationKey,
+              originalItem: 'Payroll Transactions'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the PayrollTransactions component
+            if (typeof handlePayrollClick === 'function') {
+              handlePayrollClick('transactions');
+            }
+          }, 
+          value: 'transactions' 
+        },
+        { 
+          label: 'Reports', 
+          onClick: (value) => {
+            // Create navigation event for payroll reports
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'payroll-reports', 
+              navigationKey,
+              originalItem: 'Reports'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the PayrollReports component
+            if (typeof handlePayrollClick === 'function') {
+              handlePayrollClick('reports');
+            }
+          }, 
+          value: 'reports' 
+        },
       ],
     },
     {
       icon: <NavIcons.Receipt className="w-5 h-5" />,
       label: 'Taxes',
       subItems: [
-        { label: 'Dashboard', onClick: handleTaxesClick, value: 'taxes-dashboard' },
-        { label: 'Sales Tax', onClick: handleTaxesClick, value: 'sales-tax' },
-        { label: 'Income Tax', onClick: handleTaxesClick, value: 'income-tax' },
-        { label: 'Payroll Tax', onClick: handleTaxesClick, value: 'payroll-tax' },
-        { label: 'Tax Payments', onClick: handleTaxesClick, value: 'tax-payments' },
-        { label: 'Tax Forms', onClick: handleTaxesClick, value: 'tax-forms' },
-        { label: 'Reports', onClick: handleTaxesClick, value: 'tax-reports' },
+        { 
+          label: 'Dashboard', 
+          onClick: (value) => {
+            // Create navigation event for taxes dashboard
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'taxes-dashboard', 
+              navigationKey,
+              originalItem: 'Dashboard'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the TaxesDashboard component
+            if (typeof handleTaxesClick === 'function') {
+              handleTaxesClick('taxes-dashboard');
+            }
+          }, 
+          value: 'taxes-dashboard' 
+        },
+        { 
+          label: 'Sales Tax', 
+          onClick: (value) => {
+            // Create navigation event for sales tax
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'sales-tax', 
+              navigationKey,
+              originalItem: 'Sales Tax'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the SalesTax component
+            if (typeof handleTaxesClick === 'function') {
+              handleTaxesClick('sales-tax');
+            }
+          }, 
+          value: 'sales-tax' 
+        },
+        { 
+          label: 'Income Tax', 
+          onClick: (value) => {
+            // Create navigation event for income tax
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'income-tax', 
+              navigationKey,
+              originalItem: 'Income Tax'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the IncomeTax component
+            if (typeof handleTaxesClick === 'function') {
+              handleTaxesClick('income-tax');
+            }
+          }, 
+          value: 'income-tax' 
+        },
+        { 
+          label: 'Payroll Tax', 
+          onClick: (value) => {
+            // Create navigation event for payroll tax
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'payroll-tax', 
+              navigationKey,
+              originalItem: 'Payroll Tax'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the PayrollTax component
+            if (typeof handleTaxesClick === 'function') {
+              handleTaxesClick('payroll-tax');
+            }
+          }, 
+          value: 'payroll-tax' 
+        },
+        { 
+          label: 'Tax Payments', 
+          onClick: (value) => {
+            // Create navigation event for tax payments
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'tax-payments', 
+              navigationKey,
+              originalItem: 'Tax Payments'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the TaxPayments component
+            if (typeof handleTaxesClick === 'function') {
+              handleTaxesClick('tax-payments');
+            }
+          }, 
+          value: 'tax-payments' 
+        },
+        { 
+          label: 'Tax Forms', 
+          onClick: (value) => {
+            // Create navigation event for tax forms
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'tax-forms', 
+              navigationKey,
+              originalItem: 'Tax Forms'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the TaxForms component
+            if (typeof handleTaxesClick === 'function') {
+              handleTaxesClick('tax-forms');
+            }
+          }, 
+          value: 'tax-forms' 
+        },
+        { 
+          label: 'Reports', 
+          onClick: (value) => {
+            // Create navigation event for tax reports
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'tax-reports', 
+              navigationKey,
+              originalItem: 'Reports'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the TaxReports component
+            if (typeof handleTaxesClick === 'function') {
+              handleTaxesClick('tax-reports');
+            }
+          }, 
+          value: 'tax-reports' 
+        },
       ],
     },
     {
