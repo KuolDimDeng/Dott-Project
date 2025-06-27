@@ -134,7 +134,7 @@ const MakePayments = () => {
       setError('Please select a vendor');
       return;
     }
-    if (!formData.amount || parseFloat(formData.amount) <= 0) {
+    if (!formData.amount | parseFloat(formData.amount) <= 0) {
       setError('Please enter a valid amount');
       return;
     }
@@ -170,7 +170,7 @@ const MakePayments = () => {
       setTimeout(() => setSuccessMessage(''), 5000);
     } catch (err) {
       logger.error('[MakePayments] Error recording payment:', err);
-      setError(err.message || 'Failed to record payment');
+      setError(err.message | 'Failed to record payment');
     } finally {
       setIsLoading(false);
     }
@@ -433,7 +433,7 @@ const MakePayments = () => {
       </div>
 
       <div className="text-xs text-gray-500 text-center">
-        Debug: Tenant ID: {tenantId} | Component: MakePayments | Last Updated: {new Date().toLocaleTimeString()}
+        Debug: Tenant ID: {tenantId} | Component: MakePayments
       </div>
     </div>
   );

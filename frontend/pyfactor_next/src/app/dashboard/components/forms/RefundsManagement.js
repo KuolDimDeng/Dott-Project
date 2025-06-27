@@ -95,7 +95,7 @@ const RefundsManagement = () => {
       const totalAmount = mockData
         .filter(r => r.status !== 'rejected')
         .reduce((sum, r) => sum + r.amount, 0);
-      const approved = mockData.filter(r => r.status === 'approved' || r.status === 'processed').length;
+      const approved = mockData.filter(r => r.status === 'approved' | r.status === 'processed').length;
       const total = mockData.length;
 
       setStats({
@@ -107,7 +107,7 @@ const RefundsManagement = () => {
       logger.info('[RefundsManagement] Data loaded successfully');
     } catch (err) {
       logger.error('[RefundsManagement] Error fetching data:', err);
-      setError(err.message || 'Failed to load refunds');
+      setError(err.message | 'Failed to load refunds');
     } finally {
       setIsLoading(false);
     }
@@ -133,7 +133,7 @@ const RefundsManagement = () => {
     };
     
     return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[status] || 'bg-gray-100 text-gray-800'}`}>
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[status] | 'bg-gray-100 text-gray-800'}`}>
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
     );
@@ -400,7 +400,7 @@ const RefundsManagement = () => {
       )}
 
       <div className="text-xs text-gray-500 text-center">
-        Debug: Tenant ID: {tenantId} | Component: RefundsManagement | Last Updated: {new Date().toLocaleTimeString()}
+        Debug: Tenant ID: {tenantId} | Component: RefundsManagement
       </div>
     </div>
   );

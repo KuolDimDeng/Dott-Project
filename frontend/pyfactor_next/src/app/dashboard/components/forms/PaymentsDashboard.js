@@ -246,7 +246,7 @@ const PaymentsDashboard = () => {
       </div>
 
       <div className="text-xs text-gray-500 text-center mt-4">
-        Debug: Tenant ID: {tenantId} | Component: PaymentsDashboard | Last Updated: {new Date().toLocaleTimeString()}
+        Debug: Tenant ID: {tenantId} | Component: PaymentsDashboard
       </div>
     </div>
   );

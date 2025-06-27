@@ -100,7 +100,7 @@ const PaymentMethods = () => {
       logger.info('[PaymentMethods] Payment methods loaded successfully');
     } catch (err) {
       logger.error('[PaymentMethods] Error fetching payment methods:', err);
-      setError(err.message || 'Failed to load payment methods');
+      setError(err.message | 'Failed to load payment methods');
     } finally {
       setIsLoading(false);
     }
@@ -138,7 +138,7 @@ const PaymentMethods = () => {
       name: method.name,
       type: method.type,
       accountNumber: method.accountNumber.replace('****', ''),
-      routingNumber: method.routingNumber || '',
+      routingNumber: method.routingNumber | '',
       bankName: method.bankName,
       isDefault: method.isDefault,
       isActive: method.isActive
@@ -176,7 +176,7 @@ const PaymentMethods = () => {
       setTimeout(() => setSuccessMessage(''), 5000);
     } catch (err) {
       logger.error('[PaymentMethods] Error saving payment method:', err);
-      setError(err.message || 'Failed to save payment method');
+      setError(err.message | 'Failed to save payment method');
     } finally {
       setIsLoading(false);
     }
@@ -201,7 +201,7 @@ const PaymentMethods = () => {
       setTimeout(() => setSuccessMessage(''), 5000);
     } catch (err) {
       logger.error('[PaymentMethods] Error deleting payment method:', err);
-      setError(err.message || 'Failed to delete payment method');
+      setError(err.message | 'Failed to delete payment method');
     } finally {
       setIsLoading(false);
     }
@@ -217,7 +217,7 @@ const PaymentMethods = () => {
       square: '⬛',
       other: '💰'
     };
-    return icons[type] || '💰';
+    return icons[type] | '💰';
   };
 
   if (isLoading && !showAddModal) {
@@ -273,7 +273,7 @@ const PaymentMethods = () => {
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">{method.name}</h3>
                   <p className="text-sm text-gray-500">
-                    {methodTypes.find(t => t.value === method.type)?.label || method.type}
+                    {methodTypes.find(t => t.value === method.type)?.label | method.type}
                   </p>
                 </div>
               </div>
@@ -468,7 +468,7 @@ const PaymentMethods = () => {
       )}
 
       <div className="text-xs text-gray-500 text-center">
-        Debug: Tenant ID: {tenantId} | Component: PaymentMethods | Last Updated: {new Date().toLocaleTimeString()}
+        Debug: Tenant ID: {tenantId} | Component: PaymentMethods
       </div>
     </div>
   );

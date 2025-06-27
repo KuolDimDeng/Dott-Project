@@ -94,7 +94,7 @@ const PaymentPlans = () => {
       logger.info('[PaymentPlans] Plans loaded successfully');
     } catch (err) {
       logger.error('[PaymentPlans] Error fetching plans:', err);
-      setError(err.message || 'Failed to load payment plans');
+      setError(err.message | 'Failed to load payment plans');
     } finally {
       setIsLoading(false);
     }
@@ -374,7 +374,7 @@ const PaymentPlans = () => {
       )}
 
       <div className="text-xs text-gray-500 text-center">
-        Debug: Tenant ID: {tenantId} | Component: PaymentPlans | Last Updated: {new Date().toLocaleTimeString()}
+        Debug: Tenant ID: {tenantId} | Component: PaymentPlans
       </div>
     </div>
   );

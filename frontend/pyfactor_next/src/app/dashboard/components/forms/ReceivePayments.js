@@ -500,7 +500,7 @@ const PaymentForm = ({ invoices, customers }) => {
       </div>
 
       <div className="text-xs text-gray-500 text-center">
-        Debug: Tenant ID: {tenantId} | Component: ReceivePayments | Stripe: {stripe ? 'Loaded' : 'Loading...'} | Last Updated: {new Date().toLocaleTimeString()}
+        Debug: Tenant ID: {tenantId} | Component: ReceivePayments | Stripe: {stripe ? 'Loaded' : 'Loading...'}
       </div>
     </div>
   );

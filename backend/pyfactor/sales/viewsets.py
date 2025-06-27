@@ -10,6 +10,7 @@ from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from decimal import Decimal
 from django.utils import timezone
+from django.http import FileResponse, HttpResponse
 
 from .models import SalesOrder, SalesOrderItem, Invoice, Estimate
 from .serializers_new import (
@@ -18,6 +19,7 @@ from .serializers_new import (
     InvoiceSerializer,
     EstimateSerializer
 )
+from .utils import generate_invoice_pdf
 from pyfactor.logging_config import get_logger
 
 logger = get_logger()
@@ -140,6 +142,45 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             'balance_due': str(invoice.balance_due),
             'status': invoice.status
         })
+    
+    @action(detail=True, methods=['get'])
+    def pdf(self, request, pk=None):
+        """Generate and return PDF for invoice."""
+        try:
+            # Get the invoice with related data
+            # Note: TenantAwareModel might not have 'tenant' as a direct relation
+            invoice = Invoice.objects.select_related(
+                'customer'
+            ).prefetch_related(
+                'items__product',
+                'items__service'
+            ).get(pk=pk)
+            
+            # Generate PDF
+            pdf_buffer = generate_invoice_pdf(invoice)
+            
+            # Create response
+            filename = f"invoice_{invoice.invoice_num}.pdf"
+            response = HttpResponse(
+                pdf_buffer.getvalue(),
+                content_type='application/pdf'
+            )
+            response['Content-Disposition'] = f'inline; filename="{filename}"'
+            
+            logger.info(f"Generated PDF for invoice {invoice.invoice_num}")
+            return response
+            
+        except Invoice.DoesNotExist:
+            return Response(
+                {'error': 'Invoice not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f"Error generating PDF for invoice {pk}: {str(e)}")
+            return Response(
+                {'error': 'Failed to generate PDF'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class EstimateViewSet(viewsets.ModelViewSet):

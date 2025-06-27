@@ -101,7 +101,7 @@ const PaymentGateways = () => {
       logger.info('[PaymentGateways] Gateways loaded successfully');
     } catch (err) {
       logger.error('[PaymentGateways] Error fetching gateways:', err);
-      setError(err.message || 'Failed to load payment gateways');
+      setError(err.message | 'Failed to load payment gateways');
     } finally {
       setIsLoading(false);
     }
@@ -331,7 +331,7 @@ const PaymentGateways = () => {
       )}
 
       <div className="text-xs text-gray-500 text-center">
-        Debug: Tenant ID: {tenantId} | Component: PaymentGateways | Last Updated: {new Date().toLocaleTimeString()}
+        Debug: Tenant ID: {tenantId} | Component: PaymentGateways
       </div>
     </div>
   );

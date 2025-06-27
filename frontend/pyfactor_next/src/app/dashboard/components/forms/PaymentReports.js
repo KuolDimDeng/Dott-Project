@@ -91,7 +91,7 @@ const PaymentReports = () => {
       logger.info('[PaymentReports] Report data loaded successfully');
     } catch (err) {
       logger.error('[PaymentReports] Error fetching report data:', err);
-      setError(err.message || 'Failed to load report data');
+      setError(err.message | 'Failed to load report data');
     } finally {
       setIsLoading(false);
     }
@@ -326,7 +326,7 @@ const PaymentReports = () => {
       </div>
 
       <div className="text-xs text-gray-500 text-center">
-        Debug: Tenant ID: {tenantId} | Component: PaymentReports | Last Updated: {new Date().toLocaleTimeString()}
+        Debug: Tenant ID: {tenantId} | Component: PaymentReports
       </div>
     </div>
   );

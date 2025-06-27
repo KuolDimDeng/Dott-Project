@@ -77,7 +77,7 @@ const PaymentReconciliation = () => {
       logger.info('[PaymentReconciliation] Data loaded successfully');
     } catch (err) {
       logger.error('[PaymentReconciliation] Error fetching data:', err);
-      setError(err.message || 'Failed to load reconciliation data');
+      setError(err.message | 'Failed to load reconciliation data');
     } finally {
       setIsLoading(false);
     }
@@ -126,8 +126,8 @@ const PaymentReconciliation = () => {
     };
     
     return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[status] || 'bg-gray-100 text-gray-800'}`}>
-        {labels[status] || status}
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[status] | 'bg-gray-100 text-gray-800'}`}>
+        {labels[status] | status}
       </span>
     );
   };
@@ -246,13 +246,13 @@ const PaymentReconciliation = () => {
                       {new Date(item.date).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {item.bankStatement?.reference || '-'}
+                      {item.bankStatement?.reference | '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {item.bankStatement ? formatCurrency(item.bankStatement.amount) : '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {item.systemRecord?.reference || '-'}
+                      {item.systemRecord?.reference | '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {item.systemRecord ? formatCurrency(item.systemRecord.amount) : '-'}
@@ -276,7 +276,7 @@ const PaymentReconciliation = () => {
       </div>
 
       <div className="text-xs text-gray-500 text-center">
-        Debug: Tenant ID: {tenantId} | Component: PaymentReconciliation | Last Updated: {new Date().toLocaleTimeString()}
+        Debug: Tenant ID: {tenantId} | Component: PaymentReconciliation
       </div>
     </div>
   );

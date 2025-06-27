@@ -1,6 +1,7 @@
 
 #/Users/kuoldeng/projectx/backend/pyfactor/sales/utils.py
 from datetime import datetime, date, timedelta
+from decimal import Decimal
 from finance.models import Account, AccountType, FinanceTransaction
 from django.db import IntegrityError, connections, transaction as db_transaction
 from finance.account_types import ACCOUNT_TYPES
@@ -172,6 +173,199 @@ def generate_pdf(estimate):
         return buffer
     except Exception as e:
         logger.exception("Error generating PDF for estimate %s: %s", estimate.id, str(e))
+        raise
+
+
+def generate_invoice_pdf(invoice):
+    """Generate PDF for invoice with proper formatting"""
+    logger.debug("Starting PDF generation for invoice: %s", invoice.id)
+    buffer = BytesIO()
+    try:
+        p = canvas.Canvas(buffer, pagesize=letter)
+        width, height = letter
+
+        # Set up styles
+        styles = getSampleStyleSheet()
+        title_style = styles['Heading1']
+        normal_style = styles['Normal']
+
+        # Draw invoice header
+        p.setFont("Helvetica-Bold", 20)
+        p.drawString(40, height - 40, "INVOICE")
+        
+        # Draw invoice details on the right
+        p.setFont("Helvetica", 10)
+        p.drawRightString(width - 40, height - 40, f"Invoice #: {invoice.invoice_num}")
+        p.drawRightString(width - 40, height - 55, f"Date: {invoice.date.strftime('%Y-%m-%d')}")
+        p.drawRightString(width - 40, height - 70, f"Due Date: {invoice.due_date.strftime('%Y-%m-%d')}")
+        
+        # Draw status
+        status_color = colors.green if invoice.status == 'paid' else colors.orange if invoice.status == 'sent' else colors.grey
+        p.setFillColor(status_color)
+        p.setFont("Helvetica-Bold", 12)
+        p.drawRightString(width - 40, height - 90, invoice.status.upper())
+        p.setFillColor(colors.black)
+
+        # Draw business info (if available through tenant)
+        # Note: TenantAwareModel stores tenant_id, might need to fetch tenant separately
+        p.setFont("Helvetica", 10)
+        y_pos = height - 120
+        # For now, we'll use a placeholder. In production, you might want to fetch tenant details
+        p.drawString(40, y_pos, "Your Business Name")
+        y_pos -= 15
+        # You can extend this to fetch actual tenant/business details if needed
+
+        # Draw customer details
+        y_pos -= 20
+        p.setFont("Helvetica-Bold", 10)
+        p.drawString(40, y_pos, "Bill To:")
+        p.setFont("Helvetica", 10)
+        y_pos -= 15
+        
+        # Format customer name
+        if hasattr(invoice.customer, 'first_name') and invoice.customer.first_name:
+            customer_name = f"{invoice.customer.first_name} {invoice.customer.last_name}"
+        else:
+            customer_name = invoice.customer.customerName or "Customer"
+        p.drawString(40, y_pos, customer_name)
+        y_pos -= 15
+        
+        if invoice.customer.street:
+            p.drawString(40, y_pos, invoice.customer.street)
+            y_pos -= 15
+        if invoice.customer.city:
+            p.drawString(40, y_pos, f"{invoice.customer.city}, {invoice.customer.billingState} {invoice.customer.postcode}")
+            y_pos -= 15
+
+        # Draw invoice items table
+        y_pos -= 30
+        data = [['Description', 'Quantity', 'Unit Price', 'Total']]
+        
+        subtotal = Decimal('0.00')
+        for item in invoice.items.all():
+            item_name = ""
+            if item.product:
+                item_name = item.product.name
+            elif item.service:
+                item_name = item.service.name
+            elif item.description:
+                item_name = item.description
+            
+            item_total = item.quantity * item.unit_price
+            subtotal += item_total
+            
+            data.append([
+                item_name,
+                str(item.quantity),
+                f"${item.unit_price:.2f}",
+                f"${item_total:.2f}"
+            ])
+
+        # Create the table
+        table = Table(data, colWidths=[250, 60, 80, 80])
+        table.setStyle(TableStyle([
+            # Header row
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('ALIGN', (1, 0), (1, -1), 'CENTER'),  # Quantity column
+            ('ALIGN', (2, 0), (-1, -1), 'RIGHT'),   # Price columns
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            # Data rows
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 1), (-1, -1), 9),
+            ('TOPPADDING', (0, 1), (-1, -1), 6),
+            ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.lightgrey),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ]))
+        
+        # Calculate table position
+        table_width, table_height = table.wrap(width - 80, height)
+        table.drawOn(p, 40, y_pos - table_height)
+        
+        # Draw totals
+        y_pos = y_pos - table_height - 20
+        p.setFont("Helvetica", 10)
+        
+        # Subtotal
+        p.drawString(350, y_pos, "Subtotal:")
+        p.drawRightString(width - 40, y_pos, f"${invoice.subtotal or subtotal:.2f}")
+        y_pos -= 20
+        
+        # Tax if applicable
+        if invoice.tax_total and invoice.tax_total > 0:
+            p.drawString(350, y_pos, "Tax:")
+            p.drawRightString(width - 40, y_pos, f"${invoice.tax_total:.2f}")
+            y_pos -= 20
+        
+        # Discount if applicable
+        if invoice.discount and invoice.discount > 0:
+            p.drawString(350, y_pos, "Discount:")
+            p.drawRightString(width - 40, y_pos, f"-${invoice.discount:.2f}")
+            y_pos -= 20
+        
+        # Total
+        p.setFont("Helvetica-Bold", 11)
+        p.drawString(350, y_pos, "Total:")
+        p.drawRightString(width - 40, y_pos, f"${invoice.total or invoice.totalAmount:.2f}")
+        y_pos -= 20
+        
+        # Amount paid and balance due
+        if invoice.amount_paid and invoice.amount_paid > 0:
+            p.setFont("Helvetica", 10)
+            p.drawString(350, y_pos, "Amount Paid:")
+            p.drawRightString(width - 40, y_pos, f"${invoice.amount_paid:.2f}")
+            y_pos -= 20
+            
+            p.setFont("Helvetica-Bold", 11)
+            p.drawString(350, y_pos, "Balance Due:")
+            p.drawRightString(width - 40, y_pos, f"${invoice.balance_due:.2f}")
+            y_pos -= 20
+
+        # Draw notes if any
+        if invoice.notes:
+            y_pos -= 20
+            p.setFont("Helvetica-Bold", 10)
+            p.drawString(40, y_pos, "Notes:")
+            y_pos -= 15
+            p.setFont("Helvetica", 9)
+            # Split notes into lines
+            lines = invoice.notes.split('\n')
+            for line in lines[:5]:  # Limit to 5 lines
+                if len(line) > 80:
+                    line = line[:80] + "..."
+                p.drawString(40, y_pos, line)
+                y_pos -= 12
+
+        # Draw terms if any
+        if invoice.terms:
+            y_pos -= 20
+            p.setFont("Helvetica-Bold", 10)
+            p.drawString(40, y_pos, "Terms:")
+            y_pos -= 15
+            p.setFont("Helvetica", 9)
+            # Split terms into lines
+            lines = invoice.terms.split('\n')
+            for line in lines[:3]:  # Limit to 3 lines
+                if len(line) > 80:
+                    line = line[:80] + "..."
+                p.drawString(40, y_pos, line)
+                y_pos -= 12
+
+        # Footer
+        p.setFont("Helvetica", 8)
+        p.drawCentredString(width/2, 30, "Thank you for your business!")
+
+        p.showPage()
+        p.save()
+        buffer.seek(0)
+        logger.debug("PDF generation successful for invoice: %s", invoice.id)
+        return buffer
+    except Exception as e:
+        logger.exception("Error generating PDF for invoice %s: %s", invoice.id, str(e))
         raise
     
 def get_or_create_user_database(user):

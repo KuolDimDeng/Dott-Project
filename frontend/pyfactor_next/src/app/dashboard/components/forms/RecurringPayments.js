@@ -102,7 +102,7 @@ const RecurringPayments = () => {
       logger.info('[RecurringPayments] Data loaded successfully');
     } catch (err) {
       logger.error('[RecurringPayments] Error fetching data:', err);
-      setError(err.message || 'Failed to load recurring payments');
+      setError(err.message | 'Failed to load recurring payments');
     } finally {
       setIsLoading(false);
     }
@@ -127,7 +127,7 @@ const RecurringPayments = () => {
     };
     
     return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[status] || 'bg-gray-100 text-gray-800'}`}>
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[status] | 'bg-gray-100 text-gray-800'}`}>
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
     );
@@ -265,7 +265,7 @@ const RecurringPayments = () => {
       </div>
 
       <div className="text-xs text-gray-500 text-center">
-        Debug: Tenant ID: {tenantId} | Component: RecurringPayments | Last Updated: {new Date().toLocaleTimeString()}
+        Debug: Tenant ID: {tenantId} | Component: RecurringPayments
       </div>
     </div>
   );
