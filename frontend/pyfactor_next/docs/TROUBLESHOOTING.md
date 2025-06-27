@@ -661,6 +661,77 @@ if (invalidItems.length > 0) {
 
 ---
 
+## 🔧 **Issue: Payment Menu Pages Not Rendering Due to Missing Navigation Events and Stripe Configuration**
+
+**Symptoms:**
+- Clicking on any Payment menu item (Dashboard, Receive Payments, etc.) does nothing
+- Other menus (Sales, Inventory) work fine but Payments menu is completely broken
+- Console shows navigation events firing: `[DashboardContent] Menu navigation event received: receive-payments`
+- But then Stripe error occurs: `Uncaught (in promise) IntegrationError: Missing value for Stripe(): apiKey should be a string`
+- Pages fail to render despite navigation working correctly
+
+**Root Cause Analysis:**
+1. **Initial Issue**: Payment menu items in `listItems.js` were missing event dispatching code that Sales/Inventory menus had
+   - Only had simple `onClick` handlers without `dispatchEvent` calls
+   - RenderMainContent.js listens for these events to update the view
+2. **Secondary Issue**: After fixing navigation, Stripe SDK initialization fails
+   - Payment components import Stripe SDK but no API key is configured
+   - Error prevents component from mounting even though navigation is correct
+   - Missing environment variable: `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+
+**Solution:**
+
+1. **Fix Navigation Events** (Already attempted):
+```javascript
+// In listItems.js - Add event dispatching to Payment menu items
+onClick: (value) => {
+  const navigationKey = `nav-${Date.now()}`;
+  const payload = { 
+    item: 'payments-dashboard', 
+    navigationKey,
+    originalItem: 'Dashboard'
+  };
+  window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+  window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+  if (typeof handlePaymentsClick === 'function') {
+    handlePaymentsClick('payments-dashboard');
+  }
+}
+```
+
+2. **Fix Stripe Configuration** (Root cause):
+```javascript
+// Add to .env.local or environment variables:
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_51Q2htSCI76krCII8aRwtdIr6Uw8xy2eVCt3chIXwm91lqQ9v5Qh78An79dwzOucriK97TFqvsIfwgb1BSXNyyCU600V6ZpIgul
+
+// In payment components that use Stripe:
+import { loadStripe } from '@stripe/stripe-js';
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
+```
+
+**Verification Steps:**
+1. Add Stripe publishable key to environment variables
+2. Restart Next.js development server to load new env vars
+3. Click on Payment menu items - they should now render
+4. Check console - no more Stripe initialization errors
+5. Verify payment forms can load Stripe elements
+
+**Prevention:**
+- Always check for required environment variables in components
+- Add environment variable documentation to README
+- Test payment flows with actual Stripe configuration
+- Include error boundaries to catch initialization failures gracefully
+
+**Related Issues:**
+- Environment variables must start with `NEXT_PUBLIC_` to be available client-side
+- Stripe components require initialization before rendering
+- Navigation fixes alone won't help if component initialization fails
+
+**Note:** The navigation event dispatching fix was correct and necessary, but the Stripe configuration issue was preventing the components from rendering even after navigation was fixed.
+
+---
+
 ## 📋 **Issue Reporting Template**
 
 When documenting new issues, use this format:

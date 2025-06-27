@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { DynamicStripeProvider } from '@/components/payment/DynamicStripeProvider';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
 import { CreditCardIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
@@ -30,8 +30,7 @@ const FieldTooltip = ({ text }) => {
   );
 };
 
-// Initialize Stripe with the publishable key
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
+// Initialize Stripe with the publishable key (moved inside component for better error handling)
 
 // Card element options
 const CARD_ELEMENT_OPTIONS = {
@@ -556,13 +555,13 @@ const ReceivePayments = () => {
   }, [fetchCustomers]);
 
   return (
-    <Elements stripe={stripePromise}>
+    <DynamicStripeProvider>
       <PaymentForm 
         invoices={invoices} 
         customers={customers}
         onCustomerChange={fetchInvoices}
       />
-    </Elements>
+    </DynamicStripeProvider>
   );
 };
 

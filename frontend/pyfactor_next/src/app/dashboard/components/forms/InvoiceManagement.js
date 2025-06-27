@@ -1060,7 +1060,7 @@ const InvoiceManagement = () => {
                       {filterItems(salesOrders).map((order) => (
                         <tr key={order.id} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {format(new Date(order.order_date), 'MMM dd, yyyy')}
+                            {order.order_date ? format(new Date(order.order_date), 'MMM dd, yyyy') : 'N/A'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {order.customer_name}
@@ -1154,7 +1154,7 @@ const InvoiceManagement = () => {
                       {filterItems(salesTransactions).map((transaction) => (
                         <tr key={transaction.id} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {format(new Date(transaction.order_date), 'MMM dd, yyyy')}
+                            {transaction.order_date ? format(new Date(transaction.order_date), 'MMM dd, yyyy') : 'N/A'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {transaction.customer_name}
@@ -1253,7 +1253,9 @@ const InvoiceManagement = () => {
                             {invoice.invoice_number}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {format(new Date(invoice.invoice_date), 'MMM dd, yyyy')}
+                            {invoice.issue_date || invoice.invoice_date ? 
+                              format(new Date(invoice.issue_date || invoice.invoice_date), 'MMM dd, yyyy') : 
+                              'N/A'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {invoice.customer_name}
