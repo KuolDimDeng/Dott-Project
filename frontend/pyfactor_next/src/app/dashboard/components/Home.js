@@ -19,6 +19,7 @@ import {
   ExclamationCircleIcon
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleIconSolid } from '@heroicons/react/24/solid';
+import DiagnosticPanel from './DiagnosticPanel';
 
 /**
  * Home Component
@@ -723,6 +724,11 @@ function Home({ userData, onNavigate }) {
           open={showSubscriptionPopup} 
           onClose={handleUpgradeDialogClose} 
         />
+        
+        {/* Temporary diagnostic panel - REMOVE AFTER DEBUGGING */}
+        <div className="mt-6">
+          <DiagnosticPanel />
+        </div>
       </div>
     </>
   );
