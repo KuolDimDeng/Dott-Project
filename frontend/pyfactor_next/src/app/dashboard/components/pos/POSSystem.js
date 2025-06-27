@@ -314,7 +314,9 @@ const POSSystem = ({ isOpen, onClose, onSaleCompleted }) => {
         customer_id: selectedCustomer,
         subtotal: totals.subtotal,
         discount_amount: totals.discountAmount,
+        discount_type: discountType,
         tax_amount: totals.taxAmount,
+        tax_rate: taxRate,
         total_amount: totals.total,
         payment_method: paymentMethod,
         notes,
@@ -322,17 +324,39 @@ const POSSystem = ({ isOpen, onClose, onSaleCompleted }) => {
         status: 'completed'
       };
 
-      // TODO: Replace with actual API call
-      logger.info('[POS] Processing sale:', saleData);
+      logger.info('[POS] Processing sale with backend:', saleData);
       
-      // Mock API delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Call actual backend API
+      const response = await fetch('/api/pos/complete-sale', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(saleData),
+      });
 
-      toast.success('Sale completed successfully!');
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`Sale failed: ${errorData}`);
+      }
+
+      const result = await response.json();
+      logger.info('[POS] Sale completed successfully:', result);
+
+      toast.success(`Sale completed! Invoice #${result.invoice_number || result.id}`);
+      
+      // Show success details
+      if (result.inventory_updated) {
+        toast.success('Inventory updated automatically');
+      }
+      if (result.accounting_entries_created) {
+        toast.success('Accounting entries recorded');
+      }
       
       // Notify parent and reset
       if (onSaleCompleted) {
-        onSaleCompleted(saleData);
+        onSaleCompleted(result);
       }
       
       // Reset form
@@ -341,7 +365,7 @@ const POSSystem = ({ isOpen, onClose, onSaleCompleted }) => {
       
     } catch (error) {
       logger.error('[POS] Error processing sale:', error);
-      toast.error('Failed to process sale. Please try again.');
+      toast.error(`Failed to process sale: ${error.message}`);
     } finally {
       setIsProcessing(false);
     }

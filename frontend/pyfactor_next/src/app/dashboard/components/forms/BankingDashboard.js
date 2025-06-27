@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { bankAccountsApi, bankTransactionsApi } from '@/services/api/banking';
+import { bankAccountsApi, bankTransactionsApi, bankingReportsApi } from '@/services/api/banking';
 import { logger } from '@/utils/logger';
 import { getSecureTenantId } from '@/utils/tenantUtils';
+import { toast } from 'react-hot-toast';
+import { format } from 'date-fns';
 import Link from 'next/link';
 import { 
   BanknotesIcon, 
@@ -13,7 +15,11 @@ import {
   QuestionMarkCircleIcon,
   LinkIcon,
   CreditCardIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  BuildingLibraryIcon,
+  ScaleIcon,
+  ChartBarIcon,
+  PlusIcon
 } from '@heroicons/react/24/outline';
 
 // Tooltip component for field help
@@ -41,64 +47,157 @@ const FieldTooltip = ({ text }) => {
 
 const BankingDashboard = () => {
   const [tenantId, setTenantId] = useState(null);
-  const [accounts, setAccounts] = useState([]);
-  const [transactions, setTransactions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [connectedBank, setConnectedBank] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedPeriod, setSelectedPeriod] = useState('month');
   
-  // Stats for summary cards
-  const [stats, setStats] = useState({
-    totalAccounts: 0,
-    totalBalance: 0,
-    monthlyIncoming: 0,
-    monthlyOutgoing: 0
+  // Dashboard metrics state
+  const [metrics, setMetrics] = useState({
+    accounts: { total: 0, connected: 0, totalBalance: 0, avgBalance: 0 },
+    transactions: { total: 0, thisMonth: 0, totalValue: 0, avgAmount: 0 },
+    reconciliation: { pending: 0, completed: 0, discrepancies: 0, lastDate: null },
+    cashFlow: { incoming: 0, outgoing: 0, netFlow: 0, projection: 0 }
   });
 
-  const fetchBankingAccounts = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await bankAccountsApi.getAll();
-      if (response.data.accounts && Array.isArray(response.data.accounts)) {
-        setAccounts(response.data.accounts);
-        if (response.data.accounts.length > 0) {
-          setConnectedBank(response.data.accounts[0].name.split(' ')[0]); // Assuming the bank name is the first word in the account name
-        } else {
-          setConnectedBank(null);
-        }
-      } else {
-        setAccounts([]);
-        setConnectedBank(null);
-      }
-    } catch (error) {
-      logger.error('Error fetching banking accounts:', error);
-      setError('Failed to fetch banking accounts. Please try again later.');
-      setConnectedBank(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  // Recent items for quick access
+  const [recentItems, setRecentItems] = useState({
+    accounts: [],
+    transactions: [],
+    reconciliations: [],
+    reports: []
+  });
 
-  const fetchRecentTransactions = useCallback(async () => {
-    if (!connectedBank) {
-      setTransactions([]);
-      return;
-    }
+  // Chart data
+  const [chartData, setChartData] = useState({
+    balanceTrend: [],
+    transactionTrend: [],
+    categoryBreakdown: [],
+    cashFlowTrend: []
+  });
+
+  // Fetch all dashboard data
+  const fetchDashboardData = useCallback(async () => {
     try {
-      const response = await bankTransactionsApi.getRecent({ limit: 10 });
-      if (response.data.transactions && Array.isArray(response.data.transactions)) {
-        setTransactions(response.data.transactions);
-      } else {
-        setTransactions([]);
+      setIsLoading(true);
+      
+      logger.info('[BankingDashboard] Fetching dashboard data...');
+      
+      // Fetch all data in parallel
+      const [
+        accountsRes,
+        transactionsRes,
+        reportsRes
+      ] = await Promise.allSettled([
+        bankAccountsApi.getAll(),
+        bankTransactionsApi.getAll(),
+        bankingReportsApi.getAccountBalances()
+      ]);
+
+      // Process bank accounts
+      if (accountsRes.status === 'fulfilled') {
+        const accountsData = accountsRes.value?.data || {};
+        const accounts = Array.isArray(accountsData) ? accountsData : (accountsData.accounts || []);
+        const connectedAccounts = accounts.filter(a => a.status === 'connected' || a.is_active !== false);
+        const totalBalance = accounts.reduce((sum, a) => sum + (parseFloat(a.balances?.current || a.balance || 0)), 0);
+        const avgBalance = accounts.length > 0 ? totalBalance / accounts.length : 0;
+        
+        setMetrics(prev => ({
+          ...prev,
+          accounts: {
+            total: accounts.length,
+            connected: connectedAccounts.length,
+            totalBalance: totalBalance,
+            avgBalance: avgBalance
+          }
+        }));
+
+        // Get recent accounts
+        setRecentItems(prev => ({
+          ...prev,
+          accounts: accounts.slice(0, 5).map(account => ({
+            id: account.account_id || account.id,
+            name: account.name,
+            balance: account.balances?.current || account.balance || 0,
+            type: account.type || 'checking',
+            status: account.status || 'active',
+            lastSync: account.last_sync || account.updated_at
+          }))
+        }));
       }
+
+      // Process transactions
+      if (transactionsRes.status === 'fulfilled') {
+        const transactionsData = transactionsRes.value?.data || {};
+        const transactions = Array.isArray(transactionsData) ? transactionsData : (transactionsData.transactions || []);
+        const thisMonth = new Date();
+        thisMonth.setDate(1);
+        const monthlyTransactions = transactions.filter(t => new Date(t.date) >= thisMonth);
+        const totalValue = transactions.reduce((sum, t) => sum + Math.abs(parseFloat(t.amount || 0)), 0);
+        const avgAmount = transactions.length > 0 ? totalValue / transactions.length : 0;
+        
+        // Calculate cash flow
+        const incoming = transactions.filter(t => parseFloat(t.amount || 0) > 0).reduce((sum, t) => sum + parseFloat(t.amount), 0);
+        const outgoing = transactions.filter(t => parseFloat(t.amount || 0) < 0).reduce((sum, t) => sum + Math.abs(parseFloat(t.amount)), 0);
+        
+        setMetrics(prev => ({
+          ...prev,
+          transactions: {
+            total: transactions.length,
+            thisMonth: monthlyTransactions.length,
+            totalValue: totalValue,
+            avgAmount: avgAmount
+          },
+          cashFlow: {
+            incoming: incoming,
+            outgoing: outgoing,
+            netFlow: incoming - outgoing,
+            projection: (incoming - outgoing) * 12 // Annual projection
+          }
+        }));
+
+        // Get recent transactions
+        setRecentItems(prev => ({
+          ...prev,
+          transactions: transactions.slice(0, 10).map(transaction => ({
+            id: transaction.id,
+            description: transaction.description || transaction.name,
+            amount: transaction.amount,
+            date: transaction.date,
+            type: transaction.type || 'transaction',
+            category: transaction.category || 'general',
+            status: transaction.status || 'posted'
+          }))
+        }));
+      }
+
+      // Mock reconciliation data (would come from actual API)
+      setMetrics(prev => ({
+        ...prev,
+        reconciliation: {
+          pending: 3,
+          completed: 12,
+          discrepancies: 1,
+          lastDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // 7 days ago
+        }
+      }));
+
+      // Mock recent reconciliations
+      setRecentItems(prev => ({
+        ...prev,
+        reconciliations: [
+          { id: 1, account: 'Business Checking', date: new Date(), status: 'completed', difference: 0 },
+          { id: 2, account: 'Savings Account', date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), status: 'pending', difference: 25.50 },
+          { id: 3, account: 'Credit Card', date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), status: 'discrepancy', difference: -15.00 }
+        ]
+      }));
+
+      logger.info('[BankingDashboard] Dashboard data loaded successfully');
     } catch (error) {
-      logger.error('Error fetching recent transactions:', error);
-      setError('Failed to fetch recent transactions. Please try again later.');
+      logger.error('[BankingDashboard] Error fetching dashboard data:', error);
+      toast.error('Failed to load banking dashboard data');
+    } finally {
+      setIsLoading(false);
     }
-  }, [connectedBank]);
+  }, [selectedPeriod]);
 
   // Fetch tenant ID on mount
   useEffect(() => {
@@ -111,41 +210,72 @@ const BankingDashboard = () => {
 
   useEffect(() => {
     if (tenantId) {
-      fetchBankingAccounts();
+      fetchDashboardData();
     }
-  }, [fetchBankingAccounts, tenantId]);
+  }, [fetchDashboardData, tenantId]);
 
-  useEffect(() => {
-    if (tenantId) {
-      fetchRecentTransactions();
-    }
-  }, [fetchRecentTransactions, tenantId]);
-
-  const handleDownload = async () => {
-    if (!connectedBank) {
-      setError('Please connect a bank account before downloading transactions.');
-      return;
-    }
-    try {
-      const response = await axiosInstance.get('/api/banking/download-transactions/', {
-        params: { start_date: startDate, end_date: endDate },
-        responseType: 'blob',
-      });
-
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `transactions_${startDate}_to_${endDate}.csv`);
-      document.body.appendChild(link);
-      link.click();
-    } catch (error) {
-      console.error('Error downloading transactions:', error);
-      setError('Failed to download transactions. Please try again.');
-    }
+  // Format currency
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount || 0);
   };
 
-  const filteredTransactions = transactions.filter((transaction) =>
-    transaction.description.toLowerCase().includes(searchTerm.toLowerCase())
+  // Metric Card Component
+  const MetricCard = ({ title, value, subValue, icon, color, trend }) => (
+    <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+      <div className="flex items-center justify-between mb-4">
+        <div className={`p-3 rounded-full bg-${color}-100 text-${color}-600`}>
+          {icon}
+        </div>
+        {trend !== undefined && (
+          <div className={`flex items-center text-sm ${trend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <span>{trend >= 0 ? '↑' : '↓'}</span>
+            <span className="ml-1">{Math.abs(trend)}%</span>
+          </div>
+        )}
+      </div>
+      <h3 className="text-gray-500 text-sm font-medium uppercase tracking-wider">{title}</h3>
+      <p className="text-2xl font-bold text-gray-900 mt-2">{value}</p>
+      {subValue && <p className="text-sm text-gray-600 mt-1">{subValue}</p>}
+    </div>
+  );
+
+  // Recent Items Component
+  const RecentItemsList = ({ title, items, type }) => (
+    <div className="bg-white rounded-lg shadow-md p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
+      <div className="space-y-3">
+        {items.length === 0 ? (
+          <p className="text-gray-500 text-sm">No {type} yet</p>
+        ) : (
+          items.map((item, index) => (
+            <div key={item.id} className="flex items-center justify-between py-2 border-b last:border-0">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-900">
+                  {item.name || item.description || item.account}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {item.type || item.category || item.status}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className={`text-sm font-medium ${
+                  item.amount ? (item.amount > 0 ? 'text-green-600' : 'text-red-600') : 'text-gray-900'
+                }`}>
+                  {item.amount ? formatCurrency(item.amount) : item.balance ? formatCurrency(item.balance) : ''}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {item.date ? format(new Date(item.date), 'MMM dd') : 
+                   item.lastSync ? format(new Date(item.lastSync), 'MMM dd') : ''}
+                </p>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
   );
 
   // Wait for tenant ID to load
@@ -157,198 +287,233 @@ const BankingDashboard = () => {
     );
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="text-red-600 p-4">
-        {error}
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white p-6 rounded-lg">
-      <div className="flex items-center mb-2">
-        <Bank size={40} weight="duotone" className="mr-3 text-indigo-600" />
-        <h1 className="text-2xl font-bold">Banking Dashboard</h1>
+    <div className="p-6 bg-gray-50">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-black mb-4 flex items-center">
+          <BanknotesIcon className="h-6 w-6 text-blue-600 mr-2" />
+          Banking Dashboard
+        </h1>
+        <p className="text-gray-600">Comprehensive overview of your banking accounts, transactions, and cash flow</p>
       </div>
-      
-      <p className="ml-12 mb-6 text-gray-600">
-        Manage your accounts, download transactions, and view recent activity
-      </p>
-      
-      <h2 className="text-xl font-semibold mb-4 text-indigo-600">
-        Connected Bank: {connectedBank || 'None'}
-        {!connectedBank && (
-          <span className="ml-2 font-normal text-base text-gray-700">
-            Please link a banking institution
-            <Link href="/connect-bank" className="ml-1 text-blue-600 hover:underline">here</Link>.
-          </span>
-        )}
-      </h2>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="col-span-1">
-          <div className="bg-white shadow rounded-lg h-full flex flex-col justify-between">
-            <div className="p-6 flex-grow">
-              <h3 className="text-lg font-semibold mb-4">Bank Accounts</h3>
-              {accounts.length > 0 ? (
-                <ul className="divide-y divide-gray-200">
-                  {accounts.map((account) => (
-                    <li key={account.account_id} className="py-3">
-                      <p className="font-medium">{account.name}</p>
-                      <p className="text-sm text-gray-600">Balance: ${account.balances?.current || 'N/A'}</p>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p>No accounts found. Please connect a bank account to get started.</p>
-              )}
+
+      {/* Period Selector */}
+      <div className="mb-6 flex justify-end">
+        <select
+          value={selectedPeriod}
+          onChange={(e) => setSelectedPeriod(e.target.value)}
+          className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="week">This Week</option>
+          <option value="month">This Month</option>
+          <option value="quarter">This Quarter</option>
+          <option value="year">This Year</option>
+        </select>
+      </div>
+
+      {/* Main Metrics Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <MetricCard
+          title="Bank Accounts"
+          value={metrics.accounts.total}
+          subValue={`${metrics.accounts.connected} connected`}
+          icon={<BuildingLibraryIcon className="h-7 w-7" />}
+          color="blue"
+        />
+        <MetricCard
+          title="Total Balance"
+          value={formatCurrency(metrics.accounts.totalBalance)}
+          subValue={`Avg: ${formatCurrency(metrics.accounts.avgBalance)}`}
+          icon={<BanknotesIcon className="h-7 w-7" />}
+          color="green"
+        />
+        <MetricCard
+          title="Transactions"
+          value={metrics.transactions.total}
+          subValue={`${metrics.transactions.thisMonth} this month`}
+          icon={<ArrowsRightLeftIcon className="h-7 w-7" />}
+          color="purple"
+        />
+        <MetricCard
+          title="Reconciliations"
+          value={metrics.reconciliation.completed}
+          subValue={`${metrics.reconciliation.pending} pending`}
+          icon={<ScaleIcon className="h-7 w-7" />}
+          color="yellow"
+        />
+      </div>
+
+      {/* Financial Overview */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <ArrowsRightLeftIcon className="h-5 w-5 mr-2 text-green-600" />
+            Cash Flow Overview
+          </h3>
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm text-gray-600">Money In</p>
+              <p className="text-2xl font-bold text-green-600">{formatCurrency(metrics.cashFlow.incoming)}</p>
             </div>
-            <div className="px-6 py-4 border-t border-gray-200">
-              <button 
-                onClick={fetchBankingAccounts}
-                className="flex items-center text-indigo-600 hover:text-indigo-800 border border-indigo-600 px-4 py-2 rounded-md"
-              >
-                <ArrowsClockwise size={20} weight="duotone" className="mr-2" />
-                Refresh Accounts
-              </button>
+            <div>
+              <p className="text-sm text-gray-600">Money Out</p>
+              <p className="text-2xl font-bold text-red-600">{formatCurrency(metrics.cashFlow.outgoing)}</p>
             </div>
-          </div>
-        </div>
-        
-        <div className="col-span-1">
-          <div className="bg-white shadow rounded-lg h-full flex flex-col justify-between">
-            <div className="p-6 flex-grow">
-              <h3 className="text-lg font-semibold mb-4">Download Transactions</h3>
-              
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className={`w-full p-2 border border-gray-300 rounded-md ${!connectedBank ? 'bg-gray-100 cursor-not-allowed' : 'focus:ring-blue-500 focus:border-blue-500'}`}
-                  disabled={!connectedBank}
-                />
-              </div>
-              
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className={`w-full p-2 border border-gray-300 rounded-md ${!connectedBank ? 'bg-gray-100 cursor-not-allowed' : 'focus:ring-blue-500 focus:border-blue-500'}`}
-                  disabled={!connectedBank}
-                />
-              </div>
-            </div>
-            
-            <div className="px-6 py-4 border-t border-gray-200">
-              <button
-                onClick={handleDownload}
-                disabled={!connectedBank || !startDate || !endDate}
-                className={`w-full flex justify-center items-center px-4 py-2 rounded-md transition-colors ${
-                  !connectedBank || !startDate || !endDate
-                    ? 'bg-gray-300 cursor-not-allowed text-gray-500'
-                    : 'bg-blue-600 hover:bg-blue-700 text-white'
-                }`}
-              >
-                <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
-                Download Transactions
-              </button>
+            <div>
+              <p className="text-sm text-gray-600">Net Flow</p>
+              <p className={`text-xl font-semibold ${metrics.cashFlow.netFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {formatCurrency(metrics.cashFlow.netFlow)}
+              </p>
             </div>
           </div>
         </div>
-        
-        <div className="col-span-1 md:col-span-2">
-          <div className="bg-white shadow rounded-lg h-full flex flex-col justify-between">
-            <div className="p-6 flex-grow">
-              <h3 className="text-lg font-semibold mb-4">Recent Transactions</h3>
-              
-              <div className="relative mb-4">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <MagnifyingGlass size={20} weight="duotone" className="text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  placeholder="Search transactions..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className={`w-full pl-10 p-2 border border-gray-300 rounded-md ${!connectedBank ? 'bg-gray-100 cursor-not-allowed' : 'focus:ring-indigo-500 focus:border-indigo-500'}`}
-                  disabled={!connectedBank}
-                />
-              </div>
-              
-              {connectedBank ? (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Description
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Date
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Amount
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {filteredTransactions.length > 0 ? (
-                        filteredTransactions.map((transaction) => (
-                          <tr key={transaction.id} className="hover:bg-gray-50">
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {transaction.description}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
-                              {new Date(transaction.date).toLocaleDateString()}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
-                              ${transaction.amount.toFixed(2)}
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">
-                            No transactions found.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p className="text-gray-600">Please connect a bank account to view recent transactions.</p>
-              )}
+
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <ChartBarIcon className="h-5 w-5 mr-2 text-blue-600" />
+            Account Summary
+          </h3>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Connected Accounts</span>
+              <span className="text-sm font-semibold text-blue-600">{metrics.accounts.connected}</span>
             </div>
-            
-            <div className="px-6 py-4 border-t border-gray-200">
-              <button
-                onClick={fetchRecentTransactions}
-                disabled={!connectedBank}
-                className={`flex items-center px-4 py-2 rounded-md ${
-                  !connectedBank
-                    ? 'border border-gray-300 text-gray-400 cursor-not-allowed'
-                    : 'text-indigo-600 hover:text-indigo-800 border border-indigo-600'
-                }`}
-              >
-                <ArrowsClockwise size={20} weight="duotone" className="mr-2" />
-                Refresh Transactions
-              </button>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Total Balance</span>
+              <span className="text-sm font-semibold text-green-600">{formatCurrency(metrics.accounts.totalBalance)}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Recent Transactions</span>
+              <span className="text-sm font-semibold text-purple-600">{metrics.transactions.thisMonth}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Pending Reconciliations</span>
+              <span className="text-sm font-semibold text-yellow-600">{metrics.reconciliation.pending}</span>
             </div>
           </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <ScaleIcon className="h-5 w-5 mr-2 text-purple-600" />
+            Reconciliation Status
+          </h3>
+          <div className="space-y-3">
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-sm text-gray-600">Completion Rate</span>
+                <span className="text-sm font-semibold">
+                  {metrics.reconciliation.completed + metrics.reconciliation.pending > 0 
+                    ? `${Math.round((metrics.reconciliation.completed / (metrics.reconciliation.completed + metrics.reconciliation.pending)) * 100)}%`
+                    : '0%'}
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-green-600 h-2 rounded-full"
+                  style={{ 
+                    width: `${metrics.reconciliation.completed + metrics.reconciliation.pending > 0 
+                      ? (metrics.reconciliation.completed / (metrics.reconciliation.completed + metrics.reconciliation.pending)) * 100 
+                      : 0}%` 
+                  }}
+                ></div>
+              </div>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-gray-500">Last Reconciliation</p>
+              <p className="text-sm font-medium">
+                {metrics.reconciliation.lastDate 
+                  ? format(metrics.reconciliation.lastDate, 'MMM dd, yyyy') 
+                  : 'Not available'}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Items */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+        <RecentItemsList 
+          title={<span className="flex items-center"><BuildingLibraryIcon className="h-5 w-5 mr-2 text-blue-600" />Bank Accounts</span>} 
+          items={recentItems.accounts} 
+          type="accounts"
+        />
+        <RecentItemsList 
+          title={<span className="flex items-center"><ArrowsRightLeftIcon className="h-5 w-5 mr-2 text-purple-600" />Recent Transactions</span>} 
+          items={recentItems.transactions} 
+          type="transactions"
+        />
+        <RecentItemsList 
+          title={<span className="flex items-center"><ScaleIcon className="h-5 w-5 mr-2 text-yellow-600" />Reconciliations</span>} 
+          items={recentItems.reconciliations} 
+          type="reconciliations"
+        />
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <LinkIcon className="h-5 w-5 mr-2 text-indigo-600" />
+            Connection Status
+          </h3>
+          <div className="space-y-3">
+            {metrics.accounts.connected > 0 ? (
+              <div className="flex items-center text-green-600">
+                <CheckCircleIcon className="h-5 w-5 mr-2" />
+                <span className="text-sm font-medium">Banks Connected</span>
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-gray-500 text-sm mb-2">No banks connected</p>
+                <Link 
+                  href="/connect-bank" 
+                  className="inline-flex items-center px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  <LinkIcon className="h-4 w-4 mr-1" />
+                  Connect Bank
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <PlusIcon className="h-5 w-5 mr-2 text-blue-600" />
+          Quick Actions
+        </h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <button className="p-4 text-center border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors group">
+            <LinkIcon className="h-8 w-8 mb-2 mx-auto text-gray-400 group-hover:text-blue-600 transition-colors" />
+            <span className="text-sm text-gray-700">Connect Bank</span>
+          </button>
+          <button className="p-4 text-center border-2 border-dashed border-gray-300 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-colors group">
+            <ArrowsRightLeftIcon className="h-8 w-8 mb-2 mx-auto text-gray-400 group-hover:text-purple-600 transition-colors" />
+            <span className="text-sm text-gray-700">View Transactions</span>
+          </button>
+          <button className="p-4 text-center border-2 border-dashed border-gray-300 rounded-lg hover:border-yellow-500 hover:bg-yellow-50 transition-colors group">
+            <ScaleIcon className="h-8 w-8 mb-2 mx-auto text-gray-400 group-hover:text-yellow-600 transition-colors" />
+            <span className="text-sm text-gray-700">Reconcile</span>
+          </button>
+          <button className="p-4 text-center border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition-colors group">
+            <ArrowDownTrayIcon className="h-8 w-8 mb-2 mx-auto text-gray-400 group-hover:text-green-600 transition-colors" />
+            <span className="text-sm text-gray-700">Download</span>
+          </button>
+          <button className="p-4 text-center border-2 border-dashed border-gray-300 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition-colors group">
+            <ChartBarIcon className="h-8 w-8 mb-2 mx-auto text-gray-400 group-hover:text-indigo-600 transition-colors" />
+            <span className="text-sm text-gray-700">Reports</span>
+          </button>
+          <button className="p-4 text-center border-2 border-dashed border-gray-300 rounded-lg hover:border-pink-500 hover:bg-pink-50 transition-colors group">
+            <CreditCardIcon className="h-8 w-8 mb-2 mx-auto text-gray-400 group-hover:text-pink-600 transition-colors" />
+            <span className="text-sm text-gray-700">Payment Gateway</span>
+          </button>
         </div>
       </div>
     </div>
