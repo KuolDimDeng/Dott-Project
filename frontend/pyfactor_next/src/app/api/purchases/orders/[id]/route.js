@@ -17,7 +17,7 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: 'No session found' }, { status: 401 });
     }
 
-    const url = `${BACKEND_URL}/api/purchases/orders/${id}/`;
+    const url = `${BACKEND_URL}/api/purchases/purchase-orders/${id}/`;
     logger.info('[PurchaseOrderProxy] Forwarding GET request to:', url);
 
     const response = await fetch(url, {
@@ -74,7 +74,7 @@ export async function PUT(request, { params }) {
     const body = await request.json();
     logger.info('[PurchaseOrderProxy] Request body:', JSON.stringify(body, null, 2));
 
-    const url = `${BACKEND_URL}/api/purchases/orders/${id}/`;
+    const url = `${BACKEND_URL}/api/purchases/purchase-orders/${id}/`;
     logger.info('[PurchaseOrderProxy] Forwarding PUT request to:', url);
 
     const response = await fetch(url, {
@@ -129,7 +129,7 @@ export async function DELETE(request, { params }) {
       return NextResponse.json({ error: 'No session found' }, { status: 401 });
     }
 
-    const url = `${BACKEND_URL}/api/purchases/orders/${id}/`;
+    const url = `${BACKEND_URL}/api/purchases/purchase-orders/${id}/`;
     logger.info('[PurchaseOrderProxy] Forwarding DELETE request to:', url);
 
     const response = await fetch(url, {

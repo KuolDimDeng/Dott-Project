@@ -16,7 +16,7 @@ export async function GET(request) {
       return NextResponse.json({ error: 'No session found' }, { status: 401 });
     }
 
-    const url = `${BACKEND_URL}/api/purchases/orders/`;
+    const url = `${BACKEND_URL}/api/purchases/purchase-orders/`;
     logger.info('[PurchaseOrderProxy] Forwarding GET request to:', url);
 
     const response = await fetch(url, {
@@ -75,7 +75,7 @@ export async function POST(request) {
     const body = await request.json();
     logger.info('[PurchaseOrderProxy] Request body:', JSON.stringify(body, null, 2));
 
-    const url = `${BACKEND_URL}/api/purchases/orders/`;
+    const url = `${BACKEND_URL}/api/purchases/purchase-orders/`;
     logger.info('[PurchaseOrderProxy] Forwarding POST request to:', url);
 
     const response = await fetch(url, {
