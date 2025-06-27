@@ -133,6 +133,130 @@ const InventoryIcons = {
 
 const MENU_WIDTH = 258; // Increased to match the drawer width (260px, leaving 2px for borders)
 
+// Define createOptions outside the component so it can be exported
+const createOptions = [
+  {
+    label: 'Create New',
+    description: 'Create a new transaction, invoice, or entity',
+    icon: (props) => (
+      <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+      </svg>
+    ),
+    onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu) => {
+      console.log('Create New button clicked');
+      if (isIconOnly) {
+        handleDrawerClose();
+      }
+      // Use handleShowCreateMenu instead of showing a local dropdown
+      if (typeof handleShowCreateMenu === 'function') {
+        handleShowCreateMenu();
+      } else {
+        console.error('handleShowCreateMenu is not a function');
+      }
+    }
+  },
+  {
+    label: 'Transaction',
+    description: 'Create a new transaction',
+    icon: (props) => (
+      <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+      </svg>
+    ),
+    onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
+      if (typeof handleShowCreateOptions === 'function') {
+        handleShowCreateOptions('Transaction');
+      }
+    }
+  },
+  {
+    label: 'Sales',
+    description: 'Record a sale transaction quickly',
+    icon: (props) => (
+      <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+      </svg>
+    ),
+    onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
+      if (typeof handleShowCreateOptions === 'function') {
+        handleShowCreateOptions('Sales');
+      }
+    },
+    value: 'Sales'
+  },
+  {
+    label: 'Product',
+    icon: <NavIcons.Inventory className="w-4 h-4" />,
+    onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
+      if (typeof handleShowCreateOptions === 'function') {
+        handleShowCreateOptions('Product');
+      }
+    },
+    value: 'Product'
+  },
+  {
+    label: 'Service',
+    icon: <NavIcons.Receipt className="w-4 h-4" />,
+    onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
+      if (typeof handleShowCreateOptions === 'function') {
+        handleShowCreateOptions('Service');
+      }
+    },
+    value: 'Service'
+  },
+  {
+    label: 'Invoice',
+    icon: <NavIcons.Description className="w-4 h-4" />,
+    onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
+      if (typeof handleShowCreateOptions === 'function') {
+        handleShowCreateOptions('Invoice');
+      }
+    },
+    value: 'Invoice'
+  },
+  {
+    label: 'Bill',
+    icon: <NavIcons.Cart className="w-4 h-4" />,
+    onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
+      if (typeof handleShowCreateOptions === 'function') {
+        handleShowCreateOptions('Bill');
+      }
+    },
+    value: 'Bill'
+  },
+  {
+    label: 'Estimate',
+    icon: <NavIcons.Reports className="w-4 h-4" />,
+    onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
+      if (typeof handleShowCreateOptions === 'function') {
+        handleShowCreateOptions('Estimate');
+      }
+    },
+    value: 'Estimate'
+  },
+  {
+    label: 'Customer',
+    icon: <NavIcons.People className="w-4 h-4" />,
+    onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
+      if (typeof handleShowCreateOptions === 'function') {
+        handleShowCreateOptions('Customer');
+      }
+    },
+    value: 'Customer'
+  },
+  {
+    label: 'Vendor',
+    icon: <NavIcons.Contacts className="w-4 h-4" />,
+    onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
+      if (typeof handleShowCreateOptions === 'function') {
+        handleShowCreateOptions('Vendor');
+      }
+    },
+    value: 'Vendor'
+  },
+];
+
 const MainListItems = ({
   handleMainDashboardClick,
   handleHomeClick,
@@ -1940,129 +2064,6 @@ const MainListItems = ({
 
   // Use menuItems directly (Settings is in the user dropdown menu)
   const finalMenuItems = menuItems;
-
-  const createOptions = [
-    {
-      label: 'Create New',
-      description: 'Create a new transaction, invoice, or entity',
-      icon: (props) => (
-        <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-        </svg>
-      ),
-      onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu) => {
-        console.log('Create New button clicked');
-        if (isIconOnly) {
-          handleDrawerClose();
-        }
-        // Use handleShowCreateMenu instead of showing a local dropdown
-        if (typeof handleShowCreateMenu === 'function') {
-          handleShowCreateMenu();
-        } else {
-          console.error('handleShowCreateMenu is not a function');
-        }
-      }
-    },
-    {
-      label: 'Transaction',
-      description: 'Create a new transaction',
-      icon: (props) => (
-        <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-        </svg>
-      ),
-      onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
-        if (typeof handleShowCreateOptions === 'function') {
-          handleShowCreateOptions('Transaction');
-        }
-      }
-    },
-    {
-      label: 'Sales',
-      description: 'Record a sale transaction quickly',
-      icon: (props) => (
-        <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-        </svg>
-      ),
-      onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
-        if (typeof handleShowCreateOptions === 'function') {
-          handleShowCreateOptions('Sales');
-        }
-      },
-      value: 'Sales'
-    },
-    {
-      label: 'Product',
-      icon: <NavIcons.Inventory className="w-4 h-4" />,
-      onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
-        if (typeof handleShowCreateOptions === 'function') {
-          handleShowCreateOptions('Product');
-        }
-      },
-      value: 'Product'
-    },
-    {
-      label: 'Service',
-      icon: <NavIcons.Receipt className="w-4 h-4" />,
-      onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
-        if (typeof handleShowCreateOptions === 'function') {
-          handleShowCreateOptions('Service');
-        }
-      },
-      value: 'Service'
-    },
-    {
-      label: 'Invoice',
-      icon: <NavIcons.Description className="w-4 h-4" />,
-      onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
-        if (typeof handleShowCreateOptions === 'function') {
-          handleShowCreateOptions('Invoice');
-        }
-      },
-      value: 'Invoice'
-    },
-    {
-      label: 'Bill',
-      icon: <NavIcons.Cart className="w-4 h-4" />,
-      onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
-        if (typeof handleShowCreateOptions === 'function') {
-          handleShowCreateOptions('Bill');
-        }
-      },
-      value: 'Bill'
-    },
-    {
-      label: 'Estimate',
-      icon: <NavIcons.Reports className="w-4 h-4" />,
-      onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
-        if (typeof handleShowCreateOptions === 'function') {
-          handleShowCreateOptions('Estimate');
-        }
-      },
-      value: 'Estimate'
-    },
-    {
-      label: 'Customer',
-      icon: <NavIcons.People className="w-4 h-4" />,
-      onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
-        if (typeof handleShowCreateOptions === 'function') {
-          handleShowCreateOptions('Customer');
-        }
-      },
-      value: 'Customer'
-    },
-    {
-      label: 'Vendor',
-      icon: <NavIcons.Contacts className="w-4 h-4" />,
-      onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
-        if (typeof handleShowCreateOptions === 'function') {
-          handleShowCreateOptions('Vendor');
-        }
-      },
-      value: 'Vendor'
-    },
-  ];
 
   // Create a Tailwind CSS based collapsible menu component to replace MUI Collapse
   const CollapsibleMenu = ({ isOpen, children }) => (
