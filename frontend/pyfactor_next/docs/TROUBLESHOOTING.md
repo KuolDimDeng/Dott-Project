@@ -4,6 +4,110 @@
 
 ---
 
+# Frontend Component Issues
+
+## POS System - React Error #130 (undefined render)
+
+**Issue**: POS System fails to open with "Error Loading POS System" and React error #130.
+
+**Error Messages**:
+```
+Minified React error #130; visit https://react.dev/errors/130?args[]=undefined&args[]= 
+for the full message or use the non-minified dev environment for full errors
+```
+
+**Symptoms**:
+- Clicking "Sales" in Create New menu shows error boundary
+- Error message appears at bottom of content page
+- Console shows React error about rendering undefined
+
+**Root Cause**:
+- Headless UI Transition component incompatibility with `as={Fragment}` prop
+- Missing or undefined imports (BarcodeIcon from Heroicons)
+- Potential undefined logger references
+- React attempting to render undefined values
+
+**Solution**:
+1. Remove `as={Fragment}` from Transition components:
+   ```javascript
+   // Before
+   <Transition appear show={isOpen} as={Fragment}>
+   
+   // After
+   <Transition appear show={isOpen}>
+   ```
+
+2. Create custom BarcodeIcon if missing:
+   ```javascript
+   const BarcodeIcon = (props) => (
+     <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="..." />
+     </svg>
+   );
+   ```
+
+3. Add safe logger fallback:
+   ```javascript
+   const safeLogger = logger || { info: console.log, error: console.error };
+   ```
+
+4. Add null safety checks for all object properties:
+   ```javascript
+   // Use optional chaining and fallbacks
+   <span>${totals?.total || '0.00'}</span>
+   ```
+
+**Related Issues**:
+- Camera scanner CSP errors (doesn't affect USB scanners)
+- QR scanner library dynamic import for SSR compatibility
+
+**Files Changed**:
+- `/src/app/dashboard/components/pos/POSSystem.js`
+
+---
+
+## POS System - Camera Scanner CSP Errors
+
+**Issue**: Camera scanner shows CSP errors and "Camera not found" messages.
+
+**Error Messages**:
+```
+Content-Security-Policy: The page's settings blocked a worker script (worker-src) 
+at blob:https://dottapps.com/... from being executed because it violates the 
+following directive: "script-src 'self' 'unsafe-inline' 'unsafe-eval'..."
+
+Camera access denied: Camera not found.
+```
+
+**Symptoms**:
+- Camera Scanner button doesn't work
+- Console shows CSP worker-src violations
+- USB scanner still works fine
+
+**Root Cause**:
+- QR scanner library uses Web Workers with blob URLs
+- CSP policy doesn't allow worker-src blob: URLs
+- Browser security restrictions
+
+**Solution for USB Scanners** (Recommended):
+1. Use USB barcode scanners instead of camera
+2. Click in the search field and scan - it acts as keyboard input
+3. Scanner automatically sends Enter key after barcode
+
+**Solution for Camera Scanner** (Requires CSP update):
+1. Update next.config.js to allow blob: URLs for workers:
+   ```javascript
+   'worker-src': ["'self'", "blob:"],
+   ```
+
+2. Or disable camera scanner feature and use USB only
+
+**Workaround**:
+- USB scanners work without any CSP issues
+- Most retail environments prefer USB scanners for speed and reliability
+
+---
+
 # Database Migration Issues
 
 ## Missing Multiple Columns in sales_salesorder Table
