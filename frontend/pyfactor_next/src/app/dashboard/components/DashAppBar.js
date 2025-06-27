@@ -47,6 +47,7 @@ import { useRouter } from 'next/navigation';
 import DashboardLanguageSelector from './LanguageSelector';
 import { getSubscriptionPlanColor } from '@/utils/userAttributes';
 import { useMemoryOptimizer } from '@/utils/memoryManager';
+import { createOptions } from './lists/listItems';
 import { useNotification } from '@/context/NotificationContext';
 import { logger } from '@/utils/logger';
 import SubscriptionPopup from './SubscriptionPopup';
@@ -1564,110 +1565,22 @@ const DashAppBar = ({
               </button>
             </div>
             <ul className="space-y-1">
-              <li>
-                <button 
-                  className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 flex items-center"
-                  onClick={() => handleMenuItemClick('Transaction')}
-                >
-                  <span className="mr-2 text-primary-main">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                  </span>
-                  <span>Transaction</span>
-                </button>
-              </li>
-              <li>
-                <button 
-                  className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 flex items-center"
-                  onClick={() => handleMenuItemClick('Product')}
-                >
-                  <span className="mr-2 text-primary-main">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                    </svg>
-                  </span>
-                  <span>Product</span>
-                </button>
-              </li>
-              <li>
-                <button 
-                  className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 flex items-center"
-                  onClick={() => handleMenuItemClick('Service')}
-                >
-                  <span className="mr-2 text-primary-main">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  </span>
-                  <span>Service</span>
-                </button>
-              </li>
-              <li>
-                <button 
-                  className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 flex items-center"
-                  onClick={() => handleMenuItemClick('Invoice')}
-                >
-                  <span className="mr-2 text-primary-main">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
-                  </span>
-                  <span>Invoice</span>
-                </button>
-              </li>
-              <li>
-                <button 
-                  className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 flex items-center"
-                  onClick={() => handleMenuItemClick('Bill')}
-                >
-                  <span className="mr-2 text-primary-main">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                  </span>
-                  <span>Bill</span>
-                </button>
-              </li>
-              <li>
-                <button 
-                  className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 flex items-center"
-                  onClick={() => handleMenuItemClick('Estimate')}
-                >
-                  <span className="mr-2 text-primary-main">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  </span>
-                  <span>Estimate</span>
-                </button>
-              </li>
-              <li>
-                <button 
-                  className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 flex items-center"
-                  onClick={() => handleMenuItemClick('Customer')}
-                >
-                  <span className="mr-2 text-primary-main">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
-                  </span>
-                  <span>Customer</span>
-                </button>
-              </li>
-              <li>
-                <button 
-                  className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 flex items-center"
-                  onClick={() => handleMenuItemClick('Vendor')}
-                >
-                  <span className="mr-2 text-primary-main">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                  </span>
-                  <span>Vendor</span>
-                </button>
-              </li>
+              {createOptions.filter(option => option.label !== 'Create New').map((option, index) => (
+                <li key={index}>
+                  <button 
+                    className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 flex items-center"
+                    onClick={() => handleMenuItemClick(option.value || option.label)}
+                  >
+                    <span className="mr-2 text-primary-main">
+                      {typeof option.icon === 'function' 
+                        ? option.icon({ className: "w-5 h-5" })
+                        : option.icon
+                      }
+                    </span>
+                    <span>{option.label}</span>
+                  </button>
+                </li>
+              ))}
             </ul>
           </div>
         </>
