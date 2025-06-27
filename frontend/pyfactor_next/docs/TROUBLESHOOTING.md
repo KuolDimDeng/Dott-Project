@@ -953,6 +953,123 @@ if (!tenantId) {
 
 ---
 
+## 🔧 **Issue: Plaid Bank Connection Failing with CORS Errors**
+
+**Symptoms:**
+- Plaid bank connection fails when users click "Connect with Plaid"
+- Console error: `Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at https://api.dottapps.com/api/banking/link_token/`
+- Network tab shows CORS preflight errors for banking API calls
+- Tenant ID appears as `[object+Promise]` in API URLs
+- Headers like `X-Data-Source` causing CORS rejections
+- Bank connection form loads but connection process fails
+
+**Root Cause Analysis:**
+1. **Direct Backend Calls**: Frontend making direct HTTPS calls to Django backend
+   - `fetch('https://api.dottapps.com/api/banking/link_token/')` triggers CORS
+   - Browser blocks cross-origin requests for security
+2. **Async Tenant ID Issue**: Not awaiting `getSecureTenantId()` function
+   - `const tenantId = getSecureTenantId();` returns Promise object
+   - URLs contain `[object+Promise]` instead of actual tenant ID
+3. **Problematic Headers**: Custom headers like `X-Data-Source` trigger CORS preflight
+   - Backend doesn't handle preflight OPTIONS requests for these headers
+   - Browser blocks the actual request
+
+**Solution:**
+
+1. **Create Frontend API Proxy Routes** to avoid CORS:
+```javascript
+// /src/app/api/banking/link-token/route.js
+import { cookies } from 'next/headers';
+
+export async function POST(request) {
+  try {
+    const cookieStore = cookies();
+    const sidCookie = cookieStore.get('sid');
+    
+    if (!sidCookie) {
+      return Response.json({ error: 'No session found' }, { status: 401 });
+    }
+
+    const body = await request.json();
+    
+    // Forward to Django backend with session auth
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+    const response = await fetch(`${backendUrl}/api/banking/link_token/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Session ${sidCookie.value}`,
+      },
+      body: JSON.stringify(body),
+    });
+
+    const data = await response.json();
+    return Response.json(data);
+  } catch (error) {
+    return Response.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+```
+
+2. **Fix Async Tenant ID Handling** in banking.js:
+```javascript
+// ❌ WRONG - Returns Promise object
+const tenantId = getSecureTenantId();
+
+// ✅ CORRECT - Properly await the Promise
+const tenantId = await getSecureTenantId();
+```
+
+3. **Update API Client** to use frontend proxy:
+```javascript
+// ❌ OLD - Direct backend calls
+createLinkToken: (payload) => bankingApiInstance.post('/link_token/', payload)
+
+// ✅ NEW - Frontend proxy calls
+createLinkToken: (payload = {}) => {
+  return fetch('/api/banking/link-token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(payload)
+  }).then(response => response.json()).then(data => ({ data }));
+}
+```
+
+4. **Remove Problematic Headers**:
+```javascript
+// Remove these from request interceptors:
+// config.headers['X-Data-Source'] = 'AWS_RDS';
+// config.headers['X-Database-Only'] = 'true';
+```
+
+**Proxy Routes Created:**
+- `/api/banking/link-token` - Plaid link token creation
+- `/api/banking/exchange-token` - Plaid token exchange
+- `/api/banking/accounts` - Bank account operations
+- `/api/banking/accounts/[id]` - Specific account actions
+
+**Verification Steps:**
+1. Click "Connect with Plaid" button - should open Plaid Link
+2. Check Network tab - no CORS errors
+3. Check console - no `[object+Promise]` in URLs
+4. Complete bank connection flow successfully
+5. Verify connected accounts appear in dashboard
+
+**Prevention:**
+- Always use frontend API proxy pattern for external API calls
+- Never make direct HTTPS calls to backend from frontend
+- Properly await all async functions in request interceptors
+- Avoid custom headers that trigger CORS preflight
+- Test bank connection flow in both development and production
+
+**Related Issues:**
+- Any module making direct backend API calls will face CORS
+- Authentication flows using custom headers
+- Third-party integrations (Stripe, PayPal) may have similar patterns
+
+---
+
 ## 📋 **Issue Reporting Template**
 
 When documenting new issues, use this format:
