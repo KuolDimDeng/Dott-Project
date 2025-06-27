@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
+import { ArrowUturnLeftIcon } from '@heroicons/react/24/outline';
 
 const RefundsManagement = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -185,7 +186,13 @@ const RefundsManagement = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Refunds Management</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2 flex items-center">
+            <ArrowUturnLeftIcon className="h-6 w-6 text-blue-600 mr-2" />
+            Refunds Management
+          </h1>
+          <p className="text-gray-600 text-sm">Process customer refund requests and manage payment reversals for your business.</p>
+        </div>
       </div>
 
       {/* Success Message */}

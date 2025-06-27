@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
+import { ScaleIcon } from '@heroicons/react/24/outline';
 
 const PaymentReconciliation = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -152,7 +153,13 @@ const PaymentReconciliation = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Payment Reconciliation</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2 flex items-center">
+            <ScaleIcon className="h-6 w-6 text-blue-600 mr-2" />
+            Payment Reconciliation
+          </h1>
+          <p className="text-gray-600 text-sm">Match payment records between your system and bank statements to ensure accuracy and identify discrepancies.</p>
+        </div>
         <div className="space-x-2">
           <button
             onClick={runReconciliation}

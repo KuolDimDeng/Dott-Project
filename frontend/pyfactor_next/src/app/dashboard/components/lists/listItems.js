@@ -571,16 +571,226 @@ const MainListItems = ({
       icon: <NavIcons.Payments className="w-5 h-5" />,
       label: 'Payments',
       subItems: [
-        { label: 'Dashboard', onClick: handlePaymentsClick, value: 'payments-dashboard' },
-        { label: 'Receive Payments', onClick: handlePaymentsClick, value: 'receive-payments' },
-        { label: 'Make Payments', onClick: handlePaymentsClick, value: 'make-payments' },
-        { label: 'Payment Methods', onClick: handlePaymentsClick, value: 'payment-methods' },
-        { label: 'Recurring Payments', onClick: handlePaymentsClick, value: 'recurring-payments' },
-        { label: 'Refunds', onClick: handlePaymentsClick, value: 'refunds' },
-        { label: 'Payment Reconciliation', onClick: handlePaymentsClick, value: 'payment-reconciliation' },
-        { label: 'Payment Gateways', onClick: handlePaymentsClick, value: 'payment-gateways' },
-        { label: 'Payment Plans', onClick: handlePaymentsClick, value: 'payment-plans' },
-        { label: 'Reports', onClick: handlePaymentsClick, value: 'payment-reports' },
+        { 
+          label: 'Dashboard', 
+          onClick: (value) => {
+            // Create navigation event for payments dashboard
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'payments-dashboard', 
+              navigationKey,
+              originalItem: 'Dashboard'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the PaymentsDashboard component
+            if (typeof handlePaymentsClick === 'function') {
+              handlePaymentsClick('payments-dashboard');
+            }
+          }, 
+          value: 'payments-dashboard' 
+        },
+        { 
+          label: 'Receive Payments', 
+          onClick: (value) => {
+            // Create navigation event for receive payments
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'receive-payments', 
+              navigationKey,
+              originalItem: 'Receive Payments'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the ReceivePayments component
+            if (typeof handlePaymentsClick === 'function') {
+              handlePaymentsClick('receive-payments');
+            }
+          }, 
+          value: 'receive-payments' 
+        },
+        { 
+          label: 'Make Payments', 
+          onClick: (value) => {
+            // Create navigation event for make payments
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'make-payments', 
+              navigationKey,
+              originalItem: 'Make Payments'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the MakePayments component
+            if (typeof handlePaymentsClick === 'function') {
+              handlePaymentsClick('make-payments');
+            }
+          }, 
+          value: 'make-payments' 
+        },
+        { 
+          label: 'Payment Methods', 
+          onClick: (value) => {
+            // Create navigation event for payment methods
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'payment-methods', 
+              navigationKey,
+              originalItem: 'Payment Methods'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the PaymentMethods component
+            if (typeof handlePaymentsClick === 'function') {
+              handlePaymentsClick('payment-methods');
+            }
+          }, 
+          value: 'payment-methods' 
+        },
+        { 
+          label: 'Recurring Payments', 
+          onClick: (value) => {
+            // Create navigation event for recurring payments
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'recurring-payments', 
+              navigationKey,
+              originalItem: 'Recurring Payments'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the RecurringPayments component
+            if (typeof handlePaymentsClick === 'function') {
+              handlePaymentsClick('recurring-payments');
+            }
+          }, 
+          value: 'recurring-payments' 
+        },
+        { 
+          label: 'Refunds', 
+          onClick: (value) => {
+            // Create navigation event for refunds
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'refunds', 
+              navigationKey,
+              originalItem: 'Refunds'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the RefundsManagement component
+            if (typeof handlePaymentsClick === 'function') {
+              handlePaymentsClick('refunds');
+            }
+          }, 
+          value: 'refunds' 
+        },
+        { 
+          label: 'Payment Reconciliation', 
+          onClick: (value) => {
+            // Create navigation event for payment reconciliation
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'payment-reconciliation', 
+              navigationKey,
+              originalItem: 'Payment Reconciliation'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the PaymentReconciliation component
+            if (typeof handlePaymentsClick === 'function') {
+              handlePaymentsClick('payment-reconciliation');
+            }
+          }, 
+          value: 'payment-reconciliation' 
+        },
+        { 
+          label: 'Payment Gateways', 
+          onClick: (value) => {
+            // Create navigation event for payment gateways
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'payment-gateways', 
+              navigationKey,
+              originalItem: 'Payment Gateways'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the PaymentGateways component
+            if (typeof handlePaymentsClick === 'function') {
+              handlePaymentsClick('payment-gateways');
+            }
+          }, 
+          value: 'payment-gateways' 
+        },
+        { 
+          label: 'Payment Plans', 
+          onClick: (value) => {
+            // Create navigation event for payment plans
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'payment-plans', 
+              navigationKey,
+              originalItem: 'Payment Plans'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the PaymentPlans component
+            if (typeof handlePaymentsClick === 'function') {
+              handlePaymentsClick('payment-plans');
+            }
+          }, 
+          value: 'payment-plans' 
+        },
+        { 
+          label: 'Reports', 
+          onClick: (value) => {
+            // Create navigation event for payment reports
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'payment-reports', 
+              navigationKey,
+              originalItem: 'Reports'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the PaymentReports component
+            if (typeof handlePaymentsClick === 'function') {
+              handlePaymentsClick('payment-reports');
+            }
+          }, 
+          value: 'payment-reports' 
+        },
       ],
     },
     {

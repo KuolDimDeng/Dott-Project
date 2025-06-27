@@ -5,6 +5,30 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
+import { CreditCardIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
+
+// Tooltip component for field help
+const FieldTooltip = ({ text }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  
+  return (
+    <div className="relative inline-block ml-1">
+      <QuestionMarkCircleIcon 
+        className="h-4 w-4 text-gray-400 cursor-help hover:text-gray-600"
+        onMouseEnter={() => setIsVisible(true)}
+        onMouseLeave={() => setIsVisible(false)}
+      />
+      {isVisible && (
+        <div className="absolute z-10 w-64 p-2 text-xs text-white bg-gray-900 rounded-md shadow-lg -top-2 left-6">
+          <div className="relative">
+            {text}
+            <div className="absolute w-2 h-2 bg-gray-900 rotate-45 -left-1 top-2"></div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 // Initialize Stripe with the publishable key
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
@@ -238,7 +262,13 @@ const PaymentForm = ({ invoices, customers }) => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Receive Payments</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2 flex items-center">
+            <CreditCardIcon className="h-6 w-6 text-blue-600 mr-2" />
+            Receive Payments
+          </h1>
+          <p className="text-gray-600 text-sm">Process customer payments for invoices and outstanding balances using various payment methods.</p>
+        </div>
         <div className="text-sm text-gray-500">
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
             Stripe Test Mode
@@ -268,6 +298,7 @@ const PaymentForm = ({ invoices, customers }) => {
               <div>
                 <label htmlFor="customerId" className="block text-sm font-medium text-gray-700 mb-1">
                   Customer <span className="text-red-500">*</span>
+                  <FieldTooltip text="Select the customer making the payment. Customer balances are shown to help you identify the right customer." />
                 </label>
                 <select
                   id="customerId"
@@ -290,6 +321,7 @@ const PaymentForm = ({ invoices, customers }) => {
               <div>
                 <label htmlFor="invoiceId" className="block text-sm font-medium text-gray-700 mb-1">
                   Invoice (Optional)
+                  <FieldTooltip text="Link this payment to a specific invoice. If no invoice is selected, it will be applied to the customer's account balance." />
                 </label>
                 <select
                   id="invoiceId"
@@ -312,6 +344,7 @@ const PaymentForm = ({ invoices, customers }) => {
               <div>
                 <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
                   Amount <span className="text-red-500">*</span>
+                  <FieldTooltip text="Enter the payment amount in USD. For partial payments, enter less than the full invoice amount." />
                 </label>
                 <div className="relative">
                   <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">$</span>
@@ -334,6 +367,7 @@ const PaymentForm = ({ invoices, customers }) => {
               <div>
                 <label htmlFor="paymentDate" className="block text-sm font-medium text-gray-700 mb-1">
                   Payment Date <span className="text-red-500">*</span>
+                  <FieldTooltip text="Date when the payment was received. This is used for accounting records and can be different from today's date." />
                 </label>
                 <input
                   type="date"
@@ -350,6 +384,7 @@ const PaymentForm = ({ invoices, customers }) => {
               <div>
                 <label htmlFor="paymentMethod" className="block text-sm font-medium text-gray-700 mb-1">
                   Payment Method <span className="text-red-500">*</span>
+                  <FieldTooltip text="Choose how the customer paid. Credit/Debit cards will be processed through Stripe. Other methods are recorded for tracking only." />
                 </label>
                 <select
                   id="paymentMethod"
@@ -371,6 +406,7 @@ const PaymentForm = ({ invoices, customers }) => {
               <div>
                 <label htmlFor="reference" className="block text-sm font-medium text-gray-700 mb-1">
                   Reference Number
+                  <FieldTooltip text="Optional reference like check number, wire transfer ID, or transaction reference for your records." />
                 </label>
                 <input
                   type="text"
@@ -403,6 +439,7 @@ const PaymentForm = ({ invoices, customers }) => {
             <div>
               <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
                 Notes
+                <FieldTooltip text="Add any additional information about this payment, such as special terms or customer communications." />
               </label>
               <textarea
                 id="notes"

@@ -3,6 +3,30 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
+import { CreditCardIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
+
+// Tooltip component for field help
+const FieldTooltip = ({ text }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  
+  return (
+    <div className="relative inline-block ml-1">
+      <QuestionMarkCircleIcon 
+        className="h-4 w-4 text-gray-400 cursor-help hover:text-gray-600"
+        onMouseEnter={() => setIsVisible(true)}
+        onMouseLeave={() => setIsVisible(false)}
+      />
+      {isVisible && (
+        <div className="absolute z-10 w-64 p-2 text-xs text-white bg-gray-900 rounded-md shadow-lg -top-2 left-6">
+          <div className="relative">
+            {text}
+            <div className="absolute w-2 h-2 bg-gray-900 rotate-45 -left-1 top-2"></div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const PaymentMethods = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -208,7 +232,13 @@ const PaymentMethods = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Payment Methods</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2 flex items-center">
+            <CreditCardIcon className="h-6 w-6 text-blue-600 mr-2" />
+            Payment Methods
+          </h1>
+          <p className="text-gray-600 text-sm">Manage your business payment methods including bank accounts, credit cards, and digital payment providers.</p>
+        </div>
         <button
           onClick={handleAddNew}
           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -309,6 +339,7 @@ const PaymentMethods = () => {
                 <div>
                   <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                     Method Name <span className="text-red-500">*</span>
+                    <FieldTooltip text="Give this payment method a recognizable name like 'Main Business Account' or 'Company Credit Card'." />
                   </label>
                   <input
                     type="text"
@@ -324,6 +355,7 @@ const PaymentMethods = () => {
                 <div>
                   <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">
                     Type <span className="text-red-500">*</span>
+                    <FieldTooltip text="Select the type of payment method. This determines what information is required and how it can be used." />
                   </label>
                   <select
                     id="type"
@@ -344,6 +376,7 @@ const PaymentMethods = () => {
                 <div>
                   <label htmlFor="accountNumber" className="block text-sm font-medium text-gray-700 mb-1">
                     {formData.type === 'bank_account' ? 'Account Number' : 'Account/Card Number'} <span className="text-red-500">*</span>
+                    <FieldTooltip text="Enter the account or card number. For security, only the last 4 digits will be displayed once saved." />
                   </label>
                   <input
                     type="text"
@@ -360,6 +393,7 @@ const PaymentMethods = () => {
                   <div>
                     <label htmlFor="routingNumber" className="block text-sm font-medium text-gray-700 mb-1">
                       Routing Number
+                      <FieldTooltip text="9-digit routing number for your bank. This is required for ACH transfers and direct deposits." />
                     </label>
                     <input
                       type="text"
@@ -375,6 +409,7 @@ const PaymentMethods = () => {
                 <div>
                   <label htmlFor="bankName" className="block text-sm font-medium text-gray-700 mb-1">
                     Bank/Provider Name
+                    <FieldTooltip text="Name of the bank or payment provider (e.g., Chase Bank, PayPal, Stripe) for identification purposes." />
                   </label>
                   <input
                     type="text"

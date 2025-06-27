@@ -108,8 +108,8 @@ export async function POST(request) {
       date: body.issue_date || body.invoice_date,
       due_date: body.due_date,
       status: body.status || 'draft',
-      totalAmount: body.total_amount || body.subtotal || 0,
-      discount: body.discount_amount || 0,
+      totalAmount: parseFloat(body.total_amount || body.subtotal || 0).toFixed(2), // Django expects 2 decimal places
+      discount: parseFloat(body.discount_amount || 0).toFixed(2),
       currency: body.currency || 'USD',
       notes: body.notes || '',
       terms: body.terms || '',
@@ -117,11 +117,11 @@ export async function POST(request) {
         product: item.item_type === 'product' ? item.product : null,
         service: item.item_type === 'service' ? item.service : null,
         description: item.description || 'Item',
-        quantity: item.quantity || 1,
-        unit_price: item.unit_price || 0,
-        tax_rate: item.tax_rate || 0,
-        tax_amount: item.tax_amount || 0,
-        total: item.total || (item.quantity * item.unit_price)
+        quantity: parseFloat(item.quantity || 1).toFixed(2),
+        unit_price: parseFloat(item.unit_price || 0).toFixed(2),
+        tax_rate: parseFloat(item.tax_rate || 0).toFixed(2),
+        tax_amount: parseFloat(item.tax_amount || 0).toFixed(2),
+        total: parseFloat(item.total || (item.quantity * item.unit_price)).toFixed(2)
       })) || []
     };
     

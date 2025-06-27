@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
+import { CreditCardIcon } from '@heroicons/react/24/outline';
 
 const PaymentsDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -96,7 +97,13 @@ const PaymentsDashboard = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Payments Dashboard</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2 flex items-center">
+            <CreditCardIcon className="h-6 w-6 text-blue-600 mr-2" />
+            Payments Dashboard
+          </h1>
+          <p className="text-gray-600 text-sm">Monitor payment activities, track receivables, and manage your cash flow in real-time.</p>
+        </div>
         <button
           onClick={fetchDashboardData}
           className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -106,6 +113,7 @@ const PaymentsDashboard = () => {
           </svg>
           Refresh
         </button>
+      </div>
       </div>
 
       {/* Stats Cards */}

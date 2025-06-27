@@ -3,6 +3,30 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
+import { ChartBarSquareIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
+
+// Tooltip component for field help
+const FieldTooltip = ({ text }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  
+  return (
+    <div className="relative inline-block ml-1">
+      <QuestionMarkCircleIcon 
+        className="h-4 w-4 text-gray-400 cursor-help hover:text-gray-600"
+        onMouseEnter={() => setIsVisible(true)}
+        onMouseLeave={() => setIsVisible(false)}
+      />
+      {isVisible && (
+        <div className="absolute z-10 w-64 p-2 text-xs text-white bg-gray-900 rounded-md shadow-lg -top-2 left-6">
+          <div className="relative">
+            {text}
+            <div className="absolute w-2 h-2 bg-gray-900 rotate-45 -left-1 top-2"></div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const PaymentReports = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -116,19 +140,31 @@ const PaymentReports = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Payment Reports</h1>
-        <div className="flex space-x-2">
-          <select
-            value={dateRange}
-            onChange={(e) => setDateRange(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2 flex items-center">
+            <ChartBarSquareIcon className="h-6 w-6 text-blue-600 mr-2" />
+            Payment Reports
+          </h1>
+          <p className="text-gray-600 text-sm">Analyze payment trends, revenue metrics, and customer payment patterns with comprehensive reporting tools.</p>
+        </div>
+        <div className="flex space-x-2 items-end">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Date Range
+              <FieldTooltip text="Select the time period for your payment analysis. Reports will show revenue, transactions, and trends for the selected period." />
+            </label>
+            <select
+              value={dateRange}
+              onChange={(e) => setDateRange(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
             {dateRanges.map(range => (
               <option key={range.value} value={range.value}>
                 {range.label}
               </option>
             ))}
           </select>
+          </div>
           <button
             onClick={() => exportReport('csv')}
             className="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"

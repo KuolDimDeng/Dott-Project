@@ -3,6 +3,30 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
+import { GlobeAltIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
+
+// Tooltip component for field help
+const FieldTooltip = ({ text }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  
+  return (
+    <div className="relative inline-block ml-1">
+      <QuestionMarkCircleIcon 
+        className="h-4 w-4 text-gray-400 cursor-help hover:text-gray-600"
+        onMouseEnter={() => setIsVisible(true)}
+        onMouseLeave={() => setIsVisible(false)}
+      />
+      {isVisible && (
+        <div className="absolute z-10 w-64 p-2 text-xs text-white bg-gray-900 rounded-md shadow-lg -top-2 left-6">
+          <div className="relative">
+            {text}
+            <div className="absolute w-2 h-2 bg-gray-900 rotate-45 -left-1 top-2"></div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const PaymentGateways = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -135,8 +159,11 @@ const PaymentGateways = () => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Payment Gateways</h1>
-        <p className="mt-1 text-sm text-gray-600">Configure and manage your payment gateway integrations</p>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2 flex items-center">
+          <GlobeAltIcon className="h-6 w-6 text-blue-600 mr-2" />
+          Payment Gateways
+        </h1>
+        <p className="text-gray-600 text-sm">Configure and manage your payment processing integrations including Stripe, PayPal, Square, and other gateway providers.</p>
       </div>
 
       {/* Gateways Grid */}
@@ -231,6 +258,7 @@ const PaymentGateways = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   API Key
+                  <FieldTooltip text="Your publishable API key from the payment gateway's dashboard. This allows your site to communicate with the payment processor." />
                 </label>
                 <input
                   type="text"
@@ -244,6 +272,7 @@ const PaymentGateways = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Secret Key
+                  <FieldTooltip text="Your secret key used for server-to-server communication. Keep this secure and never expose it in client-side code." />
                 </label>
                 <input
                   type="password"
@@ -257,6 +286,7 @@ const PaymentGateways = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Webhook URL
+                  <FieldTooltip text="This URL receives payment notifications from the gateway. Copy and configure this in your payment gateway's webhook settings." />
                 </label>
                 <input
                   type="text"

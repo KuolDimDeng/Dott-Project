@@ -3,6 +3,30 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
+import { CurrencyDollarIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
+
+// Tooltip component for field help
+const FieldTooltip = ({ text }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  
+  return (
+    <div className="relative inline-block ml-1">
+      <QuestionMarkCircleIcon 
+        className="h-4 w-4 text-gray-400 cursor-help hover:text-gray-600"
+        onMouseEnter={() => setIsVisible(true)}
+        onMouseLeave={() => setIsVisible(false)}
+      />
+      {isVisible && (
+        <div className="absolute z-10 w-64 p-2 text-xs text-white bg-gray-900 rounded-md shadow-lg -top-2 left-6">
+          <div className="relative">
+            {text}
+            <div className="absolute w-2 h-2 bg-gray-900 rotate-45 -left-1 top-2"></div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const PaymentPlans = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -142,7 +166,13 @@ const PaymentPlans = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Payment Plans</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2 flex items-center">
+            <CurrencyDollarIcon className="h-6 w-6 text-blue-600 mr-2" />
+            Payment Plans
+          </h1>
+          <p className="text-gray-600 text-sm">Create and manage subscription plans and pricing tiers for your customers.</p>
+        </div>
         <button
           onClick={() => {
             setEditingPlan(null);
@@ -225,6 +255,7 @@ const PaymentPlans = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Plan Name <span className="text-red-500">*</span>
+                    <FieldTooltip text="Give your plan a clear, descriptive name like 'Basic', 'Professional', or 'Enterprise' that customers will see." />
                   </label>
                   <input
                     type="text"
@@ -239,6 +270,7 @@ const PaymentPlans = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Price <span className="text-red-500">*</span>
+                    <FieldTooltip text="Set the price for this plan in USD. This will be charged to customers based on the billing cycle you choose." />
                   </label>
                   <div className="relative">
                     <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">$</span>
@@ -256,6 +288,7 @@ const PaymentPlans = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Billing Cycle <span className="text-red-500">*</span>
+                    <FieldTooltip text="Choose how often customers will be charged for this plan. Monthly plans offer flexibility, while yearly plans typically offer discounts." />
                   </label>
                   <select
                     name="billingCycle"
@@ -275,6 +308,7 @@ const PaymentPlans = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Features
+                    <FieldTooltip text="List the features and benefits included in this plan. Be specific and clear about what customers get for their money." />
                   </label>
                   {formData.features.map((feature, index) => (
                     <div key={index} className="flex mb-2">
