@@ -53,6 +53,7 @@ const FieldTooltip = ({ text, position = 'top' }) => {
 };
 
 const TransactionManagement = () => {
+  const [tenantId, setTenantId] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -87,7 +88,14 @@ const TransactionManagement = () => {
     netAmount: 0
   });
 
-  const tenantId = getSecureTenantId();
+  // Fetch tenant ID on mount
+  useEffect(() => {
+    const fetchTenantId = async () => {
+      const id = await getSecureTenantId();
+      setTenantId(id);
+    };
+    fetchTenantId();
+  }, []);
 
   const transactionTypes = [
     {
@@ -324,6 +332,15 @@ const TransactionManagement = () => {
     transaction.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     transaction.vendor_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Wait for tenant ID to load
+  if (!tenantId) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

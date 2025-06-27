@@ -815,6 +815,70 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
 
 ---
 
+## 🔧 **Issue: Component Infinite Re-rendering Due to Async Function in Render**
+
+**Symptoms:**
+- Component loads successfully but keeps re-rendering infinitely
+- Console shows repeated success messages (e.g., "[TransactionManagement] Transactions loaded successfully")
+- Multiple rapid API calls to the same endpoints
+- Browser may become unresponsive
+- Page appears blank or partially rendered
+
+**Root Cause Analysis:**
+- Using async functions directly in component body without proper state management
+- Common pattern: `const tenantId = getSecureTenantId();` where `getSecureTenantId()` is async
+- Since async functions return Promises, the Promise object changes on every render
+- If this Promise is in a useCallback dependency array, it triggers infinite re-renders
+
+**Solution:**
+
+1. **Convert to state variable:**
+```javascript
+// ❌ WRONG - Causes infinite re-renders
+const tenantId = getSecureTenantId();
+
+// ✅ CORRECT - Proper async handling
+const [tenantId, setTenantId] = useState(null);
+
+useEffect(() => {
+  const fetchTenantId = async () => {
+    const id = await getSecureTenantId();
+    setTenantId(id);
+  };
+  fetchTenantId();
+}, []);
+```
+
+2. **Add loading check before rendering:**
+```javascript
+// Wait for tenant ID to load
+if (!tenantId) {
+  return (
+    <div className="flex justify-center items-center h-64">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+    </div>
+  );
+}
+```
+
+**Verification Steps:**
+1. Component should render once and stay stable
+2. Console should show success message only once
+3. No repeated API calls
+4. Component displays properly
+
+**Prevention:**
+- Always use useState + useEffect for async operations
+- Never call async functions directly in component body
+- Check dependencies in useCallback/useMemo for Promises
+- Use loading states while async data is fetched
+
+**Related Issues:**
+- Payment Pages Infinite Render Loop
+- Any component using getSecureTenantId() incorrectly
+
+---
+
 ## 🔧 **Issue: Menu Pages Not Rendering Due to Missing Navigation Events**
 
 **Symptoms:**
