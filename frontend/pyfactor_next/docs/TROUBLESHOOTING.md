@@ -498,6 +498,85 @@ if (Array.isArray(data)) {
 setSuppliers(supplierList);
 ```
 
+---
+
+# Frontend Navigation & Rendering Issues
+
+## Payment Pages Infinite Render Loop
+
+**Issue**: Payment pages stuck in infinite render loop, never fully loading.
+
+**Error Messages**:
+```
+[PaymentPlans] Plans loaded successfully (repeated infinitely)
+NS_BINDING_ABORTED for Stripe iframe
+Multiple rapid /api/metrics/session calls
+```
+
+**Symptoms**:
+- Payment menu items don't render content
+- Console shows components loading successfully but pages remain blank
+- Session API endpoint called dozens of times per second
+- Browser becomes unresponsive
+
+**Root Cause**:
+1. **Async Function Misuse**: Payment components using `getSecureTenantId()` synchronously:
+   ```javascript
+   // ❌ WRONG - Returns a Promise object that changes every render
+   const tenantId = getSecureTenantId();
+   ```
+   Since `tenantId` was in the dependency array of `useCallback`, it triggered infinite re-renders.
+
+2. **Double Navigation**: Menu items dispatching events AND calling `handlePaymentsClick`, causing view state conflicts.
+
+**Solution**:
+
+1. **Fix Async Tenant ID Usage**:
+```javascript
+// ✅ CORRECT - Properly handle async operation
+const [tenantId, setTenantId] = useState(null);
+
+useEffect(() => {
+  const fetchTenantId = async () => {
+    const id = await getSecureTenantId();
+    setTenantId(id);
+  };
+  fetchTenantId();
+}, []);
+
+// Wait for tenant ID to load
+if (!tenantId) {
+  return (
+    <div className="flex justify-center items-center h-64">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+    </div>
+  );
+}
+```
+
+2. **Remove Duplicate Navigation Handlers** in listItems.js:
+```javascript
+// ❌ OLD - Double navigation
+window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+if (typeof handlePaymentsClick === 'function') {
+  handlePaymentsClick('payments-dashboard');
+}
+
+// ✅ NEW - Single event dispatch
+window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+// The menuNavigation event handler in DashboardContent handles view updates
+```
+
+**Files Fixed**:
+- All payment components (PaymentPlans.js, PaymentGateways.js, etc.)
+- listItems.js navigation handlers
+- Total: 10 payment component files
+
+**Prevention**:
+- Always use `useState` + `useEffect` for async operations in React
+- Never put Promises in dependency arrays
+- Use single navigation pattern (events OR callbacks, not both)
+
 3. **Fix API Endpoints**:
 ```javascript
 // ❌ OLD

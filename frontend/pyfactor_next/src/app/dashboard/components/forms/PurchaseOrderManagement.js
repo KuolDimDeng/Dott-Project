@@ -1,699 +1,1000 @@
-import React, { useState, useEffect } from 'react';
-import { axiosInstance } from '@/lib/axiosConfig';
-import { useToast } from '@/components/Toast/ToastProvider';
-import { format } from 'date-fns';
+'use client';
 
-// SVG icons as React components
-const AddIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-    <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
-  </svg>
-);
+import React, { useState, useEffect, useCallback } from 'react';
+import { getSecureTenantId } from '@/utils/tenantUtils';
+import { logger } from '@/utils/logger';
+import { DocumentTextIcon, QuestionMarkCircleIcon, PlusIcon, PencilIcon, TrashIcon, EyeIcon, MinusIcon } from '@heroicons/react/24/outline';
+import { purchaseOrderApi, vendorApi, productApi } from '@/utils/apiClient';
 
-const DeleteIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-  </svg>
-);
+// Tooltip component for field help
+const FieldTooltip = ({ text }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  
+  return (
+    <div className="relative inline-block ml-1">
+      <QuestionMarkCircleIcon 
+        className="h-4 w-4 text-gray-400 cursor-help hover:text-gray-600"
+        onMouseEnter={() => setIsVisible(true)}
+        onMouseLeave={() => setIsVisible(false)}
+      />
+      {isVisible && (
+        <div className="absolute z-10 w-64 p-2 text-xs text-white bg-gray-900 rounded-md shadow-lg -top-2 left-6">
+          <div className="relative">
+            {text}
+            <div className="absolute w-2 h-2 bg-gray-900 rotate-45 -left-1 top-2"></div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const PurchaseOrderManagement = () => {
-  const [activeTab, setActiveTab] = useState(0);
+  const [tabValue, setTabValue] = useState(0);
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [selectedPurchaseOrder, setSelectedPurchaseOrder] = useState(null);
-  const [newPurchaseOrder, setNewPurchaseOrder] = useState({
-    vendor: '',
-    date: new Date(),
-    items: [],
-    discount: 0,
-    currency: 'USD',
-    totalAmount: 0,
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [orderToDelete, setOrderToDelete] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [tenantId, setTenantId] = useState(null);
+  
+  // Form data
+  const [formData, setFormData] = useState({
+    vendor_id: '',
+    order_date: new Date().toISOString().split('T')[0],
+    expected_date: '',
+    reference_number: '',
     status: 'draft',
+    items: [],
+    shipping_cost: 0,
+    discount_percentage: 0,
+    tax_rate: 0,
+    notes: '',
+    payment_terms: '30'
   });
-  const toast = useToast();
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedPurchaseOrder, setEditedPurchaseOrder] = useState(null);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  // Additional state for dropdowns
   const [vendors, setVendors] = useState([]);
   const [products, setProducts] = useState([]);
-  const [customProduct, setCustomProduct] = useState('');
-  const [selectedProducts, setSelectedProducts] = useState([]);
+  const [stats, setStats] = useState({
+    total: 0,
+    pending: 0,
+    received: 0,
+    totalAmount: 0
+  });
+
+  useEffect(() => {
+    const fetchTenantId = async () => {
+      const id = await getSecureTenantId();
+      setTenantId(id);
+    };
+    fetchTenantId();
+  }, []);
+
+  const fetchPurchaseOrders = useCallback(async () => {
+    if (!tenantId) return;
+    
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const response = await purchaseOrderApi.getAll();
+      const orderList = response.data || response.results || response || [];
+      setPurchaseOrders(orderList);
+      
+      // Calculate stats
+      const total = orderList.length;
+      const pending = orderList.filter(o => o.status === 'pending' || o.status === 'sent').length;
+      const received = orderList.filter(o => o.status === 'received').length;
+      const totalAmount = orderList.reduce((sum, o) => sum + (parseFloat(o.total_amount) || 0), 0);
+      
+      setStats({ total, pending, received, totalAmount });
+      
+      logger.info('[PurchaseOrderManagement] Purchase orders loaded successfully');
+    } catch (error) {
+      logger.error('[PurchaseOrderManagement] Error fetching purchase orders:', error);
+      setError('Failed to load purchase orders');
+      setPurchaseOrders([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [tenantId]);
+
+  const fetchVendors = useCallback(async () => {
+    if (!tenantId) return;
+    
+    try {
+      const response = await vendorApi.getAll();
+      const vendorList = response.data || response.results || response || [];
+      setVendors(vendorList);
+    } catch (error) {
+      logger.error('[PurchaseOrderManagement] Error fetching vendors:', error);
+    }
+  }, [tenantId]);
+
+  const fetchProducts = useCallback(async () => {
+    if (!tenantId) return;
+    
+    try {
+      const response = await productApi.getAll();
+      const productList = response.data || response.results || response || [];
+      setProducts(productList);
+    } catch (error) {
+      logger.error('[PurchaseOrderManagement] Error fetching products:', error);
+    }
+  }, [tenantId]);
 
   useEffect(() => {
     fetchPurchaseOrders();
     fetchVendors();
     fetchProducts();
-  }, []);
+  }, [fetchPurchaseOrders, fetchVendors, fetchProducts]);
 
-  const fetchPurchaseOrders = async () => {
-    try {
-      const response = await axiosInstance.get('/api/purchase-orders/');
-      setPurchaseOrders(response.data);
-    } catch (error) {
-      console.error('Error fetching purchase orders:', error);
-      toast.error('Failed to fetch purchase orders');
+  // Wait for tenant ID to load
+  if (!tenantId) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  const handleTabChange = (newValue) => {
+    setTabValue(newValue);
+    setSelectedPurchaseOrder(null);
+    if (newValue === 0) {
+      // Reset form when switching to create tab
+      setFormData({
+        vendor_id: '',
+        order_date: new Date().toISOString().split('T')[0],
+        expected_date: '',
+        reference_number: '',
+        status: 'draft',
+        items: [],
+        shipping_cost: 0,
+        discount_percentage: 0,
+        tax_rate: 0,
+        notes: '',
+        payment_terms: '30'
+      });
     }
   };
 
-  const fetchVendors = async () => {
-    try {
-      const response = await axiosInstance.get('/api/vendors/');
-      setVendors(response.data);
-    } catch (error) {
-      console.error('Error fetching vendors:', error);
-      toast.error('Failed to fetch vendors');
-    }
-  };
-
-  const fetchProducts = async () => {
-    try {
-      const response = await axiosInstance.get('/api/products/');
-      setProducts(response.data);
-    } catch (error) {
-      console.error('Error fetching products:', error);
-      toast.error('Failed to fetch products');
-    }
-  };
-
-  const handleTabChange = (event, newValue) => {
-    setActiveTab(newValue);
-  };
-
-  const handleInputChange = (event) => {
-    const { name, value } = event.target;
-    setNewPurchaseOrder((prev) => ({
-      ...prev,
-      [name]: value,
+  const handleInputChange = (e) => {
+    const { name, value, type } = e.target;
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: type === 'number' ? parseFloat(value) || 0 : value,
     }));
   };
 
-  const handleDateChange = (e) => {
-    const date = new Date(e.target.value);
-    setNewPurchaseOrder((prev) => ({
+  const handleAddItem = () => {
+    setFormData((prev) => ({
       ...prev,
-      date: date,
+      items: [...prev.items, {
+        product_id: '',
+        description: '',
+        quantity: 1,
+        unit_price: 0,
+        tax_rate: prev.tax_rate || 0
+      }]
     }));
   };
 
-  const handleItemAdd = () => {
-    setNewPurchaseOrder((prev) => ({
+  const handleRemoveItem = (index) => {
+    setFormData((prev) => ({
       ...prev,
-      items: [...prev.items, { product: '', quantity: 1, unit_price: 0 }],
-    }));
-    setSelectedProducts([...selectedProducts, null]);
-  };
-
-  const handleItemRemove = (index) => {
-    const newItems = [...newPurchaseOrder.items];
-    newItems.splice(index, 1);
-    
-    const newSelectedProducts = [...selectedProducts];
-    newSelectedProducts.splice(index, 1);
-    
-    setSelectedProducts(newSelectedProducts);
-    setNewPurchaseOrder((prev) => ({
-      ...prev,
-      items: newItems,
-      totalAmount: calculateTotalAmount(newItems, prev.discount),
+      items: prev.items.filter((_, i) => i !== index)
     }));
   };
 
   const handleItemChange = (index, field, value) => {
-    const newItems = [...newPurchaseOrder.items];
-    newItems[index][field] = value;
-
-    if (field === 'product') {
-      const selectedProduct = products.find((p) => p.id === value);
-      if (selectedProduct) {
-        newItems[index].description = selectedProduct.name;
-        newItems[index].unit_price = parseFloat(selectedProduct.price) || 0;
-        
-        const newSelectedProducts = [...selectedProducts];
-        newSelectedProducts[index] = selectedProduct;
-        setSelectedProducts(newSelectedProducts);
-      }
-    }
-
-    if (field === 'quantity' || field === 'unit_price') {
-      newItems[index][field] = parseFloat(value) || 0;
-    }
-
-    newItems[index].total = newItems[index].quantity * newItems[index].unit_price;
-
-    setNewPurchaseOrder((prev) => ({
-      ...prev,
-      items: newItems,
-      totalAmount: calculateTotalAmount(newItems, prev.discount),
-    }));
-  };
-
-  const calculateTotalAmount = (items, discount) => {
-    const total = items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
-    return total - discount;
-  };
-
-  const handleCreatePurchaseOrder = async (e) => {
-    e.preventDefault();
-    try {
-      console.log('Sending purchase order data:', newPurchaseOrder); // Log the data being sent
-      const response = await axiosInstance.post('/api/purchase-orders/create/', newPurchaseOrder);
-      toast.success('Purchase order created successfully');
-      fetchPurchaseOrders();
-      setActiveTab(2);
-    } catch (error) {
-      console.error('Error creating purchase order:', error);
-      if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
-        console.error('Error data:', error.response.data);
-        console.error('Error status:', error.response.status);
-        console.error('Error headers:', error.response.headers);
-      } else if (error.request) {
-        // The request was made but no response was received
-        console.error('Error request:', error.request);
+    const newItems = [...formData.items];
+    
+    if (field === 'product_id') {
+      const product = products.find(p => p.id === value);
+      if (product) {
+        newItems[index] = {
+          ...newItems[index],
+          product_id: value,
+          description: product.name || product.description || '',
+          unit_price: parseFloat(product.price) || parseFloat(product.cost) || 0
+        };
       } else {
-        // Something happened in setting up the request that triggered an Error
-        console.error('Error message:', error.message);
+        newItems[index][field] = value;
       }
-      toast.error('Failed to create purchase order: ' + (error.response?.data?.error || error.message)
-      );
+    } else if (field === 'quantity' || field === 'unit_price' || field === 'tax_rate') {
+      newItems[index][field] = parseFloat(value) || 0;
+    } else {
+      newItems[index][field] = value;
     }
+
+    setFormData((prev) => ({ ...prev, items: newItems }));
   };
 
-  const handlePurchaseOrderSelect = (purchaseOrder) => {
-    setSelectedPurchaseOrder(purchaseOrder);
-    setActiveTab(1);
+  const calculateTotals = () => {
+    const subtotal = formData.items.reduce((sum, item) => {
+      return sum + (item.quantity * item.unit_price);
+    }, 0);
+    
+    const taxAmount = formData.items.reduce((sum, item) => {
+      const itemTotal = item.quantity * item.unit_price;
+      return sum + (itemTotal * (item.tax_rate || 0) / 100);
+    }, 0);
+    
+    const discountAmount = subtotal * (formData.discount_percentage / 100);
+    const total = subtotal + taxAmount - discountAmount + formData.shipping_cost;
+    
+    return { subtotal, taxAmount, discountAmount, total };
   };
 
-  const handleEdit = () => {
-    setIsEditing(true);
-    setEditedPurchaseOrder({ ...selectedPurchaseOrder });
-  };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
 
-  const handleCancelEdit = () => {
-    setIsEditing(false);
-    setEditedPurchaseOrder(null);
-  };
-
-  const handleSaveEdit = async () => {
     try {
-      const response = await axiosInstance.put(
-        `/api/purchase-orders/${selectedPurchaseOrder.id}/`,
-        editedPurchaseOrder
-      );
-      setSelectedPurchaseOrder(response.data);
-      setIsEditing(false);
-      fetchPurchaseOrders();
-      toast.success('Purchase order updated successfully');
+      const { total } = calculateTotals();
+      const orderData = {
+        ...formData,
+        total_amount: total,
+        items: formData.items.map(item => ({
+          ...item,
+          total_price: item.quantity * item.unit_price
+        }))
+      };
+
+      if (selectedPurchaseOrder && tabValue === 0) {
+        // Update existing order
+        await purchaseOrderApi.update(selectedPurchaseOrder.id, orderData);
+        logger.info('[PurchaseOrderManagement] Purchase order updated successfully');
+      } else {
+        // Create new order
+        await purchaseOrderApi.create(orderData);
+        logger.info('[PurchaseOrderManagement] Purchase order created successfully');
+      }
+      
+      await fetchPurchaseOrders();
+      handleTabChange(2); // Switch to list view
     } catch (error) {
-      console.error('Error updating purchase order:', error);
-      toast.error('Failed to update purchase order');
+      logger.error('[PurchaseOrderManagement] Error saving purchase order:', error);
+      setError(error.message || 'Failed to save purchase order');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleDelete = () => {
-    setDeleteDialogOpen(true);
+  const handleEdit = (order) => {
+    setSelectedPurchaseOrder(order);
+    setFormData({
+      vendor_id: order.vendor_id || order.vendor || '',
+      order_date: order.order_date || order.date || '',
+      expected_date: order.expected_date || '',
+      reference_number: order.reference_number || '',
+      status: order.status || 'draft',
+      items: order.items || [],
+      shipping_cost: parseFloat(order.shipping_cost) || 0,
+      discount_percentage: parseFloat(order.discount_percentage) || 0,
+      tax_rate: parseFloat(order.tax_rate) || 0,
+      notes: order.notes || '',
+      payment_terms: order.payment_terms || '30'
+    });
+    setTabValue(0);
   };
 
-  const handleConfirmDelete = async () => {
+  const handleView = (order) => {
+    setSelectedPurchaseOrder(order);
+    setTabValue(1);
+  };
+
+  const handleDeleteClick = (order) => {
+    setOrderToDelete(order);
+    setShowDeleteModal(true);
+  };
+
+  const handleDelete = async () => {
+    if (!orderToDelete) return;
+    
+    setIsLoading(true);
     try {
-      await axiosInstance.delete(`/api/purchase-orders/${selectedPurchaseOrder.id}/`);
-      toast.success('Purchase order deleted successfully');
-      setDeleteDialogOpen(false);
-      setSelectedPurchaseOrder(null);
-      fetchPurchaseOrders();
-      setActiveTab(2);
+      await purchaseOrderApi.delete(orderToDelete.id);
+      logger.info('[PurchaseOrderManagement] Purchase order deleted successfully');
+      await fetchPurchaseOrders();
+      setShowDeleteModal(false);
+      setOrderToDelete(null);
     } catch (error) {
-      console.error('Error deleting purchase order:', error);
-      toast.error('Failed to delete purchase order');
+      logger.error('[PurchaseOrderManagement] Error deleting purchase order:', error);
+      setError('Failed to delete purchase order');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleAddCustomProduct = () => {
-    if (customProduct.trim() !== '') {
-      setNewPurchaseOrder((prev) => ({
-        ...prev,
-        items: [
-          ...prev.items,
-          { product: null, description: customProduct, quantity: 1, unit_price: 0, total: 0 },
-        ],
-      }));
-      setSelectedProducts([...selectedProducts, null]);
-      setCustomProduct('');
-    }
+  const filteredOrders = purchaseOrders.filter(order => {
+    const searchLower = searchTerm.toLowerCase();
+    const vendorName = vendors.find(v => v.id === order.vendor_id)?.name || order.vendor_name || '';
+    return (
+      order.order_number?.toLowerCase().includes(searchLower) ||
+      order.reference_number?.toLowerCase().includes(searchLower) ||
+      vendorName.toLowerCase().includes(searchLower)
+    );
+  });
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount || 0);
+  };
+
+  const getStatusBadge = (status) => {
+    const styles = {
+      draft: 'bg-gray-100 text-gray-800',
+      sent: 'bg-blue-100 text-blue-800',
+      pending: 'bg-yellow-100 text-yellow-800',
+      received: 'bg-green-100 text-green-800',
+      cancelled: 'bg-red-100 text-red-800'
+    };
+    
+    return (
+      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[status] || 'bg-gray-100 text-gray-800'}`}>
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </span>
+    );
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
+    <div className="space-y-6">
+      {/* Header */}
       <div>
-        <h1 className="text-2xl font-semibold text-gray-800 mb-4">
+        <h1 className="text-2xl font-bold text-gray-900 mb-2 flex items-center">
+          <DocumentTextIcon className="h-6 w-6 text-purple-600 mr-2" />
           Purchase Order Management
         </h1>
-        
-        <div className="border-b border-gray-200 mb-6">
-          <nav className="flex -mb-px">
+        <p className="text-gray-600 text-sm">
+          Create and manage purchase orders, track vendor deliveries, and monitor procurement spending.
+        </p>
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-white p-4 rounded-lg shadow">
+          <div className="text-gray-500 text-sm font-medium uppercase tracking-wide">Total Orders</div>
+          <div className="mt-1 text-3xl font-bold text-gray-900">{stats.total}</div>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow">
+          <div className="text-gray-500 text-sm font-medium uppercase tracking-wide">Pending</div>
+          <div className="mt-1 text-3xl font-bold text-yellow-600">{stats.pending}</div>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow">
+          <div className="text-gray-500 text-sm font-medium uppercase tracking-wide">Received</div>
+          <div className="mt-1 text-3xl font-bold text-green-600">{stats.received}</div>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow">
+          <div className="text-gray-500 text-sm font-medium uppercase tracking-wide">Total Value</div>
+          <div className="mt-1 text-3xl font-bold text-blue-600">{formatCurrency(stats.totalAmount)}</div>
+        </div>
+      </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+          <p className="text-sm">{error}</p>
+        </div>
+      )}
+
+      {/* Tabs */}
+      <div className="bg-white shadow rounded-lg">
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex">
             <button
-              onClick={(e) => handleTabChange(e, 0)}
-              className={`py-3 px-4 text-center border-b-2 font-medium text-sm ${
-                activeTab === 0
-                  ? 'border-blue-500 text-blue-600'
+              onClick={() => handleTabChange(0)}
+              className={`py-2 px-6 border-b-2 font-medium text-sm ${
+                tabValue === 0
+                  ? 'border-purple-500 text-purple-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              Create
+              {selectedPurchaseOrder && tabValue === 0 ? 'Edit Order' : 'Create Order'}
             </button>
             <button
-              onClick={(e) => handleTabChange(e, 1)}
-              className={`py-3 px-4 text-center border-b-2 font-medium text-sm ${
-                activeTab === 1
-                  ? 'border-blue-500 text-blue-600'
+              onClick={() => handleTabChange(1)}
+              className={`py-2 px-6 border-b-2 font-medium text-sm ${
+                tabValue === 1
+                  ? 'border-purple-500 text-purple-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              Details
+              Order Details
             </button>
             <button
-              onClick={(e) => handleTabChange(e, 2)}
-              className={`py-3 px-4 text-center border-b-2 font-medium text-sm ${
-                activeTab === 2
-                  ? 'border-blue-500 text-blue-600'
+              onClick={() => handleTabChange(2)}
+              className={`py-2 px-6 border-b-2 font-medium text-sm ${
+                tabValue === 2
+                  ? 'border-purple-500 text-purple-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              List
+              Order List
             </button>
           </nav>
         </div>
 
-        {activeTab === 0 && (
-          <div className="mt-3">
-            <h2 className="text-lg font-semibold text-gray-700 mb-2">
-              Create Purchase Order
-            </h2>
-            <form onSubmit={handleCreatePurchaseOrder}>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Vendor</label>
-                <select
-                  name="vendor"
-                  value={newPurchaseOrder.vendor}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                >
-                  <option value="">Select a vendor</option>
-                  {vendors.map((vendor) => (
-                    <option key={vendor.id} value={vendor.id}>
-                      {vendor.vendor_name}
-                    </option>
-                  ))}
-                </select>
+        <div className="p-6">
+          {/* Create/Edit Form */}
+          {tabValue === 0 && (
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Vendor <span className="text-red-500">*</span>
+                    <FieldTooltip text="Select the vendor you're purchasing from." />
+                  </label>
+                  <select
+                    name="vendor_id"
+                    value={formData.vendor_id}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value="">Select a vendor</option>
+                    {vendors.map(vendor => (
+                      <option key={vendor.id} value={vendor.id}>
+                        {vendor.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Order Date <span className="text-red-500">*</span>
+                    <FieldTooltip text="Date when this purchase order is created." />
+                  </label>
+                  <input
+                    type="date"
+                    name="order_date"
+                    value={formData.order_date}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Expected Delivery Date
+                    <FieldTooltip text="When you expect to receive this order." />
+                  </label>
+                  <input
+                    type="date"
+                    name="expected_date"
+                    value={formData.expected_date}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Reference Number
+                    <FieldTooltip text="Your internal reference number for this order." />
+                  </label>
+                  <input
+                    type="text"
+                    name="reference_number"
+                    value={formData.reference_number}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Status
+                    <FieldTooltip text="Current status of this purchase order." />
+                  </label>
+                  <select
+                    name="status"
+                    value={formData.status}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value="draft">Draft</option>
+                    <option value="sent">Sent</option>
+                    <option value="pending">Pending</option>
+                    <option value="received">Received</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Payment Terms (Days)
+                    <FieldTooltip text="Number of days for payment (e.g., Net 30)." />
+                  </label>
+                  <input
+                    type="number"
+                    name="payment_terms"
+                    value={formData.payment_terms}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
               </div>
 
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                <input
-                  type="date"
-                  value={newPurchaseOrder.date instanceof Date ? newPurchaseOrder.date.toISOString().split('T')[0] : ''}
-                  onChange={handleDateChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              <div className="border-t pt-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">Order Items</h3>
+                  <button
+                    type="button"
+                    onClick={handleAddItem}
+                    className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700"
+                  >
+                    <PlusIcon className="h-4 w-4 mr-1" />
+                    Add Item
+                  </button>
+                </div>
+
+                {formData.items.length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">No items added. Click "Add Item" to start.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {formData.items.map((item, index) => (
+                      <div key={index} className="grid grid-cols-1 md:grid-cols-6 gap-4 p-4 bg-gray-50 rounded-lg">
+                        <div className="md:col-span-2">
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Product
+                            <FieldTooltip text="Select a product or enter custom description." />
+                          </label>
+                          <select
+                            value={item.product_id}
+                            onChange={(e) => handleItemChange(index, 'product_id', e.target.value)}
+                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          >
+                            <option value="">Custom item</option>
+                            {products.map(product => (
+                              <option key={product.id} value={product.id}>
+                                {product.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {!item.product_id && (
+                          <div className="md:col-span-2">
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Description</label>
+                            <input
+                              type="text"
+                              value={item.description}
+                              onChange={(e) => handleItemChange(index, 'description', e.target.value)}
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                              placeholder="Item description"
+                            />
+                          </div>
+                        )}
+
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Quantity</label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={item.quantity}
+                            onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
+                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Unit Price</label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={item.unit_price}
+                            onChange={(e) => handleItemChange(index, 'unit_price', e.target.value)}
+                            className="w-full px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Total</label>
+                          <input
+                            type="text"
+                            value={formatCurrency(item.quantity * item.unit_price)}
+                            readOnly
+                            className="w-full px-2 py-1 text-sm bg-gray-100 border border-gray-300 rounded-md"
+                          />
+                        </div>
+
+                        <div className="flex items-end">
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveItem(index)}
+                            className="p-1 text-red-600 hover:text-red-800"
+                          >
+                            <MinusIcon className="h-5 w-5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="border-t pt-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Tax Rate (%)
+                          <FieldTooltip text="Tax percentage to apply to the order." />
+                        </label>
+                        <input
+                          type="number"
+                          name="tax_rate"
+                          value={formData.tax_rate}
+                          onChange={handleInputChange}
+                          min="0"
+                          step="0.01"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Discount (%)
+                          <FieldTooltip text="Percentage discount on the subtotal." />
+                        </label>
+                        <input
+                          type="number"
+                          name="discount_percentage"
+                          value={formData.discount_percentage}
+                          onChange={handleInputChange}
+                          min="0"
+                          step="0.01"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Shipping Cost
+                          <FieldTooltip text="Additional shipping and handling charges." />
+                        </label>
+                        <input
+                          type="number"
+                          name="shipping_cost"
+                          value={formData.shipping_cost}
+                          onChange={handleInputChange}
+                          min="0"
+                          step="0.01"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <h4 className="text-sm font-medium text-gray-900 mb-3">Order Summary</h4>
+                      {(() => {
+                        const { subtotal, taxAmount, discountAmount, total } = calculateTotals();
+                        return (
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span>Subtotal:</span>
+                              <span>{formatCurrency(subtotal)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Tax:</span>
+                              <span>{formatCurrency(taxAmount)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Discount:</span>
+                              <span>-{formatCurrency(discountAmount)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Shipping:</span>
+                              <span>{formatCurrency(formData.shipping_cost)}</span>
+                            </div>
+                            <div className="border-t pt-2 flex justify-between font-medium">
+                              <span>Total:</span>
+                              <span className="text-lg">{formatCurrency(total)}</span>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Notes
+                  <FieldTooltip text="Additional notes or instructions for this purchase order." />
+                </label>
+                <textarea
+                  name="notes"
+                  value={formData.notes}
+                  onChange={handleInputChange}
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
               </div>
 
-              <h3 className="text-lg font-medium text-gray-700 mb-2">Items</h3>
-              
-              {newPurchaseOrder.items.map((item, index) => (
-                <div key={index} className="flex flex-wrap items-center mb-4 gap-2">
-                  <div className="w-full md:w-1/4 lg:w-1/5">
-                    <select
-                      value={item.product || ''}
-                      onChange={(e) => handleItemChange(index, 'product', e.target.value)}
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    >
-                      <option value="">Select a product</option>
-                      {products.map((product) => (
-                        <option key={product.id} value={product.id}>
-                          {product.name}
-                        </option>
-                      ))}
-                    </select>
+              <div className="flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={() => handleTabChange(2)}
+                  className="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-50"
+                >
+                  {isLoading ? 'Saving...' : selectedPurchaseOrder ? 'Update Order' : 'Create Order'}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Order Details View */}
+          {tabValue === 1 && selectedPurchaseOrder && (
+            <div className="space-y-6">
+              <div className="bg-gray-50 p-6 rounded-lg">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-lg font-medium text-gray-900">
+                      Order #{selectedPurchaseOrder.order_number}
+                    </h3>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {new Date(selectedPurchaseOrder.order_date || selectedPurchaseOrder.date).toLocaleDateString()}
+                    </p>
                   </div>
-                  
-                  <div className="w-full md:w-1/4 lg:w-1/5">
-                    <input
-                      type="text"
-                      placeholder="Description"
-                      value={item.description || ''}
-                      onChange={(e) => handleItemChange(index, 'description', e.target.value)}
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </div>
-                  
-                  <div className="w-full md:w-1/6 lg:w-1/8">
-                    <input
-                      type="number"
-                      placeholder="Quantity"
-                      value={item.quantity}
-                      onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </div>
-                  
-                  <div className="w-full md:w-1/6 lg:w-1/8">
-                    <input
-                      type="number"
-                      step="0.01"
-                      placeholder="Unit Price"
-                      value={item.unit_price}
-                      onChange={(e) => handleItemChange(index, 'unit_price', e.target.value)}
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </div>
-                  
-                  <div className="w-full md:w-1/6 lg:w-1/8">
-                    <input
-                      type="text"
-                      placeholder="Total"
-                      value={(item.quantity * item.unit_price).toFixed(2)}
-                      readOnly
-                      className="block w-full rounded-md bg-gray-100 border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </div>
-                  
-                  <button
-                    type="button"
-                    onClick={() => handleItemRemove(index)}
-                    className="p-2 text-red-600 hover:text-red-800 focus:outline-none"
-                  >
-                    <DeleteIcon />
-                  </button>
+                  {getStatusBadge(selectedPurchaseOrder.status)}
                 </div>
-              ))}
-              
-              <div className="flex flex-wrap gap-2 mb-4">
-                <div className="flex-grow">
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Vendor</p>
+                    <p className="mt-1 text-sm text-gray-900">
+                      {vendors.find(v => v.id === selectedPurchaseOrder.vendor_id)?.name || selectedPurchaseOrder.vendor_name || 'N/A'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Reference Number</p>
+                    <p className="mt-1 text-sm text-gray-900">{selectedPurchaseOrder.reference_number || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Expected Delivery</p>
+                    <p className="mt-1 text-sm text-gray-900">
+                      {selectedPurchaseOrder.expected_date 
+                        ? new Date(selectedPurchaseOrder.expected_date).toLocaleDateString()
+                        : 'N/A'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Payment Terms</p>
+                    <p className="mt-1 text-sm text-gray-900">Net {selectedPurchaseOrder.payment_terms || '30'} days</p>
+                  </div>
+                </div>
+
+                {selectedPurchaseOrder.notes && (
+                  <div className="mt-4">
+                    <p className="text-sm font-medium text-gray-500">Notes</p>
+                    <p className="mt-1 text-sm text-gray-900">{selectedPurchaseOrder.notes}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Items Table */}
+              {selectedPurchaseOrder.items && selectedPurchaseOrder.items.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-900 mb-3">Order Items</h4>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Item
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Quantity
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Unit Price
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Total
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {selectedPurchaseOrder.items.map((item, index) => (
+                          <tr key={index}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {item.description || products.find(p => p.id === item.product_id)?.name || 'Item'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {item.quantity}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {formatCurrency(item.unit_price)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {formatCurrency(item.quantity * item.unit_price)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot className="bg-gray-50">
+                        <tr>
+                          <td colSpan="3" className="px-6 py-3 text-right text-sm font-medium text-gray-900">
+                            Total Amount:
+                          </td>
+                          <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {formatCurrency(selectedPurchaseOrder.total_amount || selectedPurchaseOrder.totalAmount || 0)}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => handleEdit(selectedPurchaseOrder)}
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                >
+                  <PencilIcon className="h-4 w-4 mr-2" />
+                  Edit
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Order List */}
+          {tabValue === 2 && (
+            <div>
+              <div className="mb-4 flex justify-between items-center">
+                <div className="flex-1 max-w-md">
                   <input
                     type="text"
-                    placeholder="Add Custom Product"
-                    value={customProduct}
-                    onChange={(e) => setCustomProduct(e.target.value)}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    placeholder="Search orders..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
                   />
                 </div>
                 <button
-                  type="button"
-                  onClick={handleAddCustomProduct}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  onClick={() => handleTabChange(0)}
+                  className="ml-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700"
                 >
-                  Add Custom Product
+                  <PlusIcon className="h-4 w-4 mr-2" />
+                  Create Order
                 </button>
               </div>
-              
-              <button
-                type="button"
-                onClick={handleItemAdd}
-                className="flex items-center mb-4 text-blue-600 hover:text-blue-800"
-              >
-                <AddIcon />
-                <span className="ml-1">Add Item</span>
-              </button>
 
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Discount</label>
-                <input
-                  type="number"
-                  name="discount"
-                  value={newPurchaseOrder.discount}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Total Amount</label>
-                <input
-                  type="text"
-                  value={newPurchaseOrder.totalAmount.toFixed(2)}
-                  readOnly
-                  className="mt-1 block w-full rounded-md bg-gray-100 border-gray-300 shadow-sm"
-                />
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
-                <select
-                  name="currency"
-                  value={newPurchaseOrder.currency}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                >
-                  <option value="USD">USD</option>
-                  <option value="EUR">EUR</option>
-                  <option value="GBP">GBP</option>
-                </select>
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select
-                  name="status"
-                  value={newPurchaseOrder.status}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                >
-                  <option value="draft">Draft</option>
-                  <option value="sent">Sent</option>
-                  <option value="received">Received</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
-              </div>
-
-              <button
-                type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              >
-                Create Purchase Order
-              </button>
-            </form>
-          </div>
-        )}
-
-        {activeTab === 1 && (
-          <div className="mt-3">
-            <h2 className="text-lg font-semibold text-gray-700 mb-2">
-              Purchase Order Details
-            </h2>
-            {selectedPurchaseOrder ? (
-              <div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Order Number</label>
-                  <input
-                    type="text"
-                    value={selectedPurchaseOrder.order_number}
-                    readOnly
-                    className="mt-1 block w-full rounded-md bg-gray-100 border-gray-300 shadow-sm"
-                  />
+              {isLoading ? (
+                <div className="flex justify-center items-center h-64">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
                 </div>
-                
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Vendor</label>
-                  <input
-                    type="text"
-                    value={selectedPurchaseOrder.vendor_name}
-                    readOnly={!isEditing}
-                    className={`mt-1 block w-full rounded-md ${!isEditing ? 'bg-gray-100' : ''} border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500`}
-                  />
+              ) : filteredOrders.length === 0 ? (
+                <div className="text-center py-12">
+                  <DocumentTextIcon className="mx-auto h-12 w-12 text-gray-400" />
+                  <p className="mt-2 text-sm text-gray-500">No purchase orders found</p>
                 </div>
-                
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                  <input
-                    type="date"
-                    value={selectedPurchaseOrder.date}
-                    readOnly={!isEditing}
-                    className={`mt-1 block w-full rounded-md ${!isEditing ? 'bg-gray-100' : ''} border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500`}
-                  />
-                </div>
-                
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Total Amount</label>
-                  <input
-                    type="text"
-                    value={selectedPurchaseOrder.totalAmount}
-                    readOnly
-                    className="mt-1 block w-full rounded-md bg-gray-100 border-gray-300 shadow-sm"
-                  />
-                </div>
-                
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Discount</label>
-                  <input
-                    type="text"
-                    value={selectedPurchaseOrder.discount}
-                    readOnly={!isEditing}
-                    className={`mt-1 block w-full rounded-md ${!isEditing ? 'bg-gray-100' : ''} border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500`}
-                  />
-                </div>
-                
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
-                  <input
-                    type="text"
-                    value={selectedPurchaseOrder.currency}
-                    readOnly={!isEditing}
-                    className={`mt-1 block w-full rounded-md ${!isEditing ? 'bg-gray-100' : ''} border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500`}
-                  />
-                </div>
-                
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                  <input
-                    type="text"
-                    value={selectedPurchaseOrder.status}
-                    readOnly={!isEditing}
-                    className={`mt-1 block w-full rounded-md ${!isEditing ? 'bg-gray-100' : ''} border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500`}
-                  />
-                </div>
-
-                <h3 className="text-lg font-medium text-gray-700 mb-2">Items</h3>
+              ) : (
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Order Number
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Vendor
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Date
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Amount
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {selectedPurchaseOrder.items.map((item, index) => (
-                        <tr key={index}>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {item.product ? item.product.name : 'Custom Product'}
+                      {filteredOrders.map((order) => (
+                        <tr key={order.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {order.order_number || `PO-${order.id}`}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.description}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.quantity}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.unit_price}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{(item.quantity * item.unit_price).toFixed(2)}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {vendors.find(v => v.id === order.vendor_id)?.name || order.vendor_name || 'N/A'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {new Date(order.order_date || order.date).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {formatCurrency(order.total_amount || order.totalAmount || 0)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {getStatusBadge(order.status)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                            <button
+                              onClick={() => handleView(order)}
+                              className="text-blue-600 hover:text-blue-900"
+                            >
+                              <EyeIcon className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleEdit(order)}
+                              className="text-purple-600 hover:text-purple-900"
+                            >
+                              <PencilIcon className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteClick(order)}
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              <TrashIcon className="h-4 w-4" />
+                            </button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
 
-                <div className="mt-4 space-x-2">
-                  {isEditing ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={handleSaveEdit}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                      >
-                        Save
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleCancelEdit}
-                        className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-                      >
-                        Cancel
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        type="button"
-                        onClick={handleEdit}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleDelete}
-                        className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-                      >
-                        Delete
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <p className="text-gray-600">Select a purchase order from the list to view details</p>
-            )}
-          </div>
-        )}
-
-        {activeTab === 2 && (
-          <div className="mt-3">
-            <h2 className="text-lg font-semibold text-gray-700 mb-2">
-              Purchase Order List
-            </h2>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order Number</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendor</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Amount</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {purchaseOrders.map((purchaseOrder) => (
-                    <tr
-                      key={purchaseOrder.id}
-                      onClick={() => handlePurchaseOrderSelect(purchaseOrder)}
-                      className="cursor-pointer hover:bg-gray-50"
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{purchaseOrder.order_number}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{purchaseOrder.vendor_name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(purchaseOrder.date).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {purchaseOrder.totalAmount} {purchaseOrder.currency}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{purchaseOrder.status}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Delete Purchase Order</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Are you sure you want to delete order "{orderToDelete?.order_number || `PO-${orderToDelete?.id}`}"? This action cannot be undone.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={isLoading}
+                className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 disabled:opacity-50"
+              >
+                {isLoading ? 'Deleting...' : 'Delete'}
+              </button>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {deleteDialogOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl shadow-lg max-w-md w-full">
-              <div className="px-6 pt-6 pb-2">
-                <h2 className="text-xl font-semibold text-gray-800">
-                  Confirm Delete
-                </h2>
-              </div>
-              <div className="px-6 py-4">
-                <p className="text-gray-700">
-                  Are you sure you want to delete this purchase order?
-                </p>
-              </div>
-              <div className="px-6 pb-6 pt-2 flex justify-end space-x-3">
-                <button 
-                  onClick={() => setDeleteDialogOpen(false)} 
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={handleConfirmDelete} 
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+      <div className="text-xs text-gray-500 text-center">
+        Debug: Tenant ID: {tenantId} | Component: PurchaseOrderManagement
       </div>
     </div>
   );

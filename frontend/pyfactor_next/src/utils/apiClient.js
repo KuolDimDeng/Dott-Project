@@ -935,6 +935,105 @@ export const taxApi = {
   }
 };
 
+// Vendor related API methods
+export const vendorApi = {
+  async getAll(params = {}) {
+    try {
+      logger.info('[API] Requesting all vendors');
+      return await apiClient.get('/api/inventory/suppliers', params);
+    } catch (error) {
+      logger.error('[VendorApi] Error fetching vendors:', error);
+      throw error;
+    }
+  },
+  
+  async create(data, params = {}) {
+    try {
+      logger.info('[API] Creating new vendor');
+      return await apiClient.post('/api/inventory/suppliers', data, params);
+    } catch (error) {
+      logger.error('[VendorApi] Error creating vendor:', error);
+      throw error;
+    }
+  },
+  
+  async update(id, data, params = {}) {
+    try {
+      logger.info(`[API] Updating vendor ${id}`);
+      return await apiClient.put(`/api/inventory/suppliers/${id}`, data, params);
+    } catch (error) {
+      logger.error(`[VendorApi] Error updating vendor ${id}:`, error);
+      throw error;
+    }
+  },
+  
+  async delete(id, params = {}) {
+    try {
+      logger.info(`[API] Deleting vendor ${id}`);
+      return await apiClient.delete(`/api/inventory/suppliers/${id}`, params);
+    } catch (error) {
+      logger.error(`[VendorApi] Error deleting vendor ${id}:`, error);
+      throw error;
+    }
+  }
+};
+
+// Purchase Order related API methods
+export const purchaseOrderApi = {
+  async getAll(params = {}) {
+    try {
+      logger.info('[API] Requesting all purchase orders');
+      return await apiClient.get('/api/purchases/orders', params);
+    } catch (error) {
+      logger.error('[PurchaseOrderApi] Error fetching purchase orders:', error);
+      throw error;
+    }
+  },
+  
+  async create(data, params = {}) {
+    try {
+      logger.info('[API] Creating new purchase order');
+      return await apiClient.post('/api/purchases/orders', data, params);
+    } catch (error) {
+      logger.error('[PurchaseOrderApi] Error creating purchase order:', error);
+      throw error;
+    }
+  },
+  
+  async update(id, data, params = {}) {
+    try {
+      logger.info(`[API] Updating purchase order ${id}`);
+      return await apiClient.put(`/api/purchases/orders/${id}`, data, params);
+    } catch (error) {
+      logger.error(`[PurchaseOrderApi] Error updating purchase order ${id}:`, error);
+      throw error;
+    }
+  },
+  
+  async delete(id, params = {}) {
+    try {
+      logger.info(`[API] Deleting purchase order ${id}`);
+      return await apiClient.delete(`/api/purchases/orders/${id}`, params);
+    } catch (error) {
+      logger.error(`[PurchaseOrderApi] Error deleting purchase order ${id}:`, error);
+      throw error;
+    }
+  }
+};
+
+// Purchases API (for dashboard and general purchases data)
+export const purchasesApi = {
+  async getDashboard(params = {}) {
+    try {
+      logger.info('[API] Requesting purchases dashboard data');
+      return await apiClient.get('/api/purchases/dashboard', params);
+    } catch (error) {
+      logger.error('[PurchasesApi] Error fetching dashboard data:', error);
+      throw error;
+    }
+  }
+};
+
 /**
  * Create an axios instance with authentication headers
  * @returns {Promise<import('axios').AxiosInstance>} - The axios instance
