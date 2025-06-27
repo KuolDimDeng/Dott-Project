@@ -1,12 +1,46 @@
-// /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/components/forms/BankingDashboard.js
+'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { bankAccountsApi, bankTransactionsApi } from '@/services/api/banking';
 import { logger } from '@/utils/logger';
+import { getSecureTenantId } from '@/utils/tenantUtils';
 import Link from 'next/link';
-import { Bank, ArrowsClockwise, DownloadSimple, MagnifyingGlass } from '@phosphor-icons/react';
+import { 
+  BanknotesIcon, 
+  ArrowsRightLeftIcon, 
+  ArrowDownTrayIcon, 
+  MagnifyingGlassIcon,
+  QuestionMarkCircleIcon,
+  LinkIcon,
+  CreditCardIcon,
+  CheckCircleIcon
+} from '@heroicons/react/24/outline';
+
+// Tooltip component for field help
+const FieldTooltip = ({ text }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  
+  return (
+    <div className="relative inline-block ml-1">
+      <QuestionMarkCircleIcon 
+        className="h-4 w-4 text-gray-400 cursor-help hover:text-gray-600"
+        onMouseEnter={() => setIsVisible(true)}
+        onMouseLeave={() => setIsVisible(false)}
+      />
+      {isVisible && (
+        <div className="absolute z-10 w-64 p-2 text-xs text-white bg-gray-900 rounded-md shadow-lg -top-2 left-6">
+          <div className="relative">
+            {text}
+            <div className="absolute w-2 h-2 bg-gray-900 rotate-45 -left-1 top-2"></div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const BankingDashboard = () => {
+  const [tenantId, setTenantId] = useState(null);
   const [accounts, setAccounts] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,6 +49,14 @@ const BankingDashboard = () => {
   const [endDate, setEndDate] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [connectedBank, setConnectedBank] = useState(null);
+  
+  // Stats for summary cards
+  const [stats, setStats] = useState({
+    totalAccounts: 0,
+    totalBalance: 0,
+    monthlyIncoming: 0,
+    monthlyOutgoing: 0
+  });
 
   const fetchBankingAccounts = useCallback(async () => {
     try {
@@ -58,13 +100,26 @@ const BankingDashboard = () => {
     }
   }, [connectedBank]);
 
+  // Fetch tenant ID on mount
   useEffect(() => {
-    fetchBankingAccounts();
-  }, [fetchBankingAccounts]);
+    const fetchTenantId = async () => {
+      const id = await getSecureTenantId();
+      setTenantId(id);
+    };
+    fetchTenantId();
+  }, []);
 
   useEffect(() => {
-    fetchRecentTransactions();
-  }, [fetchRecentTransactions]);
+    if (tenantId) {
+      fetchBankingAccounts();
+    }
+  }, [fetchBankingAccounts, tenantId]);
+
+  useEffect(() => {
+    if (tenantId) {
+      fetchRecentTransactions();
+    }
+  }, [fetchRecentTransactions, tenantId]);
 
   const handleDownload = async () => {
     if (!connectedBank) {
@@ -92,6 +147,15 @@ const BankingDashboard = () => {
   const filteredTransactions = transactions.filter((transaction) =>
     transaction.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Wait for tenant ID to load
+  if (!tenantId) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -171,7 +235,7 @@ const BankingDashboard = () => {
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className={`w-full p-2 border border-gray-300 rounded-md ${!connectedBank ? 'bg-gray-100 cursor-not-allowed' : 'focus:ring-indigo-500 focus:border-indigo-500'}`}
+                  className={`w-full p-2 border border-gray-300 rounded-md ${!connectedBank ? 'bg-gray-100 cursor-not-allowed' : 'focus:ring-blue-500 focus:border-blue-500'}`}
                   disabled={!connectedBank}
                 />
               </div>
@@ -182,7 +246,7 @@ const BankingDashboard = () => {
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className={`w-full p-2 border border-gray-300 rounded-md ${!connectedBank ? 'bg-gray-100 cursor-not-allowed' : 'focus:ring-indigo-500 focus:border-indigo-500'}`}
+                  className={`w-full p-2 border border-gray-300 rounded-md ${!connectedBank ? 'bg-gray-100 cursor-not-allowed' : 'focus:ring-blue-500 focus:border-blue-500'}`}
                   disabled={!connectedBank}
                 />
               </div>
@@ -192,13 +256,13 @@ const BankingDashboard = () => {
               <button
                 onClick={handleDownload}
                 disabled={!connectedBank || !startDate || !endDate}
-                className={`w-full flex justify-center items-center px-4 py-2 rounded-md ${
+                className={`w-full flex justify-center items-center px-4 py-2 rounded-md transition-colors ${
                   !connectedBank || !startDate || !endDate
-                    ? 'bg-indigo-300 cursor-not-allowed text-white'
-                    : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                    ? 'bg-gray-300 cursor-not-allowed text-gray-500'
+                    : 'bg-blue-600 hover:bg-blue-700 text-white'
                 }`}
               >
-                <DownloadSimple size={20} weight="duotone" className="mr-2" />
+                <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
                 Download Transactions
               </button>
             </div>
