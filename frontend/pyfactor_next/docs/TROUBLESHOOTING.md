@@ -502,6 +502,10 @@ setSuppliers(supplierList);
 
 # Frontend Navigation & Rendering Issues
 
+## Menu Navigation Not Working
+
+**Quick Fix**: If menu items aren't rendering when clicked, they're likely missing navigation event dispatching. See "Menu Pages Not Rendering Due to Missing Navigation Events" section below for the complete solution.
+
 ## Payment Pages Infinite Render Loop
 
 **Issue**: Payment pages stuck in infinite render loop, never fully loading.
@@ -808,6 +812,80 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
 - Navigation fixes alone won't help if component initialization fails
 
 **Note:** The navigation event dispatching fix was correct and necessary, but the Stripe configuration issue was preventing the components from rendering even after navigation was fixed.
+
+---
+
+## 🔧 **Issue: Menu Pages Not Rendering Due to Missing Navigation Events**
+
+**Symptoms:**
+- Clicking on menu items (e.g., Purchases, Banking, etc.) does nothing
+- No errors in console, but pages don't render
+- Other menus (e.g., Sales, Inventory) work fine
+- Console might show handleClick functions being called, but UI doesn't update
+- Components exist but aren't displayed when menu item is clicked
+
+**Root Cause Analysis:**
+- Menu items are missing the required event dispatching code
+- Only calling the handler function (e.g., `handlePurchasesClick`) without dispatching navigation events
+- `RenderMainContent.js` listens for `menuNavigation` and `navigationChange` events to update the view
+- Without these events, the dashboard content area doesn't know to render the new component
+
+**Solution:**
+
+1. **Identify broken menu items** - Look for simple onClick handlers:
+```javascript
+// ❌ BROKEN - Missing event dispatching
+{ label: 'Dashboard', onClick: handlePurchasesClick, value: 'dashboard' }
+```
+
+2. **Fix by adding event dispatching** - Follow the Sales menu pattern:
+```javascript
+// ✅ CORRECT - Includes event dispatching
+{ 
+  label: 'Dashboard', 
+  onClick: (value) => {
+    // Create navigation event
+    const navigationKey = `nav-${Date.now()}`;
+    const payload = { 
+      item: 'purchases-dashboard',  // Component name to render
+      navigationKey,
+      originalItem: 'Dashboard'     // Display name
+    };
+    
+    // Dispatch navigation events
+    window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+    window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+    
+    // Call the handler function
+    if (typeof handlePurchasesClick === 'function') {
+      handlePurchasesClick('dashboard');
+    }
+  }, 
+  value: 'dashboard' 
+}
+```
+
+3. **Component name mapping** - Ensure the `item` in payload matches the component:
+   - `'purchases-dashboard'` → `PurchasesDashboard` component
+   - `'vendor-management'` → `VendorManagement` component
+   - `'purchase-order-management'` → `PurchaseOrderManagement` component
+
+**Verification Steps:**
+1. Click on the fixed menu item
+2. Check browser console for: `[DashboardContent] Menu navigation event received: [component-name]`
+3. Verify the component renders in the dashboard content area
+4. Test all submenu items to ensure they work
+
+**Prevention:**
+- When adding new menu items, always copy the pattern from working menus (Sales)
+- Include both event dispatching AND handler function calls
+- Test new menu items immediately after adding them
+- Document the component name mapping for new pages
+
+**Related Issues:**
+- Payment Menu Pages Not Rendering (same root cause)
+- Any menu that only calls handler functions without events
+- Dashboard content not updating despite navigation
 
 ---
 
