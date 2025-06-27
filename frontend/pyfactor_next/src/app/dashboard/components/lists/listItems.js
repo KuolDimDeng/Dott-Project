@@ -849,7 +849,7 @@ const MainListItems = ({
             // Create navigation event for bills management
             const navigationKey = `nav-${Date.now()}`;
             const payload = { 
-              item: 'bills-management', 
+              item: 'bill-management', 
               navigationKey,
               originalItem: 'Bills'
             };
@@ -858,7 +858,7 @@ const MainListItems = ({
             window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
             window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
             
-            // Load the BillsManagement component
+            // Load the BillManagement component
             if (typeof handlePurchasesClick === 'function') {
               handlePurchasesClick('bills');
             }
