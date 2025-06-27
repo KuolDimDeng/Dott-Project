@@ -80,7 +80,29 @@ const VendorManagement = ({ newVendor: isNewVendor = false }) => {
     
     try {
       const response = await vendorApi.getAll();
-      const vendorList = response.data || response || [];
+      
+      // Handle different response structures
+      logger.info('[VendorManagement] Raw response:', response);
+      
+      let vendorList = [];
+      if (Array.isArray(response)) {
+        vendorList = response;
+      } else if (response && Array.isArray(response.data)) {
+        vendorList = response.data;
+      } else if (response && response.results && Array.isArray(response.results)) {
+        vendorList = response.results;
+      } else if (response && response.vendors && Array.isArray(response.vendors)) {
+        vendorList = response.vendors;
+      } else {
+        logger.warn('[VendorManagement] Unexpected response structure:', response);
+        // If response is a single object with vendor data, wrap it in an array
+        if (response && typeof response === 'object' && response.id) {
+          vendorList = [response];
+        } else {
+          vendorList = [];
+        }
+      }
+      
       setVendors(vendorList);
       
       // Calculate stats
