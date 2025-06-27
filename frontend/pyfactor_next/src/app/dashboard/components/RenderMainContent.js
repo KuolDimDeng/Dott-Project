@@ -229,7 +229,6 @@ const SuppliersManagement = enhancedLazy(() => import('./forms/SuppliersManageme
 const MainDashboard = enhancedLazy(() => import('./dashboards/MainDashboard'), 'Main Dashboard');
 const BankTransactions = enhancedLazy(() => import('./forms/BankTransactionPage'), 'Bank Transactions');
 const HRDashboard = enhancedLazy(() => import('./forms/HRDashboard.js'), 'HR Dashboard');
-const SalesDashboard = enhancedLazy(() => import('./forms/SalesDashboard.js'), 'Sales Dashboard');
 const PurchasesDashboard = enhancedLazy(() => import('./forms/PurchasesDashboard.js'), 'Purchases Dashboard');
 const TaxManagement = enhancedLazy(() => {
   console.log('[RenderMainContent] Attempting to load TaxManagement component');
