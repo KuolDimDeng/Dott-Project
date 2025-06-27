@@ -12,39 +12,40 @@ const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoCon
   const [linkToken, setLinkToken] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
   const [connectedBankInfo, setConnectedBankInfo] = useState(null);
+  const [showProviderForm, setShowProviderForm] = useState(false);
 
-  // Use preferredProvider when provided
+  // Use preferredProvider when provided - skip region selection entirely
   useEffect(() => {
-    if (preferredProvider) {
+    if (preferredProvider && businessCountry) {
       // Set region based on preferred provider
-      if (preferredProvider === 'plaid') {
+      if (preferredProvider.provider === 'plaid') {
         // Check if this is Europe or North America
         const europeanCountries = [
           'GB', 'DE', 'FR', 'IT', 'ES', 'NL', 'BE', 'AT', 'CH', 'SE', 'DK', 'NO', 'FI', 
           'PT', 'IE', 'GR', 'PL', 'CZ', 'HU', 'RO'
         ];
         
-        if (businessCountry && europeanCountries.includes(businessCountry)) {
+        if (europeanCountries.includes(businessCountry)) {
           setRegion('Europe');
         } else {
           setRegion('America');
         }
-      } else if (preferredProvider === 'paystack') {
+      } else if (preferredProvider.provider === 'mobilemoney') {
         setRegion('Africa');
         setAfricanOption('Mobile Money');
-      } else if (preferredProvider === 'dlocal') {
+      } else if (preferredProvider.provider === 'dlocal') {
         setRegion('South America');
       }
       
-      // If autoConnect is true, automatically connect to the bank
-      if (autoConnect) {
-        // Small delay to ensure state is updated
-        setTimeout(() => {
-          autoConnectToBank();
-        }, 100);
-      }
+      // Show the provider form directly without region selection
+      setShowProviderForm(true);
+      
+      // Auto-initialize the connection
+      setTimeout(() => {
+        autoConnectToBank();
+      }, 100);
     }
-  }, [preferredProvider, businessCountry, autoConnect]);
+  }, [preferredProvider, businessCountry]);
 
   const handleRegionChange = (event) => {
     setRegion(event.target.value);
@@ -63,8 +64,8 @@ const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoCon
 
   const getProviderForRegion = (region) => {
     // If we have a preferred provider from the backend, use that
-    if (preferredProvider) {
-      return preferredProvider;
+    if (preferredProvider && preferredProvider.provider) {
+      return preferredProvider.provider;
     }
     
     // Otherwise, use region-based logic as a fallback
@@ -247,37 +248,124 @@ const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoCon
   }
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow">
-      <h1 className="text-2xl font-bold mb-4">
-        Connect Your Bank
-      </h1>
-
+    <div className="p-6">
       {!connectedBankInfo ? (
         <>
-          <p className="mb-4">
-            Please choose the region where your bank is located. This helps us provide you with the
-            most appropriate connection method for your bank.
-          </p>
-          
-          {getRegionMessage()}
-          
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Select Your Region
-            </label>
-            <select
-              value={region}
-              onChange={handleRegionChange}
-              className="w-full p-2 border border-gray-300 rounded-md bg-white focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="" disabled>Select a region</option>
-              <option value="America">America</option>
-              <option value="Europe">Europe</option>
-              <option value="Africa">Africa</option>
-              <option value="South America">South America</option>
-              <option value="Asia">Asia</option>
-            </select>
-          </div>
+          {/* Show provider-specific form when auto-detected */}
+          {showProviderForm ? (
+            <>
+              <div className="flex items-center mb-4">
+                {preferredProvider?.provider === 'plaid' ? (
+                  <svg className="h-6 w-6 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+                  </svg>
+                ) : (
+                  <svg className="h-6 w-6 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                )}
+                <h2 className="text-xl font-bold text-gray-900">
+                  Connect Your {businessCountry} Bank
+                </h2>
+              </div>
+              
+              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center">
+                  {preferredProvider.provider === 'plaid' ? (
+                    <svg className="h-5 w-5 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+                    </svg>
+                  ) : (
+                    <svg className="h-5 w-5 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                  )}
+                  <div>
+                    <div className="font-medium text-blue-800">
+                      Using {preferredProvider.name} for {businessCountry} banks
+                    </div>
+                    <div className="text-sm text-blue-600">
+                      {preferredProvider.description}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Plaid-specific form */}
+              {preferredProvider?.provider === 'plaid' && (
+                <div className="space-y-4">
+                  <p className="text-gray-600">
+                    Click the button below to securely connect your bank account using Plaid. 
+                    You'll be redirected to your bank's secure login page.
+                  </p>
+                  
+                  <button
+                    className={`w-full py-3 px-4 rounded-md font-medium ${
+                      loading
+                        ? 'bg-blue-300 cursor-not-allowed text-white'
+                        : 'bg-blue-600 hover:bg-blue-700 text-white'
+                    }`}
+                    onClick={handleConnect}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <div className="flex items-center justify-center">
+                        <svg className="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Connecting...
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center">
+                        <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+                        </svg>
+                        Connect with Plaid
+                      </div>
+                    )}
+                  </button>
+                  
+                  <div className="text-xs text-gray-500 mt-4">
+                    <p className="font-medium mb-1">🔒 Your data is secure:</p>
+                    <ul className="space-y-1 text-gray-400">
+                      <li>• Bank-level 256-bit encryption</li>
+                      <li>• We never store your login credentials</li>
+                      <li>• Read-only access to account information</li>
+                      <li>• Trusted by over 5,000 financial institutions</li>
+                    </ul>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            /* Fallback: Manual region selection for edge cases */
+            <>
+              <h1 className="text-2xl font-bold mb-4">
+                Connect Your Bank
+              </h1>
+              <p className="mb-4">
+                Please choose the region where your bank is located. This helps us provide you with the
+                most appropriate connection method for your bank.
+              </p>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Select Your Region
+                </label>
+                <select
+                  value={region}
+                  onChange={handleRegionChange}
+                  className="w-full p-2 border border-gray-300 rounded-md bg-white focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="" disabled>Select a region</option>
+                  <option value="America">America</option>
+                  <option value="Europe">Europe</option>
+                  <option value="Africa">Africa</option>
+                  <option value="South America">South America</option>
+                  <option value="Asia">Asia</option>
+                </select>
+              </div>
 
           {region === 'Africa' && (
             <div className="mb-4">
@@ -352,6 +440,8 @@ const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoCon
               </svg>
             ) : 'Connect'}
           </button>
+            </>
+          )}
         </>
       ) : (
         <div>
