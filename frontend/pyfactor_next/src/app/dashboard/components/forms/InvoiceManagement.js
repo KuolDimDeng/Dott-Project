@@ -7,7 +7,7 @@ import { orderApi, invoiceApi, customerApi, productApi, serviceApi } from '@/uti
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
 import { format } from 'date-fns';
-import { DocumentTextIcon } from '@heroicons/react/24/outline';
+import { DocumentTextIcon, EyeIcon, PaperAirplaneIcon, CreditCardIcon, PrinterIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 // Tooltip component for field help
 const FieldTooltip = ({ text, position = 'top' }) => {
@@ -1281,36 +1281,41 @@ const InvoiceManagement = () => {
                               <button
                                 onClick={() => window.open(`/api/invoices/${invoice.id}/pdf?template=${invoice.template}`, '_blank')}
                                 className="text-blue-600 hover:text-blue-900"
+                                title="View"
                               >
-                                View
+                                <EyeIcon className="h-5 w-5" />
                               </button>
                               {invoice.status !== 'paid' && (
                                 <>
                                   <button
                                     onClick={() => handleSendInvoice(invoice)}
                                     className="text-green-600 hover:text-green-900"
+                                    title="Send Invoice"
                                   >
-                                    Send
+                                    <PaperAirplaneIcon className="h-5 w-5" />
                                   </button>
                                   <button
                                     onClick={() => handleRecordPayment(invoice)}
                                     className="text-purple-600 hover:text-purple-900"
+                                    title="Record Payment"
                                   >
-                                    Record Payment
+                                    <CreditCardIcon className="h-5 w-5" />
                                   </button>
                                 </>
                               )}
                               <button
                                 onClick={() => window.print()}
                                 className="text-gray-600 hover:text-gray-900"
+                                title="Print"
                               >
-                                Print
+                                <PrinterIcon className="h-5 w-5" />
                               </button>
                               <button
                                 onClick={() => handleDelete(invoice, 'invoice')}
                                 className="text-red-600 hover:text-red-900"
+                                title="Delete"
                               >
-                                Delete
+                                <TrashIcon className="h-5 w-5" />
                               </button>
                             </div>
                           </td>

@@ -6,7 +6,7 @@ import { toast } from 'react-hot-toast';
 import { orderApi } from '@/utils/apiClient';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
-import { ShoppingCartIcon } from '@heroicons/react/24/outline';
+import { ShoppingCartIcon, EyeIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 // Tooltip component for field help
 const FieldTooltip = ({ text, position = 'top' }) => {
@@ -1034,9 +1034,10 @@ const SalesOrderManagement = () => {
                           setShowOrderDetails(true);
                           setActiveTab('details');
                         }}
-                        className="text-blue-600 hover:text-blue-900 mr-4"
+                        className="text-blue-600 hover:text-blue-900 mr-3"
+                        title="View Details"
                       >
-                        View
+                        <EyeIcon className="h-5 w-5" />
                       </button>
                       <button
                         onClick={() => {
@@ -1044,9 +1045,10 @@ const SalesOrderManagement = () => {
                           setFormData(order);
                           setIsEditing(true);
                         }}
-                        className="text-indigo-600 hover:text-indigo-900 mr-4"
+                        className="text-indigo-600 hover:text-indigo-900 mr-3"
+                        title="Edit Order"
                       >
-                        Edit
+                        <PencilIcon className="h-5 w-5" />
                       </button>
                       <button
                         onClick={() => {
@@ -1054,8 +1056,9 @@ const SalesOrderManagement = () => {
                           setDeleteDialogOpen(true);
                         }}
                         className="text-red-600 hover:text-red-900"
+                        title="Delete Order"
                       >
-                        Delete
+                        <TrashIcon className="h-5 w-5" />
                       </button>
                     </td>
                   </tr>
