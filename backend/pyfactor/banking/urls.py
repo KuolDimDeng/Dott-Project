@@ -1,5 +1,6 @@
 # File: /Users/kuoldeng/projectx/backend/pyfactor/banking/urls.py
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from .views import (
     PlaidLinkTokenView,
     PlaidExchangeTokenView,
@@ -13,9 +14,19 @@ from .views import (
     ConnectBankAccountView,
     BankingReportView,
     PaymentGatewayView,
+    BankTransactionImportView,
+    BankingRuleViewSet,
 )
 
+# Create router for ViewSets
+router = DefaultRouter()
+router.register(r'rules', BankingRuleViewSet, basename='banking-rules')
+
 urlpatterns = [
+    # Include router URLs
+    path('', include(router.urls)),
+    
+    # Existing endpoints
     path('link_token/', PlaidLinkTokenView.as_view(), name='plaid_link_token'),
     path('exchange_token/', PlaidExchangeTokenView.as_view(), name='plaid_exchange_token'),
     path('accounts/', PlaidAccountsView.as_view(), name='plaid_accounts'),
@@ -27,4 +38,7 @@ urlpatterns = [
     path('connect-bank-account/', ConnectBankAccountView.as_view(), name='connect-bank-account'),
     path('report/', BankingReportView.as_view(), name='banking-report'),
     path('payment-gateway/', PaymentGatewayView.as_view(), name='payment_gateway'),
+    
+    # New secure endpoints
+    path('import-csv/', BankTransactionImportView.as_view(), name='import-csv'),
 ]

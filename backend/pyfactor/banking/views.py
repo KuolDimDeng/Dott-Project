@@ -22,7 +22,11 @@ from plaid.model.country_code import CountryCode
 from plaid.model.sandbox_public_token_create_request import SandboxPublicTokenCreateRequest
 from plaid.configuration import Configuration
 # Temporarily modified to break circular dependency
-from .models import PlaidItem
+from .models import PlaidItem, BankingRule, BankingAuditLog
+import hashlib
+import io
+from decimal import Decimal
+from django.db import transaction
 # Temporary placeholders for BankAccount and BankTransaction
 class BankAccountPlaceholder:
     objects = type('', (), {'filter': lambda **kwargs: []})()
@@ -35,7 +39,7 @@ class BankTransactionPlaceholder:
 # Use placeholders instead of actual models
 BankAccount = BankAccountPlaceholder
 BankTransaction = BankTransactionPlaceholder
-from .serializers import BankAccountSerializer, BankTransactionSerializer
+from .serializers import BankAccountSerializer, BankTransactionSerializer, BankingRuleSerializer
 from plaid.model.accounts_get_request import AccountsGetRequest
 from pyfactor.logging_config import get_logger
 from datetime import datetime, timedelta  # Make sure this line is included
@@ -728,3 +732,281 @@ class PaymentGatewayView(APIView):
         gateway_options = get_payment_gateway_for_country(country_code)
         
         return Response(gateway_options)
+
+
+# Secure CSV Import ViewSet
+class BankTransactionImportView(APIView):
+    """
+    Secure CSV import for bank transactions with PCI DSS compliance.
+    Processes files server-side with validation and duplicate detection.
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        """Import bank transactions from CSV file"""
+        start_time = timezone.now()
+        audit_log = None
+        
+        try:
+            # Validate file upload
+            if 'file' not in request.FILES:
+                return Response(
+                    {'error': 'No file provided'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            csv_file = request.FILES['file']
+            bank_name = request.data.get('bank_name', 'Unknown Bank')
+            account_name = request.data.get('account_name', 'Imported Account')
+            
+            # File size validation (5MB limit)
+            if csv_file.size > 5 * 1024 * 1024:
+                return Response(
+                    {'error': 'File too large. Maximum size is 5MB'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Create audit log entry
+            audit_log = BankingAuditLog.objects.create(
+                user=request.user,
+                action='import_csv',
+                ip_address=self.get_client_ip(request),
+                user_agent=request.META.get('HTTP_USER_AGENT', ''),
+                details={
+                    'file_name': csv_file.name,
+                    'file_size': csv_file.size,
+                    'bank_name': bank_name
+                },
+                status='processing'
+            )
+            
+            # Process CSV
+            imported_count = 0
+            duplicate_count = 0
+            error_count = 0
+            
+            # Get or create bank account
+            bank_account, created = BankAccount.objects.get_or_create(
+                user=request.user,
+                bank_name=bank_name,
+                account_number=account_name,
+                defaults={'balance': 0}
+            )
+            
+            # Parse CSV
+            decoded_file = csv_file.read().decode('utf-8')
+            csv_reader = csv.DictReader(io.StringIO(decoded_file))
+            
+            # Process transactions in batches
+            batch_id = uuid.uuid4()
+            transactions_to_create = []
+            
+            for row in csv_reader:
+                try:
+                    # Extract fields (handle various CSV formats)
+                    date_str = self.find_field(row, ['Date', 'Transaction Date', 'Posted Date'])
+                    description = self.find_field(row, ['Description', 'Details', 'Memo'])
+                    amount_str = self.find_field(row, ['Amount', 'Transaction Amount'])
+                    
+                    # Handle separate debit/credit columns
+                    if not amount_str:
+                        debit = self.find_field(row, ['Debit', 'Withdrawal', 'Money Out'])
+                        credit = self.find_field(row, ['Credit', 'Deposit', 'Money In'])
+                        
+                        debit_amount = self.parse_amount(debit) if debit else 0
+                        credit_amount = self.parse_amount(credit) if credit else 0
+                        amount = credit_amount - debit_amount
+                    else:
+                        amount = self.parse_amount(amount_str)
+                    
+                    # Parse date
+                    transaction_date = self.parse_date(date_str)
+                    if not transaction_date:
+                        error_count += 1
+                        continue
+                    
+                    # Generate import ID for duplicate detection
+                    import_id = self.generate_import_id(
+                        bank_account.id,
+                        transaction_date,
+                        description,
+                        amount
+                    )
+                    
+                    # Check for duplicates
+                    if BankTransaction.objects.filter(import_id=import_id).exists():
+                        duplicate_count += 1
+                        continue
+                    
+                    # Determine transaction type
+                    transaction_type = 'CREDIT' if amount >= 0 else 'DEBIT'
+                    
+                    # Auto-categorize
+                    category = self.categorize_transaction(description)
+                    
+                    # Create transaction
+                    transactions_to_create.append(BankTransaction(
+                        account=bank_account,
+                        amount=abs(amount),
+                        transaction_type=transaction_type,
+                        description=description[:255],
+                        date=transaction_date,
+                        category=category,
+                        import_id=import_id,
+                        import_batch=batch_id,
+                        imported_at=timezone.now(),
+                        imported_by=request.user
+                    ))
+                    
+                    # Bulk create every 100 transactions
+                    if len(transactions_to_create) >= 100:
+                        BankTransaction.objects.bulk_create(transactions_to_create)
+                        imported_count += len(transactions_to_create)
+                        transactions_to_create = []
+                        
+                except Exception as e:
+                    error_count += 1
+                    logger.error(f"Error processing row: {e}")
+            
+            # Create remaining transactions
+            if transactions_to_create:
+                BankTransaction.objects.bulk_create(transactions_to_create)
+                imported_count += len(transactions_to_create)
+            
+            # Update audit log
+            audit_log.status = 'success'
+            audit_log.affected_records = imported_count
+            audit_log.completed_at = timezone.now()
+            audit_log.duration_ms = int((timezone.now() - start_time).total_seconds() * 1000)
+            audit_log.details.update({
+                'imported': imported_count,
+                'duplicates': duplicate_count,
+                'errors': error_count
+            })
+            audit_log.save()
+            
+            return Response({
+                'imported': imported_count,
+                'duplicates': duplicate_count,
+                'errors': error_count,
+                'batch_id': str(batch_id)
+            })
+            
+        except Exception as e:
+            logger.error(f"CSV import error: {e}")
+            
+            if audit_log:
+                audit_log.status = 'failed'
+                audit_log.error_message = str(e)
+                audit_log.completed_at = timezone.now()
+                audit_log.save()
+            
+            return Response(
+                {'error': 'Failed to import CSV'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    def get_client_ip(self, request):
+        """Get client IP address from request"""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            return x_forwarded_for.split(',')[0]
+        return request.META.get('REMOTE_ADDR', '')
+    
+    def find_field(self, row, field_names):
+        """Find field value from multiple possible column names"""
+        for field in field_names:
+            if field in row and row[field]:
+                return row[field].strip()
+        return None
+    
+    def parse_amount(self, amount_str):
+        """Parse amount string to decimal"""
+        if not amount_str:
+            return 0
+        # Remove currency symbols and commas
+        cleaned = amount_str.replace('$', '').replace(',', '').strip()
+        try:
+            return Decimal(cleaned)
+        except:
+            return 0
+    
+    def parse_date(self, date_str):
+        """Parse date string with multiple format support"""
+        if not date_str:
+            return None
+        
+        formats = [
+            '%m/%d/%Y', '%d/%m/%Y', '%Y-%m-%d', '%Y/%m/%d',
+            '%d-%b-%Y', '%d %b %Y', '%b %d, %Y', '%B %d, %Y'
+        ]
+        
+        for fmt in formats:
+            try:
+                return datetime.strptime(date_str.strip(), fmt).date()
+            except:
+                continue
+        
+        return None
+    
+    def generate_import_id(self, account_id, date, description, amount):
+        """Generate unique ID for duplicate detection"""
+        data = f"{account_id}|{date}|{description}|{amount}"
+        return hashlib.sha256(data.encode()).hexdigest()
+    
+    def categorize_transaction(self, description):
+        """Auto-categorize transaction based on description"""
+        description_lower = description.lower()
+        
+        # Define category patterns
+        categories = {
+            'Income': ['salary', 'payment received', 'invoice', 'sales'],
+            'Office Supplies': ['staples', 'office depot', 'supplies'],
+            'Utilities': ['electric', 'gas', 'water', 'internet', 'phone'],
+            'Rent': ['rent', 'lease', 'property management'],
+            'Payroll': ['payroll', 'wages', 'direct deposit'],
+            'Software': ['software', 'subscription', 'saas'],
+            'Travel': ['airline', 'hotel', 'uber', 'lyft'],
+            'Meals': ['restaurant', 'cafe', 'coffee', 'lunch'],
+            'Bank Fees': ['bank fee', 'service charge', 'overdraft']
+        }
+        
+        for category, patterns in categories.items():
+            if any(pattern in description_lower for pattern in patterns):
+                return category
+        
+        return 'Uncategorized'
+
+
+# Banking Rules ViewSet
+class BankingRuleViewSet(viewsets.ModelViewSet):
+    """Manage auto-categorization rules for bank transactions"""
+    permission_classes = [IsAuthenticated]
+    serializer_class = BankingRuleSerializer
+    
+    def get_queryset(self):
+        return BankingRule.objects.all()
+    
+    def perform_create(self, serializer):
+        serializer.save()
+        
+        # Log rule creation
+        BankingAuditLog.objects.create(
+            user=self.request.user,
+            action='create_rule',
+            ip_address=self.get_client_ip(),
+            user_agent=self.request.META.get('HTTP_USER_AGENT', ''),
+            details={
+                'rule_name': serializer.instance.name,
+                'rule_id': str(serializer.instance.id)
+            },
+            status='success',
+            affected_records=1
+        )
+    
+    def get_client_ip(self):
+        """Get client IP address"""
+        x_forwarded_for = self.request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            return x_forwarded_for.split(',')[0]
+        return self.request.META.get('REMOTE_ADDR', '')

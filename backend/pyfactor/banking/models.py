@@ -1,5 +1,6 @@
 #/Users/kuoldeng/projectx/backend/pyfactor/banking/models.py
 from django.db import models
+import uuid
 
 # Create your models here.
 from django.conf import settings
@@ -143,6 +144,12 @@ class BankTransaction(TenantAwareModel):
     merchant_name = models.CharField(max_length=255, blank=True, null=True)
     category = models.CharField(max_length=100, blank=True, null=True)
     
+    # Import tracking for CSV imports
+    import_id = models.CharField(max_length=255, unique=True, null=True, blank=True)  # Prevent duplicates
+    import_batch = models.UUIDField(null=True, blank=True)  # Track import batches
+    imported_at = models.DateTimeField(null=True, blank=True)
+    imported_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='imported_transactions')
+    
     def find_matching_finance_transaction(self):
         """
         Find a matching finance transaction for this bank transaction.
@@ -230,8 +237,6 @@ class BankTransaction(TenantAwareModel):
 # Additional models for secure CSV processing and banking tools
 class BankingRule(TenantAwareModel):
     """Auto-categorization rules for transactions"""
-    import uuid
-    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
     is_active = models.BooleanField(default=True)
@@ -272,8 +277,6 @@ class BankingRule(TenantAwareModel):
 
 class BankingAuditLog(TenantAwareModel):
     """Audit trail for all banking operations - regulatory compliance"""
-    import uuid
-    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     
