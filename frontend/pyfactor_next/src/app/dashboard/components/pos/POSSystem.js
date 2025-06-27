@@ -231,6 +231,9 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
   const [scannerType, setScannerType] = useState('usb'); // 'usb' or 'camera'
   const [productSearchTerm, setProductSearchTerm] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [scannerDetected, setScannerDetected] = useState(false);
+  const [lastScanTime, setLastScanTime] = useState(0);
+  const [scannerStatus, setScannerStatus] = useState('waiting'); // 'waiting', 'detected', 'active'
 
   // Refs
   const productSearchRef = useRef(null);
@@ -250,29 +253,108 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
     { id: '3', name: 'Bob Johnson', email: 'bob@example.com' },
   ];
 
-  // USB Scanner support (keyboard wedge)
+  // Scanner detection logic
   useEffect(() => {
+    let keypressTimer = null;
+    let scanBuffer = '';
+    let scanStartTime = 0;
+
+    const detectScanner = (timeDiff) => {
+      // If keys are pressed very quickly (< 30ms apart), it's likely a scanner
+      if (timeDiff < 30 && !scannerDetected) {
+        setScannerDetected(true);
+        setScannerStatus('detected');
+        toast.success('🔍 Barcode scanner detected! You can start scanning products.', {
+          duration: 4000,
+          position: 'top-center',
+          style: {
+            background: '#10B981',
+            color: 'white',
+          },
+        });
+        
+        // Auto-focus the search field for immediate scanning
+        if (productSearchRef.current) {
+          productSearchRef.current.focus();
+        }
+      }
+    };
+
     const handleKeyPress = (event) => {
-      if (!isSearchFocused || !isOpen) return;
+      if (!isOpen) return;
+
+      const currentTime = Date.now();
+      
+      // Detect scanner by rapid key input
+      if (lastScanTime > 0) {
+        const timeDiff = currentTime - lastScanTime;
+        detectScanner(timeDiff);
+      }
+      setLastScanTime(currentTime);
+
+      // Only process if search field is focused
+      if (!isSearchFocused) {
+        // Auto-focus search field if scanner is detected
+        if (scannerDetected && productSearchRef.current) {
+          productSearchRef.current.focus();
+        }
+        return;
+      }
+
+      console.log('[POSSystem] Key pressed:', event.key, 'Current buffer:', usbScannerRef.current);
+
+      // Clear any existing timer
+      if (keypressTimer) clearTimeout(keypressTimer);
 
       // USB scanners typically send data very quickly followed by Enter
       if (event.key === 'Enter' && usbScannerRef.current.length > 0) {
+        console.log('[POSSystem] Scanner sent Enter, processing barcode:', usbScannerRef.current);
+        setScannerStatus('active'); // Show scanner is actively being used
         handleProductScan(usbScannerRef.current);
         usbScannerRef.current = '';
         setProductSearchTerm('');
+        scanBuffer = '';
+        
+        // Reset scanner status after a delay
+        setTimeout(() => {
+          setScannerStatus('detected');
+        }, 2000);
         return;
       }
 
       // Build up the scanned code
       if (event.key.length === 1) {
-        usbScannerRef.current += event.key;
-        setProductSearchTerm(usbScannerRef.current);
+        // Track scan start time
+        if (scanBuffer === '') {
+          scanStartTime = currentTime;
+        }
+        
+        scanBuffer += event.key;
+        usbScannerRef.current = scanBuffer;
+        setProductSearchTerm(scanBuffer);
+
+        // Set a timer to clear the buffer if no more input
+        keypressTimer = setTimeout(() => {
+          // If we got a complete scan in under 100ms, it's definitely a scanner
+          const scanDuration = Date.now() - scanStartTime;
+          if (scanBuffer.length > 5 && scanDuration < 100) {
+            detectScanner(10); // Force detection
+          }
+          
+          // Don't clear if user is still typing
+          if (Date.now() - lastScanTime > 500) {
+            scanBuffer = '';
+          }
+        }, 500);
       }
     };
 
     window.addEventListener('keypress', handleKeyPress);
-    return () => window.removeEventListener('keypress', handleKeyPress);
-  }, [isSearchFocused, isOpen]);
+    return () => {
+      window.removeEventListener('keypress', handleKeyPress);
+      if (keypressTimer) clearTimeout(keypressTimer);
+    };
+  }, [isSearchFocused, isOpen, lastScanTime, scannerDetected]);
 
   // Focus on product search when modal opens
   useEffect(() => {
@@ -495,10 +577,27 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                     <div className="space-y-6">
                       {/* Product Search */}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Product Search / Barcode Scanner
-                          <FieldTooltip text="Type product name, scan barcode with USB scanner, or use camera to scan QR codes" />
-                        </label>
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="text-sm font-medium text-gray-700">
+                            Product Search / Barcode Scanner
+                            <FieldTooltip text="Type product name, scan barcode with USB scanner, or use camera to scan QR codes" />
+                          </label>
+                          {/* Scanner Status Indicator */}
+                          {scannerDetected && (
+                            <div className={`flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                              scannerStatus === 'active' 
+                                ? 'bg-blue-100 text-blue-700' 
+                                : 'bg-green-100 text-green-700'
+                            }`}>
+                              <div className={`w-2 h-2 rounded-full mr-2 ${
+                                scannerStatus === 'active' 
+                                  ? 'bg-blue-500 animate-pulse' 
+                                  : 'bg-green-500'
+                              }`} />
+                              {scannerStatus === 'active' ? 'Scanning...' : 'Scanner Ready'}
+                            </div>
+                          )}
+                        </div>
                         <div className="relative">
                           <input
                             ref={productSearchRef}
@@ -507,10 +606,16 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                             onChange={(e) => setProductSearchTerm(e.target.value)}
                             onFocus={() => setIsSearchFocused(true)}
                             onBlur={() => setIsSearchFocused(false)}
-                            placeholder="Scan barcode or type product name..."
-                            className="w-full pl-4 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-lg"
+                            placeholder={scannerDetected ? "Ready to scan - place cursor here" : "Scan barcode or type product name..."}
+                            className={`w-full pl-4 pr-12 py-3 border rounded-lg focus:ring-2 text-lg transition-all ${
+                              scannerDetected 
+                                ? 'border-green-400 focus:ring-green-500 focus:border-green-500' 
+                                : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                            }`}
                           />
-                          <BarcodeIcon className="absolute right-3 top-3 h-6 w-6 text-gray-400" />
+                          <BarcodeIcon className={`absolute right-3 top-3 h-6 w-6 ${
+                            scannerDetected ? 'text-green-500' : 'text-gray-400'
+                          }`} />
                         </div>
                       </div>
 
@@ -531,6 +636,19 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                           Camera Scanner
                         </button>
                       </div>
+
+                      {/* Scanner Help */}
+                      {!scannerDetected && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                          <h4 className="text-sm font-medium text-blue-900 mb-2">USB Barcode Scanner Setup</h4>
+                          <ul className="text-xs text-blue-700 space-y-1">
+                            <li>• Connect your USB barcode scanner to any USB port</li>
+                            <li>• Click in the search field above</li>
+                            <li>• Start scanning - the scanner will be auto-detected</li>
+                            <li>• Most USB scanners work as keyboard devices</li>
+                          </ul>
+                        </div>
+                      )}
 
                       {/* Camera Scanner */}
                       {showScanner && scannerType === 'camera' && (

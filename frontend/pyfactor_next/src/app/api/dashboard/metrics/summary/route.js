@@ -1,93 +1,126 @@
 import { NextResponse } from 'next/server';
-import { logger } from '@/utils/serverLogger';
-import { getServerUser } from '@/utils/getServerUser';
 
-/**
- * API endpoint to fetch dashboard metrics summary
- * 
- * This endpoint provides key metrics for the dashboard in a lightweight format,
- * optimized for RLS architecture. It returns placeholder data quickly for
- * initial rendering, which can be replaced with real data as it becomes available.
- */
 export async function GET(request) {
-  const requestId = crypto.randomUUID();
-  const startTime = Date.now();
-  
   try {
-    // Check if this is a prefetch request
-    const isPrefetch = request.headers.get('x-prefetch') === 'true';
+    // Get session cookie
+    const cookies = request.cookies;
+    const sessionId = cookies.get('sid');
     
-    // Get user information from the request
-    const user = await getServerUser(request);
-    const tenantId = user?.['custom:businessid'] || request.headers.get('x-tenant-id');
-    
-    if (!tenantId) {
-      logger.warn('[Metrics] No tenant ID found', { requestId });
-      return NextResponse.json({
-        success: false,
-        error: 'No tenant ID found',
-        requestId
-      }, { status: 400 });
+    if (!sessionId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    logger.debug('[Metrics] Fetching dashboard metrics', { 
-      tenantId, 
-      requestId,
-      isPrefetch
+    // Try to get dashboard metrics from Django backend
+    const metricsResponse = await fetch(`${process.env.BACKEND_API_URL || 'https://api.dottapps.com'}/api/dashboard/metrics/`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Session ${sessionId.value}`,
+        'Content-Type': 'application/json',
+      },
     });
     
-    // For RLS, we return placeholder data immediately for fast rendering
-    // In a real implementation, you would make efficient queries with RLS policies applied
+    if (metricsResponse.ok) {
+      const data = await metricsResponse.json();
+      return NextResponse.json(data);
+    }
     
-    // Create a response with metrics data
-    const response = {
-      success: true,
-      // Placeholder metrics - in a real implementation, these would come from the database
-      metrics: {
-        sales: {
-          today: { value: 0, change: 0 },
-          thisWeek: { value: 0, change: 0 },
-          thisMonth: { value: 0, change: 0 },
-          pending: { value: 0 }
+    // If backend doesn't have this endpoint, fetch data from individual endpoints
+    const [invoicesRes, salesRes] = await Promise.all([
+      fetch(`${process.env.BACKEND_API_URL || 'https://api.dottapps.com'}/api/sales/invoices/`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Session ${sessionId.value}`,
+          'Content-Type': 'application/json',
         },
-        invoices: {
-          paid: { value: 0, change: 0 },
-          unpaid: { value: 0, count: 0 },
-          overdue: { value: 0, count: 0 },
-          draft: { value: 0, count: 0 }
+      }),
+      fetch(`${process.env.BACKEND_API_URL || 'https://api.dottapps.com'}/api/sales/orders/`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Session ${sessionId.value}`,
+          'Content-Type': 'application/json',
         },
-        expenses: {
-          thisMonth: { value: 0, change: 0 },
-          pending: { value: 0, count: 0 }
-        },
-        customers: {
-          total: { value: 0 },
-          active: { value: 0 },
-          new: { value: 0, change: 0 }
-        }
-      },
-      recentActivity: [],
-      isPrefetched: isPrefetch,
-      isPlaceholder: true, // Flag indicating these are placeholder values
-      responseTime: Date.now() - startTime,
-      timestamp: new Date().toISOString(),
-      requestId
+      })
+    ]);
+    
+    let invoices = [];
+    let sales = [];
+    
+    if (invoicesRes.ok) {
+      invoices = await invoicesRes.json();
+    }
+    
+    if (salesRes.ok) {
+      sales = await salesRes.json();
+    }
+    
+    // Calculate metrics from the data
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    // Process invoices
+    const paidInvoices = invoices.filter(i => i.status === 'paid' || i.payment_status === 'paid');
+    const unpaidInvoices = invoices.filter(i => i.status === 'unpaid' || i.status === 'sent' || i.payment_status === 'unpaid');
+    const overdueInvoices = invoices.filter(i => {
+      if (i.status === 'paid' || i.payment_status === 'paid') return false;
+      const dueDate = new Date(i.due_date || i.date);
+      return dueDate < now;
+    });
+    const draftInvoices = invoices.filter(i => i.status === 'draft');
+    
+    // Calculate sales metrics
+    const calculateSalesForPeriod = (startDate) => {
+      return invoices
+        .filter(i => {
+          const invoiceDate = new Date(i.date || i.created_at);
+          return invoiceDate >= startDate && (i.status === 'paid' || i.payment_status === 'paid');
+        })
+        .reduce((sum, i) => sum + parseFloat(i.total || i.amount || 0), 0);
     };
     
-    return NextResponse.json(response);
+    const metrics = {
+      sales: {
+        today: calculateSalesForPeriod(startOfDay),
+        thisWeek: calculateSalesForPeriod(startOfWeek),
+        thisMonth: calculateSalesForPeriod(startOfMonth),
+        total: paidInvoices.reduce((sum, i) => sum + parseFloat(i.total || i.amount || 0), 0)
+      },
+      invoices: {
+        total: invoices.length,
+        paid: paidInvoices.length,
+        unpaid: unpaidInvoices.length,
+        overdue: overdueInvoices.length,
+        draft: draftInvoices.length
+      },
+      expenses: {
+        today: 0,
+        thisWeek: 0,
+        thisMonth: 0,
+        total: 0
+      },
+      customers: {
+        total: 0,
+        new: 0,
+        active: 0
+      },
+      recentActivity: []
+    };
+    
+    return NextResponse.json({ metrics });
     
   } catch (error) {
-    logger.error('[Metrics] Error fetching dashboard metrics', {
-      error: error.message,
-      stack: error.stack,
-      requestId
-    });
+    console.error('[Dashboard Metrics] Error:', error);
     
+    // Return default metrics structure on error
     return NextResponse.json({
-      success: false,
-      error: 'Failed to fetch dashboard metrics',
-      message: error.message,
-      requestId
-    }, { status: 500 });
+      metrics: {
+        sales: { today: 0, thisWeek: 0, thisMonth: 0, total: 0 },
+        invoices: { total: 0, paid: 0, unpaid: 0, overdue: 0, draft: 0 },
+        expenses: { today: 0, thisWeek: 0, thisMonth: 0, total: 0 },
+        customers: { total: 0, new: 0, active: 0 },
+        recentActivity: []
+      }
+    }, { status: 200 });
   }
-} 
+}

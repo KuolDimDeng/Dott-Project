@@ -66,6 +66,36 @@ for the full message or use the non-minified dev environment for full errors
 
 ---
 
+## POS System - Barcode Scanner Detection Feature
+
+**Feature Added**: 2025-01-28
+
+**Description**: Automatic detection of USB barcode scanners with visual feedback and improved UX.
+
+**How it Works**:
+1. System detects rapid keypress patterns (< 30ms between keys)
+2. Shows toast notification when scanner is detected
+3. Displays visual status indicator: "Scanner Ready" (green) or "Scanning..." (blue)
+4. Auto-focuses search field when scanner detected
+5. Shows setup instructions for users without connected scanners
+
+**User Benefits**:
+- Immediate feedback when scanner is connected
+- Clear visual indicators of scanner status
+- No configuration required - plug and scan
+- Helpful setup instructions for new users
+
+**Implementation Details**:
+- Detection based on keypress timing analysis
+- Status states: 'waiting', 'detected', 'active'
+- Visual feedback with color-coded indicators
+- Auto-focus enhancement for faster scanning
+
+**Files Changed**:
+- `/src/app/dashboard/components/pos/POSSystem.js`
+
+---
+
 ## POS System - Camera Scanner CSP Errors
 
 **Issue**: Camera scanner shows CSP errors and "Camera not found" messages.
@@ -93,6 +123,12 @@ Camera access denied: Camera not found.
 1. Use USB barcode scanners instead of camera
 2. Click in the search field and scan - it acts as keyboard input
 3. Scanner automatically sends Enter key after barcode
+4. **NEW**: Scanner auto-detection feature added:
+   - POS System now detects when a USB scanner is connected
+   - Shows green "Scanner Ready" indicator when detected
+   - Shows blue "Scanning..." indicator during active scans
+   - Auto-focuses search field when scanner is detected
+   - Displays setup instructions if no scanner detected yet
 
 **Solution for Camera Scanner** (Requires CSP update):
 1. Update next.config.js to allow blob: URLs for workers:

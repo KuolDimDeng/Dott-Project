@@ -61,9 +61,18 @@ function Home({ userData, onNavigate }) {
 
         // Fetch entity counts
         const [customers, products, suppliers] = await Promise.all([
-          customerApi.getAll().catch(() => []),
-          productApi.getAll().catch(() => []),
-          supplierApi.getAll().catch(() => [])
+          customerApi.getAll().catch((error) => {
+            console.error('[Home] Error fetching customers:', error);
+            return [];
+          }),
+          productApi.getAll().catch((error) => {
+            console.error('[Home] Error fetching products:', error);
+            return [];
+          }),
+          supplierApi.getAll().catch((error) => {
+            console.error('[Home] Error fetching suppliers:', error);
+            return [];
+          })
         ]);
 
         // Update stats
@@ -76,15 +85,27 @@ function Home({ userData, onNavigate }) {
         });
 
         // Update checklist based on real data
-        setChecklistData({
-          profileComplete: userData?.business_name && userData?.business_address,
+        const checklistStatus = {
+          profileComplete: !!(userData?.businessName || userData?.business_name || userData?.company_name),
           hasCustomers: (customerStats.total || customers.length) > 0,
           hasProducts: products.length > 0,
           hasServices: (serviceStats.stats?.total || 0) > 0,
           hasSuppliers: suppliers.length > 0,
           hasInvoices: (dashboardMetrics.metrics?.invoices?.total || 0) > 0,
           exploredDashboard: true // Can track this via localStorage or user activity
+        };
+        
+        console.log('[Home] Checklist Status:', checklistStatus);
+        console.log('[Home] Raw Data:', {
+          customerStats,
+          customers: customers.length,
+          products: products.length,
+          serviceStats,
+          suppliers: suppliers.length,
+          dashboardMetrics
         });
+        
+        setChecklistData(checklistStatus);
 
         // Generate recent activity from dashboard metrics
         const activities = [];
