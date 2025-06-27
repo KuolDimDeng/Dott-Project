@@ -64,6 +64,7 @@ const CustomerManagement = enhancedLazy(() => import('./forms/CustomerManagement
 const InvoiceTemplateBuilder = enhancedLazy(() => import('./forms/InvoiceTemplateBuilder.js'), 'Invoice Template Builder');
 const TransactionForm = enhancedLazy(() => import('../../createNew/forms/TransactionForm.js'), 'Transaction Form');
 const TransactionList = enhancedLazy(() => import('./lists/TransactionList.js'), 'Transaction List');
+const TransactionManagement = enhancedLazy(() => import('./forms/TransactionManagement.js'), 'Transaction Management');
 const ReportDisplay = enhancedLazy(() => import('./forms/ReportDisplay.js'), 'Report Display');
 const BankingDashboard = enhancedLazy(() => import('./forms/BankingDashboard.js'), 'Banking Dashboard');
 const AnalysisPage = enhancedLazy(() => import('./forms/AnalysisPage.js'), 'Analysis Page');
@@ -1998,7 +1999,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
         return (
           <ContentWrapperWithKey>
             <SuspenseWithCleanup componentKey={createComponentKey}>
-              {selectedOption === 'Transaction' && <TransactionForm />}
+              {selectedOption === 'Transaction' && <TransactionManagement />}
               {selectedOption === 'Invoice' && <InvoiceManagement newInvoice={true} mode="create" />}
               {selectedOption === 'Bill' && <BillManagement newBill={true} />}
               {selectedOption === 'Estimate' && <EstimateManagement newEstimate={true} />}
