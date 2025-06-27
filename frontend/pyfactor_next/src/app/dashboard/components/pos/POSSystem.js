@@ -18,8 +18,15 @@ import {
 } from '@heroicons/react/24/outline';
 import { logger } from '@/utils/logger';
 
-// QR Scanner library - import the actual library
-import QrScannerLib from 'qr-scanner';
+// QR Scanner library - import dynamically to avoid SSR issues
+let QrScannerLib = null;
+if (typeof window !== 'undefined') {
+  import('qr-scanner').then(module => {
+    QrScannerLib = module.default;
+  }).catch(err => {
+    console.error('[POSSystem] Failed to load QR scanner:', err);
+  });
+}
 
 const QRScanner = ({ isActive, onScan, onError }) => {
   const videoRef = useRef(null);
@@ -45,7 +52,14 @@ const QRScanner = ({ isActive, onScan, onError }) => {
         return;
       }
 
-      // Initialize QR Scanner
+      // Initialize QR Scanner only if library is loaded
+      if (!QrScannerLib) {
+        console.error('[QRScanner] QR Scanner library not loaded yet');
+        setIsLoading(false);
+        onError && onError(new Error('QR Scanner library not loaded'));
+        return;
+      }
+
       qrScannerRef.current = new QrScannerLib(
         videoRef.current,
         (result) => {
@@ -149,7 +163,47 @@ const FieldTooltip = ({ text, position = 'top' }) => {
   );
 };
 
-const POSSystem = ({ isOpen, onClose, onSaleCompleted }) => {
+// Error boundary for POSSystem
+class POSErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('[POSSystem] Error caught by boundary:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-6 text-center">
+          <h2 className="text-lg font-semibold text-red-600 mb-2">Error Loading POS System</h2>
+          <p className="text-sm text-gray-600 mb-4">
+            {this.state.error?.message || 'An unexpected error occurred'}
+          </p>
+          <button
+            onClick={() => {
+              this.setState({ hasError: false, error: null });
+              this.props.onClose && this.props.onClose();
+            }}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Close POS System
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
   // Cart state
   const [cartItems, setCartItems] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState('');
@@ -715,6 +769,15 @@ const POSSystem = ({ isOpen, onClose, onSaleCompleted }) => {
         </div>
       </Dialog>
     </Transition>
+  );
+};
+
+// Wrap POSSystemContent with Error Boundary
+const POSSystem = (props) => {
+  return (
+    <POSErrorBoundary onClose={props.onClose}>
+      <POSSystemContent {...props} />
+    </POSErrorBoundary>
   );
 };
 
