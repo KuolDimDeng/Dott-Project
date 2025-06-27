@@ -105,8 +105,8 @@ export async function POST(request) {
     // Transform frontend data to match backend expectations
     const backendData = {
       customer: body.customer_id,  // Backend expects 'customer' not 'customer_id'
-      date: body.issue_date || body.invoice_date,
-      due_date: body.due_date,
+      date: body.issue_date || body.invoice_date || new Date().toISOString().split('T')[0], // Ensure date format YYYY-MM-DD
+      due_date: body.due_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Default 30 days from now
       status: body.status || 'draft',
       totalAmount: parseFloat(body.total_amount || body.subtotal || 0).toFixed(2), // Django expects 2 decimal places
       discount: parseFloat(body.discount_amount || 0).toFixed(2),
@@ -121,7 +121,7 @@ export async function POST(request) {
         unit_price: parseFloat(item.unit_price || 0).toFixed(2),
         tax_rate: parseFloat(item.tax_rate || 0).toFixed(2),
         tax_amount: parseFloat(item.tax_amount || 0).toFixed(2),
-        total: parseFloat(item.total || (item.quantity * item.unit_price)).toFixed(2)
+        total: parseFloat(item.total || (parseFloat(item.quantity || 1) * parseFloat(item.unit_price || 0))).toFixed(2)
       })) || []
     };
     
