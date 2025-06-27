@@ -32,7 +32,7 @@ import { useAuth } from '@/hooks/auth';
 import { ToastProvider } from '@/components/Toast/ToastProvider';
 import DashboardLoader from '@/components/DashboardLoader';
 import { ensureAuthProvider } from '@/utils/refreshUserSession';
-import RecordSaleModal from '../../app/dashboard/components/modals/RecordSaleModal';
+import POSSystem from '../../app/dashboard/components/pos/POSSystem';
 
 // Lazy load components to reduce initial memory usage
 const RenderMainContent = lazy(() =>
@@ -192,7 +192,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     showCreateMenu: false,
     
     // Modal visibility
-    showRecordSaleModal: false,
+    showPOSSystem: false,
   });
   
   // Destructure state for easier access
@@ -203,7 +203,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     products, services, showKPIDashboard, showMainDashboard, showHome,
     showInventoryItems, showInventoryManagement, showForm, formOption,
     showHRDashboard, showEmployeeManagement, showTimesheetManagement, hrSection, showMyAccount, showHelpCenter,
-    showCreateMenu, showCreateOptions, showBenefitsManagement, showRecordSaleModal
+    showCreateMenu, showCreateOptions, showBenefitsManagement, showPOSSystem
   } = uiState;
   
   // Computed values - memoize these values
@@ -296,10 +296,10 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     updateState({ showCreateMenu: value });
   }, [updateState, uiState.showCreateMenu]);
 
-  const setShowRecordSaleModal = useCallback((value) => {
-    if (value === uiState.showRecordSaleModal) return; // Skip update if unchanged
-    updateState({ showRecordSaleModal: value });
-  }, [updateState, uiState.showRecordSaleModal]);
+  const setShowPOSSystem = useCallback((value) => {
+    if (value === uiState.showPOSSystem) return; // Skip update if unchanged
+    updateState({ showPOSSystem: value });
+  }, [updateState, uiState.showPOSSystem]);
 
   // Reset all view states for navigation
   const resetAllStates = useCallback(() => {
@@ -355,7 +355,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
       showCustomerDetails: false,
       
       // Reset modal states
-      showRecordSaleModal: false,
+      showPOSSystem: false,
       showCreateMenu: false,
       isCreating: false,
       isEditing: false
@@ -733,8 +733,8 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
       console.log('[DashboardContent] Redirecting to Estimates management');
       handleSalesClick('estimates');
     } else if (option === 'Sales') {
-      console.log('[DashboardContent] Opening Record Sale modal');
-      setShowRecordSaleModal(true);
+      console.log('[DashboardContent] Opening POS System');
+      setShowPOSSystem(true);
     } else {
       console.log('[DashboardContent] Showing create options for:', option);
       handleShowCreateOptions(option);
@@ -1328,12 +1328,12 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
         </ToastProvider>
       </NotificationProvider>
 
-      {/* Record Sale Modal */}
-      <RecordSaleModal
-        isOpen={showRecordSaleModal}
-        onClose={() => setShowRecordSaleModal(false)}
-        onSaleRecorded={(saleData) => {
-          logger.info('[DashboardContent] Sale recorded:', saleData);
+      {/* POS System */}
+      <POSSystem
+        isOpen={showPOSSystem}
+        onClose={() => setShowPOSSystem(false)}
+        onSaleCompleted={(saleData) => {
+          logger.info('[DashboardContent] Sale completed:', saleData);
           // Optionally refresh data or show confirmation
         }}
       />
