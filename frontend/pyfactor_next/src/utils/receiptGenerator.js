@@ -1,0 +1,394 @@
+'use client';
+
+import jsPDF from 'jspdf';
+
+/**
+ * Receipt Generator Utility
+ * Generates formatted receipts for POS sales with various output options
+ */
+
+export class ReceiptGenerator {
+  constructor(businessInfo = {}) {
+    this.businessInfo = {
+      name: businessInfo.name || 'Your Business Name',
+      address: businessInfo.address || 'Business Address',
+      phone: businessInfo.phone || 'Phone Number',
+      email: businessInfo.email || 'email@business.com',
+      website: businessInfo.website || 'www.business.com',
+      taxId: businessInfo.taxId || 'Tax ID',
+      ...businessInfo
+    };
+  }
+
+  /**
+   * Generate receipt data structure
+   */
+  generateReceiptData(saleData, receiptNumber) {
+    const timestamp = new Date();
+    
+    return {
+      receipt: {
+        number: receiptNumber || saleData.invoice_number || `REC-${Date.now()}`,
+        date: timestamp.toLocaleDateString(),
+        time: timestamp.toLocaleTimeString(),
+        cashier: saleData.cashier || 'POS System',
+      },
+      business: this.businessInfo,
+      customer: saleData.customer || { name: 'Walk-in Customer' },
+      items: saleData.items || [],
+      totals: {
+        subtotal: saleData.subtotal || '0.00',
+        discount: saleData.discount_amount || '0.00',
+        discountType: saleData.discount_type || 'amount',
+        tax: saleData.tax_amount || '0.00',
+        taxRate: saleData.tax_rate || 0,
+        total: saleData.total_amount || '0.00'
+      },
+      payment: {
+        method: saleData.payment_method || 'cash',
+        amount: saleData.total_amount || '0.00'
+      },
+      notes: saleData.notes || ''
+    };
+  }
+
+  /**
+   * Generate HTML receipt for display/print
+   */
+  generateHTMLReceipt(receiptData) {
+    const { receipt, business, customer, items, totals, payment, notes } = receiptData;
+    
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Receipt #${receipt.number}</title>
+        <style>
+          body { 
+            font-family: 'Courier New', monospace; 
+            max-width: 300px; 
+            margin: 0 auto; 
+            padding: 10px;
+            background: white;
+          }
+          .header { text-align: center; margin-bottom: 15px; }
+          .business-name { font-size: 18px; font-weight: bold; margin-bottom: 5px; }
+          .business-info { font-size: 12px; line-height: 1.3; }
+          .divider { border-top: 1px dashed #000; margin: 10px 0; }
+          .receipt-info { margin: 10px 0; font-size: 12px; }
+          .items { margin: 10px 0; }
+          .item { display: flex; justify-content: space-between; margin: 3px 0; font-size: 12px; }
+          .item-name { flex: 1; }
+          .item-qty { width: 30px; text-align: center; }
+          .item-price { width: 60px; text-align: right; }
+          .totals { margin: 10px 0; }
+          .total-line { display: flex; justify-content: space-between; margin: 2px 0; font-size: 12px; }
+          .total-line.final { font-weight: bold; font-size: 14px; border-top: 1px solid #000; padding-top: 3px; }
+          .payment-info { margin: 10px 0; font-size: 12px; }
+          .footer { text-align: center; margin-top: 15px; font-size: 10px; }
+          @media print {
+            body { margin: 0; }
+            .no-print { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="business-name">${business.name}</div>
+          <div class="business-info">
+            ${business.address}<br>
+            ${business.phone} | ${business.email}<br>
+            ${business.website}
+            ${business.taxId ? `<br>Tax ID: ${business.taxId}` : ''}
+          </div>
+        </div>
+        
+        <div class="divider"></div>
+        
+        <div class="receipt-info">
+          <div>Receipt #: ${receipt.number}</div>
+          <div>Date: ${receipt.date} ${receipt.time}</div>
+          <div>Cashier: ${receipt.cashier}</div>
+          ${customer.name !== 'Walk-in Customer' ? `<div>Customer: ${customer.name}</div>` : ''}
+        </div>
+        
+        <div class="divider"></div>
+        
+        <div class="items">
+          ${items.map(item => `
+            <div class="item">
+              <div class="item-name">${item.name}</div>
+              <div class="item-qty">${item.quantity}</div>
+              <div class="item-price">$${(item.price * item.quantity).toFixed(2)}</div>
+            </div>
+            <div style="font-size: 10px; color: #666; margin-left: 5px;">
+              $${item.price} each
+            </div>
+          `).join('')}
+        </div>
+        
+        <div class="divider"></div>
+        
+        <div class="totals">
+          <div class="total-line">
+            <span>Subtotal:</span>
+            <span>$${totals.subtotal}</span>
+          </div>
+          ${parseFloat(totals.discount) > 0 ? `
+            <div class="total-line">
+              <span>Discount ${totals.discountType === 'percentage' ? '(%)' : '($)'}:</span>
+              <span>-$${totals.discount}</span>
+            </div>
+          ` : ''}
+          ${parseFloat(totals.tax) > 0 ? `
+            <div class="total-line">
+              <span>Tax (${totals.taxRate}%):</span>
+              <span>$${totals.tax}</span>
+            </div>
+          ` : ''}
+          <div class="total-line final">
+            <span>TOTAL:</span>
+            <span>$${totals.total}</span>
+          </div>
+        </div>
+        
+        <div class="divider"></div>
+        
+        <div class="payment-info">
+          <div>Payment Method: ${this.formatPaymentMethod(payment.method)}</div>
+          <div>Amount Paid: $${payment.amount}</div>
+        </div>
+        
+        ${notes ? `
+          <div class="divider"></div>
+          <div style="font-size: 11px;">
+            <strong>Notes:</strong> ${notes}
+          </div>
+        ` : ''}
+        
+        <div class="footer">
+          <div>Thank you for your business!</div>
+          <div>Generated on ${new Date().toLocaleString()}</div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
+  /**
+   * Generate PDF receipt
+   */
+  generatePDFReceipt(receiptData) {
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: [80, 200] // Thermal printer paper size
+    });
+
+    const { receipt, business, customer, items, totals, payment, notes } = receiptData;
+    
+    let y = 10;
+    const lineHeight = 4;
+    const pageWidth = 80;
+    
+    // Header
+    pdf.setFontSize(12);
+    pdf.setFont(undefined, 'bold');
+    pdf.text(business.name, pageWidth/2, y, { align: 'center' });
+    y += lineHeight + 2;
+    
+    pdf.setFontSize(8);
+    pdf.setFont(undefined, 'normal');
+    pdf.text(business.address, pageWidth/2, y, { align: 'center' });
+    y += lineHeight;
+    pdf.text(`${business.phone} | ${business.email}`, pageWidth/2, y, { align: 'center' });
+    y += lineHeight;
+    pdf.text(business.website, pageWidth/2, y, { align: 'center' });
+    y += lineHeight + 3;
+    
+    // Divider
+    pdf.line(5, y, pageWidth-5, y);
+    y += 3;
+    
+    // Receipt info
+    pdf.text(`Receipt #: ${receipt.number}`, 5, y);
+    y += lineHeight;
+    pdf.text(`Date: ${receipt.date} ${receipt.time}`, 5, y);
+    y += lineHeight;
+    pdf.text(`Cashier: ${receipt.cashier}`, 5, y);
+    y += lineHeight;
+    
+    if (customer.name !== 'Walk-in Customer') {
+      pdf.text(`Customer: ${customer.name}`, 5, y);
+      y += lineHeight;
+    }
+    y += 3;
+    
+    // Divider
+    pdf.line(5, y, pageWidth-5, y);
+    y += 3;
+    
+    // Items
+    items.forEach(item => {
+      pdf.text(item.name, 5, y);
+      pdf.text(`${item.quantity}`, pageWidth-25, y);
+      pdf.text(`$${(item.price * item.quantity).toFixed(2)}`, pageWidth-5, y, { align: 'right' });
+      y += lineHeight;
+      pdf.setFontSize(7);
+      pdf.text(`$${item.price} each`, 8, y);
+      pdf.setFontSize(8);
+      y += lineHeight;
+    });
+    y += 3;
+    
+    // Divider
+    pdf.line(5, y, pageWidth-5, y);
+    y += 3;
+    
+    // Totals
+    pdf.text('Subtotal:', 5, y);
+    pdf.text(`$${totals.subtotal}`, pageWidth-5, y, { align: 'right' });
+    y += lineHeight;
+    
+    if (parseFloat(totals.discount) > 0) {
+      pdf.text(`Discount:`, 5, y);
+      pdf.text(`-$${totals.discount}`, pageWidth-5, y, { align: 'right' });
+      y += lineHeight;
+    }
+    
+    if (parseFloat(totals.tax) > 0) {
+      pdf.text(`Tax (${totals.taxRate}%):`, 5, y);
+      pdf.text(`$${totals.tax}`, pageWidth-5, y, { align: 'right' });
+      y += lineHeight;
+    }
+    
+    // Total line
+    pdf.line(5, y, pageWidth-5, y);
+    y += 2;
+    pdf.setFont(undefined, 'bold');
+    pdf.text('TOTAL:', 5, y);
+    pdf.text(`$${totals.total}`, pageWidth-5, y, { align: 'right' });
+    y += lineHeight + 3;
+    
+    // Payment info
+    pdf.setFont(undefined, 'normal');
+    pdf.text(`Payment: ${this.formatPaymentMethod(payment.method)}`, 5, y);
+    y += lineHeight;
+    pdf.text(`Amount Paid: $${payment.amount}`, 5, y);
+    y += lineHeight + 3;
+    
+    // Notes
+    if (notes) {
+      pdf.line(5, y, pageWidth-5, y);
+      y += 3;
+      pdf.setFont(undefined, 'bold');
+      pdf.text('Notes:', 5, y);
+      y += lineHeight;
+      pdf.setFont(undefined, 'normal');
+      const noteLines = pdf.splitTextToSize(notes, pageWidth-10);
+      pdf.text(noteLines, 5, y);
+      y += lineHeight * noteLines.length + 3;
+    }
+    
+    // Footer
+    pdf.line(5, y, pageWidth-5, y);
+    y += 3;
+    pdf.setFontSize(7);
+    pdf.text('Thank you for your business!', pageWidth/2, y, { align: 'center' });
+    y += lineHeight;
+    pdf.text(`Generated on ${new Date().toLocaleString()}`, pageWidth/2, y, { align: 'center' });
+    
+    return pdf;
+  }
+
+  /**
+   * Format payment method for display
+   */
+  formatPaymentMethod(method) {
+    const methods = {
+      'cash': 'Cash',
+      'credit_card': 'Credit Card',
+      'debit_card': 'Debit Card',
+      'mobile_money': 'Mobile Money',
+      'bank_transfer': 'Bank Transfer',
+      'check': 'Check'
+    };
+    return methods[method] || method;
+  }
+
+  /**
+   * Generate receipt for email (HTML format)
+   */
+  generateEmailReceipt(receiptData) {
+    const htmlContent = this.generateHTMLReceipt(receiptData);
+    
+    return {
+      subject: `Receipt #${receiptData.receipt.number} - ${receiptData.business.name}`,
+      html: htmlContent,
+      text: this.generateTextReceipt(receiptData)
+    };
+  }
+
+  /**
+   * Generate plain text receipt for SMS/WhatsApp
+   */
+  generateTextReceipt(receiptData) {
+    const { receipt, business, customer, items, totals, payment, notes } = receiptData;
+    
+    let text = '';
+    text += `${business.name}\n`;
+    text += `${business.address}\n`;
+    text += `${business.phone} | ${business.email}\n`;
+    text += `==========================================\n`;
+    text += `Receipt #: ${receipt.number}\n`;
+    text += `Date: ${receipt.date} ${receipt.time}\n`;
+    text += `Cashier: ${receipt.cashier}\n`;
+    if (customer.name !== 'Walk-in Customer') {
+      text += `Customer: ${customer.name}\n`;
+    }
+    text += `==========================================\n`;
+    
+    items.forEach(item => {
+      text += `${item.name}\n`;
+      text += `  ${item.quantity} x $${item.price} = $${(item.price * item.quantity).toFixed(2)}\n`;
+    });
+    
+    text += `==========================================\n`;
+    text += `Subtotal: $${totals.subtotal}\n`;
+    
+    if (parseFloat(totals.discount) > 0) {
+      text += `Discount: -$${totals.discount}\n`;
+    }
+    
+    if (parseFloat(totals.tax) > 0) {
+      text += `Tax (${totals.taxRate}%): $${totals.tax}\n`;
+    }
+    
+    text += `==========================================\n`;
+    text += `TOTAL: $${totals.total}\n`;
+    text += `Payment: ${this.formatPaymentMethod(payment.method)}\n`;
+    text += `Amount Paid: $${payment.amount}\n`;
+    
+    if (notes) {
+      text += `\nNotes: ${notes}\n`;
+    }
+    
+    text += `\nThank you for your business!\n`;
+    text += `Generated on ${new Date().toLocaleString()}`;
+    
+    return text;
+  }
+
+  /**
+   * Generate WhatsApp shareable message
+   */
+  generateWhatsAppMessage(receiptData) {
+    const textReceipt = this.generateTextReceipt(receiptData);
+    
+    // URL encode for WhatsApp
+    return encodeURIComponent(textReceipt);
+  }
+}
+
+export default ReceiptGenerator;

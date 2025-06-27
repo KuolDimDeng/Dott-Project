@@ -23,6 +23,7 @@ const BarcodeIcon = (props) => (
   </svg>
 );
 import { logger } from '@/utils/logger';
+import ReceiptDialog from './ReceiptDialog';
 
 // Ensure logger exists
 const safeLogger = logger || { info: console.log, error: console.error };
@@ -215,6 +216,16 @@ class POSErrorBoundary extends React.Component {
 const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
   // Debug props
   console.log('[POSSystem] Rendering with props:', { isOpen, onClose: !!onClose, onSaleCompleted: !!onSaleCompleted });
+
+  // Mock business info - in real app, this would come from settings/profile
+  const businessInfo = {
+    name: 'Your Business Name',
+    address: '123 Main Street, City, State 12345',
+    phone: '(555) 123-4567',
+    email: 'info@yourbusiness.com',
+    website: 'www.yourbusiness.com',
+    taxId: 'TAX123456789'
+  };
   
   // Cart state
   const [cartItems, setCartItems] = useState([]);
@@ -234,6 +245,10 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
   const [scannerDetected, setScannerDetected] = useState(false);
   const [lastScanTime, setLastScanTime] = useState(0);
   const [scannerStatus, setScannerStatus] = useState('waiting'); // 'waiting', 'detected', 'active'
+  
+  // Receipt dialog state
+  const [showReceiptDialog, setShowReceiptDialog] = useState(false);
+  const [completedSaleData, setCompletedSaleData] = useState(null);
 
   // Refs
   const productSearchRef = useRef(null);
@@ -550,8 +565,18 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
       const result = await response.json();
       safeLogger.info('[POS] Sale completed successfully:', result);
 
-      toast.success(`Sale completed! Invoice #${result.invoice_number || result.id}`);
-      
+      // Prepare sale data for receipt
+      const enhancedSaleData = {
+        ...saleData,
+        ...result,
+        invoice_number: result.invoice_number || result.id,
+        customer: selectedCustomer ? mockCustomers.find(c => c.id === selectedCustomer) : null,
+      };
+
+      // Show receipt dialog instead of just closing
+      setCompletedSaleData(enhancedSaleData);
+      setShowReceiptDialog(true);
+
       // Show success details
       if (result.inventory_updated) {
         toast.success('Inventory updated automatically');
@@ -560,14 +585,13 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
         toast.success('Accounting entries recorded');
       }
       
-      // Notify parent and reset
+      // Notify parent
       if (onSaleCompleted) {
         onSaleCompleted(result);
       }
       
-      // Reset form
+      // Reset form but don't close POS yet - user will close via receipt dialog
       resetCart();
-      onClose();
       
     } catch (error) {
       safeLogger.error('[POS] Error processing sale:', error);
@@ -589,7 +613,24 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
 
   const totals = calculateTotals();
 
+  // Handle receipt dialog close
+  const handleReceiptDialogClose = () => {
+    setShowReceiptDialog(false);
+    setCompletedSaleData(null);
+    onClose(); // Close the main POS dialog
+  };
+
   return (
+    <>
+      {/* Receipt Dialog */}
+      <ReceiptDialog
+        isOpen={showReceiptDialog}
+        onClose={handleReceiptDialogClose}
+        saleData={completedSaleData}
+        businessInfo={businessInfo}
+      />
+
+      {/* Main POS Dialog */}
     <Transition appear show={isOpen}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
         <Transition.Child
@@ -977,6 +1018,7 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
         </div>
       </Dialog>
     </Transition>
+    </>
   );
 };
 
