@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { toast } from 'react-hot-toast';
 import { 
   productApi,
@@ -27,6 +27,16 @@ import {
 const InventoryDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState('month');
+  const [tenantId, setTenantId] = useState(null);
+  
+  // Get tenant ID on mount
+  useEffect(() => {
+    const fetchTenantId = async () => {
+      const id = await getSecureTenantId();
+      setTenantId(id);
+    };
+    fetchTenantId();
+  }, []);
   
   // Navigation handler following the standard pattern
   const handleNavigation = useCallback((section) => {
@@ -83,7 +93,11 @@ const InventoryDashboard = () => {
   const fetchDashboardData = useCallback(async () => {
     try {
       setIsLoading(true);
-      const tenantId = getSecureTenantId();
+      
+      if (!tenantId) {
+        logger.info('[InventoryDashboard] Waiting for tenant ID...');
+        return;
+      }
       
       logger.info('[InventoryDashboard] Fetching dashboard data...');
       
@@ -199,11 +213,13 @@ const InventoryDashboard = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedPeriod]);
+  }, [tenantId, selectedPeriod]);
 
   useEffect(() => {
-    fetchDashboardData();
-  }, [fetchDashboardData]);
+    if (tenantId) {
+      fetchDashboardData();
+    }
+  }, [tenantId, fetchDashboardData]);
 
   // Format currency
   const formatCurrency = (amount) => {
@@ -213,8 +229,8 @@ const InventoryDashboard = () => {
     }).format(amount || 0);
   };
 
-  // Metric Card Component
-  const MetricCard = ({ title, value, subValue, icon, color, trend, onClick }) => (
+  // Metric Card Component - Memoized for performance
+  const MetricCard = useMemo(() => ({ title, value, subValue, icon, color, trend, onClick }) => (
     <div 
       className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer"
       onClick={onClick}
@@ -234,10 +250,10 @@ const InventoryDashboard = () => {
       <p className="text-2xl font-bold text-gray-900 mt-2">{value}</p>
       {subValue && <p className="text-sm text-gray-600 mt-1">{subValue}</p>}
     </div>
-  );
+  ), []);
 
-  // Recent Items Component
-  const RecentItemsList = ({ title, items, type }) => (
+  // Recent Items Component - Memoized for performance
+  const RecentItemsList = useMemo(() => ({ title, items, type }) => (
     <div className="bg-white rounded-lg shadow-md p-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
       <div className="space-y-3">
@@ -267,9 +283,10 @@ const InventoryDashboard = () => {
         )}
       </div>
     </div>
-  );
+  ), []);
 
-  if (isLoading) {
+  // Wait for tenant ID to load
+  if (!tenantId || isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
