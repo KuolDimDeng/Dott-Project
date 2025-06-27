@@ -1,42 +1,190 @@
 'use client';
 
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { getSubscriptionPlanColor } from '@/utils/userAttributes';
 import SubscriptionPopup from './SubscriptionPopup';
+import { customerApi, productApi, supplierApi } from '@/utils/apiClient';
+import { 
+  CheckCircleIcon, 
+  UserPlusIcon, 
+  CubeIcon, 
+  WrenchIcon,
+  TruckIcon,
+  DocumentTextIcon,
+  ChartBarIcon,
+  BuildingOfficeIcon,
+  ArrowRightIcon,
+  ClockIcon,
+  CalendarIcon,
+  ExclamationCircleIcon
+} from '@heroicons/react/24/outline';
+import { CheckCircleIcon as CheckCircleIconSolid } from '@heroicons/react/24/solid';
 
 /**
  * Home Component
- * A simplified home component that doesn't make heavy API calls
+ * An improved dashboard home page with real data and better UX
  */
-function Home({ userData }) {
+function Home({ userData, onNavigate }) {
   const [planDetailsOpen, setPlanDetailsOpen] = useState(false);
   const [showSubscriptionPopup, setShowSubscriptionPopup] = useState(false);
-  const [paymentTab, setPaymentTab] = useState(0);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('credit_card');
+  const [checklistData, setChecklistData] = useState({
+    profileComplete: false,
+    hasCustomers: false,
+    hasProducts: false,
+    hasServices: false,
+    hasSuppliers: false,
+    hasInvoices: false,
+    exploredDashboard: false
+  });
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    customers: 0,
+    products: 0,
+    services: 0,
+    suppliers: 0,
+    invoices: 0
+  });
 
-  const handlePaymentTabChange = (event, newValue) => {
-    setPaymentTab(newValue);
+  // Fetch real data for checklist and stats
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch various stats in parallel
+        const [customerStats, serviceStats, dashboardMetrics] = await Promise.all([
+          fetch('/api/customers/stats').then(res => res.json()).catch(() => ({ total: 0 })),
+          fetch('/api/services/stats').then(res => res.json()).catch(() => ({ stats: { total: 0 } })),
+          fetch('/api/dashboard/metrics/summary').then(res => res.json()).catch(() => ({ metrics: {} }))
+        ]);
+
+        // Fetch entity counts
+        const [customers, products, suppliers] = await Promise.all([
+          customerApi.getAll().catch(() => []),
+          productApi.getAll().catch(() => []),
+          supplierApi.getAll().catch(() => [])
+        ]);
+
+        // Update stats
+        setStats({
+          customers: customerStats.total || customers.length || 0,
+          products: products.length || 0,
+          services: serviceStats.stats?.total || 0,
+          suppliers: suppliers.length || 0,
+          invoices: dashboardMetrics.metrics?.invoices?.total || 0
+        });
+
+        // Update checklist based on real data
+        setChecklistData({
+          profileComplete: userData?.business_name && userData?.business_address,
+          hasCustomers: (customerStats.total || customers.length) > 0,
+          hasProducts: products.length > 0,
+          hasServices: (serviceStats.stats?.total || 0) > 0,
+          hasSuppliers: suppliers.length > 0,
+          hasInvoices: (dashboardMetrics.metrics?.invoices?.total || 0) > 0,
+          exploredDashboard: true // Can track this via localStorage or user activity
+        });
+
+        // Generate recent activity from dashboard metrics
+        const activities = [];
+        
+        // Add recent sales activity
+        if (dashboardMetrics.metrics?.sales?.today > 0) {
+          activities.push({
+            id: 'sales-today',
+            type: 'sales',
+            message: `$${dashboardMetrics.metrics.sales.today.toFixed(2)} in sales today`,
+            timestamp: new Date(),
+            icon: 'chart'
+          });
+        }
+
+        // Add invoice activity
+        if (dashboardMetrics.metrics?.invoices?.unpaid > 0) {
+          activities.push({
+            id: 'unpaid-invoices',
+            type: 'warning',
+            message: `${dashboardMetrics.metrics.invoices.unpaid} unpaid invoice${dashboardMetrics.metrics.invoices.unpaid > 1 ? 's' : ''} pending`,
+            timestamp: new Date(),
+            icon: 'alert'
+          });
+        }
+
+        if (dashboardMetrics.metrics?.invoices?.overdue > 0) {
+          activities.push({
+            id: 'overdue-invoices',
+            type: 'error',
+            message: `${dashboardMetrics.metrics.invoices.overdue} overdue invoice${dashboardMetrics.metrics.invoices.overdue > 1 ? 's' : ''} need attention`,
+            timestamp: new Date(),
+            icon: 'alert'
+          });
+        }
+
+        // Add customer activity
+        if (customerStats.new_this_month > 0) {
+          activities.push({
+            id: 'new-customers',
+            type: 'success',
+            message: `${customerStats.new_this_month} new customer${customerStats.new_this_month > 1 ? 's' : ''} this month`,
+            timestamp: new Date(),
+            icon: 'user'
+          });
+        }
+
+        setRecentActivity(activities);
+
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [userData]);
+
+  // Helper functions
+  const handlePlanDetailsOpen = () => setPlanDetailsOpen(true);
+  const handlePlanDetailsClose = () => setPlanDetailsOpen(false);
+  const handleUpgradeDialogOpen = () => setShowSubscriptionPopup(true);
+  const handleUpgradeDialogClose = () => setShowSubscriptionPopup(false);
+
+  // Navigate to specific pages
+  const navigateToCreateCustomer = () => {
+    if (onNavigate) {
+      onNavigate('customers', { showCreateForm: true });
+    }
   };
 
-  const handlePaymentMethodChange = (event) => {
-    setSelectedPaymentMethod(event.target.value);
+  const navigateToCreateProduct = () => {
+    if (onNavigate) {
+      onNavigate('sales-products', { activeTab: 'create' });
+    }
   };
 
-  const handlePlanDetailsOpen = () => {
-    setPlanDetailsOpen(true);
+  const navigateToCreateService = () => {
+    if (onNavigate) {
+      onNavigate('sales-services', { activeTab: 'create' });
+    }
   };
 
-  const handlePlanDetailsClose = () => {
-    setPlanDetailsOpen(false);
+  const navigateToCreateSupplier = () => {
+    if (onNavigate) {
+      onNavigate('inventory-suppliers', { showCreateForm: true });
+    }
   };
 
-  const handleUpgradeDialogOpen = () => {
-    setShowSubscriptionPopup(true);
+  const navigateToCreateInvoice = () => {
+    if (onNavigate) {
+      onNavigate('invoices', { showCreateForm: true });
+    }
   };
 
-  const handleUpgradeDialogClose = () => {
-    setShowSubscriptionPopup(false);
+  const navigateToProfile = () => {
+    if (onNavigate) {
+      onNavigate('settings', { activeTab: 'profile' });
+    }
   };
 
   // Data for subscription plans
@@ -96,7 +244,6 @@ function Home({ userData }) {
 
   // Helper function to get the effective subscription type
   const getEffectiveSubscriptionType = () => {
-    // Check selected_plan first (this is what's set during onboarding)
     const plan = userData?.selected_plan || 
                  userData?.selectedPlan ||
                  userData?.subscription_plan ||
@@ -104,8 +251,6 @@ function Home({ userData }) {
                  userData?.subscriptionType || 
                  userData?.subscription_type ||
                  'free';
-    
-    // Normalize the plan name to lowercase for consistent comparison
     return plan.toLowerCase();
   };
 
@@ -114,67 +259,164 @@ function Home({ userData }) {
     plan.id === getEffectiveSubscriptionType()
   ) || PLANS[0];
 
-  // Helper function to get an icon for a feature
-  const getFeatureIcon = (feature) => {
-    if (feature.includes('invoic')) return 'check-circle';
-    if (feature.includes('client')) return 'users';
-    if (feature.includes('report')) return 'chart-line';
-    if (feature.includes('support')) return 'headset';
-    if (feature.includes('storage')) return 'database';
-    if (feature.includes('user')) return 'users';
-    if (feature.includes('API')) return 'code';
-    if (feature.includes('security')) return 'shield-alt';
-    return 'check-circle';
-  };
-
-  // Function to get plan color
-  const getPlanColor = (planId) => {
-    return getSubscriptionPlanColor(planId);
-  };
-
   // Function to get personalized greeting
   const getGreeting = () => {
-    if (userData?.first_name) {
-      return userData.first_name;
+    const hour = new Date().getHours();
+    let greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+    
+    if (userData?.given_name) {
+      return `${greeting}, ${userData.given_name}!`;
+    } else if (userData?.first_name) {
+      return `${greeting}, ${userData.first_name}!`;
     } else if (userData?.email) {
-      // Extract username from email and capitalize first letter
       const username = userData.email.split('@')[0];
-      return username.charAt(0).toUpperCase() + username.slice(1);
+      return `${greeting}, ${username.charAt(0).toUpperCase() + username.slice(1)}!`;
     } else if (userData?.name) {
-      return userData.name;
+      return `${greeting}, ${userData.name}!`;
     }
-    return 'there'; // More friendly than 'User'
+    return `${greeting}!`;
   };
+
+  // Getting started checklist items
+  const checklistItems = [
+    {
+      id: 'profile',
+      title: 'Complete your business profile',
+      completed: checklistData.profileComplete,
+      action: navigateToProfile,
+      icon: BuildingOfficeIcon,
+      description: 'Add your business details and logo'
+    },
+    {
+      id: 'customer',
+      title: checklistData.hasCustomers ? `${stats.customers} customers added` : 'Add your first customer',
+      completed: checklistData.hasCustomers,
+      action: navigateToCreateCustomer,
+      icon: UserPlusIcon,
+      description: checklistData.hasCustomers ? 'Manage your customers' : 'Start building your customer base'
+    },
+    {
+      id: 'product',
+      title: checklistData.hasProducts ? `${stats.products} products created` : 'Create your first product',
+      completed: checklistData.hasProducts,
+      action: navigateToCreateProduct,
+      icon: CubeIcon,
+      description: checklistData.hasProducts ? 'Manage your products' : 'Add products to your inventory'
+    },
+    {
+      id: 'service',
+      title: checklistData.hasServices ? `${stats.services} services created` : 'Create your first service',
+      completed: checklistData.hasServices,
+      action: navigateToCreateService,
+      icon: WrenchIcon,
+      description: checklistData.hasServices ? 'Manage your services' : 'Define services you offer'
+    },
+    {
+      id: 'supplier',
+      title: checklistData.hasSuppliers ? `${stats.suppliers} suppliers added` : 'Add your first supplier',
+      completed: checklistData.hasSuppliers,
+      action: navigateToCreateSupplier,
+      icon: TruckIcon,
+      description: checklistData.hasSuppliers ? 'Manage your suppliers' : 'Track your supply chain'
+    },
+    {
+      id: 'invoice',
+      title: checklistData.hasInvoices ? `${stats.invoices} invoices created` : 'Create your first invoice',
+      completed: checklistData.hasInvoices,
+      action: navigateToCreateInvoice,
+      icon: DocumentTextIcon,
+      description: checklistData.hasInvoices ? 'Manage your invoices' : 'Start billing your customers'
+    }
+  ];
+
+  // Get activity icon
+  const getActivityIcon = (activity) => {
+    switch (activity.icon) {
+      case 'chart':
+        return <ChartBarIcon className="h-5 w-5" />;
+      case 'alert':
+        return <ExclamationCircleIcon className="h-5 w-5" />;
+      case 'user':
+        return <UserPlusIcon className="h-5 w-5" />;
+      default:
+        return <ClockIcon className="h-5 w-5" />;
+    }
+  };
+
+  // Get activity color
+  const getActivityColor = (type) => {
+    switch (type) {
+      case 'success':
+        return 'text-green-600 bg-green-50';
+      case 'warning':
+        return 'text-yellow-600 bg-yellow-50';
+      case 'error':
+        return 'text-red-600 bg-red-50';
+      default:
+        return 'text-blue-600 bg-blue-50';
+    }
+  };
+
+  // Calculate progress
+  const completedItems = checklistItems.filter(item => item.completed).length;
+  const progressPercentage = (completedItems / checklistItems.length) * 100;
 
   return (
     <>
       <div className="pt-1.5 pb-2">
         <h1 className="text-2xl font-bold mb-2">
-          Home
+          Welcome to your dashboard!
         </h1>
         
-        <p className="mb-4">
-          Welcome to your Dott dashboard, {getGreeting()}!
+        <p className="mb-4 text-lg">
+          {getGreeting()}
         </p>
         
         {/* Subscription Expired Banner */}
         {userData?.subscription_expired && (
-          <div className="p-3 mb-4 bg-red-100 border-l-4 border-red-500 rounded shadow">
-            <h2 className="text-lg font-semibold mb-1 text-red-800">
-              Your {userData.previous_plan} subscription has expired
-            </h2>
-            <p className="mb-3">
-              Your account has been downgraded to the Free plan. You now have limited access to features.
-            </p>
-            <div className="flex gap-2">
+          <div className="p-4 mb-6 bg-red-50 border-l-4 border-red-500 rounded-lg shadow-sm">
+            <div className="flex">
+              <ExclamationCircleIcon className="h-6 w-6 text-red-400 mr-3 flex-shrink-0" />
+              <div className="flex-1">
+                <h2 className="text-lg font-semibold mb-1 text-red-800">
+                  Your {userData.previous_plan} subscription has expired
+                </h2>
+                <p className="mb-3 text-red-700">
+                  Your account has been downgraded to the Free plan. You now have limited access to features.
+                </p>
+                <div className="flex gap-2">
+                  <button 
+                    className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                    onClick={handleUpgradeDialogOpen}
+                  >
+                    Renew Subscription
+                  </button>
+                  <button 
+                    className="px-4 py-2 border border-red-600 text-red-600 rounded-md hover:bg-red-50 transition-colors"
+                    onClick={handlePlanDetailsOpen}
+                  >
+                    View Plan Details
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Regular Plan Banner (shown when subscription is not expired) */}
+        {!userData?.subscription_expired && (
+          <div className="p-4 mb-6 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg shadow-sm border border-blue-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold mb-1 text-blue-900">
+                  Your {currentPlan.name} is active
+                </h2>
+                <p className="text-blue-700">
+                  You have access to all the features included in your plan.
+                </p>
+              </div>
               <button 
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-                onClick={handleUpgradeDialogOpen}
-              >
-                Renew Subscription
-              </button>
-              <button 
-                className="px-4 py-2 border border-red-600 text-red-600 rounded hover:bg-red-50"
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                 onClick={handlePlanDetailsOpen}
               >
                 View Plan Details
@@ -183,66 +425,147 @@ function Home({ userData }) {
           </div>
         )}
         
-        {/* Regular Plan Banner (shown when subscription is not expired) */}
-        {!userData?.subscription_expired && (
-          <div className="p-3 mb-4 bg-blue-100 rounded shadow">
-            <h2 className="text-lg font-semibold mb-1">
-              Your {currentPlan.name} is active
-            </h2>
-            <p className="mb-3">
-              You have access to all the features included in your plan.
-            </p>
-            <button 
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-              onClick={handlePlanDetailsOpen}
-            >
-              View Plan Details
-            </button>
-          </div>
-        )}
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="p-3 bg-white rounded shadow flex flex-col h-full">
-            <h2 className="text-lg font-semibold mb-2">
-              Getting Started
-            </h2>
-            <p className="text-sm mb-3">
-              Complete these steps to get the most out of your account:
-            </p>
-            <ul className="pl-5 list-disc">
-              <li className="mb-1">
-                <span className="text-sm">
-                  Complete your business profile
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Getting Started Section */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Getting Started
+                </h2>
+                <span className="text-sm text-gray-500">
+                  {completedItems} of {checklistItems.length} completed
                 </span>
-              </li>
-              <li className="mb-1">
-                <span className="text-sm">
-                  Add your first customer
-                </span>
-              </li>
-              <li className="mb-1">
-                <span className="text-sm">
-                  Create your first product or service
-                </span>
-              </li>
-              <li>
-                <span className="text-sm">
-                  Explore the dashboard features
-                </span>
-              </li>
-            </ul>
+              </div>
+              
+              {/* Progress Bar */}
+              <div className="w-full bg-gray-200 rounded-full h-2 mb-6">
+                <div 
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                  style={{ width: `${progressPercentage}%` }}
+                />
+              </div>
+              
+              <p className="text-sm text-gray-600 mb-4">
+                Complete these steps to get the most out of your account:
+              </p>
+              
+              <div className="space-y-3">
+                {checklistItems.map((item) => (
+                  <div 
+                    key={item.id}
+                    className={`flex items-start p-3 rounded-lg border transition-all ${
+                      item.completed 
+                        ? 'bg-green-50 border-green-200' 
+                        : 'bg-gray-50 border-gray-200 hover:bg-gray-100 cursor-pointer'
+                    }`}
+                    onClick={!item.completed ? item.action : undefined}
+                  >
+                    <div className="flex-shrink-0 mr-3">
+                      {item.completed ? (
+                        <CheckCircleIconSolid className="h-6 w-6 text-green-600" />
+                      ) : (
+                        <item.icon className="h-6 w-6 text-gray-400" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-medium text-gray-900">
+                        {item.title}
+                      </h3>
+                      <p className="text-sm text-gray-600 mt-1">
+                        {item.description}
+                      </p>
+                    </div>
+                    {!item.completed && (
+                      <ArrowRightIcon className="h-5 w-5 text-gray-400 ml-2 flex-shrink-0" />
+                    )}
+                  </div>
+                ))}
+              </div>
+              
+              {completedItems === checklistItems.length && (
+                <div className="mt-4 p-4 bg-green-100 rounded-lg">
+                  <p className="text-green-800 font-medium flex items-center">
+                    <CheckCircleIconSolid className="h-5 w-5 mr-2" />
+                    Congratulations! You've completed all setup steps.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
           
-          <div className="p-3 bg-white rounded shadow flex flex-col h-full">
-            <h2 className="text-lg font-semibold mb-2">
-              Recent Updates
-            </h2>
-            <p className="text-sm mb-3">
-              No recent updates to display.
-            </p>
-            <p className="text-sm text-gray-500">
-              Updates about your account and new features will appear here.
-            </p>
+          {/* Recent Updates Section */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Recent Updates
+                </h2>
+                <CalendarIcon className="h-5 w-5 text-gray-400" />
+              </div>
+              
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+              ) : recentActivity.length > 0 ? (
+                <div className="space-y-3">
+                  {recentActivity.map((activity) => (
+                    <div key={activity.id} className="flex items-start">
+                      <div className={`p-2 rounded-lg mr-3 ${getActivityColor(activity.type)}`}>
+                        {getActivityIcon(activity)}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-900">
+                          {activity.message}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {new Date(activity.timestamp).toLocaleTimeString([], { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <ClockIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-sm text-gray-600 mb-2">
+                    No recent updates to display.
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Updates about your account activity will appear here.
+                  </p>
+                </div>
+              )}
+              
+              {/* Quick Stats */}
+              {!loading && (
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <h3 className="text-sm font-medium text-gray-700 mb-3">Quick Stats</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-gray-900">{stats.customers}</p>
+                      <p className="text-sm text-gray-600">Customers</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-gray-900">{stats.products}</p>
+                      <p className="text-sm text-gray-600">Products</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-gray-900">{stats.services}</p>
+                      <p className="text-sm text-gray-600">Services</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-gray-900">{stats.invoices}</p>
+                      <p className="text-sm text-gray-600">Invoices</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

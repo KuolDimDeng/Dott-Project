@@ -402,6 +402,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
   handleCloseInvoiceBuilder,
   showAccountPage,
   handleDeleteAccount,
+  handleSetView,
   selectedReport,
   showReports,
   showBankingDashboard,
@@ -2073,10 +2074,48 @@ const RenderMainContent = React.memo(function RenderMainContent({
 
       if (showHome) {
         const homeComponentKey = `home-${navigationKey || 'default'}`;
+        
+        // Create navigation handler for Home component
+        const handleHomeNavigate = (targetView, options = {}) => {
+          console.log('[RenderMainContent] Home navigation to:', targetView, options);
+          
+          // Map navigation targets to appropriate views and states
+          switch (targetView) {
+            case 'customers':
+              // Navigate to customer list
+              handleSetView('customer-management');
+              if (options.showCreateForm) {
+                // You might need to pass additional state for showing create form
+                console.log('[RenderMainContent] Should show customer create form');
+              }
+              break;
+            case 'sales-products':
+              handleSetView('sales-product-management');
+              break;
+            case 'sales-services':
+              handleSetView('sales-service-management');
+              break;
+            case 'inventory-suppliers':
+              handleSetView('inventory-suppliers');
+              break;
+            case 'invoices':
+              handleSetView('invoice-management');
+              break;
+            case 'settings':
+              handleSetView('settings');
+              break;
+            default:
+              handleSetView(targetView);
+          }
+        };
+        
         return (
           <ContentWrapperWithKey>
             <SuspenseWithCleanup componentKey={homeComponentKey}>
-              <Home />
+              <Home 
+                userData={userData}
+                onNavigate={handleHomeNavigate}
+              />
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>
         );
