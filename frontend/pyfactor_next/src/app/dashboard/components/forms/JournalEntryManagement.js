@@ -3,6 +3,43 @@ import { journalEntriesApi, chartOfAccountsApi } from '@/services/api/finance';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
 
+// Tooltip component for field help
+const FieldTooltip = ({ text, position = 'top' }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+  
+  return (
+    <div className="relative inline-flex items-center ml-1">
+      <div
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+        onClick={() => setShowTooltip(!showTooltip)}
+        className="cursor-help"
+      >
+        <svg className="w-4 h-4 text-gray-400 hover:text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+        </svg>
+      </div>
+      
+      {showTooltip && (
+        <div className={`absolute z-50 ${position === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'} left-0 w-72`}>
+          <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 shadow-lg">
+            <div className="relative">
+              {text}
+              <div className={`absolute ${position === 'top' ? 'top-full' : 'bottom-full'} left-4`}>
+                <div className={`${position === 'top' ? '' : 'rotate-180'}`}>
+                  <svg className="w-2 h-2 text-gray-900" fill="currentColor" viewBox="0 0 8 4">
+                    <path d="M0 0l4 4 4-4z"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const JournalEntryManagement = () => {
   const [journalEntries, setJournalEntries] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
@@ -192,6 +229,7 @@ const JournalEntryManagement = () => {
               <div>
                 <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
                   Date
+                  <FieldTooltip text="The effective date for this journal entry. This determines which accounting period the transaction affects." />
                 </label>
                 <input
                   id="date"
@@ -206,6 +244,7 @@ const JournalEntryManagement = () => {
               <div>
                 <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
                   Description
+                  <FieldTooltip text="Enter a clear description of the transaction or adjustment. This helps with audit trails and understanding the purpose of the entry." />
                 </label>
                 <input
                   id="description"
@@ -226,6 +265,7 @@ const JournalEntryManagement = () => {
                     <div className="w-full md:w-1/4">
                       <label htmlFor={`account-${index}`} className="block text-sm font-medium text-gray-700 mb-1">
                         Account
+                        <FieldTooltip text="Select the general ledger account affected by this line item. Each journal entry must balance with equal debits and credits." />
                       </label>
                       <select
                         id={`account-${index}`}
@@ -246,6 +286,7 @@ const JournalEntryManagement = () => {
                     <div className="w-full md:w-1/4">
                       <label htmlFor={`line-desc-${index}`} className="block text-sm font-medium text-gray-700 mb-1">
                         Description
+                        <FieldTooltip text="Optional line-item description to provide additional detail about this specific account entry." />
                       </label>
                       <input
                         id={`line-desc-${index}`}
@@ -260,6 +301,7 @@ const JournalEntryManagement = () => {
                     <div className="w-full md:w-1/6">
                       <label htmlFor={`debit-${index}`} className="block text-sm font-medium text-gray-700 mb-1">
                         Debit
+                        <FieldTooltip text="Enter the debit amount for this account. Debits increase asset and expense accounts, decrease liability, equity, and revenue accounts." />
                       </label>
                       <input
                         id={`debit-${index}`}
@@ -274,6 +316,7 @@ const JournalEntryManagement = () => {
                     <div className="w-full md:w-1/6">
                       <label htmlFor={`credit-${index}`} className="block text-sm font-medium text-gray-700 mb-1">
                         Credit
+                        <FieldTooltip text="Enter the credit amount for this account. Credits decrease asset and expense accounts, increase liability, equity, and revenue accounts." />
                       </label>
                       <input
                         id={`credit-${index}`}

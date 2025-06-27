@@ -1476,6 +1476,79 @@ const RenderMainContent = React.memo(function RenderMainContent({
         }
       }
       
+      // Handle Purchases views
+      if (view && (view === 'vendor-management' || view === 'purchase-order-management' || view === 'purchase-returns-management' || view === 'procurement-management' || view === 'expenses-management')) {
+        console.log('[RenderMainContent] Rendering purchases view:', view);
+        
+        let PurchaseComponent = null;
+        let componentName = '';
+        
+        switch(view) {
+          case 'vendor-management':
+            componentName = 'VendorManagement';
+            PurchaseComponent = lazy(() => import('./forms/VendorManagement.js').catch(err => {
+              console.error('[RenderMainContent] Error loading VendorManagement:', err);
+              return { default: () => <div className="p-4">Error loading Vendor Management</div> };
+            }));
+            break;
+          case 'purchase-order-management':
+            componentName = 'PurchaseOrderManagement';
+            PurchaseComponent = lazy(() => import('./forms/PurchaseOrderManagement.js').catch(err => {
+              console.error('[RenderMainContent] Error loading PurchaseOrderManagement:', err);
+              return { default: () => <div className="p-4">Error loading Purchase Order Management</div> };
+            }));
+            break;
+          case 'purchase-returns-management':
+            componentName = 'PurchaseReturnsManagement';
+            PurchaseComponent = lazy(() => import('./forms/PurchaseReturnsManagement.js').catch(err => {
+              console.error('[RenderMainContent] Error loading PurchaseReturnsManagement:', err);
+              return { default: () => <div className="p-4">Error loading Purchase Returns Management</div> };
+            }));
+            break;
+          case 'procurement-management':
+            componentName = 'ProcurementManagement';
+            PurchaseComponent = lazy(() => import('./forms/ProcurementManagement.js').catch(err => {
+              console.error('[RenderMainContent] Error loading ProcurementManagement:', err);
+              return { default: () => <div className="p-4">Error loading Procurement Management</div> };
+            }));
+            break;
+          case 'expenses-management':
+            componentName = 'ExpensesManagement';
+            PurchaseComponent = lazy(() => import('./forms/ExpensesManagement.js').catch(err => {
+              console.error('[RenderMainContent] Error loading ExpensesManagement:', err);
+              return { default: () => <div className="p-4">Error loading Expenses Management</div> };
+            }));
+            break;
+          default:
+            console.warn('[RenderMainContent] Unknown purchases view:', view);
+            return (
+              <ContentWrapperWithKey>
+                <div className="p-4">
+                  <h1 className="text-xl font-semibold mb-2">Purchases Feature</h1>
+                  <p>This purchases feature is not yet implemented: {view}</p>
+                </div>
+              </ContentWrapperWithKey>
+            );
+        }
+        
+        if (PurchaseComponent) {
+          return (
+            <ContentWrapperWithKey>
+              <SuspenseWithCleanup 
+                componentKey={`${componentKey}-${view}`}
+                fallback={
+                  <div className="flex justify-center items-center h-64">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                  </div>
+                }
+              >
+                <PurchaseComponent />
+              </SuspenseWithCleanup>
+            </ContentWrapperWithKey>
+          );
+        }
+      }
+      
       // Handle Accounting views
       if (view && view.startsWith('accounting-') || view === 'chart-of-accounts' || view === 'journal-entries' || view === 'general-ledger' || view === 'reconciliation' || view === 'financial-statements' || view === 'fixed-assets') {
         console.log('[RenderMainContent] Rendering accounting view:', view);

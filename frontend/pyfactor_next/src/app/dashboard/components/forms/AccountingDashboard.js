@@ -7,6 +7,7 @@ import { logger } from '@/utils/logger';
 const AccountingDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [tenantId, setTenantId] = useState(null);
   const [stats, setStats] = useState({
     totalAssets: 0,
     totalLiabilities: 0,
@@ -17,7 +18,14 @@ const AccountingDashboard = () => {
     accountsReceivable: 0
   });
 
-  const tenantId = getSecureTenantId();
+  // Properly handle async tenant ID
+  useEffect(() => {
+    const fetchTenantId = async () => {
+      const id = await getSecureTenantId();
+      setTenantId(id);
+    };
+    fetchTenantId();
+  }, []);
 
   // Fetch dashboard data
   const fetchDashboardData = useCallback(async () => {
@@ -57,8 +65,10 @@ const AccountingDashboard = () => {
   }, [tenantId]);
 
   useEffect(() => {
-    fetchDashboardData();
-  }, [fetchDashboardData]);
+    if (tenantId) {
+      fetchDashboardData();
+    }
+  }, [tenantId, fetchDashboardData]);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
@@ -76,7 +86,8 @@ const AccountingDashboard = () => {
     return styles[type] || 'text-gray-600';
   };
 
-  if (isLoading) {
+  // Wait for tenant ID to load
+  if (!tenantId || isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
