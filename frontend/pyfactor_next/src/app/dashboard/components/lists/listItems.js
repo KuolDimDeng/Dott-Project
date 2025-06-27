@@ -2253,15 +2253,6 @@ const MainListItems = ({
           {!isIconOnly && (
             <span className="flex-1">{item.label}</span>
           )}
-          {!isIconOnly && item.subItems && (
-            <span className="ml-2">
-              {openMenu === item.label ? (
-                <NavIcons.ChevronUp className="w-4 h-4" />
-              ) : (
-                <NavIcons.ChevronDown className="w-4 h-4" />
-              )}
-            </span>
-          )}
         </button>
         {item.subItems && renderSubMenu(item.subItems, item.label)}
       </li>
