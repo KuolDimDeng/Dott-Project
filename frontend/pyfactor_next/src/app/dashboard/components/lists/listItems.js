@@ -732,26 +732,6 @@ const MainListItems = ({
           value: 'payment-gateways' 
         },
         { 
-          label: 'Payment Plans', 
-          onClick: (value) => {
-            // Create navigation event for payment plans
-            const navigationKey = `nav-${Date.now()}`;
-            const payload = { 
-              item: 'payment-plans', 
-              navigationKey,
-              originalItem: 'Payment Plans'
-            };
-            
-            // Dispatch navigation events
-            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
-            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
-            
-            // Note: Removed handlePaymentsClick call to prevent double navigation
-            // The menuNavigation event handler in DashboardContent will handle the view update
-          }, 
-          value: 'payment-plans' 
-        },
-        { 
           label: 'Reports', 
           onClick: (value) => {
             // Create navigation event for payment reports

@@ -793,7 +793,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
       }
       
       // Handle Payments views
-      if (view && view.startsWith('payments-') || view && view.startsWith('payment-') || view === 'receive-payments' || view === 'make-payments' || view === 'refunds') {
+      if (view && view.startsWith('payments-') || view && view.startsWith('payment-') || view === 'receive-payments' || view === 'make-payments' || view === 'refunds' || view === 'recurring-payments') {
         console.log('[RenderMainContent] Rendering payments view:', view);
         
         let PaymentComponent = null;
