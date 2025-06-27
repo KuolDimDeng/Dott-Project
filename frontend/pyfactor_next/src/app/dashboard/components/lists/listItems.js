@@ -777,14 +777,182 @@ const MainListItems = ({
       icon: <NavIcons.Cart className="w-5 h-5" />,
       label: 'Purchases',
       subItems: [
-        { label: 'Dashboard', onClick: handlePurchasesClick, value: 'dashboard' },
-        { label: 'Vendors', onClick: handlePurchasesClick, value: 'vendors' },
-        { label: 'Purchase Orders', onClick: handlePurchasesClick, value: 'purchase-orders' },
-        { label: 'Bills', onClick: handlePurchasesClick, value: 'bills' },
-        { label: 'Expenses', onClick: handlePurchasesClick, value: 'expenses' },
-        { label: 'Purchase Returns', onClick: handlePurchasesClick, value: 'purchase-returns' },
-        { label: 'Procurement', onClick: handlePurchasesClick, value: 'procurement' },
-        { label: 'Reports', onClick: handlePurchasesClick, value: 'reports' },
+        { 
+          label: 'Dashboard', 
+          onClick: (value) => {
+            // Create navigation event for purchases dashboard
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'purchases-dashboard', 
+              navigationKey,
+              originalItem: 'Dashboard'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the PurchasesDashboard component
+            if (typeof handlePurchasesClick === 'function') {
+              handlePurchasesClick('dashboard');
+            }
+          }, 
+          value: 'dashboard' 
+        },
+        { 
+          label: 'Vendors', 
+          onClick: (value) => {
+            // Create navigation event for vendor management
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'vendor-management', 
+              navigationKey,
+              originalItem: 'Vendors'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the VendorManagement component
+            if (typeof handlePurchasesClick === 'function') {
+              handlePurchasesClick('vendors');
+            }
+          }, 
+          value: 'vendors' 
+        },
+        { 
+          label: 'Purchase Orders', 
+          onClick: (value) => {
+            // Create navigation event for purchase order management
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'purchase-order-management', 
+              navigationKey,
+              originalItem: 'Purchase Orders'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the PurchaseOrderManagement component
+            if (typeof handlePurchasesClick === 'function') {
+              handlePurchasesClick('purchase-orders');
+            }
+          }, 
+          value: 'purchase-orders' 
+        },
+        { 
+          label: 'Bills', 
+          onClick: (value) => {
+            // Create navigation event for bills management
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'bills-management', 
+              navigationKey,
+              originalItem: 'Bills'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the BillsManagement component
+            if (typeof handlePurchasesClick === 'function') {
+              handlePurchasesClick('bills');
+            }
+          }, 
+          value: 'bills' 
+        },
+        { 
+          label: 'Expenses', 
+          onClick: (value) => {
+            // Create navigation event for expenses management
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'expenses-management', 
+              navigationKey,
+              originalItem: 'Expenses'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the ExpensesManagement component
+            if (typeof handlePurchasesClick === 'function') {
+              handlePurchasesClick('expenses');
+            }
+          }, 
+          value: 'expenses' 
+        },
+        { 
+          label: 'Purchase Returns', 
+          onClick: (value) => {
+            // Create navigation event for purchase returns management
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'purchase-returns-management', 
+              navigationKey,
+              originalItem: 'Purchase Returns'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the PurchaseReturnsManagement component
+            if (typeof handlePurchasesClick === 'function') {
+              handlePurchasesClick('purchase-returns');
+            }
+          }, 
+          value: 'purchase-returns' 
+        },
+        { 
+          label: 'Procurement', 
+          onClick: (value) => {
+            // Create navigation event for procurement management
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'procurement-management', 
+              navigationKey,
+              originalItem: 'Procurement'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the ProcurementManagement component
+            if (typeof handlePurchasesClick === 'function') {
+              handlePurchasesClick('procurement');
+            }
+          }, 
+          value: 'procurement' 
+        },
+        { 
+          label: 'Reports', 
+          onClick: (value) => {
+            // Create navigation event for purchases reports
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'purchases-reports', 
+              navigationKey,
+              originalItem: 'Reports'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+            
+            // Load the PurchasesReports component
+            if (typeof handlePurchasesClick === 'function') {
+              handlePurchasesClick('reports');
+            }
+          }, 
+          value: 'reports' 
+        },
       ],
     },
     {
