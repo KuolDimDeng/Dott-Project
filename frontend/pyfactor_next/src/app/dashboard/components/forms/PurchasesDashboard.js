@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
-import { ShoppingCartIcon, CurrencyDollarIcon, DocumentTextIcon, TruckIcon } from '@heroicons/react/24/outline';
+import { ShoppingCart, CurrencyDollar, FileText, Truck, ArrowsClockwise } from '@phosphor-icons/react';
 import { purchasesApi } from '@/utils/apiClient';
 
 const PurchasesDashboard = () => {
@@ -123,7 +123,7 @@ const PurchasesDashboard = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2 flex items-center">
-            <ShoppingCartIcon className="h-6 w-6 text-purple-600 mr-2" />
+            <ShoppingCart size={24} weight="duotone" className="text-purple-600 mr-2" />
             Purchases Dashboard
           </h1>
           <p className="text-gray-600 text-sm">
@@ -134,9 +134,7 @@ const PurchasesDashboard = () => {
           onClick={fetchDashboardData}
           className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
         >
-          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
+          <ArrowsClockwise size={16} weight="duotone" className="mr-2" />
           Refresh
         </button>
       </div>
@@ -147,7 +145,7 @@ const PurchasesDashboard = () => {
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <CurrencyDollarIcon className="h-6 w-6 text-purple-500" />
+                <CurrencyDollar size={24} weight="duotone" className="text-purple-500" />
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
@@ -163,7 +161,7 @@ const PurchasesDashboard = () => {
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <DocumentTextIcon className="h-6 w-6 text-yellow-500" />
+                <FileText size={24} weight="duotone" className="text-yellow-500" />
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
@@ -179,7 +177,7 @@ const PurchasesDashboard = () => {
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <TruckIcon className="h-6 w-6 text-green-500" />
+                <Truck size={24} weight="duotone" className="text-green-500" />
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
@@ -195,7 +193,7 @@ const PurchasesDashboard = () => {
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <ShoppingCartIcon className="h-6 w-6 text-blue-500" />
+                <ShoppingCart size={24} weight="duotone" className="text-blue-500" />
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
