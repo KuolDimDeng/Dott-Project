@@ -10,13 +10,22 @@ import {
   PlusIcon, 
   MinusIcon,
   CameraIcon,
-  BarcodeIcon,
   TrashIcon,
   UserIcon,
   CreditCardIcon,
   PrinterIcon
 } from '@heroicons/react/24/outline';
+
+// Custom Barcode Icon as it might not exist in Heroicons
+const BarcodeIcon = (props) => (
+  <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h2M8 7h8m0 0v10a1 1 0 01-1 1H9a1 1 0 01-1-1V7m8 0V5a1 1 0 00-1-1H9a1 1 0 00-1 1v2" />
+  </svg>
+);
 import { logger } from '@/utils/logger';
+
+// Ensure logger exists
+const safeLogger = logger || { info: console.log, error: console.error };
 
 // QR Scanner library - import dynamically to avoid SSR issues
 let QrScannerLib = null;
@@ -63,7 +72,7 @@ const QRScanner = ({ isActive, onScan, onError }) => {
       qrScannerRef.current = new QrScannerLib(
         videoRef.current,
         (result) => {
-          logger.info('[QRScanner] QR Code detected:', result.data);
+          safeLogger.info('[QRScanner] QR Code detected:', result.data);
           onScan(result.data);
         },
         {
@@ -204,6 +213,9 @@ class POSErrorBoundary extends React.Component {
 }
 
 const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
+  // Debug props
+  console.log('[POSSystem] Rendering with props:', { isOpen, onClose: !!onClose, onSaleCompleted: !!onSaleCompleted });
+  
   // Cart state
   const [cartItems, setCartItems] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState('');
@@ -273,7 +285,7 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
 
   // Handle product scanning (both USB and camera)
   const handleProductScan = useCallback((scannedCode) => {
-    logger.info('[POS] Product scanned:', scannedCode);
+    safeLogger.info('[POS] Product scanned:', scannedCode);
     
     // Find product by ID or SKU
     const product = mockProducts.find(p => 
@@ -378,7 +390,7 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
         status: 'completed'
       };
 
-      logger.info('[POS] Processing sale with backend:', saleData);
+      safeLogger.info('[POS] Processing sale with backend:', saleData);
       
       // Call actual backend API
       const response = await fetch('/api/pos/complete-sale', {
@@ -396,7 +408,7 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
       }
 
       const result = await response.json();
-      logger.info('[POS] Sale completed successfully:', result);
+      safeLogger.info('[POS] Sale completed successfully:', result);
 
       toast.success(`Sale completed! Invoice #${result.invoice_number || result.id}`);
       
@@ -418,7 +430,7 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
       onClose();
       
     } catch (error) {
-      logger.error('[POS] Error processing sale:', error);
+      safeLogger.error('[POS] Error processing sale:', error);
       toast.error(`Failed to process sale: ${error.message}`);
     } finally {
       setIsProcessing(false);
@@ -438,10 +450,9 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
   const totals = calculateTotals();
 
   return (
-    <Transition appear show={isOpen} as={Fragment}>
+    <Transition appear show={isOpen}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
         <Transition.Child
-          as={Fragment}
           enter="ease-out duration-300"
           enterFrom="opacity-0"
           enterTo="opacity-100"
@@ -455,7 +466,6 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
         <div className="fixed inset-0 overflow-y-auto">
           <div className="flex min-h-full items-center justify-center p-4">
             <Transition.Child
-              as={Fragment}
               enter="ease-out duration-300"
               enterFrom="opacity-0 scale-95"
               enterTo="opacity-100 scale-100"
