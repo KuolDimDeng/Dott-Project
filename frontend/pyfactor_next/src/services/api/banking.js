@@ -2,7 +2,7 @@ import axios from 'axios';
 import { logger } from '@/utils/logger';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
 
 /**
  * Banking API service instance
@@ -22,18 +22,18 @@ const bankingApiInstance = axios.create({
 bankingApiInstance.interceptors.request.use(
   async (config) => {
     try {
-      // Get tenant ID
-      const tenantId = getSecureTenantId();
+      // Get tenant ID asynchronously
+      const tenantId = await getSecureTenantId();
       if (tenantId) {
         config.headers['X-Tenant-ID'] = tenantId;
         if (!config.params) config.params = {};
         config.params.tenantId = tenantId;
       }
 
-      // Database settings
-      config.headers['X-Data-Source'] = 'AWS_RDS';
-      config.headers['X-Database-Only'] = 'true';
-      config.headers['X-Use-Mock-Data'] = 'false';
+      // Remove problematic CORS headers - let backend handle these
+      // config.headers['X-Data-Source'] = 'AWS_RDS';
+      // config.headers['X-Database-Only'] = 'true';
+      // config.headers['X-Use-Mock-Data'] = 'false';
 
       return config;
     } catch (error) {
@@ -56,26 +56,82 @@ bankingApiInstance.interceptors.response.use(
 );
 
 /**
- * Plaid Link API
+ * Plaid Link API - Use frontend proxy instead of direct backend calls
  */
 export const plaidApi = {
-  createLinkToken: () => bankingApiInstance.post('/link_token/'),
-  exchangeToken: (publicToken) => bankingApiInstance.post('/exchange_token/', { 
-    public_token: publicToken 
-  }),
+  createLinkToken: (payload = {}) => {
+    // Use frontend proxy to avoid CORS issues
+    return fetch('/api/banking/link-token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify(payload)
+    }).then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return response.json();
+    }).then(data => ({ data }));
+  },
+  exchangeToken: (publicToken) => {
+    return fetch('/api/banking/exchange-token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({ public_token: publicToken })
+    }).then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return response.json();
+    }).then(data => ({ data }));
+  },
   getAccounts: () => bankingApiInstance.get('/accounts/'),
   getTransactions: (params = {}) => bankingApiInstance.get('/transactions/', { params }),
   createSandboxToken: () => bankingApiInstance.post('/create_sandbox_public_token/')
 };
 
 /**
- * Bank Accounts API
+ * Bank Accounts API - Use frontend proxy for key operations
  */
 export const bankAccountsApi = {
-  getAll: () => bankingApiInstance.get('/accounts/'),
+  getAll: () => {
+    return fetch('/api/banking/accounts', {
+      credentials: 'include'
+    }).then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return response.json();
+    }).then(data => ({ data }));
+  },
   getById: (id) => bankingApiInstance.get(`/accounts/${id}/`),
   connect: (data) => bankingApiInstance.post('/connect-bank-account/', data),
-  getConnectedAccounts: () => bankingApiInstance.get('/accounts/')
+  getConnectedAccounts: () => {
+    return fetch('/api/banking/accounts', {
+      credentials: 'include'
+    }).then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return response.json();
+    }).then(data => ({ data }));
+  },
+  disconnectAccount: (accountId) => {
+    return fetch(`/api/banking/accounts/${accountId}`, {
+      method: 'DELETE',
+      credentials: 'include'
+    }).then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return response.json();
+    }).then(data => ({ data }));
+  }
 };
 
 /**
