@@ -102,13 +102,31 @@ export async function POST(request) {
     const body = await request.json();
     logger.info('[Invoices API] Creating invoice with data:', body);
     
+    // Validate that the invoice has items and a valid total
+    if (!body.items || body.items.length === 0) {
+      logger.error('[Invoices API] Cannot create invoice without items');
+      return NextResponse.json({
+        error: 'Cannot create invoice without items',
+        message: 'Please add at least one item to the invoice'
+      }, { status: 400 });
+    }
+    
+    const totalAmount = parseFloat(body.total_amount || body.subtotal || 0);
+    if (totalAmount < 0.01) {
+      logger.error('[Invoices API] Invoice total must be at least $0.01');
+      return NextResponse.json({
+        error: 'Invalid invoice amount',
+        message: 'Invoice total must be at least $0.01'
+      }, { status: 400 });
+    }
+    
     // Transform frontend data to match backend expectations
     const backendData = {
       customer: body.customer_id,  // Backend expects 'customer' not 'customer_id'
       date: body.issue_date || body.invoice_date || new Date().toISOString().split('T')[0], // Ensure date format YYYY-MM-DD
       due_date: body.due_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // Default 30 days from now
       status: body.status || 'draft',
-      totalAmount: parseFloat(body.total_amount || body.subtotal || 0).toFixed(2), // Django expects 2 decimal places
+      totalAmount: totalAmount.toFixed(2), // Django expects 2 decimal places
       discount: parseFloat(body.discount_amount || 0).toFixed(2),
       currency: body.currency || 'USD',
       notes: body.notes || '',
