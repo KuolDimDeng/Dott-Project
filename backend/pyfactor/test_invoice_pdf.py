@@ -1,50 +1,35 @@
 #!/usr/bin/env python
 """
-Test script for invoice PDF generation endpoint.
-Run this from the Django shell or as a management command.
+Test script to verify invoice PDF generation
+Run this from Django shell: python manage.py shell < test_invoice_pdf.py
 """
-
-import os
-import django
-
-# Setup Django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
-django.setup()
 
 from sales.models import Invoice
 from sales.utils import generate_invoice_pdf
+from pyfactor.logging_config import get_logger
 
+logger = get_logger()
 
-def test_invoice_pdf():
-    """Test the invoice PDF generation."""
-    # Get the first invoice (you might want to use a specific ID)
-    try:
-        invoice = Invoice.objects.select_related('customer').prefetch_related('items').first()
+try:
+    # Get the first invoice
+    invoice = Invoice.objects.first()
+    
+    if invoice:
+        logger.info(f"Testing PDF generation for invoice: {invoice.invoice_num}")
+        logger.info(f"Invoice ID: {invoice.id}")
+        logger.info(f"Customer: {invoice.customer if hasattr(invoice, 'customer') else 'No customer'}")
+        logger.info(f"Total Amount: {invoice.totalAmount}")
+        logger.info(f"Date: {invoice.date}")
+        logger.info(f"Status: {invoice.status}")
         
-        if not invoice:
-            print("No invoices found in the database.")
-            return
-            
-        print(f"Testing PDF generation for invoice: {invoice.invoice_num}")
-        print(f"Customer: {invoice.customer.customerName if hasattr(invoice.customer, 'customerName') else 'Unknown'}")
-        print(f"Total Amount: ${invoice.totalAmount}")
-        print(f"Status: {invoice.status}")
-        
-        # Generate PDF
+        # Try to generate PDF
         pdf_buffer = generate_invoice_pdf(invoice)
+        logger.info("PDF generation successful!")
+        logger.info(f"PDF size: {len(pdf_buffer.getvalue())} bytes")
+    else:
+        logger.error("No invoices found in the database")
         
-        # Save to file for testing
-        with open(f'test_invoice_{invoice.invoice_num}.pdf', 'wb') as f:
-            f.write(pdf_buffer.getvalue())
-            
-        print(f"PDF generated successfully! Saved as test_invoice_{invoice.invoice_num}.pdf")
-        print(f"The API endpoint would be: /api/sales/invoices/{invoice.id}/pdf/")
-        
-    except Exception as e:
-        print(f"Error: {str(e)}")
-        import traceback
-        traceback.print_exc()
-
-
-if __name__ == "__main__":
-    test_invoice_pdf()
+except Exception as e:
+    logger.error(f"Error during PDF test: {str(e)}")
+    import traceback
+    logger.error(traceback.format_exc())

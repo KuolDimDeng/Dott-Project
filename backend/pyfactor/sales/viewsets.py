@@ -146,15 +146,21 @@ class InvoiceViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'])
     def pdf(self, request, pk=None):
         """Generate and return PDF for invoice."""
+        logger.info(f"PDF generation requested for invoice {pk}")
+        logger.info(f"User: {request.user}, Tenant: {getattr(request.user, 'tenant_id', 'No tenant')}")
         try:
-            # Get the invoice with related data
-            # Note: TenantAwareModel might not have 'tenant' as a direct relation
+            # Get the invoice using get_object() which respects permissions and tenant filtering
+            invoice = self.get_object()
+            
+            # Prefetch related data
             invoice = Invoice.objects.select_related(
                 'customer'
             ).prefetch_related(
                 'items__product',
                 'items__service'
-            ).get(pk=pk)
+            ).get(pk=invoice.pk)
+            
+            logger.info(f"Invoice found: {invoice.invoice_num}")
             
             # Generate PDF
             pdf_buffer = generate_invoice_pdf(invoice)
@@ -171,14 +177,17 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             return response
             
         except Invoice.DoesNotExist:
+            logger.error(f"Invoice not found: {pk}")
             return Response(
                 {'error': 'Invoice not found'},
                 status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
-            logger.error(f"Error generating PDF for invoice {pk}: {str(e)}")
+            logger.exception(f"Error generating PDF for invoice {pk}: {str(e)}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
             return Response(
-                {'error': 'Failed to generate PDF'},
+                {'error': f'Failed to generate PDF: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 

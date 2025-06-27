@@ -195,9 +195,21 @@ def generate_invoice_pdf(invoice):
         
         # Draw invoice details on the right
         p.setFont("Helvetica", 10)
-        p.drawRightString(width - 40, height - 40, f"Invoice #: {invoice.invoice_num}")
-        p.drawRightString(width - 40, height - 55, f"Date: {invoice.date.strftime('%Y-%m-%d')}")
-        p.drawRightString(width - 40, height - 70, f"Due Date: {invoice.due_date.strftime('%Y-%m-%d')}")
+        invoice_num = getattr(invoice, 'invoice_num', f'INV-{invoice.id}')
+        p.drawRightString(width - 40, height - 40, f"Invoice #: {invoice_num}")
+        
+        # Handle date formatting
+        try:
+            date_str = invoice.date.strftime('%Y-%m-%d')
+        except:
+            date_str = str(invoice.date)
+        p.drawRightString(width - 40, height - 55, f"Date: {date_str}")
+        
+        try:
+            due_date_str = invoice.due_date.strftime('%Y-%m-%d')
+        except:
+            due_date_str = str(invoice.due_date)
+        p.drawRightString(width - 40, height - 70, f"Due Date: {due_date_str}")
         
         # Draw status
         status_color = colors.green if invoice.status == 'paid' else colors.orange if invoice.status == 'sent' else colors.grey
@@ -222,19 +234,29 @@ def generate_invoice_pdf(invoice):
         p.setFont("Helvetica", 10)
         y_pos -= 15
         
-        # Format customer name
-        if hasattr(invoice.customer, 'first_name') and invoice.customer.first_name:
-            customer_name = f"{invoice.customer.first_name} {invoice.customer.last_name}"
-        else:
-            customer_name = invoice.customer.customerName or "Customer"
-        p.drawString(40, y_pos, customer_name)
-        y_pos -= 15
-        
-        if invoice.customer.street:
-            p.drawString(40, y_pos, invoice.customer.street)
+        # Check if customer exists
+        if hasattr(invoice, 'customer') and invoice.customer:
+            # Format customer name
+            customer_name = ""
+            if hasattr(invoice.customer, 'business_name') and invoice.customer.business_name:
+                customer_name = invoice.customer.business_name
+            elif hasattr(invoice.customer, 'first_name') and invoice.customer.first_name:
+                customer_name = f"{invoice.customer.first_name} {invoice.customer.last_name or ''}"
+            else:
+                customer_name = "Customer"
+            p.drawString(40, y_pos, customer_name)
             y_pos -= 15
-        if invoice.customer.city:
-            p.drawString(40, y_pos, f"{invoice.customer.city}, {invoice.customer.billingState} {invoice.customer.postcode}")
+            
+            if hasattr(invoice.customer, 'street') and invoice.customer.street:
+                p.drawString(40, y_pos, invoice.customer.street)
+                y_pos -= 15
+            if hasattr(invoice.customer, 'city') and invoice.customer.city:
+                billing_state = getattr(invoice.customer, 'billing_state', '')
+                postcode = getattr(invoice.customer, 'postcode', '')
+                p.drawString(40, y_pos, f"{invoice.customer.city}, {billing_state} {postcode}".strip())
+                y_pos -= 15
+        else:
+            p.drawString(40, y_pos, "No customer information")
             y_pos -= 15
 
         # Draw invoice items table
@@ -242,22 +264,32 @@ def generate_invoice_pdf(invoice):
         data = [['Description', 'Quantity', 'Unit Price', 'Total']]
         
         subtotal = Decimal('0.00')
-        for item in invoice.items.all():
+        try:
+            items = invoice.items.all()
+        except Exception as e:
+            logger.warning(f"Could not fetch invoice items: {e}")
+            items = []
+        
+        for item in items:
             item_name = ""
-            if item.product:
-                item_name = item.product.name
-            elif item.service:
-                item_name = item.service.name
-            elif item.description:
+            if hasattr(item, 'product') and item.product:
+                item_name = getattr(item.product, 'name', 'Product')
+            elif hasattr(item, 'service') and item.service:
+                item_name = getattr(item.service, 'name', 'Service')
+            elif hasattr(item, 'description') and item.description:
                 item_name = item.description
+            else:
+                item_name = "Item"
             
-            item_total = item.quantity * item.unit_price
+            quantity = getattr(item, 'quantity', 1)
+            unit_price = getattr(item, 'unit_price', 0)
+            item_total = Decimal(str(quantity)) * Decimal(str(unit_price))
             subtotal += item_total
             
             data.append([
                 item_name,
-                str(item.quantity),
-                f"${item.unit_price:.2f}",
+                str(quantity),
+                f"${unit_price:.2f}",
                 f"${item_total:.2f}"
             ])
 
@@ -292,37 +324,43 @@ def generate_invoice_pdf(invoice):
         
         # Subtotal
         p.drawString(350, y_pos, "Subtotal:")
-        p.drawRightString(width - 40, y_pos, f"${invoice.subtotal or subtotal:.2f}")
+        invoice_subtotal = getattr(invoice, 'subtotal', subtotal)
+        p.drawRightString(width - 40, y_pos, f"${invoice_subtotal:.2f}")
         y_pos -= 20
         
         # Tax if applicable
-        if invoice.tax_total and invoice.tax_total > 0:
+        tax_total = getattr(invoice, 'tax_total', 0)
+        if tax_total and tax_total > 0:
             p.drawString(350, y_pos, "Tax:")
-            p.drawRightString(width - 40, y_pos, f"${invoice.tax_total:.2f}")
+            p.drawRightString(width - 40, y_pos, f"${tax_total:.2f}")
             y_pos -= 20
         
         # Discount if applicable
-        if invoice.discount and invoice.discount > 0:
+        discount = getattr(invoice, 'discount', 0)
+        if discount and discount > 0:
             p.drawString(350, y_pos, "Discount:")
-            p.drawRightString(width - 40, y_pos, f"-${invoice.discount:.2f}")
+            p.drawRightString(width - 40, y_pos, f"-${discount:.2f}")
             y_pos -= 20
         
         # Total
         p.setFont("Helvetica-Bold", 11)
         p.drawString(350, y_pos, "Total:")
-        p.drawRightString(width - 40, y_pos, f"${invoice.total or invoice.totalAmount:.2f}")
+        invoice_total = getattr(invoice, 'total', getattr(invoice, 'totalAmount', 0))
+        p.drawRightString(width - 40, y_pos, f"${invoice_total:.2f}")
         y_pos -= 20
         
         # Amount paid and balance due
-        if invoice.amount_paid and invoice.amount_paid > 0:
+        amount_paid = getattr(invoice, 'amount_paid', 0)
+        if amount_paid and amount_paid > 0:
             p.setFont("Helvetica", 10)
             p.drawString(350, y_pos, "Amount Paid:")
-            p.drawRightString(width - 40, y_pos, f"${invoice.amount_paid:.2f}")
+            p.drawRightString(width - 40, y_pos, f"${amount_paid:.2f}")
             y_pos -= 20
             
             p.setFont("Helvetica-Bold", 11)
             p.drawString(350, y_pos, "Balance Due:")
-            p.drawRightString(width - 40, y_pos, f"${invoice.balance_due:.2f}")
+            balance_due = getattr(invoice, 'balance_due', invoice_total - amount_paid)
+            p.drawRightString(width - 40, y_pos, f"${balance_due:.2f}")
             y_pos -= 20
 
         # Draw notes if any
@@ -364,9 +402,14 @@ def generate_invoice_pdf(invoice):
         buffer.seek(0)
         logger.debug("PDF generation successful for invoice: %s", invoice.id)
         return buffer
+    except AttributeError as e:
+        logger.error(f"AttributeError in PDF generation - missing field: {str(e)}")
+        logger.error(f"Invoice object type: {type(invoice)}")
+        logger.error(f"Invoice fields: {[f.name for f in invoice._meta.fields] if hasattr(invoice, '_meta') else 'No meta'}")
+        raise Exception(f"PDF generation failed due to missing invoice field: {str(e)}")
     except Exception as e:
         logger.exception("Error generating PDF for invoice %s: %s", invoice.id, str(e))
-        raise
+        raise Exception(f"PDF generation failed: {str(e)}")
     
 def get_or_create_user_database(user):
     try:
