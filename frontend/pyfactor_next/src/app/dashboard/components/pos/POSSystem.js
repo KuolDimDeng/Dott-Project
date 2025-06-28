@@ -240,31 +240,7 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
   // UI state
   const [isProcessing, setIsProcessing] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
-  const [scannerType, setScannerType] = useState('usb'); // 'usb' or 'camera'
   const [productSearchTerm, setProductSearchTerm] = useState('');
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [scannerDetected, setScannerDetected] = useState(false);
-  const [lastScanTime, setLastScanTime] = useState(0);
-  const [scannerStatus, setScannerStatus] = useState('searching'); // 'searching', 'detected', 'not_found', 'active'
-  const [scannerSearchStarted, setScannerSearchStarted] = useState(false);
-  
-  // Refs to access latest state in event handlers
-  const isSearchFocusedRef = useRef(false);
-  const scannerDetectedRef = useRef(false);
-  const lastScanTimeRef = useRef(0);
-  
-  // Update refs when state changes
-  useEffect(() => {
-    isSearchFocusedRef.current = isSearchFocused;
-  }, [isSearchFocused]);
-  
-  useEffect(() => {
-    scannerDetectedRef.current = scannerDetected;
-  }, [scannerDetected]);
-  
-  useEffect(() => {
-    lastScanTimeRef.current = lastScanTime;
-  }, [lastScanTime]);
   
   // Receipt dialog state
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
@@ -272,8 +248,6 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
 
   // Refs
   const productSearchRef = useRef(null);
-  const usbScannerRef = useRef('');
-  const eventListenerAddedRef = useRef(false);
 
   // Real product data from database
   const [products, setProducts] = useState([]);
@@ -442,157 +416,59 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
     }
   }, [products, addToCart]);
 
-  // Scanner detection logic
+  // Simplified scanner detection logic
   useEffect(() => {
     if (!isOpen) return;
     
-    let keypressTimer = null;
-    let scanStartTime = 0;
-    let searchTimeout = null;
-    let hasShownSearching = false;
-
-    // Show initial searching status when POS opens (only once)
-    if (!scannerSearchStarted) {
-      console.log('[POSSystem] Scanner detection started, setting status to searching');
-      setScannerStatus('searching');
-      setScannerSearchStarted(true);
-      
-      // Set timeout to show "not found" after 10 seconds of no scanner activity
-      searchTimeout = setTimeout(() => {
-        if (!scannerDetectedRef.current) {
-          console.log('[POSSystem] Scanner detection timeout - no scanner found after 10 seconds');
-          setScannerStatus('not_found');
-          toast('⚠️ No barcode scanner detected. You can still search products manually.', {
-            duration: 6000,
-            position: 'top-center',
-            style: {
-              background: '#F59E0B',
-              color: 'white',
-            },
-          });
-        }
-      }, 10000);
-    }
-
-    const detectScanner = (timeDiff) => {
-      // If keys are pressed very quickly (< 30ms apart), it's likely a scanner
-      if (timeDiff < 30 && !scannerDetectedRef.current) {
-        setScannerDetected(true);
-        scannerDetectedRef.current = true;
-        setScannerStatus('detected');
-        
-        // Clear the search timeout since we found a scanner
-        if (searchTimeout) {
-          clearTimeout(searchTimeout);
-        }
-        
-        toast.success('🔍 Barcode scanner detected! You can start scanning products.', {
-          duration: 4000,
-          position: 'top-center',
-          style: {
-            background: '#10B981',
-            color: 'white',
-          },
-        });
-        
-        // Auto-focus the search field for immediate scanning
-        if (productSearchRef.current) {
-          productSearchRef.current.focus();
-        }
-      }
-    };
+    let buffer = '';
+    let bufferTimer = null;
+    let lastKeypressTime = 0;
 
     const handleKeyPress = (event) => {
-      if (!isOpen) return;
-
-      const currentTime = Date.now();
+      // Only process printable characters and Enter
+      if (event.key === 'Enter') {
+        if (buffer.length > 0) {
+          console.log('[POSSystem] Scanner input detected:', buffer);
+          handleProductScan(buffer);
+          buffer = '';
+          setProductSearchTerm('');
+        }
+        return;
+      }
       
-      // Detect scanner by rapid key input
-      if (lastScanTimeRef.current > 0) {
-        const timeDiff = currentTime - lastScanTimeRef.current;
-        detectScanner(timeDiff);
-      }
-      setLastScanTime(currentTime);
-      lastScanTimeRef.current = currentTime;
-
-      // Only process if search field is focused
-      if (!isSearchFocusedRef.current) {
-        // Auto-focus search field if scanner is detected
-        if (scannerDetectedRef.current && productSearchRef.current) {
-          productSearchRef.current.focus();
-        }
-        return;
-      }
-
-      console.log('[POSSystem] Key pressed:', event.key, 'Current buffer before:', usbScannerRef.current);
-      console.log('[POSSystem] Key character code:', event.key.charCodeAt(0));
-
-      // Clear any existing timer
-      if (keypressTimer) clearTimeout(keypressTimer);
-
-      // USB scanners typically send data very quickly followed by Enter
-      if (event.key === 'Enter' && usbScannerRef.current.length > 0) {
-        console.log('[POSSystem] Scanner sent Enter, processing barcode:', usbScannerRef.current);
-        console.log('[POSSystem] Barcode length:', usbScannerRef.current.length);
-        console.log('[POSSystem] Barcode characters:', usbScannerRef.current.split('').map(c => `${c} (${c.charCodeAt(0)})`).join(', '));
-        
-        setScannerStatus('active'); // Show scanner is actively being used
-        handleProductScan(usbScannerRef.current);
-        usbScannerRef.current = '';
-        setProductSearchTerm('');
-        
-        // Reset scanner status after a delay
-        setTimeout(() => {
-          setScannerStatus('detected');
-        }, 2000);
-        return;
-      }
-
-      // Build up the scanned code
       if (event.key.length === 1) {
-        // Track scan start time
-        if (usbScannerRef.current === '') {
-          scanStartTime = currentTime;
+        const now = Date.now();
+        
+        // If it's been more than 100ms since last keypress, start new buffer
+        if (now - lastKeypressTime > 100) {
+          buffer = '';
         }
         
-        // Accumulate the scanned characters
-        usbScannerRef.current += event.key;
-        setProductSearchTerm(usbScannerRef.current);
+        buffer += event.key;
+        lastKeypressTime = now;
         
-        console.log('[POSSystem] Buffer after adding:', usbScannerRef.current);
-
-        // Set a timer to clear the buffer if no more input
-        keypressTimer = setTimeout(() => {
-          // If we got a complete scan in under 100ms, it's definitely a scanner
-          const scanDuration = Date.now() - scanStartTime;
-          if (usbScannerRef.current.length > 5 && scanDuration < 100) {
-            detectScanner(10); // Force detection
-          }
-          
-          // Don't clear if user is still typing
-          if (Date.now() - lastScanTimeRef.current > 500) {
-            usbScannerRef.current = '';
-            setProductSearchTerm('');
-          }
+        // Update search term for visual feedback
+        setProductSearchTerm(buffer);
+        
+        // Clear buffer after 500ms of inactivity
+        if (bufferTimer) clearTimeout(bufferTimer);
+        bufferTimer = setTimeout(() => {
+          buffer = '';
+          setProductSearchTerm('');
         }, 500);
       }
     };
 
-    // Only add event listener if not already added
-    if (!eventListenerAddedRef.current) {
-      window.addEventListener('keypress', handleKeyPress);
-      eventListenerAddedRef.current = true;
-      console.log('[POSSystem] Event listener added');
-    }
+    // Add single event listener
+    window.addEventListener('keydown', handleKeyPress);
+    console.log('[POSSystem] Event listener added');
     
     return () => {
-      window.removeEventListener('keypress', handleKeyPress);
-      eventListenerAddedRef.current = false;
-      if (keypressTimer) clearTimeout(keypressTimer);
-      if (searchTimeout) clearTimeout(searchTimeout);
+      window.removeEventListener('keydown', handleKeyPress);
+      if (bufferTimer) clearTimeout(bufferTimer);
       console.log('[POSSystem] Event listener removed');
     };
-  }, [isOpen, scannerSearchStarted]); // Only depend on isOpen and scannerSearchStarted
+  }, [isOpen]); // Only depend on isOpen
 
   // Focus on product search when modal opens
   useEffect(() => {
@@ -600,15 +476,6 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
       setTimeout(() => {
         productSearchRef.current.focus();
       }, 100);
-    }
-  }, [isOpen]);
-
-  // Reset scanner search when modal closes
-  useEffect(() => {
-    if (!isOpen) {
-      setScannerSearchStarted(false);
-      setScannerDetected(false);
-      setScannerStatus('searching');
     }
   }, [isOpen]);
 
@@ -816,32 +683,8 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                         <div className="flex items-center justify-between mb-2">
                           <label className="text-sm font-medium text-gray-700">
                             Product Search / Barcode Scanner
-                            <FieldTooltip text="Type product name, scan barcode with USB scanner, or use camera to scan QR codes" />
+                            <FieldTooltip text="Type product name or scan barcode with USB scanner" />
                           </label>
-                          {/* Scanner Status Indicator */}
-                          <div className={`flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                            scannerStatus === 'searching' 
-                              ? 'bg-yellow-100 text-yellow-700' 
-                              : scannerStatus === 'detected' || scannerStatus === 'active'
-                              ? 'bg-green-100 text-green-700'
-                              : scannerStatus === 'not_found'
-                              ? 'bg-gray-100 text-gray-600'
-                              : 'bg-gray-100 text-gray-600'
-                          }`}>
-                            <div className={`w-2 h-2 rounded-full mr-2 ${
-                              scannerStatus === 'searching' 
-                                ? 'bg-yellow-500 animate-pulse' 
-                                : scannerStatus === 'active' 
-                                ? 'bg-blue-500 animate-pulse' 
-                                : scannerStatus === 'detected'
-                                ? 'bg-green-500'
-                                : 'bg-gray-400'
-                            }`} />
-                            {scannerStatus === 'searching' && 'Searching for scanner...'}
-                            {scannerStatus === 'detected' && 'Scanner Ready'}
-                            {scannerStatus === 'active' && 'Scanning...'}
-                            {scannerStatus === 'not_found' && 'No scanner detected'}
-                          </div>
                         </div>
                         <div className="relative">
                           <input
@@ -849,8 +692,7 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                             type="text"
                             value={productSearchTerm}
                             onChange={(e) => setProductSearchTerm(e.target.value)}
-                            onFocus={() => setIsSearchFocused(true)}
-                            onBlur={() => setIsSearchFocused(false)}
+                            placeholder="Type product name or scan barcode..."
                             placeholder={
                               scannerStatus === 'detected' ? "Ready to scan - place cursor here" 
                               : scannerStatus === 'searching' ? "Searching for scanner... You can type to search"
