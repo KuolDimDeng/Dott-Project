@@ -52,52 +52,8 @@ function Home({ userData, onNavigate }) {
       try {
         setLoading(true);
         
-        // Check if we have a session cookie
-        const cookies = document.cookie.split('; ');
-        const sidCookie = cookies.find(row => row.startsWith('sid='));
-        
-        if (!sidCookie) {
-          console.warn('[Home] No session cookie found - session may have expired');
-          // Try to refresh the session first
-          try {
-            const sessionResponse = await fetch('/api/auth/session-v2', { 
-              credentials: 'include',
-              cache: 'no-store'
-            });
-            
-            if (!sessionResponse.ok) {
-              console.warn('[Home] Session refresh failed, using local data only');
-              // Set minimal checklist data based on what we know from userData
-              setChecklistData({
-                profileComplete: !!(userData?.businessName || userData?.business_name || userData?.company_name),
-                hasCustomers: false,
-                hasProducts: false,
-                hasServices: false,
-                hasSuppliers: false,
-                hasInvoices: false,
-                exploredDashboard: true
-              });
-              setLoading(false);
-              return;
-            }
-            
-            console.log('[Home] Session refreshed successfully');
-            // Session is now valid, continue with data fetching below
-          } catch (error) {
-            console.error('[Home] Error refreshing session:', error);
-            setChecklistData({
-              profileComplete: !!(userData?.businessName || userData?.business_name || userData?.company_name),
-              hasCustomers: false,
-              hasProducts: false,
-              hasServices: false,
-              hasSuppliers: false,
-              hasInvoices: false,
-              exploredDashboard: true
-            });
-            setLoading(false);
-            return;
-          }
-        }
+        // Session is managed server-side, no need to check cookies directly
+        // The API calls will handle authentication automatically
         
         // Fetch various stats in parallel
         const [customerStats, serviceStats, dashboardMetrics] = await Promise.all([
@@ -506,32 +462,15 @@ function Home({ userData, onNavigate }) {
                 </span>
               </div>
               
-              {/* Session Warning */}
-              {(() => {
-                const cookies = typeof document !== 'undefined' ? document.cookie.split('; ') : [];
-                const sidCookie = cookies.find(row => row.startsWith('sid='));
-                return !sidCookie && (
-                  <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <ExclamationCircleIcon className="h-5 w-5 text-orange-500 mr-2" />
-                        <div>
-                          <p className="text-sm text-orange-800 font-medium">Session Issue Detected</p>
-                          <p className="text-xs text-orange-700 mt-1">
-                            Your session may have expired. If the checklist shows 0 completed items even though you've created data, please refresh the page.
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => window.location.reload()}
-                        className="ml-3 px-3 py-1 text-xs bg-orange-100 text-orange-800 rounded-md hover:bg-orange-200 transition-colors"
-                      >
-                        Refresh Page
-                      </button>
-                    </div>
+              {/* Loading indicator while fetching data */}
+              {loading && (
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center">
+                    <ClockIcon className="h-5 w-5 text-blue-500 mr-2 animate-pulse" />
+                    <p className="text-sm text-blue-800">Loading your progress...</p>
                   </div>
-                );
-              })()}
+                </div>
+              )}
               
               {/* Progress Bar */}
               <div className="w-full bg-gray-200 rounded-full h-2 mb-6">
