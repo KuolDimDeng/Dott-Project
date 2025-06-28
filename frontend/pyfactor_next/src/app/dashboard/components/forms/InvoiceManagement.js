@@ -8,6 +8,7 @@ import { getSecureTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
 import { format } from 'date-fns';
 import { DocumentTextIcon } from '@heroicons/react/24/outline';
+import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 
 // Tooltip component for field help
 const FieldTooltip = ({ text, position = 'top' }) => {
@@ -1024,10 +1025,7 @@ const InvoiceManagement = () => {
         {/* Tab Content */}
         <div className="p-6">
           {isLoading ? (
-            <div className="text-center py-8">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <p className="mt-2 text-gray-600">Loading...</p>
-            </div>
+            <CenteredSpinner size="medium" text="Loading..." />
           ) : (
             <>
               {/* Sales Orders Tab */}

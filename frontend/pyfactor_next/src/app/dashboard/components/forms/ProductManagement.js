@@ -366,10 +366,7 @@ const ModernFormLayout = ({ children, title, subtitle, onSubmit, isLoading, subm
           className={`relative overflow-hidden ${isLoading ? 'bg-blue-500 cursor-not-allowed opacity-80' : 'bg-blue-700 hover:bg-blue-800'}`}
         >
           {isLoading ? (
-            <div className="flex items-center">
-              <span className="animate-spin mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
-              <span>Processing...</span>
-            </div>
+            <ButtonSpinner />
           ) : (
             <span>{submitLabel || 'Submit'}</span>
           )}
@@ -1568,7 +1565,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
             >
               {isSubmitting ? (
                 <div className="flex items-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-white mr-2"></div>
+                  <ButtonSpinner />
                   Creating...
         </div>
               ) : (
@@ -2074,7 +2071,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
       return (
         <div className="flex justify-center items-center h-64">
           <div className="flex flex-col items-center">
-            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+            <StandardSpinner size="large" />
             <p className="mt-4 text-gray-600">Loading products...</p>
           </div>
         </div>
@@ -2543,7 +2540,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                 >
                   {isSubmitting ? (
                     <div className="flex items-center">
-                      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-white mr-2"></div>
+                      <ButtonSpinner />
                       Saving...
                     </div>
                   ) : (
@@ -2774,7 +2771,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                   >
                     {isSubmitting ? (
                       <div className="flex items-center">
-                        <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-white mr-2"></div>
+                        <ButtonSpinner />
                         Saving...
                       </div>
                     ) : (

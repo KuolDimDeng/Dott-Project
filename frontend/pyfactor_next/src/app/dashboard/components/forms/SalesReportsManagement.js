@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { useToast } from '@/components/Toast/ToastProvider';
 import { logger } from '@/utils/logger';
+import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 
 const SalesReportsManagement = () => {
   const [activeTab, setActiveTab] = useState(0);
@@ -156,12 +157,7 @@ const SalesReportsManagement = () => {
   const renderReportData = () => {
     if (isLoading) {
       return (
-        <div className="flex justify-center items-center h-64">
-          <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mb-4"></div>
-            <p className="text-gray-600">Generating report...</p>
-          </div>
-        </div>
+        <CenteredSpinner size="medium" text="Generating report..." />
       );
     }
 
