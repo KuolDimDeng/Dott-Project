@@ -5,6 +5,7 @@ import { reportsApi } from '@/services/api/reports';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import { ChartBar, CurrencyDollar, Receipt, Users, Buildings, ChartLine, FileText, Clock, Eye, Star, Download } from '@phosphor-icons/react';
+import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 
 const ReportsDashboard = () => {
   const [loading, setLoading] = useState(true);
@@ -122,9 +123,7 @@ const ReportsDashboard = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
+      <CenteredSpinner size="large" minHeight="h-96" />
     );
   }
 

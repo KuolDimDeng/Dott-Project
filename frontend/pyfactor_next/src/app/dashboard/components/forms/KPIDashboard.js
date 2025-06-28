@@ -12,6 +12,7 @@ import {
 import { axiosInstance } from '@/lib/axiosConfig';
 // Import TrendingUp and TrendingDown icons from a different source (e.g., heroicons)
 import { ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/24/solid';
+import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 
 const KPIDashboard = () => {
   const [activeTab, setActiveTab] = useState(0);
@@ -154,9 +155,7 @@ const KPIDashboard = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-      </div>
+      <CenteredSpinner size="large" minHeight="min-h-[400px]" />
     );
   }
 

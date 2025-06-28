@@ -99,7 +99,10 @@
       "Bash(git revert:*)",
       "Bash(git restore:*)",
       "Bash(awk:*)",
-      "Bash(npm run lint:*)"
+      "Bash(npm run lint:*)",
+      "Bash(for:*)",
+      "Bash(do echo \"=== $file ===\")",
+      "Bash(done)"
     ],
     "deny": []
   }

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
+import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 import { 
   CreditCard,
   CheckCircle,
@@ -75,9 +76,7 @@ const PaymentsDashboard = () => {
   // Wait for tenant ID to load
   if (!tenantId) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
+      <CenteredSpinner size="large" minHeight="h-64" />
     );
   }
 
@@ -104,9 +103,7 @@ const PaymentsDashboard = () => {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
+      <CenteredSpinner size="large" minHeight="h-64" />
     );
   }
 

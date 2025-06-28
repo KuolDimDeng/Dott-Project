@@ -28,6 +28,7 @@ import {
   Plus
 } from '@phosphor-icons/react';
 
+import StandardSpinner from '@/components/ui/StandardSpinner';
 const SalesDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState('month');
@@ -323,7 +324,7 @@ const SalesDashboard = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <StandardSpinner size="large" />
       </div>
     );
   }

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { customerApi, productApi, supplierApi } from '@/utils/apiClient';
+import StandardSpinner from '@/components/ui/StandardSpinner';
 
 const DiagnosticPanel = () => {
   const [diagnostics, setDiagnostics] = useState({
@@ -187,7 +188,7 @@ const DiagnosticPanel = () => {
     return (
       <div className="p-4 bg-white rounded-lg shadow">
         <h3 className="text-lg font-semibold mb-2">Running Diagnostics...</h3>
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <StandardSpinner size="default" />
       </div>
     );
   }

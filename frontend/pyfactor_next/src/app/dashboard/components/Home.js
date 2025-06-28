@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { getSubscriptionPlanColor } from '@/utils/userAttributes';
 import SubscriptionPopup from './SubscriptionPopup';
 import { customerApi, productApi, supplierApi } from '@/utils/apiClient';
+import StandardSpinner from '@/components/ui/StandardSpinner';
 import { 
   CheckCircleIcon, 
   UserPlusIcon, 
@@ -567,7 +568,7 @@ function Home({ userData, onNavigate }) {
               
               {loading ? (
                 <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <StandardSpinner size="default" />
                 </div>
               ) : recentActivity.length > 0 ? (
                 <div className="space-y-3">

@@ -22,6 +22,7 @@ import {
   PlusIcon
 } from '@heroicons/react/24/outline';
 
+import StandardSpinner from '@/components/ui/StandardSpinner';
 // Tooltip component for field help
 const FieldTooltip = ({ text }) => {
   const [isVisible, setIsVisible] = useState(false);
@@ -290,7 +291,7 @@ const BankingDashboard = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <StandardSpinner size="large" />
       </div>
     );
   }

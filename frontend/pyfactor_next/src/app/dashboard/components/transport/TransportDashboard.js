@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import PieChart from '../charts/PieChart';
+import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 
 const TransportDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -78,9 +79,7 @@ const TransportDashboard = () => {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-[50vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
-      </div>
+      <CenteredSpinner size="large" minHeight="h-[50vh]" />
     );
   }
 

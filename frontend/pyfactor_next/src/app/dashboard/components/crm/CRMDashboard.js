@@ -6,6 +6,7 @@ import { useStore } from '@/store/authStore';
 import { logger } from '@/utils/logger';
 import { appCache } from '@/utils/appCache';
 import { fetchAuthSession } from '@/config/amplifyUnified';
+import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 
 const CRMDashboard = () => {
   const [loading, setLoading] = useState(true);
@@ -203,9 +204,7 @@ const CRMDashboard = () => {
   
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-full">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-main"></div>
-      </div>
+      <CenteredSpinner size="large" minHeight="h-full" />
     );
   }
   
