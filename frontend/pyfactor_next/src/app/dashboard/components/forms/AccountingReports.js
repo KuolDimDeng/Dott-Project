@@ -25,7 +25,8 @@ import {
   CheckCircleIcon,
   ExclamationCircleIcon,
   DocumentMagnifyingGlassIcon,
-  TableCellsIcon
+  TableCellsIcon,
+  ChartBarSquareIcon
 } from '@heroicons/react/24/outline';
 
 // Tooltip component for field help

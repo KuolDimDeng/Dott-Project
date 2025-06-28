@@ -535,7 +535,7 @@ function FixedAssetManagement({ onNavigate }) {
             <h3 className="text-gray-500 text-sm font-medium uppercase tracking-wide">Total Assets</h3>
             <ArchiveBoxIcon className="h-5 w-5 text-gray-400" />
           </div>
-          <div className="text-3xl font-bold text-gray-900">{stats.totalAssets}</div>
+          <div className="text-3xl font-bold text-gray-900 truncate">{stats.totalAssets}</div>
           <p className="text-sm text-gray-600 mt-1">{stats.activeAssets} active</p>
         </div>
 
@@ -544,7 +544,7 @@ function FixedAssetManagement({ onNavigate }) {
             <h3 className="text-gray-500 text-sm font-medium uppercase tracking-wide">Total Value</h3>
             <CurrencyDollarIcon className="h-5 w-5 text-green-500" />
           </div>
-          <div className="text-3xl font-bold text-green-600">{formatCurrency(stats.totalValue)}</div>
+          <div className="text-3xl font-bold text-green-600 truncate">{formatCurrency(stats.totalValue)}</div>
           <p className="text-sm text-gray-600 mt-1">Acquisition cost</p>
         </div>
 
@@ -553,7 +553,7 @@ function FixedAssetManagement({ onNavigate }) {
             <h3 className="text-gray-500 text-sm font-medium uppercase tracking-wide">Depreciation</h3>
             <ChartBarIcon className="h-5 w-5 text-red-500" />
           </div>
-          <div className="text-3xl font-bold text-red-600">{formatCurrency(stats.totalDepreciation)}</div>
+          <div className="text-3xl font-bold text-red-600 truncate">{formatCurrency(stats.totalDepreciation)}</div>
           <p className="text-sm text-gray-600 mt-1">Accumulated</p>
         </div>
 
@@ -562,7 +562,7 @@ function FixedAssetManagement({ onNavigate }) {
             <h3 className="text-gray-500 text-sm font-medium uppercase tracking-wide">Book Value</h3>
             <DocumentChartBarIcon className="h-5 w-5 text-blue-500" />
           </div>
-          <div className="text-3xl font-bold text-blue-600">{formatCurrency(stats.currentBookValue)}</div>
+          <div className="text-3xl font-bold text-blue-600 truncate">{formatCurrency(stats.currentBookValue)}</div>
           <p className="text-sm text-gray-600 mt-1">Current value</p>
         </div>
 
@@ -571,7 +571,7 @@ function FixedAssetManagement({ onNavigate }) {
             <h3 className="text-gray-500 text-sm font-medium uppercase tracking-wide">Active</h3>
             <BuildingOfficeIcon className="h-5 w-5 text-green-500" />
           </div>
-          <div className="text-3xl font-bold text-green-600">{stats.activeAssets}</div>
+          <div className="text-3xl font-bold text-green-600 truncate">{stats.activeAssets}</div>
           <p className="text-sm text-gray-600 mt-1">In service</p>
         </div>
 
@@ -580,7 +580,7 @@ function FixedAssetManagement({ onNavigate }) {
             <h3 className="text-gray-500 text-sm font-medium uppercase tracking-wide">Disposed</h3>
             <ExclamationTriangleIcon className="h-5 w-5 text-yellow-500" />
           </div>
-          <div className="text-3xl font-bold text-yellow-600">{stats.disposedAssets}</div>
+          <div className="text-3xl font-bold text-yellow-600 truncate">{stats.disposedAssets}</div>
           <p className="text-sm text-gray-600 mt-1">Sold/retired</p>
         </div>
       </div>

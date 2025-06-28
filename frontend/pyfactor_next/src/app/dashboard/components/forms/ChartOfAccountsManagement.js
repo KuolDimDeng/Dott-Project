@@ -260,9 +260,9 @@ function ChartOfAccountsManagement({ onNavigate }) {
           <div className="flex-shrink-0">
             <CalculatorIcon className="h-8 w-8 text-blue-600" />
           </div>
-          <div className="ml-4">
+          <div className="ml-4 flex-1 min-w-0">
             <p className="text-gray-500 text-sm font-medium uppercase tracking-wide">Total Accounts</p>
-            <p className="text-3xl font-bold text-blue-600">{loading ? '-' : stats.totalAccounts}</p>
+            <p className="text-3xl font-bold text-blue-600 truncate">{loading ? '-' : stats.totalAccounts}</p>
           </div>
         </div>
       </div>
@@ -272,9 +272,9 @@ function ChartOfAccountsManagement({ onNavigate }) {
           <div className="flex-shrink-0">
             <BanknotesIcon className="h-8 w-8 text-green-600" />
           </div>
-          <div className="ml-4">
+          <div className="ml-4 flex-1 min-w-0">
             <p className="text-gray-500 text-sm font-medium uppercase tracking-wide">Total Assets</p>
-            <p className="text-3xl font-bold text-green-600">{loading ? '-' : formatCurrency(stats.totalAssets)}</p>
+            <p className="text-3xl font-bold text-green-600 truncate">{loading ? '-' : formatCurrency(stats.totalAssets)}</p>
           </div>
         </div>
       </div>
@@ -284,9 +284,9 @@ function ChartOfAccountsManagement({ onNavigate }) {
           <div className="flex-shrink-0">
             <BuildingLibraryIcon className="h-8 w-8 text-red-600" />
           </div>
-          <div className="ml-4">
+          <div className="ml-4 flex-1 min-w-0">
             <p className="text-gray-500 text-sm font-medium uppercase tracking-wide">Total Liabilities</p>
-            <p className="text-3xl font-bold text-red-600">{loading ? '-' : formatCurrency(stats.totalLiabilities)}</p>
+            <p className="text-3xl font-bold text-red-600 truncate">{loading ? '-' : formatCurrency(stats.totalLiabilities)}</p>
           </div>
         </div>
       </div>
@@ -296,9 +296,9 @@ function ChartOfAccountsManagement({ onNavigate }) {
           <div className="flex-shrink-0">
             <ChartBarIcon className="h-8 w-8 text-purple-600" />
           </div>
-          <div className="ml-4">
+          <div className="ml-4 flex-1 min-w-0">
             <p className="text-gray-500 text-sm font-medium uppercase tracking-wide">Total Equity</p>
-            <p className="text-3xl font-bold text-purple-600">{loading ? '-' : formatCurrency(stats.totalEquity)}</p>
+            <p className="text-3xl font-bold text-purple-600 truncate">{loading ? '-' : formatCurrency(stats.totalEquity)}</p>
           </div>
         </div>
       </div>
@@ -308,9 +308,9 @@ function ChartOfAccountsManagement({ onNavigate }) {
           <div className="flex-shrink-0">
             <DocumentPlusIcon className="h-8 w-8 text-yellow-600" />
           </div>
-          <div className="ml-4">
+          <div className="ml-4 flex-1 min-w-0">
             <p className="text-gray-500 text-sm font-medium uppercase tracking-wide">Active Accounts</p>
-            <p className="text-3xl font-bold text-yellow-600">{loading ? '-' : stats.activeAccounts}</p>
+            <p className="text-3xl font-bold text-yellow-600 truncate">{loading ? '-' : stats.activeAccounts}</p>
           </div>
         </div>
       </div>
