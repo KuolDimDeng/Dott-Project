@@ -216,7 +216,7 @@ class POSErrorBoundary extends React.Component {
 const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
   // Debug props
   console.log('[POSSystem] Rendering with props:', { isOpen, onClose: !!onClose, onSaleCompleted: !!onSaleCompleted });
-  console.log('[POSSystem] Version: 2025-01-11 with enhanced debugging');
+  console.log('[POSSystem] Version: 2025-01-11 v2 - Fixed null protection for all string operations');
 
   // Mock business info - in real app, this would come from settings/profile
   const businessInfo = {
@@ -376,8 +376,8 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
         skuCleanMatch: p.sku === cleanCode,
         barcodeMatch: p.barcode === productId,
         barcodeCleanMatch: p.barcode === cleanCode,
-        nameMatch: (p.name || '').toLowerCase().includes((cleanCode || '').toLowerCase()),
-        exactNameMatch: (p.name || '').toLowerCase() === (cleanCode || '').toLowerCase()
+        nameMatch: String(p.name || '').toLowerCase().includes(String(cleanCode || '').toLowerCase()),
+        exactNameMatch: String(p.name || '').toLowerCase() === String(cleanCode || '').toLowerCase()
       };
       
       console.log(`[POS] Checking product "${p.name}":`, matches);
@@ -952,11 +952,22 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
                             <h3 className="text-sm font-medium text-gray-700">
-                              {products.filter(product =>
-                                (product.name || '').toLowerCase().includes((productSearchTerm || '').toLowerCase()) ||
-                                (product.sku || '').toLowerCase().includes((productSearchTerm || '').toLowerCase()) ||
-                                (product.barcode || '').includes((productSearchTerm || ''))
-                              ).length > 0 ? 'Search Results:' : 'No products found'}
+                              {(() => {
+                                try {
+                                  const searchTerm = String(productSearchTerm || '').toLowerCase();
+                                  const filtered = products.filter(product => {
+                                    if (!product) return false;
+                                    const name = String(product.name || '').toLowerCase();
+                                    const sku = String(product.sku || '').toLowerCase();
+                                    const barcode = String(product.barcode || '');
+                                    return name.includes(searchTerm) || sku.includes(searchTerm) || barcode.includes(searchTerm);
+                                  });
+                                  return filtered.length > 0 ? 'Search Results:' : 'No products found';
+                                } catch (error) {
+                                  console.error('[POSSystem] Filter error:', error);
+                                  return 'No products found';
+                                }
+                              })()}
                             </h3>
                             {(productSearchTerm || '').length > 0 && (
                               <button
@@ -971,14 +982,17 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                             )}
                           </div>
                           <div className="max-h-64 overflow-y-auto space-y-2">
-                            {products
-                              .filter(product =>
-                                (product.name || '').toLowerCase().includes((productSearchTerm || '').toLowerCase()) ||
-                                (product.sku || '').toLowerCase().includes((productSearchTerm || '').toLowerCase()) ||
-                                (product.barcode || '').includes((productSearchTerm || ''))
-                              )
-                              .slice(0, 5) // Show max 5 results
-                              .map(product => (
+                            {(() => {
+                              try {
+                                const searchTerm = String(productSearchTerm || '').toLowerCase();
+                                const filtered = products.filter(product => {
+                                  if (!product) return false;
+                                  const name = String(product.name || '').toLowerCase();
+                                  const sku = String(product.sku || '').toLowerCase();
+                                  const barcode = String(product.barcode || '');
+                                  return name.includes(searchTerm) || sku.includes(searchTerm) || barcode.includes(searchTerm);
+                                });
+                                return filtered.slice(0, 5).map(product => (
                                 <div
                                   key={product.id}
                                   onClick={() => {
@@ -1000,7 +1014,12 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                                     </div>
                                   </div>
                                 </div>
-                              ))}
+                              ));
+                              } catch (error) {
+                                console.error('[POSSystem] Filter error:', error);
+                                return null;
+                              }
+                            })()}
                           </div>
                         </div>
                       )}
