@@ -124,13 +124,23 @@ export default function SmartInsight({ onNavigate }) {
   const [showBuyCredits, setShowBuyCredits] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [tenantId, setTenantId] = useState(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Initialize tenant ID
   useEffect(() => {
-    const id = getSecureTenantId();
-    if (id) {
-      setTenantId(id);
-    }
+    const fetchTenantId = async () => {
+      try {
+        const id = await getSecureTenantId();
+        if (id) {
+          setTenantId(id);
+        }
+      } catch (error) {
+        console.error('[SmartInsight] Error fetching tenant ID:', error);
+      } finally {
+        setIsInitialized(true);
+      }
+    };
+    fetchTenantId();
   }, []);
 
   // Auto-scroll to bottom of chat
@@ -192,6 +202,15 @@ export default function SmartInsight({ onNavigate }) {
     // Implement payment flow here
     toast.success(`Selected ${pkg.name} - ${pkg.credits} credits for $${pkg.price}`);
   };
+
+  // Show loading while initializing
+  if (!isInitialized) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <CenteredSpinner size="large" text="Initializing Smart Insight..." />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto p-6">
