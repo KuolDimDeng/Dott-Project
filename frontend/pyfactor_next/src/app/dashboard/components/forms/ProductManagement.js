@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import BarcodeGenerator from '@/components/BarcodeGenerator';
 import ProductQRCode from '@/components/ProductQRCode';
 import { useTable, usePagination, useSortBy } from 'react-table';
+import StandardSpinner, { CenteredSpinner, ButtonSpinner } from '@/components/ui/StandardSpinner';
 import PropTypes from 'prop-types';
 import { useNotification } from '@/context/NotificationContext';
 import { productApi } from '@/utils/apiClient';

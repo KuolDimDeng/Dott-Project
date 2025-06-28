@@ -7,9 +7,11 @@ import ErrorBoundary from './ErrorBoundary';
 // import { TransportDashboard, VehicleManagement } from './transport';
 
 // Empty loading component (removed spinner)
+import StandardSpinner from '@/components/ui/StandardSpinner';
+
 const LoadingComponent = () => (
   <div className="py-4 flex items-center justify-center">
-    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+    <StandardSpinner size="default" showText={false} />
     <span className="ml-2 text-gray-600">Loading component...</span>
   </div>
 );
