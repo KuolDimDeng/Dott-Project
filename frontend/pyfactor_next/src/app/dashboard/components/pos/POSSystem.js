@@ -216,7 +216,7 @@ class POSErrorBoundary extends React.Component {
 const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
   // Debug props
   console.log('[POSSystem] Rendering with props:', { isOpen, onClose: !!onClose, onSaleCompleted: !!onSaleCompleted });
-  console.log('[POSSystem] Version: 2025-01-11 v3 - Fixed event listeners and scanner detection');
+  console.log('[POSSystem] Version: 2025-01-11 v4 - Fixed duplicate events with memoization');
 
   // Mock business info - in real app, this would come from settings/profile
   const businessInfo = {
@@ -273,6 +273,7 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
   // Refs
   const productSearchRef = useRef(null);
   const usbScannerRef = useRef('');
+  const eventListenerAddedRef = useRef(false);
 
   // Real product data from database
   const [products, setProducts] = useState([]);
@@ -577,11 +578,19 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
       }
     };
 
-    window.addEventListener('keypress', handleKeyPress);
+    // Only add event listener if not already added
+    if (!eventListenerAddedRef.current) {
+      window.addEventListener('keypress', handleKeyPress);
+      eventListenerAddedRef.current = true;
+      console.log('[POSSystem] Event listener added');
+    }
+    
     return () => {
       window.removeEventListener('keypress', handleKeyPress);
+      eventListenerAddedRef.current = false;
       if (keypressTimer) clearTimeout(keypressTimer);
       if (searchTimeout) clearTimeout(searchTimeout);
+      console.log('[POSSystem] Event listener removed');
     };
   }, [isOpen, scannerSearchStarted]); // Only depend on isOpen and scannerSearchStarted
 
@@ -1247,11 +1256,14 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
   );
 };
 
+// Memoize POSSystemContent to prevent unnecessary re-renders
+const MemoizedPOSSystemContent = React.memo(POSSystemContent);
+
 // Wrap POSSystemContent with Error Boundary
 const POSSystem = (props) => {
   return (
     <POSErrorBoundary onClose={props.onClose}>
-      <POSSystemContent {...props} />
+      <MemoizedPOSSystemContent {...props} />
     </POSErrorBoundary>
   );
 };
