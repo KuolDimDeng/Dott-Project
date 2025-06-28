@@ -263,6 +263,8 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
     // Add some products that match common barcode formats
     { id: 'PROD-005', name: 'Test Product 1', price: 19.99, sku: 'TEST-001', barcode: '043bb-963d-f5d5b0bc009e"}', description: 'Test item', stock: 10 },
     { id: 'PROD-006', name: 'Sample Item', price: 9.99, sku: 'SAMPLE-001', barcode: '043bb963df5d5b0bc009e', description: 'Sample product', stock: 15 },
+    { id: 'PROD-007', name: 'Hat', price: 25.00, sku: 'HAT-001', barcode: 'hat', description: 'Baseball hat', stock: 20 },
+    { id: 'PROD-008', name: 'Hat', price: 25.00, sku: 'HAT-002', barcode: 'Hat', description: 'Baseball hat', stock: 20 },
   ];
 
   const mockCustomers = [
@@ -314,16 +316,36 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
       console.log('[POS] Not JSON format, using raw code');
     }
     
-    // Find product by ID, SKU, barcode, or name
-    const product = mockProducts.find(p => 
-      p.id === productId || 
-      p.sku === productId ||
-      p.barcode === productId ||
-      p.barcode === cleanCode ||
-      p.id === cleanCode ||
-      p.sku === cleanCode ||
-      p.name.toLowerCase().includes(cleanCode.toLowerCase())
-    );
+    // Find product by ID, SKU, barcode, or name (with extensive debugging)
+    console.log('[POS] Searching for product with:');
+    console.log('[POS] - productId:', productId);
+    console.log('[POS] - cleanCode:', cleanCode);
+    console.log('[POS] - Available products:', mockProducts.map(p => ({
+      id: p.id,
+      name: p.name,
+      sku: p.sku,
+      barcode: p.barcode
+    })));
+    
+    const product = mockProducts.find(p => {
+      const matches = {
+        idMatch: p.id === productId,
+        idCleanMatch: p.id === cleanCode,
+        skuMatch: p.sku === productId,
+        skuCleanMatch: p.sku === cleanCode,
+        barcodeMatch: p.barcode === productId,
+        barcodeCleanMatch: p.barcode === cleanCode,
+        nameMatch: p.name.toLowerCase().includes(cleanCode.toLowerCase()),
+        exactNameMatch: p.name.toLowerCase() === cleanCode.toLowerCase()
+      };
+      
+      console.log(`[POS] Checking product "${p.name}":`, matches);
+      
+      return matches.idMatch || matches.idCleanMatch || 
+             matches.skuMatch || matches.skuCleanMatch ||
+             matches.barcodeMatch || matches.barcodeCleanMatch ||
+             matches.nameMatch || matches.exactNameMatch;
+    });
 
     if (product) {
       addToCart(product);
@@ -367,11 +389,13 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
 
     // Show initial searching status when POS opens
     if (isOpen) {
+      console.log('[POSSystem] Scanner detection started, setting status to searching');
       setScannerStatus('searching');
       
       // Set timeout to show "not found" after 10 seconds of no scanner activity
       searchTimeout = setTimeout(() => {
         if (!scannerDetected) {
+          console.log('[POSSystem] Scanner detection timeout - no scanner found after 10 seconds');
           setScannerStatus('not_found');
           toast('⚠️ No barcode scanner detected. You can still search products manually.', {
             duration: 6000,
@@ -434,6 +458,7 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
       }
 
       console.log('[POSSystem] Key pressed:', event.key, 'Current buffer before:', usbScannerRef.current);
+      console.log('[POSSystem] Key character code:', event.key.charCodeAt(0));
 
       // Clear any existing timer
       if (keypressTimer) clearTimeout(keypressTimer);
@@ -779,6 +804,15 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                         >
                           <CameraIcon className="h-5 w-5 mr-2" />
                           Camera Scanner
+                        </button>
+                        <button
+                          onClick={() => {
+                            console.log('[POS] Manual test: scanning "Hat"');
+                            handleProductScan('Hat');
+                          }}
+                          className="px-4 py-3 rounded-lg border border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors text-sm"
+                        >
+                          Test "Hat"
                         </button>
                       </div>
 
