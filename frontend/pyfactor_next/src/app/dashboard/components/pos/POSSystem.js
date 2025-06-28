@@ -255,18 +255,58 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
   const productSearchRef = useRef(null);
   const usbScannerRef = useRef('');
 
-  // Mock product data - replace with actual API call
-  const mockProducts = [
-    { id: 'PROD-001', name: 'Widget A', price: 29.99, sku: 'WID-A-001', barcode: '1234567890123', description: 'Premium widget', stock: 50 },
-    { id: 'PROD-002', name: 'Widget B', price: 39.99, sku: 'WID-B-002', barcode: '9876543210987', description: 'Deluxe widget', stock: 30 },
-    { id: 'PROD-003', name: 'Gadget X', price: 15.99, sku: 'GAD-X-003', barcode: '5555555555555', description: 'Compact gadget', stock: 100 },
-    { id: 'PROD-004', name: 'Tool Pro', price: 89.99, sku: 'TOL-P-004', barcode: '1111111111111', description: 'Professional tool', stock: 25 },
-    // Add some products that match common barcode formats
-    { id: 'PROD-005', name: 'Test Product 1', price: 19.99, sku: 'TEST-001', barcode: '043bb-963d-f5d5b0bc009e"}', description: 'Test item', stock: 10 },
-    { id: 'PROD-006', name: 'Sample Item', price: 9.99, sku: 'SAMPLE-001', barcode: '043bb963df5d5b0bc009e', description: 'Sample product', stock: 15 },
-    { id: 'PROD-007', name: 'Hat', price: 25.00, sku: 'HAT-001', barcode: 'hat', description: 'Baseball hat', stock: 20 },
-    { id: 'PROD-008', name: 'Hat', price: 25.00, sku: 'HAT-002', barcode: 'Hat', description: 'Baseball hat', stock: 20 },
-  ];
+  // Real product data from database
+  const [products, setProducts] = useState([]);
+  const [productsLoading, setProductsLoading] = useState(true);
+  const [productsError, setProductsError] = useState(null);
+
+  // Fetch products from database
+  useEffect(() => {
+    const fetchProducts = async () => {
+      if (!isOpen) return; // Don't fetch if POS is not open
+      
+      try {
+        setProductsLoading(true);
+        console.log('[POSSystem] Fetching products from database...');
+        
+        const response = await fetch('/api/products', {
+          credentials: 'include',
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch products: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('[POSSystem] Products fetched:', data);
+        
+        // Transform API data to match POS format
+        const transformedProducts = (data.products || []).map(product => ({
+          id: product.id || product.product_id || product.sku,
+          name: product.name || product.product_name,
+          price: parseFloat(product.price || 0),
+          sku: product.sku || product.id,
+          barcode: product.barcode || product.sku || product.id, // Use SKU as barcode if no barcode
+          description: product.description || '',
+          stock: parseInt(product.stockQuantity || product.stock_quantity || 0)
+        }));
+        
+        setProducts(transformedProducts);
+        console.log('[POSSystem] Transformed products:', transformedProducts);
+        
+      } catch (error) {
+        console.error('[POSSystem] Error fetching products:', error);
+        setProductsError(error.message);
+        
+        // Fallback to empty array on error
+        setProducts([]);
+      } finally {
+        setProductsLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, [isOpen]);
 
   const mockCustomers = [
     { id: '1', name: 'John Doe', email: 'john@example.com' },
@@ -321,14 +361,14 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
     console.log('[POS] Searching for product with:');
     console.log('[POS] - productId:', productId);
     console.log('[POS] - cleanCode:', cleanCode);
-    console.log('[POS] - Available products:', mockProducts.map(p => ({
+    console.log('[POS] - Available products:', products.map(p => ({
       id: p.id,
       name: p.name,
       sku: p.sku,
       barcode: p.barcode
     })));
     
-    const product = mockProducts.find(p => {
+    const product = products.find(p => {
       const matches = {
         idMatch: p.id === productId,
         idCleanMatch: p.id === cleanCode,
@@ -380,7 +420,7 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
       // Keep the scanned code in search field so user can modify it
       // Don't clear immediately - let user try manual search
     }
-  }, [mockProducts, addToCart]);
+  }, [products, addToCart]);
 
   // Scanner detection logic
   useEffect(() => {
@@ -808,12 +848,12 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                         </button>
                         <button
                           onClick={() => {
-                            console.log('[POS] Manual test: scanning "Hat"');
-                            handleProductScan('Hat');
+                            console.log('[POS] Manual test: scanning "PROD-2025-0002"');
+                            handleProductScan('PROD-2025-0002');
                           }}
                           className="px-4 py-3 rounded-lg border border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors text-sm"
                         >
-                          Test "Hat"
+                          Test Hat SKU
                         </button>
                       </div>
 
@@ -883,12 +923,36 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                         </div>
                       )}
 
+                      {/* Products Loading State */}
+                      {productsLoading && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                          <div className="flex items-center">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                            <span className="text-sm text-blue-700">Loading products from database...</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Products Error State */}
+                      {productsError && (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                          <h4 className="text-sm font-medium text-red-900 mb-1">Error Loading Products</h4>
+                          <p className="text-xs text-red-700">{productsError}</p>
+                          <button
+                            onClick={() => window.location.reload()}
+                            className="mt-2 px-3 py-1 bg-red-600 text-white text-xs rounded-md hover:bg-red-700 transition-colors"
+                          >
+                            Reload
+                          </button>
+                        </div>
+                      )}
+
                       {/* Product Quick Add (if searching) */}
-                      {productSearchTerm && !showScanner && (
+                      {productSearchTerm && !showScanner && !productsLoading && (
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
                             <h3 className="text-sm font-medium text-gray-700">
-                              {mockProducts.filter(product =>
+                              {products.filter(product =>
                                 product.name.toLowerCase().includes(productSearchTerm.toLowerCase()) ||
                                 product.sku.toLowerCase().includes(productSearchTerm.toLowerCase()) ||
                                 product.barcode?.includes(productSearchTerm)
@@ -907,7 +971,7 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                             )}
                           </div>
                           <div className="max-h-64 overflow-y-auto space-y-2">
-                            {mockProducts
+                            {products
                               .filter(product =>
                                 product.name.toLowerCase().includes(productSearchTerm.toLowerCase()) ||
                                 product.sku.toLowerCase().includes(productSearchTerm.toLowerCase()) ||
