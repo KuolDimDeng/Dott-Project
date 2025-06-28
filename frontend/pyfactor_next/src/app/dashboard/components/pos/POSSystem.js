@@ -216,6 +216,7 @@ class POSErrorBoundary extends React.Component {
 const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
   // Debug props
   console.log('[POSSystem] Rendering with props:', { isOpen, onClose: !!onClose, onSaleCompleted: !!onSaleCompleted });
+  console.log('[POSSystem] Version: 2025-01-11 with enhanced debugging');
 
   // Mock business info - in real app, this would come from settings/profile
   const businessInfo = {
