@@ -327,3 +327,17 @@ node scripts/load-test-sessions.js --scenario=mixed --users=100
 
 ### Enable Redis (Optional)
 Add `REDIS_URL` environment variable in Render dashboard
+
+### [13.0.0] - 2025-01-28 - CURRENT - Loading Spinner Standards
+- **Component**: StandardSpinner (`/src/components/ui/StandardSpinner.js`)
+- **Purpose**: Consistent loading indicators across entire application
+- **Implementation**: 
+  - SVG-based with Tailwind CSS `animate-spin`
+  - Proper accessibility (`role="status"`, screen reader text)
+  - Size variants: small (4x4), default (8x8), large (12x12), xl (16x16)
+- **Helper Components**:
+  - `CenteredSpinner`: For centered loading states in containers
+  - `ButtonSpinner`: For inline button loading states
+- **Migration**: Replace all `animate-spin rounded-full` divs with StandardSpinner
+- **Documentation**: `/docs/STANDARD_SPINNER.md`
+- **Registry**: Component tracking in `/src/utils/componentRegistry.js`
