@@ -894,7 +894,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
                 componentKey={`${componentKey}-${view}`}
                 fallback={
                   <div className="flex justify-center items-center h-64">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                    <StandardSpinner size="large" />
                   </div>
                 }
               >
@@ -982,7 +982,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
                   componentKey={`${componentKey}-${view}`}
                   fallback={
                     <div className="flex justify-center items-center h-64">
-                      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                      <StandardSpinner size="large" />
                     </div>
                   }
                 >
@@ -1110,7 +1110,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
                   componentKey={`${componentKey}-${view}`}
                   fallback={
                     <div className="flex justify-center items-center h-64">
-                      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                      <StandardSpinner size="large" />
                     </div>
                   }
                 >
@@ -1269,7 +1269,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
                   componentKey={`${componentKey}-${reportType}`}
                   fallback={
                     <div className="flex justify-center items-center h-64">
-                      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                      <StandardSpinner size="large" />
                     </div>
                   }
                 >
@@ -1350,7 +1350,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
                 componentKey={`${componentKey}-${view}`}
                 fallback={
                   <div className="flex justify-center items-center h-64">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                    <StandardSpinner size="large" />
                   </div>
                 }
               >
@@ -1441,7 +1441,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
                 componentKey={`${componentKey}-${view}`}
                 fallback={
                   <div className="flex justify-center items-center h-64">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                    <StandardSpinner size="large" />
                   </div>
                 }
               >
@@ -1535,7 +1535,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
                 componentKey={`${componentKey}-${view}`}
                 fallback={
                   <div className="flex justify-center items-center h-64">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                    <StandardSpinner size="large" />
                   </div>
                 }
               >
@@ -1660,7 +1660,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
                 <div className="p-4">
                   <h1 className="text-xl font-semibold mb-2">Employee Management</h1>
                   <div className="flex items-center justify-center h-64">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                    <StandardSpinner size="large" />
                   </div>
                 </div>
               } componentKey={`employee-management-${navigationKey || 'default'}`}>
@@ -1726,7 +1726,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
                 <div className="p-4">
                   <h2 className="text-2xl font-semibold text-gray-800 mb-4">Settings Management</h2>
                   <div className="flex items-center justify-center h-64">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                    <StandardSpinner size="large" />
                   </div>
                 </div>
               }>
@@ -1772,7 +1772,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
         return (
           <ContentWrapperWithKey>
             <div className="flex flex-col items-center justify-center h-[70vh]">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+              <StandardSpinner size="large" />
               <h6 className="text-lg font-medium mt-2">
                 Setting up your account data...
               </h6>
@@ -1852,7 +1852,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
                   componentKey={`${componentKey}-${view}`}
                   fallback={
                     <div className="flex justify-center items-center h-64">
-                      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                      <StandardSpinner size="large" />
                     </div>
                   }
                 >
@@ -2033,7 +2033,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
                 componentKey={`timesheet-management-${navigationKey || 'default'}`}
                 fallback={
                   <div className="flex justify-center items-center h-64">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                    <StandardSpinner size="large" />
                   </div>
                 }
               >
@@ -2052,7 +2052,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
               <div className="p-4">
                 <h1 className="text-xl font-semibold mb-2">Employee Tax Management</h1>
                 <div className="flex items-center justify-center h-64">
-                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                  <StandardSpinner size="large" />
                 </div>
               </div>
             } componentKey={`tax-management-${sectionComponentKey}`}>
@@ -2070,7 +2070,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
               componentKey={`benefits-management-${navigationKey || 'default'}`} 
               fallback={
                 <div className="flex justify-center items-center h-64">
-                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                  <StandardSpinner size="large" />
                 </div>
               }
             >
@@ -2090,7 +2090,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
               componentKey={`pay-management-${navigationKey || 'default'}`} 
               fallback={
                 <div className="flex justify-center items-center h-64">
-                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                  <StandardSpinner size="large" />
                 </div>
               }
             >

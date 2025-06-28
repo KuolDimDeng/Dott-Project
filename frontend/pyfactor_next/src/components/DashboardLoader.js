@@ -1,13 +1,9 @@
 'use client';
 
-
-
-
-
-
 import { appCache } from '../utils/appCache';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 
 
 
@@ -442,7 +438,9 @@ export default function DashboardLoader({ message = 'Loading your dashboard...' 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 bg-gray-100 bg-opacity-70 backdrop-blur-sm">
       <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md mx-4 text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto mb-4" />
+        <div className="mb-4">
+          <CenteredSpinner size="large" minHeight="h-12" />
+        </div>
         
         <h3 className="text-lg font-medium text-gray-900 mb-2">
           {status}
