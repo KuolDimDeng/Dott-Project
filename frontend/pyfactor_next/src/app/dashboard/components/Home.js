@@ -63,38 +63,69 @@ function Home({ userData, onNavigate }) {
         ]);
 
         // Fetch entity counts
-        const [customers, products, suppliers] = await Promise.all([
-          customerApi.getAll().catch((error) => {
+        const [customersResponse, productsResponse, suppliersResponse] = await Promise.all([
+          customerApi.getAll().then(res => {
+            console.log('[Home] Customers response:', res);
+            // Django REST Framework paginated response format
+            if (res.results && Array.isArray(res.results)) return res.results;
+            // Handle different response formats
+            if (Array.isArray(res)) return res;
+            if (res.customers && Array.isArray(res.customers)) return res.customers;
+            if (res.data && Array.isArray(res.data)) return res.data;
+            return [];
+          }).catch((error) => {
             console.error('[Home] Error fetching customers:', error);
             return [];
           }),
-          productApi.getAll().catch((error) => {
+          productApi.getAll().then(res => {
+            console.log('[Home] Products response:', res);
+            // Handle different response formats from /api/products route
+            if (res.products && Array.isArray(res.products)) return res.products;
+            if (res.results && Array.isArray(res.results)) return res.results;
+            if (Array.isArray(res)) return res;
+            if (res.data && Array.isArray(res.data)) return res.data;
+            return [];
+          }).catch((error) => {
             console.error('[Home] Error fetching products:', error);
             return [];
           }),
-          supplierApi.getAll().catch((error) => {
+          supplierApi.getAll().then(res => {
+            console.log('[Home] Suppliers response:', res);
+            // Django REST Framework paginated response format
+            if (res.results && Array.isArray(res.results)) return res.results;
+            // Handle different response formats
+            if (Array.isArray(res)) return res;
+            if (res.suppliers && Array.isArray(res.suppliers)) return res.suppliers;
+            if (res.data && Array.isArray(res.data)) return res.data;
+            return [];
+          }).catch((error) => {
             console.error('[Home] Error fetching suppliers:', error);
             return [];
           })
         ]);
 
-        // Update stats
+        // Extract the actual arrays from the responses
+        const customers = customersResponse || [];
+        const products = productsResponse || [];
+        const suppliers = suppliersResponse || [];
+
+        // Update stats - use actual data counts, not failing stats endpoints
         setStats({
-          customers: customerStats.total || customers.length || 0,
+          customers: customers.length || customerStats.total || 0,
           products: products.length || 0,
-          services: serviceStats.stats?.total || 0,
+          services: serviceStats.stats?.total || serviceStats.total || 0,
           suppliers: suppliers.length || 0,
-          invoices: dashboardMetrics.metrics?.invoices?.total || 0
+          invoices: dashboardMetrics.metrics?.invoices?.total || dashboardMetrics.total || 0
         });
 
         // Update checklist based on real data
         const checklistStatus = {
           profileComplete: !!(userData?.businessName || userData?.business_name || userData?.company_name),
-          hasCustomers: (customerStats.total || customers.length) > 0,
+          hasCustomers: customers.length > 0 || customerStats.total > 0,
           hasProducts: products.length > 0,
-          hasServices: (serviceStats.stats?.total || 0) > 0,
+          hasServices: (serviceStats.stats?.total || serviceStats.total || 0) > 0,
           hasSuppliers: suppliers.length > 0,
-          hasInvoices: (dashboardMetrics.metrics?.invoices?.total || 0) > 0,
+          hasInvoices: (dashboardMetrics.metrics?.invoices?.total || dashboardMetrics.total || 0) > 0,
           exploredDashboard: true // Can track this via localStorage or user activity
         };
         
