@@ -46,8 +46,19 @@ const AnalyticsDashboard = ({ userData }) => {
         start_date: dateRange.startDate,
         end_date: dateRange.endDate
       });
-      if (metricsResponse.data) {
-        setMetrics(metricsResponse.data);
+      if (metricsResponse?.data) {
+        // Ensure proper structure with defaults
+        const metricsData = {
+          revenue: metricsResponse.data.revenue || { current: 0, previous: 0, growth: 0 },
+          expenses: metricsResponse.data.expenses || { current: 0, previous: 0, growth: 0 },
+          profit: metricsResponse.data.profit || { current: 0, previous: 0, growth: 0 },
+          customers: metricsResponse.data.customers || { current: 0, new: 0, growth: 0 },
+          cashFlow: metricsResponse.data.cashFlow || { inflow: 0, outflow: 0, net: 0 }
+        };
+        setMetrics(metricsData);
+      } else {
+        // Use mock data if no response
+        setMetrics(generateMockMetrics());
       }
       
       // Fetch chart data
@@ -56,8 +67,21 @@ const AnalyticsDashboard = ({ userData }) => {
         end_date: dateRange.endDate,
         metric: selectedMetric
       });
-      if (chartResponse.data) {
-        setChartData(chartResponse.data);
+      if (chartResponse?.data) {
+        // Ensure proper structure with defaults
+        const chartDataResponse = {
+          revenue: chartResponse.data.revenue || [],
+          expenses: chartResponse.data.expenses || [],
+          profitTrend: chartResponse.data.profitTrend || [],
+          customerGrowth: chartResponse.data.customerGrowth || [],
+          topProducts: chartResponse.data.topProducts || [],
+          topCustomers: chartResponse.data.topCustomers || [],
+          cashFlow: chartResponse.data.cashFlow || []
+        };
+        setChartData(chartDataResponse);
+      } else {
+        // Use mock data if no response
+        setChartData(generateMockChartData());
       }
     } catch (error) {
       console.error('Error fetching analytics data:', error);
@@ -196,53 +220,53 @@ const AnalyticsDashboard = ({ userData }) => {
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm font-medium text-gray-600">Revenue</p>
-            <span className={`text-sm font-medium ${metrics.revenue.growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatPercentage(metrics.revenue.growth)}
+            <span className={`text-sm font-medium ${metrics.revenue?.growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {formatPercentage(metrics.revenue?.growth || 0)}
             </span>
           </div>
-          <p className="text-2xl font-bold text-gray-900">{formatCurrency(metrics.revenue.current)}</p>
-          <p className="text-xs text-gray-500 mt-1">vs {formatCurrency(metrics.revenue.previous)} last period</p>
+          <p className="text-2xl font-bold text-gray-900">{formatCurrency(metrics.revenue?.current || 0)}</p>
+          <p className="text-xs text-gray-500 mt-1">vs {formatCurrency(metrics.revenue?.previous || 0)} last period</p>
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm font-medium text-gray-600">Expenses</p>
-            <span className={`text-sm font-medium ${metrics.expenses.growth <= 5 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatPercentage(metrics.expenses.growth)}
+            <span className={`text-sm font-medium ${metrics.expenses?.growth <= 5 ? 'text-green-600' : 'text-red-600'}`}>
+              {formatPercentage(metrics.expenses?.growth || 0)}
             </span>
           </div>
-          <p className="text-2xl font-bold text-gray-900">{formatCurrency(metrics.expenses.current)}</p>
-          <p className="text-xs text-gray-500 mt-1">vs {formatCurrency(metrics.expenses.previous)} last period</p>
+          <p className="text-2xl font-bold text-gray-900">{formatCurrency(metrics.expenses?.current || 0)}</p>
+          <p className="text-xs text-gray-500 mt-1">vs {formatCurrency(metrics.expenses?.previous || 0)} last period</p>
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm font-medium text-gray-600">Profit</p>
-            <span className={`text-sm font-medium ${metrics.profit.growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatPercentage(metrics.profit.growth)}
+            <span className={`text-sm font-medium ${metrics.profit?.growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {formatPercentage(metrics.profit?.growth || 0)}
             </span>
           </div>
-          <p className="text-2xl font-bold text-gray-900">{formatCurrency(metrics.profit.current)}</p>
-          <p className="text-xs text-gray-500 mt-1">vs {formatCurrency(metrics.profit.previous)} last period</p>
+          <p className="text-2xl font-bold text-gray-900">{formatCurrency(metrics.profit?.current || 0)}</p>
+          <p className="text-xs text-gray-500 mt-1">vs {formatCurrency(metrics.profit?.previous || 0)} last period</p>
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm font-medium text-gray-600">Customers</p>
-            <span className={`text-sm font-medium ${metrics.customers.growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatPercentage(metrics.customers.growth)}
+            <span className={`text-sm font-medium ${metrics.customers?.growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {formatPercentage(metrics.customers?.growth || 0)}
             </span>
           </div>
-          <p className="text-2xl font-bold text-gray-900">{metrics.customers.current}</p>
-          <p className="text-xs text-gray-500 mt-1">{metrics.customers.new} new this period</p>
+          <p className="text-2xl font-bold text-gray-900">{metrics.customers?.current || 0}</p>
+          <p className="text-xs text-gray-500 mt-1">{metrics.customers?.new || 0} new this period</p>
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm font-medium text-gray-600">Cash Flow</p>
           </div>
-          <p className={`text-2xl font-bold ${metrics.cashFlow.net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-            {formatCurrency(metrics.cashFlow.net)}
+          <p className={`text-2xl font-bold ${metrics.cashFlow?.net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            {formatCurrency(metrics.cashFlow?.net || 0)}
           </p>
           <p className="text-xs text-gray-500 mt-1">Net cash position</p>
         </div>

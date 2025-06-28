@@ -612,8 +612,8 @@ Please provide a clear, actionable answer based on the data above. Include speci
                   <p className="text-sm text-gray-400 mt-1">Try: "What was my revenue last month?"</p>
                 </div>
               ) : (
-                chatHistory.map((message) => (
-                  <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+                chatHistory.map((message, index) => (
+                  <div key={message.id || `msg-${index}`} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[80%] rounded-lg px-4 py-2 ${
                       message.type === 'user' 
                         ? 'bg-purple-600 text-white' 
@@ -944,7 +944,7 @@ Please provide a clear, actionable answer based on the data above. Include speci
                         </label>
                         
                         <div className="space-y-2">
-                          {PAYMENT_METHODS[userRegion].map((method) => {
+                          {(PAYMENT_METHODS[userRegion] || PAYMENT_METHODS.global).map((method) => {
                             const IconComponent = method.icon;
                             return (
                               <button
