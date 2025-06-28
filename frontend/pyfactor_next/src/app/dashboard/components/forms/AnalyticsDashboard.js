@@ -123,6 +123,26 @@ const AnalyticsDashboard = ({ userData }) => {
     setKpis(generateMockKPIs());
   }, []);
 
+  // Calculate average values safely
+  const calculatedAverages = useMemo(() => {
+    const safeAvg = (arr, key) => arr.length > 0 ? arr.reduce((sum, item) => sum + item[key], 0) / arr.length : 0;
+    
+    return {
+      expenseAverages: {
+        operating: safeAvg(chartData.expenses, 'operating'),
+        marketing: safeAvg(chartData.expenses, 'marketing'),
+        payroll: safeAvg(chartData.expenses, 'payroll'),
+        other: safeAvg(chartData.expenses, 'other')
+      },
+      revenueAverage: safeAvg(chartData.revenue, 'revenue'),
+      performanceAverage: safeAvg(chartData.performance, 'score'),
+      cashFlowAverages: {
+        inflow: safeAvg(chartData.cashFlow, 'inflow'),
+        outflow: Math.abs(safeAvg(chartData.cashFlow, 'outflow'))
+      }
+    };
+  }, [chartData]);
+
   const fetchAnalyticsData = async (isRefresh = false) => {
     try {
       if (isRefresh) {
@@ -687,7 +707,10 @@ const AnalyticsDashboard = ({ userData }) => {
                 <p className="text-xs text-green-600">{metrics.orders.completed} completed</p>
               </div>
             </div>
-            <p className="text-xs text-gray-500 mt-2">Order completion rate: {metrics.orders.current > 0 ? ((metrics.orders.completed / metrics.orders.current) * 100).toFixed(1) : '0'}%</p>
+            <p className="text-xs text-gray-500 mt-2">Order completion rate: {(() => {
+              const completionRate = metrics.orders.current > 0 ? ((metrics.orders.completed / metrics.orders.current) * 100).toFixed(1) : '0';
+              return `${completionRate}%`;
+            })()}</p>
           </div>
 
           {/* Net Profit Card */}
@@ -712,7 +735,10 @@ const AnalyticsDashboard = ({ userData }) => {
                 {formatPercentage(metrics.profit.growth)}
               </span>
             </div>
-            <p className="text-xs text-gray-500 mt-2">Profit margin: {metrics.revenue.current > 0 ? ((metrics.profit.current / metrics.revenue.current) * 100).toFixed(1) : '0'}%</p>
+            <p className="text-xs text-gray-500 mt-2">Profit margin: {(() => {
+              const profitMargin = metrics.revenue.current > 0 ? ((metrics.profit.current / metrics.revenue.current) * 100).toFixed(1) : '0';
+              return `${profitMargin}%`;
+            })()}</p>
           </div>
         </div>
 
@@ -864,7 +890,7 @@ const AnalyticsDashboard = ({ userData }) => {
             <div className="mt-4 grid grid-cols-3 gap-4 pt-4 border-t border-gray-100">
               <div className="text-center">
                 <p className="text-sm text-gray-500">Avg Monthly</p>
-                <p className="text-lg font-semibold text-blue-600">{formatCurrency(chartData.revenue.length > 0 ? chartData.revenue.reduce((sum, item) => sum + item.revenue, 0) / chartData.revenue.length : 0)}</p>
+                <p className="text-lg font-semibold text-blue-600">{formatCurrency(calculatedAverages.revenueAverage)}</p>
               </div>
               <div className="text-center">
                 <p className="text-sm text-gray-500">Best Month</p>
@@ -925,10 +951,10 @@ const AnalyticsDashboard = ({ userData }) => {
             </ResponsiveContainer>
             <div className="mt-4 grid grid-cols-4 gap-3 pt-4 border-t border-gray-100">
               {[
-                { label: 'Operating', color: 'blue', value: chartData.expenses.length > 0 ? chartData.expenses.reduce((sum, item) => sum + item.operating, 0) / chartData.expenses.length : 0 },
-                { label: 'Marketing', color: 'green', value: chartData.expenses.length > 0 ? chartData.expenses.reduce((sum, item) => sum + item.marketing, 0) / chartData.expenses.length : 0 },
-                { label: 'Payroll', color: 'yellow', value: chartData.expenses.length > 0 ? chartData.expenses.reduce((sum, item) => sum + item.payroll, 0) / chartData.expenses.length : 0 },
-                { label: 'Other', color: 'purple', value: chartData.expenses.length > 0 ? chartData.expenses.reduce((sum, item) => sum + item.other, 0) / chartData.expenses.length : 0 }
+                { label: 'Operating', color: 'blue', value: calculatedAverages.expenseAverages.operating },
+                { label: 'Marketing', color: 'green', value: calculatedAverages.expenseAverages.marketing },
+                { label: 'Payroll', color: 'yellow', value: calculatedAverages.expenseAverages.payroll },
+                { label: 'Other', color: 'purple', value: calculatedAverages.expenseAverages.other }
               ].map((expense, index) => (
                 <div key={index} className="text-center">
                   <div className={`w-3 h-3 rounded-full mx-auto mb-1 ${
@@ -1059,13 +1085,17 @@ const AnalyticsDashboard = ({ userData }) => {
               <div className="text-center">
                 <p className="text-sm text-gray-500">Overall Score</p>
                 <p className="text-2xl font-bold text-blue-600">
-                  {(chartData.performance.length > 0 ? chartData.performance.reduce((sum, item) => sum + item.score, 0) / chartData.performance.length : 0).toFixed(1)}/10
+                  {calculatedAverages.performanceAverage.toFixed(1)}/10
                 </p>
               </div>
               <div className="text-center">
                 <p className="text-sm text-gray-500">Above Target</p>
                 <p className="text-2xl font-bold text-green-600">
-                  {chartData.performance.filter(item => item.score >= item.target).length}/{chartData.performance.length}
+                  {(() => {
+                    const aboveTarget = chartData.performance.filter(item => item.score >= item.target).length;
+                    const total = chartData.performance.length;
+                    return `${aboveTarget}/${total}`;
+                  })()}
                 </p>
               </div>
               <div className="text-center">
@@ -1263,13 +1293,13 @@ const AnalyticsDashboard = ({ userData }) => {
             <div className="text-center">
               <p className="text-sm text-gray-500">Avg Inflow</p>
               <p className="text-lg font-semibold text-green-600">
-                {formatCurrency(chartData.cashFlow.length > 0 ? chartData.cashFlow.reduce((sum, item) => sum + item.inflow, 0) / chartData.cashFlow.length : 0)}
+                {formatCurrency(calculatedAverages.cashFlowAverages.inflow)}
               </p>
             </div>
             <div className="text-center">
               <p className="text-sm text-gray-500">Avg Outflow</p>
               <p className="text-lg font-semibold text-red-600">
-                {formatCurrency(Math.abs(chartData.cashFlow.length > 0 ? chartData.cashFlow.reduce((sum, item) => sum + item.outflow, 0) / chartData.cashFlow.length : 0))}
+                {formatCurrency(calculatedAverages.cashFlowAverages.outflow)}
               </p>
             </div>
             <div className="text-center">
