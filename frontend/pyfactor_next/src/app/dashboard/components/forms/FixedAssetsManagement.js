@@ -76,7 +76,16 @@ const FixedAssetsManagement = () => {
     totalDepreciation: 0
   });
 
-  const tenantId = getSecureTenantId();
+  const [tenantId, setTenantId] = useState(null);
+  
+  // Initialize tenant ID
+  useEffect(() => {
+    const fetchTenantId = async () => {
+      const id = await getSecureTenantId();
+      setTenantId(id);
+    };
+    fetchTenantId();
+  }, []);
 
   // Fetch assets data
   const fetchAssets = useCallback(async () => {

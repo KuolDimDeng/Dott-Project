@@ -85,7 +85,7 @@ const TaxManagement = () => {
   const fetchEmployees = async () => {
     setLoading(true);
     try {
-      const tenantId = getSecureTenantId();
+      const tenantId = await getSecureTenantId();
       logger.info('[TaxManagement] Fetching employees with tenant ID:', tenantId);
       logger.info('[TaxManagement] Search query:', searchQuery || 'none');
       
@@ -122,7 +122,7 @@ const TaxManagement = () => {
   // Fetch available states 
   const fetchStates = async () => {
     try {
-      const tenantId = getSecureTenantId();
+      const tenantId = await getSecureTenantId();
       const response = await taxApi.getStates({ tenant: tenantId });
       
       if (response.data) {
@@ -141,7 +141,7 @@ const TaxManagement = () => {
   const fetchTaxForms = async (employeeId) => {
     setLoading(true);
     try {
-      const tenantId = getSecureTenantId();
+      const tenantId = await getSecureTenantId();
       const response = await taxApi.getFormsByEmployee(employeeId, { tenant: tenantId });
       
       if (response.data) {
@@ -209,7 +209,7 @@ const TaxManagement = () => {
     
     setLoading(true);
     try {
-      const tenantId = getSecureTenantId();
+      const tenantId = await getSecureTenantId();
       const formDataToSend = new FormData();
       
       // Append form data

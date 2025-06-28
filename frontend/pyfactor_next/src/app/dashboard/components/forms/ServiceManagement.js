@@ -93,7 +93,7 @@ const ServiceManagement = () => {
       console.log('[ServiceManagement] Fetching services...');
       
       // Get secure tenant ID
-      const tenantId = getSecureTenantId();
+      const tenantId = await getSecureTenantId();
       if (!tenantId) {
         console.error('[ServiceManagement] No tenant ID found');
         toast.error('Authentication required. Please log in again.');
@@ -184,7 +184,7 @@ const ServiceManagement = () => {
     try {
       setIsSubmitting(true);
       
-      const tenantId = getSecureTenantId();
+      const tenantId = await getSecureTenantId();
       if (!tenantId) {
         toast.error('Authentication required.');
         return;

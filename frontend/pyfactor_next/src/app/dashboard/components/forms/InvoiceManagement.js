@@ -786,7 +786,7 @@ const InvoiceManagement = () => {
 
   const handleRecordPaymentConfirm = async (paymentData) => {
     try {
-      const tenantId = getSecureTenantId();
+      const tenantId = await getSecureTenantId();
       if (!tenantId) {
         toast.error('Authentication required');
         return;
@@ -841,7 +841,7 @@ const InvoiceManagement = () => {
 
   const handleSendInvoiceConfirm = async (sendData) => {
     try {
-      const tenantId = getSecureTenantId();
+      const tenantId = await getSecureTenantId();
       if (!tenantId) {
         toast.error('Authentication required');
         return;
