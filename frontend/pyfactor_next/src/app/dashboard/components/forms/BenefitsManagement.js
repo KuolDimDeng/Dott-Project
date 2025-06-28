@@ -18,7 +18,7 @@ import {
   DocumentTextIcon,
   ClipboardDocumentListIcon
 } from '@heroicons/react/24/outline';
-import { hrApi } from '@/utils/apiClient';
+import { hrApi, payrollApi } from '@/utils/apiClient';
 import { logger } from '@/utils/logger';
 
 // Tooltip component for field help
@@ -105,7 +105,7 @@ function BenefitsManagement({ onNavigate }) {
   const loadBenefits = async () => {
     try {
       setLoading(true);
-      const data = await hrApi.benefits.getAll();
+      const data = await payrollApi.benefits.getAll();
       setBenefits(data || []);
     } catch (error) {
       logger.error('[BenefitsManagement] Error loading benefits:', error);
@@ -117,7 +117,7 @@ function BenefitsManagement({ onNavigate }) {
 
   const loadStats = async () => {
     try {
-      const data = await hrApi.benefits.getStats();
+      const data = await payrollApi.benefits.getStats();
       setStats(data || stats);
     } catch (error) {
       logger.error('[BenefitsManagement] Error loading stats:', error);
@@ -145,7 +145,7 @@ function BenefitsManagement({ onNavigate }) {
           </div>
           <div className="ml-4">
             <p className="text-gray-500 text-sm font-medium uppercase tracking-wide">Total Benefits</p>
-            <p className="text-3xl font-bold text-red-600">{loading ? '-' : stats.totalBenefits}</p>
+            <p className="text-3xl font-bold text-red-600 truncate">{loading ? '-' : stats.totalBenefits}</p>
           </div>
         </div>
       </div>
@@ -157,7 +157,7 @@ function BenefitsManagement({ onNavigate }) {
           </div>
           <div className="ml-4">
             <p className="text-gray-500 text-sm font-medium uppercase tracking-wide">Enrolled Employees</p>
-            <p className="text-3xl font-bold text-blue-600">{loading ? '-' : stats.enrolledEmployees}</p>
+            <p className="text-3xl font-bold text-blue-600 truncate">{loading ? '-' : stats.enrolledEmployees}</p>
           </div>
         </div>
       </div>
@@ -169,7 +169,7 @@ function BenefitsManagement({ onNavigate }) {
           </div>
           <div className="ml-4">
             <p className="text-gray-500 text-sm font-medium uppercase tracking-wide">Total Cost</p>
-            <p className="text-3xl font-bold text-green-600">${loading ? '-' : stats.totalCost?.toLocaleString()}</p>
+            <p className="text-3xl font-bold text-green-600 truncate">${loading ? '-' : stats.totalCost?.toLocaleString()}</p>
           </div>
         </div>
       </div>
@@ -181,7 +181,7 @@ function BenefitsManagement({ onNavigate }) {
           </div>
           <div className="ml-4">
             <p className="text-gray-500 text-sm font-medium uppercase tracking-wide">Active Programs</p>
-            <p className="text-3xl font-bold text-purple-600">{loading ? '-' : stats.activePrograms}</p>
+            <p className="text-3xl font-bold text-purple-600 truncate">{loading ? '-' : stats.activePrograms}</p>
           </div>
         </div>
       </div>

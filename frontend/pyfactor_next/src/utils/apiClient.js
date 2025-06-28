@@ -2199,3 +2199,514 @@ export const accountingApi = {
     }
   }
 };
+
+// Payroll related API methods - Industry standard pattern
+export const payrollApi = {
+  // Dashboard methods
+  dashboard: {
+    async getStats(params = {}) {
+      const response = await fetch('/api/payroll/dashboard/stats', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async getRecentPayrolls(params = {}) {
+      const response = await fetch('/api/payroll/dashboard/recent', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async getUpcomingPayroll(params = {}) {
+      const response = await fetch('/api/payroll/dashboard/upcoming', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    }
+  },
+
+  // Payroll processing
+  processing: {
+    async getAll(params = {}) {
+      const response = await fetch('/api/payroll/processing', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async create(data, params = {}) {
+      logger.info('[PayrollApi] Creating payroll run:', data);
+      
+      const response = await fetch('/api/payroll/processing', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async update(id, data, params = {}) {
+      const response = await fetch(`/api/payroll/processing/${id}`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async process(id, params = {}) {
+      const response = await fetch(`/api/payroll/processing/${id}/process`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async approve(id, params = {}) {
+      const response = await fetch(`/api/payroll/processing/${id}/approve`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async cancel(id, params = {}) {
+      const response = await fetch(`/api/payroll/processing/${id}/cancel`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    }
+  },
+
+  // Employee payroll data
+  employees: {
+    async getAll(params = {}) {
+      const response = await fetch('/api/payroll/employees', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async updateSalary(id, data, params = {}) {
+      const response = await fetch(`/api/payroll/employees/${id}/salary`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async getPayStubs(id, params = {}) {
+      const response = await fetch(`/api/payroll/employees/${id}/paystubs`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    }
+  },
+
+  // Timesheets
+  timesheets: {
+    async getAll(params = {}) {
+      const response = await fetch('/api/payroll/timesheets', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async create(data, params = {}) {
+      logger.info('[PayrollApi] Creating timesheet:', data);
+      
+      const response = await fetch('/api/payroll/timesheets', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async update(id, data, params = {}) {
+      const response = await fetch(`/api/payroll/timesheets/${id}`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async delete(id, params = {}) {
+      const response = await fetch(`/api/payroll/timesheets/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return { success: true };
+    },
+
+    async approve(id, params = {}) {
+      const response = await fetch(`/api/payroll/timesheets/${id}/approve`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async getStats(params = {}) {
+      const response = await fetch('/api/payroll/timesheets/stats', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    }
+  },
+
+  // Benefits
+  benefits: {
+    async getAll(params = {}) {
+      const response = await fetch('/api/payroll/benefits', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async create(data, params = {}) {
+      logger.info('[PayrollApi] Creating benefit:', data);
+      
+      const response = await fetch('/api/payroll/benefits', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async update(id, data, params = {}) {
+      const response = await fetch(`/api/payroll/benefits/${id}`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async delete(id, params = {}) {
+      const response = await fetch(`/api/payroll/benefits/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return { success: true };
+    },
+
+    async enroll(employeeId, benefitId, data, params = {}) {
+      const response = await fetch(`/api/payroll/benefits/${benefitId}/enroll/${employeeId}`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async getStats(params = {}) {
+      const response = await fetch('/api/payroll/benefits/stats', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    }
+  },
+
+  // Reports
+  reports: {
+    async getPayrollSummary(params = {}) {
+      const response = await fetch('/api/payroll/reports/summary', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async getTaxReport(params = {}) {
+      const response = await fetch('/api/payroll/reports/tax', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async getEmployeeReport(params = {}) {
+      const response = await fetch('/api/payroll/reports/employee', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async getBenefitsReport(params = {}) {
+      const response = await fetch('/api/payroll/reports/benefits', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    }
+  }
+};

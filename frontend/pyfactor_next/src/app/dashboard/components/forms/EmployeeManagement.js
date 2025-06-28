@@ -20,7 +20,7 @@ import {
   MapPinIcon,
   BriefcaseIcon
 } from '@heroicons/react/24/outline';
-import { hrApi } from '@/utils/apiClient';
+import { hrApi, payrollApi } from '@/utils/apiClient';
 import { logger } from '@/utils/logger';
 
 // Tooltip component for field help
@@ -423,7 +423,7 @@ function EmployeeManagement({ onNavigate }) {
           </div>
           <div className="ml-4">
             <p className="text-gray-500 text-sm font-medium uppercase tracking-wide">Total Employees</p>
-            <p className="text-3xl font-bold text-blue-600">{loading ? '-' : stats.total}</p>
+            <p className="text-3xl font-bold text-blue-600 truncate">{loading ? '-' : stats.total}</p>
           </div>
         </div>
       </div>
@@ -436,7 +436,7 @@ function EmployeeManagement({ onNavigate }) {
           </div>
           <div className="ml-4">
             <p className="text-gray-500 text-sm font-medium uppercase tracking-wide">Active</p>
-            <p className="text-3xl font-bold text-green-600">{loading ? '-' : stats.active}</p>
+            <p className="text-3xl font-bold text-green-600 truncate">{loading ? '-' : stats.active}</p>
           </div>
         </div>
       </div>
@@ -449,7 +449,7 @@ function EmployeeManagement({ onNavigate }) {
           </div>
           <div className="ml-4">
             <p className="text-gray-500 text-sm font-medium uppercase tracking-wide">On Leave</p>
-            <p className="text-3xl font-bold text-yellow-600">{loading ? '-' : stats.onLeave}</p>
+            <p className="text-3xl font-bold text-yellow-600 truncate">{loading ? '-' : stats.onLeave}</p>
           </div>
         </div>
       </div>
@@ -462,7 +462,7 @@ function EmployeeManagement({ onNavigate }) {
           </div>
           <div className="ml-4">
             <p className="text-gray-500 text-sm font-medium uppercase tracking-wide">Inactive</p>
-            <p className="text-3xl font-bold text-gray-600">{loading ? '-' : stats.inactive}</p>
+            <p className="text-3xl font-bold text-gray-600 truncate">{loading ? '-' : stats.inactive}</p>
           </div>
         </div>
       </div>

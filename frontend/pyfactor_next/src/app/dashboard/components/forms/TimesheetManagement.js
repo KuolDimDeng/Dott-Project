@@ -20,7 +20,7 @@ import {
   BriefcaseIcon,
   ClipboardDocumentListIcon
 } from '@heroicons/react/24/outline';
-import { hrApi } from '@/utils/apiClient';
+import { hrApi, payrollApi } from '@/utils/apiClient';
 import { logger } from '@/utils/logger';
 
 // Tooltip component for field help
@@ -108,7 +108,7 @@ function TimesheetManagement({ onNavigate }) {
   const loadTimesheets = async () => {
     try {
       setLoading(true);
-      const data = await hrApi.timesheets.getAll();
+      const data = await payrollApi.timesheets.getAll();
       setTimesheets(data || []);
     } catch (error) {
       logger.error('[TimesheetManagement] Error loading timesheets:', error);
@@ -120,7 +120,7 @@ function TimesheetManagement({ onNavigate }) {
 
   const loadStats = async () => {
     try {
-      const data = await hrApi.timesheets.getStats();
+      const data = await payrollApi.timesheets.getStats();
       setStats(data || stats);
     } catch (error) {
       logger.error('[TimesheetManagement] Error loading stats:', error);
@@ -315,11 +315,11 @@ function TimesheetManagement({ onNavigate }) {
     
     try {
       if (selectedTimesheet) {
-        await hrApi.timesheets.update(selectedTimesheet.id, formData);
+        await payrollApi.timesheets.update(selectedTimesheet.id, formData);
         toast.success('Timesheet updated successfully');
         setIsEditModalOpen(false);
       } else {
-        await hrApi.timesheets.create(formData);
+        await payrollApi.timesheets.create(formData);
         toast.success('Timesheet created successfully');
         setIsCreateModalOpen(false);
       }
@@ -335,7 +335,7 @@ function TimesheetManagement({ onNavigate }) {
 
   const handleDeleteConfirm = async () => {
     try {
-      await hrApi.timesheets.delete(selectedTimesheet.id);
+      await payrollApi.timesheets.delete(selectedTimesheet.id);
       toast.success('Timesheet deleted successfully');
       setIsDeleteModalOpen(false);
       await loadTimesheets();
