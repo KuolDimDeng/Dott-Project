@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
+import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 
 const InventoryReportsManagement = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -380,12 +381,7 @@ const InventoryReportsManagement = () => {
   const renderReportContent = () => {
     if (isLoading) {
       return (
-        <div className="flex justify-center items-center h-64">
-          <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mb-4"></div>
-            <p className="text-gray-600">Generating report...</p>
-          </div>
-        </div>
+        <CenteredSpinner size="medium" text="Generating report..." />
       );
     }
 
