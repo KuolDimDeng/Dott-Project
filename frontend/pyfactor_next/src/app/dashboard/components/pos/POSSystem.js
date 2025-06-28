@@ -267,7 +267,7 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
         setProductsLoading(true);
         console.log('[POSSystem] Fetching products from database...');
         
-        const response = await fetch('/api/products', {
+        const response = await fetch('/api/inventory/products', {
           credentials: 'include',
         });
         
@@ -276,17 +276,32 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
         }
         
         const data = await response.json();
-        console.log('[POSSystem] Products fetched:', data);
+        console.log('[POSSystem] Products API response:', data);
+        
+        // Handle Django REST Framework response format
+        let productsArray = [];
+        if (data.results && Array.isArray(data.results)) {
+          // Paginated response
+          productsArray = data.results;
+        } else if (Array.isArray(data)) {
+          // Direct array response
+          productsArray = data;
+        } else if (data.products && Array.isArray(data.products)) {
+          // Wrapped in products key
+          productsArray = data.products;
+        }
+        
+        console.log('[POSSystem] Products array:', productsArray);
         
         // Transform API data to match POS format
-        const transformedProducts = (data.products || []).map(product => ({
-          id: product.id || product.product_id || product.sku || 'unknown',
+        const transformedProducts = productsArray.map(product => ({
+          id: product.id || product.product_id || 'unknown',
           name: product.name || product.product_name || 'Unknown Product',
           price: parseFloat(product.price || 0),
           sku: product.sku || product.id || 'no-sku',
-          barcode: product.barcode || product.sku || product.id || 'no-barcode', // Use SKU as barcode if no barcode
+          barcode: product.barcode || product.sku || product.id || 'no-barcode',
           description: product.description || '',
-          stock: parseInt(product.stockQuantity || product.stock_quantity || 0)
+          stock: parseInt(product.quantity || product.stock_quantity || product.stock || 0)
         }));
         
         setProducts(transformedProducts);
@@ -296,8 +311,8 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
         console.error('[POSSystem] Error fetching products:', error);
         setProductsError(error.message);
         
-        // Fallback to mock data for development/testing
-        console.log('[POSSystem] Using fallback mock products');
+        // Fallback to real products from database for testing
+        console.log('[POSSystem] Using fallback products from database');
         const fallbackProducts = [
           {
             id: 'c1b9b1aa-f180-4591-ade3-2b884b2fe629',
@@ -305,29 +320,30 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
             price: 21.00,
             sku: 'PROD-2025-0002',
             barcode: 'PROD-2025-0002',
-            description: 'Stylish hat',
-            stock: 50
+            description: 'Hat product from database',
+            stock: 12
           },
           {
-            id: 'fallback-1',
-            name: 'Fallback Product 1',
-            price: 19.99,
-            sku: '1',
-            barcode: '1',
-            description: 'Mock product for testing',
-            stock: 100
-          },
-          {
-            id: 'fallback-2',
-            name: 'Fallback Product 2',
-            price: 29.99,
-            sku: '2',
-            barcode: '2',
-            description: 'Another mock product',
-            stock: 50
+            id: '605ae0c8-bf1d-48c5-9bc9-e883929a33ab',
+            name: 'Shoes',
+            price: 12.00,
+            sku: 'PROD-2025-0001',
+            barcode: 'PROD-2025-0001',
+            description: 'Shoes product from database',
+            stock: 0
           }
         ];
         setProducts(fallbackProducts);
+        
+        // Show error but continue with fallback data
+        toast.error(
+          <div>
+            <div>Products API Error</div>
+            <div className="text-xs mt-1">Using cached products</div>
+            <div className="text-xs">Check backend connection</div>
+          </div>,
+          { duration: 5000 }
+        );
       } finally {
         setProductsLoading(false);
       }
