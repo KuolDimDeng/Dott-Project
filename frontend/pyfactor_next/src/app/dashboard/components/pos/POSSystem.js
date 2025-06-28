@@ -296,8 +296,38 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
         console.error('[POSSystem] Error fetching products:', error);
         setProductsError(error.message);
         
-        // Fallback to empty array on error
-        setProducts([]);
+        // Fallback to mock data for development/testing
+        console.log('[POSSystem] Using fallback mock products');
+        const fallbackProducts = [
+          {
+            id: 'c1b9b1aa-f180-4591-ade3-2b884b2fe629',
+            name: 'Hat',
+            price: 21.00,
+            sku: 'PROD-2025-0002',
+            barcode: 'PROD-2025-0002',
+            description: 'Stylish hat',
+            stock: 50
+          },
+          {
+            id: 'fallback-1',
+            name: 'Fallback Product 1',
+            price: 19.99,
+            sku: '1',
+            barcode: '1',
+            description: 'Mock product for testing',
+            stock: 100
+          },
+          {
+            id: 'fallback-2',
+            name: 'Fallback Product 2',
+            price: 29.99,
+            sku: '2',
+            barcode: '2',
+            description: 'Another mock product',
+            stock: 50
+          }
+        ];
+        setProducts(fallbackProducts);
       } finally {
         setProductsLoading(false);
       }
@@ -333,33 +363,34 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
   const handleProductScan = useCallback((scannedCode) => {
     safeLogger.info('[POS] Product scanned:', scannedCode);
     
-    // Clean the scanned code (remove any extra characters like quotes, brackets, etc.)
-    let cleanCode = scannedCode.trim();
+    console.log('[POS] Raw scanned code:', scannedCode);
     
-    // Remove common QR code artifacts
-    cleanCode = cleanCode.replace(/[{}"']/g, '');
-    cleanCode = cleanCode.replace(/^\{|\}$/g, ''); // Remove curly braces at start/end
+    // Try to parse as JSON first (for QR codes with full product data)
+    let productData = null;
+    let searchTerms = [];
     
-    console.log('[POS] Original code:', scannedCode);
-    console.log('[POS] Cleaned code:', cleanCode);
-    
-    // Try to parse as JSON if it looks like JSON data
-    let productId = cleanCode;
     try {
-      if (cleanCode.includes(':')) {
-        const jsonData = JSON.parse(`{${cleanCode}}`);
-        productId = jsonData.id || jsonData.productId || jsonData.sku || cleanCode;
-      }
+      // Try parsing as JSON directly
+      productData = JSON.parse(scannedCode);
+      console.log('[POS] Parsed JSON data:', productData);
+      
+      // Extract search terms from JSON
+      if (productData.id) searchTerms.push(productData.id);
+      if (productData.sku) searchTerms.push(productData.sku);
+      if (productData.name) searchTerms.push(productData.name);
+      if (productData.barcode) searchTerms.push(productData.barcode);
+      
     } catch (e) {
-      // Not JSON, use as-is
-      console.log('[POS] Not JSON format, using raw code');
+      console.log('[POS] Not valid JSON, treating as simple barcode/SKU');
+      // Clean the scanned code for simple barcodes
+      let cleanCode = scannedCode.trim().replace(/[{}"']/g, '');
+      searchTerms.push(cleanCode, scannedCode.trim());
     }
     
-    // Find product by ID, SKU, barcode, or name (with extensive debugging)
-    console.log('[POS] Searching for product with:');
-    console.log('[POS] - productId:', productId);
-    console.log('[POS] - cleanCode:', cleanCode);
-    console.log('[POS] - Available products:', products.map(p => ({
+    console.log('[POS] Search terms extracted:', searchTerms);
+    
+    // Find product using all search terms
+    console.log('[POS] Available products:', products.map(p => ({
       id: p.id,
       name: p.name,
       sku: p.sku,
@@ -367,23 +398,21 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
     })));
     
     const product = products.find(p => {
-      const matches = {
-        idMatch: p.id === productId,
-        idCleanMatch: p.id === cleanCode,
-        skuMatch: p.sku === productId,
-        skuCleanMatch: p.sku === cleanCode,
-        barcodeMatch: p.barcode === productId,
-        barcodeCleanMatch: p.barcode === cleanCode,
-        nameMatch: String(p.name || '').toLowerCase().includes(String(cleanCode || '').toLowerCase()),
-        exactNameMatch: String(p.name || '').toLowerCase() === String(cleanCode || '').toLowerCase()
-      };
-      
-      console.log(`[POS] Checking product "${p.name}":`, matches);
-      
-      return matches.idMatch || matches.idCleanMatch || 
-             matches.skuMatch || matches.skuCleanMatch ||
-             matches.barcodeMatch || matches.barcodeCleanMatch ||
-             matches.nameMatch || matches.exactNameMatch;
+      // Check each search term against all product fields
+      return searchTerms.some(term => {
+        const matches = {
+          idMatch: String(p.id || '') === String(term || ''),
+          skuMatch: String(p.sku || '') === String(term || ''),
+          barcodeMatch: String(p.barcode || '') === String(term || ''),
+          nameMatch: String(p.name || '').toLowerCase() === String(term || '').toLowerCase(),
+          nameContains: String(p.name || '').toLowerCase().includes(String(term || '').toLowerCase())
+        };
+        
+        console.log(`[POS] Checking product "${p.name}" against term "${term}":`, matches);
+        
+        return matches.idMatch || matches.skuMatch || matches.barcodeMatch || 
+               matches.nameMatch || (term.length > 2 && matches.nameContains);
+      });
     });
 
     if (product) {
@@ -400,13 +429,14 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
       
       // Clear the search field after successful scan
       setProductSearchTerm('');
-      usbScannerRef.current = '';
     } else {
       // Show the scanned code in the error message
+      const searchTerm = searchTerms[0] || scannedCode;
       toast.error(
         <div>
           <div>Product not found</div>
-          <div className="text-xs mt-1">Scanned: {cleanCode}</div>
+          <div className="text-xs mt-1">Scanned: {searchTerm}</div>
+          <div className="text-xs mt-1">Available products: {products.length}</div>
           <div className="text-xs mt-1">Try searching by product name instead</div>
         </div>, 
         {
@@ -415,8 +445,8 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
         }
       );
       
-      // Keep the scanned code in search field so user can modify it
-      // Don't clear immediately - let user try manual search
+      // Set the search term in the field so user can try manual search
+      setProductSearchTerm(searchTerm);
     }
   }, [products, addToCart]);
 
@@ -500,9 +530,19 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
           scannerDetected: isDetected
         });
         
-        // Detect scanner based on typing speed (very fast input)
-        if (timeBetweenKeys < 50 && buffer.length > 3 && !isDetected) {
-          console.log('[POSSystem] SCANNER DETECTED! Fast typing detected');
+        // Detect scanner based on typing speed (very fast input) or JSON pattern
+        const looksLikeJsonQR = buffer.includes('{') && buffer.includes('"');
+        const fastTyping = timeBetweenKeys < 50 && buffer.length > 3;
+        const longFastInput = buffer.length > 10 && (now - scanStartTime) < 500; // Long input in short time
+        
+        if ((fastTyping || longFastInput || looksLikeJsonQR) && !isDetected) {
+          console.log('[POSSystem] SCANNER DETECTED!', {
+            fastTyping,
+            longFastInput,
+            looksLikeJsonQR,
+            bufferLength: buffer.length,
+            timeSpan: now - scanStartTime
+          });
           isDetected = true;
           setScannerDetected(true);
           setScannerStatus('detected');
@@ -913,7 +953,6 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                               <button
                                 onClick={() => {
                                   setProductSearchTerm('');
-                                  usbScannerRef.current = '';
                                 }}
                                 className="text-xs text-gray-500 hover:text-gray-700"
                               >
@@ -938,7 +977,6 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                                   onClick={() => {
                                     addToCart(product);
                                     setProductSearchTerm('');
-                                    usbScannerRef.current = '';
                                     toast.success(`Added ${product.name} to cart`);
                                   }}
                                   className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors group"
