@@ -432,14 +432,41 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
 
     // Initial status
     setScannerStatus('ready');
+    console.log('[POSSystem] Scanner detection initialized, isOpen:', isOpen);
 
     const handleKeyPress = (event) => {
       const now = Date.now();
       
+      // CRITICAL FIX: Ignore keystrokes when focused on input/textarea/select elements
+      const activeElement = document.activeElement;
+      const isInputFocused = activeElement && (
+        activeElement.tagName === 'INPUT' || 
+        activeElement.tagName === 'TEXTAREA' || 
+        activeElement.tagName === 'SELECT' ||
+        activeElement.contentEditable === 'true'
+      );
+      
+      console.log('[POSSystem] Key pressed:', {
+        key: event.key,
+        isInputFocused,
+        activeElement: activeElement?.tagName,
+        activeElementId: activeElement?.id,
+        activeElementClass: activeElement?.className,
+        buffer: buffer,
+        bufferLength: buffer.length,
+        timeSinceLastKey: now - lastKeypressTime
+      });
+      
+      // If user is typing in an input field, ignore the keystroke for scanner detection
+      if (isInputFocused) {
+        console.log('[POSSystem] Ignoring keystroke - user typing in input field');
+        return;
+      }
+      
       // Handle Enter key - process complete scan
       if (event.key === 'Enter') {
         if (buffer.length > 0) {
-          console.log('[POSSystem] Scanner input detected:', buffer);
+          console.log('[POSSystem] Scanner input detected via Enter:', buffer);
           setScannerStatus('scanning');
           handleProductScan(buffer);
           buffer = '';
@@ -457,6 +484,7 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
       if (event.key.length === 1) {
         // If it's been more than 100ms since last keypress, start new buffer
         if (now - lastKeypressTime > 100) {
+          console.log('[POSSystem] Starting new scanner buffer (timeout)');
           buffer = '';
           scanStartTime = now;
         }
@@ -465,8 +493,16 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
         const timeBetweenKeys = now - lastKeypressTime;
         lastKeypressTime = now;
         
+        console.log('[POSSystem] Scanner buffer updated:', {
+          buffer,
+          timeBetweenKeys,
+          bufferLength: buffer.length,
+          scannerDetected: isDetected
+        });
+        
         // Detect scanner based on typing speed (very fast input)
         if (timeBetweenKeys < 50 && buffer.length > 3 && !isDetected) {
+          console.log('[POSSystem] SCANNER DETECTED! Fast typing detected');
           isDetected = true;
           setScannerDetected(true);
           setScannerStatus('detected');
@@ -476,28 +512,34 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
           });
         }
         
-        // Update search term for visual feedback
-        setProductSearchTerm(buffer);
+        // Update search term for visual feedback ONLY if not typing in input
+        if (!isInputFocused) {
+          setProductSearchTerm(buffer);
+          console.log('[POSSystem] Updated search term to:', buffer);
+        }
         
         // Clear buffer after 500ms of inactivity
         if (bufferTimer) clearTimeout(bufferTimer);
         bufferTimer = setTimeout(() => {
+          console.log('[POSSystem] Clearing scanner buffer after timeout');
           buffer = '';
-          setProductSearchTerm('');
+          if (!isInputFocused) {
+            setProductSearchTerm('');
+          }
         }, 500);
       }
     };
 
     // Add single event listener
     window.addEventListener('keydown', handleKeyPress);
-    console.log('[POSSystem] Event listener added');
+    console.log('[POSSystem] Global keydown event listener added');
     
     return () => {
       window.removeEventListener('keydown', handleKeyPress);
       if (bufferTimer) clearTimeout(bufferTimer);
-      console.log('[POSSystem] Event listener removed');
+      console.log('[POSSystem] Global keydown event listener removed and buffers cleared');
     };
-  }, [isOpen, handleProductScan]); // Only depend on isOpen and handleProductScan to prevent re-render loops
+  }, [isOpen]); // Only depend on isOpen to prevent re-render loops
 
   // Focus on product search when modal opens and reset when closed
   useEffect(() => {
@@ -746,7 +788,28 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                             ref={productSearchRef}
                             type="text"
                             value={productSearchTerm}
-                            onChange={(e) => setProductSearchTerm(e.target.value)}
+                            onChange={(e) => {
+                              console.log('[POSSystem] Input onChange:', {
+                                newValue: e.target.value,
+                                oldValue: productSearchTerm,
+                                inputSource: 'manual_typing'
+                              });
+                              setProductSearchTerm(e.target.value);
+                            }}
+                            onKeyDown={(e) => {
+                              console.log('[POSSystem] Input onKeyDown:', {
+                                key: e.key,
+                                currentValue: productSearchTerm,
+                                targetValue: e.target.value
+                              });
+                            }}
+                            onInput={(e) => {
+                              console.log('[POSSystem] Input onInput:', {
+                                inputType: e.inputType,
+                                data: e.data,
+                                value: e.target.value
+                              });
+                            }}
                             placeholder={
                               scannerStatus === 'detected' ? "Scanner ready - scan or type to search"
                               : scannerStatus === 'scanning' ? "Scanning..."
