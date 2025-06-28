@@ -693,111 +693,14 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                             value={productSearchTerm}
                             onChange={(e) => setProductSearchTerm(e.target.value)}
                             placeholder="Type product name or scan barcode..."
-                            placeholder={
-                              scannerStatus === 'detected' ? "Ready to scan - place cursor here" 
-                              : scannerStatus === 'searching' ? "Searching for scanner... You can type to search"
-                              : scannerStatus === 'not_found' ? "Type product name or SKU to search"
-                              : "Scan barcode or type product name..."
-                            }
-                            className={`w-full pl-4 pr-12 py-3 border rounded-lg focus:ring-2 text-lg transition-all ${
-                              scannerStatus === 'detected' 
-                                ? 'border-green-400 focus:ring-green-500 focus:border-green-500' 
-                                : scannerStatus === 'searching'
-                                ? 'border-yellow-400 focus:ring-yellow-500 focus:border-yellow-500'
-                                : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                            }`}
+                            className="w-full pl-4 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg transition-all"
                           />
-                          <BarcodeIcon className={`absolute right-3 top-3 h-6 w-6 ${
-                            scannerStatus === 'detected' ? 'text-green-500' 
-                            : scannerStatus === 'searching' ? 'text-yellow-500'
-                            : 'text-gray-400'
-                          }`} />
+                          <BarcodeIcon className="absolute right-3 top-3 h-6 w-6 text-gray-400" />
                         </div>
                       </div>
 
-                      {/* Scanner Controls */}
-                      <div className="flex space-x-3">
-                        <button
-                          onClick={() => {
-                            setScannerType('camera');
-                            setShowScanner(!showScanner);
-                          }}
-                          className={`flex-1 flex items-center justify-center px-4 py-3 rounded-lg border transition-colors ${
-                            showScanner && scannerType === 'camera'
-                              ? 'bg-blue-600 text-white border-blue-600'
-                              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                          }`}
-                        >
-                          <CameraIcon className="h-5 w-5 mr-2" />
-                          Camera Scanner
-                        </button>
-                      </div>
 
-                      {/* Scanner Help */}
-                      {scannerStatus === 'searching' && (
-                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                          <h4 className="text-sm font-medium text-yellow-900 mb-2">Looking for USB Barcode Scanner...</h4>
-                          <ul className="text-xs text-yellow-700 space-y-1">
-                            <li>• Make sure your USB scanner is connected</li>
-                            <li>• Click in the search field and try scanning a barcode</li>
-                            <li>• Scanner will be detected automatically on first scan</li>
-                            <li>• You can search products manually while waiting</li>
-                          </ul>
-                        </div>
-                      )}
 
-                      {scannerStatus === 'not_found' && (
-                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                          <h4 className="text-sm font-medium text-gray-900 mb-2">No Scanner Detected</h4>
-                          <ul className="text-xs text-gray-600 space-y-1">
-                            <li>• Check that your USB scanner is properly connected</li>
-                            <li>• Try unplugging and reconnecting the scanner</li>
-                            <li>• You can search products by name or SKU instead</li>
-                          </ul>
-                          <button
-                            onClick={() => {
-                              setScannerStatus('searching');
-                              setScannerDetected(false);
-                              toast('🔄 Searching for scanner again...', {
-                                duration: 2000,
-                                position: 'top-center',
-                              });
-                            }}
-                            className="mt-2 px-3 py-1 bg-blue-600 text-white text-xs rounded-md hover:bg-blue-700 transition-colors"
-                          >
-                            Search Again
-                          </button>
-                        </div>
-                      )}
-
-                      {(scannerStatus === 'detected' || scannerStatus === 'active') && (
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                          <h4 className="text-sm font-medium text-green-900 mb-2">✅ Scanner Ready</h4>
-                          <ul className="text-xs text-green-700 space-y-1">
-                            <li>• Scanner detected and ready to use</li>
-                            <li>• Click in the search field and scan any barcode</li>
-                            <li>• Products will be added to cart automatically</li>
-                            <li>• You can also search manually by typing</li>
-                          </ul>
-                        </div>
-                      )}
-
-                      {/* Camera Scanner */}
-                      {showScanner && scannerType === 'camera' && (
-                        <div className="space-y-4">
-                          <QRScanner
-                            isActive={showScanner && scannerType === 'camera'}
-                            onScan={handleProductScan}
-                            onError={(error) => {
-                              toast.error(error?.message || error?.toString() || 'Scanner error occurred');
-                              setShowScanner(false);
-                            }}
-                          />
-                          <p className="text-sm text-gray-600 text-center">
-                            Point camera at QR code to scan product
-                          </p>
-                        </div>
-                      )}
 
                       {/* Products Loading State */}
                       {productsLoading && (
