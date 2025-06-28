@@ -1804,7 +1804,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
       }
 
       // Handle Analytics views
-      if (view && (view.startsWith('analytics-') || view === 'kpi-data' || view === 'ai-query') || showAnalysisPage || showKPIDashboard) {
+      if (view && (view.startsWith('analytics-') || view === 'kpi-data' || view === 'smart-business' || view === 'ai-query') || showAnalysisPage || showKPIDashboard) {
         console.log('[RenderMainContent] Rendering analytics view:', view);
         
         let AnalyticsComponent = null;
@@ -1822,12 +1822,14 @@ const RenderMainContent = React.memo(function RenderMainContent({
                 return { default: () => <div className="p-4">Error loading Analytics Dashboard</div> };
               }));
               break;
-            case 'ai-query':
+            case 'smart-business':
+            case 'analytics-smart-business':
+            case 'ai-query': // Keep backward compatibility
             case 'analytics-ai-query':
-              componentName = 'AIQueryPage';
-              AnalyticsComponent = lazy(() => import('./forms/AIQueryPage.js').catch(err => {
-                console.error('[RenderMainContent] Error loading AIQueryPage:', err);
-                return { default: () => <div className="p-4">Error loading AI Query Page</div> };
+              componentName = 'SmartBusiness';
+              AnalyticsComponent = lazy(() => import('./forms/SmartBusiness.js').catch(err => {
+                console.error('[RenderMainContent] Error loading SmartBusiness:', err);
+                return { default: () => <div className="p-4">Error loading Smart Business AI</div> };
               }));
               break;
             default:
@@ -1861,7 +1863,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
         if (showAnalysisPage || showKPIDashboard) {
           const LegacyAnalyticsComponent = showKPIDashboard ? 
             lazy(() => import('./forms/AnalyticsDashboard.js')) : 
-            lazy(() => import('./forms/AIQueryPage.js'));
+            lazy(() => import('./forms/SmartBusiness.js'));
           
           return (
             <ContentWrapperWithKey>
