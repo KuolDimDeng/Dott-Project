@@ -1751,7 +1751,7 @@ export const accountingApi = {
         }
       });
       
-      if (\!response.ok) {
+      if (!response.ok) {
         const error = await response.text();
         throw new Error(error || `HTTP ${response.status}`);
       }
@@ -1768,7 +1768,7 @@ export const accountingApi = {
         }
       });
       
-      if (\!response.ok) {
+      if (!response.ok) {
         const error = await response.text();
         throw new Error(error || `HTTP ${response.status}`);
       }
@@ -1788,7 +1788,7 @@ export const accountingApi = {
         }
       });
       
-      if (\!response.ok) {
+      if (!response.ok) {
         const error = await response.text();
         throw new Error(error || `HTTP ${response.status}`);
       }
@@ -1808,7 +1808,7 @@ export const accountingApi = {
         body: JSON.stringify(data)
       });
       
-      if (\!response.ok) {
+      if (!response.ok) {
         const error = await response.text();
         throw new Error(error || `HTTP ${response.status}`);
       }
@@ -1826,7 +1826,7 @@ export const accountingApi = {
         body: JSON.stringify(data)
       });
       
-      if (\!response.ok) {
+      if (!response.ok) {
         const error = await response.text();
         throw new Error(error || `HTTP ${response.status}`);
       }
@@ -1843,7 +1843,7 @@ export const accountingApi = {
         }
       });
       
-      if (\!response.ok) {
+      if (!response.ok) {
         const error = await response.text();
         throw new Error(error || `HTTP ${response.status}`);
       }
@@ -1863,7 +1863,7 @@ export const accountingApi = {
         }
       });
       
-      if (\!response.ok) {
+      if (!response.ok) {
         const error = await response.text();
         throw new Error(error || `HTTP ${response.status}`);
       }
@@ -1883,7 +1883,7 @@ export const accountingApi = {
         body: JSON.stringify(data)
       });
       
-      if (\!response.ok) {
+      if (!response.ok) {
         const error = await response.text();
         throw new Error(error || `HTTP ${response.status}`);
       }
@@ -1901,7 +1901,7 @@ export const accountingApi = {
         body: JSON.stringify(data)
       });
       
-      if (\!response.ok) {
+      if (!response.ok) {
         const error = await response.text();
         throw new Error(error || `HTTP ${response.status}`);
       }
@@ -1918,7 +1918,7 @@ export const accountingApi = {
         }
       });
       
-      if (\!response.ok) {
+      if (!response.ok) {
         const error = await response.text();
         throw new Error(error || `HTTP ${response.status}`);
       }
@@ -1935,7 +1935,7 @@ export const accountingApi = {
         }
       });
       
-      if (\!response.ok) {
+      if (!response.ok) {
         const error = await response.text();
         throw new Error(error || `HTTP ${response.status}`);
       }
@@ -1955,7 +1955,7 @@ export const accountingApi = {
         }
       });
       
-      if (\!response.ok) {
+      if (!response.ok) {
         const error = await response.text();
         throw new Error(error || `HTTP ${response.status}`);
       }
@@ -1972,7 +1972,7 @@ export const accountingApi = {
         }
       });
       
-      if (\!response.ok) {
+      if (!response.ok) {
         const error = await response.text();
         throw new Error(error || `HTTP ${response.status}`);
       }
@@ -1989,7 +1989,7 @@ export const accountingApi = {
         }
       });
       
-      if (\!response.ok) {
+      if (!response.ok) {
         const error = await response.text();
         throw new Error(error || `HTTP ${response.status}`);
       }
@@ -2009,7 +2009,7 @@ export const accountingApi = {
         }
       });
       
-      if (\!response.ok) {
+      if (!response.ok) {
         const error = await response.text();
         throw new Error(error || `HTTP ${response.status}`);
       }
@@ -2029,7 +2029,7 @@ export const accountingApi = {
         body: JSON.stringify(data)
       });
       
-      if (\!response.ok) {
+      if (!response.ok) {
         const error = await response.text();
         throw new Error(error || `HTTP ${response.status}`);
       }
@@ -2047,7 +2047,7 @@ export const accountingApi = {
         body: JSON.stringify(data)
       });
       
-      if (\!response.ok) {
+      if (!response.ok) {
         const error = await response.text();
         throw new Error(error || `HTTP ${response.status}`);
       }
@@ -2064,7 +2064,7 @@ export const accountingApi = {
         }
       });
       
-      if (\!response.ok) {
+      if (!response.ok) {
         const error = await response.text();
         throw new Error(error || `HTTP ${response.status}`);
       }
@@ -2081,7 +2081,7 @@ export const accountingApi = {
         }
       });
       
-      if (\!response.ok) {
+      if (!response.ok) {
         const error = await response.text();
         throw new Error(error || `HTTP ${response.status}`);
       }
@@ -2101,7 +2101,7 @@ export const accountingApi = {
         }
       });
       
-      if (\!response.ok) {
+      if (!response.ok) {
         const error = await response.text();
         throw new Error(error || `HTTP ${response.status}`);
       }
@@ -2118,7 +2118,7 @@ export const accountingApi = {
         }
       });
       
-      if (\!response.ok) {
+      if (!response.ok) {
         const error = await response.text();
         throw new Error(error || `HTTP ${response.status}`);
       }
@@ -2136,7 +2136,7 @@ export const accountingApi = {
         body: JSON.stringify(data)
       });
       
-      if (\!response.ok) {
+      if (!response.ok) {
         const error = await response.text();
         throw new Error(error || `HTTP ${response.status}`);
       }
@@ -2156,7 +2156,7 @@ export const accountingApi = {
         }
       });
       
-      if (\!response.ok) {
+      if (!response.ok) {
         const error = await response.text();
         throw new Error(error || `HTTP ${response.status}`);
       }
@@ -2173,7 +2173,7 @@ export const accountingApi = {
         }
       });
       
-      if (\!response.ok) {
+      if (!response.ok) {
         const error = await response.text();
         throw new Error(error || `HTTP ${response.status}`);
       }
@@ -2190,7 +2190,7 @@ export const accountingApi = {
         }
       });
       
-      if (\!response.ok) {
+      if (!response.ok) {
         const error = await response.text();
         throw new Error(error || `HTTP ${response.status}`);
       }
