@@ -408,134 +408,66 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     setShowHome(true);
   }, [resetAllStates, setShowHome]);
 
-  const handleHRClick = useCallback((section) => {
-    // Hide other sections
+  const handleHRClick = useCallback((value) => {
+    console.log('[DashboardContent] HR option selected:', value);
     resetAllStates();
     
-    if (section === 'taxes') {
-      // Show tax management component
-      console.log('[DashboardContent] Setting showTaxManagement to true for section:', section);
-      updateState({
-        showTaxManagement: true,
-        hrSection: section
-      });
-      
-      // Log the state immediately after update
-      console.log('[DashboardContent] State after update:', { 
-        showTaxManagement: true, 
-        hrSection: section 
-      });
-    } else if (section === 'timesheets') {
-      // Show timesheet management component
-      console.log('[DashboardContent] Setting showTimesheetManagement to true for section:', section);
-      // Generate a unique navigation key for component remounting
-      const timesheetNavKey = `timesheet-${Date.now()}`;
-      console.log('[DashboardContent] Setting navigationKey for timesheet:', timesheetNavKey);
-      
-      updateState({
-        showTimesheetManagement: true,
-        hrSection: section,
-        navigationKey: timesheetNavKey
-      });
-      
-      // Log the state immediately after update
-      console.log('[DashboardContent] State after update:', { 
-        showTimesheetManagement: true, 
-        hrSection: section 
-      });
-    } else if (section === 'pay') {
-      // Show pay management component
-      console.log('[DashboardContent] Setting showPayManagement to true for section:', section);
-      // Generate a unique navigation key for component remounting
-      const payNavKey = `pay-${Date.now()}`;
-      console.log('[DashboardContent] Setting navigationKey for pay:', payNavKey);
-      
-      updateState({
-        showPayManagement: true,
-        hrSection: section,
-        navigationKey: payNavKey
-      });
-      
-      // Log the state immediately after update
-      console.log('[DashboardContent] State after update:', { 
-        showPayManagement: true, 
-        hrSection: section 
-      });
-    } else if (section === 'benefits') {
-      // Show benefits management component with proper re-rendering
-      console.log('[DashboardContent] Setting showBenefitsManagement to true for section:', section);
-      
-      // Generate a unique navigation key for component remounting
-      const benefitsNavKey = `benefits-${Date.now()}`;
-      
-      // IMPORTANT FIX: Set state with the correct properties 
-      // and ensure navigationKey is included for proper component remounting
-      setUiState(prevState => ({
-        ...prevState,
-        showBenefitsManagement: true,
-        hrSection: section,
-        navigationKey: benefitsNavKey
-      }));
-      
-      // For event dispatch compatibility use updateState as well
-      updateState({
-        showBenefitsManagement: true,
-        hrSection: section,
-        navigationKey: benefitsNavKey
-      });
-      
-      // Log the state immediately after update
-      console.log('[DEBUG] State after update:', { 
-        showBenefitsManagement: true, 
-        hrSection: section,
-        navigationKey: benefitsNavKey
-      });
-    } else if (section === 'reports') {
-      // Show reports management component with proper re-rendering
-      console.log('[DEBUG-REPORT] DashboardContent handling reports section with value:', section);
-      
-      // Generate a unique navigation key for component remounting
-      const reportsNavKey = `reports-${Date.now()}`;
-      console.log('[DEBUG-REPORT] Generated navigation key:', reportsNavKey);
-      
-      // Set state with the correct properties and ensure navigationKey is included
-      console.log('[DEBUG-REPORT] About to update uiState with showReportsManagement=true');
-      setUiState(prevState => {
-        const newState = {
-          ...prevState,
-          showReportsManagement: true,
-          hrSection: section,
-          navigationKey: reportsNavKey
-        };
-        console.log('[DEBUG-REPORT] New uiState:', newState);
-        return newState;
-      });
-      
-      // For event dispatch compatibility use updateState as well
-      console.log('[DEBUG-REPORT] About to call updateState with showReportsManagement=true');
-      updateState({
-        showReportsManagement: true,
-        hrSection: section,
-        navigationKey: reportsNavKey
-      });
-      
-      // Log the state immediately after update
-      console.log('[DEBUG-REPORT] State update calls completed for Reports section. Values passed:', { 
-        showReportsManagement: true, 
-        hrSection: section,
-        navigationKey: reportsNavKey
-      });
-    } else {
-      // Show other HR components (excluding benefits which has special handling above)
-      updateState({
-        showHRDashboard: section === 'dashboard',
-        showEmployeeManagement: section === 'employees',
-        // Benefits is handled in the specific if-block above
-        showPerformanceManagement: section === 'performance',
-        hrSection: section || 'dashboard'
-      });
+    // Generate a unique navigation key for component remounting
+    const hrNavKey = `hr-${Date.now()}`;
+    
+    switch(value) {
+      case 'dashboard':
+        updateState({ 
+          view: 'hr-dashboard',
+          navigationKey: hrNavKey
+        });
+        break;
+      case 'employees':
+        updateState({ 
+          view: 'hr-employees',
+          navigationKey: hrNavKey
+        });
+        break;
+      case 'timesheets':
+        updateState({ 
+          view: 'hr-timesheets',
+          navigationKey: hrNavKey
+        });
+        break;
+      case 'pay':
+        updateState({ 
+          view: 'hr-pay',
+          navigationKey: hrNavKey
+        });
+        break;
+      case 'benefits':
+        updateState({ 
+          view: 'hr-benefits',
+          navigationKey: hrNavKey
+        });
+        break;
+      case 'reports':
+        updateState({ 
+          view: 'hr-reports',
+          navigationKey: hrNavKey
+        });
+        break;
+      case 'performance':
+        updateState({ 
+          view: 'hr-performance',
+          navigationKey: hrNavKey
+        });
+        break;
+      default:
+        // Default to HR dashboard
+        updateState({ 
+          view: 'hr-dashboard',
+          navigationKey: hrNavKey
+        });
     }
-  }, [resetAllStates, updateState, setUiState]);
+    
+    console.log(`[DashboardContent] Navigating to HR ${value} with key ${hrNavKey}`);
+  }, [resetAllStates, updateState]);
 
   const handleInventoryClick = useCallback((value) => {
     console.log('[DashboardContent] Inventory option selected:', value);

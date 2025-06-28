@@ -1384,106 +1384,12 @@ const MainListItems = ({
       label: 'HR',
       subItems: [
         { label: 'Dashboard', onClick: handleHRClick, value: 'dashboard', path: '/dashboard/hr' },
-        { 
-          label: 'Employees', 
-          path: '/dashboard/employees',
-          onClick: () => {
-            console.log('[listItems] Employees menu item clicked');
-            // Dispatch a standardized navigation event
-            const navigationKey = `nav-${Date.now()}`;
-            const payload = { 
-              item: 'employees', 
-              navigationKey
-            };
-            
-            // Dispatch navigation events for all listeners
-            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
-            
-            // Call the handler directly if it exists
-            if (typeof handleEmployeeManagementClick === 'function') {
-              handleEmployeeManagementClick();
-            } else if (typeof handleHRClick === 'function') {
-              // Fallback to handleHRClick with employees section
-              handleHRClick('employees');
-            }
-          }
-        },
-        { 
-          label: 'Timesheets', 
-          onClick: () => {
-            console.log('[listItems] Timesheets menu item clicked');
-            // Dispatch a standardized navigation event
-            const navigationKey = `nav-${Date.now()}`;
-            const payload = { 
-              item: 'timesheets', 
-              navigationKey
-            };
-            
-            // Dispatch navigation events for all listeners
-            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
-            
-            // Call the handler directly
-            if (typeof handleHRClick === 'function') {
-              handleHRClick('timesheets');
-            }
-          }
-        },
-        { 
-          label: 'Pay', 
-          onClick: () => {
-            console.log('[listItems] Pay menu item clicked');
-            // Dispatch a standardized navigation event
-            const navigationKey = `nav-${Date.now()}`;
-            const payload = { 
-              item: 'pay', 
-              navigationKey
-            };
-            
-            // Dispatch navigation events for all listeners
-            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
-            
-            // Call the handler directly
-            if (typeof handleHRClick === 'function') {
-              handleHRClick('pay');
-            }
-          }
-        },
-        { 
-          label: 'Benefits', 
-          path: '/dashboard/benefits',
-          onClick: () => {
-            console.log('[DEBUG] Benefits menu item clicked - Start');
-            
-            // Generate a unique navigation key for navigation
-            const navigationKey = `benefits-${Date.now()}`;
-            console.log('[DEBUG] Generated navigationKey:', navigationKey);
-            
-            const payload = { 
-              item: 'benefits', 
-              navigationKey,
-              source: 'hr-benefits-menu-click'
-            };
-            
-            console.log('[DEBUG] Dispatching menuNavigation event with payload:', JSON.stringify(payload));
-            
-            // Dispatch navigation events for all listeners
-            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
-            console.log('[DEBUG] menuNavigation event dispatched');
-            
-            // Call the handler directly
-            if (typeof handleHRClick === 'function') {
-              console.log('[DEBUG] Calling handleHRClick with section: benefits');
-              handleHRClick('benefits');
-              console.log('[DEBUG] handleHRClick called');
-            } else {
-              console.error('[DEBUG] handleHRClick is not a function');
-            }
-            
-            console.log('[DEBUG] Benefits menu item clicked - End');
-          }
-        },
+        { label: 'Employees', onClick: handleHRClick, value: 'employees', path: '/dashboard/employees' },
+        { label: 'Timesheets', onClick: handleHRClick, value: 'timesheets', path: '/dashboard/timesheets' },
+        { label: 'Pay', onClick: handleHRClick, value: 'pay', path: '/dashboard/pay' },
+        { label: 'Benefits', onClick: handleHRClick, value: 'benefits', path: '/dashboard/benefits' },
         { label: 'Reports', onClick: handleHRClick, value: 'reports', path: '/dashboard/reports' },
-        { label: 'Performance', onClick: handleHRClick, value: 'performance', path: '/dashboard/hr' },
+        { label: 'Performance', onClick: handleHRClick, value: 'performance', path: '/dashboard/performance' },
       ],
     },
     {

@@ -903,161 +903,32 @@ const RenderMainContent = React.memo(function RenderMainContent({
         }
       }
       
-      // Handle HR views
-      if (view && view.startsWith('hr-') || view === 'employees' || view === 'timesheets' || view === 'pay' || view === 'benefits' || view === 'hr-reports' || view === 'performance' || showEmployeeManagement || showTimesheetManagement || showPayManagement || showBenefitsManagement || showReportsManagement || showPerformanceManagement || showHRDashboard) {
-        console.log('[RenderMainContent] Rendering HR view or state:', { view, showEmployeeManagement, showTimesheetManagement, showPayManagement, showBenefitsManagement, showReportsManagement, showPerformanceManagement, showHRDashboard });
-        
-        let HRComponent = null;
-        let componentName = '';
-        
-        // Handle view-based routing first
-        if (view) {
-          switch(view) {
-            case 'hr':
-            case 'hr-dashboard':
-              componentName = 'HRDashboard';
-              HRComponent = lazy(() => import('./forms/HRDashboard.js').catch(err => {
-                console.error('[RenderMainContent] Error loading HRDashboard:', err);
-                return { default: () => <div className="p-4">Error loading HR Dashboard</div> };
-              }));
-              break;
-            case 'employees':
-            case 'hr-employees':
-              componentName = 'EmployeeManagement';
-              HRComponent = lazy(() => import('./forms/EmployeeManagement.js').catch(err => {
-                console.error('[RenderMainContent] Error loading EmployeeManagement:', err);
-                return { default: () => <div className="p-4">Error loading Employee Management</div> };
-              }));
-              break;
-            case 'timesheets':
-            case 'hr-timesheets':
-              componentName = 'TimesheetManagement';
-              HRComponent = lazy(() => import('./forms/TimesheetManagement.js').catch(err => {
-                console.error('[RenderMainContent] Error loading TimesheetManagement:', err);
-                return { default: () => <div className="p-4">Error loading Timesheet Management</div> };
-              }));
-              break;
-            case 'pay':
-            case 'hr-pay':
-              componentName = 'PayManagement';
-              HRComponent = lazy(() => import('./forms/PayManagement.js').catch(err => {
-                console.error('[RenderMainContent] Error loading PayManagement:', err);
-                return { default: () => <div className="p-4">Error loading Pay Management</div> };
-              }));
-              break;
-            case 'benefits':
-            case 'hr-benefits':
-              componentName = 'BenefitsManagement';
-              HRComponent = lazy(() => import('./forms/BenefitsManagement.js').catch(err => {
-                console.error('[RenderMainContent] Error loading BenefitsManagement:', err);
-                return { default: () => <div className="p-4">Error loading Benefits Management</div> };
-              }));
-              break;
-            case 'hr-reports':
-              componentName = 'HRReportsManagement';
-              HRComponent = lazy(() => import('./forms/ReportsManagement.js').catch(err => {
-                console.error('[RenderMainContent] Error loading ReportsManagement:', err);
-                return { default: () => <div className="p-4">Error loading HR Reports</div> };
-              }));
-              break;
-            case 'performance':
-            case 'hr-performance':
-              componentName = 'PerformanceManagement';
-              HRComponent = lazy(() => import('./forms/PerformanceManagement.js').catch(err => {
-                console.error('[RenderMainContent] Error loading PerformanceManagement:', err);
-                return { default: () => <div className="p-4">Error loading Performance Management</div> };
-              }));
-              break;
-          }
-          
-          if (HRComponent) {
-            return (
-              <ContentWrapperWithKey>
-                <SuspenseWithCleanup 
-                  componentKey={`${componentKey}-${view}`}
-                  fallback={
-                    <div className="flex justify-center items-center h-64">
-                      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-                    </div>
-                  }
-                >
-                  <HRComponent />
-                </SuspenseWithCleanup>
-              </ContentWrapperWithKey>
-            );
-          }
-        }
-        
-        // Direct render for specific HR states (backwards compatibility)
-        if (showEmployeeManagement) {
-          return (
-            <ContentWrapperWithKey>
-              <SuspenseWithCleanup componentKey={`employee-management-${navigationKey || 'default'}`}>
-                <EmployeeManagement />
-              </SuspenseWithCleanup>
-            </ContentWrapperWithKey>
-          );
-        }
-        
-        if (showTimesheetManagement) {
-          return (
-            <ContentWrapperWithKey>
-              <SuspenseWithCleanup componentKey={`timesheet-management-${navigationKey || 'default'}`}>
-                <TimesheetManagement />
-              </SuspenseWithCleanup>
-            </ContentWrapperWithKey>
-          );
-        }
-        
-        if (showPayManagement) {
-          return (
-            <ContentWrapperWithKey>
-              <SuspenseWithCleanup componentKey={`pay-management-${navigationKey || 'default'}`}>
-                <PayManagement />
-              </SuspenseWithCleanup>
-            </ContentWrapperWithKey>
-          );
-        }
-        
-        if (showBenefitsManagement) {
-          return (
-            <ContentWrapperWithKey>
-              <SuspenseWithCleanup componentKey={`benefits-management-${navigationKey || 'default'}`}>
-                <BenefitsManagement />
-              </SuspenseWithCleanup>
-            </ContentWrapperWithKey>
-          );
-        }
-        
-        if (showReportsManagement) {
-          return (
-            <ContentWrapperWithKey>
-              <SuspenseWithCleanup componentKey={`hr-reports-${navigationKey || 'default'}`}>
-                <HRReportsManagement />
-              </SuspenseWithCleanup>
-            </ContentWrapperWithKey>
-          );
-        }
-        
-        if (showPerformanceManagement) {
-          return (
-            <ContentWrapperWithKey>
-              <SuspenseWithCleanup componentKey={`performance-management-${navigationKey || 'default'}`}>
-                <PerformanceManagement />
-              </SuspenseWithCleanup>
-            </ContentWrapperWithKey>
-          );
-        }
-        
-        if (showHRDashboard) {
-          return (
-            <ContentWrapperWithKey>
-              <SuspenseWithCleanup componentKey={`hr-dashboard-${navigationKey || 'default'}`}>
-                <HRDashboard section={hrSection} />
-              </SuspenseWithCleanup>
-            </ContentWrapperWithKey>
-          );
-        }
+      // HR view handling
+      if (view && view.startsWith('hr-')) {
+        const hrComponentKey = `hr-${navigationKey || 'default'}`;
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup componentKey={hrComponentKey}>
+              {view === 'hr-dashboard' && <HRDashboard />}
+              {view === 'hr-employees' && <EmployeeManagement />}
+              {view === 'hr-timesheets' && <TimesheetManagement />}
+              {view === 'hr-pay' && <PayManagement />}
+              {view === 'hr-benefits' && <BenefitsManagement />}
+              {view === 'hr-reports' && <ReportDisplay type="hr" />}
+              {view === 'hr-performance' && <PerformanceManagement />}
+              {/* Legacy view support */}
+              {(view === 'employees' || view === 'timesheets' || view === 'pay' || view === 'benefits' || view === 'performance') && (
+                <>
+                  {view === 'employees' && <EmployeeManagement />}
+                  {view === 'timesheets' && <TimesheetManagement />}
+                  {view === 'pay' && <PayManagement />}
+                  {view === 'benefits' && <BenefitsManagement />}
+                  {view === 'performance' && <PerformanceManagement />}
+                </>
+              )}
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
       }
       
       // Handle Payroll views
