@@ -63,7 +63,7 @@ const SalesDashboard = () => {
   const fetchDashboardData = useCallback(async () => {
     try {
       setIsLoading(true);
-      const tenantId = getSecureTenantId();
+      const tenantId = await getSecureTenantId();
       
       logger.info('[SalesDashboard] Fetching dashboard data...');
       

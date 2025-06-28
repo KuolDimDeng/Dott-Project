@@ -60,7 +60,7 @@ const EstimateManagement = () => {
       console.log('[EstimateManagement] Fetching estimates...');
       
       // Get secure tenant ID
-      const tenantId = getSecureTenantId();
+      const tenantId = await getSecureTenantId();
       if (!tenantId) {
         console.error('[EstimateManagement] No tenant ID found');
         toast.error('Authentication required. Please log in again.');
@@ -110,7 +110,7 @@ const EstimateManagement = () => {
 
   const fetchCustomers = async () => {
     try {
-      const tenantId = getSecureTenantId();
+      const tenantId = await getSecureTenantId();
       const response = await fetch('/api/crm/customers', {
         headers: { 'x-tenant-id': tenantId }
       });
@@ -132,7 +132,7 @@ const EstimateManagement = () => {
 
   const fetchProducts = async () => {
     try {
-      const tenantId = getSecureTenantId();
+      const tenantId = await getSecureTenantId();
       const response = await fetch('/api/inventory/products', {
         headers: { 'x-tenant-id': tenantId }
       });
@@ -154,7 +154,7 @@ const EstimateManagement = () => {
 
   const fetchServices = async () => {
     try {
-      const tenantId = getSecureTenantId();
+      const tenantId = await getSecureTenantId();
       const response = await fetch('/api/inventory/services', {
         headers: { 'x-tenant-id': tenantId }
       });
@@ -249,7 +249,7 @@ const EstimateManagement = () => {
     try {
       setIsSubmitting(true);
       
-      const tenantId = getSecureTenantId();
+      const tenantId = await getSecureTenantId();
       if (!tenantId) {
         toast.error('Authentication required. Please log in again.');
         return;
@@ -312,7 +312,7 @@ const EstimateManagement = () => {
     try {
       setIsSubmitting(true);
       
-      const tenantId = getSecureTenantId();
+      const tenantId = await getSecureTenantId();
       if (!tenantId) {
         toast.error('Authentication required. Please log in again.');
         return;
@@ -363,7 +363,7 @@ const EstimateManagement = () => {
     console.log('[EstimateManagement] Deleting estimate:', estimateToDelete.id);
     
     try {
-      const tenantId = getSecureTenantId();
+      const tenantId = await getSecureTenantId();
       if (!tenantId) {
         toast.error('Authentication required. Please log in again.');
         return;
