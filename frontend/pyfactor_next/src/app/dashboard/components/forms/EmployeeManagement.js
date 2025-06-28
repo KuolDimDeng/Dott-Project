@@ -851,10 +851,13 @@ function EmployeeManagement({ onNavigate }) {
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-black">Employee Management</h1>
-        <p className="text-gray-600 mt-1">Manage your team members, track their information, and oversee employment details</p>
+      {/* Page Header with Heroicon */}
+      <div className="flex items-center space-x-3">
+        <UserGroupIcon className="h-8 w-8 text-blue-600" />
+        <div>
+          <h1 className="text-2xl font-bold text-black">Employee Management</h1>
+          <p className="text-gray-600 mt-1">Manage your team members, track their information, and oversee employment details</p>
+        </div>
       </div>
 
       {/* Summary Cards */}

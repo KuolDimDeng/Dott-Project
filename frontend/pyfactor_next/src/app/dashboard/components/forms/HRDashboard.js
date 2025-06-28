@@ -393,10 +393,13 @@ function HRDashboard({ section = 'dashboard', onNavigate }) {
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-black">HR Dashboard</h1>
-        <p className="text-gray-600 mt-1">Manage employees, track performance, and oversee HR operations</p>
+      {/* Page Header with Heroicon */}
+      <div className="flex items-center space-x-3">
+        <ChartBarIcon className="h-8 w-8 text-blue-600" />
+        <div>
+          <h1 className="text-2xl font-bold text-black">HR Dashboard</h1>
+          <p className="text-gray-600 mt-1">Manage employees, track performance, and oversee HR operations</p>
+        </div>
       </div>
 
       {/* Summary Cards */}

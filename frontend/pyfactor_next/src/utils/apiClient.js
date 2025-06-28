@@ -1269,6 +1269,96 @@ export const hrApi = {
     }
   },
 
+  // Payroll management
+  payroll: {
+    async getAll(params = {}) {
+      const response = await fetch('/api/hr/payroll', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+    
+    async create(data, params = {}) {
+      const response = await fetch('/api/hr/payroll', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+    
+    async update(id, data, params = {}) {
+      const response = await fetch(`/api/hr/payroll/${id}`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async delete(id, params = {}) {
+      const response = await fetch(`/api/hr/payroll/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+    
+    async getStats(params = {}) {
+      const response = await fetch('/api/hr/payroll/stats', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    }
+  },
+
   // Benefits management
   benefits: {
     async getAll(params = {}) {
@@ -1339,6 +1429,23 @@ export const hrApi = {
       }
       
       return response.json();
+    },
+
+    async getStats(params = {}) {
+      const response = await fetch('/api/hr/benefits/stats', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
     }
   },
 
@@ -1378,9 +1485,224 @@ export const hrApi = {
       
       return response.json();
     },
-    
+
+    async update(id, data, params = {}) {
+      const response = await fetch(`/api/hr/payroll/${id}`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async delete(id, params = {}) {
+      const response = await fetch(`/api/hr/payroll/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
     async getStats(params = {}) {
       const response = await fetch('/api/hr/payroll/stats', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    }
+  },
+
+  // Timesheet management
+  timesheets: {
+    async getAll(params = {}) {
+      const response = await fetch('/api/hr/timesheets', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+    
+    async create(data, params = {}) {
+      const response = await fetch('/api/hr/timesheets', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+    
+    async update(id, data, params = {}) {
+      const response = await fetch(`/api/hr/timesheets/${id}`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+    
+    async delete(id, params = {}) {
+      const response = await fetch(`/api/hr/timesheets/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async getStats(params = {}) {
+      const response = await fetch('/api/hr/timesheets/stats', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    }
+  },
+
+  // Performance management
+  performance: {
+    async getAll(params = {}) {
+      const response = await fetch('/api/hr/performance', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+    
+    async create(data, params = {}) {
+      const response = await fetch('/api/hr/performance', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+    
+    async update(id, data, params = {}) {
+      const response = await fetch(`/api/hr/performance/${id}`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+    
+    async delete(id, params = {}) {
+      const response = await fetch(`/api/hr/performance/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async getStats(params = {}) {
+      const response = await fetch('/api/hr/performance/stats', {
         method: 'GET',
         credentials: 'include',
         headers: {
