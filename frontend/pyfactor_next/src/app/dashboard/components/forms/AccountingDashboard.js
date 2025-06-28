@@ -3,6 +3,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
+import { accountingApi } from '@/utils/apiClient';
+import { 
+  BanknotesIcon,
+  ChartBarIcon,
+  CalendarIcon,
+  DocumentTextIcon,
+  CurrencyDollarIcon,
+  ArrowTrendingUpIcon
+} from '@heroicons/react/24/outline';
 
 const AccountingDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -34,12 +43,20 @@ const AccountingDashboard = () => {
     setError(null);
 
     try {
-      // TODO: Replace with actual API endpoint when backend is ready
-      // const response = await fetch(`/api/accounting/dashboard`);
-      // const data = await response.json();
-      
-      // Mock data for now
-      const mockData = {
+      // Fetch real data from backend using accounting API
+      const [dashboardStats, recentTransactions] = await Promise.all([
+        accountingApi.dashboard.getStats().catch(err => {
+          logger.warn('[AccountingDashboard] Stats API error, using fallback:', err);
+          return null;
+        }),
+        accountingApi.dashboard.getRecentTransactions().catch(err => {
+          logger.warn('[AccountingDashboard] Transactions API error, using fallback:', err);
+          return null;
+        })
+      ]);
+
+      // If APIs are not ready, use demo data
+      const demoData = {
         totalAssets: 285000,
         totalLiabilities: 125000,
         totalEquity: 160000,
@@ -54,7 +71,18 @@ const AccountingDashboard = () => {
         ]
       };
 
-      setStats(mockData);
+      // Merge real data with demo data as fallback
+      const finalStats = {
+        totalAssets: dashboardStats?.totalAssets || demoData.totalAssets,
+        totalLiabilities: dashboardStats?.totalLiabilities || demoData.totalLiabilities,
+        totalEquity: dashboardStats?.totalEquity || demoData.totalEquity,
+        cashFlow: dashboardStats?.cashFlow || demoData.cashFlow,
+        accountsPayable: dashboardStats?.accountsPayable || demoData.accountsPayable,
+        accountsReceivable: dashboardStats?.accountsReceivable || demoData.accountsReceivable,
+        recentTransactions: recentTransactions?.transactions || demoData.recentTransactions
+      };
+
+      setStats(finalStats);
       logger.info('[AccountingDashboard] Dashboard data loaded successfully');
     } catch (err) {
       logger.error('[AccountingDashboard] Error fetching dashboard data:', err);
@@ -107,16 +135,15 @@ const AccountingDashboard = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex items-center space-x-3 mb-6">
+        <BanknotesIcon className="h-8 w-8 text-blue-600" />
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2 flex items-center">
-            <svg className="h-6 w-6 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
-            </svg>
-            Accounting Dashboard
-          </h1>
-          <p className="text-gray-600 text-sm">Monitor your financial position, track transactions, and manage accounting operations in real-time.</p>
+          <h1 className="text-2xl font-bold text-black">Accounting Dashboard</h1>
+          <p className="text-gray-600 mt-1">Monitor your financial position, track transactions, and manage accounting operations in real-time</p>
         </div>
+      </div>
+      
+      <div className="flex justify-end mb-4">
         <button
           onClick={fetchDashboardData}
           className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"

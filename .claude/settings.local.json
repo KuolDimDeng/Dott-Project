@@ -97,7 +97,8 @@
       "Bash(timeout 30 pnpm run build:*)",
       "Bash(git rm:*)",
       "Bash(git revert:*)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Bash(awk:*)"
     ],
     "deny": []
   }

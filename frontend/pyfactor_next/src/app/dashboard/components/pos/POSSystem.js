@@ -880,15 +880,6 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                           <CameraIcon className="h-5 w-5 mr-2" />
                           Camera Scanner
                         </button>
-                        <button
-                          onClick={() => {
-                            console.log('[POS] Manual test: scanning "PROD-2025-0002"');
-                            handleProductScan('PROD-2025-0002');
-                          }}
-                          className="px-4 py-3 rounded-lg border border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-100 transition-colors text-sm"
-                        >
-                          Test Hat SKU
-                        </button>
                       </div>
 
                       {/* Scanner Help */}
