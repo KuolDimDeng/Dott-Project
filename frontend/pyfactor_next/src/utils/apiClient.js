@@ -971,7 +971,7 @@ export const vendorApi = {
 // Purchase Order related API methods - Using local proxy pattern (industry standard)
 export const purchaseOrderApi = {
   async getAll(params = {}) {
-    const response = await fetch('/api/purchases/orders', {
+    const response = await fetch('/api/purchases/api/purchase-orders/', {
       method: 'GET',
       credentials: 'include',
       headers: {
@@ -988,7 +988,7 @@ export const purchaseOrderApi = {
   },
   
   async getById(id, params = {}) {
-    const response = await fetch(`/api/purchases/orders/${id}`, {
+    const response = await fetch(`/api/purchases/api/purchase-orders/${id}/`, {
       method: 'GET',
       credentials: 'include',
       headers: {
@@ -1007,7 +1007,7 @@ export const purchaseOrderApi = {
   async create(data, params = {}) {
     logger.info('[PurchaseOrderApi] Creating purchase order with data:', data);
     
-    const response = await fetch('/api/purchases/orders', {
+    const response = await fetch('/api/purchases/api/purchase-orders/create/', {
       method: 'POST',
       credentials: 'include',
       headers: {
@@ -1027,7 +1027,7 @@ export const purchaseOrderApi = {
   },
   
   async update(id, data, params = {}) {
-    const response = await fetch(`/api/purchases/orders/${id}`, {
+    const response = await fetch(`/api/purchases/api/purchase-orders/${id}/`, {
       method: 'PUT',
       credentials: 'include',
       headers: {
@@ -1045,7 +1045,7 @@ export const purchaseOrderApi = {
   },
   
   async delete(id, params = {}) {
-    const response = await fetch(`/api/purchases/orders/${id}`, {
+    const response = await fetch(`/api/purchases/api/purchase-orders/${id}/`, {
       method: 'DELETE',
       credentials: 'include',
       headers: {
@@ -1737,3 +1737,465 @@ export const hrApi = {
     return response.json();
   }
 }; 
+
+// Accounting related API methods - Industry standard pattern
+export const accountingApi = {
+  // Dashboard methods
+  dashboard: {
+    async getStats(params = {}) {
+      const response = await fetch('/api/accounting/dashboard/stats', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (\!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async getRecentTransactions(params = {}) {
+      const response = await fetch('/api/accounting/dashboard/transactions', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (\!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    }
+  },
+
+  // Chart of Accounts
+  chartOfAccounts: {
+    async getAll(params = {}) {
+      const response = await fetch('/api/accounting/chart-of-accounts', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (\!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async create(data, params = {}) {
+      logger.info('[AccountingApi] Creating chart of account:', data);
+      
+      const response = await fetch('/api/accounting/chart-of-accounts', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (\!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async update(id, data, params = {}) {
+      const response = await fetch(`/api/accounting/chart-of-accounts/${id}`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (\!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async delete(id, params = {}) {
+      const response = await fetch(`/api/accounting/chart-of-accounts/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (\!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return { success: true };
+    }
+  },
+
+  // Journal Entries
+  journalEntries: {
+    async getAll(params = {}) {
+      const response = await fetch('/api/accounting/journal-entries', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (\!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async create(data, params = {}) {
+      logger.info('[AccountingApi] Creating journal entry:', data);
+      
+      const response = await fetch('/api/accounting/journal-entries', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (\!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async update(id, data, params = {}) {
+      const response = await fetch(`/api/accounting/journal-entries/${id}`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (\!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async delete(id, params = {}) {
+      const response = await fetch(`/api/accounting/journal-entries/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (\!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return { success: true };
+    },
+
+    async getStats(params = {}) {
+      const response = await fetch('/api/accounting/journal-entries/stats', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (\!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    }
+  },
+
+  // General Ledger
+  generalLedger: {
+    async getAll(params = {}) {
+      const response = await fetch('/api/accounting/general-ledger', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (\!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async getByAccount(accountId, params = {}) {
+      const response = await fetch(`/api/accounting/general-ledger/account/${accountId}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (\!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async getStats(params = {}) {
+      const response = await fetch('/api/accounting/general-ledger/stats', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (\!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    }
+  },
+
+  // Fixed Assets
+  fixedAssets: {
+    async getAll(params = {}) {
+      const response = await fetch('/api/accounting/fixed-assets', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (\!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async create(data, params = {}) {
+      logger.info('[AccountingApi] Creating fixed asset:', data);
+      
+      const response = await fetch('/api/accounting/fixed-assets', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (\!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async update(id, data, params = {}) {
+      const response = await fetch(`/api/accounting/fixed-assets/${id}`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (\!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async delete(id, params = {}) {
+      const response = await fetch(`/api/accounting/fixed-assets/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (\!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return { success: true };
+    },
+
+    async getStats(params = {}) {
+      const response = await fetch('/api/accounting/fixed-assets/stats', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (\!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    }
+  },
+
+  // Reconciliation
+  reconciliation: {
+    async getAccounts(params = {}) {
+      const response = await fetch('/api/accounting/reconciliation/accounts', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (\!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async getTransactions(accountId, params = {}) {
+      const response = await fetch(`/api/accounting/reconciliation/account/${accountId}/transactions`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (\!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async reconcile(accountId, data, params = {}) {
+      const response = await fetch(`/api/accounting/reconciliation/account/${accountId}/reconcile`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (\!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    }
+  },
+
+  // Financial Statements
+  financialStatements: {
+    async getBalanceSheet(params = {}) {
+      const response = await fetch('/api/accounting/financial-statements/balance-sheet', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (\!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async getIncomeStatement(params = {}) {
+      const response = await fetch('/api/accounting/financial-statements/income-statement', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (\!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    },
+
+    async getCashFlow(params = {}) {
+      const response = await fetch('/api/accounting/financial-statements/cash-flow', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (\!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
+    }
+  }
+};
