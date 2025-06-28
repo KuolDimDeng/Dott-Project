@@ -247,6 +247,24 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
   const [lastScanTime, setLastScanTime] = useState(0);
   const [scannerStatus, setScannerStatus] = useState('searching'); // 'searching', 'detected', 'not_found', 'active'
   
+  // Refs to access latest state in event handlers
+  const isSearchFocusedRef = useRef(false);
+  const scannerDetectedRef = useRef(false);
+  const lastScanTimeRef = useRef(0);
+  
+  // Update refs when state changes
+  useEffect(() => {
+    isSearchFocusedRef.current = isSearchFocused;
+  }, [isSearchFocused]);
+  
+  useEffect(() => {
+    scannerDetectedRef.current = scannerDetected;
+  }, [scannerDetected]);
+  
+  useEffect(() => {
+    lastScanTimeRef.current = lastScanTime;
+  }, [lastScanTime]);
+  
   // Receipt dialog state
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
   const [completedSaleData, setCompletedSaleData] = useState(null);
@@ -424,18 +442,22 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
 
   // Scanner detection logic
   useEffect(() => {
+    if (!isOpen) return;
+    
     let keypressTimer = null;
     let scanStartTime = 0;
     let searchTimeout = null;
+    let hasShownSearching = false;
 
-    // Show initial searching status when POS opens
-    if (isOpen) {
+    // Show initial searching status when POS opens (only once)
+    if (!hasShownSearching) {
       console.log('[POSSystem] Scanner detection started, setting status to searching');
       setScannerStatus('searching');
+      hasShownSearching = true;
       
       // Set timeout to show "not found" after 10 seconds of no scanner activity
       searchTimeout = setTimeout(() => {
-        if (!scannerDetected) {
+        if (!scannerDetectedRef.current) {
           console.log('[POSSystem] Scanner detection timeout - no scanner found after 10 seconds');
           setScannerStatus('not_found');
           toast('⚠️ No barcode scanner detected. You can still search products manually.', {
@@ -452,8 +474,9 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
 
     const detectScanner = (timeDiff) => {
       // If keys are pressed very quickly (< 30ms apart), it's likely a scanner
-      if (timeDiff < 30 && !scannerDetected) {
+      if (timeDiff < 30 && !scannerDetectedRef.current) {
         setScannerDetected(true);
+        scannerDetectedRef.current = true;
         setScannerStatus('detected');
         
         // Clear the search timeout since we found a scanner
@@ -483,16 +506,17 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
       const currentTime = Date.now();
       
       // Detect scanner by rapid key input
-      if (lastScanTime > 0) {
-        const timeDiff = currentTime - lastScanTime;
+      if (lastScanTimeRef.current > 0) {
+        const timeDiff = currentTime - lastScanTimeRef.current;
         detectScanner(timeDiff);
       }
       setLastScanTime(currentTime);
+      lastScanTimeRef.current = currentTime;
 
       // Only process if search field is focused
-      if (!isSearchFocused) {
+      if (!isSearchFocusedRef.current) {
         // Auto-focus search field if scanner is detected
-        if (scannerDetected && productSearchRef.current) {
+        if (scannerDetectedRef.current && productSearchRef.current) {
           productSearchRef.current.focus();
         }
         return;
@@ -544,7 +568,7 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
           }
           
           // Don't clear if user is still typing
-          if (Date.now() - lastScanTime > 500) {
+          if (Date.now() - lastScanTimeRef.current > 500) {
             usbScannerRef.current = '';
             setProductSearchTerm('');
           }
@@ -558,7 +582,7 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
       if (keypressTimer) clearTimeout(keypressTimer);
       if (searchTimeout) clearTimeout(searchTimeout);
     };
-  }, [isSearchFocused, isOpen, lastScanTime, scannerDetected, handleProductScan]);
+  }, [isOpen]); // Only depend on isOpen to prevent multiple event listeners
 
   // Focus on product search when modal opens
   useEffect(() => {
