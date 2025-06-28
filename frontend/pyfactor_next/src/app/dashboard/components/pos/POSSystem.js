@@ -216,7 +216,7 @@ class POSErrorBoundary extends React.Component {
 const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
   // Debug props
   console.log('[POSSystem] Rendering with props:', { isOpen, onClose: !!onClose, onSaleCompleted: !!onSaleCompleted });
-  console.log('[POSSystem] Version: 2025-01-11 v2 - Fixed null protection for all string operations');
+  console.log('[POSSystem] Version: 2025-01-11 v3 - Fixed event listeners and scanner detection');
 
   // Mock business info - in real app, this would come from settings/profile
   const businessInfo = {
@@ -246,6 +246,7 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
   const [scannerDetected, setScannerDetected] = useState(false);
   const [lastScanTime, setLastScanTime] = useState(0);
   const [scannerStatus, setScannerStatus] = useState('searching'); // 'searching', 'detected', 'not_found', 'active'
+  const [scannerSearchStarted, setScannerSearchStarted] = useState(false);
   
   // Refs to access latest state in event handlers
   const isSearchFocusedRef = useRef(false);
@@ -450,10 +451,10 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
     let hasShownSearching = false;
 
     // Show initial searching status when POS opens (only once)
-    if (!hasShownSearching) {
+    if (!scannerSearchStarted) {
       console.log('[POSSystem] Scanner detection started, setting status to searching');
       setScannerStatus('searching');
-      hasShownSearching = true;
+      setScannerSearchStarted(true);
       
       // Set timeout to show "not found" after 10 seconds of no scanner activity
       searchTimeout = setTimeout(() => {
@@ -582,7 +583,7 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
       if (keypressTimer) clearTimeout(keypressTimer);
       if (searchTimeout) clearTimeout(searchTimeout);
     };
-  }, [isOpen]); // Only depend on isOpen to prevent multiple event listeners
+  }, [isOpen, scannerSearchStarted]); // Only depend on isOpen and scannerSearchStarted
 
   // Focus on product search when modal opens
   useEffect(() => {
@@ -590,6 +591,15 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
       setTimeout(() => {
         productSearchRef.current.focus();
       }, 100);
+    }
+  }, [isOpen]);
+
+  // Reset scanner search when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setScannerSearchStarted(false);
+      setScannerDetected(false);
+      setScannerStatus('searching');
     }
   }, [isOpen]);
 
