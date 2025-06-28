@@ -1965,26 +1965,26 @@ const MainListItems = ({
           value: 'analytics-dashboard' 
         },
         { 
-          label: 'A.I Query', 
+          label: 'Smart Business', 
           onClick: (value) => {
-            // Create navigation event for AI query
+            // Create navigation event for Smart Business AI
             const navigationKey = `nav-${Date.now()}`;
             const payload = { 
-              item: 'ai-query', 
+              item: 'smart-business', 
               navigationKey,
-              originalItem: 'A.I Query'
+              originalItem: 'Smart Business'
             };
             
             // Dispatch navigation events
             window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
             window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
             
-            // Load the AIQuery component
+            // Load the Smart Business component
             if (typeof handleAnalysisClick === 'function') {
-              handleAnalysisClick('ai-query');
+              handleAnalysisClick('smart-business');
             }
           }, 
-          value: 'ai-query' 
+          value: 'smart-business' 
         },
       ],
     },

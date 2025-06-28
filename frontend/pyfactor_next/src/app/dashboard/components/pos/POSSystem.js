@@ -242,6 +242,10 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
   const [showScanner, setShowScanner] = useState(false);
   const [productSearchTerm, setProductSearchTerm] = useState('');
   
+  // Scanner status for user feedback
+  const [scannerStatus, setScannerStatus] = useState('ready'); // ready, scanning, detected
+  const [scannerDetected, setScannerDetected] = useState(false);
+  
   // Receipt dialog state
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
   const [completedSaleData, setCompletedSaleData] = useState(null);
@@ -416,36 +420,68 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
     }
   }, [products, addToCart]);
 
-  // Simplified scanner detection logic
+  // Enhanced scanner detection with status management
   useEffect(() => {
     if (!isOpen) return;
     
     let buffer = '';
     let bufferTimer = null;
     let lastKeypressTime = 0;
+    let scanStartTime = 0;
+    let detectionTimer = null;
+
+    // Initial status
+    setScannerStatus('ready');
+
+    const detectScannerSpeed = (timeElapsed, bufferLength) => {
+      // If multiple characters entered very quickly (< 50ms between chars)
+      // and buffer is reasonable length, it's likely a scanner
+      if (timeElapsed < 50 && bufferLength > 3) {
+        if (!scannerDetected) {
+          setScannerDetected(true);
+          setScannerStatus('detected');
+          toast.success('🔍 Barcode scanner detected!', {
+            duration: 3000,
+            position: 'top-center',
+          });
+        }
+      }
+    };
 
     const handleKeyPress = (event) => {
-      // Only process printable characters and Enter
+      const now = Date.now();
+      
+      // Handle Enter key - process complete scan
       if (event.key === 'Enter') {
         if (buffer.length > 0) {
           console.log('[POSSystem] Scanner input detected:', buffer);
+          setScannerStatus('scanning');
           handleProductScan(buffer);
           buffer = '';
           setProductSearchTerm('');
+          
+          // Reset to detected status after scanning
+          setTimeout(() => {
+            setScannerStatus(scannerDetected ? 'detected' : 'ready');
+          }, 1000);
         }
         return;
       }
       
+      // Handle printable characters
       if (event.key.length === 1) {
-        const now = Date.now();
-        
         // If it's been more than 100ms since last keypress, start new buffer
         if (now - lastKeypressTime > 100) {
           buffer = '';
+          scanStartTime = now;
         }
         
+        const timeSinceStart = now - scanStartTime;
         buffer += event.key;
         lastKeypressTime = now;
+        
+        // Detect scanner based on typing speed
+        detectScannerSpeed(now - lastKeypressTime, buffer.length);
         
         // Update search term for visual feedback
         setProductSearchTerm(buffer);
@@ -466,16 +502,22 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
     return () => {
       window.removeEventListener('keydown', handleKeyPress);
       if (bufferTimer) clearTimeout(bufferTimer);
+      if (detectionTimer) clearTimeout(detectionTimer);
       console.log('[POSSystem] Event listener removed');
     };
-  }, [isOpen]); // Only depend on isOpen
+  }, [isOpen, scannerDetected]); // Depend on isOpen and scannerDetected
 
-  // Focus on product search when modal opens
+  // Focus on product search when modal opens and reset when closed
   useEffect(() => {
     if (isOpen && productSearchRef.current) {
       setTimeout(() => {
         productSearchRef.current.focus();
       }, 100);
+    } else if (!isOpen) {
+      // Reset scanner state when POS is closed
+      setScannerStatus('ready');
+      setScannerDetected(false);
+      setProductSearchTerm('');
     }
   }, [isOpen]);
 
@@ -681,10 +723,31 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                       {/* Product Search */}
                       <div>
                         <div className="flex items-center justify-between mb-2">
-                          <label className="text-sm font-medium text-gray-700">
-                            Product Search / Barcode Scanner
-                            <FieldTooltip text="Type product name or scan barcode with USB scanner" />
-                          </label>
+                          <div className="flex items-center justify-between mb-2">
+                            <label className="text-sm font-medium text-gray-700">
+                              Product Search / Barcode Scanner
+                              <FieldTooltip text="Type product name or scan barcode with USB scanner" />
+                            </label>
+                            {/* Scanner Status Indicator */}
+                            <div className={`flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                              scannerStatus === 'detected' 
+                                ? 'bg-green-100 text-green-700'
+                                : scannerStatus === 'scanning'
+                                ? 'bg-blue-100 text-blue-700' 
+                                : 'bg-gray-100 text-gray-600'
+                            }`}>
+                              <div className={`w-2 h-2 rounded-full mr-2 ${
+                                scannerStatus === 'detected'
+                                  ? 'bg-green-500'
+                                  : scannerStatus === 'scanning'
+                                  ? 'bg-blue-500 animate-pulse'
+                                  : 'bg-gray-400'
+                              }`} />
+                              {scannerStatus === 'detected' && 'Scanner Ready'}
+                              {scannerStatus === 'scanning' && 'Scanning...'}
+                              {scannerStatus === 'ready' && 'Ready'}
+                            </div>
+                          </div>
                         </div>
                         <div className="relative">
                           <input
@@ -692,11 +755,54 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                             type="text"
                             value={productSearchTerm}
                             onChange={(e) => setProductSearchTerm(e.target.value)}
-                            placeholder="Type product name or scan barcode..."
-                            className="w-full pl-4 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg transition-all"
+                            placeholder={
+                              scannerStatus === 'detected' ? "Scanner ready - scan or type to search"
+                              : scannerStatus === 'scanning' ? "Scanning..."
+                              : "Type product name or scan barcode..."
+                            }
+                            className={`w-full pl-4 pr-12 py-3 border rounded-lg focus:ring-2 text-lg transition-all ${
+                              scannerStatus === 'detected'
+                                ? 'border-green-400 focus:ring-green-500 focus:border-green-500'
+                                : scannerStatus === 'scanning'
+                                ? 'border-blue-400 focus:ring-blue-500 focus:border-blue-500'
+                                : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                            }`}
                           />
-                          <BarcodeIcon className="absolute right-3 top-3 h-6 w-6 text-gray-400" />
+                          <BarcodeIcon className={`absolute right-3 top-3 h-6 w-6 ${
+                            scannerStatus === 'detected' ? 'text-green-500'
+                            : scannerStatus === 'scanning' ? 'text-blue-500 animate-pulse'
+                            : 'text-gray-400'
+                          }`} />
                         </div>
+                        
+                        {/* Scanner Status Messages */}
+                        {scannerStatus === 'detected' && (
+                          <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                            <div className="flex items-center">
+                              <svg className="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                              <div>
+                                <p className="text-sm font-medium text-green-800">Scanner Connected ✓</p>
+                                <p className="text-xs text-green-700">Your barcode scanner is ready. Scan any product or type to search.</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {scannerStatus === 'ready' && !scannerDetected && (
+                          <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div className="flex items-center">
+                              <svg className="w-5 h-5 text-blue-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                              </svg>
+                              <div>
+                                <p className="text-sm font-medium text-blue-800">Scanner Detection</p>
+                                <p className="text-xs text-blue-700">Connect a USB barcode scanner and scan a product to enable automatic detection.</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
 

@@ -282,7 +282,7 @@ const CampaignsManagement = enhancedLazy(() => import('./crm/CampaignsManagement
 const ReportsManagement = enhancedLazy(() => import('./crm/ReportsManagement'), 'Reports Management');
 
 // Analytics Components
-const AIQueryPage = enhancedLazy(() => import('./forms/AIQueryPage.js'), 'AI Query Page');
+const SmartBusiness = enhancedLazy(() => import('./forms/SmartBusiness.js'), 'Smart Business AI');
 
 // Add a custom error boundary component
 class LazyLoadErrorBoundary extends React.Component {
