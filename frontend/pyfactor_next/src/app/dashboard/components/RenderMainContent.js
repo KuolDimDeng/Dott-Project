@@ -284,7 +284,7 @@ const CampaignsManagement = enhancedLazy(() => import('./crm/CampaignsManagement
 const ReportsManagement = enhancedLazy(() => import('./crm/ReportsManagement'), 'Reports Management');
 
 // Analytics Components
-const SmartBusiness = enhancedLazy(() => import('./forms/SmartBusiness.js'), 'Smart Business AI');
+const SmartInsight = enhancedLazy(() => import('./forms/SmartInsight.js'), 'Smart Insight AI');
 
 // Add a custom error boundary component
 class LazyLoadErrorBoundary extends React.Component {
@@ -1824,14 +1824,16 @@ const RenderMainContent = React.memo(function RenderMainContent({
                 return { default: () => <div className="p-4">Error loading Analytics Dashboard</div> };
               }));
               break;
-            case 'smart-business':
+            case 'smart-insight':
+            case 'analytics-smart-insight':
+            case 'smart-business': // Keep backward compatibility
             case 'analytics-smart-business':
             case 'ai-query': // Keep backward compatibility
             case 'analytics-ai-query':
-              componentName = 'SmartBusiness';
-              AnalyticsComponent = lazy(() => import('./forms/SmartBusiness.js').catch(err => {
-                console.error('[RenderMainContent] Error loading SmartBusiness:', err);
-                return { default: () => <div className="p-4">Error loading Smart Business AI</div> };
+              componentName = 'SmartInsight';
+              AnalyticsComponent = lazy(() => import('./forms/SmartInsight.js').catch(err => {
+                console.error('[RenderMainContent] Error loading SmartInsight:', err);
+                return { default: () => <div className="p-4">Error loading Smart Insight AI</div> };
               }));
               break;
             default:
@@ -1865,7 +1867,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
         if (showAnalysisPage || showKPIDashboard) {
           const LegacyAnalyticsComponent = showKPIDashboard ? 
             lazy(() => import('./forms/AnalyticsDashboard.js')) : 
-            lazy(() => import('./forms/SmartBusiness.js'));
+            lazy(() => import('./forms/SmartInsight.js'));
           
           return (
             <ContentWrapperWithKey>

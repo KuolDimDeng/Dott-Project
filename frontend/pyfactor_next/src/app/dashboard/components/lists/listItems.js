@@ -176,7 +176,7 @@ const createOptions = [
     }
   },
   {
-    label: 'Sales',
+    label: 'Point of Sale',
     description: 'Record a sale transaction quickly',
     icon: (props) => (
       <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -1967,23 +1967,23 @@ const MainListItems = ({
     },
     {
       icon: <NavIcons.SmartBusiness className="w-5 h-5" />,
-      label: 'Smart Business',
+      label: 'Smart Insight',
       onClick: () => {
-        // Create navigation event for Smart Business AI
+        // Create navigation event for Smart Insight AI
         const navigationKey = `nav-${Date.now()}`;
         const payload = { 
-          item: 'smart-business', 
+          item: 'smart-insight', 
           navigationKey,
-          originalItem: 'Smart Business'
+          originalItem: 'Smart Insight'
         };
         
         // Dispatch navigation events
         window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
         window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
         
-        // Load Smart Business component
+        // Load Smart Insight component
         if (typeof handleAnalysisClick === 'function') {
-          handleAnalysisClick('smart-business');
+          handleAnalysisClick('smart-insight');
         }
       },
     },

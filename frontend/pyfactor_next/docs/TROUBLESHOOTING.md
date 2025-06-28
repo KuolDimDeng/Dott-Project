@@ -1210,6 +1210,107 @@ createLinkToken: (payload = {}) => {
 
 ---
 
+## 🔧 **Issue: POS QR Code Scanner Not Finding Products**
+
+**Symptoms:**
+- Scanning QR codes with full JSON product data shows "Product not found"
+- Manual typing of product name works correctly
+- Scanner detects the JSON data but can't match it to products
+- Error shows product details (ID, SKU, Name) but still can't find the product
+- Manual button required to process scanned QR codes
+
+**Root Cause Analysis:**
+1. **API Endpoint Mismatch**: POS was fetching from `/api/products` instead of `/api/inventory/products`
+2. **Fallback Data**: When API failed, system was using mock products instead of real database products
+3. **JSON Processing**: Scanner wasn't automatically processing JSON QR codes
+4. **Product Matching**: ID matching wasn't prioritized for JSON QR codes
+
+**Solution:**
+
+1. **Fix API Endpoint** in POSSystem.js:
+```javascript
+// ❌ OLD - Wrong endpoint
+const response = await fetch('/api/products', {
+  credentials: 'include',
+});
+
+// ✅ NEW - Correct inventory endpoint
+const response = await fetch('/api/inventory/products', {
+  credentials: 'include',
+});
+```
+
+2. **Update Fallback Products** to match real database:
+```javascript
+const fallbackProducts = [
+  {
+    id: 'c1b9b1aa-f180-4591-ade3-2b884b2fe629',
+    name: 'Hat',
+    price: 21.00,
+    sku: 'PROD-2025-0002',
+    barcode: 'PROD-2025-0002',
+    description: 'Hat product from database',
+    stock: 12
+  },
+  // ... other real products
+];
+```
+
+3. **Auto-Process JSON QR Codes**:
+```javascript
+// Auto-detect and process JSON in search field
+useEffect(() => {
+  if (!productSearchTerm || productSearchTerm.length < 10) return;
+  
+  // Check if it's JSON
+  if (productSearchTerm.trim().startsWith('{') && productSearchTerm.includes('"id"')) {
+    console.log('[POSSystem] Detected JSON in search field, auto-processing...');
+    setScannerStatus('scanning');
+    
+    const timer = setTimeout(() => {
+      handleProductScan(productSearchTerm);
+      setProductSearchTerm('');
+      
+      setTimeout(() => {
+        setScannerStatus(scannerDetected ? 'detected' : 'ready');
+      }, 1000);
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }
+}, [productSearchTerm, scannerDetected]);
+```
+
+4. **Prioritize ID Matching** for JSON QR codes:
+```javascript
+// First try exact ID match if we have JSON data
+if (productData && productData.id) {
+  product = products.find(p => String(p.id) === String(productData.id));
+  if (product) {
+    console.log('[POS] Found product by exact ID match:', productData.id);
+  }
+}
+```
+
+**Verification Steps:**
+1. Scan a QR code with JSON product data
+2. Product should be found and added to cart automatically
+3. No manual button click required
+4. Success toast shows "QR Code Scanned" with product details
+
+**Prevention:**
+- Always use correct API endpoints (`/api/inventory/products`)
+- Test with real database products, not mock data
+- Auto-process detected JSON without requiring user interaction
+- Prioritize exact ID matches for QR codes
+
+**Related Issues:**
+- Scanner detection for JSON patterns
+- API endpoint consistency
+- Frontend/backend data synchronization
+
+---
+
 ## 📋 **Issue Reporting Template**
 
 When documenting new issues, use this format:

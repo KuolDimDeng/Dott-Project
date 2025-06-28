@@ -80,8 +80,8 @@ export const heavyComponents = {
       'Conditional data fetching'
     ]
   },
-  'SmartBusiness': {
-    path: '@/app/dashboard/components/forms/SmartBusiness',
+  'SmartInsight': {
+    path: '@/app/dashboard/components/forms/SmartInsight',
     memoryFootprint: 'medium',
     optimizations: [
       'Streaming responses',
