@@ -931,7 +931,12 @@ const AnalyticsDashboard = ({ userData }) => {
                 { label: 'Other', color: 'purple', value: chartData.expenses.length > 0 ? chartData.expenses.reduce((sum, item) => sum + item.other, 0) / chartData.expenses.length : 0 }
               ].map((expense, index) => (
                 <div key={index} className="text-center">
-                  <div className={`w-3 h-3 rounded-full mx-auto mb-1 bg-${expense.color}-500`}></div>
+                  <div className={`w-3 h-3 rounded-full mx-auto mb-1 ${
+                    expense.color === 'blue' ? 'bg-blue-500' :
+                    expense.color === 'green' ? 'bg-green-500' :
+                    expense.color === 'yellow' ? 'bg-yellow-500' :
+                    expense.color === 'purple' ? 'bg-purple-500' : 'bg-gray-500'
+                  }`}></div>
                   <p className="text-xs text-gray-500">{expense.label}</p>
                   <p className="text-sm font-semibold text-gray-900">{formatCurrency(expense.value)}</p>
                 </div>
