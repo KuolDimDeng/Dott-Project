@@ -413,56 +413,111 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
       barcode: p.barcode
     })));
     
-    const product = products.find(p => {
-      // Check each search term against all product fields
-      return searchTerms.some(term => {
-        const matches = {
-          idMatch: String(p.id || '') === String(term || ''),
-          skuMatch: String(p.sku || '') === String(term || ''),
-          barcodeMatch: String(p.barcode || '') === String(term || ''),
-          nameMatch: String(p.name || '').toLowerCase() === String(term || '').toLowerCase(),
-          nameContains: String(p.name || '').toLowerCase().includes(String(term || '').toLowerCase())
-        };
-        
-        console.log(`[POS] Checking product "${p.name}" against term "${term}":`, matches);
-        
-        return matches.idMatch || matches.skuMatch || matches.barcodeMatch || 
-               matches.nameMatch || (term.length > 2 && matches.nameContains);
+    let product = null;
+    
+    // First, try exact ID match if we have JSON data
+    if (productData && productData.id) {
+      product = products.find(p => String(p.id) === String(productData.id));
+      if (product) {
+        console.log('[POS] Found product by exact ID match:', productData.id);
+      }
+    }
+    
+    // If not found by ID, try other search terms
+    if (!product) {
+      product = products.find(p => {
+        // Check each search term against all product fields
+        return searchTerms.some(term => {
+          const matches = {
+            idMatch: String(p.id || '') === String(term || ''),
+            skuMatch: String(p.sku || '') === String(term || ''),
+            barcodeMatch: String(p.barcode || '') === String(term || ''),
+            nameMatch: String(p.name || '').toLowerCase() === String(term || '').toLowerCase(),
+            nameContains: String(p.name || '').toLowerCase().includes(String(term || '').toLowerCase())
+          };
+          
+          console.log(`[POS] Checking product "${p.name}" against term "${term}":`, matches);
+          
+          return matches.idMatch || matches.skuMatch || matches.barcodeMatch || 
+                 matches.nameMatch || (term.length > 2 && matches.nameContains);
+        });
       });
-    });
+    }
 
     if (product) {
       addToCart(product);
-      toast.success(`Added ${product.name} to cart`, {
-        duration: 3000,
-        position: 'top-center',
-        style: {
-          background: '#10B981',
-          color: 'white',
-        },
-      });
+      
+      // Different success messages for QR vs barcode scans
+      if (productData && productData.id) {
+        toast.success(
+          <div className="flex items-center">
+            <BarcodeIcon className="h-5 w-5 mr-2" />
+            <div>
+              <div className="font-medium">QR Code Scanned</div>
+              <div className="text-sm">{product.name} - ${product.price}</div>
+            </div>
+          </div>, 
+          {
+            duration: 3000,
+            position: 'top-center',
+            style: {
+              background: '#10B981',
+              color: 'white',
+            },
+          }
+        );
+      } else {
+        toast.success(`Added ${product.name} to cart`, {
+          duration: 3000,
+          position: 'top-center',
+          style: {
+            background: '#10B981',
+            color: 'white',
+          },
+        });
+      }
+      
       setShowScanner(false);
       
       // Clear the search field after successful scan
       setProductSearchTerm('');
     } else {
-      // Show the scanned code in the error message
-      const searchTerm = searchTerms[0] || scannedCode;
-      toast.error(
-        <div>
-          <div>Product not found</div>
-          <div className="text-xs mt-1">Scanned: {searchTerm}</div>
-          <div className="text-xs mt-1">Available products: {products.length}</div>
-          <div className="text-xs mt-1">Try searching by product name instead</div>
-        </div>, 
-        {
-          duration: 4000,
-          position: 'top-center',
-        }
-      );
-      
-      // Set the search term in the field so user can try manual search
-      setProductSearchTerm(searchTerm);
+      // More informative error for JSON QR codes
+      if (productData && productData.id) {
+        toast.error(
+          <div>
+            <div className="font-medium">Product Not Found</div>
+            <div className="text-xs mt-1">Product ID: {productData.id}</div>
+            <div className="text-xs mt-1">SKU: {productData.sku || 'N/A'}</div>
+            <div className="text-xs mt-1">Name: {productData.name || 'N/A'}</div>
+            <div className="text-xs mt-2 font-medium">Make sure this product exists in your inventory</div>
+          </div>, 
+          {
+            duration: 5000,
+            position: 'top-center',
+          }
+        );
+        // Clear search field for JSON scans since we can't search with the full JSON
+        setProductSearchTerm('');
+      } else {
+        // Show the scanned code in the error message
+        const searchTerm = searchTerms[0] || scannedCode;
+        toast.error(
+          <div>
+            <div>Product not found</div>
+            <div className="text-xs mt-1">Scanned: {searchTerm}</div>
+            <div className="text-xs mt-1">Available products: {products.length}</div>
+            <div className="text-xs mt-1">Try searching by product name instead</div>
+          </div>, 
+          {
+            duration: 4000,
+            position: 'top-center',
+          }
+        );
+        
+        // Set the search term in the field so user can try manual search
+        setProductSearchTerm(searchTerm);
+      }
     }
   }, [products, addToCart]);
 
@@ -511,6 +566,7 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
       
       // Handle Enter key - process complete scan
       if (event.key === 'Enter') {
+        // If buffer has content, it's a scanner input
         if (buffer.length > 0) {
           console.log('[POSSystem] Scanner input detected via Enter:', buffer);
           setScannerStatus('scanning');
@@ -521,6 +577,16 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
           // Reset to detected status after scanning
           setTimeout(() => {
             setScannerStatus(isDetected ? 'detected' : 'ready');
+          }, 1000);
+        } else if (productSearchTerm.length > 0) {
+          // If no buffer but there's text in the search field, process it as manual input
+          console.log('[POSSystem] Manual search via Enter:', productSearchTerm);
+          setScannerStatus('scanning');
+          handleProductScan(productSearchTerm);
+          
+          // Reset status after processing
+          setTimeout(() => {
+            setScannerStatus('ready');
           }, 1000);
         }
         return;
@@ -610,6 +676,33 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
       setProductSearchTerm('');
     }
   }, [isOpen]);
+
+  // Auto-process JSON QR codes when detected in search field
+  useEffect(() => {
+    if (!productSearchTerm || productSearchTerm.length < 10) return;
+    
+    // Check if it's JSON
+    if (productSearchTerm.trim().startsWith('{') && productSearchTerm.includes('"id"')) {
+      console.log('[POSSystem] Detected JSON in search field, auto-processing...');
+      
+      // Update scanner status to show processing
+      setScannerStatus('scanning');
+      
+      // Small delay to ensure the full JSON is typed/scanned
+      const timer = setTimeout(() => {
+        handleProductScan(productSearchTerm);
+        // Clear the search field after processing
+        setProductSearchTerm('');
+        
+        // Reset scanner status after processing
+        setTimeout(() => {
+          setScannerStatus(scannerDetected ? 'detected' : 'ready');
+        }, 1000);
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [productSearchTerm, scannerDetected]);
 
   // Update item quantity
   const updateQuantity = (productId, newQuantity) => {
@@ -950,6 +1043,11 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                             <h3 className="text-sm font-medium text-gray-700">
                               {(() => {
                                 try {
+                                  // Check if it's JSON being processed
+                                  if (productSearchTerm.trim().startsWith('{') && productSearchTerm.includes('"id"')) {
+                                    return 'Processing QR Code...';
+                                  }
+                                  
                                   const searchTerm = String(productSearchTerm || '').toLowerCase();
                                   const filtered = products.filter(product => {
                                     if (!product) return false;
@@ -979,6 +1077,16 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                           <div className="max-h-64 overflow-y-auto space-y-2">
                             {(() => {
                               try {
+                                // Don't show product list if processing JSON
+                                if (productSearchTerm.trim().startsWith('{') && productSearchTerm.includes('"id"')) {
+                                  return (
+                                    <div className="p-4 text-center">
+                                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                                      <p className="text-sm text-gray-500 mt-2">Processing QR code data...</p>
+                                    </div>
+                                  );
+                                }
+                                
                                 const searchTerm = String(productSearchTerm || '').toLowerCase();
                                 const filtered = products.filter(product => {
                                   if (!product) return false;

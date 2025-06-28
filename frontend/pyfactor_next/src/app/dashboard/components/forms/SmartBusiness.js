@@ -707,7 +707,12 @@ Please provide a clear, actionable answer based on the data above. Include speci
                 const IconComponent = category.icon;
                 return (
                   <div key={category.category}>
-                    <h4 className={`text-sm font-medium text-${category.color}-600 mb-2 flex items-center`}>
+                    <h4 className={`text-sm font-medium mb-2 flex items-center ${
+                      category.color === 'green' ? 'text-green-600' :
+                      category.color === 'blue' ? 'text-blue-600' :
+                      category.color === 'purple' ? 'text-purple-600' :
+                      category.color === 'yellow' ? 'text-yellow-600' : 'text-gray-600'
+                    }`}>
                       <IconComponent className="w-4 h-4 mr-1" />
                       {category.category}
                     </h4>
