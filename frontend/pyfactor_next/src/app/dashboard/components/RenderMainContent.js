@@ -1806,7 +1806,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
       }
 
       // Handle Analytics views
-      if (view && (view.startsWith('analytics-') || view === 'kpi-data' || view === 'smart-business' || view === 'ai-query') || showAnalysisPage || showKPIDashboard) {
+      if (view && (view.startsWith('analytics-') || view === 'kpi-data' || view === 'smart-insight' || view === 'smart-business' || view === 'ai-query') || showAnalysisPage || showKPIDashboard) {
         console.log('[RenderMainContent] Rendering analytics view:', view);
         
         let AnalyticsComponent = null;
