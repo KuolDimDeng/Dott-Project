@@ -388,13 +388,9 @@ function Home({ userData, onNavigate }) {
   return (
     <>
       <div className="pt-1.5 pb-2">
-        <h1 className="text-2xl font-bold mb-2">
-          Welcome to your dashboard!
-        </h1>
-        
-        <p className="mb-4 text-lg">
+        <h1 className="text-2xl font-bold mb-4">
           {getGreeting()}
-        </p>
+        </h1>
         
         {/* Subscription Expired Banner */}
         {userData?.subscription_expired && (
