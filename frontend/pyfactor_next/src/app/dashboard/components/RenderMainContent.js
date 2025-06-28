@@ -1852,7 +1852,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
                     </div>
                   }
                 >
-                  <AnalyticsComponent userData={userData} />
+                  <AnalyticsComponent onNavigate={onNavigate} />
                 </SuspenseWithCleanup>
               </ContentWrapperWithKey>
             );
@@ -1868,7 +1868,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
           return (
             <ContentWrapperWithKey>
               <SuspenseWithCleanup componentKey={`analytics-legacy-${navigationKey || 'default'}`}>
-                <LegacyAnalyticsComponent userData={userData} />
+                <LegacyAnalyticsComponent onNavigate={onNavigate} />
               </SuspenseWithCleanup>
             </ContentWrapperWithKey>
           );
