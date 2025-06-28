@@ -376,8 +376,8 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
         skuCleanMatch: p.sku === cleanCode,
         barcodeMatch: p.barcode === productId,
         barcodeCleanMatch: p.barcode === cleanCode,
-        nameMatch: (p.name || '').toLowerCase().includes(cleanCode.toLowerCase()),
-        exactNameMatch: (p.name || '').toLowerCase() === cleanCode.toLowerCase()
+        nameMatch: (p.name || '').toLowerCase().includes((cleanCode || '').toLowerCase()),
+        exactNameMatch: (p.name || '').toLowerCase() === (cleanCode || '').toLowerCase()
       };
       
       console.log(`[POS] Checking product "${p.name}":`, matches);
@@ -953,12 +953,12 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                           <div className="flex items-center justify-between">
                             <h3 className="text-sm font-medium text-gray-700">
                               {products.filter(product =>
-                                (product.name || '').toLowerCase().includes(productSearchTerm.toLowerCase()) ||
-                                (product.sku || '').toLowerCase().includes(productSearchTerm.toLowerCase()) ||
-                                (product.barcode || '').includes(productSearchTerm)
+                                (product.name || '').toLowerCase().includes((productSearchTerm || '').toLowerCase()) ||
+                                (product.sku || '').toLowerCase().includes((productSearchTerm || '').toLowerCase()) ||
+                                (product.barcode || '').includes((productSearchTerm || ''))
                               ).length > 0 ? 'Search Results:' : 'No products found'}
                             </h3>
-                            {productSearchTerm.length > 0 && (
+                            {(productSearchTerm || '').length > 0 && (
                               <button
                                 onClick={() => {
                                   setProductSearchTerm('');
@@ -973,9 +973,9 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                           <div className="max-h-64 overflow-y-auto space-y-2">
                             {products
                               .filter(product =>
-                                (product.name || '').toLowerCase().includes(productSearchTerm.toLowerCase()) ||
-                                (product.sku || '').toLowerCase().includes(productSearchTerm.toLowerCase()) ||
-                                (product.barcode || '').includes(productSearchTerm)
+                                (product.name || '').toLowerCase().includes((productSearchTerm || '').toLowerCase()) ||
+                                (product.sku || '').toLowerCase().includes((productSearchTerm || '').toLowerCase()) ||
+                                (product.barcode || '').includes((productSearchTerm || ''))
                               )
                               .slice(0, 5) // Show max 5 results
                               .map(product => (
