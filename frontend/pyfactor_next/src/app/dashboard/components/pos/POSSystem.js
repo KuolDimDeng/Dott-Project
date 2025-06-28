@@ -420,7 +420,7 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
     }
   }, [products, addToCart]);
 
-  // Enhanced scanner detection with status management
+  // Scanner detection with stable event handling
   useEffect(() => {
     if (!isOpen) return;
     
@@ -428,25 +428,10 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
     let bufferTimer = null;
     let lastKeypressTime = 0;
     let scanStartTime = 0;
-    let detectionTimer = null;
+    let isDetected = false; // Local variable to avoid state dependency
 
     // Initial status
     setScannerStatus('ready');
-
-    const detectScannerSpeed = (timeElapsed, bufferLength) => {
-      // If multiple characters entered very quickly (< 50ms between chars)
-      // and buffer is reasonable length, it's likely a scanner
-      if (timeElapsed < 50 && bufferLength > 3) {
-        if (!scannerDetected) {
-          setScannerDetected(true);
-          setScannerStatus('detected');
-          toast.success('🔍 Barcode scanner detected!', {
-            duration: 3000,
-            position: 'top-center',
-          });
-        }
-      }
-    };
 
     const handleKeyPress = (event) => {
       const now = Date.now();
@@ -462,7 +447,7 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
           
           // Reset to detected status after scanning
           setTimeout(() => {
-            setScannerStatus(scannerDetected ? 'detected' : 'ready');
+            setScannerStatus(isDetected ? 'detected' : 'ready');
           }, 1000);
         }
         return;
@@ -476,12 +461,20 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
           scanStartTime = now;
         }
         
-        const timeSinceStart = now - scanStartTime;
         buffer += event.key;
+        const timeBetweenKeys = now - lastKeypressTime;
         lastKeypressTime = now;
         
-        // Detect scanner based on typing speed
-        detectScannerSpeed(now - lastKeypressTime, buffer.length);
+        // Detect scanner based on typing speed (very fast input)
+        if (timeBetweenKeys < 50 && buffer.length > 3 && !isDetected) {
+          isDetected = true;
+          setScannerDetected(true);
+          setScannerStatus('detected');
+          toast.success('🔍 Barcode scanner detected!', {
+            duration: 3000,
+            position: 'top-center',
+          });
+        }
         
         // Update search term for visual feedback
         setProductSearchTerm(buffer);
@@ -502,10 +495,9 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
     return () => {
       window.removeEventListener('keydown', handleKeyPress);
       if (bufferTimer) clearTimeout(bufferTimer);
-      if (detectionTimer) clearTimeout(detectionTimer);
       console.log('[POSSystem] Event listener removed');
     };
-  }, [isOpen, scannerDetected]); // Depend on isOpen and scannerDetected
+  }, [isOpen, handleProductScan]); // Only depend on isOpen and handleProductScan to prevent re-render loops
 
   // Focus on product search when modal opens and reset when closed
   useEffect(() => {
