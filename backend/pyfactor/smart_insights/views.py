@@ -382,6 +382,10 @@ class SmartInsightsViewSet(viewsets.ViewSet):
             import anthropic
             print(f"[Smart Insights] Anthropic version: {anthropic.__version__}")
             print(f"[Smart Insights] API key present: {bool(settings.CLAUDE_API_KEY)}")
+            print(f"[Smart Insights] API key length: {len(settings.CLAUDE_API_KEY) if settings.CLAUDE_API_KEY else 0}")
+            
+            if not settings.CLAUDE_API_KEY:
+                raise ValueError("CLAUDE_API_KEY environment variable is not set")
             
             # Initialize Claude client
             client = anthropic.Anthropic(api_key=settings.CLAUDE_API_KEY)
