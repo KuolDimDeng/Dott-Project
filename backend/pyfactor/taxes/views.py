@@ -5,14 +5,16 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import (
     State, IncomeTaxRate, PayrollTaxFiling, TaxFilingInstruction, TaxForm,
-    TaxDataEntryControl, TaxDataEntryLog, TaxDataAbuseReport, TaxDataBlacklist
+    TaxDataEntryControl, TaxDataEntryLog, TaxDataAbuseReport, TaxDataBlacklist,
+    TaxSettings, TaxApiUsage
 )
 from .serializers import (
     StateSerializer, IncomeTaxRateSerializer, 
     PayrollTaxFilingSerializer, TaxFilingInstructionSerializer,
     TaxFormSerializer, TaxDataEntryControlSerializer,
     TaxDataEntryLogSerializer, TaxDataAbuseReportSerializer,
-    TaxDataBlacklistSerializer
+    TaxDataBlacklistSerializer, TaxSettingsSerializer,
+    TaxApiUsageSerializer
 )
 from django.db import transaction, models
 import logging
@@ -720,3 +722,132 @@ class TaxDataBlacklistViewSet(viewsets.ModelViewSet):
         ).exists()
         
         return Response({"is_blacklisted": is_blacklisted})
+
+
+class TaxSettingsViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing tenant tax settings.
+    Provides CRUD operations for tax configuration.
+    """
+    queryset = TaxSettings.objects.all()
+    serializer_class = TaxSettingsSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        """Filter by tenant from query params"""
+        queryset = super().get_queryset()
+        tenant_id = self.request.query_params.get('tenant_id')
+        if tenant_id:
+            queryset = queryset.filter(tenant_id=tenant_id)
+        return queryset
+    
+    def list(self, request):
+        """Get tax settings for a tenant"""
+        tenant_id = request.query_params.get('tenant_id')
+        if not tenant_id:
+            return Response(
+                {"error": "tenant_id parameter is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            # Try to get existing settings
+            tax_settings = self.get_queryset().filter(tenant_id=tenant_id).first()
+            if tax_settings:
+                serializer = self.get_serializer(tax_settings)
+                return Response(serializer.data)
+            else:
+                # No settings found
+                return Response(
+                    {"message": "No tax settings found for this tenant"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+        except Exception as e:
+            logger.error(f"Error fetching tax settings: {str(e)}")
+            return Response(
+                {"error": "Failed to fetch tax settings"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    def create(self, request):
+        """Create or update tax settings for a tenant"""
+        tenant_id = request.data.get('tenant_id')
+        if not tenant_id:
+            return Response(
+                {"error": "tenant_id is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            # Check if settings already exist
+            existing_settings = TaxSettings.objects.filter(tenant_id=tenant_id).first()
+            
+            if existing_settings:
+                # Update existing settings
+                serializer = self.get_serializer(existing_settings, data=request.data, partial=True)
+            else:
+                # Create new settings
+                serializer = self.get_serializer(data=request.data)
+            
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"Error saving tax settings: {str(e)}")
+            return Response(
+                {"error": "Failed to save tax settings"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class TaxApiUsageViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for tracking tax API usage.
+    """
+    queryset = TaxApiUsage.objects.all()
+    serializer_class = TaxApiUsageSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def list(self, request):
+        """Get API usage for a tenant for the current month"""
+        tenant_id = request.query_params.get('tenant_id')
+        if not tenant_id:
+            return Response(
+                {"error": "tenant_id parameter is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        from datetime import datetime
+        current_month = datetime.now().strftime('%Y-%m')
+        
+        try:
+            # Get or create usage record for current month
+            usage, created = TaxApiUsage.objects.get_or_create(
+                tenant_id=tenant_id,
+                month_year=current_month,
+                defaults={
+                    'monthly_limit': 5,  # Default free plan limit
+                    'plan_type': 'free'
+                }
+            )
+            
+            # Prepare response data
+            from dateutil.relativedelta import relativedelta
+            next_month = datetime.now() + relativedelta(months=1)
+            resets_at = datetime(next_month.year, next_month.month, 1).isoformat()
+            
+            return Response({
+                'monthly_usage': usage.api_calls_count,
+                'monthly_limit': usage.monthly_limit,
+                'resets_at': resets_at,
+                'plan_type': usage.plan_type,
+                'cache_hits': usage.cache_hits_count
+            })
+            
+        except Exception as e:
+            logger.error(f"Error fetching API usage: {str(e)}")
+            return Response(
+                {"error": "Failed to fetch API usage"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

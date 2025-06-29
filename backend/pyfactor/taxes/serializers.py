@@ -2,7 +2,8 @@
 from rest_framework import serializers
 from .models import (
     State, IncomeTaxRate, PayrollTaxFiling, TaxFilingInstruction, TaxForm,
-    TaxDataEntryControl, TaxDataEntryLog, TaxDataAbuseReport, TaxDataBlacklist
+    TaxDataEntryControl, TaxDataEntryLog, TaxDataAbuseReport, TaxDataBlacklist,
+    TaxSettings, TaxApiUsage
 )
 
 class StateSerializer(serializers.ModelSerializer):
@@ -115,3 +116,44 @@ class TaxDataBlacklistSerializer(serializers.ModelSerializer):
             'created_at', 'expires_at', 'created_by', 'created_by_email'
         ]
         read_only_fields = ['id', 'created_at']
+
+
+class TaxSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TaxSettings
+        fields = [
+            'id', 'business_name', 'business_type', 'country', 'state_province',
+            'city', 'postal_code', 'sales_tax_rate', 'income_tax_rate',
+            'payroll_tax_rate', 'filing_website', 'filing_address',
+            'filing_deadlines', 'ai_suggested', 'ai_confidence_score',
+            'approved_by_name', 'approved_by_signature', 'approved_at',
+            'approval_ip_address', 'confirmation_email_sent',
+            'confirmation_email_sent_at', 'confirmation_email_sent_to',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class TaxApiUsageSerializer(serializers.ModelSerializer):
+    resets_at = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = TaxApiUsage
+        fields = [
+            'id', 'month_year', 'api_calls_count', 'cache_hits_count',
+            'monthly_limit', 'plan_type', 'resets_at', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def get_resets_at(self, obj):
+        """Calculate when the monthly usage resets"""
+        from datetime import datetime
+        from dateutil.relativedelta import relativedelta
+        
+        # Parse month_year (YYYY-MM format)
+        year, month = map(int, obj.month_year.split('-'))
+        current_date = datetime(year, month, 1)
+        
+        # Get first day of next month
+        next_month = current_date + relativedelta(months=1)
+        return next_month.isoformat()

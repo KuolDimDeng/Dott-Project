@@ -6,7 +6,8 @@ from .views import (
     PayrollTaxFilingViewSet, TaxFilingInstructionViewSet,
     TaxCalculationView, TaxFormViewSet, GlobalComplianceViewSet, currency_info,
     TaxDataEntryControlViewSet, TaxDataEntryLogViewSet,
-    TaxDataAbuseReportViewSet, TaxDataBlacklistViewSet
+    TaxDataAbuseReportViewSet, TaxDataBlacklistViewSet,
+    TaxSettingsViewSet, TaxApiUsageViewSet
 )
 
 router = DefaultRouter()
@@ -16,6 +17,8 @@ router.register(r'tax-filings', PayrollTaxFilingViewSet)
 router.register(r'filing-instructions', TaxFilingInstructionViewSet)
 router.register(r'tax-forms', TaxFormViewSet)
 router.register(r'global', GlobalComplianceViewSet, basename='global')
+router.register(r'settings', TaxSettingsViewSet, basename='tax-settings')
+router.register(r'api-usage', TaxApiUsageViewSet, basename='tax-api-usage')
 
 # Abuse control endpoints
 router.register(r'abuse-control/controls', TaxDataEntryControlViewSet, basename='tax-entry-control')
