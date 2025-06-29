@@ -20,16 +20,11 @@ WebBrowser.maybeCompleteAuthSession();
 const AUTH0_DOMAIN = 'auth.dottapps.com';
 const AUTH0_CLIENT_ID = '9i7GSU4bgh6hFtMXnQACwiRxTudpuOSF';
 
-// Use makeRedirectUri to ensure proper URL formatting
-const redirectUri = makeRedirectUri({
-  scheme: 'dott',
-  path: 'redirect',
-  // Use production-ready URI instead of localhost
-  preferLocalhost: false,
-});
+// Use explicit redirect URI to match Auth0 configuration exactly
+const redirectUri = 'dott://redirect';
 
 console.log('Redirect URI:', redirectUri);
-// You need to add this exact URI to Auth0's Allowed Callback URLs
+// This matches exactly what's in Auth0's Allowed Callback URLs
 
 // Auth0 endpoints
 const discovery = {
