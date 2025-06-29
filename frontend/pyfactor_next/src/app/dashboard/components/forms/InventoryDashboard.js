@@ -261,6 +261,13 @@ const InventoryDashboard = () => {
             topSupplier: suppliers[0]?.name || 'N/A'
           }
         }));
+        } catch (error) {
+          logger.error('[InventoryDashboard] Error processing suppliers:', error);
+          setMetrics(prev => ({
+            ...prev,
+            suppliers: { total: 0, active: 0, newThisMonth: 0, topSupplier: 'N/A' }
+          }));
+        }
       }
 
       // Process stock adjustments
