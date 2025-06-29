@@ -1109,6 +1109,13 @@ const RenderMainContent = React.memo(function RenderMainContent({
                 return { default: () => <div className="p-4">Error loading Tax Settings</div> };
               }));
               break;
+            case 'tax-filing':
+              componentName = 'TaxFiling';
+              TaxesComponent = lazy(() => import('./forms/TaxFiling.js').catch(err => {
+                console.error('[RenderMainContent] Error loading TaxFiling:', err);
+                return { default: () => <div className="p-4">Error loading Tax Filing</div> };
+              }));
+              break;
           }
           
           if (TaxesComponent) {

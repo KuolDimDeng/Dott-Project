@@ -1540,48 +1540,26 @@ const MainListItems = ({
           value: 'tax-settings' 
         },
         { 
-          label: 'Tax Payments', 
+          label: 'Tax Filing', 
           onClick: (value) => {
-            // Create navigation event for tax payments
+            // Create navigation event for tax filing
             const navigationKey = `nav-${Date.now()}`;
             const payload = { 
-              item: 'tax-payments', 
+              item: 'tax-filing', 
               navigationKey,
-              originalItem: 'Tax Payments'
+              originalItem: 'Tax Filing'
             };
             
             // Dispatch navigation events
             window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
             window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
             
-            // Load the TaxPayments component
+            // Load the TaxFiling component
             if (typeof handleTaxesClick === 'function') {
-              handleTaxesClick('tax-payments');
+              handleTaxesClick('tax-filing');
             }
           }, 
-          value: 'tax-payments' 
-        },
-        { 
-          label: 'Tax Forms', 
-          onClick: (value) => {
-            // Create navigation event for tax forms
-            const navigationKey = `nav-${Date.now()}`;
-            const payload = { 
-              item: 'tax-forms', 
-              navigationKey,
-              originalItem: 'Tax Forms'
-            };
-            
-            // Dispatch navigation events
-            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
-            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
-            
-            // Load the TaxForms component
-            if (typeof handleTaxesClick === 'function') {
-              handleTaxesClick('tax-forms');
-            }
-          }, 
-          value: 'tax-forms' 
+          value: 'tax-filing' 
         },
         { 
           label: 'Reports', 
