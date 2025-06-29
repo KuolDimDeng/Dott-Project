@@ -5,6 +5,7 @@ import { toast } from 'react-hot-toast';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { useSession } from '@/hooks/useSession-v2';
 import StandardSpinner, { CenteredSpinner } from '@/components/ui/StandardSpinner';
+import { getCountryName } from '@/utils/countryMapping';
 import { 
   CogIcon, 
   MapPinIcon, 
@@ -118,28 +119,11 @@ export default function TaxSettings({ onNavigate }) {
           
           // Pre-populate form with user data from session
           if (user) {
-            // Convert country code to full name if needed
+            // Convert country code to full name using worldwide mapping
             const countryValue = user.country || '';
             console.log('[TaxSettings] Raw country value from user:', countryValue);
             
-            const countryCodeToName = {
-              'US': 'United States',
-              'CA': 'Canada', 
-              'GB': 'United Kingdom',
-              'UK': 'United Kingdom',
-              'AU': 'Australia',
-              'DE': 'Germany',
-              'FR': 'France',
-              'IT': 'Italy',
-              'ES': 'Spain',
-              'JP': 'Japan',
-              'BR': 'Brazil',
-              'MX': 'Mexico',
-              'IN': 'India',
-              'CN': 'China'
-            };
-            
-            const countryName = countryCodeToName[countryValue.toUpperCase()] || countryValue;
+            const countryName = getCountryName(countryValue);
             console.log('[TaxSettings] Mapped country name:', countryName);
             
             const initialFormData = {
