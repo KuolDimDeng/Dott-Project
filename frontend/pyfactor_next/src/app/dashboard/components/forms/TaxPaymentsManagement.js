@@ -129,19 +129,19 @@ const TaxPaymentsManagement = () => {
         <div className="bg-white rounded-lg shadow-md p-6">
           <h3 className="text-sm font-medium text-gray-500">Total Paid (YTD)</h3>
           <p className="text-2xl font-bold text-green-600 mt-2">
-            ${paymentSummary.totalPaid.toFixed(2)}
+            ${(paymentSummary.totalPaid || 0).toFixed(2)}
           </p>
         </div>
         <div className="bg-white rounded-lg shadow-md p-6">
           <h3 className="text-sm font-medium text-gray-500">Total Pending</h3>
           <p className="text-2xl font-bold text-yellow-600 mt-2">
-            ${paymentSummary.totalPending.toFixed(2)}
+            ${(paymentSummary.totalPending || 0).toFixed(2)}
           </p>
         </div>
         <div className="bg-white rounded-lg shadow-md p-6">
           <h3 className="text-sm font-medium text-gray-500">Total Scheduled</h3>
           <p className="text-2xl font-bold text-blue-600 mt-2">
-            ${paymentSummary.totalScheduled.toFixed(2)}
+            ${(paymentSummary.totalScheduled || 0).toFixed(2)}
           </p>
         </div>
       </div>

@@ -11,7 +11,8 @@ import {
   CheckCircleIcon,
   ExclamationCircleIcon,
   DocumentCheckIcon,
-  PencilIcon
+  PencilIcon,
+  ClockIcon
 } from '@heroicons/react/24/outline';
 
 export default function TaxSettings({ onNavigate }) {
