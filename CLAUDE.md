@@ -1,5 +1,5 @@
 # CLAUDE.md - Dott Project Configuration
-*Last Updated: 2025-06-26*
+*Last Updated: 2025-06-29*
 
 ## Numbering System Guide
 - **Format**: `[MAJOR.MINOR.PATCH] - DATE - STATUS`
@@ -375,3 +375,16 @@ Add `REDIS_URL` environment variable in Render dashboard
 - **Migration**: Replace all `animate-spin rounded-full` divs with StandardSpinner
 - **Documentation**: `/docs/STANDARD_SPINNER.md`
 - **Registry**: Component tracking in `/src/utils/componentRegistry.js`
+
+### [15.0.0] - 2025-06-29 - CURRENT - Worldwide Country Mapping Utility
+- **Location**: `/src/utils/countryMapping.js`
+- **Purpose**: Complete ISO 3166-1 alpha-2 country code mapping for global support
+- **Coverage**: All 195 countries worldwide including territories and dependencies
+- **Functions**:
+  - `getCountryName(code)`: Convert country code to full name
+  - `getCountryCode(name)`: Convert country name to code
+  - `getAllCountries()`: Get sorted array of all countries
+  - `isValidCountryCode(code)`: Validate country codes
+- **Implementation**: Tax Settings component updated to use shared utility
+- **Benefits**: Reusable across app, consistent international support
+- **Documentation**: `/docs/COUNTRY_MAPPING.md`
