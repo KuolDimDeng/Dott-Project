@@ -391,14 +391,24 @@ class SmartInsightsViewSet(viewsets.ViewSet):
             client = anthropic.Anthropic(api_key=settings.CLAUDE_SMART_INSIGHTS_API_KEY)
             print("[Smart Insights] Client initialized successfully")
             
-            # Call Claude API
+            # Fetch business data for context
+            business_context = self._get_business_context(request.user)
+            
+            # Call Claude API with business context
             response = client.messages.create(
                 model=settings.CLAUDE_SMART_INSIGHTS_MODEL,
                 max_tokens=settings.CLAUDE_SMART_INSIGHTS_MAX_TOKENS,
                 messages=[
                     {
                         "role": "user",
-                        "content": f"You are a business intelligence assistant. Answer this query based on general business knowledge: {query_text}"
+                        "content": f"""You are a business intelligence assistant for this company. Answer the following query using the provided business data and insights.
+
+BUSINESS DATA:
+{business_context}
+
+USER QUERY: {query_text}
+
+Please provide specific insights based on the actual business data above, not generic advice."""
                     }
                 ]
             )
@@ -453,6 +463,83 @@ class SmartInsightsViewSet(viewsets.ViewSet):
                 {'error': f'Failed to process query: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+    
+    def _get_business_context(self, user):
+        """Fetch business data to provide context to Claude"""
+        try:
+            from crm.models import Customer
+            from inventory.models import Product, Supplier
+            from sales.models import Sale, Order
+            from django.db.models import Sum, Count, Avg
+            from datetime import datetime, timedelta
+            
+            # Get user's tenant for data filtering
+            tenant = user.tenant
+            if not tenant:
+                return "No business data available - user not associated with a tenant."
+            
+            context_parts = []
+            
+            # Customer data
+            try:
+                customers = Customer.objects.filter(tenant=tenant)
+                customer_count = customers.count()
+                if customer_count > 0:
+                    top_customers = customers.order_by('-id')[:5]  # Get recent customers as "top"
+                    customer_names = [c.name for c in top_customers if hasattr(c, 'name')]
+                    context_parts.append(f"CUSTOMERS: Total {customer_count} customers. Recent customers: {', '.join(customer_names[:3])}")
+                else:
+                    context_parts.append("CUSTOMERS: No customers found.")
+            except Exception as e:
+                context_parts.append(f"CUSTOMERS: Error fetching customer data: {str(e)}")
+            
+            # Product data
+            try:
+                products = Product.objects.filter(tenant=tenant)
+                product_count = products.count()
+                if product_count > 0:
+                    product_names = [p.name for p in products[:5] if hasattr(p, 'name')]
+                    context_parts.append(f"PRODUCTS: Total {product_count} products. Products: {', '.join(product_names)}")
+                else:
+                    context_parts.append("PRODUCTS: No products found.")
+            except Exception as e:
+                context_parts.append(f"PRODUCTS: Error fetching product data: {str(e)}")
+            
+            # Supplier data
+            try:
+                suppliers = Supplier.objects.filter(tenant=tenant)
+                supplier_count = suppliers.count()
+                if supplier_count > 0:
+                    supplier_names = [s.name for s in suppliers[:3] if hasattr(s, 'name')]
+                    context_parts.append(f"SUPPLIERS: Total {supplier_count} suppliers. Suppliers: {', '.join(supplier_names)}")
+                else:
+                    context_parts.append("SUPPLIERS: No suppliers found.")
+            except Exception as e:
+                context_parts.append(f"SUPPLIERS: Error fetching supplier data: {str(e)}")
+            
+            # Sales data (if available)
+            try:
+                # Try to get recent sales data
+                thirty_days_ago = datetime.now() - timedelta(days=30)
+                recent_sales = Sale.objects.filter(tenant=tenant, created_at__gte=thirty_days_ago)
+                sales_count = recent_sales.count()
+                if sales_count > 0:
+                    total_revenue = recent_sales.aggregate(total=Sum('total_amount'))['total'] or 0
+                    context_parts.append(f"SALES: {sales_count} sales in last 30 days, total revenue: ${total_revenue}")
+                else:
+                    context_parts.append("SALES: No recent sales data.")
+            except Exception as e:
+                context_parts.append(f"SALES: Error fetching sales data: {str(e)}")
+            
+            # Business info
+            context_parts.append(f"BUSINESS: {tenant.name}")
+            context_parts.append(f"USER: {user.subscription_plan.title()} plan subscriber")
+            
+            return "\n".join(context_parts)
+            
+        except Exception as e:
+            print(f"[Smart Insights] Error getting business context: {str(e)}")
+            return f"Error fetching business data: {str(e)}"
     
     @action(detail=False, methods=['get'])
     def history(self, request):
