@@ -117,9 +117,7 @@ console.log('[SmartInsight] CREDIT_PACKAGES:', CREDIT_PACKAGES);
 
 export default function SmartInsight({ onNavigate }) {
   try {
-    console.log('[SmartInsight] Component mounting, props:', { onNavigate });
-    console.log('[SmartInsight] onNavigate type:', typeof onNavigate);
-    console.log('[SmartInsight] Is onNavigate a function?', typeof onNavigate === 'function');
+    console.log('[SmartInsight] Component mounting');
     
     const router = useRouter();
     const chatEndRef = useRef(null);
@@ -135,12 +133,7 @@ export default function SmartInsight({ onNavigate }) {
   const [tenantId, setTenantId] = useState(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  console.log('[SmartInsight] Initial state:', { 
-    tenantId, 
-    isInitialized,
-    tenantIdType: typeof tenantId,
-    isInitializedType: typeof isInitialized 
-  });
+  console.log('[SmartInsight] Initial state setup complete');
 
   // Initialize tenant ID
   useEffect(() => {
@@ -245,32 +238,10 @@ export default function SmartInsight({ onNavigate }) {
   }
   
   console.log('[SmartInsight] Proceeding with main render');
-  console.log('[SmartInsight] CREDIT_PACKAGES check:', CREDIT_PACKAGES);
-  console.log('[SmartInsight] INSIGHT_CATEGORIES check:', INSIGHT_CATEGORIES);
-  console.log('[SmartInsight] State values check:', {
-    credits: credits,
-    creditsType: typeof credits,
-    messages: messages,
-    messagesType: typeof messages,
-    messagesLength: messages?.length,
-    inputValue: inputValue,
-    inputValueType: typeof inputValue,
-    isLoading: isLoading,
-    isLoadingType: typeof isLoading,
-    showBuyCredits: showBuyCredits,
-    showBuyCreditsType: typeof showBuyCredits,
-    selectedPackage: selectedPackage,
-    selectedPackageType: typeof selectedPackage
-  });
-
-  // Check if any state value is causing the issue
-  console.log('[SmartInsight] About to render main div');
 
   return (
     <div className="max-w-7xl mx-auto p-6">
-      {console.log('[SmartInsight] Main div rendered successfully')}
       {/* Header */}
-      {console.log('[SmartInsight] About to render Header section')}
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
@@ -285,10 +256,7 @@ export default function SmartInsight({ onNavigate }) {
           <div className="flex items-center space-x-4">
             <div className="text-right">
               <p className="text-sm text-gray-500">Available Credits</p>
-              <p className="text-2xl font-bold text-purple-600">
-                {console.log('[SmartInsight] Rendering credits value:', credits, 'type:', typeof credits)}
-                {credits}
-              </p>
+              <p className="text-2xl font-bold text-purple-600">{credits}</p>
             </div>
             <button
               onClick={() => setShowBuyCredits(true)}
@@ -302,7 +270,6 @@ export default function SmartInsight({ onNavigate }) {
       </div>
 
       {/* Main Content */}
-      {console.log('[SmartInsight] Header section rendered, about to render Main Content grid')}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Chat Interface */}
         <div className="lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200">
@@ -317,7 +284,7 @@ export default function SmartInsight({ onNavigate }) {
               </div>
             ) : (
               messages.map((message) => {
-                console.log('[SmartInsight] Mapping message:', message, 'id:', message.id, 'type:', message.type);
+                console.log('[SmartInsight] Mapping message:', message, 'id:', message.id, 'type:', message.type, 'timestamp:', message.timestamp, 'timestamp type:', typeof message.timestamp);
                 return (
                 <div
                   key={message.id}
@@ -332,7 +299,9 @@ export default function SmartInsight({ onNavigate }) {
                   >
                     <p className="text-sm">{message.content}</p>
                     <p className="text-xs mt-1 opacity-75">
-                      {message.timestamp.toLocaleTimeString()}
+                      {message.timestamp && typeof message.timestamp.toLocaleTimeString === 'function' 
+                        ? message.timestamp.toLocaleTimeString() 
+                        : 'Just now'}
                     </p>
                   </div>
                 </div>
@@ -357,7 +326,7 @@ export default function SmartInsight({ onNavigate }) {
                 type="text"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                 placeholder="Ask about your business..."
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                 disabled={isLoading}
@@ -378,12 +347,11 @@ export default function SmartInsight({ onNavigate }) {
         </div>
 
         {/* Query Templates */}
-        {console.log('[SmartInsight] Chat interface rendered, about to render Query Templates')}
         <div className="space-y-4">
           <h3 className="text-lg font-semibold text-gray-900">Popular Queries</h3>
           
           {console.log('[SmartInsight] About to map INSIGHT_CATEGORIES, length:', INSIGHT_CATEGORIES?.length)}
-          {INSIGHT_CATEGORIES.map((category) => {
+          {INSIGHT_CATEGORIES && INSIGHT_CATEGORIES.map((category) => {
             console.log('[SmartInsight] Mapping category:', category?.id, 'icon:', category?.icon);
             const IconComponent = category.icon;
             const colorClasses = {
@@ -394,6 +362,12 @@ export default function SmartInsight({ onNavigate }) {
             };
             
             console.log('[SmartInsight] Category color classes:', colorClasses, 'selected color:', colorClasses[category.color]);
+            
+            if (!IconComponent) {
+              console.error('[SmartInsight] IconComponent is undefined for category:', category.id);
+              return null;
+            }
+            
             return (
               <div key={category.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
                 <div className={`flex items-center mb-3 ${colorClasses[category.color]}`}>
@@ -402,7 +376,7 @@ export default function SmartInsight({ onNavigate }) {
                   <h4 className="font-medium">{category.title}</h4>
                 </div>
                 <div className="space-y-2">
-                  {category.queries.map((query, index) => (
+                  {category.queries && category.queries.map((query, index) => (
                     <button
                       key={index}
                       onClick={() => handleTemplateQuery(query)}
@@ -419,7 +393,6 @@ export default function SmartInsight({ onNavigate }) {
       </div>
 
       {/* Buy Credits Modal */}
-      {console.log('[SmartInsight] Main content rendered, about to render Buy Credits Modal, showBuyCredits:', showBuyCredits)}
       <Transition show={showBuyCredits} as={Fragment}>
         <Dialog onClose={() => setShowBuyCredits(false)} className="relative z-50">
           <Transition.Child
@@ -464,7 +437,7 @@ export default function SmartInsight({ onNavigate }) {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {console.log('[SmartInsight] About to map CREDIT_PACKAGES in modal, length:', CREDIT_PACKAGES?.length)}
-                    {CREDIT_PACKAGES.map((pkg) => {
+                    {CREDIT_PACKAGES && CREDIT_PACKAGES.map((pkg) => {
                       console.log('[SmartInsight] Mapping package:', pkg?.id, 'name:', pkg?.name);
                       return (
                       <div
