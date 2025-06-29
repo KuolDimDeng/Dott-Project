@@ -245,10 +245,32 @@ export default function SmartInsight({ onNavigate }) {
   }
   
   console.log('[SmartInsight] Proceeding with main render');
+  console.log('[SmartInsight] CREDIT_PACKAGES check:', CREDIT_PACKAGES);
+  console.log('[SmartInsight] INSIGHT_CATEGORIES check:', INSIGHT_CATEGORIES);
+  console.log('[SmartInsight] State values check:', {
+    credits: credits,
+    creditsType: typeof credits,
+    messages: messages,
+    messagesType: typeof messages,
+    messagesLength: messages?.length,
+    inputValue: inputValue,
+    inputValueType: typeof inputValue,
+    isLoading: isLoading,
+    isLoadingType: typeof isLoading,
+    showBuyCredits: showBuyCredits,
+    showBuyCreditsType: typeof showBuyCredits,
+    selectedPackage: selectedPackage,
+    selectedPackageType: typeof selectedPackage
+  });
+
+  // Check if any state value is causing the issue
+  console.log('[SmartInsight] About to render main div');
 
   return (
     <div className="max-w-7xl mx-auto p-6">
+      {console.log('[SmartInsight] Main div rendered successfully')}
       {/* Header */}
+      {console.log('[SmartInsight] About to render Header section')}
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
@@ -263,7 +285,10 @@ export default function SmartInsight({ onNavigate }) {
           <div className="flex items-center space-x-4">
             <div className="text-right">
               <p className="text-sm text-gray-500">Available Credits</p>
-              <p className="text-2xl font-bold text-purple-600">{credits}</p>
+              <p className="text-2xl font-bold text-purple-600">
+                {console.log('[SmartInsight] Rendering credits value:', credits, 'type:', typeof credits)}
+                {credits}
+              </p>
             </div>
             <button
               onClick={() => setShowBuyCredits(true)}
@@ -277,11 +302,13 @@ export default function SmartInsight({ onNavigate }) {
       </div>
 
       {/* Main Content */}
+      {console.log('[SmartInsight] Header section rendered, about to render Main Content grid')}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Chat Interface */}
         <div className="lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200">
           {/* Messages */}
           <div className="h-96 overflow-y-auto p-4 space-y-4">
+            {console.log('[SmartInsight] About to check messages.length:', messages.length)}
             {messages.length === 0 ? (
               <div className="text-center text-gray-500 mt-12">
                 <SparklesIcon className="h-12 w-12 mx-auto mb-4 text-gray-300" />
@@ -289,7 +316,9 @@ export default function SmartInsight({ onNavigate }) {
                 <p className="text-sm mt-2">Ask me anything about your business data</p>
               </div>
             ) : (
-              messages.map((message) => (
+              messages.map((message) => {
+                console.log('[SmartInsight] Mapping message:', message, 'id:', message.id, 'type:', message.type);
+                return (
                 <div
                   key={message.id}
                   className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -307,7 +336,8 @@ export default function SmartInsight({ onNavigate }) {
                     </p>
                   </div>
                 </div>
-              ))
+              );
+              })
             )}
             {isLoading && (
               <div className="flex justify-start">
@@ -348,10 +378,13 @@ export default function SmartInsight({ onNavigate }) {
         </div>
 
         {/* Query Templates */}
+        {console.log('[SmartInsight] Chat interface rendered, about to render Query Templates')}
         <div className="space-y-4">
           <h3 className="text-lg font-semibold text-gray-900">Popular Queries</h3>
           
+          {console.log('[SmartInsight] About to map INSIGHT_CATEGORIES, length:', INSIGHT_CATEGORIES?.length)}
           {INSIGHT_CATEGORIES.map((category) => {
+            console.log('[SmartInsight] Mapping category:', category?.id, 'icon:', category?.icon);
             const IconComponent = category.icon;
             const colorClasses = {
               blue: 'text-blue-600',
@@ -360,9 +393,11 @@ export default function SmartInsight({ onNavigate }) {
               yellow: 'text-yellow-600'
             };
             
+            console.log('[SmartInsight] Category color classes:', colorClasses, 'selected color:', colorClasses[category.color]);
             return (
               <div key={category.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
                 <div className={`flex items-center mb-3 ${colorClasses[category.color]}`}>
+                  {console.log('[SmartInsight] Rendering IconComponent:', IconComponent, 'for category:', category.id)}
                   <IconComponent className="h-5 w-5 mr-2" />
                   <h4 className="font-medium">{category.title}</h4>
                 </div>
@@ -384,6 +419,7 @@ export default function SmartInsight({ onNavigate }) {
       </div>
 
       {/* Buy Credits Modal */}
+      {console.log('[SmartInsight] Main content rendered, about to render Buy Credits Modal, showBuyCredits:', showBuyCredits)}
       <Transition show={showBuyCredits} as={Fragment}>
         <Dialog onClose={() => setShowBuyCredits(false)} className="relative z-50">
           <Transition.Child
@@ -427,7 +463,10 @@ export default function SmartInsight({ onNavigate }) {
                   </p>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {CREDIT_PACKAGES.map((pkg) => (
+                    {console.log('[SmartInsight] About to map CREDIT_PACKAGES in modal, length:', CREDIT_PACKAGES?.length)}
+                    {CREDIT_PACKAGES.map((pkg) => {
+                      console.log('[SmartInsight] Mapping package:', pkg?.id, 'name:', pkg?.name);
+                      return (
                       <div
                         key={pkg.id}
                         className={`relative border rounded-lg p-4 cursor-pointer transition-all ${
@@ -456,7 +495,8 @@ export default function SmartInsight({ onNavigate }) {
                           </p>
                         )}
                       </div>
-                    ))}
+                    );
+                    })}
                   </div>
 
                   <div className="mt-6 flex justify-end space-x-3">

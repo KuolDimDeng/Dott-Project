@@ -86,7 +86,9 @@ const SalesDashboard = () => {
 
       // Process products
       if (productsRes.status === 'fulfilled') {
-        const products = productsRes.value || [];
+        // Handle both array and paginated responses
+        const productsData = productsRes.value || [];
+        const products = Array.isArray(productsData) ? productsData : (productsData.results || []);
         const activeProducts = products.filter(p => p.is_active !== false);
         const lowStockProducts = products.filter(p => p.stock_quantity < (p.reorder_level || 10));
         const totalValue = products.reduce((sum, p) => sum + (p.price * p.stock_quantity || 0), 0);
@@ -122,7 +124,9 @@ const SalesDashboard = () => {
 
       // Process orders
       if (ordersRes.status === 'fulfilled') {
-        const orders = ordersRes.value || [];
+        // Handle both array and paginated responses
+        const ordersData = ordersRes.value || [];
+        const orders = Array.isArray(ordersData) ? ordersData : (ordersData.results || []);
         const pendingOrders = orders.filter(o => o.status === 'pending');
         const completedOrders = orders.filter(o => o.status === 'completed');
         const totalValue = orders.reduce((sum, o) => sum + (parseFloat(o.total_amount) || 0), 0);
@@ -227,7 +231,9 @@ const SalesDashboard = () => {
         // Calculate total revenue from paid invoices
         let totalRevenue = 0;
         if (invoicesRes.status === 'fulfilled') {
-          const paidInvoices = (invoicesRes.value || []).filter(i => i.is_paid || i.status === 'paid');
+          const invoicesData = invoicesRes.value || [];
+          const invoicesArray = Array.isArray(invoicesData) ? invoicesData : (invoicesData.results || []);
+          const paidInvoices = invoicesArray.filter(i => i.is_paid || i.status === 'paid');
           totalRevenue = paidInvoices.reduce((sum, i) => sum + (parseFloat(i.total_amount || i.totalAmount) || 0), 0);
         }
         

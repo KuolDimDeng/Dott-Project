@@ -1,24 +1,36 @@
 import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
-import { fetchWithAuth } from '@/utils/api';
+import { cookies } from 'next/headers';
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.dottapps.com';
 
 // GET /api/inventory/stock-adjustments
 export async function GET(request) {
   try {
     logger.info('[API] GET /api/inventory/stock-adjustments');
     
+    const cookieStore = await cookies();
+    const sidCookie = cookieStore.get('sid');
+    
+    if (!sidCookie?.value) {
+      return NextResponse.json(
+        { error: 'No session found' },
+        { status: 401 }
+      );
+    }
+    
     // Extract query parameters
     const { searchParams } = new URL(request.url);
     const queryString = searchParams.toString();
     
     // Forward request to Django backend
-    const url = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/inventory/stock-adjustments/${queryString ? `?${queryString}` : ''}`;
-    const response = await fetchWithAuth(url, {
+    const url = `${BACKEND_URL}/api/inventory/stock-adjustments/${queryString ? `?${queryString}` : ''}`;
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Session ${sidCookie.value}`,
       },
-      cookies: request.cookies,
     });
 
     const data = await response.json();
@@ -45,16 +57,26 @@ export async function POST(request) {
     const body = await request.json();
     logger.info('[API] POST /api/inventory/stock-adjustments', { items: body.items?.length });
     
+    const cookieStore = await cookies();
+    const sidCookie = cookieStore.get('sid');
+    
+    if (!sidCookie?.value) {
+      return NextResponse.json(
+        { error: 'No session found' },
+        { status: 401 }
+      );
+    }
+    
     // Forward request to Django backend
-    const response = await fetchWithAuth(
-      `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/inventory/stock-adjustments/`,
+    const response = await fetch(
+      `${BACKEND_URL}/api/inventory/stock-adjustments/`,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Session ${sidCookie.value}`,
         },
         body: JSON.stringify(body),
-        cookies: request.cookies,
       }
     );
 

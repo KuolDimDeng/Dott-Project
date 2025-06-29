@@ -140,7 +140,9 @@ const InventoryDashboard = () => {
 
       // Process products/inventory
       if (productsRes.status === 'fulfilled') {
-        const products = productsRes.value || [];
+        // Handle both array and paginated responses
+        const productsData = productsRes.value || [];
+        const products = Array.isArray(productsData) ? productsData : (productsData.results || []);
         const lowStockItems = products.filter(p => p.stock_quantity > 0 && p.stock_quantity < (p.reorder_level || 10));
         const outOfStockItems = products.filter(p => p.stock_quantity === 0);
         const totalValue = products.reduce((sum, p) => sum + ((p.price || 0) * (p.stock_quantity || 0)), 0);
@@ -170,7 +172,9 @@ const InventoryDashboard = () => {
 
       // Process locations
       if (locationsRes.status === 'fulfilled') {
-        const locations = locationsRes.value || [];
+        // Handle both array and paginated responses
+        const locationsData = locationsRes.value || [];
+        const locations = Array.isArray(locationsData) ? locationsData : (locationsData.results || []);
         const activeLocations = locations.filter(l => l.is_active !== false);
         
         setMetrics(prev => ({
@@ -186,7 +190,9 @@ const InventoryDashboard = () => {
 
       // Process suppliers
       if (suppliersRes.status === 'fulfilled') {
-        const suppliers = suppliersRes.value || [];
+        // Handle both array and paginated responses
+        const suppliersData = suppliersRes.value || [];
+        const suppliers = Array.isArray(suppliersData) ? suppliersData : (suppliersData.results || []);
         const activeSuppliers = suppliers.filter(s => s.is_active !== false);
         const thisMonth = new Date();
         const newSuppliers = suppliers.filter(s => {
