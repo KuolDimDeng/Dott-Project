@@ -11,30 +11,31 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         # Define packages with 30% markup built in
+        # With token-based pricing, queries typically use 5-20 credits each
         packages = [
             {
                 'name': 'Starter Pack',
-                'credits': 50,
-                'price': 6.50,  # Base: $5.00 + 30% = $6.50
-                'description': 'Perfect for trying out Smart Insights'
+                'credits': 100,
+                'price': 13.00,  # Base: $10.00 + 30% = $13.00
+                'description': 'Perfect for trying out Smart Insights (~10 queries)'
             },
             {
                 'name': 'Growth Pack',
-                'credits': 200,
-                'price': 23.40,  # Base: $18.00 + 30% = $23.40
-                'description': 'Great for regular business insights'
+                'credits': 500,
+                'price': 65.00,  # Base: $50.00 + 30% = $65.00
+                'description': 'Great for regular business insights (~50 queries)'
             },
             {
                 'name': 'Professional Pack',
-                'credits': 500,
-                'price': 65.00,  # Base: $50.00 + 30% = $65.00
-                'description': 'Best value for power users'
+                'credits': 1000,
+                'price': 130.00,  # Base: $100.00 + 30% = $130.00
+                'description': 'Best value for power users (~100 queries)'
             },
             {
                 'name': 'Enterprise Pack',
-                'credits': 1000,
-                'price': 130.00,  # Base: $100.00 + 30% = $130.00
-                'description': 'Maximum credits for enterprise needs'
+                'credits': 2500,
+                'price': 325.00,  # Base: $250.00 + 30% = $325.00
+                'description': 'Maximum credits for enterprise needs (~250 queries)'
             }
         ]
 

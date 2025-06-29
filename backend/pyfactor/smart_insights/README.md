@@ -32,12 +32,14 @@ These are one-time credits that don't renew. Once consumed, users must purchase 
 ## Credit Packages & Pricing
 All packages include a 30% markup on the base cost ($0.10/credit):
 
-| Package | Credits | Price | Per Credit | Your Cost | Profit |
-|---------|---------|-------|------------|-----------|---------|
-| Starter Pack | 50 | $6.50 | $0.13 | $5.00 | $1.50 |
-| Growth Pack | 200 | $23.40 | $0.117 | $18.00 | $5.40 |
-| Professional Pack | 500 | $65.00 | $0.13 | $50.00 | $15.00 |
-| Enterprise Pack | 1000 | $130.00 | $0.13 | $100.00 | $30.00 |
+| Package | Credits | Price | Per Credit | Est. Queries | Your Cost | Profit |
+|---------|---------|-------|------------|--------------|-----------|---------|
+| Starter Pack | 100 | $13.00 | $0.13 | ~10 queries | $10.00 | $3.00 |
+| Growth Pack | 500 | $65.00 | $0.13 | ~50 queries | $50.00 | $15.00 |
+| Professional Pack | 1000 | $130.00 | $0.13 | ~100 queries | $100.00 | $30.00 |
+| Enterprise Pack | 2500 | $325.00 | $0.13 | ~250 queries | $250.00 | $75.00 |
+
+*Note: Actual queries per package depends on query complexity (typically 5-20 credits per query)*
 
 ## Transaction Fees
 - **Stripe fees** (passed to customer): 2.9% + $0.30
@@ -45,7 +47,7 @@ All packages include a 30% markup on the base cost ($0.10/credit):
 - **Total customer pays**: 2.9% + $0.60 in fees
 
 ## Features
-1. **Token-Based Credit System**: 1 credit = 1,000 tokens (minimum 1 credit per query)
+1. **Token-Based Credit System**: 1 credit = $0.001 of Claude API usage (minimum 1 credit per query)
 2. **Rate Limiting**: 10 requests per minute (Redis-based)
 3. **Monthly Spending Cap**: $500 per user
 4. **Audit Trail**: All queries and transactions logged
