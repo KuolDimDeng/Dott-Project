@@ -367,9 +367,9 @@ export default function SmartInsight({ onNavigate }) {
       {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Chat Interface */}
-        <div className="lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200">
-          {/* Messages */}
-          <div className="h-96 overflow-y-auto p-4 space-y-4">
+        <div className="lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col h-[600px]">
+          {/* Messages - 70% of space */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {messages.length === 0 ? (
               <div className="text-center text-gray-500 mt-12">
                 <SparklesIcon className="h-12 w-12 mx-auto mb-4 text-gray-300" />
@@ -411,8 +411,8 @@ export default function SmartInsight({ onNavigate }) {
             <div ref={chatEndRef} />
           </div>
 
-          {/* Input Area */}
-          <div className="border-t border-gray-200 p-4">
+          {/* Input Area - 30% of space, fixed at bottom */}
+          <div className="border-t border-gray-200 p-4 flex-shrink-0">
             <div className="flex space-x-4">
               <input
                 ref={inputRef}
