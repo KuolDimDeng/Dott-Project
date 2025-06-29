@@ -228,7 +228,9 @@ export default function SmartInsight({ onNavigate }) {
         type: 'ai',
         content: data.response,
         timestamp: new Date(),
-        usage: data.usage
+        usage: data.usage,
+        tokensUsed: data.total_tokens,
+        creditsUsed: data.credits_used
       };
       
       setMessages(prev => [...prev, aiResponse]);
@@ -238,7 +240,7 @@ export default function SmartInsight({ onNavigate }) {
         setCredits(data.remaining_credits);
       }
       
-      logger.info('[SmartInsights] AI response received, credits used:', data.credits_used);
+      logger.info('[SmartInsights] AI response received, credits used:', data.credits_used, 'tokens:', data.total_tokens);
       
     } catch (error) {
       console.error('Error:', error);
