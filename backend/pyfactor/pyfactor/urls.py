@@ -83,6 +83,9 @@ urlpatterns = [
     # Audit API routes
     path('api/audit/', include('audit.urls')),
     
+    # Smart Insights API routes
+    path('api/', include('smart_insights.urls')),
+    
     # Main app routes
     path('', include('users.urls')),
     

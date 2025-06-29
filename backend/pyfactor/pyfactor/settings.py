@@ -77,6 +77,7 @@ STRIPE_PRICE_PROFESSIONAL_YEARLY = os.getenv('STRIPE_PRICE_PROFESSIONAL_YEARLY',
 STRIPE_PRICE_ENTERPRISE_MONTHLY = os.getenv('STRIPE_PRICE_ENTERPRISE_MONTHLY', 'placeholder_enterprise_monthly')
 STRIPE_PRICE_ENTERPRISE_YEARLY = os.getenv('STRIPE_PRICE_ENTERPRISE_YEARLY', 'placeholder_enterprise_yearly')
 STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', 'placeholder_webhook_secret')
+STRIPE_MODE = os.getenv('STRIPE_MODE', 'test')  # 'test' or 'live'
 
 # Print warning for development mode
 if STRIPE_PUBLISHABLE_KEY.startswith('placeholder_') or STRIPE_SECRET_KEY.startswith('placeholder_'):
@@ -826,6 +827,7 @@ SHARED_APPS = (
     'onboarding.apps.OnboardingConfig',
     'session_manager.apps.SessionManagerConfig',  # New session management app with signals
     'audit.apps.AuditConfig',  # Audit trail system
+    'smart_insights',  # Smart Insights with Claude API integration
 )
 
 TENANT_APPS = (

@@ -1,0 +1,1 @@
+# Smart Insights app for AI-powered business intelligence

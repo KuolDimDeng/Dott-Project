@@ -29,7 +29,13 @@ export async function GET(request) {
     if (!response.ok) {
       // If backend doesn't have this endpoint yet, return default credits
       if (response.status === 404) {
-        return NextResponse.json({ credits: 10 }); // Default free credits
+        return NextResponse.json({ 
+          balance: 10,  // Default free credits
+          total_purchased: 0,
+          total_used: 0,
+          monthly_spend_limit: 500,
+          monthly_usage: null
+        });
       }
       throw new Error(`Backend error: ${response.status}`);
     }

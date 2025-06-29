@@ -121,7 +121,7 @@ export default function SmartInsight({ onNavigate }) {
   const inputRef = useRef(null);
   
   // State management
-  const [credits, setCredits] = useState(10); // Start with 10 free credits
+  const [credits, setCredits] = useState(0); // Will be fetched from backend
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -129,33 +129,53 @@ export default function SmartInsight({ onNavigate }) {
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [tenantId, setTenantId] = useState(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [creditPackages, setCreditPackages] = useState([]);
+  const [monthlyUsage, setMonthlyUsage] = useState(null);
 
   console.log('[SmartInsight] Initial state setup complete');
 
-  // Initialize tenant ID
+  // Initialize tenant ID and fetch user credits
   useEffect(() => {
-    console.log('[SmartInsight] useEffect running for tenant initialization');
-    const fetchTenantId = async () => {
+    console.log('[SmartInsight] useEffect running for initialization');
+    const initialize = async () => {
       try {
+        // Get tenant ID
         console.log('[SmartInsight] Calling getSecureTenantId...');
         const id = await getSecureTenantId();
         console.log('[SmartInsight] getSecureTenantId returned:', id, 'type:', typeof id);
         if (id) {
           setTenantId(id);
           console.log('[SmartInsight] Tenant ID set successfully');
+          
+          // Fetch user credits
+          const creditsResponse = await fetch('/api/smart-insights/credits/');
+          if (creditsResponse.ok) {
+            const creditsData = await creditsResponse.json();
+            setCredits(creditsData.balance);
+            setMonthlyUsage(creditsData.monthly_usage);
+            console.log('[SmartInsight] Credits fetched:', creditsData.balance);
+          }
+          
+          // Fetch available packages
+          const packagesResponse = await fetch('/api/smart-insights/packages/');
+          if (packagesResponse.ok) {
+            const packagesData = await packagesResponse.json();
+            setCreditPackages(packagesData.results || packagesData);
+            console.log('[SmartInsight] Credit packages fetched');
+          }
         } else {
           console.error('[SmartInsight] No tenant ID returned');
           toast.error('Failed to initialize. Please refresh the page.');
         }
       } catch (error) {
-        console.error('[SmartInsight] Error fetching tenant ID:', error);
+        console.error('[SmartInsight] Error during initialization:', error);
         toast.error('Failed to initialize. Please try again.');
       } finally {
         console.log('[SmartInsight] Setting isInitialized to true');
         setIsInitialized(true);
       }
     };
-    fetchTenantId();
+    initialize();
   }, []);
 
   // Auto-scroll to bottom of chat
@@ -185,24 +205,20 @@ export default function SmartInsight({ onNavigate }) {
     setIsLoading(true);
 
     try {
-      // Call Smart Insights Claude API
-      const response = await fetch('/api/smart-insights/claude', {
+      // Call backend Smart Insights query endpoint
+      const response = await fetch('/api/smart-insights/query/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          query: userMessage.content,
-          context: {
-            tenantId: await getSecureTenantId(),
-            timestamp: new Date().toISOString()
-          }
+          query: userMessage.content
         })
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to get AI response');
+        throw new Error(errorData.error || errorData.detail || 'Failed to get AI response');
       }
 
       const data = await response.json();
@@ -216,10 +232,13 @@ export default function SmartInsight({ onNavigate }) {
       };
       
       setMessages(prev => [...prev, aiResponse]);
-      setCredits(prev => prev - 1);
       
-      // Store credit usage (you might want to sync this with backend)
-      logger.info('[SmartInsights] AI response received, tokens used:', data.usage);
+      // Update credits from backend response
+      if (data.remaining_credits !== undefined) {
+        setCredits(data.remaining_credits);
+      }
+      
+      logger.info('[SmartInsights] AI response received, credits used:', data.credits_used);
       
     } catch (error) {
       console.error('Error:', error);
@@ -246,11 +265,39 @@ export default function SmartInsight({ onNavigate }) {
     inputRef.current?.focus();
   };
 
-  // Handle package selection
-  const handlePackageSelect = (pkg) => {
+  // Handle package selection and purchase
+  const handlePackageSelect = async (pkg) => {
     setSelectedPackage(pkg);
-    // Implement payment flow here
-    toast.success(`Selected ${pkg.name} - ${pkg.credits} credits for $${pkg.price}`);
+    
+    try {
+      // Create checkout session
+      const response = await fetch('/api/smart-insights/purchase/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          package_id: pkg.id
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create checkout session');
+      }
+      
+      const data = await response.json();
+      
+      // Redirect to Stripe checkout
+      if (data.checkout_url) {
+        window.location.href = data.checkout_url;
+      } else {
+        throw new Error('No checkout URL received');
+      }
+    } catch (error) {
+      console.error('Purchase error:', error);
+      toast.error(error.message || 'Failed to process purchase. Please try again.');
+    }
   };
 
   // Show loading while initializing or if tenant ID is not available
@@ -300,6 +347,11 @@ export default function SmartInsight({ onNavigate }) {
             <div className="text-right">
               <p className="text-sm text-gray-500">Available Credits</p>
               <p className="text-2xl font-bold text-blue-600">{credits || 0}</p>
+              {monthlyUsage && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Used this month: {monthlyUsage.total_credits_used || 0}
+                </p>
+              )}
             </div>
             <button
               onClick={() => setShowBuyCredits(true)}
@@ -472,7 +524,7 @@ export default function SmartInsight({ onNavigate }) {
                   </p>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {CREDIT_PACKAGES && CREDIT_PACKAGES.map((pkg) => (
+                    {creditPackages && creditPackages.length > 0 ? creditPackages.map((pkg) => (
                       <div
                         key={pkg.id}
                         className={`relative border rounded-lg p-4 cursor-pointer transition-all ${
@@ -482,9 +534,9 @@ export default function SmartInsight({ onNavigate }) {
                         }`}
                         onClick={() => handlePackageSelect(pkg)}
                       >
-                        {pkg.popular === true && (
+                        {pkg.credits >= 500 && pkg.credits < 1000 && (
                           <span className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
-                            Popular
+                            Best Value
                           </span>
                         )}
                         
@@ -495,13 +547,16 @@ export default function SmartInsight({ onNavigate }) {
                         <p className="text-gray-600 text-sm mt-1">
                           {pkg.credits} credits
                         </p>
-                        {pkg.savings && pkg.savings !== undefined && (
-                          <p className="text-green-600 text-sm mt-1">
-                            Save {pkg.savings}
-                          </p>
-                        )}
+                        <p className="text-gray-500 text-xs mt-1">
+                          ${(pkg.price / pkg.credits).toFixed(3)} per credit
+                        </p>
                       </div>
-                    ))}
+                    )) : (
+                      <div className="col-span-2 text-center text-gray-500 py-8">
+                        <CreditCardIcon className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+                        <p>Loading credit packages...</p>
+                      </div>
+                    )}
                   </div>
 
                   <div className="mt-6 flex justify-end space-x-3">
