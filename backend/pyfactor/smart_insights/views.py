@@ -381,20 +381,20 @@ class SmartInsightsViewSet(viewsets.ViewSet):
         try:
             import anthropic
             print(f"[Smart Insights] Anthropic version: {anthropic.__version__}")
-            print(f"[Smart Insights] API key present: {bool(settings.CLAUDE_API_KEY)}")
-            print(f"[Smart Insights] API key length: {len(settings.CLAUDE_API_KEY) if settings.CLAUDE_API_KEY else 0}")
+            print(f"[Smart Insights] Smart Insights API key present: {bool(settings.CLAUDE_SMART_INSIGHTS_API_KEY)}")
+            print(f"[Smart Insights] Smart Insights API key length: {len(settings.CLAUDE_SMART_INSIGHTS_API_KEY) if settings.CLAUDE_SMART_INSIGHTS_API_KEY else 0}")
             
-            if not settings.CLAUDE_API_KEY:
-                raise ValueError("CLAUDE_API_KEY environment variable is not set")
+            if not settings.CLAUDE_SMART_INSIGHTS_API_KEY:
+                raise ValueError("CLAUDE_SMART_INSIGHTS_API_KEY environment variable is not set")
             
-            # Initialize Claude client
-            client = anthropic.Anthropic(api_key=settings.CLAUDE_API_KEY)
+            # Initialize Claude client for Smart Insights
+            client = anthropic.Anthropic(api_key=settings.CLAUDE_SMART_INSIGHTS_API_KEY)
             print("[Smart Insights] Client initialized successfully")
             
             # Call Claude API
             response = client.messages.create(
-                model=settings.CLAUDE_API_MODEL,
-                max_tokens=settings.CLAUDE_API_MAX_TOKENS,
+                model=settings.CLAUDE_SMART_INSIGHTS_MODEL,
+                max_tokens=settings.CLAUDE_SMART_INSIGHTS_MAX_TOKENS,
                 messages=[
                     {
                         "role": "user",
@@ -421,7 +421,7 @@ class SmartInsightsViewSet(viewsets.ViewSet):
                     user=request.user,
                     query=query_text,
                     response=ai_response,
-                    model_used=settings.CLAUDE_API_MODEL,
+                    model_used=settings.CLAUDE_SMART_INSIGHTS_MODEL,
                     input_tokens=input_tokens,
                     output_tokens=output_tokens,
                     credits_used=credits_used

@@ -483,6 +483,11 @@ CLAUDE_API_KEY = os.getenv('CLAUDE_API_KEY', '')
 CLAUDE_API_MODEL = os.getenv('CLAUDE_API_MODEL', 'claude-3-opus-20240229')
 CLAUDE_API_MAX_TOKENS = 1000
 
+# Smart Insights specific Claude API configuration
+CLAUDE_SMART_INSIGHTS_API_KEY = os.getenv('CLAUDE_SMART_INSIGHTS_API_KEY', '')
+CLAUDE_SMART_INSIGHTS_MODEL = os.getenv('CLAUDE_SMART_INSIGHTS_MODEL', 'claude-3-sonnet-20240229')
+CLAUDE_SMART_INSIGHTS_MAX_TOKENS = int(os.getenv('CLAUDE_SMART_INSIGHTS_MAX_TOKENS', '1000'))
+
 CELERY_QUEUES = {
     'default': {
         'exchange': 'default',
