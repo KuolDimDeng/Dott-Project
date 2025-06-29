@@ -4,11 +4,16 @@
 Smart Insights is an AI-powered business intelligence feature using Claude API with a credit-based payment system.
 
 ## Free Credits (One-Time Welcome Bonus)
-All users receive free credits based on their subscription plan when they first access Smart Insights:
+All users automatically receive free credits based on their subscription plan:
 
 - **Free Plan**: 5 credits
 - **Professional Plan**: 10 credits  
 - **Enterprise Plan**: 20 credits
+
+### Automatic Credit Allocation
+- **New Users**: Credits granted automatically upon account creation
+- **Existing Users**: Run `python manage.py grant_initial_credits`
+- **Plan Changes**: Users who upgrade before using any credits will receive the higher plan's allocation
 
 These are one-time credits that don't renew. Once consumed, users must purchase additional credits.
 

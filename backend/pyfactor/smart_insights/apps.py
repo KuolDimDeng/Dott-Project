@@ -8,4 +8,4 @@ class SmartInsightsConfig(AppConfig):
     
     def ready(self):
         # Import signal handlers when the app is ready
-        pass
+        import smart_insights.signals
