@@ -53,7 +53,7 @@ class Migration(migrations.Migration):
                 ('input_tokens', models.IntegerField(default=0)),
                 ('output_tokens', models.IntegerField(default=0)),
                 ('credits_used', models.IntegerField(default=1)),
-                ('response_time_ms', models.IntegerField(blank=True, null=True)),
+                ('processing_time_ms', models.IntegerField(blank=True, null=True)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='query_logs', to=settings.AUTH_USER_MODEL)),
             ],

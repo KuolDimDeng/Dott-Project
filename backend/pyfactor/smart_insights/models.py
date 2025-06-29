@@ -93,13 +93,13 @@ class CreditTransaction(models.Model):
 class QueryLog(models.Model):
     """Log of all AI queries for audit and analytics"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='ai_queries')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='query_logs')
     query = models.TextField()
     response = models.TextField()
     credits_used = models.IntegerField(default=1)
-    input_tokens = models.IntegerField(null=True, blank=True)
-    output_tokens = models.IntegerField(null=True, blank=True)
-    model_used = models.CharField(max_length=100, default='claude-3-sonnet')
+    input_tokens = models.IntegerField(default=0)
+    output_tokens = models.IntegerField(default=0)
+    model_used = models.CharField(max_length=100, default='claude-3-opus-20240229')
     processing_time_ms = models.IntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     
