@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { sessionManagerEnhanced } from '@/utils/sessionManager-v2-enhanced';
+import StandardSpinner from '@/components/ui/StandardSpinner';
 
 export function useSession() {
   const [session, setSession] = useState(null);
@@ -102,7 +103,7 @@ export function withAuth(Component) {
     if (loading) {
       return (
         <div className="min-h-screen flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <StandardSpinner size="large" />
         </div>
       );
     }

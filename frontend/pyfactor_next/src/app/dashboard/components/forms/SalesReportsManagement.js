@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { useToast } from '@/components/Toast/ToastProvider';
 import { logger } from '@/utils/logger';
-import { CenteredSpinner } from '@/components/ui/StandardSpinner';
+import StandardSpinner from '@/components/ui/StandardSpinner';
 import { ChartBarIcon } from '@heroicons/react/24/outline';
 
 const SalesReportsManagement = () => {
@@ -107,7 +107,10 @@ const SalesReportsManagement = () => {
   const renderReportData = () => {
     if (isLoading) {
       return (
-        <CenteredSpinner size="medium" text="Generating report..." />
+        <div className="flex flex-col items-center justify-center py-8">
+          <StandardSpinner size="medium" />
+          <p className="mt-4 text-gray-500">Generating report...</p>
+        </div>
       );
     }
 
@@ -342,7 +345,14 @@ const SalesReportsManagement = () => {
               disabled={isLoading}
               className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
             >
-              {isLoading ? 'Generating...' : 'Generate Report'}
+              {isLoading ? (
+                <span className="flex items-center">
+                  <StandardSpinner size="small" className="mr-2" />
+                  Generating...
+                </span>
+              ) : (
+                'Generate Report'
+              )}
             </button>
           </div>
         </div>
@@ -365,7 +375,7 @@ const SalesReportsManagement = () => {
               </button>
               <button
                 onClick={() => exportReport('CSV')}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
               >
                 Export CSV
               </button>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { logger } from '@/utils/logger';
+import StandardSpinner from '@/components/ui/StandardSpinner';
 
 export default function SessionLoading() {
   const searchParams = useSearchParams();
@@ -111,7 +112,7 @@ export default function SessionLoading() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+        <StandardSpinner size="large" />
         <h2 className="mt-4 text-lg font-medium text-gray-900">Setting up your session...</h2>
         <p className="mt-2 text-sm text-gray-500">{status}</p>
       </div>

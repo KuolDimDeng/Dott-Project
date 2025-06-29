@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { logger } from '@/utils/logger';
+import StandardSpinner from '@/components/ui/StandardSpinner';
 
 export function LoadingFallback({ children }) {
   const [isClient, setIsClient] = useState(false);
@@ -21,7 +22,7 @@ export function LoadingFallback({ children }) {
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
           <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
             <div className="flex justify-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+              <StandardSpinner size="large" />
             </div>
             <p className="mt-4 text-center text-sm text-gray-600">
               Loading...

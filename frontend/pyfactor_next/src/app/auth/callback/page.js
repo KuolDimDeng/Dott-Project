@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import StandardSpinner from '@/components/ui/StandardSpinner';
 
 export default function Auth0CallbackPage() {
   const router = useRouter();
@@ -315,7 +316,7 @@ export default function Auth0CallbackPage() {
       <div className="max-w-md w-full space-y-8 text-center">
         <div>
           <div className="flex justify-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+            <StandardSpinner size="large" />
           </div>
           <h2 className="mt-6 text-2xl font-semibold text-gray-900">
             {status}

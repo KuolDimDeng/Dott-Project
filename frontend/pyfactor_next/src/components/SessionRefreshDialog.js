@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useAuth } from '@/hooks/auth';
 import { useRefreshSession } from '@/utils/refreshUserSession';
 import { useToast } from '@/components/Toast/ToastProvider';
+import StandardSpinner from '@/components/ui/StandardSpinner';
 
 export function SessionRefreshDialog({ open, onClose, onComplete }) {
   const [password, setPassword] = useState('');
@@ -99,10 +100,10 @@ export function SessionRefreshDialog({ open, onClose, onComplete }) {
                 disabled={isLoading || !password}
               >
                 {isLoading ? (
-                  <div className="flex items-center gap-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
-                    <span>Signing In...</span>
-                  </div>
+                  <span className="flex items-center">
+                    <StandardSpinner size="small" className="mr-2" color="white" />
+                    Signing In...
+                  </span>
                 ) : (
                   'Sign In'
                 )}
@@ -115,10 +116,10 @@ export function SessionRefreshDialog({ open, onClose, onComplete }) {
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  <div className="flex items-center gap-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
-                    <span>Processing...</span>
-                  </div>
+                  <span className="flex items-center">
+                    <StandardSpinner size="small" className="mr-2" color="white" />
+                    Processing...
+                  </span>
                 ) : (
                   'Continue'
                 )}

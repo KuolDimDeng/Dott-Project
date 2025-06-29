@@ -10,7 +10,8 @@ const StandardSpinner = ({
   size = 'default',
   className = '',
   text = 'Loading...',
-  showText = true
+  showText = true,
+  color = 'default'
 }) => {
   // Size mappings
   const sizeClasses = {
@@ -21,12 +22,22 @@ const StandardSpinner = ({
   };
 
   const spinnerSize = sizeClasses[size] || sizeClasses.default;
+  
+  // Color mappings
+  const colorClasses = {
+    default: 'text-gray-200 dark:text-gray-600 fill-blue-600',
+    white: 'text-gray-400 fill-white',
+    blue: 'text-gray-200 dark:text-gray-600 fill-blue-600',
+    green: 'text-gray-200 dark:text-gray-600 fill-green-600'
+  };
+  
+  const spinnerColor = colorClasses[color] || colorClasses.default;
 
   return (
     <div role="status" className={className}>
       <svg 
         aria-hidden="true" 
-        className={`${spinnerSize} text-gray-200 animate-spin dark:text-gray-600 fill-blue-600`}
+        className={`${spinnerSize} animate-spin ${spinnerColor}`}
         viewBox="0 0 100 101" 
         fill="none" 
         xmlns="http://www.w3.org/2000/svg"

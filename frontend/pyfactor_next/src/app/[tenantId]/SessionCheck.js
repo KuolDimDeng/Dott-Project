@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { sessionManagerEnhanced } from '@/utils/sessionManager-v2-enhanced';
+import StandardSpinner from '@/components/ui/StandardSpinner';
 
 export default function SessionCheck({ children }) {
   const router = useRouter();
@@ -40,7 +41,7 @@ export default function SessionCheck({ children }) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
+          <StandardSpinner size="large" />
           <p className="text-gray-600">Verifying session...</p>
         </div>
       </div>

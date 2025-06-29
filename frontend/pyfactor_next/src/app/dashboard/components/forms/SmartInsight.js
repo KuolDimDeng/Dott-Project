@@ -25,6 +25,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 // Query categories for Smart Insight
+console.log('[SmartInsight] Defining INSIGHT_CATEGORIES...');
 const INSIGHT_CATEGORIES = [
   {
     id: 'revenue',
@@ -111,10 +112,18 @@ const CREDIT_PACKAGES = [
   }
 ];
 
+console.log('[SmartInsight] Constants defined successfully');
+console.log('[SmartInsight] CREDIT_PACKAGES:', CREDIT_PACKAGES);
+
 export default function SmartInsight({ onNavigate }) {
-  const router = useRouter();
-  const chatEndRef = useRef(null);
-  const inputRef = useRef(null);
+  try {
+    console.log('[SmartInsight] Component mounting, props:', { onNavigate });
+    console.log('[SmartInsight] onNavigate type:', typeof onNavigate);
+    console.log('[SmartInsight] Is onNavigate a function?', typeof onNavigate === 'function');
+    
+    const router = useRouter();
+    const chatEndRef = useRef(null);
+    const inputRef = useRef(null);
   
   // State management
   const [credits, setCredits] = useState(10); // Start with 10 free credits
@@ -126,13 +135,24 @@ export default function SmartInsight({ onNavigate }) {
   const [tenantId, setTenantId] = useState(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
+  console.log('[SmartInsight] Initial state:', { 
+    tenantId, 
+    isInitialized,
+    tenantIdType: typeof tenantId,
+    isInitializedType: typeof isInitialized 
+  });
+
   // Initialize tenant ID
   useEffect(() => {
+    console.log('[SmartInsight] useEffect running for tenant initialization');
     const fetchTenantId = async () => {
       try {
+        console.log('[SmartInsight] Calling getSecureTenantId...');
         const id = await getSecureTenantId();
+        console.log('[SmartInsight] getSecureTenantId returned:', id, 'type:', typeof id);
         if (id) {
           setTenantId(id);
+          console.log('[SmartInsight] Tenant ID set successfully');
         } else {
           console.error('[SmartInsight] No tenant ID returned');
           toast.error('Failed to initialize. Please refresh the page.');
@@ -141,6 +161,7 @@ export default function SmartInsight({ onNavigate }) {
         console.error('[SmartInsight] Error fetching tenant ID:', error);
         toast.error('Failed to initialize. Please try again.');
       } finally {
+        console.log('[SmartInsight] Setting isInitialized to true');
         setIsInitialized(true);
       }
     };
@@ -208,13 +229,22 @@ export default function SmartInsight({ onNavigate }) {
   };
 
   // Show loading while initializing or if tenant ID is not available
+  console.log('[SmartInsight] Render check:', { 
+    isInitialized, 
+    tenantId,
+    shouldShowLoading: !isInitialized || !tenantId 
+  });
+  
   if (!isInitialized || !tenantId) {
+    console.log('[SmartInsight] Showing loading spinner');
     return (
       <div className="flex justify-center items-center h-64">
         <CenteredSpinner size="large" text="Initializing Smart Insight..." />
       </div>
     );
   }
+  
+  console.log('[SmartInsight] Proceeding with main render');
 
   return (
     <div className="max-w-7xl mx-auto p-6">
@@ -457,4 +487,16 @@ export default function SmartInsight({ onNavigate }) {
       </Transition>
     </div>
   );
+  } catch (error) {
+    console.error('[SmartInsight] Component error:', error);
+    console.error('[SmartInsight] Error stack:', error.stack);
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-red-500">
+          <p>Error loading Smart Insight</p>
+          <p className="text-sm">{error.message}</p>
+        </div>
+      </div>
+    );
+  }
 }

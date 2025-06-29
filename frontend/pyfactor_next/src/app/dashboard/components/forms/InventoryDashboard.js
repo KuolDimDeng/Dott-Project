@@ -102,6 +102,17 @@ const InventoryDashboard = () => {
       
       logger.info('[InventoryDashboard] Fetching dashboard data...');
       
+      // Verify APIs are available
+      if (!productApi?.getAll) {
+        throw new Error('productApi not properly initialized');
+      }
+      if (!locationApi?.getAll) {
+        throw new Error('locationApi not properly initialized');
+      }
+      if (!supplierApi?.getAll) {
+        throw new Error('supplierApi not properly initialized');
+      }
+      
       // Fetch all data in parallel
       const [
         productsRes,
@@ -119,6 +130,13 @@ const InventoryDashboard = () => {
           }
         }).then(res => res.ok ? res.json() : [])
       ]);
+      
+      logger.info('[InventoryDashboard] API responses received:', {
+        products: productsRes.status,
+        locations: locationsRes.status,
+        suppliers: suppliersRes.status,
+        adjustments: adjustmentsRes.status
+      });
 
       // Process products/inventory
       if (productsRes.status === 'fulfilled') {
@@ -264,7 +282,33 @@ const InventoryDashboard = () => {
 
     } catch (error) {
       logger.error('[InventoryDashboard] Error fetching data:', error);
-      toast.error('Failed to load inventory dashboard');
+      
+      // More specific error messages
+      if (error.message?.includes('productApi')) {
+        toast.error('Failed to load product data');
+      } else if (error.message?.includes('locationApi')) {
+        toast.error('Failed to load location data');
+      } else if (error.message?.includes('supplierApi')) {
+        toast.error('Failed to load supplier data');
+      } else {
+        toast.error('Failed to load inventory dashboard');
+      }
+      
+      // Set default empty data to prevent rendering errors
+      setMetrics({
+        inventory: { totalItems: 0, totalValue: 0, lowStock: 0, outOfStock: 0 },
+        stockAdjustments: { total: 0, additions: 0, reductions: 0, thisMonth: 0 },
+        locations: { total: 0, active: 0, warehouses: 0, stores: 0 },
+        suppliers: { total: 0, active: 0, newThisMonth: 0, topSupplier: 'N/A' },
+        movements: { inbound: 0, outbound: 0, transfers: 0, damaged: 0 }
+      });
+      
+      setRecentItems({
+        adjustments: [],
+        lowStockItems: [],
+        recentReceipts: [],
+        pendingOrders: []
+      });
     } finally {
       setIsLoading(false);
     }

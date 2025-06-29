@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { usePermissions } from '@/hooks/usePermissions';
+import StandardSpinner from '@/components/ui/StandardSpinner';
 
 const PROTECTED_ROUTES = {
   // Sales Management
@@ -63,7 +64,7 @@ export default function ProtectedRoute({ children }) {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <StandardSpinner size="large" />
       </div>
     );
   }
