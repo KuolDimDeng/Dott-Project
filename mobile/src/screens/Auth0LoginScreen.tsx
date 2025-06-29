@@ -47,12 +47,10 @@ const Auth0LoginScreen = () => {
       extraParams: {
         audience: 'https://api.dottapps.com',
       },
-      // Use PKCE for better security
+      // Use PKCE with proper state handling
       usePKCE: true,
-      // Additional params to prevent state issues
-      additionalParameters: {
-        prompt: 'login',
-      },
+      // Clear additional parameters
+      additionalParameters: {},
     },
     discovery
   );
@@ -71,7 +69,11 @@ const Auth0LoginScreen = () => {
   useEffect(() => {
     if (response?.type === 'success') {
       const { code, state } = response.params;
-      console.log('Auth response:', { code: code?.substring(0, 10) + '...', state, type: response.type });
+      console.log('Auth response:', { 
+        code: code?.substring(0, 10) + '...', 
+        state: state?.substring(0, 10) + '...', 
+        type: response.type 
+      });
       handleAuthCode(code);
     } else if (response?.type === 'error') {
       console.error('Auth error:', response.error);
@@ -100,6 +102,13 @@ const Auth0LoginScreen = () => {
       if (request?.codeVerifier) {
         tokenBody.code_verifier = request.codeVerifier;
       }
+
+      console.log('Token exchange request:', {
+        grant_type: tokenBody.grant_type,
+        client_id: tokenBody.client_id,
+        redirect_uri: tokenBody.redirect_uri,
+        has_code_verifier: !!tokenBody.code_verifier
+      });
 
       const tokenResponse = await fetch(`https://${AUTH0_DOMAIN}/oauth/token`, {
         method: 'POST',
@@ -144,10 +153,13 @@ const Auth0LoginScreen = () => {
           index: 0,
           routes: [{ name: 'Dashboard' as never }],
         });
+      } else {
+        throw new Error('Failed to get user info');
       }
     } catch (error) {
       console.error('Token exchange error:', error);
       Alert.alert('Login Failed', 'Could not complete authentication');
+      setIsLoading(false);
     }
   };
 

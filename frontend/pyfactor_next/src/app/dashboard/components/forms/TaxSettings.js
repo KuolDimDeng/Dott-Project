@@ -70,7 +70,14 @@ export default function TaxSettings({ onNavigate }) {
       if (response.ok) {
         const data = await response.json();
         if (data.businessInfo) {
-          setFormData(data.businessInfo);
+          // Only update fields that aren't already populated from user data
+          setFormData(prev => ({
+            ...prev,
+            // Keep user data for core fields, only update additional fields
+            street: data.businessInfo.street || prev.street,
+            emailForDocuments: data.businessInfo.emailForDocuments || prev.emailForDocuments,
+            phone: data.businessInfo.phone || prev.phone
+          }));
         }
         if (data.taxRates) {
           setCustomRates(data.taxRates);
@@ -113,14 +120,29 @@ export default function TaxSettings({ onNavigate }) {
           if (user) {
             // Convert country code to full name if needed
             const countryValue = user.country || '';
-            const countryName = countryValue === 'US' ? 'United States' : 
-                               countryValue === 'CA' ? 'Canada' : 
-                               countryValue === 'GB' ? 'United Kingdom' : 
-                               countryValue === 'AU' ? 'Australia' : 
-                               countryValue;
+            console.log('[TaxSettings] Raw country value from user:', countryValue);
             
-            setFormData(prev => ({
-              ...prev,
+            const countryCodeToName = {
+              'US': 'United States',
+              'CA': 'Canada', 
+              'GB': 'United Kingdom',
+              'UK': 'United Kingdom',
+              'AU': 'Australia',
+              'DE': 'Germany',
+              'FR': 'France',
+              'IT': 'Italy',
+              'ES': 'Spain',
+              'JP': 'Japan',
+              'BR': 'Brazil',
+              'MX': 'Mexico',
+              'IN': 'India',
+              'CN': 'China'
+            };
+            
+            const countryName = countryCodeToName[countryValue.toUpperCase()] || countryValue;
+            console.log('[TaxSettings] Mapped country name:', countryName);
+            
+            const initialFormData = {
               businessName: user.businessName || user.business_name || '',
               businessType: user.businessType || user.business_type || 'retail',
               country: countryName,
@@ -130,6 +152,12 @@ export default function TaxSettings({ onNavigate }) {
               postalCode: user.postalCode || user.postal_code || user.zip_code || '',
               emailForDocuments: user.email || '',
               phone: user.phone || ''
+            };
+            
+            console.log('[TaxSettings] Setting initial form data:', initialFormData);
+            setFormData(prev => ({
+              ...prev,
+              ...initialFormData
             }));
           }
           
