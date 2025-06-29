@@ -1036,7 +1036,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
       }
       
       // Handle Taxes views
-      if (view && view.startsWith('taxes-') || view === 'sales-tax' || view === 'income-tax' || view === 'payroll-tax' || view === 'tax-payments' || view === 'tax-forms' || view === 'tax-reports' || showTaxManagement) {
+      if (view && view.startsWith('taxes-') || view === 'sales-tax' || view === 'income-tax' || view === 'payroll-tax' || view === 'tax-payments' || view === 'tax-forms' || view === 'tax-reports' || view === 'tax-settings' || showTaxManagement) {
         console.log('[RenderMainContent] Rendering taxes view:', view);
         
         let TaxesComponent = null;
@@ -1099,6 +1099,14 @@ const RenderMainContent = React.memo(function RenderMainContent({
               TaxesComponent = lazy(() => import('./forms/TaxReportsManagement.js').catch(err => {
                 console.error('[RenderMainContent] Error loading TaxReportsManagement:', err);
                 return { default: () => <div className="p-4">Error loading Tax Reports</div> };
+              }));
+              break;
+            case 'tax-settings':
+            case 'taxes-settings':
+              componentName = 'TaxSettings';
+              TaxesComponent = lazy(() => import('./forms/TaxSettings.js').catch(err => {
+                console.error('[RenderMainContent] Error loading TaxSettings:', err);
+                return { default: () => <div className="p-4">Error loading Tax Settings</div> };
               }));
               break;
           }

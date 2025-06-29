@@ -1155,7 +1155,8 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     showPayrollManagement: view === 'payroll-management',
     handleCreateCustomer: () => console.log('Create customer flow'),
     showMyAccount,
-    showHelpCenter
+    showHelpCenter,
+    showTaxManagement: view === 'tax-settings' || view === 'tax-forms' || view === 'tax-payments' || view === 'tax-rates' || view === 'tax-exemptions' || view === 'tax-filing' || view === 'tax-reports' || uiState.showTaxManagement
   }), [
     view, memoizedUserData, showKPIDashboard, showMainDashboard, showHome, setView,
     showForm, formOption, showHRDashboard, hrSection, showEmployeeManagement,
@@ -1164,7 +1165,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     navigationKey, selectedSettingsOption,
     // We already have view listed above, but it's critical for all the conditional flags
     // that depend on it like showDownloadTransactions: view === 'download-transactions'
-  , uiState.showBenefitsManagement]);
+  , uiState.showBenefitsManagement, uiState.showTaxManagement]);
 
   // Listen for menu navigation events
   useEffect(() => {
