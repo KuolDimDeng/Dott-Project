@@ -105,6 +105,7 @@
     "next": "15.3.1",
     "next-auth": "^4.24.11",
     "papaparse": "^5.5.3",
+    "pdf-lib": "^1.17.1",
     "pg": "^8.11.3",
     "postcss": "^8",
     "postcss-import": "^16.1.0",

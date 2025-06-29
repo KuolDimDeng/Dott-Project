@@ -1,4 +1,12 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || process.env.EXPO_PUBLIC_API_URL || 'https://api.dottapps.com';
+// Check environment and use appropriate env variable
+const getApiUrl = () => {
+  if (typeof process !== 'undefined' && process.env) {
+    return process.env.NEXT_PUBLIC_API_URL || process.env.EXPO_PUBLIC_API_URL || 'https://api.dottapps.com';
+  }
+  return 'https://api.dottapps.com';
+};
+
+const API_BASE_URL = getApiUrl();
 
 class ApiClient {
   constructor() {

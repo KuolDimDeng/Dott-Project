@@ -1,52 +1,55 @@
 let SecureStore;
 let AsyncStorage;
 
-if (typeof window === 'undefined' && global.__expo) {
+// Check if we're in React Native environment
+const isReactNative = typeof navigator !== 'undefined' && navigator.product === 'ReactNative';
+
+if (isReactNative) {
   SecureStore = require('expo-secure-store');
   AsyncStorage = require('@react-native-async-storage/async-storage').default;
 }
 
 class StorageManager {
   async setSecureItem(key, value) {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(key, value);
-    } else if (SecureStore) {
+    if (isReactNative && SecureStore) {
       await SecureStore.setItemAsync(key, value);
+    } else if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(key, value);
     }
   }
 
   async getSecureItem(key) {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem(key);
-    } else if (SecureStore) {
+    if (isReactNative && SecureStore) {
       return await SecureStore.getItemAsync(key);
+    } else if (typeof window !== 'undefined' && window.localStorage) {
+      return localStorage.getItem(key);
     }
     return null;
   }
 
   async removeSecureItem(key) {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem(key);
-    } else if (SecureStore) {
+    if (isReactNative && SecureStore) {
       await SecureStore.deleteItemAsync(key);
+    } else if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.removeItem(key);
     }
   }
 
   async setItem(key, value) {
     const stringValue = JSON.stringify(value);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(key, stringValue);
-    } else if (AsyncStorage) {
+    if (isReactNative && AsyncStorage) {
       await AsyncStorage.setItem(key, stringValue);
+    } else if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(key, stringValue);
     }
   }
 
   async getItem(key) {
     let value;
-    if (typeof window !== 'undefined') {
-      value = localStorage.getItem(key);
-    } else if (AsyncStorage) {
+    if (isReactNative && AsyncStorage) {
       value = await AsyncStorage.getItem(key);
+    } else if (typeof window !== 'undefined' && window.localStorage) {
+      value = localStorage.getItem(key);
     }
     
     if (value) {
@@ -60,18 +63,18 @@ class StorageManager {
   }
 
   async removeItem(key) {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem(key);
-    } else if (AsyncStorage) {
+    if (isReactNative && AsyncStorage) {
       await AsyncStorage.removeItem(key);
+    } else if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.removeItem(key);
     }
   }
 
   async clear() {
-    if (typeof window !== 'undefined') {
-      localStorage.clear();
-    } else if (AsyncStorage) {
+    if (isReactNative && AsyncStorage) {
       await AsyncStorage.clear();
+    } else if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.clear();
     }
   }
 }
