@@ -4,7 +4,7 @@ import Anthropic from '@anthropic-ai/sdk';
 
 // Initialize Anthropic client
 const anthropic = new Anthropic({
-  apiKey: process.env.CLAUDE_API_KEY,
+  apiKey: process.env.CLAUDE_TAX_API_KEY,
 });
 
 export async function POST(request) {
@@ -12,8 +12,8 @@ export async function POST(request) {
   
   try {
     // Check if API key is configured
-    if (!process.env.CLAUDE_API_KEY) {
-      console.error('[Tax Suggestions API] CLAUDE_API_KEY not configured');
+    if (!process.env.CLAUDE_TAX_API_KEY) {
+      console.error('[Tax Suggestions API] CLAUDE_TAX_API_KEY not configured');
       return NextResponse.json(
         { error: 'Tax suggestions service not configured. Please contact support.' },
         { status: 503 }
