@@ -252,7 +252,7 @@ export default function SmartInsight({ onNavigate }) {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <LightBulbIcon className="h-8 w-8 text-purple-600 mr-3" />
+            <LightBulbIcon className="h-8 w-8 text-blue-600 mr-3" />
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Smart Insight</h1>
               <p className="text-gray-600">AI-powered business intelligence assistant</p>
@@ -263,11 +263,11 @@ export default function SmartInsight({ onNavigate }) {
           <div className="flex items-center space-x-4">
             <div className="text-right">
               <p className="text-sm text-gray-500">Available Credits</p>
-              <p className="text-2xl font-bold text-purple-600">{credits || 0}</p>
+              <p className="text-2xl font-bold text-blue-600">{credits || 0}</p>
             </div>
             <button
               onClick={() => setShowBuyCredits(true)}
-              className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               <PlusIcon className="h-5 w-5 mr-2" />
               Buy Credits
@@ -297,7 +297,7 @@ export default function SmartInsight({ onNavigate }) {
                   <div
                     className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
                       message.type === 'user'
-                        ? 'bg-purple-600 text-white'
+                        ? 'bg-blue-600 text-white'
                         : 'bg-gray-100 text-gray-900'
                     }`}
                   >
@@ -331,13 +331,13 @@ export default function SmartInsight({ onNavigate }) {
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                 placeholder="Ask about your business..."
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={isLoading}
               />
               <button
                 onClick={handleSendMessage}
                 disabled={isLoading || !inputValue.trim()}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {isLoading === true ? (
                   <StandardSpinner size="small" />
@@ -358,7 +358,7 @@ export default function SmartInsight({ onNavigate }) {
             const colorClasses = {
               blue: 'text-blue-600',
               green: 'text-green-600',
-              purple: 'text-purple-600',
+              purple: 'text-blue-600',
               yellow: 'text-yellow-600'
             };
             
@@ -378,7 +378,7 @@ export default function SmartInsight({ onNavigate }) {
                     <button
                       key={index}
                       onClick={() => handleTemplateQuery(query)}
-                      className="block w-full text-left text-sm text-gray-600 hover:text-purple-600 hover:bg-purple-50 px-2 py-1 rounded transition-colors"
+                      className="block w-full text-left text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 px-2 py-1 rounded transition-colors"
                     >
                       {query}
                     </button>
@@ -439,19 +439,19 @@ export default function SmartInsight({ onNavigate }) {
                         key={pkg.id}
                         className={`relative border rounded-lg p-4 cursor-pointer transition-all ${
                           selectedPackage?.id === pkg.id
-                            ? 'border-purple-600 bg-purple-50'
+                            ? 'border-blue-600 bg-blue-50'
                             : 'border-gray-200 hover:border-gray-300'
                         }`}
                         onClick={() => handlePackageSelect(pkg)}
                       >
                         {pkg.popular === true && (
-                          <span className="absolute -top-2 -right-2 bg-purple-600 text-white text-xs px-2 py-1 rounded-full">
+                          <span className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
                             Popular
                           </span>
                         )}
                         
                         <h4 className="font-semibold text-gray-900">{pkg.name}</h4>
-                        <p className="text-2xl font-bold text-purple-600 mt-2">
+                        <p className="text-2xl font-bold text-blue-600 mt-2">
                           ${pkg.price}
                         </p>
                         <p className="text-gray-600 text-sm mt-1">
@@ -481,7 +481,7 @@ export default function SmartInsight({ onNavigate }) {
                         }
                       }}
                       disabled={!selectedPackage}
-                      className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Continue to Payment
                     </button>
