@@ -86,40 +86,77 @@ const SalesDashboard = () => {
 
       // Process products
       if (productsRes.status === 'fulfilled') {
-        // Handle both array and paginated responses
-        const productsData = productsRes.value || [];
-        const products = Array.isArray(productsData) ? productsData : (productsData.results || []);
-        const activeProducts = products.filter(p => p.is_active !== false);
-        const lowStockProducts = products.filter(p => p.stock_quantity < (p.reorder_level || 10));
-        const totalValue = products.reduce((sum, p) => sum + (p.price * p.stock_quantity || 0), 0);
-        
-        setMetrics(prev => ({
-          ...prev,
-          products: {
-            total: products.length,
-            active: activeProducts.length,
-            lowStock: lowStockProducts.length,
-            value: totalValue
+        try {
+          // Handle both array and paginated responses
+          const productsData = productsRes.value || [];
+          logger.info('[SalesDashboard] Products raw data:', productsData);
+          
+          let products = [];
+          if (Array.isArray(productsData)) {
+            products = productsData;
+          } else if (productsData && typeof productsData === 'object' && Array.isArray(productsData.results)) {
+            products = productsData.results;
+          } else {
+            logger.error('[SalesDashboard] Unexpected products data structure:', productsData);
           }
-        }));
+          
+          const activeProducts = products.filter(p => p.is_active !== false);
+          const lowStockProducts = products.filter(p => p.stock_quantity < (p.reorder_level || 10));
+          const totalValue = products.reduce((sum, p) => sum + (p.price * p.stock_quantity || 0), 0);
+          
+          setMetrics(prev => ({
+            ...prev,
+            products: {
+              total: products.length,
+              active: activeProducts.length,
+              lowStock: lowStockProducts.length,
+              value: totalValue
+            }
+          }));
+        } catch (error) {
+          logger.error('[SalesDashboard] Error processing products:', error);
+          setMetrics(prev => ({
+            ...prev,
+            products: { total: 0, active: 0, lowStock: 0, value: 0 }
+          }));
+        }
       }
 
       // Process services
       if (servicesRes.status === 'fulfilled') {
-        const services = servicesRes.value || [];
-        const activeServices = services.filter(s => s.is_active !== false);
-        const recurringServices = services.filter(s => s.is_recurring);
-        const totalValue = services.reduce((sum, s) => sum + (s.price || 0), 0);
-        
-        setMetrics(prev => ({
-          ...prev,
-          services: {
-            total: services.length,
-            active: activeServices.length,
-            recurring: recurringServices.length,
-            value: totalValue
+        try {
+          const servicesData = servicesRes.value || [];
+          logger.info('[SalesDashboard] Services raw data:', servicesData);
+          
+          let services = [];
+          if (Array.isArray(servicesData)) {
+            services = servicesData;
+          } else if (servicesData && typeof servicesData === 'object' && Array.isArray(servicesData.results)) {
+            services = servicesData.results;
+          } else {
+            logger.error('[SalesDashboard] Unexpected services data structure:', servicesData);
           }
-        }));
+          
+          const activeServices = services.filter(s => s.is_active !== false);
+          const recurringServices = services.filter(s => s.is_recurring);
+          const totalValue = services.reduce((sum, s) => sum + (s.price || 0), 0);
+          
+          setMetrics(prev => ({
+            ...prev,
+            services: {
+              total: services.length,
+              active: activeServices.length,
+              recurring: recurringServices.length,
+              value: totalValue
+            }
+          }));
+        } catch (error) {
+          logger.error('[SalesDashboard] Error processing services:', error);
+          setMetrics(prev => ({
+            ...prev,
+            services: { total: 0, active: 0, recurring: 0, value: 0 }
+          }));
+        }
       }
 
       // Process orders

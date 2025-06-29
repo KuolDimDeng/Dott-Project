@@ -132,20 +132,31 @@ const InventoryDashboard = () => {
       ]);
       
       logger.info('[InventoryDashboard] API responses received:', {
-        products: productsRes.status,
-        locations: locationsRes.status,
-        suppliers: suppliersRes.status,
-        adjustments: adjustmentsRes.status
+        products: { status: productsRes.status, value: productsRes.value },
+        locations: { status: locationsRes.status, value: locationsRes.value },
+        suppliers: { status: suppliersRes.status, value: suppliersRes.value },
+        adjustments: { status: adjustmentsRes.status, value: adjustmentsRes.value }
       });
 
       // Process products/inventory
       if (productsRes.status === 'fulfilled') {
-        // Handle both array and paginated responses
-        const productsData = productsRes.value || [];
-        const products = Array.isArray(productsData) ? productsData : (productsData.results || []);
-        const lowStockItems = products.filter(p => p.stock_quantity > 0 && p.stock_quantity < (p.reorder_level || 10));
-        const outOfStockItems = products.filter(p => p.stock_quantity === 0);
-        const totalValue = products.reduce((sum, p) => sum + ((p.price || 0) * (p.stock_quantity || 0)), 0);
+        try {
+          // Handle both array and paginated responses
+          const productsData = productsRes.value || [];
+          logger.info('[InventoryDashboard] Products raw data:', productsData);
+          
+          let products = [];
+          if (Array.isArray(productsData)) {
+            products = productsData;
+          } else if (productsData && typeof productsData === 'object' && Array.isArray(productsData.results)) {
+            products = productsData.results;
+          } else {
+            logger.error('[InventoryDashboard] Unexpected products data structure:', productsData);
+          }
+          
+          const lowStockItems = products.filter(p => p.stock_quantity > 0 && p.stock_quantity < (p.reorder_level || 10));
+          const outOfStockItems = products.filter(p => p.stock_quantity === 0);
+          const totalValue = products.reduce((sum, p) => sum + ((p.price || 0) * (p.stock_quantity || 0)), 0);
         
         setMetrics(prev => ({
           ...prev,
@@ -168,14 +179,36 @@ const InventoryDashboard = () => {
             value: item.price * item.stock_quantity
           }))
         }));
+        } catch (error) {
+          logger.error('[InventoryDashboard] Error processing products:', error);
+          setMetrics(prev => ({
+            ...prev,
+            inventory: { totalItems: 0, totalValue: 0, lowStock: 0, outOfStock: 0 }
+          }));
+          setRecentItems(prev => ({
+            ...prev,
+            lowStockItems: []
+          }));
+        }
       }
 
       // Process locations
       if (locationsRes.status === 'fulfilled') {
-        // Handle both array and paginated responses
-        const locationsData = locationsRes.value || [];
-        const locations = Array.isArray(locationsData) ? locationsData : (locationsData.results || []);
-        const activeLocations = locations.filter(l => l.is_active !== false);
+        try {
+          // Handle both array and paginated responses
+          const locationsData = locationsRes.value || [];
+          logger.info('[InventoryDashboard] Locations raw data:', locationsData);
+          
+          let locations = [];
+          if (Array.isArray(locationsData)) {
+            locations = locationsData;
+          } else if (locationsData && typeof locationsData === 'object' && Array.isArray(locationsData.results)) {
+            locations = locationsData.results;
+          } else {
+            logger.error('[InventoryDashboard] Unexpected locations data structure:', locationsData);
+          }
+          
+          const activeLocations = locations.filter(l => l.is_active !== false);
         
         setMetrics(prev => ({
           ...prev,
@@ -186,14 +219,32 @@ const InventoryDashboard = () => {
             stores: locations.filter(l => l.type === 'store').length
           }
         }));
+        } catch (error) {
+          logger.error('[InventoryDashboard] Error processing locations:', error);
+          setMetrics(prev => ({
+            ...prev,
+            locations: { total: 0, active: 0, warehouses: 0, stores: 0 }
+          }));
+        }
       }
 
       // Process suppliers
       if (suppliersRes.status === 'fulfilled') {
-        // Handle both array and paginated responses
-        const suppliersData = suppliersRes.value || [];
-        const suppliers = Array.isArray(suppliersData) ? suppliersData : (suppliersData.results || []);
-        const activeSuppliers = suppliers.filter(s => s.is_active !== false);
+        try {
+          // Handle both array and paginated responses
+          const suppliersData = suppliersRes.value || [];
+          logger.info('[InventoryDashboard] Suppliers raw data:', suppliersData);
+          
+          let suppliers = [];
+          if (Array.isArray(suppliersData)) {
+            suppliers = suppliersData;
+          } else if (suppliersData && typeof suppliersData === 'object' && Array.isArray(suppliersData.results)) {
+            suppliers = suppliersData.results;
+          } else {
+            logger.error('[InventoryDashboard] Unexpected suppliers data structure:', suppliersData);
+          }
+          
+          const activeSuppliers = suppliers.filter(s => s.is_active !== false);
         const thisMonth = new Date();
         const newSuppliers = suppliers.filter(s => {
           const createdDate = new Date(s.created_at);
