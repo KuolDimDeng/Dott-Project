@@ -46,7 +46,26 @@ dump.rdb
 .DS_Store
 .idea/
 .vscode/
+
+# Mobile specific
+mobile/.expo/
+mobile/node_modules/
+mobile/dist/
+mobile/build/
+mobile/.expo-shared/
+mobile/web-build/
+mobile/*.ipa
+mobile/*.apk
+mobile/*.aab
+mobile/*.jks
+mobile/*.keystore
+mobile/.env
+mobile/.env.local
+mobile/.env.production
+
+# Expo
 .expo/
+.expo-shared/
 
 # Dependencies
 node_modules/

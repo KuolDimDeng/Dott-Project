@@ -184,9 +184,17 @@ export default function TaxSettings({ onNavigate }) {
   
   // Get tax suggestions from Claude API
   const getTaxSuggestions = async () => {
+    console.log('[TaxSettings] getTaxSuggestions called');
+    console.log('[TaxSettings] Form data:', formData);
+    
     // Field validation
     if (!formData.country || !formData.stateProvince || !formData.city) {
-      toast.error('Please fill in all location fields first');
+      toast.error('Please fill in Country, State/Province, and City fields first');
+      console.log('[TaxSettings] Validation failed - missing fields:', {
+        country: formData.country,
+        stateProvince: formData.stateProvince,
+        city: formData.city
+      });
       return;
     }
     
@@ -212,8 +220,10 @@ export default function TaxSettings({ onNavigate }) {
       return;
     }
     
+    console.log('[TaxSettings] Validation passed, making API call');
     setIsLoading(true);
     try {
+      console.log('[TaxSettings] Calling API with:', { tenantId, businessInfo: formData });
       const response = await fetch('/api/taxes/suggestions', {
         method: 'POST',
         headers: {
@@ -225,6 +235,8 @@ export default function TaxSettings({ onNavigate }) {
           businessInfo: formData
         })
       });
+      
+      console.log('[TaxSettings] API response status:', response.status);
       
       if (response.status === 429) {
         const error = await response.json();
@@ -492,7 +504,10 @@ export default function TaxSettings({ onNavigate }) {
         <div className="mt-6">
           <div className="flex items-center justify-between mb-4">
             <button
-              onClick={getTaxSuggestions}
+              onClick={() => {
+                console.log('[TaxSettings] Button clicked');
+                getTaxSuggestions();
+              }}
               disabled={isLoading || suggestionCooldown || apiUsage.used >= apiUsage.limit}
               className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >

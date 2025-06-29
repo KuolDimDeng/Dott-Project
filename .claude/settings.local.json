@@ -102,7 +102,8 @@
       "Bash(npm run lint:*)",
       "Bash(for:*)",
       "Bash(do echo \"=== $file ===\")",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(npx create-expo-app:*)"
     ],
     "deny": []
   }
