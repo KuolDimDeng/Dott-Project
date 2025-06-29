@@ -15,7 +15,7 @@ import {
   PlusIcon,
   LightBulbIcon,
   ChartBarIcon,
-  TrendingUpIcon,
+  ArrowTrendingUpIcon,
   UserGroupIcon,
   ShoppingBagIcon,
   ClockIcon,
@@ -29,7 +29,7 @@ const INSIGHT_CATEGORIES = [
   {
     id: 'revenue',
     title: 'Revenue & Sales',
-    icon: TrendingUpIcon,
+    icon: ArrowTrendingUpIcon,
     color: 'blue',
     queries: [
       "What's my revenue trend this month?",
