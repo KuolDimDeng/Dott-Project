@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { useToast } from '@/components/Toast/ToastProvider';
+import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 
 const TrialBalance = () => {
   const [trialBalanceData, setTrialBalanceData] = useState(null);
@@ -31,7 +32,7 @@ const TrialBalance = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <CenteredSpinner size="medium" />
       </div>
     );
   }

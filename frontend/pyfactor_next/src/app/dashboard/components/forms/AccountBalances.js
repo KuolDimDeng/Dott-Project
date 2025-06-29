@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { useToast } from '@/components/Toast/ToastProvider';
+import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 
 const AccountBalances = () => {
   const [accounts, setAccounts] = useState([]);
@@ -33,10 +34,7 @@ const AccountBalances = () => {
         Account Balances
       </h1>
       {loading ? (
-        <div className="flex justify-center p-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-      ) : (
+        <CenteredSpinner size="medium" /> : (
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">

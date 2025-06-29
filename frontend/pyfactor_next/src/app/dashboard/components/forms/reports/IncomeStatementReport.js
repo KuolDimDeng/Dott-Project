@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { reportsApi } from '@/services/api/reports';
 import { toast } from 'react-hot-toast';
 import { format } from 'date-fns';
+import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 
 const IncomeStatementReport = () => {
   const [loading, setLoading] = useState(false);
@@ -147,7 +148,7 @@ const IncomeStatementReport = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <CenteredSpinner size="medium" />
       </div>
     );
   }

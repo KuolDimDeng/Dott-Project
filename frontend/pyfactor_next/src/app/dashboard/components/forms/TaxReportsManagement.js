@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { taxesApi } from '@/services/api/taxes';
 import { toast } from 'react-hot-toast';
+import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 
 const TaxReportsManagement = () => {
   const [loading, setLoading] = useState(true);
@@ -239,7 +240,7 @@ const TaxReportsManagement = () => {
   if (loading && !reportData) {
     return (
       <div className="flex justify-center items-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <CenteredSpinner size="medium" />
       </div>
     );
   }
@@ -311,10 +312,7 @@ const TaxReportsManagement = () => {
       {/* Report Content */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-          </div>
-        ) : (
+        <CenteredSpinner size="medium" /> : (
           renderReportContent()
         )}
       </div>

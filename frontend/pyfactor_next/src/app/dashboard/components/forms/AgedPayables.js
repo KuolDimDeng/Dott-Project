@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import { useToast } from '@/components/Toast/ToastProvider';
+import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 
 const AgedPayables = () => {
   const [payables, setPayables] = useState([]);
@@ -112,7 +113,7 @@ const AgedPayables = () => {
                 <tr>
                   <td colSpan={columns.length} className="px-6 py-4 text-center">
                     <div className="flex justify-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+                      <CenteredSpinner size="medium" />
                     </div>
                   </td>
                 </tr>
