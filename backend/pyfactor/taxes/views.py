@@ -3,13 +3,18 @@ from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import State, IncomeTaxRate, PayrollTaxFiling, TaxFilingInstruction, TaxForm
+from .models import (
+    State, IncomeTaxRate, PayrollTaxFiling, TaxFilingInstruction, TaxForm,
+    TaxDataEntryControl, TaxDataEntryLog, TaxDataAbuseReport, TaxDataBlacklist
+)
 from .serializers import (
     StateSerializer, IncomeTaxRateSerializer, 
     PayrollTaxFilingSerializer, TaxFilingInstructionSerializer,
-    TaxFormSerializer
+    TaxFormSerializer, TaxDataEntryControlSerializer,
+    TaxDataEntryLogSerializer, TaxDataAbuseReportSerializer,
+    TaxDataBlacklistSerializer
 )
-from django.db import transaction
+from django.db import transaction, models
 import logging
 from django.http import HttpResponse
 from django.template.loader import render_to_string
@@ -20,6 +25,7 @@ from .services.claude_service import ClaudeComplianceService
 from rest_framework.decorators import api_view
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -72,9 +78,85 @@ class IncomeTaxRateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     filterset_fields = ['state', 'tax_year', 'is_flat_rate']
     
+    def _check_abuse_control(self, entry_type='create', entry_count=1):
+        """Check abuse control before allowing operation"""
+        from custom_auth.rls import get_current_tenant_id
+        from .services.abuse_control_service import TaxDataAbuseControlService
+        
+        tenant_id = get_current_tenant_id()
+        if not tenant_id:
+            return False, "No tenant context"
+        
+        # Get IP and user agent
+        ip_address = self.request.META.get('REMOTE_ADDR', '0.0.0.0')
+        user_agent = self.request.META.get('HTTP_USER_AGENT', '')
+        
+        # Check rate limits
+        allowed, error_msg = TaxDataAbuseControlService.check_rate_limit(
+            tenant_id, 'income_tax_rates', self.request.user, ip_address, entry_count
+        )
+        
+        # Log the attempt
+        TaxDataAbuseControlService.log_entry(
+            tenant_id, 'income_tax_rates', entry_type, self.request.user,
+            ip_address, user_agent, 'allowed' if allowed else 'rate_limited',
+            entry_count
+        )
+        
+        # Check for suspicious activity
+        if allowed and TaxDataAbuseControlService.check_suspicious_activity(
+            tenant_id, self.request.user, ip_address
+        ):
+            allowed = False
+            error_msg = "Suspicious activity detected"
+        
+        return allowed, error_msg
+    
+    def create(self, request, *args, **kwargs):
+        """Override create to add abuse control"""
+        allowed, error_msg = self._check_abuse_control('create')
+        if not allowed:
+            return Response(
+                {"error": error_msg},
+                status=status.HTTP_429_TOO_MANY_REQUESTS
+            )
+        
+        return super().create(request, *args, **kwargs)
+    
+    def update(self, request, *args, **kwargs):
+        """Override update to add abuse control"""
+        allowed, error_msg = self._check_abuse_control('update')
+        if not allowed:
+            return Response(
+                {"error": error_msg},
+                status=status.HTTP_429_TOO_MANY_REQUESTS
+            )
+        
+        return super().update(request, *args, **kwargs)
+    
+    def destroy(self, request, *args, **kwargs):
+        """Override destroy to add abuse control"""
+        allowed, error_msg = self._check_abuse_control('delete')
+        if not allowed:
+            return Response(
+                {"error": error_msg},
+                status=status.HTTP_429_TOO_MANY_REQUESTS
+            )
+        
+        return super().destroy(request, *args, **kwargs)
+    
     @action(detail=False, methods=['post'])
     def bulk_update(self, request):
         """Bulk update tax rates"""
+        # Check abuse control for bulk operations
+        entry_count = len(request.data) if isinstance(request.data, list) else 1
+        allowed, error_msg = self._check_abuse_control('bulk_update', entry_count)
+        if not allowed:
+            return Response(
+                {"error": error_msg},
+                status=status.HTTP_429_TOO_MANY_REQUESTS
+            )
+        
         try:
             with transaction.atomic():
                 updated_rates = []
@@ -456,3 +538,185 @@ class GlobalComplianceViewSet(viewsets.ViewSet):
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+class TaxDataEntryControlViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing tax data entry controls"""
+    queryset = TaxDataEntryControl.objects.all()
+    serializer_class = TaxDataEntryControlSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        """Filter by tenant"""
+        from custom_auth.rls import get_current_tenant_id
+        tenant_id = get_current_tenant_id()
+        if tenant_id:
+            return self.queryset.filter(tenant_id=tenant_id)
+        return self.queryset.none()
+    
+    @action(detail=False, methods=['get'])
+    def summary(self, request):
+        """Get summary of all control settings"""
+        controls = self.get_queryset()
+        return Response(self.get_serializer(controls, many=True).data)
+
+
+class TaxDataEntryLogViewSet(viewsets.ReadOnlyModelViewSet):
+    """ViewSet for viewing tax data entry logs"""
+    queryset = TaxDataEntryLog.objects.all().order_by('-created_at')
+    serializer_class = TaxDataEntryLogSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        """Filter by tenant and optional parameters"""
+        from custom_auth.rls import get_current_tenant_id
+        tenant_id = get_current_tenant_id()
+        if not tenant_id:
+            return self.queryset.none()
+            
+        queryset = self.queryset.filter(tenant_id=tenant_id)
+        
+        # Filter by control type
+        control_type = self.request.query_params.get('control_type')
+        if control_type:
+            queryset = queryset.filter(control_type=control_type)
+        
+        # Filter by status
+        status = self.request.query_params.get('status')
+        if status:
+            queryset = queryset.filter(status=status)
+        
+        # Filter by user
+        user_id = self.request.query_params.get('user_id')
+        if user_id:
+            queryset = queryset.filter(user_id=user_id)
+        
+        # Filter by date range
+        from_date = self.request.query_params.get('from_date')
+        to_date = self.request.query_params.get('to_date')
+        if from_date:
+            queryset = queryset.filter(created_at__gte=from_date)
+        if to_date:
+            queryset = queryset.filter(created_at__lte=to_date)
+        
+        return queryset
+    
+    @action(detail=False, methods=['get'])
+    def statistics(self, request):
+        """Get statistics on tax data entries"""
+        from django.db.models import Count, Sum
+        queryset = self.get_queryset()
+        
+        stats = {
+            'total_entries': queryset.count(),
+            'by_status': list(queryset.values('status').annotate(count=Count('id'))),
+            'by_control_type': list(queryset.values('control_type').annotate(
+                count=Count('id'),
+                total_entries=Sum('entry_count')
+            )),
+            'by_user': list(queryset.values('user__email').annotate(count=Count('id'))[:10])
+        }
+        
+        return Response(stats)
+
+
+class TaxDataAbuseReportViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing tax data abuse reports"""
+    queryset = TaxDataAbuseReport.objects.all().order_by('-created_at')
+    serializer_class = TaxDataAbuseReportSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        """Filter by tenant"""
+        from custom_auth.rls import get_current_tenant_id
+        tenant_id = get_current_tenant_id()
+        if tenant_id:
+            return self.queryset.filter(tenant_id=tenant_id)
+        return self.queryset.none()
+    
+    @action(detail=True, methods=['post'])
+    def resolve(self, request, pk=None):
+        """Resolve an abuse report"""
+        report = self.get_object()
+        
+        action_taken = request.data.get('action_taken', '')
+        resolution_status = request.data.get('status', 'resolved')
+        
+        report.status = resolution_status
+        report.action_taken = action_taken
+        report.resolved_at = timezone.now()
+        report.resolved_by = request.user
+        report.save()
+        
+        return Response(self.get_serializer(report).data)
+    
+    @action(detail=False, methods=['get'])
+    def pending(self, request):
+        """Get all pending abuse reports"""
+        pending_reports = self.get_queryset().filter(status='pending')
+        return Response(self.get_serializer(pending_reports, many=True).data)
+
+
+class TaxDataBlacklistViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing tax data blacklist"""
+    queryset = TaxDataBlacklist.objects.all().order_by('-created_at')
+    serializer_class = TaxDataBlacklistSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        """Filter by active status"""
+        queryset = super().get_queryset()
+        
+        # Filter by active status
+        is_active = self.request.query_params.get('is_active')
+        if is_active is not None:
+            queryset = queryset.filter(is_active=is_active.lower() == 'true')
+        
+        # Filter by blacklist type
+        blacklist_type = self.request.query_params.get('blacklist_type')
+        if blacklist_type:
+            queryset = queryset.filter(blacklist_type=blacklist_type)
+        
+        return queryset
+    
+    def create(self, request):
+        """Create a new blacklist entry with current user as creator"""
+        data = request.data.copy()
+        data['created_by'] = request.user.id
+        
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    @action(detail=True, methods=['post'])
+    def deactivate(self, request, pk=None):
+        """Deactivate a blacklist entry"""
+        blacklist_entry = self.get_object()
+        blacklist_entry.is_active = False
+        blacklist_entry.save()
+        
+        return Response(self.get_serializer(blacklist_entry).data)
+    
+    @action(detail=False, methods=['post'])
+    def check(self, request):
+        """Check if an identifier is blacklisted"""
+        identifier = request.data.get('identifier')
+        blacklist_type = request.data.get('blacklist_type')
+        
+        if not identifier or not blacklist_type:
+            return Response(
+                {"error": "Both identifier and blacklist_type are required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        is_blacklisted = self.queryset.filter(
+            blacklist_type=blacklist_type,
+            identifier=identifier,
+            is_active=True
+        ).filter(
+            models.Q(expires_at__isnull=True) | models.Q(expires_at__gt=timezone.now())
+        ).exists()
+        
+        return Response({"is_blacklisted": is_blacklisted})

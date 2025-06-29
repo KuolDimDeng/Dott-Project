@@ -1,6 +1,9 @@
 # taxes/serializers.py
 from rest_framework import serializers
-from .models import State, IncomeTaxRate, PayrollTaxFiling, TaxFilingInstruction, TaxForm
+from .models import (
+    State, IncomeTaxRate, PayrollTaxFiling, TaxFilingInstruction, TaxForm,
+    TaxDataEntryControl, TaxDataEntryLog, TaxDataAbuseReport, TaxDataBlacklist
+)
 
 class StateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -63,3 +66,52 @@ class TaxFormSerializer(serializers.ModelSerializer):
     def get_ssn_last_four(self, obj):
         """Get the SSN last four digits from employee through Stripe"""
         return obj.get_ssn_last_four()
+
+
+class TaxDataEntryControlSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TaxDataEntryControl
+        fields = [
+            'id', 'control_type', 'max_entries_per_hour', 'max_entries_per_day',
+            'max_entries_per_month', 'is_active', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class TaxDataEntryLogSerializer(serializers.ModelSerializer):
+    user_email = serializers.CharField(source='user.email', read_only=True)
+    
+    class Meta:
+        model = TaxDataEntryLog
+        fields = [
+            'id', 'control_type', 'entry_type', 'user', 'user_email',
+            'ip_address', 'user_agent', 'status', 'entry_count',
+            'details', 'created_at'
+        ]
+        read_only_fields = ['id', 'created_at']
+
+
+class TaxDataAbuseReportSerializer(serializers.ModelSerializer):
+    user_email = serializers.CharField(source='user.email', read_only=True)
+    resolved_by_email = serializers.CharField(source='resolved_by.email', read_only=True)
+    
+    class Meta:
+        model = TaxDataAbuseReport
+        fields = [
+            'id', 'report_type', 'severity', 'status', 'user', 'user_email',
+            'description', 'evidence', 'action_taken', 'created_at',
+            'updated_at', 'resolved_at', 'resolved_by', 'resolved_by_email'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class TaxDataBlacklistSerializer(serializers.ModelSerializer):
+    created_by_email = serializers.CharField(source='created_by.email', read_only=True)
+    
+    class Meta:
+        model = TaxDataBlacklist
+        fields = [
+            'id', 'blacklist_type', 'identifier', 'reason', 'is_active',
+            'created_at', 'expires_at', 'created_by', 'created_by_email'
+        ]
+        read_only_fields = ['id', 'created_at']

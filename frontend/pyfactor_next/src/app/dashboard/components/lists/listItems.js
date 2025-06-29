@@ -1518,70 +1518,26 @@ const MainListItems = ({
           value: 'taxes-dashboard' 
         },
         { 
-          label: 'Sales Tax', 
+          label: 'Tax Settings', 
           onClick: (value) => {
-            // Create navigation event for sales tax
+            // Create navigation event for tax settings
             const navigationKey = `nav-${Date.now()}`;
             const payload = { 
-              item: 'sales-tax', 
+              item: 'tax-settings', 
               navigationKey,
-              originalItem: 'Sales Tax'
+              originalItem: 'Tax Settings'
             };
             
             // Dispatch navigation events
             window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
             window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
             
-            // Load the SalesTax component
+            // Load the TaxSettings component
             if (typeof handleTaxesClick === 'function') {
-              handleTaxesClick('sales-tax');
+              handleTaxesClick('tax-settings');
             }
           }, 
-          value: 'sales-tax' 
-        },
-        { 
-          label: 'Income Tax', 
-          onClick: (value) => {
-            // Create navigation event for income tax
-            const navigationKey = `nav-${Date.now()}`;
-            const payload = { 
-              item: 'income-tax', 
-              navigationKey,
-              originalItem: 'Income Tax'
-            };
-            
-            // Dispatch navigation events
-            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
-            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
-            
-            // Load the IncomeTax component
-            if (typeof handleTaxesClick === 'function') {
-              handleTaxesClick('income-tax');
-            }
-          }, 
-          value: 'income-tax' 
-        },
-        { 
-          label: 'Payroll Tax', 
-          onClick: (value) => {
-            // Create navigation event for payroll tax
-            const navigationKey = `nav-${Date.now()}`;
-            const payload = { 
-              item: 'payroll-tax', 
-              navigationKey,
-              originalItem: 'Payroll Tax'
-            };
-            
-            // Dispatch navigation events
-            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
-            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
-            
-            // Load the PayrollTax component
-            if (typeof handleTaxesClick === 'function') {
-              handleTaxesClick('payroll-tax');
-            }
-          }, 
-          value: 'payroll-tax' 
+          value: 'tax-settings' 
         },
         { 
           label: 'Tax Payments', 

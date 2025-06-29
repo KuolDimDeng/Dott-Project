@@ -5,6 +5,7 @@ import { Dialog, Transition } from '@headlessui/react';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import { getSecureTenantId } from '@/utils/tenantUtils';
+import { logger } from '@/utils/logger';
 import StandardSpinner, { CenteredSpinner, ButtonSpinner } from '@/components/ui/StandardSpinner';
 import {
   SparklesIcon,
@@ -184,22 +185,57 @@ export default function SmartInsight({ onNavigate }) {
     setIsLoading(true);
 
     try {
-      // Simulate AI response (replace with actual API call)
-      setTimeout(() => {
-        const aiResponse = {
-          id: Date.now() + 1,
-          type: 'ai',
-          content: `Based on your query "${userMessage.content}", here's what I found...`,
-          timestamp: new Date()
-        };
-        
-        setMessages(prev => [...prev, aiResponse]);
-        setCredits(prev => prev - 1);
-        setIsLoading(false);
-      }, 1500);
+      // Call Smart Insights Claude API
+      const response = await fetch('/api/smart-insights/claude', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query: userMessage.content,
+          context: {
+            tenantId: await getSecureTenantId(),
+            timestamp: new Date().toISOString()
+          }
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to get AI response');
+      }
+
+      const data = await response.json();
+      
+      const aiResponse = {
+        id: Date.now() + 1,
+        type: 'ai',
+        content: data.response,
+        timestamp: new Date(),
+        usage: data.usage
+      };
+      
+      setMessages(prev => [...prev, aiResponse]);
+      setCredits(prev => prev - 1);
+      
+      // Store credit usage (you might want to sync this with backend)
+      logger.info('[SmartInsights] AI response received, tokens used:', data.usage);
+      
     } catch (error) {
       console.error('Error:', error);
-      toast.error('Failed to get response. Please try again.');
+      toast.error(error.message || 'Failed to get AI response. Please try again.');
+      
+      // Don't deduct credits if the request failed
+      const errorMessage = {
+        id: Date.now() + 1,
+        type: 'ai',
+        content: 'I apologize, but I encountered an error processing your request. Please try again.',
+        timestamp: new Date(),
+        isError: true
+      };
+      
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setIsLoading(false);
     }
   };
@@ -298,10 +334,12 @@ export default function SmartInsight({ onNavigate }) {
                     className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
                       message.type === 'user'
                         ? 'bg-blue-600 text-white'
+                        : message.isError
+                        ? 'bg-red-50 text-red-900 border border-red-200'
                         : 'bg-gray-100 text-gray-900'
                     }`}
                   >
-                    <p className="text-sm">{message.content}</p>
+                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                     <p className="text-xs mt-1 opacity-75">
                       {message.timestamp && typeof message.timestamp.toLocaleTimeString === 'function' 
                         ? message.timestamp.toLocaleTimeString() 

@@ -4,7 +4,9 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     StateViewSet, IncomeTaxRateViewSet, 
     PayrollTaxFilingViewSet, TaxFilingInstructionViewSet,
-    TaxCalculationView, TaxFormViewSet, GlobalComplianceViewSet, currency_info
+    TaxCalculationView, TaxFormViewSet, GlobalComplianceViewSet, currency_info,
+    TaxDataEntryControlViewSet, TaxDataEntryLogViewSet,
+    TaxDataAbuseReportViewSet, TaxDataBlacklistViewSet
 )
 
 router = DefaultRouter()
@@ -14,6 +16,12 @@ router.register(r'tax-filings', PayrollTaxFilingViewSet)
 router.register(r'filing-instructions', TaxFilingInstructionViewSet)
 router.register(r'tax-forms', TaxFormViewSet)
 router.register(r'global', GlobalComplianceViewSet, basename='global')
+
+# Abuse control endpoints
+router.register(r'abuse-control/controls', TaxDataEntryControlViewSet, basename='tax-entry-control')
+router.register(r'abuse-control/logs', TaxDataEntryLogViewSet, basename='tax-entry-log')
+router.register(r'abuse-control/reports', TaxDataAbuseReportViewSet, basename='tax-abuse-report')
+router.register(r'abuse-control/blacklist', TaxDataBlacklistViewSet, basename='tax-blacklist')
 
 urlpatterns = [
     path('', include(router.urls)),

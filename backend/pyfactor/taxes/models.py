@@ -214,3 +214,129 @@ class TaxForm(TenantAwareModel):
         # if self.employee.ssn_stored_in_stripe and self.employee.ssn_last_four:
         #     return self.employee.ssn_last_four
         return None
+
+
+class TaxDataEntryControl(TenantAwareModel):
+    """Controls and tracks tax data entry limits per tenant"""
+    CONTROL_TYPE_CHOICES = [
+        ('income_tax_rates', 'Income Tax Rates'),
+        ('payroll_filings', 'Payroll Tax Filings'),
+        ('tax_forms', 'Tax Forms'),
+        ('api_calls', 'Tax API Calls'),
+    ]
+    
+    control_type = models.CharField(max_length=50, choices=CONTROL_TYPE_CHOICES)
+    max_entries_per_hour = models.IntegerField(default=100)
+    max_entries_per_day = models.IntegerField(default=1000)
+    max_entries_per_month = models.IntegerField(default=10000)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        app_label = 'taxes'
+        unique_together = ('tenant_id', 'control_type')
+        
+    def __str__(self):
+        return f"{self.get_control_type_display()} - Tenant {self.tenant_id}"
+
+
+class TaxDataEntryLog(TenantAwareModel):
+    """Logs all tax data entry attempts for abuse monitoring"""
+    ENTRY_TYPE_CHOICES = [
+        ('create', 'Create'),
+        ('update', 'Update'),
+        ('delete', 'Delete'),
+        ('bulk_create', 'Bulk Create'),
+        ('bulk_update', 'Bulk Update'),
+        ('api_call', 'API Call'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('allowed', 'Allowed'),
+        ('rate_limited', 'Rate Limited'),
+        ('blocked', 'Blocked'),
+        ('suspicious', 'Suspicious'),
+    ]
+    
+    control_type = models.CharField(max_length=50, choices=TaxDataEntryControl.CONTROL_TYPE_CHOICES)
+    entry_type = models.CharField(max_length=20, choices=ENTRY_TYPE_CHOICES)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='tax_entry_logs')
+    ip_address = models.GenericIPAddressField()
+    user_agent = models.TextField(blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES)
+    entry_count = models.IntegerField(default=1)
+    details = models.JSONField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        app_label = 'taxes'
+        indexes = [
+            models.Index(fields=['tenant_id', 'control_type', 'created_at']),
+            models.Index(fields=['user', 'created_at']),
+            models.Index(fields=['status', 'created_at']),
+        ]
+        
+    def __str__(self):
+        return f"{self.entry_type} - {self.control_type} - {self.status} - {self.created_at}"
+
+
+class TaxDataAbuseReport(TenantAwareModel):
+    """Reports of potential abuse or suspicious activity"""
+    SEVERITY_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+        ('critical', 'Critical'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('pending', 'Pending Review'),
+        ('investigating', 'Under Investigation'),
+        ('resolved', 'Resolved'),
+        ('false_positive', 'False Positive'),
+        ('confirmed', 'Confirmed Abuse'),
+    ]
+    
+    report_type = models.CharField(max_length=100)
+    severity = models.CharField(max_length=20, choices=SEVERITY_CHOICES)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='tax_abuse_reports')
+    description = models.TextField()
+    evidence = models.JSONField(null=True, blank=True)
+    action_taken = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    resolved_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='resolved_tax_abuse_reports')
+    
+    class Meta:
+        app_label = 'taxes'
+        ordering = ['-created_at']
+        
+    def __str__(self):
+        return f"{self.report_type} - {self.severity} - {self.status}"
+
+
+class TaxDataBlacklist(TenantAwareModel):
+    """Blacklist for blocking abusive users or tenants"""
+    BLACKLIST_TYPE_CHOICES = [
+        ('user', 'User'),
+        ('tenant', 'Tenant'),
+        ('ip', 'IP Address'),
+    ]
+    
+    blacklist_type = models.CharField(max_length=20, choices=BLACKLIST_TYPE_CHOICES)
+    identifier = models.CharField(max_length=255, db_index=True)
+    reason = models.TextField()
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='created_tax_blacklists')
+    
+    class Meta:
+        app_label = 'taxes'
+        unique_together = ('blacklist_type', 'identifier')
+        
+    def __str__(self):
+        return f"{self.blacklist_type} - {self.identifier}"
