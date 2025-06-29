@@ -25,10 +25,10 @@ const StandardSpinner = ({
   
   // Color mappings
   const colorClasses = {
-    default: 'text-gray-200 dark:text-gray-600 fill-blue-600',
+    default: 'text-gray-200 fill-blue-600',
     white: 'text-gray-400 fill-white',
-    blue: 'text-gray-200 dark:text-gray-600 fill-blue-600',
-    green: 'text-gray-200 dark:text-gray-600 fill-green-600'
+    blue: 'text-gray-200 fill-blue-600',
+    green: 'text-gray-200 fill-green-600'
   };
   
   const spinnerColor = colorClasses[color] || colorClasses.default;
