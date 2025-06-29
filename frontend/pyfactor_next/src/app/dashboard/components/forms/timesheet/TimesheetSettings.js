@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { Tab } from '@headlessui/react';
 import { format } from 'date-fns';
+import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 
 const TimesheetSettings = ({ userData }) => {
   const [activeTab, setActiveTab] = useState(0);
@@ -179,10 +180,7 @@ const TimesheetSettings = ({ userData }) => {
   return (
     <div>
       {loading ? (
-        <div className="flex justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-        </div>
-      ) : (
+        <CenteredSpinner size="medium" /> : (
         <>
           <Tab.Group selectedIndex={activeTab} onChange={setActiveTab}>
             <Tab.List className="flex border-b border-gray-200">

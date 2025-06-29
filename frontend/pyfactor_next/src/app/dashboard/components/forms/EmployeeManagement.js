@@ -22,6 +22,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { hrApi, payrollApi } from '@/utils/apiClient';
 import { logger } from '@/utils/logger';
+import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 
 // Tooltip component for field help
 const FieldTooltip = ({ text, position = 'top' }) => {
@@ -720,10 +721,7 @@ function EmployeeManagement({ onNavigate }) {
   const renderEmployeeList = () => (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
       {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        </div>
-      ) : filteredEmployees.length === 0 ? (
+        <CenteredSpinner size="medium" /> : filteredEmployees.length === 0 ? (
         <div className="text-center py-12">
           <UserGroupIcon className="h-12 w-12 text-gray-300 mx-auto mb-4" />
           <p className="text-gray-600 mb-4">No employees found</p>

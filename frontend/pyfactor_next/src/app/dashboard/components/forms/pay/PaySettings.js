@@ -9,6 +9,7 @@ import PayCycles from './tabs/settings/PayCycles';
 import BankAccounts from './tabs/settings/BankAccounts';
 import TaxSettings from './tabs/settings/TaxSettings';
 import GeneralSettings from './tabs/settings/GeneralSettings';
+import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 
 /**
  * PaySettings Component
@@ -94,40 +95,28 @@ const PaySettings = ({ userData }) => {
         <Tab.Panels className="mt-4">
           <Tab.Panel>
             {loading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-              </div>
-            ) : (
+        <CenteredSpinner size="medium" /> : (
               <PayCycles userData={userData} />
             )}
           </Tab.Panel>
           
           <Tab.Panel>
             {loading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-              </div>
-            ) : (
+        <CenteredSpinner size="medium" /> : (
               <BankAccounts userData={userData} />
             )}
           </Tab.Panel>
           
           <Tab.Panel>
             {loading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-              </div>
-            ) : (
+        <CenteredSpinner size="medium" /> : (
               <TaxSettings userData={userData} />
             )}
           </Tab.Panel>
           
           <Tab.Panel>
             {loading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-              </div>
-            ) : (
+        <CenteredSpinner size="medium" /> : (
               <GeneralSettings userData={userData} />
             )}
           </Tab.Panel>

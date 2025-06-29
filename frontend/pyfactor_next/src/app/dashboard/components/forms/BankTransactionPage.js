@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { bankAccountsApi, bankTransactionsApi } from '@/services/api/banking';
 import { logger } from '@/utils/logger';
 import { getSecureTenantId } from '@/utils/tenantUtils';
+import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 import { 
   ArrowsRightLeftIcon,
   MagnifyingGlassIcon,
@@ -128,7 +129,7 @@ const BankTransactionPage = () => {
   if (!tenantId) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <CenteredSpinner size="medium" />
       </div>
     );
   }
@@ -240,10 +241,7 @@ const BankTransactionPage = () => {
         )}
 
         {loading ? (
-          <div className="flex justify-center my-8">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
-          </div>
-        ) : (
+        <CenteredSpinner size="medium" /> : (
           <div className="mt-6 overflow-x-auto shadow-md rounded-lg max-h-[440px]">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50 sticky top-0">

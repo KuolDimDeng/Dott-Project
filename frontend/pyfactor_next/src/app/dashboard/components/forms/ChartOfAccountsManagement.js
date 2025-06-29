@@ -21,6 +21,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { accountingApi } from '@/utils/apiClient';
 import { logger } from '@/utils/logger';
+import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 
 // Tooltip component for field help
 const FieldTooltip = ({ text, position = 'top' }) => {
@@ -375,7 +376,7 @@ function ChartOfAccountsManagement({ onNavigate }) {
     if (loading) {
       return (
         <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          <CenteredSpinner size="medium" />
         </div>
       );
     }

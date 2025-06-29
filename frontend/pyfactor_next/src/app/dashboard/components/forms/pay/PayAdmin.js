@@ -10,6 +10,7 @@ import DepartmentPayroll from './tabs/admin/DepartmentPayroll';
 import EmployeePayroll from './tabs/admin/EmployeePayroll';
 import PayrollHistory from './tabs/admin/PayrollHistory';
 import PayrollReports from './tabs/admin/PayrollReports';
+import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 
 /**
  * PayAdmin Component
@@ -107,40 +108,28 @@ const PayAdmin = ({ userData, isOwner }) => {
         <Tab.Panels className="mt-4">
           <Tab.Panel>
             {loading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-              </div>
-            ) : (
+        <CenteredSpinner size="medium" /> : (
               <CompanyPayroll />
             )}
           </Tab.Panel>
           
           <Tab.Panel>
             {loading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-              </div>
-            ) : (
+        <CenteredSpinner size="medium" /> : (
               <DepartmentPayroll />
             )}
           </Tab.Panel>
           
           <Tab.Panel>
             {loading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-              </div>
-            ) : (
+        <CenteredSpinner size="medium" /> : (
               <EmployeePayroll userData={userData} isOwner={isOwner} />
             )}
           </Tab.Panel>
           
           <Tab.Panel>
             {loading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-              </div>
-            ) : (
+        <CenteredSpinner size="medium" /> : (
               <PayrollHistory />
             )}
           </Tab.Panel>
@@ -148,10 +137,7 @@ const PayAdmin = ({ userData, isOwner }) => {
           {isOwner && (
             <Tab.Panel>
               {loading ? (
-                <div className="flex justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-                </div>
-              ) : (
+        <CenteredSpinner size="medium" /> : (
                 <PayrollReports />
               )}
             </Tab.Panel>

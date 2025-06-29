@@ -8,6 +8,7 @@ import { Tab } from '@headlessui/react';
 import BenefitsSummary from './tabs/BenefitsSummary';
 import ManageBenefits from './tabs/ManageBenefits';
 import BenefitsDocuments from './tabs/BenefitsDocuments';
+import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 
 const MyBenefits = ({ userData }) => {
   const [activeTab, setActiveTab] = useState(0);
@@ -57,30 +58,21 @@ const MyBenefits = ({ userData }) => {
         <Tab.Panels className="mt-4">
           <Tab.Panel>
             {loading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-              </div>
-            ) : (
+        <CenteredSpinner size="medium" /> : (
               <BenefitsSummary userData={userData} />
             )}
           </Tab.Panel>
           
           <Tab.Panel>
             {loading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-              </div>
-            ) : (
+        <CenteredSpinner size="medium" /> : (
               <ManageBenefits userData={userData} />
             )}
           </Tab.Panel>
           
           <Tab.Panel>
             {loading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-              </div>
-            ) : (
+        <CenteredSpinner size="medium" /> : (
               <BenefitsDocuments userData={userData} />
             )}
           </Tab.Panel>

@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { Tab } from '@headlessui/react';
 import { format } from 'date-fns';
+import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 
 const TimesheetAdmin = ({ userData, isOwner }) => {
   const [activeTab, setActiveTab] = useState(0);
@@ -241,10 +242,7 @@ const TimesheetAdmin = ({ userData, isOwner }) => {
           {/* Pending Timesheets Tab */}
           <Tab.Panel>
             {loading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-              </div>
-            ) : selectedTimesheet ? (
+        <CenteredSpinner size="medium" /> : selectedTimesheet ? (
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                 <div className="px-4 py-5 sm:p-6">
                   <div className="flex justify-between items-center mb-4">
@@ -395,10 +393,7 @@ const TimesheetAdmin = ({ userData, isOwner }) => {
           {/* Time Off Requests Tab */}
           <Tab.Panel>
             {loading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-              </div>
-            ) : pendingTimeOff.length > 0 ? (
+        <CenteredSpinner size="medium" /> : pendingTimeOff.length > 0 ? (
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                 <div className="px-4 py-5 sm:p-6">
                   <h3 className="text-lg font-medium text-gray-900 mb-4">Pending Time Off Requests</h3>

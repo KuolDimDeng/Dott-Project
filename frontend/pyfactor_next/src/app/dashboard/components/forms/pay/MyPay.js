@@ -12,6 +12,7 @@ import YTDSummary from './tabs/YTDSummary';
 import Deposit from './tabs/Deposit';
 import IncomeTax from './tabs/IncomeTax';
 import Statement from './tabs/Statement';
+import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 
 const MyPay = ({ userData }) => {
   const [activeTab, setActiveTab] = useState(0);
@@ -192,60 +193,42 @@ const MyPay = ({ userData }) => {
         <Tab.Panels className="mt-4">
           <Tab.Panel>
             {loading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-              </div>
-            ) : (
+        <CenteredSpinner size="medium" /> : (
               <CurrentPay currentPay={payData?.currentPay} />
             )}
           </Tab.Panel>
           
           <Tab.Panel>
             {loading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-              </div>
-            ) : (
+        <CenteredSpinner size="medium" /> : (
               <PayHistory payStatements={payStatements} />
             )}
           </Tab.Panel>
           
           <Tab.Panel>
             {loading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-              </div>
-            ) : (
+        <CenteredSpinner size="medium" /> : (
               <YTDSummary ytdSummary={payData?.ytdSummary} />
             )}
           </Tab.Panel>
           
           <Tab.Panel>
             {loading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-              </div>
-            ) : (
+        <CenteredSpinner size="medium" /> : (
               <Deposit deposit={payData?.deposit} userData={userData} />
             )}
           </Tab.Panel>
           
           <Tab.Panel>
             {loading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-              </div>
-            ) : (
+        <CenteredSpinner size="medium" /> : (
               <IncomeTax incomeTax={payData?.incomeTax} userData={userData} />
             )}
           </Tab.Panel>
           
           <Tab.Panel>
             {loading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-              </div>
-            ) : (
+        <CenteredSpinner size="medium" /> : (
               <Statement payStatements={payStatements} />
             )}
           </Tab.Panel>

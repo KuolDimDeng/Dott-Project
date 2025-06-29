@@ -6,6 +6,7 @@ import { bankAccountsApi } from '@/services/api/banking';
 import { logger } from '@/utils/logger';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { useSession } from '@/hooks/useSession-v2';
+import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 import {
   BuildingLibraryIcon,
   LinkIcon,
@@ -197,10 +198,7 @@ const ConnectBankManagement = () => {
           <div className="p-4">
             <h2 className="text-xl font-bold mb-4">Manage Connected Accounts</h2>
             {loading ? (
-              <div className="flex justify-center">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
-              </div>
-            ) : error ? (
+        <CenteredSpinner size="medium" /> : error ? (
               <div className="text-red-500">{error}</div>
             ) : connectedAccounts.length === 0 ? (
               <div className="text-center py-10">
@@ -273,7 +271,7 @@ const ConnectBankManagement = () => {
   if (!tenantId) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <CenteredSpinner size="medium" />
       </div>
     );
   }
