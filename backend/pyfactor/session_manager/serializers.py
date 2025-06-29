@@ -75,18 +75,37 @@ class SessionSerializer(serializers.ModelSerializer):
                     user_data['business_name'] = onboarding.business.name
                     user_data['businessName'] = onboarding.business.name  # Both formats for compatibility
                 
-                # Get business type from BusinessDetails
+                # Get business type and country from BusinessDetails
+                business_country = None
+                business_type = None
                 if onboarding.business:
                     business_type = onboarding.business.business_type
                     if business_type:
                         user_data['business_type'] = business_type
                         user_data['businessType'] = business_type
+                    
+                    # Get country from business details (correct location)
+                    try:
+                        # Country is stored in BusinessDetails.country
+                        business_details = onboarding.business.details
+                        if business_details and business_details.country:
+                            business_country = str(business_details.country)
+                            logger.debug(f"Found country from BusinessDetails: {business_country}")
+                    except Exception as e:
+                        logger.debug(f"Could not fetch country from business details: {e}")
+                        # Fallback: try to get from onboarding.business directly if it has a country field
+                        try:
+                            if hasattr(onboarding.business, 'country') and onboarding.business.country:
+                                business_country = str(onboarding.business.country)
+                                logger.debug(f"Found country from Business fallback: {business_country}")
+                        except Exception as fallback_e:
+                            logger.debug(f"Fallback country lookup also failed: {fallback_e}")
                 
                 # Include full onboarding progress data
                 user_data['onboardingProgress'] = {
                     'businessName': onboarding.business.name if onboarding.business else None,
-                    'businessType': onboarding.business.business_type if onboarding.business else None,
-                    'country': onboarding.country,
+                    'businessType': business_type,
+                    'country': business_country,  # Now correctly from BusinessDetails
                     'legalStructure': onboarding.legal_structure,
                     'dateFounded': onboarding.date_founded.isoformat() if onboarding.date_founded else None,
                     'currentStep': onboarding.current_step,

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -21,24 +21,23 @@ const AUTH0_DOMAIN = 'auth.dottapps.com';
 const AUTH0_CLIENT_ID = '9i7GSU4bgh6hFtMXnQACwiRxTudpuOSF';
 const redirectUri = 'dott://redirect';
 
-console.log('Redirect URI:', redirectUri);
-
 const Auth0LoginScreen = () => {
+  console.log('Auth0LoginScreen mounting');
+  console.log('Redirect URI:', redirectUri);
   const navigation = useNavigation();
   const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-
-  // Auto-trigger login when component mounts
-  useEffect(() => {
-    // Add small delay then auto-trigger
-    setTimeout(() => {
-      handleLogin();
-    }, 1000);
-  }, []);
+  const [isAuthInProgress, setIsAuthInProgress] = useState(false);
 
   const handleLogin = async () => {
+    if (isAuthInProgress) {
+      console.log('Authentication already in progress, ignoring');
+      return;
+    }
+    
     try {
       setIsLoading(true);
+      setIsAuthInProgress(true);
       
       // Generate PKCE parameters and state manually
       console.log('Generating PKCE parameters...');
@@ -124,6 +123,7 @@ const Auth0LoginScreen = () => {
       } else if (result.type === 'cancel') {
         console.log('User cancelled authentication');
         setIsLoading(false);
+        setIsAuthInProgress(false);
       } else {
         console.log('Authentication result:', result);
         throw new Error('Authentication failed');
@@ -132,6 +132,7 @@ const Auth0LoginScreen = () => {
       console.error('Login error:', error);
       Alert.alert('Login Failed', error.message || 'Could not complete authentication');
       setIsLoading(false);
+      setIsAuthInProgress(false);
     }
   };
 
@@ -197,6 +198,7 @@ const Auth0LoginScreen = () => {
       console.error('Token exchange error:', error);
       Alert.alert('Login Failed', 'Could not complete authentication');
       setIsLoading(false);
+      setIsAuthInProgress(false);
     }
   };
 
@@ -228,12 +230,12 @@ const Auth0LoginScreen = () => {
           <Text style={styles.subtitle}>Please sign in to continue</Text>
 
           <TouchableOpacity
-            style={styles.button}
+            style={[styles.button, (isLoading || isAuthInProgress) && styles.buttonDisabled]}
             onPress={handleLogin}
-            disabled={isLoading}
+            disabled={isLoading || isAuthInProgress}
           >
             <Text style={styles.buttonText}>
-              {isLoading ? 'Signing in...' : 'Sign in with Dott'}
+              {isLoading || isAuthInProgress ? 'Signing in...' : 'Sign in with Dott'}
             </Text>
           </TouchableOpacity>
 
@@ -300,6 +302,9 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
     marginTop: 8,
+  },
+  buttonDisabled: {
+    backgroundColor: '#94a3b8',
   },
   buttonText: {
     color: '#fff',

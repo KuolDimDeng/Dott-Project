@@ -119,12 +119,24 @@ export default function TaxSettings({ onNavigate }) {
           
           // Pre-populate form with user data from session
           if (user) {
-            // Get country from onboardingProgress (primary) or fallback locations
+            // Debug: Log complete user object structure to find country
+            console.log('[TaxSettings] Complete user object:', user);
+            console.log('[TaxSettings] User keys:', Object.keys(user));
+            
+            // Try multiple possible country field locations
             const countryCode = user.onboardingProgress?.country || 
                                user.country || 
-                               user.business_country || '';
+                               user.business_country || 
+                               user.businessCountry ||
+                               user.userCountry ||
+                               user.profile?.country ||
+                               user.business?.country ||
+                               user.businessDetails?.country ||
+                               '';
             console.log('[TaxSettings] Raw country value from user:', countryCode);
             console.log('[TaxSettings] User onboardingProgress:', user.onboardingProgress);
+            console.log('[TaxSettings] User profile:', user.profile);
+            console.log('[TaxSettings] User business:', user.business);
             
             const countryName = getCountryName(countryCode);
             console.log('[TaxSettings] Mapped country name:', countryName);
