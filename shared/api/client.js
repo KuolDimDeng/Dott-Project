@@ -21,6 +21,13 @@ class ApiClient {
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
     
+    console.log('API Request:', {
+      url,
+      method: options.method || 'GET',
+      baseURL: this.baseURL,
+      endpoint
+    });
+    
     const headers = {
       'Content-Type': 'application/json',
       ...options.headers,
@@ -31,18 +38,45 @@ class ApiClient {
     }
 
     try {
-      const response = await fetch(url, {
+      // React Native doesn't support credentials: 'include'
+      const fetchOptions = {
         ...options,
         headers,
-        credentials: 'include',
+      };
+      
+      // Only add credentials for web environment
+      if (typeof window !== 'undefined' && window.document) {
+        fetchOptions.credentials = 'include';
+      }
+      
+      const response = await fetch(url, fetchOptions);
+
+      const contentType = response.headers.get('content-type');
+      console.log('Response:', {
+        status: response.status,
+        contentType,
+        url: response.url
       });
 
       if (!response.ok) {
-        const error = await response.json();
+        let error;
+        if (contentType && contentType.includes('application/json')) {
+          error = await response.json();
+        } else {
+          const text = await response.text();
+          console.error('Non-JSON response:', text.substring(0, 200));
+          error = { message: 'Server returned non-JSON response' };
+        }
         throw new Error(error.message || `HTTP error! status: ${response.status}`);
       }
 
-      return await response.json();
+      if (contentType && contentType.includes('application/json')) {
+        return await response.json();
+      } else {
+        const text = await response.text();
+        console.error('Expected JSON but got:', text.substring(0, 200));
+        throw new Error('Expected JSON response but got HTML/text');
+      }
     } catch (error) {
       console.error('API request failed:', error);
       throw error;
@@ -78,16 +112,23 @@ export const apiClient = new ApiClient();
 
 export const authApi = {
   login: async (credentials) => {
-    return apiClient.post('/api/auth/login', credentials);
+    // Your backend uses session-based auth, not token-based
+    // First, we need to get CSRF token or use the session endpoint
+    const response = await apiClient.post('/api/auth/session-v2', {
+      email: credentials.email,
+      password: credentials.password,
+      action: 'login'
+    });
+    return response;
   },
   logout: async () => {
-    return apiClient.post('/api/auth/logout');
+    return apiClient.delete('/api/auth/session-v2');
   },
   getSession: async () => {
     return apiClient.get('/api/auth/session-v2');
   },
   refreshSession: async () => {
-    return apiClient.post('/api/auth/session-v2');
+    return apiClient.post('/api/auth/session-v2', { action: 'refresh' });
   },
 };
 

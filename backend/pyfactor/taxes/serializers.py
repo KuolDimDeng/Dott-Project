@@ -3,7 +3,7 @@ from rest_framework import serializers
 from .models import (
     State, IncomeTaxRate, PayrollTaxFiling, TaxFilingInstruction, TaxForm,
     TaxDataEntryControl, TaxDataEntryLog, TaxDataAbuseReport, TaxDataBlacklist,
-    TaxSettings, TaxApiUsage
+    TaxSettings, TaxApiUsage, TaxFilingLocation, TaxReminder
 )
 
 class StateSerializer(serializers.ModelSerializer):
@@ -157,3 +157,36 @@ class TaxApiUsageSerializer(serializers.ModelSerializer):
         # Get first day of next month
         next_month = current_date + relativedelta(months=1)
         return next_month.isoformat()
+
+
+class TaxFilingLocationSerializer(serializers.ModelSerializer):
+    is_stale = serializers.ReadOnlyField()
+    
+    class Meta:
+        model = TaxFilingLocation
+        fields = [
+            'id', 'country', 'state_province', 'city', 'postal_code',
+            'federal_website', 'federal_name', 'federal_address', 'federal_phone', 'federal_email',
+            'state_website', 'state_name', 'state_address', 'state_phone', 'state_email',
+            'local_website', 'local_name', 'local_address', 'local_phone', 'local_email',
+            'filing_deadlines', 'special_instructions', 'tax_types',
+            'last_updated', 'created_at', 'verified', 'lookup_count', 'is_stale'
+        ]
+        read_only_fields = ['id', 'last_updated', 'created_at', 'lookup_count', 'is_stale']
+
+
+class TaxReminderSerializer(serializers.ModelSerializer):
+    is_overdue = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = TaxReminder
+        fields = [
+            'id', 'title', 'description', 'reminder_type', 'due_date',
+            'status', 'created_at', 'updated_at', 'is_overdue'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def get_is_overdue(self, obj):
+        """Check if reminder is overdue"""
+        from django.utils import timezone
+        return obj.status == 'pending' and obj.due_date < timezone.now().date()

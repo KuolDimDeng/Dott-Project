@@ -533,3 +533,106 @@ class TaxApiUsage(TenantAwareModel):
     
     def __str__(self):
         return f"Tenant {self.tenant_id} - {self.month_year} ({self.api_calls_count}/{self.monthly_limit})"
+
+
+class TaxFilingLocation(models.Model):
+    """Caches tax filing location information to reduce API calls."""
+    # Location identifiers
+    country = models.CharField(max_length=100)
+    state_province = models.CharField(max_length=100, blank=True, default='')
+    city = models.CharField(max_length=100, blank=True, default='')
+    postal_code = models.CharField(max_length=20, blank=True, default='')
+    
+    # Federal/National filing information
+    federal_website = models.URLField(max_length=500, blank=True, default='')
+    federal_name = models.CharField(max_length=255, blank=True, default='')
+    federal_address = models.TextField(blank=True, default='')
+    federal_phone = models.CharField(max_length=50, blank=True, default='')
+    federal_email = models.EmailField(blank=True, default='')
+    
+    # State/Provincial filing information
+    state_website = models.URLField(max_length=500, blank=True, default='')
+    state_name = models.CharField(max_length=255, blank=True, default='')
+    state_address = models.TextField(blank=True, default='')
+    state_phone = models.CharField(max_length=50, blank=True, default='')
+    state_email = models.EmailField(blank=True, default='')
+    
+    # Local/Municipal filing information
+    local_website = models.URLField(max_length=500, blank=True, default='')
+    local_name = models.CharField(max_length=255, blank=True, default='')
+    local_address = models.TextField(blank=True, default='')
+    local_phone = models.CharField(max_length=50, blank=True, default='')
+    local_email = models.EmailField(blank=True, default='')
+    
+    # Additional information
+    filing_deadlines = models.JSONField(default=dict, blank=True)
+    special_instructions = models.TextField(blank=True, default='')
+    tax_types = models.JSONField(default=list, blank=True)  # ['sales', 'income', 'property', etc.]
+    
+    # Cache management
+    last_updated = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    verified = models.BooleanField(default=False)
+    lookup_count = models.IntegerField(default=1)  # Track popularity
+    
+    class Meta:
+        app_label = 'taxes'
+        db_table = 'tax_filing_locations'
+        unique_together = ['country', 'state_province', 'city']
+        indexes = [
+            models.Index(fields=['country', 'state_province']),
+            models.Index(fields=['last_updated']),
+            models.Index(fields=['lookup_count']),
+        ]
+        
+    def __str__(self):
+        location_parts = [self.country]
+        if self.state_province:
+            location_parts.append(self.state_province)
+        if self.city:
+            location_parts.append(self.city)
+        return ', '.join(location_parts)
+    
+    @property
+    def is_stale(self):
+        """Check if cache is older than 90 days."""
+        from django.utils import timezone
+        from datetime import timedelta
+        return self.last_updated < timezone.now() - timedelta(days=90)
+
+
+class TaxReminder(TenantAwareModel):
+    """Stores tax filing reminders for tenants."""
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, default='')
+    reminder_type = models.CharField(
+        max_length=50,
+        choices=[
+            ('sales_tax', 'Sales Tax'),
+            ('income_tax', 'Income Tax'),
+            ('quarterly', 'Quarterly Filing'),
+            ('annual', 'Annual Filing'),
+            ('other', 'Other'),
+        ]
+    )
+    due_date = models.DateField()
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ('pending', 'Pending'),
+            ('completed', 'Completed'),
+            ('overdue', 'Overdue'),
+        ],
+        default='pending'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        app_label = 'taxes'
+        db_table = 'tax_reminders'
+        ordering = ['due_date']
+        indexes = [
+            models.Index(fields=['tenant_id', 'due_date']),
+            models.Index(fields=['tenant_id', 'status']),
+        ]

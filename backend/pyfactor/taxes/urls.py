@@ -9,6 +9,8 @@ from .views import (
     TaxDataAbuseReportViewSet, TaxDataBlacklistViewSet,
     TaxSettingsViewSet, TaxApiUsageViewSet
 )
+from .views.filing_locations import TaxFilingLocationViewSet
+from .views.reminders import TaxReminderViewSet
 
 router = DefaultRouter()
 router.register(r'states', StateViewSet)
@@ -19,6 +21,8 @@ router.register(r'tax-forms', TaxFormViewSet)
 router.register(r'global', GlobalComplianceViewSet, basename='global')
 router.register(r'settings', TaxSettingsViewSet, basename='tax-settings')
 router.register(r'api-usage', TaxApiUsageViewSet, basename='tax-api-usage')
+router.register(r'filing-locations', TaxFilingLocationViewSet, basename='tax-filing-locations')
+router.register(r'reminders', TaxReminderViewSet, basename='tax-reminders')
 
 # Abuse control endpoints
 router.register(r'abuse-control/controls', TaxDataEntryControlViewSet, basename='tax-entry-control')

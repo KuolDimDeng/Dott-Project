@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { tokenStorage, userStorage } from '../../../shared/utils/storage';
-import { apiClient, authApi } from '../../../shared/api/client';
+import { apiClient } from '../../../shared/api/client';
+import { auth0Service } from '../services/auth';
 
 interface User {
   id: string;
@@ -8,6 +9,7 @@ interface User {
   name: string;
   businessName?: string;
   tenantId?: string;
+  picture?: string;
 }
 
 interface AuthContextType {
@@ -42,17 +44,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const token = await tokenStorage.getToken();
       if (token) {
         apiClient.setToken(token);
-        const sessionData = await authApi.getSession();
         
-        if (sessionData.authenticated && sessionData.user) {
+        // Try to get user info from Auth0
+        try {
+          const userInfo = await auth0Service.getUserInfo(token);
+          const userData = await userStorage.getUser();
+          
           setUser({
-            id: sessionData.user.id,
-            email: sessionData.user.email,
-            name: sessionData.user.name || sessionData.user.email,
-            businessName: sessionData.user.businessName,
-            tenantId: sessionData.user.tenantId,
+            id: userInfo.sub,
+            email: userInfo.email,
+            name: userInfo.name || userInfo.email,
+            businessName: userData?.businessName,
+            tenantId: userData?.tenantId,
+            picture: userInfo.picture,
           });
-          await userStorage.setUser(sessionData.user);
+        } catch (error) {
+          console.error('Error getting user info:', error);
+          await tokenStorage.removeToken();
+          await userStorage.removeUser();
         }
       }
     } catch (error) {
@@ -66,7 +75,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await authApi.login({ email, password });
+      const response = await auth0Service.login(email, password);
       
       if (response.token) {
         await tokenStorage.setToken(response.token);
@@ -80,6 +89,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           name: response.user.name || response.user.email,
           businessName: response.user.businessName,
           tenantId: response.user.tenantId,
+          picture: response.user.picture,
         });
         await userStorage.setUser(response.user);
       }
@@ -91,7 +101,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
-      await authApi.logout();
+      const token = await tokenStorage.getToken();
+      if (token) {
+        await auth0Service.logout(token);
+      }
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
@@ -104,14 +117,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshSession = async () => {
     try {
-      const sessionData = await authApi.refreshSession();
-      if (sessionData.authenticated && sessionData.user) {
+      const token = await tokenStorage.getToken();
+      if (token) {
+        const userInfo = await auth0Service.getUserInfo(token);
+        const userData = await userStorage.getUser();
+        
         setUser({
-          id: sessionData.user.id,
-          email: sessionData.user.email,
-          name: sessionData.user.name || sessionData.user.email,
-          businessName: sessionData.user.businessName,
-          tenantId: sessionData.user.tenantId,
+          id: userInfo.sub,
+          email: userInfo.email,
+          name: userInfo.name || userInfo.email,
+          businessName: userData?.businessName,
+          tenantId: userData?.tenantId,
+          picture: userInfo.picture,
         });
       }
     } catch (error) {

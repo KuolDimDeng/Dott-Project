@@ -3,12 +3,12 @@ from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import (
+from ..models import (
     State, IncomeTaxRate, PayrollTaxFiling, TaxFilingInstruction, TaxForm,
     TaxDataEntryControl, TaxDataEntryLog, TaxDataAbuseReport, TaxDataBlacklist,
     TaxSettings, TaxApiUsage
 )
-from .serializers import (
+from ..serializers import (
     StateSerializer, IncomeTaxRateSerializer, 
     PayrollTaxFilingSerializer, TaxFilingInstructionSerializer,
     TaxFormSerializer, TaxDataEntryControlSerializer,
@@ -23,7 +23,7 @@ from django.template.loader import render_to_string
 # from weasyprint import HTML  # Removed - not available on Render
 import tempfile
 from datetime import date
-from .services.claude_service import ClaudeComplianceService
+from taxes.services.claude_service import ClaudeComplianceService
 from rest_framework.decorators import api_view
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -83,7 +83,7 @@ class IncomeTaxRateViewSet(viewsets.ModelViewSet):
     def _check_abuse_control(self, entry_type='create', entry_count=1):
         """Check abuse control before allowing operation"""
         from custom_auth.rls import get_current_tenant_id
-        from .services.abuse_control_service import TaxDataAbuseControlService
+        from taxes.services.abuse_control_service import TaxDataAbuseControlService
         
         tenant_id = get_current_tenant_id()
         if not tenant_id:

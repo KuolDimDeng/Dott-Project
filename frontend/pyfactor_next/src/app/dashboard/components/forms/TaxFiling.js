@@ -55,6 +55,10 @@ export default function TaxFiling({ onNavigate }) {
   // PDF generation state
   const [generatingPDF, setGeneratingPDF] = useState(false);
   
+  // Filing location state
+  const [filingLocations, setFilingLocations] = useState(null);
+  const [loadingLocations, setLoadingLocations] = useState(false);
+  
   // Initialize and load tax settings
   useEffect(() => {
     const initialize = async () => {
@@ -327,47 +331,64 @@ export default function TaxFiling({ onNavigate }) {
     }
   }, [tenantId, isInitialized]);
   
-  // Get filing links based on location
-  const getFilingLinks = () => {
-    const state = taxSettings?.stateProvince?.toLowerCase();
+  // Fetch filing locations from smart lookup
+  const fetchFilingLocations = async () => {
+    if (!taxSettings) return;
+    
+    setLoadingLocations(true);
+    try {
+      const params = new URLSearchParams({
+        country: taxSettings.country,
+        stateProvince: taxSettings.stateProvince,
+        city: taxSettings.city
+      });
+      
+      const response = await fetch(`/api/taxes/filing-locations?${params}`, {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setFilingLocations(data);
+      } else {
+        console.error('[TaxFiling] Failed to fetch filing locations');
+        // Use fallback hardcoded links
+        setFilingLocations(getFallbackLinks());
+      }
+    } catch (error) {
+      console.error('[TaxFiling] Error fetching filing locations:', error);
+      // Use fallback hardcoded links
+      setFilingLocations(getFallbackLinks());
+    } finally {
+      setLoadingLocations(false);
+    }
+  };
+  
+  // Fallback filing links
+  const getFallbackLinks = () => {
     const country = taxSettings?.country?.toLowerCase();
     
-    // Common tax filing websites
-    const links = {
-      federal: {
-        us: {
-          name: 'IRS (Federal)',
-          url: 'https://www.irs.gov/filing',
-          description: 'File federal income taxes'
-        },
-        canada: {
-          name: 'CRA (Federal)',
-          url: 'https://www.canada.ca/en/revenue-agency/services/e-services/e-services-businesses/business-account.html',
-          description: 'File Canadian federal taxes'
-        }
+    return {
+      federal_website: country?.includes('united states') ? 'https://www.irs.gov/filing' : '',
+      federal_name: country?.includes('united states') ? 'IRS (Internal Revenue Service)' : 'Federal Tax Authority',
+      state_website: taxSettings?.filingWebsite || '',
+      state_name: `${taxSettings?.stateProvince} Department of Revenue`,
+      local_website: '',
+      local_name: '',
+      filing_deadlines: {
+        quarterly: '15th of month following quarter end',
+        annual: 'April 15th (US) or varies by country'
       },
-      state: {
-        california: {
-          name: 'California Department of Tax and Fee Administration',
-          url: 'https://www.cdtfa.ca.gov/',
-          description: 'File California state taxes'
-        },
-        texas: {
-          name: 'Texas Comptroller',
-          url: 'https://comptroller.texas.gov/taxes/',
-          description: 'File Texas state taxes'
-        },
-        newyork: {
-          name: 'New York State Department of Taxation',
-          url: 'https://www.tax.ny.gov/',
-          description: 'File New York state taxes'
-        }
-        // Add more states as needed
-      }
+      special_instructions: 'Please check with your tax professional for specific requirements.'
     };
-    
-    return links;
   };
+  
+  // Load filing locations when tax settings are loaded
+  useEffect(() => {
+    if (taxSettings && isInitialized) {
+      fetchFilingLocations();
+    }
+  }, [taxSettings, isInitialized]);
   
   if (sessionLoading || !isInitialized) {
     return <CenteredSpinner size="large" text="Loading Tax Filing..." showText={true} />;
@@ -391,7 +412,6 @@ export default function TaxFiling({ onNavigate }) {
     );
   }
   
-  const filingLinks = getFilingLinks();
   
   return (
     <div className="p-6">
@@ -612,69 +632,164 @@ export default function TaxFiling({ onNavigate }) {
       
       {/* Filing Links */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-          <ArrowTopRightOnSquareIcon className="h-5 w-5 mr-2 text-gray-600" />
-          File Your Taxes
-        </h2>
-        
-        <div className="space-y-4">
-          {/* Federal Filing */}
-          <div>
-            <h3 className="font-medium text-gray-900 mb-2">Federal Taxes</h3>
-            <div className="space-y-2">
-              {taxSettings.country?.toLowerCase().includes('united states') && (
-                <a
-                  href={filingLinks.federal.us.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <div>
-                    <p className="font-medium text-blue-600">{filingLinks.federal.us.name}</p>
-                    <p className="text-sm text-gray-600">{filingLinks.federal.us.description}</p>
-                  </div>
-                  <ArrowTopRightOnSquareIcon className="h-5 w-5 text-gray-400" />
-                </a>
-              )}
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+            <ArrowTopRightOnSquareIcon className="h-5 w-5 mr-2 text-gray-600" />
+            File Your Taxes
+          </h2>
+          {loadingLocations && (
+            <div className="flex items-center text-sm text-gray-600">
+              <StandardSpinner size="small" className="mr-2" />
+              Finding filing locations...
             </div>
-          </div>
-          
-          {/* State Filing */}
-          <div>
-            <h3 className="font-medium text-gray-900 mb-2">State Taxes</h3>
-            <div className="space-y-2">
-              {taxSettings.stateProvince && (
-                <a
-                  href={taxSettings.filingWebsite || '#'}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <div>
-                    <p className="font-medium text-blue-600">
-                      {taxSettings.stateProvince} Department of Revenue
-                    </p>
-                    <p className="text-sm text-gray-600">File state sales and income taxes</p>
-                  </div>
-                  <ArrowTopRightOnSquareIcon className="h-5 w-5 text-gray-400" />
-                </a>
-              )}
-            </div>
-          </div>
+          )}
         </div>
+        
+        {filingLocations ? (
+          <div className="space-y-4">
+            {/* Federal Filing */}
+            {filingLocations.federal_website && (
+              <div>
+                <h3 className="font-medium text-gray-900 mb-2">Federal Taxes</h3>
+                <div className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                  <a
+                    href={filingLocations.federal_website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-start justify-between"
+                  >
+                    <div className="flex-1">
+                      <p className="font-medium text-blue-600 mb-1">
+                        {filingLocations.federal_name}
+                      </p>
+                      <p className="text-sm text-gray-600 mb-2">
+                        {filingLocations.federal_website}
+                      </p>
+                      {filingLocations.federal_address && (
+                        <p className="text-sm text-gray-700 mb-1">
+                          <span className="font-medium">Address:</span> {filingLocations.federal_address}
+                        </p>
+                      )}
+                      {filingLocations.federal_phone && (
+                        <p className="text-sm text-gray-700">
+                          <span className="font-medium">Phone:</span> {filingLocations.federal_phone}
+                        </p>
+                      )}
+                    </div>
+                    <ArrowTopRightOnSquareIcon className="h-5 w-5 text-gray-400 flex-shrink-0 ml-4" />
+                  </a>
+                </div>
+              </div>
+            )}
+            
+            {/* State Filing */}
+            {filingLocations.state_website && (
+              <div>
+                <h3 className="font-medium text-gray-900 mb-2">State/Provincial Taxes</h3>
+                <div className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                  <a
+                    href={filingLocations.state_website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-start justify-between"
+                  >
+                    <div className="flex-1">
+                      <p className="font-medium text-blue-600 mb-1">
+                        {filingLocations.state_name}
+                      </p>
+                      <p className="text-sm text-gray-600 mb-2">
+                        {filingLocations.state_website}
+                      </p>
+                      {filingLocations.state_address && (
+                        <p className="text-sm text-gray-700 mb-1">
+                          <span className="font-medium">Address:</span> {filingLocations.state_address}
+                        </p>
+                      )}
+                      {filingLocations.state_phone && (
+                        <p className="text-sm text-gray-700">
+                          <span className="font-medium">Phone:</span> {filingLocations.state_phone}
+                        </p>
+                      )}
+                    </div>
+                    <ArrowTopRightOnSquareIcon className="h-5 w-5 text-gray-400 flex-shrink-0 ml-4" />
+                  </a>
+                </div>
+              </div>
+            )}
+            
+            {/* Local Filing */}
+            {filingLocations.local_website && (
+              <div>
+                <h3 className="font-medium text-gray-900 mb-2">Local/Municipal Taxes</h3>
+                <div className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                  <a
+                    href={filingLocations.local_website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-start justify-between"
+                  >
+                    <div className="flex-1">
+                      <p className="font-medium text-blue-600 mb-1">
+                        {filingLocations.local_name}
+                      </p>
+                      <p className="text-sm text-gray-600 mb-2">
+                        {filingLocations.local_website}
+                      </p>
+                      {filingLocations.local_address && (
+                        <p className="text-sm text-gray-700 mb-1">
+                          <span className="font-medium">Address:</span> {filingLocations.local_address}
+                        </p>
+                      )}
+                      {filingLocations.local_phone && (
+                        <p className="text-sm text-gray-700">
+                          <span className="font-medium">Phone:</span> {filingLocations.local_phone}
+                        </p>
+                      )}
+                    </div>
+                    <ArrowTopRightOnSquareIcon className="h-5 w-5 text-gray-400 flex-shrink-0 ml-4" />
+                  </a>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            <p>Loading filing location information...</p>
+          </div>
+        )}
         
         {/* Important Dates */}
-        <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <div className="flex items-start">
-            <ClockIcon className="h-5 w-5 text-yellow-600 mt-0.5 mr-2" />
-            <div>
-              <p className="font-medium text-yellow-900">Important Filing Deadlines</p>
-              <p className="text-sm text-yellow-700 mt-1">
-                {taxSettings.filingDeadlines || 'Quarterly: 15th of month following quarter end'}
-              </p>
+        {filingLocations && (
+          <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="flex items-start">
+              <ClockIcon className="h-5 w-5 text-yellow-600 mt-0.5 mr-2" />
+              <div>
+                <p className="font-medium text-yellow-900">Important Filing Deadlines</p>
+                {filingLocations.filing_deadlines && Object.keys(filingLocations.filing_deadlines).length > 0 ? (
+                  <div className="text-sm text-yellow-700 mt-1 space-y-1">
+                    {Object.entries(filingLocations.filing_deadlines).map(([type, deadline]) => (
+                      <p key={type}>
+                        <span className="capitalize">{type.replace('_', ' ')}:</span> {deadline}
+                      </p>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-yellow-700 mt-1">
+                    Quarterly: 15th of month following quarter end
+                  </p>
+                )}
+              </div>
             </div>
+            
+            {filingLocations.special_instructions && (
+              <div className="mt-3 pt-3 border-t border-yellow-300">
+                <p className="text-sm text-yellow-800">
+                  <span className="font-medium">Note:</span> {filingLocations.special_instructions}
+                </p>
+              </div>
+            )}
           </div>
-        </div>
+        )}
       </div>
       
       {/* Tax Reminders */}
