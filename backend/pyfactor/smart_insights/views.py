@@ -380,9 +380,12 @@ class SmartInsightsViewSet(viewsets.ViewSet):
         
         try:
             import anthropic
+            print(f"[Smart Insights] Anthropic version: {anthropic.__version__}")
+            print(f"[Smart Insights] API key present: {bool(settings.CLAUDE_API_KEY)}")
             
             # Initialize Claude client
             client = anthropic.Anthropic(api_key=settings.CLAUDE_API_KEY)
+            print("[Smart Insights] Client initialized successfully")
             
             # Call Claude API
             response = client.messages.create(
@@ -438,6 +441,10 @@ class SmartInsightsViewSet(viewsets.ViewSet):
             })
             
         except Exception as e:
+            print(f"[Smart Insights] Error processing query: {str(e)}")
+            print(f"[Smart Insights] Error type: {type(e)}")
+            import traceback
+            print(f"[Smart Insights] Traceback: {traceback.format_exc()}")
             return Response(
                 {'error': f'Failed to process query: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR

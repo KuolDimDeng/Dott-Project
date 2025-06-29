@@ -100,7 +100,7 @@ certifi==2025.4.26
 stripe==12.2.0
 
 # AI SDK for Smart Insights - CRITICAL for smart_insights app
-anthropic==0.18.1
+anthropic==0.40.0
 
 # Banking integration - CRITICAL for banking app
 plaid-python==27.0.0
