@@ -224,13 +224,30 @@ const SalesDashboard = () => {
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         const newCustomers = customers.filter(c => new Date(c.created_at) > thirtyDaysAgo);
         
+        // Calculate total revenue from paid invoices
+        let totalRevenue = 0;
+        if (invoicesRes.status === 'fulfilled') {
+          const paidInvoices = (invoicesRes.value || []).filter(i => i.is_paid || i.status === 'paid');
+          totalRevenue = paidInvoices.reduce((sum, i) => sum + (parseFloat(i.total_amount || i.totalAmount) || 0), 0);
+        }
+        
+        // Active customers are those with orders in the last 90 days
+        const ninetyDaysAgo = new Date();
+        ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+        let activeCustomers = customers.length;
+        if (ordersRes.status === 'fulfilled') {
+          const recentOrders = (ordersRes.value || []).filter(o => new Date(o.order_date || o.created_at) > ninetyDaysAgo);
+          const activeCustomerIds = [...new Set(recentOrders.map(o => o.customer_id))];
+          activeCustomers = activeCustomerIds.length;
+        }
+        
         setMetrics(prev => ({
           ...prev,
           customers: {
             total: customers.length,
-            active: customers.length, // You might want to define what makes a customer "active"
+            active: activeCustomers,
             new: newCustomers.length,
-            totalRevenue: 0 // This would need to be calculated from orders/invoices
+            totalRevenue: totalRevenue
           }
         }));
 
@@ -245,6 +262,131 @@ const SalesDashboard = () => {
             createdAt: customer.created_at
           }))
         }));
+      }
+
+      // Process chart data
+      if (ordersRes.status === 'fulfilled' && invoicesRes.status === 'fulfilled') {
+        const orders = ordersRes.value || [];
+        const invoices = invoicesRes.value || [];
+        
+        // Sales trend data - last 7 days
+        const salesTrend = [];
+        for (let i = 6; i >= 0; i--) {
+          const date = new Date();
+          date.setDate(date.getDate() - i);
+          const dateStr = format(date, 'yyyy-MM-dd');
+          
+          const dayOrders = orders.filter(o => 
+            format(new Date(o.order_date || o.created_at), 'yyyy-MM-dd') === dateStr
+          );
+          const dayInvoices = invoices.filter(i => 
+            format(new Date(i.invoice_date || i.created_at), 'yyyy-MM-dd') === dateStr
+          );
+          
+          salesTrend.push({
+            date: format(date, 'MMM dd'),
+            orders: dayOrders.length,
+            revenue: dayOrders.reduce((sum, o) => sum + (parseFloat(o.total_amount) || 0), 0) +
+                    dayInvoices.filter(i => i.is_paid || i.status === 'paid')
+                      .reduce((sum, i) => sum + (parseFloat(i.total_amount || i.totalAmount) || 0), 0)
+          });
+        }
+        
+        setChartData(prev => ({ ...prev, salesTrend }));
+      }
+      
+      // Top products
+      if (productsRes.status === 'fulfilled' && ordersRes.status === 'fulfilled') {
+        const products = productsRes.value || [];
+        const orders = ordersRes.value || [];
+        
+        // Count product sales from order items
+        const productSales = {};
+        orders.forEach(order => {
+          if (order.items) {
+            order.items.forEach(item => {
+              const productId = item.product_id;
+              if (productId) {
+                productSales[productId] = (productSales[productId] || 0) + (item.quantity || 0);
+              }
+            });
+          }
+        });
+        
+        // Get top 5 products by sales
+        const topProducts = Object.entries(productSales)
+          .map(([productId, sales]) => {
+            const product = products.find(p => p.id === parseInt(productId));
+            return product ? {
+              name: product.name,
+              sales: sales,
+              revenue: sales * (product.price || 0)
+            } : null;
+          })
+          .filter(Boolean)
+          .sort((a, b) => b.sales - a.sales)
+          .slice(0, 5);
+        
+        setChartData(prev => ({ ...prev, topProducts }));
+      }
+      
+      // Top services  
+      if (servicesRes.status === 'fulfilled' && ordersRes.status === 'fulfilled') {
+        const services = servicesRes.value || [];
+        const orders = ordersRes.value || [];
+        
+        // Count service sales from order items
+        const serviceSales = {};
+        orders.forEach(order => {
+          if (order.items) {
+            order.items.forEach(item => {
+              const serviceId = item.service_id;
+              if (serviceId) {
+                serviceSales[serviceId] = (serviceSales[serviceId] || 0) + (item.quantity || 1);
+              }
+            });
+          }
+        });
+        
+        // Get top 5 services by sales
+        const topServices = Object.entries(serviceSales)
+          .map(([serviceId, sales]) => {
+            const service = services.find(s => s.id === parseInt(serviceId));
+            return service ? {
+              name: service.name,
+              sales: sales,
+              revenue: sales * (service.price || 0)
+            } : null;
+          })
+          .filter(Boolean)
+          .sort((a, b) => b.revenue - a.revenue)
+          .slice(0, 5);
+        
+        setChartData(prev => ({ ...prev, topServices }));
+      }
+      
+      // Customer growth - last 6 months
+      if (customersRes.status === 'fulfilled') {
+        const customers = customersRes.value || [];
+        const customerGrowth = [];
+        
+        for (let i = 5; i >= 0; i--) {
+          const date = new Date();
+          date.setMonth(date.getMonth() - i);
+          const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+          const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+          
+          const customersBeforeMonth = customers.filter(c => 
+            new Date(c.created_at) < monthEnd
+          ).length;
+          
+          customerGrowth.push({
+            month: format(monthStart, 'MMM'),
+            customers: customersBeforeMonth
+          });
+        }
+        
+        setChartData(prev => ({ ...prev, customerGrowth }));
       }
 
       logger.info('[SalesDashboard] Dashboard data loaded successfully');
