@@ -5,6 +5,7 @@ import { toast } from 'react-hot-toast';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { useSession } from '@/hooks/useSession-v2';
 import StandardSpinner, { CenteredSpinner } from '@/components/ui/StandardSpinner';
+import TaxFilingSteps from './TaxFilingSteps';
 import { 
   DocumentTextIcon,
   CalculatorIcon,
@@ -18,7 +19,10 @@ import {
   DocumentArrowDownIcon,
   BellIcon,
   PlusIcon,
-  ChartBarIcon
+  ChartBarIcon,
+  AcademicCapIcon,
+  LightBulbIcon,
+  ClipboardDocumentListIcon
 } from '@heroicons/react/24/outline';
 
 export default function TaxFiling({ onNavigate }) {
@@ -58,6 +62,11 @@ export default function TaxFiling({ onNavigate }) {
   // Filing location state
   const [filingLocations, setFilingLocations] = useState(null);
   const [loadingLocations, setLoadingLocations] = useState(false);
+  
+  // Filing steps state
+  const [filingSteps, setFilingSteps] = useState(null);
+  const [loadingSteps, setLoadingSteps] = useState(false);
+  const [showSteps, setShowSteps] = useState(false);
   
   // Initialize and load tax settings
   useEffect(() => {
@@ -330,6 +339,41 @@ export default function TaxFiling({ onNavigate }) {
       loadReminders();
     }
   }, [tenantId, isInitialized]);
+  
+  // Generate filing steps function
+  const generateFilingSteps = () => {
+    setLoadingSteps(true);
+    setShowSteps(true);
+    
+    fetch('/api/taxes/filing-steps', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        businessInfo: {
+          businessName: taxSettings.businessName,
+          businessType: taxSettings.businessType
+        },
+        taxSettings,
+        filingPeriod: `${filingPeriod} - ${selectedQuarter}`,
+        financialData,
+        filingType: 'both' // or specific type based on what they're filing
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      setFilingSteps(data);
+      toast.success('Generated personalized filing guide');
+    })
+    .catch(error => {
+      console.error('[TaxFiling] Error generating filing steps:', error);
+      toast.error('Failed to generate filing guide');
+      setShowSteps(false);
+    })
+    .finally(() => {
+      setLoadingSteps(false);
+    });
+  };
   
   // Fetch filing locations from smart lookup
   const fetchFilingLocations = async () => {
@@ -791,6 +835,15 @@ export default function TaxFiling({ onNavigate }) {
           </div>
         )}
       </div>
+      
+      {/* Personalized Filing Steps */}
+      <TaxFilingSteps 
+        filingSteps={filingSteps}
+        showSteps={showSteps}
+        loadingSteps={loadingSteps}
+        generateFilingSteps={generateFilingSteps}
+        calculations={calculations}
+      />
       
       {/* Tax Reminders */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">

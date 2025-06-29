@@ -8,7 +8,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAuthRequest } from 'expo-auth-session';
+import { makeRedirectUri, useAuthRequest, ResponseType } from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
@@ -19,7 +19,17 @@ WebBrowser.maybeCompleteAuthSession();
 
 const AUTH0_DOMAIN = 'auth.dottapps.com';
 const AUTH0_CLIENT_ID = '9i7GSU4bgh6hFtMXnQACwiRxTudpuOSF';
-const redirectUri = 'dott://redirect';
+
+// Use makeRedirectUri to ensure proper URL formatting
+const redirectUri = makeRedirectUri({
+  scheme: 'dott',
+  path: 'redirect',
+  // Use production-ready URI instead of localhost
+  preferLocalhost: false,
+});
+
+console.log('Redirect URI:', redirectUri);
+// You need to add this exact URI to Auth0's Allowed Callback URLs
 
 // Auth0 endpoints
 const discovery = {
@@ -36,37 +46,44 @@ const Auth0LoginScreen = () => {
   const [request, response, promptAsync] = useAuthRequest(
     {
       clientId: AUTH0_CLIENT_ID,
-      scopes: ['openid', 'profile', 'email', 'offline_access'],
+      scopes: ['openid', 'profile', 'email'],
       redirectUri,
-      responseType: 'code',
+      responseType: ResponseType.Code,
       extraParams: {
         audience: 'https://api.dottapps.com',
       },
-      // This helps reduce the popup frequency
-      prompt: 'login',
-      // Use PKCE for better security and state handling
+      // Use PKCE for better security
       usePKCE: true,
+      // Additional params to prevent state issues
+      additionalParameters: {
+        prompt: 'login',
+      },
     },
     discovery
   );
 
   // Auto-trigger login when request is ready
   useEffect(() => {
-    if (request) {
+    if (request && !response) {
       // Add a small delay to ensure proper initialization
       setTimeout(() => {
         promptAsync();
         setIsLoading(false);
-      }, 100);
+      }, 500);
     }
-  }, [request]);
+  }, [request, response]);
 
   useEffect(() => {
     if (response?.type === 'success') {
-      const { code } = response.params;
+      const { code, state } = response.params;
+      console.log('Auth response:', { code: code?.substring(0, 10) + '...', state, type: response.type });
       handleAuthCode(code);
     } else if (response?.type === 'error') {
-      Alert.alert('Authentication Error', response.error?.message || 'Something went wrong');
+      console.error('Auth error:', response.error);
+      Alert.alert(
+        'Authentication Error', 
+        response.error?.description || response.error?.message || 'Something went wrong'
+      );
       setIsLoading(false);
     } else if (response?.type === 'dismiss') {
       // User cancelled - show the login button again

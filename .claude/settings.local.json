@@ -105,7 +105,8 @@
       "Bash(done)",
       "Bash(npx create-expo-app:*)",
       "Bash(npx expo start:*)",
-      "Bash(DJANGO_SETTINGS_MODULE=pyfactor.settings python -c \"import django; django.setup(); from taxes.views import TaxFilingLocationViewSet, TaxReminderViewSet; print(''✅ Successfully imported TaxFilingLocationViewSet and TaxReminderViewSet'')\")"
+      "Bash(DJANGO_SETTINGS_MODULE=pyfactor.settings python -c \"import django; django.setup(); from taxes.views import TaxFilingLocationViewSet, TaxReminderViewSet; print(''✅ Successfully imported TaxFilingLocationViewSet and TaxReminderViewSet'')\")",
+      "Bash(pnpm start:*)"
     ],
     "deny": []
   }
