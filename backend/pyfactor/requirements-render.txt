@@ -99,6 +99,9 @@ certifi==2025.4.26
 # Payment processing - CRITICAL for business_views.py line 15
 stripe==12.2.0
 
+# AI SDK for Smart Insights - CRITICAL for smart_insights app
+anthropic==0.18.1
+
 # Banking integration - CRITICAL for banking app
 plaid-python==27.0.0
 
