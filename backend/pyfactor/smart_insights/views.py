@@ -546,6 +546,7 @@ class StripeWebhookView(viewsets.ViewSet):
                             user=user,
                             transaction_type='purchase',
                             amount=credits,
+                            balance_before=user_credit.balance - credits,
                             balance_after=user_credit.balance,
                             description=f"Purchased {credits} credits via Stripe",
                             stripe_payment_intent_id=session.get('payment_intent')

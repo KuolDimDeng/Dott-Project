@@ -72,12 +72,14 @@ class CreditTransaction(models.Model):
         ('usage', 'Usage'),
         ('refund', 'Refund'),
         ('bonus', 'Bonus'),
+        ('grant', 'Grant'),
     )
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='credit_transactions')
     transaction_type = models.CharField(max_length=20, choices=TRANSACTION_TYPES)
     amount = models.IntegerField()  # Positive for additions, negative for usage
+    balance_before = models.IntegerField(default=0)
     balance_after = models.IntegerField()
     description = models.TextField(blank=True)
     stripe_payment_intent_id = models.CharField(max_length=255, blank=True)

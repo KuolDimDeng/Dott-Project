@@ -40,11 +40,10 @@ class Command(BaseCommand):
                 # Record the grant transaction
                 CreditTransaction.objects.create(
                     user=user,
-                    transaction_type='grant',
+                    transaction_type='bonus',  # Use 'bonus' which exists in the current model
                     amount=initial_credits,
-                    balance_before=0,
                     balance_after=initial_credits,
-                    description=f"Initial {subscription_plan} plan credits"
+                    description=f"Initial {subscription_plan} plan credits - Welcome bonus"
                 )
                 users_updated += 1
                 self.stdout.write(
