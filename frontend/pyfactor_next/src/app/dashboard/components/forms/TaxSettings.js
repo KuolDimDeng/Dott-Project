@@ -28,9 +28,12 @@ export default function TaxSettings({ onNavigate }) {
     businessName: '',
     businessType: 'retail',
     country: '',
+    street: '',
     stateProvince: '',
     city: '',
-    postalCode: ''
+    postalCode: '',
+    emailForDocuments: '',
+    phone: ''
   });
   
   // Tax data state
@@ -108,14 +111,25 @@ export default function TaxSettings({ onNavigate }) {
           
           // Pre-populate form with user data from session
           if (user) {
+            // Convert country code to full name if needed
+            const countryValue = user.country || '';
+            const countryName = countryValue === 'US' ? 'United States' : 
+                               countryValue === 'CA' ? 'Canada' : 
+                               countryValue === 'GB' ? 'United Kingdom' : 
+                               countryValue === 'AU' ? 'Australia' : 
+                               countryValue;
+            
             setFormData(prev => ({
               ...prev,
               businessName: user.businessName || user.business_name || '',
               businessType: user.businessType || user.business_type || 'retail',
-              country: user.country || '',
+              country: countryName,
+              street: user.street || user.address || '',
               stateProvince: user.stateProvince || user.state_province || user.state || '',
               city: user.city || '',
-              postalCode: user.postalCode || user.postal_code || user.zip_code || ''
+              postalCode: user.postalCode || user.postal_code || user.zip_code || '',
+              emailForDocuments: user.email || '',
+              phone: user.phone || ''
             }));
           }
           
@@ -378,12 +392,25 @@ export default function TaxSettings({ onNavigate }) {
               name="country"
               value={formData.country}
               onChange={handleInputChange}
-              className={`w-full px-3 py-2 border rounded-lg ${
-                user?.country ? 'border-gray-200 bg-gray-50 text-gray-700' : 'border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500'
-              }`}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-700"
               placeholder="e.g., United States"
-              readOnly={!!user?.country}
-              title={user?.country ? "This is pulled from your business profile" : "Enter your country"}
+              readOnly
+              title="This is pulled from your business profile"
+            />
+          </div>
+          
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Street Address
+            </label>
+            <input
+              type="text"
+              name="street"
+              value={formData.street}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="e.g., 123 Main Street, Suite 100"
+              required
             />
           </div>
           
@@ -398,6 +425,7 @@ export default function TaxSettings({ onNavigate }) {
               onChange={handleInputChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="e.g., California"
+              required
             />
           </div>
           
@@ -412,12 +440,13 @@ export default function TaxSettings({ onNavigate }) {
               onChange={handleInputChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="e.g., San Francisco"
+              required
             />
           </div>
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Postal Code
+              Postal/Zip Code
             </label>
             <input
               type="text"
@@ -426,6 +455,36 @@ export default function TaxSettings({ onNavigate }) {
               onChange={handleInputChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="e.g., 94105"
+              required
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Email for Tax Documents
+            </label>
+            <input
+              type="email"
+              name="emailForDocuments"
+              value={formData.emailForDocuments}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="tax@company.com"
+              required
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Phone Number (Optional)
+            </label>
+            <input
+              type="tel"
+              name="phone"
+              value={formData.phone}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="(555) 123-4567"
             />
           </div>
         </div>
