@@ -8,8 +8,8 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { makeRedirectUri, useAuthRequest, ResponseType } from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
+import * as Crypto from 'expo-crypto';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { tokenStorage, userStorage } from '../../../shared/utils/storage';
@@ -19,103 +19,138 @@ WebBrowser.maybeCompleteAuthSession();
 
 const AUTH0_DOMAIN = 'auth.dottapps.com';
 const AUTH0_CLIENT_ID = '9i7GSU4bgh6hFtMXnQACwiRxTudpuOSF';
-
-// Use explicit redirect URI to match Auth0 configuration exactly
 const redirectUri = 'dott://redirect';
 
 console.log('Redirect URI:', redirectUri);
-// This matches exactly what's in Auth0's Allowed Callback URLs
-
-// Auth0 endpoints
-const discovery = {
-  authorizationEndpoint: `https://${AUTH0_DOMAIN}/authorize`,
-  tokenEndpoint: `https://${AUTH0_DOMAIN}/oauth/token`,
-  revocationEndpoint: `https://${AUTH0_DOMAIN}/oauth/revoke`,
-};
 
 const Auth0LoginScreen = () => {
   const navigation = useNavigation();
   const { login } = useAuth();
-  const [isLoading, setIsLoading] = useState(true);
-  
-  const [request, response, promptAsync] = useAuthRequest(
-    {
-      clientId: AUTH0_CLIENT_ID,
-      scopes: ['openid', 'profile', 'email'],
-      redirectUri,
-      responseType: ResponseType.Code,
-      extraParams: {
-        audience: 'https://api.dottapps.com',
-      },
-      // Use PKCE with proper state handling
-      usePKCE: true,
-      // Clear additional parameters
-      additionalParameters: {},
-    },
-    discovery
-  );
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Auto-trigger login when request is ready
+  // Auto-trigger login when component mounts
   useEffect(() => {
-    if (request && !response) {
-      // Add a small delay to ensure proper initialization
-      setTimeout(() => {
-        promptAsync();
-        setIsLoading(false);
-      }, 500);
-    }
-  }, [request, response]);
+    // Add small delay then auto-trigger
+    setTimeout(() => {
+      handleLogin();
+    }, 1000);
+  }, []);
 
-  useEffect(() => {
-    if (response?.type === 'success') {
-      const { code, state } = response.params;
-      console.log('Auth response:', { 
-        code: code?.substring(0, 10) + '...', 
-        state: state?.substring(0, 10) + '...', 
-        type: response.type 
-      });
-      handleAuthCode(code);
-    } else if (response?.type === 'error') {
-      console.error('Auth error:', response.error);
-      Alert.alert(
-        'Authentication Error', 
-        response.error?.description || response.error?.message || 'Something went wrong'
-      );
-      setIsLoading(false);
-    } else if (response?.type === 'dismiss') {
-      // User cancelled - show the login button again
-      setIsLoading(false);
-    }
-  }, [response]);
-
-  const handleAuthCode = async (code: string) => {
+  const handleLogin = async () => {
     try {
-      // Exchange code for tokens with PKCE
-      const tokenBody: any = {
-        grant_type: 'authorization_code',
-        client_id: AUTH0_CLIENT_ID,
-        code,
-        redirect_uri: redirectUri,
-      };
+      setIsLoading(true);
+      
+      // Generate PKCE parameters and state manually
+      console.log('Generating PKCE parameters...');
+      const randomBytes = Crypto.getRandomBytes(32);
+      const codeVerifier = randomBytes
+        .toString('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=/g, '');
+      
+      // Generate state parameter
+      const stateBytes = Crypto.getRandomBytes(16);
+      const state = stateBytes
+        .toString('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=/g, '');
+      
+      console.log('Code verifier generated:', codeVerifier.substring(0, 10) + '...');
+      console.log('State generated:', state.substring(0, 10) + '...');
+      
+      const challengeBytes = await Crypto.digestStringAsync(
+        Crypto.CryptoDigestAlgorithm.SHA256,
+        codeVerifier,
+        { encoding: Crypto.CryptoEncoding.BASE64 }
+      );
+      
+      const codeChallenge = challengeBytes
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=/g, '');
+        
+      console.log('Code challenge generated:', codeChallenge.substring(0, 10) + '...');
+      
+      // Build authorization URL manually
+      const authUrl = `https://${AUTH0_DOMAIN}/authorize?` + 
+        `client_id=${AUTH0_CLIENT_ID}&` +
+        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+        `response_type=code&` +
+        `scope=${encodeURIComponent('openid profile email')}&` +
+        `audience=${encodeURIComponent('https://api.dottapps.com')}&` +
+        `state=${state}&` +
+        `code_challenge=${codeChallenge}&` +
+        `code_challenge_method=S256`;
 
-      // Add code verifier for PKCE
-      if (request?.codeVerifier) {
-        tokenBody.code_verifier = request.codeVerifier;
+      console.log('Opening auth URL:', authUrl.substring(0, 100) + '...');
+      
+      // Open WebBrowser
+      const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
+      
+      console.log('WebBrowser result:', { type: result.type });
+      
+      if (result.type === 'success' && result.url) {
+        console.log('Callback URL received:', result.url);
+        const url = new URL(result.url);
+        const code = url.searchParams.get('code');
+        const error = url.searchParams.get('error');
+        const errorDescription = url.searchParams.get('error_description');
+        const receivedState = url.searchParams.get('state');
+        
+        console.log('Callback params:', { 
+          code: code?.substring(0, 10) + '...', 
+          error, 
+          errorDescription,
+          receivedState: receivedState?.substring(0, 10) + '...',
+          expectedState: state?.substring(0, 10) + '...'
+        });
+        
+        if (error) {
+          throw new Error(errorDescription || error);
+        }
+        
+        // Validate state parameter
+        if (receivedState !== state) {
+          throw new Error(`State validation failed. Expected: ${state}, Received: ${receivedState}`);
+        }
+        
+        if (code) {
+          await handleAuthCode(code, codeVerifier);
+        } else {
+          throw new Error('No authorization code received');
+        }
+      } else if (result.type === 'cancel') {
+        console.log('User cancelled authentication');
+        setIsLoading(false);
+      } else {
+        console.log('Authentication result:', result);
+        throw new Error('Authentication failed');
       }
+    } catch (error) {
+      console.error('Login error:', error);
+      Alert.alert('Login Failed', error.message || 'Could not complete authentication');
+      setIsLoading(false);
+    }
+  };
 
-      console.log('Token exchange request:', {
-        grant_type: tokenBody.grant_type,
-        client_id: tokenBody.client_id,
-        redirect_uri: tokenBody.redirect_uri,
-        has_code_verifier: !!tokenBody.code_verifier
-      });
-
+  const handleAuthCode = async (code: string, codeVerifier: string) => {
+    try {
+      console.log('Exchanging code for token...');
+      
       const tokenResponse = await fetch(`https://${AUTH0_DOMAIN}/oauth/token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(tokenBody),
+        body: JSON.stringify({
+          grant_type: 'authorization_code',
+          client_id: AUTH0_CLIENT_ID,
+          code,
+          redirect_uri: redirectUri,
+          code_verifier: codeVerifier,
+        }),
       });
 
       if (!tokenResponse.ok) {
@@ -125,6 +160,7 @@ const Auth0LoginScreen = () => {
       }
 
       const tokens = await tokenResponse.json();
+      console.log('Tokens received successfully');
       
       // Store token
       await tokenStorage.setToken(tokens.access_token);
@@ -139,6 +175,7 @@ const Auth0LoginScreen = () => {
 
       if (userResponse.ok) {
         const userInfo = await userResponse.json();
+        console.log('User info received:', { email: userInfo.email });
         
         // Store user info
         await userStorage.setUser({
@@ -161,10 +198,6 @@ const Auth0LoginScreen = () => {
       Alert.alert('Login Failed', 'Could not complete authentication');
       setIsLoading(false);
     }
-  };
-
-  const handleLogin = () => {
-    promptAsync();
   };
 
   if (isLoading) {
@@ -197,9 +230,11 @@ const Auth0LoginScreen = () => {
           <TouchableOpacity
             style={styles.button}
             onPress={handleLogin}
-            disabled={!request}
+            disabled={isLoading}
           >
-            <Text style={styles.buttonText}>Sign in with Dott</Text>
+            <Text style={styles.buttonText}>
+              {isLoading ? 'Signing in...' : 'Sign in with Dott'}
+            </Text>
           </TouchableOpacity>
 
           <Text style={styles.secureText}>

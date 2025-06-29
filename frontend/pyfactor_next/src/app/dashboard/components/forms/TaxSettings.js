@@ -119,23 +119,29 @@ export default function TaxSettings({ onNavigate }) {
           
           // Pre-populate form with user data from session
           if (user) {
-            // Convert country code to full name using worldwide mapping
-            const countryValue = user.country || '';
-            console.log('[TaxSettings] Raw country value from user:', countryValue);
+            // Get country from onboardingProgress (primary) or fallback locations
+            const countryCode = user.onboardingProgress?.country || 
+                               user.country || 
+                               user.business_country || '';
+            console.log('[TaxSettings] Raw country value from user:', countryCode);
+            console.log('[TaxSettings] User onboardingProgress:', user.onboardingProgress);
             
-            const countryName = getCountryName(countryValue);
+            const countryName = getCountryName(countryCode);
             console.log('[TaxSettings] Mapped country name:', countryName);
             
+            // Get business info from onboarding progress if available
+            const onboarding = user.onboardingProgress || {};
+            
             const initialFormData = {
-              businessName: user.businessName || user.business_name || '',
-              businessType: user.businessType || user.business_type || 'retail',
+              businessName: onboarding.businessName || user.businessName || user.business_name || '',
+              businessType: onboarding.businessType || user.businessType || user.business_type || 'retail',
               country: countryName,
-              street: user.street || user.address || '',
-              stateProvince: user.stateProvince || user.state_province || user.state || '',
-              city: user.city || '',
-              postalCode: user.postalCode || user.postal_code || user.zip_code || '',
+              street: user.street || user.address || onboarding.address || '',
+              stateProvince: user.stateProvince || user.state_province || user.state || onboarding.state || '',
+              city: user.city || onboarding.city || '',
+              postalCode: user.postalCode || user.postal_code || user.zip_code || onboarding.postalCode || '',
               emailForDocuments: user.email || '',
-              phone: user.phone || ''
+              phone: user.phone || onboarding.phone || ''
             };
             
             console.log('[TaxSettings] Setting initial form data:', initialFormData);

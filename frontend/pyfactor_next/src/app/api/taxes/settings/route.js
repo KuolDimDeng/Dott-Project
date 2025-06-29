@@ -1,14 +1,18 @@
 import { NextResponse } from 'next/server';
-import { getSession } from '@/utils/sessionManager-v2-enhanced';
+import { getSecureSession } from '@/utils/sessionUtils-v2';
+import { standardSecurityHeaders } from '@/utils/responseHeaders';
 
 export async function GET(request) {
   console.log('[Tax Settings API] GET request received');
   
   try {
     // Verify session
-    const session = await getSession();
-    if (!session?.authenticated) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const session = await getSecureSession(request);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { 
+        status: 401, 
+        headers: standardSecurityHeaders 
+      });
     }
     
     const { searchParams } = new URL(request.url);
@@ -17,7 +21,7 @@ export async function GET(request) {
     if (!tenantId) {
       return NextResponse.json(
         { error: 'Tenant ID required' },
-        { status: 400 }
+        { status: 400, headers: standardSecurityHeaders }
       );
     }
     
@@ -39,7 +43,7 @@ export async function GET(request) {
         return NextResponse.json({
           businessInfo: null,
           taxRates: null
-        });
+        }, { headers: standardSecurityHeaders });
       }
       throw new Error(`Backend responded with ${response.status}`);
     }
@@ -66,13 +70,13 @@ export async function GET(request) {
       lastUpdated: data.updated_at,
       approvedBy: data.approved_by_name,
       approvedAt: data.approved_at
-    });
+    }, { headers: standardSecurityHeaders });
     
   } catch (error) {
     console.error('[Tax Settings API] GET Error:', error);
     return NextResponse.json(
       { error: 'Failed to fetch tax settings' },
-      { status: 500 }
+      { status: 500, headers: standardSecurityHeaders }
     );
   }
 }
@@ -82,9 +86,12 @@ export async function POST(request) {
   
   try {
     // Verify session
-    const session = await getSession();
-    if (!session?.authenticated) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const session = await getSecureSession(request);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { 
+        status: 401, 
+        headers: standardSecurityHeaders 
+      });
     }
     
     const data = await request.json();
@@ -93,7 +100,7 @@ export async function POST(request) {
     if (!tenantId || !businessInfo || !taxRates) {
       return NextResponse.json(
         { error: 'Missing required fields' },
-        { status: 400 }
+        { status: 400, headers: standardSecurityHeaders }
       );
     }
     
@@ -136,13 +143,13 @@ export async function POST(request) {
       success: true,
       id: result.id,
       message: 'Tax settings saved successfully'
-    });
+    }, { headers: standardSecurityHeaders });
     
   } catch (error) {
     console.error('[Tax Settings API] POST Error:', error);
     return NextResponse.json(
       { error: 'Failed to save tax settings' },
-      { status: 500 }
+      { status: 500, headers: standardSecurityHeaders }
     );
   }
 }
