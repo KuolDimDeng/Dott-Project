@@ -35,6 +35,13 @@ const DashboardScreen = () => {
       setStats(data);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+      // If API fails, show empty data rather than mock
+      setStats({
+        totalRevenue: 0,
+        totalInvoices: 0,
+        totalCustomers: 0,
+        pendingInvoices: 0,
+      });
     } finally {
       setIsLoading(false);
       setRefreshing(false);

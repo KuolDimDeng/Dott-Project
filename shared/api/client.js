@@ -170,12 +170,32 @@ export const customerApi = {
 
 export const dashboardApi = {
   getStats: async () => {
-    return apiClient.get('/api/dashboard/stats');
+    // For now, we'll aggregate data from multiple endpoints
+    // In the future, create a dedicated mobile dashboard endpoint
+    try {
+      const [invoices, customers] = await Promise.all([
+        apiClient.get('/api/invoices'),
+        apiClient.get('/api/customers'),
+      ]);
+      
+      // Calculate stats from the data
+      const stats = {
+        totalRevenue: invoices.reduce((sum, inv) => sum + (inv.total || 0), 0),
+        totalInvoices: invoices.length,
+        totalCustomers: customers.length,
+        pendingInvoices: invoices.filter(inv => inv.status === 'pending').length,
+      };
+      
+      return stats;
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+      throw error;
+    }
   },
   getSalesData: async (period) => {
-    return apiClient.get('/api/dashboard/sales', { period });
+    return apiClient.get('/api/sales', { period });
   },
   getInventoryData: async () => {
-    return apiClient.get('/api/dashboard/inventory');
+    return apiClient.get('/api/inventory');
   },
 };

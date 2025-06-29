@@ -12,7 +12,7 @@ import { useAuthRequest } from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
-import { tokenStorage } from '../../../shared/utils/storage';
+import { tokenStorage, userStorage } from '../../../shared/utils/storage';
 import { apiClient } from '../../../shared/api/client';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -42,6 +42,10 @@ const Auth0LoginScreen = () => {
       extraParams: {
         audience: 'https://api.dottapps.com',
       },
+      // This helps reduce the popup frequency
+      prompt: 'login',
+      // Use PKCE for better security and state handling
+      usePKCE: true,
     },
     discovery
   );
@@ -49,8 +53,11 @@ const Auth0LoginScreen = () => {
   // Auto-trigger login when request is ready
   useEffect(() => {
     if (request) {
-      promptAsync();
-      setIsLoading(false);
+      // Add a small delay to ensure proper initialization
+      setTimeout(() => {
+        promptAsync();
+        setIsLoading(false);
+      }, 100);
     }
   }, [request]);
 
@@ -69,22 +76,31 @@ const Auth0LoginScreen = () => {
 
   const handleAuthCode = async (code: string) => {
     try {
-      // Exchange code for tokens
+      // Exchange code for tokens with PKCE
+      const tokenBody: any = {
+        grant_type: 'authorization_code',
+        client_id: AUTH0_CLIENT_ID,
+        code,
+        redirect_uri: redirectUri,
+      };
+
+      // Add code verifier for PKCE
+      if (request?.codeVerifier) {
+        tokenBody.code_verifier = request.codeVerifier;
+      }
+
       const tokenResponse = await fetch(`https://${AUTH0_DOMAIN}/oauth/token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          grant_type: 'authorization_code',
-          client_id: AUTH0_CLIENT_ID,
-          code,
-          redirect_uri: redirectUri,
-        }),
+        body: JSON.stringify(tokenBody),
       });
 
       if (!tokenResponse.ok) {
-        throw new Error('Failed to exchange code for token');
+        const errorData = await tokenResponse.json();
+        console.error('Token exchange error:', errorData);
+        throw new Error(errorData.error_description || 'Failed to exchange code for token');
       }
 
       const tokens = await tokenResponse.json();
@@ -103,8 +119,19 @@ const Auth0LoginScreen = () => {
       if (userResponse.ok) {
         const userInfo = await userResponse.json();
         
+        // Store user info
+        await userStorage.setUser({
+          id: userInfo.sub,
+          email: userInfo.email,
+          name: userInfo.name,
+          picture: userInfo.picture,
+        });
+        
         // Navigate to dashboard
-        navigation.navigate('Dashboard' as never);
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Dashboard' as never }],
+        });
       }
     } catch (error) {
       console.error('Token exchange error:', error);
