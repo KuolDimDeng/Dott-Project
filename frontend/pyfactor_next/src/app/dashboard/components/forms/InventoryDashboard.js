@@ -376,7 +376,7 @@ const InventoryDashboard = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [tenantId, selectedPeriod]);
+  }, [tenantId]);
 
   useEffect(() => {
     if (tenantId) {
