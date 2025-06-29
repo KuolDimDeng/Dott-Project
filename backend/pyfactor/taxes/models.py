@@ -340,3 +340,196 @@ class TaxDataBlacklist(TenantAwareModel):
         
     def __str__(self):
         return f"{self.blacklist_type} - {self.identifier}"
+
+
+class TaxSettings(TenantAwareModel):
+    """
+    Stores tenant-specific tax configuration and rates.
+    This model stores the tax information configured by users through the Tax Settings UI.
+    """
+    
+    # Business Information
+    business_name = models.CharField(max_length=255)
+    business_type = models.CharField(
+        max_length=50,
+        choices=[
+            ('retail', 'Retail'),
+            ('service', 'Service'),
+            ('manufacturing', 'Manufacturing'),
+            ('consulting', 'Consulting'),
+            ('restaurant', 'Restaurant'),
+            ('ecommerce', 'E-commerce'),
+            ('other', 'Other'),
+        ],
+        default='retail'
+    )
+    
+    # Location Information
+    country = models.CharField(max_length=100)
+    state_province = models.CharField(max_length=100)
+    city = models.CharField(max_length=100)
+    postal_code = models.CharField(max_length=20)
+    
+    # Tax Rates
+    sales_tax_rate = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0,
+        help_text="Sales tax rate as a percentage (e.g., 8.75)"
+    )
+    income_tax_rate = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0,
+        help_text="Income/corporate tax rate as a percentage"
+    )
+    payroll_tax_rate = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0,
+        help_text="Combined employer payroll tax rate as a percentage"
+    )
+    
+    # Filing Information
+    filing_website = models.URLField(max_length=500, blank=True)
+    filing_address = models.TextField(blank=True)
+    filing_deadlines = models.TextField(blank=True)
+    
+    # AI Suggestion Metadata
+    ai_suggested = models.BooleanField(
+        default=False,
+        help_text="Whether these rates were suggested by AI"
+    )
+    ai_confidence_score = models.IntegerField(
+        null=True,
+        blank=True,
+        help_text="AI confidence score (0-100) for the suggestions"
+    )
+    
+    # Approval Information
+    approved_by_name = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Digital signature - full name of approver"
+    )
+    approved_by_signature = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Digital signature text"
+    )
+    approved_at = models.DateTimeField(null=True, blank=True)
+    approval_ip_address = models.GenericIPAddressField(null=True, blank=True)
+    
+    # Email Confirmation
+    confirmation_email_sent = models.BooleanField(default=False)
+    confirmation_email_sent_at = models.DateTimeField(null=True, blank=True)
+    confirmation_email_sent_to = models.EmailField(blank=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        app_label = 'taxes'
+        db_table = 'tax_settings'
+        verbose_name = 'Tax Settings'
+        verbose_name_plural = 'Tax Settings'
+    
+    def __str__(self):
+        return f"{self.business_name} - {self.city}, {self.state_province}"
+
+
+class TaxRateCache(models.Model):
+    """
+    Global cache for tax rate suggestions to avoid duplicate AI API calls.
+    This is shared across all tenants to reduce costs.
+    """
+    
+    # Location key
+    country = models.CharField(max_length=100, db_index=True)
+    state_province = models.CharField(max_length=100, db_index=True)
+    city = models.CharField(max_length=100, db_index=True)
+    business_type = models.CharField(max_length=50, db_index=True)
+    
+    # Cached rates
+    sales_tax_rate = models.DecimalField(max_digits=5, decimal_places=2)
+    income_tax_rate = models.DecimalField(max_digits=5, decimal_places=2)
+    payroll_tax_rate = models.DecimalField(max_digits=5, decimal_places=2)
+    
+    # Cached filing info
+    filing_website = models.URLField(max_length=500, blank=True)
+    filing_address = models.TextField(blank=True)
+    filing_deadlines = models.TextField(blank=True)
+    
+    # Metadata
+    confidence_score = models.IntegerField(default=0)
+    source = models.CharField(
+        max_length=50,
+        choices=[
+            ('claude_api', 'Claude AI API'),
+            ('manual', 'Manual Entry'),
+            ('verified', 'Verified by Admin'),
+        ],
+        default='claude_api'
+    )
+    
+    # Cache control
+    expires_at = models.DateTimeField(db_index=True)
+    hit_count = models.IntegerField(default=0)
+    last_accessed = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        app_label = 'taxes'
+        db_table = 'tax_rate_cache'
+        verbose_name = 'Tax Rate Cache'
+        verbose_name_plural = 'Tax Rate Cache'
+        unique_together = ['country', 'state_province', 'city', 'business_type']
+        indexes = [
+            models.Index(fields=['expires_at']),
+            models.Index(fields=['last_accessed']),
+        ]
+    
+    def __str__(self):
+        return f"{self.city}, {self.state_province}, {self.country} - {self.business_type}"
+
+
+class TaxApiUsage(TenantAwareModel):
+    """
+    Tracks API usage for tax suggestions per tenant.
+    """
+    
+    # Usage tracking
+    month_year = models.CharField(
+        max_length=7,
+        help_text="Format: YYYY-MM",
+        db_index=True
+    )
+    api_calls_count = models.IntegerField(default=0)
+    cache_hits_count = models.IntegerField(default=0)
+    
+    # Limits based on plan
+    monthly_limit = models.IntegerField(default=5)
+    plan_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('free', 'Free'),
+            ('basic', 'Basic'),
+            ('premium', 'Premium'),
+        ],
+        default='free'
+    )
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        app_label = 'taxes'
+        db_table = 'tax_api_usage'
+        verbose_name = 'Tax API Usage'
+        verbose_name_plural = 'Tax API Usage'
+        unique_together = ['tenant_id', 'month_year']
+    
+    def __str__(self):
+        return f"Tenant {self.tenant_id} - {self.month_year} ({self.api_calls_count}/{self.monthly_limit})"
