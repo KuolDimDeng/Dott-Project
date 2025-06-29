@@ -231,6 +231,36 @@
 - **Documentation**: Updated TROUBLESHOOTING.md with complete workflow
 - **NEVER**: Run migrations only on production without committing files first
 
+### [13.0.0] - 2025-01-12 - CURRENT - Claude API Integration Architecture
+- **Purpose**: Dual Claude API setup for feature separation and cost optimization
+- **Tax API Configuration**:
+  - Environment Variable: `CLAUDE_API_KEY`
+  - Model: `claude-3-opus-20240229` (high accuracy for tax computations)
+  - Purpose: Tax calculations, compliance checks, regulatory guidance
+  - Usage: Tax modules requiring precise calculations
+- **Smart Insights API Configuration**:
+  - Environment Variable: `CLAUDE_SMART_INSIGHTS_API_KEY`
+  - Model: `claude-3-sonnet-20240229` (cost-effective for general queries)
+  - Purpose: Business intelligence, customer insights, revenue analysis
+  - Credit System: 1 credit per query with monthly spending caps
+  - Rate Limiting: 10 requests per minute via Redis
+- **Benefits**:
+  - **Cost Optimization**: Sonnet for general queries, Opus for precision tasks
+  - **Feature Separation**: Independent API keys prevent cross-feature interference
+  - **Specialized Models**: Different models optimized for different use cases
+  - **Budget Control**: Separate spending tracking and limits
+- **Environment Variables Required**:
+  ```
+  # Tax API (existing)
+  CLAUDE_API_KEY=sk-ant-api03-...
+  CLAUDE_API_MODEL=claude-3-opus-20240229
+  
+  # Smart Insights API (new)
+  CLAUDE_SMART_INSIGHTS_API_KEY=sk-ant-api03-...
+  CLAUDE_SMART_INSIGHTS_MODEL=claude-3-sonnet-20240229
+  CLAUDE_SMART_INSIGHTS_MAX_TOKENS=1000
+  ```
+
 ---
 
 ## DEPRECATED CONFIGURATIONS (Replaced - Do Not Use)
