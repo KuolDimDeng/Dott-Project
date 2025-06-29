@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import { getSecureTenantId } from '@/utils/tenantUtils';
+import { useSession } from '@/hooks/useSession-v2';
 import StandardSpinner, { CenteredSpinner } from '@/components/ui/StandardSpinner';
 import { 
   CogIcon, 
@@ -16,12 +17,13 @@ import {
 } from '@heroicons/react/24/outline';
 
 export default function TaxSettings({ onNavigate }) {
+  const { user, loading: sessionLoading } = useSession();
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [tenantId, setTenantId] = useState(null);
   const [isInitialized, setIsInitialized] = useState(false);
   
-  // Form state
+  // Form state - initialized with user data
   const [formData, setFormData] = useState({
     businessName: '',
     businessType: 'retail',
@@ -55,13 +57,27 @@ export default function TaxSettings({ onNavigate }) {
   const [lastSuggestionTime, setLastSuggestionTime] = useState(null);
   const [suggestionCooldown, setSuggestionCooldown] = useState(false);
   
-  // Initialize tenant ID
+  // Initialize tenant ID and populate form with user data
   useEffect(() => {
-    const fetchTenantId = async () => {
+    const initialize = async () => {
       try {
         const id = await getSecureTenantId();
         if (id) {
           setTenantId(id);
+          
+          // Pre-populate form with user data from session
+          if (user) {
+            setFormData(prev => ({
+              ...prev,
+              businessName: user.businessName || user.business_name || '',
+              businessType: user.businessType || user.business_type || 'retail',
+              country: user.country || '',
+              stateProvince: user.stateProvince || user.state_province || user.state || '',
+              city: user.city || '',
+              postalCode: user.postalCode || user.postal_code || user.zip_code || ''
+            }));
+          }
+          
           // Load existing tax settings and usage info
           await loadTaxSettings(id);
           await loadApiUsage(id);
@@ -69,14 +85,18 @@ export default function TaxSettings({ onNavigate }) {
           toast.error('Failed to initialize. Please refresh the page.');
         }
       } catch (error) {
-        console.error('[TaxSettings] Error fetching tenant ID:', error);
+        console.error('[TaxSettings] Error during initialization:', error);
         toast.error('Failed to initialize. Please try again.');
       } finally {
         setIsInitialized(true);
       }
     };
-    fetchTenantId();
-  }, []);
+    
+    // Only initialize when session is loaded
+    if (!sessionLoading) {
+      initialize();
+    }
+  }, [user, sessionLoading, loadTaxSettings, loadApiUsage]);
   
   // Cooldown timer effect
   useEffect(() => {
@@ -90,7 +110,7 @@ export default function TaxSettings({ onNavigate }) {
   }, [suggestionCooldown, lastSuggestionTime]);
   
   // Load existing tax settings
-  const loadTaxSettings = async (tenantId) => {
+  const loadTaxSettings = useCallback(async (tenantId) => {
     try {
       const response = await fetch(`/api/taxes/settings?tenantId=${tenantId}`, {
         credentials: 'include'
@@ -108,10 +128,10 @@ export default function TaxSettings({ onNavigate }) {
     } catch (error) {
       console.error('[TaxSettings] Error loading settings:', error);
     }
-  };
+  }, []);
   
   // Load API usage information
-  const loadApiUsage = async (tenantId) => {
+  const loadApiUsage = useCallback(async (tenantId) => {
     try {
       const response = await fetch(`/api/taxes/usage?tenantId=${tenantId}`, {
         credentials: 'include'
@@ -128,7 +148,7 @@ export default function TaxSettings({ onNavigate }) {
     } catch (error) {
       console.error('[TaxSettings] Error loading API usage:', error);
     }
-  };
+  }, []);
   
   // Handle form input changes
   const handleInputChange = (e) => {
@@ -278,7 +298,7 @@ export default function TaxSettings({ onNavigate }) {
   };
   
   // Render loading state
-  if (!isInitialized || !tenantId) {
+  if (sessionLoading || !isInitialized || !tenantId) {
     return <CenteredSpinner size="large" text="Initializing Tax Settings..." showText={true} />;
   }
   
@@ -302,6 +322,14 @@ export default function TaxSettings({ onNavigate }) {
           Business Information
         </h2>
         
+        {/* Info message about pre-populated fields */}
+        {user && (user.businessName || user.country) && (
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+            <ExclamationCircleIcon className="h-4 w-4 inline mr-1" />
+            Some fields are pre-populated from your business profile and cannot be edited here.
+          </div>
+        )}
+        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -312,8 +340,10 @@ export default function TaxSettings({ onNavigate }) {
               name="businessName"
               value={formData.businessName}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-700"
               placeholder="Your Business Name"
+              readOnly
+              title="This is pulled from your business profile"
             />
           </div>
           
@@ -325,7 +355,9 @@ export default function TaxSettings({ onNavigate }) {
               name="businessType"
               value={formData.businessType}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-700"
+              disabled
+              title="This is pulled from your business profile"
             >
               <option value="retail">Retail</option>
               <option value="service">Service</option>
@@ -346,8 +378,12 @@ export default function TaxSettings({ onNavigate }) {
               name="country"
               value={formData.country}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={`w-full px-3 py-2 border rounded-lg ${
+                user?.country ? 'border-gray-200 bg-gray-50 text-gray-700' : 'border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500'
+              }`}
               placeholder="e.g., United States"
+              readOnly={!!user?.country}
+              title={user?.country ? "This is pulled from your business profile" : "Enter your country"}
             />
           </div>
           
