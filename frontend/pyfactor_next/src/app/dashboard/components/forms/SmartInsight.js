@@ -133,9 +133,13 @@ export default function SmartInsight({ onNavigate }) {
         const id = await getSecureTenantId();
         if (id) {
           setTenantId(id);
+        } else {
+          console.error('[SmartInsight] No tenant ID returned');
+          toast.error('Failed to initialize. Please refresh the page.');
         }
       } catch (error) {
         console.error('[SmartInsight] Error fetching tenant ID:', error);
+        toast.error('Failed to initialize. Please try again.');
       } finally {
         setIsInitialized(true);
       }
