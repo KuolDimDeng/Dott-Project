@@ -17,6 +17,18 @@ All users automatically receive free credits based on their subscription plan:
 
 These are one-time credits that don't renew. Once consumed, users must purchase additional credits.
 
+## Credit Calculation
+- **1 credit = $0.001 (0.1 cent) of Claude API usage**
+- **Minimum charge**: 1 credit per query
+- **Claude 3 Sonnet costs**:
+  - Input: $3 per million tokens ($0.000003/token)
+  - Output: $15 per million tokens ($0.000015/token)
+- **Examples**:
+  - Short query (500 input + 200 output tokens): 1 credit
+  - Medium query (1,000 input + 500 output tokens): 2 credits
+  - Long analysis (2,000 input + 1,000 output tokens): 3 credits
+- **User pays**: $0.10 per credit (100x markup for business sustainability)
+
 ## Credit Packages & Pricing
 All packages include a 30% markup on the base cost ($0.10/credit):
 
@@ -33,11 +45,13 @@ All packages include a 30% markup on the base cost ($0.10/credit):
 - **Total customer pays**: 2.9% + $0.60 in fees
 
 ## Features
-1. **Rate Limiting**: 10 requests per minute (Redis-based)
-2. **Monthly Spending Cap**: $500 per user
-3. **Audit Trail**: All queries and transactions logged
-4. **Stripe Integration**: Secure payment processing
-5. **Auto Credit Allocation**: Credits added automatically after payment
+1. **Token-Based Credit System**: 1 credit = 1,000 tokens (minimum 1 credit per query)
+2. **Rate Limiting**: 10 requests per minute (Redis-based)
+3. **Monthly Spending Cap**: $500 per user
+4. **Audit Trail**: All queries and transactions logged
+5. **Stripe Integration**: Secure payment processing
+6. **Auto Credit Allocation**: Credits added automatically after payment
+7. **Business Data Context**: Queries include actual customer, product, and sales data
 
 ## Backend Endpoints
 - `GET /api/smart-insights/credits/` - Get user credit balance

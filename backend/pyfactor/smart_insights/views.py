@@ -10,6 +10,7 @@ import stripe
 import redis
 import json
 import hashlib
+import math
 from datetime import datetime, timedelta
 
 from .models import (
@@ -419,8 +420,23 @@ Please provide specific insights based on the actual business data above, not ge
             output_tokens = response.usage.output_tokens
             total_tokens = input_tokens + output_tokens
             
-            # Calculate credits used (1 credit per query for now)
-            credits_used = 1
+            # Calculate credits based on actual Claude API costs
+            # Claude 3 Sonnet pricing (as of 2024):
+            # Input: $3 per million tokens = $0.000003 per token
+            # Output: $15 per million tokens = $0.000015 per token
+            
+            # Calculate actual API cost
+            input_cost = Decimal(str(input_tokens)) * Decimal('0.000003')
+            output_cost = Decimal(str(output_tokens)) * Decimal('0.000015')
+            total_api_cost = input_cost + output_cost
+            
+            # 1 credit = $0.001 (0.1 cent) of API cost
+            # This gives users good value while covering costs + markup
+            cost_per_credit = Decimal('0.001')
+            credits_used = max(1, math.ceil(total_api_cost / cost_per_credit))
+            
+            print(f"[Smart Insights] Token usage - Input: {input_tokens}, Output: {output_tokens}, Total: {total_tokens}")
+            print(f"[Smart Insights] API cost: ${total_api_cost:.6f}, Credits charged: {credits_used}")
             
             with transaction.atomic():
                 # Deduct credits
