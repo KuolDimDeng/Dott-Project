@@ -242,7 +242,7 @@
   - Environment Variable: `CLAUDE_SMART_INSIGHTS_API_KEY`
   - Model: `claude-3-sonnet-20240229` (cost-effective for general queries)
   - Purpose: Business intelligence, customer insights, revenue analysis
-  - Credit System: 1 credit per query with monthly spending caps
+  - Credit System: 1 credit = $0.001 of API usage (min 1 credit/query)
   - Rate Limiting: 10 requests per minute via Redis
 - **Benefits**:
   - **Cost Optimization**: Sonnet for general queries, Opus for precision tasks
@@ -260,6 +260,23 @@
   CLAUDE_SMART_INSIGHTS_MODEL=claude-3-sonnet-20240229
   CLAUDE_SMART_INSIGHTS_MAX_TOKENS=1000
   ```
+
+### [14.0.0] - 2025-01-12 - CURRENT - Smart Insights Pricing Model
+- **Credit System**: Token-based pricing with 1 credit = $0.001 of Claude API usage
+- **User Pricing**: $0.10 per credit (10,000% base markup)
+- **Package Pricing**: Additional 30% markup on bundles (12,900% total markup)
+- **Credit Packages**:
+  - **Starter**: 100 credits for $13 (~10 queries)
+  - **Growth**: 500 credits for $65 (~50 queries)
+  - **Professional**: 1000 credits for $130 (~100 queries)
+  - **Enterprise**: 2500 credits for $325 (~250 queries)
+- **Query Types**:
+  - **Short** (5 credits): Quick facts, simple questions
+  - **Medium** (10 credits): Standard analysis, trends
+  - **Long** (20 credits): Complex analysis, strategies
+- **Business Context**: All queries include actual customer, product, and sales data
+- **Free Credits**: One-time allocation based on subscription plan (5/10/20)
+- **Documentation**: `/backend/pyfactor/docs/SMART_INSIGHTS_PRICING_MODEL.md`
 
 ---
 
