@@ -44,9 +44,18 @@ class SmartInsightsViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['get'])
     def credits(self, request):
         """Get user's current credit balance"""
+        # Determine initial credits based on subscription plan
+        initial_credits = 5  # Default for free plan
+        subscription_plan = getattr(request.user, 'subscription_plan', 'free')
+        
+        if subscription_plan == 'professional':
+            initial_credits = 10
+        elif subscription_plan == 'enterprise':
+            initial_credits = 20
+        
         user_credit, created = UserCredit.objects.get_or_create(
             user=request.user,
-            defaults={'balance': 10}  # 10 free credits for new users
+            defaults={'balance': initial_credits}
         )
         
         # Get current month usage
@@ -203,21 +212,39 @@ class SmartInsightsViewSet(viewsets.ViewSet):
             )
         
         try:
-            # Create Stripe payment intent
-            intent = stripe.PaymentIntent.create(
-                amount=int(package.price * 100),  # Convert to cents
-                currency='usd',
-                customer=getattr(request.user, 'stripe_customer_id', None),
+            # Get success and cancel URLs
+            frontend_url = settings.FRONTEND_URL
+            success_url = f"{frontend_url}/dashboard?smart_insights_purchase=success"
+            cancel_url = f"{frontend_url}/dashboard?smart_insights_purchase=cancelled"
+            
+            # Create Stripe checkout session
+            checkout_session = stripe.checkout.Session.create(
+                payment_method_types=['card'],
+                line_items=[{
+                    'price_data': {
+                        'currency': 'usd',
+                        'unit_amount': int(package.price * 100),  # Convert to cents
+                        'product_data': {
+                            'name': package.name,
+                            'description': f"{package.credits} Smart Insights credits",
+                        },
+                    },
+                    'quantity': 1,
+                }],
+                mode='payment',
+                success_url=success_url,
+                cancel_url=cancel_url,
+                customer_email=request.user.email,
                 metadata={
                     'user_id': str(request.user.id),
                     'package_id': str(package.id),
                     'credits': package.credits
-                },
-                description=f"{package.name} - {package.credits} credits"
+                }
             )
             
             return Response({
-                'client_secret': intent.client_secret,
+                'checkout_url': checkout_session.url,
+                'session_id': checkout_session.id,
                 'amount': str(package.price),
                 'credits': package.credits
             })
@@ -317,10 +344,18 @@ class SmartInsightsViewSet(viewsets.ViewSet):
             except:
                 pass  # Continue if Redis fails
         
-        # Check user credits
+        # Check user credits with plan-based initial credits
+        initial_credits = 5  # Default for free plan
+        subscription_plan = getattr(request.user, 'subscription_plan', 'free')
+        
+        if subscription_plan == 'professional':
+            initial_credits = 10
+        elif subscription_plan == 'enterprise':
+            initial_credits = 20
+            
         user_credit, _ = UserCredit.objects.get_or_create(
             user=request.user,
-            defaults={'balance': 10}  # 10 free credits for new users
+            defaults={'balance': initial_credits}
         )
         
         if user_credit.balance <= 0:
@@ -487,9 +522,50 @@ class StripeWebhookView(viewsets.ViewSet):
             return Response(status=400)
         
         # Handle the event
-        if event['type'] == 'payment_intent.succeeded':
+        if event['type'] == 'checkout.session.completed':
+            # Handle successful checkout
+            session = event['data']['object']
+            user_id = session['metadata'].get('user_id')
+            package_id = session['metadata'].get('package_id')
+            credits = int(session['metadata'].get('credits', 0))
+            
+            if user_id and credits > 0:
+                try:
+                    from django.contrib.auth import get_user_model
+                    User = get_user_model()
+                    user = User.objects.get(id=user_id)
+                    
+                    # Add credits to user account
+                    user_credit, _ = UserCredit.objects.get_or_create(user=user)
+                    
+                    with transaction.atomic():
+                        user_credit.add_credits(credits)
+                        
+                        # Record transaction
+                        CreditTransaction.objects.create(
+                            user=user,
+                            transaction_type='purchase',
+                            amount=credits,
+                            balance_after=user_credit.balance,
+                            description=f"Purchased {credits} credits via Stripe",
+                            stripe_payment_intent_id=session.get('payment_intent')
+                        )
+                        
+                        # Update monthly usage
+                        now = timezone.now()
+                        monthly_usage, _ = MonthlyUsage.objects.get_or_create(
+                            user=user,
+                            year=now.year,
+                            month=now.month
+                        )
+                        monthly_usage.total_cost += Decimal(str(session['amount_total'] / 100))
+                        monthly_usage.save()
+                except Exception as e:
+                    print(f"Error processing webhook: {e}")
+                    
+        elif event['type'] == 'payment_intent.succeeded':
             # Payment successful - credits should already be added
-            # via confirm_purchase endpoint
+            # via checkout.session.completed event
             pass
         elif event['type'] == 'payment_intent.payment_failed':
             # Handle failed payment

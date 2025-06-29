@@ -57,6 +57,47 @@ export default function TaxSettings({ onNavigate }) {
   const [lastSuggestionTime, setLastSuggestionTime] = useState(null);
   const [suggestionCooldown, setSuggestionCooldown] = useState(false);
   
+  // Load existing tax settings
+  const loadTaxSettings = useCallback(async (tenantId) => {
+    try {
+      const response = await fetch(`/api/taxes/settings?tenantId=${tenantId}`, {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.businessInfo) {
+          setFormData(data.businessInfo);
+        }
+        if (data.taxRates) {
+          setCustomRates(data.taxRates);
+        }
+      }
+    } catch (error) {
+      console.error('[TaxSettings] Error loading settings:', error);
+    }
+  }, []);
+  
+  // Load API usage information
+  const loadApiUsage = useCallback(async (tenantId) => {
+    try {
+      const response = await fetch(`/api/taxes/usage?tenantId=${tenantId}`, {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setApiUsage({
+          used: data.monthlyUsage || 0,
+          limit: data.monthlyLimit || 5,
+          resetsAt: data.resetsAt
+        });
+      }
+    } catch (error) {
+      console.error('[TaxSettings] Error loading API usage:', error);
+    }
+  }, []);
+  
   // Initialize tenant ID and populate form with user data
   useEffect(() => {
     const initialize = async () => {
@@ -108,47 +149,6 @@ export default function TaxSettings({ onNavigate }) {
       return () => clearTimeout(timer);
     }
   }, [suggestionCooldown, lastSuggestionTime]);
-  
-  // Load existing tax settings
-  const loadTaxSettings = useCallback(async (tenantId) => {
-    try {
-      const response = await fetch(`/api/taxes/settings?tenantId=${tenantId}`, {
-        credentials: 'include'
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.businessInfo) {
-          setFormData(data.businessInfo);
-        }
-        if (data.taxRates) {
-          setCustomRates(data.taxRates);
-        }
-      }
-    } catch (error) {
-      console.error('[TaxSettings] Error loading settings:', error);
-    }
-  }, []);
-  
-  // Load API usage information
-  const loadApiUsage = useCallback(async (tenantId) => {
-    try {
-      const response = await fetch(`/api/taxes/usage?tenantId=${tenantId}`, {
-        credentials: 'include'
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setApiUsage({
-          used: data.monthlyUsage || 0,
-          limit: data.monthlyLimit || 5,
-          resetsAt: data.resetsAt
-        });
-      }
-    } catch (error) {
-      console.error('[TaxSettings] Error loading API usage:', error);
-    }
-  }, []);
   
   // Handle form input changes
   const handleInputChange = (e) => {

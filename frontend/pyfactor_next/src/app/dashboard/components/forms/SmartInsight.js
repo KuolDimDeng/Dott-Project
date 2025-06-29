@@ -569,8 +569,7 @@ export default function SmartInsight({ onNavigate }) {
                     <button
                       onClick={() => {
                         if (selectedPackage) {
-                          toast.success('Payment integration coming soon!');
-                          setShowBuyCredits(false);
+                          handlePackageSelect(selectedPackage);
                         }
                       }}
                       disabled={!selectedPackage}
