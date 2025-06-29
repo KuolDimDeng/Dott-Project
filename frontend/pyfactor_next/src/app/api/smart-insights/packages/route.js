@@ -50,14 +50,14 @@ export async function GET(request) {
               id: 'professional',
               name: 'Professional Pack',
               credits: 500,
-              price: 52.00,
+              price: 65.00,
               description: 'Best value for power users'
             },
             {
               id: 'enterprise',
               name: 'Enterprise Pack',
               credits: 1000,
-              price: 91.00,
+              price: 130.00,
               description: 'Maximum credits for enterprise needs'
             }
           ]

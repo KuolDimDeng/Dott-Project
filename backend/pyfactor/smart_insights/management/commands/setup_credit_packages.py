@@ -27,13 +27,13 @@ class Command(BaseCommand):
             {
                 'name': 'Professional Pack',
                 'credits': 500,
-                'price': 52.00,  # Base: $40.00 + 30% = $52.00
+                'price': 65.00,  # Base: $50.00 + 30% = $65.00
                 'description': 'Best value for power users'
             },
             {
                 'name': 'Enterprise Pack',
                 'credits': 1000,
-                'price': 91.00,  # Base: $70.00 + 30% = $91.00
+                'price': 130.00,  # Base: $100.00 + 30% = $130.00
                 'description': 'Maximum credits for enterprise needs'
             }
         ]

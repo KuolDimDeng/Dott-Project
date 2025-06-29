@@ -142,8 +142,8 @@ class SmartInsightsViewSet(viewsets.ViewSet):
                 default_packages = [
                     {'name': 'Starter Pack', 'credits': 50, 'price': 6.50},
                     {'name': 'Growth Pack', 'credits': 200, 'price': 23.40},
-                    {'name': 'Professional Pack', 'credits': 500, 'price': 52.00},
-                    {'name': 'Enterprise Pack', 'credits': 1000, 'price': 91.00}
+                    {'name': 'Professional Pack', 'credits': 500, 'price': 65.00},
+                    {'name': 'Enterprise Pack', 'credits': 1000, 'price': 130.00}
                 ]
                 
                 for pkg in default_packages:
@@ -175,14 +175,14 @@ class SmartInsightsViewSet(viewsets.ViewSet):
                         'id': 3,
                         'name': 'Professional Pack',
                         'credits': 500,
-                        'price': '52.00',
+                        'price': '65.00',
                         'is_active': True
                     },
                     {
                         'id': 4,
                         'name': 'Enterprise Pack',
                         'credits': 1000,
-                        'price': '91.00',
+                        'price': '130.00',
                         'is_active': True
                     }
                 ]
