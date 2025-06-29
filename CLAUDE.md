@@ -328,7 +328,41 @@ node scripts/load-test-sessions.js --scenario=mixed --users=100
 ### Enable Redis (Optional)
 Add `REDIS_URL` environment variable in Render dashboard
 
-### [13.0.0] - 2025-01-28 - CURRENT - Loading Spinner Standards
+### [13.0.0] - 2025-06-29 - CURRENT - Smart Insights AI Credit System
+- **Purpose**: AI-powered business intelligence with Claude API integration
+- **Free Credits** (one-time welcome bonus):
+  - Free Plan: 5 credits
+  - Professional Plan: 10 credits
+  - Enterprise Plan: 20 credits
+- **Credit Packages** (30% markup included):
+  - Starter: $6.50 for 50 credits
+  - Growth: $23.40 for 200 credits
+  - Professional: $65.00 for 500 credits
+  - Enterprise: $130.00 for 1000 credits
+- **Transaction Fees**:
+  - Stripe fees (customer pays): 2.9% + $0.30
+  - Platform fee (profit): $0.30
+  - Total customer pays: 2.9% + $0.60
+- **Features**:
+  - Redis rate limiting: 10 requests/minute
+  - Monthly spending cap: $500/user
+  - Stripe checkout integration
+  - Comprehensive audit trail
+- **Management Commands**:
+  ```bash
+  python manage.py grant_initial_credits  # Grant free credits to existing users
+  python manage.py setup_credit_packages  # Create default packages
+  ```
+- **Environment Variables**:
+  ```
+  REDIS_URL=redis://red-d18u66p5pdvs73cvcnig:6379
+  STRIPE_SECRET_KEY=sk_...
+  STRIPE_WEBHOOK_SECRET=whsec_...
+  CLAUDE_API_KEY=sk-ant-api03-...
+  ```
+- **Documentation**: `/backend/pyfactor/smart_insights/README.md`
+
+### [14.0.0] - 2025-01-28 - CURRENT - Loading Spinner Standards
 - **Component**: StandardSpinner (`/src/components/ui/StandardSpinner.js`)
 - **Purpose**: Consistent loading indicators across entire application
 - **Implementation**: 
