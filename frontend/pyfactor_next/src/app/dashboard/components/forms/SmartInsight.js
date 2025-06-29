@@ -151,9 +151,9 @@ export default function SmartInsight({ onNavigate }) {
           const creditsResponse = await fetch('/api/smart-insights/credits/');
           if (creditsResponse.ok) {
             const creditsData = await creditsResponse.json();
-            setCredits(creditsData.balance);
+            setCredits(creditsData.credits);
             setMonthlyUsage(creditsData.monthly_usage);
-            console.log('[SmartInsight] Credits fetched:', creditsData.balance);
+            console.log('[SmartInsight] Credits fetched:', creditsData.credits);
           }
           
           // Fetch available packages

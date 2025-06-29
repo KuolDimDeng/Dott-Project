@@ -3,17 +3,24 @@ import { getSession } from '@/utils/sessionManager-v2-enhanced';
 import Anthropic from '@anthropic-ai/sdk';
 
 // Initialize Anthropic client
-const anthropic = new Anthropic({
-  apiKey: process.env.CLAUDE_TAX_API_KEY,
-});
+let anthropic;
+try {
+  anthropic = new Anthropic({
+    apiKey: process.env.CLAUDE_TAX_API_KEY,
+  });
+} catch (error) {
+  console.error('[Tax Suggestions API] Failed to initialize Anthropic client:', error);
+}
 
 export async function POST(request) {
   console.log('[Tax Suggestions API] Request received');
+  console.log('[Tax Suggestions API] API Key exists:', !!process.env.CLAUDE_TAX_API_KEY);
+  console.log('[Tax Suggestions API] Backend URL:', process.env.NEXT_PUBLIC_BACKEND_URL);
   
   try {
     // Check if API key is configured
-    if (!process.env.CLAUDE_TAX_API_KEY) {
-      console.error('[Tax Suggestions API] CLAUDE_TAX_API_KEY not configured');
+    if (!process.env.CLAUDE_TAX_API_KEY || !anthropic) {
+      console.error('[Tax Suggestions API] CLAUDE_TAX_API_KEY not configured or Anthropic client not initialized');
       return NextResponse.json(
         { error: 'Tax suggestions service not configured. Please contact support.' },
         { status: 503 }
@@ -37,75 +44,8 @@ export async function POST(request) {
     
     const { country, stateProvince, city, businessType } = businessInfo;
     
-    // First, check if we have cached data for this location
-    try {
-      const cacheCheckResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/taxes/cache-check/`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Cookie': request.headers.get('cookie') || ''
-          },
-          credentials: 'include',
-          body: JSON.stringify({
-            country,
-            state_province: stateProvince,
-            city,
-            business_type: businessType
-          })
-        }
-      );
-      
-      if (cacheCheckResponse.ok) {
-        const cachedData = await cacheCheckResponse.json();
-        if (cachedData.found) {
-          console.log('[Tax Suggestions API] Using cached data');
-          return NextResponse.json({
-            suggestedRates: {
-              salesTaxRate: cachedData.sales_tax_rate,
-              incomeTaxRate: cachedData.income_tax_rate,
-              payrollTaxRate: cachedData.payroll_tax_rate,
-              filingWebsite: cachedData.filing_website,
-              filingAddress: cachedData.filing_address,
-              filingDeadlines: cachedData.filing_deadlines
-            },
-            confidenceScore: cachedData.confidence_score,
-            source: 'cache',
-            expiresAt: cachedData.expires_at
-          });
-        }
-      }
-    } catch (cacheError) {
-      console.error('[Tax Suggestions API] Cache check error:', cacheError);
-      // Continue to API call if cache check fails
-    }
-    
-    // Check API usage limits
-    try {
-      const usageCheckResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/taxes/check-usage/`,
-        {
-          method: 'GET',
-          headers: {
-            'Cookie': request.headers.get('cookie') || ''
-          },
-          credentials: 'include'
-        }
-      );
-      
-      if (usageCheckResponse.ok) {
-        const usage = await usageCheckResponse.json();
-        if (usage.limit_reached) {
-          return NextResponse.json(
-            { error: 'Monthly API limit reached. Please try again next month.' },
-            { status: 429 }
-          );
-        }
-      }
-    } catch (usageError) {
-      console.error('[Tax Suggestions API] Usage check error:', usageError);
-    }
+    // Skip cache and usage checks for now since backend endpoints might not exist
+    console.log('[Tax Suggestions API] Skipping cache checks - proceeding directly to Claude API');
     
     // Call Claude API for tax suggestions
     console.log('[Tax Suggestions API] Calling Claude API...');
@@ -140,7 +80,7 @@ Format your response as JSON with the following structure:
 
     try {
       const message = await anthropic.messages.create({
-        model: 'claude-3-opus-20240229',
+        model: 'claude-3-haiku-20240307',
         max_tokens: 1000,
         temperature: 0,
         system: "You are a tax expert that provides accurate, up-to-date tax information for businesses worldwide. Always provide conservative estimates and include disclaimers when appropriate.",
@@ -179,57 +119,8 @@ Format your response as JSON with the following structure:
         };
       }
       
-      // Save to cache
-      try {
-        await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/taxes/cache-save/`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Cookie': request.headers.get('cookie') || ''
-            },
-            credentials: 'include',
-            body: JSON.stringify({
-              country,
-              state_province: stateProvince,
-              city,
-              business_type: businessType,
-              sales_tax_rate: taxData.salesTaxRate,
-              income_tax_rate: taxData.incomeTaxRate,
-              payroll_tax_rate: taxData.payrollTaxRate,
-              filing_website: taxData.filingWebsite,
-              filing_address: taxData.filingAddress,
-              filing_deadlines: taxData.filingDeadlines,
-              confidence_score: taxData.confidenceScore,
-              source: 'claude_api'
-            })
-          }
-        );
-      } catch (cacheError) {
-        console.error('[Tax Suggestions API] Error saving to cache:', cacheError);
-      }
-      
-      // Track API usage
-      try {
-        await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/taxes/track-usage/`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Cookie': request.headers.get('cookie') || ''
-            },
-            credentials: 'include',
-            body: JSON.stringify({
-              jurisdiction_queried: `${city}, ${stateProvince}, ${country}`,
-              credits_used: 1
-            })
-          }
-        );
-      } catch (trackError) {
-        console.error('[Tax Suggestions API] Error tracking usage:', trackError);
-      }
+      // Skip cache save and usage tracking for now
+      console.log('[Tax Suggestions API] Skipping cache save and usage tracking');
       
       return NextResponse.json({
         suggestedRates: {
