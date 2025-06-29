@@ -106,11 +106,18 @@ const InventoryDashboard = () => {
       const [
         productsRes,
         locationsRes,
-        suppliersRes
+        suppliersRes,
+        adjustmentsRes
       ] = await Promise.allSettled([
         productApi.getAll(),
         locationApi.getAll(),
-        supplierApi.getAll()
+        supplierApi.getAll(),
+        fetch('/api/inventory/stock-adjustments', {
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }).then(res => res.ok ? res.json() : [])
       ]);
 
       // Process products/inventory
@@ -181,31 +188,78 @@ const InventoryDashboard = () => {
         }));
       }
 
-      // Mock stock adjustments data (replace with actual API when available)
-      setMetrics(prev => ({
-        ...prev,
-        stockAdjustments: {
-          total: 45,
-          additions: 28,
-          reductions: 17,
-          thisMonth: 12
-        },
-        movements: {
-          inbound: 156,
-          outbound: 234,
-          transfers: 45,
-          damaged: 8
-        }
-      }));
+      // Process stock adjustments
+      if (adjustmentsRes.status === 'fulfilled') {
+        const adjustments = Array.isArray(adjustmentsRes.value) ? adjustmentsRes.value : 
+                           (adjustmentsRes.value?.results || []);
+        
+        const thisMonth = new Date();
+        const thisMonthAdjustments = adjustments.filter(adj => {
+          const adjDate = new Date(adj.created_at || adj.date);
+          return adjDate.getMonth() === thisMonth.getMonth() && 
+                 adjDate.getFullYear() === thisMonth.getFullYear();
+        });
+        
+        const additions = adjustments.filter(adj => adj.type === 'addition' || adj.adjustment_type === 'in');
+        const reductions = adjustments.filter(adj => adj.type === 'reduction' || adj.adjustment_type === 'out');
+        
+        setMetrics(prev => ({
+          ...prev,
+          stockAdjustments: {
+            total: adjustments.length,
+            additions: additions.length,
+            reductions: reductions.length,
+            thisMonth: thisMonthAdjustments.length
+          },
+          movements: {
+            inbound: additions.filter(adj => adj.reason === 'purchase' || adj.reason === 'return').length,
+            outbound: reductions.filter(adj => adj.reason === 'sale' || adj.reason === 'damaged').length,
+            transfers: adjustments.filter(adj => adj.reason === 'transfer').length,
+            damaged: adjustments.filter(adj => adj.reason === 'damaged').length
+          }
+        }));
 
-      // Mock recent adjustments
+        // Set recent adjustments
+        const recentAdj = adjustments
+          .sort((a, b) => new Date(b.created_at || b.date) - new Date(a.created_at || a.date))
+          .slice(0, 5)
+          .map(adj => ({
+            id: adj.id,
+            type: adj.type || adj.adjustment_type,
+            quantity: adj.quantity || adj.items?.reduce((sum, item) => sum + item.quantity, 0) || 0,
+            item: adj.product_name || adj.items?.[0]?.product_name || 'Multiple Items',
+            date: new Date(adj.created_at || adj.date)
+          }));
+        
+        setRecentItems(prev => ({
+          ...prev,
+          adjustments: recentAdj
+        }));
+      } else {
+        // Fallback to empty data if API fails
+        setMetrics(prev => ({
+          ...prev,
+          stockAdjustments: {
+            total: 0,
+            additions: 0,
+            reductions: 0,
+            thisMonth: 0
+          },
+          movements: {
+            inbound: 0,
+            outbound: 0,
+            transfers: 0,
+            damaged: 0
+          }
+        }));
+      }
+
+      // TODO: Add recent receipts and pending orders when APIs are available
+      // For now, keeping these empty to show real data only
       setRecentItems(prev => ({
         ...prev,
-        adjustments: [
-          { id: 1, type: 'addition', quantity: 100, item: 'Product A', date: new Date() },
-          { id: 2, type: 'reduction', quantity: 50, item: 'Product B', date: new Date() },
-          { id: 3, type: 'addition', quantity: 200, item: 'Product C', date: new Date() }
-        ]
+        recentReceipts: [],
+        pendingOrders: []
       }));
 
     } catch (error) {

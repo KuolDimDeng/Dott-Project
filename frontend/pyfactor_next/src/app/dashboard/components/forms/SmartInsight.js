@@ -203,8 +203,8 @@ export default function SmartInsight({ onNavigate }) {
     toast.success(`Selected ${pkg.name} - ${pkg.credits} credits for $${pkg.price}`);
   };
 
-  // Show loading while initializing
-  if (!isInitialized) {
+  // Show loading while initializing or if tenant ID is not available
+  if (!isInitialized || !tenantId) {
     return (
       <div className="flex justify-center items-center h-64">
         <CenteredSpinner size="large" text="Initializing Smart Insight..." />
