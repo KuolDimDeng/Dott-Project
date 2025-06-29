@@ -241,7 +241,8 @@ const BankTransactionPage = () => {
         )}
 
         {loading ? (
-        <CenteredSpinner size="medium" /> : (
+          <CenteredSpinner size="medium" />
+        ) : (
           <div className="mt-6 overflow-x-auto shadow-md rounded-lg max-h-[440px]">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50 sticky top-0">

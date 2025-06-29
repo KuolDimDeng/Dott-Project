@@ -312,7 +312,8 @@ const TaxReportsManagement = () => {
       {/* Report Content */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         {loading ? (
-        <CenteredSpinner size="medium" /> : (
+          <CenteredSpinner size="medium" />
+        ) : (
           renderReportContent()
         )}
       </div>

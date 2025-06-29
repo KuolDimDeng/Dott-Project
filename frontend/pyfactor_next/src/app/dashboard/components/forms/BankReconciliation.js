@@ -278,7 +278,8 @@ const BankReconciliation = () => {
         <div>
           <h2 className="text-lg font-semibold mb-3">Bank Transactions</h2>
           {loading ? (
-        <CenteredSpinner size="medium" /> : (
+            <CenteredSpinner size="medium" />
+          ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full bg-white border border-gray-200">
                 <thead className="bg-gray-50">
@@ -321,7 +322,8 @@ const BankReconciliation = () => {
         <div>
           <h2 className="text-lg font-semibold mb-3">Book Transactions</h2>
           {loading ? (
-        <CenteredSpinner size="medium" /> : (
+            <CenteredSpinner size="medium" />
+          ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full bg-white border border-gray-200">
                 <thead className="bg-gray-50">

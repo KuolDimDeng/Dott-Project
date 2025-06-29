@@ -198,7 +198,8 @@ const ConnectBankManagement = () => {
           <div className="p-4">
             <h2 className="text-xl font-bold mb-4">Manage Connected Accounts</h2>
             {loading ? (
-        <CenteredSpinner size="medium" /> : error ? (
+              <CenteredSpinner size="medium" />
+            ) : error ? (
               <div className="text-red-500">{error}</div>
             ) : connectedAccounts.length === 0 ? (
               <div className="text-center py-10">

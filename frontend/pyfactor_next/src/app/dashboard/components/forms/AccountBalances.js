@@ -34,7 +34,8 @@ const AccountBalances = () => {
         Account Balances
       </h1>
       {loading ? (
-        <CenteredSpinner size="medium" /> : (
+        <CenteredSpinner size="medium" />
+      ) : (
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
