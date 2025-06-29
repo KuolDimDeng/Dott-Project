@@ -60,6 +60,7 @@
     "cache-status": "curl -s http://localhost:3000/api/cache/session | jq"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.55.0",
     "@auth0/auth0-react": "^2.3.0",
     "@auth0/auth0-spa-js": "^2.2.0",
     "@auth0/nextjs-auth0": "^4.6.0",
