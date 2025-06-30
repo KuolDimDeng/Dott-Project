@@ -9,7 +9,6 @@ import AppBar from '@/app/components/AppBar';
 import Hero from '@/app/components/Hero';
 import Features from '@/app/components/Features';
 import Highlights from '@/app/components/Highlights';
-import Testimonials from '@/app/components/Testimonials';
 import Pricing from '@/app/components/Pricing';
 import FAQ from '@/app/components/FAQ';
 import ContactForm from '@/app/components/ContactForm';
@@ -89,10 +88,6 @@ export default function Home() {
         <Highlights />
       </div>
       
-      {/* Testimonials Section - White background */}
-      <div className="bg-white">
-        <Testimonials />
-      </div>
       
       {/* Pricing Section - Light cyan background */}
       <div className="bg-cyan-50">
