@@ -81,36 +81,8 @@ export default function Hero() {
             </div>
           </div>
           
-          <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="mt-10">
             <AuthButton theme="light" />
-            <button className="px-8 py-4 border-2 border-primary-main text-primary-main rounded-lg font-semibold hover:bg-primary-light hover:border-primary-light hover:text-white transition-all duration-200">
-              Watch Demo
-            </button>
-          </div>
-          
-          {/* Trusted by logos - with error handling */}
-          <div className="mt-10 mb-20">
-            <p className="text-sm text-center text-gray-500 mb-6">
-              Trusted by leading companies worldwide
-            </p>
-            <div className="flex flex-wrap justify-center gap-x-10 gap-y-8 max-w-5xl mx-auto">
-              {[1, 2, 3, 4].map((num) => (
-                <div key={num} className="flex items-center">
-                  <img 
-                    src={`/static/images/logos/logo${num}.png`} 
-                    alt="Company logo" 
-                    width={140} 
-                    height={40}
-                    className="grayscale opacity-70 h-8 w-auto object-contain"
-                    onError={(e) => {
-                      // Replace with fallback on error
-                      e.target.onerror = null; // Prevent infinite loop
-                      e.target.src = FALLBACK_LOGO;
-                    }}
-                  />
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       </div>
