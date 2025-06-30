@@ -58,38 +58,62 @@ export default function ContactForm() {
     return Object.keys(newErrors).length === 0;
   };
   
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!validateForm()) {
       return;
     }
     
-    // Simulate form submission
     setFormStatus({
       submitted: true,
       success: null,
       message: t('contact.submitting', 'Submitting your message...')
     });
     
-    // Mock API call (replace with actual API call in production)
-    setTimeout(() => {
-      setFormStatus({
-        submitted: true,
-        success: true,
-        message: t('contact.success', 'Thanks for reaching out! We\'ll get back to you shortly.')
+    try {
+      // Send the form data to the API endpoint
+      const response = await fetch('/api/contact/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formState),
       });
       
-      // Reset form after successful submission
-      setFormState({
-        name: '',
-        email: '',
-        company: '',
-        phone: '',
-        message: '',
-        subject: 'general'
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        setFormStatus({
+          submitted: true,
+          success: true,
+          message: data.message || t('contact.success', 'Thanks for reaching out! We\'ll get back to you shortly.')
+        });
+        
+        // Reset form after successful submission
+        setFormState({
+          name: '',
+          email: '',
+          company: '',
+          phone: '',
+          message: '',
+          subject: 'general'
+        });
+      } else {
+        setFormStatus({
+          submitted: true,
+          success: false,
+          message: data.error || t('contact.error', 'Failed to send your message. Please try again or email us directly at support@dottapps.com.')
+        });
+      }
+    } catch (error) {
+      console.error('Error submitting contact form:', error);
+      setFormStatus({
+        submitted: true,
+        success: false,
+        message: t('contact.error', 'Failed to send your message. Please try again or email us directly at support@dottapps.com.')
       });
-    }, 1500);
+    }
   };
   
   return (
@@ -123,24 +147,12 @@ export default function ContactForm() {
                   <div className="flex items-start">
                     <div className="flex-shrink-0">
                       <svg className="h-6 w-6 text-primary-light" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                      </svg>
-                    </div>
-                    <div className="ml-4">
-                      <p className="font-medium">{t('contact.phone', 'Phone')}</p>
-                      <p className="mt-1 text-primary-light/80">+1 (555) 123-4567</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0">
-                      <svg className="h-6 w-6 text-primary-light" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                       </svg>
                     </div>
                     <div className="ml-4">
                       <p className="font-medium">{t('contact.email', 'Email')}</p>
-                      <p className="mt-1 text-primary-light/80">support@dott.com</p>
+                      <p className="mt-1 text-primary-light/80">support@dottapps.com</p>
                     </div>
                   </div>
                   
@@ -154,9 +166,10 @@ export default function ContactForm() {
                     <div className="ml-4">
                       <p className="font-medium">{t('contact.address', 'Address')}</p>
                       <p className="mt-1 text-primary-light/80">
-                        123 Business Avenue<br />
-                        Suite 100<br />
-                        San Francisco, CA 94107
+                        800 N King Street<br />
+                        Suite 304 #2797<br />
+                        Wilmington, DE 19801<br />
+                        United States
                       </p>
                     </div>
                   </div>
