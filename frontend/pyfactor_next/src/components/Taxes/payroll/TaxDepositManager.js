@@ -1,47 +1,18 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Chip,
-  IconButton,
-  Tooltip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Alert,
-  CircularProgress,
-  Grid,
-  Tabs,
-  Tab,
-  Badge
-} from '@mui/material';
-import {
-  Payment as PaymentIcon,
-  Schedule as ScheduleIcon,
-  CheckCircle as CheckIcon,
-  Warning as WarningIcon,
-  Info as InfoIcon,
-  Receipt as ReceiptIcon,
-  CalendarToday as CalendarIcon,
-  AttachMoney as MoneyIcon,
-  Add as AddIcon
-} from '@mui/icons-material';
+  CreditCardIcon,
+  ClockIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  InformationCircleIcon,
+  DocumentDuplicateIcon,
+  CalendarIcon,
+  CurrencyDollarIcon,
+  PlusIcon
+} from '@heroicons/react/24/outline';
+import { CenteredSpinner } from '@components/ui/StandardSpinner';
 import { format, parseISO, isAfter, isBefore, addDays } from 'date-fns';
 
 const TaxDepositManager = () => {
@@ -230,92 +201,89 @@ const TaxDepositManager = () => {
     }).format(amount || 0);
   };
 
-  const getStatusColor = (status, dueDate) => {
-    if (status === 'completed') return 'success';
-    if (status === 'failed') return 'error';
-    if (status === 'processing') return 'info';
+  const getStatusClasses = (status, dueDate) => {
+    if (status === 'completed') return 'bg-green-100 text-green-800';
+    if (status === 'failed') return 'bg-red-100 text-red-800';
+    if (status === 'processing') return 'bg-blue-100 text-blue-800';
     
     // Check if overdue
     if (isBefore(parseISO(dueDate), new Date())) {
-      return 'error';
+      return 'bg-red-100 text-red-800';
     }
     
-    return 'default';
+    return 'bg-gray-100 text-gray-800';
   };
 
   const renderStats = () => (
-    <Grid container spacing={3} sx={{ mb: 3 }}>
-      <Grid item xs={12} sm={6} md={3}>
-        <Card>
-          <CardContent>
-            <Box display="flex" alignItems="center" justifyContent="space-between">
-              <Box>
-                <Typography color="text.secondary" gutterBottom>
-                  Total Due
-                </Typography>
-                <Typography variant="h5">
-                  {formatCurrency(stats.totalDue)}
-                </Typography>
-              </Box>
-              <MoneyIcon color="warning" />
-            </Box>
-          </CardContent>
-        </Card>
-      </Grid>
-      <Grid item xs={12} sm={6} md={3}>
-        <Card>
-          <CardContent>
-            <Box display="flex" alignItems="center" justifyContent="space-between">
-              <Box>
-                <Typography color="text.secondary" gutterBottom>
-                  Total Paid
-                </Typography>
-                <Typography variant="h5">
-                  {formatCurrency(stats.totalPaid)}
-                </Typography>
-              </Box>
-              <CheckIcon color="success" />
-            </Box>
-          </CardContent>
-        </Card>
-      </Grid>
-      <Grid item xs={12} sm={6} md={3}>
-        <Card>
-          <CardContent>
-            <Box display="flex" alignItems="center" justifyContent="space-between">
-              <Box>
-                <Typography color="text.secondary" gutterBottom>
-                  Overdue
-                </Typography>
-                <Typography variant="h5">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
+      <div className="bg-white overflow-hidden shadow rounded-lg">
+        <div className="p-5">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-500 truncate">
+                Total Due
+              </p>
+              <p className="mt-1 text-2xl font-semibold text-gray-900">
+                {formatCurrency(stats.totalDue)}
+              </p>
+            </div>
+            <CurrencyDollarIcon className="h-8 w-8 text-yellow-500" />
+          </div>
+        </div>
+      </div>
+      <div className="bg-white overflow-hidden shadow rounded-lg">
+        <div className="p-5">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-500 truncate">
+                Total Paid
+              </p>
+              <p className="mt-1 text-2xl font-semibold text-gray-900">
+                {formatCurrency(stats.totalPaid)}
+              </p>
+            </div>
+            <CheckCircleIcon className="h-8 w-8 text-green-500" />
+          </div>
+        </div>
+      </div>
+      <div className="bg-white overflow-hidden shadow rounded-lg">
+        <div className="p-5">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-500 truncate">
+                Overdue
+              </p>
+              <p className="mt-1 text-2xl font-semibold text-gray-900">
+                {stats.overdue}
+              </p>
+            </div>
+            <div className="relative">
+              <ExclamationTriangleIcon className="h-8 w-8 text-red-500" />
+              {stats.overdue > 0 && (
+                <span className="absolute -top-2 -right-2 h-5 w-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
                   {stats.overdue}
-                </Typography>
-              </Box>
-              <Badge badgeContent={stats.overdue} color="error">
-                <WarningIcon color="error" />
-              </Badge>
-            </Box>
-          </CardContent>
-        </Card>
-      </Grid>
-      <Grid item xs={12} sm={6} md={3}>
-        <Card>
-          <CardContent>
-            <Box display="flex" alignItems="center" justifyContent="space-between">
-              <Box>
-                <Typography color="text.secondary" gutterBottom>
-                  Scheduled
-                </Typography>
-                <Typography variant="h5">
-                  {stats.scheduled}
-                </Typography>
-              </Box>
-              <ScheduleIcon color="info" />
-            </Box>
-          </CardContent>
-        </Card>
-      </Grid>
-    </Grid>
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="bg-white overflow-hidden shadow rounded-lg">
+        <div className="p-5">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-500 truncate">
+                Scheduled
+              </p>
+              <p className="mt-1 text-2xl font-semibold text-gray-900">
+                {stats.scheduled}
+              </p>
+            </div>
+            <ClockIcon className="h-8 w-8 text-blue-500" />
+          </div>
+        </div>
+      </div>
+    </div>
   );
 
   const renderDepositsTable = () => {
@@ -326,288 +294,374 @@ const TaxDepositManager = () => {
     });
 
     return (
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Pay Date</TableCell>
-              <TableCell>Deposit Date</TableCell>
-              <TableCell>Due Date</TableCell>
-              <TableCell align="right">Federal Income</TableCell>
-              <TableCell align="right">Social Security</TableCell>
-              <TableCell align="right">Medicare</TableCell>
-              <TableCell align="right">Total</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
+      <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Pay Date
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Deposit Date
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Due Date
+              </th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Federal Income
+              </th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Social Security
+              </th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Medicare
+              </th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Total
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Status
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
             {filteredDeposits.map((deposit) => {
               const isOverdue = deposit.status !== 'completed' && 
                                isBefore(parseISO(deposit.due_date), new Date());
               
               return (
-                <TableRow key={deposit.id}>
-                  <TableCell>{format(parseISO(deposit.pay_date), 'MM/dd/yyyy')}</TableCell>
-                  <TableCell>{format(parseISO(deposit.deposit_date), 'MM/dd/yyyy')}</TableCell>
-                  <TableCell>
-                    <Box display="flex" alignItems="center" gap={1}>
-                      {format(parseISO(deposit.due_date), 'MM/dd/yyyy')}
+                <tr key={deposit.id}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {format(parseISO(deposit.pay_date), 'MM/dd/yyyy')}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {format(parseISO(deposit.deposit_date), 'MM/dd/yyyy')}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <span className="text-sm text-gray-900">
+                        {format(parseISO(deposit.due_date), 'MM/dd/yyyy')}
+                      </span>
                       {isOverdue && (
-                        <Tooltip title="Overdue">
-                          <WarningIcon color="error" fontSize="small" />
-                        </Tooltip>
+                        <div className="ml-2 group relative">
+                          <ExclamationTriangleIcon className="h-4 w-4 text-red-500" />
+                          <span className="absolute z-10 -top-8 right-0 text-xs bg-gray-800 text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                            Overdue
+                          </span>
+                        </div>
                       )}
-                    </Box>
-                  </TableCell>
-                  <TableCell align="right">{formatCurrency(deposit.federal_income_tax)}</TableCell>
-                  <TableCell align="right">{formatCurrency(deposit.social_security_tax)}</TableCell>
-                  <TableCell align="right">{formatCurrency(deposit.medicare_tax)}</TableCell>
-                  <TableCell align="right">
-                    <Typography variant="subtitle2">
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                    {formatCurrency(deposit.federal_income_tax)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                    {formatCurrency(deposit.social_security_tax)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                    {formatCurrency(deposit.medicare_tax)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <span className="text-sm font-medium text-gray-900">
                       {formatCurrency(deposit.total_deposit)}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={deposit.status_display}
-                      color={getStatusColor(deposit.status, deposit.due_date)}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Box display="flex" gap={1}>
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusClasses(deposit.status, deposit.due_date)}`}>
+                      {deposit.status_display}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <div className="flex gap-2">
                       {deposit.status !== 'completed' && (
-                        <Tooltip title="Make Payment">
-                          <IconButton
-                            size="small"
-                            color="primary"
-                            onClick={() => {
-                              setSelectedDeposit(deposit);
-                              setShowPaymentDialog(true);
-                            }}
-                          >
-                            <PaymentIcon />
-                          </IconButton>
-                        </Tooltip>
+                        <button
+                          className="text-blue-600 hover:text-blue-900 group relative"
+                          onClick={() => {
+                            setSelectedDeposit(deposit);
+                            setShowPaymentDialog(true);
+                          }}
+                        >
+                          <CreditCardIcon className="h-5 w-5" />
+                          <span className="absolute z-10 -top-8 right-0 text-xs bg-gray-800 text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                            Make Payment
+                          </span>
+                        </button>
                       )}
                       {deposit.confirmation_number && (
-                        <Tooltip title={`Confirmation: ${deposit.confirmation_number}`}>
-                          <IconButton size="small">
-                            <ReceiptIcon />
-                          </IconButton>
-                        </Tooltip>
+                        <button className="text-gray-400 hover:text-gray-500 group relative">
+                          <DocumentDuplicateIcon className="h-5 w-5" />
+                          <span className="absolute z-10 -top-8 right-0 text-xs bg-gray-800 text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                            Confirmation: {deposit.confirmation_number}
+                          </span>
+                        </button>
                       )}
-                    </Box>
-                  </TableCell>
-                </TableRow>
+                    </div>
+                  </td>
+                </tr>
               );
             })}
             {filteredDeposits.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={9} align="center">
+              <tr>
+                <td colSpan={9} className="px-6 py-4 text-center text-sm text-gray-500">
                   No deposits found
-                </TableCell>
-              </TableRow>
+                </td>
+              </tr>
             )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+          </tbody>
+        </table>
+      </div>
     );
   };
 
   return (
-    <Box>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h5">
+    <div>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-black">
           Tax Deposits
-        </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
+        </h1>
+        <button
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
           onClick={() => setShowCreateDialog(true)}
         >
+          <PlusIcon className="h-4 w-4 mr-2" />
           Create Deposit
-        </Button>
-      </Box>
+        </button>
+      </div>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
-          {error}
-        </Alert>
+        <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative">
+          <span className="block sm:inline">{error}</span>
+          <button
+            className="absolute top-0 bottom-0 right-0 px-4 py-3"
+            onClick={() => setError(null)}
+          >
+            <span className="text-red-500">×</span>
+          </button>
+        </div>
       )}
 
       {/* Stats Cards */}
       {renderStats()}
 
       {/* Filters */}
-      <Card sx={{ mb: 2 }}>
-        <CardContent>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} sm={6} md={4}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={filters.status}
-                  onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                  label="Status"
-                >
-                  <MenuItem value="all">All</MenuItem>
-                  <MenuItem value="scheduled">Scheduled</MenuItem>
-                  <MenuItem value="pending">Pending</MenuItem>
-                  <MenuItem value="processing">Processing</MenuItem>
-                  <MenuItem value="completed">Completed</MenuItem>
-                  <MenuItem value="failed">Failed</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6} md={4}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Date Range</InputLabel>
-                <Select
-                  value={filters.dateRange}
-                  onChange={(e) => setFilters({ ...filters, dateRange: e.target.value })}
-                  label="Date Range"
-                >
-                  <MenuItem value="current_quarter">Current Quarter</MenuItem>
-                  <MenuItem value="current_year">Current Year</MenuItem>
-                  <MenuItem value="last_90_days">Last 90 Days</MenuItem>
-                  <MenuItem value="all">All Time</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
+      <div className="bg-white overflow-hidden shadow rounded-lg mb-4">
+        <div className="px-4 py-5 sm:p-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Status
+              </label>
+              <select
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                value={filters.status}
+                onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+              >
+                <option value="all">All</option>
+                <option value="scheduled">Scheduled</option>
+                <option value="pending">Pending</option>
+                <option value="processing">Processing</option>
+                <option value="completed">Completed</option>
+                <option value="failed">Failed</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Date Range
+              </label>
+              <select
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                value={filters.dateRange}
+                onChange={(e) => setFilters({ ...filters, dateRange: e.target.value })}
+              >
+                <option value="current_quarter">Current Quarter</option>
+                <option value="current_year">Current Year</option>
+                <option value="last_90_days">Last 90 Days</option>
+                <option value="all">All Time</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Tabs */}
-      <Tabs
-        value={activeTab}
-        onChange={(e, newValue) => setActiveTab(newValue)}
-        sx={{ mb: 2 }}
-      >
-        <Tab label="All Deposits" />
-        <Tab 
-          label={
-            <Badge badgeContent={stats.scheduled + stats.pending} color="warning">
-              <span>Pending</span>
-            </Badge>
-          } 
-        />
-        <Tab label="Completed" />
-      </Tabs>
+      <div className="border-b border-gray-200 mb-4">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 0
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+            onClick={() => setActiveTab(0)}
+          >
+            All Deposits
+          </button>
+          <button
+            className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm relative ${
+              activeTab === 1
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+            onClick={() => setActiveTab(1)}
+          >
+            Pending
+            {stats.scheduled + stats.pending > 0 && (
+              <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                {stats.scheduled + stats.pending}
+              </span>
+            )}
+          </button>
+          <button
+            className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 2
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+            onClick={() => setActiveTab(2)}
+          >
+            Completed
+          </button>
+        </nav>
+      </div>
 
       {/* Deposits Table */}
       {loading ? (
-        <Box display="flex" justifyContent="center" p={3}>
-          <CircularProgress />
-        </Box>
+        <CenteredSpinner />
       ) : (
         renderDepositsTable()
       )}
 
       {/* Payment Dialog */}
-      <Dialog
-        open={showPaymentDialog}
-        onClose={() => {
-          setShowPaymentDialog(false);
-          setSelectedDeposit(null);
-        }}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Process Tax Deposit Payment</DialogTitle>
-        <DialogContent>
-          {selectedDeposit && (
-            <Box>
-              <Alert severity="info" sx={{ mb: 2 }}>
-                You are about to process a federal tax deposit through EFTPS
-              </Alert>
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <Typography variant="body2" color="text.secondary">
-                    Deposit Amount
-                  </Typography>
-                  <Typography variant="h6">
-                    {formatCurrency(selectedDeposit.total_deposit)}
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="body2" color="text.secondary">
-                    Due Date
-                  </Typography>
-                  <Typography variant="h6">
-                    {format(parseISO(selectedDeposit.due_date), 'MMM d, yyyy')}
-                  </Typography>
-                </Grid>
-              </Grid>
-              
-              <Box mt={3}>
-                <Typography variant="subtitle2" gutterBottom>
-                  Tax Breakdown:
-                </Typography>
-                <Box component="ul" pl={2}>
-                  <li>Federal Income Tax: {formatCurrency(selectedDeposit.federal_income_tax)}</li>
-                  <li>Social Security Tax: {formatCurrency(selectedDeposit.social_security_tax)}</li>
-                  <li>Medicare Tax: {formatCurrency(selectedDeposit.medicare_tax)}</li>
-                </Box>
-              </Box>
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowPaymentDialog(false)}>
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={() => processPayment(selectedDeposit.id)}
-            disabled={loading}
-          >
-            {loading ? <CircularProgress size={24} /> : 'Process Payment'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {showPaymentDialog && (
+        <div className="fixed z-10 inset-0 overflow-y-auto">
+          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+                  Process Tax Deposit Payment
+                </h3>
+                {selectedDeposit && (
+                  <div>
+                    <div className="mb-4 bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded">
+                      You are about to process a federal tax deposit through EFTPS
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <p className="text-sm font-medium text-gray-500">
+                          Deposit Amount
+                        </p>
+                        <p className="text-lg font-semibold text-gray-900">
+                          {formatCurrency(selectedDeposit.total_deposit)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-500">
+                          Due Date
+                        </p>
+                        <p className="text-lg font-semibold text-gray-900">
+                          {format(parseISO(selectedDeposit.due_date), 'MMM d, yyyy')}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-4">
+                      <p className="text-sm font-medium text-gray-700 mb-2">
+                        Tax Breakdown:
+                      </p>
+                      <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                        <li>Federal Income Tax: {formatCurrency(selectedDeposit.federal_income_tax)}</li>
+                        <li>Social Security Tax: {formatCurrency(selectedDeposit.social_security_tax)}</li>
+                        <li>Medicare Tax: {formatCurrency(selectedDeposit.medicare_tax)}</li>
+                      </ul>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button
+                  type="button"
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm disabled:bg-gray-300"
+                  onClick={() => processPayment(selectedDeposit.id)}
+                  disabled={loading}
+                >
+                  {loading ? 'Processing...' : 'Process Payment'}
+                </button>
+                <button
+                  type="button"
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                  onClick={() => {
+                    setShowPaymentDialog(false);
+                    setSelectedDeposit(null);
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create Deposit Dialog */}
-      <Dialog
-        open={showCreateDialog}
-        onClose={() => setShowCreateDialog(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Create Tax Deposit</DialogTitle>
-        <DialogContent>
-          <Alert severity="info" sx={{ mb: 2 }}>
-            Select a payroll run to create a tax deposit
-          </Alert>
-          <TextField
-            fullWidth
-            label="Payroll Run ID"
-            placeholder="Enter payroll run ID"
-            margin="normal"
-            onChange={(e) => {
-              // Handle payroll run selection
-            }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowCreateDialog(false)}>
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={() => {
-              // Create deposit logic
-            }}
-          >
-            Create Deposit
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+      {showCreateDialog && (
+        <div className="fixed z-10 inset-0 overflow-y-auto">
+          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+                  Create Tax Deposit
+                </h3>
+                <div className="mb-4 bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded">
+                  Select a payroll run to create a tax deposit
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Payroll Run ID
+                  </label>
+                  <input
+                    type="text"
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    placeholder="Enter payroll run ID"
+                    onChange={(e) => {
+                      // Handle payroll run selection
+                    }}
+                  />
+                </div>
+              </div>
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button
+                  type="button"
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+                  onClick={() => {
+                    // Create deposit logic
+                  }}
+                >
+                  Create Deposit
+                </button>
+                <button
+                  type="button"
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                  onClick={() => setShowCreateDialog(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

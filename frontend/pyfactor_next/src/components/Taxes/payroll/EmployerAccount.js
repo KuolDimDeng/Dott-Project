@@ -1,47 +1,19 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Button,
-  Grid,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Alert,
-  CircularProgress,
-  Switch,
-  FormControlLabel,
-  Divider,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-  IconButton,
-  Tooltip,
-  Chip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  InputAdornment
-} from '@mui/material';
-import {
-  AccountBalance as AccountIcon,
-  Verified as VerifiedIcon,
-  Error as ErrorIcon,
-  Add as AddIcon,
-  Edit as EditIcon,
-  Save as SaveIcon,
-  Cancel as CancelIcon,
-  Lock as LockIcon,
-  Check as CheckIcon,
-  Close as CloseIcon,
-  Info as InfoIcon
-} from '@mui/icons-material';
+  BuildingLibraryIcon,
+  CheckBadgeIcon,
+  ExclamationCircleIcon,
+  PlusIcon,
+  PencilIcon,
+  DocumentCheckIcon,
+  XMarkIcon,
+  LockClosedIcon,
+  CheckIcon,
+  InformationCircleIcon
+} from '@heroicons/react/24/outline';
+import { CenteredSpinner } from '@components/ui/StandardSpinner';
 
 const EmployerAccount = () => {
   const [loading, setLoading] = useState(false);
@@ -224,348 +196,418 @@ const EmployerAccount = () => {
   ];
 
   if (loading && !account.ein) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight={400}>
-        <CircularProgress />
-      </Box>
-    );
+    return <CenteredSpinner />;
   }
 
   return (
-    <Box>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h5">
+    <div>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-black">
           Employer Tax Account Settings
-        </Typography>
-        <Box>
+        </h1>
+        <div>
           {editing ? (
             <>
-              <Button
-                variant="outlined"
-                startIcon={<CancelIcon />}
+              <button
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 mr-2"
                 onClick={handleCancel}
-                sx={{ mr: 1 }}
               >
+                <XMarkIcon className="w-4 h-4 inline mr-1" />
                 Cancel
-              </Button>
-              <Button
-                variant="contained"
-                startIcon={<SaveIcon />}
+              </button>
+              <button
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:bg-gray-300"
                 onClick={saveAccount}
                 disabled={loading}
               >
+                <DocumentCheckIcon className="w-4 h-4 inline mr-1" />
                 Save Changes
-              </Button>
+              </button>
             </>
           ) : (
-            <Button
-              variant="contained"
-              startIcon={<EditIcon />}
+            <button
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700"
               onClick={() => setEditing(true)}
             >
+              <PencilIcon className="w-4 h-4 inline mr-1" />
               Edit Settings
-            </Button>
+            </button>
           )}
-        </Box>
-      </Box>
+        </div>
+      </div>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
-          {error}
-        </Alert>
+        <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative">
+          <span className="block sm:inline">{error}</span>
+          <button
+            className="absolute top-0 bottom-0 right-0 px-4 py-3"
+            onClick={() => setError(null)}
+          >
+            <XMarkIcon className="h-4 w-4" />
+          </button>
+        </div>
       )}
       
       {success && (
-        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess(null)}>
-          {success}
-        </Alert>
+        <div className="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded relative">
+          <span className="block sm:inline">{success}</span>
+          <button
+            className="absolute top-0 bottom-0 right-0 px-4 py-3"
+            onClick={() => setSuccess(null)}
+          >
+            <XMarkIcon className="h-4 w-4" />
+          </button>
+        </div>
       )}
 
       {/* Federal Tax Information */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
+      <div className="bg-white overflow-hidden shadow rounded-lg mb-6">
+        <div className="px-4 py-5 sm:p-6">
+          <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
             Federal Tax Information
-          </Typography>
+          </h3>
           
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Employer Identification Number (EIN)"
-                value={account.ein}
-                onChange={handleEINChange}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Employer Identification Number (EIN)
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-100"
+                  value={account.ein}
+                  onChange={handleEINChange}
+                  disabled={!editing}
+                />
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                  {account.ein_verified ? (
+                    <div className="group relative">
+                      <CheckBadgeIcon className="h-5 w-5 text-green-500" />
+                      <span className="absolute z-10 -top-8 right-0 text-xs bg-gray-800 text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                        EIN Verified
+                      </span>
+                    </div>
+                  ) : account.ein && editing ? (
+                    <button
+                      className="text-sm text-blue-600 hover:text-blue-500"
+                      onClick={verifyEIN}
+                      disabled={verifyingEIN}
+                    >
+                      {verifyingEIN ? 'Verifying...' : 'Verify'}
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Federal Deposit Schedule
+              </label>
+              <select
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-100"
+                value={account.federal_deposit_schedule}
+                onChange={(e) => setAccount({ ...account, federal_deposit_schedule: e.target.value })}
                 disabled={!editing}
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      {account.ein_verified ? (
-                        <Tooltip title="EIN Verified">
-                          <VerifiedIcon color="success" />
-                        </Tooltip>
-                      ) : account.ein && editing ? (
-                        <Button
-                          size="small"
-                          onClick={verifyEIN}
-                          disabled={verifyingEIN}
-                        >
-                          {verifyingEIN ? <CircularProgress size={20} /> : 'Verify'}
-                        </Button>
-                      ) : null}
-                    </InputAdornment>
-                  )
-                }}
-              />
-            </Grid>
+              >
+                <option value="monthly">Monthly</option>
+                <option value="semiweekly">Semi-Weekly</option>
+                <option value="next_day">Next Day</option>
+              </select>
+            </div>
             
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth disabled={!editing}>
-                <InputLabel>Federal Deposit Schedule</InputLabel>
-                <Select
-                  value={account.federal_deposit_schedule}
-                  onChange={(e) => setAccount({ ...account, federal_deposit_schedule: e.target.value })}
-                  label="Federal Deposit Schedule"
-                >
-                  <MenuItem value="monthly">Monthly</MenuItem>
-                  <MenuItem value="semiweekly">Semi-Weekly</MenuItem>
-                  <MenuItem value="next_day">Next Day</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Previous Year Tax Liability
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <span className="text-gray-500 sm:text-sm">$</span>
+                </div>
+                <input
+                  type="text"
+                  className="block w-full pl-7 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-100"
+                  value={account.previous_year_liability}
+                  onChange={(e) => setAccount({ ...account, previous_year_liability: e.target.value })}
+                  disabled={!editing}
+                />
+              </div>
+              <p className="mt-1 text-sm text-gray-500">Used to determine deposit schedule</p>
+            </div>
             
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Previous Year Tax Liability"
-                value={account.previous_year_liability}
-                onChange={(e) => setAccount({ ...account, previous_year_liability: e.target.value })}
-                disabled={!editing}
-                InputProps={{
-                  startAdornment: <InputAdornment position="start">$</InputAdornment>
-                }}
-                helperText="Used to determine deposit schedule"
-              />
-            </Grid>
-            
-            <Grid item xs={12} md={6}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={account.eftps_enrolled}
-                    onChange={(e) => setAccount({ ...account, eftps_enrolled: e.target.checked })}
-                    disabled={!editing}
-                  />
-                }
-                label="EFTPS Enrolled"
-              />
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
+            <div className="flex items-center">
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="sr-only"
+                  checked={account.eftps_enrolled}
+                  onChange={(e) => setAccount({ ...account, eftps_enrolled: e.target.checked })}
+                  disabled={!editing}
+                />
+                <div className="relative">
+                  <div className={`block w-10 h-6 rounded-full ${account.eftps_enrolled ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+                  <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition ${account.eftps_enrolled ? 'transform translate-x-4' : ''}`}></div>
+                </div>
+                <span className="ml-3 text-sm font-medium text-gray-700">EFTPS Enrolled</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* State Tax Accounts */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-            <Typography variant="h6">
+      <div className="bg-white overflow-hidden shadow rounded-lg mb-6">
+        <div className="px-4 py-5 sm:p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg leading-6 font-medium text-gray-900">
               State Tax Accounts
-            </Typography>
+            </h3>
             {editing && (
-              <Button
-                size="small"
-                startIcon={<AddIcon />}
+              <button
+                className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
                 onClick={() => setShowStateDialog(true)}
               >
+                <PlusIcon className="w-4 h-4 mr-1" />
                 Add State
-              </Button>
+              </button>
             )}
-          </Box>
+          </div>
           
           {Object.keys(account.state_accounts).length > 0 ? (
-            <List>
+            <ul className="divide-y divide-gray-200">
               {Object.entries(account.state_accounts).map(([state, data]) => (
-                <ListItem key={state} divider>
-                  <ListItemText
-                    primary={
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <Chip label={state} size="small" color="primary" />
+                <li key={state} className="py-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          {state}
+                        </span>
                         {data.enabled ? (
-                          <CheckIcon color="success" fontSize="small" />
+                          <CheckIcon className="h-4 w-4 text-green-500" />
                         ) : (
-                          <CloseIcon color="error" fontSize="small" />
+                          <XMarkIcon className="h-4 w-4 text-red-500" />
                         )}
-                      </Box>
-                    }
-                    secondary={
-                      editing ? (
-                        <Grid container spacing={2} sx={{ mt: 1 }}>
-                          <Grid item xs={12} sm={5}>
-                            <TextField
-                              size="small"
-                              fullWidth
-                              label="Account Number"
+                      </div>
+                      {editing ? (
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 mt-2">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700">Account Number</label>
+                            <input
+                              type="text"
+                              className="mt-1 block w-full px-2 py-1 text-sm border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                               value={data.account_number || ''}
                               onChange={(e) => updateStateAccount(state, 'account_number', e.target.value)}
                             />
-                          </Grid>
-                          <Grid item xs={12} sm={5}>
-                            <TextField
-                              size="small"
-                              fullWidth
-                              label="Access Code"
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700">Access Code</label>
+                            <input
                               type="password"
+                              className="mt-1 block w-full px-2 py-1 text-sm border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                               value={data.access_code || ''}
                               onChange={(e) => updateStateAccount(state, 'access_code', e.target.value)}
                             />
-                          </Grid>
-                          <Grid item xs={12} sm={2}>
-                            <FormControlLabel
-                              control={
-                                <Switch
-                                  size="small"
-                                  checked={data.enabled}
-                                  onChange={(e) => updateStateAccount(state, 'enabled', e.target.checked)}
-                                />
-                              }
-                              label="Active"
-                            />
-                          </Grid>
-                        </Grid>
+                          </div>
+                          <div className="flex items-end">
+                            <label className="flex items-center">
+                              <input
+                                type="checkbox"
+                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                checked={data.enabled}
+                                onChange={(e) => updateStateAccount(state, 'enabled', e.target.checked)}
+                              />
+                              <span className="ml-2 text-sm text-gray-700">Active</span>
+                            </label>
+                          </div>
+                        </div>
                       ) : (
-                        `Account: ${data.account_number ? '****' + data.account_number.slice(-4) : 'Not configured'}`
-                      )
-                    }
-                  />
-                  {editing && (
-                    <ListItemSecondaryAction>
-                      <IconButton edge="end" onClick={() => removeStateAccount(state)}>
-                        <CloseIcon />
-                      </IconButton>
-                    </ListItemSecondaryAction>
-                  )}
-                </ListItem>
+                        <p className="text-sm text-gray-500">
+                          Account: {data.account_number ? '****' + data.account_number.slice(-4) : 'Not configured'}
+                        </p>
+                      )}
+                    </div>
+                    {editing && (
+                      <button
+                        className="ml-4 text-gray-400 hover:text-gray-500"
+                        onClick={() => removeStateAccount(state)}
+                      >
+                        <XMarkIcon className="h-5 w-5" />
+                      </button>
+                    )}
+                  </div>
+                </li>
               ))}
-            </List>
+            </ul>
           ) : (
-            <Typography variant="body2" color="text.secondary">
+            <p className="text-sm text-gray-500">
               No state tax accounts configured
-            </Typography>
+            </p>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Tax Contact Information */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
+      <div className="bg-white overflow-hidden shadow rounded-lg mb-6">
+        <div className="px-4 py-5 sm:p-6">
+          <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
             Tax Contact Information
-          </Typography>
+          </h3>
           
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={4}>
-              <TextField
-                fullWidth
-                label="Contact Name"
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Contact Name
+              </label>
+              <input
+                type="text"
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-100"
                 value={account.tax_contact_name}
                 onChange={(e) => setAccount({ ...account, tax_contact_name: e.target.value })}
                 disabled={!editing}
               />
-            </Grid>
+            </div>
             
-            <Grid item xs={12} md={4}>
-              <TextField
-                fullWidth
-                label="Contact Email"
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Contact Email
+              </label>
+              <input
                 type="email"
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-100"
                 value={account.tax_contact_email}
                 onChange={(e) => setAccount({ ...account, tax_contact_email: e.target.value })}
                 disabled={!editing}
               />
-            </Grid>
+            </div>
             
-            <Grid item xs={12} md={4}>
-              <TextField
-                fullWidth
-                label="Contact Phone"
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Contact Phone
+              </label>
+              <input
+                type="text"
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-100"
                 value={account.tax_contact_phone}
                 onChange={(e) => setAccount({ ...account, tax_contact_phone: e.target.value })}
                 disabled={!editing}
               />
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Power of Attorney */}
-      <Card>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
+      <div className="bg-white overflow-hidden shadow rounded-lg">
+        <div className="px-4 py-5 sm:p-6">
+          <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
             Power of Attorney
-          </Typography>
+          </h3>
           
-          <FormControlLabel
-            control={
-              <Switch
+          <div className="flex items-center mb-4">
+            <label className="flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                className="sr-only"
                 checked={account.has_poa}
                 onChange={(e) => setAccount({ ...account, has_poa: e.target.checked })}
                 disabled={!editing}
               />
-            }
-            label="Power of Attorney on File"
-          />
+              <div className="relative">
+                <div className={`block w-10 h-6 rounded-full ${account.has_poa ? 'bg-blue-600' : 'bg-gray-300'}`}></div>
+                <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition ${account.has_poa ? 'transform translate-x-4' : ''}`}></div>
+              </div>
+              <span className="ml-3 text-sm font-medium text-gray-700">Power of Attorney on File</span>
+            </label>
+          </div>
           
           {account.has_poa && (
-            <Grid container spacing={3} sx={{ mt: 1 }}>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label="Firm Name"
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Firm Name
+                </label>
+                <input
+                  type="text"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-100"
                   value={account.poa_firm_name}
                   onChange={(e) => setAccount({ ...account, poa_firm_name: e.target.value })}
                   disabled={!editing}
                 />
-              </Grid>
+              </div>
               
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label="CAF Number"
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  CAF Number
+                </label>
+                <input
+                  type="text"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-100"
                   value={account.poa_caf_number}
                   onChange={(e) => setAccount({ ...account, poa_caf_number: e.target.value })}
                   disabled={!editing}
                 />
-              </Grid>
-            </Grid>
+              </div>
+            </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Add State Dialog */}
-      <Dialog open={showStateDialog} onClose={() => setShowStateDialog(false)}>
-        <DialogTitle>Add State Tax Account</DialogTitle>
-        <DialogContent>
-          <FormControl fullWidth sx={{ mt: 2 }}>
-            <InputLabel>Select State</InputLabel>
-            <Select
-              value={selectedState}
-              onChange={(e) => setSelectedState(e.target.value)}
-              label="Select State"
-            >
-              {states
-                .filter(state => !account.state_accounts[state])
-                .map(state => (
-                  <MenuItem key={state} value={state}>{state}</MenuItem>
-                ))
-              }
-            </Select>
-          </FormControl>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowStateDialog(false)}>Cancel</Button>
-          <Button onClick={addStateAccount} disabled={!selectedState}>Add State</Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+      {showStateDialog && (
+        <div className="fixed z-10 inset-0 overflow-y-auto">
+          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+                  Add State Tax Account
+                </h3>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Select State
+                  </label>
+                  <select
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    value={selectedState}
+                    onChange={(e) => setSelectedState(e.target.value)}
+                  >
+                    <option value="">Choose a state</option>
+                    {states
+                      .filter(state => !account.state_accounts[state])
+                      .map(state => (
+                        <option key={state} value={state}>{state}</option>
+                      ))
+                    }
+                  </select>
+                </div>
+              </div>
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button
+                  type="button"
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm disabled:bg-gray-300"
+                  onClick={addStateAccount}
+                  disabled={!selectedState}
+                >
+                  Add State
+                </button>
+                <button
+                  type="button"
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                  onClick={() => setShowStateDialog(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

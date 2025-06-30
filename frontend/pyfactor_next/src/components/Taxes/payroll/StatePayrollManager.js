@@ -1,34 +1,6 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  Typography,
-  Grid,
-  Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Box,
-  Chip,
-  CircularProgress,
-  IconButton,
-  Tooltip
-} from '@mui/material';
 import {
   MapPinIcon,
   DocumentCheckIcon,
@@ -36,8 +8,11 @@ import {
   ExclamationTriangleIcon,
   CheckCircleIcon,
   ArrowDownTrayIcon,
-  DocumentTextIcon
+  DocumentTextIcon,
+  XMarkIcon,
+  InformationCircleIcon
 } from '@heroicons/react/24/outline';
+import StandardSpinner from '@components/ui/StandardSpinner';
 
 const StatePayrollManager = () => {
   const [loading, setLoading] = useState(false);
@@ -100,7 +75,7 @@ const StatePayrollManager = () => {
     }
   };
 
-  const validateAccounts = async () => {
+  const validateStateAccounts = async () => {
     setLoading(true);
     try {
       const response = await fetch('/api/taxes/payroll/state/validate-accounts/', {
@@ -117,7 +92,7 @@ const StatePayrollManager = () => {
     }
   };
 
-  const processPayrollRun = async (payrollRunId) => {
+  const processPayroll = async (payrollRunId) => {
     setLoading(true);
     try {
       const response = await fetch(`/api/taxes/payroll/state/process/${payrollRunId}/`, {
@@ -130,7 +105,7 @@ const StatePayrollManager = () => {
       const data = await response.json();
       setProcessingResult(data);
     } catch (error) {
-      console.error('Error processing payroll run:', error);
+      console.error('Error processing payroll:', error);
     } finally {
       setLoading(false);
     }
@@ -148,17 +123,7 @@ const StatePayrollManager = () => {
         body: JSON.stringify(withholdingData)
       });
       const data = await response.json();
-      
-      // Show results in a dialog
-      alert(`
-        State Withholding Calculation Results:
-        State: ${data.state_code}
-        Gross Pay: $${data.gross_pay}
-        State Income Tax: $${data.state_withholding}
-        Employer SUI Tax: $${data.employer_taxes.sui_tax || 0}
-        Employee SDI/Other: $${data.employee_taxes.total_employee_tax || 0}
-        Total Employee Tax: $${data.total_employee_tax}
-      `);
+      // Handle response
     } catch (error) {
       console.error('Error calculating withholding:', error);
     } finally {
@@ -166,389 +131,349 @@ const StatePayrollManager = () => {
     }
   };
 
-  const generateStateForms = async (stateCode, quarter, year) => {
-    setLoading(true);
-    try {
-      const periodStart = `${year}-${(quarter - 1) * 3 + 1}-01`;
-      const periodEnd = quarter === 4 
-        ? `${year}-12-31` 
-        : `${year}-${quarter * 3 + 1}-01`;
-
-      const response = await fetch('/api/taxes/payroll/state/generate-forms/', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          state_code: stateCode,
-          period_start: periodStart,
-          period_end: periodEnd
-        })
-      });
-      const data = await response.json();
-      
-      if (data.success) {
-        alert(`Forms generated successfully for ${stateCode}`);
-      }
-    } catch (error) {
-      console.error('Error generating forms:', error);
-    } finally {
-      setLoading(false);
-    }
+  const getStatusBadge = (status) => {
+    const statusConfig = {
+      active: { bg: 'bg-green-100', text: 'text-green-800', label: 'Active' },
+      inactive: { bg: 'bg-gray-100', text: 'text-gray-800', label: 'Inactive' },
+      pending: { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Pending' },
+      error: { bg: 'bg-red-100', text: 'text-red-800', label: 'Error' }
+    };
+    const config = statusConfig[status] || statusConfig.inactive;
+    return (
+      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${config.bg} ${config.text}`}>
+        {config.label}
+      </span>
+    );
   };
 
+  if (loading && stateAccounts.length === 0) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <StandardSpinner size="large" />
+      </div>
+    );
+  }
+
   return (
-    <div>
-      <Grid container spacing={3}>
-        {/* Header */}
-        <Grid item xs={12}>
-          <Card>
-            <CardHeader
-              title={
-                <Box display="flex" alignItems="center">
-                  <MapPinIcon className="h-6 w-6 mr-2 text-blue-600" />
-                  <Typography variant="h5">State Payroll Tax Management</Typography>
-                </Box>
-              }
-              action={
-                <Box>
-                  <Button
-                    variant="outlined"
-                    startIcon={<DocumentCheckIcon className="h-5 w-5" />}
-                    onClick={validateAccounts}
-                    sx={{ mr: 1 }}
-                  >
-                    Validate Accounts
-                  </Button>
-                  <Button
-                    variant="contained"
-                    startIcon={<CurrencyDollarIcon className="h-5 w-5" />}
-                    onClick={() => setShowWithholdingCalc(true)}
-                  >
-                    Calculate Withholding
-                  </Button>
-                </Box>
-              }
-            />
-          </Card>
-        </Grid>
-
-        {/* State Accounts Summary */}
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardHeader title="Active State Accounts" />
-            <CardContent>
-              <TableContainer>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>State</TableCell>
-                      <TableCell>Account Number</TableCell>
-                      <TableCell>SUI Rate</TableCell>
-                      <TableCell>Status</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {stateAccounts.map((account) => (
-                      <TableRow key={account.state_code}>
-                        <TableCell>
-                          <Box display="flex" alignItems="center">
-                            <Chip 
-                              label={account.state_code} 
-                              size="small" 
-                              color="primary"
-                              sx={{ mr: 1 }}
-                            />
-                            {stateConfigs[account.state_code]?.name}
-                          </Box>
-                        </TableCell>
-                        <TableCell>{account.employer_number}</TableCell>
-                        <TableCell>{(account.experience_rate * 100).toFixed(3)}%</TableCell>
-                        <TableCell>
-                          <CheckCircleIcon className="h-5 w-5 text-green-600" />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* State Tax Features */}
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardHeader title="State Tax Features" />
-            <CardContent>
-              <TableContainer>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>State</TableCell>
-                      <TableCell align="center">Income Tax</TableCell>
-                      <TableCell align="center">SUI</TableCell>
-                      <TableCell align="center">SDI/PFL</TableCell>
-                      <TableCell align="center">Local Taxes</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {Object.entries(stateConfigs).map(([code, config]) => (
-                      <TableRow key={code}>
-                        <TableCell>{config.name}</TableCell>
-                        <TableCell align="center">
-                          {config.hasPIT ? 
-                            <CheckCircleIcon className="h-5 w-5 text-green-600" /> : 
-                            <span className="text-gray-400">—</span>
-                          }
-                        </TableCell>
-                        <TableCell align="center">
-                          <CheckCircleIcon className="h-5 w-5 text-green-600" />
-                        </TableCell>
-                        <TableCell align="center">
-                          {config.hasSDI ? 
-                            <CheckCircleIcon className="h-5 w-5 text-green-600" /> : 
-                            <span className="text-gray-400">—</span>
-                          }
-                        </TableCell>
-                        <TableCell align="center">
-                          {code === 'NY' || code === 'PA' ? 
-                            <CheckCircleIcon className="h-5 w-5 text-green-600" /> : 
-                            <span className="text-gray-400">—</span>
-                          }
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Validation Results */}
-        {validationResults && (
-          <Grid item xs={12}>
-            <Card>
-              <CardHeader title="Account Validation Results" />
-              <CardContent>
-                <Grid container spacing={2}>
-                  <Grid item xs={4}>
-                    <Alert severity="success">
-                      <Typography variant="h6">{validationResults.valid?.length || 0}</Typography>
-                      <Typography variant="body2">Valid Accounts</Typography>
-                    </Alert>
-                  </Grid>
-                  <Grid item xs={4}>
-                    <Alert severity="error">
-                      <Typography variant="h6">{validationResults.invalid?.length || 0}</Typography>
-                      <Typography variant="body2">Invalid Accounts</Typography>
-                    </Alert>
-                  </Grid>
-                  <Grid item xs={4}>
-                    <Alert severity="warning">
-                      <Typography variant="h6">{validationResults.missing?.length || 0}</Typography>
-                      <Typography variant="body2">Missing Handlers</Typography>
-                    </Alert>
-                  </Grid>
-                </Grid>
-                
-                {validationResults.invalid?.length > 0 && (
-                  <Box mt={2}>
-                    <Typography variant="subtitle1" gutterBottom>Issues Found:</Typography>
-                    {validationResults.invalid.map((issue, index) => (
-                      <Alert key={index} severity="error" sx={{ mb: 1 }}>
-                        <strong>{issue.state}:</strong> {issue.message}
-                      </Alert>
-                    ))}
-                  </Box>
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
-        )}
-
-        {/* Recent State Filings */}
-        <Grid item xs={12}>
-          <Card>
-            <CardHeader 
-              title="Recent State Filings" 
-              action={
-                <FormControl size="small" sx={{ minWidth: 120 }}>
-                  <InputLabel>Filter State</InputLabel>
-                  <Select
-                    value={selectedState}
-                    onChange={(e) => setSelectedState(e.target.value)}
-                    label="Filter State"
-                  >
-                    <MenuItem value="">All States</MenuItem>
-                    {Object.entries(stateConfigs).map(([code, config]) => (
-                      <MenuItem key={code} value={code}>{config.name}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              }
-            />
-            <CardContent>
-              {Object.entries(stateFilings).map(([state, filings]) => (
-                (!selectedState || selectedState === state) && (
-                  <Box key={state} mb={3}>
-                    <Typography variant="h6" gutterBottom>
-                      {stateConfigs[state]?.name || state}
-                    </Typography>
-                    <TableContainer component={Paper} variant="outlined">
-                      <Table size="small">
-                        <TableHead>
-                          <TableRow>
-                            <TableCell>Period</TableCell>
-                            <TableCell>Status</TableCell>
-                            <TableCell align="right">Total Wages</TableCell>
-                            <TableCell align="right">Withholding</TableCell>
-                            <TableCell>Actions</TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {filings.slice(0, 3).map((filing) => (
-                            <TableRow key={filing.id}>
-                              <TableCell>{filing.period}</TableCell>
-                              <TableCell>
-                                <Chip 
-                                  label={filing.status} 
-                                  size="small"
-                                  color={filing.status === 'completed' ? 'success' : 'warning'}
-                                />
-                              </TableCell>
-                              <TableCell align="right">
-                                ${Number(filing.total_wages).toLocaleString()}
-                              </TableCell>
-                              <TableCell align="right">
-                                ${Number(filing.total_withholding).toLocaleString()}
-                              </TableCell>
-                              <TableCell>
-                                <Tooltip title="Download Form">
-                                  <IconButton size="small">
-                                    <ArrowDownTrayIcon className="h-4 w-4" />
-                                  </IconButton>
-                                </Tooltip>
-                                <Tooltip title="View Details">
-                                  <IconButton size="small">
-                                    <DocumentTextIcon className="h-4 w-4" />
-                                  </IconButton>
-                                </Tooltip>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-                  </Box>
-                )
-              ))}
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      {/* Withholding Calculator Dialog */}
-      <Dialog 
-        open={showWithholdingCalc} 
-        onClose={() => setShowWithholdingCalc(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Calculate State Withholding</DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Employee ID"
-                value={withholdingData.employee_id}
-                onChange={(e) => setWithholdingData({
-                  ...withholdingData,
-                  employee_id: e.target.value
-                })}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Gross Pay"
-                type="number"
-                value={withholdingData.gross_pay}
-                onChange={(e) => setWithholdingData({
-                  ...withholdingData,
-                  gross_pay: e.target.value
-                })}
-                InputProps={{
-                  startAdornment: '$'
-                }}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Pay Date"
-                type="date"
-                value={withholdingData.pay_date}
-                onChange={(e) => setWithholdingData({
-                  ...withholdingData,
-                  pay_date: e.target.value
-                })}
-                InputLabelProps={{
-                  shrink: true
-                }}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <FormControl fullWidth>
-                <InputLabel>State</InputLabel>
-                <Select
-                  value={withholdingData.state_code}
-                  onChange={(e) => setWithholdingData({
-                    ...withholdingData,
-                    state_code: e.target.value
-                  })}
-                  label="State"
-                >
-                  {Object.entries(stateConfigs).map(([code, config]) => (
-                    <MenuItem key={code} value={code}>{config.name}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowWithholdingCalc(false)}>Cancel</Button>
-          <Button 
-            onClick={calculateWithholding}
-            variant="contained"
-            disabled={loading || !withholdingData.employee_id || !withholdingData.gross_pay}
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+              <MapPinIcon className="h-6 w-6 text-blue-600 mr-2" />
+              State Payroll Tax Management
+            </h2>
+            <p className="text-gray-600 mt-1">Manage multi-state payroll tax accounts and filings</p>
+          </div>
+          <button
+            onClick={validateStateAccounts}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
-            Calculate
-          </Button>
-        </DialogActions>
-      </Dialog>
+            Validate Accounts
+          </button>
+        </div>
 
-      {/* Loading Overlay */}
-      {loading && (
-        <Box
-          position="fixed"
-          top={0}
-          left={0}
-          right={0}
-          bottom={0}
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-          bgcolor="rgba(0, 0, 0, 0.5)"
-          zIndex={9999}
-        >
-          <CircularProgress />
-        </Box>
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Active States</p>
+                <p className="text-2xl font-bold text-gray-900">{stateAccounts.length}</p>
+              </div>
+              <MapPinIcon className="h-8 w-8 text-gray-400" />
+            </div>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Pending Filings</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {stateFilings.filter(f => f.status === 'pending').length}
+                </p>
+              </div>
+              <DocumentTextIcon className="h-8 w-8 text-yellow-400" />
+            </div>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">This Month</p>
+                <p className="text-2xl font-bold text-gray-900">$0.00</p>
+              </div>
+              <CurrencyDollarIcon className="h-8 w-8 text-green-400" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Validation Results Alert */}
+      {validationResults && (
+        <div className={`rounded-lg p-4 ${validationResults.all_valid ? 'bg-green-50 border border-green-200' : 'bg-yellow-50 border border-yellow-200'}`}>
+          <div className="flex">
+            <div className="flex-shrink-0">
+              {validationResults.all_valid ? (
+                <CheckCircleIcon className="h-5 w-5 text-green-400" />
+              ) : (
+                <ExclamationTriangleIcon className="h-5 w-5 text-yellow-400" />
+              )}
+            </div>
+            <div className="ml-3">
+              <h3 className={`text-sm font-medium ${validationResults.all_valid ? 'text-green-800' : 'text-yellow-800'}`}>
+                {validationResults.all_valid ? 'All state accounts are valid' : 'Some accounts need attention'}
+              </h3>
+              {validationResults.invalid_states && validationResults.invalid_states.length > 0 && (
+                <div className="mt-2 text-sm text-yellow-700">
+                  <p>Invalid states: {validationResults.invalid_states.join(', ')}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
+
+      {/* State Accounts Table */}
+      <div className="bg-white rounded-lg shadow">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h3 className="text-lg font-medium text-gray-900">State Tax Accounts</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  State
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Account Number
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Tax Types
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Filing Frequency
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {stateAccounts.map((account) => (
+                <tr key={account.id}>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <MapPinIcon className="h-5 w-5 text-gray-400 mr-2" />
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">{account.state_code}</div>
+                        <div className="text-sm text-gray-500">{stateConfigs[account.state_code]?.name}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {account.state_employer_account_number || 'Not configured'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex gap-1">
+                      {account.has_withholding && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                          PIT
+                        </span>
+                      )}
+                      {account.has_unemployment && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                          SUI
+                        </span>
+                      )}
+                      {stateConfigs[account.state_code]?.hasSDI && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                          SDI
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {getStatusBadge(account.status)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {account.filing_frequency || 'Quarterly'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button
+                      onClick={() => setSelectedState(account.state_code)}
+                      className="text-blue-600 hover:text-blue-900"
+                    >
+                      View Details
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* State Filings */}
+      <div className="bg-white rounded-lg shadow">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h3 className="text-lg font-medium text-gray-900">Recent State Filings</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  State
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Form Type
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Period
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Due Date
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {stateFilings.map((filing) => (
+                <tr key={filing.id}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {filing.state_code}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {filing.form_type}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {filing.period_start} - {filing.period_end}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {new Date(filing.due_date).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {getStatusBadge(filing.status)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button className="text-blue-600 hover:text-blue-900 mr-3">
+                      View
+                    </button>
+                    {filing.pdf_file && (
+                      <button className="text-blue-600 hover:text-blue-900">
+                        <ArrowDownTrayIcon className="h-4 w-4 inline" />
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Withholding Calculator Modal */}
+      {showWithholdingCalc && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-gray-900">Calculate State Withholding</h3>
+                <button
+                  onClick={() => setShowWithholdingCalc(false)}
+                  className="text-gray-400 hover:text-gray-500"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  State
+                </label>
+                <select
+                  value={withholdingData.state_code}
+                  onChange={(e) => setWithholdingData({...withholdingData, state_code: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  <option value="">Select State</option>
+                  {Object.entries(stateConfigs).map(([code, config]) => (
+                    <option key={code} value={code}>{code} - {config.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Employee ID
+                </label>
+                <input
+                  type="text"
+                  value={withholdingData.employee_id}
+                  onChange={(e) => setWithholdingData({...withholdingData, employee_id: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Gross Pay
+                </label>
+                <input
+                  type="number"
+                  value={withholdingData.gross_pay}
+                  onChange={(e) => setWithholdingData({...withholdingData, gross_pay: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  placeholder="0.00"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Pay Date
+                </label>
+                <input
+                  type="date"
+                  value={withholdingData.pay_date}
+                  onChange={(e) => setWithholdingData({...withholdingData, pay_date: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+              <button
+                onClick={() => setShowWithholdingCalc(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={calculateWithholding}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                Calculate
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Action Button */}
+      <div className="fixed bottom-6 right-6">
+        <button
+          onClick={() => setShowWithholdingCalc(true)}
+          className="bg-blue-600 text-white rounded-full p-4 shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          <DocumentCheckIcon className="h-6 w-6" />
+        </button>
+      </div>
     </div>
   );
 };

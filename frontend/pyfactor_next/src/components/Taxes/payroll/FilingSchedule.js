@@ -1,52 +1,24 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Button,
-  Grid,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Chip,
-  Alert,
-  CircularProgress,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  IconButton,
-  Tooltip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  Divider
-} from '@mui/material';
-import {
-  CalendarToday as CalendarIcon,
-  Schedule as ScheduleIcon,
-  CheckCircle as CheckIcon,
-  Warning as WarningIcon,
-  Info as InfoIcon,
-  Notifications as NotificationIcon,
-  Add as AddIcon,
-  Event as EventIcon,
-  Assignment as FormIcon
-} from '@mui/icons-material';
+  CalendarDaysIcon,
+  ClockIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  InformationCircleIcon,
+  BellIcon,
+  PlusIcon,
+  CalendarIcon,
+  DocumentTextIcon
+} from '@heroicons/react/24/outline';
+import { CenteredSpinner } from '@components/ui/StandardSpinner';
 import { format, parseISO, differenceInDays, addMonths } from 'date-fns';
-import FullCalendar from '@fullcalendar/react';
-import dayGridPlugin from '@fullcalendar/daygrid';
-import listPlugin from '@fullcalendar/list';
+import dynamic from 'next/dynamic';
+
+const FullCalendar = dynamic(() => import('@fullcalendar/react'), { ssr: false });
+const dayGridPlugin = dynamic(() => import('@fullcalendar/daygrid'), { ssr: false });
+const listPlugin = dynamic(() => import('@fullcalendar/list'), { ssr: false });
 
 const FilingSchedule = () => {
   const [schedules, setSchedules] = useState([]);
@@ -138,15 +110,15 @@ const FilingSchedule = () => {
     }
   };
 
-  const getStatusColor = (status) => {
-    const statusColors = {
-      upcoming: 'default',
-      in_progress: 'warning',
-      filed: 'success',
-      late: 'error',
-      extended: 'info'
+  const getStatusClasses = (status) => {
+    const statusClasses = {
+      upcoming: 'bg-gray-100 text-gray-800',
+      in_progress: 'bg-yellow-100 text-yellow-800',
+      filed: 'bg-green-100 text-green-800',
+      late: 'bg-red-100 text-red-800',
+      extended: 'bg-blue-100 text-blue-800'
     };
-    return statusColors[status] || 'default';
+    return statusClasses[status] || 'bg-gray-100 text-gray-800';
   };
 
   const getEventColor = (status) => {
@@ -165,10 +137,10 @@ const FilingSchedule = () => {
   };
 
   const getUrgencyIcon = (daysUntil) => {
-    if (daysUntil < 0) return <WarningIcon color="error" />;
-    if (daysUntil <= 7) return <WarningIcon color="warning" />;
-    if (daysUntil <= 30) return <InfoIcon color="info" />;
-    return <CheckIcon color="success" />;
+    if (daysUntil < 0) return <ExclamationTriangleIcon className="h-5 w-5 text-red-500" />;
+    if (daysUntil <= 7) return <ExclamationTriangleIcon className="h-5 w-5 text-yellow-500" />;
+    if (daysUntil <= 30) return <InformationCircleIcon className="h-5 w-5 text-blue-500" />;
+    return <CheckCircleIcon className="h-5 w-5 text-green-500" />;
   };
 
   const renderScheduleSummary = () => {
@@ -178,163 +150,170 @@ const FilingSchedule = () => {
     const late = schedules.filter(s => s.status === 'late').length;
 
     return (
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center" justifyContent="space-between">
-                <Box>
-                  <Typography color="text.secondary" gutterBottom>
-                    Upcoming
-                  </Typography>
-                  <Typography variant="h4">
-                    {upcoming}
-                  </Typography>
-                </Box>
-                <EventIcon color="primary" />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center" justifyContent="space-between">
-                <Box>
-                  <Typography color="text.secondary" gutterBottom>
-                    In Progress
-                  </Typography>
-                  <Typography variant="h4">
-                    {inProgress}
-                  </Typography>
-                </Box>
-                <ScheduleIcon color="warning" />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center" justifyContent="space-between">
-                <Box>
-                  <Typography color="text.secondary" gutterBottom>
-                    Filed
-                  </Typography>
-                  <Typography variant="h4">
-                    {filed}
-                  </Typography>
-                </Box>
-                <CheckIcon color="success" />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center" justifyContent="space-between">
-                <Box>
-                  <Typography color="text.secondary" gutterBottom>
-                    Late
-                  </Typography>
-                  <Typography variant="h4">
-                    {late}
-                  </Typography>
-                </Box>
-                <WarningIcon color="error" />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
+        <div className="bg-white overflow-hidden shadow rounded-lg">
+          <div className="p-5">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-500 truncate">
+                  Upcoming
+                </p>
+                <p className="mt-1 text-3xl font-semibold text-gray-900">
+                  {upcoming}
+                </p>
+              </div>
+              <CalendarIcon className="h-8 w-8 text-blue-500" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-white overflow-hidden shadow rounded-lg">
+          <div className="p-5">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-500 truncate">
+                  In Progress
+                </p>
+                <p className="mt-1 text-3xl font-semibold text-gray-900">
+                  {inProgress}
+                </p>
+              </div>
+              <ClockIcon className="h-8 w-8 text-yellow-500" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-white overflow-hidden shadow rounded-lg">
+          <div className="p-5">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-500 truncate">
+                  Filed
+                </p>
+                <p className="mt-1 text-3xl font-semibold text-gray-900">
+                  {filed}
+                </p>
+              </div>
+              <CheckCircleIcon className="h-8 w-8 text-green-500" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-white overflow-hidden shadow rounded-lg">
+          <div className="p-5">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-500 truncate">
+                  Late
+                </p>
+                <p className="mt-1 text-3xl font-semibold text-gray-900">
+                  {late}
+                </p>
+              </div>
+              <ExclamationTriangleIcon className="h-8 w-8 text-red-500" />
+            </div>
+          </div>
+        </div>
+      </div>
     );
   };
 
   const renderTableView = () => (
-    <TableContainer component={Paper}>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Form Type</TableCell>
-            <TableCell>Period</TableCell>
-            <TableCell>Filing Deadline</TableCell>
-            <TableCell>Days Until Due</TableCell>
-            <TableCell>Status</TableCell>
-            <TableCell>Filed Date</TableCell>
-            <TableCell>Confirmation</TableCell>
-            <TableCell>Actions</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
+    <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Form Type
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Period
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Filing Deadline
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Days Until Due
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Status
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Filed Date
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Confirmation
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Actions
+            </th>
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-200">
           {schedules.map((schedule) => {
             const daysUntil = getDaysUntilDue(schedule.filing_deadline);
             const quarterStr = schedule.quarter ? `Q${schedule.quarter}` : 'Annual';
             
             return (
-              <TableRow key={schedule.id}>
-                <TableCell>
-                  <Box display="flex" alignItems="center" gap={1}>
-                    <FormIcon fontSize="small" />
-                    {schedule.form_type_display}
-                  </Box>
-                </TableCell>
-                <TableCell>
+              <tr key={schedule.id}>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <DocumentTextIcon className="h-4 w-4 text-gray-400 mr-2" />
+                    <span className="text-sm text-gray-900">{schedule.form_type_display}</span>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {quarterStr} {schedule.year}
                   {schedule.state_code && ` (${schedule.state_code})`}
-                </TableCell>
-                <TableCell>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {format(parseISO(schedule.filing_deadline), 'MMM d, yyyy')}
-                </TableCell>
-                <TableCell>
-                  <Box display="flex" alignItems="center" gap={1}>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
                     {getUrgencyIcon(daysUntil)}
                     {schedule.status !== 'filed' && (
-                      <Typography variant="body2">
+                      <span className="ml-2 text-sm text-gray-900">
                         {daysUntil < 0 ? `${Math.abs(daysUntil)} days late` : `${daysUntil} days`}
-                      </Typography>
+                      </span>
                     )}
-                  </Box>
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    label={schedule.status_display}
-                    color={getStatusColor(schedule.status)}
-                    size="small"
-                  />
-                </TableCell>
-                <TableCell>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusClasses(schedule.status)}`}>
+                    {schedule.status_display}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {schedule.filed_date ? format(parseISO(schedule.filed_date), 'MM/dd/yyyy') : '-'}
-                </TableCell>
-                <TableCell>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {schedule.confirmation_number || '-'}
-                </TableCell>
-                <TableCell>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {schedule.status === 'upcoming' && (
-                    <Tooltip title="Set Reminder">
-                      <IconButton size="small">
-                        <NotificationIcon />
-                      </IconButton>
-                    </Tooltip>
+                    <button className="text-gray-400 hover:text-gray-500 group relative">
+                      <BellIcon className="h-5 w-5" />
+                      <span className="absolute z-10 -top-8 right-0 text-xs bg-gray-800 text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                        Set Reminder
+                      </span>
+                    </button>
                   )}
-                </TableCell>
-              </TableRow>
+                </td>
+              </tr>
             );
           })}
           {schedules.length === 0 && (
-            <TableRow>
-              <TableCell colSpan={8} align="center">
+            <tr>
+              <td colSpan={8} className="px-6 py-4 text-center text-sm text-gray-500">
                 No filing schedules found for {selectedYear}
-              </TableCell>
-            </TableRow>
+              </td>
+            </tr>
           )}
-        </TableBody>
-      </Table>
-    </TableContainer>
+        </tbody>
+      </table>
+    </div>
   );
 
   const renderCalendarView = () => (
-    <Paper sx={{ p: 2 }}>
+    <div className="bg-white shadow overflow-hidden sm:rounded-lg p-4">
       <FullCalendar
         plugins={[dayGridPlugin, listPlugin]}
         initialView="dayGridMonth"
@@ -350,7 +329,7 @@ const FilingSchedule = () => {
         }}
         height="600px"
       />
-    </Paper>
+    </div>
   );
 
   const renderUpcomingDeadlines = () => {
@@ -362,114 +341,122 @@ const FilingSchedule = () => {
     if (upcomingDeadlines.length === 0) return null;
 
     return (
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
+      <div className="bg-white overflow-hidden shadow rounded-lg mb-6">
+        <div className="px-4 py-5 sm:p-6">
+          <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
             Upcoming Deadlines
-          </Typography>
-          <List>
-            {upcomingDeadlines.map((schedule, index) => {
+          </h3>
+          <ul className="divide-y divide-gray-200">
+            {upcomingDeadlines.map((schedule) => {
               const daysUntil = getDaysUntilDue(schedule.filing_deadline);
               
               return (
-                <React.Fragment key={schedule.id}>
-                  <ListItem>
-                    <ListItemIcon>
+                <li key={schedule.id} className="py-4">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
                       {getUrgencyIcon(daysUntil)}
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={schedule.form_type_display}
-                      secondary={`Due: ${format(parseISO(schedule.filing_deadline), 'MMMM d, yyyy')} (${daysUntil} days)`}
-                    />
-                  </ListItem>
-                  {index < upcomingDeadlines.length - 1 && <Divider />}
-                </React.Fragment>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm font-medium text-gray-900">
+                        {schedule.form_type_display}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        Due: {format(parseISO(schedule.filing_deadline), 'MMMM d, yyyy')} ({daysUntil} days)
+                      </p>
+                    </div>
+                  </div>
+                </li>
               );
             })}
-          </List>
-        </CardContent>
-      </Card>
+          </ul>
+        </div>
+      </div>
     );
   };
 
   return (
-    <Box>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h5">
+    <div>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-black">
           Tax Filing Schedule
-        </Typography>
-        <Box display="flex" gap={2}>
-          <Button
-            variant={view === 'table' ? 'contained' : 'outlined'}
+        </h1>
+        <div className="flex gap-2">
+          <button
+            className={`px-4 py-2 text-sm font-medium rounded-md ${view === 'table' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'}`}
             onClick={() => setView('table')}
           >
             Table View
-          </Button>
-          <Button
-            variant={view === 'calendar' ? 'contained' : 'outlined'}
+          </button>
+          <button
+            className={`px-4 py-2 text-sm font-medium rounded-md ${view === 'calendar' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'}`}
             onClick={() => setView('calendar')}
           >
             Calendar View
-          </Button>
-        </Box>
-      </Box>
+          </button>
+        </div>
+      </div>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
-          {error}
-        </Alert>
+        <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative">
+          <span className="block sm:inline">{error}</span>
+          <button
+            className="absolute top-0 bottom-0 right-0 px-4 py-3"
+            onClick={() => setError(null)}
+          >
+            <span className="text-red-500">×</span>
+          </button>
+        </div>
       )}
 
       {/* Filters */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} sm={4}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Year</InputLabel>
-                <Select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(e.target.value)}
-                  label="Year"
-                >
-                  {[...Array(5)].map((_, i) => {
-                    const year = new Date().getFullYear() - 2 + i;
-                    return <MenuItem key={year} value={year}>{year}</MenuItem>;
-                  })}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Form Type</InputLabel>
-                <Select
-                  value={selectedFormType}
-                  onChange={(e) => setSelectedFormType(e.target.value)}
-                  label="Form Type"
-                >
-                  <MenuItem value="all">All Forms</MenuItem>
-                  <MenuItem value="941">Form 941</MenuItem>
-                  <MenuItem value="940">Form 940</MenuItem>
-                  <MenuItem value="W2">Form W-2</MenuItem>
-                  <MenuItem value="1099">Form 1099</MenuItem>
-                  <MenuItem value="STATE_QUARTERLY">State Quarterly</MenuItem>
-                  <MenuItem value="STATE_ANNUAL">State Annual</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <Button
-                fullWidth
-                variant="outlined"
-                startIcon={<AddIcon />}
+      <div className="bg-white overflow-hidden shadow rounded-lg mb-6">
+        <div className="px-4 py-5 sm:p-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Year
+              </label>
+              <select
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+              >
+                {[...Array(5)].map((_, i) => {
+                  const year = new Date().getFullYear() - 2 + i;
+                  return <option key={year} value={year}>{year}</option>;
+                })}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Form Type
+              </label>
+              <select
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                value={selectedFormType}
+                onChange={(e) => setSelectedFormType(e.target.value)}
+              >
+                <option value="all">All Forms</option>
+                <option value="941">Form 941</option>
+                <option value="940">Form 940</option>
+                <option value="W2">Form W-2</option>
+                <option value="1099">Form 1099</option>
+                <option value="STATE_QUARTERLY">State Quarterly</option>
+                <option value="STATE_ANNUAL">State Annual</option>
+              </select>
+            </div>
+            <div className="flex items-end">
+              <button
+                className="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 onClick={() => setShowInitDialog(true)}
               >
+                <PlusIcon className="h-4 w-4 mr-2" />
                 Initialize Year
-              </Button>
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Summary Cards */}
       {renderScheduleSummary()}
@@ -479,55 +466,58 @@ const FilingSchedule = () => {
 
       {/* Main Content */}
       {loading ? (
-        <Box display="flex" justifyContent="center" p={3}>
-          <CircularProgress />
-        </Box>
+        <CenteredSpinner />
       ) : (
         view === 'table' ? renderTableView() : renderCalendarView()
       )}
 
       {/* Initialize Year Dialog */}
-      <Dialog
-        open={showInitDialog}
-        onClose={() => setShowInitDialog(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Initialize Filing Schedule</DialogTitle>
-        <DialogContent>
-          <Alert severity="info" sx={{ mb: 2 }}>
-            This will create all standard tax filing deadlines for {selectedYear}
-          </Alert>
-          <Typography variant="body2">
-            The following forms will be scheduled:
-          </Typography>
-          <List dense>
-            <ListItem>
-              <ListItemText primary="Form 941 - Quarterly (4 filings)" />
-            </ListItem>
-            <ListItem>
-              <ListItemText primary="Form 940 - Annual FUTA" />
-            </ListItem>
-            <ListItem>
-              <ListItemText primary="Form W-2 - Annual" />
-            </ListItem>
-          </List>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowInitDialog(false)}>
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={initializeYear}
-            disabled={loading}
-          >
-            Initialize {selectedYear}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+      {showInitDialog && (
+        <div className="fixed z-10 inset-0 overflow-y-auto">
+          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+                  Initialize Filing Schedule
+                </h3>
+                <div className="mb-4 bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded">
+                  This will create all standard tax filing deadlines for {selectedYear}
+                </div>
+                <p className="text-sm text-gray-700 mb-2">
+                  The following forms will be scheduled:
+                </p>
+                <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                  <li>Form 941 - Quarterly (4 filings)</li>
+                  <li>Form 940 - Annual FUTA</li>
+                  <li>Form W-2 - Annual</li>
+                </ul>
+              </div>
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button
+                  type="button"
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm disabled:bg-gray-300"
+                  onClick={initializeYear}
+                  disabled={loading}
+                >
+                  Initialize {selectedYear}
+                </button>
+                <button
+                  type="button"
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                  onClick={() => setShowInitDialog(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

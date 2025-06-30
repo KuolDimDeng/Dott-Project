@@ -1,5 +1,6 @@
 'use client';
 
+// PayrollTaxDashboard - Main dashboard for payroll tax management
 import React, { useState, useEffect } from 'react';
 import { 
   ClockIcon, 

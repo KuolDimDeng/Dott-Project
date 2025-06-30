@@ -1,53 +1,20 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Button,
-  Grid,
-  TextField,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Alert,
-  CircularProgress,
-  Stepper,
-  Step,
-  StepLabel,
-  IconButton,
-  Tooltip,
-  Chip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction
-} from '@mui/material';
-import {
-  Calculate as CalculateIcon,
-  Send as SendIcon,
-  Check as CheckIcon,
-  Error as ErrorIcon,
-  Download as DownloadIcon,
-  Refresh as RefreshIcon,
-  Assessment as AssessmentIcon,
-  Schedule as ScheduleIcon,
-  AttachMoney as MoneyIcon,
-  People as PeopleIcon,
-  CalendarToday as CalendarIcon
-} from '@mui/icons-material';
+  CalculatorIcon,
+  PaperAirplaneIcon,
+  CheckIcon,
+  ExclamationCircleIcon,
+  ArrowDownTrayIcon,
+  ArrowPathIcon,
+  ChartBarIcon,
+  ClockIcon,
+  CurrencyDollarIcon,
+  UsersIcon,
+  CalendarIcon
+} from '@heroicons/react/24/outline';
+import { CenteredSpinner } from '@components/ui/StandardSpinner';
 import { format, startOfQuarter, endOfQuarter } from 'date-fns';
 
 const Form941Management = () => {
@@ -184,395 +151,414 @@ const Form941Management = () => {
     }).format(amount || 0);
   };
 
-  const getStatusColor = (status) => {
-    const statusColors = {
-      draft: 'default',
-      calculated: 'info',
-      ready: 'warning',
-      submitted: 'primary',
-      accepted: 'success',
-      rejected: 'error',
-      amended: 'secondary'
+  const getStatusClasses = (status) => {
+    const statusClasses = {
+      draft: 'bg-gray-100 text-gray-800',
+      calculated: 'bg-blue-100 text-blue-800',
+      ready: 'bg-yellow-100 text-yellow-800',
+      submitted: 'bg-indigo-100 text-indigo-800',
+      accepted: 'bg-green-100 text-green-800',
+      rejected: 'bg-red-100 text-red-800',
+      amended: 'bg-purple-100 text-purple-800'
     };
-    return statusColors[status] || 'default';
+    return statusClasses[status] || 'bg-gray-100 text-gray-800';
   };
 
   const renderPeriodSelection = () => (
-    <Box>
-      <Typography variant="h6" gutterBottom>
+    <div>
+      <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
         Select Filing Period
-      </Typography>
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={6}>
-          <FormControl fullWidth>
-            <InputLabel>Quarter</InputLabel>
-            <Select
-              value={formData.quarter}
-              onChange={(e) => setFormData({ ...formData, quarter: e.target.value })}
-              label="Quarter"
-            >
-              <MenuItem value={1}>Q1 (Jan - Mar)</MenuItem>
-              <MenuItem value={2}>Q2 (Apr - Jun)</MenuItem>
-              <MenuItem value={3}>Q3 (Jul - Sep)</MenuItem>
-              <MenuItem value={4}>Q4 (Oct - Dec)</MenuItem>
-            </Select>
-          </FormControl>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <TextField
-            fullWidth
-            label="Year"
+      </h3>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Quarter
+          </label>
+          <select
+            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            value={formData.quarter}
+            onChange={(e) => setFormData({ ...formData, quarter: e.target.value })}
+          >
+            <option value={1}>Q1 (Jan - Mar)</option>
+            <option value={2}>Q2 (Apr - Jun)</option>
+            <option value={3}>Q3 (Jul - Sep)</option>
+            <option value={4}>Q4 (Oct - Dec)</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Year
+          </label>
+          <input
             type="number"
+            className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             value={formData.year}
             onChange={(e) => setFormData({ ...formData, year: parseInt(e.target.value) })}
-            InputProps={{
-              inputProps: { min: 2020, max: new Date().getFullYear() + 1 }
-            }}
+            min="2020"
+            max={new Date().getFullYear() + 1}
           />
-        </Grid>
-      </Grid>
-      <Box mt={3}>
-        <Button
-          variant="contained"
-          color="primary"
+        </div>
+      </div>
+      <div className="mt-6">
+        <button
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300"
           onClick={() => setActiveStep(1)}
           disabled={!formData.quarter || !formData.year}
         >
           Continue
-        </Button>
-      </Box>
-    </Box>
+        </button>
+      </div>
+    </div>
   );
 
   const renderCalculation = () => (
-    <Box>
-      <Typography variant="h6" gutterBottom>
+    <div>
+      <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
         Calculate Form 941
-      </Typography>
-      <Alert severity="info" sx={{ mb: 2 }}>
+      </h3>
+      <div className="mb-4 bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded">
         This will calculate your Form 941 based on payroll data for Q{formData.quarter} {formData.year}
-      </Alert>
-      <Grid container spacing={2}>
-        <Grid item xs={12}>
-          <Card variant="outlined">
-            <CardContent>
-              <Typography variant="subtitle1" gutterBottom>
-                Period Details
-              </Typography>
-              <Typography variant="body2">
-                Quarter: Q{formData.quarter} {formData.year}
-              </Typography>
-              <Typography variant="body2">
-                Period: {format(startOfQuarter(new Date(formData.year, (formData.quarter - 1) * 3)), 'MMM d, yyyy')} - {format(endOfQuarter(new Date(formData.year, (formData.quarter - 1) * 3)), 'MMM d, yyyy')}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-      <Box mt={3} display="flex" gap={2}>
-        <Button
-          variant="outlined"
+      </div>
+      <div className="grid grid-cols-1 gap-4">
+        <div className="border border-gray-200 rounded-lg p-4">
+          <h4 className="text-sm font-medium text-gray-900 mb-2">
+            Period Details
+          </h4>
+          <p className="text-sm text-gray-600">
+            Quarter: Q{formData.quarter} {formData.year}
+          </p>
+          <p className="text-sm text-gray-600">
+            Period: {format(startOfQuarter(new Date(formData.year, (formData.quarter - 1) * 3)), 'MMM d, yyyy')} - {format(endOfQuarter(new Date(formData.year, (formData.quarter - 1) * 3)), 'MMM d, yyyy')}
+          </p>
+        </div>
+      </div>
+      <div className="mt-6 flex gap-2">
+        <button
+          className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
           onClick={() => setActiveStep(0)}
         >
           Back
-        </Button>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<CalculateIcon />}
+        </button>
+        <button
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300"
           onClick={calculateForm}
           disabled={loading}
         >
-          {loading ? <CircularProgress size={24} /> : 'Calculate Form'}
-        </Button>
-      </Box>
-    </Box>
+          <CalculatorIcon className="h-4 w-4 mr-2" />
+          {loading ? 'Calculating...' : 'Calculate Form'}
+        </button>
+      </div>
+    </div>
   );
 
   const renderReview = () => {
     if (!selectedForm) return null;
 
     return (
-      <Box>
-        <Typography variant="h6" gutterBottom>
+      <div>
+        <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
           Review Form 941
-        </Typography>
+        </h3>
         
         {validationErrors.length > 0 && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            <Typography variant="subtitle2">Validation Errors:</Typography>
-            <List dense>
+          <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+            <p className="font-medium mb-2">Validation Errors:</p>
+            <ul className="list-disc list-inside text-sm space-y-1">
               {validationErrors.map((error, index) => (
-                <ListItem key={index}>
-                  <ListItemText primary={error} />
-                </ListItem>
+                <li key={index}>{error}</li>
               ))}
-            </List>
-          </Alert>
+            </ul>
+          </div>
         )}
 
-        <Grid container spacing={3}>
+        <div className="space-y-4">
           {/* Part 1: Answer these questions */}
-          <Grid item xs={12}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Part 1: Answer these questions for this quarter
-                </Typography>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <PeopleIcon color="primary" />
-                      <Box>
-                        <Typography variant="body2" color="text.secondary">
-                          Number of Employees
-                        </Typography>
-                        <Typography variant="h6">
-                          {selectedForm.number_of_employees}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <MoneyIcon color="primary" />
-                      <Box>
-                        <Typography variant="body2" color="text.secondary">
-                          Wages, Tips & Compensation
-                        </Typography>
-                        <Typography variant="h6">
-                          {formatCurrency(selectedForm.wages_tips_compensation)}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Grid>
-                </Grid>
-              </CardContent>
-            </Card>
-          </Grid>
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="px-4 py-5 sm:p-6">
+              <h4 className="text-base font-medium text-gray-900 mb-4">
+                Part 1: Answer these questions for this quarter
+              </h4>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="flex items-center">
+                  <UsersIcon className="h-8 w-8 text-blue-500 mr-3" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">
+                      Number of Employees
+                    </p>
+                    <p className="text-lg font-semibold text-gray-900">
+                      {selectedForm.number_of_employees}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center">
+                  <CurrencyDollarIcon className="h-8 w-8 text-blue-500 mr-3" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">
+                      Wages, Tips & Compensation
+                    </p>
+                    <p className="text-lg font-semibold text-gray-900">
+                      {formatCurrency(selectedForm.wages_tips_compensation)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* Tax Calculations */}
-          <Grid item xs={12}>
-            <TableContainer component={Paper}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Tax Type</TableCell>
-                    <TableCell align="right">Taxable Wages</TableCell>
-                    <TableCell align="right">Tax Amount</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  <TableRow>
-                    <TableCell>Federal Income Tax Withheld</TableCell>
-                    <TableCell align="right">{formatCurrency(selectedForm.wages_tips_compensation)}</TableCell>
-                    <TableCell align="right">{formatCurrency(selectedForm.federal_income_tax_withheld)}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Social Security Tax</TableCell>
-                    <TableCell align="right">{formatCurrency(selectedForm.social_security_wages)}</TableCell>
-                    <TableCell align="right">{formatCurrency(selectedForm.social_security_tax)}</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Medicare Tax</TableCell>
-                    <TableCell align="right">{formatCurrency(selectedForm.medicare_wages_tips)}</TableCell>
-                    <TableCell align="right">{formatCurrency(selectedForm.medicare_tax)}</TableCell>
-                  </TableRow>
-                  {selectedForm.additional_medicare_tax > 0 && (
-                    <TableRow>
-                      <TableCell>Additional Medicare Tax</TableCell>
-                      <TableCell align="right">-</TableCell>
-                      <TableCell align="right">{formatCurrency(selectedForm.additional_medicare_tax)}</TableCell>
-                    </TableRow>
-                  )}
-                  <TableRow>
-                    <TableCell><strong>Total Tax</strong></TableCell>
-                    <TableCell align="right">-</TableCell>
-                    <TableCell align="right"><strong>{formatCurrency(selectedForm.total_tax_after_adjustments)}</strong></TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Grid>
+          <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Tax Type
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Taxable Wages
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Tax Amount
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                <tr>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    Federal Income Tax Withheld
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                    {formatCurrency(selectedForm.wages_tips_compensation)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                    {formatCurrency(selectedForm.federal_income_tax_withheld)}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    Social Security Tax
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                    {formatCurrency(selectedForm.social_security_wages)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                    {formatCurrency(selectedForm.social_security_tax)}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    Medicare Tax
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                    {formatCurrency(selectedForm.medicare_wages_tips)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                    {formatCurrency(selectedForm.medicare_tax)}
+                  </td>
+                </tr>
+                {selectedForm.additional_medicare_tax > 0 && (
+                  <tr>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      Additional Medicare Tax
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                      -
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                      {formatCurrency(selectedForm.additional_medicare_tax)}
+                    </td>
+                  </tr>
+                )}
+                <tr className="bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    Total Tax
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                    -
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
+                    {formatCurrency(selectedForm.total_tax_after_adjustments)}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
           {/* Deposit Schedule */}
-          <Grid item xs={12}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Part 2: Deposit Schedule
-                </Typography>
-                <Box display="flex" alignItems="center" gap={2} mb={2}>
-                  <Chip 
-                    label={selectedForm.deposit_schedule === 'monthly' ? 'Monthly Depositor' : 'Semiweekly Depositor'}
-                    color="primary"
-                  />
-                  {showScheduleB && (
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={() => setShowScheduleB(true)}
-                    >
-                      View Schedule B
-                    </Button>
-                  )}
-                </Box>
-                
-                {selectedForm.deposit_schedule === 'monthly' && (
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={4}>
-                      <Typography variant="body2" color="text.secondary">Month 1 Liability</Typography>
-                      <Typography variant="h6">{formatCurrency(selectedForm.month1_liability)}</Typography>
-                    </Grid>
-                    <Grid item xs={12} sm={4}>
-                      <Typography variant="body2" color="text.secondary">Month 2 Liability</Typography>
-                      <Typography variant="h6">{formatCurrency(selectedForm.month2_liability)}</Typography>
-                    </Grid>
-                    <Grid item xs={12} sm={4}>
-                      <Typography variant="body2" color="text.secondary">Month 3 Liability</Typography>
-                      <Typography variant="h6">{formatCurrency(selectedForm.month3_liability)}</Typography>
-                    </Grid>
-                  </Grid>
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="px-4 py-5 sm:p-6">
+              <h4 className="text-base font-medium text-gray-900 mb-4">
+                Part 2: Deposit Schedule
+              </h4>
+              <div className="flex items-center gap-2 mb-4">
+                <span className={`inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800`}>
+                  {selectedForm.deposit_schedule === 'monthly' ? 'Monthly Depositor' : 'Semiweekly Depositor'}
+                </span>
+                {showScheduleB && (
+                  <button
+                    className="inline-flex items-center px-3 py-1 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                    onClick={() => setShowScheduleB(true)}
+                  >
+                    View Schedule B
+                  </button>
                 )}
-                
-                <Box mt={2}>
-                  <Typography variant="body2" color="text.secondary">Total Deposits for Quarter</Typography>
-                  <Typography variant="h6">{formatCurrency(selectedForm.total_deposits)}</Typography>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
+              </div>
+              
+              {selectedForm.deposit_schedule === 'monthly' && (
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 mb-4">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Month 1 Liability</p>
+                    <p className="text-lg font-semibold text-gray-900">{formatCurrency(selectedForm.month1_liability)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Month 2 Liability</p>
+                    <p className="text-lg font-semibold text-gray-900">{formatCurrency(selectedForm.month2_liability)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Month 3 Liability</p>
+                    <p className="text-lg font-semibold text-gray-900">{formatCurrency(selectedForm.month3_liability)}</p>
+                  </div>
+                </div>
+              )}
+              
+              <div className="mt-4">
+                <p className="text-sm font-medium text-gray-500">Total Deposits for Quarter</p>
+                <p className="text-lg font-semibold text-gray-900">{formatCurrency(selectedForm.total_deposits)}</p>
+              </div>
+            </div>
+          </div>
 
           {/* Balance Due/Overpayment */}
-          <Grid item xs={12}>
-            <Card>
-              <CardContent>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
-                    <Typography variant="body2" color="text.secondary">
-                      {selectedForm.balance_due > 0 ? 'Balance Due' : 'Overpayment'}
-                    </Typography>
-                    <Typography variant="h6" color={selectedForm.balance_due > 0 ? 'error' : 'success'}>
-                      {formatCurrency(selectedForm.balance_due > 0 ? selectedForm.balance_due : selectedForm.overpayment)}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <Typography variant="body2" color="text.secondary">Filing Deadline</Typography>
-                    <Typography variant="h6">
-                      {format(new Date(selectedForm.due_date), 'MMMM d, yyyy')}
-                    </Typography>
-                  </Grid>
-                </Grid>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="px-4 py-5 sm:p-6">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <p className="text-sm font-medium text-gray-500">
+                    {selectedForm.balance_due > 0 ? 'Balance Due' : 'Overpayment'}
+                  </p>
+                  <p className={`text-lg font-semibold ${selectedForm.balance_due > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    {formatCurrency(selectedForm.balance_due > 0 ? selectedForm.balance_due : selectedForm.overpayment)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-500">Filing Deadline</p>
+                  <p className="text-lg font-semibold text-gray-900">
+                    {format(new Date(selectedForm.due_date), 'MMMM d, yyyy')}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
-        <Box mt={3} display="flex" gap={2}>
-          <Button
-            variant="outlined"
+        <div className="mt-6 flex gap-2">
+          <button
+            className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
             onClick={() => setActiveStep(1)}
           >
             Back
-          </Button>
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<SendIcon />}
+          </button>
+          <button
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300"
             onClick={() => setActiveStep(3)}
             disabled={!selectedForm.is_valid}
           >
+            <PaperAirplaneIcon className="h-4 w-4 mr-2" />
             Proceed to Submit
-          </Button>
-        </Box>
-      </Box>
+          </button>
+        </div>
+      </div>
     );
   };
 
   const renderSubmit = () => (
-    <Box>
-      <Typography variant="h6" gutterBottom>
+    <div>
+      <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
         Submit Form 941
-      </Typography>
+      </h3>
       
-      <Alert severity="warning" sx={{ mb: 2 }}>
+      <div className="mb-4 bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded">
         Please review the following before submitting:
-      </Alert>
+      </div>
       
-      <List>
-        <ListItem>
-          <ListItemText 
-            primary="All information is accurate and complete"
-            secondary="You are responsible for the accuracy of this filing"
-          />
-        </ListItem>
-        <ListItem>
-          <ListItemText 
-            primary="You have the authority to file this return"
-            secondary="You must be authorized to file taxes for this business"
-          />
-        </ListItem>
-        <ListItem>
-          <ListItemText 
-            primary="Electronic signature agreement"
-            secondary="By submitting, you agree to sign this return electronically"
-          />
-        </ListItem>
-      </List>
+      <ul className="space-y-3">
+        <li className="bg-white overflow-hidden shadow rounded-lg p-4">
+          <p className="text-sm font-medium text-gray-900">
+            All information is accurate and complete
+          </p>
+          <p className="text-sm text-gray-500 mt-1">
+            You are responsible for the accuracy of this filing
+          </p>
+        </li>
+        <li className="bg-white overflow-hidden shadow rounded-lg p-4">
+          <p className="text-sm font-medium text-gray-900">
+            You have the authority to file this return
+          </p>
+          <p className="text-sm text-gray-500 mt-1">
+            You must be authorized to file taxes for this business
+          </p>
+        </li>
+        <li className="bg-white overflow-hidden shadow rounded-lg p-4">
+          <p className="text-sm font-medium text-gray-900">
+            Electronic signature agreement
+          </p>
+          <p className="text-sm text-gray-500 mt-1">
+            By submitting, you agree to sign this return electronically
+          </p>
+        </li>
+      </ul>
 
-      <Box mt={3} display="flex" gap={2}>
-        <Button
-          variant="outlined"
+      <div className="mt-6 flex gap-2">
+        <button
+          className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
           onClick={() => setActiveStep(2)}
         >
           Back to Review
-        </Button>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<SendIcon />}
+        </button>
+        <button
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300"
           onClick={submitToIRS}
           disabled={loading}
         >
-          {loading ? <CircularProgress size={24} /> : 'Submit to IRS'}
-        </Button>
-      </Box>
-    </Box>
+          <PaperAirplaneIcon className="h-4 w-4 mr-2" />
+          {loading ? 'Submitting...' : 'Submit to IRS'}
+        </button>
+      </div>
+    </div>
   );
 
   const renderConfirmation = () => (
-    <Box>
-      <Box display="flex" alignItems="center" gap={2} mb={3}>
-        <CheckIcon color="success" sx={{ fontSize: 48 }} />
-        <Typography variant="h5">
+    <div>
+      <div className="flex items-center gap-3 mb-6">
+        <CheckIcon className="h-12 w-12 text-green-500" />
+        <h3 className="text-xl font-semibold text-gray-900">
           Form 941 Submitted Successfully
-        </Typography>
-      </Box>
+        </h3>
+      </div>
       
       {selectedForm && (
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6}>
-            <Typography variant="body2" color="text.secondary">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 mb-6">
+          <div>
+            <p className="text-sm font-medium text-gray-500">
               Submission ID
-            </Typography>
-            <Typography variant="body1">
+            </p>
+            <p className="text-base text-gray-900">
               {selectedForm.submission_id}
-            </Typography>
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <Typography variant="body2" color="text.secondary">
+            </p>
+          </div>
+          <div>
+            <p className="text-sm font-medium text-gray-500">
               Tracking Number
-            </Typography>
-            <Typography variant="body1">
+            </p>
+            <p className="text-base text-gray-900">
               {selectedForm.irs_tracking_number}
-            </Typography>
-          </Grid>
-        </Grid>
+            </p>
+          </div>
+        </div>
       )}
       
-      <Box mt={3}>
-        <Button
-          variant="contained"
+      <div className="mt-6">
+        <button
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
           onClick={() => {
             setActiveStep(0);
             setSelectedForm(null);
@@ -580,9 +566,9 @@ const Form941Management = () => {
           }}
         >
           File Another Form
-        </Button>
-      </Box>
-    </Box>
+        </button>
+      </div>
+    </div>
   );
 
   const renderStepContent = () => {
@@ -603,141 +589,193 @@ const Form941Management = () => {
   };
 
   if (loading && forms.length === 0) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight={400}>
-        <CircularProgress />
-      </Box>
-    );
+    return <CenteredSpinner />;
   }
 
   return (
-    <Box>
-      <Typography variant="h4" gutterBottom>
+    <div>
+      <h1 className="text-2xl font-bold text-black mb-6">
         Form 941 - Quarterly Federal Tax Return
-      </Typography>
+      </h1>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
-          {error}
-        </Alert>
+        <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative">
+          <span className="block sm:inline">{error}</span>
+          <button
+            className="absolute top-0 bottom-0 right-0 px-4 py-3"
+            onClick={() => setError(null)}
+          >
+            <span className="text-red-500">×</span>
+          </button>
+        </div>
       )}
 
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-            <Typography variant="h6">File New Form 941</Typography>
-            <Button
-              variant="outlined"
-              startIcon={<RefreshIcon />}
+      <div className="bg-white overflow-hidden shadow rounded-lg mb-6">
+        <div className="px-4 py-5 sm:p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-lg font-medium text-gray-900">File New Form 941</h2>
+            <button
+              className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
               onClick={fetchForms}
             >
+              <ArrowPathIcon className="h-4 w-4 mr-1" />
               Refresh
-            </Button>
-          </Box>
+            </button>
+          </div>
           
-          <Stepper activeStep={activeStep} sx={{ mb: 3 }}>
-            {steps.map((label) => (
-              <Step key={label}>
-                <StepLabel>{label}</StepLabel>
-              </Step>
-            ))}
-          </Stepper>
+          <nav aria-label="Progress">
+            <ol className="flex items-center justify-between mb-6">
+              {steps.map((label, index) => (
+                <li key={label} className="relative flex-1">
+                  {index !== steps.length - 1 && (
+                    <div className="absolute top-4 w-full" aria-hidden="true">
+                      <div className="h-0.5 w-full bg-gray-200">
+                        <div
+                          className="h-0.5 bg-blue-600 transition-all"
+                          style={{
+                            width: index < activeStep ? '100%' : '0%'
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                  )}
+                  <div className={`relative flex flex-col items-center group ${
+                    index < activeStep ? 'text-blue-600' : index === activeStep ? 'text-blue-600' : 'text-gray-500'
+                  }`}>
+                    <span className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                      index < activeStep
+                        ? 'bg-blue-600 text-white'
+                        : index === activeStep
+                        ? 'border-2 border-blue-600 bg-white'
+                        : 'border-2 border-gray-300 bg-white'
+                    }`}>
+                      {index < activeStep ? <CheckIcon className="h-5 w-5" /> : index + 1}
+                    </span>
+                    <span className="text-xs mt-2">{label}</span>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </nav>
           
           {renderStepContent()}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Previous Forms List */}
-      <Card>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
+      <div className="bg-white overflow-hidden shadow rounded-lg">
+        <div className="px-4 py-5 sm:p-6">
+          <h2 className="text-lg font-medium text-gray-900 mb-4">
             Previous Form 941 Filings
-          </Typography>
+          </h2>
           
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Period</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell align="right">Total Tax</TableCell>
-                  <TableCell>Filed Date</TableCell>
-                  <TableCell>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Period
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Total Tax
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Filed Date
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
                 {forms.map((form) => (
-                  <TableRow key={form.id}>
-                    <TableCell>
+                  <tr key={form.id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       Q{form.quarter} {form.year}
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={form.filing_status_display || form.status}
-                        color={getStatusColor(form.status)}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell align="right">
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusClasses(form.status)}`}>
+                        {form.filing_status_display || form.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
                       {formatCurrency(form.total_tax_after_adjustments)}
-                    </TableCell>
-                    <TableCell>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {form.filing_date ? format(new Date(form.filing_date), 'MM/dd/yyyy') : '-'}
-                    </TableCell>
-                    <TableCell>
-                      <Box display="flex" gap={1}>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <div className="flex gap-2">
                         {form.status === 'submitted' && (
-                          <Tooltip title="Check Status">
-                            <IconButton
-                              size="small"
-                              onClick={() => checkStatus(form.id)}
-                            >
-                              <RefreshIcon />
-                            </IconButton>
-                          </Tooltip>
+                          <button
+                            className="text-gray-400 hover:text-gray-500 group relative"
+                            onClick={() => checkStatus(form.id)}
+                          >
+                            <ArrowPathIcon className="h-5 w-5" />
+                            <span className="absolute z-10 -top-8 right-0 text-xs bg-gray-800 text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                              Check Status
+                            </span>
+                          </button>
                         )}
-                        <Tooltip title="Download PDF">
-                          <IconButton size="small">
-                            <DownloadIcon />
-                          </IconButton>
-                        </Tooltip>
-                      </Box>
-                    </TableCell>
-                  </TableRow>
+                        <button className="text-gray-400 hover:text-gray-500 group relative">
+                          <ArrowDownTrayIcon className="h-5 w-5" />
+                          <span className="absolute z-10 -top-8 right-0 text-xs bg-gray-800 text-white px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                            Download PDF
+                          </span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
                 ))}
                 {forms.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={5} align="center">
+                  <tr>
+                    <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
                       No forms filed yet
-                    </TableCell>
-                  </TableRow>
+                    </td>
+                  </tr>
                 )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </CardContent>
-      </Card>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
 
       {/* Schedule B Dialog */}
-      <Dialog
-        open={showScheduleB}
-        onClose={() => setShowScheduleB(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>Schedule B - Tax Liability for Semiweekly Schedule Depositors</DialogTitle>
-        <DialogContent>
-          {selectedForm?.schedule_b && (
-            <Typography variant="body2">
-              Schedule B data would be displayed here
-            </Typography>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowScheduleB(false)}>Close</Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+      {showScheduleB && (
+        <div className="fixed z-10 inset-0 overflow-y-auto">
+          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+                  Schedule B - Tax Liability for Semiweekly Schedule Depositors
+                </h3>
+                {selectedForm?.schedule_b && (
+                  <p className="text-sm text-gray-700">
+                    Schedule B data would be displayed here
+                  </p>
+                )}
+              </div>
+              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button
+                  type="button"
+                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:w-auto sm:text-sm"
+                  onClick={() => setShowScheduleB(false)}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 
