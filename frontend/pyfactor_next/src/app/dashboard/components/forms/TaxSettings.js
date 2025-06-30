@@ -1119,7 +1119,6 @@ export default function TaxSettings({ onNavigate }) {
                 />
               </div>
             </div>
-            )}
           </div>
           
           {/* Personal Income Tax Section */}

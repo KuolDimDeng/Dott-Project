@@ -6,6 +6,9 @@ from django.conf import settings
 from custom_auth.tenant_base_model import TenantAwareModel
 
 import uuid
+from django.contrib.postgres.fields import JSONField
+from django.utils import timezone
+from audit.mixins import AuditMixin
 
 
 
@@ -46,6 +49,177 @@ class State(TaxJurisdiction):
     
     class Meta:
         app_label = 'taxes'
+
+class TaxFiling(AuditMixin, TenantAwareModel):
+    """
+    Main model for tracking tax filing requests and their status
+    """
+    FILING_STATUS_CHOICES = [
+        ('payment_pending', 'Payment Pending'),
+        ('payment_completed', 'Payment Completed'),
+        ('documents_pending', 'Documents Pending'),
+        ('in_preparation', 'In Preparation'),
+        ('ready_for_review', 'Ready for Review'),
+        ('submitted', 'Submitted to Tax Authority'),
+        ('accepted', 'Accepted by Tax Authority'),
+        ('rejected', 'Rejected - Needs Correction'),
+        ('completed', 'Completed'),
+        ('cancelled', 'Cancelled'),
+    ]
+    
+    TAX_TYPE_CHOICES = [
+        ('sales', 'Sales Tax'),
+        ('payroll', 'Payroll Tax'),
+        ('income', 'Income Tax'),
+    ]
+    
+    SERVICE_TYPE_CHOICES = [
+        ('fullService', 'Full Service'),
+        ('selfService', 'Self Service'),
+    ]
+    
+    filing_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    tax_type = models.CharField(max_length=20, choices=TAX_TYPE_CHOICES)
+    service_type = models.CharField(max_length=20, choices=SERVICE_TYPE_CHOICES)
+    status = models.CharField(max_length=30, choices=FILING_STATUS_CHOICES, default='payment_pending')
+    
+    # Pricing
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    complexity_multiplier = models.DecimalField(max_digits=3, decimal_places=2, default=1.0)
+    
+    # Filing period information
+    filing_period = models.CharField(max_length=50)  # e.g., "Q1 2024", "March 2024"
+    filing_year = models.IntegerField()
+    filing_month = models.IntegerField(null=True, blank=True)  # For monthly filings
+    filing_quarter = models.IntegerField(null=True, blank=True)  # For quarterly filings
+    due_date = models.DateField()
+    
+    # Payment information
+    payment_status = models.CharField(max_length=20, default='pending')
+    payment_session_id = models.CharField(max_length=200, null=True, blank=True)
+    payment_completed_at = models.DateTimeField(null=True, blank=True)
+    
+    # Filing information
+    submitted_at = models.DateTimeField(null=True, blank=True)
+    accepted_at = models.DateTimeField(null=True, blank=True)
+    confirmation_number = models.CharField(max_length=100, null=True, blank=True)
+    
+    # Multi-location support
+    locations = JSONField(default=list, blank=True)  # List of location IDs included
+    
+    # Calculated amounts
+    total_sales = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
+    taxable_sales = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
+    tax_collected = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
+    tax_due = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
+    
+    # Metadata
+    filing_data = JSONField(default=dict, blank=True)  # Store form-specific data
+    notes = models.TextField(blank=True)
+    internal_notes = models.TextField(blank=True)  # For staff use only
+    
+    # User information
+    user_email = models.EmailField()
+    preparer_email = models.EmailField(null=True, blank=True)  # For full service
+    
+    class Meta:
+        app_label = 'taxes'
+        db_table = 'tax_filings'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['tenant_id', 'status']),
+            models.Index(fields=['tenant_id', 'tax_type']),
+            models.Index(fields=['tenant_id', 'due_date']),
+            models.Index(fields=['filing_year', 'filing_month']),
+        ]
+        
+    def __str__(self):
+        return f"{self.get_tax_type_display()} - {self.filing_period} - {self.get_status_display()}"
+    
+    def can_cancel(self):
+        """Check if filing can be cancelled"""
+        return self.status in ['payment_pending', 'payment_completed', 'documents_pending']
+    
+    def mark_paid(self):
+        """Mark filing as paid"""
+        self.payment_status = 'completed'
+        self.payment_completed_at = timezone.now()
+        self.status = 'documents_pending'
+        self.save()
+
+
+class FilingDocument(AuditMixin, TenantAwareModel):
+    """
+    Documents uploaded for tax filings
+    """
+    DOCUMENT_TYPE_CHOICES = [
+        # Sales Tax Documents
+        ('sales_report', 'Sales Report'),
+        ('exemption_certificates', 'Exemption Certificates'),
+        ('pos_reports', 'POS System Reports'),
+        
+        # Payroll Tax Documents
+        ('payroll_register', 'Payroll Register'),
+        ('previous_941', 'Previous Form 941'),
+        ('previous_940', 'Previous Form 940'),
+        ('state_ui_report', 'State UI Report'),
+        ('w2_forms', 'W-2 Forms'),
+        
+        # Income Tax Documents
+        ('profit_loss', 'Profit & Loss Statement'),
+        ('balance_sheet', 'Balance Sheet'),
+        ('previous_return', 'Previous Tax Return'),
+        ('bank_statements', 'Bank Statements'),
+        ('receipts', 'Receipts and Invoices'),
+        
+        # General
+        ('other', 'Other Supporting Document'),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    filing = models.ForeignKey(TaxFiling, on_delete=models.CASCADE, related_name='documents')
+    document_type = models.CharField(max_length=50, choices=DOCUMENT_TYPE_CHOICES)
+    file_name = models.CharField(max_length=255)
+    file_path = models.FileField(upload_to='tax_documents/%Y/%m/')
+    file_size = models.IntegerField()  # in bytes
+    mime_type = models.CharField(max_length=100)
+    
+    # Metadata
+    uploaded_by = models.EmailField()
+    description = models.TextField(blank=True)
+    is_verified = models.BooleanField(default=False)
+    verified_by = models.EmailField(null=True, blank=True)
+    verified_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        app_label = 'taxes'
+        db_table = 'tax_filing_documents'
+        ordering = ['-created_at']
+        
+    def __str__(self):
+        return f"{self.get_document_type_display()} - {self.file_name}"
+
+
+class FilingStatusHistory(models.Model):
+    """
+    Track status changes for audit trail
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    filing = models.ForeignKey(TaxFiling, on_delete=models.CASCADE, related_name='status_history')
+    previous_status = models.CharField(max_length=30)
+    new_status = models.CharField(max_length=30)
+    changed_by = models.EmailField()
+    changed_at = models.DateTimeField(auto_now_add=True)
+    notes = models.TextField(blank=True)
+    
+    class Meta:
+        app_label = 'taxes'
+        db_table = 'tax_filing_status_history'
+        ordering = ['-changed_at']
+        
+    def __str__(self):
+        return f"{self.filing_id}: {self.previous_status} -> {self.new_status}"
+
 
 class IncomeTaxRate(TenantAwareModel):
     """Income tax rates for specific states"""
@@ -636,3 +810,150 @@ class TaxReminder(TenantAwareModel):
             models.Index(fields=['tenant_id', 'due_date']),
             models.Index(fields=['tenant_id', 'status']),
         ]
+
+
+class TaxForm(models.Model):
+    """
+    Reference table for tax forms by state and type
+    """
+    form_code = models.CharField(max_length=50, unique=True)  # e.g., "CA-BOE-401-A"
+    form_name = models.CharField(max_length=200)  # e.g., "California State, Local and District Sales and Use Tax Return"
+    tax_type = models.CharField(max_length=20, choices=TaxFiling.TAX_TYPE_CHOICES)
+    state = models.CharField(max_length=2, null=True, blank=True)  # null for federal forms
+    is_federal = models.BooleanField(default=False)
+    
+    # Form specifications
+    filing_frequency = models.CharField(max_length=20)  # monthly, quarterly, annual
+    due_day = models.IntegerField()  # Day of month when due
+    grace_period_days = models.IntegerField(default=0)
+    
+    # E-filing information
+    supports_efiling = models.BooleanField(default=False)
+    efiling_url = models.URLField(null=True, blank=True)
+    api_endpoint = models.CharField(max_length=200, null=True, blank=True)
+    
+    # Form template
+    template_version = models.CharField(max_length=20)
+    template_data = JSONField(default=dict)  # Form field definitions
+    
+    is_active = models.BooleanField(default=True)
+    
+    class Meta:
+        app_label = 'taxes'
+        db_table = 'tax_forms'
+        indexes = [
+            models.Index(fields=['tax_type', 'state']),
+            models.Index(fields=['form_code']),
+        ]
+        
+    def __str__(self):
+        return f"{self.form_code} - {self.form_name}"
+
+
+class StateFilingRequirement(models.Model):
+    """
+    State-specific filing requirements and thresholds
+    """
+    state = models.CharField(max_length=2, unique=True)
+    state_name = models.CharField(max_length=50)
+    
+    # Sales tax
+    has_sales_tax = models.BooleanField(default=True)
+    sales_tax_threshold = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    sales_tax_registration_required = models.BooleanField(default=True)
+    
+    # Income tax
+    has_income_tax = models.BooleanField(default=True)
+    
+    # Nexus rules
+    economic_nexus_threshold = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    transaction_threshold = models.IntegerField(null=True, blank=True)  # Number of transactions
+    
+    # E-filing
+    supports_sales_efiling = models.BooleanField(default=False)
+    supports_payroll_efiling = models.BooleanField(default=False)
+    supports_income_efiling = models.BooleanField(default=False)
+    
+    # URLs
+    tax_website = models.URLField()
+    registration_url = models.URLField(null=True, blank=True)
+    
+    # Additional requirements
+    requirements = JSONField(default=dict)  # State-specific requirements
+    
+    class Meta:
+        app_label = 'taxes'
+        db_table = 'state_filing_requirements'
+        ordering = ['state']
+        
+    def __str__(self):
+        return f"{self.state} - {self.state_name}"
+
+
+class FilingCalculation(models.Model):
+    """
+    Store tax calculations for each filing
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    filing = models.ForeignKey(TaxFiling, on_delete=models.CASCADE, related_name='calculations')
+    
+    # Calculation details
+    calculation_type = models.CharField(max_length=50)  # e.g., "sales_tax", "payroll_tax"
+    gross_amount = models.DecimalField(max_digits=15, decimal_places=2)
+    deductions = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    exemptions = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    taxable_amount = models.DecimalField(max_digits=15, decimal_places=2)
+    tax_rate = models.DecimalField(max_digits=5, decimal_places=4)
+    tax_amount = models.DecimalField(max_digits=15, decimal_places=2)
+    
+    # Breakdown by location (for multi-location)
+    location_id = models.CharField(max_length=50, null=True, blank=True)
+    location_name = models.CharField(max_length=200, null=True, blank=True)
+    
+    # Metadata
+    calculation_data = JSONField(default=dict)  # Detailed breakdown
+    calculated_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        app_label = 'taxes'
+        db_table = 'tax_filing_calculations'
+        
+    def __str__(self):
+        return f"{self.calculation_type} - ${self.tax_amount}"
+
+
+class FilingPayment(models.Model):
+    """
+    Track payments for tax filings (both service fees and tax payments)
+    """
+    PAYMENT_TYPE_CHOICES = [
+        ('service_fee', 'Service Fee'),
+        ('tax_payment', 'Tax Payment'),
+        ('penalty', 'Penalty Payment'),
+        ('interest', 'Interest Payment'),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    filing = models.ForeignKey(TaxFiling, on_delete=models.CASCADE, related_name='payments')
+    payment_type = models.CharField(max_length=20, choices=PAYMENT_TYPE_CHOICES)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    
+    # Stripe information
+    stripe_payment_intent_id = models.CharField(max_length=200, null=True, blank=True)
+    stripe_charge_id = models.CharField(max_length=200, null=True, blank=True)
+    
+    # Payment details
+    payment_method = models.CharField(max_length=50)  # card, bank_transfer, etc
+    payment_date = models.DateTimeField()
+    reference_number = models.CharField(max_length=100, null=True, blank=True)
+    
+    # Status
+    is_successful = models.BooleanField(default=False)
+    failure_reason = models.TextField(null=True, blank=True)
+    
+    class Meta:
+        app_label = 'taxes'
+        db_table = 'tax_filing_payments'
+        
+    def __str__(self):
+        return f"{self.get_payment_type_display()} - ${self.amount}"
