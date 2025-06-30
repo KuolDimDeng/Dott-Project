@@ -421,6 +421,8 @@ class SmartInsightsViewSet(viewsets.ViewSet):
             
             # Fetch business data for context
             business_context = self._get_business_context(request.user)
+            print(f"[Smart Insights] Business context length: {len(business_context)}")
+            print(f"[Smart Insights] Business context preview: {business_context[:500]}...")
             
             # Call Claude API with business context
             response = client.messages.create(
@@ -510,7 +512,9 @@ Please provide specific insights based on the actual business data above, not ge
     
     def _get_business_context(self, user):
         """Fetch business data to provide context to Claude"""
+        context_parts = []
         try:
+            print(f"[Smart Insights] Fetching business context for user: {user.email}")
             from crm.models import Customer
             from inventory.models import Product, Supplier
             from django.db.models import Sum, Count, Avg
@@ -524,11 +528,21 @@ Please provide specific insights based on the actual business data above, not ge
                 Sale = None
             
             # Get user's tenant for data filtering
-            tenant = user.tenant
+            tenant = getattr(user, 'tenant', None)
+            print(f"[Smart Insights] User: {user.email}, Tenant: {tenant}")
+            print(f"[Smart Insights] User attributes: {[attr for attr in dir(user) if not attr.startswith('_')][:20]}")
             if not tenant:
-                return "No business data available - user not associated with a tenant."
-            
-            context_parts = []
+                # Try to get tenant from user's tenants relationship
+                if hasattr(user, 'tenants'):
+                    user_tenants = user.tenants.all()
+                    print(f"[Smart Insights] User tenants: {user_tenants}")
+                    if user_tenants:
+                        tenant = user_tenants.first()
+                        print(f"[Smart Insights] Using first tenant: {tenant}")
+                    else:
+                        return "No business data available - user not associated with any tenant."
+                else:
+                    return "No business data available - user not associated with a tenant."
             
             # Customer data
             try:
@@ -541,7 +555,10 @@ Please provide specific insights based on the actual business data above, not ge
                 else:
                     context_parts.append("CUSTOMERS: No customers found.")
             except Exception as e:
-                context_parts.append(f"CUSTOMERS: Error fetching customer data: {str(e)}")
+                print(f"[Smart Insights] Customer error: {str(e)}")
+                import traceback
+                print(f"[Smart Insights] Customer traceback: {traceback.format_exc()}")
+                context_parts.append(f"CUSTOMERS: Error fetching customer data")
             
             # Product data
             try:
