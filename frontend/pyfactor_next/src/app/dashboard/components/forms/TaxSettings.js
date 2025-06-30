@@ -6,6 +6,7 @@ import { getSecureTenantId } from '@/utils/tenantUtils';
 import { useSession } from '@/hooks/useSession-v2';
 import StandardSpinner, { CenteredSpinner } from '@/components/ui/StandardSpinner';
 import { getCountryName } from '@/utils/countryMapping';
+import { locationApi } from '@/utils/apiClient';
 import { 
   CogIcon, 
   MapPinIcon, 
@@ -18,8 +19,52 @@ import {
   PlusIcon,
   TrashIcon,
   BuildingOfficeIcon,
-  UserIcon
+  UserIcon,
+  ArrowDownTrayIcon,
+  ArrowUpTrayIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+  ShieldCheckIcon,
+  BuildingStorefrontIcon,
+  DocumentDuplicateIcon,
+  ExclamationTriangleIcon,
+  InformationCircleIcon
 } from '@heroicons/react/24/outline';
+
+// Tooltip component for field help
+const FieldTooltip = ({ text, position = 'top' }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+  
+  return (
+    <div className="relative inline-flex items-center ml-1">
+      <div
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+        onClick={() => setShowTooltip(!showTooltip)}
+        className="cursor-help"
+      >
+        <InformationCircleIcon className="w-4 h-4 text-gray-400 hover:text-gray-600" />
+      </div>
+      
+      {showTooltip && (
+        <div className={`absolute z-50 ${position === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'} left-0 w-72`}>
+          <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 shadow-lg">
+            <div className="relative">
+              {text}
+              <div className={`absolute ${position === 'top' ? 'top-full' : 'bottom-full'} left-4`}>
+                <div className={`${position === 'top' ? '' : 'rotate-180'}`}>
+                  <svg className="w-2 h-2 text-gray-900" fill="currentColor" viewBox="0 0 8 4">
+                    <path d="M0 0l4 4 4-4z"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default function TaxSettings({ onNavigate }) {
   const { user, loading: sessionLoading } = useSession();
@@ -27,6 +72,37 @@ export default function TaxSettings({ onNavigate }) {
   const [isSaving, setIsSaving] = useState(false);
   const [tenantId, setTenantId] = useState(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  
+  // Location-based tax support
+  const [locations, setLocations] = useState([]);
+  const [selectedLocations, setSelectedLocations] = useState([]);
+  const [locationTaxProfiles, setLocationTaxProfiles] = useState({});
+  const [loadingLocations, setLoadingLocations] = useState(false);
+  
+  // Industry-specific tax settings
+  const [industrySpecificSettings, setIndustrySpecificSettings] = useState({});
+  const [showIndustrySettings, setShowIndustrySettings] = useState(false);
+  
+  // Validation and compliance
+  const [validationErrors, setValidationErrors] = useState({});
+  const [complianceWarnings, setComplianceWarnings] = useState([]);
+  
+  // Historical rate tracking
+  const [taxHistory, setTaxHistory] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
+  
+  // UI State - Progressive disclosure
+  const [expandedSections, setExpandedSections] = useState({
+    basic: true,
+    sales: false,
+    income: false,
+    payroll: false,
+    insurance: false,
+    filing: false,
+    multiLocation: false,
+    industrySpecific: false,
+    history: false
+  });
   
   // Form state - initialized with user data
   const [formData, setFormData] = useState({
@@ -124,6 +200,30 @@ export default function TaxSettings({ onNavigate }) {
     }
   }, []);
   
+  // Load locations for multi-location support
+  const loadLocations = useCallback(async () => {
+    try {
+      setLoadingLocations(true);
+      const data = await locationApi.getAll();
+      let locationsList = [];
+      
+      if (Array.isArray(data)) {
+        locationsList = data;
+      } else if (data && Array.isArray(data.results)) {
+        locationsList = data.results;
+      } else if (data && Array.isArray(data.data)) {
+        locationsList = data.data;
+      }
+      
+      setLocations(locationsList.filter(loc => loc.is_active));
+    } catch (error) {
+      console.error('[TaxSettings] Error loading locations:', error);
+      toast.error('Failed to load locations');
+    } finally {
+      setLoadingLocations(false);
+    }
+  }, []);
+  
   // Load API usage information
   const loadApiUsage = useCallback(async (tenantId) => {
     try {
@@ -191,6 +291,7 @@ export default function TaxSettings({ onNavigate }) {
           // Load existing tax settings and usage info
           await loadTaxSettings(id);
           await loadApiUsage(id);
+          await loadLocations();
         } else {
           toast.error('Failed to initialize. Please refresh the page.');
         }
@@ -206,7 +307,7 @@ export default function TaxSettings({ onNavigate }) {
     if (!sessionLoading) {
       initialize();
     }
-  }, [user, sessionLoading, loadTaxSettings, loadApiUsage]);
+  }, [user, sessionLoading, loadTaxSettings, loadApiUsage, loadLocations]);
   
   // Cooldown timer effect
   useEffect(() => {
@@ -267,6 +368,187 @@ export default function TaxSettings({ onNavigate }) {
         personalIncomeTaxBrackets: newBrackets
       };
     });
+  };
+  
+  // Toggle section expansion
+  const toggleSection = (section) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
+  
+  // Handle location selection
+  const handleLocationToggle = (locationId) => {
+    setSelectedLocations(prev => {
+      if (prev.includes(locationId)) {
+        // Remove location and its tax profile
+        const newLocations = prev.filter(id => id !== locationId);
+        setLocationTaxProfiles(profiles => {
+          const newProfiles = { ...profiles };
+          delete newProfiles[locationId];
+          return newProfiles;
+        });
+        return newLocations;
+      } else {
+        // Add location and initialize tax profile
+        setLocationTaxProfiles(profiles => ({
+          ...profiles,
+          [locationId]: {
+            inheritFromMain: true,
+            customRates: {}
+          }
+        }));
+        return [...prev, locationId];
+      }
+    });
+  };
+  
+  // Validate tax rates
+  const validateTaxRates = useCallback(() => {
+    const errors = {};
+    const warnings = [];
+    
+    // Sales tax validation
+    const totalSales = parseFloat(customRates.totalSalesTaxRate) || 0;
+    if (totalSales > 15) {
+      warnings.push({
+        type: 'sales',
+        message: 'Total sales tax rate exceeds 15%. Please verify this is correct for your jurisdiction.'
+      });
+    }
+    
+    // Corporate tax validation
+    const corpRate = parseFloat(customRates.corporateIncomeTaxRate) || 0;
+    if (corpRate > 40) {
+      warnings.push({
+        type: 'corporate',
+        message: 'Corporate tax rate exceeds 40%. This is unusually high - please verify.'
+      });
+    }
+    
+    // Payroll tax validation
+    const federalPayroll = parseFloat(customRates.federalPayrollTaxRate) || 0;
+    const statePayroll = parseFloat(customRates.statePayrollTaxRate) || 0;
+    if (federalPayroll + statePayroll > 30) {
+      warnings.push({
+        type: 'payroll',
+        message: 'Combined payroll tax exceeds 30%. Please verify these rates.'
+      });
+    }
+    
+    // Progressive tax bracket validation
+    if (customRates.hasProgressiveTax && customRates.personalIncomeTaxBrackets) {
+      customRates.personalIncomeTaxBrackets.forEach((bracket, idx) => {
+        if (!bracket.minIncome || !bracket.rate) {
+          errors[`bracket_${idx}`] = 'Income bracket missing required fields';
+        }
+        if (idx > 0) {
+          const prevBracket = customRates.personalIncomeTaxBrackets[idx - 1];
+          if (parseFloat(bracket.minIncome) <= parseFloat(prevBracket.maxIncome || 0)) {
+            errors[`bracket_${idx}_overlap`] = 'Income brackets overlap';
+          }
+        }
+      });
+    }
+    
+    setValidationErrors(errors);
+    setComplianceWarnings(warnings);
+    
+    return Object.keys(errors).length === 0;
+  }, [customRates]);
+  
+  // Export tax configuration
+  const exportTaxConfiguration = () => {
+    const exportData = {
+      version: '1.0',
+      exportDate: new Date().toISOString(),
+      businessInfo: formData,
+      taxRates: customRates,
+      locations: selectedLocations.map(locId => {
+        const location = locations.find(l => l.id === locId);
+        return {
+          id: locId,
+          name: location?.name,
+          address: location?.address,
+          taxProfile: locationTaxProfiles[locId]
+        };
+      }),
+      industrySettings: industrySpecificSettings,
+      metadata: {
+        lastModified: new Date().toISOString(),
+        exportedBy: user?.email
+      }
+    };
+    
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    
+    const exportFileDefaultName = `tax-config-${formData.businessName.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+    
+    toast.success('Tax configuration exported successfully');
+  };
+  
+  // Import tax configuration
+  const importTaxConfiguration = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const importData = JSON.parse(e.target.result);
+        
+        // Validate import data
+        if (!importData.version || !importData.taxRates) {
+          throw new Error('Invalid tax configuration file');
+        }
+        
+        // Import business info (partial)
+        setFormData(prev => ({
+          ...prev,
+          street: importData.businessInfo?.street || prev.street,
+          stateProvince: importData.businessInfo?.stateProvince || prev.stateProvince,
+          city: importData.businessInfo?.city || prev.city,
+          postalCode: importData.businessInfo?.postalCode || prev.postalCode
+        }));
+        
+        // Import tax rates
+        setCustomRates(importData.taxRates);
+        
+        // Import location settings
+        if (importData.locations) {
+          const locationIds = importData.locations.map(loc => loc.id);
+          setSelectedLocations(locationIds);
+          
+          const profiles = {};
+          importData.locations.forEach(loc => {
+            profiles[loc.id] = loc.taxProfile;
+          });
+          setLocationTaxProfiles(profiles);
+        }
+        
+        // Import industry settings
+        if (importData.industrySettings) {
+          setIndustrySpecificSettings(importData.industrySettings);
+        }
+        
+        toast.success('Tax configuration imported successfully');
+      } catch (error) {
+        console.error('[TaxSettings] Import error:', error);
+        toast.error('Failed to import tax configuration. Please check the file format.');
+      }
+    };
+    
+    reader.readAsText(file);
+    
+    // Reset file input
+    event.target.value = null;
   };
   
   // Add new income tax bracket
@@ -748,7 +1030,23 @@ export default function TaxSettings({ onNavigate }) {
           
           {/* Sales Tax Section */}
           <div className="mb-6">
-            <h3 className="text-md font-medium text-gray-800 mb-3 border-b pb-2">Sales Tax Rates</h3>
+            <div 
+              className="flex items-center justify-between cursor-pointer py-2"
+              onClick={() => toggleSection('sales')}
+            >
+              <h3 className="text-md font-medium text-gray-800 border-b pb-2 flex-1 flex items-center">
+                Sales Tax Rates
+                {validationErrors.sales && (
+                  <ExclamationCircleIcon className="h-5 w-5 ml-2 text-red-500" />
+                )}
+              </h3>
+              {expandedSections.sales ? (
+                <ChevronDownIcon className="h-5 w-5 text-gray-400" />
+              ) : (
+                <ChevronRightIcon className="h-5 w-5 text-gray-400" />
+              )}
+            </div>
+            {expandedSections.sales && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -796,6 +1094,7 @@ export default function TaxSettings({ onNavigate }) {
                 />
               </div>
             </div>
+            )}
           </div>
           
           {/* Corporate Income Tax Section */}
@@ -820,6 +1119,7 @@ export default function TaxSettings({ onNavigate }) {
                 />
               </div>
             </div>
+            )}
           </div>
           
           {/* Personal Income Tax Section */}
@@ -1049,6 +1349,7 @@ export default function TaxSettings({ onNavigate }) {
                 />
               </div>
             </div>
+            )}
           </div>
           
           {/* Filing Information Section */}

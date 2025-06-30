@@ -119,6 +119,7 @@ export default function SmartInsight({ onNavigate }) {
   const router = useRouter();
   const chatEndRef = useRef(null);
   const inputRef = useRef(null);
+  const chatContainerRef = useRef(null);
   
   // State management
   const [credits, setCredits] = useState(0); // Will be fetched from backend
@@ -178,10 +179,22 @@ export default function SmartInsight({ onNavigate }) {
     initialize();
   }, []);
 
-  // Auto-scroll to bottom of chat
+  // Auto-scroll to bottom of chat only when new messages are added
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    // Only scroll if we have messages and the chat area is visible
+    if (messages.length > 0 && chatContainerRef.current) {
+      // Check if user is near the bottom of the chat (within 100px)
+      const container = chatContainerRef.current;
+      const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+      
+      // Only auto-scroll if user is already near the bottom
+      if (isNearBottom) {
+        setTimeout(() => {
+          chatEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
+      }
+    }
+  }, [messages.length]); // Only trigger on message count change, not content changes
 
   // Handle sending a message
   const handleSendMessage = async () => {
@@ -371,7 +384,7 @@ export default function SmartInsight({ onNavigate }) {
         {/* Chat Interface */}
         <div className="lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col h-[600px]">
           {/* Messages - 70% of space */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
             {messages.length === 0 ? (
               <div className="text-center text-gray-500 mt-12">
                 <SparklesIcon className="h-12 w-12 mx-auto mb-4 text-gray-300" />
