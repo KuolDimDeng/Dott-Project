@@ -1,4 +1,10 @@
-import posthog
+try:
+    import posthog
+    POSTHOG_AVAILABLE = True
+except ImportError:
+    POSTHOG_AVAILABLE = False
+    posthog = None
+
 from django.conf import settings
 import logging
 
@@ -7,6 +13,10 @@ logger = logging.getLogger(__name__)
 # Initialize PostHog
 def init_posthog():
     """Initialize PostHog with API key from settings"""
+    if not POSTHOG_AVAILABLE:
+        logger.warning("PostHog package not available. Analytics will be disabled.")
+        return
+        
     if hasattr(settings, 'POSTHOG_API_KEY') and settings.POSTHOG_API_KEY:
         posthog.project_api_key = settings.POSTHOG_API_KEY
         posthog.host = getattr(settings, 'POSTHOG_HOST', 'https://app.posthog.com')
@@ -16,7 +26,7 @@ def init_posthog():
 
 def track_event(user_id, event_name, properties=None):
     """Track an event in PostHog"""
-    if not hasattr(settings, 'POSTHOG_API_KEY') or not settings.POSTHOG_API_KEY:
+    if not POSTHOG_AVAILABLE or not hasattr(settings, 'POSTHOG_API_KEY') or not settings.POSTHOG_API_KEY:
         return
     
     try:
@@ -30,7 +40,7 @@ def track_event(user_id, event_name, properties=None):
 
 def identify_user(user):
     """Identify a user in PostHog"""
-    if not hasattr(settings, 'POSTHOG_API_KEY') or not settings.POSTHOG_API_KEY:
+    if not POSTHOG_AVAILABLE or not hasattr(settings, 'POSTHOG_API_KEY') or not settings.POSTHOG_API_KEY:
         return
     
     try:
@@ -54,7 +64,7 @@ def identify_user(user):
 
 def track_api_call(user_id, endpoint, method, status_code, duration_ms=None):
     """Track API call metrics"""
-    if not hasattr(settings, 'POSTHOG_API_KEY') or not settings.POSTHOG_API_KEY:
+    if not POSTHOG_AVAILABLE or not hasattr(settings, 'POSTHOG_API_KEY') or not settings.POSTHOG_API_KEY:
         return
     
     properties = {
@@ -70,7 +80,7 @@ def track_api_call(user_id, endpoint, method, status_code, duration_ms=None):
 
 def track_business_metric(user_id, metric_name, value, metadata=None):
     """Track business metrics like revenue, customer count, etc."""
-    if not hasattr(settings, 'POSTHOG_API_KEY') or not settings.POSTHOG_API_KEY:
+    if not POSTHOG_AVAILABLE or not hasattr(settings, 'POSTHOG_API_KEY') or not settings.POSTHOG_API_KEY:
         return
     
     properties = {
