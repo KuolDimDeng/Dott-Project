@@ -18,7 +18,10 @@ export async function POST(request) {
       taxRates, 
       signature, 
       agreedAt,
-      suggestions 
+      suggestions,
+      locations,
+      industrySettings,
+      validationPassed
     } = data;
     
     if (!tenantId || !businessInfo || !taxRates || !signature) {
@@ -46,8 +49,41 @@ export async function POST(request) {
           state_province: businessInfo.stateProvince,
           city: businessInfo.city,
           postal_code: businessInfo.postalCode,
-          sales_tax_rate: parseFloat(taxRates.salesTaxRate) || 0,
-          income_tax_rate: parseFloat(taxRates.incomeTaxRate) || 0,
+          // Sales tax breakdown
+          state_sales_tax_rate: parseFloat(taxRates.stateSalesTaxRate) || 0,
+          local_sales_tax_rate: parseFloat(taxRates.localSalesTaxRate) || 0,
+          total_sales_tax_rate: parseFloat(taxRates.totalSalesTaxRate) || 0,
+          
+          // Corporate income tax
+          corporate_income_tax_rate: parseFloat(taxRates.corporateIncomeTaxRate) || 0,
+          
+          // Personal income tax
+          has_progressive_tax: taxRates.hasProgressiveTax || false,
+          personal_income_tax_brackets: taxRates.personalIncomeTaxBrackets || [],
+          flat_personal_income_tax_rate: parseFloat(taxRates.flatPersonalIncomeTaxRate) || null,
+          
+          // Social insurance
+          health_insurance_rate: parseFloat(taxRates.healthInsuranceRate) || 0,
+          health_insurance_employer_rate: parseFloat(taxRates.healthInsuranceEmployerRate) || 0,
+          social_security_rate: parseFloat(taxRates.socialSecurityRate) || 0,
+          social_security_employer_rate: parseFloat(taxRates.socialSecurityEmployerRate) || 0,
+          
+          // Payroll taxes
+          federal_payroll_tax_rate: parseFloat(taxRates.federalPayrollTaxRate) || 0,
+          state_payroll_tax_rate: parseFloat(taxRates.statePayrollTaxRate) || 0,
+          
+          // Filing information
+          state_tax_website: taxRates.stateTaxWebsite || '',
+          state_tax_address: taxRates.stateTaxAddress || '',
+          local_tax_website: taxRates.localTaxWebsite || '',
+          local_tax_address: taxRates.localTaxAddress || '',
+          federal_tax_website: taxRates.federalTaxWebsite || '',
+          filing_deadlines: taxRates.filingDeadlines || {},
+          
+          // Enhanced features
+          locations: locations || [],
+          industry_settings: industrySettings || {},
+          validation_passed: validationPassed || false,
           payroll_tax_rate: parseFloat(taxRates.payrollTaxRate) || 0,
           filing_website: taxRates.filingWebsite,
           filing_address: taxRates.filingAddress,

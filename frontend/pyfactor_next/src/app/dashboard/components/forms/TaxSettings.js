@@ -1349,7 +1349,6 @@ export default function TaxSettings({ onNavigate }) {
                 />
               </div>
             </div>
-            )}
           </div>
           
           {/* Filing Information Section */}
