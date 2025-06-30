@@ -190,7 +190,7 @@ class IncomeTaxRateViewSet(viewsets.ModelViewSet):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class PayrollTaxFilingViewSet(viewsets.ModelViewSet):
-    queryset = PayrollTaxFiling.objects.all().order_by('-submission_date')
+    queryset = PayrollTaxFiling.objects.all().order_by('-id')
     serializer_class = PayrollTaxFilingSerializer
     permission_classes = [permissions.IsAuthenticated]
     filterset_fields = ['state', 'business_id', 'filing_status', 'submission_method']
@@ -352,7 +352,7 @@ class TaxFilingInstructionViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
 class TaxFormViewSet(viewsets.ModelViewSet):
-    queryset = TaxForm.objects.all().order_by('-submission_date')
+    queryset = TaxForm.objects.all().order_by('-id')
     serializer_class = TaxFormSerializer
     permission_classes = [permissions.IsAuthenticated]
     filterset_fields = ['employee', 'form_type', 'tax_year', 'was_filed', 'is_verified', 'state_code']

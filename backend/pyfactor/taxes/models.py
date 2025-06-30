@@ -47,6 +47,41 @@ class State(TaxJurisdiction):
     has_local_taxes = models.BooleanField(default=False)
     notes = models.TextField(blank=True)
     
+    # E-filing configuration
+    e_file_api_base_url = models.URLField(blank=True, null=True,
+        help_text="Base URL for state's e-filing API")
+    e_file_api_version = models.CharField(max_length=20, default='v1',
+        help_text="API version for e-filing")
+    e_file_formats = models.CharField(max_length=100, default='XML',
+        help_text="Supported e-file formats (comma-separated)")
+    
+    # Tax rates and thresholds
+    base_tax_rate = models.DecimalField(max_digits=6, decimal_places=4, default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(1)],
+        help_text="Base state sales tax rate")
+    filing_frequency_thresholds = JSONField(default=dict, blank=True,
+        help_text="Revenue thresholds for filing frequency")
+    
+    # Filing requirements
+    form_number = models.CharField(max_length=50, blank=True,
+        help_text="Primary sales tax form number")
+    form_name = models.CharField(max_length=200, blank=True,
+        help_text="Primary sales tax form name")
+    filing_due_day = models.IntegerField(default=20,
+        validators=[MinValueValidator(1), MaxValueValidator(31)],
+        help_text="Day of month when filing is due")
+    vendor_discount_rate = models.DecimalField(max_digits=6, decimal_places=4, default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(0.1)],
+        help_text="Discount rate for timely filing")
+    
+    # Special features
+    has_district_taxes = models.BooleanField(default=False,
+        help_text="State has special district taxes")
+    has_home_rule_cities = models.BooleanField(default=False,
+        help_text="State has cities that collect their own tax")
+    requires_location_reporting = models.BooleanField(default=False,
+        help_text="Requires separate reporting by location")
+    
     class Meta:
         app_label = 'taxes'
 
