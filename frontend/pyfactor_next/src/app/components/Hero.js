@@ -23,19 +23,13 @@ export default function Hero() {
       
       <div className="relative z-10 max-w-7xl mx-auto pt-20 pb-16 px-4 sm:pt-28 sm:pb-24 sm:px-6 lg:px-8">
         <div className="text-center">
-          {/* Trust Badge */}
-          <div className="mb-6 animate-fade-in">
-            <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-gradient-to-r from-primary-light to-primary-main text-white shadow-lg">
-              🌍 Trusted by businesses in 100+ countries
-            </span>
-          </div>
           
           <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl">
             <span className="block text-transparent bg-clip-text bg-gradient-to-r from-primary-main to-primary-light">
-              Global Business Software
+              Business Management Software
             </span>
             <span className="block text-2xl sm:text-3xl mt-3 text-gray-700 font-medium">
-              Operate Internationally with Confidence
+              Manage your business like a professional
             </span>
           </h1>
           
@@ -44,7 +38,7 @@ export default function Hero() {
               <div className="relative w-full sm:max-w-md">
                 <Image
                   src="/static/images/Office-Working-1--Streamline-Brooklyn.png"
-                  alt={t('heroImageAlt', 'Global Business Software')}
+                  alt={t('heroImageAlt', 'Business Management Software')}
                   width={500}
                   height={350}
                   loading="eager"
@@ -71,19 +65,23 @@ export default function Hero() {
               <svg className="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
               </svg>
-              50% off for developing countries
+              Create professional invoices
             </div>
             <div className="flex items-center">
               <svg className="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
               </svg>
-              24/7 multilingual support
+              Accept card payments from customers*
             </div>
           </div>
           
           <div className="mt-10">
             <AuthButton theme="light" />
           </div>
+          
+          <p className="mt-4 text-xs text-gray-500">
+            * Card payment acceptance not available in all countries
+          </p>
         </div>
       </div>
     </div>
