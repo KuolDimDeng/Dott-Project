@@ -1,5 +1,20 @@
 from rest_framework import permissions
 
+class TenantAccessPermission(permissions.BasePermission):
+    """
+    Ensures that users can only access data from their own tenant.
+    """
+    
+    def has_permission(self, request, view):
+        # User must be authenticated
+        return request.user and request.user.is_authenticated
+    
+    def has_object_permission(self, request, view, obj):
+        # Check if the object has a tenant_id attribute
+        if hasattr(obj, 'tenant_id'):
+            return obj.tenant_id == request.user.tenant_id
+        return True
+
 class SetupEndpointPermission(permissions.BasePermission):
     """
     Custom permission class for setup endpoints.

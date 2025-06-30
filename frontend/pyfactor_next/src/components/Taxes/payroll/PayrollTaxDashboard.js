@@ -1,6 +1,7 @@
 'use client';
 
 // PayrollTaxDashboard - Main dashboard for payroll tax management
+// Updated to use Tailwind CSS instead of MUI
 import React, { useState, useEffect } from 'react';
 import { 
   ClockIcon, 
