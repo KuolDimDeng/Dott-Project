@@ -9,6 +9,7 @@ import { logger } from '@/utils/logger';
 import { clearAllAuthData } from '@/utils/authUtils';
 import { setCacheValue } from '@/utils/appCache';
 import { handleAuthError, checkCookiesEnabled } from '@/utils/authErrorHandler';
+import { captureEvent } from '@/lib/posthog';
 
 // Simple email validation regex
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -56,6 +57,9 @@ export default function SignUpForm() {
     if (!enabled) {
       setErrorMessage('Cookies must be enabled to sign up. Please enable cookies in your browser settings.');
     }
+    
+    // Track signup page view
+    captureEvent('signup_page_viewed');
   }, []); // Empty dependency array means this runs once on mount
 
   // Form validation function
@@ -127,6 +131,13 @@ export default function SignUpForm() {
         hasPassword: !!formData.password,
         hasFirstName: !!formData.firstName,
         hasLastName: !!formData.lastName
+      });
+      
+      // Track signup attempt
+      captureEvent('signup_attempted', {
+        email: formData.username,
+        has_first_name: !!formData.firstName,
+        has_last_name: !!formData.lastName
       });
       
       // Redirect to Auth0 signup

@@ -91,4 +91,7 @@ urlpatterns = [
     path('esignature/providers/', get_available_providers, name='esignature-providers'),
     path('esignature/statistics/', get_signature_statistics, name='esignature-statistics'),
     path('esignature/webhook/<str:provider_name>/', webhook_handler, name='esignature-webhook'),
+    
+    # Payroll tax endpoints
+    path('payroll/', include('taxes.payroll.urls')),
 ]

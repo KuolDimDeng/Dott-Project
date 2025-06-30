@@ -9,3 +9,7 @@ from .payment_views import (
     validate_payment_session,
     cancel_payment_session
 )
+from .confirmation_views import (
+    FilingConfirmationViewSet,
+    FilingNotificationViewSet
+)

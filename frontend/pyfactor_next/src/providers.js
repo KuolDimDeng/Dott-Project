@@ -10,6 +10,7 @@ import { AmplifyProvider } from '@/providers/AmplifyProvider';
 import AuthWrapper from '@/app/AuthWrapper/AuthWrapper';
 import { logger } from '@/utils/logger';
 import { ToastProvider } from '@/components/Toast/ToastProvider';
+import PostHogProvider from '@/components/providers/PostHogProvider';
 
 // Create a new QueryClient instance with error logging
 const queryClient = new QueryClient({
@@ -88,18 +89,24 @@ function Providers({ children }) {
         {pathname.startsWith('/auth/') ? (
           <AmplifyProvider>
             <AuthProvider>
-              {children}
+              <PostHogProvider>
+                {children}
+              </PostHogProvider>
             </AuthProvider>
           </AmplifyProvider>
         ) : !isPublic ? (
           <AmplifyProvider>
             <AuthProvider>
-              <AuthWrapper>{children}</AuthWrapper>
+              <PostHogProvider>
+                <AuthWrapper>{children}</AuthWrapper>
+              </PostHogProvider>
             </AuthProvider>
           </AmplifyProvider>
         ) : (
           <AuthProvider>
-            {children}
+            <PostHogProvider>
+              {children}
+            </PostHogProvider>
           </AuthProvider>
         )}
       </ToastProvider>

@@ -1311,6 +1311,23 @@ class FilingConfirmation(TenantAwareModel):
         return f"Confirmation {self.confirmation_number} for Filing {self.filing_id}"
 
 
+# Enums for notification models
+class NotificationType(models.TextChoices):
+    EMAIL = 'email', 'Email'
+    SMS = 'sms', 'SMS'
+    IN_APP = 'in_app', 'In-App Notification'
+    PUSH = 'push', 'Push Notification'
+
+
+class NotificationStatus(models.TextChoices):
+    PENDING = 'pending', 'Pending'
+    SENT = 'sent', 'Sent'
+    DELIVERED = 'delivered', 'Delivered'
+    READ = 'read', 'Read'
+    FAILED = 'failed', 'Failed'
+    BOUNCED = 'bounced', 'Bounced'
+
+
 class FilingNotification(TenantAwareModel):
     """Tracks notifications sent for filing confirmations."""
     
@@ -1355,23 +1372,6 @@ class FilingNotification(TenantAwareModel):
         return f"{self.get_notification_type_display()} to {self.recipient} - {self.get_status_display()}"
 
 
-# Enums for notification models
-class NotificationType(models.TextChoices):
-    EMAIL = 'email', 'Email'
-    SMS = 'sms', 'SMS'
-    IN_APP = 'in_app', 'In-App Notification'
-    PUSH = 'push', 'Push Notification'
-
-
-class NotificationStatus(models.TextChoices):
-    PENDING = 'pending', 'Pending'
-    SENT = 'sent', 'Sent'
-    DELIVERED = 'delivered', 'Delivered'
-    READ = 'read', 'Read'
-    FAILED = 'failed', 'Failed'
-    BOUNCED = 'bounced', 'Bounced'
-
-
 class TaxFilingStatus(models.TextChoices):
     """Extended status choices for tax filings."""
     DRAFT = 'draft', 'Draft'
@@ -1386,3 +1386,311 @@ class TaxFilingStatus(models.TextChoices):
     COMPLETED = 'completed', 'Completed'
     CANCELLED = 'cancelled', 'Cancelled'
     AMENDED = 'amended', 'Amended'
+
+
+# Payroll Tax Models
+
+class Form941(TenantAwareModel):
+    """Quarterly Federal Payroll Tax Return (Form 941)"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    # Period information
+    quarter = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(4)])
+    year = models.IntegerField()
+    
+    # Filing dates
+    period_start = models.DateField()
+    period_end = models.DateField()
+    due_date = models.DateField()
+    filing_date = models.DateTimeField(null=True, blank=True)
+    
+    # Status
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('calculated', 'Calculated'),
+        ('ready', 'Ready to File'),
+        ('submitted', 'Submitted'),
+        ('accepted', 'Accepted'),
+        ('rejected', 'Rejected'),
+        ('amended', 'Amended'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    
+    # Part 1: Answer these questions for this quarter
+    number_of_employees = models.IntegerField(default=0, help_text="Number of employees who received wages")
+    wages_tips_compensation = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    federal_income_tax_withheld = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    
+    # Social Security
+    social_security_wages = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    social_security_tips = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    social_security_tax = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    
+    # Medicare
+    medicare_wages_tips = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    medicare_tax = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    additional_medicare_tax = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    
+    # Totals
+    total_tax_before_adjustments = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    current_quarter_adjustments = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    total_tax_after_adjustments = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    
+    # Part 2: Tell us about your deposit schedule
+    DEPOSIT_SCHEDULE_CHOICES = [
+        ('monthly', 'Monthly'),
+        ('semiweekly', 'Semiweekly'),
+    ]
+    deposit_schedule = models.CharField(max_length=20, choices=DEPOSIT_SCHEDULE_CHOICES, default='monthly')
+    
+    # Monthly liabilities (for monthly depositors)
+    month1_liability = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    month2_liability = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    month3_liability = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    
+    # Total deposits and balance
+    total_deposits = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    balance_due = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    overpayment = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    
+    # Schedule B (for semiweekly depositors)
+    requires_schedule_b = models.BooleanField(default=False)
+    schedule_b_data = JSONField(default=dict, blank=True)
+    
+    # Part 3: Tell us about your business
+    business_closed = models.BooleanField(default=False)
+    final_return = models.BooleanField(default=False)
+    seasonal_employer = models.BooleanField(default=False)
+    
+    # E-filing information
+    submission_id = models.CharField(max_length=100, null=True, blank=True)
+    irs_tracking_number = models.CharField(max_length=100, null=True, blank=True)
+    acknowledgment_number = models.CharField(max_length=100, null=True, blank=True)
+    acknowledgment_date = models.DateTimeField(null=True, blank=True)
+    
+    # Validation
+    validation_errors = JSONField(default=list, blank=True)
+    is_valid = models.BooleanField(default=False)
+    
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.EmailField()
+    
+    class Meta:
+        app_label = 'taxes'
+        db_table = 'tax_form_941'
+        unique_together = ['tenant_id', 'quarter', 'year']
+        indexes = [
+            models.Index(fields=['tenant_id', 'year', 'quarter']),
+            models.Index(fields=['status', 'due_date']),
+        ]
+        
+    def __str__(self):
+        return f"Form 941 - Q{self.quarter} {self.year} - {self.get_status_display()}"
+    
+    def calculate_total_tax(self):
+        """Calculate total tax before adjustments"""
+        self.total_tax_before_adjustments = (
+            self.federal_income_tax_withheld +
+            self.social_security_tax +
+            self.medicare_tax +
+            self.additional_medicare_tax
+        )
+        self.total_tax_after_adjustments = (
+            self.total_tax_before_adjustments +
+            self.current_quarter_adjustments
+        )
+        return self.total_tax_after_adjustments
+
+
+class Form941ScheduleB(TenantAwareModel):
+    """Schedule B - Report of Tax Liability for Semiweekly Schedule Depositors"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    form_941 = models.OneToOneField(Form941, on_delete=models.CASCADE, related_name='schedule_b')
+    
+    # Daily tax liabilities stored as JSON
+    # Format: {1: [day1_amount, day2_amount, ...], 2: [...], 3: [...]}
+    daily_liabilities = JSONField(default=dict)
+    
+    # Monthly totals
+    month1_total = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    month2_total = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    month3_total = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    
+    # Total for quarter
+    quarter_total = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    
+    class Meta:
+        app_label = 'taxes'
+        db_table = 'tax_form_941_schedule_b'
+        
+    def __str__(self):
+        return f"Schedule B for {self.form_941}"
+
+
+class PayrollTaxDeposit(TenantAwareModel):
+    """Track federal tax deposits"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    # Reference to payroll run
+    payroll_run_id = models.CharField(max_length=50, db_index=True)
+    pay_date = models.DateField()
+    
+    # Deposit details
+    deposit_date = models.DateField()
+    due_date = models.DateField()
+    
+    # Amounts
+    federal_income_tax = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    social_security_tax = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    medicare_tax = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total_deposit = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    
+    # Status
+    STATUS_CHOICES = [
+        ('scheduled', 'Scheduled'),
+        ('pending', 'Pending'),
+        ('processing', 'Processing'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='scheduled')
+    
+    # Payment information
+    payment_method = models.CharField(max_length=50, null=True, blank=True)
+    confirmation_number = models.CharField(max_length=100, null=True, blank=True)
+    eftps_acknowledgment = models.CharField(max_length=100, null=True, blank=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        app_label = 'taxes'
+        db_table = 'tax_payroll_deposits'
+        indexes = [
+            models.Index(fields=['tenant_id', 'deposit_date']),
+            models.Index(fields=['status', 'due_date']),
+        ]
+        
+    def __str__(self):
+        return f"Tax Deposit - {self.deposit_date} - ${self.total_deposit}"
+
+
+class PayrollTaxFilingSchedule(TenantAwareModel):
+    """Manage payroll tax filing schedules and deadlines"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    # Schedule type
+    FORM_TYPE_CHOICES = [
+        ('941', 'Form 941 - Quarterly'),
+        ('940', 'Form 940 - Annual FUTA'),
+        ('W2', 'Form W-2 - Annual'),
+        ('1099', 'Form 1099 - Annual'),
+        ('STATE_QUARTERLY', 'State Quarterly'),
+        ('STATE_ANNUAL', 'State Annual'),
+    ]
+    form_type = models.CharField(max_length=20, choices=FORM_TYPE_CHOICES)
+    
+    # Period
+    year = models.IntegerField()
+    quarter = models.IntegerField(null=True, blank=True)  # For quarterly forms
+    
+    # Deadlines
+    period_start = models.DateField()
+    period_end = models.DateField()
+    filing_deadline = models.DateField()
+    extended_deadline = models.DateField(null=True, blank=True)
+    
+    # Status tracking
+    STATUS_CHOICES = [
+        ('upcoming', 'Upcoming'),
+        ('in_progress', 'In Progress'),
+        ('filed', 'Filed'),
+        ('late', 'Late'),
+        ('extended', 'Extended'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='upcoming')
+    
+    # Filing details
+    filed_date = models.DateTimeField(null=True, blank=True)
+    confirmation_number = models.CharField(max_length=100, null=True, blank=True)
+    
+    # Reminders
+    reminder_sent = models.BooleanField(default=False)
+    reminder_date = models.DateTimeField(null=True, blank=True)
+    
+    # State-specific
+    state_code = models.CharField(max_length=2, null=True, blank=True)
+    
+    class Meta:
+        app_label = 'taxes'
+        db_table = 'tax_payroll_filing_schedule'
+        unique_together = ['tenant_id', 'form_type', 'year', 'quarter', 'state_code']
+        indexes = [
+            models.Index(fields=['tenant_id', 'filing_deadline']),
+            models.Index(fields=['status', 'filing_deadline']),
+        ]
+        
+    def __str__(self):
+        quarter_str = f"Q{self.quarter}" if self.quarter else "Annual"
+        return f"{self.get_form_type_display()} - {quarter_str} {self.year}"
+
+
+class EmployerTaxAccount(TenantAwareModel):
+    """Store employer tax account information"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    # Federal accounts
+    ein = models.CharField(max_length=20, help_text="Employer Identification Number")
+    ein_verified = models.BooleanField(default=False)
+    
+    # EFTPS (Electronic Federal Tax Payment System)
+    eftps_enrolled = models.BooleanField(default=False)
+    eftps_pin = models.CharField(max_length=100, blank=True, help_text="Encrypted PIN")
+    
+    # State accounts
+    state_accounts = JSONField(default=dict, blank=True)
+    # Format: {"CA": {"account_number": "...", "access_code": "..."}, ...}
+    
+    # Deposit schedules
+    federal_deposit_schedule = models.CharField(
+        max_length=20,
+        choices=[
+            ('monthly', 'Monthly'),
+            ('semiweekly', 'Semiweekly'),
+            ('next_day', 'Next Day'),
+        ],
+        default='monthly'
+    )
+    
+    # Previous year liability (determines deposit schedule)
+    previous_year_liability = models.DecimalField(
+        max_digits=12, 
+        decimal_places=2, 
+        null=True, 
+        blank=True,
+        help_text="Total tax liability for previous year"
+    )
+    
+    # Contact information for tax notices
+    tax_contact_name = models.CharField(max_length=100, blank=True)
+    tax_contact_email = models.EmailField(blank=True)
+    tax_contact_phone = models.CharField(max_length=20, blank=True)
+    
+    # Power of Attorney
+    has_poa = models.BooleanField(default=False)
+    poa_firm_name = models.CharField(max_length=200, blank=True)
+    poa_caf_number = models.CharField(max_length=50, blank=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        app_label = 'taxes'
+        db_table = 'tax_employer_accounts'
+        
+    def __str__(self):
+        return f"Tax Account - EIN: {self.ein}"

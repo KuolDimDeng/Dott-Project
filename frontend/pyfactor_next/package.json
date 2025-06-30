@@ -116,6 +116,7 @@
     "postcss": "^8",
     "postcss-import": "^16.1.0",
     "postcss-loader": "^8.1.1",
+    "posthog-js": "^1.255.1",
     "prisma": "^6.5.0",
     "puppeteer": "^24.7.2",
     "qr-scanner": "^1.4.2",
