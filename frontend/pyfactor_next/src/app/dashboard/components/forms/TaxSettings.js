@@ -1633,6 +1633,79 @@ export default function TaxSettings({ onNavigate }) {
           </div>
         </div>
       )}
+      
+      {/* Tax History Section */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+        <div 
+          className="p-6 cursor-pointer hover:bg-gray-50 transition-colors"
+          onClick={() => toggleSection('history')}
+        >
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+              <ClockIcon className="h-5 w-5 mr-2 text-gray-600" />
+              Tax Rate History
+              {taxHistory.length > 0 && (
+                <span className="ml-2 px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded-full">
+                  {taxHistory.length} changes
+                </span>
+              )}
+            </h2>
+            {expandedSections.history ? (
+              <ChevronDownIcon className="h-5 w-5 text-gray-400" />
+            ) : (
+              <ChevronRightIcon className="h-5 w-5 text-gray-400" />
+            )}
+          </div>
+        </div>
+        
+        {expandedSections.history && (
+          <div className="border-t border-gray-200 p-6">
+            {taxHistory.length === 0 ? (
+              <p className="text-sm text-gray-500 text-center py-8">
+                No tax rate changes recorded yet.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {taxHistory.map((entry) => (
+                  <div key={entry.id} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {entry.type === 'manual_update' ? 'Manual Update' : 'System Update'}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {new Date(entry.date).toLocaleString()} by {entry.user}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          // Restore these settings
+                          if (confirm('Restore these tax settings?')) {
+                            setFormData(prev => ({
+                              ...prev,
+                              ...entry.changes.businessInfo
+                            }));
+                            setCustomRates(entry.changes.taxRates);
+                            setSelectedLocations(entry.changes.locations || []);
+                            toast.success('Tax settings restored from history');
+                          }
+                        }}
+                        className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                      >
+                        Restore
+                      </button>
+                    </div>
+                    <div className="mt-2 text-xs text-gray-600">
+                      <p>Sales Tax: {entry.changes.taxRates.totalSalesTaxRate}%</p>
+                      <p>Corporate Tax: {entry.changes.taxRates.corporateIncomeTaxRate}%</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

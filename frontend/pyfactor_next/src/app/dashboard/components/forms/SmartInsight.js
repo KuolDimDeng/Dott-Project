@@ -345,7 +345,7 @@ export default function SmartInsight({ onNavigate }) {
 
   try {
     return (
-    <div className="max-w-7xl mx-auto p-6">
+    <div className="max-w-[1400px] mx-auto p-6">
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center justify-between">
@@ -380,9 +380,9 @@ export default function SmartInsight({ onNavigate }) {
       </div>
 
       {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Chat Interface */}
-        <div className="lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col h-[600px]">
+        <div className="lg:col-span-3 bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col h-[750px]">
           {/* Messages - 70% of space */}
           <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
             {messages.length === 0 ? (
@@ -398,7 +398,7 @@ export default function SmartInsight({ onNavigate }) {
                   className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                    className={`max-w-xs lg:max-w-2xl px-4 py-2 rounded-lg ${
                       message.type === 'user'
                         ? 'bg-blue-600 text-white'
                         : message.isError
@@ -455,7 +455,7 @@ export default function SmartInsight({ onNavigate }) {
         </div>
 
         {/* Query Templates */}
-        <div className="space-y-4">
+        <div className="space-y-3 lg:col-span-1">
           <h3 className="text-lg font-semibold text-gray-900">Popular Queries</h3>
           
           {INSIGHT_CATEGORIES && INSIGHT_CATEGORIES.map((category) => {
@@ -473,17 +473,17 @@ export default function SmartInsight({ onNavigate }) {
             }
             
             return (
-              <div key={category.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                <div className={`flex items-center mb-3 ${colorClasses[category.color]}`}>
-                  <IconComponent className="h-5 w-5 mr-2" />
-                  <h4 className="font-medium">{category.title}</h4>
+              <div key={category.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
+                <div className={`flex items-center mb-2 ${colorClasses[category.color]}`}>
+                  <IconComponent className="h-4 w-4 mr-2 flex-shrink-0" />
+                  <h4 className="font-medium text-sm">{category.title}</h4>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-1">
                   {category.queries && category.queries.map((query, index) => (
                     <button
                       key={index}
                       onClick={() => handleTemplateQuery(query)}
-                      className="block w-full text-left text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 px-2 py-1 rounded transition-colors"
+                      className="block w-full text-left text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 px-2 py-1 rounded transition-colors"
                     >
                       {query}
                     </button>
