@@ -54,51 +54,70 @@ export async function POST(request) {
     // Call Claude API for tax suggestions
     console.log('[Tax Suggestions API] Calling Claude API...');
     
-    const prompt = `You are a tax expert assistant providing CURRENT 2024 tax rates. Based on the following business information, provide accurate tax rate suggestions and filing information.
+    const prompt = `You are a tax expert assistant providing CURRENT 2024 tax rates. Based on the following business information, provide accurate and comprehensive tax rate suggestions and filing information.
 
 Business Information:
 - Type: ${businessType}
 - Location: ${city}, ${stateProvince}, ${country}
 
-IMPORTANT: Use the most current tax rates as of 2024. For Utah specifically:
-- State Sales Tax: 4.85% base rate (plus local taxes which vary by city)
-- State Income Tax: 4.65% flat rate (as of 2024)
-- Look up the specific local sales tax rate for ${city}, ${stateProvince}
+IMPORTANT: 
+- Use the most current tax rates as of 2024
+- For countries with progressive personal income tax (like Kenya, USA), provide tax brackets
+- Include ALL relevant taxes for the location, even if not listed in the structure below
+- Any additional country-specific taxes should be included as extra fields
 
-Please provide the following tax information broken down by jurisdiction:
+Please provide comprehensive tax information:
 
 SALES TAX:
-1. State Sales Tax Rate - ${stateProvince} state rate only (e.g., 4.85 for Utah)
-2. Local Sales Tax Rate - ${city} local rate only (e.g., 2.0)
-3. Total Sales Tax Rate - Combined state + local
+- State/Regional Sales Tax Rate
+- Local/City Sales Tax Rate
+- Total Sales Tax Rate
 
-INCOME TAX:
-4. Federal Income Tax Rate - US federal corporate/business rate
-5. State Income Tax Rate - ${stateProvince} state rate
-6. Total Income Tax Rate - Combined federal + state
+CORPORATE INCOME TAX:
+- Corporate Income Tax Rate (for businesses)
+
+PERSONAL INCOME TAX:
+- Check if the country uses progressive tax brackets
+- If progressive: provide all brackets with income ranges and rates
+- If flat rate: provide the single rate
+- For Kenya example: First KES 24,000: 10%, Next KES 8,333: 25%, etc.
+
+SOCIAL INSURANCE:
+- Health Insurance (employee and employer rates)
+- Social Security/Pension (employee and employer rates)
+- Any other mandatory insurance
 
 PAYROLL TAX:
-7. Federal Payroll Tax Rate - FICA, Medicare, Federal unemployment
-8. State Payroll Tax Rate - State unemployment, disability if applicable
+- Federal/National Payroll Tax Rate
+- State/Regional Payroll Tax Rate
 
 FILING INFORMATION:
-9. State Tax Website - Official ${stateProvince} tax website
-10. State Tax Filing Address - Physical address for state taxes
-11. Local Tax Website - ${city} tax website if applicable
-12. Local Tax Filing Address - ${city} tax office if separate from state
-13. Federal Tax Website - IRS website
-14. Important Filing Deadlines - Broken down by tax type and jurisdiction
+- All relevant tax websites and physical addresses
+- Filing deadlines for each tax type
 
-Provide a confidence score (0-100) for accuracy and include any important notes.
+ADDITIONAL TAXES:
+- Include ANY other taxes specific to this location (e.g., VAT, GST, capital gains, wealth tax, etc.)
 
-Format your response as JSON with the following structure:
+Format your response as JSON. Include all standard fields below, plus any additional country-specific fields:
 {
   "stateSalesTaxRate": number,
   "localSalesTaxRate": number,
   "totalSalesTaxRate": number,
-  "federalIncomeTaxRate": number,
-  "stateIncomeTaxRate": number,
-  "totalIncomeTaxRate": number,
+  "corporateIncomeTaxRate": number,
+  "hasProgressiveTax": boolean,
+  "personalIncomeTaxBrackets": [
+    {
+      "minIncome": number,
+      "maxIncome": number or null for highest bracket,
+      "rate": number,
+      "description": "string (e.g., 'First KES 24,000')"
+    }
+  ],
+  "flatPersonalIncomeTaxRate": number (if not progressive),
+  "healthInsuranceRate": number,
+  "healthInsuranceEmployerRate": number,
+  "socialSecurityRate": number,
+  "socialSecurityEmployerRate": number,
   "federalPayrollTaxRate": number,
   "statePayrollTaxRate": number,
   "stateTaxWebsite": "string",
@@ -109,10 +128,12 @@ Format your response as JSON with the following structure:
   "filingDeadlines": {
     "salesTax": "string",
     "incomeTax": "string",
-    "payrollTax": "string"
+    "payrollTax": "string",
+    "corporateTax": "string"
   },
   "confidenceScore": number,
-  "notes": "string"
+  "notes": "string",
+  // Add any additional country-specific fields here
 }`;
 
     try {

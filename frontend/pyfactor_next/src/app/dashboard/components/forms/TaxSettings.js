@@ -14,7 +14,11 @@ import {
   ExclamationCircleIcon,
   DocumentCheckIcon,
   PencilIcon,
-  ClockIcon
+  ClockIcon,
+  PlusIcon,
+  TrashIcon,
+  BuildingOfficeIcon,
+  UserIcon
 } from '@heroicons/react/24/outline';
 
 export default function TaxSettings({ onNavigate }) {
@@ -39,16 +43,25 @@ export default function TaxSettings({ onNavigate }) {
   
   // Tax data state
   const [taxSuggestions, setTaxSuggestions] = useState(null);
+  const [additionalTaxFields, setAdditionalTaxFields] = useState({}); // For dynamic fields from API
   const [customRates, setCustomRates] = useState({
     // Sales Tax breakdown
     stateSalesTaxRate: '',
     localSalesTaxRate: '',
     totalSalesTaxRate: '',
     
-    // Income Tax breakdown
-    federalIncomeTaxRate: '',
-    stateIncomeTaxRate: '',
-    totalIncomeTaxRate: '',
+    // Personal Income Tax - Progressive Brackets
+    personalIncomeTaxBrackets: [],
+    hasProgressiveTax: false,
+    
+    // Corporate Income Tax
+    corporateIncomeTaxRate: '',
+    
+    // Social Insurance
+    healthInsuranceRate: '',
+    healthInsuranceEmployerRate: '',
+    socialSecurityRate: '',
+    socialSecurityEmployerRate: '',
     
     // Payroll Tax breakdown
     federalPayrollTaxRate: '',
@@ -65,7 +78,8 @@ export default function TaxSettings({ onNavigate }) {
     filingDeadlines: {
       salesTax: '',
       incomeTax: '',
-      payrollTax: ''
+      payrollTax: '',
+      corporateTax: ''
     }
   });
   
@@ -240,6 +254,56 @@ export default function TaxSettings({ onNavigate }) {
     });
   };
   
+  // Handle income tax bracket changes
+  const handleBracketChange = (index, field, value) => {
+    setCustomRates(prev => {
+      const newBrackets = [...prev.personalIncomeTaxBrackets];
+      newBrackets[index] = {
+        ...newBrackets[index],
+        [field]: value
+      };
+      return {
+        ...prev,
+        personalIncomeTaxBrackets: newBrackets
+      };
+    });
+  };
+  
+  // Add new income tax bracket
+  const addBracket = () => {
+    setCustomRates(prev => ({
+      ...prev,
+      personalIncomeTaxBrackets: [
+        ...prev.personalIncomeTaxBrackets,
+        { 
+          minIncome: '', 
+          maxIncome: '', 
+          rate: '', 
+          description: '' 
+        }
+      ]
+    }));
+  };
+  
+  // Remove income tax bracket
+  const removeBracket = (index) => {
+    setCustomRates(prev => ({
+      ...prev,
+      personalIncomeTaxBrackets: prev.personalIncomeTaxBrackets.filter((_, i) => i !== index)
+    }));
+  };
+  
+  // Toggle progressive tax system
+  const toggleProgressiveTax = () => {
+    setCustomRates(prev => ({
+      ...prev,
+      hasProgressiveTax: !prev.hasProgressiveTax,
+      personalIncomeTaxBrackets: !prev.hasProgressiveTax ? [
+        { minIncome: '0', maxIncome: '', rate: '', description: 'First bracket' }
+      ] : []
+    }));
+  };
+
   // Get tax suggestions from Claude API
   const getTaxSuggestions = async () => {
     console.log('[TaxSettings] getTaxSuggestions called');
@@ -316,17 +380,43 @@ export default function TaxSettings({ onNavigate }) {
       
       // Pre-fill custom rates with suggestions
       if (data.suggestedRates) {
+        // Known fields that map to our form
+        const knownFields = [
+          'stateSalesTaxRate', 'localSalesTaxRate', 'totalSalesTaxRate',
+          'corporateIncomeTaxRate', 'healthInsuranceRate', 'healthInsuranceEmployerRate',
+          'socialSecurityRate', 'socialSecurityEmployerRate', 'federalPayrollTaxRate',
+          'statePayrollTaxRate', 'stateTaxWebsite', 'stateTaxAddress', 'localTaxWebsite',
+          'localTaxAddress', 'federalTaxWebsite', 'filingDeadlines', 'hasProgressiveTax',
+          'personalIncomeTaxBrackets'
+        ];
+        
+        // Separate known and unknown fields
+        const knownRates = {};
+        const unknownFields = {};
+        
+        Object.keys(data.suggestedRates).forEach(key => {
+          if (knownFields.includes(key)) {
+            knownRates[key] = data.suggestedRates[key];
+          } else {
+            unknownFields[key] = data.suggestedRates[key];
+          }
+        });
+        
+        // Update known fields
         setCustomRates(prev => ({
           ...prev,
-          ...data.suggestedRates,
+          ...knownRates,
           // Calculate totals if not provided
-          totalSalesTaxRate: data.suggestedRates.totalSalesTaxRate || 
-            (parseFloat(data.suggestedRates.stateSalesTaxRate || 0) + 
-             parseFloat(data.suggestedRates.localSalesTaxRate || 0)).toFixed(2),
-          totalIncomeTaxRate: data.suggestedRates.totalIncomeTaxRate ||
-            (parseFloat(data.suggestedRates.federalIncomeTaxRate || 0) + 
-             parseFloat(data.suggestedRates.stateIncomeTaxRate || 0)).toFixed(2)
+          totalSalesTaxRate: knownRates.totalSalesTaxRate || 
+            (parseFloat(knownRates.stateSalesTaxRate || prev.stateSalesTaxRate || 0) + 
+             parseFloat(knownRates.localSalesTaxRate || prev.localSalesTaxRate || 0)).toFixed(2)
         }));
+        
+        // Store unknown fields for dynamic rendering
+        if (Object.keys(unknownFields).length > 0) {
+          setAdditionalTaxFields(unknownFields);
+          console.log('[TaxSettings] Additional tax fields from API:', unknownFields);
+        }
       }
       
       // Update usage and set cooldown
@@ -717,54 +807,210 @@ export default function TaxSettings({ onNavigate }) {
             </div>
           </div>
           
-          {/* Income Tax Section */}
+          {/* Corporate Income Tax Section */}
           <div className="mb-6">
-            <h3 className="text-md font-medium text-gray-800 mb-3 border-b pb-2">Income Tax Rates</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <h3 className="text-md font-medium text-gray-800 mb-3 border-b pb-2 flex items-center">
+              <BuildingOfficeIcon className="h-5 w-5 mr-2 text-gray-600" />
+              Corporate Income Tax
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Federal Income Tax (%)
+                  Corporate Income Tax Rate (%)
                 </label>
                 <input
                   type="number"
-                  name="federalIncomeTaxRate"
-                  value={customRates.federalIncomeTaxRate}
+                  name="corporateIncomeTaxRate"
+                  value={customRates.corporateIncomeTaxRate}
                   onChange={handleRateChange}
                   step="0.01"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="e.g., 21.00"
                 />
               </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  State Income Tax (%)
-                </label>
+            </div>
+          </div>
+          
+          {/* Personal Income Tax Section */}
+          <div className="mb-6">
+            <h3 className="text-md font-medium text-gray-800 mb-3 border-b pb-2 flex items-center">
+              <UserIcon className="h-5 w-5 mr-2 text-gray-600" />
+              Personal Income Tax
+            </h3>
+            
+            {/* Toggle for Progressive Tax System */}
+            <div className="mb-4">
+              <label className="flex items-center">
                 <input
-                  type="number"
-                  name="stateIncomeTaxRate"
-                  value={customRates.stateIncomeTaxRate}
-                  onChange={handleRateChange}
-                  step="0.01"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="e.g., 4.65"
+                  type="checkbox"
+                  checked={customRates.hasProgressiveTax}
+                  onChange={toggleProgressiveTax}
+                  className="mr-2"
                 />
+                <span className="text-sm text-gray-700">This country uses a progressive tax system (tax brackets)</span>
+              </label>
+            </div>
+            
+            {customRates.hasProgressiveTax ? (
+              <div>
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-sm text-gray-600">Define income tax brackets (e.g., Kenya, USA)</p>
+                  <button
+                    type="button"
+                    onClick={addBracket}
+                    className="flex items-center px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
+                  >
+                    <PlusIcon className="h-4 w-4 mr-1" />
+                    Add Bracket
+                  </button>
+                </div>
+                
+                {customRates.personalIncomeTaxBrackets.map((bracket, index) => (
+                  <div key={index} className="mb-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="flex items-start justify-between mb-2">
+                      <h4 className="text-sm font-medium text-gray-700">Bracket {index + 1}</h4>
+                      {customRates.personalIncomeTaxBrackets.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeBracket(index)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">From (Monthly)</label>
+                        <input
+                          type="number"
+                          value={bracket.minIncome}
+                          onChange={(e) => handleBracketChange(index, 'minIncome', e.target.value)}
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          placeholder="0"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">To (Monthly)</label>
+                        <input
+                          type="number"
+                          value={bracket.maxIncome}
+                          onChange={(e) => handleBracketChange(index, 'maxIncome', e.target.value)}
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          placeholder="24000"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Tax Rate (%)</label>
+                        <input
+                          type="number"
+                          value={bracket.rate}
+                          onChange={(e) => handleBracketChange(index, 'rate', e.target.value)}
+                          step="0.1"
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          placeholder="10"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">Description</label>
+                        <input
+                          type="text"
+                          value={bracket.description}
+                          onChange={(e) => handleBracketChange(index, 'description', e.target.value)}
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          placeholder="First KES 24,000"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                {customRates.personalIncomeTaxBrackets.length === 0 && (
+                  <p className="text-sm text-gray-500 italic">No brackets defined. Click "Add Bracket" to start.</p>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Flat Personal Income Tax Rate (%)
+                  </label>
+                  <input
+                    type="number"
+                    name="flatPersonalIncomeTaxRate"
+                    value={customRates.flatPersonalIncomeTaxRate || ''}
+                    onChange={handleRateChange}
+                    step="0.01"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., 30.00"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Social Insurance Section */}
+          <div className="mb-6">
+            <h3 className="text-md font-medium text-gray-800 mb-3 border-b pb-2">Social Insurance & Benefits</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Health Insurance</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Employee Rate (%)</label>
+                    <input
+                      type="number"
+                      name="healthInsuranceRate"
+                      value={customRates.healthInsuranceRate}
+                      onChange={handleRateChange}
+                      step="0.01"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="e.g., 2.75"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Employer Rate (%)</label>
+                    <input
+                      type="number"
+                      name="healthInsuranceEmployerRate"
+                      value={customRates.healthInsuranceEmployerRate}
+                      onChange={handleRateChange}
+                      step="0.01"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="e.g., 2.75"
+                    />
+                  </div>
+                </div>
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Total Income Tax (%)
-                </label>
-                <input
-                  type="number"
-                  name="totalIncomeTaxRate"
-                  value={customRates.totalIncomeTaxRate}
-                  onChange={handleRateChange}
-                  step="0.01"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
-                  placeholder="Auto-calculated"
-                  readOnly
-                />
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Social Security</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Employee Rate (%)</label>
+                    <input
+                      type="number"
+                      name="socialSecurityRate"
+                      value={customRates.socialSecurityRate}
+                      onChange={handleRateChange}
+                      step="0.01"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="e.g., 6.00"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">Employer Rate (%)</label>
+                    <input
+                      type="number"
+                      name="socialSecurityEmployerRate"
+                      value={customRates.socialSecurityEmployerRate}
+                      onChange={handleRateChange}
+                      step="0.01"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="e.g., 6.00"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -966,6 +1212,37 @@ export default function TaxSettings({ onNavigate }) {
             </div>
           </div>
           
+          {/* Dynamic Additional Tax Fields from API */}
+          {Object.keys(additionalTaxFields).length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-md font-medium text-gray-800 mb-3 border-b pb-2">Additional Tax Information</h3>
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-3">
+                <p className="text-sm text-yellow-800">
+                  <ExclamationCircleIcon className="h-4 w-4 inline mr-1" />
+                  The following fields were suggested by our tax AI but are not yet fully integrated into the form. 
+                  Please review and note these for manual entry if needed.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {Object.entries(additionalTaxFields).map(([key, value]) => (
+                  <div key={key} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {/* Convert camelCase to Title Case */}
+                      {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                    </label>
+                    <div className="text-sm text-gray-900">
+                      {typeof value === 'object' ? (
+                        <pre className="text-xs overflow-auto">{JSON.stringify(value, null, 2)}</pre>
+                      ) : (
+                        <span>{value}%</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
           <div className="mt-6 flex justify-end">
             <button
               onClick={() => setShowSignatureModal(true)}
@@ -990,7 +1267,10 @@ export default function TaxSettings({ onNavigate }) {
               <h4 className="font-medium text-gray-900 mb-2">Summary:</h4>
               <div className="space-y-1 text-sm text-gray-600">
                 <p><strong>Sales Tax:</strong> {customRates.stateSalesTaxRate}% (State) + {customRates.localSalesTaxRate}% (Local) = {customRates.totalSalesTaxRate}% Total</p>
-                <p><strong>Income Tax:</strong> {customRates.federalIncomeTaxRate}% (Federal) + {customRates.stateIncomeTaxRate}% (State) = {customRates.totalIncomeTaxRate}% Total</p>
+                <p><strong>Corporate Income Tax:</strong> {customRates.corporateIncomeTaxRate}%</p>
+                <p><strong>Personal Income Tax:</strong> {customRates.hasProgressiveTax ? `Progressive (${customRates.personalIncomeTaxBrackets.length} brackets)` : `Flat rate: ${customRates.flatPersonalIncomeTaxRate || 'N/A'}%`}</p>
+                <p><strong>Health Insurance:</strong> {customRates.healthInsuranceRate}% (Employee) + {customRates.healthInsuranceEmployerRate}% (Employer)</p>
+                <p><strong>Social Security:</strong> {customRates.socialSecurityRate}% (Employee) + {customRates.socialSecurityEmployerRate}% (Employer)</p>
                 <p><strong>Payroll Tax:</strong> {customRates.federalPayrollTaxRate}% (Federal) + {customRates.statePayrollTaxRate}% (State)</p>
                 <p>Location: {formData.city}, {formData.stateProvince}, {formData.country}</p>
               </div>
