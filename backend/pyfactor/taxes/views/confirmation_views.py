@@ -28,12 +28,11 @@ from ..serializers_confirmations import (
     FilingConfirmationSerializer, FilingNotificationSerializer,
     FilingConfirmationDetailSerializer
 )
-from custom_auth.mixins import TenantAwareMixin
 
 logger = logging.getLogger(__name__)
 
 
-class FilingConfirmationViewSet(TenantAwareMixin, viewsets.ModelViewSet):
+class FilingConfirmationViewSet(viewsets.ModelViewSet):
     """ViewSet for managing tax filing confirmations."""
     
     serializer_class = FilingConfirmationSerializer
@@ -170,7 +169,7 @@ class FilingConfirmationViewSet(TenantAwareMixin, viewsets.ModelViewSet):
             )
 
 
-class FilingNotificationViewSet(TenantAwareMixin, viewsets.ReadOnlyModelViewSet):
+class FilingNotificationViewSet(viewsets.ReadOnlyModelViewSet):
     """ViewSet for viewing filing notifications."""
     
     serializer_class = FilingNotificationSerializer
