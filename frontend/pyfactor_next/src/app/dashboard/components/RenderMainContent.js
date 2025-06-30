@@ -8,6 +8,7 @@ import ErrorBoundary from './ErrorBoundary';
 
 // Empty loading component (removed spinner)
 import StandardSpinner from '@/components/ui/StandardSpinner';
+import { captureEvent, capturePageView } from '@/lib/posthog';
 
 const LoadingComponent = () => (
   <div className="py-4 flex items-center justify-center">
@@ -739,6 +740,21 @@ const RenderMainContent = React.memo(function RenderMainContent({
       // Track that we're changing views for cleanup purposes
       console.log(`[RenderMainContent] View changing from ${previousViewRef.current} to ${view}`);
       
+      // Track page view and feature usage
+      if (view) {
+        capturePageView(`Dashboard - ${view}`, {
+          previous_view: previousViewRef.current,
+          tenant_id: tenantId,
+          has_user_data: !!userData
+        });
+        
+        captureEvent('dashboard_feature_accessed', {
+          feature: view,
+          previous_feature: previousViewRef.current,
+          tenant_id: tenantId
+        });
+      }
+      
       // Force cleanup of any previous component
       setMountedComponents(prev => ({
         ...prev,
@@ -749,7 +765,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
       // Update ref after state update
       previousViewRef.current = view;
     }
-  }, [view]);
+  }, [view, tenantId, userData]);
   
   // Define the content wrapper with key instead of redefining WrapperComponent
   const ContentWrapperWithKey = useCallback(({ children, className = '' }) => (

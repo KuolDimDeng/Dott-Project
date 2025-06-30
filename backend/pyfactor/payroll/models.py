@@ -102,6 +102,13 @@ class PayrollTransaction(TenantAwareModel):
     social_security_tax = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     additional_withholdings = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     
+    # State-specific taxes
+    state_disability_tax = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    state_family_leave_tax = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    state_unemployment_tax = models.DecimalField(max_digits=10, decimal_places=2, default=0)  # Employee portion if applicable
+    local_tax = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    local_tax_jurisdiction = models.CharField(max_length=100, blank=True, null=True)
+    
     def __str__(self):
         timesheet_info = f" - Timesheet: {self.timesheet.timesheet_number}" if self.timesheet else ""
         return f"Payment for {self.employee}{timesheet_info} - {self.gross_pay}"
@@ -216,12 +223,33 @@ class IncomeWithholding(TenantAwareModel):
     
     # State-specific fields
     state_code = models.CharField(max_length=2, blank=True, null=True)
+    state_filing_status = models.CharField(max_length=2, blank=True, null=True,
+        help_text="State-specific filing status if different from federal")
     state_allowances = models.IntegerField(default=0)
     state_additional_withholding = models.DecimalField(
         max_digits=10, 
         decimal_places=2, 
         default=Decimal('0.00')
     )
+    
+    # State-specific withholding elections
+    ca_filing_status = models.CharField(max_length=20, blank=True, null=True)
+    ca_allowances = models.IntegerField(default=0)
+    ca_additional_withholding = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    
+    ny_filing_status = models.CharField(max_length=20, blank=True, null=True)
+    ny_allowances = models.IntegerField(default=0)
+    ny_additional_withholding = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    nyc_resident = models.BooleanField(default=False)
+    yonkers_resident = models.BooleanField(default=False)
+    
+    pa_additional_withholding = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    pa_work_municipality = models.CharField(max_length=100, blank=True, null=True)
+    pa_residence_municipality = models.CharField(max_length=100, blank=True, null=True)
+    
+    il_allowances = models.IntegerField(default=0)
+    il_basic_allowances = models.IntegerField(default=0)
+    il_additional_withholding = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     
     # Electronic signature for W-4
     is_electronically_signed = models.BooleanField(default=False)

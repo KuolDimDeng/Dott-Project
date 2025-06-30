@@ -13,14 +13,19 @@ from decimal import Decimal
 
 from taxes.models import (
     Form941, Form941ScheduleB, PayrollTaxDeposit,
-    PayrollTaxFilingSchedule, EmployerTaxAccount
+    PayrollTaxFilingSchedule, EmployerTaxAccount,
+    Form940, Form940ScheduleA, StateTaxAccount,
+    StatePayrollConfiguration, PayrollTaxFiling
 )
 from .serializers import (
     Form941Serializer, Form941ScheduleBSerializer,
     PayrollTaxDepositSerializer, PayrollTaxFilingScheduleSerializer,
-    EmployerTaxAccountSerializer, PayrollTaxSummarySerializer
+    EmployerTaxAccountSerializer, PayrollTaxSummarySerializer,
+    Form940Serializer, Form940ScheduleASerializer, StateTaxAccountSerializer,
+    Form940ProcessorSerializer, Form940AmendmentSerializer
 )
 from .form941_processor import Form941Processor
+from .form940_processor import Form940Processor
 from .irs_integration import IRSIntegration
 from payroll.models import PayrollRun, PayrollTransaction
 
@@ -692,4 +697,590 @@ class EmployerTaxAccountViewSet(viewsets.ModelViewSet):
             return Response(
                 {'error': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class Form940ViewSet(viewsets.ModelViewSet):
+    """ViewSet for Form 940 management"""
+    serializer_class = Form940Serializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        """Get forms for current tenant"""
+        return Form940.objects.filter(
+            tenant_id=self.request.user.tenant_id
+        ).order_by("-year")
+    
+    @action(detail=False, methods=["post"])
+    def calculate_year(self, request):
+        """Calculate Form 940 for a specific year"""
+        serializer = Form940ProcessorSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        year = serializer.validated_data["year"]
+        calculate_only = serializer.validated_data["calculate_only"]
+        save_draft = serializer.validated_data["save_draft"]
+        
+        try:
+            # Check if form already exists
+            existing_form = Form940.objects.filter(
+                tenant_id=request.user.tenant_id,
+                year=year,
+                amended_return=False
+            ).first()
+            
+            if existing_form and not calculate_only:
+                return Response(
+                    {"error": f"Form 940 for {year} already exists"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Calculate form data
+            processor = Form940Processor(request.user.tenant_id, year)
+            form_data = processor.calculate_form940_data()
+            
+            # Validate the calculated data
+            validation_errors = processor.validate_form940(form_data)
+            if validation_errors:
+                return Response({
+                    "status": "validation_failed",
+                    "errors": validation_errors,
+                    "form_data": form_data
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # If only calculating, return the data
+            if calculate_only:
+                return Response({
+                    "status": "calculated",
+                    "form_data": form_data
+                })
+            
+            # Save as draft if requested
+            if save_draft:
+                form_data["tenant_id"] = request.user.tenant_id
+                form_data["status"] = "draft"
+                
+                if existing_form:
+                    # Update existing draft
+                    serializer = self.get_serializer(existing_form, data=form_data, partial=True)
+                else:
+                    # Create new draft
+                    serializer = self.get_serializer(data=form_data)
+                
+                serializer.is_valid(raise_exception=True)
+                form940 = serializer.save()
+                
+                # Handle Schedule A for multi-state employers
+                if form_data.get("is_multi_state") and form_data.get("state_details"):
+                    for state_data in form_data["state_details"]:
+                        state_data["form_940"] = form940.id
+                        state_serializer = Form940ScheduleASerializer(data=state_data)
+                        state_serializer.is_valid(raise_exception=True)
+                        state_serializer.save()
+                
+                return Response({
+                    "status": "draft_saved",
+                    "form": self.get_serializer(form940).data
+                })
+            
+            return Response({
+                "status": "calculated",
+                "form_data": form_data
+            })
+            
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=True, methods=["post"])
+    def submit(self, request, pk=None):
+        """Submit Form 940 to IRS"""
+        form940 = self.get_object()
+        
+        if form940.status not in ["draft", "ready"]:
+            return Response(
+                {"error": "Form must be in draft or ready status to submit"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            # Validate form before submission
+            processor = Form940Processor(form940.tenant_id, form940.year)
+            validation_errors = processor.validate_form940(form940.__dict__)
+            
+            if validation_errors:
+                return Response({
+                    "status": "validation_failed",
+                    "errors": validation_errors
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # TODO: Implement actual IRS submission
+            # For now, mark as filed
+            form940.status = "filed"
+            form940.filing_date = timezone.now()
+            form940.confirmation_number = f"MOCK-940-{form940.year}-{timezone.now().strftime(\"%Y%m%d%H%M%S\")}"
+            form940.save()
+            
+            return Response({
+                "status": "submitted",
+                "confirmation_number": form940.confirmation_number,
+                "form": self.get_serializer(form940).data
+            })
+            
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=False, methods=["post"])
+    def amend(self, request):
+        """Create amended Form 940"""
+        serializer = Form940AmendmentSerializer(
+            data=request.data,
+            context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+        
+        original_form_id = serializer.validated_data["original_form_id"]
+        reason = serializer.validated_data["reason"]
+        changes = serializer.validated_data["changes"]
+        
+        try:
+            # Generate amended return
+            processor = Form940Processor(request.user.tenant_id, None)
+            amended_data = processor.generate_amended_return(original_form_id, {
+                "reason": reason,
+                **changes
+            })
+            
+            # Create amended form
+            amended_data["tenant_id"] = request.user.tenant_id
+            amended_data["status"] = "draft"
+            
+            form_serializer = self.get_serializer(data=amended_data)
+            form_serializer.is_valid(raise_exception=True)
+            amended_form = form_serializer.save()
+            
+            return Response({
+                "status": "amended_draft_created",
+                "form": self.get_serializer(amended_form).data
+            })
+            
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=True, methods=["get"])
+    def pdf(self, request, pk=None):
+        """Generate PDF of Form 940"""
+        form940 = self.get_object()
+        
+        try:
+            # TODO: Implement PDF generation
+            # For now, return a placeholder response
+            return Response({
+                "status": "not_implemented",
+                "message": "PDF generation will be implemented"
+            })
+            
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=False, methods=["get"])
+    def futa_summary(self, request):
+        """Get FUTA tax summary for the year"""
+        year = request.query_params.get("year", timezone.now().year)
+        
+        try:
+            # Get all Form 940s for the year
+            forms = Form940.objects.filter(
+                tenant_id=request.user.tenant_id,
+                year=year
+            )
+            
+            # Calculate totals
+            summary = {
+                "year": year,
+                "total_wages": Decimal("0"),
+                "taxable_futa_wages": Decimal("0"),
+                "total_futa_tax": Decimal("0"),
+                "total_deposits": Decimal("0"),
+                "balance_due": Decimal("0"),
+                "quarterly_breakdown": {
+                    1: {"liability": Decimal("0"), "deposits": Decimal("0")},
+                    2: {"liability": Decimal("0"), "deposits": Decimal("0")},
+                    3: {"liability": Decimal("0"), "deposits": Decimal("0")},
+                    4: {"liability": Decimal("0"), "deposits": Decimal("0")},
+                },
+                "forms": []
+            }
+            
+            for form in forms:
+                if form.status in ["filed", "accepted"]:
+                    summary["total_wages"] += form.total_payments
+                    summary["taxable_futa_wages"] += form.total_taxable_futa_wages
+                    summary["total_futa_tax"] += form.total_futa_tax
+                    summary["total_deposits"] += form.total_deposits
+                    summary["balance_due"] += form.balance_due
+                    
+                    summary["quarterly_breakdown"][1]["liability"] += form.first_quarter_liability
+                    summary["quarterly_breakdown"][2]["liability"] += form.second_quarter_liability
+                    summary["quarterly_breakdown"][3]["liability"] += form.third_quarter_liability
+                    summary["quarterly_breakdown"][4]["liability"] += form.fourth_quarter_liability
+                
+                summary["forms"].append({
+                    "id": form.id,
+                    "status": form.status,
+                    "filing_date": form.filing_date,
+                    "confirmation_number": form.confirmation_number,
+                    "amended": form.amended_return
+                })
+            
+            # Get FUTA deposits for the year
+            deposits = PayrollTaxDeposit.objects.filter(
+                tenant_id=request.user.tenant_id,
+                tax_type="FUTA",
+                deposit_date__year=year,
+                status="completed"
+            )
+            
+            for deposit in deposits:
+                quarter = (deposit.deposit_date.month - 1) // 3 + 1
+                summary["quarterly_breakdown"][quarter]["deposits"] += deposit.amount
+            
+            return Response(summary)
+            
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class StateTaxAccountViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing state tax accounts"""
+    serializer_class = StateTaxAccountSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        """Get state tax accounts for current tenant"""
+        return StateTaxAccount.objects.filter(
+            tenant_id=self.request.user.tenant_id
+        ).order_by("state_code")
+    
+    def create(self, request, *args, **kwargs):
+        """Create state tax account"""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(tenant_id=request.user.tenant_id)
+        
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    @action(detail=False, methods=["get"])
+    def active_states(self, request):
+        """Get list of states with active accounts"""
+        accounts = self.get_queryset().filter(is_active=True)
+        
+        state_list = []
+        for account in accounts:
+            state_list.append({
+                "state_code": account.state_code,
+                "employer_number": account.state_employer_number,
+                "experience_rate": account.experience_rate,
+                "filing_frequency": account.filing_frequency
+            })
+        
+        return Response(state_list)
+    
+    @action(detail=True, methods=["post"])
+    def update_experience_rate(self, request, pk=None):
+        """Update state unemployment experience rate"""
+        account = self.get_object()
+        
+        new_rate = request.data.get("experience_rate")
+        effective_date = request.data.get("effective_date")
+        
+        if not new_rate:
+            return Response(
+                {"error": "Experience rate is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            account.experience_rate = Decimal(str(new_rate))
+            if effective_date:
+                account.experience_rate_effective_date = effective_date
+            account.save()
+            
+            return Response({
+                "status": "updated",
+                "state_code": account.state_code,
+                "new_rate": account.experience_rate,
+                "effective_date": account.experience_rate_effective_date
+            })
+            
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+class StatePayrollProcessorView(viewsets.ViewSet):
+    """ViewSet for state payroll tax processing"""
+    permission_classes = [IsAuthenticated]
+    
+    def create(self, request, payroll_run_id=None):
+        """Process state payroll taxes for a payroll run"""
+        from .state_payroll_processor import StatePayrollProcessor
+        
+        try:
+            payroll_run = PayrollRun.objects.get(
+                id=payroll_run_id,
+                tenant_id=request.user.tenant_id
+            )
+            
+            processor = StatePayrollProcessor(request.user.tenant_id)
+            results = processor.process_payroll_run(payroll_run)
+            
+            return Response(results)
+            
+        except PayrollRun.DoesNotExist:
+            return Response(
+                {"error": "Payroll run not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    @action(detail=False, methods=['get'])
+    def validate_accounts(self, request):
+        """Validate state employer accounts"""
+        from .state_payroll_processor import StatePayrollProcessor
+        
+        processor = StatePayrollProcessor(request.user.tenant_id)
+        validation_results = processor.validate_employer_accounts()
+        
+        return Response(validation_results)
+    
+    @action(detail=False, methods=['post'])
+    def generate_forms(self, request):
+        """Generate state tax forms for a period"""
+        from .state_payroll_processor import StatePayrollProcessor
+        
+        state_code = request.data.get('state_code')
+        period_start = request.data.get('period_start')
+        period_end = request.data.get('period_end')
+        
+        if not all([state_code, period_start, period_end]):
+            return Response(
+                {"error": "state_code, period_start, and period_end are required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            processor = StatePayrollProcessor(request.user.tenant_id)
+            results = processor.generate_state_forms(
+                state_code,
+                datetime.strptime(period_start, '%Y-%m-%d').date(),
+                datetime.strptime(period_end, '%Y-%m-%d').date()
+            )
+            
+            return Response(results)
+            
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    @action(detail=True, methods=['post'])
+    def submit_filing(self, request, filing_id=None):
+        """Submit state tax filing electronically"""
+        from .state_payroll_processor import StatePayrollProcessor
+        
+        processor = StatePayrollProcessor(request.user.tenant_id)
+        result = processor.submit_state_filing(filing_id)
+        
+        if result['success']:
+            return Response(result)
+        else:
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+
+
+class StatePayrollConfigViewSet(viewsets.ModelViewSet):
+    """ViewSet for state payroll configuration"""
+    serializer_class = None  # Will be created in serializers
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        """Get configurations for current tenant"""
+        return StatePayrollConfiguration.objects.filter(
+            tenant_id=self.request.user.tenant_id
+        ).order_by('state_code', '-year')
+    
+    @action(detail=False, methods=['get'])
+    def current_year(self, request):
+        """Get current year configurations for all states"""
+        current_year = timezone.now().year
+        configs = self.get_queryset().filter(year=current_year)
+        
+        # Would use serializer here
+        data = []
+        for config in configs:
+            data.append({
+                'state_code': config.state_code,
+                'year': config.year,
+                'sui_wage_base': config.sui_wage_base,
+                'sui_new_employer_rate': config.sui_new_employer_rate,
+                'has_sdi': config.has_sdi,
+                'has_fli': config.has_fli
+            })
+        
+        return Response(data)
+
+
+class StateFilingViewSet(viewsets.ModelViewSet):
+    """ViewSet for state payroll tax filings"""
+    serializer_class = None  # Will be created in serializers
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        """Get state filings for current tenant"""
+        return PayrollTaxFiling.objects.filter(
+            tenant_id=self.request.user.tenant_id,
+            submission_method__in=['api', 'portal', 'manual']
+        ).order_by('-filing_period_end')
+    
+    @action(detail=False, methods=['get'])
+    def by_state(self, request):
+        """Get filings grouped by state"""
+        state_code = request.query_params.get('state_code')
+        year = request.query_params.get('year')
+        
+        queryset = self.get_queryset()
+        
+        if state_code:
+            queryset = queryset.filter(state__code=state_code)
+        if year:
+            queryset = queryset.filter(filing_period_start__year=year)
+        
+        # Group by state
+        filings_by_state = {}
+        for filing in queryset:
+            state = filing.state.code
+            if state not in filings_by_state:
+                filings_by_state[state] = []
+            
+            filings_by_state[state].append({
+                'id': filing.id,
+                'period': f"{filing.filing_period_start} - {filing.filing_period_end}",
+                'status': filing.filing_status,
+                'total_wages': filing.total_wages,
+                'total_withholding': filing.total_withholding
+            })
+        
+        return Response(filings_by_state)
+
+
+class StateWithholdingView(viewsets.ViewSet):
+    """View for calculating state withholding"""
+    permission_classes = [IsAuthenticated]
+    
+    def create(self, request):
+        """Calculate state withholding for an employee"""
+        from .state_payroll_processor import StatePayrollProcessor
+        
+        employee_id = request.data.get('employee_id')
+        gross_pay = request.data.get('gross_pay')
+        pay_date = request.data.get('pay_date')
+        state_code = request.data.get('state_code')
+        
+        if not all([employee_id, gross_pay, pay_date]):
+            return Response(
+                {"error": "employee_id, gross_pay, and pay_date are required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            from hr.models import Employee
+            employee = Employee.objects.get(
+                id=employee_id,
+                tenant_id=request.user.tenant_id
+            )
+            
+            # If no state code provided, use employee's work state
+            if not state_code:
+                state_code = employee.work_state or employee.state
+            
+            if not state_code:
+                return Response(
+                    {"error": "State code could not be determined"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            processor = StatePayrollProcessor(request.user.tenant_id)
+            
+            if state_code in processor.handlers:
+                handler = processor.handlers[state_code]
+                withholding = handler.calculate_state_withholding(
+                    employee,
+                    Decimal(str(gross_pay)),
+                    datetime.strptime(pay_date, '%Y-%m-%d').date()
+                )
+                
+                # Also calculate employer and employee taxes
+                state_account = StateTaxAccount.objects.filter(
+                    tenant_id=request.user.tenant_id,
+                    state_code=state_code,
+                    is_active=True
+                ).first()
+                
+                employer_taxes = handler.calculate_employer_taxes(
+                    employee,
+                    Decimal(str(gross_pay)),
+                    datetime.strptime(pay_date, '%Y-%m-%d').date(),
+                    state_account
+                )
+                
+                employee_taxes = handler.calculate_employee_taxes(
+                    employee,
+                    Decimal(str(gross_pay)),
+                    datetime.strptime(pay_date, '%Y-%m-%d').date()
+                )
+                
+                return Response({
+                    'state_code': state_code,
+                    'gross_pay': gross_pay,
+                    'state_withholding': withholding,
+                    'employer_taxes': employer_taxes,
+                    'employee_taxes': employee_taxes,
+                    'total_employee_tax': withholding + employee_taxes.get('total_employee_tax', Decimal('0'))
+                })
+            else:
+                return Response(
+                    {"error": f"No handler configured for state {state_code}"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+        except Employee.DoesNotExist:
+            return Response(
+                {"error": "Employee not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
             )

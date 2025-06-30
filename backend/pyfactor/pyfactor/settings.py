@@ -488,6 +488,10 @@ CLAUDE_SMART_INSIGHTS_API_KEY = os.getenv('CLAUDE_SMART_INSIGHTS_API_KEY', '')
 CLAUDE_SMART_INSIGHTS_MODEL = os.getenv('CLAUDE_SMART_INSIGHTS_MODEL', 'claude-3-sonnet-20240229')
 CLAUDE_SMART_INSIGHTS_MAX_TOKENS = int(os.getenv('CLAUDE_SMART_INSIGHTS_MAX_TOKENS', '1000'))
 
+# PostHog Analytics Configuration
+POSTHOG_API_KEY = os.getenv('POSTHOG_API_KEY', '')
+POSTHOG_HOST = os.getenv('POSTHOG_HOST', 'https://app.posthog.com')
+
 CELERY_QUEUES = {
     'default': {
         'exchange': 'default',
@@ -734,6 +738,7 @@ MIDDLEWARE = [
 'custom_auth.middleware.TenantMiddleware',  # Tenant isolation middleware
 'audit.middleware.AuditMiddleware',  # Audit trail middleware
 'custom_auth.middleware_package.onboarding_middleware.OnboardingMiddleware',  # Onboarding check middleware
+'pyfactor.middleware.analytics_middleware.AnalyticsMiddleware',  # PostHog analytics tracking
 'custom_auth.dashboard_middleware.DashboardMigrationMiddleware',
 'custom_auth.tenant_isolation_middleware.TenantIsolationMiddleware',
 'custom_auth.tenant_isolation_middleware.TenantSecurityMiddleware',

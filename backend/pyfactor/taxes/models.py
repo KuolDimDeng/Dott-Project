@@ -1534,18 +1534,34 @@ class PayrollTaxDeposit(TenantAwareModel):
     """Track federal tax deposits"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
-    # Reference to payroll run
-    payroll_run_id = models.CharField(max_length=50, db_index=True)
-    pay_date = models.DateField()
+    # Tax type
+    TAX_TYPE_CHOICES = [
+        ('941', 'Form 941 - Employment Tax'),
+        ('FUTA', 'Form 940 - FUTA Tax'),
+        ('OTHER', 'Other Tax'),
+    ]
+    tax_type = models.CharField(max_length=10, choices=TAX_TYPE_CHOICES, default='941')
+    
+    # Reference to payroll run (optional for FUTA)
+    payroll_run_id = models.CharField(max_length=50, db_index=True, null=True, blank=True)
+    pay_date = models.DateField(null=True, blank=True)
     
     # Deposit details
     deposit_date = models.DateField()
     due_date = models.DateField()
     
-    # Amounts
+    # Amounts (941 taxes)
     federal_income_tax = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     social_security_tax = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     medicare_tax = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    
+    # FUTA specific
+    futa_tax = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    quarter = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(4)], null=True, blank=True)
+    year = models.IntegerField(null=True, blank=True)
+    
+    # Total amount
+    amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     total_deposit = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     
     # Status
@@ -1646,6 +1662,7 @@ class EmployerTaxAccount(TenantAwareModel):
     # Federal accounts
     ein = models.CharField(max_length=20, help_text="Employer Identification Number")
     ein_verified = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
     
     # EFTPS (Electronic Federal Tax Payment System)
     eftps_enrolled = models.BooleanField(default=False)
@@ -1925,6 +1942,51 @@ class Form940ScheduleA(TenantAwareModel):
         return self.credit_reduction_amount
 
 
+class StatePayrollConfiguration(TenantAwareModel):
+    """Configuration for state payroll tax processing"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    state_code = models.CharField(max_length=2)
+    
+    # Wage bases and rates (updated annually)
+    year = models.IntegerField()
+    sui_wage_base = models.DecimalField(max_digits=10, decimal_places=2)
+    sui_new_employer_rate = models.DecimalField(max_digits=6, decimal_places=5)
+    sui_minimum_rate = models.DecimalField(max_digits=6, decimal_places=5)
+    sui_maximum_rate = models.DecimalField(max_digits=6, decimal_places=5)
+    
+    # State disability insurance (if applicable)
+    has_sdi = models.BooleanField(default=False)
+    sdi_wage_base = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    sdi_employee_rate = models.DecimalField(max_digits=6, decimal_places=5, null=True, blank=True)
+    sdi_employer_rate = models.DecimalField(max_digits=6, decimal_places=5, null=True, blank=True)
+    
+    # Family leave insurance (if applicable)
+    has_fli = models.BooleanField(default=False)
+    fli_wage_base = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    fli_employee_rate = models.DecimalField(max_digits=6, decimal_places=5, null=True, blank=True)
+    fli_employer_rate = models.DecimalField(max_digits=6, decimal_places=5, null=True, blank=True)
+    
+    # Other state-specific taxes
+    other_taxes = JSONField(default=dict, blank=True)
+    
+    # Filing requirements
+    quarterly_filing_required = models.BooleanField(default=True)
+    monthly_deposit_threshold = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    
+    # Reciprocity agreements
+    reciprocity_states = JSONField(default=list, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        app_label = 'taxes'
+        unique_together = ['state_code', 'year']
+        
+    def __str__(self):
+        return f"{self.state_code} Payroll Config - {self.year}"
+
+
 class StateTaxAccount(TenantAwareModel):
     """Store state-specific employer tax account information"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -1975,3 +2037,394 @@ class StateTaxAccount(TenantAwareModel):
         
     def __str__(self):
         return f"{self.state_code} Tax Account - {self.state_employer_number}"
+
+
+# Year-End Tax Form Models
+
+class W2Form(TenantAwareModel):
+    """Store W-2 form data for employees"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    employee_id = models.UUIDField(db_index=True)
+    tax_year = models.IntegerField()
+    control_number = models.CharField(max_length=50, unique=True)
+    
+    # Box 1-11: Wages and taxes
+    wages_tips_other = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    federal_income_tax_withheld = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    social_security_wages = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    social_security_tax_withheld = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    medicare_wages_tips = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    medicare_tax_withheld = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    social_security_tips = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    allocated_tips = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    advance_eic_payment = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    dependent_care_benefits = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    nonqualified_plans = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    
+    # Box 12: Coded items
+    box12_codes = JSONField(default=dict, blank=True)  # {"D": 5000.00, "DD": 12000.00}
+    
+    # Box 13: Checkboxes
+    statutory_employee = models.BooleanField(default=False)
+    retirement_plan = models.BooleanField(default=False)
+    third_party_sick_pay = models.BooleanField(default=False)
+    
+    # Box 14: Other
+    box14_other = JSONField(default=dict, blank=True)  # {"Union Dues": 500.00}
+    
+    # State and local information
+    state_wages_tips = JSONField(default=list, blank=True)
+    # [{"state": "CA", "wages": 50000.00, "tax": 2500.00, "employer_state_id": "123456789"}]
+    
+    local_wages_tips = JSONField(default=list, blank=True)
+    # [{"locality": "NYC", "wages": 50000.00, "tax": 1500.00}]
+    
+    # Status
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('generated', 'Generated'),
+        ('distributed', 'Distributed'),
+        ('corrected', 'Corrected'),
+        ('voided', 'Voided'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    
+    # PDF storage
+    pdf_file = models.FileField(upload_to='w2_forms/%Y/', null=True, blank=True)
+    pdf_generated_at = models.DateTimeField(null=True, blank=True)
+    
+    # Distribution tracking
+    distributed_to_employee = models.BooleanField(default=False)
+    distribution_date = models.DateTimeField(null=True, blank=True)
+    distribution_method = models.CharField(max_length=50, blank=True)  # email, mail, portal
+    
+    # E-filing
+    efiled_to_ssa = models.BooleanField(default=False)
+    ssa_submission_id = models.CharField(max_length=100, blank=True)
+    ssa_submission_date = models.DateTimeField(null=True, blank=True)
+    
+    # Corrections
+    is_correction = models.BooleanField(default=False)
+    original_w2_id = models.UUIDField(null=True, blank=True)
+    correction_code = models.CharField(max_length=10, blank=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        app_label = 'taxes'
+        db_table = 'tax_w2_forms'
+        unique_together = ['tenant_id', 'employee_id', 'tax_year']
+        indexes = [
+            models.Index(fields=['tenant_id', 'tax_year']),
+            models.Index(fields=['employee_id', 'tax_year']),
+            models.Index(fields=['status']),
+        ]
+        
+    def __str__(self):
+        return f"W-2 {self.tax_year} - Employee {self.employee_id} - {self.control_number}"
+
+
+class W3Form(TenantAwareModel):
+    """W-3 Transmittal form for W-2s"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    tax_year = models.IntegerField()
+    control_number = models.CharField(max_length=50, unique=True)
+    
+    # Kind of payer
+    KIND_OF_PAYER_CHOICES = [
+        ('941', 'Form 941'),
+        ('Military', 'Military'),
+        ('943', 'Form 943'),
+        ('944', 'Form 944'),
+        ('CT-1', 'Form CT-1'),
+        ('Hshld', 'Household'),
+        ('Medicare', 'Medicare govt employer'),
+    ]
+    kind_of_payer = models.CharField(max_length=20, choices=KIND_OF_PAYER_CHOICES, default='941')
+    
+    # Totals from all W-2s
+    total_forms = models.IntegerField(default=0)
+    total_wages = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    total_federal_tax = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    total_ss_wages = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    total_ss_tax = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    total_medicare_wages = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    total_medicare_tax = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    total_ss_tips = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    total_allocated_tips = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    total_advance_eic = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    total_dependent_care = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    total_nonqualified_plans = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    
+    # Other totals
+    total_deferred_compensation = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    
+    # Third party sick pay
+    third_party_sick_pay = models.BooleanField(default=False)
+    
+    # Status
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('generated', 'Generated'),
+        ('submitted', 'Submitted'),
+        ('accepted', 'Accepted'),
+        ('rejected', 'Rejected'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    
+    # Submission
+    submission_date = models.DateTimeField(null=True, blank=True)
+    ssa_tracking_number = models.CharField(max_length=100, blank=True)
+    
+    # PDF storage
+    pdf_file = models.FileField(upload_to='w3_forms/%Y/', null=True, blank=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        app_label = 'taxes'
+        db_table = 'tax_w3_forms'
+        unique_together = ['tenant_id', 'tax_year']
+        
+    def __str__(self):
+        return f"W-3 Transmittal {self.tax_year} - {self.total_forms} forms"
+
+
+class Form1099(TenantAwareModel):
+    """Base model for 1099 forms"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    vendor_id = models.UUIDField(db_index=True)
+    tax_year = models.IntegerField()
+    
+    # Form type
+    FORM_TYPE_CHOICES = [
+        ('1099-NEC', '1099-NEC Nonemployee Compensation'),
+        ('1099-MISC', '1099-MISC Miscellaneous Income'),
+        ('1099-K', '1099-K Payment Card and Third Party Network Transactions'),
+        ('1099-INT', '1099-INT Interest Income'),
+        ('1099-DIV', '1099-DIV Dividends and Distributions'),
+    ]
+    form_type = models.CharField(max_length=20, choices=FORM_TYPE_CHOICES)
+    
+    # Recipient information
+    recipient_tin = models.CharField(max_length=20)
+    recipient_name = models.CharField(max_length=200)
+    recipient_address = JSONField(default=dict)  # street, city, state, zip
+    account_number = models.CharField(max_length=50, blank=True)
+    
+    # Status
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('generated', 'Generated'),
+        ('distributed', 'Distributed'),
+        ('corrected', 'Corrected'),
+        ('voided', 'Voided'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    
+    # Federal tax withheld
+    federal_tax_withheld = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    
+    # State information
+    state_tax_info = JSONField(default=list, blank=True)
+    # [{"state": "CA", "state_tax_withheld": 500.00, "state_income": 10000.00, "payer_state_no": "123456"}]
+    
+    # Correction
+    corrected = models.BooleanField(default=False)
+    void = models.BooleanField(default=False)
+    
+    # PDF storage
+    pdf_file = models.FileField(upload_to='1099_forms/%Y/', null=True, blank=True)
+    pdf_generated_at = models.DateTimeField(null=True, blank=True)
+    
+    # Distribution
+    distributed_to_recipient = models.BooleanField(default=False)
+    distribution_date = models.DateTimeField(null=True, blank=True)
+    distribution_method = models.CharField(max_length=50, blank=True)
+    
+    # E-filing
+    efiled_to_irs = models.BooleanField(default=False)
+    irs_submission_id = models.CharField(max_length=100, blank=True)
+    irs_submission_date = models.DateTimeField(null=True, blank=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        app_label = 'taxes'
+        db_table = 'tax_1099_forms'
+        abstract = True
+        indexes = [
+            models.Index(fields=['tenant_id', 'tax_year']),
+            models.Index(fields=['vendor_id', 'tax_year']),
+            models.Index(fields=['form_type', 'status']),
+        ]
+
+
+class Form1099NEC(Form1099):
+    """1099-NEC Nonemployee Compensation"""
+    # Box 1 - Nonemployee compensation
+    nonemployee_compensation = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    
+    # Box 2 - Checkbox if payer made direct sales
+    payer_made_direct_sales = models.BooleanField(default=False)
+    
+    class Meta:
+        app_label = 'taxes'
+        db_table = 'tax_1099_nec_forms'
+        
+    def __str__(self):
+        return f"1099-NEC {self.tax_year} - {self.recipient_name} - ${self.nonemployee_compensation}"
+
+
+class Form1099MISC(Form1099):
+    """1099-MISC Miscellaneous Income"""
+    # Box 1-14
+    rents = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    royalties = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    other_income = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    fishing_boat_proceeds = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    medical_healthcare_payments = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    substitute_payments = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    direct_sales_indicator = models.BooleanField(default=False)
+    crop_insurance_proceeds = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    gross_proceeds_attorney = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    section_409a_deferrals = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    excess_golden_parachute = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    nonqualified_deferred_comp = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    
+    # Box 15-17 are handled in state_tax_info
+    
+    class Meta:
+        app_label = 'taxes'
+        db_table = 'tax_1099_misc_forms'
+        
+    def __str__(self):
+        total = sum([
+            self.rents, self.royalties, self.other_income, self.fishing_boat_proceeds,
+            self.medical_healthcare_payments, self.crop_insurance_proceeds, 
+            self.gross_proceeds_attorney
+        ])
+        return f"1099-MISC {self.tax_year} - {self.recipient_name} - ${total}"
+
+
+class Form1096(TenantAwareModel):
+    """1096 Annual Summary and Transmittal of U.S. Information Returns"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    tax_year = models.IntegerField()
+    
+    # Type of returns
+    form_types_included = JSONField(default=list)  # ['1099-NEC', '1099-MISC']
+    
+    # Totals
+    total_forms = models.IntegerField(default=0)
+    total_amount_reported = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    
+    # Filer information (populated from Business/Tenant)
+    filer_name = models.CharField(max_length=200)
+    filer_address = JSONField(default=dict)
+    filer_tin = models.CharField(max_length=20)
+    
+    # Contact information
+    contact_name = models.CharField(max_length=100)
+    contact_phone = models.CharField(max_length=20)
+    contact_email = models.EmailField()
+    
+    # Status
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('generated', 'Generated'),
+        ('submitted', 'Submitted'),
+        ('accepted', 'Accepted'),
+        ('rejected', 'Rejected'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    
+    # Submission
+    submission_date = models.DateTimeField(null=True, blank=True)
+    irs_tracking_number = models.CharField(max_length=100, blank=True)
+    
+    # PDF storage
+    pdf_file = models.FileField(upload_to='1096_forms/%Y/', null=True, blank=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        app_label = 'taxes'
+        db_table = 'tax_1096_forms'
+        unique_together = ['tenant_id', 'tax_year']
+        
+    def __str__(self):
+        return f"1096 Transmittal {self.tax_year} - {self.total_forms} forms"
+
+
+class YearEndTaxGeneration(TenantAwareModel):
+    """Track year-end tax form generation batches"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    tax_year = models.IntegerField()
+    
+    # Generation type
+    GENERATION_TYPE_CHOICES = [
+        ('w2_w3', 'W-2 and W-3 Forms'),
+        ('1099', '1099 Forms'),
+        ('all', 'All Year-End Forms'),
+    ]
+    generation_type = models.CharField(max_length=20, choices=GENERATION_TYPE_CHOICES)
+    
+    # Status
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('processing', 'Processing'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+        ('partial', 'Partially Completed'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    
+    # Statistics
+    total_forms_expected = models.IntegerField(default=0)
+    total_forms_generated = models.IntegerField(default=0)
+    total_forms_distributed = models.IntegerField(default=0)
+    
+    # W-2 specific
+    w2_count = models.IntegerField(default=0)
+    w3_generated = models.BooleanField(default=False)
+    
+    # 1099 specific
+    form_1099_nec_count = models.IntegerField(default=0)
+    form_1099_misc_count = models.IntegerField(default=0)
+    form_1096_generated = models.BooleanField(default=False)
+    
+    # Processing details
+    started_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    error_message = models.TextField(blank=True)
+    
+    # Generated forms references
+    generated_forms = JSONField(default=dict, blank=True)
+    # {"w2": ["uuid1", "uuid2"], "1099_nec": ["uuid3"], ...}
+    
+    # User who initiated
+    initiated_by = models.EmailField()
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        app_label = 'taxes'
+        db_table = 'tax_year_end_generation'
+        indexes = [
+            models.Index(fields=['tenant_id', 'tax_year']),
+            models.Index(fields=['status', 'created_at']),
+        ]
+        
+    def __str__(self):
+        return f"{self.get_generation_type_display()} - {self.tax_year} - {self.get_status_display()}"

@@ -10,6 +10,7 @@ import { errorHandler } from '@/utils/errorHandler.v2';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import BusinessInfoFormV2 from './BusinessInfoForm.v2';
 import SubscriptionSelectionFormV2 from './SubscriptionSelectionForm.v2';
+import { captureEvent } from '@/lib/posthog';
 
 /**
  * Enhanced Onboarding Flow Component
@@ -35,6 +36,12 @@ export default function OnboardingFlowV2() {
       
       const state = onboardingStateMachine.getCurrentState();
       setCurrentState(state);
+      
+      // Track onboarding state
+      captureEvent('onboarding_flow_initialized', {
+        state: state,
+        has_saved_progress: !!formData
+      });
       
       // Redirect if already completed
       if (state === ONBOARDING_STATES.COMPLETED) {
@@ -92,6 +99,14 @@ export default function OnboardingFlowV2() {
       // Submit to backend
       const response = await apiClient.post('/api/onboarding/business-info', backendData);
       
+      // Track business info submission
+      captureEvent('onboarding_business_info_submitted', {
+        business_type: data.businessType,
+        country: data.country,
+        legal_structure: data.legalStructure,
+        has_tenant_id: !!response.tenant_id
+      });
+      
       // Update state machine
       await onboardingStateMachine.submitBusinessInfo(data);
       
@@ -130,6 +145,13 @@ export default function OnboardingFlowV2() {
       await apiClient.post('/api/onboarding/subscription', {
         selected_plan: plan,
         billing_cycle: billingCycle
+      });
+      
+      // Track subscription selection
+      captureEvent('onboarding_subscription_selected', {
+        plan: plan,
+        billing_cycle: billingCycle,
+        is_free_plan: plan === 'free'
       });
       
       // Update state machine
@@ -196,6 +218,15 @@ export default function OnboardingFlowV2() {
       }
       
       if (response.success && tenantId) {
+        // Track onboarding completion
+        captureEvent('onboarding_completed', {
+          plan: data.selectedPlan,
+          billing_cycle: data.billingCycle,
+          business_type: data.businessType,
+          country: data.country,
+          tenant_id: tenantId
+        });
+        
         // Session updates are handled automatically by backend in session-v2 system
         // Force session refresh to get updated data
         sessionManager.clearCache();

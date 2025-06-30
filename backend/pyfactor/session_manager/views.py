@@ -25,6 +25,7 @@ from .serializers import (
 )
 from custom_auth.auth0_authentication import Auth0JWTAuthentication
 from core.decorators import deprecated_class_view
+from pyfactor.analytics import track_event, identify_user
 
 logger = logging.getLogger(__name__)
 
@@ -147,6 +148,23 @@ class SessionCreateView(APIView):
             }
             
             logger.info(f"Session created for user {user.email}: {session.session_id}")
+            
+            # Track user login event
+            user_id = str(user.id)
+            track_event(
+                user_id=user_id,
+                event_name='user_logged_in',
+                properties={
+                    'login_method': 'auth0',
+                    'has_tenant': bool(session.tenant),
+                    'needs_onboarding': session.needs_onboarding,
+                    'subscription_plan': session.subscription_plan,
+                    'session_type': session_data.get('session_type', 'web')
+                }
+            )
+            
+            # Identify user in PostHog
+            identify_user(user)
             
             # Create response with session cookie
             response = Response(response_data, status=status.HTTP_201_CREATED)

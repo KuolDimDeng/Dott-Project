@@ -94,4 +94,7 @@ urlpatterns = [
     
     # Payroll tax endpoints
     path('payroll/', include('taxes.payroll.urls')),
+    
+    # Year-end tax form endpoints
+    path('year-end/', include('taxes.year_end.urls')),
 ]

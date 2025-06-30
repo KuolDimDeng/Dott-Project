@@ -19,6 +19,7 @@ import { logger } from '@/utils/logger';
 import { extractTenantId, getSecureTenantId } from '@/utils/tenantUtils';
 import { getCacheValue } from '@/utils/appCache';
 import { CubeIcon } from '@heroicons/react/24/outline';
+import { captureEvent } from '@/lib/posthog';
 
 // Tooltip component for field help
 const FieldTooltip = ({ text, position = 'top' }) => {
@@ -1044,6 +1045,11 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
       console.log(`[ProductManagement] Successfully deleted product with ID: ${productId}`);
       setSuccessMessage('Product deleted successfully');
       
+      // Track product deletion
+      captureEvent('product_deleted', {
+        product_id: productId
+      });
+      
       // Refresh the product list
       fetchProducts();
       
@@ -1108,6 +1114,16 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
         setIsCreating(false);
         return;
       }
+      
+      // Track product creation attempt
+      captureEvent('product_creation_attempted', {
+        has_sku: !!productData.sku,
+        has_description: !!productData.description,
+        for_sale: productData.forSale,
+        for_rent: productData.forRent,
+        has_supplier: !!productData.supplier_id,
+        has_location: !!productData.location_id
+      });
       
       // Get secure tenant ID from Auth0 session
       const secureTenantId = await getSecureTenantId();
@@ -1180,6 +1196,16 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
       
       // Show success notification
       notifySuccess('Product created successfully!');
+      
+      // Track successful product creation
+      captureEvent('product_created', {
+        product_id: responseData.product?.id || responseData.id,
+        product_name: productData.name,
+        price: parseFloat(productData.price),
+        has_sku: !!productData.sku,
+        for_sale: productData.forSale,
+        for_rent: productData.forRent
+      });
       
       // Refresh products list
       fetchProducts();
@@ -2633,6 +2659,14 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
       
       // Show success notification
       notifySuccess(`Product "${updatedProduct.name}" updated successfully`);
+      
+      // Track product update
+      captureEvent('product_updated', {
+        product_id: editedProduct.id,
+        product_name: updatedProduct.name,
+        price_changed: parseFloat(editedProduct.price) !== parseFloat(selectedProduct.price),
+        stock_changed: parseInt(editedProduct.stockQuantity || editedProduct.stock_quantity) !== parseInt(selectedProduct.stock_quantity)
+      });
       
       // Exit edit mode
       setIsEditing(false);

@@ -43,3 +43,4 @@ jwcrypto==1.5.6
 
 # Payment processing - CRITICAL for business_views.py
 stripe>=5.0.0
+posthog==6.0.0

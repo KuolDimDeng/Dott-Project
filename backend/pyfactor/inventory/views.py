@@ -22,6 +22,7 @@ from custom_auth.utils import ensure_single_tenant_per_business
 from custom_auth.middleware import verify_auth_tables_in_schema
 import uuid
 import logging
+from pyfactor.analytics import track_event, track_business_metric
 
 # Get logger
 logger = logging.getLogger(__name__)
@@ -197,6 +198,128 @@ class ProductViewSet(viewsets.ModelViewSet):
                     {"error": str(e)},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
+    
+    def create(self, request, *args, **kwargs):
+        """Override create to track product creation"""
+        response = super().create(request, *args, **kwargs)
+        
+        if response.status_code == status.HTTP_201_CREATED:
+            user_id = str(request.user.id) if request.user.is_authenticated else None
+            product_data = response.data
+            
+            # Track product creation event
+            track_event(
+                user_id=user_id,
+                event_name='product_created_backend',
+                properties={
+                    'product_id': product_data.get('id'),
+                    'product_name': product_data.get('name'),
+                    'price': product_data.get('price'),
+                    'has_sku': bool(product_data.get('sku')),
+                    'for_sale': product_data.get('for_sale', True),
+                    'for_rent': product_data.get('for_rent', False),
+                    'initial_stock': product_data.get('stock_quantity', 0)
+                }
+            )
+            
+            # Track inventory value metric
+            if product_data.get('price') and product_data.get('stock_quantity'):
+                inventory_value = float(product_data.get('price', 0)) * int(product_data.get('stock_quantity', 0))
+                track_business_metric(
+                    user_id=user_id,
+                    metric_name='inventory_value_added',
+                    value=inventory_value,
+                    metadata={
+                        'product_id': product_data.get('id'),
+                        'product_name': product_data.get('name')
+                    }
+                )
+        
+        return response
+    
+    def update(self, request, *args, **kwargs):
+        """Override update to track product updates"""
+        # Get the existing product data before update
+        instance = self.get_object()
+        old_price = instance.price
+        old_stock = instance.stock_quantity
+        
+        response = super().update(request, *args, **kwargs)
+        
+        if response.status_code == status.HTTP_200_OK:
+            user_id = str(request.user.id) if request.user.is_authenticated else None
+            product_data = response.data
+            
+            # Track product update event
+            track_event(
+                user_id=user_id,
+                event_name='product_updated_backend',
+                properties={
+                    'product_id': product_data.get('id'),
+                    'product_name': product_data.get('name'),
+                    'price_changed': float(product_data.get('price', 0)) != float(old_price),
+                    'stock_changed': int(product_data.get('stock_quantity', 0)) != int(old_stock),
+                    'new_price': product_data.get('price'),
+                    'new_stock': product_data.get('stock_quantity')
+                }
+            )
+            
+            # Track inventory value change
+            old_value = float(old_price) * int(old_stock)
+            new_value = float(product_data.get('price', 0)) * int(product_data.get('stock_quantity', 0))
+            value_change = new_value - old_value
+            
+            if value_change != 0:
+                track_business_metric(
+                    user_id=user_id,
+                    metric_name='inventory_value_change',
+                    value=value_change,
+                    metadata={
+                        'product_id': product_data.get('id'),
+                        'product_name': product_data.get('name'),
+                        'old_value': old_value,
+                        'new_value': new_value
+                    }
+                )
+        
+        return response
+    
+    def destroy(self, request, *args, **kwargs):
+        """Override destroy to track product deletion"""
+        instance = self.get_object()
+        product_id = instance.id
+        product_name = instance.name
+        inventory_value = float(instance.price) * int(instance.stock_quantity)
+        
+        response = super().destroy(request, *args, **kwargs)
+        
+        if response.status_code == status.HTTP_204_NO_CONTENT:
+            user_id = str(request.user.id) if request.user.is_authenticated else None
+            
+            # Track product deletion event
+            track_event(
+                user_id=user_id,
+                event_name='product_deleted_backend',
+                properties={
+                    'product_id': product_id,
+                    'product_name': product_name,
+                    'inventory_value_removed': inventory_value
+                }
+            )
+            
+            # Track inventory value reduction
+            if inventory_value > 0:
+                track_business_metric(
+                    user_id=user_id,
+                    metric_name='inventory_value_removed',
+                    value=inventory_value,
+                    metadata={
+                        'product_id': product_id,
+                        'product_name': product_name
+                    }
+                )
+        
+        return response
 
 class ServiceViewSet(viewsets.ModelViewSet):
     queryset = Service.objects.all()  # TenantManager handles filtering automatically

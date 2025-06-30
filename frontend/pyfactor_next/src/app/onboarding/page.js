@@ -7,6 +7,7 @@ import { getClientSession } from '@/utils/clientSessionHelper';
 import { onboardingStateMachine, ONBOARDING_STATES } from '@/utils/onboardingStateMachine';
 import OnboardingFlowV2 from '@/components/Onboarding/OnboardingFlow.v2';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { captureEvent } from '@/lib/posthog';
 
 export default function OnboardingPageV2() {
   const router = useRouter();
@@ -57,6 +58,13 @@ export default function OnboardingPageV2() {
         needsOnboarding: session.user?.needsOnboarding,
         onboardingCompleted: session.user?.onboardingCompleted,
         tenantId: session.user?.tenantId
+      });
+      
+      // Track onboarding page view
+      captureEvent('onboarding_page_viewed', {
+        needs_onboarding: session.user?.needsOnboarding,
+        onboarding_completed: session.user?.onboardingCompleted,
+        has_tenant_id: !!session.user?.tenantId
       });
 
       // CRITICAL: Only check backend's onboarding status
