@@ -293,16 +293,7 @@ export default function TaxSettings({ onNavigate }) {
     }));
   };
   
-  // Toggle progressive tax system
-  const toggleProgressiveTax = () => {
-    setCustomRates(prev => ({
-      ...prev,
-      hasProgressiveTax: !prev.hasProgressiveTax,
-      personalIncomeTaxBrackets: !prev.hasProgressiveTax ? [
-        { minIncome: '0', maxIncome: '', rate: '', description: 'First bracket' }
-      ] : []
-    }));
-  };
+  // No toggle needed - Claude determines tax system automatically
 
   // Get tax suggestions from Claude API
   const getTaxSuggestions = async () => {
@@ -838,23 +829,32 @@ export default function TaxSettings({ onNavigate }) {
               Personal Income Tax
             </h3>
             
-            {/* Toggle for Progressive Tax System */}
-            <div className="mb-4">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={customRates.hasProgressiveTax}
-                  onChange={toggleProgressiveTax}
-                  className="mr-2"
-                />
-                <span className="text-sm text-gray-700">This country uses a progressive tax system (tax brackets)</span>
-              </label>
-            </div>
+            {/* System automatically detects if country uses progressive or flat tax */}
+            {taxSuggestions && customRates.hasProgressiveTax !== undefined && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-700">
+                  <SparklesIcon className="h-4 w-4 inline mr-1" />
+                  {customRates.hasProgressiveTax 
+                    ? `This location uses a progressive tax system with ${customRates.personalIncomeTaxBrackets?.length || 0} tax brackets.`
+                    : `This location uses a flat personal income tax rate of ${customRates.flatPersonalIncomeTaxRate || 'N/A'}%.`
+                  }
+                </p>
+              </div>
+            )}
+            
+            {!taxSuggestions && (
+              <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                <p className="text-sm text-gray-600">
+                  <ExclamationCircleIcon className="h-4 w-4 inline mr-1" />
+                  Click "Get Tax Suggestions" above to automatically detect the tax system for your location.
+                </p>
+              </div>
+            )}
             
             {customRates.hasProgressiveTax ? (
               <div>
                 <div className="mb-3 flex items-center justify-between">
-                  <p className="text-sm text-gray-600">Define income tax brackets (e.g., Kenya, USA)</p>
+                  <p className="text-sm text-gray-600">Income tax brackets for your location</p>
                   <button
                     type="button"
                     onClick={addBracket}
@@ -929,7 +929,7 @@ export default function TaxSettings({ onNavigate }) {
                   <p className="text-sm text-gray-500 italic">No brackets defined. Click "Add Bracket" to start.</p>
                 )}
               </div>
-            ) : (
+            ) : customRates.hasProgressiveTax === false ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -946,7 +946,7 @@ export default function TaxSettings({ onNavigate }) {
                   />
                 </div>
               </div>
-            )}
+            ) : null}
           </div>
           
           {/* Social Insurance Section */}
