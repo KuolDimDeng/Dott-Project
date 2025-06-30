@@ -29,9 +29,9 @@ class W2FormSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'updated_at', 'pdf_generated_at']
     
     def get_employee_name(self, obj):
-        # Get employee name from users app
+        # Get employee name from HR app
         try:
-            from users.models import Employee
+            from hr.models import Employee
             employee = Employee.objects.get(id=obj.employee_id)
             return f"{employee.first_name} {employee.last_name}"
         except:

@@ -14,7 +14,7 @@ import os
 import tempfile
 from io import BytesIO
 
-from users.models import Employee
+from hr.models import Employee
 from payroll.models import PayrollRun, PayrollTransaction
 from users.models import Business
 from custom_auth.models import Tenant

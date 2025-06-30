@@ -23,32 +23,69 @@ export default function Hero() {
       
       <div className="relative z-10 max-w-7xl mx-auto pt-20 pb-16 px-4 sm:pt-28 sm:pb-24 sm:px-6 lg:px-8">
         <div className="text-center">
+          {/* Trust Badge */}
+          <div className="mb-6 animate-fade-in">
+            <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-gradient-to-r from-primary-light to-primary-main text-white shadow-lg">
+              🌍 Trusted by businesses in 100+ countries
+            </span>
+          </div>
+          
           <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl">
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-primary-main to-primary-light">Manage your business like a pro.</span>
+            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-primary-main to-primary-light">
+              Global Business Management Platform
+            </span>
+            <span className="block text-2xl sm:text-3xl mt-3 text-gray-700 font-medium">
+              Operate Internationally with Confidence
+            </span>
           </h1>
           
           <div className="mt-10 max-w-3xl mx-auto">
             <div className="sm:flex sm:justify-center">
-              <div className="relative w-full sm:max-w-sm">
+              <div className="relative w-full sm:max-w-md">
                 <Image
-                  src="/static/images/Work-Life-Balance-1--Streamline-Brooklyn.png"
-                  alt={t('heroImageAlt', 'Business Management Illustration')}
-                  width={400}
-                  height={280}
+                  src="/static/images/Office-Working-1--Streamline-Brooklyn.png"
+                  alt={t('heroImageAlt', 'Global Business Management Platform')}
+                  width={500}
+                  height={350}
                   loading="eager"
-                  className="w-full h-auto object-cover"
+                  className="w-full h-auto object-cover rounded-lg shadow-2xl"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-white/80 via-transparent to-transparent"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-white/50 via-transparent to-transparent rounded-lg"></div>
               </div>
             </div>
           </div>
           
           <p className="mt-12 text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            {t('heroDescription', 'Global business management with advanced inventory, barcode scanning, and regional payment solutions—all in one intuitive platform for businesses worldwide.')}
+            {t('heroDescription', 'Run your international business with one powerful platform. Multi-currency invoicing, regional tax compliance, advanced inventory with barcode scanning, and local payment gateways - everything you need to succeed globally.')}
           </p>
           
-          <div className="mt-10">
+          {/* Key Benefits */}
+          <div className="mt-8 flex flex-wrap justify-center gap-4 text-sm text-gray-600">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+              Free forever for basic features
+            </div>
+            <div className="flex items-center">
+              <svg className="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+              50% off for developing countries
+            </div>
+            <div className="flex items-center">
+              <svg className="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+              24/7 multilingual support
+            </div>
+          </div>
+          
+          <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
             <AuthButton theme="light" />
+            <button className="px-8 py-4 border-2 border-primary-main text-primary-main rounded-lg font-semibold hover:bg-primary-light hover:border-primary-light hover:text-white transition-all duration-200">
+              Watch Demo
+            </button>
           </div>
           
           {/* Trusted by logos - with error handling */}

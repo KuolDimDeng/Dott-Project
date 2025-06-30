@@ -1,4 +1,5 @@
 # taxes/urls.py
+# Comprehensive tax management endpoints for sales, payroll, and year-end filing
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
