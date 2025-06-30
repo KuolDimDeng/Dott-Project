@@ -231,18 +231,18 @@ export default function AppBar() {
 
           {/* Desktop Navigation Links */}
           <div className="hidden md:flex md:items-center md:space-x-6">
-            <button 
+            <a 
+              href="#features"
               className="px-3 py-2 text-gray-700 hover:text-blue-600 font-medium transition-colors duration-150"
-              onClick={() => router.push('/features')}
             >
               {t('navFeatures', 'Features')}
-            </button>
-            <button 
+            </a>
+            <a 
+              href="#pricing"
               className="px-3 py-2 text-gray-700 hover:text-blue-600 font-medium transition-colors duration-150"
-              onClick={() => router.push('/pricing')}
             >
               {t('navPricing', 'Pricing')}
-            </button>
+            </a>
             <button 
               className="px-3 py-2 text-gray-700 hover:text-blue-600 font-medium transition-colors duration-150"
               onClick={() => router.push('/about')}
@@ -339,24 +339,20 @@ export default function AppBar() {
       {/* Mobile menu, show/hide based on menu state */}
       <div className={`${isMobileMenuOpen ? 'block' : 'hidden'} md:hidden bg-white shadow-lg`}>
         <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-          <button
+          <a
+            href="#features"
             className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-100"
-            onClick={() => {
-              router.push('/features');
-              setIsMobileMenuOpen(false);
-            }}
+            onClick={() => setIsMobileMenuOpen(false)}
           >
             {t('navFeatures', 'Features')}
-          </button>
-          <button
+          </a>
+          <a
+            href="#pricing"
             className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-100"
-            onClick={() => {
-              router.push('/pricing');
-              setIsMobileMenuOpen(false);
-            }}
+            onClick={() => setIsMobileMenuOpen(false)}
           >
             {t('navPricing', 'Pricing')}
-          </button>
+          </a>
           <button
             className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-100"
             onClick={() => {

@@ -32,7 +32,7 @@ export default function Hero() {
           
           <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl">
             <span className="block text-transparent bg-clip-text bg-gradient-to-r from-primary-main to-primary-light">
-              Global Business Management Platform
+              Global Business Software
             </span>
             <span className="block text-2xl sm:text-3xl mt-3 text-gray-700 font-medium">
               Operate Internationally with Confidence
@@ -44,7 +44,7 @@ export default function Hero() {
               <div className="relative w-full sm:max-w-md">
                 <Image
                   src="/static/images/Office-Working-1--Streamline-Brooklyn.png"
-                  alt={t('heroImageAlt', 'Global Business Management Platform')}
+                  alt={t('heroImageAlt', 'Global Business Software')}
                   width={500}
                   height={350}
                   loading="eager"
