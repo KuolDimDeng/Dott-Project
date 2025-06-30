@@ -7,27 +7,109 @@ import { getCacheValue } from '@/utils/appCache';
 import { debugCacheState, forceRefreshCountryDetection } from '@/utils/cacheCleaner';
 import Link from 'next/link';
 
+// Feature comparison data
+const featureComparison = [
+  {
+    category: 'Core Features',
+    features: [
+      { name: 'Users', basic: '1 user', professional: 'Up to 3 users', enterprise: 'Unlimited users' },
+      { name: 'Storage', basic: '3GB', professional: 'Unlimited', enterprise: 'Unlimited' },
+      { name: 'Support', basic: 'Basic support', professional: 'Priority support', enterprise: 'Dedicated support' },
+      { name: 'Onboarding', basic: 'Self-service', professional: 'Email assistance', enterprise: 'Custom onboarding' }
+    ]
+  },
+  {
+    category: 'Business Management',
+    features: [
+      { name: 'Income & Expense Tracking', basic: true, professional: true, enterprise: true },
+      { name: 'Multi-Currency Support', basic: true, professional: true, enterprise: true },
+      { name: 'Invoice Creation', basic: true, professional: true, enterprise: true },
+      { name: 'Automated Reminders', basic: true, professional: true, enterprise: true },
+      { name: 'Customer Management', basic: true, professional: true, enterprise: true },
+      { name: 'Product Catalog', basic: true, professional: true, enterprise: true }
+    ]
+  },
+  {
+    category: 'Inventory & POS',
+    features: [
+      { name: 'Inventory Tracking', basic: true, professional: true, enterprise: true },
+      { name: 'Barcode Scanning', basic: true, professional: true, enterprise: true },
+      { name: 'Custom Barcode Printing', basic: true, professional: true, enterprise: true },
+      { name: 'Low Stock Alerts', basic: true, professional: true, enterprise: true },
+      { name: 'Multi-Location Inventory', basic: false, professional: true, enterprise: true },
+      { name: 'POS System', basic: true, professional: true, enterprise: true },
+      { name: 'Offline Mode', basic: false, professional: true, enterprise: true }
+    ]
+  },
+  {
+    category: 'Payments & Invoicing',
+    features: [
+      { name: 'Stripe Integration', basic: true, professional: true, enterprise: true },
+      { name: 'PayPal Integration', basic: true, professional: true, enterprise: true },
+      { name: 'Mobile Money (M-Pesa, etc.)', basic: true, professional: true, enterprise: true },
+      { name: 'Regional Payment Methods', basic: true, professional: true, enterprise: true },
+      { name: 'Invoice Factoring', basic: false, professional: true, enterprise: true },
+      { name: 'Recurring Invoices', basic: false, professional: true, enterprise: true },
+      { name: 'Payment Links', basic: true, professional: true, enterprise: true }
+    ]
+  },
+  {
+    category: 'Tax & Compliance',
+    features: [
+      { name: 'Regional Tax Calculations', basic: true, professional: true, enterprise: true },
+      { name: 'VAT/GST Support', basic: true, professional: true, enterprise: true },
+      { name: 'Tax Reports', basic: true, professional: true, enterprise: true },
+      { name: 'E-filing Ready', basic: false, professional: true, enterprise: true },
+      { name: 'Multi-Region Compliance', basic: false, professional: true, enterprise: true }
+    ]
+  },
+  {
+    category: 'Analytics & Reporting',
+    features: [
+      { name: 'Basic Reports', basic: true, professional: true, enterprise: true },
+      { name: 'Custom Reports', basic: false, professional: true, enterprise: true },
+      { name: 'Real-time Dashboard', basic: true, professional: true, enterprise: true },
+      { name: 'Profit Analysis', basic: false, professional: true, enterprise: true },
+      { name: 'Cash Flow Forecasting', basic: false, professional: true, enterprise: true },
+      { name: 'AI Recommendations', basic: false, professional: false, enterprise: true }
+    ]
+  },
+  {
+    category: 'Import/Export',
+    features: [
+      { name: 'Import/Export Management', basic: false, professional: true, enterprise: true },
+      { name: 'Customs Documentation', basic: false, professional: true, enterprise: true },
+      { name: 'Shipping Integration', basic: false, professional: true, enterprise: true },
+      { name: 'Trade Compliance', basic: false, professional: false, enterprise: true }
+    ]
+  },
+  {
+    category: 'Security & Compliance',
+    features: [
+      { name: 'Data Encryption', basic: true, professional: true, enterprise: true },
+      { name: 'Two-Factor Authentication', basic: true, professional: true, enterprise: true },
+      { name: 'GDPR Compliance', basic: true, professional: true, enterprise: true },
+      { name: 'SOC2 Compliance', basic: false, professional: false, enterprise: true },
+      { name: 'Custom Security Policies', basic: false, professional: false, enterprise: true }
+    ]
+  }
+];
+
 export default function Pricing() {
   const { t } = useTranslation();
   const [annual, setAnnual] = useState(false);
   const [dynamicPricing, setDynamicPricing] = useState(null);
   const [userCountry, setUserCountry] = useState('US');
   const [hasDiscount, setHasDiscount] = useState(false);
-  const [expandedPlan, setExpandedPlan] = useState(null);
+  const [showComparison, setShowComparison] = useState(false);
   
   // Load dynamic pricing based on user's country
   useEffect(() => {
     async function loadDynamicPricing() {
       try {
-        // Debug current cache state
-        console.log('🔍 Debug: Current cache state before loading pricing:');
-        const cacheState = await debugCacheState();
-        
         const pricing = await getCurrentUserPricing();
         const country = await getCacheValue('user_country') || 'US';
         const isDeveloping = await getCacheValue('user_is_developing_country') || false;
-        
-        console.log('🌍 Resolved values:', { country, isDeveloping });
         
         // Special check for USA - should NEVER have discount
         if (country === 'US' && isDeveloping) {
@@ -36,7 +118,6 @@ export default function Pricing() {
           setDynamicPricing(await getCurrentUserPricing());
           setUserCountry(refreshResult.country);
           setHasDiscount(refreshResult.isDeveloping);
-          console.log('✅ Fixed USA discount issue:', refreshResult);
           return;
         }
         
@@ -48,8 +129,6 @@ export default function Pricing() {
         setDynamicPricing(pricing);
         setUserCountry(country);
         setHasDiscount(shouldHaveDiscount);
-        
-        console.log('✅ Loaded dynamic pricing:', { pricing, country, isDeveloping, hasDiscount: shouldHaveDiscount });
       } catch (error) {
         console.error('❌ Error loading dynamic pricing:', error);
       }
@@ -57,398 +136,326 @@ export default function Pricing() {
     
     loadDynamicPricing();
   }, []);
-  
-  // Debug pricing logic
-  console.log('🎯 Pricing Component Debug:', {
-    userCountry,
-    hasDiscount,
-    isDeveloping: hasDiscount,
-    professionalPrice: hasDiscount && userCountry !== 'US' ? 
-      (dynamicPricing?.professional?.monthly?.formatted || '$7.50') : '$15',
-    enterprisePrice: hasDiscount && userCountry !== 'US' ? 
-      (dynamicPricing?.enterprise?.monthly?.formatted || '$22.50') : '$45'
-  });
 
   const plans = [
     {
       name: 'Basic',
-      description: 'Perfect for small businesses just getting started',
+      description: 'Perfect for freelancers and small businesses',
       price: { 
         monthly: 'FREE', 
         annual: 'FREE' 
       },
-      savings: '',
       features: [
-        { category: 'Core Business Tools', items: [
-          '✓ Income and expense tracking',
-          '✓ Invoice creation',
-          '✓ Automated invoice reminders',
-          '✓ 1 user limit'
-        ]},
-        { category: 'Global Payment Solutions', items: [
-          '✓ Accept Stripe & PayPal payments',
-          '✓ Mobile money payments (M-Pesa, etc.)',
-          '✓ Reduced transaction fees',
-          '✓ Multi-currency support'
-        ]},
-        { category: 'Inventory Management', items: [
-          '✓ Basic inventory tracking',
-          '✓ Low stock alerts',
-          '✓ Barcode scanning',
-          '✓ Inventory forecasting'
-        ]},
-        { category: 'Account Limits', items: [
-          '• 3GB storage limit',
-          '• Basic support (non-priority)',
-          '• 1 user only',
-          '• All features included'
-        ]}
+        '1 user',
+        '3GB storage',
+        'All core features',
+        'Basic support',
+        'Mobile app access'
       ],
-      cta: 'Start for Free',
+      cta: 'Start Free',
       highlight: false,
-      badge: '',
-      color: 'bg-gray-50 border-gray-200',
+      popular: false,
     },
     {
       name: 'Professional',
-      description: 'Everything growing businesses need to thrive',
+      description: 'For growing businesses that need more',
       price: { 
         monthly: hasDiscount && userCountry !== 'US' ? 
-          (dynamicPricing?.professional?.monthly?.formatted ? 
-            `${dynamicPricing.professional.monthly.formatted}/mo` : '$7.50/mo') :
-          '$15/mo',
+          (dynamicPricing?.professional?.monthly?.formatted || '$7.50') :
+          '$15',
         annual: hasDiscount && userCountry !== 'US' ? 
           (dynamicPricing?.professional?.annual?.formatted ? 
-            `${dynamicPricing.professional.annual.formatted}/year` : '$72/year') :
-          '$144/year'
+            `${dynamicPricing.professional.annual.formatted.split('/')[0]}` : '$72') :
+          '$144'
       },
-      savings: 'save 20%',
       features: [
-        { category: 'Core Business Tools', items: [
-          '✓ Income and expense tracking',
-          '✓ Invoice creation',
-          '✓ Automated invoice reminders',
-          '✓ Up to 3 users'
-        ]},
-        { category: 'Global Payment Solutions', items: [
-          '✓ Accept Stripe & PayPal payments',
-          '✓ Mobile money payments (M-Pesa, etc.)',
-          '✓ Reduced transaction fees',
-          '✓ Multi-currency support'
-        ]},
-        { category: 'Inventory Management', items: [
-          '✓ Basic inventory tracking',
-          '✓ Low stock alerts',
-          '✓ Barcode scanning',
-          '✓ Inventory forecasting'
-        ]},
-        { category: 'Professional Benefits', items: [
-          '• Unlimited storage',
-          '• Priority support',
-          '• 3 user collaboration',
-          '• All features included',
-          '• 20% discount on annual billing'
-        ]}
+        'Up to 3 users',
+        'Unlimited storage',
+        'All features included',
+        'Priority support',
+        'Advanced analytics',
+        'Multi-location support'
       ],
-      cta: 'Choose Professional',
+      cta: 'Get Professional',
       highlight: true,
-      badge: 'Most popular',
-      color: 'bg-gradient-to-b from-blue-50 to-white border-primary-light',
+      popular: true,
     },
     {
       name: 'Enterprise',
-      description: 'Unlimited scale for ambitious organizations',
+      description: 'Unlimited scale for large organizations',
       price: { 
         monthly: hasDiscount && userCountry !== 'US' ? 
-          (dynamicPricing?.enterprise?.monthly?.formatted ? 
-            `${dynamicPricing.enterprise.monthly.formatted}/mo` : '$22.50/mo') :
-          '$45/mo',
+          (dynamicPricing?.enterprise?.monthly?.formatted || '$22.50') :
+          '$45',
         annual: hasDiscount && userCountry !== 'US' ? 
           (dynamicPricing?.enterprise?.annual?.formatted ? 
-            `${dynamicPricing.enterprise.annual.formatted}/year` : '$168/year') :
-          '$432/year'
+            `${dynamicPricing.enterprise.annual.formatted.split('/')[0]}` : '$216') :
+          '$432'
       },
-      savings: 'save 20%',
       features: [
-        { category: 'Core Business Tools', items: [
-          '✓ Income and expense tracking',
-          '✓ Invoice creation',
-          '✓ Automated invoice reminders',
-          '✓ Unlimited users'
-        ]},
-        { category: 'Global Payment Solutions', items: [
-          '✓ Accept Stripe & PayPal payments',
-          '✓ Mobile money payments (M-Pesa, etc.)',
-          '✓ Reduced transaction fees',
-          '✓ Multi-currency support'
-        ]},
-        { category: 'Inventory Management', items: [
-          '✓ Basic inventory tracking',
-          '✓ Low stock alerts',
-          '✓ Barcode scanning',
-          '✓ Inventory forecasting'
-        ]},
-        { category: 'Enterprise Benefits', items: [
-          '• Unlimited everything',
-          '• Priority support',
-          '• Unlimited users',
-          '• All features included',
-          '• Custom onboarding',
-          '• 20% discount on annual billing'
-        ]}
+        'Unlimited users',
+        'Unlimited everything',
+        'All features included',
+        'Dedicated support',
+        'Custom onboarding',
+        'AI-powered insights',
+        'API access'
       ],
-      cta: 'Choose Enterprise',
+      cta: 'Contact Sales',
       highlight: false,
-      badge: 'Premium',
-      color: 'bg-gradient-to-b from-purple-50 to-white border-secondary-main',
+      popular: false,
     },
   ];
 
-  const toggleFeatures = (planName) => {
-    setExpandedPlan(expandedPlan === planName ? null : planName);
-  };
-
   return (
-    <div id="pricing" className="relative py-16 sm:py-24 overflow-hidden">
-      {/* Background decorative elements */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 opacity-10">
-        <div className="absolute -top-24 -left-24 w-96 h-96 bg-primary-light rounded-full filter blur-3xl opacity-20"></div>
-        <div className="absolute top-1/3 -right-24 w-96 h-96 bg-secondary-main rounded-full filter blur-3xl opacity-20"></div>
-        <div className="absolute -bottom-24 left-1/4 w-96 h-96 bg-info-light rounded-full filter blur-3xl opacity-10"></div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+    <div id="pricing" className="py-16 sm:py-24 bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center">
-          <h2 className="inline-flex items-center px-4 py-1 rounded-full text-sm font-medium bg-primary-light/10 text-primary-main">
-            {t('pricing.eyebrow', 'Pricing')}
+          <h2 className="text-base font-semibold text-primary-main uppercase tracking-wide">
+            {t('pricing.eyebrow', 'Simple, Transparent Pricing')}
           </h2>
-          <p className="mt-3 text-3xl font-extrabold text-gray-900 sm:text-4xl lg:text-5xl bg-clip-text text-transparent bg-gradient-to-r from-primary-dark via-primary-main to-secondary-main">
-            Choose Your Perfect Plan
+          <p className="mt-2 text-3xl font-extrabold text-gray-900 sm:text-4xl lg:text-5xl">
+            Choose the Right Plan for Your Business
           </p>
           <p className="mt-4 max-w-2xl text-xl text-gray-600 mx-auto">
-            Transparent pricing with no hidden fees. Scale your business with confidence.
+            No hidden fees. No credit card required for Basic plan. Cancel anytime.
           </p>
         </div>
 
         {/* Developing Country Discount Banner */}
         {hasDiscount && (
-          <div className="mb-8 bg-gradient-to-r from-green-500 to-emerald-600 text-white p-4 rounded-lg text-center">
-            <div className="flex items-center justify-center">
-              <svg className="h-6 w-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="mt-8 mb-8 bg-gradient-to-r from-green-600 to-emerald-600 text-white p-6 rounded-xl text-center shadow-lg">
+            <div className="flex items-center justify-center mb-2">
+              <svg className="h-8 w-8 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
               </svg>
-              <span className="font-semibold">
-                🎉 Special Pricing for {userCountry}: 50% Off All Plans!
+              <span className="text-2xl font-bold">
+                50% Off All Paid Plans!
               </span>
             </div>
-            <p className="mt-1 text-sm opacity-90">
-              Supporting businesses in developing economies with reduced pricing
+            <p className="text-lg opacity-90">
+              Special pricing for businesses in {userCountry} - Supporting local entrepreneurship
             </p>
           </div>
         )}
         
-        <div className="mt-12 flex justify-center">
-          <div className="relative bg-gray-100 p-1 rounded-lg inline-flex">
+        {/* Billing Toggle */}
+        <div className="mt-10 flex justify-center">
+          <div className="relative bg-white p-1 rounded-full shadow-md inline-flex">
             <button
               onClick={() => setAnnual(false)}
-              className={`relative px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
-                !annual ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              className={`relative px-6 py-3 text-sm font-medium rounded-full transition-all duration-200 ${
+                !annual ? 'bg-primary-main text-white shadow-sm' : 'text-gray-700 hover:text-gray-900'
               }`}
             >
-              Monthly
+              Monthly billing
             </button>
             <button
               onClick={() => setAnnual(true)}
-              className={`relative px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 flex items-center ${
-                annual ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              className={`relative px-6 py-3 text-sm font-medium rounded-full transition-all duration-200 flex items-center ${
+                annual ? 'bg-primary-main text-white shadow-sm' : 'text-gray-700 hover:text-gray-900'
               }`}
             >
-              Annual
-              <span className="ml-2 bg-green-100 text-green-800 text-xs font-semibold px-1.5 py-0.5 rounded-full">Save 20%</span>
+              Annual billing
+              <span className="ml-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">SAVE 20%</span>
             </button>
           </div>
         </div>
 
-        <div className="mt-12 grid lg:grid-cols-3 gap-8">
+        {/* Pricing Cards */}
+        <div className="mt-16 grid lg:grid-cols-3 gap-8 lg:gap-4">
           {plans.map((plan) => (
             <div
               key={plan.name}
-              className={`relative flex flex-col rounded-2xl border ${
+              className={`relative flex flex-col rounded-2xl shadow-lg overflow-hidden ${
                 plan.highlight 
-                  ? 'ring-4 ring-primary-light/30' 
-                  : ''
-              } ${plan.color} overflow-hidden hover:shadow-xl transition-all duration-300 group`}
+                  ? 'ring-4 ring-primary-main ring-opacity-50 transform scale-105' 
+                  : 'border border-gray-200'
+              } bg-white`}
             >
-              {plan.badge && (
-                <div className="absolute top-4 right-4">
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                    plan.highlight 
-                      ? 'bg-primary-main text-white' 
-                      : plan.name === 'Enterprise' 
-                        ? 'bg-secondary-main text-white'
-                        : 'bg-gray-100 text-gray-800'
-                  }`}>
-                    {plan.badge}
-                  </span>
+              {plan.popular && (
+                <div className="absolute top-0 right-0 transform translate-x-1 -translate-y-1">
+                  <div className="bg-gradient-to-r from-primary-main to-primary-dark text-white px-4 py-1 rounded-bl-lg rounded-tr-2xl text-sm font-bold">
+                    MOST POPULAR
+                  </div>
                 </div>
               )}
               
-              <div className="p-6 md:p-8 flex-1 flex flex-col">
+              <div className="p-8">
                 <h3 className="text-2xl font-bold text-gray-900">{plan.name}</h3>
                 <p className="mt-2 text-gray-600">{plan.description}</p>
+                
                 <div className="mt-8">
-                  <p className="flex items-baseline">
-                    <span className="text-4xl font-extrabold text-gray-900">
-                      {plan.name === 'Basic' ? 'FREE' : annual ? plan.price.annual.split('/')[0] : plan.price.monthly.split('/')[0]}
+                  <div className="flex items-baseline">
+                    <span className="text-5xl font-extrabold text-gray-900">
+                      {plan.name === 'Basic' ? 'FREE' : annual ? plan.price.annual : plan.price.monthly}
                     </span>
                     {plan.name !== 'Basic' && (
-                      <span className="ml-1 text-gray-500">
-                        {annual ? (
-                          <>
-                            /year<br />
-                            <span className="text-sm">({plan.savings})</span>
-                          </>
-                        ) : '/mo'}
+                      <span className="ml-2 text-xl text-gray-500">
+                        {annual ? '/year' : '/month'}
                       </span>
                     )}
-                  </p>
+                  </div>
+                  {plan.name !== 'Basic' && annual && (
+                    <p className="mt-1 text-sm text-green-600 font-medium">
+                      Save {hasDiscount ? '$36' : '$36'} per year
+                    </p>
+                  )}
                 </div>
-                
-                <div className="mt-8 mb-8">
+
+                <ul className="mt-8 space-y-4">
+                  {plan.features.map((feature, idx) => (
+                    <li key={idx} className="flex items-start">
+                      <svg className="h-5 w-5 text-green-500 mr-3 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                      <span className="text-gray-700">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <div className="mt-10">
                   <Link
-                    href="/api/auth/login"
-                    className={`block w-full text-center px-6 py-3 border border-transparent rounded-lg ${
+                    href={plan.name === 'Enterprise' ? '/contact' : '/api/auth/login'}
+                    className={`block w-full text-center px-6 py-4 rounded-lg font-semibold transition-all duration-200 ${
                       plan.highlight
-                        ? 'bg-primary-main hover:bg-primary-dark text-white shadow-md'
+                        ? 'bg-primary-main hover:bg-primary-dark text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
                         : plan.name === 'Basic'
-                          ? 'bg-white border-2 hover:bg-gray-50 text-primary-main border-primary-main'
-                          : plan.name === 'Enterprise'
-                            ? 'bg-secondary-main hover:bg-secondary-dark text-white shadow-md'
-                            : 'bg-white border-2 hover:bg-gray-50 text-primary-main border-primary-main'
-                    } text-base font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-light transition-all duration-200`}
+                          ? 'bg-white border-2 border-primary-main text-primary-main hover:bg-primary-light hover:text-white'
+                          : 'bg-gray-900 hover:bg-gray-800 text-white'
+                    }`}
                   >
                     {plan.cta}
                   </Link>
-                </div>
-                
-                <div className="space-y-6 flex-1">
-                  {/* Always show all feature categories */}
-                  {plan.features.map((category) => (
-                    <div key={category.category}>
-                      <h4 className="font-semibold text-gray-800 mb-2">{category.category}</h4>
-                      <ul className="space-y-1">
-                        {category.items.map((item, idx) => (
-                          <li key={idx} className="text-sm text-gray-600">
-                            {item}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                  
-                  {/* View all features button */}
-                  <div className="pt-4 mt-auto">
-                    <button 
-                      type="button" 
-                      className="text-primary-main hover:text-primary-dark text-sm font-medium flex items-center focus:outline-none group-hover:underline"
-                      onClick={() => toggleFeatures(plan.name)}
-                    >
-                      View all features
-                      <svg 
-                        className={`ml-1 w-4 h-4 transform transition-transform ${expandedPlan === plan.name ? 'rotate-180' : ''}`} 
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24" 
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
-                      </svg>
-                    </button>
-                  </div>
                 </div>
               </div>
             </div>
           ))}
         </div>
-        
-        <div className="mt-16 bg-gray-50 rounded-2xl p-8 shadow-sm">
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="md:col-span-1">
-              <h3 className="text-xl font-bold text-gray-900">Need more?</h3>
-              <p className="mt-2 text-gray-600">Contact us for custom features or dedicated support for your large organization.</p>
-              <div className="mt-6">
-                <Link
-                  href="/contact"
-                  className="inline-flex items-center px-5 py-2.5 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-primary-main hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-light transition-all duration-200"
-                >
-                  Contact Sales
-                </Link>
-              </div>
-            </div>
-            <div className="md:col-span-2">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex">
-                  <svg className="h-6 w-6 text-primary-main mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span className="text-gray-600">Custom development</span>
-                </div>
-                <div className="flex">
-                  <svg className="h-6 w-6 text-primary-main mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span className="text-gray-600">Priority 24/7 support</span>
-                </div>
-                <div className="flex">
-                  <svg className="h-6 w-6 text-primary-main mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span className="text-gray-600">Dedicated account manager</span>
-                </div>
-                <div className="flex">
-                  <svg className="h-6 w-6 text-primary-main mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span className="text-gray-600">Custom API and integrations</span>
-                </div>
-                <div className="flex">
-                  <svg className="h-6 w-6 text-primary-main mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span className="text-gray-600">Advanced security features</span>
-                </div>
-                <div className="flex">
-                  <svg className="h-6 w-6 text-primary-main mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span className="text-gray-600">SLA guarantees</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
+
+        {/* Compare Plans Button */}
         <div className="mt-12 text-center">
-          <p className="text-gray-600">
-            All plans include: 24/7 customer support, regular updates, and secure data encryption
-          </p>
-          <div className="mt-6 flex flex-wrap justify-center gap-4">
-            <Link
-              href="/faq"
-              className="inline-flex items-center px-4 py-2 text-base font-medium text-gray-600 hover:text-gray-900"
-            >
-              Frequently Asked Questions
-              <svg className="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
-              </svg>
-            </Link>
-            <Link
-              href="/contact"
-              className="inline-flex items-center px-4 py-2 border border-primary-main text-base font-medium rounded-lg text-primary-main bg-white hover:bg-primary-light/5 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-light"
-            >
-              Need a custom solution? Contact us
-            </Link>
+          <button
+            onClick={() => setShowComparison(!showComparison)}
+            className="inline-flex items-center px-6 py-3 border border-gray-300 shadow-sm text-base font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-light transition-all duration-200"
+          >
+            <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            {showComparison ? 'Hide' : 'Compare'} All Features
+          </button>
+        </div>
+
+        {/* Feature Comparison Table */}
+        {showComparison && (
+          <div className="mt-12 bg-white rounded-2xl shadow-xl overflow-hidden">
+            <div className="px-6 py-8">
+              <h3 className="text-2xl font-bold text-gray-900 text-center mb-8">
+                Detailed Feature Comparison
+              </h3>
+              
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="text-left py-4 px-4 font-semibold text-gray-900">Features</th>
+                      <th className="text-center py-4 px-4 font-semibold text-gray-900">Basic</th>
+                      <th className="text-center py-4 px-4 font-semibold text-gray-900 bg-primary-light/10">Professional</th>
+                      <th className="text-center py-4 px-4 font-semibold text-gray-900">Enterprise</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {featureComparison.map((category, catIdx) => (
+                      <React.Fragment key={catIdx}>
+                        <tr className="bg-gray-50">
+                          <td colSpan="4" className="py-3 px-4 font-semibold text-gray-700 text-sm uppercase tracking-wider">
+                            {category.category}
+                          </td>
+                        </tr>
+                        {category.features.map((feature, featIdx) => (
+                          <tr key={featIdx} className="border-b border-gray-100 hover:bg-gray-50">
+                            <td className="py-4 px-4 text-gray-700">{feature.name}</td>
+                            <td className="text-center py-4 px-4">
+                              {typeof feature.basic === 'boolean' ? (
+                                feature.basic ? (
+                                  <svg className="h-5 w-5 text-green-500 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                ) : (
+                                  <svg className="h-5 w-5 text-gray-300 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                )
+                              ) : (
+                                <span className="text-gray-700">{feature.basic}</span>
+                              )}
+                            </td>
+                            <td className="text-center py-4 px-4 bg-primary-light/10">
+                              {typeof feature.professional === 'boolean' ? (
+                                feature.professional ? (
+                                  <svg className="h-5 w-5 text-green-500 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                ) : (
+                                  <svg className="h-5 w-5 text-gray-300 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                )
+                              ) : (
+                                <span className="text-gray-700 font-medium">{feature.professional}</span>
+                              )}
+                            </td>
+                            <td className="text-center py-4 px-4">
+                              {typeof feature.enterprise === 'boolean' ? (
+                                feature.enterprise ? (
+                                  <svg className="h-5 w-5 text-green-500 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                ) : (
+                                  <svg className="h-5 w-5 text-gray-300 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                )
+                              ) : (
+                                <span className="text-gray-700">{feature.enterprise}</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </React.Fragment>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
+        )}
+
+        {/* Money Back Guarantee */}
+        <div className="mt-16 bg-gradient-to-r from-primary-light to-primary-main rounded-2xl p-8 text-center text-white">
+          <svg className="h-16 w-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+          <h3 className="text-2xl font-bold mb-2">30-Day Money Back Guarantee</h3>
+          <p className="text-lg opacity-90 max-w-2xl mx-auto">
+            Try any paid plan risk-free. If you're not completely satisfied within 30 days, we'll give you a full refund. No questions asked.
+          </p>
+        </div>
+
+        {/* FAQ Link */}
+        <div className="mt-12 text-center">
+          <p className="text-gray-600 mb-4">
+            Have questions about our pricing?
+          </p>
+          <Link
+            href="/faq"
+            className="inline-flex items-center text-primary-main hover:text-primary-dark font-medium"
+          >
+            View Frequently Asked Questions
+            <svg className="ml-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+          </Link>
         </div>
       </div>
     </div>
