@@ -6,6 +6,7 @@ from django.conf import settings
 from custom_auth.tenant_base_model import TenantAwareModel
 
 import uuid
+from decimal import Decimal
 from django.contrib.postgres.fields import JSONField
 from django.utils import timezone
 from audit.mixins import AuditMixin
@@ -1694,3 +1695,283 @@ class EmployerTaxAccount(TenantAwareModel):
         
     def __str__(self):
         return f"Tax Account - EIN: {self.ein}"
+
+
+class Form940(TenantAwareModel):
+    """Annual Federal Unemployment Tax Return (Form 940)"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    # Period information
+    year = models.IntegerField()
+    
+    # Employer information
+    ein = models.CharField(max_length=20)
+    business_name = models.CharField(max_length=200)
+    trade_name = models.CharField(max_length=200, blank=True)
+    address = JSONField(default=dict)  # Street, city, state, zip
+    
+    # Part 1 - Tell us about your return
+    amended_return = models.BooleanField(default=False)
+    successor_employer = models.BooleanField(default=False)
+    no_payments_to_employees = models.BooleanField(default=False)
+    final_return = models.BooleanField(default=False)
+    
+    # Part 2 - Determine FUTA tax before adjustments
+    total_payments = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    payments_exempt_from_futa = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    payments_exceeding_7000 = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total_taxable_futa_wages = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    
+    # Part 3 - Determine adjustments
+    adjustments_fringe_benefits = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    adjustments_group_life = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    adjustments_retirement = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    adjustments_dependent_care = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    adjustments_other = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total_adjustments = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    
+    # Part 4 - Calculate FUTA tax
+    adjusted_taxable_futa_wages = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    futa_tax_rate = models.DecimalField(max_digits=5, decimal_places=3, default=0.006)
+    futa_tax_before_adjustments = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    futa_tax_adjustments = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    futa_tax_after_adjustments = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    
+    # Part 5 - State unemployment tax credit
+    state_contributions_paid = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    state_taxable_wages = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    additional_tax_credit_reduction = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    credit_reduction_states = JSONField(default=list, blank=True)  # List of states with credit reduction
+    total_credit_reduction = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    state_credit_allowable = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    
+    # Part 6 - Calculate total FUTA tax
+    total_futa_tax = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    
+    # Part 7 - Quarterly tax liability
+    first_quarter_liability = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    second_quarter_liability = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    third_quarter_liability = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    fourth_quarter_liability = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total_tax_liability = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    
+    # Part 8 - Balance due or overpayment
+    total_deposits = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    balance_due = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    overpayment = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    overpayment_applied_to_next_return = models.BooleanField(default=False)
+    overpayment_refunded = models.BooleanField(default=False)
+    
+    # Multi-state employer information
+    is_multi_state = models.BooleanField(default=False)
+    schedule_a_attached = models.BooleanField(default=False)
+    
+    # Filing information
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('ready', 'Ready to File'),
+        ('filed', 'Filed'),
+        ('accepted', 'Accepted'),
+        ('rejected', 'Rejected'),
+        ('amended', 'Amended'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    filing_date = models.DateTimeField(null=True, blank=True)
+    due_date = models.DateField()
+    confirmation_number = models.CharField(max_length=100, blank=True)
+    
+    # Third-party designee
+    third_party_designee = models.BooleanField(default=False)
+    designee_name = models.CharField(max_length=100, blank=True)
+    designee_phone = models.CharField(max_length=20, blank=True)
+    designee_pin = models.CharField(max_length=5, blank=True)
+    
+    # Signature
+    signer_name = models.CharField(max_length=100, blank=True)
+    signer_title = models.CharField(max_length=100, blank=True)
+    signature_date = models.DateField(null=True, blank=True)
+    
+    # Preparer information (if applicable)
+    paid_preparer = models.BooleanField(default=False)
+    preparer_name = models.CharField(max_length=100, blank=True)
+    preparer_ptin = models.CharField(max_length=20, blank=True)
+    preparer_firm_name = models.CharField(max_length=200, blank=True)
+    preparer_firm_ein = models.CharField(max_length=20, blank=True)
+    preparer_firm_address = JSONField(default=dict, blank=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        app_label = 'taxes'
+        db_table = 'tax_form940'
+        unique_together = ['tenant_id', 'year']
+        indexes = [
+            models.Index(fields=['tenant_id', 'year']),
+            models.Index(fields=['status', 'due_date']),
+        ]
+        
+    def __str__(self):
+        return f"Form 940 - {self.year} - {self.business_name}"
+    
+    def calculate_totals(self):
+        """Calculate all derived totals"""
+        # Total taxable FUTA wages
+        self.total_taxable_futa_wages = (
+            self.total_payments - 
+            self.payments_exempt_from_futa - 
+            self.payments_exceeding_7000
+        )
+        
+        # Total adjustments
+        self.total_adjustments = (
+            self.adjustments_fringe_benefits +
+            self.adjustments_group_life +
+            self.adjustments_retirement +
+            self.adjustments_dependent_care +
+            self.adjustments_other
+        )
+        
+        # Adjusted taxable FUTA wages
+        self.adjusted_taxable_futa_wages = (
+            self.total_taxable_futa_wages + self.total_adjustments
+        )
+        
+        # FUTA tax calculations
+        self.futa_tax_before_adjustments = (
+            self.adjusted_taxable_futa_wages * Decimal('0.060')  # 6.0%
+        )
+        self.futa_tax_after_adjustments = (
+            self.futa_tax_before_adjustments + self.futa_tax_adjustments
+        )
+        
+        # Total FUTA tax after credit
+        self.total_futa_tax = (
+            self.futa_tax_after_adjustments - 
+            self.state_credit_allowable + 
+            self.total_credit_reduction
+        )
+        
+        # Total quarterly liability
+        self.total_tax_liability = (
+            self.first_quarter_liability +
+            self.second_quarter_liability +
+            self.third_quarter_liability +
+            self.fourth_quarter_liability
+        )
+        
+        # Balance due or overpayment
+        if self.total_tax_liability > self.total_deposits:
+            self.balance_due = self.total_tax_liability - self.total_deposits
+            self.overpayment = Decimal('0')
+        else:
+            self.balance_due = Decimal('0')
+            self.overpayment = self.total_deposits - self.total_tax_liability
+        
+        return self
+
+
+class Form940ScheduleA(TenantAwareModel):
+    """Schedule A - Multi-State Employer and Credit Reduction Information"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    form_940 = models.ForeignKey(Form940, on_delete=models.CASCADE, related_name='schedule_a_states')
+    
+    # State information
+    state_code = models.CharField(max_length=2)
+    state_ein = models.CharField(max_length=50, blank=True)
+    
+    # Wages and contributions
+    taxable_wages = models.DecimalField(max_digits=12, decimal_places=2)
+    state_experience_rate = models.DecimalField(
+        max_digits=6, 
+        decimal_places=4,
+        validators=[MinValueValidator(0), MaxValueValidator(1)]
+    )
+    state_unemployment_tax_paid = models.DecimalField(max_digits=12, decimal_places=2)
+    additional_contributions = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total_contributions = models.DecimalField(max_digits=12, decimal_places=2)
+    
+    # Credit reduction (if applicable)
+    is_credit_reduction_state = models.BooleanField(default=False)
+    credit_reduction_rate = models.DecimalField(
+        max_digits=5, 
+        decimal_places=3, 
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(0.1)]
+    )
+    credit_reduction_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        app_label = 'taxes'
+        db_table = 'tax_form940_schedule_a'
+        unique_together = ['form_940', 'state_code']
+        
+    def __str__(self):
+        return f"Schedule A - {self.state_code} - Form 940 {self.form_940.year}"
+    
+    def calculate_credit_reduction(self):
+        """Calculate credit reduction amount if applicable"""
+        if self.is_credit_reduction_state:
+            self.credit_reduction_amount = (
+                self.taxable_wages * self.credit_reduction_rate
+            )
+        else:
+            self.credit_reduction_amount = Decimal('0')
+        return self.credit_reduction_amount
+
+
+class StateTaxAccount(TenantAwareModel):
+    """Store state-specific employer tax account information"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    # State information
+    state_code = models.CharField(max_length=2)
+    state_employer_number = models.CharField(max_length=50)
+    state_unemployment_number = models.CharField(max_length=50, blank=True)
+    
+    # Experience rating
+    experience_rate = models.DecimalField(
+        max_digits=6, 
+        decimal_places=4,
+        validators=[MinValueValidator(0), MaxValueValidator(1)],
+        help_text="State unemployment tax experience rate"
+    )
+    experience_rate_effective_date = models.DateField(null=True, blank=True)
+    
+    # State-specific settings
+    state_withholding_number = models.CharField(max_length=50, blank=True)
+    filing_frequency = models.CharField(
+        max_length=20,
+        choices=[
+            ('monthly', 'Monthly'),
+            ('quarterly', 'Quarterly'),
+            ('annually', 'Annually'),
+        ],
+        default='quarterly'
+    )
+    
+    # Online access
+    online_portal_url = models.URLField(blank=True)
+    online_username = models.CharField(max_length=100, blank=True)
+    online_password_hint = models.CharField(max_length=200, blank=True)
+    
+    # Status
+    is_active = models.BooleanField(default=True)
+    registration_date = models.DateField(null=True, blank=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        app_label = 'taxes'
+        db_table = 'tax_state_accounts'
+        unique_together = ['tenant_id', 'state_code']
+        
+    def __str__(self):
+        return f"{self.state_code} Tax Account - {self.state_employer_number}"
