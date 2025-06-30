@@ -155,35 +155,35 @@ class SmartInsightsViewSet(viewsets.ViewSet):
             
             return Response({'results': serialized_data})
         except Exception as e:
-            # Return mock data if there's an error
+            # Return updated mock data if there's an error
             return Response({
                 'results': [
                     {
-                        'id': 1,
+                        'id': 'starter',
                         'name': 'Starter Pack',
-                        'credits': 50,
-                        'price': '6.50',
+                        'credits': 100,
+                        'price': '13.00',
                         'is_active': True
                     },
                     {
-                        'id': 2,
+                        'id': 'growth',
                         'name': 'Growth Pack',
-                        'credits': 200,
-                        'price': '23.40',
-                        'is_active': True
-                    },
-                    {
-                        'id': 3,
-                        'name': 'Professional Pack',
                         'credits': 500,
                         'price': '65.00',
                         'is_active': True
                     },
                     {
-                        'id': 4,
-                        'name': 'Enterprise Pack',
+                        'id': 'professional',
+                        'name': 'Professional Pack',
                         'credits': 1000,
                         'price': '130.00',
+                        'is_active': True
+                    },
+                    {
+                        'id': 'enterprise',
+                        'name': 'Enterprise Pack',
+                        'credits': 2500,
+                        'price': '325.00',
                         'is_active': True
                     }
                 ]
@@ -192,27 +192,45 @@ class SmartInsightsViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'])
     def purchase(self, request):
         """Purchase credits with Stripe"""
-        serializer = PurchaseCreditsSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        
-        package = CreditPackage.objects.get(id=serializer.validated_data['package_id'])
-        
-        # Check monthly spending limit
-        user_credit, _ = UserCredit.objects.get_or_create(user=request.user)
-        now = timezone.now()
-        monthly_usage, _ = MonthlyUsage.objects.get_or_create(
-            user=request.user,
-            year=now.year,
-            month=now.month
-        )
-        
-        if monthly_usage.total_cost + package.price > user_credit.monthly_spend_limit:
-            return Response(
-                {'error': f'Purchase would exceed monthly limit of ${user_credit.monthly_spend_limit}'},
-                status=status.HTTP_402_PAYMENT_REQUIRED
-            )
-        
         try:
+            package_id = request.data.get('package_id')
+            print(f"[Smart Insights] Purchase request for package_id: {package_id}")
+            
+            # For mock packages, create a temporary object
+            if isinstance(package_id, str) and package_id in ['starter', 'growth', 'professional', 'enterprise']:
+                # Map string IDs to package data
+                package_map = {
+                    'starter': {'name': 'Starter Pack', 'credits': 100, 'price': Decimal('13.00')},
+                    'growth': {'name': 'Growth Pack', 'credits': 500, 'price': Decimal('65.00')},
+                    'professional': {'name': 'Professional Pack', 'credits': 1000, 'price': Decimal('130.00')},
+                    'enterprise': {'name': 'Enterprise Pack', 'credits': 2500, 'price': Decimal('325.00')}
+                }
+                
+                if package_id not in package_map:
+                    return Response({'error': 'Invalid package'}, status=status.HTTP_404_NOT_FOUND)
+                
+                # Create a temporary package object
+                package = type('Package', (), package_map[package_id])()
+            else:
+                # Try to get from database
+                serializer = PurchaseCreditsSerializer(data=request.data)
+                serializer.is_valid(raise_exception=True)
+                package = CreditPackage.objects.get(id=serializer.validated_data['package_id'])
+            
+            # Check monthly spending limit
+            user_credit, _ = UserCredit.objects.get_or_create(user=request.user)
+            now = timezone.now()
+            monthly_usage, _ = MonthlyUsage.objects.get_or_create(
+                user=request.user,
+                year=now.year,
+                month=now.month
+            )
+            
+            if monthly_usage.total_cost + package.price > user_credit.monthly_spend_limit:
+                return Response(
+                    {'error': f'Purchase would exceed monthly limit of ${user_credit.monthly_spend_limit}'},
+                    status=status.HTTP_402_PAYMENT_REQUIRED
+                )
             # Get success and cancel URLs
             frontend_url = settings.FRONTEND_URL
             success_url = f"{frontend_url}/dashboard?smart_insights_purchase=success"
@@ -238,7 +256,7 @@ class SmartInsightsViewSet(viewsets.ViewSet):
                 customer_email=request.user.email,
                 metadata={
                     'user_id': str(request.user.id),
-                    'package_id': str(package.id),
+                    'package_id': str(getattr(package, 'id', package_id)),
                     'credits': package.credits
                 }
             )
@@ -251,9 +269,18 @@ class SmartInsightsViewSet(viewsets.ViewSet):
             })
             
         except stripe.error.StripeError as e:
+                print(f"[Smart Insights] Stripe error: {str(e)}")
+                return Response(
+                    {'error': str(e)},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        except Exception as e:
+            print(f"[Smart Insights] Purchase error: {str(e)}")
+            import traceback
+            print(f"[Smart Insights] Traceback: {traceback.format_exc()}")
             return Response(
-                {'error': str(e)},
-                status=status.HTTP_400_BAD_REQUEST
+                {'error': 'Internal server error'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     
     @action(detail=False, methods=['post'])
@@ -485,9 +512,17 @@ Please provide specific insights based on the actual business data above, not ge
         try:
             from crm.models import Customer
             from inventory.models import Product, Supplier
-            from sales.models import Sale, Order
             from django.db.models import Sum, Count, Avg
             from datetime import datetime, timedelta
+            
+            # Try to import Sale model - it might be in different locations
+            try:
+                from sales.models import Sale
+            except ImportError:
+                try:
+                    from orders.models import Sale
+                except ImportError:
+                    Sale = None
             
             # Get user's tenant for data filtering
             tenant = user.tenant
@@ -534,18 +569,21 @@ Please provide specific insights based on the actual business data above, not ge
                 context_parts.append(f"SUPPLIERS: Error fetching supplier data: {str(e)}")
             
             # Sales data (if available)
-            try:
-                # Try to get recent sales data
-                thirty_days_ago = datetime.now() - timedelta(days=30)
-                recent_sales = Sale.objects.filter(tenant=tenant, created_at__gte=thirty_days_ago)
-                sales_count = recent_sales.count()
-                if sales_count > 0:
-                    total_revenue = recent_sales.aggregate(total=Sum('total_amount'))['total'] or 0
-                    context_parts.append(f"SALES: {sales_count} sales in last 30 days, total revenue: ${total_revenue}")
-                else:
-                    context_parts.append("SALES: No recent sales data.")
-            except Exception as e:
-                context_parts.append(f"SALES: Error fetching sales data: {str(e)}")
+            if Sale:
+                try:
+                    # Try to get recent sales data
+                    thirty_days_ago = datetime.now() - timedelta(days=30)
+                    recent_sales = Sale.objects.filter(tenant=tenant, created_at__gte=thirty_days_ago)
+                    sales_count = recent_sales.count()
+                    if sales_count > 0:
+                        total_revenue = recent_sales.aggregate(total=Sum('total_amount'))['total'] or 0
+                        context_parts.append(f"SALES: {sales_count} sales in last 30 days, total revenue: ${total_revenue}")
+                    else:
+                        context_parts.append("SALES: No recent sales data.")
+                except Exception as e:
+                    context_parts.append(f"SALES: Limited sales data available")
+            else:
+                context_parts.append("SALES: Sales data not available in current system")
             
             # Business info
             context_parts.append(f"BUSINESS: {tenant.name}")
