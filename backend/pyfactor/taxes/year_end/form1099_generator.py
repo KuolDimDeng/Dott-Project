@@ -11,8 +11,9 @@ from reportlab.lib.colors import black, red
 from io import BytesIO
 
 from purchases.models import Vendor, Purchase, PurchaseOrder
-from accounting.models import Transaction, JournalEntry
-from custom_auth.models import Business, Tenant
+from sales.models import Invoice
+from users.models import Business
+from custom_auth.models import Tenant
 from taxes.models import TaxSetting
 
 
@@ -99,18 +100,19 @@ class Form1099Generator:
             if category in payments:
                 payments[category] += purchase.total_amount
                 
-        # Also check journal entries for direct payments
-        journal_entries = JournalEntry.objects.filter(
+        # Also check direct payments from invoices
+        direct_payments = Invoice.objects.filter(
             tenant_id=self.tenant_id,
             date__year=self.tax_year,
-            description__icontains=vendor.name
+            vendor=vendor,
+            status='paid'
         )
         
-        for entry in journal_entries:
-            if self._is_vendor_payment(entry, vendor):
-                category = self._categorize_journal_entry(entry)
+        for payment in direct_payments:
+            if payment.total_amount:
+                category = self._categorize_payment_by_description(payment.description or '')
                 if category in payments:
-                    payments[category] += entry.debit_amount or Decimal('0.00')
+                    payments[category] += payment.total_amount
                     
         return payments
     
@@ -131,16 +133,15 @@ class Form1099Generator:
         else:
             return 'other_income'
     
-    def _categorize_journal_entry(self, entry: JournalEntry) -> str:
-        """Categorize journal entry payment"""
-        account_name = entry.account.name.lower() if entry.account else ''
-        description = entry.description.lower() if entry.description else ''
+    def _categorize_purchase(self, purchase: Purchase) -> str:
+        """Categorize purchase payment"""
+        description = purchase.description.lower() if purchase.description else ''
         
-        if 'professional services' in account_name or 'contract labor' in account_name:
+        if any(term in description for term in ['professional services', 'contract labor', 'consulting']):
             return 'nonemployee_compensation'
-        elif 'rent' in account_name:
+        elif 'rent' in description:
             return 'rent'
-        elif 'legal' in account_name:
+        elif 'legal' in description:
             return 'attorney_payments'
         else:
             return self._categorize_payment_by_description(description)
@@ -157,10 +158,11 @@ class Form1099Generator:
         else:
             return 'other_income'
     
-    def _is_vendor_payment(self, entry: JournalEntry, vendor: Vendor) -> bool:
-        """Check if journal entry is a payment to vendor"""
-        return (vendor.name.lower() in entry.description.lower() and
-                entry.debit_amount and entry.debit_amount > 0)
+    def _is_vendor_payment(self, purchase: Purchase, vendor: Vendor) -> bool:
+        """Check if purchase is a payment to vendor"""
+        vendor_name = vendor.company_name or f"{vendor.first_name} {vendor.last_name}"
+        return (vendor_name.lower() in purchase.description.lower() and
+                purchase.total_amount and purchase.total_amount > 0)
     
     def _generate_1099_nec(self, vendor: Vendor, payments: Dict) -> Optional[Dict]:
         """Generate 1099-NEC data for vendor"""

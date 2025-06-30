@@ -7,9 +7,9 @@ import logging
 
 from taxes.models import State, TaxFiling
 from taxes.efiling.state_handlers import get_state_handler
-from locations.models import Location
+from inventory.models import Location
 from sales.models import Invoice, InvoiceItem
-from products.models import Product, Service
+from inventory.models import Product, Service
 
 logger = logging.getLogger(__name__)
 

@@ -102,6 +102,9 @@ stripe==12.2.0
 # AI SDK for Smart Insights - CRITICAL for smart_insights app
 anthropic==0.40.0
 
+# Analytics tracking - CRITICAL for analytics middleware
+posthog==6.0.0
+
 # Banking integration - CRITICAL for banking app
 plaid-python==27.0.0
 

@@ -3,7 +3,7 @@ from reportlab.lib.units import inch
 from reportlab.pdfgen import canvas
 from reportlab.lib.colors import HexColor, black, red, gray
 from reportlab.pdfbase import pdfform
-from reportlab.pdfbase.pdfform import textFieldRelative, checkboxRelative
+from reportlab.pdfbase.pdfform import textFieldRelative
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
@@ -526,13 +526,12 @@ class TaxFormGenerator:
                     maxlen=field.get('maxlen', 100)
                 )
             elif field['type'] == 'checkbox':
-                checkboxRelative(
-                    canvas_obj,
-                    field['name'],
-                    field['x'], field['y'],
-                    size=field.get('size', 12),
-                    checked=field.get('checked', False)
-                )
+                # Draw a simple checkbox since checkboxRelative is not available
+                size = field.get('size', 12)
+                canvas_obj.rect(field['x'], field['y'], size, size)
+                if field.get('checked', False):
+                    canvas_obj.line(field['x'], field['y'], field['x'] + size, field['y'] + size)
+                    canvas_obj.line(field['x'] + size, field['y'], field['x'], field['y'] + size)
     
     def add_attachments(self, main_pdf: bytes, attachments: List[bytes]) -> bytes:
         """Combine main form with attachment PDFs"""

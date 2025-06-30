@@ -820,7 +820,7 @@ class Form940ViewSet(viewsets.ModelViewSet):
             # For now, mark as filed
             form940.status = "filed"
             form940.filing_date = timezone.now()
-            form940.confirmation_number = f"MOCK-940-{form940.year}-{timezone.now().strftime(\"%Y%m%d%H%M%S\")}"
+            form940.confirmation_number = f"MOCK-940-{form940.year}-{timezone.now().strftime('%Y%m%d%H%M%S')}"
             form940.save()
             
             return Response({

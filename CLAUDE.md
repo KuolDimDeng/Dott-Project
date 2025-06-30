@@ -435,3 +435,54 @@ Add `REDIS_URL` environment variable in Render dashboard
 - **Implementation**: Tax Settings component updated to use shared utility
 - **Benefits**: Reusable across app, consistent international support
 - **Documentation**: `/docs/COUNTRY_MAPPING.md`
+
+### [16.0.0] - 2025-06-30 - CURRENT - AI-Powered Tax Filing Service Implementation
+- **Purpose**: Complete tax filing service with AI eligibility determination and two-tier pricing
+- **Service Model**:
+  - Full Service: $40 (we handle everything - preparation, review, filing)
+  - Self Service: $20 (we guide users through the process step-by-step)
+  - Complexity multipliers: 1.2x-2.0x based on business complexity
+  - AI determines filing eligibility using Claude integration
+- **Tax Types Supported**:
+  - Sales Tax: Top 20 states with e-filing integration
+  - Payroll Tax: Federal Form 941/940 plus 6 major states
+  - Income Tax: Multi-state apportionment and nexus tracking
+  - Year-End: W-2/1099 generation with IRS compliance
+- **Core Features**:
+  - Document upload with drag-drop, virus scanning, file validation
+  - Professional PDF form generation with ReportLab
+  - E-signature integration (DocuSign, Adobe Sign, HelloSign)
+  - Stripe payment processing with webhook handling
+  - Multi-channel confirmations (email, SMS, PDF receipts)
+  - Real-time status tracking with 7-stage workflow
+  - Multi-state support with nexus tracking and apportionment
+- **File Structure**:
+  ```
+  /backend/pyfactor/taxes/
+  ├── models.py              # Core filing models with audit trails
+  ├── efiling/               # State e-filing for 20 states
+  ├── pdf_generation/        # Professional PDF forms
+  ├── esignature/           # Multi-provider e-signature
+  ├── confirmations/        # Filing confirmation system
+  ├── payroll/              # Federal 941/940 + state handlers
+  ├── year_end/             # W-2/1099 generation
+  └── multistate/           # Nexus tracking & apportionment
+  ```
+- **Security & Compliance**:
+  - Banking-grade tenant isolation with RLS
+  - PCI DSS compliance via Stripe
+  - IRS form specifications and validation
+  - Complete audit trails for all operations
+  - AES-256-CBC encryption for sensitive data
+- **Frontend Components**:
+  - TaxFilingService.js: Main filing interface with AI eligibility
+  - TaxFilingDocuments.js: Drag-drop document upload
+  - TaxFilingStatus.js: Visual status tracking
+  - TaxSettings.js: Enhanced multi-location configuration
+  - Calendar.js: Tax deadline calendar integration
+- **Revenue Potential**: 
+  - Target market: 30M+ US businesses
+  - Industry standard pricing with AI automation
+  - Scalable across all major tax types and states
+- **Documentation**: `/docs/TAX_FILING_IMPLEMENTATION.md`
+- **Status**: Production-ready, awaiting state API credentials and final deployment

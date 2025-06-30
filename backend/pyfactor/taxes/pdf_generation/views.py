@@ -13,7 +13,7 @@ from typing import Dict, Any
 
 from .form_generator import TaxFormGenerator
 from .form_templates import FormTemplateRegistry
-from ..models import TaxFiling, TaxFilingDocument
+from ..models import TaxFiling, FilingDocument
 
 
 class PDFFormGeneratorView(View):

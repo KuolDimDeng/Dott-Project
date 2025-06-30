@@ -14,8 +14,10 @@ import os
 import tempfile
 from io import BytesIO
 
-from hr.models import Employee, Payroll, PayrollItem
-from custom_auth.models import Business, Tenant
+from users.models import Employee
+from payroll.models import PayrollRun, PayrollTransaction
+from users.models import Business
+from custom_auth.models import Tenant
 from taxes.models import TaxSetting
 
 
@@ -44,7 +46,7 @@ class W2Generator:
     
     def _employee_has_wages(self, employee: Employee) -> bool:
         """Check if employee has wages for the tax year"""
-        return Payroll.objects.filter(
+        return PayrollRun.objects.filter(
             tenant_id=self.tenant_id,
             employee=employee,
             pay_date__year=self.tax_year,
@@ -54,7 +56,7 @@ class W2Generator:
     def _generate_employee_w2(self, employee: Employee) -> Optional[Dict]:
         """Generate W-2 data for a single employee"""
         # Get all payroll records for the year
-        payrolls = Payroll.objects.filter(
+        payrolls = PayrollRun.objects.filter(
             tenant_id=self.tenant_id,
             employee=employee,
             pay_date__year=self.tax_year,
@@ -114,7 +116,7 @@ class W2Generator:
         }
         
         for payroll in payrolls:
-            items = PayrollItem.objects.filter(payroll=payroll)
+            items = PayrollTransaction.objects.filter(payroll_run=payroll)
             
             for item in items:
                 if item.item_type == 'earning':
@@ -151,7 +153,7 @@ class W2Generator:
         }
         
         for payroll in payrolls:
-            items = PayrollItem.objects.filter(payroll=payroll)
+            items = PayrollTransaction.objects.filter(payroll_run=payroll)
             
             for item in items:
                 if item.item_type == 'tax':
@@ -171,7 +173,7 @@ class W2Generator:
         state_data = {}
         
         for payroll in payrolls:
-            items = PayrollItem.objects.filter(payroll=payroll)
+            items = PayrollTransaction.objects.filter(payroll_run=payroll)
             
             for item in items:
                 if item.item_type == 'tax' and 'state' in item.description.lower():

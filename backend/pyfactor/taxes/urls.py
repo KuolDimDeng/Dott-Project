@@ -97,4 +97,7 @@ urlpatterns = [
     
     # Year-end tax form endpoints
     path('year-end/', include('taxes.year_end.urls')),
+    
+    # Multi-state tax endpoints
+    path('multistate/', include('taxes.multistate.urls')),
 ]
