@@ -119,11 +119,7 @@ export default function TaxSettings({ onNavigate }) {
           
           // Pre-populate form with user data from session
           if (user) {
-            // Debug: Log complete user object structure to find country
-            console.log('[TaxSettings] Complete user object:', user);
-            console.log('[TaxSettings] User keys:', Object.keys(user));
-            
-            // Try multiple possible country field locations
+            // Get country from onboardingProgress (primary) or fallback locations
             const countryCode = user.onboardingProgress?.country || 
                                user.country || 
                                user.business_country || 
@@ -133,13 +129,8 @@ export default function TaxSettings({ onNavigate }) {
                                user.business?.country ||
                                user.businessDetails?.country ||
                                '';
-            console.log('[TaxSettings] Raw country value from user:', countryCode);
-            console.log('[TaxSettings] User onboardingProgress:', user.onboardingProgress);
-            console.log('[TaxSettings] User profile:', user.profile);
-            console.log('[TaxSettings] User business:', user.business);
             
             const countryName = getCountryName(countryCode);
-            console.log('[TaxSettings] Mapped country name:', countryName);
             
             // Get business info from onboarding progress if available
             const onboarding = user.onboardingProgress || {};
@@ -156,7 +147,6 @@ export default function TaxSettings({ onNavigate }) {
               phone: user.phone || onboarding.phone || ''
             };
             
-            console.log('[TaxSettings] Setting initial form data:', initialFormData);
             setFormData(prev => ({
               ...prev,
               ...initialFormData
@@ -379,10 +369,10 @@ export default function TaxSettings({ onNavigate }) {
         </h2>
         
         {/* Info message about pre-populated fields */}
-        {user && (user.businessName || user.country) && (
+        {user && (user.businessName || user.onboardingProgress?.businessName) && (
           <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
             <ExclamationCircleIcon className="h-4 w-4 inline mr-1" />
-            Some fields are pre-populated from your business profile and cannot be edited here.
+            Business name and type are from your business profile. Country can be updated if needed for tax purposes.
           </div>
         )}
         
@@ -427,18 +417,21 @@ export default function TaxSettings({ onNavigate }) {
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Country
+              Country *
             </label>
             <input
               type="text"
               name="country"
               value={formData.country}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-700"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="e.g., United States"
-              readOnly
-              title="This is pulled from your business profile"
+              required
+              title="Country where your business is located for tax purposes"
             />
+            <p className="text-xs text-gray-500 mt-1">
+              Pre-filled from your business profile. Update if needed for tax purposes.
+            </p>
           </div>
           
           <div className="md:col-span-2">

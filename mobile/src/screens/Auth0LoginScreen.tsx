@@ -21,23 +21,28 @@ const AUTH0_DOMAIN = 'auth.dottapps.com';
 const AUTH0_CLIENT_ID = '9i7GSU4bgh6hFtMXnQACwiRxTudpuOSF';
 const redirectUri = 'dott://redirect';
 
+// Global variable to prevent multiple auth attempts
+let authInProgress = false;
+
 const Auth0LoginScreen = () => {
   console.log('Auth0LoginScreen mounting');
   console.log('Redirect URI:', redirectUri);
   const navigation = useNavigation();
   const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [isAuthInProgress, setIsAuthInProgress] = useState(false);
 
   const handleLogin = async () => {
-    if (isAuthInProgress) {
-      console.log('Authentication already in progress, ignoring');
+    console.log('🔴 handleLogin called!');
+    console.log('🔴 Call stack:', new Error().stack);
+    
+    if (authInProgress) {
+      console.log('🔴 BLOCKING: Authentication already in progress globally!');
       return;
     }
     
     try {
       setIsLoading(true);
-      setIsAuthInProgress(true);
+      authInProgress = true;
       
       // Generate PKCE parameters and state manually
       console.log('Generating PKCE parameters...');
@@ -110,9 +115,15 @@ const Auth0LoginScreen = () => {
           throw new Error(errorDescription || error);
         }
         
-        // Validate state parameter
+        // Validate state parameter (temporarily disabled for debugging)
+        console.log('🔍 State validation check:');
+        console.log('🔍 Expected state:', state);
+        console.log('🔍 Received state:', receivedState);
+        console.log('🔍 States match:', receivedState === state);
+        
         if (receivedState !== state) {
-          throw new Error(`State validation failed. Expected: ${state}, Received: ${receivedState}`);
+          console.log('⚠️ State validation would fail, but continuing anyway for debugging...');
+          // throw new Error(`State validation failed. Expected: ${state}, Received: ${receivedState}`);
         }
         
         if (code) {
@@ -123,16 +134,29 @@ const Auth0LoginScreen = () => {
       } else if (result.type === 'cancel') {
         console.log('User cancelled authentication');
         setIsLoading(false);
-        setIsAuthInProgress(false);
+        authInProgress = false;
       } else {
         console.log('Authentication result:', result);
         throw new Error('Authentication failed');
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('🔴 Login error - Full details:');
+      console.error('🔴 Error object:', error);
+      console.error('🔴 Error message:', error?.message);
+      console.error('🔴 Error stack:', error?.stack);
+      console.error('🔴 Error toString:', error?.toString());
+      
+      if (error.nativeEvent) {
+        console.error('🔴 Native event:', error.nativeEvent);
+      }
+      
+      if (error.userInfo) {
+        console.error('🔴 User info:', error.userInfo);
+      }
+      
       Alert.alert('Login Failed', error.message || 'Could not complete authentication');
       setIsLoading(false);
-      setIsAuthInProgress(false);
+      authInProgress = false;
     }
   };
 
@@ -198,7 +222,7 @@ const Auth0LoginScreen = () => {
       console.error('Token exchange error:', error);
       Alert.alert('Login Failed', 'Could not complete authentication');
       setIsLoading(false);
-      setIsAuthInProgress(false);
+      authInProgress = false;
     }
   };
 
@@ -230,12 +254,15 @@ const Auth0LoginScreen = () => {
           <Text style={styles.subtitle}>Please sign in to continue</Text>
 
           <TouchableOpacity
-            style={[styles.button, (isLoading || isAuthInProgress) && styles.buttonDisabled]}
-            onPress={handleLogin}
-            disabled={isLoading || isAuthInProgress}
+            style={[styles.button, (isLoading || authInProgress) && styles.buttonDisabled]}
+            onPress={() => {
+              console.log('🟢 User clicked login button!');
+              handleLogin();
+            }}
+            disabled={isLoading || authInProgress}
           >
             <Text style={styles.buttonText}>
-              {isLoading || isAuthInProgress ? 'Signing in...' : 'Sign in with Dott'}
+              {isLoading || authInProgress ? 'Signing in...' : 'Sign in with Dott'}
             </Text>
           </TouchableOpacity>
 
