@@ -97,7 +97,7 @@ urlpatterns = [
     path('payroll/', include('taxes.payroll.urls')),
     
     # Year-end tax form endpoints
-    path('year-end/', include('taxes.year_end.urls')),
+    # path('year-end/', include('taxes.year_end.urls')),  # Temporarily disabled to debug import issue
     
     # Multi-state tax endpoints
     path('multistate/', include('taxes.multistate.urls')),
