@@ -40,12 +40,33 @@ export default function TaxSettings({ onNavigate }) {
   // Tax data state
   const [taxSuggestions, setTaxSuggestions] = useState(null);
   const [customRates, setCustomRates] = useState({
-    salesTaxRate: '',
-    incomeTaxRate: '',
-    payrollTaxRate: '',
-    filingWebsite: '',
-    filingAddress: '',
-    filingDeadlines: ''
+    // Sales Tax breakdown
+    stateSalesTaxRate: '',
+    localSalesTaxRate: '',
+    totalSalesTaxRate: '',
+    
+    // Income Tax breakdown
+    federalIncomeTaxRate: '',
+    stateIncomeTaxRate: '',
+    totalIncomeTaxRate: '',
+    
+    // Payroll Tax breakdown
+    federalPayrollTaxRate: '',
+    statePayrollTaxRate: '',
+    
+    // Filing information
+    stateTaxWebsite: '',
+    stateTaxAddress: '',
+    localTaxWebsite: '',
+    localTaxAddress: '',
+    federalTaxWebsite: '',
+    
+    // Deadlines
+    filingDeadlines: {
+      salesTax: '',
+      incomeTax: '',
+      payrollTax: ''
+    }
   });
   
   const [signature, setSignature] = useState('');
@@ -196,10 +217,27 @@ export default function TaxSettings({ onNavigate }) {
   // Handle custom rate changes
   const handleRateChange = (e) => {
     const { name, value } = e.target;
-    setCustomRates(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setCustomRates(prev => {
+      const updated = {
+        ...prev,
+        [name]: value
+      };
+      
+      // Auto-calculate totals when individual rates change
+      if (name === 'stateSalesTaxRate' || name === 'localSalesTaxRate') {
+        const stateRate = parseFloat(name === 'stateSalesTaxRate' ? value : prev.stateSalesTaxRate) || 0;
+        const localRate = parseFloat(name === 'localSalesTaxRate' ? value : prev.localSalesTaxRate) || 0;
+        updated.totalSalesTaxRate = (stateRate + localRate).toFixed(2);
+      }
+      
+      if (name === 'federalIncomeTaxRate' || name === 'stateIncomeTaxRate') {
+        const federalRate = parseFloat(name === 'federalIncomeTaxRate' ? value : prev.federalIncomeTaxRate) || 0;
+        const stateRate = parseFloat(name === 'stateIncomeTaxRate' ? value : prev.stateIncomeTaxRate) || 0;
+        updated.totalIncomeTaxRate = (federalRate + stateRate).toFixed(2);
+      }
+      
+      return updated;
+    });
   };
   
   // Get tax suggestions from Claude API
@@ -280,7 +318,14 @@ export default function TaxSettings({ onNavigate }) {
       if (data.suggestedRates) {
         setCustomRates(prev => ({
           ...prev,
-          ...data.suggestedRates
+          ...data.suggestedRates,
+          // Calculate totals if not provided
+          totalSalesTaxRate: data.suggestedRates.totalSalesTaxRate || 
+            (parseFloat(data.suggestedRates.stateSalesTaxRate || 0) + 
+             parseFloat(data.suggestedRates.localSalesTaxRate || 0)).toFixed(2),
+          totalIncomeTaxRate: data.suggestedRates.totalIncomeTaxRate ||
+            (parseFloat(data.suggestedRates.federalIncomeTaxRate || 0) + 
+             parseFloat(data.suggestedRates.stateIncomeTaxRate || 0)).toFixed(2)
         }));
       }
       
@@ -620,92 +665,304 @@ export default function TaxSettings({ onNavigate }) {
             </div>
           )}
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Sales Tax Section */}
+          <div className="mb-6">
+            <h3 className="text-md font-medium text-gray-800 mb-3 border-b pb-2">Sales Tax Rates</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  State Sales Tax (%)
+                </label>
+                <input
+                  type="number"
+                  name="stateSalesTaxRate"
+                  value={customRates.stateSalesTaxRate}
+                  onChange={handleRateChange}
+                  step="0.01"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., 4.85"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Local Sales Tax (%)
+                </label>
+                <input
+                  type="number"
+                  name="localSalesTaxRate"
+                  value={customRates.localSalesTaxRate}
+                  onChange={handleRateChange}
+                  step="0.01"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., 2.00"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Total Sales Tax (%)
+                </label>
+                <input
+                  type="number"
+                  name="totalSalesTaxRate"
+                  value={customRates.totalSalesTaxRate}
+                  onChange={handleRateChange}
+                  step="0.01"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                  placeholder="Auto-calculated"
+                  readOnly
+                />
+              </div>
+            </div>
+          </div>
+          
+          {/* Income Tax Section */}
+          <div className="mb-6">
+            <h3 className="text-md font-medium text-gray-800 mb-3 border-b pb-2">Income Tax Rates</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Federal Income Tax (%)
+                </label>
+                <input
+                  type="number"
+                  name="federalIncomeTaxRate"
+                  value={customRates.federalIncomeTaxRate}
+                  onChange={handleRateChange}
+                  step="0.01"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., 21.00"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  State Income Tax (%)
+                </label>
+                <input
+                  type="number"
+                  name="stateIncomeTaxRate"
+                  value={customRates.stateIncomeTaxRate}
+                  onChange={handleRateChange}
+                  step="0.01"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., 4.65"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Total Income Tax (%)
+                </label>
+                <input
+                  type="number"
+                  name="totalIncomeTaxRate"
+                  value={customRates.totalIncomeTaxRate}
+                  onChange={handleRateChange}
+                  step="0.01"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                  placeholder="Auto-calculated"
+                  readOnly
+                />
+              </div>
+            </div>
+          </div>
+          
+          {/* Payroll Tax Section */}
+          <div className="mb-6">
+            <h3 className="text-md font-medium text-gray-800 mb-3 border-b pb-2">Payroll Tax Rates</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Federal Payroll Tax (%)
+                </label>
+                <input
+                  type="number"
+                  name="federalPayrollTaxRate"
+                  value={customRates.federalPayrollTaxRate}
+                  onChange={handleRateChange}
+                  step="0.01"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., 15.30"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  State Payroll Tax (%)
+                </label>
+                <input
+                  type="number"
+                  name="statePayrollTaxRate"
+                  value={customRates.statePayrollTaxRate}
+                  onChange={handleRateChange}
+                  step="0.01"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., 3.00"
+                />
+              </div>
+            </div>
+          </div>
+          
+          {/* Filing Information Section */}
+          <div className="mb-6">
+            <h3 className="text-md font-medium text-gray-800 mb-3 border-b pb-2">Tax Filing Information</h3>
+            
+            {/* Federal Tax Filing */}
+            <div className="mb-4">
+              <h4 className="text-sm font-medium text-gray-700 mb-2">Federal Tax Filing</h4>
+              <div className="grid grid-cols-1 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">
+                    IRS Website
+                  </label>
+                  <input
+                    type="url"
+                    name="federalTaxWebsite"
+                    value={customRates.federalTaxWebsite}
+                    onChange={handleRateChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="https://www.irs.gov"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            {/* State Tax Filing */}
+            <div className="mb-4">
+              <h4 className="text-sm font-medium text-gray-700 mb-2">State Tax Filing</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">
+                    State Tax Website
+                  </label>
+                  <input
+                    type="url"
+                    name="stateTaxWebsite"
+                    value={customRates.stateTaxWebsite}
+                    onChange={handleRateChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., https://tax.utah.gov"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">
+                    State Tax Office Address
+                  </label>
+                  <input
+                    type="text"
+                    name="stateTaxAddress"
+                    value={customRates.stateTaxAddress}
+                    onChange={handleRateChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Physical address..."
+                  />
+                </div>
+              </div>
+            </div>
+            
+            {/* Local Tax Filing */}
+            <div className="mb-4">
+              <h4 className="text-sm font-medium text-gray-700 mb-2">Local Tax Filing</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">
+                    Local Tax Website
+                  </label>
+                  <input
+                    type="url"
+                    name="localTaxWebsite"
+                    value={customRates.localTaxWebsite}
+                    onChange={handleRateChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="City/County tax website..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">
+                    Local Tax Office Address
+                  </label>
+                  <input
+                    type="text"
+                    name="localTaxAddress"
+                    value={customRates.localTaxAddress}
+                    onChange={handleRateChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Physical address..."
+                  />
+                </div>
+              </div>
+            </div>
+            
+            {/* Filing Deadlines */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Sales Tax Rate (%)
-              </label>
-              <input
-                type="number"
-                name="salesTaxRate"
-                value={customRates.salesTaxRate}
-                onChange={handleRateChange}
-                step="0.01"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g., 8.75"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Income Tax Rate (%)
-              </label>
-              <input
-                type="number"
-                name="incomeTaxRate"
-                value={customRates.incomeTaxRate}
-                onChange={handleRateChange}
-                step="0.01"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g., 28.00"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Payroll Tax Rate (%)
-              </label>
-              <input
-                type="number"
-                name="payrollTaxRate"
-                value={customRates.payrollTaxRate}
-                onChange={handleRateChange}
-                step="0.01"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g., 15.30"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Filing Website
-              </label>
-              <input
-                type="url"
-                name="filingWebsite"
-                value={customRates.filingWebsite}
-                onChange={handleRateChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="https://..."
-              />
-            </div>
-            
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Filing Address
-              </label>
-              <textarea
-                name="filingAddress"
-                value={customRates.filingAddress}
-                onChange={handleRateChange}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Tax filing office address..."
-              />
-            </div>
-            
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Filing Deadlines
-              </label>
-              <textarea
-                name="filingDeadlines"
-                value={customRates.filingDeadlines}
-                onChange={handleRateChange}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Important tax filing deadlines..."
-              />
+              <h4 className="text-sm font-medium text-gray-700 mb-2">Filing Deadlines</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">
+                    Sales Tax Deadline
+                  </label>
+                  <input
+                    type="text"
+                    name="salesTaxDeadline"
+                    value={customRates.filingDeadlines?.salesTax || ''}
+                    onChange={(e) => {
+                      setCustomRates(prev => ({
+                        ...prev,
+                        filingDeadlines: {
+                          ...prev.filingDeadlines,
+                          salesTax: e.target.value
+                        }
+                      }));
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., Monthly, 20th"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">
+                    Income Tax Deadline
+                  </label>
+                  <input
+                    type="text"
+                    name="incomeTaxDeadline"
+                    value={customRates.filingDeadlines?.incomeTax || ''}
+                    onChange={(e) => {
+                      setCustomRates(prev => ({
+                        ...prev,
+                        filingDeadlines: {
+                          ...prev.filingDeadlines,
+                          incomeTax: e.target.value
+                        }
+                      }));
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., April 15"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">
+                    Payroll Tax Deadline
+                  </label>
+                  <input
+                    type="text"
+                    name="payrollTaxDeadline"
+                    value={customRates.filingDeadlines?.payrollTax || ''}
+                    onChange={(e) => {
+                      setCustomRates(prev => ({
+                        ...prev,
+                        filingDeadlines: {
+                          ...prev.filingDeadlines,
+                          payrollTax: e.target.value
+                        }
+                      }));
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., Quarterly"
+                  />
+                </div>
+              </div>
             </div>
           </div>
           
@@ -732,9 +989,9 @@ export default function TaxSettings({ onNavigate }) {
             <div className="mb-4 p-4 bg-gray-50 rounded-lg">
               <h4 className="font-medium text-gray-900 mb-2">Summary:</h4>
               <div className="space-y-1 text-sm text-gray-600">
-                <p>Sales Tax Rate: {customRates.salesTaxRate}%</p>
-                <p>Income Tax Rate: {customRates.incomeTaxRate}%</p>
-                <p>Payroll Tax Rate: {customRates.payrollTaxRate}%</p>
+                <p><strong>Sales Tax:</strong> {customRates.stateSalesTaxRate}% (State) + {customRates.localSalesTaxRate}% (Local) = {customRates.totalSalesTaxRate}% Total</p>
+                <p><strong>Income Tax:</strong> {customRates.federalIncomeTaxRate}% (Federal) + {customRates.stateIncomeTaxRate}% (State) = {customRates.totalIncomeTaxRate}% Total</p>
+                <p><strong>Payroll Tax:</strong> {customRates.federalPayrollTaxRate}% (Federal) + {customRates.statePayrollTaxRate}% (State)</p>
                 <p>Location: {formData.city}, {formData.stateProvince}, {formData.country}</p>
               </div>
             </div>
