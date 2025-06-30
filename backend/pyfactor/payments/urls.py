@@ -1,6 +1,7 @@
 # payments/urls.py
 from django.urls import path
 from . import views
+from . import webhook_handlers
 
 # Import payment views from accounts app for Stripe integration
 from accounts import views_payment
@@ -16,6 +17,9 @@ urlpatterns = [
     path('confirm-payment/', views_payment.confirm_payment, name='confirm_payment'),
     path('create-subscription/', views_payment.create_subscription, name='create_subscription'),
     # Note: Stripe webhook is now handled at /api/onboarding/webhooks/stripe/
+    
+    # Tax filing payment webhook
+    path('webhooks/stripe/tax-filing/', webhook_handlers.stripe_webhook_handler, name='tax_filing_stripe_webhook'),
     
     # Payment recording endpoint
     path('record/', views.record_payment, name='record_payment'),

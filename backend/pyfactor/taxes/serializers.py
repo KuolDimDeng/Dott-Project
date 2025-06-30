@@ -3,8 +3,11 @@ from rest_framework import serializers
 from .models import (
     State, IncomeTaxRate, PayrollTaxFiling, TaxFilingInstruction, TaxForm,
     TaxDataEntryControl, TaxDataEntryLog, TaxDataAbuseReport, TaxDataBlacklist,
-    TaxSettings, TaxApiUsage, TaxFilingLocation, TaxReminder
+    TaxSettings, TaxApiUsage, TaxFilingLocation, TaxReminder, TaxFiling, FilingDocument
 )
+import logging
+
+logger = logging.getLogger(__name__)
 
 class StateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -190,3 +193,229 @@ class TaxReminderSerializer(serializers.ModelSerializer):
         """Check if reminder is overdue"""
         from django.utils import timezone
         return obj.status == 'pending' and obj.due_date < timezone.now().date()
+
+
+class FilingDocumentSerializer(serializers.ModelSerializer):
+    """
+    Serializer for tax filing documents.
+    """
+    file_url = serializers.SerializerMethodField()
+    uploaded_by_name = serializers.SerializerMethodField()
+    document_type_display = serializers.CharField(source='get_document_type_display', read_only=True)
+    
+    class Meta:
+        model = FilingDocument
+        fields = [
+            'id',
+            'filing',
+            'document_type',
+            'document_type_display',
+            'file_name',
+            'file_path',
+            'file_url',
+            'file_size',
+            'mime_type',
+            'uploaded_by',
+            'uploaded_by_name',
+            'description',
+            'is_verified',
+            'verified_by',
+            'verified_at',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = [
+            'id',
+            'file_path',
+            'file_url',
+            'uploaded_by',
+            'uploaded_by_name',
+            'is_verified',
+            'verified_by',
+            'verified_at',
+            'created_at',
+            'updated_at'
+        ]
+    
+    def get_file_url(self, obj):
+        """Generate URL for accessing the file."""
+        if obj.file_path:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(f'/media/{obj.file_path}')
+        return None
+    
+    def get_uploaded_by_name(self, obj):
+        """Get the name of the user who uploaded the document."""
+        if obj.created_by:
+            return f"{obj.created_by.first_name} {obj.created_by.last_name}".strip() or obj.created_by.email
+        return obj.uploaded_by
+
+
+class FilingDocumentUploadSerializer(serializers.Serializer):
+    """
+    Serializer for document upload requests.
+    """
+    filing_id = serializers.UUIDField(required=True)
+    documents = serializers.ListField(
+        child=serializers.FileField(),
+        required=True,
+        allow_empty=False
+    )
+    document_types = serializers.ListField(
+        child=serializers.ChoiceField(choices=FilingDocument.DOCUMENT_TYPE_CHOICES),
+        required=True,
+        allow_empty=False
+    )
+    descriptions = serializers.ListField(
+        child=serializers.CharField(max_length=500, allow_blank=True),
+        required=False,
+        allow_empty=True
+    )
+    
+    def validate(self, attrs):
+        """Validate that number of files matches number of document types."""
+        documents = attrs.get('documents', [])
+        document_types = attrs.get('document_types', [])
+        
+        if len(documents) != len(document_types):
+            raise serializers.ValidationError(
+                "Number of documents must match number of document types"
+            )
+        
+        return attrs
+
+
+class TaxFilingSerializer(serializers.ModelSerializer):
+    """
+    Serializer for tax filings with nested documents.
+    """
+    documents = FilingDocumentSerializer(many=True, read_only=True)
+    document_count = serializers.SerializerMethodField()
+    verified_document_count = serializers.SerializerMethodField()
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    tax_type_display = serializers.CharField(source='get_tax_type_display', read_only=True)
+    service_type_display = serializers.CharField(source='get_service_type_display', read_only=True)
+    can_cancel = serializers.BooleanField(read_only=True)
+    
+    class Meta:
+        model = TaxFiling
+        fields = [
+            'filing_id',
+            'tax_type',
+            'tax_type_display',
+            'service_type',
+            'service_type_display',
+            'status',
+            'status_display',
+            'price',
+            'complexity_multiplier',
+            'filing_period',
+            'filing_year',
+            'filing_month',
+            'filing_quarter',
+            'due_date',
+            'payment_status',
+            'payment_session_id',
+            'payment_completed_at',
+            'submitted_at',
+            'accepted_at',
+            'confirmation_number',
+            'locations',
+            'total_sales',
+            'taxable_sales',
+            'tax_collected',
+            'tax_due',
+            'filing_data',
+            'notes',
+            'user_email',
+            'preparer_email',
+            'documents',
+            'document_count',
+            'verified_document_count',
+            'can_cancel',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = [
+            'filing_id',
+            'payment_status',
+            'payment_completed_at',
+            'submitted_at',
+            'accepted_at',
+            'confirmation_number',
+            'user_email',
+            'documents',
+            'document_count',
+            'verified_document_count',
+            'can_cancel',
+            'created_at',
+            'updated_at'
+        ]
+    
+    def get_document_count(self, obj):
+        """Get total number of documents."""
+        return obj.documents.count()
+    
+    def get_verified_document_count(self, obj):
+        """Get number of verified documents."""
+        return obj.documents.filter(is_verified=True).count()
+    
+    def create(self, validated_data):
+        """Create a new tax filing."""
+        # Remove any nested data that might have been included
+        validated_data.pop('documents', None)
+        
+        # Create the filing
+        filing = TaxFiling.objects.create(**validated_data)
+        
+        logger.info(f"Created tax filing {filing.filing_id} for tenant {filing.tenant_id}")
+        
+        return filing
+    
+    def update(self, instance, validated_data):
+        """Update an existing tax filing."""
+        # Remove any nested data that might have been included
+        validated_data.pop('documents', None)
+        
+        # Update the filing
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        
+        instance.save()
+        
+        logger.info(f"Updated tax filing {instance.filing_id}")
+        
+        return instance
+
+
+class TaxFilingListSerializer(serializers.ModelSerializer):
+    """
+    Lightweight serializer for tax filing lists.
+    """
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    tax_type_display = serializers.CharField(source='get_tax_type_display', read_only=True)
+    service_type_display = serializers.CharField(source='get_service_type_display', read_only=True)
+    document_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = TaxFiling
+        fields = [
+            'filing_id',
+            'tax_type',
+            'tax_type_display',
+            'service_type',
+            'service_type_display',
+            'status',
+            'status_display',
+            'filing_period',
+            'filing_year',
+            'due_date',
+            'price',
+            'document_count',
+            'created_at'
+        ]
+    
+    def get_document_count(self, obj):
+        """Get total number of documents."""
+        return obj.documents.count()

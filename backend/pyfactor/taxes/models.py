@@ -812,7 +812,7 @@ class TaxReminder(TenantAwareModel):
         ]
 
 
-class TaxForm(models.Model):
+class TaxFormTemplate(models.Model):
     """
     Reference table for tax forms by state and type
     """
