@@ -18,6 +18,22 @@ from .views.payment_views import (
     validate_payment_session,
     cancel_payment_session
 )
+from .views.esignature_views import (
+    TaxSignatureRequestViewSet,
+    send_signature_request,
+    cancel_signature_request,
+    check_signature_status,
+    download_signed_document,
+    get_audit_trail,
+    get_available_providers,
+    webhook_handler,
+    get_signature_statistics
+)
+from .views.confirmation_views import (
+    FilingConfirmationViewSet,
+    FilingNotificationViewSet
+)
+from .efiling.views import EFilingViewSet
 
 router = DefaultRouter()
 router.register(r'states', StateViewSet)
@@ -34,6 +50,16 @@ router.register(r'reminders', TaxReminderViewSet, basename='tax-reminders')
 # New filing document endpoints
 router.register(r'filings', TaxFilingViewSet, basename='tax-filing')
 router.register(r'filing-documents', FilingDocumentUploadView, basename='filing-documents')
+
+# E-filing endpoints
+router.register(r'efiling', EFilingViewSet, basename='tax-efiling')
+
+# E-signature endpoints
+router.register(r'esignature/requests', TaxSignatureRequestViewSet, basename='tax-signature-request')
+
+# Filing confirmation endpoints
+router.register(r'confirmations', FilingConfirmationViewSet, basename='tax-filing-confirmation')
+router.register(r'notifications', FilingNotificationViewSet, basename='tax-filing-notification')
 
 # Abuse control endpoints
 router.register(r'abuse-control/controls', TaxDataEntryControlViewSet, basename='tax-entry-control')
@@ -52,4 +78,17 @@ urlpatterns = [
     path('payment/pricing/', get_filing_pricing, name='tax-payment-pricing'),
     path('payment/validate-session/', validate_payment_session, name='tax-payment-validate-session'),
     path('payment/cancel-session/', cancel_payment_session, name='tax-payment-cancel-session'),
+    
+    # PDF Generation endpoints
+    path('pdf/', include('taxes.pdf_generation.urls')),
+    
+    # E-signature endpoints
+    path('esignature/requests/<uuid:signature_id>/send/', send_signature_request, name='esignature-send'),
+    path('esignature/requests/<uuid:signature_id>/cancel/', cancel_signature_request, name='esignature-cancel'),
+    path('esignature/requests/<uuid:signature_id>/status/', check_signature_status, name='esignature-status'),
+    path('esignature/requests/<uuid:signature_id>/download/', download_signed_document, name='esignature-download'),
+    path('esignature/requests/<uuid:signature_id>/audit/', get_audit_trail, name='esignature-audit'),
+    path('esignature/providers/', get_available_providers, name='esignature-providers'),
+    path('esignature/statistics/', get_signature_statistics, name='esignature-statistics'),
+    path('esignature/webhook/<str:provider_name>/', webhook_handler, name='esignature-webhook'),
 ]

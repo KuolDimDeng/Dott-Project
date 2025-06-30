@@ -3,16 +3,29 @@ from rest_framework import serializers
 from .models import (
     State, IncomeTaxRate, PayrollTaxFiling, TaxFilingInstruction, TaxForm,
     TaxDataEntryControl, TaxDataEntryLog, TaxDataAbuseReport, TaxDataBlacklist,
-    TaxSettings, TaxApiUsage, TaxFilingLocation, TaxReminder, TaxFiling, FilingDocument
+    TaxSettings, TaxApiUsage, TaxFilingLocation, TaxReminder, TaxFiling, FilingDocument,
+    FilingConfirmation, FilingNotification, NotificationType, NotificationStatus
 )
 import logging
 
 logger = logging.getLogger(__name__)
 
 class StateSerializer(serializers.ModelSerializer):
+    filing_frequency_thresholds = serializers.JSONField(required=False)
+    
     class Meta:
         model = State
-        fields = '__all__'
+        fields = [
+            'id', 'name', 'code', 'is_active', 'country', 'service_type',
+            'compliance_last_checked', 'compliance_check_frequency',
+            'full_service_enabled', 'e_file_supported', 'e_file_portal_url',
+            'has_local_taxes', 'notes',
+            # E-filing configuration fields
+            'e_file_api_base_url', 'e_file_api_version', 'e_file_formats',
+            'base_tax_rate', 'filing_frequency_thresholds',
+            'form_number', 'form_name', 'filing_due_day', 'vendor_discount_rate',
+            'has_district_taxes', 'has_home_rule_cities', 'requires_location_reporting'
+        ]
 
 class IncomeTaxRateSerializer(serializers.ModelSerializer):
     state_code = serializers.CharField(source='state.code', read_only=True)

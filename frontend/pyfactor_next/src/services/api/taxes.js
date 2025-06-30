@@ -90,4 +90,34 @@ export const taxesApi = {
     updateTaxProfile: (id, data) => axiosInstance.put(`/taxes/settings/profiles/${id}/`, data),
     deleteTaxProfile: (id) => axiosInstance.delete(`/taxes/settings/profiles/${id}/`),
   },
+
+  // E-Signature
+  esignature: {
+    // Signature Requests
+    getRequests: (params) => axiosInstance.get('/taxes/esignature/requests/', { params }),
+    getRequest: (id) => axiosInstance.get(`/taxes/esignature/requests/${id}/`),
+    createRequest: (data) => axiosInstance.post('/taxes/esignature/requests/', data, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }),
+    updateRequest: (id, data) => axiosInstance.put(`/taxes/esignature/requests/${id}/`, data),
+    deleteRequest: (id) => axiosInstance.delete(`/taxes/esignature/requests/${id}/`),
+    
+    // Signature Actions
+    sendRequest: (id) => axiosInstance.post(`/taxes/esignature/requests/${id}/send/`),
+    cancelRequest: (id) => axiosInstance.post(`/taxes/esignature/requests/${id}/cancel/`),
+    checkStatus: (id) => axiosInstance.get(`/taxes/esignature/requests/${id}/status/`),
+    downloadSigned: (id) => axiosInstance.get(`/taxes/esignature/requests/${id}/download/`, {
+      responseType: 'blob'
+    }),
+    
+    // Audit and Tracking
+    getAuditTrail: (id) => axiosInstance.get(`/taxes/esignature/requests/${id}/audit/`),
+    getStatistics: () => axiosInstance.get('/taxes/esignature/statistics/'),
+    
+    // Provider Management
+    getProviders: () => axiosInstance.get('/taxes/esignature/providers/'),
+    
+    // Webhooks (internal use)
+    handleWebhook: (provider, data) => axiosInstance.post(`/taxes/esignature/webhook/${provider}/`, data),
+  },
 };

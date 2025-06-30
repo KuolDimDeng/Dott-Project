@@ -157,6 +157,14 @@ class TaxFiling(AuditMixin, TenantAwareModel):
     user_email = models.EmailField()
     preparer_email = models.EmailField(null=True, blank=True)  # For full service
     
+    # Add missing fields for the confirmation system
+    filing_type = models.CharField(max_length=50, null=True, blank=True)  # e.g., 'quarterly', 'annual'
+    tax_year = models.IntegerField(null=True, blank=True)
+    state = models.CharField(max_length=2, null=True, blank=True)  # State code
+    payment_amount = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
+    payment_method = models.CharField(max_length=50, null=True, blank=True)
+    taxpayer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='tax_filings')
+    
     class Meta:
         app_label = 'taxes'
         db_table = 'tax_filings'
@@ -992,3 +1000,389 @@ class FilingPayment(models.Model):
         
     def __str__(self):
         return f"{self.get_payment_type_display()} - ${self.amount}"
+
+
+# E-Signature Models
+
+class TaxSignatureRequest(TenantAwareModel):
+    """Main model for e-signature requests for tax documents"""
+    
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('sent', 'Sent'),
+        ('signed', 'Partially Signed'),
+        ('completed', 'Completed'),
+        ('cancelled', 'Cancelled'),
+        ('expired', 'Expired'),
+        ('declined', 'Declined'),
+        ('error', 'Error'),
+    ]
+    
+    PROVIDER_CHOICES = [
+        ('docusign', 'DocuSign'),
+        ('adobe_sign', 'Adobe Sign'),
+        ('hellosign', 'HelloSign/Dropbox Sign'),
+        ('internal', 'Internal System'),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.CASCADE, 
+        related_name='created_signature_requests'
+    )
+    
+    # Document information
+    document_name = models.CharField(max_length=255)
+    tax_form_type = models.CharField(max_length=50, null=True, blank=True)
+    tax_year = models.IntegerField(null=True, blank=True)
+    
+    # Status and provider information
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    provider_name = models.CharField(max_length=20, choices=PROVIDER_CHOICES, default='internal')
+    provider_request_id = models.CharField(max_length=255, null=True, blank=True)
+    provider_data = JSONField(default=dict, blank=True)
+    
+    # Timing
+    sent_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+    expires_at = models.DateTimeField()
+    
+    # Additional information
+    metadata = JSONField(default=dict, blank=True)
+    error_message = models.TextField(blank=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        app_label = 'taxes'
+        db_table = 'tax_signature_requests'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['tenant_id', 'status']),
+            models.Index(fields=['tenant_id', 'tax_form_type']),
+            models.Index(fields=['provider_name', 'provider_request_id']),
+            models.Index(fields=['created_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.document_name} - {self.get_status_display()}"
+
+
+class TaxSignatureSigner(models.Model):
+    """Individual signers for signature requests"""
+    
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('sent', 'Sent'),
+        ('viewed', 'Viewed'),
+        ('signed', 'Signed'),
+        ('declined', 'Declined'),
+        ('cancelled', 'Cancelled'),
+    ]
+    
+    ROLE_CHOICES = [
+        ('signer', 'Signer'),
+        ('approver', 'Approver'),
+        ('witness', 'Witness'),
+        ('notary', 'Notary'),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    signature_request = models.ForeignKey(
+        TaxSignatureRequest, 
+        on_delete=models.CASCADE, 
+        related_name='signers'
+    )
+    
+    # Signer information
+    email = models.EmailField()
+    name = models.CharField(max_length=255)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='signer')
+    
+    # Status and timing
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    signing_order = models.IntegerField(default=1)
+    signing_url = models.URLField(max_length=1000, blank=True)
+    
+    # Signature details
+    signed_at = models.DateTimeField(null=True, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    
+    # Provider-specific data
+    provider_signer_id = models.CharField(max_length=255, null=True, blank=True)
+    provider_data = JSONField(default=dict, blank=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        app_label = 'taxes'
+        db_table = 'tax_signature_signers'
+        ordering = ['signing_order', 'created_at']
+        unique_together = ('signature_request', 'email')
+        indexes = [
+            models.Index(fields=['signature_request', 'status']),
+            models.Index(fields=['email']),
+        ]
+    
+    def __str__(self):
+        return f"{self.name} ({self.email}) - {self.get_status_display()}"
+
+
+class TaxSignatureDocument(models.Model):
+    """Documents associated with signature requests"""
+    
+    DOCUMENT_TYPE_CHOICES = [
+        ('original', 'Original Document'),
+        ('signed', 'Signed Document'),
+        ('certificate', 'Signature Certificate'),
+        ('audit_trail', 'Audit Trail'),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    signature_request = models.ForeignKey(
+        TaxSignatureRequest, 
+        on_delete=models.CASCADE, 
+        related_name='documents'
+    )
+    
+    # Document information
+    document_type = models.CharField(max_length=20, choices=DOCUMENT_TYPE_CHOICES)
+    document_file = models.FileField(upload_to='tax_signatures/%Y/%m/')
+    file_name = models.CharField(max_length=255)
+    file_size = models.IntegerField()  # in bytes
+    mime_type = models.CharField(max_length=100, default='application/pdf')
+    
+    # Security
+    checksum = models.CharField(max_length=64, blank=True)  # SHA-256 hash
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        app_label = 'taxes'
+        db_table = 'tax_signature_documents'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['signature_request', 'document_type']),
+        ]
+    
+    def save(self, *args, **kwargs):
+        if not self.file_name and self.document_file:
+            self.file_name = self.document_file.name
+        if not self.checksum and self.document_file:
+            # Calculate SHA-256 checksum
+            import hashlib
+            hash_sha256 = hashlib.sha256()
+            for chunk in self.document_file.chunks():
+                hash_sha256.update(chunk)
+            self.checksum = hash_sha256.hexdigest()
+        super().save(*args, **kwargs)
+    
+    def __str__(self):
+        return f"{self.get_document_type_display()} - {self.file_name}"
+
+
+class TaxSignatureAuditLog(models.Model):
+    """Audit trail for signature requests"""
+    
+    EVENT_TYPE_CHOICES = [
+        ('request_created', 'Request Created'),
+        ('request_sent', 'Request Sent'),
+        ('signer_viewed', 'Signer Viewed Document'),
+        ('signer_signed', 'Signer Signed Document'),
+        ('signer_declined', 'Signer Declined'),
+        ('request_completed', 'Request Completed'),
+        ('request_cancelled', 'Request Cancelled'),
+        ('document_downloaded', 'Document Downloaded'),
+        ('status_changed', 'Status Changed'),
+        ('webhook_received', 'Webhook Received'),
+        ('send_failed', 'Send Failed'),
+        ('webhook_status_update', 'Webhook Status Update'),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    signature_request = models.ForeignKey(
+        TaxSignatureRequest, 
+        on_delete=models.CASCADE, 
+        related_name='audit_logs'
+    )
+    
+    # Event details
+    event_type = models.CharField(max_length=30, choices=EVENT_TYPE_CHOICES)
+    description = models.TextField()
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True
+    )
+    
+    # Context information
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    metadata = JSONField(default=dict, blank=True)
+    
+    # Timestamp
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        app_label = 'taxes'
+        db_table = 'tax_signature_audit_logs'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['signature_request', 'created_at']),
+            models.Index(fields=['event_type', 'created_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.get_event_type_display()} - {self.created_at}"
+
+
+class TaxSignatureWebhook(models.Model):
+    """Log of webhook events from signature providers"""
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    provider_name = models.CharField(max_length=20)
+    event_type = models.CharField(max_length=100)
+    
+    # Webhook data
+    payload = JSONField()
+    headers = JSONField(default=dict)
+    
+    # Processing status
+    processed = models.BooleanField(default=False)
+    processed_at = models.DateTimeField(null=True, blank=True)
+    error_message = models.TextField(blank=True)
+    
+    # Timestamp
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        app_label = 'taxes'
+        db_table = 'tax_signature_webhooks'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['provider_name', 'processed']),
+            models.Index(fields=['created_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.provider_name} - {self.event_type} - {'Processed' if self.processed else 'Pending'}"
+
+
+# Filing Confirmation Models
+
+class FilingConfirmation(TenantAwareModel):
+    """Stores confirmation details for completed tax filings."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    filing = models.OneToOneField(TaxFiling, on_delete=models.CASCADE, related_name='confirmation')
+    
+    # Confirmation details
+    confirmation_number = models.CharField(max_length=50, unique=True, db_index=True)
+    generated_at = models.DateTimeField(auto_now_add=True)
+    
+    # PDF receipt storage
+    pdf_receipt = models.BinaryField(null=True, blank=True)  # Store PDF as binary
+    pdf_file_path = models.FileField(upload_to='tax_confirmations/%Y/%m/', null=True, blank=True)
+    
+    # State-specific confirmations
+    state_confirmation_number = models.CharField(max_length=100, null=True, blank=True)
+    state_confirmation_data = JSONField(default=dict, blank=True)
+    
+    # Metadata
+    metadata = JSONField(default=dict, blank=True)
+    
+    class Meta:
+        app_label = 'taxes'
+        db_table = 'tax_filing_confirmations'
+        indexes = [
+            models.Index(fields=['tenant_id', 'confirmation_number']),
+            models.Index(fields=['generated_at']),
+        ]
+    
+    def __str__(self):
+        return f"Confirmation {self.confirmation_number} for Filing {self.filing_id}"
+
+
+class FilingNotification(TenantAwareModel):
+    """Tracks notifications sent for filing confirmations."""
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    confirmation = models.ForeignKey(FilingConfirmation, on_delete=models.CASCADE, related_name='notifications')
+    
+    # Notification type and recipient
+    notification_type = models.CharField(max_length=20, choices=NotificationType.choices)
+    recipient = models.CharField(max_length=255)  # Email or phone number
+    
+    # Content
+    subject = models.CharField(max_length=255, null=True, blank=True)
+    content = models.TextField()
+    
+    # Status tracking
+    status = models.CharField(max_length=20, choices=NotificationStatus.choices, default=NotificationStatus.PENDING)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    delivered_at = models.DateTimeField(null=True, blank=True)
+    read_at = models.DateTimeField(null=True, blank=True)
+    
+    # Error handling
+    error_message = models.TextField(null=True, blank=True)
+    retry_count = models.IntegerField(default=0)
+    
+    # External tracking
+    external_id = models.CharField(max_length=255, null=True, blank=True)  # e.g., Twilio message SID
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        app_label = 'taxes'
+        db_table = 'tax_filing_notifications'
+        indexes = [
+            models.Index(fields=['confirmation', 'notification_type']),
+            models.Index(fields=['status', 'created_at']),
+            models.Index(fields=['tenant_id', 'created_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.get_notification_type_display()} to {self.recipient} - {self.get_status_display()}"
+
+
+# Enums for notification models
+class NotificationType(models.TextChoices):
+    EMAIL = 'email', 'Email'
+    SMS = 'sms', 'SMS'
+    IN_APP = 'in_app', 'In-App Notification'
+    PUSH = 'push', 'Push Notification'
+
+
+class NotificationStatus(models.TextChoices):
+    PENDING = 'pending', 'Pending'
+    SENT = 'sent', 'Sent'
+    DELIVERED = 'delivered', 'Delivered'
+    READ = 'read', 'Read'
+    FAILED = 'failed', 'Failed'
+    BOUNCED = 'bounced', 'Bounced'
+
+
+class TaxFilingStatus(models.TextChoices):
+    """Extended status choices for tax filings."""
+    DRAFT = 'draft', 'Draft'
+    PAYMENT_PENDING = 'payment_pending', 'Payment Pending'
+    PAYMENT_COMPLETED = 'payment_completed', 'Payment Completed'
+    DOCUMENTS_PENDING = 'documents_pending', 'Documents Pending'
+    IN_PREPARATION = 'in_preparation', 'In Preparation'
+    READY_FOR_REVIEW = 'ready_for_review', 'Ready for Review'
+    SUBMITTED = 'submitted', 'Submitted to Tax Authority'
+    ACCEPTED = 'accepted', 'Accepted by Tax Authority'
+    REJECTED = 'rejected', 'Rejected - Needs Correction'
+    COMPLETED = 'completed', 'Completed'
+    CANCELLED = 'cancelled', 'Cancelled'
+    AMENDED = 'amended', 'Amended'

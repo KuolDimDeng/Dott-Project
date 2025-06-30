@@ -17,14 +17,13 @@ from taxes.payment_integration import (
     validate_checkout_session,
     cancel_checkout_session
 )
-from custom_auth.rls_middleware import with_tenant_context
+# Tenant context is handled by middleware, no need for decorator
 
 logger = logging.getLogger(__name__)
 
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-@with_tenant_context
 def create_payment_session(request):
     """
     Create a Stripe checkout session for tax filing payment
@@ -101,7 +100,6 @@ def create_payment_session(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-@with_tenant_context
 def get_filing_pricing(request):
     """
     Get pricing for a tax filing based on type and complexity
@@ -171,7 +169,6 @@ def get_filing_pricing(request):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-@with_tenant_context
 def validate_payment_session(request):
     """
     Validate a Stripe checkout session
@@ -211,7 +208,6 @@ def validate_payment_session(request):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-@with_tenant_context
 def cancel_payment_session(request):
     """
     Cancel a Stripe checkout session

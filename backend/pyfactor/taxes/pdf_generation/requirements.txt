@@ -1,0 +1,18 @@
+# PDF Generation Requirements
+# Core PDF library
+reportlab>=4.0.4
+
+# PDF manipulation (optional but recommended)
+PyPDF2>=3.0.1
+
+# For enhanced barcode support
+pillow>=10.0.0
+
+# For QR code generation
+qrcode[pil]>=7.4.2
+
+# For advanced PDF features
+cryptography>=41.0.0
+
+# For form field validation
+jsonschema>=4.19.0

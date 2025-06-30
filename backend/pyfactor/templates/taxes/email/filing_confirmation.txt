@@ -1,0 +1,45 @@
+Tax Filing Confirmation
+
+Dear {{ taxpayer_name }},
+
+Your tax filing has been successfully submitted and confirmed.
+
+CONFIRMATION NUMBER: {{ confirmation_number }}
+Please save this number for your records.
+
+Filing Details:
+--------------
+Tax Year: {{ tax_year }}
+Filing Type: {{ filing_type }}
+State: {{ state }}
+Filing Date: {{ filing_date }}
+Status: {{ status }}
+{% if amount_paid %}Amount Paid: ${{ amount_paid }}{% endif %}
+{% if payment_method %}Payment Method: {{ payment_method }}{% endif %}
+{% if agency_reference %}Agency Reference: {{ agency_reference }}{% endif %}
+
+What's Next?
+------------
+- Your filing has been submitted to {{ tax_authority }}
+- Processing times vary by jurisdiction (typically 24-72 hours)  
+- You will receive updates on your filing status via email
+- A PDF receipt is attached to this email for your records
+- Keep this confirmation for tax preparation and audit purposes
+
+View your filing status at: {{ dashboard_url }}
+
+Need Help?
+----------
+If you have questions about your filing, please contact our support team with your confirmation number.
+
+Thank you for using Dott Tax Filing System.
+
+Best regards,
+The Dott Tax Team
+
+---
+This is an automated message from Dott Tax Filing System
+Please do not reply to this email
+
+dottapps.com | Support | Privacy Policy
+© {{ current_year }} Dott Apps. All rights reserved.
