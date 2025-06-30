@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import PayrollTaxDashboard from '@/components/taxes/payroll/PayrollTaxDashboard';
+import PayrollTaxDashboard from '@components/taxes/payroll/PayrollTaxDashboard';
 import withPageAccess from '@/app/dashboard/components/withPageAccess';
 
 function PayrollTaxPage() {

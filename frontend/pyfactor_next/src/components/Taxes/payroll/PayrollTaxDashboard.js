@@ -11,7 +11,7 @@ import {
   ExclamationCircleIcon,
   ArrowDownTrayIcon
 } from '@heroicons/react/24/outline';
-import StandardSpinner from '@/components/ui/StandardSpinner';
+import StandardSpinner from '@components/ui/StandardSpinner';
 
 const PayrollTaxDashboard = () => {
   const [loading, setLoading] = useState(true);
