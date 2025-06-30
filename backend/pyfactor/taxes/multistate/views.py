@@ -14,7 +14,7 @@ from decimal import Decimal
 from datetime import date, timedelta
 import logging
 
-from custom_auth.permissions import TenantPermission
+from custom_auth.permissions import TenantAccessPermission
 from .models import (
     MultistateNexusProfile, StateNexusStatus, BusinessActivity,
     ApportionmentFactors, MultistateReturn, StateReturnFiling,
@@ -41,7 +41,7 @@ class MultistateNexusProfileViewSet(viewsets.ModelViewSet):
     """
     
     serializer_class = MultistateNexusProfileSerializer
-    permission_classes = [IsAuthenticated, TenantPermission]
+    permission_classes = [IsAuthenticated, TenantAccessPermission]
     
     def get_queryset(self):
         return MultistateNexusProfile.objects.filter(
@@ -443,7 +443,7 @@ class StateNexusStatusViewSet(viewsets.ModelViewSet):
     """ViewSet for managing state nexus status records"""
     
     serializer_class = StateNexusStatusSerializer
-    permission_classes = [IsAuthenticated, TenantPermission]
+    permission_classes = [IsAuthenticated, TenantAccessPermission]
     
     def get_queryset(self):
         return StateNexusStatus.objects.filter(
@@ -471,7 +471,7 @@ class BusinessActivityViewSet(viewsets.ModelViewSet):
     """ViewSet for managing business activities that affect nexus"""
     
     serializer_class = BusinessActivitySerializer
-    permission_classes = [IsAuthenticated, TenantPermission]
+    permission_classes = [IsAuthenticated, TenantAccessPermission]
     
     def get_queryset(self):
         return BusinessActivity.objects.filter(
@@ -483,7 +483,7 @@ class ApportionmentFactorsViewSet(viewsets.ModelViewSet):
     """ViewSet for managing apportionment factors"""
     
     serializer_class = ApportionmentFactorsSerializer
-    permission_classes = [IsAuthenticated, TenantPermission]
+    permission_classes = [IsAuthenticated, TenantAccessPermission]
     
     def get_queryset(self):
         return ApportionmentFactors.objects.filter(
@@ -510,7 +510,7 @@ class MultistateReturnViewSet(viewsets.ModelViewSet):
     """ViewSet for managing multistate tax returns"""
     
     serializer_class = MultistateReturnSerializer
-    permission_classes = [IsAuthenticated, TenantPermission]
+    permission_classes = [IsAuthenticated, TenantAccessPermission]
     
     def get_queryset(self):
         return MultistateReturn.objects.filter(
@@ -545,7 +545,7 @@ class NexusThresholdMonitoringViewSet(viewsets.ModelViewSet):
     """ViewSet for managing nexus threshold monitoring alerts"""
     
     serializer_class = NexusThresholdMonitoringSerializer
-    permission_classes = [IsAuthenticated, TenantPermission]
+    permission_classes = [IsAuthenticated, TenantAccessPermission]
     
     def get_queryset(self):
         return NexusThresholdMonitoring.objects.filter(
@@ -595,7 +595,7 @@ class ConsolidatedGroupViewSet(viewsets.ModelViewSet):
     """ViewSet for managing consolidated group filings"""
     
     serializer_class = ConsolidatedGroupSerializer
-    permission_classes = [IsAuthenticated, TenantPermission]
+    permission_classes = [IsAuthenticated, TenantAccessPermission]
     
     def get_queryset(self):
         return ConsolidatedGroup.objects.filter(
