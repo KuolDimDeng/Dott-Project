@@ -421,8 +421,6 @@ class SmartInsightsViewSet(viewsets.ViewSet):
             
             # Fetch business data for context
             business_context = self._get_business_context(request.user)
-            print(f"[Smart Insights] Business context length: {len(business_context)}")
-            print(f"[Smart Insights] Business context preview: {business_context[:500]}...")
             
             # Call Claude API with business context
             response = client.messages.create(
@@ -514,7 +512,6 @@ Please provide specific insights based on the actual business data above, not ge
         """Fetch business data to provide context to Claude"""
         context_parts = []
         try:
-            print(f"[Smart Insights] Fetching business context for user: {user.email}")
             from crm.models import Customer
             from inventory.models import Product, Supplier
             from django.db.models import Sum, Count, Avg
@@ -529,16 +526,12 @@ Please provide specific insights based on the actual business data above, not ge
             
             # Get user's tenant for data filtering
             tenant = getattr(user, 'tenant', None)
-            print(f"[Smart Insights] User: {user.email}, Tenant: {tenant}")
-            print(f"[Smart Insights] User attributes: {[attr for attr in dir(user) if not attr.startswith('_')][:20]}")
             if not tenant:
                 # Try to get tenant from user's tenants relationship
                 if hasattr(user, 'tenants'):
                     user_tenants = user.tenants.all()
-                    print(f"[Smart Insights] User tenants: {user_tenants}")
                     if user_tenants:
                         tenant = user_tenants.first()
-                        print(f"[Smart Insights] Using first tenant: {tenant}")
                     else:
                         return "No business data available - user not associated with any tenant."
                 else:
@@ -546,23 +539,28 @@ Please provide specific insights based on the actual business data above, not ge
             
             # Customer data
             try:
-                customers = Customer.objects.filter(tenant=tenant)
+                customers = Customer.objects.filter(tenant_id=tenant.id)
                 customer_count = customers.count()
                 if customer_count > 0:
                     top_customers = customers.order_by('-id')[:5]  # Get recent customers as "top"
-                    customer_names = [c.name for c in top_customers if hasattr(c, 'name')]
+                    customer_names = []
+                    for c in top_customers:
+                        if hasattr(c, 'business_name') and c.business_name:
+                            customer_names.append(c.business_name)
+                        elif hasattr(c, 'first_name') and c.first_name:
+                            full_name = f"{c.first_name} {getattr(c, 'last_name', '')}".strip()
+                            customer_names.append(full_name)
+                        elif hasattr(c, 'email') and c.email:
+                            customer_names.append(c.email)
                     context_parts.append(f"CUSTOMERS: Total {customer_count} customers. Recent customers: {', '.join(customer_names[:3])}")
                 else:
                     context_parts.append("CUSTOMERS: No customers found.")
             except Exception as e:
-                print(f"[Smart Insights] Customer error: {str(e)}")
-                import traceback
-                print(f"[Smart Insights] Customer traceback: {traceback.format_exc()}")
-                context_parts.append(f"CUSTOMERS: Error fetching customer data")
+                context_parts.append(f"CUSTOMERS: Limited customer data available")
             
             # Product data
             try:
-                products = Product.objects.filter(tenant=tenant)
+                products = Product.objects.filter(tenant_id=tenant.id)
                 product_count = products.count()
                 if product_count > 0:
                     product_names = [p.name for p in products[:5] if hasattr(p, 'name')]
@@ -570,11 +568,11 @@ Please provide specific insights based on the actual business data above, not ge
                 else:
                     context_parts.append("PRODUCTS: No products found.")
             except Exception as e:
-                context_parts.append(f"PRODUCTS: Error fetching product data: {str(e)}")
+                context_parts.append(f"PRODUCTS: Limited product data available")
             
             # Supplier data
             try:
-                suppliers = Supplier.objects.filter(tenant=tenant)
+                suppliers = Supplier.objects.filter(tenant_id=tenant.id)
                 supplier_count = suppliers.count()
                 if supplier_count > 0:
                     supplier_names = [s.name for s in suppliers[:3] if hasattr(s, 'name')]
@@ -582,7 +580,7 @@ Please provide specific insights based on the actual business data above, not ge
                 else:
                     context_parts.append("SUPPLIERS: No suppliers found.")
             except Exception as e:
-                context_parts.append(f"SUPPLIERS: Error fetching supplier data: {str(e)}")
+                context_parts.append(f"SUPPLIERS: Limited supplier data available")
             
             # Sales data (if available)
             if Sale:
@@ -591,12 +589,12 @@ Please provide specific insights based on the actual business data above, not ge
                     thirty_days_ago = datetime.now() - timedelta(days=30)
                     # Try different date field names
                     try:
-                        recent_sales = Sale.objects.filter(tenant=tenant, order_date__gte=thirty_days_ago)
+                        recent_sales = Sale.objects.filter(tenant_id=tenant.id, order_date__gte=thirty_days_ago)
                     except:
                         try:
-                            recent_sales = Sale.objects.filter(tenant=tenant, created_at__gte=thirty_days_ago)
+                            recent_sales = Sale.objects.filter(tenant_id=tenant.id, created_at__gte=thirty_days_ago)
                         except:
-                            recent_sales = Sale.objects.filter(tenant=tenant)[:100]  # Just get recent 100
+                            recent_sales = Sale.objects.filter(tenant_id=tenant.id)[:100]  # Just get recent 100
                     
                     sales_count = recent_sales.count()
                     if sales_count > 0:
