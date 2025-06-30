@@ -17,12 +17,10 @@ from django.db import transaction
 from django.utils import timezone
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404
-from rest_framework import status
+from rest_framework import status, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from custom_auth.tenant_base_viewset import TenantSecureViewSet
-from custom_auth.mixins import TenantAwareMixin
 
 import json
 from typing import Dict, Any
@@ -37,12 +35,14 @@ from ..esignature.providers import get_signature_provider, get_available_provide
 logger = logging.getLogger(__name__)
 
 
-class TaxSignatureRequestViewSet(TenantSecureViewSet):
+class TaxSignatureRequestViewSet(viewsets.ModelViewSet):
     """ViewSet for managing tax signature requests"""
+    
+    permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
         """Return signature requests for the current tenant"""
-        return TaxSignatureRequest.objects.filter(tenant_id=self.get_tenant_id())
+        return TaxSignatureRequest.objects.filter(tenant_id=self.request.user.tenant_id)
     
     def list(self, request):
         """List signature requests with filtering and pagination"""
@@ -138,7 +138,7 @@ class TaxSignatureRequestViewSet(TenantSecureViewSet):
             
             # Create signature manager
             signature_manager = SignatureManager(
-                tenant_id=self.get_tenant_id(),
+                tenant_id=request.user.tenant_id,
                 user_id=request.user.id
             )
             
