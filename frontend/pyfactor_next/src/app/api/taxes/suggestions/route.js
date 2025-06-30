@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getSession } from '@/utils/sessionManager-v2-enhanced';
+import { getSecureSession } from '@/utils/sessionUtils-v2';
+import { standardSecurityHeaders } from '@/utils/responseHeaders';
 import Anthropic from '@anthropic-ai/sdk';
 
 // Initialize Anthropic client
@@ -23,14 +24,17 @@ export async function POST(request) {
       console.error('[Tax Suggestions API] CLAUDE_TAX_API_KEY not configured or Anthropic client not initialized');
       return NextResponse.json(
         { error: 'Tax suggestions service not configured. Please contact support.' },
-        { status: 503 }
+        { status: 503, headers: standardSecurityHeaders }
       );
     }
     
     // Verify session
-    const session = await getSession();
-    if (!session?.authenticated) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const session = await getSecureSession(request);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { 
+        status: 401, 
+        headers: standardSecurityHeaders 
+      });
     }
     
     const { tenantId, businessInfo } = await request.json();
@@ -38,7 +42,7 @@ export async function POST(request) {
     if (!tenantId || !businessInfo) {
       return NextResponse.json(
         { error: 'Missing required fields' },
-        { status: 400 }
+        { status: 400, headers: standardSecurityHeaders }
       );
     }
     
@@ -134,13 +138,13 @@ Format your response as JSON with the following structure:
         confidenceScore: taxData.confidenceScore,
         notes: taxData.notes,
         source: 'claude_api'
-      });
+      }, { headers: standardSecurityHeaders });
       
     } catch (apiError) {
       console.error('[Tax Suggestions API] Claude API error:', apiError);
       return NextResponse.json(
         { error: 'Failed to get tax suggestions. Please try again later.' },
-        { status: 500 }
+        { status: 500, headers: standardSecurityHeaders }
       );
     }
     
@@ -148,7 +152,7 @@ Format your response as JSON with the following structure:
     console.error('[Tax Suggestions API] Error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500, headers: standardSecurityHeaders }
     );
   }
 }

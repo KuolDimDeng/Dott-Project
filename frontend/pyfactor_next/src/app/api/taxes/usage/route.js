@@ -1,14 +1,18 @@
 import { NextResponse } from 'next/server';
-import { getSession } from '@/utils/sessionManager-v2-enhanced';
+import { getSecureSession } from '@/utils/sessionUtils-v2';
+import { standardSecurityHeaders } from '@/utils/responseHeaders';
 
 export async function GET(request) {
   console.log('[Tax Usage API] GET request received');
   
   try {
     // Verify session
-    const session = await getSession();
-    if (!session?.authenticated) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const session = await getSecureSession(request);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { 
+        status: 401, 
+        headers: standardSecurityHeaders 
+      });
     }
     
     const { searchParams } = new URL(request.url);
@@ -17,7 +21,7 @@ export async function GET(request) {
     if (!tenantId) {
       return NextResponse.json(
         { error: 'Tenant ID required' },
-        { status: 400 }
+        { status: 400, headers: standardSecurityHeaders }
       );
     }
     
@@ -40,7 +44,7 @@ export async function GET(request) {
         monthlyUsage: 0,
         monthlyLimit: 5,
         resetsAt: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString()
-      });
+      }, { headers: standardSecurityHeaders });
     }
     
     const data = await response.json();
@@ -50,7 +54,7 @@ export async function GET(request) {
       monthlyLimit: data.monthly_limit || 5,
       resetsAt: data.resets_at || new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString(),
       planType: data.plan_type || 'free'
-    });
+    }, { headers: standardSecurityHeaders });
     
   } catch (error) {
     console.error('[Tax Usage API] Error:', error);
@@ -59,6 +63,6 @@ export async function GET(request) {
       monthlyUsage: 0,
       monthlyLimit: 5,
       resetsAt: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString()
-    });
+    }, { headers: standardSecurityHeaders });
   }
 }
