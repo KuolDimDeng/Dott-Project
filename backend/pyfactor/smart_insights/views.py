@@ -460,7 +460,8 @@ Please provide specific insights based on the actual business data above, not ge
             # 1 credit = $0.001 (0.1 cent) of API cost
             # This gives users good value while covering costs + markup
             cost_per_credit = Decimal('0.001')
-            credits_used = max(1, math.ceil(total_api_cost / cost_per_credit))
+            # Use proper rounding instead of always rounding up
+            credits_used = max(1, int(round(total_api_cost / cost_per_credit)))
             
             print(f"[Smart Insights] Token usage - Input: {input_tokens}, Output: {output_tokens}, Total: {total_tokens}")
             print(f"[Smart Insights] API cost: ${total_api_cost:.6f}, Credits charged: {credits_used}")
@@ -515,14 +516,12 @@ Please provide specific insights based on the actual business data above, not ge
             from django.db.models import Sum, Count, Avg
             from datetime import datetime, timedelta
             
-            # Try to import Sale model - it might be in different locations
+            # Try to import SalesOrder model
             try:
-                from sales.models import Sale
+                from sales.models import SalesOrder
+                Sale = SalesOrder
             except ImportError:
-                try:
-                    from orders.models import Sale
-                except ImportError:
-                    Sale = None
+                Sale = None
             
             # Get user's tenant for data filtering
             tenant = user.tenant
@@ -573,11 +572,26 @@ Please provide specific insights based on the actual business data above, not ge
                 try:
                     # Try to get recent sales data
                     thirty_days_ago = datetime.now() - timedelta(days=30)
-                    recent_sales = Sale.objects.filter(tenant=tenant, created_at__gte=thirty_days_ago)
+                    # Try different date field names
+                    try:
+                        recent_sales = Sale.objects.filter(tenant=tenant, order_date__gte=thirty_days_ago)
+                    except:
+                        try:
+                            recent_sales = Sale.objects.filter(tenant=tenant, created_at__gte=thirty_days_ago)
+                        except:
+                            recent_sales = Sale.objects.filter(tenant=tenant)[:100]  # Just get recent 100
+                    
                     sales_count = recent_sales.count()
                     if sales_count > 0:
-                        total_revenue = recent_sales.aggregate(total=Sum('total_amount'))['total'] or 0
-                        context_parts.append(f"SALES: {sales_count} sales in last 30 days, total revenue: ${total_revenue}")
+                        # Try different amount field names
+                        try:
+                            total_revenue = recent_sales.aggregate(total=Sum('total'))['total'] or 0
+                        except:
+                            try:
+                                total_revenue = recent_sales.aggregate(total=Sum('total_amount'))['total'] or 0
+                            except:
+                                total_revenue = "N/A"
+                        context_parts.append(f"SALES: {sales_count} recent sales, total revenue: ${total_revenue}")
                     else:
                         context_parts.append("SALES: No recent sales data.")
                 except Exception as e:

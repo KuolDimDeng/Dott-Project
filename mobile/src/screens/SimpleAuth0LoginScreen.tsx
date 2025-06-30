@@ -9,13 +9,21 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
+import { makeRedirectUri } from 'expo-auth-session';
 import { useNavigation } from '@react-navigation/native';
 
 WebBrowser.maybeCompleteAuthSession();
 
 const AUTH0_DOMAIN = 'auth.dottapps.com';
 const AUTH0_CLIENT_ID = '9i7GSU4bgh6hFtMXnQACwiRxTudpuOSF';
-const redirectUri = 'dott://redirect';
+
+// Try using Expo's redirect URI
+const redirectUri = makeRedirectUri({
+  preferLocalhost: true,
+  scheme: 'exp'
+});
+
+console.log('📍 Using redirect URI:', redirectUri);
 
 const SimpleAuth0LoginScreen = () => {
   const navigation = useNavigation();
@@ -27,22 +35,42 @@ const SimpleAuth0LoginScreen = () => {
       
       console.log('🔵 Starting simple Auth0 flow...');
       
-      // Simple auth URL without PKCE (implicit flow)
+      // Generate a simple state parameter
+      const state = Math.random().toString(36).substring(7);
+      console.log('🔵 Generated state:', state);
+      
+      // Simple auth URL with state parameter (implicit flow)
       const authUrl = `https://${AUTH0_DOMAIN}/authorize?` + 
         `client_id=${AUTH0_CLIENT_ID}&` +
         `redirect_uri=${encodeURIComponent(redirectUri)}&` +
         `response_type=token&` +
         `scope=${encodeURIComponent('openid profile email')}&` +
-        `audience=${encodeURIComponent('https://api.dottapps.com')}`;
+        `audience=${encodeURIComponent('https://api.dottapps.com')}&` +
+        `state=${state}`;
 
       console.log('🔵 Auth URL:', authUrl);
       
       const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
       
-      console.log('🔵 WebBrowser result:', result);
+      console.log('🔵 WebBrowser result:', JSON.stringify(result, null, 2));
       
       if (result.type === 'success' && result.url) {
         console.log('🔵 Success URL:', result.url);
+        
+        // Check if Auth0 is returning an error in the URL
+        if (result.url.includes('error=')) {
+          const errorMatch = result.url.match(/error=([^&]+)/);
+          const errorDescMatch = result.url.match(/error_description=([^&]+)/);
+          const stateMatch = result.url.match(/state=([^&]+)/);
+          
+          console.log('🔴 Auth0 returned error in URL:');
+          console.log('🔴 Error:', errorMatch ? decodeURIComponent(errorMatch[1]) : 'unknown');
+          console.log('🔴 Description:', errorDescMatch ? decodeURIComponent(errorDescMatch[1]) : 'none');
+          console.log('🔴 State:', stateMatch ? decodeURIComponent(stateMatch[1]) : 'none');
+          console.log('🔴 Full URL:', result.url);
+          
+          throw new Error(errorDescMatch ? decodeURIComponent(errorDescMatch[1]) : 'Auth0 error');
+        }
         
         // Parse URL fragment for tokens (implicit flow)
         const url = result.url;
