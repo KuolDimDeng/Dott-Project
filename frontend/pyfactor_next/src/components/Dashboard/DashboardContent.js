@@ -238,9 +238,13 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   }, [updateState, uiState.settingsAnchorEl]);
   
   const setDrawerOpen = useCallback((value) => {
-    if (value === uiState.drawerOpen) return; // Skip update if unchanged
-    updateState({ drawerOpen: value });
-  }, [updateState, uiState.drawerOpen]);
+    updateState(prev => {
+      // Check if value is a function (for functional updates)
+      const newValue = typeof value === 'function' ? value(prev.drawerOpen) : value;
+      if (newValue === prev.drawerOpen) return prev; // Skip update if unchanged
+      return { ...prev, drawerOpen: newValue };
+    });
+  }, [updateState]);
   
   const setUserData = useCallback((value) => {
     updateState({ userData: value });
@@ -762,14 +766,18 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   // Handle drawer toggle with improved memory management
   const handleDrawerToggle = useCallback(() => {
     // Toggle the drawer state
-    setDrawerOpen(prev => !prev);
+    setDrawerOpen(prev => {
+      const newState = !prev;
+      console.log('[DashboardContent] Drawer toggle:', prev, '->', newState);
+      return newState;
+    });
   }, [setDrawerOpen]);
   
   // Add logging to help debug issues
   const handleDrawerToggleWithLogging = useCallback(() => {
-    console.log('[DashboardContent] Toggling drawer');
+    console.log('[DashboardContent] Toggle button clicked, current state:', drawerOpen);
     handleDrawerToggle();
-  }, [handleDrawerToggle]);
+  }, [handleDrawerToggle, drawerOpen]);
 
   // Handle specific click for employee management for direct access
   const handleEmployeeManagementClick = useCallback(() => {
@@ -1291,13 +1299,13 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
                 style={{
                   position: 'absolute',
                   top: '64px',
-                  left: drawerOpen ? `${drawerWidth}px` : '60px',
+                  left: drawerOpen ? `${drawerWidth}px` : `${iconOnlyWidth}px`,
                   right: '0',
                   width: 'auto',
                   minHeight: 'calc(100vh - 64px)',
                   backgroundColor: '#F8FAFC',
                   padding: '24px',
-                  transition: 'all 300ms ease-in-out',
+                  transition: 'left 300ms cubic-bezier(0.4, 0, 0.2, 1)',
                   zIndex: '0'
                 }}
                 key={`content-container-${navigationKey}`}

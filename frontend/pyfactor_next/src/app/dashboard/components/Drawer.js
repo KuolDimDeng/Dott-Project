@@ -49,6 +49,11 @@ const Drawer = ({
   // Determine if drawer is open based on either drawerOpen or open prop
   const isOpen = drawerOpen !== undefined ? drawerOpen : (open !== undefined ? open : false);
   
+  // Log drawer state for debugging
+  useEffect(() => {
+    console.log('[Drawer] State update - isOpen:', isOpen, 'drawerOpen prop:', drawerOpen);
+  }, [isOpen, drawerOpen]);
+  
   // Determine drawer toggle handler using either handleDrawerToggle or onClose
   const toggleDrawer = handleDrawerToggle || onClose || (() => {});
   
