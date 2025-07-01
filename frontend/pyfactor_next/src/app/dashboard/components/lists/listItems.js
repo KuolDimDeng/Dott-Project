@@ -298,6 +298,7 @@ const MainListItems = ({
   isIconOnly = false,
   borderRightColor = 'transparent',
   borderRightWidth = '0px',
+  handleDrawerOpen,
 }) => {
   const { canAccessRoute, isOwnerOrAdmin, user, isLoading } = usePermissions();
   const [openMenu, setOpenMenu] = useState('');
@@ -308,6 +309,7 @@ const MainListItems = ({
   const isMobile = useRef(window.innerWidth < 640);
   const [activeItem, setActiveItem] = useState(null);
   const [openTooltip, setOpenTooltip] = useState(null);
+  const [tooltipVisible, setTooltipVisible] = useState(null);
   
   // Debug logging for permissions hook
   useEffect(() => {
@@ -1960,7 +1962,7 @@ const MainListItems = ({
     
     return (
       <CollapsibleMenu isOpen={openMenu === parentMenu}>
-        <ul className="pl-10 mt-1">
+        <ul className={`${isIconOnly ? 'pl-4' : 'pl-10'} mt-1`}>
           {filteredItems.map((item, index) => (
           <li key={index}>
             <button
@@ -2120,7 +2122,7 @@ const MainListItems = ({
     return (
       <li
         key={index}
-        className={`mb-2 ${isIconOnly ? '' : 'pr-3'}`}
+        className={`mb-2 ${isIconOnly ? '' : 'pr-3'} relative`}
       >
         <button
           className={`flex items-center w-full rounded-md text-left ${
@@ -2131,14 +2133,28 @@ const MainListItems = ({
               : 'text-gray-700 hover:bg-gray-100'
           } transition-colors duration-150`}
           onClick={(e) => {
-            if (item.subItems) {
+            // If drawer is closed and item has subItems, open drawer and expand submenu
+            if (isIconOnly && item.subItems && handleDrawerOpen) {
+              handleDrawerOpen();
+              setTimeout(() => {
+                handleMenuToggle(item.label);
+              }, 300); // Wait for drawer animation
+            } else if (item.subItems) {
               handleMenuToggle(item.label);
             } else if (item.onClick) {
               item.onClick(e);
             }
           }}
-          onMouseEnter={() => handleMouseEnter(item.label)}
-          onMouseLeave={handleMouseLeave}
+          onMouseEnter={() => {
+            handleMouseEnter(item.label);
+            if (isIconOnly) {
+              setTooltipVisible(item.label);
+            }
+          }}
+          onMouseLeave={() => {
+            handleMouseLeave();
+            setTooltipVisible(null);
+          }}
         >
           <span className={`${isIconOnly ? '' : 'mr-3'} flex items-center justify-center`}>
             {item.icon}
@@ -2147,6 +2163,15 @@ const MainListItems = ({
             <span className="flex-1">{item.label}</span>
           )}
         </button>
+        
+        {/* Tooltip for icon-only mode */}
+        {isIconOnly && tooltipVisible === item.label && (
+          <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-sm rounded-md whitespace-nowrap z-50">
+            {item.label}
+            <div className="absolute right-full top-1/2 transform -translate-y-1/2 w-0 h-0 border-t-4 border-t-transparent border-b-4 border-b-transparent border-r-4 border-r-gray-800"></div>
+          </div>
+        )}
+        
         {item.subItems && renderSubMenu(item.subItems, item.label)}
       </li>
     );

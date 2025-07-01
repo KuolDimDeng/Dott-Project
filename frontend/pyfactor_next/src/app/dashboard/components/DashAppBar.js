@@ -186,7 +186,6 @@ const DashAppBar = ({
   const [businessName, setBusinessName] = useState(null);
   const [fetchedBusinessName, setFetchedBusinessName] = useState(null);
   const [isDesktop, setIsDesktop] = useState(true);
-  const [showSettingsSubmenu, setShowSettingsSubmenu] = useState(false);
   
   // Get user permissions
   const { isOwner, isAdmin, isOwnerOrAdmin } = usePermissions();
@@ -1228,19 +1227,42 @@ const DashAppBar = ({
         style={mainBackground}
       >
         <div className="flex items-center justify-between px-4 h-16">
-          {/* Logo on the left */}
-          <div 
-            className="cursor-pointer"
-            onClick={handleDrawerToggle}
-          >
-            <Image 
-              src="/static/images/PyfactorDashboard.png"
-              alt="Pyfactor Dashboard Logo"
-              width={90}
-              height={80}
-              className="object-contain"
-              priority
-            />
+          {/* Hamburger menu and Logo on the left */}
+          <div className="flex items-center">
+            {/* Hamburger menu button */}
+            <button
+              className="p-2 text-white hover:bg-white/10 rounded-full mr-2"
+              onClick={handleDrawerToggle}
+              aria-label="Toggle navigation menu"
+              title="Toggle navigation menu"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+            </button>
+            
+            {/* Logo */}
+            <div className="cursor-pointer">
+              <Image 
+                src="/static/images/PyfactorDashboard.png"
+                alt="Pyfactor Dashboard Logo"
+                width={90}
+                height={80}
+                className="object-contain"
+                priority
+              />
+            </div>
           </div>
           
           {/* Controls on the right */}
@@ -1340,28 +1362,6 @@ const DashAppBar = ({
                 </svg>
               </button>
 
-              {/* Menu toggle button */}
-              <button
-                className="flex items-center justify-center p-2 text-white hover:bg-white/10 rounded-full mr-2"
-                aria-label="open drawer"
-                onClick={handleDrawerToggle}
-                title="Open and close menu"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                </svg>
-              </button>
 
               {/* Language selector */}
               <div className="hidden sm:block mr-2">
@@ -1438,74 +1438,20 @@ const DashAppBar = ({
               </div>
               {/* Settings menu item - only show for OWNER and ADMIN */}
               {isOwnerOrAdmin() && (
-                <div className="relative">
-                  <div
-                    className="py-3 px-4 hover:bg-blue-50 cursor-pointer flex items-center justify-between"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowSettingsSubmenu(!showSettingsSubmenu);
-                    }}
-                  >
-                    <div className="flex items-center">
-                      <svg className="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                      </svg>
-                      <span>Settings</span>
-                    </div>
-                    <svg 
-                      className={`w-4 h-4 transition-transform ${showSettingsSubmenu ? 'rotate-180' : ''}`} 
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24" 
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
-                    </svg>
-                  </div>
-                  
-                  {/* Settings submenu */}
-                  {showSettingsSubmenu && (
-                    <div className="ml-8 border-l-2 border-gray-200">
-                      <div
-                        className="py-2 px-4 hover:bg-blue-50 cursor-pointer text-sm"
-                        onClick={() => {
-                          if (typeof handleSettingsClick === 'function') {
-                            handleSettingsClick('users');
-                          }
-                          handleClose();
-                        }}
-                      >
-                        User Management
-                      </div>
-                      {isOwner() && (
-                        <>
-                          <div
-                            className="py-2 px-4 hover:bg-blue-50 cursor-pointer text-sm"
-                            onClick={() => {
-                              if (typeof handleSettingsClick === 'function') {
-                                handleSettingsClick('subscription');
-                              }
-                              handleClose();
-                            }}
-                          >
-                            Subscription
-                          </div>
-                          <div
-                            className="py-2 px-4 hover:bg-blue-50 cursor-pointer text-sm text-red-600"
-                            onClick={() => {
-                              if (typeof handleSettingsClick === 'function') {
-                                handleSettingsClick('close-account');
-                              }
-                              handleClose();
-                            }}
-                          >
-                            Close Account
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  )}
+                <div
+                  className="py-3 px-4 hover:bg-blue-50 cursor-pointer flex items-center"
+                  onClick={() => {
+                    if (typeof handleSettingsClick === 'function') {
+                      handleSettingsClick();
+                    }
+                    handleClose();
+                  }}
+                >
+                  <svg className="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  </svg>
+                  <span>Settings</span>
                 </div>
               )}
               <div

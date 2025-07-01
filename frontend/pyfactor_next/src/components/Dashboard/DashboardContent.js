@@ -141,7 +141,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     // Menu state
     anchorEl: null,
     settingsAnchorEl: null,
-    drawerOpen: true,
+    drawerOpen: false, // Start with drawer closed (icon-only mode)
     
     // User data
     userData: initialUserData,
@@ -380,6 +380,10 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     setShowCreateMenu(false);
   }, [setShowCreateMenu]);
 
+  const handleDrawerToggle = useCallback(() => {
+    setDrawerOpen(!drawerOpen);
+  }, [setDrawerOpen, drawerOpen]);
+
   const handleDrawerItemClick = useCallback((option) => {
     console.log(`Drawer item clicked: ${option}`);
     
@@ -409,7 +413,6 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     resetAllStates();
     const dashboardNavKey = `dashboard-${Date.now()}`;
     updateState({ 
-      showHome: true,
       showMainDashboard: true
     });
     setNavigationKey(dashboardNavKey);
@@ -1220,15 +1223,18 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   useEffect(() => {
     const handleMenuNavigation = (event) => {
       console.log('[DEBUG] handleMenuNavigation event received:', event.detail);
-      console.log('[DEBUG] handleMenuNavigation event received:', event.detail);
       const { item, navigationKey: newKey } = event.detail;
       console.log(`[DashboardContent] Menu navigation event received: ${item}, key: ${newKey}`);
       
       // Update navigation key to force remounting of components
       setNavigationKey(newKey);
       
-      // Clean up any previous component state
-      if (item) {
+      // Handle special cases
+      if (item === 'dashboard') {
+        // For dashboard, trigger the main dashboard click handler
+        handleMainDashboardClick();
+      } else if (item) {
+        // For other items, set the view
         setView(item);
       }
       
@@ -1243,7 +1249,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     return () => {
       window.removeEventListener('menuNavigation', handleMenuNavigation);
     };
-  }, [setView, setNavigationKey]);
+  }, [setView, setNavigationKey, handleMainDashboardClick]);
 
   // Just use a single useEffect for fetching employees on mount
   useEffect(() => {
