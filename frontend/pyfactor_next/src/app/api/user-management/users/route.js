@@ -34,7 +34,7 @@ export async function GET(request) {
     }
 
     // Fetch users from local database (tenant-scoped)
-    const localUsers = await fetchLocalUsers(tenantId);
+    const localUsers = await fetchLocalUsers(tenantId, currentUser);
     
     // Fetch Auth0 users for this tenant
     const auth0Users = await fetchAuth0UsersForTenant(tenantId);
@@ -123,76 +123,95 @@ export async function POST(request) {
  */
 async function getSession(request) {
   try {
-    // Extract session from cookies or headers
-    const cookies = request.headers.get('cookie') || '';
-    const sessionId = extractSessionId(cookies);
+    // First try to get user info from existing session endpoint
+    const sessionResponse = await fetch(`${request.nextUrl.origin}/api/auth/session-v2`, {
+      headers: {
+        cookie: request.headers.get('cookie') || ''
+      }
+    });
     
-    if (!sessionId) {
-      return null;
+    if (sessionResponse.ok) {
+      const sessionData = await sessionResponse.json();
+      if (sessionData && sessionData.user) {
+        return {
+          user: {
+            id: sessionData.user.sub || sessionData.user.id,
+            email: sessionData.user.email,
+            name: sessionData.user.name || sessionData.user.email,
+            tenantId: sessionData.user.tenantId || sessionData.user.tenant_id,
+            role: sessionData.user.role || 'OWNER',
+            mfa_enabled: sessionData.user.mfa_enabled || false,
+            permissions: sessionData.user.permissions || []
+          }
+        };
+      }
     }
     
-    // Validate session and get user data
-    const session = await validateSession(sessionId);
-    return session;
+    // Fallback: try unified profile endpoint
+    const profileResponse = await fetch(`${request.nextUrl.origin}/api/auth/unified-profile`, {
+      headers: {
+        cookie: request.headers.get('cookie') || ''
+      }
+    });
+    
+    if (profileResponse.ok) {
+      const profileData = await profileResponse.json();
+      if (profileData && profileData.profile) {
+        const profile = profileData.profile;
+        return {
+          user: {
+            id: profile.sub || profile.id,
+            email: profile.email,
+            name: profile.name || profile.email,
+            tenantId: profile.tenantId || profile.tenant_id,
+            role: profile.role || 'OWNER',
+            mfa_enabled: profile.mfa_enabled || false,
+            permissions: profile.permissions || []
+          }
+        };
+      }
+    }
+    
+    return null;
     
   } catch (error) {
-    logger.error('[UserManagement] Session validation failed:', error);
+    logger.error('[UserManagement] Session retrieval failed:', error);
     return null;
   }
 }
 
-/**
- * Helper function to extract session ID from cookies
- */
-function extractSessionId(cookieString) {
-  const cookies = cookieString.split(';').reduce((acc, cookie) => {
-    const [key, value] = cookie.trim().split('=');
-    acc[key] = value;
-    return acc;
-  }, {});
-  
-  return cookies.sid || cookies.session_token;
-}
-
-/**
- * Helper function to validate session
- */
-async function validateSession(sessionId) {
-  // This should integrate with your existing session management
-  // For now, return a mock session structure
-  return {
-    user: {
-      id: 'user-123',
-      email: 'user@example.com',
-      name: 'Current User',
-      tenantId: 'tenant-123',
-      role: 'OWNER'
-    }
-  };
-}
 
 /**
  * Helper function to fetch local users from database
  */
-async function fetchLocalUsers(tenantId) {
+async function fetchLocalUsers(tenantId, currentUser) {
   try {
     // This should query your local database for tenant users
-    // Return structure should match the frontend expectations
-    return [
-      {
-        id: 'local-user-1',
-        email: 'owner@example.com',
-        name: 'Tenant Owner',
-        role: 'OWNER',
+    // For now, return the current user as the first user in the list
+    const users = [];
+    
+    // Add current user if they belong to this tenant
+    if (currentUser && currentUser.tenantId === tenantId) {
+      users.push({
+        id: currentUser.id,
+        email: currentUser.email,
+        name: currentUser.name || currentUser.email,
+        role: currentUser.role || 'OWNER',
         status: 'active',
         tenantId: tenantId,
-        permissions: [],
-        created_at: new Date().toISOString(),
+        permissions: currentUser.permissions || [],
+        created_at: currentUser.created_at || new Date().toISOString(),
         last_login: new Date().toISOString(),
-        mfa_enabled: false,
+        mfa_enabled: currentUser.mfa_enabled || false,
         invite_status: 'accepted'
-      }
-    ];
+      });
+    }
+    
+    // TODO: Query actual database for all tenant users
+    // const dbUsers = await db.query('SELECT * FROM tenant_users WHERE tenant_id = ?', [tenantId]);
+    // users.push(...dbUsers);
+    
+    return users;
   } catch (error) {
     logger.error('[UserManagement] Error fetching local users:', error);
     return [];
@@ -207,10 +226,10 @@ async function fetchAuth0UsersForTenant(tenantId) {
     // This should call Auth0 Management API
     // Filter users by tenant metadata
     const auth0Config = {
-      domain: process.env.AUTH0_DOMAIN,
-      clientId: process.env.AUTH0_CLIENT_ID,
+      domain: process.env.AUTH0_ISSUER_BASE_URL?.replace('https://', '').replace('/', '') || process.env.AUTH0_DOMAIN || 'auth.dottapps.com',
+      clientId: process.env.AUTH0_CLIENT_ID || '9i7GSU4bgh6hFtMXnQACwiRxTudpuOSF',
       clientSecret: process.env.AUTH0_CLIENT_SECRET,
-      audience: process.env.AUTH0_AUDIENCE
+      audience: process.env.AUTH0_AUDIENCE || 'https://api.dottapps.com'
     };
     
     if (!auth0Config.domain || !auth0Config.clientId || !auth0Config.clientSecret) {
