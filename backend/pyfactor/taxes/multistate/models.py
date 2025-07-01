@@ -106,7 +106,7 @@ class StateNexusStatus(AuditMixin, TenantAwareModel):
     
     # Nexus determination
     has_nexus = models.BooleanField(default=False)
-    nexus_types = models.models.JSONField(default=list, help_text="List of nexus types established")
+    nexus_types = models.JSONField(default=list, help_text="List of nexus types established")
     nexus_effective_date = models.DateField(null=True, blank=True)
     nexus_determination_date = models.DateTimeField(auto_now_add=True)
     
@@ -436,7 +436,7 @@ class NexusThresholdMonitoring(AuditMixin, TenantAwareModel):
     
     # Alert message and recommendations
     message = models.TextField()
-    recommendations = models.models.JSONField(default=list, help_text="Recommended actions")
+    recommendations = models.JSONField(default=list, help_text="Recommended actions")
     
     # Alert status
     is_active = models.BooleanField(default=True)
