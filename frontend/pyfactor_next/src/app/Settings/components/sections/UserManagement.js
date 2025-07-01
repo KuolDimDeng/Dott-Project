@@ -236,54 +236,59 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
     try {
       setLoading(true);
       
-      // Get tenant ID from profileData or user
-      const tenantId = profileData?.tenantId || profileData?.tenant_id || user?.tenant_id || user?.tenantId;
-      
-      // Fetch users from the HR employees API with tenant ID
-      const response = await fetch('/api/hr/employees', {
+      // Fetch users from the proper User Management API (not HR employees)
+      const response = await fetch('/api/user-management/users', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'X-Tenant-ID': tenantId || '',
         },
       });
 
       if (!response.ok) {
+        // If the API doesn't exist yet, fall back to current user only
+        if (response.status === 404) {
+          throw new Error('User management API not implemented yet');
+        }
         throw new Error('Failed to fetch users');
       }
 
       const data = await response.json();
       
       // Transform the API data to match our component structure
-      // Handle both array response and object with results/employees property
-      const employees = Array.isArray(data) ? data : (data.results || data.employees || []);
+      const apiUsers = Array.isArray(data) ? data : (data.users || data.results || []);
       
-      const transformedUsers = employees.map(apiUser => ({
-        id: apiUser.id || apiUser.employee_id || apiUser.user_id,
-        email: apiUser.email || apiUser.work_email || apiUser.personal_email,
-        name: apiUser.full_name || apiUser.name || `${apiUser.first_name || ''} ${apiUser.last_name || ''}`.trim() || apiUser.email,
-        role: apiUser.role || apiUser.user_role || 'USER',
-        status: apiUser.status || (apiUser.is_active ? 'active' : 'inactive'),
-        lastLogin: apiUser.last_login || apiUser.last_login_at || apiUser.updated_at,
-        twoFactorEnabled: apiUser.two_factor_enabled || apiUser.mfa_enabled || false,
+      const transformedUsers = apiUsers.map(apiUser => ({
+        id: apiUser.id || apiUser.user_id || apiUser.auth0_id,
+        email: apiUser.email,
+        name: apiUser.name || apiUser.full_name || apiUser.email,
+        role: apiUser.role || 'USER',
+        status: apiUser.status || (apiUser.active ? 'active' : 'inactive'),
+        lastLogin: apiUser.last_login || apiUser.last_active || apiUser.updated_at,
+        twoFactorEnabled: apiUser.mfa_enabled || apiUser.two_factor_enabled || false,
         permissions: apiUser.permissions || apiUser.page_permissions || [],
         invitedDate: apiUser.invited_at || apiUser.created_at,
-        department: apiUser.department || apiUser.department_name,
-        position: apiUser.position || apiUser.job_title
+        inviteStatus: apiUser.invite_status || (apiUser.email_verified ? 'accepted' : 'pending')
       }));
 
-      // If no users returned, at least show the current user
-      if (transformedUsers.length === 0 && user) {
-        transformedUsers.push({
-          id: user.sub || user.id,
-          email: user.email,
-          name: user.name || user.email,
-          role: 'OWNER', // Assuming current user is owner if no other users
-          status: 'active',
-          lastLogin: new Date().toISOString(),
-          twoFactorEnabled: user.two_factor_enabled || false,
-          permissions: []
-        });
+      // Always include the current user if not already in the list
+      if (user) {
+        const currentUserExists = transformedUsers.some(u => 
+          u.email === user.email || u.id === user.sub || u.id === user.id
+        );
+        
+        if (!currentUserExists) {
+          transformedUsers.unshift({
+            id: user.sub || user.id,
+            email: user.email,
+            name: user.name || user.email,
+            role: isOwner ? 'OWNER' : isAdmin ? 'ADMIN' : 'USER',
+            status: 'active',
+            lastLogin: new Date().toISOString(),
+            twoFactorEnabled: user.mfa_enabled || false,
+            permissions: [],
+            inviteStatus: 'accepted'
+          });
+        }
       }
 
       setUsers(transformedUsers);
@@ -301,14 +306,15 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
           role: isOwner ? 'OWNER' : isAdmin ? 'ADMIN' : 'USER',
           status: 'active',
           lastLogin: new Date().toISOString(),
-          twoFactorEnabled: user.two_factor_enabled || false,
-          permissions: []
+          twoFactorEnabled: user.mfa_enabled || false,
+          permissions: [],
+          inviteStatus: 'accepted'
         };
         setUsers([fallbackUser]);
         setFilteredUsers([fallbackUser]);
       }
       
-      notifyError('Failed to load users. Showing limited data.');
+      notifyError('Failed to load users. Showing current user only.');
     } finally {
       setLoading(false);
     }
@@ -345,8 +351,8 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
     try {
       setLoading(true);
       
-      // Call the real API to invite user
-      const response = await fetch('/api/hr/employees/invite', {
+      // Call the proper User Management API to invite user
+      const response = await fetch('/api/user-management/invite', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -387,7 +393,7 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
     try {
       setLoading(true);
       
-      const response = await fetch(`/api/hr/employees/${userId}`, {
+      const response = await fetch(`/api/user-management/users/${userId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -416,7 +422,7 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
     try {
       setLoading(true);
       
-      const response = await fetch(`/api/hr/employees/${userId}/resend-invite`, {
+      const response = await fetch(`/api/user-management/users/${userId}/resend-invite`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -445,12 +451,73 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
   };
 
   const handlePermissionToggle = (permissionId) => {
-    setInviteData(prev => ({
-      ...prev,
-      permissions: prev.permissions.includes(permissionId)
-        ? prev.permissions.filter(p => p !== permissionId)
-        : [...prev.permissions, permissionId]
-    }));
+    setInviteData(prev => {
+      const currentPermissions = prev.permissions;
+      const isCurrentlyChecked = currentPermissions.includes(permissionId);
+      
+      if (isCurrentlyChecked) {
+        // Unchecking: remove this permission and handle parent/child logic
+        let newPermissions = currentPermissions.filter(p => p !== permissionId);
+        
+        // Find if this is a parent menu
+        const parentMenu = MENU_STRUCTURE.find(menu => menu.id === permissionId);
+        if (parentMenu && parentMenu.subItems) {
+          // If unchecking a parent, remove all its children
+          const childIds = parentMenu.subItems.map(sub => sub.id);
+          newPermissions = newPermissions.filter(p => !childIds.includes(p));
+        }
+        
+        // Find if this is a child menu and check if parent should be unchecked
+        const parentOfChild = MENU_STRUCTURE.find(menu => 
+          menu.subItems && menu.subItems.some(sub => sub.id === permissionId)
+        );
+        if (parentOfChild) {
+          // Check if any other children of this parent are still checked
+          const siblingIds = parentOfChild.subItems.map(sub => sub.id);
+          const hasOtherCheckedSiblings = siblingIds.some(id => 
+            id !== permissionId && newPermissions.includes(id)
+          );
+          
+          // If no other children are checked, uncheck the parent
+          if (!hasOtherCheckedSiblings) {
+            newPermissions = newPermissions.filter(p => p !== parentOfChild.id);
+          }
+        }
+        
+        return {
+          ...prev,
+          permissions: newPermissions
+        };
+      } else {
+        // Checking: add this permission and handle parent/child logic
+        let newPermissions = [...currentPermissions, permissionId];
+        
+        // Find if this is a parent menu
+        const parentMenu = MENU_STRUCTURE.find(menu => menu.id === permissionId);
+        if (parentMenu && parentMenu.subItems) {
+          // If checking a parent, add all its children
+          const childIds = parentMenu.subItems.map(sub => sub.id);
+          childIds.forEach(childId => {
+            if (!newPermissions.includes(childId)) {
+              newPermissions.push(childId);
+            }
+          });
+        }
+        
+        // Find if this is a child menu and auto-check parent
+        const parentOfChild = MENU_STRUCTURE.find(menu => 
+          menu.subItems && menu.subItems.some(sub => sub.id === permissionId)
+        );
+        if (parentOfChild && !newPermissions.includes(parentOfChild.id)) {
+          newPermissions.push(parentOfChild.id);
+        }
+        
+        return {
+          ...prev,
+          permissions: newPermissions
+        };
+      }
+    });
   };
 
   const stats = [
