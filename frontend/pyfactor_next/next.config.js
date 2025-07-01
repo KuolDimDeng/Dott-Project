@@ -46,6 +46,8 @@ const nextConfig = {
     NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_OUT: process.env.NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_OUT,
     NEXT_PUBLIC_OAUTH_SCOPES: process.env.NEXT_PUBLIC_OAUTH_SCOPES,
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+    NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
+    NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
     APP_BASE_URL: process.env.APP_BASE_URL || process.env.NEXT_PUBLIC_BASE_URL,
     AUTH0_BASE_URL: process.env.AUTH0_BASE_URL,
     AUTH0_ISSUER_BASE_URL: process.env.AUTH0_ISSUER_BASE_URL,
@@ -229,12 +231,12 @@ const nextConfig = {
             value: [
               "default-src 'self'",
               // Remove unsafe-inline and unsafe-eval for scripts - use strict CSP
-              "script-src 'self' https://accounts.google.com https://dev-cbyy63jovi6zrcos.us.auth0.com https://js.stripe.com https://client.crisp.chat https://widget.crisp.chat https://cdn.plaid.com",
+              "script-src 'self' https://accounts.google.com https://dev-cbyy63jovi6zrcos.us.auth0.com https://js.stripe.com https://client.crisp.chat https://widget.crisp.chat https://cdn.plaid.com https://cdn.posthog.com https://app.posthog.com",
               // Allow inline styles for now (can be removed later with CSS refactoring)
               "style-src 'self' 'unsafe-inline' https://client.crisp.chat",
               "font-src 'self' data: https://fonts.gstatic.com https://client.crisp.chat",
               "img-src 'self' data: https: blob:",
-              "connect-src 'self' https://*.auth0.com https://*.stripe.com https://*.googleapis.com wss://*.crisp.chat https://*.crisp.chat https://api.stripe.com https://api.dottapps.com https://auth.dottapps.com https://ipapi.co https://api.country.is https://ipinfo.io https://ipgeolocation.io https://*.plaid.com",
+              "connect-src 'self' https://*.auth0.com https://*.stripe.com https://*.googleapis.com wss://*.crisp.chat https://*.crisp.chat https://api.stripe.com https://api.dottapps.com https://auth.dottapps.com https://ipapi.co https://api.country.is https://ipinfo.io https://ipgeolocation.io https://*.plaid.com https://app.posthog.com https://*.posthog.com",
               "frame-src 'self' https://accounts.google.com https://dev-cbyy63jovi6zrcos.us.auth0.com https://js.stripe.com https://auth.dottapps.com https://client.crisp.chat https://*.plaid.com",
               "object-src 'none'",
               "base-uri 'self'",

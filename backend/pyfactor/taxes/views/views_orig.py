@@ -565,7 +565,7 @@ class TaxDataEntryControlViewSet(viewsets.ModelViewSet):
 
 class TaxDataEntryLogViewSet(viewsets.ReadOnlyModelViewSet):
     """ViewSet for viewing tax data entry logs"""
-    queryset = TaxDataEntryLog.objects.all().order_by('-created_at')
+    queryset = TaxDataEntryLog.objects.all().order_by('-created')
     serializer_class = TaxDataEntryLogSerializer
     permission_classes = [permissions.IsAuthenticated]
     
@@ -624,7 +624,7 @@ class TaxDataEntryLogViewSet(viewsets.ReadOnlyModelViewSet):
 
 class TaxDataAbuseReportViewSet(viewsets.ModelViewSet):
     """ViewSet for managing tax data abuse reports"""
-    queryset = TaxDataAbuseReport.objects.all().order_by('-created_at')
+    queryset = TaxDataAbuseReport.objects.all().order_by('-created')
     serializer_class = TaxDataAbuseReportSerializer
     permission_classes = [permissions.IsAuthenticated]
     
@@ -661,7 +661,7 @@ class TaxDataAbuseReportViewSet(viewsets.ModelViewSet):
 
 class TaxDataBlacklistViewSet(viewsets.ModelViewSet):
     """ViewSet for managing tax data blacklist"""
-    queryset = TaxDataBlacklist.objects.all().order_by('-created_at')
+    queryset = TaxDataBlacklist.objects.all().order_by('-created')
     serializer_class = TaxDataBlacklistSerializer
     permission_classes = [permissions.IsAuthenticated]
     

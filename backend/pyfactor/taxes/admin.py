@@ -209,18 +209,18 @@ class TaxFilingInstructionAdmin(admin.ModelAdmin):
 class TaxFilingAdmin(admin.ModelAdmin):
     list_display = [
         'filing_id_short', 'tax_type', 'service_type', 'status_badge',
-        'filing_period', 'due_date', 'price', 'user_email', 'created_at'
+        'filing_period', 'due_date', 'price', 'user_email', 'created'
     ]
     list_filter = [
         'status', 'tax_type', 'service_type', 'payment_status',
-        'filing_year', 'created_at'
+        'filing_year', 'created'
     ]
     search_fields = [
         'filing_id', 'user_email', 'preparer_email',
         'confirmation_number', 'filing_period'
     ]
     readonly_fields = [
-        'filing_id', 'created_at', 'updated_at',
+        'filing_id', 'created', 'updated',
         'payment_completed_at', 'submitted_at', 'accepted_at'
     ]
     
@@ -251,7 +251,7 @@ class TaxFilingAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
         ('Metadata', {
-            'fields': ('filing_data', 'locations', 'created_at', 'updated_at'),
+            'fields': ('filing_data', 'locations', 'created', 'updated'),
             'classes': ('collapse',)
         })
     )

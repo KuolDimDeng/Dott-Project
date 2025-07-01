@@ -5,7 +5,7 @@ Handles nexus tracking, apportionment factors, multi-state filings, and complian
 
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
-from django.contrib.postgres.fields import JSONField
+# Removed deprecated import - JSONField is now from django.db.models
 from django.utils import timezone
 from custom_auth.tenant_base_model import TenantAwareModel
 from audit.mixins import AuditMixin
@@ -60,7 +60,7 @@ class MultistateNexusProfile(AuditMixin, TenantAwareModel):
     compliance_status = models.CharField(max_length=20, default='active')
     
     # Configuration
-    settings = JSONField(default=dict, blank=True)
+    settings = models.JSONField(default=dict, blank=True)
     
     class Meta:
         app_label = 'taxes'
@@ -106,7 +106,7 @@ class StateNexusStatus(AuditMixin, TenantAwareModel):
     
     # Nexus determination
     has_nexus = models.BooleanField(default=False)
-    nexus_types = models.JSONField(default=list, help_text="List of nexus types established")
+    nexus_types = models.models.JSONField(default=list, help_text="List of nexus types established")
     nexus_effective_date = models.DateField(null=True, blank=True)
     nexus_determination_date = models.DateTimeField(auto_now_add=True)
     
@@ -120,7 +120,7 @@ class StateNexusStatus(AuditMixin, TenantAwareModel):
     transaction_threshold = models.IntegerField(null=True, blank=True)
     
     # Analysis details
-    threshold_analysis = JSONField(default=dict, blank=True)
+    threshold_analysis = models.JSONField(default=dict, blank=True)
     last_threshold_check = models.DateTimeField(auto_now=True)
     
     # Registration and compliance
@@ -196,7 +196,7 @@ class BusinessActivity(AuditMixin, TenantAwareModel):
         default=False, 
         help_text="Whether this activity creates nexus"
     )
-    nexus_analysis = JSONField(default=dict, blank=True)
+    nexus_analysis = models.JSONField(default=dict, blank=True)
     
     # Status
     is_active = models.BooleanField(default=True)
@@ -234,18 +234,18 @@ class ApportionmentFactors(AuditMixin, TenantAwareModel):
     total_income = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     
     # State-by-state data (stored as JSON for flexibility)
-    state_sales = JSONField(default=dict, help_text="Sales by state")
-    state_payroll = JSONField(default=dict, help_text="Payroll by state")
-    state_property = JSONField(default=dict, help_text="Property by state")
+    state_sales = models.JSONField(default=dict, help_text="Sales by state")
+    state_payroll = models.JSONField(default=dict, help_text="Payroll by state")
+    state_property = models.JSONField(default=dict, help_text="Property by state")
     
     # Calculated factors
-    sales_factors = JSONField(default=dict, help_text="Sales apportionment factors by state")
-    payroll_factors = JSONField(default=dict, help_text="Payroll apportionment factors by state")
-    property_factors = JSONField(default=dict, help_text="Property apportionment factors by state")
-    apportionment_percentages = JSONField(default=dict, help_text="Final apportionment percentages by state")
+    sales_factors = models.JSONField(default=dict, help_text="Sales apportionment factors by state")
+    payroll_factors = models.JSONField(default=dict, help_text="Payroll apportionment factors by state")
+    property_factors = models.JSONField(default=dict, help_text="Property apportionment factors by state")
+    apportionment_percentages = models.JSONField(default=dict, help_text="Final apportionment percentages by state")
     
     # Throwback/throwout adjustments
-    throwback_adjustments = JSONField(default=dict, help_text="Throwback adjustments by state")
+    throwback_adjustments = models.JSONField(default=dict, help_text="Throwback adjustments by state")
     nowhere_sales = models.DecimalField(
         max_digits=15, 
         decimal_places=2, 
@@ -254,7 +254,7 @@ class ApportionmentFactors(AuditMixin, TenantAwareModel):
     )
     
     # Validation and analysis
-    validation_warnings = JSONField(default=list, help_text="Validation warnings from calculation")
+    validation_warnings = models.JSONField(default=list, help_text="Validation warnings from calculation")
     calculation_method = models.CharField(max_length=50, default='separate_filing')
     
     # Status
@@ -318,7 +318,7 @@ class MultistateReturn(AuditMixin, TenantAwareModel):
     extended_due_date = models.DateField(null=True, blank=True)
     
     # Tax calculations
-    state_tax_calculations = JSONField(default=dict, help_text="Tax calculations by state")
+    state_tax_calculations = models.JSONField(default=dict, help_text="Tax calculations by state")
     total_tax_due = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     total_payments_made = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     balance_due = models.DecimalField(max_digits=15, decimal_places=2, default=0)
@@ -329,7 +329,7 @@ class MultistateReturn(AuditMixin, TenantAwareModel):
     electronic_filing = models.BooleanField(default=True)
     
     # Compliance tracking
-    compliance_issues = JSONField(default=list, help_text="Any compliance issues identified")
+    compliance_issues = models.JSONField(default=list, help_text="Any compliance issues identified")
     review_notes = models.TextField(blank=True)
     
     class Meta:
@@ -383,7 +383,7 @@ class StateReturnFiling(AuditMixin, TenantAwareModel):
     acknowledgment_date = models.DateTimeField(null=True, blank=True)
     
     # State-specific data
-    state_specific_data = JSONField(default=dict, help_text="State-specific form data")
+    state_specific_data = models.JSONField(default=dict, help_text="State-specific form data")
     
     class Meta:
         app_label = 'taxes'
@@ -436,7 +436,7 @@ class NexusThresholdMonitoring(AuditMixin, TenantAwareModel):
     
     # Alert message and recommendations
     message = models.TextField()
-    recommendations = JSONField(default=list, help_text="Recommended actions")
+    recommendations = models.models.JSONField(default=list, help_text="Recommended actions")
     
     # Alert status
     is_active = models.BooleanField(default=True)
@@ -477,8 +477,8 @@ class ReciprocityAgreement(TenantAwareModel):
     
     # Agreement terms
     description = models.TextField()
-    tax_types_covered = JSONField(default=list, help_text="Tax types covered by agreement")
-    conditions = JSONField(default=dict, help_text="Conditions and limitations")
+    tax_types_covered = models.JSONField(default=list, help_text="Tax types covered by agreement")
+    conditions = models.JSONField(default=dict, help_text="Conditions and limitations")
     
     # Status
     is_active = models.BooleanField(default=True)
@@ -510,12 +510,12 @@ class ConsolidatedGroup(AuditMixin, TenantAwareModel):
     filing_method = models.CharField(max_length=20, default='consolidated')
     
     # Group members (stored as JSON for flexibility)
-    member_entities = JSONField(default=list, help_text="List of group member entities")
-    ownership_percentages = JSONField(default=dict, help_text="Ownership percentages")
+    member_entities = models.JSONField(default=list, help_text="List of group member entities")
+    ownership_percentages = models.JSONField(default=dict, help_text="Ownership percentages")
     
     # Combined financials
     combined_income = models.DecimalField(max_digits=15, decimal_places=2, default=0)
-    combined_apportionment = JSONField(default=dict, help_text="Combined apportionment factors")
+    combined_apportionment = models.JSONField(default=dict, help_text="Combined apportionment factors")
     
     # Status
     is_active = models.BooleanField(default=True)

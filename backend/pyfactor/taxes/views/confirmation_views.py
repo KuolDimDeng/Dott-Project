@@ -138,7 +138,7 @@ class FilingConfirmationViewSet(viewsets.ModelViewSet):
     def notifications(self, request, pk=None):
         """Get all notifications for a confirmation."""
         confirmation = self.get_object()
-        notifications = confirmation.notifications.all().order_by('-created_at')
+        notifications = confirmation.notifications.all().order_by('-created')
         
         serializer = FilingNotificationSerializer(notifications, many=True)
         return Response(serializer.data)
@@ -179,7 +179,7 @@ class FilingNotificationViewSet(viewsets.ReadOnlyModelViewSet):
         """Get notifications for the current tenant."""
         return FilingNotification.objects.filter(
             tenant_id=self.request.user.tenant_id
-        ).select_related('confirmation__filing').order_by('-created_at')
+        ).select_related('confirmation__filing').order_by('-created')
     
     @action(detail=True, methods=['post'])
     def check_status(self, request, pk=None):

@@ -246,7 +246,7 @@ class FilingDocument(AuditMixin, TenantAwareModel):
     class Meta:
         app_label = 'taxes'
         db_table = 'tax_filing_documents'
-        ordering = ['-created_at']
+        ordering = ['-created']
         
     def __str__(self):
         return f"{self.get_document_type_display()} - {self.file_name}"
@@ -538,7 +538,7 @@ class TaxDataAbuseReport(TenantAwareModel):
     
     class Meta:
         app_label = 'taxes'
-        ordering = ['-created_at']
+        ordering = ['-created']
         
     def __str__(self):
         return f"{self.report_type} - {self.severity} - {self.status}"
@@ -1177,7 +1177,7 @@ class TaxSignatureDocument(models.Model):
     class Meta:
         app_label = 'taxes'
         db_table = 'tax_signature_documents'
-        ordering = ['-created_at']
+        ordering = ['-created']
         indexes = [
             models.Index(fields=['signature_request', 'document_type']),
         ]
@@ -1244,7 +1244,7 @@ class TaxSignatureAuditLog(models.Model):
     class Meta:
         app_label = 'taxes'
         db_table = 'tax_signature_audit_logs'
-        ordering = ['-created_at']
+        ordering = ['-created']
         indexes = [
             models.Index(fields=['signature_request', 'created_at']),
             models.Index(fields=['event_type', 'created_at']),
@@ -1276,7 +1276,7 @@ class TaxSignatureWebhook(models.Model):
     class Meta:
         app_label = 'taxes'
         db_table = 'tax_signature_webhooks'
-        ordering = ['-created_at']
+        ordering = ['-created']
         indexes = [
             models.Index(fields=['provider_name', 'processed']),
             models.Index(fields=['created_at']),

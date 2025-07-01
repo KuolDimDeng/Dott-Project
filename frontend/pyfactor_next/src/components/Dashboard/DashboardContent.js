@@ -404,9 +404,25 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   }, [resetAllStates, setShowHome, setShowMainDashboard, setShowKPIDashboard, setView]);
 
   const handleHomeClick = useCallback(() => {
+    console.log('[DashboardContent] handleHomeClick called');
     resetAllStates();
-    setShowHome(true);
-  }, [resetAllStates, setShowHome]);
+    
+    // Generate a unique navigation key for component remounting
+    const homeNavKey = `home-${Date.now()}`;
+    console.log('[DashboardContent] Setting navigationKey for home:', homeNavKey);
+    
+    // Update state to show home view
+    updateState({ 
+      showHome: true,
+      view: 'home',
+      navigationKey: homeNavKey
+    });
+    
+    // Also update the navigation key separately to ensure component remounting
+    setNavigationKey(homeNavKey);
+    
+    console.log('[DashboardContent] Navigating to Home view with key', homeNavKey);
+  }, [resetAllStates, updateState, setNavigationKey]);
 
   const handleHRClick = useCallback((value) => {
     console.log('[DashboardContent] HR option selected:', value);
@@ -1042,13 +1058,14 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     handleMenuItemClick,
     setShowForm,
     setFormOption,
-    tenantId: effectiveTenantId
+    tenantId: effectiveTenantId,
+    handleHomeClick
   }), [
     anchorEl, settingsAnchorEl, openMenu, settingsMenuOpen, setAnchorEl, setSettingsAnchorEl,
     setShowMyAccount, setShowHelpCenter, memoizedUserData, userAttributes, setUserData, drawerOpen, handleDrawerToggleWithLogging,
     resetAllStates, setShowHome, setShowCreateMenu, showCreateMenu, handleClick, handleClose,
     handleUserProfileClick, handleSettingsClick, handleHelpClick, handlePrivacyClick, handleTermsClick,
-    handleSignOut, handleCloseCreateMenu, handleMenuItemClick, setShowForm, setFormOption, effectiveTenantId
+    handleSignOut, handleCloseCreateMenu, handleMenuItemClick, setShowForm, setFormOption, effectiveTenantId, handleHomeClick
   ]);
   
   // Memoize Drawer props with handlePayrollClick included

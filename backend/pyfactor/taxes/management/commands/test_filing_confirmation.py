@@ -63,7 +63,7 @@ class Command(BaseCommand):
             # Find most recent filing
             filing = TaxFiling.objects.filter(
                 status__in=['submitted', 'accepted', 'completed']
-            ).order_by('-created_at').first()
+            ).order_by('-created').first()
             
             if not filing:
                 self.stdout.write(self.style.ERROR('No eligible filings found. Use --create-test-filing to create one.'))

@@ -423,7 +423,7 @@ class SignatureManager:
         if tax_year:
             queryset = queryset.filter(tax_year=tax_year)
         
-        return queryset.order_by('-created_at')
+        return queryset.order_by('-created')
     
     def _handle_signature_completion(self, signature_request: 'TaxSignatureRequest'):
         """Handle signature request completion"""

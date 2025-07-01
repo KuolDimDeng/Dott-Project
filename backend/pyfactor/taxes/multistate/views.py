@@ -325,7 +325,7 @@ class MultistateNexusProfileViewSet(viewsets.ModelViewSet):
             # Get active monitoring alerts
             monitoring_alerts = profile.threshold_monitoring.filter(
                 is_active=True
-            ).order_by('-created_at')
+            ).order_by('-created')
             
             # Get recent returns
             recent_returns = profile.multistate_returns.filter(
@@ -550,7 +550,7 @@ class NexusThresholdMonitoringViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return NexusThresholdMonitoring.objects.filter(
             nexus_profile__tenant=self.request.user.tenant
-        ).order_by('-created_at')
+        ).order_by('-created')
     
     @action(detail=True, methods=['post'])
     def acknowledge(self, request, pk=None):
