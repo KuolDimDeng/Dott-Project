@@ -3,18 +3,57 @@
 
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { getServerUser } from '@/utils/getServerUser';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+
+// Helper function to verify session using the same pattern as session-v2
+async function verifySession() {
+  try {
+    const cookieStore = await cookies();
+    const sessionId = cookieStore.get('sid');
+    
+    if (!sessionId) {
+      console.log('[Calendar API] No session ID found');
+      return null;
+    }
+    
+    console.log('[Calendar API] Found session ID, validating with backend...');
+    
+    // Fetch session from backend - single source of truth
+    const response = await fetch(`${API_BASE_URL}/api/sessions/current/`, {
+      headers: {
+        'Authorization': `Session ${sessionId.value}`,
+        'Cookie': `session_token=${sessionId.value}`
+      },
+      cache: 'no-store'
+    });
+    
+    if (!response.ok) {
+      console.log('[Calendar API] Backend session validation failed:', response.status);
+      return null;
+    }
+    
+    const sessionData = await response.json();
+    console.log('[Calendar API] Session validated successfully:', {
+      email: sessionData.email || sessionData.user?.email,
+      tenantId: sessionData.tenant_id || sessionData.tenantId
+    });
+    
+    return sessionData;
+  } catch (error) {
+    console.error('[Calendar API] Session verification error:', error);
+    return null;
+  }
+}
 
 // GET - Fetch calendar events from database
 export async function GET(request) {
   try {
     console.log('[Calendar API GET] Starting request');
-    const user = await getServerUser();
+    const sessionData = await verifySession();
     
-    if (!user) {
-      console.error('[Calendar API GET] No valid user session');
+    if (!sessionData) {
+      console.error('[Calendar API GET] No valid session');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -47,7 +86,7 @@ export async function GET(request) {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          ...(user?.access_token ? { 'Authorization': `Bearer ${user.access_token}` } : {}),
+          'Authorization': `Session ${(await cookies()).get('sid')?.value}`,
           'X-Tenant-Id': tenantId
         }
       }
@@ -99,18 +138,18 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     console.log('[Calendar API POST] Starting request');
-    const user = await getServerUser();
+    const sessionData = await verifySession();
     
-    if (!user) {
-      console.error('[Calendar API POST] No valid user session');
+    if (!sessionData) {
+      console.error('[Calendar API POST] No valid session');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
     // Log session info for debugging
-    console.log('[Calendar API POST] User info:', { 
-      hasUser: !!user, 
-      email: user?.email,
-      tenantId: user?.tenantId
+    console.log('[Calendar API POST] Session info:', { 
+      hasSession: !!sessionData, 
+      email: sessionData?.email || sessionData?.user?.email,
+      tenantId: sessionData?.tenant_id || sessionData?.tenantId
     });
 
     const body = await request.json();
@@ -164,7 +203,7 @@ export async function POST(request) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(user?.access_token ? { 'Authorization': `Bearer ${user.access_token}` } : {}),
+        'Authorization': `Session ${(await cookies()).get('sid')?.value}`,
         'X-Tenant-Id': tenantId
       },
       body: JSON.stringify(backendData)
@@ -217,10 +256,10 @@ export async function POST(request) {
 export async function PUT(request) {
   try {
     console.log('[Calendar API PUT] Starting request');
-    const user = await getServerUser();
+    const sessionData = await verifySession();
     
-    if (!user) {
-      console.error('[Calendar API PUT] No valid user session');
+    if (!sessionData) {
+      console.error('[Calendar API PUT] No valid session');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -300,10 +339,10 @@ export async function PUT(request) {
 export async function DELETE(request) {
   try {
     console.log('[Calendar API DELETE] Starting request');
-    const user = await getServerUser();
+    const sessionData = await verifySession();
     
-    if (!user) {
-      console.error('[Calendar API DELETE] No valid user session');
+    if (!sessionData) {
+      console.error('[Calendar API DELETE] No valid session');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -322,7 +361,7 @@ export async function DELETE(request) {
     const response = await fetch(`${API_BASE_URL}/api/calendar/events/${id}`, {
       method: 'DELETE',
       headers: {
-        ...(user?.access_token ? { 'Authorization': `Bearer ${user.access_token}` } : {}),
+        'Authorization': `Session ${(await cookies()).get('sid')?.value}`,
         'X-Tenant-Id': tenantId
       }
     });

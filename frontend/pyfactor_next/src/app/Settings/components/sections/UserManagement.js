@@ -129,11 +129,15 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
     try {
       setLoading(true);
       
-      // Fetch users from the HR employees API
+      // Get tenant ID from profileData or user
+      const tenantId = profileData?.tenantId || profileData?.tenant_id || user?.tenant_id || user?.tenantId;
+      
+      // Fetch users from the HR employees API with tenant ID
       const response = await fetch('/api/hr/employees', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          'X-Tenant-ID': tenantId || '',
         },
       });
 

@@ -8,9 +8,7 @@ import {
   customerApi, 
   productApi, 
   serviceApi,
-  estimateApi,
-  paymentApi,
-  expenseApi
+  estimateApi
 } from '@/utils/apiClient';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
@@ -106,18 +104,14 @@ const BusinessOverview = () => {
         ordersRes,
         invoicesRes,
         estimatesRes,
-        customersRes,
-        paymentsRes,
-        expensesRes
+        customersRes
       ] = await Promise.allSettled([
         productApi.getAll(),
         serviceApi.getAll(),
         orderApi.getAll(),
         invoiceApi.getAll(),
         estimateApi.getAll(),
-        customerApi.getAll(),
-        paymentApi.getAll(),
-        expenseApi.getAll()
+        customerApi.getAll()
       ]);
 
       // Process all data and calculate metrics
@@ -127,9 +121,7 @@ const BusinessOverview = () => {
         ordersRes,
         invoicesRes,
         estimatesRes,
-        customersRes,
-        paymentsRes,
-        expensesRes
+        customersRes
       });
 
     } catch (error) {
@@ -183,19 +175,8 @@ const BusinessOverview = () => {
       customers = Array.isArray(customersData) ? customersData : (customersData.results || []);
     }
 
-    // Process payments
-    let payments = [];
-    if (responses.paymentsRes.status === 'fulfilled') {
-      const paymentsData = responses.paymentsRes.value || [];
-      payments = Array.isArray(paymentsData) ? paymentsData : (paymentsData.results || []);
-    }
-
-    // Process expenses
-    let expenses = [];
-    if (responses.expensesRes.status === 'fulfilled') {
-      const expensesData = responses.expensesRes.value || [];
-      expenses = Array.isArray(expensesData) ? expensesData : (expensesData.results || []);
-    }
+    // Note: Payments will be calculated from invoice data
+    // Note: Expenses functionality to be added later
 
     // Calculate revenue metrics
     const totalRevenue = invoices.reduce((sum, inv) => sum + (parseFloat(inv.total_amount) || 0), 0);
