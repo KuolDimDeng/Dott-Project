@@ -764,7 +764,7 @@ export default function TaxSettings({ onNavigate }) {
   
   // Render loading state
   if (sessionLoading || !isInitialized || !tenantId) {
-    return <CenteredSpinner size="large" text="Initializing Tax Settings..." showText={true} />;
+    return <CenteredSpinner size="large" />;
   }
   
   return (
