@@ -18,7 +18,7 @@ import { getFallbackTenantId, storeReliableTenantId } from '@/utils/tenantFallba
 import { useSession } from '@/hooks/useSession-v2';
 
 // Import needed for recovery
-import { signIn } from '@/config/amplifyUnified';
+// import { signIn } from '@/config/amplifyUnified'; // Removed - no longer using Cognito
 import Cookies from 'js-cookie';
 import SessionInitializer from '@/components/SessionInitializer';
 

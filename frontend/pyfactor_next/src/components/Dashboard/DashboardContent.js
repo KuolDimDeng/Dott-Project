@@ -20,12 +20,12 @@ import Drawer from '../../app/dashboard/components/Drawer';
 import { logger } from '@/utils/logger';
 import ErrorBoundary from '../../app/dashboard/components/ErrorBoundary';
 import { useRouter } from 'next/navigation';
-import { getCurrentUser, fetchUserAttributes  } from '@/config/amplifyUnified';
+// import { getCurrentUser, fetchUserAttributes  } from '@/config/amplifyUnified'; // Removed - no longer using Cognito
 import renderForm from '../../app/dashboard/components/RenderForm';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
-import { fetchAuthSession  } from '@/config/amplifyUnified';
+// import { fetchAuthSession  } from '@/config/amplifyUnified'; // Removed - no longer using Cognito
 import { NotificationProvider, useNotification } from '@/context/NotificationContext';
 import useEnsureTenant from '@/hooks/useEnsureTenant';
 import { useAuth } from '@/hooks/auth';
