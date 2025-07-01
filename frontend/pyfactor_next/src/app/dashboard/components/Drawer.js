@@ -32,6 +32,7 @@ const Drawer = ({
   handleInventoryClick,
   handleHomeClick,
   handleMainDashboardClick,
+  handleCalendarClick,
   handleCRMClick,
   handleBillingClick = () => console.log('Billing option selected'),
   handleEmployeeManagementClick,
@@ -243,6 +244,7 @@ const Drawer = ({
             handleInventoryClick={handleInventoryClick}
             handleHomeClick={handleHomeClick}
             handleMainDashboardClick={handleMainDashboardClick}
+            handleCalendarClick={handleCalendarClick}
             handleCRMClick={handleCRMClick}
             handleBillingClick={handleBillingClick}
             handleEmployeeManagementClick={handleEmployeeManagementClick}
