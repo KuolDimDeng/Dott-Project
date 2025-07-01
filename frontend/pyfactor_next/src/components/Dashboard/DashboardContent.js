@@ -891,6 +891,24 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     console.log(`[DashboardContent] Navigating to Payments ${option} with key ${paymentsNavKey}`);
   }, [resetAllStates, updateState]);
 
+  // Add the handleCalendarClick function
+  const handleCalendarClick = useCallback(() => {
+    console.log('[DashboardContent] handleCalendarClick called');
+    resetAllStates();
+    
+    // Generate a unique navigation key for component remounting
+    const calendarNavKey = `calendar-${Date.now()}`;
+    console.log('[DashboardContent] Setting navigationKey for calendar:', calendarNavKey);
+    
+    // Update state to show calendar view
+    updateState({ 
+      view: 'calendar',
+      navigationKey: calendarNavKey
+    });
+    
+    console.log('[DashboardContent] Navigating to Calendar view with key', calendarNavKey);
+  }, [resetAllStates, updateState]);
+
   // Add the handleAccountingClick function
   const handleAccountingClick = useCallback((option) => {
     console.log('[DashboardContent] handleAccountingClick called with option:', option);
@@ -1054,12 +1072,13 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     handleCRMClick,
     handleBillingClick,
     handleSalesClick,
-    handleTaxesClick
+    handleTaxesClick,
+    handleCalendarClick
   }), [
     drawerOpen, handleDrawerToggleWithLogging, drawerWidth, handleDrawerItemClick, memoizedUserData,
     resetAllStates, handleHomeClick, handleHRClick, handlePayrollClick, handlePaymentsClick, handleAccountingClick, handleBankingClick, handleInventoryClick,
     handleShowCreateOptions, handleShowCreateMenu, handleEmployeeManagementClick, handleCRMClick,
-    handleBillingClick, handleSalesClick, handleTaxesClick
+    handleBillingClick, handleSalesClick, handleTaxesClick, handleCalendarClick
   ]);
   
   // Memoize RenderMainContent props

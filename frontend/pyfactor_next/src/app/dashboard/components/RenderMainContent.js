@@ -287,6 +287,9 @@ const ReportsManagement = enhancedLazy(() => import('./crm/ReportsManagement'), 
 // Analytics Components
 const SmartInsight = enhancedLazy(() => import('./forms/SmartInsight.js'), 'Smart Insight AI');
 
+// Calendar Component
+const Calendar = enhancedLazy(() => import('./forms/Calendar.js'), 'Calendar');
+
 // Add a custom error boundary component
 class LazyLoadErrorBoundary extends React.Component {
   constructor(props) {
@@ -1976,6 +1979,18 @@ const RenderMainContent = React.memo(function RenderMainContent({
               {view === 'sales-products' && <SalesProductManagement />}
               {view === 'sales-services' && <ServiceManagement />}
               {view === 'sales-reports' && <ReportDisplay type="sales" />}
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
+      }
+
+      // Calendar view handling
+      if (view === 'calendar') {
+        const calendarComponentKey = `calendar-${navigationKey || 'default'}`;
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup componentKey={calendarComponentKey}>
+              <Calendar />
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>
         );

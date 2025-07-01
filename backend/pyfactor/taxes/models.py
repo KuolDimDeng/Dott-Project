@@ -703,7 +703,7 @@ class TaxRateCache(models.Model):
     expires_at = models.DateTimeField(db_index=True)
     hit_count = models.IntegerField(default=0)
     last_accessed = models.DateTimeField(auto_now=True)
-    # Using 'created' from TenantAwareModel instead of defining created_at
+    created = models.DateTimeField(auto_now_add=True)
     
     class Meta:
         app_label = 'taxes'
@@ -747,8 +747,8 @@ class TaxApiUsage(TenantAwareModel):
     )
     
     # Timestamps
-    # Using 'created' from TenantAwareModel instead of defining created_at
-    # Using 'updated' from TenantAwareModel instead of defining updated_at
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
     
     class Meta:
         app_label = 'taxes'
@@ -797,7 +797,7 @@ class TaxFilingLocation(models.Model):
     
     # Cache management
     last_updated = models.DateTimeField(auto_now=True)
-    # Using 'created' from TenantAwareModel instead of defining created_at
+    created = models.DateTimeField(auto_now_add=True)
     verified = models.BooleanField(default=False)
     lookup_count = models.IntegerField(default=1)  # Track popularity
     
@@ -851,8 +851,8 @@ class TaxReminder(TenantAwareModel):
         ],
         default='pending'
     )
-    # Using 'created' from TenantAwareModel instead of defining created_at
-    # Using 'updated' from TenantAwareModel instead of defining updated_at
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
     
     class Meta:
         app_label = 'taxes'
@@ -1127,8 +1127,8 @@ class TaxSignatureSigner(models.Model):
     provider_data = models.JSONField(default=dict, blank=True)
     
     # Timestamps
-    # Using 'created' from TenantAwareModel instead of defining created_at
-    # Using 'updated' from TenantAwareModel instead of defining updated_at
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
     
     class Meta:
         app_label = 'taxes'
@@ -1365,8 +1365,8 @@ class FilingNotification(TenantAwareModel):
     external_id = models.CharField(max_length=255, null=True, blank=True)  # e.g., Twilio message SID
     
     # Timestamps
-    # Using 'created' from TenantAwareModel instead of defining created_at
-    # Using 'updated' from TenantAwareModel instead of defining updated_at
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
     
     class Meta:
         app_label = 'taxes'
