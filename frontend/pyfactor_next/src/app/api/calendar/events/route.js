@@ -44,7 +44,7 @@ export async function GET(request) {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.accessToken}`,
+          ...(session?.accessToken ? { 'Authorization': `Bearer ${session.accessToken}` } : {}),
           'X-Tenant-Id': tenantId
         }
       }
@@ -99,6 +99,13 @@ export async function POST(request) {
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    
+    // Log session info for debugging
+    console.log('[Calendar API] Session info:', { 
+      hasSession: !!session, 
+      hasAccessToken: !!session?.accessToken,
+      sessionKeys: session ? Object.keys(session) : []
+    });
 
     const body = await request.json();
     const { tenantId, ...eventData } = body;
@@ -128,7 +135,7 @@ export async function POST(request) {
       description: eventData.description || '',
       location: eventData.location || '',
       attendees: eventData.attendees || [],
-      reminder_minutes: eventData.reminder || 15,
+      reminder_minutes: eventData.reminderMinutes || eventData.reminder || 15,
       is_recurring: eventData.recurring || false,
       recurrence_pattern: eventData.recurringPattern || null,
       tenant_id: tenantId
@@ -139,7 +146,7 @@ export async function POST(request) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.accessToken}`,
+        ...(session?.accessToken ? { 'Authorization': `Bearer ${session.accessToken}` } : {}),
         'X-Tenant-Id': tenantId
       },
       body: JSON.stringify(backendData)
@@ -209,7 +216,7 @@ export async function PUT(request) {
       description: eventData.description || '',
       location: eventData.location || '',
       attendees: eventData.attendees || [],
-      reminder_minutes: eventData.reminder || 15,
+      reminder_minutes: eventData.reminderMinutes || eventData.reminder || 15,
       is_recurring: eventData.recurring || false,
       recurrence_pattern: eventData.recurringPattern || null
     };
@@ -219,7 +226,7 @@ export async function PUT(request) {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.accessToken}`,
+        ...(session?.accessToken ? { 'Authorization': `Bearer ${session.accessToken}` } : {}),
         'X-Tenant-Id': tenantId
       },
       body: JSON.stringify(backendData)
@@ -284,7 +291,7 @@ export async function DELETE(request) {
     const response = await fetch(`${API_BASE_URL}/api/calendar/events/${id}`, {
       method: 'DELETE',
       headers: {
-        'Authorization': `Bearer ${session.accessToken}`,
+        ...(session?.accessToken ? { 'Authorization': `Bearer ${session.accessToken}` } : {}),
         'X-Tenant-Id': tenantId
       }
     });
