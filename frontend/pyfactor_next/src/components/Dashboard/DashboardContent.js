@@ -455,10 +455,13 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     console.log('[DashboardContent] handleMainDashboardClick called');
     resetAllStates();
     const dashboardNavKey = `dashboard-${Date.now()}`;
+    // Set both showMainDashboard and view to ensure proper rendering
     updateState({ 
-      showMainDashboard: true
+      showMainDashboard: true,
+      view: 'main-dashboard'
     });
     setNavigationKey(dashboardNavKey);
+    console.log('[DashboardContent] Set showMainDashboard to true with key:', dashboardNavKey);
   }, [resetAllStates, updateState, setNavigationKey]);
 
   const handleHomeClick = useCallback(() => {
@@ -1169,7 +1172,9 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   // Debug current state before creating mainContentProps
   console.log('[DEBUG] Creating mainContentProps with showBenefitsManagement:', uiState.showBenefitsManagement);
   
-  const mainContentProps = useMemo(() => ({
+  const mainContentProps = useMemo(() => {
+    console.log('[DashboardContent] Creating mainContentProps with showMainDashboard:', showMainDashboard, 'view:', view);
+    return {
     view,
     userData: memoizedUserData,
     showKPIDashboard,
@@ -1257,7 +1262,8 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     showMyAccount,
     showHelpCenter,
     showTaxManagement: view === 'tax-settings' || view === 'tax-forms' || view === 'tax-payments' || view === 'tax-rates' || view === 'tax-exemptions' || view === 'tax-filing' || view === 'tax-reports' || uiState.showTaxManagement
-  }), [
+  };
+  }, [
     view, memoizedUserData, showKPIDashboard, showMainDashboard, showHome, setView,
     showForm, formOption, showHRDashboard, hrSection, showEmployeeManagement,
     setShowKPIDashboard, setShowMainDashboard, updateState, customContent, mockData,
@@ -1265,7 +1271,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     navigationKey, selectedSettingsOption,
     // We already have view listed above, but it's critical for all the conditional flags
     // that depend on it like showDownloadTransactions: view === 'download-transactions'
-  , uiState.showBenefitsManagement, uiState.showTaxManagement]);
+    showBenefitsManagement, uiState]);
 
   // Listen for menu navigation events
   useEffect(() => {
