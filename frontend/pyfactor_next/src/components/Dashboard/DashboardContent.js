@@ -215,9 +215,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     setUiState(prev => {
       // If updates is a function, call it with prev
       if (typeof updates === 'function') {
-        const result = updates(prev);
-        console.log('[DashboardContent] updateState functional update:', result);
-        return result;
+        return updates(prev);
       }
       
       // Check if any values are actually changing to prevent unnecessary renders
@@ -226,13 +224,9 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
       );
       
       // If no changes, return the previous state reference to avoid a re-render
-      if (!hasChanges) {
-        console.log('[DashboardContent] updateState skipping - no changes');
-        return prev;
-      }
+      if (!hasChanges) return prev;
       
       // Otherwise, apply the updates
-      console.log('[DashboardContent] updateState applying:', updates);
       return { ...prev, ...updates };
     });
   }, []);
@@ -253,16 +247,10 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   }, [updateState]);
   
   const setDrawerOpen = useCallback((value) => {
-    console.log('[DashboardContent] setDrawerOpen called with:', value);
     updateState(prev => {
       // Check if value is a function (for functional updates)
       const newValue = typeof value === 'function' ? value(prev.drawerOpen) : value;
-      console.log('[DashboardContent] setDrawerOpen updating from', prev.drawerOpen, 'to', newValue);
-      if (newValue === prev.drawerOpen) {
-        console.log('[DashboardContent] setDrawerOpen skipping update - no change');
-        return prev; // Skip update if unchanged
-      }
-      console.log('[DashboardContent] setDrawerOpen applying update');
+      if (newValue === prev.drawerOpen) return prev; // Skip update if unchanged
       return { ...prev, drawerOpen: newValue };
     });
   }, [updateState]);
@@ -811,20 +799,9 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
 
   // Handle drawer toggle with improved memory management
   const handleDrawerToggle = useCallback(() => {
-    console.log('[DashboardContent] handleDrawerToggle called');
     // Toggle the drawer state
-    setDrawerOpen(prev => {
-      const newState = !prev;
-      console.log('[DashboardContent] Drawer toggle:', prev, '->', newState);
-      return newState;
-    });
+    setDrawerOpen(prev => !prev);
   }, [setDrawerOpen]);
-  
-  // Add logging to help debug issues
-  const handleDrawerToggleWithLogging = useCallback(() => {
-    console.log('[DashboardContent] Toggle button clicked, current drawerOpen state:', drawerOpen);
-    handleDrawerToggle();
-  }, [handleDrawerToggle, drawerOpen]);
 
   // Handle specific click for employee management for direct access
   const handleEmployeeManagementClick = useCallback(() => {
@@ -1107,7 +1084,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     userAttributes,
     setUserData,
     drawerOpen,
-    handleDrawerToggle: handleDrawerToggleWithLogging,
+    handleDrawerToggle,
     resetAllStates,
     setShowHome,
     setShowCreateMenu,
@@ -1137,7 +1114,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   // Memoize Drawer props with handlePayrollClick included
   const drawerProps = useMemo(() => ({
     drawerOpen,
-    handleDrawerToggle: handleDrawerToggleWithLogging,
+    handleDrawerToggle,
     width: drawerOpen ? drawerWidth : iconOnlyWidth,
     handleDrawerItemClick,
     userData: memoizedUserData,
@@ -1159,7 +1136,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     handleTaxesClick,
     handleCalendarClick
   }), [
-    drawerOpen, handleDrawerToggleWithLogging, drawerWidth, handleDrawerItemClick, memoizedUserData,
+    drawerOpen, handleDrawerToggle, drawerWidth, handleDrawerItemClick, memoizedUserData,
     resetAllStates, handleHomeClick, handleMainDashboardClick, handleHRClick, handlePayrollClick, handlePaymentsClick, handleAccountingClick, handleBankingClick, handleInventoryClick,
     handleShowCreateOptions, handleShowCreateMenu, handleEmployeeManagementClick, handleCRMClick,
     handleBillingClick, handleSalesClick, handleTaxesClick, handleCalendarClick

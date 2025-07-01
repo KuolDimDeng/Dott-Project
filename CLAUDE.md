@@ -214,7 +214,39 @@
   ```
 
 
-### [17.0.0] - 2025-07-01 - CURRENT - Local Backend Testing Workflow
+### [17.0.0] - 2025-07-01 - CURRENT - Dashboard Drawer Toggle State Management Fix
+- **Purpose**: Fix drawer toggle functionality and content area synchronization
+- **Issue**: Drawer toggle button stops working after clicks due to stale closure
+- **Root Cause**: State setter callbacks captured initial `uiState` values
+- **Solution**:
+  1. Use functional state updates for ALL state setters:
+     ```javascript
+     // Before - stale closure
+     const setDrawerOpen = useCallback((value) => {
+       if (value === uiState.drawerOpen) return; // Always sees initial value!
+       updateState({ drawerOpen: value });
+     }, [updateState, uiState.drawerOpen]);
+     
+     // After - functional update
+     const setDrawerOpen = useCallback((value) => {
+       updateState(prev => {
+         const newValue = typeof value === 'function' ? value(prev.drawerOpen) : value;
+         if (newValue === prev.drawerOpen) return prev;
+         return { ...prev, drawerOpen: newValue };
+       });
+     }, [updateState]); // No uiState dependency!
+     ```
+  2. Apply pattern to ALL state setters (setView, setShowHome, etc.)
+  3. Set drawer default state to open: `drawerOpen: true`
+  4. Fix content area to use constants: `left: drawerOpen ? ${drawerWidth}px : ${iconOnlyWidth}px`
+- **Key Learning**: Never include state values in callback dependencies
+- **Files Changed**: 
+  - `/src/components/Dashboard/DashboardContent.js`
+  - `/src/app/dashboard/components/DashAppBar.js`
+  - `/src/app/dashboard/components/Drawer.js`
+- **Documentation**: Updated `/frontend/pyfactor_next/docs/TROUBLESHOOTING.md`
+
+### [18.0.0] - 2025-07-01 - CURRENT - Local Backend Testing Workflow
 - **Purpose**: Prevent deployment failures through comprehensive local testing
 - **Breaking Change**: ALL backend changes must be tested locally first using Docker
 - **Core Workflow**:

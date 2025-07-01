@@ -1232,16 +1232,7 @@ const DashAppBar = ({
             {/* Hamburger menu button */}
             <button
               className="p-2 text-white hover:bg-white/10 rounded-full mr-2"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('[DashAppBar] Drawer toggle button clicked');
-                if (typeof handleDrawerToggle === 'function') {
-                  handleDrawerToggle();
-                } else {
-                  console.error('[DashAppBar] handleDrawerToggle is not a function:', handleDrawerToggle);
-                }
-              }}
+              onClick={handleDrawerToggle}
               aria-label="Toggle navigation menu"
               title="Toggle navigation menu"
             >
