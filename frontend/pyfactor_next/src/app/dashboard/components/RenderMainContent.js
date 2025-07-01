@@ -1999,6 +1999,18 @@ const RenderMainContent = React.memo(function RenderMainContent({
         );
       }
 
+      // Main Dashboard view handling
+      if (view === 'main-dashboard') {
+        const mainDashboardComponentKey = `main-dashboard-${navigationKey || 'default'}`;
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup componentKey={mainDashboardComponentKey}>
+              <BusinessOverview userData={userData} />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
+      }
+
       if (showHome) {
         const homeComponentKey = `home-${navigationKey || 'default'}`;
         

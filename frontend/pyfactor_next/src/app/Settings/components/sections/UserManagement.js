@@ -120,53 +120,88 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
   });
   const [expandedMenus, setExpandedMenus] = useState({});
 
-  // Mock data for demonstration
+  // Fetch real user data
   useEffect(() => {
-    const mockUsers = [
-      {
-        id: '1',
-        email: user?.email || 'owner@company.com',
-        name: user?.name || 'Company Owner',
-        role: 'OWNER',
-        status: 'active',
-        lastLogin: new Date().toISOString(),
-        twoFactorEnabled: true,
-        permissions: []
-      },
-      {
-        id: '2',
-        email: 'admin@company.com',
-        name: 'Admin User',
-        role: 'ADMIN',
-        status: 'active',
-        lastLogin: new Date(Date.now() - 86400000).toISOString(),
-        twoFactorEnabled: true,
-        permissions: []
-      },
-      {
-        id: '3',
-        email: 'user1@company.com',
-        name: 'Regular User',
-        role: 'USER',
-        status: 'active',
-        lastLogin: new Date(Date.now() - 172800000).toISOString(),
-        twoFactorEnabled: false,
-        permissions: ['dashboard', 'sales-dashboard', 'sales-products']
-      },
-      {
-        id: '4',
-        email: 'pending@company.com',
-        name: 'Pending User',
-        role: 'USER',
-        status: 'pending',
-        invitedDate: new Date(Date.now() - 259200000).toISOString(),
-        twoFactorEnabled: false,
-        permissions: ['dashboard', 'reports-dashboard']
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch users from the HR employees API
+      const response = await fetch('/api/hr/employees', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch users');
       }
-    ];
-    setUsers(mockUsers);
-    setFilteredUsers(mockUsers);
-  }, [user]);
+
+      const data = await response.json();
+      
+      // Transform the API data to match our component structure
+      // Handle both array response and object with results/employees property
+      const employees = Array.isArray(data) ? data : (data.results || data.employees || []);
+      
+      const transformedUsers = employees.map(apiUser => ({
+        id: apiUser.id || apiUser.employee_id || apiUser.user_id,
+        email: apiUser.email || apiUser.work_email || apiUser.personal_email,
+        name: apiUser.full_name || apiUser.name || `${apiUser.first_name || ''} ${apiUser.last_name || ''}`.trim() || apiUser.email,
+        role: apiUser.role || apiUser.user_role || 'USER',
+        status: apiUser.status || (apiUser.is_active ? 'active' : 'inactive'),
+        lastLogin: apiUser.last_login || apiUser.last_login_at || apiUser.updated_at,
+        twoFactorEnabled: apiUser.two_factor_enabled || apiUser.mfa_enabled || false,
+        permissions: apiUser.permissions || apiUser.page_permissions || [],
+        invitedDate: apiUser.invited_at || apiUser.created_at,
+        department: apiUser.department || apiUser.department_name,
+        position: apiUser.position || apiUser.job_title
+      }));
+
+      // If no users returned, at least show the current user
+      if (transformedUsers.length === 0 && user) {
+        transformedUsers.push({
+          id: user.sub || user.id,
+          email: user.email,
+          name: user.name || user.email,
+          role: 'OWNER', // Assuming current user is owner if no other users
+          status: 'active',
+          lastLogin: new Date().toISOString(),
+          twoFactorEnabled: user.two_factor_enabled || false,
+          permissions: []
+        });
+      }
+
+      setUsers(transformedUsers);
+      setFilteredUsers(transformedUsers);
+      
+    } catch (error) {
+      logger.error('[UserManagement] Error fetching users:', error);
+      
+      // Fallback to showing at least the current user
+      if (user) {
+        const fallbackUser = {
+          id: user.sub || user.id,
+          email: user.email,
+          name: user.name || user.email,
+          role: isOwner ? 'OWNER' : isAdmin ? 'ADMIN' : 'USER',
+          status: 'active',
+          lastLogin: new Date().toISOString(),
+          twoFactorEnabled: user.two_factor_enabled || false,
+          permissions: []
+        };
+        setUsers([fallbackUser]);
+        setFilteredUsers([fallbackUser]);
+      }
+      
+      notifyError('Failed to load users. Showing limited data.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Filter users based on search and filters
   useEffect(() => {
@@ -198,28 +233,38 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
 
     try {
       setLoading(true);
-      // Mock API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Call the real API to invite user
+      const response = await fetch('/api/hr/employees/invite', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: inviteData.email,
+          role: inviteData.role,
+          permissions: inviteData.permissions,
+          send_invite: true
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to send invitation');
+      }
+
+      const result = await response.json();
       
       notifySuccess(`Invitation sent to ${inviteData.email}`);
       setShowInviteModal(false);
       setInviteData({ email: '', role: 'USER', permissions: [] });
       
-      // Add to pending users
-      const newUser = {
-        id: Date.now().toString(),
-        email: inviteData.email,
-        name: inviteData.email.split('@')[0],
-        role: inviteData.role,
-        status: 'pending',
-        invitedDate: new Date().toISOString(),
-        twoFactorEnabled: false,
-        permissions: inviteData.permissions
-      };
-      setUsers([...users, newUser]);
+      // Refresh the users list to show the new pending user
+      await fetchUsers();
+      
     } catch (error) {
       logger.error('[UserManagement] Error inviting user:', error);
-      notifyError('Failed to send invitation');
+      notifyError(error.message || 'Failed to send invitation');
     } finally {
       setLoading(false);
     }
@@ -230,13 +275,27 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
 
     try {
       setLoading(true);
-      // Mock API call
-      await new Promise(resolve => setTimeout(resolve, 500));
       
-      setUsers(users.filter(u => u.id !== userId));
+      const response = await fetch(`/api/hr/employees/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to remove user');
+      }
+      
       notifySuccess('User removed successfully');
+      
+      // Refresh the users list
+      await fetchUsers();
+      
     } catch (error) {
-      notifyError('Failed to remove user');
+      logger.error('[UserManagement] Error deleting user:', error);
+      notifyError(error.message || 'Failed to remove user');
     } finally {
       setLoading(false);
     }
@@ -245,11 +304,23 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
   const handleResendInvite = async (userId) => {
     try {
       setLoading(true);
-      // Mock API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      notifySuccess('Invitation resent');
+      
+      const response = await fetch(`/api/hr/employees/${userId}/resend-invite`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to resend invitation');
+      }
+      
+      notifySuccess('Invitation resent successfully');
     } catch (error) {
-      notifyError('Failed to resend invitation');
+      logger.error('[UserManagement] Error resending invitation:', error);
+      notifyError(error.message || 'Failed to resend invitation');
     } finally {
       setLoading(false);
     }

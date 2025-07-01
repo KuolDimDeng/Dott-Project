@@ -43,33 +43,88 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
 
   useEffect(() => {
     loadCompanyData();
-  }, [profileData]);
+  }, [profileData, user]);
 
   const loadCompanyData = async () => {
     try {
       setLoading(true);
       
-      if (profileData?.tenant) {
-        setCompanyData({
-          businessName: profileData.tenant.businessName || profileData.businessName || '',
-          businessType: profileData.tenant.businessType || profileData.businessType || '',
-          email: profileData.tenant.email || profileData.email || user?.email || '',
-          phone: profileData.tenant.phone || profileData.phone || '',
-          website: profileData.tenant.website || '',
+      // Debug log to see what data we have
+      console.log('[CompanyProfile] Loading with data:', { user, profileData });
+      
+      // First try to get data from profileData
+      let businessData = {
+        businessName: '',
+        businessType: '',
+        email: '',
+        phone: '',
+        website: '',
+        address: {
+          street: '',
+          city: '',
+          state: '',
+          zipCode: '',
+          country: 'US'
+        },
+        taxId: '',
+        registrationNumber: '',
+        yearEstablished: '',
+        industry: '',
+        description: ''
+      };
+
+      // Check multiple sources for business data
+      if (profileData) {
+        businessData = {
+          businessName: profileData.businessName || profileData.tenant?.businessName || profileData.business_name || '',
+          businessType: profileData.businessType || profileData.tenant?.businessType || profileData.business_type || '',
+          email: profileData.email || profileData.tenant?.email || user?.email || '',
+          phone: profileData.phone || profileData.tenant?.phone || profileData.phone_number || '',
+          website: profileData.website || profileData.tenant?.website || '',
           address: {
-            street: profileData.tenant.address?.street || '',
-            city: profileData.tenant.address?.city || '',
-            state: profileData.tenant.address?.state || '',
-            zipCode: profileData.tenant.address?.zipCode || '',
-            country: profileData.tenant.address?.country || 'US'
+            street: profileData.address?.street || profileData.tenant?.address?.street || '',
+            city: profileData.address?.city || profileData.tenant?.address?.city || '',
+            state: profileData.address?.state || profileData.tenant?.address?.state || '',
+            zipCode: profileData.address?.zipCode || profileData.tenant?.address?.zipCode || '',
+            country: profileData.address?.country || profileData.tenant?.address?.country || 'US'
           },
-          taxId: profileData.tenant.taxId || '',
-          registrationNumber: profileData.tenant.registrationNumber || '',
-          yearEstablished: profileData.tenant.yearEstablished || '',
-          industry: profileData.tenant.industry || '',
-          description: profileData.tenant.description || ''
-        });
+          taxId: profileData.taxId || profileData.tenant?.taxId || '',
+          registrationNumber: profileData.registrationNumber || profileData.tenant?.registrationNumber || '',
+          yearEstablished: profileData.yearEstablished || profileData.tenant?.yearEstablished || '',
+          industry: profileData.industry || profileData.tenant?.industry || '',
+          description: profileData.description || profileData.tenant?.description || ''
+        };
       }
+
+      // If no business name from profileData, try to fetch from API
+      if (!businessData.businessName && user) {
+        try {
+          const response = await fetch('/api/user/profile');
+          if (response.ok) {
+            const userData = await response.json();
+            if (userData) {
+              businessData = {
+                ...businessData,
+                businessName: userData.businessName || userData.business_name || businessData.businessName,
+                businessType: userData.businessType || userData.business_type || businessData.businessType,
+                email: userData.email || businessData.email,
+                phone: userData.phone || userData.phone_number || businessData.phone
+              };
+            }
+          }
+        } catch (apiError) {
+          logger.error('[CompanyProfile] Error fetching user profile:', apiError);
+        }
+      }
+
+      // Also check user object for business data
+      if (user) {
+        businessData.businessName = businessData.businessName || user.businessName || user['custom:businessname'] || '';
+        businessData.businessType = businessData.businessType || user.businessType || user['custom:businesstype'] || '';
+        businessData.email = businessData.email || user.email || '';
+      }
+
+      setCompanyData(businessData);
     } catch (error) {
       logger.error('[CompanyProfile] Error loading company data:', error);
       notifyError('Failed to load company information');

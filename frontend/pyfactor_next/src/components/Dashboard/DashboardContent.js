@@ -777,9 +777,17 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   }, [resetAllStates, setShowMyAccount, setShowHelpCenter, setSelectedSettingsOption, setNavigationKey, handleClose]);
 
   const handleHelpClick = useCallback(() => {
+    console.log('[DashboardContent] Help Center clicked');
+    resetAllStates();
     setShowHelpCenter(true);
+    
+    // Force a re-render with a new navigation key
+    const newNavKey = `help-center-${Date.now()}`;
+    console.log(`[DashboardContent] Updating navigationKey to: ${newNavKey}`);
+    setNavigationKey(newNavKey);
+    
     handleClose();
-  }, [setShowHelpCenter, handleClose]);
+  }, [resetAllStates, setShowHelpCenter, setNavigationKey, handleClose]);
 
   const handlePrivacyClick = useCallback(() => {
     window.open('/privacy', '_blank');

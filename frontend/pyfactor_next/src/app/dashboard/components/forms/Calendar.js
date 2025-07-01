@@ -455,6 +455,13 @@ export default function Calendar({ onNavigate }) {
             center: 'title',
             right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
           }}
+          buttonText={{
+            today: 'Today',
+            month: 'Month',
+            week: 'Week',
+            day: 'Day',
+            list: 'List'
+          }}
           events={events}
           editable={true}
           selectable={true}
