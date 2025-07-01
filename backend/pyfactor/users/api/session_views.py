@@ -9,9 +9,59 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from session_manager.models import UserSession, SessionEvent
 from pyfactor.logging_config import get_logger
-import user_agents
+
+# Try to import user_agents, fallback to basic parsing if not available
+try:
+    import user_agents
+    HAS_USER_AGENTS = True
+except ImportError:
+    HAS_USER_AGENTS = False
+    # Create a mock user agent parser for fallback
+    class MockUserAgent:
+        def __init__(self, ua_string=''):
+            # Basic mobile detection
+            ua_lower = ua_string.lower()
+            self.is_mobile = any(x in ua_lower for x in ['mobile', 'android', 'iphone'])
+            self.is_tablet = any(x in ua_lower for x in ['tablet', 'ipad'])
+            
+            # Basic browser detection
+            browser_family = 'Unknown'
+            if 'chrome' in ua_lower:
+                browser_family = 'Chrome'
+            elif 'firefox' in ua_lower:
+                browser_family = 'Firefox'
+            elif 'safari' in ua_lower and 'chrome' not in ua_lower:
+                browser_family = 'Safari'
+            elif 'edge' in ua_lower:
+                browser_family = 'Edge'
+            
+            # Basic OS detection
+            os_family = 'Unknown'
+            if 'windows' in ua_lower:
+                os_family = 'Windows'
+            elif 'mac' in ua_lower or 'darwin' in ua_lower:
+                os_family = 'Mac OS X'
+            elif 'linux' in ua_lower:
+                os_family = 'Linux'
+            elif 'android' in ua_lower:
+                os_family = 'Android'
+            elif 'ios' in ua_lower or 'iphone' in ua_lower or 'ipad' in ua_lower:
+                os_family = 'iOS'
+            
+            self.browser = type('obj', (object,), {'family': browser_family, 'version_string': ''})
+            self.os = type('obj', (object,), {'family': os_family, 'version_string': ''})
+    
+    class MockUserAgents:
+        @staticmethod
+        def parse(ua_string):
+            return MockUserAgent(ua_string)
+    
+    user_agents = MockUserAgents()
 
 logger = get_logger()
+
+if not HAS_USER_AGENTS:
+    logger.warning("user_agents module not available. Using basic user agent parsing.")
 
 
 class UserSessionListView(APIView):
