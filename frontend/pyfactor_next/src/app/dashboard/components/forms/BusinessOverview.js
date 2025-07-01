@@ -31,9 +31,7 @@ import {
   invoiceApi, 
   customerApi, 
   productApi, 
-  serviceApi,
-  dashboardApi,
-  bankingApi 
+  serviceApi
 } from '@/utils/apiClient';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import StandardSpinner from '@/components/ui/StandardSpinner';
@@ -102,13 +100,49 @@ const BusinessOverview = () => {
     return ((current - previous) / previous * 100).toFixed(1);
   };
 
+  // Helper function to fetch dashboard metrics
+  const fetchDashboardMetrics = async () => {
+    try {
+      const response = await fetch('/api/dashboard/metrics/summary', {
+        method: 'GET',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (response.ok) {
+        return response.json();
+      }
+      return {};
+    } catch (error) {
+      console.error('Dashboard metrics fetch failed:', error);
+      return {};
+    }
+  };
+
+  // Helper function to fetch bank accounts
+  const fetchBankAccounts = async () => {
+    try {
+      const response = await fetch('/api/banking/accounts', {
+        method: 'GET',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (response.ok) {
+        return response.json();
+      }
+      return [];
+    } catch (error) {
+      console.error('Bank accounts fetch failed:', error);
+      return [];
+    }
+  };
+
   // Fetch all business data
   const fetchBusinessData = useCallback(async () => {
     try {
       setIsLoading(true);
       const tenantId = await getSecureTenantId();
       
-      // Fetch all data in parallel
+      // Fetch all data in parallel with error handling
       const [
         dashboardData,
         productsRes,
@@ -117,12 +151,24 @@ const BusinessOverview = () => {
         customersRes,
         bankAccountsRes
       ] = await Promise.allSettled([
-        dashboardApi.getMetricsSummary(),
-        productApi.getAll(),
-        orderApi.getAll(),
-        invoiceApi.getAll(),
-        customerApi.getAll(),
-        bankingApi.getAccounts()
+        fetchDashboardMetrics(),
+        productApi.getAll().catch(err => {
+          console.error('Products API failed:', err);
+          return [];
+        }),
+        orderApi.getAll().catch(err => {
+          console.error('Orders API failed:', err);
+          return [];
+        }),
+        invoiceApi.getAll().catch(err => {
+          console.error('Invoices API failed:', err);
+          return [];
+        }),
+        customerApi.getAll().catch(err => {
+          console.error('Customers API failed:', err);
+          return [];
+        }),
+        fetchBankAccounts()
       ]);
 
       // Process dashboard metrics
@@ -234,7 +280,7 @@ const BusinessOverview = () => {
         const accountsData = bankAccountsRes.value || [];
         const accounts = Array.isArray(accountsData) ? accountsData : (accountsData.results || []);
         accounts.forEach(acc => {
-          bankBalance += parseFloat(acc.current_balance || 0);
+          bankBalance += parseFloat(acc.current_balance || acc.balance || 0);
         });
       }
 
@@ -347,6 +393,49 @@ const BusinessOverview = () => {
     } catch (error) {
       console.error('[BusinessOverview] Error fetching data:', error);
       toast.error('Failed to load business data');
+      
+      // Set default values on error
+      setMetrics({
+        // Financial
+        totalAssets: 0,
+        totalLiabilities: 0,
+        equity: 0,
+        bankBalance: 0,
+        cashOnHand: 0,
+        accountsReceivable: 0,
+        accountsPayable: 0,
+        
+        // Revenue
+        totalRevenue: 0,
+        monthlyRevenue: 0,
+        weeklyRevenue: 0,
+        todayRevenue: 0,
+        expenses: 0,
+        profitMargin: 0,
+        
+        // Operations
+        totalOrders: 0,
+        pendingOrders: 0,
+        completedOrders: 0,
+        totalCustomers: 0,
+        newCustomers: 0,
+        activeCustomers: 0,
+        totalProducts: 0,
+        lowStockProducts: 0,
+        totalInvoices: 0,
+        overdueInvoices: 0,
+        paidInvoices: 0,
+        
+        // Trends
+        revenueTrend: 0,
+        customerTrend: 0,
+        orderTrend: 0,
+        
+        // Lists
+        topProducts: [],
+        recentOrders: [],
+        pendingTasks: []
+      });
     } finally {
       setIsLoading(false);
     }
