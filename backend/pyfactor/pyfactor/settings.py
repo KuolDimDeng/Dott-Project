@@ -858,6 +858,7 @@ TENANT_APPS = (
     'hr.apps.HrConfig',
     'crm.apps.CrmConfig',
     'transport.apps.TransportConfig',
+    'events.apps.EventsConfig',
 )
 
 INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in SHARED_APPS]

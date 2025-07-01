@@ -15,7 +15,7 @@ import {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
 
-// SIMPLIFIED: Check for session cookie only (temporary for in-memory storage)
+// Helper function to verify session using the same pattern as session-v2
 async function verifySession() {
   try {
     const cookieStore = await cookies();
@@ -26,15 +26,29 @@ async function verifySession() {
       return null;
     }
     
-    console.log('[Calendar API] Found session ID, using simplified verification for in-memory storage');
+    console.log('[Calendar API] Found session ID, validating with backend...');
     
-    // For temporary in-memory storage, just verify cookie exists
-    // Return mock session data to allow calendar to work
-    return {
-      authenticated: true,
-      user: { email: 'authenticated-user' },
-      tenant_id: 'authenticated-tenant'
-    };
+    // Fetch session from backend - single source of truth
+    const response = await fetch(`${API_BASE_URL}/api/sessions/current/`, {
+      headers: {
+        'Authorization': `Session ${sessionId.value}`,
+        'Cookie': `session_token=${sessionId.value}`
+      },
+      cache: 'no-store'
+    });
+    
+    if (!response.ok) {
+      console.log('[Calendar API] Backend session validation failed:', response.status);
+      return null;
+    }
+    
+    const sessionData = await response.json();
+    console.log('[Calendar API] Session validated successfully:', {
+      email: sessionData.email || sessionData.user?.email,
+      tenantId: sessionData.tenant_id || sessionData.tenantId
+    });
+    
+    return sessionData;
   } catch (error) {
     console.error('[Calendar API] Session verification error:', error);
     return null;
@@ -66,24 +80,52 @@ export async function GET(request) {
     }
 
     // Build query parameters
-    const queryParams = new URLSearchParams({
-      tenant_id: tenantId
-    });
+    const queryParams = new URLSearchParams();
 
     if (startDate) queryParams.append('start_date', startDate);
     if (endDate) queryParams.append('end_date', endDate);
     if (eventType) queryParams.append('event_type', eventType);
 
-    // TEMPORARY: Return events from in-memory storage
-    console.log('[Calendar API GET] Using in-memory storage, total events across all tenants:', getTotalEventCount());
-    console.log('[Calendar API GET] Requesting events for tenant:', tenantId);
+    // Call backend API
+    console.log('[Calendar API GET] Calling backend API for tenant:', tenantId);
     
-    // Filter events by tenant ID
-    const events = getEventsByTenant(tenantId);
-    console.log('[Calendar API GET] Retrieved events for tenant:', events.length);
-    console.log('[Calendar API GET] Events:', events);
+    const backendResponse = await fetch(
+      `${API_BASE_URL}/api/calendar/events/?${queryParams.toString()}`,
+      {
+        headers: {
+          'Authorization': `Session ${sessionData.session_token || (await cookies()).get('sid')?.value}`,
+          'Content-Type': 'application/json'
+        },
+        cache: 'no-store'
+      }
+    );
 
-    // Transform backend data to calendar format if needed
+    if (!backendResponse.ok) {
+      console.error('[Calendar API GET] Backend error:', backendResponse.status);
+      // Fallback to in-memory storage if backend not available
+      console.log('[Calendar API GET] Falling back to in-memory storage');
+      const events = getEventsByTenant(tenantId);
+      const transformedEvents = events.map(event => ({
+        id: event.id,
+        title: event.title,
+        start: event.start_datetime,
+        end: event.end_datetime,
+        allDay: event.all_day || false,
+        type: event.event_type,
+        description: event.description,
+        location: event.location,
+        backgroundColor: getEventColor(event.event_type),
+        borderColor: getEventColor(event.event_type),
+        editable: true
+      }));
+      return NextResponse.json(transformedEvents);
+    }
+
+    const backendData = await backendResponse.json();
+    console.log('[Calendar API GET] Backend response:', backendData);
+
+    // Transform backend data to calendar format
+    const events = Array.isArray(backendData) ? backendData : (backendData.results || []);
     const transformedEvents = events.map(event => ({
       id: event.id,
       title: event.title,
@@ -97,10 +139,8 @@ export async function GET(request) {
       borderColor: getEventColor(event.event_type),
       editable: true,
       extendedProps: {
-        attendees: event.attendees,
         reminder: event.reminder_minutes,
-        recurring: event.is_recurring,
-        recurringPattern: event.recurrence_pattern
+        created_by: event.created_by_name
       }
     }));
 
@@ -117,17 +157,8 @@ export async function GET(request) {
 // POST - Create new calendar event
 export async function POST(request) {
   try {
-    console.log('[Calendar API POST] ==================== Starting request ====================');
-    console.log('[Calendar API POST] Request URL:', request.url);
-    console.log('[Calendar API POST] Request method:', request.method);
-    console.log('[Calendar API POST] Headers:', Object.fromEntries(request.headers.entries()));
-    
-    // TEMPORARILY SKIP SESSION VERIFICATION FOR DEBUGGING
-    // const sessionData = await verifySession();
-    // console.log('[Calendar API POST] Session verification result:', !!sessionData);
-    
-    const sessionData = { authenticated: true }; // TEMP: Always allow for debugging
-    console.log('[Calendar API POST] TEMP: Skipping session verification for debugging');
+    console.log('[Calendar API POST] Starting request');
+    const sessionData = await verifySession();
     
     if (!sessionData) {
       console.error('[Calendar API POST] No valid session');
@@ -175,40 +206,61 @@ export async function POST(request) {
       event_type: eventData.type || 'appointment',
       description: eventData.description || '',
       location: eventData.location || '',
-      attendees: eventData.attendees || [],
-      reminder_minutes: eventData.reminderMinutes || eventData.reminder || 15,
-      is_recurring: eventData.recurring || false,
-      recurrence_pattern: eventData.recurringPattern || null,
-      tenant_id: tenantId
+      reminder_minutes: eventData.reminderMinutes || eventData.reminder || 15
     };
 
-    // TEMPORARY: Store event locally since backend endpoint doesn't exist yet
-    console.log('[Calendar API POST] Backend endpoint not available, using local storage fallback');
-    
-    // Generate a unique ID for the event
-    const eventId = `cal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    // Create event object with proper structure
-    const createdEvent = {
-      id: eventId,
-      title: backendData.title,
-      start_datetime: backendData.start_datetime,
-      end_datetime: backendData.end_datetime,
-      all_day: backendData.all_day,
-      event_type: backendData.event_type,
-      description: backendData.description,
-      location: backendData.location,
-      reminder_minutes: backendData.reminder_minutes,
-      tenant_id: backendData.tenant_id,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
+    console.log('[Calendar API POST] Sending to backend:', backendData);
 
-    // Store the event in memory
-    addCalendarEvent(createdEvent);
-    console.log('[Calendar API POST] Created local event:', createdEvent);
-    console.log('[Calendar API POST] Total events in storage:', getTotalEventCount());
-    console.log('[Calendar API POST] Events for this tenant:', getEventsByTenant(tenantId).length);
+    // Call backend API
+    const backendResponse = await fetch(
+      `${API_BASE_URL}/api/calendar/events/`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Session ${sessionData.session_token || (await cookies()).get('sid')?.value}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(backendData)
+      }
+    );
+
+    if (!backendResponse.ok) {
+      console.error('[Calendar API POST] Backend error:', backendResponse.status);
+      const errorText = await backendResponse.text();
+      console.error('[Calendar API POST] Error details:', errorText);
+      
+      // Fallback to in-memory storage
+      console.log('[Calendar API POST] Falling back to in-memory storage');
+      const eventId = `cal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const createdEvent = {
+        id: eventId,
+        ...backendData,
+        tenant_id: tenantId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      addCalendarEvent(createdEvent);
+      
+      const transformedEvent = {
+        id: createdEvent.id,
+        title: createdEvent.title,
+        start: createdEvent.start_datetime,
+        end: createdEvent.end_datetime,
+        allDay: createdEvent.all_day,
+        type: createdEvent.event_type,
+        description: createdEvent.description,
+        location: createdEvent.location,
+        backgroundColor: getEventColor(createdEvent.event_type),
+        borderColor: getEventColor(createdEvent.event_type),
+        editable: true
+      };
+      
+      return NextResponse.json(transformedEvent, { status: 201 });
+    }
+
+    const createdEvent = await backendResponse.json();
+    console.log('[Calendar API POST] Backend created event:', createdEvent);
 
     // Transform response to calendar format
     const transformedEvent = {
@@ -280,29 +332,49 @@ export async function PUT(request) {
       recurrence_pattern: eventData.recurringPattern || null
     };
 
-    // TEMPORARY: Update event in memory storage
-    console.log('[Calendar API PUT] Using in-memory storage, updating event:', id);
+    // Call backend API
+    console.log('[Calendar API PUT] Updating event:', id);
     
-    const updatedEvent = updateCalendarEvent(id, tenantId, {
-      title: backendData.title,
-      start_datetime: backendData.start_datetime,
-      end_datetime: backendData.end_datetime,
-      all_day: backendData.all_day,
-      event_type: backendData.event_type,
-      description: backendData.description,
-      location: backendData.location,
-      reminder_minutes: backendData.reminder_minutes
-    });
-    
-    if (!updatedEvent) {
-      console.error('[Calendar API PUT] Event not found:', id);
-      return NextResponse.json(
-        { error: 'Event not found' },
-        { status: 404 }
-      );
+    const backendResponse = await fetch(
+      `${API_BASE_URL}/api/calendar/events/${id}/`,
+      {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Session ${sessionData.session_token || (await cookies()).get('sid')?.value}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(backendData)
+      }
+    );
+
+    if (!backendResponse.ok) {
+      console.error('[Calendar API PUT] Backend error:', backendResponse.status);
+      
+      // Fallback to in-memory storage
+      const updatedEvent = updateCalendarEvent(id, tenantId, backendData);
+      if (!updatedEvent) {
+        return NextResponse.json({ error: 'Event not found' }, { status: 404 });
+      }
+      
+      const transformedEvent = {
+        id: updatedEvent.id,
+        title: updatedEvent.title,
+        start: updatedEvent.start_datetime,
+        end: updatedEvent.end_datetime,
+        allDay: updatedEvent.all_day,
+        type: updatedEvent.event_type,
+        description: updatedEvent.description,
+        location: updatedEvent.location,
+        backgroundColor: getEventColor(updatedEvent.event_type),
+        borderColor: getEventColor(updatedEvent.event_type),
+        editable: true
+      };
+      
+      return NextResponse.json(transformedEvent);
     }
 
-    console.log('[Calendar API PUT] Updated event:', updatedEvent);
+    const updatedEvent = await backendResponse.json();
+    console.log('[Calendar API PUT] Backend updated event:', updatedEvent);
 
     // Transform response to calendar format
     const transformedEvent = {
@@ -355,20 +427,32 @@ export async function DELETE(request) {
       );
     }
 
-    // TEMPORARY: Delete event from memory storage
-    console.log('[Calendar API DELETE] Using in-memory storage, deleting event:', id);
+    // Call backend API
+    console.log('[Calendar API DELETE] Deleting event:', id);
     
-    const deleted = deleteCalendarEvent(id, tenantId);
-    if (!deleted) {
-      console.error('[Calendar API DELETE] Event not found:', id);
-      return NextResponse.json(
-        { error: 'Event not found' },
-        { status: 404 }
-      );
+    const backendResponse = await fetch(
+      `${API_BASE_URL}/api/calendar/events/${id}/`,
+      {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Session ${sessionData.session_token || (await cookies()).get('sid')?.value}`
+        }
+      }
+    );
+
+    if (!backendResponse.ok) {
+      console.error('[Calendar API DELETE] Backend error:', backendResponse.status);
+      
+      // Fallback to in-memory storage
+      const deleted = deleteCalendarEvent(id, tenantId);
+      if (!deleted) {
+        return NextResponse.json({ error: 'Event not found' }, { status: 404 });
+      }
+      
+      return NextResponse.json({ message: 'Event deleted successfully' });
     }
 
-    console.log('[Calendar API DELETE] Deleted event, remaining events:', getTotalEventCount());
-
+    console.log('[Calendar API DELETE] Backend deleted event successfully');
     return NextResponse.json({ message: 'Event deleted successfully' });
   } catch (error) {
     console.error('[Calendar API] Error deleting event:', error);

@@ -7,7 +7,7 @@ import Anthropic from '@anthropic-ai/sdk';
 let anthropic;
 try {
   anthropic = new Anthropic({
-    apiKey: process.env.CLAUDE_TAX_API_KEY,
+    apiKey: process.env.CLAUDE_API_KEY,
   });
 } catch (error) {
   console.error('[Tax Suggestions API] Failed to initialize Anthropic client:', error);
@@ -15,13 +15,13 @@ try {
 
 export async function POST(request) {
   console.log('[Tax Suggestions API] Request received');
-  console.log('[Tax Suggestions API] API Key exists:', !!process.env.CLAUDE_TAX_API_KEY);
+  console.log('[Tax Suggestions API] API Key exists:', !!process.env.CLAUDE_API_KEY);
   console.log('[Tax Suggestions API] Backend URL:', process.env.NEXT_PUBLIC_BACKEND_URL);
   
   try {
     // Check if API key is configured
-    if (!process.env.CLAUDE_TAX_API_KEY || !anthropic) {
-      console.error('[Tax Suggestions API] CLAUDE_TAX_API_KEY not configured or Anthropic client not initialized');
+    if (!process.env.CLAUDE_API_KEY || !anthropic) {
+      console.error('[Tax Suggestions API] CLAUDE_API_KEY not configured or Anthropic client not initialized');
       return NextResponse.json(
         { error: 'Tax suggestions service not configured. Please contact support.' },
         { status: 503, headers: standardSecurityHeaders }
@@ -152,41 +152,104 @@ Format your response as JSON. Include all standard fields below, plus any additi
       
       // Parse the response
       const responseText = message.content[0].text;
+      console.log('[Tax Suggestions API] Claude response length:', responseText.length);
+      console.log('[Tax Suggestions API] First 500 chars of response:', responseText.substring(0, 500));
+      
       let taxData;
       
       try {
-        // Extract JSON from the response
-        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          taxData = JSON.parse(jsonMatch[0]);
-        } else {
+        // First try to find JSON by looking for the pattern
+        let jsonString = null;
+        
+        // Method 1: Look for JSON block in code fence
+        const codeFenceMatch = responseText.match(/```json\s*\n([\s\S]*?)\n```/);
+        if (codeFenceMatch) {
+          jsonString = codeFenceMatch[1];
+          console.log('[Tax Suggestions API] Found JSON in code fence');
+        }
+        
+        // Method 2: Look for raw JSON object
+        if (!jsonString) {
+          const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            jsonString = jsonMatch[0];
+            console.log('[Tax Suggestions API] Found raw JSON object');
+          }
+        }
+        
+        if (!jsonString) {
           throw new Error('No JSON found in response');
         }
+        
+        console.log('[Tax Suggestions API] JSON found at position:', responseText.indexOf(jsonString));
+        console.log('[Tax Suggestions API] JSON length:', jsonString.length);
+        
+        // Log the area around position 234 for debugging
+        if (jsonString.length > 234) {
+          console.log('[Tax Suggestions API] Character at position 234:', jsonString[234]);
+          console.log('[Tax Suggestions API] Context around position 234:', jsonString.substring(224, 244));
+        }
+        
+        // Clean the JSON string before parsing
+        // Remove any BOM characters, zero-width spaces, or other invisible characters
+        jsonString = jsonString
+          .replace(/^\uFEFF/, '') // Remove BOM
+          .replace(/[\u200B-\u200D\uFEFF]/g, '') // Remove zero-width spaces
+          .trim();
+        
+        taxData = JSON.parse(jsonString);
+        console.log('[Tax Suggestions API] Successfully parsed JSON');
       } catch (parseError) {
         console.error('[Tax Suggestions API] Error parsing Claude response:', parseError);
-        // Fallback to a structured response
-        taxData = {
-          stateSalesTaxRate: 0,
-          localSalesTaxRate: 0,
-          totalSalesTaxRate: 0,
-          federalIncomeTaxRate: 0,
-          stateIncomeTaxRate: 0,
-          totalIncomeTaxRate: 0,
-          federalPayrollTaxRate: 0,
-          statePayrollTaxRate: 0,
-          stateTaxWebsite: '',
-          stateTaxAddress: '',
-          localTaxWebsite: '',
-          localTaxAddress: '',
-          federalTaxWebsite: 'https://www.irs.gov',
-          filingDeadlines: {
-            salesTax: '',
-            incomeTax: '',
-            payrollTax: ''
-          },
-          confidenceScore: 0,
-          notes: 'Unable to parse tax information. Please enter manually.'
-        };
+        console.error('[Tax Suggestions API] Parse error details:', parseError.message);
+        
+        // Try to clean the JSON before parsing
+        try {
+          console.log('[Tax Suggestions API] Attempting to clean and parse JSON...');
+          const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            // Clean potential issues: replace any standalone numbers that might be causing issues
+            let cleanedJson = jsonMatch[0]
+              .replace(/:\s*(\d+\.?\d*)\s*([,\}])/g, ': "$1"$2') // Wrap numbers in quotes temporarily
+              .replace(/:\s*"(\d+\.?\d*)"\s*([,\}])/g, ': $1$2'); // Unwrap them back
+            
+            taxData = JSON.parse(cleanedJson);
+            console.log('[Tax Suggestions API] Successfully parsed after cleaning');
+          } else {
+            throw new Error('Still no JSON found');
+          }
+        } catch (cleanError) {
+          console.error('[Tax Suggestions API] Clean parse also failed:', cleanError);
+          // Fallback to a structured response
+          taxData = {
+            stateSalesTaxRate: 0,
+            localSalesTaxRate: 0,
+            totalSalesTaxRate: 0,
+            corporateIncomeTaxRate: 0,
+            hasProgressiveTax: false,
+            personalIncomeTaxBrackets: [],
+            flatPersonalIncomeTaxRate: 0,
+            healthInsuranceRate: 0,
+            healthInsuranceEmployerRate: 0,
+            socialSecurityRate: 0,
+            socialSecurityEmployerRate: 0,
+            federalPayrollTaxRate: 0,
+            statePayrollTaxRate: 0,
+            stateTaxWebsite: '',
+            stateTaxAddress: '',
+            localTaxWebsite: '',
+            localTaxAddress: '',
+            federalTaxWebsite: 'https://www.irs.gov',
+            filingDeadlines: {
+              salesTax: '',
+              incomeTax: '',
+              payrollTax: '',
+              corporateTax: ''
+            },
+            confidenceScore: 0,
+            notes: 'Unable to parse tax information. Please enter manually.'
+          };
+        }
       }
       
       // Skip cache save and usage tracking for now
@@ -202,10 +265,19 @@ Format your response as JSON. Include all standard fields below, plus any additi
           localSalesTaxRate: taxData.localSalesTaxRate,
           totalSalesTaxRate: taxData.totalSalesTaxRate,
           
-          // Income Tax breakdown
-          federalIncomeTaxRate: taxData.federalIncomeTaxRate,
-          stateIncomeTaxRate: taxData.stateIncomeTaxRate,
-          totalIncomeTaxRate: taxData.totalIncomeTaxRate,
+          // Corporate Income Tax
+          corporateIncomeTaxRate: taxData.corporateIncomeTaxRate,
+          
+          // Personal Income Tax
+          hasProgressiveTax: taxData.hasProgressiveTax,
+          personalIncomeTaxBrackets: taxData.personalIncomeTaxBrackets,
+          flatPersonalIncomeTaxRate: taxData.flatPersonalIncomeTaxRate,
+          
+          // Social Insurance
+          healthInsuranceRate: taxData.healthInsuranceRate,
+          healthInsuranceEmployerRate: taxData.healthInsuranceEmployerRate,
+          socialSecurityRate: taxData.socialSecurityRate,
+          socialSecurityEmployerRate: taxData.socialSecurityEmployerRate,
           
           // Payroll Tax breakdown
           federalPayrollTaxRate: taxData.federalPayrollTaxRate,

@@ -86,6 +86,9 @@ urlpatterns = [
     # Smart Insights API routes
     path('api/', include('smart_insights.urls')),
     
+    # Calendar/Events API routes
+    path('api/calendar/', include('events.urls')),
+    
     # Main app routes
     path('', include('users.urls')),
     
