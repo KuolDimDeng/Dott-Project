@@ -20,8 +20,7 @@ import {
   UserGroupIcon, 
   BuildingOfficeIcon, 
   CreditCardIcon,
-  ShieldCheckIcon,
-  ChevronRightIcon
+  ShieldCheckIcon
 } from '@heroicons/react/24/outline';
 
 const SettingsManagement = () => {
@@ -91,78 +90,70 @@ const SettingsManagement = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
+        <div className="py-6">
           <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
           <p className="text-sm text-gray-500 mt-1">
             Manage your account settings and preferences
           </p>
         </div>
 
-        <div className="flex flex-col lg:flex-row">
-          {/* Sidebar Navigation */}
-          <nav className="lg:w-64 bg-white shadow-sm border-r border-gray-200 min-h-screen">
-            <div className="p-4">
-              <ul className="space-y-1">
-                {availableSections.map((section) => {
-                  const Icon = section.icon;
-                  const isActive = activeSection === section.id;
-                  
-                  return (
-                    <li key={section.id}>
-                      <button
-                        onClick={() => setActiveSection(section.id)}
-                        className={`
-                          w-full flex items-center justify-between px-4 py-3 rounded-lg
-                          transition-all duration-200 group
-                          ${isActive 
-                            ? 'bg-blue-50 text-blue-700 font-medium' 
-                            : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                          }
-                        `}
-                      >
-                        <div className="flex items-center">
-                          <Icon 
-                            className={`h-5 w-5 mr-3 ${
-                              isActive ? 'text-blue-700' : 'text-gray-400 group-hover:text-gray-600'
-                            }`} 
-                          />
-                          <span className="text-sm">{section.title}</span>
-                        </div>
-                        <ChevronRightIcon 
-                          className={`h-4 w-4 ${
-                            isActive ? 'text-blue-600' : 'text-gray-400'
-                          }`} 
-                        />
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          </nav>
-
-          {/* Main Content Area */}
-          <main className="flex-1 p-6">
-            <div className="bg-white shadow-sm rounded-lg">
-              {ActiveSectionComponent ? (
-                <ActiveSectionComponent 
-                  user={user}
-                  profileData={profileData}
-                  isOwner={isOwner()}
-                  isAdmin={isOwnerOrAdmin()}
-                  notifySuccess={notifySuccess}
-                  notifyError={notifyError}
-                />
-              ) : (
-                <div className="p-8 text-center text-gray-500">
-                  <p>Select a section from the menu</p>
-                </div>
-              )}
-            </div>
-          </main>
+        {/* Tab Navigation */}
+        <div className="bg-white shadow-sm rounded-lg mb-6">
+          <div className="border-b border-gray-200">
+            <nav className="-mb-px flex space-x-8 px-6" aria-label="Settings tabs">
+              {availableSections.map((section) => {
+                const Icon = section.icon;
+                const isActive = activeSection === section.id;
+                
+                return (
+                  <button
+                    key={section.id}
+                    onClick={() => setActiveSection(section.id)}
+                    className={`
+                      group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm
+                      transition-all duration-200
+                      ${isActive 
+                        ? 'border-blue-500 text-blue-600' 
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }
+                    `}
+                  >
+                    <Icon 
+                      className={`mr-2 h-5 w-5 ${
+                        isActive 
+                          ? 'text-blue-600' 
+                          : 'text-gray-400 group-hover:text-gray-500'
+                      }`} 
+                    />
+                    <span>{section.title}</span>
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
         </div>
+
+        {/* Main Content Area */}
+        <main>
+          <div className="bg-white shadow-sm rounded-lg">
+            {ActiveSectionComponent ? (
+              <ActiveSectionComponent 
+                user={user}
+                profileData={profileData}
+                isOwner={isOwner()}
+                isAdmin={isOwnerOrAdmin()}
+                notifySuccess={notifySuccess}
+                notifyError={notifyError}
+              />
+            ) : (
+              <div className="p-8 text-center text-gray-500">
+                <p>Select a section from the menu</p>
+              </div>
+            )}
+          </div>
+        </main>
       </div>
     </div>
   );
