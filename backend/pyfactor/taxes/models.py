@@ -60,7 +60,7 @@ class State(TaxJurisdiction):
     base_tax_rate = models.DecimalField(max_digits=6, decimal_places=4, default=0,
         validators=[MinValueValidator(0), MaxValueValidator(1)],
         help_text="Base state sales tax rate")
-    filing_frequency_thresholds = models.models.JSONField(default=dict, blank=True,
+    filing_frequency_thresholds = models.JSONField(default=dict, blank=True,
         help_text="Revenue thresholds for filing frequency")
     
     # Filing requirements
@@ -484,7 +484,7 @@ class TaxDataEntryLog(TenantAwareModel):
     user_agent = models.TextField(blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES)
     entry_count = models.IntegerField(default=1)
-    details = models.models.JSONField(null=True, blank=True)
+    details = models.JSONField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
@@ -521,7 +521,7 @@ class TaxDataAbuseReport(TenantAwareModel):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='tax_abuse_reports')
     description = models.TextField()
-    evidence = models.models.JSONField(null=True, blank=True)
+    evidence = models.JSONField(null=True, blank=True)
     action_taken = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -783,9 +783,9 @@ class TaxFilingLocation(models.Model):
     local_email = models.EmailField(blank=True, default='')
     
     # Additional information
-    filing_deadlines = models.models.JSONField(default=dict, blank=True)
+    filing_deadlines = models.JSONField(default=dict, blank=True)
     special_instructions = models.TextField(blank=True, default='')
-    tax_types = models.models.JSONField(default=list, blank=True)  # ['sales', 'income', 'property', etc.]
+    tax_types = models.JSONField(default=list, blank=True)  # ['sales', 'income', 'property', etc.]
     
     # Cache management
     last_updated = models.DateTimeField(auto_now=True)
