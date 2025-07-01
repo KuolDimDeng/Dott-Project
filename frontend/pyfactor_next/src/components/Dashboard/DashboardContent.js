@@ -380,10 +380,6 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     setShowCreateMenu(false);
   }, [setShowCreateMenu]);
 
-  const handleDrawerToggle = useCallback(() => {
-    setDrawerOpen(!drawerOpen);
-  }, [setDrawerOpen, drawerOpen]);
-
   const handleDrawerItemClick = useCallback((option) => {
     console.log(`Drawer item clicked: ${option}`);
     
