@@ -6,6 +6,74 @@
 
 # Frontend Component Issues
 
+## Dashboard Drawer Toggle Not Working
+
+**Issue**: The drawer open/close hamburger icon stops working after a few clicks, and the content area doesn't expand/contract in sync with the drawer state.
+
+**Symptoms**:
+- Clicking the hamburger menu icon doesn't toggle the drawer
+- Content area remains in the same position regardless of drawer state
+- Console shows toggle clicks but state remains unchanged
+- Drawer may start in closed state instead of open
+
+**Root Cause**:
+- Stale closure issue in React callbacks capturing initial state values
+- State setter callbacks had dependencies on `uiState` values causing them to never update
+- Memoization preventing re-renders when drawer state changes
+
+**Solution**:
+1. Use functional state updates for all state setters to avoid stale closures:
+   ```javascript
+   // Before - captures initial state value
+   const setDrawerOpen = useCallback((value) => {
+     if (value === uiState.drawerOpen) return; // This always sees initial value!
+     updateState({ drawerOpen: value });
+   }, [updateState, uiState.drawerOpen]);
+
+   // After - uses functional update
+   const setDrawerOpen = useCallback((value) => {
+     updateState(prev => {
+       const newValue = typeof value === 'function' ? value(prev.drawerOpen) : value;
+       if (newValue === prev.drawerOpen) return prev;
+       return { ...prev, drawerOpen: newValue };
+     });
+   }, [updateState]); // No dependency on uiState!
+   ```
+
+2. Ensure all state setters use the same pattern:
+   ```javascript
+   const setView = useCallback((value) => {
+     updateState(prev => {
+       if (value === prev.view) return prev;
+       return { ...prev, view: value };
+     });
+   }, [updateState]);
+   ```
+
+3. Fix content area to use proper constants:
+   ```javascript
+   // Use iconOnlyWidth constant instead of hardcoded '60px'
+   left: drawerOpen ? `${drawerWidth}px` : `${iconOnlyWidth}px`
+   ```
+
+4. Set drawer to start open by default:
+   ```javascript
+   drawerOpen: true, // Start with drawer open by default
+   ```
+
+**Implementation Details**:
+- The issue was that callbacks were capturing the initial state value and never seeing updates
+- Functional updates ensure callbacks always work with the current state
+- Removed all `uiState.*` dependencies from callback dependency arrays
+- This pattern must be applied to ALL state setters to prevent similar issues
+
+**Files Changed**:
+- `/src/components/Dashboard/DashboardContent.js` - Fixed all state setter callbacks
+- `/src/app/dashboard/components/DashAppBar.js` - Added handleDrawerToggle to memoization
+- `/src/app/dashboard/components/Drawer.js` - Added debugging attributes
+
+---
+
 ## POS System - React Error #130 (undefined render)
 
 **Issue**: POS System fails to open with "Error Loading POS System" and React error #130.
