@@ -85,18 +85,6 @@ export default function FAQ() {
             </div>
           ))}
         </div>
-        
-        <div className="mt-16 text-center">
-          <p className="text-base text-gray-600">
-            {t('faq.more.text', 'Still have questions?')}
-          </p>
-          <a
-            href="/contact"
-            className="mt-6 inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-primary-main hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-light"
-          >
-            {t('faq.more.contact', 'Contact Support')}
-          </a>
-        </div>
       </div>
     </div>
   );

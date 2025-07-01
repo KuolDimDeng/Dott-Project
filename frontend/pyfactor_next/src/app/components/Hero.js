@@ -29,7 +29,7 @@ export default function Hero() {
               Business Management Software
             </span>
             <span className="block text-2xl sm:text-3xl mt-3 text-gray-700 font-medium">
-              Manage your business like a professional
+              Manage your business like a Pro
             </span>
           </h1>
           
