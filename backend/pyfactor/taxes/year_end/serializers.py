@@ -24,9 +24,9 @@ class W2FormSerializer(serializers.ModelSerializer):
             'distributed_to_employee', 'distribution_date', 'distribution_method',
             'efiled_to_ssa', 'ssa_submission_id', 'ssa_submission_date',
             'is_correction', 'original_w2_id', 'correction_code',
-            'created_at', 'updated_at'
+            'created', 'updated'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at', 'pdf_generated_at']
+        read_only_fields = ['id', 'created', 'updated', 'pdf_generated_at']
     
     def get_employee_name(self, obj):
         # Get employee name from HR app
@@ -49,9 +49,9 @@ class W3FormSerializer(serializers.ModelSerializer):
             'total_advance_eic', 'total_dependent_care', 'total_nonqualified_plans',
             'total_deferred_compensation', 'third_party_sick_pay',
             'status', 'submission_date', 'ssa_tracking_number',
-            'pdf_file', 'created_at', 'updated_at'
+            'pdf_file', 'created', 'updated'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created', 'updated']
 
 
 class Form1099NECSerializer(serializers.ModelSerializer):
@@ -68,9 +68,9 @@ class Form1099NECSerializer(serializers.ModelSerializer):
             'pdf_file', 'pdf_generated_at',
             'distributed_to_recipient', 'distribution_date', 'distribution_method',
             'efiled_to_irs', 'irs_submission_id', 'irs_submission_date',
-            'created_at', 'updated_at'
+            'created', 'updated'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at', 'pdf_generated_at']
+        read_only_fields = ['id', 'created', 'updated', 'pdf_generated_at']
     
     def get_vendor_name(self, obj):
         # Get vendor name from purchases app
@@ -101,9 +101,9 @@ class Form1099MISCSerializer(serializers.ModelSerializer):
             'pdf_file', 'pdf_generated_at',
             'distributed_to_recipient', 'distribution_date', 'distribution_method',
             'efiled_to_irs', 'irs_submission_id', 'irs_submission_date',
-            'created_at', 'updated_at'
+            'created', 'updated'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at', 'pdf_generated_at']
+        read_only_fields = ['id', 'created', 'updated', 'pdf_generated_at']
     
     def get_vendor_name(self, obj):
         # Get vendor name from purchases app
@@ -124,9 +124,9 @@ class Form1096Serializer(serializers.ModelSerializer):
             'filer_name', 'filer_address', 'filer_tin',
             'contact_name', 'contact_phone', 'contact_email',
             'status', 'submission_date', 'irs_tracking_number',
-            'pdf_file', 'created_at', 'updated_at'
+            'pdf_file', 'created', 'updated'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created', 'updated']
 
 
 class YearEndTaxGenerationSerializer(serializers.ModelSerializer):
@@ -139,9 +139,9 @@ class YearEndTaxGenerationSerializer(serializers.ModelSerializer):
             'form_1099_nec_count', 'form_1099_misc_count', 'form_1096_generated',
             'started_at', 'completed_at', 'error_message',
             'generated_forms', 'initiated_by',
-            'created_at', 'updated_at'
+            'created', 'updated'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created', 'updated']
 
 
 class VendorTaxSummarySerializer(serializers.Serializer):

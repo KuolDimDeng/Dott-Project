@@ -33,7 +33,7 @@ class W2FormViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return W2Form.objects.filter(
             tenant_id=self.request.user.tenant_id
-        ).order_by('-tax_year', '-created_at')
+        ).order_by('-tax_year', '-created')
     
     @action(detail=False, methods=['post'])
     def generate_year(self, request):
@@ -507,7 +507,7 @@ class YearEndTaxGenerationViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         return YearEndTaxGeneration.objects.filter(
             tenant_id=self.request.user.tenant_id
-        ).order_by('-created_at')
+        ).order_by('-created')
     
     @action(detail=False, methods=['post'])
     def generate_all(self, request):

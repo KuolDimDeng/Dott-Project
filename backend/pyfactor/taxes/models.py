@@ -7,7 +7,7 @@ from custom_auth.tenant_base_model import TenantAwareModel
 
 import uuid
 from decimal import Decimal
-from django.contrib.postgres.fields import JSONField
+# Removed deprecated import - JSONField is now from django.db.models
 from django.utils import timezone
 from audit.mixins import AuditMixin
 
@@ -60,7 +60,7 @@ class State(TaxJurisdiction):
     base_tax_rate = models.DecimalField(max_digits=6, decimal_places=4, default=0,
         validators=[MinValueValidator(0), MaxValueValidator(1)],
         help_text="Base state sales tax rate")
-    filing_frequency_thresholds = JSONField(default=dict, blank=True,
+    filing_frequency_thresholds = models.models.JSONField(default=dict, blank=True,
         help_text="Revenue thresholds for filing frequency")
     
     # Filing requirements
@@ -141,7 +141,7 @@ class TaxFiling(AuditMixin, TenantAwareModel):
     confirmation_number = models.CharField(max_length=100, null=True, blank=True)
     
     # Multi-location support
-    locations = JSONField(default=list, blank=True)  # List of location IDs included
+    locations = models.JSONField(default=list, blank=True)  # List of location IDs included
     
     # Calculated amounts
     total_sales = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
@@ -150,7 +150,7 @@ class TaxFiling(AuditMixin, TenantAwareModel):
     tax_due = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
     
     # Metadata
-    filing_data = JSONField(default=dict, blank=True)  # Store form-specific data
+    filing_data = models.JSONField(default=dict, blank=True)  # Store form-specific data
     notes = models.TextField(blank=True)
     internal_notes = models.TextField(blank=True)  # For staff use only
     
@@ -484,15 +484,15 @@ class TaxDataEntryLog(TenantAwareModel):
     user_agent = models.TextField(blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES)
     entry_count = models.IntegerField(default=1)
-    details = models.JSONField(null=True, blank=True)
+    details = models.models.JSONField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
         app_label = 'taxes'
         indexes = [
-            models.Index(fields=['tenant_id', 'control_type', 'created_at']),
-            models.Index(fields=['user', 'created_at']),
-            models.Index(fields=['status', 'created_at']),
+            models.Index(fields=['tenant_id', 'control_type', 'created']),
+            models.Index(fields=['user', 'created']),
+            models.Index(fields=['status', 'created']),
         ]
         
     def __str__(self):
@@ -521,7 +521,7 @@ class TaxDataAbuseReport(TenantAwareModel):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='tax_abuse_reports')
     description = models.TextField()
-    evidence = models.JSONField(null=True, blank=True)
+    evidence = models.models.JSONField(null=True, blank=True)
     action_taken = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -783,9 +783,9 @@ class TaxFilingLocation(models.Model):
     local_email = models.EmailField(blank=True, default='')
     
     # Additional information
-    filing_deadlines = models.JSONField(default=dict, blank=True)
+    filing_deadlines = models.models.JSONField(default=dict, blank=True)
     special_instructions = models.TextField(blank=True, default='')
-    tax_types = models.JSONField(default=list, blank=True)  # ['sales', 'income', 'property', etc.]
+    tax_types = models.models.JSONField(default=list, blank=True)  # ['sales', 'income', 'property', etc.]
     
     # Cache management
     last_updated = models.DateTimeField(auto_now=True)
@@ -878,7 +878,7 @@ class TaxFormTemplate(models.Model):
     
     # Form template
     template_version = models.CharField(max_length=20)
-    template_data = JSONField(default=dict)  # Form field definitions
+    template_data = models.JSONField(default=dict)  # Form field definitions
     
     is_active = models.BooleanField(default=True)
     
@@ -923,7 +923,7 @@ class StateFilingRequirement(models.Model):
     registration_url = models.URLField(null=True, blank=True)
     
     # Additional requirements
-    requirements = JSONField(default=dict)  # State-specific requirements
+    requirements = models.JSONField(default=dict)  # State-specific requirements
     
     class Meta:
         app_label = 'taxes'
@@ -955,7 +955,7 @@ class FilingCalculation(models.Model):
     location_name = models.CharField(max_length=200, null=True, blank=True)
     
     # Metadata
-    calculation_data = JSONField(default=dict)  # Detailed breakdown
+    calculation_data = models.JSONField(default=dict)  # Detailed breakdown
     calculated_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
@@ -1042,7 +1042,7 @@ class TaxSignatureRequest(TenantAwareModel):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
     provider_name = models.CharField(max_length=20, choices=PROVIDER_CHOICES, default='internal')
     provider_request_id = models.CharField(max_length=255, null=True, blank=True)
-    provider_data = JSONField(default=dict, blank=True)
+    provider_data = models.JSONField(default=dict, blank=True)
     
     # Timing
     sent_at = models.DateTimeField(null=True, blank=True)
@@ -1051,7 +1051,7 @@ class TaxSignatureRequest(TenantAwareModel):
     expires_at = models.DateTimeField()
     
     # Additional information
-    metadata = JSONField(default=dict, blank=True)
+    metadata = models.JSONField(default=dict, blank=True)
     error_message = models.TextField(blank=True)
     
     # Timestamps
@@ -1066,7 +1066,7 @@ class TaxSignatureRequest(TenantAwareModel):
             models.Index(fields=['tenant_id', 'status']),
             models.Index(fields=['tenant_id', 'tax_form_type']),
             models.Index(fields=['provider_name', 'provider_request_id']),
-            models.Index(fields=['created_at']),
+            models.Index(fields=['created']),
         ]
     
     def __str__(self):
@@ -1116,7 +1116,7 @@ class TaxSignatureSigner(models.Model):
     
     # Provider-specific data
     provider_signer_id = models.CharField(max_length=255, null=True, blank=True)
-    provider_data = JSONField(default=dict, blank=True)
+    provider_data = models.JSONField(default=dict, blank=True)
     
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
@@ -1125,7 +1125,7 @@ class TaxSignatureSigner(models.Model):
     class Meta:
         app_label = 'taxes'
         db_table = 'tax_signature_signers'
-        ordering = ['signing_order', 'created_at']
+        ordering = ['signing_order', 'created']
         unique_together = ('signature_request', 'email')
         indexes = [
             models.Index(fields=['signature_request', 'status']),
@@ -1228,7 +1228,7 @@ class TaxSignatureAuditLog(models.Model):
     # Context information
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.TextField(blank=True)
-    metadata = JSONField(default=dict, blank=True)
+    metadata = models.JSONField(default=dict, blank=True)
     
     # Timestamp
     created_at = models.DateTimeField(auto_now_add=True)
@@ -1238,8 +1238,8 @@ class TaxSignatureAuditLog(models.Model):
         db_table = 'tax_signature_audit_logs'
         ordering = ['-created_at']
         indexes = [
-            models.Index(fields=['signature_request', 'created_at']),
-            models.Index(fields=['event_type', 'created_at']),
+            models.Index(fields=['signature_request', 'created']),
+            models.Index(fields=['event_type', 'created']),
         ]
     
     def __str__(self):
@@ -1254,8 +1254,8 @@ class TaxSignatureWebhook(models.Model):
     event_type = models.CharField(max_length=100)
     
     # Webhook data
-    payload = JSONField()
-    headers = JSONField(default=dict)
+    payload = models.JSONField()
+    headers = models.JSONField(default=dict)
     
     # Processing status
     processed = models.BooleanField(default=False)
@@ -1271,7 +1271,7 @@ class TaxSignatureWebhook(models.Model):
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['provider_name', 'processed']),
-            models.Index(fields=['created_at']),
+            models.Index(fields=['created']),
         ]
     
     def __str__(self):
@@ -1295,10 +1295,10 @@ class FilingConfirmation(TenantAwareModel):
     
     # State-specific confirmations
     state_confirmation_number = models.CharField(max_length=100, null=True, blank=True)
-    state_confirmation_data = JSONField(default=dict, blank=True)
+    state_confirmation_data = models.JSONField(default=dict, blank=True)
     
     # Metadata
-    metadata = JSONField(default=dict, blank=True)
+    metadata = models.JSONField(default=dict, blank=True)
     
     class Meta:
         app_label = 'taxes'
@@ -1365,8 +1365,8 @@ class FilingNotification(TenantAwareModel):
         db_table = 'tax_filing_notifications'
         indexes = [
             models.Index(fields=['confirmation', 'notification_type']),
-            models.Index(fields=['status', 'created_at']),
-            models.Index(fields=['tenant_id', 'created_at']),
+            models.Index(fields=['status', 'created']),
+            models.Index(fields=['tenant_id', 'created']),
         ]
     
     def __str__(self):
@@ -1456,7 +1456,7 @@ class Form941(TenantAwareModel):
     
     # Schedule B (for semiweekly depositors)
     requires_schedule_b = models.BooleanField(default=False)
-    schedule_b_data = JSONField(default=dict, blank=True)
+    schedule_b_data = models.JSONField(default=dict, blank=True)
     
     # Part 3: Tell us about your business
     business_closed = models.BooleanField(default=False)
@@ -1470,7 +1470,7 @@ class Form941(TenantAwareModel):
     acknowledgment_date = models.DateTimeField(null=True, blank=True)
     
     # Validation
-    validation_errors = JSONField(default=list, blank=True)
+    validation_errors = models.JSONField(default=list, blank=True)
     is_valid = models.BooleanField(default=False)
     
     # Metadata
@@ -1512,7 +1512,7 @@ class Form941ScheduleB(TenantAwareModel):
     
     # Daily tax liabilities stored as JSON
     # Format: {1: [day1_amount, day2_amount, ...], 2: [...], 3: [...]}
-    daily_liabilities = JSONField(default=dict)
+    daily_liabilities = models.JSONField(default=dict)
     
     # Monthly totals
     month1_total = models.DecimalField(max_digits=15, decimal_places=2, default=0)
@@ -1669,7 +1669,7 @@ class EmployerTaxAccount(TenantAwareModel):
     eftps_pin = models.CharField(max_length=100, blank=True, help_text="Encrypted PIN")
     
     # State accounts
-    state_accounts = JSONField(default=dict, blank=True)
+    state_accounts = models.JSONField(default=dict, blank=True)
     # Format: {"CA": {"account_number": "...", "access_code": "..."}, ...}
     
     # Deposit schedules
@@ -1725,7 +1725,7 @@ class Form940(TenantAwareModel):
     ein = models.CharField(max_length=20)
     business_name = models.CharField(max_length=200)
     trade_name = models.CharField(max_length=200, blank=True)
-    address = JSONField(default=dict)  # Street, city, state, zip
+    address = models.JSONField(default=dict)  # Street, city, state, zip
     
     # Part 1 - Tell us about your return
     amended_return = models.BooleanField(default=False)
@@ -1758,7 +1758,7 @@ class Form940(TenantAwareModel):
     state_contributions_paid = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     state_taxable_wages = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     additional_tax_credit_reduction = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    credit_reduction_states = JSONField(default=list, blank=True)  # List of states with credit reduction
+    credit_reduction_states = models.JSONField(default=list, blank=True)  # List of states with credit reduction
     total_credit_reduction = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     state_credit_allowable = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     
@@ -1814,7 +1814,7 @@ class Form940(TenantAwareModel):
     preparer_ptin = models.CharField(max_length=20, blank=True)
     preparer_firm_name = models.CharField(max_length=200, blank=True)
     preparer_firm_ein = models.CharField(max_length=20, blank=True)
-    preparer_firm_address = JSONField(default=dict, blank=True)
+    preparer_firm_address = models.JSONField(default=dict, blank=True)
     
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
@@ -1967,14 +1967,14 @@ class StatePayrollConfiguration(TenantAwareModel):
     fli_employer_rate = models.DecimalField(max_digits=6, decimal_places=5, null=True, blank=True)
     
     # Other state-specific taxes
-    other_taxes = JSONField(default=dict, blank=True)
+    other_taxes = models.JSONField(default=dict, blank=True)
     
     # Filing requirements
     quarterly_filing_required = models.BooleanField(default=True)
     monthly_deposit_threshold = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     
     # Reciprocity agreements
-    reciprocity_states = JSONField(default=list, blank=True)
+    reciprocity_states = models.JSONField(default=list, blank=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -2062,7 +2062,7 @@ class W2Form(TenantAwareModel):
     nonqualified_plans = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     
     # Box 12: Coded items
-    box12_codes = JSONField(default=dict, blank=True)  # {"D": 5000.00, "DD": 12000.00}
+    box12_codes = models.JSONField(default=dict, blank=True)  # {"D": 5000.00, "DD": 12000.00}
     
     # Box 13: Checkboxes
     statutory_employee = models.BooleanField(default=False)
@@ -2070,13 +2070,13 @@ class W2Form(TenantAwareModel):
     third_party_sick_pay = models.BooleanField(default=False)
     
     # Box 14: Other
-    box14_other = JSONField(default=dict, blank=True)  # {"Union Dues": 500.00}
+    box14_other = models.JSONField(default=dict, blank=True)  # {"Union Dues": 500.00}
     
     # State and local information
-    state_wages_tips = JSONField(default=list, blank=True)
+    state_wages_tips = models.JSONField(default=list, blank=True)
     # [{"state": "CA", "wages": 50000.00, "tax": 2500.00, "employer_state_id": "123456789"}]
     
-    local_wages_tips = JSONField(default=list, blank=True)
+    local_wages_tips = models.JSONField(default=list, blank=True)
     # [{"locality": "NYC", "wages": 50000.00, "tax": 1500.00}]
     
     # Status
@@ -2213,7 +2213,7 @@ class Form1099(TenantAwareModel):
     # Recipient information
     recipient_tin = models.CharField(max_length=20)
     recipient_name = models.CharField(max_length=200)
-    recipient_address = JSONField(default=dict)  # street, city, state, zip
+    recipient_address = models.JSONField(default=dict)  # street, city, state, zip
     account_number = models.CharField(max_length=50, blank=True)
     
     # Status
@@ -2230,7 +2230,7 @@ class Form1099(TenantAwareModel):
     federal_tax_withheld = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     
     # State information
-    state_tax_info = JSONField(default=list, blank=True)
+    state_tax_info = models.JSONField(default=list, blank=True)
     # [{"state": "CA", "state_tax_withheld": 500.00, "state_income": 10000.00, "payer_state_no": "123456"}]
     
     # Correction
@@ -2319,7 +2319,7 @@ class Form1096(TenantAwareModel):
     tax_year = models.IntegerField()
     
     # Type of returns
-    form_types_included = JSONField(default=list)  # ['1099-NEC', '1099-MISC']
+    form_types_included = models.JSONField(default=list)  # ['1099-NEC', '1099-MISC']
     
     # Totals
     total_forms = models.IntegerField(default=0)
@@ -2327,7 +2327,7 @@ class Form1096(TenantAwareModel):
     
     # Filer information (populated from Business/Tenant)
     filer_name = models.CharField(max_length=200)
-    filer_address = JSONField(default=dict)
+    filer_address = models.JSONField(default=dict)
     filer_tin = models.CharField(max_length=20)
     
     # Contact information
@@ -2408,7 +2408,7 @@ class YearEndTaxGeneration(TenantAwareModel):
     error_message = models.TextField(blank=True)
     
     # Generated forms references
-    generated_forms = JSONField(default=dict, blank=True)
+    generated_forms = models.JSONField(default=dict, blank=True)
     # {"w2": ["uuid1", "uuid2"], "1099_nec": ["uuid3"], ...}
     
     # User who initiated
@@ -2423,7 +2423,7 @@ class YearEndTaxGeneration(TenantAwareModel):
         db_table = 'tax_year_end_generation'
         indexes = [
             models.Index(fields=['tenant_id', 'tax_year']),
-            models.Index(fields=['status', 'created_at']),
+            models.Index(fields=['status', 'created']),
         ]
         
     def __str__(self):
