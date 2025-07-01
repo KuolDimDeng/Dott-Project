@@ -75,11 +75,13 @@ export async function GET(request) {
     if (eventType) queryParams.append('event_type', eventType);
 
     // TEMPORARY: Return events from in-memory storage
-    console.log('[Calendar API GET] Using in-memory storage, found events:', getTotalEventCount());
+    console.log('[Calendar API GET] Using in-memory storage, total events across all tenants:', getTotalEventCount());
+    console.log('[Calendar API GET] Requesting events for tenant:', tenantId);
     
     // Filter events by tenant ID
     const events = getEventsByTenant(tenantId);
-    console.log('[Calendar API GET] Filtered events for tenant:', events.length);
+    console.log('[Calendar API GET] Retrieved events for tenant:', events.length);
+    console.log('[Calendar API GET] Events:', events);
 
     // Transform backend data to calendar format if needed
     const transformedEvents = events.map(event => ({
@@ -206,6 +208,7 @@ export async function POST(request) {
     addCalendarEvent(createdEvent);
     console.log('[Calendar API POST] Created local event:', createdEvent);
     console.log('[Calendar API POST] Total events in storage:', getTotalEventCount());
+    console.log('[Calendar API POST] Events for this tenant:', getEventsByTenant(tenantId).length);
 
     // Transform response to calendar format
     const transformedEvent = {
