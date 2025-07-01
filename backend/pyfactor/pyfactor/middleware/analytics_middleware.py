@@ -25,7 +25,7 @@ class AnalyticsMiddleware(MiddlewareMixin):
         
         # Get user ID if authenticated
         user_id = None
-        if hasattr(request, 'user') and request.user.is_authenticated:
+        if hasattr(request, 'user') and request.user and request.user.is_authenticated:
             user_id = str(request.user.id)
         
         # Track API endpoints
