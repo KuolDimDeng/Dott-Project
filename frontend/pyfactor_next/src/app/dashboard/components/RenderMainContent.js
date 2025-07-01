@@ -2233,9 +2233,23 @@ const RenderMainContent = React.memo(function RenderMainContent({
           </ContentWrapperWithKey>
         );
       } else if (showSalesOrderManagement) {
-        ActiveComponent = SalesOrderManagement;
+        // Use SalesOrderManagement component for order management
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup componentKey={`sales-order-management-${sectionComponentKey}`}>
+              <SalesOrderManagement />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
       } else if (showInvoiceManagement) {
-        ActiveComponent = InvoiceManagement;
+        // Use InvoiceManagement component for invoice management
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup componentKey={`invoice-management-${sectionComponentKey}`}>
+              <InvoiceManagement />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
       } else if (showVendorManagement) {
         // Use VendorManagement component for vendor management
         return (

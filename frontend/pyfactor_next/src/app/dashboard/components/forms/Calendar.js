@@ -324,11 +324,13 @@ export default function Calendar({ onNavigate }) {
           scheduleReminder(eventForm);
         }
       } else {
-        throw new Error('Failed to save event');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('[Calendar] Save error response:', errorData);
+        throw new Error(errorData.error || 'Failed to save event');
       }
     } catch (error) {
       console.error('[Calendar] Error saving event:', error);
-      toast.error('Failed to save event');
+      toast.error(error.message || 'Failed to save event');
     }
   };
 
@@ -339,7 +341,7 @@ export default function Calendar({ onNavigate }) {
     }
     
     try {
-      const response = await fetch(`/api/calendar/events/${selectedEvent.id}`, {
+      const response = await fetch(`/api/calendar/events/${selectedEvent.id}?tenantId=${tenantId}`, {
         method: 'DELETE',
         credentials: 'include'
       });
@@ -349,11 +351,13 @@ export default function Calendar({ onNavigate }) {
         await loadEvents(tenantId);
         setShowEventModal(false);
       } else {
-        throw new Error('Failed to delete event');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('[Calendar] Delete error response:', errorData);
+        throw new Error(errorData.error || 'Failed to delete event');
       }
     } catch (error) {
       console.error('[Calendar] Error deleting event:', error);
-      toast.error('Failed to delete event');
+      toast.error(error.message || 'Failed to delete event');
     }
   };
 
