@@ -125,7 +125,9 @@ export default function Calendar({ onNavigate }) {
       
       if (response.ok) {
         const data = await response.json();
-        return data.events.map(event => ({
+        // Handle both array response and object with events property
+        const events = Array.isArray(data) ? data : (data.events || []);
+        return events.map(event => ({
           ...event,
           color: EVENT_TYPES[event.type]?.color || '#6B7280'
         }));
