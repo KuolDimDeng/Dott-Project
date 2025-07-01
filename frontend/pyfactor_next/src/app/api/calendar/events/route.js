@@ -93,8 +93,9 @@ export async function GET(request) {
       `${API_BASE_URL}/api/calendar/events/?${queryParams.toString()}`,
       {
         headers: {
-          'Authorization': `Session ${sessionData.session_token || (await cookies()).get('sid')?.value}`,
-          'Content-Type': 'application/json'
+          'Authorization': `Bearer ${sessionData.access_token || sessionData.session_token || (await cookies()).get('sid')?.value}`,
+          'Content-Type': 'application/json',
+          'X-Session-Token': sessionData.session_token || (await cookies()).get('sid')?.value
         },
         cache: 'no-store'
       }
@@ -223,8 +224,9 @@ export async function POST(request) {
       {
         method: 'POST',
         headers: {
-          'Authorization': `Session ${sessionData.session_token || (await cookies()).get('sid')?.value}`,
-          'Content-Type': 'application/json'
+          'Authorization': `Bearer ${sessionData.access_token || sessionData.session_token || (await cookies()).get('sid')?.value}`,
+          'Content-Type': 'application/json',
+          'X-Session-Token': sessionData.session_token || (await cookies()).get('sid')?.value
         },
         body: JSON.stringify(backendData)
       }
@@ -346,8 +348,9 @@ export async function PUT(request) {
       {
         method: 'PUT',
         headers: {
-          'Authorization': `Session ${sessionData.session_token || (await cookies()).get('sid')?.value}`,
-          'Content-Type': 'application/json'
+          'Authorization': `Bearer ${sessionData.access_token || sessionData.session_token || (await cookies()).get('sid')?.value}`,
+          'Content-Type': 'application/json',
+          'X-Session-Token': sessionData.session_token || (await cookies()).get('sid')?.value
         },
         body: JSON.stringify(backendData)
       }
@@ -441,7 +444,8 @@ export async function DELETE(request) {
       {
         method: 'DELETE',
         headers: {
-          'Authorization': `Session ${sessionData.session_token || (await cookies()).get('sid')?.value}`
+          'Authorization': `Bearer ${sessionData.access_token || sessionData.session_token || (await cookies()).get('sid')?.value}`,
+          'X-Session-Token': sessionData.session_token || (await cookies()).get('sid')?.value
         }
       }
     );
