@@ -141,7 +141,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     // Menu state
     anchorEl: null,
     settingsAnchorEl: null,
-    drawerOpen: false, // Start with drawer closed (icon-only mode)
+    drawerOpen: true, // Start with drawer open by default
     
     // User data
     userData: initialUserData,
@@ -228,14 +228,18 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   
   // Memoize commonly used callbacks with optimized equality checks
   const setAnchorEl = useCallback((value) => {
-    if (value === uiState.anchorEl) return; // Skip update if unchanged
-    updateState({ anchorEl: value });
-  }, [updateState, uiState.anchorEl]);
+    updateState(prev => {
+      if (value === prev.anchorEl) return prev; // Skip update if unchanged
+      return { ...prev, anchorEl: value };
+    });
+  }, [updateState]);
   
   const setSettingsAnchorEl = useCallback((value) => {
-    if (value === uiState.settingsAnchorEl) return; // Skip update if unchanged
-    updateState({ settingsAnchorEl: value });
-  }, [updateState, uiState.settingsAnchorEl]);
+    updateState(prev => {
+      if (value === prev.settingsAnchorEl) return prev; // Skip update if unchanged
+      return { ...prev, settingsAnchorEl: value };
+    });
+  }, [updateState]);
   
   const setDrawerOpen = useCallback((value) => {
     updateState(prev => {
@@ -251,59 +255,81 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   }, [updateState]);
   
   const setView = useCallback((value) => {
-    if (value === uiState.view) return; // Skip update if unchanged
-    updateState({ view: value });
-  }, [updateState, uiState.view]);
+    updateState(prev => {
+      if (value === prev.view) return prev;
+      return { ...prev, view: value };
+    });
+  }, [updateState]);
   
   const setShowKPIDashboard = useCallback((value) => {
-    if (value === uiState.showKPIDashboard) return; // Skip update if unchanged
-    updateState({ showKPIDashboard: value });
-  }, [updateState, uiState.showKPIDashboard]);
+    updateState(prev => {
+      if (value === prev.showKPIDashboard) return prev;
+      return { ...prev, showKPIDashboard: value };
+    });
+  }, [updateState]);
   
   const setShowMainDashboard = useCallback((value) => {
-    if (value === uiState.showMainDashboard) return; // Skip update if unchanged
-    updateState({ showMainDashboard: value });
-  }, [updateState, uiState.showMainDashboard]);
+    updateState(prev => {
+      if (value === prev.showMainDashboard) return prev;
+      return { ...prev, showMainDashboard: value };
+    });
+  }, [updateState]);
   
   const setShowHome = useCallback((value) => {
-    if (value === uiState.showHome) return; // Skip update if unchanged
-    updateState({ showHome: value });
-  }, [updateState, uiState.showHome]);
+    updateState(prev => {
+      if (value === prev.showHome) return prev;
+      return { ...prev, showHome: value };
+    });
+  }, [updateState]);
   
   const setShowForm = useCallback((value) => {
-    if (value === uiState.showForm) return; // Skip update if unchanged
-    updateState({ showForm: value });
-  }, [updateState, uiState.showForm]);
+    updateState(prev => {
+      if (value === prev.showForm) return prev;
+      return { ...prev, showForm: value };
+    });
+  }, [updateState]);
   
   const setFormOption = useCallback((value) => {
-    if (value === uiState.formOption) return; // Skip update if unchanged
-    updateState({ formOption: value });
-  }, [updateState, uiState.formOption]);
+    updateState(prev => {
+      if (value === prev.formOption) return prev;
+      return { ...prev, formOption: value };
+    });
+  }, [updateState]);
   
   const setShowMyAccount = useCallback((value) => {
-    if (value === uiState.showMyAccount) return; // Skip update if unchanged
-    updateState({ showMyAccount: value });
-  }, [updateState, uiState.showMyAccount]);
+    updateState(prev => {
+      if (value === prev.showMyAccount) return prev;
+      return { ...prev, showMyAccount: value };
+    });
+  }, [updateState]);
   
   const setShowHelpCenter = useCallback((value) => {
-    if (value === uiState.showHelpCenter) return; // Skip update if unchanged
-    updateState({ showHelpCenter: value });
-  }, [updateState, uiState.showHelpCenter]);
+    updateState(prev => {
+      if (value === prev.showHelpCenter) return prev;
+      return { ...prev, showHelpCenter: value };
+    });
+  }, [updateState]);
   
   const setSelectedSettingsOption = useCallback((value) => {
-    if (value === uiState.selectedSettingsOption) return; // Skip update if unchanged
-    updateState({ selectedSettingsOption: value });
-  }, [updateState, uiState.selectedSettingsOption]);
+    updateState(prev => {
+      if (value === prev.selectedSettingsOption) return prev;
+      return { ...prev, selectedSettingsOption: value };
+    });
+  }, [updateState]);
   
   const setShowCreateMenu = useCallback((value) => {
-    if (value === uiState.showCreateMenu) return; // Skip update if unchanged
-    updateState({ showCreateMenu: value });
-  }, [updateState, uiState.showCreateMenu]);
+    updateState(prev => {
+      if (value === prev.showCreateMenu) return prev;
+      return { ...prev, showCreateMenu: value };
+    });
+  }, [updateState]);
 
   const setShowPOSSystem = useCallback((value) => {
-    if (value === uiState.showPOSSystem) return; // Skip update if unchanged
-    updateState({ showPOSSystem: value });
-  }, [updateState, uiState.showPOSSystem]);
+    updateState(prev => {
+      if (value === prev.showPOSSystem) return prev;
+      return { ...prev, showPOSSystem: value };
+    });
+  }, [updateState]);
 
   // Reset all view states for navigation
   const resetAllStates = useCallback(() => {
@@ -775,9 +801,9 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   
   // Add logging to help debug issues
   const handleDrawerToggleWithLogging = useCallback(() => {
-    console.log('[DashboardContent] Toggle button clicked, current state:', drawerOpen);
+    console.log('[DashboardContent] Toggle button clicked, current drawerOpen state:', uiState.drawerOpen);
     handleDrawerToggle();
-  }, [handleDrawerToggle, drawerOpen]);
+  }, [handleDrawerToggle, uiState.drawerOpen]);
 
   // Handle specific click for employee management for direct access
   const handleEmployeeManagementClick = useCallback(() => {

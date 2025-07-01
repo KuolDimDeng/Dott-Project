@@ -192,6 +192,7 @@ const Drawer = ({
           overflow-x-hidden
           transition-all duration-300 ease-in-out
         `}
+        data-drawer-state={isOpen ? 'open' : 'closed'}
       >
         
         <div 
