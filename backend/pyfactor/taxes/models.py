@@ -1172,7 +1172,7 @@ class TaxSignatureDocument(models.Model):
     checksum = models.CharField(max_length=64, blank=True)  # SHA-256 hash
     
     # Timestamps
-    # Using 'created' from TenantAwareModel instead of defining created_at
+    created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
         app_label = 'taxes'
@@ -1239,15 +1239,15 @@ class TaxSignatureAuditLog(models.Model):
     metadata = models.JSONField(default=dict, blank=True)
     
     # Timestamp
-    # Using 'created' from TenantAwareModel instead of defining created_at
+    created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
         app_label = 'taxes'
         db_table = 'tax_signature_audit_logs'
         ordering = ['-created_at']
         indexes = [
-            models.Index(fields=['signature_request', 'created']),
-            models.Index(fields=['event_type', 'created']),
+            models.Index(fields=['signature_request', 'created_at']),
+            models.Index(fields=['event_type', 'created_at']),
         ]
     
     def __str__(self):
@@ -1271,7 +1271,7 @@ class TaxSignatureWebhook(models.Model):
     error_message = models.TextField(blank=True)
     
     # Timestamp
-    # Using 'created' from TenantAwareModel instead of defining created_at
+    created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
         app_label = 'taxes'
@@ -1279,7 +1279,7 @@ class TaxSignatureWebhook(models.Model):
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['provider_name', 'processed']),
-            models.Index(fields=['created']),
+            models.Index(fields=['created_at']),
         ]
     
     def __str__(self):
