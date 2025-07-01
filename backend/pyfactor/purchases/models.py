@@ -54,6 +54,8 @@ class Vendor(models.Model):
     city = models.CharField(max_length=100)
     state = models.CharField(max_length=100)
     phone = models.CharField(max_length=20, blank=True, null=True)
+    is_1099_vendor = models.BooleanField(default=False)
+    tax_id = models.CharField(max_length=20, blank=True, null=True)  # For EIN or SSN
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -323,3 +325,32 @@ class ProcurementItem(models.Model):
 
     def __str__(self):
         return f"Item for {self.procurement.procurement_number}"
+
+
+class Purchase(models.Model):
+    """Model for tracking purchases and payments to vendors for 1099 reporting"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    tenant_id = models.IntegerField()
+    vendor = models.ForeignKey('Vendor', on_delete=models.CASCADE, related_name='purchases')
+    purchase_date = models.DateField()
+    payment_date = models.DateField(null=True, blank=True)
+    description = models.TextField()
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(max_length=20, choices=[
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('paid', 'Paid'),
+        ('cancelled', 'Cancelled')
+    ], default='pending')
+    payment_method = models.CharField(max_length=50, blank=True, null=True)
+    reference_number = models.CharField(max_length=100, blank=True, null=True)
+    is_1099_eligible = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Purchase from {self.vendor.vendor_name} - ${self.total_amount}"
+
+    class Meta:
+        ordering = ['-purchase_date']
+        app_label = 'purchases'

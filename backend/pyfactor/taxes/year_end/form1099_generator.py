@@ -14,7 +14,7 @@ from purchases.models import Vendor, Purchase, PurchaseOrder
 from sales.models import Invoice
 from users.models import Business
 from custom_auth.models import Tenant
-from taxes.models import TaxSetting
+from taxes.models import TaxSettings
 
 
 class Form1099Generator:
