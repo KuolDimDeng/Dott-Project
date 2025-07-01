@@ -7,7 +7,7 @@ import Anthropic from '@anthropic-ai/sdk';
 let anthropic;
 try {
   anthropic = new Anthropic({
-    apiKey: process.env.CLAUDE_API_KEY,
+    apiKey: process.env.CLAUDE_TAX_API_KEY,
   });
 } catch (error) {
   console.error('[Tax Suggestions API] Failed to initialize Anthropic client:', error);
@@ -15,13 +15,13 @@ try {
 
 export async function POST(request) {
   console.log('[Tax Suggestions API] Request received');
-  console.log('[Tax Suggestions API] API Key exists:', !!process.env.CLAUDE_API_KEY);
+  console.log('[Tax Suggestions API] API Key exists:', !!process.env.CLAUDE_TAX_API_KEY);
   console.log('[Tax Suggestions API] Backend URL:', process.env.NEXT_PUBLIC_BACKEND_URL);
   
   try {
     // Check if API key is configured
-    if (!process.env.CLAUDE_API_KEY || !anthropic) {
-      console.error('[Tax Suggestions API] CLAUDE_API_KEY not configured or Anthropic client not initialized');
+    if (!process.env.CLAUDE_TAX_API_KEY || !anthropic) {
+      console.error('[Tax Suggestions API] CLAUDE_TAX_API_KEY not configured or Anthropic client not initialized');
       return NextResponse.json(
         { error: 'Tax suggestions service not configured. Please contact support.' },
         { status: 503, headers: standardSecurityHeaders }

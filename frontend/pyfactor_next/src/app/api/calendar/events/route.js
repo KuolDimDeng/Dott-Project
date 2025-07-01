@@ -102,8 +102,14 @@ export async function GET(request) {
 
     if (!backendResponse.ok) {
       console.error('[Calendar API GET] Backend error:', backendResponse.status);
+      try {
+        const errorText = await backendResponse.text();
+        console.error('[Calendar API GET] Error details:', errorText);
+      } catch (e) {
+        console.error('[Calendar API GET] Could not read error response');
+      }
       // Fallback to in-memory storage if backend not available
-      console.log('[Calendar API GET] Falling back to in-memory storage');
+      console.log('[Calendar API GET] Falling back to in-memory storage due to backend error');
       const events = getEventsByTenant(tenantId);
       const transformedEvents = events.map(event => ({
         id: event.id,
