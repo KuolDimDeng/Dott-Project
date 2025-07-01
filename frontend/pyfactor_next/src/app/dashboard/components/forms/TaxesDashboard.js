@@ -25,7 +25,12 @@ const TaxesDashboard = () => {
       // Fetch tax summary data
       const summaryResponse = await taxesApi.dashboard.getSummary();
       if (summaryResponse.data) {
-        setTaxSummary(summaryResponse.data);
+        // Ensure we have the proper structure even if some fields are missing
+        setTaxSummary({
+          salesTax: summaryResponse.data.salesTax || { collected: 0, filed: 0, due: 0 },
+          incomeTax: summaryResponse.data.incomeTax || { estimated: 0, paid: 0, remaining: 0 },
+          payrollTax: summaryResponse.data.payrollTax || { withheld: 0, deposited: 0, pending: 0 }
+        });
       }
       
       // Fetch upcoming filings
@@ -65,15 +70,15 @@ const TaxesDashboard = () => {
           <div className="space-y-2">
             <div className="flex justify-between">
               <span className="text-gray-600">Collected</span>
-              <span className="font-medium">${taxSummary.salesTax.collected.toFixed(2)}</span>
+              <span className="font-medium">${(taxSummary.salesTax?.collected || 0).toFixed(2)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Filed</span>
-              <span className="font-medium">${taxSummary.salesTax.filed.toFixed(2)}</span>
+              <span className="font-medium">${(taxSummary.salesTax?.filed || 0).toFixed(2)}</span>
             </div>
             <div className="flex justify-between border-t pt-2">
               <span className="text-gray-600">Due</span>
-              <span className="font-bold text-red-600">${taxSummary.salesTax.due.toFixed(2)}</span>
+              <span className="font-bold text-red-600">${(taxSummary.salesTax?.due || 0).toFixed(2)}</span>
             </div>
           </div>
         </div>
@@ -84,15 +89,15 @@ const TaxesDashboard = () => {
           <div className="space-y-2">
             <div className="flex justify-between">
               <span className="text-gray-600">Estimated</span>
-              <span className="font-medium">${taxSummary.incomeTax.estimated.toFixed(2)}</span>
+              <span className="font-medium">${(taxSummary.incomeTax?.estimated || 0).toFixed(2)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Paid</span>
-              <span className="font-medium">${taxSummary.incomeTax.paid.toFixed(2)}</span>
+              <span className="font-medium">${(taxSummary.incomeTax?.paid || 0).toFixed(2)}</span>
             </div>
             <div className="flex justify-between border-t pt-2">
               <span className="text-gray-600">Remaining</span>
-              <span className="font-bold text-orange-600">${taxSummary.incomeTax.remaining.toFixed(2)}</span>
+              <span className="font-bold text-orange-600">${(taxSummary.incomeTax?.remaining || 0).toFixed(2)}</span>
             </div>
           </div>
         </div>
@@ -103,15 +108,15 @@ const TaxesDashboard = () => {
           <div className="space-y-2">
             <div className="flex justify-between">
               <span className="text-gray-600">Withheld</span>
-              <span className="font-medium">${taxSummary.payrollTax.withheld.toFixed(2)}</span>
+              <span className="font-medium">${(taxSummary.payrollTax?.withheld || 0).toFixed(2)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Deposited</span>
-              <span className="font-medium">${taxSummary.payrollTax.deposited.toFixed(2)}</span>
+              <span className="font-medium">${(taxSummary.payrollTax?.deposited || 0).toFixed(2)}</span>
             </div>
             <div className="flex justify-between border-t pt-2">
               <span className="text-gray-600">Pending</span>
-              <span className="font-bold text-yellow-600">${taxSummary.payrollTax.pending.toFixed(2)}</span>
+              <span className="font-bold text-yellow-600">${(taxSummary.payrollTax?.pending || 0).toFixed(2)}</span>
             </div>
           </div>
         </div>
