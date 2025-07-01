@@ -2111,9 +2111,21 @@ const RenderMainContent = React.memo(function RenderMainContent({
           </ContentWrapperWithKey>
         );
       } else if (showReportsManagement) {
-        ActiveComponent = HRReportsManagement;
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup componentKey={`hr-reports-${sectionComponentKey}`}>
+              <HRReportsManagement />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
       } else if (showPerformanceManagement) {
-        ActiveComponent = PerformanceManagement;
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup componentKey={`performance-${sectionComponentKey}`}>
+              <PerformanceManagement />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
       } else if (showPayManagement) {
         console.log('[RenderMainContent] Rendering PayManagement component');
         return (
@@ -2336,6 +2348,30 @@ const RenderMainContent = React.memo(function RenderMainContent({
 
       // If we reached here and have an ActiveComponent, render it
       if (ActiveComponent) {
+        console.log('[RenderMainContent] Rendering ActiveComponent:', {
+          componentName: ActiveComponent.name || 'Unknown',
+          componentType: typeof ActiveComponent,
+          componentProps,
+          sectionComponentKey,
+          navigationKey
+        });
+        
+        // Add extra safety check
+        if (typeof ActiveComponent !== 'function') {
+          console.error('[RenderMainContent] ActiveComponent is not a function!', {
+            ActiveComponent,
+            type: typeof ActiveComponent
+          });
+          return (
+            <ContentWrapperWithKey>
+              <div className="p-6 bg-red-50 border border-red-200 rounded">
+                <h3 className="text-red-800 font-semibold">Component Loading Error</h3>
+                <p className="text-red-600 mt-2">The selected component could not be loaded properly.</p>
+              </div>
+            </ContentWrapperWithKey>
+          );
+        }
+        
         return (
           <ContentWrapperWithKey>
             <SuspenseWithCleanup componentKey={`${sectionComponentKey}-${navigationKey}`}>
