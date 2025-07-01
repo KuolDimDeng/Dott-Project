@@ -128,8 +128,18 @@ export async function GET(request) {
       return NextResponse.json(transformedEvents);
     }
 
-    const backendData = await backendResponse.json();
-    console.log('[Calendar API GET] Backend response:', backendData);
+    const backendText = await backendResponse.text();
+    console.log('[Calendar API GET] Backend response text:', backendText);
+    
+    let backendData;
+    try {
+      backendData = JSON.parse(backendText);
+      console.log('[Calendar API GET] Parsed backend response:', backendData);
+    } catch (e) {
+      console.error('[Calendar API GET] Failed to parse backend response as JSON');
+      // Return empty array if parsing fails
+      return NextResponse.json([]);
+    }
 
     // Transform backend data to calendar format
     const events = Array.isArray(backendData) ? backendData : (backendData.results || []);
