@@ -290,8 +290,20 @@ export default function Calendar({ onNavigate }) {
 
   // Save event
   const handleSaveEvent = async () => {
+    console.log('[Calendar] handleSaveEvent called');
+    console.log('[Calendar] Event form data:', eventForm);
+    console.log('[Calendar] Tenant ID:', tenantId);
+    console.log('[Calendar] Selected event:', selectedEvent);
+    
     if (!eventForm.title) {
+      console.error('[Calendar] No title provided');
       toast.error('Please enter a title for the event');
+      return;
+    }
+    
+    if (!tenantId) {
+      console.error('[Calendar] No tenant ID available');
+      toast.error('Unable to save event - no tenant ID');
       return;
     }
     
@@ -301,6 +313,13 @@ export default function Calendar({ onNavigate }) {
         : '/api/calendar/events';
       
       const method = selectedEvent ? 'PUT' : 'POST';
+      
+      console.log('[Calendar] Making request to:', endpoint);
+      console.log('[Calendar] Method:', method);
+      console.log('[Calendar] Request body:', {
+        ...eventForm,
+        tenantId
+      });
       
       const response = await fetch(endpoint, {
         method,
@@ -314,22 +333,32 @@ export default function Calendar({ onNavigate }) {
         })
       });
       
+      console.log('[Calendar] Response status:', response.status);
+      console.log('[Calendar] Response ok:', response.ok);
+      
       if (response.ok) {
+        const data = await response.json();
+        console.log('[Calendar] Save successful, response data:', data);
+        
         toast.success(selectedEvent ? 'Event updated!' : 'Event created!');
         await loadEvents(tenantId);
         setShowEventModal(false);
         
         // Send reminder notification if requested
         if (eventForm.sendReminder) {
+          console.log('[Calendar] Scheduling reminder');
           scheduleReminder(eventForm);
         }
       } else {
         const errorData = await response.json().catch(() => ({}));
         console.error('[Calendar] Save error response:', errorData);
-        throw new Error(errorData.error || 'Failed to save event');
+        console.error('[Calendar] Response status:', response.status);
+        console.error('[Calendar] Response headers:', response.headers);
+        throw new Error(errorData.error || `Failed to save event (${response.status})`);
       }
     } catch (error) {
       console.error('[Calendar] Error saving event:', error);
+      console.error('[Calendar] Error stack:', error.stack);
       toast.error(error.message || 'Failed to save event');
     }
   };
@@ -667,7 +696,10 @@ export default function Calendar({ onNavigate }) {
                   Cancel
                 </button>
                 <button
-                  onClick={handleSaveEvent}
+                  onClick={() => {
+                    console.log('[Calendar] Save button clicked');
+                    handleSaveEvent();
+                  }}
                   className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
                   <CheckIcon className="h-4 w-4 mr-1" />

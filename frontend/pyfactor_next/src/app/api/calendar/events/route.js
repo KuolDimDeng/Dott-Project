@@ -2,16 +2,19 @@
 // Handles CRUD operations for calendar events using real database
 
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { cookies } from 'next/headers';
+import { getServerUser } from '@/utils/getServerUser';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
 
 // GET - Fetch calendar events from database
 export async function GET(request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
+    console.log('[Calendar API GET] Starting request');
+    const user = await getServerUser();
+    
+    if (!user) {
+      console.error('[Calendar API GET] No valid user session');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -44,7 +47,7 @@ export async function GET(request) {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          ...(session?.accessToken ? { 'Authorization': `Bearer ${session.accessToken}` } : {}),
+          ...(user?.access_token ? { 'Authorization': `Bearer ${user.access_token}` } : {}),
           'X-Tenant-Id': tenantId
         }
       }
@@ -95,22 +98,28 @@ export async function GET(request) {
 // POST - Create new calendar event
 export async function POST(request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
+    console.log('[Calendar API POST] Starting request');
+    const user = await getServerUser();
+    
+    if (!user) {
+      console.error('[Calendar API POST] No valid user session');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
     // Log session info for debugging
-    console.log('[Calendar API] Session info:', { 
-      hasSession: !!session, 
-      hasAccessToken: !!session?.accessToken,
-      sessionKeys: session ? Object.keys(session) : []
+    console.log('[Calendar API POST] User info:', { 
+      hasUser: !!user, 
+      email: user?.email,
+      tenantId: user?.tenantId
     });
 
     const body = await request.json();
+    console.log('[Calendar API POST] Request body:', body);
+    
     const { tenantId, ...eventData } = body;
 
     if (!tenantId) {
+      console.error('[Calendar API POST] No tenant ID provided');
       return NextResponse.json(
         { error: 'Tenant ID is required' },
         { status: 400 }
@@ -119,6 +128,10 @@ export async function POST(request) {
 
     // Validate required fields
     if (!eventData.title || !eventData.start) {
+      console.error('[Calendar API POST] Missing required fields:', {
+        hasTitle: !!eventData.title,
+        hasStart: !!eventData.start
+      });
       return NextResponse.json(
         { error: 'Title and start date are required' },
         { status: 400 }
@@ -142,19 +155,31 @@ export async function POST(request) {
     };
 
     // Create event in backend
+    console.log('[Calendar API POST] Sending to backend:', {
+      url: `${API_BASE_URL}/api/calendar/events`,
+      data: backendData
+    });
+    
     const response = await fetch(`${API_BASE_URL}/api/calendar/events`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(session?.accessToken ? { 'Authorization': `Bearer ${session.accessToken}` } : {}),
+        ...(user?.access_token ? { 'Authorization': `Bearer ${user.access_token}` } : {}),
         'X-Tenant-Id': tenantId
       },
       body: JSON.stringify(backendData)
     });
 
+    console.log('[Calendar API POST] Backend response status:', response.status);
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error('[Calendar API] Backend error:', errorData);
+      console.error('[Calendar API POST] Backend error:', errorData);
+      console.error('[Calendar API POST] Full response:', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries())
+      });
       return NextResponse.json(
         { error: errorData.error || 'Failed to create event' },
         { status: response.status }
@@ -191,8 +216,11 @@ export async function POST(request) {
 // PUT - Update calendar event
 export async function PUT(request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
+    console.log('[Calendar API PUT] Starting request');
+    const user = await getServerUser();
+    
+    if (!user) {
+      console.error('[Calendar API PUT] No valid user session');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -271,8 +299,11 @@ export async function PUT(request) {
 // DELETE - Delete calendar event
 export async function DELETE(request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
+    console.log('[Calendar API DELETE] Starting request');
+    const user = await getServerUser();
+    
+    if (!user) {
+      console.error('[Calendar API DELETE] No valid user session');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -291,7 +322,7 @@ export async function DELETE(request) {
     const response = await fetch(`${API_BASE_URL}/api/calendar/events/${id}`, {
       method: 'DELETE',
       headers: {
-        ...(session?.accessToken ? { 'Authorization': `Bearer ${session.accessToken}` } : {}),
+        ...(user?.access_token ? { 'Authorization': `Bearer ${user.access_token}` } : {}),
         'X-Tenant-Id': tenantId
       }
     });
