@@ -1,65 +1,24 @@
 // Inventory Expiring Products API Endpoint
-// Fetches product expiry dates for calendar integration
+// Fetches products nearing expiration from the database
 
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../../../auth/[...auth0]/route';
 
-// Mock expiring products data (replace with actual database queries)
-const mockExpiringProducts = [
-  {
-    id: 'product-1',
-    name: 'Organic Milk',
-    sku: 'ORG-MILK-001',
-    expiryDate: '2025-07-20',
-    quantity: 24,
-    location: 'Refrigerator A-1',
-    category: 'Dairy',
-    costPerUnit: 3.50,
-    alertDays: 7
-  },
-  {
-    id: 'product-2',
-    name: 'Fresh Bread',
-    sku: 'BREAD-WHT-002',
-    expiryDate: '2025-07-25',
-    quantity: 15,
-    location: 'Shelf B-3',
-    category: 'Bakery',
-    costPerUnit: 2.99,
-    alertDays: 3
-  },
-  {
-    id: 'product-3',
-    name: 'Pharmaceutical Supplement',
-    sku: 'PHARMA-001',
-    expiryDate: '2025-08-15',
-    quantity: 50,
-    location: 'Pharmacy Storage',
-    category: 'Pharmaceuticals',
-    costPerUnit: 25.00,
-    alertDays: 30
-  },
-  {
-    id: 'product-4',
-    name: 'Frozen Vegetables',
-    sku: 'FRZ-VEG-003',
-    expiryDate: '2025-09-30',
-    quantity: 100,
-    location: 'Freezer C-2',
-    category: 'Frozen Foods',
-    costPerUnit: 4.25,
-    alertDays: 14
-  }
-];
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
 
-// GET - Fetch expiring products
+// GET - Fetch expiring products from database
 export async function GET(request) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const tenantId = searchParams.get('tenantId');
-    const daysAhead = parseInt(searchParams.get('daysAhead')) || 90; // Default to 90 days ahead
-    const category = searchParams.get('category'); // Optional: filter by category
+    const daysAhead = searchParams.get('days') || 30; // Default to 30 days
     const location = searchParams.get('location'); // Optional: filter by location
-    const urgentOnly = searchParams.get('urgentOnly'); // Optional: only show urgent items
 
     if (!tenantId) {
       return NextResponse.json(
@@ -68,188 +27,145 @@ export async function GET(request) {
       );
     }
 
-    // In a real implementation, you would:
-    // 1. Validate the tenant ID
-    // 2. Query the database for products belonging to this tenant
-    // 3. Filter products by expiry date within the specified range
-    // 4. Apply filters for category, location, urgency, etc.
-    
-    console.log(`[Expiring Products API] Fetching expiring products for tenant: ${tenantId}, days ahead: ${daysAhead}`);
-
+    // Calculate date range
     const today = new Date();
     const futureDate = new Date();
-    futureDate.setDate(today.getDate() + daysAhead);
+    futureDate.setDate(today.getDate() + parseInt(daysAhead));
 
-    let filteredProducts = mockExpiringProducts;
-
-    // Filter by expiry date range
-    filteredProducts = filteredProducts.filter(product => {
-      const expiryDate = new Date(product.expiryDate);
-      return expiryDate >= today && expiryDate <= futureDate;
+    // Build query parameters
+    const queryParams = new URLSearchParams({
+      tenant_id: tenantId,
+      has_expiry: 'true',
+      expiry_before: futureDate.toISOString().split('T')[0],
+      expiry_after: today.toISOString().split('T')[0]
     });
 
-    // Filter by category if specified
-    if (category) {
-      filteredProducts = filteredProducts.filter(product => 
-        product.category.toLowerCase().includes(category.toLowerCase())
-      );
-    }
+    if (location) queryParams.append('location_id', location);
 
-    // Filter by location if specified
-    if (location) {
-      filteredProducts = filteredProducts.filter(product => 
-        product.location.toLowerCase().includes(location.toLowerCase())
-      );
-    }
-
-    // Filter for urgent items only if requested (expiring within alert days)
-    if (urgentOnly === 'true') {
-      filteredProducts = filteredProducts.filter(product => {
-        const expiryDate = new Date(product.expiryDate);
-        const alertDate = new Date();
-        alertDate.setDate(today.getDate() + (product.alertDays || 7));
-        return expiryDate <= alertDate;
-      });
-    }
-
-    // Calculate additional info for each product
-    const enrichedProducts = filteredProducts.map(product => {
-      const expiryDate = new Date(product.expiryDate);
-      const daysUntilExpiry = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
-      const totalValue = product.quantity * product.costPerUnit;
-      const isUrgent = daysUntilExpiry <= (product.alertDays || 7);
-
-      return {
-        ...product,
-        daysUntilExpiry,
-        totalValue: parseFloat(totalValue.toFixed(2)),
-        isUrgent,
-        urgencyLevel: isUrgent ? (daysUntilExpiry <= 1 ? 'critical' : 'high') : 'normal'
-      };
-    });
-
-    // Sort by expiry date (soonest first)
-    enrichedProducts.sort((a, b) => new Date(a.expiryDate) - new Date(b.expiryDate));
-
-    // Calculate summary statistics
-    const totalProducts = enrichedProducts.length;
-    const urgentProducts = enrichedProducts.filter(p => p.isUrgent).length;
-    const totalValue = enrichedProducts.reduce((sum, p) => sum + p.totalValue, 0);
-    const criticalProducts = enrichedProducts.filter(p => p.urgencyLevel === 'critical').length;
-
-    return NextResponse.json({
-      success: true,
-      products: enrichedProducts,
-      summary: {
-        totalProducts,
-        urgentProducts,
-        criticalProducts,
-        totalValue: parseFloat(totalValue.toFixed(2))
-      },
-      filters: {
-        daysAhead,
-        category,
-        location,
-        urgentOnly: urgentOnly === 'true'
+    // Fetch products with expiry dates from backend
+    const response = await fetch(
+      `${API_BASE_URL}/api/inventory/products?${queryParams}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.accessToken}`,
+          'X-Tenant-Id': tenantId
+        }
       }
-    });
-
-  } catch (error) {
-    console.error('[Expiring Products API] Error fetching expiring products:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch expiring products' },
-      { status: 500 }
     );
-  }
-}
 
-// POST - Add expiry information for a product
-export async function POST(request) {
-  try {
-    const body = await request.json();
-    const { tenantId, productId, name, sku, expiryDate, quantity, location, category, costPerUnit, alertDays } = body;
-
-    if (!tenantId || !productId || !name || !expiryDate) {
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('[Expiring Products API] Backend error:', errorData);
+      
+      // If no products found, return empty array instead of error
+      if (response.status === 404) {
+        return NextResponse.json([]);
+      }
+      
       return NextResponse.json(
-        { error: 'Tenant ID, product ID, name, and expiry date are required' },
-        { status: 400 }
+        { error: errorData.error || 'Failed to fetch inventory data' },
+        { status: response.status }
       );
     }
 
-    // In a real implementation, you would:
-    // 1. Validate the tenant ID and user permissions
-    // 2. Check if the product exists and belongs to the tenant
-    // 3. Add/update the expiry information in the database
-    
-    const productExpiry = {
-      id: productId,
-      name,
-      sku: sku || 'N/A',
-      expiryDate,
-      quantity: quantity || 0,
-      location: location || 'Not specified',
-      category: category || 'General',
-      costPerUnit: costPerUnit || 0,
-      alertDays: alertDays || 7,
-      createdAt: new Date().toISOString()
-    };
+    const products = await response.json();
 
-    console.log(`[Expiring Products API] Adding expiry info for product ${productId} in tenant: ${tenantId}`, productExpiry);
+    // Transform product data to calendar events
+    const expiryEvents = products
+      .filter(product => product.expiry_date) // Only products with expiry dates
+      .map(product => {
+        const expiryDate = new Date(product.expiry_date);
+        const daysUntilExpiry = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+        
+        // Determine urgency and color
+        let urgency = 'low';
+        let backgroundColor = '#F59E0B'; // Amber default
+        let icon = '⚠️';
+        
+        if (daysUntilExpiry <= 7) {
+          urgency = 'critical';
+          backgroundColor = '#DC2626'; // Red
+          icon = '🚨';
+        } else if (daysUntilExpiry <= 14) {
+          urgency = 'high';
+          backgroundColor = '#EF4444'; // Light red
+          icon = '⚠️';
+        } else if (daysUntilExpiry <= 21) {
+          urgency = 'medium';
+          backgroundColor = '#F59E0B'; // Amber
+          icon = '📦';
+        }
+        
+        return {
+          id: `expiry-${product.id}-${product.batch_number || 'nobatch'}`,
+          title: `${icon} ${product.name} Expires${product.batch_number ? ` (Batch: ${product.batch_number})` : ''}`,
+          start: product.expiry_date,
+          allDay: true,
+          type: 'productExpiry',
+          backgroundColor: backgroundColor,
+          borderColor: backgroundColor,
+          editable: false,
+          extendedProps: {
+            productId: product.id,
+            productName: product.name,
+            sku: product.sku,
+            batchNumber: product.batch_number,
+            quantity: product.quantity_on_hand,
+            location: product.location_name,
+            locationId: product.location_id,
+            daysUntilExpiry: daysUntilExpiry,
+            urgency: urgency,
+            value: product.quantity_on_hand * (product.unit_cost || 0),
+            supplier: product.supplier_name
+          }
+        };
+      });
 
-    return NextResponse.json({
-      success: true,
-      product: productExpiry,
-      message: 'Product expiry information added successfully'
-    });
+    // Add reminder events for critical expiries
+    const reminderEvents = products
+      .filter(product => {
+        if (!product.expiry_date) return false;
+        const daysUntilExpiry = Math.ceil((new Date(product.expiry_date) - today) / (1000 * 60 * 60 * 24));
+        return daysUntilExpiry > 7 && daysUntilExpiry <= 30; // Only for products expiring in 8-30 days
+      })
+      .map(product => {
+        const expiryDate = new Date(product.expiry_date);
+        const reminderDate = new Date(expiryDate);
+        reminderDate.setDate(reminderDate.getDate() - 7); // 7 days before expiry
+        
+        return {
+          id: `expiry-reminder-${product.id}-${product.batch_number || 'nobatch'}`,
+          title: `📅 Reminder: ${product.name} expires in 7 days`,
+          start: reminderDate.toISOString().split('T')[0],
+          allDay: true,
+          type: 'reminder',
+          backgroundColor: '#14B8A6', // Teal
+          borderColor: '#14B8A6',
+          editable: false,
+          extendedProps: {
+            isReminder: true,
+            productId: product.id,
+            productName: product.name,
+            expiryDate: product.expiry_date,
+            quantity: product.quantity_on_hand,
+            description: `${product.name} will expire on ${new Date(product.expiry_date).toLocaleDateString()}`
+          }
+        };
+      });
 
+    // Combine expiry events and reminders
+    const allEvents = [...expiryEvents, ...reminderEvents];
+
+    // Sort by date
+    allEvents.sort((a, b) => new Date(a.start) - new Date(b.start));
+
+    return NextResponse.json(allEvents);
   } catch (error) {
-    console.error('[Expiring Products API] Error adding product expiry info:', error);
+    console.error('[Expiring Products API] Error:', error);
     return NextResponse.json(
-      { error: 'Failed to add product expiry information' },
-      { status: 500 }
-    );
-  }
-}
-
-// PUT - Update expiry information for a product
-export async function PUT(request) {
-  try {
-    const body = await request.json();
-    const { productId, tenantId, expiryDate, quantity, location, alertDays } = body;
-
-    if (!productId || !tenantId) {
-      return NextResponse.json(
-        { error: 'Product ID and Tenant ID are required' },
-        { status: 400 }
-      );
-    }
-
-    // In a real implementation, you would:
-    // 1. Validate the tenant ID and user permissions
-    // 2. Check if the product exists and belongs to the tenant
-    // 3. Update the expiry information in the database
-    
-    const updatedProduct = {
-      id: productId,
-      expiryDate,
-      quantity,
-      location,
-      alertDays,
-      updatedAt: new Date().toISOString()
-    };
-
-    console.log(`[Expiring Products API] Updating expiry info for product ${productId} in tenant: ${tenantId}`, updatedProduct);
-
-    return NextResponse.json({
-      success: true,
-      product: updatedProduct,
-      message: 'Product expiry information updated successfully'
-    });
-
-  } catch (error) {
-    console.error('[Expiring Products API] Error updating product expiry info:', error);
-    return NextResponse.json(
-      { error: 'Failed to update product expiry information' },
+      { error: 'Internal server error', details: error.message },
       { status: 500 }
     );
   }

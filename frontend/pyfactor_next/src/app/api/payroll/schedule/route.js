@@ -1,65 +1,24 @@
 // Payroll Schedule API Endpoint
-// Fetches payroll processing dates for calendar integration
+// Fetches payroll processing dates from the database
 
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../../../auth/[...auth0]/route';
 
-// Mock payroll schedule data (replace with actual database queries)
-const mockPayrollSchedule = [
-  {
-    id: 'payroll-1',
-    date: '2025-07-15',
-    type: 'regular',
-    period: 'July 1-15, 2025',
-    description: 'Bi-weekly payroll processing',
-    employeeCount: 25,
-    status: 'scheduled'
-  },
-  {
-    id: 'payroll-2',
-    date: '2025-07-31',
-    type: 'regular',
-    period: 'July 16-31, 2025',
-    description: 'Bi-weekly payroll processing',
-    employeeCount: 25,
-    status: 'scheduled'
-  },
-  {
-    id: 'payroll-3',
-    date: '2025-08-15',
-    type: 'regular',
-    period: 'August 1-15, 2025',
-    description: 'Bi-weekly payroll processing',
-    employeeCount: 25,
-    status: 'scheduled'
-  },
-  {
-    id: 'payroll-4',
-    date: '2025-08-31',
-    type: 'regular',
-    period: 'August 16-31, 2025',
-    description: 'Bi-weekly payroll processing',
-    employeeCount: 25,
-    status: 'scheduled'
-  },
-  {
-    id: 'payroll-bonus-1',
-    date: '2025-12-15',
-    type: 'bonus',
-    period: 'Q4 2025 Bonus',
-    description: 'Year-end bonus distribution',
-    employeeCount: 20,
-    status: 'scheduled'
-  }
-];
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
 
-// GET - Fetch payroll schedule
+// GET - Fetch payroll schedule from database
 export async function GET(request) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const tenantId = searchParams.get('tenantId');
     const year = searchParams.get('year') || new Date().getFullYear();
-    const type = searchParams.get('type'); // Optional: filter by payroll type (regular, bonus, etc.)
-    const upcoming = searchParams.get('upcoming'); // Optional: only show upcoming payrolls
+    const month = searchParams.get('month'); // Optional: filter by month
 
     if (!tenantId) {
       return NextResponse.json(
@@ -68,181 +27,231 @@ export async function GET(request) {
       );
     }
 
-    // In a real implementation, you would:
-    // 1. Validate the tenant ID
-    // 2. Query the database for payroll schedules belonging to this tenant
-    // 3. Consider the company's payroll frequency settings
-    // 4. Apply filters for date range, type, etc.
-    
-    console.log(`[Payroll Schedule API] Fetching payroll schedule for tenant: ${tenantId}, year: ${year}`);
-
-    let filteredSchedule = mockPayrollSchedule;
-
-    // Filter by year
-    filteredSchedule = filteredSchedule.filter(payroll => {
-      const payrollYear = new Date(payroll.date).getFullYear();
-      return payrollYear === parseInt(year);
+    // Build query parameters
+    const queryParams = new URLSearchParams({
+      tenant_id: tenantId,
+      year: year
     });
 
-    // Filter by type if specified
-    if (type) {
-      filteredSchedule = filteredSchedule.filter(payroll => payroll.type === type);
+    if (month) queryParams.append('month', month);
+
+    // Fetch payroll settings from backend
+    const settingsResponse = await fetch(
+      `${API_BASE_URL}/api/payroll/settings?${queryParams}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.accessToken}`,
+          'X-Tenant-Id': tenantId
+        }
+      }
+    );
+
+    let payrollSettings = {};
+    if (settingsResponse.ok) {
+      payrollSettings = await settingsResponse.json();
     }
 
-    // Filter for upcoming payrolls only if requested
-    if (upcoming === 'true') {
-      const today = new Date();
-      filteredSchedule = filteredSchedule.filter(payroll => 
-        new Date(payroll.date) >= today
+    // Fetch actual payroll runs from backend
+    const payrollResponse = await fetch(
+      `${API_BASE_URL}/api/payroll/runs?${queryParams}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.accessToken}`,
+          'X-Tenant-Id': tenantId
+        }
+      }
+    );
+
+    let payrollRuns = [];
+    if (payrollResponse.ok) {
+      payrollRuns = await payrollResponse.json();
+    }
+
+    // Generate payroll schedule events
+    const payrollEvents = [];
+
+    // Add completed payroll runs
+    payrollRuns.forEach(run => {
+      payrollEvents.push({
+        id: `payroll-run-${run.id}`,
+        title: `✅ Payroll Processed - ${run.pay_period}`,
+        start: run.pay_date,
+        allDay: true,
+        type: 'payroll',
+        backgroundColor: '#10B981',
+        borderColor: '#10B981',
+        editable: false,
+        extendedProps: {
+          payrollId: run.id,
+          payPeriod: run.pay_period,
+          employeeCount: run.employee_count,
+          totalAmount: run.total_amount,
+          status: run.status,
+          processedDate: run.processed_date
+        }
+      });
+    });
+
+    // Generate future payroll dates based on frequency
+    const frequency = payrollSettings.pay_frequency || 'biweekly';
+    const payDayOfWeek = payrollSettings.pay_day_of_week || 5; // Default Friday
+    const payDayOfMonth = payrollSettings.pay_day_of_month || 15;
+    
+    const futurePayrollDates = generatePayrollSchedule(
+      year,
+      frequency,
+      payDayOfWeek,
+      payDayOfMonth,
+      month
+    );
+
+    // Add future payroll dates that haven't been processed yet
+    futurePayrollDates.forEach(payDate => {
+      // Check if this date already has a processed payroll
+      const isProcessed = payrollRuns.some(run => 
+        run.pay_date === payDate.date
       );
-    }
 
-    // Sort by date
-    filteredSchedule.sort((a, b) => new Date(a.date) - new Date(b.date));
-
-    return NextResponse.json({
-      success: true,
-      payrollDates: filteredSchedule,
-      count: filteredSchedule.length,
-      filters: {
-        year: parseInt(year),
-        type,
-        upcoming: upcoming === 'true'
+      if (!isProcessed) {
+        payrollEvents.push({
+          id: `payroll-scheduled-${payDate.date}`,
+          title: `💰 Payroll Processing - ${payDate.period}`,
+          start: payDate.date,
+          allDay: true,
+          type: 'payroll',
+          backgroundColor: '#10B981',
+          borderColor: '#10B981',
+          editable: false,
+          extendedProps: {
+            payPeriod: payDate.period,
+            frequency: frequency,
+            status: 'scheduled',
+            reminder: true,
+            reminderDays: 3
+          }
+        });
       }
     });
 
+    // Add payroll deadline reminders (processing dates)
+    if (payrollSettings.reminder_enabled) {
+      futurePayrollDates.forEach(payDate => {
+        const reminderDate = new Date(payDate.date);
+        reminderDate.setDate(reminderDate.getDate() - (payrollSettings.reminder_days || 3));
+        
+        payrollEvents.push({
+          id: `payroll-reminder-${payDate.date}`,
+          title: `⏰ Payroll Processing Reminder`,
+          start: reminderDate.toISOString().split('T')[0],
+          allDay: true,
+          type: 'payroll',
+          backgroundColor: '#F59E0B',
+          borderColor: '#F59E0B',
+          editable: false,
+          extendedProps: {
+            isReminder: true,
+            payDate: payDate.date,
+            payPeriod: payDate.period,
+            description: `Process payroll for ${payDate.period}`
+          }
+        });
+      });
+    }
+
+    return NextResponse.json(payrollEvents);
   } catch (error) {
-    console.error('[Payroll Schedule API] Error fetching payroll schedule:', error);
+    console.error('[Payroll Schedule API] Error:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch payroll schedule' },
+      { error: 'Internal server error', details: error.message },
       { status: 500 }
     );
   }
 }
 
-// POST - Create new payroll schedule entry
-export async function POST(request) {
-  try {
-    const body = await request.json();
-    const { tenantId, date, type, period, description, employeeCount } = body;
-
-    if (!tenantId || !date || !type) {
-      return NextResponse.json(
-        { error: 'Tenant ID, date, and type are required' },
-        { status: 400 }
-      );
-    }
-
-    // In a real implementation, you would:
-    // 1. Validate the tenant ID and user permissions
-    // 2. Create the payroll schedule entry in the database
-    // 3. Set up reminders for payroll processing
-    
-    const newPayroll = {
-      id: `payroll-${Date.now()}`,
-      date,
-      type,
-      period: period || 'Not specified',
-      description: description || 'Payroll processing',
-      employeeCount: employeeCount || 0,
-      status: 'scheduled',
-      createdAt: new Date().toISOString()
-    };
-
-    console.log(`[Payroll Schedule API] Creating payroll schedule for tenant: ${tenantId}`, newPayroll);
-
-    return NextResponse.json({
-      success: true,
-      payroll: newPayroll,
-      message: 'Payroll schedule created successfully'
-    });
-
-  } catch (error) {
-    console.error('[Payroll Schedule API] Error creating payroll schedule:', error);
-    return NextResponse.json(
-      { error: 'Failed to create payroll schedule' },
-      { status: 500 }
-    );
+// Helper function to generate payroll schedule based on frequency
+function generatePayrollSchedule(year, frequency, dayOfWeek, dayOfMonth, filterMonth) {
+  const dates = [];
+  const startDate = new Date(year, filterMonth ? parseInt(filterMonth) - 1 : 0, 1);
+  const endDate = new Date(year, filterMonth ? parseInt(filterMonth) : 11, 31);
+  
+  switch (frequency) {
+    case 'weekly':
+      let currentWeek = new Date(startDate);
+      // Find first occurrence of the pay day
+      while (currentWeek.getDay() !== dayOfWeek) {
+        currentWeek.setDate(currentWeek.getDate() + 1);
+      }
+      
+      while (currentWeek <= endDate) {
+        dates.push({
+          date: currentWeek.toISOString().split('T')[0],
+          period: `Week of ${currentWeek.toLocaleDateString()}`
+        });
+        currentWeek.setDate(currentWeek.getDate() + 7);
+      }
+      break;
+      
+    case 'biweekly':
+      let currentBiweek = new Date(startDate);
+      // Find first occurrence of the pay day
+      while (currentBiweek.getDay() !== dayOfWeek) {
+        currentBiweek.setDate(currentBiweek.getDate() + 1);
+      }
+      
+      while (currentBiweek <= endDate) {
+        dates.push({
+          date: currentBiweek.toISOString().split('T')[0],
+          period: `Pay Period ending ${currentBiweek.toLocaleDateString()}`
+        });
+        currentBiweek.setDate(currentBiweek.getDate() + 14);
+      }
+      break;
+      
+    case 'semimonthly':
+      // Usually 15th and last day of month
+      for (let month = startDate.getMonth(); month <= endDate.getMonth(); month++) {
+        // 15th of the month
+        const mid = new Date(year, month, 15);
+        if (mid >= startDate && mid <= endDate) {
+          dates.push({
+            date: mid.toISOString().split('T')[0],
+            period: `1st Half ${mid.toLocaleDateString('default', { month: 'long', year: 'numeric' })}`
+          });
+        }
+        
+        // Last day of the month
+        const lastDay = new Date(year, month + 1, 0);
+        if (lastDay >= startDate && lastDay <= endDate) {
+          dates.push({
+            date: lastDay.toISOString().split('T')[0],
+            period: `2nd Half ${lastDay.toLocaleDateString('default', { month: 'long', year: 'numeric' })}`
+          });
+        }
+      }
+      break;
+      
+    case 'monthly':
+      for (let month = startDate.getMonth(); month <= endDate.getMonth(); month++) {
+        let payDate = new Date(year, month, dayOfMonth);
+        
+        // If day doesn't exist in month (e.g., 31st in February), use last day
+        if (payDate.getMonth() !== month) {
+          payDate = new Date(year, month + 1, 0);
+        }
+        
+        if (payDate >= startDate && payDate <= endDate) {
+          dates.push({
+            date: payDate.toISOString().split('T')[0],
+            period: payDate.toLocaleDateString('default', { month: 'long', year: 'numeric' })
+          });
+        }
+      }
+      break;
   }
-}
-
-// PUT - Update payroll schedule entry
-export async function PUT(request) {
-  try {
-    const body = await request.json();
-    const { payrollId, tenantId, date, type, period, description, employeeCount, status } = body;
-
-    if (!payrollId || !tenantId) {
-      return NextResponse.json(
-        { error: 'Payroll ID and Tenant ID are required' },
-        { status: 400 }
-      );
-    }
-
-    // In a real implementation, you would:
-    // 1. Validate the tenant ID and user permissions
-    // 2. Check if the payroll schedule exists and belongs to the tenant
-    // 3. Update the payroll schedule in the database
-    
-    const updatedPayroll = {
-      id: payrollId,
-      date,
-      type,
-      period,
-      description,
-      employeeCount,
-      status,
-      updatedAt: new Date().toISOString()
-    };
-
-    console.log(`[Payroll Schedule API] Updating payroll schedule ${payrollId} for tenant: ${tenantId}`, updatedPayroll);
-
-    return NextResponse.json({
-      success: true,
-      payroll: updatedPayroll,
-      message: 'Payroll schedule updated successfully'
-    });
-
-  } catch (error) {
-    console.error('[Payroll Schedule API] Error updating payroll schedule:', error);
-    return NextResponse.json(
-      { error: 'Failed to update payroll schedule' },
-      { status: 500 }
-    );
-  }
-}
-
-// DELETE - Delete payroll schedule entry
-export async function DELETE(request) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const payrollId = searchParams.get('payrollId');
-    const tenantId = searchParams.get('tenantId');
-
-    if (!payrollId || !tenantId) {
-      return NextResponse.json(
-        { error: 'Payroll ID and Tenant ID are required' },
-        { status: 400 }
-      );
-    }
-
-    // In a real implementation, you would:
-    // 1. Validate the tenant ID and user permissions
-    // 2. Check if the payroll schedule exists and belongs to the tenant
-    // 3. Delete the payroll schedule from the database
-    
-    console.log(`[Payroll Schedule API] Deleting payroll schedule ${payrollId} for tenant: ${tenantId}`);
-
-    return NextResponse.json({
-      success: true,
-      message: 'Payroll schedule deleted successfully'
-    });
-
-  } catch (error) {
-    console.error('[Payroll Schedule API] Error deleting payroll schedule:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete payroll schedule' },
-      { status: 500 }
-    );
-  }
+  
+  return dates;
 }

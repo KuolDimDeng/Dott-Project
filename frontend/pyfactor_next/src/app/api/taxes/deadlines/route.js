@@ -1,61 +1,24 @@
 // Tax Deadlines API Endpoint
-// Fetches tax deadline events for calendar integration
+// Fetches tax deadlines and filing dates from the database
 
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../../../auth/[...auth0]/route';
 
-// Mock tax deadline data (replace with actual database queries)
-const mockTaxDeadlines = [
-  {
-    id: 'tax-1',
-    title: 'Quarterly Sales Tax Filing',
-    dueDate: '2025-07-31',
-    type: 'sales_tax',
-    description: 'Q2 2025 Sales Tax Filing',
-    jurisdiction: 'California',
-    amount: null,
-    status: 'pending'
-  },
-  {
-    id: 'tax-2',
-    title: 'Payroll Tax Deposit',
-    dueDate: '2025-08-15',
-    type: 'payroll_tax',
-    description: 'Monthly payroll tax deposit',
-    jurisdiction: 'Federal',
-    amount: null,
-    status: 'pending'
-  },
-  {
-    id: 'tax-3',
-    title: 'Income Tax Quarterly Payment',
-    dueDate: '2025-09-15',
-    type: 'income_tax',
-    description: 'Q3 2025 Estimated Income Tax Payment',
-    jurisdiction: 'Federal',
-    amount: null,
-    status: 'pending'
-  },
-  {
-    id: 'tax-4',
-    title: 'Annual Business License Renewal',
-    dueDate: '2025-12-31',
-    type: 'business_license',
-    description: 'Annual business license renewal',
-    jurisdiction: 'City of San Francisco',
-    amount: 150.00,
-    status: 'pending'
-  }
-];
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
 
-// GET - Fetch tax deadlines
+// GET - Fetch tax deadlines from database
 export async function GET(request) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const tenantId = searchParams.get('tenantId');
     const year = searchParams.get('year') || new Date().getFullYear();
-    const type = searchParams.get('type'); // Optional: filter by tax type
-    const jurisdiction = searchParams.get('jurisdiction'); // Optional: filter by jurisdiction
-    const upcoming = searchParams.get('upcoming'); // Optional: only show upcoming deadlines
+    const taxType = searchParams.get('type'); // Optional: filter by tax type
 
     if (!tenantId) {
       return NextResponse.json(
@@ -64,156 +27,187 @@ export async function GET(request) {
       );
     }
 
-    // In a real implementation, you would:
-    // 1. Validate the tenant ID
-    // 2. Query the database for tax deadlines belonging to this tenant
-    // 3. Consider the business location and applicable tax jurisdictions
-    // 4. Apply filters for date range, type, jurisdiction, etc.
-    
-    console.log(`[Tax Deadlines API] Fetching tax deadlines for tenant: ${tenantId}, year: ${year}`);
-
-    let filteredDeadlines = mockTaxDeadlines;
-
-    // Filter by year
-    filteredDeadlines = filteredDeadlines.filter(deadline => {
-      const deadlineYear = new Date(deadline.dueDate).getFullYear();
-      return deadlineYear === parseInt(year);
+    // Build query parameters
+    const queryParams = new URLSearchParams({
+      tenant_id: tenantId,
+      year: year
     });
 
-    // Filter by type if specified
-    if (type) {
-      filteredDeadlines = filteredDeadlines.filter(deadline => deadline.type === type);
-    }
+    if (taxType) queryParams.append('tax_type', taxType);
 
-    // Filter by jurisdiction if specified
-    if (jurisdiction) {
-      filteredDeadlines = filteredDeadlines.filter(deadline => 
-        deadline.jurisdiction.toLowerCase().includes(jurisdiction.toLowerCase())
-      );
-    }
-
-    // Filter for upcoming deadlines only if requested
-    if (upcoming === 'true') {
-      const today = new Date();
-      filteredDeadlines = filteredDeadlines.filter(deadline => 
-        new Date(deadline.dueDate) >= today
-      );
-    }
-
-    // Sort by due date
-    filteredDeadlines.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
-
-    return NextResponse.json({
-      success: true,
-      deadlines: filteredDeadlines,
-      count: filteredDeadlines.length,
-      filters: {
-        year: parseInt(year),
-        type,
-        jurisdiction,
-        upcoming: upcoming === 'true'
+    // Fetch tax settings and deadlines from backend
+    const response = await fetch(
+      `${API_BASE_URL}/api/taxes/deadlines?${queryParams}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.accessToken}`,
+          'X-Tenant-Id': tenantId
+        }
       }
-    });
+    );
 
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('[Tax Deadlines API] Backend error:', errorData);
+      
+      // If no tax deadlines found, return empty array instead of error
+      if (response.status === 404) {
+        return NextResponse.json([]);
+      }
+      
+      return NextResponse.json(
+        { error: errorData.error || 'Failed to fetch tax deadlines' },
+        { status: response.status }
+      );
+    }
+
+    const taxDeadlines = await response.json();
+
+    // Transform tax deadlines to calendar events
+    const taxEvents = taxDeadlines.map(deadline => ({
+      id: `tax-${deadline.id}`,
+      title: `📋 ${deadline.tax_name} - ${deadline.form_type || 'Filing Due'}`,
+      start: deadline.due_date,
+      allDay: true,
+      type: 'tax',
+      backgroundColor: '#DC2626',
+      borderColor: '#DC2626',
+      editable: false,
+      extendedProps: {
+        taxType: deadline.tax_type,
+        formType: deadline.form_type,
+        description: deadline.description,
+        filingFrequency: deadline.filing_frequency,
+        jurisdiction: deadline.jurisdiction,
+        penalty: deadline.late_penalty,
+        reminder: true,
+        reminderDays: deadline.reminder_days || 7
+      }
+    }));
+
+    // Also fetch any custom tax reminders from tax settings
+    const settingsResponse = await fetch(
+      `${API_BASE_URL}/api/taxes/settings?${queryParams}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.accessToken}`,
+          'X-Tenant-Id': tenantId
+        }
+      }
+    );
+
+    if (settingsResponse.ok) {
+      const taxSettings = await settingsResponse.json();
+      
+      // Add quarterly estimated tax payment reminders if enabled
+      if (taxSettings.quarterly_reminders) {
+        const quarterlyDates = [
+          { quarter: 'Q1', date: `${year}-04-15`, title: 'Q1 Estimated Tax Payment Due' },
+          { quarter: 'Q2', date: `${year}-06-15`, title: 'Q2 Estimated Tax Payment Due' },
+          { quarter: 'Q3', date: `${year}-09-15`, title: 'Q3 Estimated Tax Payment Due' },
+          { quarter: 'Q4', date: `${year + 1}-01-15`, title: 'Q4 Estimated Tax Payment Due' }
+        ];
+
+        quarterlyDates.forEach(qDate => {
+          taxEvents.push({
+            id: `tax-quarterly-${qDate.quarter}-${year}`,
+            title: `💰 ${qDate.title}`,
+            start: qDate.date,
+            allDay: true,
+            type: 'tax',
+            backgroundColor: '#DC2626',
+            borderColor: '#DC2626',
+            editable: false,
+            extendedProps: {
+              taxType: 'estimated',
+              quarter: qDate.quarter,
+              description: 'Quarterly estimated tax payment deadline',
+              reminder: true,
+              reminderDays: 7
+            }
+          });
+        });
+      }
+
+      // Add sales tax filing reminders based on frequency
+      if (taxSettings.sales_tax_frequency) {
+        const salesTaxDates = generateSalesTaxDates(year, taxSettings.sales_tax_frequency);
+        salesTaxDates.forEach(taxDate => {
+          taxEvents.push({
+            id: `tax-sales-${taxDate.period}-${year}`,
+            title: `🛒 Sales Tax Filing - ${taxDate.period}`,
+            start: taxDate.date,
+            allDay: true,
+            type: 'tax',
+            backgroundColor: '#DC2626',
+            borderColor: '#DC2626',
+            editable: false,
+            extendedProps: {
+              taxType: 'sales',
+              period: taxDate.period,
+              frequency: taxSettings.sales_tax_frequency,
+              description: 'Sales tax filing deadline',
+              reminder: true,
+              reminderDays: 5
+            }
+          });
+        });
+      }
+    }
+
+    return NextResponse.json(taxEvents);
   } catch (error) {
-    console.error('[Tax Deadlines API] Error fetching tax deadlines:', error);
+    console.error('[Tax Deadlines API] Error:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch tax deadlines' },
+      { error: 'Internal server error', details: error.message },
       { status: 500 }
     );
   }
 }
 
-// POST - Create new tax deadline
-export async function POST(request) {
-  try {
-    const body = await request.json();
-    const { tenantId, title, dueDate, type, description, jurisdiction, amount } = body;
-
-    if (!tenantId || !title || !dueDate || !type) {
-      return NextResponse.json(
-        { error: 'Tenant ID, title, due date, and type are required' },
-        { status: 400 }
-      );
-    }
-
-    // In a real implementation, you would:
-    // 1. Validate the tenant ID and user permissions
-    // 2. Create the tax deadline in the database
-    // 3. Set up reminders/notifications for the deadline
-    
-    const newDeadline = {
-      id: `tax-${Date.now()}`,
-      title,
-      dueDate,
-      type,
-      description: description || '',
-      jurisdiction: jurisdiction || 'Not specified',
-      amount: amount || null,
-      status: 'pending',
-      createdAt: new Date().toISOString()
-    };
-
-    console.log(`[Tax Deadlines API] Creating tax deadline for tenant: ${tenantId}`, newDeadline);
-
-    return NextResponse.json({
-      success: true,
-      deadline: newDeadline,
-      message: 'Tax deadline created successfully'
-    });
-
-  } catch (error) {
-    console.error('[Tax Deadlines API] Error creating tax deadline:', error);
-    return NextResponse.json(
-      { error: 'Failed to create tax deadline' },
-      { status: 500 }
-    );
+// Helper function to generate sales tax filing dates based on frequency
+function generateSalesTaxDates(year, frequency) {
+  const dates = [];
+  
+  switch (frequency) {
+    case 'monthly':
+      for (let month = 0; month < 12; month++) {
+        const date = new Date(year, month + 1, 20); // Usually due on 20th of following month
+        dates.push({
+          period: new Date(year, month).toLocaleString('default', { month: 'long' }),
+          date: date.toISOString().split('T')[0]
+        });
+      }
+      break;
+      
+    case 'quarterly':
+      const quarters = [
+        { period: 'Q1', month: 3, day: 30 }, // April 30
+        { period: 'Q2', month: 6, day: 31 }, // July 31
+        { period: 'Q3', month: 9, day: 31 }, // October 31
+        { period: 'Q4', month: 0, day: 31 }  // January 31 next year
+      ];
+      
+      quarters.forEach(q => {
+        const qYear = q.month === 0 ? year + 1 : year;
+        dates.push({
+          period: q.period,
+          date: new Date(qYear, q.month, q.day).toISOString().split('T')[0]
+        });
+      });
+      break;
+      
+    case 'annually':
+      dates.push({
+        period: 'Annual',
+        date: new Date(year + 1, 0, 31).toISOString().split('T')[0] // January 31
+      });
+      break;
   }
-}
-
-// PUT - Update tax deadline
-export async function PUT(request) {
-  try {
-    const body = await request.json();
-    const { deadlineId, tenantId, title, dueDate, type, description, jurisdiction, amount, status } = body;
-
-    if (!deadlineId || !tenantId) {
-      return NextResponse.json(
-        { error: 'Deadline ID and Tenant ID are required' },
-        { status: 400 }
-      );
-    }
-
-    // In a real implementation, you would:
-    // 1. Validate the tenant ID and user permissions
-    // 2. Check if the deadline exists and belongs to the tenant
-    // 3. Update the deadline in the database
-    
-    const updatedDeadline = {
-      id: deadlineId,
-      title,
-      dueDate,
-      type,
-      description,
-      jurisdiction,
-      amount,
-      status,
-      updatedAt: new Date().toISOString()
-    };
-
-    console.log(`[Tax Deadlines API] Updating tax deadline ${deadlineId} for tenant: ${tenantId}`, updatedDeadline);
-
-    return NextResponse.json({
-      success: true,
-      deadline: updatedDeadline,
-      message: 'Tax deadline updated successfully'
-    });
-
-  } catch (error) {
-    console.error('[Tax Deadlines API] Error updating tax deadline:', error);
-    return NextResponse.json(
-      { error: 'Failed to update tax deadline' },
-      { status: 500 }
-    );
-  }
+  
+  return dates;
 }
