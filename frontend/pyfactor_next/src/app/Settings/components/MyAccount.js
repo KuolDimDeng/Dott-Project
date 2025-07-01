@@ -36,6 +36,11 @@ const MyAccount = ({ userData }) => {
   
   const router = useRouter();
   const { notifySuccess, notifyError } = useNotification();
+  
+  // Log the userData to see what we're working with
+  useEffect(() => {
+    console.log('[MyAccount] Component mounted with userData:', userData);
+  }, [userData]);
 
   // Fetch profile data on mount
   useEffect(() => {
@@ -51,12 +56,26 @@ const MyAccount = ({ userData }) => {
       const response = await fetch('/api/user/profile');
       if (response.ok) {
         const data = await response.json();
+        console.log('[MyAccount] Profile data fetched:', data);
         setProfileData(data);
         setProfilePhoto(data.profilePhoto || data.profile_photo || data.picture);
+      } else {
+        console.error('[MyAccount] Profile fetch failed:', response.status, response.statusText);
+        // If the new endpoint fails, try to use userData
+        if (userData) {
+          console.log('[MyAccount] Using userData fallback:', userData);
+          setProfileData(userData);
+          setProfilePhoto(userData.picture || userData.profilePhoto);
+        }
       }
     } catch (error) {
-      console.error('Error fetching profile:', error);
-      notifyError('Failed to load profile data');
+      console.error('[MyAccount] Error fetching profile:', error);
+      // Use userData as fallback
+      if (userData) {
+        console.log('[MyAccount] Using userData fallback due to error:', userData);
+        setProfileData(userData);
+        setProfilePhoto(userData.picture || userData.profilePhoto);
+      }
     } finally {
       setLoading(false);
     }
@@ -221,31 +240,19 @@ const MyAccount = ({ userData }) => {
           <h3 className="text-lg font-semibold text-gray-900 mb-6">Personal Information</h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
+            <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Full Name
               </label>
               <input
                 type="text"
-                value={user.name || ''}
+                value={user.name || user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : ''}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                 readOnly
               />
             </div>
             
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Username
-              </label>
-              <input
-                type="text"
-                value={user.nickname || user.username || user.email?.split('@')[0] || ''}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                readOnly
-              />
-            </div>
-            
-            <div>
+            <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Email Address
               </label>
@@ -256,11 +263,11 @@ const MyAccount = ({ userData }) => {
                   className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                   readOnly
                 />
-                {user.email_verified && (
+                {(user.email_verified || user.emailVerified) && (
                   <CheckBadgeIcon className="absolute right-3 top-2.5 w-5 h-5 text-green-500" />
                 )}
               </div>
-              {!user.email_verified && (
+              {!(user.email_verified || user.emailVerified) && user.email && (
                 <p className="mt-1 text-sm text-amber-600 flex items-center">
                   <ExclamationCircleIcon className="w-4 h-4 mr-1" />
                   Email not verified
@@ -268,13 +275,13 @@ const MyAccount = ({ userData }) => {
               )}
             </div>
             
-            <div>
+            <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Phone Number <span className="text-gray-400">(Optional)</span>
               </label>
               <input
                 type="tel"
-                value={user.phone_number || ''}
+                value={user.phone_number || user.phoneNumber || ''}
                 placeholder="Not provided"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                 readOnly
