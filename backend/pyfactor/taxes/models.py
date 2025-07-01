@@ -166,10 +166,14 @@ class TaxFiling(AuditMixin, TenantAwareModel):
     payment_method = models.CharField(max_length=50, null=True, blank=True)
     taxpayer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='tax_filings')
     
+    # Timestamps
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+    
     class Meta:
         app_label = 'taxes'
         db_table = 'tax_filings'
-        ordering = ['-created_at']
+        ordering = ['-created']
         indexes = [
             models.Index(fields=['tenant_id', 'status']),
             models.Index(fields=['tenant_id', 'tax_type']),
@@ -234,6 +238,10 @@ class FilingDocument(AuditMixin, TenantAwareModel):
     is_verified = models.BooleanField(default=False)
     verified_by = models.EmailField(null=True, blank=True)
     verified_at = models.DateTimeField(null=True, blank=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
         app_label = 'taxes'
@@ -448,8 +456,8 @@ class TaxDataEntryControl(TenantAwareModel):
     max_entries_per_day = models.IntegerField(default=1000)
     max_entries_per_month = models.IntegerField(default=10000)
     is_active = models.BooleanField(default=True)
-    # Using 'created' from TenantAwareModel instead of defining created_at
-    # Using 'updated' from TenantAwareModel instead of defining updated_at
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
     
     class Meta:
         app_label = 'taxes'
@@ -485,7 +493,7 @@ class TaxDataEntryLog(TenantAwareModel):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES)
     entry_count = models.IntegerField(default=1)
     details = models.JSONField(null=True, blank=True)
-    # Using 'created' from TenantAwareModel instead of defining created_at
+    created = models.DateTimeField(auto_now_add=True)
     
     class Meta:
         app_label = 'taxes'
@@ -496,7 +504,7 @@ class TaxDataEntryLog(TenantAwareModel):
         ]
         
     def __str__(self):
-        return f"{self.entry_type} - {self.control_type} - {self.status} - {self.created_at}"
+        return f"{self.entry_type} - {self.control_type} - {self.status} - {self.created}"
 
 
 class TaxDataAbuseReport(TenantAwareModel):
@@ -523,8 +531,8 @@ class TaxDataAbuseReport(TenantAwareModel):
     description = models.TextField()
     evidence = models.JSONField(null=True, blank=True)
     action_taken = models.TextField(blank=True)
-    # Using 'created' from TenantAwareModel instead of defining created_at
-    # Using 'updated' from TenantAwareModel instead of defining updated_at
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
     resolved_at = models.DateTimeField(null=True, blank=True)
     resolved_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='resolved_tax_abuse_reports')
     
@@ -548,7 +556,7 @@ class TaxDataBlacklist(TenantAwareModel):
     identifier = models.CharField(max_length=255, db_index=True)
     reason = models.TextField()
     is_active = models.BooleanField(default=True)
-    # Using 'created' from TenantAwareModel instead of defining created_at
+    created = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField(null=True, blank=True)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='created_tax_blacklists')
     
@@ -644,8 +652,8 @@ class TaxSettings(TenantAwareModel):
     confirmation_email_sent_to = models.EmailField(blank=True)
     
     # Timestamps
-    # Using 'created' from TenantAwareModel instead of defining created_at
-    # Using 'updated' from TenantAwareModel instead of defining updated_at
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
     
     class Meta:
         app_label = 'taxes'
@@ -1055,13 +1063,13 @@ class TaxSignatureRequest(TenantAwareModel):
     error_message = models.TextField(blank=True)
     
     # Timestamps
-    # Using 'created' from TenantAwareModel instead of defining created_at
-    # Using 'updated' from TenantAwareModel instead of defining updated_at
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
     
     class Meta:
         app_label = 'taxes'
         db_table = 'tax_signature_requests'
-        ordering = ['-created_at']
+        ordering = ['-created']
         indexes = [
             models.Index(fields=['tenant_id', 'status']),
             models.Index(fields=['tenant_id', 'tax_form_type']),
@@ -1474,8 +1482,8 @@ class Form941(TenantAwareModel):
     is_valid = models.BooleanField(default=False)
     
     # Metadata
-    # Using 'created' from TenantAwareModel instead of defining created_at
-    # Using 'updated' from TenantAwareModel instead of defining updated_at
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
     created_by = models.EmailField()
     
     class Meta:
@@ -1521,6 +1529,10 @@ class Form941ScheduleB(TenantAwareModel):
     
     # Total for quarter
     quarter_total = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    
+    # Timestamps
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
     
     class Meta:
         app_label = 'taxes'
@@ -1580,8 +1592,8 @@ class PayrollTaxDeposit(TenantAwareModel):
     eftps_acknowledgment = models.CharField(max_length=100, null=True, blank=True)
     
     # Timestamps
-    # Using 'created' from TenantAwareModel instead of defining created_at
-    # Using 'updated' from TenantAwareModel instead of defining updated_at
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
     
     class Meta:
         app_label = 'taxes'
@@ -1640,6 +1652,10 @@ class PayrollTaxFilingSchedule(TenantAwareModel):
     
     # State-specific
     state_code = models.CharField(max_length=2, null=True, blank=True)
+    
+    # Timestamps
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
     
     class Meta:
         app_label = 'taxes'
@@ -1703,8 +1719,8 @@ class EmployerTaxAccount(TenantAwareModel):
     poa_caf_number = models.CharField(max_length=50, blank=True)
     
     # Timestamps
-    # Using 'created' from TenantAwareModel instead of defining created_at
-    # Using 'updated' from TenantAwareModel instead of defining updated_at
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
     
     class Meta:
         app_label = 'taxes'
@@ -1817,8 +1833,8 @@ class Form940(TenantAwareModel):
     preparer_firm_address = models.JSONField(default=dict, blank=True)
     
     # Timestamps
-    # Using 'created' from TenantAwareModel instead of defining created_at
-    # Using 'updated' from TenantAwareModel instead of defining updated_at
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
     
     class Meta:
         app_label = 'taxes'
@@ -1920,8 +1936,8 @@ class Form940ScheduleA(TenantAwareModel):
     credit_reduction_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     
     # Timestamps
-    # Using 'created' from TenantAwareModel instead of defining created_at
-    # Using 'updated' from TenantAwareModel instead of defining updated_at
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
     
     class Meta:
         app_label = 'taxes'
@@ -1976,8 +1992,8 @@ class StatePayrollConfiguration(TenantAwareModel):
     # Reciprocity agreements
     reciprocity_states = models.JSONField(default=list, blank=True)
     
-    # Using 'created' from TenantAwareModel instead of defining created_at
-    # Using 'updated' from TenantAwareModel instead of defining updated_at
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
     
     class Meta:
         app_label = 'taxes'
@@ -2027,8 +2043,8 @@ class StateTaxAccount(TenantAwareModel):
     registration_date = models.DateField(null=True, blank=True)
     
     # Timestamps
-    # Using 'created' from TenantAwareModel instead of defining created_at
-    # Using 'updated' from TenantAwareModel instead of defining updated_at
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
     
     class Meta:
         app_label = 'taxes'
@@ -2109,8 +2125,8 @@ class W2Form(TenantAwareModel):
     correction_code = models.CharField(max_length=10, blank=True)
     
     # Timestamps
-    # Using 'created' from TenantAwareModel instead of defining created_at
-    # Using 'updated' from TenantAwareModel instead of defining updated_at
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
     
     class Meta:
         app_label = 'taxes'
@@ -2182,8 +2198,8 @@ class W3Form(TenantAwareModel):
     pdf_file = models.FileField(upload_to='w3_forms/%Y/', null=True, blank=True)
     
     # Timestamps
-    # Using 'created' from TenantAwareModel instead of defining created_at
-    # Using 'updated' from TenantAwareModel instead of defining updated_at
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
     
     class Meta:
         app_label = 'taxes'
@@ -2252,8 +2268,8 @@ class Form1099(TenantAwareModel):
     irs_submission_date = models.DateTimeField(null=True, blank=True)
     
     # Timestamps
-    # Using 'created' from TenantAwareModel instead of defining created_at
-    # Using 'updated' from TenantAwareModel instead of defining updated_at
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
     
     class Meta:
         app_label = 'taxes'
@@ -2353,8 +2369,8 @@ class Form1096(TenantAwareModel):
     pdf_file = models.FileField(upload_to='1096_forms/%Y/', null=True, blank=True)
     
     # Timestamps
-    # Using 'created' from TenantAwareModel instead of defining created_at
-    # Using 'updated' from TenantAwareModel instead of defining updated_at
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
     
     class Meta:
         app_label = 'taxes'
@@ -2415,8 +2431,8 @@ class YearEndTaxGeneration(TenantAwareModel):
     initiated_by = models.EmailField()
     
     # Timestamps
-    # Using 'created' from TenantAwareModel instead of defining created_at
-    # Using 'updated' from TenantAwareModel instead of defining updated_at
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
     
     class Meta:
         app_label = 'taxes'
