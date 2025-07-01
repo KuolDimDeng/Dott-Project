@@ -16,7 +16,21 @@ import {
   KeyIcon,
   ShieldCheckIcon,
   ClipboardDocumentCheckIcon,
-  ArrowPathIcon
+  ArrowPathIcon,
+  PlusIcon,
+  HomeIcon,
+  CalendarIcon,
+  ShoppingCartIcon,
+  CubeIcon,
+  CreditCardIcon,
+  UserGroupIcon,
+  BuildingLibraryIcon,
+  ShoppingBagIcon,
+  BriefcaseIcon,
+  DocumentTextIcon,
+  ChartBarIcon,
+  LightBulbIcon,
+  ChartPieIcon
 } from '@heroicons/react/24/outline';
 import { logger } from '@/utils/logger';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -25,23 +39,39 @@ import { FieldTooltip } from '@/components/ui/FieldTooltip';
 // Define the complete menu structure based on listItems.js
 const MENU_STRUCTURE = [
   {
+    id: 'create-new',
+    label: 'Create New',
+    icon: PlusIcon,
+    subItems: [
+      { id: 'create-new-transaction', label: 'Transaction', path: '/dashboard/transactions/new' },
+      { id: 'create-new-pos', label: 'Point of Sale', path: '/dashboard/pos' },
+      { id: 'create-new-product', label: 'Product', path: '/dashboard/products/new' },
+      { id: 'create-new-service', label: 'Service', path: '/dashboard/services/new' },
+      { id: 'create-new-invoice', label: 'Invoice', path: '/dashboard/invoices/new' },
+      { id: 'create-new-bill', label: 'Bill', path: '/dashboard/bills/new' },
+      { id: 'create-new-estimate', label: 'Estimate', path: '/dashboard/estimates/new' },
+      { id: 'create-new-customer', label: 'Customer', path: '/dashboard/customers/new' },
+      { id: 'create-new-vendor', label: 'Vendor', path: '/dashboard/vendors/new' }
+    ]
+  },
+  {
     id: 'dashboard',
     label: 'Dashboard',
-    icon: '📊',
+    icon: HomeIcon,
     path: '/dashboard',
     permissions: ['view']
   },
   {
     id: 'calendar',
     label: 'Calendar',
-    icon: '📅',
+    icon: CalendarIcon,
     path: '/dashboard/calendar',
     permissions: ['view', 'create', 'edit', 'delete']
   },
   {
     id: 'sales',
     label: 'Sales',
-    icon: '💰',
+    icon: ShoppingCartIcon,
     subItems: [
       { id: 'sales-dashboard', label: 'Dashboard', path: '/dashboard/sales' },
       { id: 'sales-products', label: 'Products', path: '/dashboard/products' },
@@ -56,7 +86,7 @@ const MENU_STRUCTURE = [
   {
     id: 'inventory',
     label: 'Inventory',
-    icon: '📦',
+    icon: CubeIcon,
     subItems: [
       { id: 'inventory-dashboard', label: 'Dashboard', path: '/dashboard/inventory' },
       { id: 'inventory-stock', label: 'Stock Adjustments', path: '/dashboard/inventory/stock' },
@@ -68,7 +98,7 @@ const MENU_STRUCTURE = [
   {
     id: 'payments',
     label: 'Payments',
-    icon: '💳',
+    icon: CreditCardIcon,
     subItems: [
       { id: 'payments-dashboard', label: 'Dashboard', path: '/dashboard/payments' },
       { id: 'payments-receive', label: 'Receive Payments', path: '/dashboard/payments/receive' },
@@ -81,7 +111,7 @@ const MENU_STRUCTURE = [
   {
     id: 'hr',
     label: 'HR',
-    icon: '👥',
+    icon: UserGroupIcon,
     subItems: [
       { id: 'hr-dashboard', label: 'Dashboard', path: '/dashboard/hr' },
       { id: 'hr-employees', label: 'Employees', path: '/dashboard/employees' },
@@ -91,9 +121,86 @@ const MENU_STRUCTURE = [
     ]
   },
   {
+    id: 'banking',
+    label: 'Banking',
+    icon: BuildingLibraryIcon,
+    subItems: [
+      { id: 'banking-dashboard', label: 'Dashboard', path: '/dashboard/banking' },
+      { id: 'banking-connect', label: 'Connect Bank', path: '/dashboard/banking/connect' },
+      { id: 'banking-transactions', label: 'Transactions', path: '/dashboard/banking/transactions' },
+      { id: 'banking-reconciliation', label: 'Reconciliation', path: '/dashboard/banking/reconciliation' },
+      { id: 'banking-reports', label: 'Bank Reports', path: '/dashboard/banking/bank-reports' }
+    ]
+  },
+  {
+    id: 'purchases',
+    label: 'Purchases',
+    icon: ShoppingBagIcon,
+    subItems: [
+      { id: 'purchases-dashboard', label: 'Dashboard', path: '/dashboard/purchases' },
+      { id: 'purchases-orders', label: 'Purchase Orders', path: '/dashboard/purchases/orders' },
+      { id: 'purchases-bills', label: 'Bills', path: '/dashboard/bills' },
+      { id: 'purchases-expenses', label: 'Expenses', path: '/dashboard/expenses' },
+      { id: 'purchases-vendors', label: 'Vendors', path: '/dashboard/vendors' },
+      { id: 'purchases-reports', label: 'Purchase Reports', path: '/dashboard/purchases/reports' }
+    ]
+  },
+  {
+    id: 'payroll',
+    label: 'Payroll',
+    icon: BriefcaseIcon,
+    subItems: [
+      { id: 'payroll-dashboard', label: 'Dashboard', path: '/dashboard/payroll' },
+      { id: 'payroll-run', label: 'Run Payroll', path: '/dashboard/payroll/run' },
+      { id: 'payroll-schedule', label: 'Payroll Schedule', path: '/dashboard/payroll/schedule' },
+      { id: 'payroll-settings', label: 'Payroll Settings', path: '/dashboard/payroll/settings' },
+      { id: 'payroll-reports', label: 'Payroll Reports', path: '/dashboard/payroll/reports' },
+      { id: 'payroll-export', label: 'Export Reports', path: '/dashboard/payroll/export-report' }
+    ]
+  },
+  {
+    id: 'taxes',
+    label: 'Taxes',
+    icon: DocumentTextIcon,
+    subItems: [
+      { id: 'taxes-dashboard', label: 'Dashboard', path: '/dashboard/taxes' },
+      { id: 'taxes-forms', label: 'Tax Forms', path: '/dashboard/taxes/forms' },
+      { id: 'taxes-filing', label: 'Tax Filing', path: '/dashboard/taxes/filing' },
+      { id: 'taxes-deadlines', label: 'Tax Deadlines', path: '/dashboard/taxes/deadlines' },
+      { id: 'taxes-settings', label: 'Tax Settings', path: '/dashboard/taxes/settings' },
+      { id: 'taxes-reports', label: 'Tax Reports', path: '/dashboard/taxes/reports' }
+    ]
+  },
+  {
+    id: 'analytics',
+    label: 'Analytics',
+    icon: ChartPieIcon,
+    subItems: [
+      { id: 'analytics-dashboard', label: 'Dashboard', path: '/dashboard/analytics' },
+      { id: 'analytics-business', label: 'Business Analytics', path: '/dashboard/analytics/business' },
+      { id: 'analytics-financial', label: 'Financial Analytics', path: '/dashboard/analytics/financial' },
+      { id: 'analytics-sales', label: 'Sales Analytics', path: '/dashboard/analytics/sales' },
+      { id: 'analytics-customer', label: 'Customer Analytics', path: '/dashboard/analytics/customer' },
+      { id: 'analytics-inventory', label: 'Inventory Analytics', path: '/dashboard/analytics/inventory' }
+    ]
+  },
+  {
+    id: 'smart-insights',
+    label: 'Smart Insights',
+    icon: LightBulbIcon,
+    subItems: [
+      { id: 'smart-insights-dashboard', label: 'Dashboard', path: '/dashboard/smart-insights' },
+      { id: 'smart-insights-claude', label: 'Claude AI Assistant', path: '/dashboard/smart-insights/claude' },
+      { id: 'smart-insights-query', label: 'Query Builder', path: '/dashboard/smart-insights/query' },
+      { id: 'smart-insights-packages', label: 'Credit Packages', path: '/dashboard/smart-insights/packages' },
+      { id: 'smart-insights-credits', label: 'Credit Usage', path: '/dashboard/smart-insights/credits' },
+      { id: 'smart-insights-purchase', label: 'Purchase Credits', path: '/dashboard/smart-insights/purchase' }
+    ]
+  },
+  {
     id: 'reports',
     label: 'Reports',
-    icon: '📈',
+    icon: ChartBarIcon,
     subItems: [
       { id: 'reports-dashboard', label: 'Dashboard', path: '/dashboard/reports' },
       { id: 'reports-financial', label: 'Financial Reports', path: '/dashboard/reports/financial' },
@@ -611,8 +718,9 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
                             onChange={() => handlePermissionToggle(menu.id)}
                             className="h-4 w-4 text-blue-600 rounded border-gray-300"
                           />
-                          <label htmlFor={menu.id} className="ml-2 font-medium text-gray-900">
-                            {menu.icon} {menu.label}
+                          <label htmlFor={menu.id} className="ml-2 font-medium text-gray-900 flex items-center">
+                            <menu.icon className="h-4 w-4 text-gray-600 mr-2" />
+                            {menu.label}
                           </label>
                           {menu.subItems && (
                             <button
