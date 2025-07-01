@@ -27,7 +27,7 @@ export async function GET(request) {
     
     // Fetch tax settings from backend
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/taxes/settings/?tenant_id=${tenantId}`,
+      `${process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com'}/api/taxes/settings/?tenant_id=${tenantId}`,
       {
         method: 'GET',
         headers: {
