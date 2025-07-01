@@ -121,6 +121,10 @@ const PrivacyPolicy = () => {
         {
           title: 'C.5 Customer Information',
           content: 'When you use our invoicing or payment processing features, we may collect information about your customers necessary to process these transactions.'
+        },
+        {
+          title: 'C.6 Tax Information',
+          content: 'When you use our tax features, we collect your business location, tax rates you enter, tax settings preferences, and tax calculation history. We may also process tax-related queries when you use our AI-powered tax suggestion features. This information is used solely to provide tax calculation services and is not used for tax filing or reporting on your behalf.'
         }
       ]
     },
@@ -251,6 +255,10 @@ const PrivacyPolicy = () => {
         {
           title: 'H.4 Data Breach Procedures',
           content: 'We have procedures in place to respond to suspected data security breaches and will notify you and applicable regulators of breaches as required by law.'
+        },
+        {
+          title: 'H.5 Tax Data Security',
+          content: 'Tax rates and settings you enter are encrypted and stored securely. AI-powered tax suggestions are processed without storing your specific queries. We do not share your tax configuration data with third parties except as necessary to provide our services or as required by law. You remain responsible for the accuracy of all tax information entered into our system.'
         }
       ]
     },
@@ -285,12 +293,31 @@ const PrivacyPolicy = () => {
       ]
     },
     {
-      title: 'M. Changes to This Privacy Policy',
+      title: 'M. AI and Automated Processing',
+      content:
+        'We use artificial intelligence and automated systems to enhance our services and provide features like tax rate suggestions, financial insights, and fraud detection.',
+      subsections: [
+        {
+          title: 'M.1 AI-Powered Features',
+          content: 'Our AI features analyze your location and business type to suggest tax rates and provide other business insights. These suggestions are generated based on publicly available information and general tax rules.'
+        },
+        {
+          title: 'M.2 No Professional Advice',
+          content: 'AI-generated suggestions, including tax rate recommendations, are provided for informational purposes only and do not constitute professional tax, legal, or financial advice. You should independently verify all suggestions before using them.'
+        },
+        {
+          title: 'M.3 Human Review',
+          content: 'Significant automated decisions that may have legal or similarly significant effects on you are subject to human review upon request.'
+        }
+      ]
+    },
+    {
+      title: 'N. Changes to This Privacy Policy',
       content:
         'We may update this privacy policy from time to time to reflect changes in our practices or legal requirements. We will notify you of any material changes by posting the new version on our website and updating the effective date. We encourage you to review our privacy policy periodically.'
     },
     {
-      title: 'N. Contact Us',
+      title: 'O. Contact Us',
       content:
         'If you have any questions about this Privacy Policy or our data practices, or if you wish to exercise your rights regarding your personal information, please contact us at:',
     },

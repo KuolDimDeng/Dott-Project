@@ -675,14 +675,25 @@ export default function TaxSettings({ onNavigate }) {
           }
         });
         
-        // Update known fields
+        // Update known fields - ensure numeric values are properly formatted
+        const formattedKnownRates = {};
+        Object.keys(knownRates).forEach(key => {
+          const value = knownRates[key];
+          // Format numeric values to ensure they display properly
+          if (typeof value === 'number' || (typeof value === 'string' && !isNaN(parseFloat(value)))) {
+            formattedKnownRates[key] = String(value);
+          } else {
+            formattedKnownRates[key] = value;
+          }
+        });
+        
         setCustomRates(prev => ({
           ...prev,
-          ...knownRates,
+          ...formattedKnownRates,
           // Calculate totals if not provided
-          totalSalesTaxRate: knownRates.totalSalesTaxRate || 
-            (parseFloat(knownRates.stateSalesTaxRate || prev.stateSalesTaxRate || 0) + 
-             parseFloat(knownRates.localSalesTaxRate || prev.localSalesTaxRate || 0)).toFixed(2)
+          totalSalesTaxRate: formattedKnownRates.totalSalesTaxRate || 
+            (parseFloat(formattedKnownRates.stateSalesTaxRate || prev.stateSalesTaxRate || 0) + 
+             parseFloat(formattedKnownRates.localSalesTaxRate || prev.localSalesTaxRate || 0)).toFixed(2)
         }));
         
         // Store unknown fields for dynamic rendering
@@ -1055,7 +1066,7 @@ export default function TaxSettings({ onNavigate }) {
                 <input
                   type="number"
                   name="stateSalesTaxRate"
-                  value={customRates.stateSalesTaxRate}
+                  value={customRates.stateSalesTaxRate || ''}
                   onChange={handleRateChange}
                   step="0.01"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -1070,7 +1081,7 @@ export default function TaxSettings({ onNavigate }) {
                 <input
                   type="number"
                   name="localSalesTaxRate"
-                  value={customRates.localSalesTaxRate}
+                  value={customRates.localSalesTaxRate || ''}
                   onChange={handleRateChange}
                   step="0.01"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -1085,7 +1096,7 @@ export default function TaxSettings({ onNavigate }) {
                 <input
                   type="number"
                   name="totalSalesTaxRate"
-                  value={customRates.totalSalesTaxRate}
+                  value={customRates.totalSalesTaxRate || ''}
                   onChange={handleRateChange}
                   step="0.01"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
@@ -1111,7 +1122,7 @@ export default function TaxSettings({ onNavigate }) {
                 <input
                   type="number"
                   name="corporateIncomeTaxRate"
-                  value={customRates.corporateIncomeTaxRate}
+                  value={customRates.corporateIncomeTaxRate || ''}
                   onChange={handleRateChange}
                   step="0.01"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -1260,7 +1271,7 @@ export default function TaxSettings({ onNavigate }) {
                     <input
                       type="number"
                       name="healthInsuranceRate"
-                      value={customRates.healthInsuranceRate}
+                      value={customRates.healthInsuranceRate || ''}
                       onChange={handleRateChange}
                       step="0.01"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -1272,7 +1283,7 @@ export default function TaxSettings({ onNavigate }) {
                     <input
                       type="number"
                       name="healthInsuranceEmployerRate"
-                      value={customRates.healthInsuranceEmployerRate}
+                      value={customRates.healthInsuranceEmployerRate || ''}
                       onChange={handleRateChange}
                       step="0.01"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -1290,7 +1301,7 @@ export default function TaxSettings({ onNavigate }) {
                     <input
                       type="number"
                       name="socialSecurityRate"
-                      value={customRates.socialSecurityRate}
+                      value={customRates.socialSecurityRate || ''}
                       onChange={handleRateChange}
                       step="0.01"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -1302,7 +1313,7 @@ export default function TaxSettings({ onNavigate }) {
                     <input
                       type="number"
                       name="socialSecurityEmployerRate"
-                      value={customRates.socialSecurityEmployerRate}
+                      value={customRates.socialSecurityEmployerRate || ''}
                       onChange={handleRateChange}
                       step="0.01"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -1325,7 +1336,7 @@ export default function TaxSettings({ onNavigate }) {
                 <input
                   type="number"
                   name="federalPayrollTaxRate"
-                  value={customRates.federalPayrollTaxRate}
+                  value={customRates.federalPayrollTaxRate || ''}
                   onChange={handleRateChange}
                   step="0.01"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -1340,7 +1351,7 @@ export default function TaxSettings({ onNavigate }) {
                 <input
                   type="number"
                   name="statePayrollTaxRate"
-                  value={customRates.statePayrollTaxRate}
+                  value={customRates.statePayrollTaxRate || ''}
                   onChange={handleRateChange}
                   step="0.01"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -1565,13 +1576,13 @@ export default function TaxSettings({ onNavigate }) {
             <div className="mb-4 p-4 bg-gray-50 rounded-lg">
               <h4 className="font-medium text-gray-900 mb-2">Summary:</h4>
               <div className="space-y-1 text-sm text-gray-600">
-                <p><strong>Sales Tax:</strong> {customRates.stateSalesTaxRate}% (State) + {customRates.localSalesTaxRate}% (Local) = {customRates.totalSalesTaxRate}% Total</p>
-                <p><strong>Corporate Income Tax:</strong> {customRates.corporateIncomeTaxRate}%</p>
-                <p><strong>Personal Income Tax:</strong> {customRates.hasProgressiveTax ? `Progressive (${customRates.personalIncomeTaxBrackets.length} brackets)` : `Flat rate: ${customRates.flatPersonalIncomeTaxRate || 'N/A'}%`}</p>
-                <p><strong>Health Insurance:</strong> {customRates.healthInsuranceRate}% (Employee) + {customRates.healthInsuranceEmployerRate}% (Employer)</p>
-                <p><strong>Social Security:</strong> {customRates.socialSecurityRate}% (Employee) + {customRates.socialSecurityEmployerRate}% (Employer)</p>
-                <p><strong>Payroll Tax:</strong> {customRates.federalPayrollTaxRate}% (Federal) + {customRates.statePayrollTaxRate}% (State)</p>
-                <p>Location: {formData.city}, {formData.stateProvince}, {formData.country}</p>
+                <p><strong>Sales Tax:</strong> {customRates.stateSalesTaxRate || 0}% (State) + {customRates.localSalesTaxRate || 0}% (Local) = {customRates.totalSalesTaxRate || '0.00'}% Total</p>
+                <p><strong>Corporate Income Tax:</strong> {customRates.corporateIncomeTaxRate || 0}%</p>
+                <p><strong>Personal Income Tax:</strong> {customRates.hasProgressiveTax ? `Progressive (${customRates.personalIncomeTaxBrackets?.length || 0} brackets)` : `Flat rate: ${customRates.flatPersonalIncomeTaxRate || 'N/A'}%`}</p>
+                <p><strong>Health Insurance:</strong> {customRates.healthInsuranceRate || 0}% (Employee) + {customRates.healthInsuranceEmployerRate || 0}% (Employer)</p>
+                <p><strong>Social Security:</strong> {customRates.socialSecurityRate || 0}% (Employee) + {customRates.socialSecurityEmployerRate || 0}% (Employer)</p>
+                <p><strong>Payroll Tax:</strong> {customRates.federalPayrollTaxRate || 0}% (Federal) + {customRates.statePayrollTaxRate || 0}% (State)</p>
+                <p><strong>Location:</strong> {formData.city}, {formData.stateProvince}, {formData.country}</p>
               </div>
             </div>
             
@@ -1599,6 +1610,10 @@ export default function TaxSettings({ onNavigate }) {
                 <span className="text-sm text-gray-600">
                   I confirm that the tax information provided above is accurate to the best of my knowledge. 
                   I understand that these rates will be used throughout the application for tax calculations.
+                  <br /><br />
+                  <strong className="text-red-600">Important Disclaimer:</strong> It is my sole responsibility to verify that all tax rates are correct and comply with current tax laws in my jurisdiction. 
+                  The AI-powered suggestions are provided for convenience only and should not be relied upon as tax advice. 
+                  I acknowledge that incorrect tax rates may result in legal and financial consequences for which I am fully responsible.
                 </span>
               </label>
             </div>

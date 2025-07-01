@@ -288,7 +288,50 @@ const TermsOfUse = () => {
           HARMFUL COMPONENTS.
         </SectionContent>
 
-        <SectionTitle>12. Limitation of Liability</SectionTitle>
+        <SectionTitle>12. Tax Information and Disclaimer</SectionTitle>
+        <SectionContent>
+          DOTT PROVIDES TAX CALCULATION FEATURES AND AI-POWERED TAX RATE SUGGESTIONS AS A CONVENIENCE TOOL ONLY. THESE FEATURES 
+          DO NOT CONSTITUTE TAX ADVICE, LEGAL ADVICE, OR FINANCIAL ADVICE OF ANY KIND. TAX LAWS ARE COMPLEX AND CHANGE FREQUENTLY, 
+          AND THEY VARY BY JURISDICTION.
+        </SectionContent>
+        
+        <SubsectionTitle>12.1 User Responsibility for Tax Compliance</SubsectionTitle>
+        <SectionContent>
+          You acknowledge and agree that:
+        </SectionContent>
+        <ul className="list-disc pl-8 mb-6">
+          <li className="mb-2 text-gray-600">
+            You are solely responsible for ensuring all tax rates, calculations, and filings are accurate and comply with applicable laws.
+          </li>
+          <li className="mb-2 text-gray-600">
+            AI-powered tax suggestions are based on general information and may not reflect current tax rates or special circumstances.
+          </li>
+          <li className="mb-2 text-gray-600">
+            You must independently verify all tax rates before using them in any business or financial calculations.
+          </li>
+          <li className="mb-2 text-gray-600">
+            You should consult with qualified tax professionals for advice specific to your situation.
+          </li>
+          <li className="mb-2 text-gray-600">
+            Incorrect tax calculations may result in penalties, interest, and legal consequences for which you are fully responsible.
+          </li>
+        </ul>
+        
+        <SubsectionTitle>12.2 No Professional Advice</SubsectionTitle>
+        <SectionContent>
+          Nothing in Dott should be construed as professional tax, legal, or financial advice. The tax features are provided for 
+          informational and computational purposes only. Dott LLC, its employees, agents, and partners are not tax advisors, 
+          attorneys, or certified public accountants, and are not engaged in rendering tax, legal, or financial advice.
+        </SectionContent>
+        
+        <SubsectionTitle>12.3 Disclaimer of Tax Feature Accuracy</SubsectionTitle>
+        <SectionContent>
+          DOTT LLC MAKES NO WARRANTIES OR REPRESENTATIONS REGARDING THE ACCURACY, COMPLETENESS, OR TIMELINESS OF ANY TAX RATES, 
+          CALCULATIONS, OR SUGGESTIONS PROVIDED THROUGH THE SERVICE. TAX INFORMATION MAY BE OUTDATED, INCOMPLETE, OR INCORRECT. 
+          YOU USE ALL TAX FEATURES AT YOUR OWN RISK.
+        </SectionContent>
+
+        <SectionTitle>13. Limitation of Liability</SectionTitle>
         <SectionContent>
           TO THE FULLEST EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT WILL DOTT LLC, ITS AFFILIATES, OFFICERS, DIRECTORS, 
           EMPLOYEES, AGENTS, SUPPLIERS OR LICENSORS BE LIABLE FOR ANY INDIRECT, SPECIAL, INCIDENTAL, PUNITIVE, EXEMPLARY OR 
@@ -298,13 +341,13 @@ const TermsOfUse = () => {
           HEREIN IS FOUND TO HAVE FAILED OF ITS ESSENTIAL PURPOSE.
         </SectionContent>
         
-        <SubsectionTitle>12.1 Limitation of Total Liability</SubsectionTitle>
+        <SubsectionTitle>13.1 Limitation of Total Liability</SubsectionTitle>
         <SectionContent>
           TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, DOTT LLC'S TOTAL LIABILITY TO YOU FOR ANY DAMAGES (REGARDLESS OF 
           THE FOUNDATION FOR THE ACTION) SHALL NOT EXCEED THE AMOUNT YOU HAVE PAID DOTT LLC IN THE PRIOR 12 MONTHS.
         </SectionContent>
 
-        <SectionTitle>13. Indemnification</SectionTitle>
+        <SectionTitle>14. Indemnification</SectionTitle>
         <SectionContent>
           You agree to indemnify, defend and hold harmless Dott LLC, its affiliates, officers, directors, employees, agents and 
           third parties, for any losses, costs, liabilities and expenses (including reasonable attorney's fees) relating to or 
@@ -312,7 +355,7 @@ const TermsOfUse = () => {
           violation of any law, regulation, or third-party rights.
         </SectionContent>
 
-        <SectionTitle>14. Termination</SectionTitle>
+        <SectionTitle>15. Termination</SectionTitle>
         <SectionContent>
           Dott LLC reserves the right to terminate or suspend your account and access to Dott immediately, without prior notice or 
           liability, for any reason whatsoever, including, without limitation, if you breach this Agreement. Upon termination, 
@@ -321,27 +364,27 @@ const TermsOfUse = () => {
           and limitations of liability.
         </SectionContent>
         
-        <SubsectionTitle>14.1 Data After Termination</SubsectionTitle>
+        <SubsectionTitle>15.1 Data After Termination</SubsectionTitle>
         <SectionContent>
           Upon termination, you may request a copy of your data within 30 days. After this period, we may delete your data 
           in accordance with our data retention policies and applicable laws.
         </SectionContent>
 
-        <SectionTitle>15. Governing Law</SectionTitle>
+        <SectionTitle>16. Governing Law</SectionTitle>
         <SectionContent>
           This Agreement shall be governed by and construed in accordance with the laws of the State of Delaware, without 
           regard to its conflict of law provisions. You agree to submit to the personal and exclusive jurisdiction of the 
           courts located within Delaware for the resolution of any disputes.
         </SectionContent>
 
-        <SectionTitle>16. Compliance with Laws</SectionTitle>
+        <SectionTitle>17. Compliance with Laws</SectionTitle>
         <SectionContent>
           You agree to comply with all applicable domestic and international laws, statutes, ordinances, and regulations regarding 
           your use of Dott and any financial transactions conducted through it. Dott LLC reserves the right to investigate and take 
           appropriate legal action against anyone who, in Dott LLC's sole discretion, violates this provision.
         </SectionContent>
 
-        <SectionTitle>17. Changes to Agreement</SectionTitle>
+        <SectionTitle>18. Changes to Agreement</SectionTitle>
         <SectionContent>
           We reserve the right, at our sole discretion, to modify or replace this Agreement at any time. If a revision is material, 
           we will provide at least 30 days' notice prior to any new terms taking effect. What constitutes a material change will be 
@@ -349,19 +392,19 @@ const TermsOfUse = () => {
           to be bound by the revised Agreement.
         </SectionContent>
 
-        <SectionTitle>18. Entire Agreement</SectionTitle>
+        <SectionTitle>19. Entire Agreement</SectionTitle>
         <SectionContent>
           This Agreement, together with our Privacy Policy and any other legal notices and agreements published by Dott LLC, shall 
           constitute the entire agreement between you and Dott LLC concerning Dott.
         </SectionContent>
 
-        <SectionTitle>19. Severability</SectionTitle>
+        <SectionTitle>20. Severability</SectionTitle>
         <SectionContent>
           If any provision of this Agreement is found to be unenforceable or invalid, that provision will be limited or eliminated 
           to the minimum extent necessary so that this Agreement will otherwise remain in full force and effect and enforceable.
         </SectionContent>
 
-        <SectionTitle>20. Contact Information</SectionTitle>
+        <SectionTitle>21. Contact Information</SectionTitle>
         <SectionContent>
           If you have any questions about this Agreement, please contact us at:
         </SectionContent>
