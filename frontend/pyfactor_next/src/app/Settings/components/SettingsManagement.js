@@ -10,7 +10,7 @@ import usersApi from '@/utils/api/usersApi';
 import api from '@/utils/api';
 
 // Import components
-import UserManagementEnhanced from './sections/UserManagementEnhanced';
+import UserManagement from './sections/UserManagement';
 import CompanyProfile from './sections/CompanyProfile';
 import BillingSubscriptions from './sections/BillingSubscriptions';
 import SecuritySettings from './sections/SecuritySettings';
@@ -41,7 +41,7 @@ const SettingsManagement = () => {
       title: 'User Management',
       icon: UserGroupIcon,
       description: 'Manage user access, roles, and permissions',
-      component: UserManagementEnhanced,
+      component: UserManagement,
       requiredRole: 'admin' // Admin and Owner can access
     },
     {

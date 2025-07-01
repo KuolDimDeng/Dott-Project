@@ -4,544 +4,427 @@ import React, { useState, useEffect } from 'react';
 import { 
   ShieldCheckIcon,
   KeyIcon,
-  DocumentTextIcon,
+  DevicePhoneMobileIcon,
+  ComputerDesktopIcon,
+  ClockIcon,
   ExclamationTriangleIcon,
   CheckCircleIcon,
-  ClockIcon,
-  ComputerDesktopIcon,
+  XCircleIcon,
+  ArrowRightIcon,
   LockClosedIcon,
-  FingerPrintIcon,
-  ChartBarIcon,
-  DevicePhoneMobileIcon
+  UserGroupIcon,
+  DocumentTextIcon,
+  EyeIcon,
+  ChartBarIcon
 } from '@heroicons/react/24/outline';
-import { logger } from '@/utils/logger';
 import { FieldTooltip } from '@/components/ui/FieldTooltip';
+import { logger } from '@/utils/logger';
 
 const SecuritySettings = ({ user, profileData, isOwner, isAdmin, notifySuccess, notifyError }) => {
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('mfa');
+  const [loading, setLoading] = useState(false);
   const [securityData, setSecurityData] = useState({
-    mfa: {
-      enabled: false,
-      methods: [],
-      preferredMethod: null
-    },
+    mfaEnabled: false,
+    mfaMethods: [],
     sessions: [],
     auditLogs: [],
-    compliance: {
-      passwordPolicy: {
-        minLength: 12,
-        requireUppercase: true,
-        requireLowercase: true,
-        requireNumbers: true,
-        requireSpecialChars: true,
-        expirationDays: 90
-      },
-      sessionTimeout: 30, // minutes
-      maxLoginAttempts: 5,
+    securitySettings: {
+      passwordPolicy: 'standard',
+      sessionTimeout: 24,
       ipWhitelisting: false,
-      whitelistedIPs: []
+      whitelistedIps: [],
+      forceLogoutOnPasswordChange: true,
+      requireMfaForAdmins: false
     }
   });
 
-  // Tabs configuration
-  const tabs = [
-    { id: 'mfa', label: 'Multi-Factor Authentication', icon: FingerPrintIcon },
-    { id: 'sessions', label: 'Active Sessions', icon: ComputerDesktopIcon },
-    { id: 'audit', label: 'Audit Trail', icon: DocumentTextIcon },
-    { id: 'compliance', label: 'Compliance & Policies', icon: ShieldCheckIcon }
-  ];
+  const [showMfaSetup, setShowMfaSetup] = useState(false);
+  const [showAuditLogs, setShowAuditLogs] = useState(false);
 
-  // Fetch security data
   useEffect(() => {
-    const fetchSecurityData = async () => {
-      try {
-        setLoading(true);
-        
-        // Fetch MFA status
-        const mfaResponse = await fetch('/api/auth/mfa-status');
-        if (mfaResponse.ok) {
-          const mfaData = await mfaResponse.json();
-          setSecurityData(prev => ({ ...prev, mfa: mfaData }));
-        }
+    loadSecurityData();
+  }, []);
 
-        // Fetch active sessions
-        const sessionsResponse = await fetch('/api/auth/sessions');
-        if (sessionsResponse.ok) {
-          const sessionsData = await sessionsResponse.json();
-          setSecurityData(prev => ({ ...prev, sessions: sessionsData }));
-        }
-
-        // Fetch audit logs (limited to recent 100)
-        const auditResponse = await fetch('/api/audit/logs?limit=100');
-        if (auditResponse.ok) {
-          const auditData = await auditResponse.json();
-          setSecurityData(prev => ({ ...prev, auditLogs: auditData }));
-        }
-
-        // Fetch compliance settings
-        const complianceResponse = await fetch('/api/settings/compliance');
-        if (complianceResponse.ok) {
-          const complianceData = await complianceResponse.json();
-          setSecurityData(prev => ({ ...prev, compliance: complianceData }));
-        }
-      } catch (error) {
-        logger.error('[SecuritySettings] Error fetching security data:', error);
-        notifyError('Failed to load security settings');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchSecurityData();
-  }, [notifyError]);
-
-  // Enable/Disable MFA
-  const handleToggleMFA = async () => {
+  const loadSecurityData = async () => {
     try {
-      if (!securityData.mfa.enabled) {
-        // Redirect to Auth0 MFA setup
-        window.location.href = '/api/auth/mfa-setup';
-      } else {
-        // Confirm before disabling
-        if (!confirm('Are you sure you want to disable multi-factor authentication? This will make your account less secure.')) {
-          return;
-        }
+      setLoading(true);
+      
+      const [mfaResponse, sessionsResponse, auditResponse] = await Promise.all([
+        fetch('/api/auth/mfa-status'),
+        fetch('/api/auth/sessions'),
+        fetch('/api/audit/logs?limit=10')
+      ]);
 
-        const response = await fetch('/api/auth/mfa-disable', {
-          method: 'POST'
-        });
+      const mfaData = mfaResponse.ok ? await mfaResponse.json() : {};
+      const sessionsData = sessionsResponse.ok ? await sessionsResponse.json() : { sessions: [] };
+      const auditData = auditResponse.ok ? await auditResponse.json() : { logs: [] };
 
-        if (!response.ok) {
-          throw new Error('Failed to disable MFA');
-        }
-
-        setSecurityData(prev => ({
-          ...prev,
-          mfa: { ...prev.mfa, enabled: false }
-        }));
-        notifySuccess('Multi-factor authentication disabled');
-      }
+      setSecurityData(prev => ({
+        ...prev,
+        mfaEnabled: mfaData.enabled || false,
+        mfaMethods: mfaData.methods || [],
+        sessions: sessionsData.sessions || [],
+        auditLogs: auditData.logs || []
+      }));
     } catch (error) {
-      logger.error('[SecuritySettings] Error toggling MFA:', error);
-      notifyError('Failed to update MFA settings');
+      logger.error('[SecuritySettings] Error loading security data:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Revoke session
+  const handleEnableMfa = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/auth/mfa-setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (!response.ok) throw new Error('Failed to setup MFA');
+
+      const data = await response.json();
+      setShowMfaSetup(true);
+      
+    } catch (error) {
+      notifyError('Failed to enable MFA');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleRevokeSession = async (sessionId) => {
     try {
       const response = await fetch(`/api/auth/sessions/${sessionId}`, {
         method: 'DELETE'
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to revoke session');
-      }
+      if (!response.ok) throw new Error('Failed to revoke session');
 
-      setSecurityData(prev => ({
-        ...prev,
-        sessions: prev.sessions.filter(s => s.id !== sessionId)
-      }));
       notifySuccess('Session revoked successfully');
+      loadSecurityData();
     } catch (error) {
-      logger.error('[SecuritySettings] Error revoking session:', error);
       notifyError('Failed to revoke session');
     }
   };
 
-  // Update compliance settings
-  const handleUpdateCompliance = async (section, value) => {
+  const handleUpdateSecuritySettings = async (settings) => {
     try {
-      const response = await fetch('/api/settings/compliance', {
+      setLoading(true);
+      const response = await fetch('/api/security/settings', {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          [section]: value
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings)
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to update compliance settings');
-      }
+      if (!response.ok) throw new Error('Failed to update settings');
 
-      setSecurityData(prev => ({
-        ...prev,
-        compliance: {
-          ...prev.compliance,
-          [section]: value
-        }
-      }));
-      notifySuccess('Compliance settings updated');
+      notifySuccess('Security settings updated');
+      loadSecurityData();
     } catch (error) {
-      logger.error('[SecuritySettings] Error updating compliance:', error);
-      notifyError('Failed to update compliance settings');
+      notifyError('Failed to update security settings');
+    } finally {
+      setLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="p-6 flex items-center justify-center">
-        <div className="text-gray-500">Loading security settings...</div>
-      </div>
-    );
-  }
+  const canManageSecurity = isOwner || isAdmin;
 
   return (
     <div className="p-6">
-      {/* Header */}
       <div className="mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">Security Settings</h2>
-        <p className="text-sm text-gray-600">
-          Manage your account security, compliance, and audit settings
+        <h2 className="text-xl font-semibold text-gray-900">Security Settings</h2>
+        <p className="text-sm text-gray-500 mt-1">
+          Manage your account security and compliance settings
         </p>
       </div>
 
-      {/* Tab Navigation */}
-      <div className="border-b border-gray-200 mb-6">
-        <nav className="-mb-px flex space-x-8">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`
-                  py-2 px-1 border-b-2 font-medium text-sm flex items-center
-                  ${activeTab === tab.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }
-                `}
-              >
-                <Icon className="h-5 w-5 mr-2" />
-                {tab.label}
-              </button>
-            );
-          })}
-        </nav>
-      </div>
-
-      {/* Tab Content */}
-      <div className="bg-white border border-gray-200 rounded-lg">
-        {/* MFA Tab */}
-        {activeTab === 'mfa' && (
-          <div className="p-6">
-            <div className="mb-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                Multi-Factor Authentication (MFA)
-              </h3>
-              
-              <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-gray-900">MFA Status</p>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Add an extra layer of security to your account
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleToggleMFA}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                      securityData.mfa.enabled
-                        ? 'bg-red-600 text-white hover:bg-red-700'
-                        : 'bg-green-600 text-white hover:bg-green-700'
-                    }`}
-                  >
-                    {securityData.mfa.enabled ? 'Disable MFA' : 'Enable MFA'}
-                  </button>
-                </div>
-                
-                {securityData.mfa.enabled && (
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <p className="text-sm text-gray-600">
-                      <CheckCircleIcon className="h-5 w-5 text-green-500 inline mr-2" />
-                      Multi-factor authentication is active on your account
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {!securityData.mfa.enabled && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <div className="flex items-start">
-                    <ExclamationTriangleIcon className="h-5 w-5 text-yellow-600 mt-0.5 mr-3" />
-                    <div className="text-sm text-yellow-800">
-                      <p className="font-medium">Security Recommendation</p>
-                      <p>Enable multi-factor authentication to protect your account from unauthorized access.</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Sessions Tab */}
-        {activeTab === 'sessions' && (
-          <div className="p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Active Sessions</h3>
-            
-            <div className="space-y-4">
-              {securityData.sessions.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">No active sessions found</p>
-              ) : (
-                securityData.sessions.map((session) => (
-                  <div key={session.id} className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="flex items-center mb-2">
-                          <ComputerDesktopIcon className="h-5 w-5 text-gray-400 mr-2" />
-                          <span className="font-medium text-gray-900">
-                            {session.device || 'Unknown Device'}
-                          </span>
-                          {session.current && (
-                            <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                              Current Session
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-sm text-gray-600 space-y-1">
-                          <p>IP Address: {session.ipAddress}</p>
-                          <p>Location: {session.location || 'Unknown'}</p>
-                          <p>Last Active: {new Date(session.lastActive).toLocaleString()}</p>
-                        </div>
-                      </div>
-                      {!session.current && (
-                        <button
-                          onClick={() => handleRevokeSession(session.id)}
-                          className="text-red-600 hover:text-red-700 text-sm font-medium"
-                        >
-                          Revoke
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Audit Trail Tab */}
-        {activeTab === 'audit' && (
-          <div className="p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Audit Trail</h3>
-            
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Time
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      User
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Action
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Details
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      IP Address
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {securityData.auditLogs.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
-                        No audit logs available
-                      </td>
-                    </tr>
-                  ) : (
-                    securityData.auditLogs.map((log) => (
-                      <tr key={log.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {new Date(log.timestamp).toLocaleString()}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {log.userEmail}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            log.action.includes('delete') || log.action.includes('remove')
-                              ? 'bg-red-100 text-red-800'
-                              : log.action.includes('create') || log.action.includes('add')
-                              ? 'bg-green-100 text-green-800'
-                              : log.action.includes('update') || log.action.includes('edit')
-                              ? 'bg-blue-100 text-blue-800'
-                              : 'bg-gray-100 text-gray-800'
-                          }`}>
-                            {log.action}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-600">
-                          {log.details}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {log.ipAddress}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Compliance Tab */}
-        {activeTab === 'compliance' && isAdmin && (
-          <div className="p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
-              Compliance & Security Policies
+      {loading && !securityData.sessions.length ? (
+        <div className="flex justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+              <ShieldCheckIcon className="h-5 w-5 text-blue-600 mr-2" />
+              Two-Factor Authentication (2FA)
             </h3>
             
-            <div className="space-y-6">
-              {/* Password Policy */}
-              <div className="border border-gray-200 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 mb-3">Password Policy</h4>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm text-gray-700">
-                      Minimum Password Length
-                      <FieldTooltip content="Minimum number of characters required for passwords" />
-                    </label>
-                    <input
-                      type="number"
-                      value={securityData.compliance.passwordPolicy.minLength}
-                      onChange={(e) => handleUpdateCompliance('passwordPolicy', {
-                        ...securityData.compliance.passwordPolicy,
-                        minLength: parseInt(e.target.value)
-                      })}
-                      min="8"
-                      max="32"
-                      className="w-20 px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    />
+            {securityData.mfaEnabled ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center">
+                    <CheckCircleIcon className="h-5 w-5 text-green-600 mr-3" />
+                    <div>
+                      <p className="font-medium text-green-900">2FA is enabled</p>
+                      <p className="text-sm text-green-700">Your account is secured with two-factor authentication</p>
+                    </div>
                   </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm text-gray-700">
-                      Password Expiration (days)
-                      <FieldTooltip content="Number of days before passwords must be changed" />
-                    </label>
-                    <input
-                      type="number"
-                      value={securityData.compliance.passwordPolicy.expirationDays}
-                      onChange={(e) => handleUpdateCompliance('passwordPolicy', {
-                        ...securityData.compliance.passwordPolicy,
-                        expirationDays: parseInt(e.target.value)
-                      })}
-                      min="0"
-                      max="365"
-                      className="w-20 px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
+                </div>
+                
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Active Methods:</h4>
                   <div className="space-y-2">
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={securityData.compliance.passwordPolicy.requireUppercase}
-                        onChange={(e) => handleUpdateCompliance('passwordPolicy', {
-                          ...securityData.compliance.passwordPolicy,
-                          requireUppercase: e.target.checked
-                        })}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                      />
-                      <span className="ml-2 text-sm text-gray-700">Require uppercase letters</span>
-                    </label>
-                    
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={securityData.compliance.passwordPolicy.requireNumbers}
-                        onChange={(e) => handleUpdateCompliance('passwordPolicy', {
-                          ...securityData.compliance.passwordPolicy,
-                          requireNumbers: e.target.checked
-                        })}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                      />
-                      <span className="ml-2 text-sm text-gray-700">Require numbers</span>
-                    </label>
-                    
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={securityData.compliance.passwordPolicy.requireSpecialChars}
-                        onChange={(e) => handleUpdateCompliance('passwordPolicy', {
-                          ...securityData.compliance.passwordPolicy,
-                          requireSpecialChars: e.target.checked
-                        })}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                      />
-                      <span className="ml-2 text-sm text-gray-700">Require special characters</span>
-                    </label>
+                    {securityData.mfaMethods.map((method, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center">
+                          {method.type === 'app' ? (
+                            <DevicePhoneMobileIcon className="h-5 w-5 text-gray-600 mr-3" />
+                          ) : (
+                            <KeyIcon className="h-5 w-5 text-gray-600 mr-3" />
+                          )}
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">{method.name}</p>
+                            <p className="text-xs text-gray-500">Added {new Date(method.createdAt).toLocaleDateString()}</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {}}
+                          className="text-sm text-red-600 hover:text-red-700"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
-
-              {/* Session Settings */}
-              <div className="border border-gray-200 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 mb-3">Session Settings</h4>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm text-gray-700">
-                      Session Timeout (minutes)
-                      <FieldTooltip content="Time before inactive sessions are automatically logged out" />
-                    </label>
-                    <input
-                      type="number"
-                      value={securityData.compliance.sessionTimeout}
-                      onChange={(e) => handleUpdateCompliance('sessionTimeout', parseInt(e.target.value))}
-                      min="5"
-                      max="1440"
-                      className="w-20 px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    />
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <div className="flex items-center">
+                    <ExclamationTriangleIcon className="h-5 w-5 text-yellow-600 mr-3" />
+                    <div>
+                      <p className="font-medium text-yellow-900">2FA is not enabled</p>
+                      <p className="text-sm text-yellow-700">Protect your account with two-factor authentication</p>
+                    </div>
                   </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm text-gray-700">
-                      Max Login Attempts
-                      <FieldTooltip content="Number of failed login attempts before account lockout" />
-                    </label>
-                    <input
-                      type="number"
-                      value={securityData.compliance.maxLoginAttempts}
-                      onChange={(e) => handleUpdateCompliance('maxLoginAttempts', parseInt(e.target.value))}
-                      min="3"
-                      max="10"
-                      className="w-20 px-3 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
+                  <button
+                    onClick={handleEnableMfa}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    disabled={loading}
+                  >
+                    Enable 2FA
+                  </button>
                 </div>
               </div>
+            )}
+          </div>
 
-              {/* Compliance Status */}
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <div className="flex items-start">
-                  <CheckCircleIcon className="h-5 w-5 text-green-600 mt-0.5 mr-3" />
-                  <div className="text-sm text-green-800">
-                    <p className="font-medium">Compliance Status</p>
-                    <p>Your security settings meet industry standards for data protection.</p>
-                    <ul className="mt-2 space-y-1">
-                      <li>✓ SOC 2 Type II compliant infrastructure</li>
-                      <li>✓ GDPR ready configuration</li>
-                      <li>✓ PCI DSS Level 1 compliant payment processing</li>
-                      <li>✓ HIPAA compliant data handling available</li>
-                    </ul>
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+              <ComputerDesktopIcon className="h-5 w-5 text-blue-600 mr-2" />
+              Active Sessions
+            </h3>
+            
+            <div className="space-y-3">
+              {securityData.sessions.map((session) => {
+                const isCurrent = session.id === profileData?.sessionId;
+                
+                return (
+                  <div key={session.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-center">
+                      <ComputerDesktopIcon className="h-5 w-5 text-gray-600 mr-3" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {session.device || 'Unknown Device'}
+                          {isCurrent && <span className="ml-2 text-xs text-green-600">(Current)</span>}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {session.location || 'Unknown Location'} • 
+                          Last active {new Date(session.lastActive).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                    {!isCurrent && (
+                      <button
+                        onClick={() => handleRevokeSession(session.id)}
+                        className="text-sm text-red-600 hover:text-red-700"
+                      >
+                        Revoke
+                      </button>
+                    )}
                   </div>
+                );
+              })}
+              
+              {securityData.sessions.length === 0 && (
+                <p className="text-center text-gray-500 py-4">No active sessions found</p>
+              )}
+            </div>
+          </div>
+
+          {canManageSecurity && (
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                <LockClosedIcon className="h-5 w-5 text-blue-600 mr-2" />
+                Security Policies
+              </h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="flex items-center justify-between">
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Password Policy</span>
+                      <FieldTooltip content="Set minimum requirements for user passwords" />
+                    </div>
+                    <select
+                      value={securityData.securitySettings.passwordPolicy}
+                      onChange={(e) => handleUpdateSecuritySettings({
+                        ...securityData.securitySettings,
+                        passwordPolicy: e.target.value
+                      })}
+                      className="ml-4 px-3 py-1 border border-gray-300 rounded-lg text-sm"
+                    >
+                      <option value="standard">Standard (8+ chars)</option>
+                      <option value="strong">Strong (12+ chars, mixed case, numbers, symbols)</option>
+                      <option value="custom">Custom</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div>
+                  <label className="flex items-center justify-between">
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Session Timeout</span>
+                      <FieldTooltip content="Automatically log out inactive users after this duration" />
+                    </div>
+                    <select
+                      value={securityData.securitySettings.sessionTimeout}
+                      onChange={(e) => handleUpdateSecuritySettings({
+                        ...securityData.securitySettings,
+                        sessionTimeout: parseInt(e.target.value)
+                      })}
+                      className="ml-4 px-3 py-1 border border-gray-300 rounded-lg text-sm"
+                    >
+                      <option value="1">1 hour</option>
+                      <option value="4">4 hours</option>
+                      <option value="8">8 hours</option>
+                      <option value="24">24 hours</option>
+                      <option value="168">7 days</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div>
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={securityData.securitySettings.requireMfaForAdmins}
+                      onChange={(e) => handleUpdateSecuritySettings({
+                        ...securityData.securitySettings,
+                        requireMfaForAdmins: e.target.checked
+                      })}
+                      className="h-4 w-4 text-blue-600 rounded border-gray-300"
+                    />
+                    <div className="ml-3">
+                      <span className="text-sm font-medium text-gray-700">Require 2FA for Admins</span>
+                      <FieldTooltip content="All admin users must enable 2FA to access the system" />
+                    </div>
+                  </label>
+                </div>
+
+                <div>
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={securityData.securitySettings.forceLogoutOnPasswordChange}
+                      onChange={(e) => handleUpdateSecuritySettings({
+                        ...securityData.securitySettings,
+                        forceLogoutOnPasswordChange: e.target.checked
+                      })}
+                      className="h-4 w-4 text-blue-600 rounded border-gray-300"
+                    />
+                    <div className="ml-3">
+                      <span className="text-sm font-medium text-gray-700">Force logout on password change</span>
+                      <FieldTooltip content="Log out all sessions when a user changes their password" />
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                <DocumentTextIcon className="h-5 w-5 text-blue-600 mr-2" />
+                Audit Trail
+              </h3>
+              <button
+                onClick={() => setShowAuditLogs(!showAuditLogs)}
+                className="text-sm text-blue-600 hover:text-blue-700"
+              >
+                {showAuditLogs ? 'Hide' : 'View All'}
+              </button>
+            </div>
+            
+            <div className="space-y-2">
+              {securityData.auditLogs.slice(0, showAuditLogs ? undefined : 3).map((log) => (
+                <div key={log.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center">
+                    <ClockIcon className="h-4 w-4 text-gray-500 mr-3" />
+                    <div>
+                      <p className="text-sm text-gray-900">{log.action}</p>
+                      <p className="text-xs text-gray-500">
+                        {log.user} • {new Date(log.timestamp).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                  <span className={`text-xs px-2 py-1 rounded-full ${
+                    log.status === 'success' 
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {log.status}
+                  </span>
+                </div>
+              ))}
+              
+              {securityData.auditLogs.length === 0 && (
+                <p className="text-center text-gray-500 py-4">No audit logs available</p>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <h3 className="text-lg font-medium text-blue-900 mb-3 flex items-center">
+              <ChartBarIcon className="h-5 w-5 text-blue-600 mr-2" />
+              Compliance & Certifications
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex items-start">
+                <CheckCircleIcon className="h-5 w-5 text-green-500 mr-3 mt-0.5" />
+                <div>
+                  <p className="font-medium text-gray-900">SOC 2 Type II</p>
+                  <p className="text-sm text-gray-600">Annual security audit compliance</p>
+                </div>
+              </div>
+              <div className="flex items-start">
+                <CheckCircleIcon className="h-5 w-5 text-green-500 mr-3 mt-0.5" />
+                <div>
+                  <p className="font-medium text-gray-900">GDPR Compliant</p>
+                  <p className="text-sm text-gray-600">EU data protection standards</p>
+                </div>
+              </div>
+              <div className="flex items-start">
+                <CheckCircleIcon className="h-5 w-5 text-green-500 mr-3 mt-0.5" />
+                <div>
+                  <p className="font-medium text-gray-900">256-bit Encryption</p>
+                  <p className="text-sm text-gray-600">Bank-level data encryption</p>
+                </div>
+              </div>
+              <div className="flex items-start">
+                <CheckCircleIcon className="h-5 w-5 text-green-500 mr-3 mt-0.5" />
+                <div>
+                  <p className="font-medium text-gray-900">99.9% Uptime SLA</p>
+                  <p className="text-sm text-gray-600">Guaranteed service availability</p>
                 </div>
               </div>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

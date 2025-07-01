@@ -3,510 +3,511 @@
 import React, { useState, useEffect } from 'react';
 import { 
   BuildingOfficeIcon,
-  MapPinIcon,
-  GlobeAltIcon,
   PhoneIcon,
   EnvelopeIcon,
+  GlobeAltIcon,
+  MapPinIcon,
   IdentificationIcon,
+  CalendarIcon,
+  ExclamationTriangleIcon,
   CheckCircleIcon,
-  ExclamationCircleIcon
+  PencilIcon
 } from '@heroicons/react/24/outline';
-import { logger } from '@/utils/logger';
 import { FieldTooltip } from '@/components/ui/FieldTooltip';
-import { businessTypes, legalStructures } from '@/app/utils/businessData';
+import { logger } from '@/utils/logger';
 
 const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, notifyError }) => {
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [companyData, setCompanyData] = useState({
     businessName: '',
-    legalName: '',
     businessType: '',
-    legalStructure: '',
-    taxId: '',
-    addressLine1: '',
-    addressLine2: '',
-    city: '',
-    state: '',
-    postalCode: '',
-    country: 'US',
-    phone: '',
     email: '',
+    phone: '',
     website: '',
-    founded: '',
+    address: {
+      street: '',
+      city: '',
+      state: '',
+      zipCode: '',
+      country: 'US'
+    },
+    taxId: '',
+    registrationNumber: '',
+    yearEstablished: '',
+    industry: '',
     description: ''
   });
 
-  const [originalData, setOriginalData] = useState({});
-  const [hasChanges, setHasChanges] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [errors, setErrors] = useState({});
 
-  // Fetch company data
   useEffect(() => {
-    const fetchCompanyData = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch('/api/tenant/company-profile');
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch company data');
-        }
+    loadCompanyData();
+  }, [profileData]);
 
-        const data = await response.json();
-        setCompanyData(data);
-        setOriginalData(data);
-      } catch (error) {
-        logger.error('[CompanyProfile] Error fetching company data:', error);
-        notifyError('Failed to load company information');
-      } finally {
-        setLoading(false);
+  const loadCompanyData = async () => {
+    try {
+      setLoading(true);
+      
+      if (profileData?.tenant) {
+        setCompanyData({
+          businessName: profileData.tenant.businessName || profileData.businessName || '',
+          businessType: profileData.tenant.businessType || profileData.businessType || '',
+          email: profileData.tenant.email || profileData.email || user?.email || '',
+          phone: profileData.tenant.phone || profileData.phone || '',
+          website: profileData.tenant.website || '',
+          address: {
+            street: profileData.tenant.address?.street || '',
+            city: profileData.tenant.address?.city || '',
+            state: profileData.tenant.address?.state || '',
+            zipCode: profileData.tenant.address?.zipCode || '',
+            country: profileData.tenant.address?.country || 'US'
+          },
+          taxId: profileData.tenant.taxId || '',
+          registrationNumber: profileData.tenant.registrationNumber || '',
+          yearEstablished: profileData.tenant.yearEstablished || '',
+          industry: profileData.tenant.industry || '',
+          description: profileData.tenant.description || ''
+        });
       }
-    };
-
-    fetchCompanyData();
-  }, [notifyError]);
-
-  // Check for changes
-  useEffect(() => {
-    const changed = JSON.stringify(companyData) !== JSON.stringify(originalData);
-    setHasChanges(changed);
-  }, [companyData, originalData]);
-
-  // Handle input changes
-  const handleChange = (field, value) => {
-    setCompanyData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    } catch (error) {
+      logger.error('[CompanyProfile] Error loading company data:', error);
+      notifyError('Failed to load company information');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Save changes
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!companyData.email) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(companyData.email)) {
+      newErrors.email = 'Invalid email format';
+    }
+    
+    if (companyData.phone && !/^\+?[\d\s()-]+$/.test(companyData.phone)) {
+      newErrors.phone = 'Invalid phone format';
+    }
+    
+    if (companyData.website && !/^https?:\/\/.+/.test(companyData.website)) {
+      newErrors.website = 'Website must start with http:// or https://';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSave = async () => {
+    if (!validateForm()) return;
+    
     try {
-      setSaving(true);
-
-      // Validate required fields
-      if (!companyData.addressLine1 || !companyData.city || !companyData.state || !companyData.postalCode) {
-        notifyError('Please fill in all required address fields');
-        return;
-      }
-
-      const response = await fetch('/api/tenant/company-profile', {
+      setLoading(true);
+      
+      const response = await fetch('/api/tenant/business-info', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(companyData)
+        body: JSON.stringify({
+          ...companyData,
+          businessName: undefined
+        })
       });
 
       if (!response.ok) {
         throw new Error('Failed to update company information');
       }
 
-      const updatedData = await response.json();
-      setCompanyData(updatedData);
-      setOriginalData(updatedData);
       notifySuccess('Company information updated successfully');
+      setEditMode(false);
     } catch (error) {
       logger.error('[CompanyProfile] Error saving company data:', error);
       notifyError('Failed to update company information');
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   };
 
-  // Reset changes
-  const handleReset = () => {
-    setCompanyData(originalData);
-  };
+  const canEdit = isOwner || isAdmin;
 
-  if (loading) {
-    return (
-      <div className="p-6 flex items-center justify-center">
-        <div className="text-gray-500">Loading company information...</div>
-      </div>
-    );
-  }
+  const industryOptions = [
+    'Technology', 'Healthcare', 'Finance', 'Retail', 'Manufacturing',
+    'Education', 'Real Estate', 'Construction', 'Hospitality', 'Transportation',
+    'Professional Services', 'Non-Profit', 'Government', 'Other'
+  ];
+
+  const businessTypes = [
+    'Sole Proprietorship', 'Partnership', 'LLC', 'Corporation', 
+    'S-Corporation', 'Non-Profit', 'Other'
+  ];
 
   return (
     <div className="p-6">
-      {/* Header */}
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">Company Profile</h2>
-        <p className="text-sm text-gray-600">
-          View and manage your company information
-        </p>
-      </div>
-
-      {/* Read-only Business Name Notice */}
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-        <div className="flex items-start">
-          <ExclamationCircleIcon className="h-5 w-5 text-yellow-600 mt-0.5 mr-3" />
-          <div className="text-sm text-yellow-800">
-            <p className="font-medium">Business Name Protection</p>
-            <p>Your business name cannot be changed here for security reasons. Contact support if you need to update it.</p>
-          </div>
+      <div className="mb-6 flex justify-between items-center">
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900">Company Profile</h2>
+          <p className="text-sm text-gray-500 mt-1">
+            View and manage your company information
+          </p>
         </div>
+        {canEdit && !editMode && (
+          <button
+            onClick={() => setEditMode(true)}
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            <PencilIcon className="h-4 w-4 mr-2" />
+            Edit Information
+          </button>
+        )}
       </div>
 
-      {/* Company Information Form */}
-      <div className="space-y-6">
-        {/* Basic Information */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-            <BuildingOfficeIcon className="h-5 w-5 mr-2 text-gray-500" />
-            Basic Information
-          </h3>
-          
+      {loading && !companyData.businessName ? (
+        <div className="flex justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start">
+            <ExclamationTriangleIcon className="h-5 w-5 text-yellow-600 mt-0.5 mr-3 flex-shrink-0" />
+            <div className="text-sm text-yellow-800">
+              <p className="font-medium">Business Name Cannot Be Changed</p>
+              <p className="mt-1">
+                Your business name "{companyData.businessName}" is permanently set and cannot be modified. 
+                Contact support if you need assistance.
+              </p>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Business Name
-                <FieldTooltip content="This is your primary business name used throughout the system" />
+                <FieldTooltip content="Your registered business name (cannot be changed)" />
               </label>
-              <input
-                type="text"
-                value={companyData.businessName}
-                disabled
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
-              />
+              <div className="flex items-center p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                <BuildingOfficeIcon className="h-5 w-5 text-gray-400 mr-3" />
+                <span className="text-gray-900">{companyData.businessName}</span>
+              </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Legal Name
-                <FieldTooltip content="Your business's legal name as registered" />
-              </label>
-              <input
-                type="text"
-                value={companyData.legalName}
-                onChange={(e) => handleChange('legalName', e.target.value)}
-                disabled={!isAdmin}
-                className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                  !isAdmin ? 'bg-gray-50 cursor-not-allowed' : ''
-                }`}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Business Type
-                <FieldTooltip content="Select your primary business category" />
+                <FieldTooltip content="Legal structure of your business" />
               </label>
-              <select
-                value={companyData.businessType}
-                onChange={(e) => handleChange('businessType', e.target.value)}
-                disabled={!isAdmin}
-                className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                  !isAdmin ? 'bg-gray-50 cursor-not-allowed' : ''
-                }`}
-              >
-                <option value="">Select business type</option>
-                {businessTypes.map(type => (
-                  <option key={type.value} value={type.value}>
-                    {type.label}
-                  </option>
-                ))}
-              </select>
+              {editMode ? (
+                <select
+                  value={companyData.businessType}
+                  onChange={(e) => setCompanyData({ ...companyData, businessType: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">Select business type</option>
+                  {businessTypes.map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+              ) : (
+                <div className="flex items-center p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                  <IdentificationIcon className="h-5 w-5 text-gray-400 mr-3" />
+                  <span className="text-gray-900">{companyData.businessType || 'Not specified'}</span>
+                </div>
+              )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Legal Structure
-                <FieldTooltip content="Your business's legal structure for tax purposes" />
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Contact Email
+                <FieldTooltip content="Primary email for business communications" />
               </label>
-              <select
-                value={companyData.legalStructure}
-                onChange={(e) => handleChange('legalStructure', e.target.value)}
-                disabled={!isAdmin}
-                className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                  !isAdmin ? 'bg-gray-50 cursor-not-allowed' : ''
-                }`}
-              >
-                <option value="">Select legal structure</option>
-                {legalStructures.map(structure => (
-                  <option key={structure.value} value={structure.value}>
-                    {structure.label}
-                  </option>
-                ))}
-              </select>
+              {editMode ? (
+                <div>
+                  <input
+                    type="email"
+                    value={companyData.email}
+                    onChange={(e) => setCompanyData({ ...companyData, email: e.target.value })}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 ${
+                      errors.email ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                  />
+                  {errors.email && (
+                    <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                  <EnvelopeIcon className="h-5 w-5 text-gray-400 mr-3" />
+                  <span className="text-gray-900">{companyData.email}</span>
+                </div>
+              )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tax ID (EIN)
-                <FieldTooltip content="Your Federal Employer Identification Number" />
-              </label>
-              <input
-                type="text"
-                value={companyData.taxId}
-                onChange={(e) => handleChange('taxId', e.target.value)}
-                disabled={!isAdmin}
-                placeholder="XX-XXXXXXX"
-                className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                  !isAdmin ? 'bg-gray-50 cursor-not-allowed' : ''
-                }`}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Founded Year
-                <FieldTooltip content="The year your business was established" />
-              </label>
-              <input
-                type="number"
-                value={companyData.founded}
-                onChange={(e) => handleChange('founded', e.target.value)}
-                disabled={!isAdmin}
-                placeholder="YYYY"
-                min="1900"
-                max={new Date().getFullYear()}
-                className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                  !isAdmin ? 'bg-gray-50 cursor-not-allowed' : ''
-                }`}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Address Information */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-            <MapPinIcon className="h-5 w-5 mr-2 text-gray-500" />
-            Address Information
-          </h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Address Line 1 *
-                <FieldTooltip content="Street address, P.O. box, company name, c/o" />
-              </label>
-              <input
-                type="text"
-                value={companyData.addressLine1}
-                onChange={(e) => handleChange('addressLine1', e.target.value)}
-                disabled={!isAdmin}
-                className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                  !isAdmin ? 'bg-gray-50 cursor-not-allowed' : ''
-                }`}
-                required
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Address Line 2
-                <FieldTooltip content="Apartment, suite, unit, building, floor, etc." />
-              </label>
-              <input
-                type="text"
-                value={companyData.addressLine2}
-                onChange={(e) => handleChange('addressLine2', e.target.value)}
-                disabled={!isAdmin}
-                className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                  !isAdmin ? 'bg-gray-50 cursor-not-allowed' : ''
-                }`}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                City *
-                <FieldTooltip content="City where your business is located" />
-              </label>
-              <input
-                type="text"
-                value={companyData.city}
-                onChange={(e) => handleChange('city', e.target.value)}
-                disabled={!isAdmin}
-                className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                  !isAdmin ? 'bg-gray-50 cursor-not-allowed' : ''
-                }`}
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                State/Province *
-                <FieldTooltip content="State or province where your business is located" />
-              </label>
-              <input
-                type="text"
-                value={companyData.state}
-                onChange={(e) => handleChange('state', e.target.value)}
-                disabled={!isAdmin}
-                className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                  !isAdmin ? 'bg-gray-50 cursor-not-allowed' : ''
-                }`}
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Postal Code *
-                <FieldTooltip content="ZIP or postal code" />
-              </label>
-              <input
-                type="text"
-                value={companyData.postalCode}
-                onChange={(e) => handleChange('postalCode', e.target.value)}
-                disabled={!isAdmin}
-                className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                  !isAdmin ? 'bg-gray-50 cursor-not-allowed' : ''
-                }`}
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Country
-                <FieldTooltip content="Country where your business is located" />
-              </label>
-              <select
-                value={companyData.country}
-                onChange={(e) => handleChange('country', e.target.value)}
-                disabled={!isAdmin}
-                className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                  !isAdmin ? 'bg-gray-50 cursor-not-allowed' : ''
-                }`}
-              >
-                <option value="US">United States</option>
-                <option value="CA">Canada</option>
-                <option value="MX">Mexico</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* Contact Information */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-            <PhoneIcon className="h-5 w-5 mr-2 text-gray-500" />
-            Contact Information
-          </h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Phone Number
-                <FieldTooltip content="Primary business phone number" />
+                <FieldTooltip content="Business contact phone number" />
               </label>
-              <input
-                type="tel"
-                value={companyData.phone}
-                onChange={(e) => handleChange('phone', e.target.value)}
-                disabled={!isAdmin}
-                placeholder="(555) 123-4567"
-                className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                  !isAdmin ? 'bg-gray-50 cursor-not-allowed' : ''
-                }`}
-              />
+              {editMode ? (
+                <div>
+                  <input
+                    type="tel"
+                    value={companyData.phone}
+                    onChange={(e) => setCompanyData({ ...companyData, phone: e.target.value })}
+                    placeholder="+1 (555) 123-4567"
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 ${
+                      errors.phone ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                  />
+                  {errors.phone && (
+                    <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                  <PhoneIcon className="h-5 w-5 text-gray-400 mr-3" />
+                  <span className="text-gray-900">{companyData.phone || 'Not specified'}</span>
+                </div>
+              )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email Address
-                <FieldTooltip content="Primary business email address" />
-              </label>
-              <input
-                type="email"
-                value={companyData.email}
-                onChange={(e) => handleChange('email', e.target.value)}
-                disabled={!isAdmin}
-                placeholder="contact@business.com"
-                className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                  !isAdmin ? 'bg-gray-50 cursor-not-allowed' : ''
-                }`}
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Website
                 <FieldTooltip content="Your business website URL" />
               </label>
-              <input
-                type="url"
-                value={companyData.website}
-                onChange={(e) => handleChange('website', e.target.value)}
-                disabled={!isAdmin}
-                placeholder="https://www.yourbusiness.com"
-                className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                  !isAdmin ? 'bg-gray-50 cursor-not-allowed' : ''
-                }`}
-              />
+              {editMode ? (
+                <div>
+                  <input
+                    type="url"
+                    value={companyData.website}
+                    onChange={(e) => setCompanyData({ ...companyData, website: e.target.value })}
+                    placeholder="https://example.com"
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 ${
+                      errors.website ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                  />
+                  {errors.website && (
+                    <p className="mt-1 text-sm text-red-600">{errors.website}</p>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                  <GlobeAltIcon className="h-5 w-5 text-gray-400 mr-3" />
+                  <span className="text-gray-900">{companyData.website || 'Not specified'}</span>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Industry
+                <FieldTooltip content="Primary industry your business operates in" />
+              </label>
+              {editMode ? (
+                <select
+                  value={companyData.industry}
+                  onChange={(e) => setCompanyData({ ...companyData, industry: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">Select industry</option>
+                  {industryOptions.map(industry => (
+                    <option key={industry} value={industry}>{industry}</option>
+                  ))}
+                </select>
+              ) : (
+                <div className="flex items-center p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                  <BuildingOfficeIcon className="h-5 w-5 text-gray-400 mr-3" />
+                  <span className="text-gray-900">{companyData.industry || 'Not specified'}</span>
+                </div>
+              )}
             </div>
           </div>
-        </div>
 
-        {/* Business Description */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-            <IdentificationIcon className="h-5 w-5 mr-2 text-gray-500" />
-            Business Description
-          </h3>
-          
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              About Your Business
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Business Address
+              <FieldTooltip content="Primary business location address" />
+            </label>
+            {editMode ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input
+                  type="text"
+                  value={companyData.address.street}
+                  onChange={(e) => setCompanyData({ 
+                    ...companyData, 
+                    address: { ...companyData.address, street: e.target.value }
+                  })}
+                  placeholder="Street address"
+                  className="col-span-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                />
+                <input
+                  type="text"
+                  value={companyData.address.city}
+                  onChange={(e) => setCompanyData({ 
+                    ...companyData, 
+                    address: { ...companyData.address, city: e.target.value }
+                  })}
+                  placeholder="City"
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                />
+                <div className="grid grid-cols-2 gap-4">
+                  <input
+                    type="text"
+                    value={companyData.address.state}
+                    onChange={(e) => setCompanyData({ 
+                      ...companyData, 
+                      address: { ...companyData.address, state: e.target.value }
+                    })}
+                    placeholder="State"
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <input
+                    type="text"
+                    value={companyData.address.zipCode}
+                    onChange={(e) => setCompanyData({ 
+                      ...companyData, 
+                      address: { ...companyData.address, zipCode: e.target.value }
+                    })}
+                    placeholder="ZIP code"
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-start p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                <MapPinIcon className="h-5 w-5 text-gray-400 mr-3 mt-0.5" />
+                <div className="text-gray-900">
+                  {companyData.address.street ? (
+                    <>
+                      <p>{companyData.address.street}</p>
+                      <p>
+                        {companyData.address.city}
+                        {companyData.address.state && `, ${companyData.address.state}`}
+                        {companyData.address.zipCode && ` ${companyData.address.zipCode}`}
+                      </p>
+                    </>
+                  ) : (
+                    <span className="text-gray-500">Not specified</span>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Tax ID / EIN
+                <FieldTooltip content="Federal tax identification number" />
+              </label>
+              {editMode ? (
+                <input
+                  type="text"
+                  value={companyData.taxId}
+                  onChange={(e) => setCompanyData({ ...companyData, taxId: e.target.value })}
+                  placeholder="XX-XXXXXXX"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                />
+              ) : (
+                <div className="flex items-center p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                  <IdentificationIcon className="h-5 w-5 text-gray-400 mr-3" />
+                  <span className="text-gray-900">
+                    {companyData.taxId ? '••••••' + companyData.taxId.slice(-4) : 'Not specified'}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Registration Number
+                <FieldTooltip content="State business registration number" />
+              </label>
+              {editMode ? (
+                <input
+                  type="text"
+                  value={companyData.registrationNumber}
+                  onChange={(e) => setCompanyData({ ...companyData, registrationNumber: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                />
+              ) : (
+                <div className="flex items-center p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                  <IdentificationIcon className="h-5 w-5 text-gray-400 mr-3" />
+                  <span className="text-gray-900">{companyData.registrationNumber || 'Not specified'}</span>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Year Established
+                <FieldTooltip content="Year your business was founded" />
+              </label>
+              {editMode ? (
+                <input
+                  type="number"
+                  value={companyData.yearEstablished}
+                  onChange={(e) => setCompanyData({ ...companyData, yearEstablished: e.target.value })}
+                  min="1900"
+                  max={new Date().getFullYear()}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                />
+              ) : (
+                <div className="flex items-center p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                  <CalendarIcon className="h-5 w-5 text-gray-400 mr-3" />
+                  <span className="text-gray-900">{companyData.yearEstablished || 'Not specified'}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Business Description
               <FieldTooltip content="Brief description of your business activities" />
             </label>
-            <textarea
-              value={companyData.description}
-              onChange={(e) => handleChange('description', e.target.value)}
-              disabled={!isAdmin}
-              rows={4}
-              placeholder="Describe your business..."
-              className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                !isAdmin ? 'bg-gray-50 cursor-not-allowed' : ''
-              }`}
-            />
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        {isAdmin && (
-          <div className="flex justify-end space-x-3">
-            {hasChanges && (
-              <button
-                onClick={handleReset}
-                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-                disabled={saving}
-              >
-                Reset Changes
-              </button>
+            {editMode ? (
+              <textarea
+                value={companyData.description}
+                onChange={(e) => setCompanyData({ ...companyData, description: e.target.value })}
+                rows={4}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Describe your business..."
+              />
+            ) : (
+              <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                <p className="text-gray-900">
+                  {companyData.description || <span className="text-gray-500">No description provided</span>}
+                </p>
+              </div>
             )}
-            <button
-              onClick={handleSave}
-              disabled={!hasChanges || saving}
-              className={`px-4 py-2 rounded-lg transition-colors flex items-center ${
-                hasChanges && !saving
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
-            >
-              {saving ? (
-                <>
-                  <svg className="animate-spin h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <CheckCircleIcon className="h-5 w-5 mr-2" />
-                  Save Changes
-                </>
-              )}
-            </button>
           </div>
-        )}
-      </div>
+
+          {editMode && (
+            <div className="flex justify-end space-x-3 pt-4">
+              <button
+                onClick={() => {
+                  setEditMode(false);
+                  setErrors({});
+                  loadCompanyData();
+                }}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                disabled={loading}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                disabled={loading}
+              >
+                {loading ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

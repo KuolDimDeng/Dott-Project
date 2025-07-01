@@ -3,466 +3,372 @@
 import React, { useState, useEffect } from 'react';
 import { 
   CreditCardIcon,
-  DocumentDuplicateIcon,
-  ArrowUpIcon,
-  ArrowDownIcon,
   CheckCircleIcon,
+  XCircleIcon,
   ExclamationTriangleIcon,
-  CalendarIcon,
-  CurrencyDollarIcon,
-  XCircleIcon
+  ArrowRightIcon,
+  ClockIcon,
+  DocumentTextIcon,
+  ArrowDownTrayIcon,
+  SparklesIcon
 } from '@heroicons/react/24/outline';
-import { logger } from '@/utils/logger';
 import { useStripe } from '@/hooks/useStripe';
+import { logger } from '@/utils/logger';
 
 const BillingSubscriptions = ({ user, profileData, isOwner, notifySuccess, notifyError }) => {
-  const { createCheckoutSession, createPortalSession } = useStripe();
-  const [loading, setLoading] = useState(true);
-  const [billingData, setBillingData] = useState({
-    subscription: null,
-    invoices: [],
-    paymentMethod: null,
-    upcomingInvoice: null
-  });
-  const [showCancelModal, setShowCancelModal] = useState(false);
-  const [cancelling, setCancelling] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [subscription, setSubscription] = useState(null);
+  const [billingHistory, setBillingHistory] = useState([]);
+  const { createCheckoutSession, createPortalSession, loading: stripeLoading } = useStripe();
 
-  // Subscription plans
-  const subscriptionPlans = [
+  const plans = [
     {
-      id: 'free',
-      name: 'Free Plan',
+      id: 'basic',
+      name: 'Basic',
       price: 0,
-      interval: 'month',
+      priceId: null,
       features: [
         '1 User',
         '3GB Storage',
-        'Basic Features',
-        'Email Support'
+        'Basic Reports',
+        'Email Support',
+        'Mobile Access'
       ],
-      color: 'gray'
+      limitations: [
+        'No Team Collaboration',
+        'Limited API Access',
+        'Basic Analytics Only'
+      ]
     },
     {
       id: 'professional',
       name: 'Professional',
       price: 15,
-      interval: 'month',
-      priceYearly: 144,
+      priceId: process.env.NEXT_PUBLIC_STRIPE_PROFESSIONAL_PRICE_ID,
+      yearlyPriceId: process.env.NEXT_PUBLIC_STRIPE_PROFESSIONAL_YEARLY_PRICE_ID,
       features: [
-        '5 Users',
+        'Up to 10 Users',
         '50GB Storage',
-        'Advanced Features',
+        'Advanced Reports',
         'Priority Support',
         'API Access',
-        'Custom Reports'
+        'Custom Integrations',
+        'Advanced Analytics',
+        'Audit Trail'
       ],
-      color: 'blue',
       popular: true
     },
     {
       id: 'enterprise',
       name: 'Enterprise',
       price: 45,
-      interval: 'month',
-      priceYearly: 432,
+      priceId: process.env.NEXT_PUBLIC_STRIPE_ENTERPRISE_PRICE_ID,
+      yearlyPriceId: process.env.NEXT_PUBLIC_STRIPE_ENTERPRISE_YEARLY_PRICE_ID,
       features: [
         'Unlimited Users',
         '500GB Storage',
-        'All Features',
-        '24/7 Phone Support',
-        'API Access',
-        'Custom Integration',
-        'Dedicated Account Manager'
-      ],
-      color: 'purple'
+        'Custom Reports',
+        'Dedicated Support',
+        'Full API Access',
+        'White Label Option',
+        'Advanced Security',
+        'SLA Guarantee',
+        'Custom Training'
+      ]
     }
   ];
 
-  // Fetch billing data
   useEffect(() => {
-    const fetchBillingData = async () => {
-      try {
-        setLoading(true);
-        
-        // Fetch subscription data
-        const subResponse = await fetch('/api/billing/subscription');
-        if (subResponse.ok) {
-          const subData = await subResponse.json();
-          setBillingData(prev => ({ ...prev, subscription: subData }));
-        }
-
-        // Fetch invoices
-        const invoicesResponse = await fetch('/api/billing/invoices');
-        if (invoicesResponse.ok) {
-          const invoicesData = await invoicesResponse.json();
-          setBillingData(prev => ({ ...prev, invoices: invoicesData.data || [] }));
-        }
-
-        // Fetch payment method
-        const pmResponse = await fetch('/api/billing/payment-method');
-        if (pmResponse.ok) {
-          const pmData = await pmResponse.json();
-          setBillingData(prev => ({ ...prev, paymentMethod: pmData }));
-        }
-
-        // Fetch upcoming invoice
-        const upcomingResponse = await fetch('/api/billing/upcoming-invoice');
-        if (upcomingResponse.ok) {
-          const upcomingData = await upcomingResponse.json();
-          setBillingData(prev => ({ ...prev, upcomingInvoice: upcomingData }));
-        }
-      } catch (error) {
-        logger.error('[BillingSubscriptions] Error fetching billing data:', error);
-        notifyError('Failed to load billing information');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     if (isOwner) {
-      fetchBillingData();
-    } else {
+      loadSubscriptionData();
+    }
+  }, [isOwner]);
+
+  const loadSubscriptionData = async () => {
+    try {
+      setLoading(true);
+      
+      const [subResponse, historyResponse] = await Promise.all([
+        fetch('/api/user/subscription'),
+        fetch('/api/billing/history')
+      ]);
+
+      if (subResponse.ok) {
+        const data = await subResponse.json();
+        setSubscription(data);
+      }
+
+      if (historyResponse.ok) {
+        const data = await historyResponse.json();
+        setBillingHistory(data.invoices || []);
+      }
+    } catch (error) {
+      logger.error('[BillingSubscriptions] Error loading data:', error);
+    } finally {
       setLoading(false);
     }
-  }, [isOwner, notifyError]);
+  };
 
-  // Handle upgrade/downgrade
-  const handlePlanChange = async (planId) => {
+  const handleUpgrade = async (priceId) => {
     try {
-      if (planId === 'free') {
-        setShowCancelModal(true);
-        return;
-      }
-
-      const priceId = planId === 'professional' ? 'price_professional' : 'price_enterprise';
       await createCheckoutSession(priceId);
     } catch (error) {
-      logger.error('[BillingSubscriptions] Error changing plan:', error);
-      notifyError('Failed to change subscription plan');
+      notifyError('Failed to start checkout process');
     }
   };
 
-  // Handle subscription cancellation
-  const handleCancelSubscription = async () => {
-    try {
-      setCancelling(true);
-      
-      const response = await fetch('/api/billing/cancel-subscription', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to cancel subscription');
-      }
-
-      notifySuccess('Your subscription has been cancelled. You will continue to have access until the end of your billing period.');
-      setShowCancelModal(false);
-      
-      // Refresh billing data
-      window.location.reload();
-    } catch (error) {
-      logger.error('[BillingSubscriptions] Error cancelling subscription:', error);
-      notifyError('Failed to cancel subscription');
-    } finally {
-      setCancelling(false);
-    }
-  };
-
-  // Handle manage billing (Stripe portal)
   const handleManageBilling = async () => {
     try {
       await createPortalSession();
     } catch (error) {
-      logger.error('[BillingSubscriptions] Error opening billing portal:', error);
       notifyError('Failed to open billing portal');
     }
   };
 
-  // Get current plan
-  const currentPlan = subscriptionPlans.find(
-    plan => plan.id === (billingData.subscription?.plan?.id || 'free')
-  ) || subscriptionPlans[0];
+  const getCurrentPlan = () => {
+    if (!subscription || subscription.status === 'trialing' || subscription.status === 'canceled') {
+      return plans[0];
+    }
+    
+    return plans.find(plan => 
+      plan.priceId === subscription.priceId || 
+      plan.yearlyPriceId === subscription.priceId
+    ) || plans[0];
+  };
+
+  const currentPlan = getCurrentPlan();
 
   if (!isOwner) {
     return (
       <div className="p-6">
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <div className="flex items-start">
+          <div className="flex">
             <ExclamationTriangleIcon className="h-5 w-5 text-yellow-600 mt-0.5 mr-3" />
-            <div className="text-sm text-yellow-800">
-              <p className="font-medium">Access Restricted</p>
-              <p>Only the account owner can view and manage billing information.</p>
+            <div>
+              <h3 className="text-sm font-medium text-yellow-800">Access Restricted</h3>
+              <p className="mt-1 text-sm text-yellow-700">
+                Only the account owner can manage billing and subscriptions.
+              </p>
             </div>
           </div>
         </div>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="p-6 flex items-center justify-center">
-        <div className="text-gray-500">Loading billing information...</div>
       </div>
     );
   }
 
   return (
     <div className="p-6">
-      {/* Header */}
       <div className="mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">Billing & Subscriptions</h2>
-        <p className="text-sm text-gray-600">
+        <h2 className="text-xl font-semibold text-gray-900">Billing & Subscriptions</h2>
+        <p className="text-sm text-gray-500 mt-1">
           Manage your subscription plan and billing information
         </p>
       </div>
 
-      {/* Current Plan */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-medium text-gray-900">Current Plan</h3>
-          {billingData.subscription && (
-            <button
-              onClick={handleManageBilling}
-              className="text-sm text-blue-600 hover:text-blue-700"
-            >
-              Manage Billing
-            </button>
-          )}
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
-
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-2xl font-bold text-gray-900">{currentPlan.name}</p>
-            <p className="text-gray-600">
-              ${currentPlan.price}/{currentPlan.interval}
-              {currentPlan.priceYearly && ` or $${currentPlan.priceYearly}/year`}
-            </p>
-          </div>
-          {billingData.subscription?.status && (
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-              billingData.subscription.status === 'active' 
-                ? 'bg-green-100 text-green-800' 
-                : 'bg-gray-100 text-gray-800'
-            }`}>
-              {billingData.subscription.status}
-            </span>
-          )}
-        </div>
-
-        {billingData.subscription?.current_period_end && (
-          <p className="text-sm text-gray-500 mt-2">
-            {billingData.subscription.cancel_at_period_end 
-              ? `Cancels on ${new Date(billingData.subscription.current_period_end * 1000).toLocaleDateString()}`
-              : `Renews on ${new Date(billingData.subscription.current_period_end * 1000).toLocaleDateString()}`
-            }
-          </p>
-        )}
-      </div>
-
-      {/* Subscription Plans */}
-      <div className="mb-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Available Plans</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {subscriptionPlans.map((plan) => {
-            const isCurrent = plan.id === currentPlan.id;
-            
-            return (
-              <div
-                key={plan.id}
-                className={`relative border rounded-lg p-6 ${
-                  plan.popular ? 'border-blue-500 shadow-lg' : 'border-gray-200'
-                }`}
-              >
-                {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <span className="bg-blue-500 text-white text-xs font-medium px-3 py-1 rounded-full">
-                      Most Popular
-                    </span>
-                  </div>
-                )}
-
-                <div className="text-center mb-4">
-                  <h4 className="text-lg font-semibold text-gray-900">{plan.name}</h4>
-                  <div className="mt-2">
-                    <span className="text-3xl font-bold">${plan.price}</span>
-                    <span className="text-gray-500">/{plan.interval}</span>
-                  </div>
-                  {plan.priceYearly && (
-                    <p className="text-sm text-gray-600 mt-1">
-                      ${plan.priceYearly}/year (save ${(plan.price * 12 - plan.priceYearly).toFixed(0)})
-                    </p>
-                  )}
-                </div>
-
-                <ul className="space-y-2 mb-6">
-                  {plan.features.map((feature, index) => (
-                    <li key={index} className="flex items-start">
-                      <CheckCircleIcon className="h-5 w-5 text-green-500 mr-2 flex-shrink-0" />
-                      <span className="text-sm text-gray-600">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
+      ) : (
+        <div className="space-y-6">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-medium text-blue-900">
+                  Current Plan: {currentPlan.name}
+                </h3>
+                <p className="text-sm text-blue-700 mt-1">
+                  {currentPlan.price === 0 
+                    ? 'Free forever' 
+                    : `$${currentPlan.price}/month${subscription?.interval === 'year' ? ' (billed yearly)' : ''}`
+                  }
+                </p>
+              </div>
+              {subscription?.status === 'active' && currentPlan.price > 0 && (
                 <button
-                  onClick={() => handlePlanChange(plan.id)}
-                  disabled={isCurrent}
-                  className={`w-full py-2 px-4 rounded-lg font-medium transition-colors ${
-                    isCurrent
-                      ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
-                      : plan.popular
-                      ? 'bg-blue-600 text-white hover:bg-blue-700'
-                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                  }`}
+                  onClick={handleManageBilling}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  disabled={stripeLoading}
                 >
-                  {isCurrent ? 'Current Plan' : plan.price > currentPlan.price ? 'Upgrade' : 'Downgrade'}
+                  Manage Billing
+                </button>
+              )}
+            </div>
+            
+            {subscription?.cancelAtPeriodEnd && (
+              <div className="mt-3 flex items-center text-sm text-red-600">
+                <ExclamationTriangleIcon className="h-4 w-4 mr-2" />
+                Subscription will cancel on {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Available Plans</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {plans.map((plan) => {
+                const isCurrentPlan = currentPlan.id === plan.id;
+                
+                return (
+                  <div
+                    key={plan.id}
+                    className={`relative rounded-lg border-2 p-6 ${
+                      plan.popular 
+                        ? 'border-blue-500 shadow-lg' 
+                        : 'border-gray-200'
+                    }`}
+                  >
+                    {plan.popular && (
+                      <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                        <span className="bg-blue-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                          Most Popular
+                        </span>
+                      </div>
+                    )}
+                    
+                    <div className="text-center mb-4">
+                      <h4 className="text-xl font-semibold text-gray-900">{plan.name}</h4>
+                      <div className="mt-2">
+                        <span className="text-3xl font-bold text-gray-900">${plan.price}</span>
+                        <span className="text-gray-500">/month</span>
+                      </div>
+                      {plan.yearlyPriceId && (
+                        <p className="text-sm text-green-600 mt-1">
+                          Save 20% with yearly billing
+                        </p>
+                      )}
+                    </div>
+
+                    <ul className="space-y-2 mb-6">
+                      {plan.features.map((feature, index) => (
+                        <li key={index} className="flex items-start">
+                          <CheckCircleIcon className="h-5 w-5 text-green-500 mr-2 flex-shrink-0" />
+                          <span className="text-sm text-gray-700">{feature}</span>
+                        </li>
+                      ))}
+                      {plan.limitations?.map((limitation, index) => (
+                        <li key={`limit-${index}`} className="flex items-start">
+                          <XCircleIcon className="h-5 w-5 text-red-400 mr-2 flex-shrink-0" />
+                          <span className="text-sm text-gray-500">{limitation}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    {isCurrentPlan ? (
+                      <button
+                        disabled
+                        className="w-full px-4 py-2 bg-gray-100 text-gray-500 rounded-lg cursor-not-allowed"
+                      >
+                        Current Plan
+                      </button>
+                    ) : plan.price > currentPlan.price ? (
+                      <button
+                        onClick={() => handleUpgrade(plan.priceId)}
+                        className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center"
+                        disabled={stripeLoading || !plan.priceId}
+                      >
+                        Upgrade
+                        <ArrowRightIcon className="h-4 w-4 ml-2" />
+                      </button>
+                    ) : (
+                      <button
+                        disabled
+                        className="w-full px-4 py-2 bg-gray-100 text-gray-500 rounded-lg cursor-not-allowed"
+                      >
+                        Downgrade Not Available
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Billing History</h3>
+            {billingHistory.length > 0 ? (
+              <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Date
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Description
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Amount
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Invoice
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {billingHistory.map((invoice) => (
+                      <tr key={invoice.id}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {new Date(invoice.created * 1000).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {invoice.description || 'Subscription'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          ${(invoice.amount_paid / 100).toFixed(2)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex px-2 py-1 text-xs rounded-full ${
+                            invoice.status === 'paid'
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {invoice.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <a
+                            href={invoice.invoice_pdf}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 flex items-center"
+                          >
+                            <ArrowDownTrayIcon className="h-4 w-4 mr-1" />
+                            Download
+                          </a>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="text-center py-8 bg-gray-50 rounded-lg">
+                <DocumentTextIcon className="mx-auto h-12 w-12 text-gray-400" />
+                <p className="mt-2 text-sm text-gray-500">No billing history available</p>
+              </div>
+            )}
+          </div>
+
+          <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-6">
+            <div className="flex items-start">
+              <SparklesIcon className="h-6 w-6 text-purple-600 mr-3 flex-shrink-0" />
+              <div>
+                <h4 className="text-lg font-medium text-gray-900">Need a Custom Plan?</h4>
+                <p className="mt-1 text-sm text-gray-600">
+                  For organizations with specific requirements, we offer custom enterprise solutions 
+                  with tailored features, dedicated support, and flexible pricing.
+                </p>
+                <button
+                  onClick={() => window.location.href = 'mailto:sales@dottapps.com?subject=Enterprise Plan Inquiry'}
+                  className="mt-3 text-sm font-medium text-purple-600 hover:text-purple-700"
+                >
+                  Contact Sales →
                 </button>
               </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Payment Method */}
-      {billingData.paymentMethod && (
-        <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Payment Method</h3>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <CreditCardIcon className="h-8 w-8 text-gray-400 mr-3" />
-              <div>
-                <p className="font-medium">
-                  •••• •••• •••• {billingData.paymentMethod.last4}
-                </p>
-                <p className="text-sm text-gray-500">
-                  Expires {billingData.paymentMethod.exp_month}/{billingData.paymentMethod.exp_year}
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={handleManageBilling}
-              className="text-sm text-blue-600 hover:text-blue-700"
-            >
-              Update
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Billing History */}
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">Billing History</h3>
-        </div>
-        
-        {billingData.invoices.length === 0 ? (
-          <div className="px-6 py-12 text-center text-gray-500">
-            No billing history available
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Description
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Amount
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Invoice
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {billingData.invoices.map((invoice) => (
-                  <tr key={invoice.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {new Date(invoice.created * 1000).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {invoice.description || 'Subscription'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      ${(invoice.amount_paid / 100).toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        invoice.status === 'paid' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {invoice.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                      <a
-                        href={invoice.invoice_pdf}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-700"
-                      >
-                        <DocumentDuplicateIcon className="h-5 w-5 inline" />
-                      </a>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      {/* Cancel Subscription Modal */}
-      {showCancelModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <div className="flex items-center mb-4">
-              <ExclamationTriangleIcon className="h-6 w-6 text-red-600 mr-3" />
-              <h3 className="text-lg font-semibold text-gray-900">Cancel Subscription</h3>
-            </div>
-            
-            <p className="text-gray-600 mb-6">
-              Are you sure you want to cancel your subscription? You'll lose access to premium features at the end of your billing period.
-            </p>
-
-            <div className="bg-gray-50 rounded-lg p-4 mb-6">
-              <p className="text-sm text-gray-700 font-medium mb-2">You'll lose access to:</p>
-              <ul className="space-y-1">
-                {currentPlan.features.slice(1).map((feature, index) => (
-                  <li key={index} className="flex items-start text-sm text-gray-600">
-                    <XCircleIcon className="h-4 w-4 text-red-500 mr-2 flex-shrink-0 mt-0.5" />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setShowCancelModal(false)}
-                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-                disabled={cancelling}
-              >
-                Keep Subscription
-              </button>
-              <button
-                onClick={handleCancelSubscription}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
-                disabled={cancelling}
-              >
-                {cancelling ? 'Cancelling...' : 'Cancel Subscription'}
-              </button>
             </div>
           </div>
         </div>

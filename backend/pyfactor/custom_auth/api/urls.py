@@ -17,13 +17,6 @@ from .views.update_session_view import UpdateSessionView
 from .views.session_profile_view import SessionUserProfileView
 from .views.register_view import EmailPasswordRegisterView
 from .views.unified_profile_view import UnifiedProfileView
-from .views.user_management_proxy import (
-    invite_user, update_user_role, remove_user, resend_invitation
-)
-from .views.security_settings_views import (
-    mfa_status, mfa_setup, mfa_disable, get_sessions, revoke_session,
-    get_audit_logs, get_compliance_settings, update_compliance_settings
-)
 
 # Import new Auth0 views
 try:
@@ -44,21 +37,6 @@ urlpatterns = [
     
     # Unified profile endpoint (consolidates all profile endpoints)
     path('auth/profile', UnifiedProfileView.as_view(), name='unified-profile'),
-    
-    # User management proxy endpoints (for frontend compatibility)
-    path('auth/invite-user', invite_user, name='invite-user'),
-    path('auth/update-user-role', update_user_role, name='update-user-role'),
-    path('auth/remove-user', remove_user, name='remove-user'),
-    
-    # Security settings endpoints
-    path('auth/mfa-status', mfa_status, name='mfa-status'),
-    path('auth/mfa-setup', mfa_setup, name='mfa-setup'),
-    path('auth/mfa-disable', mfa_disable, name='mfa-disable'),
-    path('auth/sessions', get_sessions, name='get-sessions'),
-    path('auth/sessions/<str:session_id>', revoke_session, name='revoke-session'),
-    path('audit/logs', get_audit_logs, name='get-audit-logs'),
-    path('settings/compliance', get_compliance_settings, name='get-compliance-settings'),
-    path('settings/compliance', update_compliance_settings, name='update-compliance-settings'),
     
     # User check endpoint (for debugging)
     path('check-user/', CheckUserView.as_view(), name='check-user'),
