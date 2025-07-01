@@ -212,7 +212,7 @@ export default function AppBar() {
   return (
     <nav className="sticky top-0 z-50 bg-white shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-28 md:h-36">
+        <div className="flex justify-between h-24 md:h-28">
           {/* Logo */}
           <div className="flex-shrink-0 flex items-center">
             <div
@@ -222,9 +222,9 @@ export default function AppBar() {
               <img
                 src="/static/images/PyfactorLandingpage.png"
                 alt="PyFactor Logo"
-                width={360}
-                height={120}
-                className="h-24 md:h-32 w-auto object-contain"
+                width={270}
+                height={90}
+                className="h-18 md:h-24 w-auto object-contain"
               />
             </div>
           </div>

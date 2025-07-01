@@ -1,0 +1,22 @@
+# Docker ignore file for local testing
+*.pyc
+__pycache__
+.env
+.venv
+venv/
+*.sqlite3
+.git
+.gitignore
+.dockerignore
+Dockerfile.local
+docker-compose.local.yml
+test-backend-locally.sh
+test-local-venv.sh
+local-test.sh
+*.log
+.DS_Store
+media/
+staticfiles/
+.pytest_cache/
+.coverage
+htmlcov/

@@ -10123,3 +10123,10 @@ backend/venv/lib/python3.12/site-packages/phonenumbers-8.13.45.dist-info/RECORD
 backend/venv/lib/python3.12/site-packages/phonenumbers-8.13.45.dist-info/REQUESTED
 backend/venv/lib/python3.12/site-packages/phonenumbers-8.13.45.dist-info/top_level.txt
 backend/venv/lib/python3.12/site-packages/phonenumbers-8.13.45.dist-info/WHEEL
+
+# Local testing files (DO NOT COMMIT)
+backend/Dockerfile.local
+backend/docker-compose.local.yml
+backend/test-backend-locally.sh
+backend/test-local-venv.sh
+backend/local-test.sh

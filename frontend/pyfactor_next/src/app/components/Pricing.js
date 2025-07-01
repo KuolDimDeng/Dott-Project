@@ -201,7 +201,7 @@ export default function Pricing() {
         'AI-powered insights',
         'API access'
       ],
-      cta: 'Contact Sales',
+      cta: 'Get Enterprise',
       highlight: false,
       popular: false,
     },
@@ -269,9 +269,11 @@ export default function Pricing() {
               key={plan.name}
               className={`relative flex flex-col rounded-2xl shadow-lg overflow-hidden ${
                 plan.highlight 
-                  ? 'ring-4 ring-primary-main ring-opacity-50 transform scale-105' 
-                  : 'border border-gray-200'
-              } bg-white`}
+                  ? 'ring-4 ring-primary-main ring-opacity-50 transform scale-105 bg-blue-50' 
+                  : plan.name === 'Basic' 
+                    ? 'border border-gray-200 bg-gray-50'
+                    : 'border border-gray-200 bg-purple-50'
+              }`}
             >
               {plan.popular && (
                 <div className="absolute top-0 right-0 transform translate-x-1 -translate-y-1">
@@ -281,7 +283,7 @@ export default function Pricing() {
                 </div>
               )}
               
-              <div className="p-8">
+              <div className="p-8 bg-white bg-opacity-60 backdrop-blur-sm">
                 <h3 className="text-2xl font-bold text-gray-900">{plan.name}</h3>
                 <p className="mt-2 text-gray-600">{plan.description}</p>
                 
@@ -316,7 +318,7 @@ export default function Pricing() {
 
                 <div className="mt-10">
                   <Link
-                    href={plan.name === 'Enterprise' ? '/contact' : '/api/auth/login'}
+                    href="/api/auth/login"
                     className={`block w-full text-center px-6 py-4 rounded-lg font-semibold transition-all duration-200 ${
                       plan.highlight
                         ? 'bg-primary-main hover:bg-primary-dark text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
