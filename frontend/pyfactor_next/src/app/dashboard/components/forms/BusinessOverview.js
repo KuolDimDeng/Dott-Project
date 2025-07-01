@@ -89,6 +89,21 @@ const BusinessOverview = () => {
     return ((current - previous) / previous * 100).toFixed(1);
   };
 
+  // Helper function for color classes
+  const getColorClass = (color, type) => {
+    const colorMap = {
+      blue: { bg: 'bg-blue-100', text: 'text-blue-600' },
+      red: { bg: 'bg-red-100', text: 'text-red-600' },
+      green: { bg: 'bg-green-100', text: 'text-green-600' },
+      purple: { bg: 'bg-purple-100', text: 'text-purple-600' },
+      indigo: { bg: 'bg-indigo-100', text: 'text-indigo-600' },
+      yellow: { bg: 'bg-yellow-100', text: 'text-yellow-600' },
+      orange: { bg: 'bg-orange-100', text: 'text-orange-600' },
+      teal: { bg: 'bg-teal-100', text: 'text-teal-600' }
+    };
+    return colorMap[color]?.[type] || 'bg-gray-100 text-gray-600';
+  };
+
   // Fetch comprehensive business data
   const fetchBusinessData = useCallback(async () => {
     try {
@@ -177,6 +192,13 @@ const BusinessOverview = () => {
 
     // Note: Payments will be calculated from invoice data
     // Note: Expenses functionality to be added later
+    
+    // Process estimates
+    let estimates = [];
+    if (responses.estimatesRes.status === 'fulfilled') {
+      const estimatesData = responses.estimatesRes.value || [];
+      estimates = Array.isArray(estimatesData) ? estimatesData : (estimatesData.results || []);
+    }
 
     // Calculate revenue metrics
     const totalRevenue = invoices.reduce((sum, inv) => sum + (parseFloat(inv.total_amount) || 0), 0);
@@ -194,14 +216,9 @@ const BusinessOverview = () => {
       })
       .reduce((sum, inv) => sum + (parseFloat(inv.total_amount) || 0), 0);
 
-    // Calculate expense metrics
-    const totalExpenses = expenses.reduce((sum, exp) => sum + (parseFloat(exp.amount) || 0), 0);
-    const thisMonthExpenses = expenses
-      .filter(exp => {
-        const expDate = new Date(exp.created_at);
-        return expDate.getMonth() === currentMonth && expDate.getFullYear() === currentYear;
-      })
-      .reduce((sum, exp) => sum + (parseFloat(exp.amount) || 0), 0);
+    // Calculate expense metrics (placeholder - to be implemented)
+    const totalExpenses = 0; // No expense data available yet
+    const thisMonthExpenses = 0; // No expense data available yet
 
     // Calculate inventory metrics
     const totalProductValue = products.reduce((sum, p) => sum + (parseFloat(p.price) * parseInt(p.stock_quantity || 0)), 0);
@@ -238,7 +255,7 @@ const BusinessOverview = () => {
         margin: totalRevenue ? ((totalRevenue - totalExpenses) / totalRevenue * 100).toFixed(1) : 0
       },
       cashFlow: {
-        inflow: payments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0),
+        inflow: totalRevenue, // Using revenue as cash inflow approximation
         outflow: totalExpenses,
         net: totalRevenue - totalExpenses,
         bankBalance: 0, // Would need bank integration
@@ -247,7 +264,7 @@ const BusinessOverview = () => {
       sales: {
         orders: orders.length,
         invoices: invoices.length,
-        estimates: 0, // Would need estimates data
+        estimates: estimates.length,
         totalValue: totalRevenue
       },
       customers: {
@@ -320,8 +337,8 @@ const BusinessOverview = () => {
       onClick={onClick}
     >
       <div className="flex items-center justify-between mb-4">
-        <div className={`p-3 rounded-full bg-${color}-100`}>
-          <Icon className={`w-6 h-6 text-${color}-600`} />
+        <div className={`p-3 rounded-full ${getColorClass(color, 'bg')}`}>
+          <Icon className={`w-6 h-6 ${getColorClass(color, 'text')}`} />
         </div>
         {trend !== undefined && (
           <div className={`flex items-center text-sm ${trend >= 0 ? 'text-green-600' : 'text-red-600'}`}>

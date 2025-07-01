@@ -6,6 +6,9 @@ import { cookies } from 'next/headers';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
 
+// TEMPORARY: In-memory storage for calendar events (until backend is implemented)
+let calendarEvents = [];
+
 // Helper function to verify session using the same pattern as session-v2
 async function verifySession() {
   try {
@@ -79,29 +82,12 @@ export async function GET(request) {
     if (endDate) queryParams.append('end_date', endDate);
     if (eventType) queryParams.append('event_type', eventType);
 
-    // Fetch calendar events from backend
-    const response = await fetch(
-      `${API_BASE_URL}/api/calendar/events?${queryParams}`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Session ${(await cookies()).get('sid')?.value}`,
-          'X-Tenant-Id': tenantId
-        }
-      }
-    );
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('[Calendar API] Backend error:', errorData);
-      return NextResponse.json(
-        { error: errorData.error || 'Failed to fetch calendar events' },
-        { status: response.status }
-      );
-    }
-
-    const events = await response.json();
+    // TEMPORARY: Return events from in-memory storage
+    console.log('[Calendar API GET] Using in-memory storage, found events:', calendarEvents.length);
+    
+    // Filter events by tenant ID
+    const events = calendarEvents.filter(event => event.tenant_id === tenantId);
+    console.log('[Calendar API GET] Filtered events for tenant:', events.length);
 
     // Transform backend data to calendar format if needed
     const transformedEvents = events.map(event => ({
@@ -193,39 +179,32 @@ export async function POST(request) {
       tenant_id: tenantId
     };
 
-    // Create event in backend
-    console.log('[Calendar API POST] Sending to backend:', {
-      url: `${API_BASE_URL}/api/calendar/events`,
-      data: backendData
-    });
+    // TEMPORARY: Store event locally since backend endpoint doesn't exist yet
+    console.log('[Calendar API POST] Backend endpoint not available, using local storage fallback');
     
-    const response = await fetch(`${API_BASE_URL}/api/calendar/events`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Session ${(await cookies()).get('sid')?.value}`,
-        'X-Tenant-Id': tenantId
-      },
-      body: JSON.stringify(backendData)
-    });
+    // Generate a unique ID for the event
+    const eventId = `cal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Create event object with proper structure
+    const createdEvent = {
+      id: eventId,
+      title: backendData.title,
+      start_datetime: backendData.start_datetime,
+      end_datetime: backendData.end_datetime,
+      all_day: backendData.all_day,
+      event_type: backendData.event_type,
+      description: backendData.description,
+      location: backendData.location,
+      reminder_minutes: backendData.reminder_minutes,
+      tenant_id: backendData.tenant_id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
 
-    console.log('[Calendar API POST] Backend response status:', response.status);
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('[Calendar API POST] Backend error:', errorData);
-      console.error('[Calendar API POST] Full response:', {
-        status: response.status,
-        statusText: response.statusText,
-        headers: Object.fromEntries(response.headers.entries())
-      });
-      return NextResponse.json(
-        { error: errorData.error || 'Failed to create event' },
-        { status: response.status }
-      );
-    }
-
-    const createdEvent = await response.json();
+    // Store the event in memory
+    calendarEvents.push(createdEvent);
+    console.log('[Calendar API POST] Created local event:', createdEvent);
+    console.log('[Calendar API POST] Total events in storage:', calendarEvents.length);
 
     // Transform response to calendar format
     const transformedEvent = {
@@ -288,27 +267,34 @@ export async function PUT(request) {
       recurrence_pattern: eventData.recurringPattern || null
     };
 
-    // Update event in backend
-    const response = await fetch(`${API_BASE_URL}/api/calendar/events/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(session?.accessToken ? { 'Authorization': `Bearer ${session.accessToken}` } : {}),
-        'X-Tenant-Id': tenantId
-      },
-      body: JSON.stringify(backendData)
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('[Calendar API] Backend error:', errorData);
+    // TEMPORARY: Update event in memory storage
+    console.log('[Calendar API PUT] Using in-memory storage, updating event:', id);
+    
+    const eventIndex = calendarEvents.findIndex(event => event.id === id && event.tenant_id === tenantId);
+    if (eventIndex === -1) {
+      console.error('[Calendar API PUT] Event not found:', id);
       return NextResponse.json(
-        { error: errorData.error || 'Failed to update event' },
-        { status: response.status }
+        { error: 'Event not found' },
+        { status: 404 }
       );
     }
 
-    const updatedEvent = await response.json();
+    // Update the event
+    const updatedEvent = {
+      ...calendarEvents[eventIndex],
+      title: backendData.title,
+      start_datetime: backendData.start_datetime,
+      end_datetime: backendData.end_datetime,
+      all_day: backendData.all_day,
+      event_type: backendData.event_type,
+      description: backendData.description,
+      location: backendData.location,
+      reminder_minutes: backendData.reminder_minutes,
+      updated_at: new Date().toISOString()
+    };
+
+    calendarEvents[eventIndex] = updatedEvent;
+    console.log('[Calendar API PUT] Updated event:', updatedEvent);
 
     // Transform response to calendar format
     const transformedEvent = {
@@ -357,23 +343,21 @@ export async function DELETE(request) {
       );
     }
 
-    // Delete event from backend
-    const response = await fetch(`${API_BASE_URL}/api/calendar/events/${id}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Session ${(await cookies()).get('sid')?.value}`,
-        'X-Tenant-Id': tenantId
-      }
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('[Calendar API] Backend error:', errorData);
+    // TEMPORARY: Delete event from memory storage
+    console.log('[Calendar API DELETE] Using in-memory storage, deleting event:', id);
+    
+    const eventIndex = calendarEvents.findIndex(event => event.id === id && event.tenant_id === tenantId);
+    if (eventIndex === -1) {
+      console.error('[Calendar API DELETE] Event not found:', id);
       return NextResponse.json(
-        { error: errorData.error || 'Failed to delete event' },
-        { status: response.status }
+        { error: 'Event not found' },
+        { status: 404 }
       );
     }
+
+    // Remove the event
+    calendarEvents.splice(eventIndex, 1);
+    console.log('[Calendar API DELETE] Deleted event, remaining events:', calendarEvents.length);
 
     return NextResponse.json({ message: 'Event deleted successfully' });
   } catch (error) {
