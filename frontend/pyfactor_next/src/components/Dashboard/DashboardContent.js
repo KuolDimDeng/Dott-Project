@@ -213,15 +213,26 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   // Create optimized state setter that uses functional updates to prevent unnecessary renders
   const updateState = useCallback((updates) => {
     setUiState(prev => {
+      // If updates is a function, call it with prev
+      if (typeof updates === 'function') {
+        const result = updates(prev);
+        console.log('[DashboardContent] updateState functional update:', result);
+        return result;
+      }
+      
       // Check if any values are actually changing to prevent unnecessary renders
       const hasChanges = Object.entries(updates).some(
         ([key, value]) => prev[key] !== value
       );
       
       // If no changes, return the previous state reference to avoid a re-render
-      if (!hasChanges) return prev;
+      if (!hasChanges) {
+        console.log('[DashboardContent] updateState skipping - no changes');
+        return prev;
+      }
       
       // Otherwise, apply the updates
+      console.log('[DashboardContent] updateState applying:', updates);
       return { ...prev, ...updates };
     });
   }, []);
@@ -242,10 +253,16 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   }, [updateState]);
   
   const setDrawerOpen = useCallback((value) => {
+    console.log('[DashboardContent] setDrawerOpen called with:', value);
     updateState(prev => {
       // Check if value is a function (for functional updates)
       const newValue = typeof value === 'function' ? value(prev.drawerOpen) : value;
-      if (newValue === prev.drawerOpen) return prev; // Skip update if unchanged
+      console.log('[DashboardContent] setDrawerOpen updating from', prev.drawerOpen, 'to', newValue);
+      if (newValue === prev.drawerOpen) {
+        console.log('[DashboardContent] setDrawerOpen skipping update - no change');
+        return prev; // Skip update if unchanged
+      }
+      console.log('[DashboardContent] setDrawerOpen applying update');
       return { ...prev, drawerOpen: newValue };
     });
   }, [updateState]);
@@ -791,6 +808,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
 
   // Handle drawer toggle with improved memory management
   const handleDrawerToggle = useCallback(() => {
+    console.log('[DashboardContent] handleDrawerToggle called');
     // Toggle the drawer state
     setDrawerOpen(prev => {
       const newState = !prev;
@@ -801,9 +819,9 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   
   // Add logging to help debug issues
   const handleDrawerToggleWithLogging = useCallback(() => {
-    console.log('[DashboardContent] Toggle button clicked, current drawerOpen state:', uiState.drawerOpen);
+    console.log('[DashboardContent] Toggle button clicked, current drawerOpen state:', drawerOpen);
     handleDrawerToggle();
-  }, [handleDrawerToggle, uiState.drawerOpen]);
+  }, [handleDrawerToggle, drawerOpen]);
 
   // Handle specific click for employee management for direct access
   const handleEmployeeManagementClick = useCallback(() => {
