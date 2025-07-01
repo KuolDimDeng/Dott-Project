@@ -1105,7 +1105,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     handleHomeClick
   }), [
     anchorEl, settingsAnchorEl, openMenu, settingsMenuOpen, setAnchorEl, setSettingsAnchorEl,
-    setShowMyAccount, setShowHelpCenter, memoizedUserData, userAttributes, setUserData, drawerOpen, handleDrawerToggleWithLogging,
+    setShowMyAccount, setShowHelpCenter, memoizedUserData, userAttributes, setUserData, drawerOpen, handleDrawerToggle,
     resetAllStates, setShowHome, setShowCreateMenu, showCreateMenu, handleClick, handleClose,
     handleUserProfileClick, handleSettingsClick, handleHelpClick, handlePrivacyClick, handleTermsClick,
     handleSignOut, handleCloseCreateMenu, handleMenuItemClick, setShowForm, setFormOption, effectiveTenantId, handleHomeClick
