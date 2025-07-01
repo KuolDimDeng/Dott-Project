@@ -1,5 +1,5 @@
 # CLAUDE.md - Dott Project Configuration
-*Last Updated: 2025-06-29*
+*Last Updated: 2025-07-01*
 
 ## Numbering System Guide
 - **Format**: `[MAJOR.MINOR.PATCH] - DATE - STATUS`
@@ -213,23 +213,35 @@
   </h1>
   ```
 
-### [12.0.0] - 2025-06-26 - CURRENT - Django Migration Workflow
-- **Purpose**: Standardize migration process to prevent deployment issues
-- **Workflow**: Always local first, then deploy
-- **Steps**:
-  1. **Generate locally**: `python manage.py makemigrations`
-  2. **Resolve conflicts**: `echo "y" | python manage.py makemigrations --merge`
-  3. **Commit migrations**: `git add backend/pyfactor/*/migrations/`
-  4. **Push to deploy**: `git push origin Dott_Main_Dev_Deploy`
-  5. **Auto-deployment**: Render picks up changes and runs migrations
+
+### [17.0.0] - 2025-07-01 - CURRENT - Local Backend Testing Workflow
+- **Purpose**: Prevent deployment failures through comprehensive local testing
+- **Breaking Change**: ALL backend changes must be tested locally first using Docker
+- **Core Workflow**:
+  1. **Start Services**: `docker-compose up db redis --detach`
+  2. **Syntax Check**: `python3 -m py_compile taxes/models.py taxes/multistate/models.py`
+  3. **Build Backend**: `docker-compose build backend`
+  4. **Django Check**: `docker-compose exec backend python manage.py check`
+  5. **Migration Test**: `docker-compose exec backend python manage.py makemigrations --dry-run`
+  6. **Deploy**: Only after all local tests pass
 - **Benefits**:
-  - Migration files in version control
-  - Team synchronization
-  - No manual production database work
-  - Rollback capability
-- **Local Issues**: Use `--fake` flag for existing columns
-- **Documentation**: Updated TROUBLESHOOTING.md with complete workflow
-- **NEVER**: Run migrations only on production without committing files first
+  - Prevents deployment failures (syntax, dependencies, migrations)
+  - Faster feedback loop (seconds vs. minutes)
+  - Production-identical environment (Docker)
+  - Safe migration testing
+  - Eliminates repeated deployment failures
+- **Documentation**: `/backend/pyfactor/docs/LOCAL_TESTING_WORKFLOW.md`
+- **Created Files**: 
+  - `test_models.py` for model validation
+  - `LOCAL_TESTING_WORKFLOW.md` comprehensive guide
+- **Dependencies Added**: `django-debug-toolbar==4.4.6`
+- **Required Tools**: Docker Desktop, docker-compose
+- **MANDATORY**: No direct deployments without local testing
+- **Quick Commands**:
+  - Syntax: `python3 -m py_compile *.py`
+  - Build: `docker-compose build backend`
+  - Test: `docker-compose exec backend python manage.py check`
+  - Migrate: `docker-compose exec backend python manage.py makemigrations --dry-run`
 
 ### [13.0.0] - 2025-01-12 - CURRENT - Claude API Integration Architecture
 - **Purpose**: Dual Claude API setup for feature separation and cost optimization
@@ -310,6 +322,11 @@
 ### [1.9.0] - 2025-01-23 - DEPRECATED - Industry Standard Architecture (First Version)
 - **Deprecated by**: [4.0.0]
 - **Note**: June version includes complete security patterns
+
+### [12.0.0] - 2025-06-26 - DEPRECATED - Django Migration Workflow
+- **Deprecated by**: [17.0.0]
+- **Issue**: Didn't include pre-deployment testing
+- **Note**: Replaced by comprehensive Docker-based local testing workflow
 
 ---
 

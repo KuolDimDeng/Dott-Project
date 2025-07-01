@@ -148,6 +148,7 @@ const CashFlowAnalysis = enhancedLazy(() => import('./forms/CashFlowAnalysis.js'
 const BudgetVsActualAnalysis = enhancedLazy(() => import('./forms/BudgetVsActualAnalysis.js'), 'Budget vs Actual Analysis');
 const SalesAnalysis = enhancedLazy(() => import('./forms/SalesAnalysis.js'), 'Sales Analysis');
 const SalesDashboard = enhancedLazy(() => import('./forms/SalesDashboard.js'), 'Sales Dashboard');
+const BusinessOverview = enhancedLazy(() => import('./forms/BusinessOverview.js'), 'Business Overview');
 const ExpenseAnalysis = enhancedLazy(() => import('./forms/ExpenseAnalysis.js'), 'Expense Analysis');
 const KPIDashboard = enhancedLazy(() => import('./dashboards/KPIDashboard'), 'KPI Dashboard');
 const BalanceSheetAnalysis = enhancedLazy(() => import('./forms/BalanceSheetAnalysis.js'), 'Balance Sheet Analysis');
@@ -2179,7 +2180,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
       } else if (showIntegrationSettings) {
         ActiveComponent = IntegrationSettings;
       } else if (showMainDashboard) {
-        ActiveComponent = MainDashboard;
+        ActiveComponent = BusinessOverview;
         componentProps = { userData };
       } else if (showKPIDashboard) {
         ActiveComponent = KPIDashboard;

@@ -403,6 +403,18 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     }
   }, [resetAllStates, setShowHome, setShowMainDashboard, setShowKPIDashboard, setView]);
 
+  // Handle main dashboard click - shows the business overview
+  const handleMainDashboardClick = useCallback(() => {
+    console.log('[DashboardContent] handleMainDashboardClick called');
+    resetAllStates();
+    const dashboardNavKey = `dashboard-${Date.now()}`;
+    updateState({ 
+      showHome: true,
+      showMainDashboard: true
+    });
+    setNavigationKey(dashboardNavKey);
+  }, [resetAllStates, updateState, setNavigationKey]);
+
   const handleHomeClick = useCallback(() => {
     console.log('[DashboardContent] handleHomeClick called');
     resetAllStates();
@@ -1077,6 +1089,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     userData: memoizedUserData,
     resetAllStates,
     handleHomeClick,
+    handleMainDashboardClick,
     handleHRClick,
     handlePayrollClick,
     handlePaymentsClick,
@@ -1093,7 +1106,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     handleCalendarClick
   }), [
     drawerOpen, handleDrawerToggleWithLogging, drawerWidth, handleDrawerItemClick, memoizedUserData,
-    resetAllStates, handleHomeClick, handleHRClick, handlePayrollClick, handlePaymentsClick, handleAccountingClick, handleBankingClick, handleInventoryClick,
+    resetAllStates, handleHomeClick, handleMainDashboardClick, handleHRClick, handlePayrollClick, handlePaymentsClick, handleAccountingClick, handleBankingClick, handleInventoryClick,
     handleShowCreateOptions, handleShowCreateMenu, handleEmployeeManagementClick, handleCRMClick,
     handleBillingClick, handleSalesClick, handleTaxesClick, handleCalendarClick
   ]);
