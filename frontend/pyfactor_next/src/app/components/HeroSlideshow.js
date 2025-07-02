@@ -63,20 +63,59 @@ const placeholderImages = [
 
 export default function HeroSlideshow() {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const intervalRef = React.useRef(null);
+
+  // Auto-play functionality
+  React.useEffect(() => {
+    const startAutoPlay = () => {
+      intervalRef.current = setInterval(() => {
+        setCurrentIndex((prevIndex) => 
+          prevIndex === placeholderImages.length - 1 ? 0 : prevIndex + 1
+        );
+      }, 5000); // Change slide every 5 seconds
+    };
+
+    if (!isPaused) {
+      startAutoPlay();
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [isPaused]);
+
+  // Pause auto-play for 10 seconds after user interaction
+  const handleUserInteraction = () => {
+    setIsPaused(true);
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+    
+    // Resume auto-play after 10 seconds
+    setTimeout(() => {
+      setIsPaused(false);
+    }, 10000);
+  };
 
   const goToPrevious = () => {
+    handleUserInteraction();
     setCurrentIndex((prevIndex) => 
       prevIndex === 0 ? placeholderImages.length - 1 : prevIndex - 1
     );
   };
 
   const goToNext = () => {
+    handleUserInteraction();
     setCurrentIndex((prevIndex) => 
       prevIndex === placeholderImages.length - 1 ? 0 : prevIndex + 1
     );
   };
 
   const goToSlide = (index) => {
+    handleUserInteraction();
     setCurrentIndex(index);
   };
 
@@ -156,19 +195,28 @@ export default function HeroSlideshow() {
       </div>
 
       {/* Dot indicators */}
-      <div className="flex justify-center mt-6 space-x-2">
+      <div className="flex justify-center items-center mt-6 space-x-2">
         {placeholderImages.map((_, index) => (
           <button
             key={index}
             onClick={() => goToSlide(index)}
-            className={`w-2 h-2 rounded-full transition-all duration-200 ${
+            className={`rounded-full transition-all duration-200 ${
               index === currentIndex 
-                ? 'bg-primary-main w-8' 
-                : 'bg-gray-300 hover:bg-gray-400'
+                ? 'bg-primary-main w-8 h-2' 
+                : 'bg-gray-300 hover:bg-gray-400 w-2 h-2'
             }`}
             aria-label={`Go to slide ${index + 1}`}
           />
         ))}
+        {/* Auto-play indicator */}
+        <div className="ml-4 flex items-center text-xs text-gray-500">
+          {!isPaused && (
+            <svg className="w-4 h-4 mr-1 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+            </svg>
+          )}
+          {isPaused ? 'Paused' : 'Auto-playing'}
+        </div>
       </div>
     </div>
   );

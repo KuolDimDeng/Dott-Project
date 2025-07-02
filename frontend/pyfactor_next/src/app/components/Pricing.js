@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getCurrentUserPricing } from '@/utils/currencyUtils';
 import { getCacheValue } from '@/utils/appCache';
@@ -324,7 +324,7 @@ export default function Pricing() {
                         ? 'bg-primary-main hover:bg-primary-dark text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
                         : plan.name === 'Basic'
                           ? 'bg-white border-2 border-primary-main text-primary-main hover:bg-primary-light hover:text-white'
-                          : 'bg-gray-900 hover:bg-gray-800 text-white'
+                          : 'bg-purple-600 hover:bg-purple-700 text-white'
                     }`}
                   >
                     {plan.cta}
@@ -434,21 +434,6 @@ export default function Pricing() {
         )}
 
 
-        {/* FAQ Link */}
-        <div className="mt-12 text-center">
-          <p className="text-gray-600 mb-4">
-            Have questions about our pricing?
-          </p>
-          <Link
-            href="/faq"
-            className="inline-flex items-center text-primary-main hover:text-primary-dark font-medium"
-          >
-            View Frequently Asked Questions
-            <svg className="ml-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-            </svg>
-          </Link>
-        </div>
       </div>
     </div>
   );
