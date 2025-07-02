@@ -88,47 +88,50 @@ export default function HeroSlideshow() {
   };
 
   return (
-    <div className="relative w-full max-w-6xl mx-auto px-16">
-      <div className="relative h-[400px] flex items-center justify-center">
+    <div className="relative w-full max-w-7xl mx-auto px-8">
+      <div className="relative h-[500px] flex items-center justify-center">
         {/* Previous slide */}
-        <div className="absolute left-0 w-[35%] h-[80%] opacity-60 transform scale-90 -translate-x-8 z-10">
-          <div className="relative w-full h-full rounded-lg overflow-hidden shadow-lg">
+        <div className="absolute left-0 w-[35%] h-[85%] opacity-60 transform scale-95 -translate-x-4 z-10">
+          <div className="relative w-full h-full rounded-lg overflow-hidden shadow-lg bg-gray-100">
             <Image
               src={placeholderImages[getSlideIndex(-1)].src}
               alt={placeholderImages[getSlideIndex(-1)].alt}
               fill
-              className="object-cover"
+              className="object-contain"
+              sizes="(max-width: 768px) 35vw, 35vw"
             />
             <div className="absolute inset-0 bg-black/20"></div>
           </div>
         </div>
 
         {/* Current slide - centered and larger */}
-        <div className="relative w-[60%] h-full z-20">
-          <div className="relative w-full h-full rounded-lg overflow-hidden shadow-2xl">
+        <div className="relative w-[65%] h-full z-20">
+          <div className="relative w-full h-full rounded-lg overflow-hidden shadow-2xl bg-gray-50">
             <Image
               src={placeholderImages[currentIndex].src}
               alt={placeholderImages[currentIndex].alt}
               fill
-              className="object-cover"
+              className="object-contain"
+              sizes="(max-width: 768px) 100vw, 65vw"
               priority
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
-            <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-              <h3 className="text-xl font-semibold mb-1">{placeholderImages[currentIndex].title}</h3>
-              <p className="text-sm opacity-90">{placeholderImages[currentIndex].description}</p>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+            <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
+              <h3 className="text-2xl font-semibold mb-2">{placeholderImages[currentIndex].title}</h3>
+              <p className="text-base opacity-95">{placeholderImages[currentIndex].description}</p>
             </div>
           </div>
         </div>
 
         {/* Next slide */}
-        <div className="absolute right-0 w-[35%] h-[80%] opacity-60 transform scale-90 translate-x-8 z-10">
-          <div className="relative w-full h-full rounded-lg overflow-hidden shadow-lg">
+        <div className="absolute right-0 w-[35%] h-[85%] opacity-60 transform scale-95 translate-x-4 z-10">
+          <div className="relative w-full h-full rounded-lg overflow-hidden shadow-lg bg-gray-100">
             <Image
               src={placeholderImages[getSlideIndex(1)].src}
               alt={placeholderImages[getSlideIndex(1)].alt}
               fill
-              className="object-cover"
+              className="object-contain"
+              sizes="(max-width: 768px) 35vw, 35vw"
             />
             <div className="absolute inset-0 bg-black/20"></div>
           </div>
