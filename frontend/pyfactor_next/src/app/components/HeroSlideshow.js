@@ -6,34 +6,58 @@ import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
 const placeholderImages = [
   {
-    src: 'https://via.placeholder.com/600x400/4F46E5/FFFFFF?text=Dashboard+Overview',
-    alt: 'Dashboard Overview',
-    title: 'Comprehensive Dashboard',
-    description: 'Get a complete overview of your business metrics'
+    src: '/static/images/slideshow/business-overview.png',
+    alt: 'Business Overview Dashboard',
+    title: 'Business Overview',
+    description: 'Monitor your entire business performance from one dashboard'
   },
   {
-    src: 'https://via.placeholder.com/600x400/7C3AED/FFFFFF?text=Invoice+Management',
-    alt: 'Invoice Management',
-    title: 'Professional Invoices',
-    description: 'Create and manage invoices with ease'
+    src: '/static/images/slideshow/point-of-sale.png',
+    alt: 'Point of Sale System',
+    title: 'Point of Sale',
+    description: 'Process sales quickly with our integrated POS system'
   },
   {
-    src: 'https://via.placeholder.com/600x400/EC4899/FFFFFF?text=Inventory+Tracking',
-    alt: 'Inventory Tracking',
-    title: 'Smart Inventory',
-    description: 'Track inventory with barcode scanning'
+    src: '/static/images/slideshow/product.png',
+    alt: 'Product Management',
+    title: 'Product Management',
+    description: 'Organize and track your products with advanced inventory control'
   },
   {
-    src: 'https://via.placeholder.com/600x400/F59E0B/FFFFFF?text=Payment+Processing',
-    alt: 'Payment Processing',
-    title: 'Secure Payments',
-    description: 'Accept payments from customers worldwide'
+    src: '/static/images/slideshow/bar-code.png',
+    alt: 'Barcode Scanning',
+    title: 'Barcode Scanning',
+    description: 'Scan and manage inventory with built-in barcode support'
   },
   {
-    src: 'https://via.placeholder.com/600x400/10B981/FFFFFF?text=Reports+Analytics',
-    alt: 'Reports & Analytics',
-    title: 'Detailed Analytics',
-    description: 'Gain insights with comprehensive reports'
+    src: '/static/images/slideshow/supplier.png',
+    alt: 'Supplier Management',
+    title: 'Supplier Management',
+    description: 'Manage vendor relationships and track purchase orders'
+  },
+  {
+    src: '/static/images/slideshow/chart-of-accounts.png',
+    alt: 'Chart of Accounts',
+    title: 'Financial Accounting',
+    description: 'Complete chart of accounts for professional bookkeeping'
+  },
+  {
+    src: '/static/images/slideshow/tax-settings.png',
+    alt: 'Tax Settings',
+    title: 'Tax Configuration',
+    description: 'Configure tax rates for multiple locations and jurisdictions'
+  },
+  {
+    src: '/static/images/slideshow/tax-filing.png',
+    alt: 'Tax Filing',
+    title: 'Tax Filing Service',
+    description: 'File your business taxes with our integrated filing service'
+  },
+  {
+    src: '/static/images/slideshow/calendar.png',
+    alt: 'Business Calendar',
+    title: 'Smart Calendar',
+    description: 'Track important dates, deadlines, and business events'
   }
 ];
 

@@ -303,49 +303,49 @@ Return ONLY this JSON structure:
       lastError = attemptError;
       console.error(`[Tax Suggestions API] Attempt ${attempt} failed:`, attemptError.message);
     }
-  }
-  
-  // If all attempts failed, use fallback data
-  if (!taxData) {
-    console.warn('[Tax Suggestions API] All attempts failed. Using fallback data.');
-    console.error('[Tax Suggestions API] Last error:', lastError);
-    taxData = {
-      stateSalesTaxRate: 0,
-      localSalesTaxRate: 0,
-      totalSalesTaxRate: 0,
-      corporateIncomeTaxRate: 0,
-      hasProgressiveTax: false,
-      personalIncomeTaxBrackets: [],
-      flatPersonalIncomeTaxRate: 0,
-      healthInsuranceRate: 0,
-      healthInsuranceEmployerRate: 0,
-      socialSecurityRate: 0,
-      socialSecurityEmployerRate: 0,
-      federalPayrollTaxRate: 0,
-      statePayrollTaxRate: 0,
-      stateTaxWebsite: '',
-      stateTaxAddress: '',
-      localTaxWebsite: '',
-      localTaxAddress: '',
-      federalTaxWebsite: 'https://www.irs.gov',
-      filingDeadlines: {
-        salesTax: '',
-        incomeTax: '',
-        payrollTax: '',
-        corporateTax: ''
-      },
-      confidenceScore: 0,
-      notes: 'Unable to parse tax information after 3 attempts. Please enter manually.'
-    };
-  }
-      
-      // Skip cache save and usage tracking for now
-      console.log('[Tax Suggestions API] Skipping cache save and usage tracking');
-      
-      // Log the parsed data for debugging
-      console.log('[Tax Suggestions API] Parsed tax data:', JSON.stringify(taxData, null, 2));
-      
-      return NextResponse.json({
+    }
+    
+    // If all attempts failed, use fallback data
+    if (!taxData) {
+      console.warn('[Tax Suggestions API] All attempts failed. Using fallback data.');
+      console.error('[Tax Suggestions API] Last error:', lastError);
+      taxData = {
+        stateSalesTaxRate: 0,
+        localSalesTaxRate: 0,
+        totalSalesTaxRate: 0,
+        corporateIncomeTaxRate: 0,
+        hasProgressiveTax: false,
+        personalIncomeTaxBrackets: [],
+        flatPersonalIncomeTaxRate: 0,
+        healthInsuranceRate: 0,
+        healthInsuranceEmployerRate: 0,
+        socialSecurityRate: 0,
+        socialSecurityEmployerRate: 0,
+        federalPayrollTaxRate: 0,
+        statePayrollTaxRate: 0,
+        stateTaxWebsite: '',
+        stateTaxAddress: '',
+        localTaxWebsite: '',
+        localTaxAddress: '',
+        federalTaxWebsite: 'https://www.irs.gov',
+        filingDeadlines: {
+          salesTax: '',
+          incomeTax: '',
+          payrollTax: '',
+          corporateTax: ''
+        },
+        confidenceScore: 0,
+        notes: 'Unable to parse tax information after 3 attempts. Please enter manually.'
+      };
+    }
+    
+    // Skip cache save and usage tracking for now
+    console.log('[Tax Suggestions API] Skipping cache save and usage tracking');
+    
+    // Log the parsed data for debugging
+    console.log('[Tax Suggestions API] Parsed tax data:', JSON.stringify(taxData, null, 2));
+    
+    return NextResponse.json({
         suggestedRates: {
           // Sales Tax breakdown
           stateSalesTaxRate: taxData.stateSalesTaxRate,
