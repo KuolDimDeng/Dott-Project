@@ -34,6 +34,7 @@ from .views.confirmation_views import (
     FilingConfirmationViewSet,
     FilingNotificationViewSet
 )
+from .views.tax_suggestions import get_tax_suggestions
 from .efiling.views import EFilingViewSet
 
 router = DefaultRouter()
@@ -71,6 +72,7 @@ router.register(r'abuse-control/blacklist', TaxDataBlacklistViewSet, basename='t
 urlpatterns = [
     path('', include(router.urls)),
     path('calculate/', TaxCalculationView.as_view(), name='tax-calculate'),
+    path('suggestions/', get_tax_suggestions, name='tax-suggestions'),
     path('global-compliance/<str:country_code>/', GlobalComplianceViewSet.as_view({'get': 'global_compliance'}), name='global-compliance'),
     path('currency-info/<str:country_code>/', currency_info, name='currency-info'),
     
