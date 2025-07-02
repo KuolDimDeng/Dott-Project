@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useNotification } from '@/context/NotificationContext';
+import { useSession } from '@/hooks/useSession-v2';
 import Image from 'next/image';
 import { 
   UserIcon,
@@ -36,10 +37,25 @@ const MyAccount = ({ userData }) => {
   
   const router = useRouter();
   const { notifySuccess, notifyError } = useNotification();
+  
+  // Get session data with user information
+  const { session, loading: sessionLoading } = useSession();
 
-  // Fetch profile data on mount
+  // Use session data to set profile data
   useEffect(() => {
-    fetchProfileData();
+    if (session?.user && !sessionLoading) {
+      const sessionUser = session.user;
+      setProfileData(sessionUser);
+      setProfilePhoto(sessionUser.picture || sessionUser.profilePhoto || sessionUser.profile_photo);
+      setLoading(false);
+    } else if (!sessionLoading) {
+      // If no session user data, fetch from API as fallback
+      fetchProfileData();
+    }
+  }, [session, sessionLoading]);
+  
+  // Fetch login sessions when security tab is selected
+  useEffect(() => {
     if (selectedTab === 2) {
       fetchLoginSessions();
     }
@@ -51,8 +67,12 @@ const MyAccount = ({ userData }) => {
       const response = await fetch('/api/user/profile');
       if (response.ok) {
         const data = await response.json();
-        setProfileData(data);
-        setProfilePhoto(data.profilePhoto || data.profile_photo || data.picture);
+        // Handle different response structures
+        const profile = data.profile || data;
+        setProfileData(profile);
+        setProfilePhoto(profile.profilePhoto || profile.profile_photo || profile.picture);
+      } else {
+        notifyError('Failed to load profile data');
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -147,7 +167,7 @@ const MyAccount = ({ userData }) => {
   };
 
   const renderProfileTab = () => {
-    if (loading) {
+    if (loading || sessionLoading) {
       return (
         <div className="flex justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -155,7 +175,12 @@ const MyAccount = ({ userData }) => {
       );
     }
 
-    const user = profileData || userData || {};
+    // Merge all available user data sources, prioritizing session data
+    const user = {
+      ...(userData || {}),
+      ...(profileData || {}),
+      ...(session?.user || {})
+    };
 
     return (
       <div className="space-y-6">
@@ -227,7 +252,11 @@ const MyAccount = ({ userData }) => {
               </label>
               <input
                 type="text"
-                value={user.name || ''}
+                value={
+                  user.name || 
+                  `${user.first_name || user.firstName || user.given_name || ''} ${user.last_name || user.lastName || user.family_name || ''}`.trim() || 
+                  ''
+                }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                 readOnly
               />
