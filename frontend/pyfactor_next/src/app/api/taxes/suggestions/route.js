@@ -6,11 +6,18 @@ import Anthropic from '@anthropic-ai/sdk';
 // Initialize Anthropic client
 let anthropic;
 try {
-  anthropic = new Anthropic({
-    apiKey: process.env.CLAUDE_TAX_API_KEY,
-  });
+  if (!process.env.CLAUDE_TAX_API_KEY) {
+    console.error('[Tax Suggestions API] CLAUDE_TAX_API_KEY is not defined in environment');
+  } else {
+    console.log('[Tax Suggestions API] Initializing Anthropic client with API key');
+    anthropic = new Anthropic({
+      apiKey: process.env.CLAUDE_TAX_API_KEY,
+    });
+    console.log('[Tax Suggestions API] Anthropic client initialized successfully');
+  }
 } catch (error) {
   console.error('[Tax Suggestions API] Failed to initialize Anthropic client:', error);
+  console.error('[Tax Suggestions API] Error details:', error.message);
 }
 
 export async function POST(request) {
@@ -151,6 +158,7 @@ Format your response as JSON. Include all standard fields below, plus any additi
     console.log('[Tax Suggestions API] Full prompt:', prompt);
 
     try {
+      console.log('[Tax Suggestions API] About to call Claude API with model: claude-3-haiku-20240307');
       const message = await anthropic.messages.create({
         model: 'claude-3-haiku-20240307',
         max_tokens: 1000,
@@ -163,6 +171,7 @@ Format your response as JSON. Include all standard fields below, plus any additi
           }
         ]
       });
+      console.log('[Tax Suggestions API] Claude API call successful');
       
       // Parse the response
       const responseText = message.content[0].text;

@@ -640,8 +640,12 @@ export default function TaxSettings({ onNavigate }) {
 
   // Get tax suggestions from Claude API
   const getTaxSuggestions = async () => {
+    console.log('[TaxSettings] Button clicked');
     console.log('[TaxSettings] getTaxSuggestions called');
     console.log('[TaxSettings] Form data:', formData);
+    console.log('[TaxSettings] Tenant ID:', tenantId);
+    console.log('[TaxSettings] Is Loading:', isLoading);
+    console.log('[TaxSettings] Suggestion Cooldown:', suggestionCooldown);
     
     // Field validation
     if (!formData.country || !formData.stateProvince || !formData.city) {
@@ -776,6 +780,13 @@ export default function TaxSettings({ onNavigate }) {
           setAdditionalTaxFields(unknownFields);
           console.log('[TaxSettings] Additional tax fields from API:', unknownFields);
         }
+        
+        // Also log if we got any non-zero values
+        const nonZeroFields = Object.entries(formattedKnownRates).filter(([key, value]) => {
+          const numValue = parseFloat(value);
+          return !isNaN(numValue) && numValue > 0;
+        });
+        console.log('[TaxSettings] Non-zero tax rates found:', nonZeroFields);
       }
       
       // Update usage and set cooldown
