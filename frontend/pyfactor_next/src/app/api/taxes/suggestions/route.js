@@ -82,6 +82,7 @@ IMPORTANT:
 - For countries with progressive personal income tax (like Kenya, USA), provide tax brackets
 - Include ALL relevant taxes for the location, even if not listed in the structure below
 - Any additional country-specific taxes should be included as extra fields
+- YOU MUST RESPOND WITH VALID JSON ONLY - NO ADDITIONAL TEXT BEFORE OR AFTER THE JSON
 
 Please provide comprehensive tax information:
 
@@ -115,7 +116,14 @@ FILING INFORMATION:
 ADDITIONAL TAXES:
 - Include ANY other taxes specific to this location (e.g., VAT, GST, capital gains, wealth tax, etc.)
 
-Format your response as JSON. Include all standard fields below, plus any additional country-specific fields:
+Format your response as JSON. Include all standard fields below, plus any additional country-specific fields.
+
+For Utah specifically, the sales tax rates should be:
+- State: 4.85%
+- Local (Layton): 1.35%
+- Total: 6.2%
+
+Return ONLY this JSON structure:
 {
   "stateSalesTaxRate": number,
   "localSalesTaxRate": number,
@@ -163,7 +171,7 @@ Format your response as JSON. Include all standard fields below, plus any additi
         model: 'claude-3-haiku-20240307',
         max_tokens: 1000,
         temperature: 0,
-        system: "You are a tax expert that provides accurate, up-to-date tax information for businesses worldwide. Always provide current 2024 tax rates. Be specific about state vs federal taxes. Always provide conservative estimates and include disclaimers when appropriate.",
+        system: "You are a tax expert that provides accurate, up-to-date tax information for businesses worldwide. Always provide current 2024 tax rates. Be specific about state vs federal taxes. Always provide conservative estimates and include disclaimers when appropriate. CRITICAL: You must ONLY respond with valid JSON - no explanatory text, no markdown, just the JSON object.",
         messages: [
           {
             role: 'user',
@@ -192,7 +200,16 @@ Format your response as JSON. Include all standard fields below, plus any additi
           console.log('[Tax Suggestions API] Found JSON in code fence');
         }
         
-        // Method 2: Look for raw JSON object
+        // Method 2: Look for JSON block without language specifier
+        if (!jsonString) {
+          const plainCodeFenceMatch = responseText.match(/```\s*\n([\s\S]*?)\n```/);
+          if (plainCodeFenceMatch) {
+            jsonString = plainCodeFenceMatch[1];
+            console.log('[Tax Suggestions API] Found JSON in plain code fence');
+          }
+        }
+        
+        // Method 3: Look for raw JSON object
         if (!jsonString) {
           const jsonMatch = responseText.match(/\{[\s\S]*\}/);
           if (jsonMatch) {
@@ -202,6 +219,8 @@ Format your response as JSON. Include all standard fields below, plus any additi
         }
         
         if (!jsonString) {
+          console.log('[Tax Suggestions API] No JSON pattern found, Claude might have returned plain text');
+          console.log('[Tax Suggestions API] First 1000 chars of response:', responseText.substring(0, 1000));
           throw new Error('No JSON found in response');
         }
         
