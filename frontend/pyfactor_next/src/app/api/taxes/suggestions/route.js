@@ -16,6 +16,7 @@ try {
 export async function POST(request) {
   console.log('[Tax Suggestions API] Request received');
   console.log('[Tax Suggestions API] API Key exists:', !!process.env.CLAUDE_TAX_API_KEY);
+  console.log('[Tax Suggestions API] Anthropic client initialized:', !!anthropic);
   console.log('[Tax Suggestions API] Backend URL:', process.env.NEXT_PUBLIC_BACKEND_URL);
   
   try {
@@ -47,6 +48,14 @@ export async function POST(request) {
     }
     
     const { country, stateProvince, city, businessType } = businessInfo;
+    
+    console.log('[Tax Suggestions API] Input data:', { 
+      country, 
+      stateProvince, 
+      city, 
+      businessType,
+      tenantId 
+    });
     
     // Skip cache and usage checks for now since backend endpoints might not exist
     console.log('[Tax Suggestions API] Skipping cache checks - proceeding directly to Claude API');
@@ -136,6 +145,10 @@ Format your response as JSON. Include all standard fields below, plus any additi
   // Add any additional country-specific fields here
 }`;
 
+    console.log('[Tax Suggestions API] Sending prompt to Claude:');
+    console.log('[Tax Suggestions API] Prompt length:', prompt.length);
+    console.log('[Tax Suggestions API] Full prompt:', prompt);
+
     try {
       const message = await anthropic.messages.create({
         model: 'claude-3-haiku-20240307',
@@ -153,6 +166,7 @@ Format your response as JSON. Include all standard fields below, plus any additi
       // Parse the response
       const responseText = message.content[0].text;
       console.log('[Tax Suggestions API] Claude response length:', responseText.length);
+      console.log('[Tax Suggestions API] FULL Claude response:', responseText);
       console.log('[Tax Suggestions API] First 500 chars of response:', responseText.substring(0, 500));
       
       let taxData;
@@ -183,6 +197,7 @@ Format your response as JSON. Include all standard fields below, plus any additi
         
         console.log('[Tax Suggestions API] JSON found at position:', responseText.indexOf(jsonString));
         console.log('[Tax Suggestions API] JSON length:', jsonString.length);
+        console.log('[Tax Suggestions API] Extracted JSON string:', jsonString);
         
         // Log the area around position 234 for debugging
         if (jsonString.length > 234) {
@@ -220,6 +235,8 @@ Format your response as JSON. Include all standard fields below, plus any additi
           }
         } catch (cleanError) {
           console.error('[Tax Suggestions API] Clean parse also failed:', cleanError);
+          console.error('[Tax Suggestions API] Full response that failed to parse:', responseText);
+          console.warn('[Tax Suggestions API] Using fallback data due to parse failure');
           // Fallback to a structured response
           taxData = {
             stateSalesTaxRate: 0,
