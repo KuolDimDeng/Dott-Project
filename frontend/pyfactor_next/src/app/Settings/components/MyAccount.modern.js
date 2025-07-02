@@ -33,7 +33,13 @@ const MyAccount = ({ userData }) => {
   const [profilePhoto, setProfilePhoto] = useState(null);
   const [sessions, setSessions] = useState([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
-  const [mfaSettings, setMfaSettings] = useState(null);
+  const [mfaSettings, setMfaSettings] = useState({
+    enabled: false,
+    preferredMethod: 'totp',
+    enrollments: [],
+    availableMethods: ['totp', 'email', 'recovery-code'],
+    hasActiveEnrollment: false
+  });
   const [loadingMFA, setLoadingMFA] = useState(true);
   const [updatingMFA, setUpdatingMFA] = useState(false);
   const fileInputRef = useRef(null);
@@ -59,7 +65,9 @@ const MyAccount = ({ userData }) => {
   
   // Fetch login sessions when security tab is selected
   useEffect(() => {
+    console.log('[MyAccount] Selected tab changed to:', selectedTab);
     if (selectedTab === 1) {
+      console.log('[MyAccount] Security tab selected, fetching data...');
       fetchLoginSessions();
       fetchMFASettings();
     }
@@ -168,36 +176,53 @@ const MyAccount = ({ userData }) => {
 
   const fetchMFASettings = async () => {
     try {
-      console.log('[MFA Settings] Starting fetch...');
+      console.log('[MFA Settings] ========== FETCH STARTED ==========');
+      console.log('[MFA Settings] Loading state before:', loadingMFA);
       setLoadingMFA(true);
+      console.log('[MFA Settings] Making API call to /api/user/mfa...');
+      
       const response = await fetch('/api/user/mfa');
-      console.log('[MFA Settings] Response status:', response.status);
+      console.log('[MFA Settings] Response received - status:', response.status);
+      console.log('[MFA Settings] Response ok:', response.ok);
       
       if (response.ok) {
         const data = await response.json();
         console.log('[MFA Settings] Retrieved data:', data);
         setMfaSettings(data);
+        console.log('[MFA Settings] MFA settings state updated');
       } else {
         const errorText = await response.text();
         console.error('[MFA Settings] API error:', response.status, errorText);
+        console.error('[MFA Settings] Error response body:', errorText);
       }
     } catch (error) {
-      console.error('[MFA Settings] Fetch error:', error);
+      console.error('[MFA Settings] ========== FETCH ERROR ==========');
+      console.error('[MFA Settings] Error details:', error);
+      console.error('[MFA Settings] Error message:', error.message);
+      console.error('[MFA Settings] Error stack:', error.stack);
     } finally {
+      console.log('[MFA Settings] ========== FETCH FINISHED ==========');
+      console.log('[MFA Settings] Loading state set to false');
       setLoadingMFA(false);
     }
   };
   
   const handleToggleMFA = async (enabled) => {
     try {
-      console.log('[MFA Toggle] Starting toggle, enabled:', enabled);
+      console.log('[MFA Toggle] ========== TOGGLE STARTED ==========');
+      console.log('[MFA Toggle] Enabled:', enabled);
+      console.log('[MFA Toggle] Current MFA settings:', mfaSettings);
+      console.log('[MFA Toggle] Update state before:', updatingMFA);
+      
       setUpdatingMFA(true);
+      console.log('[MFA Toggle] Update state set to true');
       
       const requestBody = { 
         enabled, 
         preferredMethod: mfaSettings?.preferredMethod || 'totp' 
       };
       console.log('[MFA Toggle] Request body:', requestBody);
+      console.log('[MFA Toggle] Making API call to /api/user/mfa...');
       
       const response = await fetch('/api/user/mfa', {
         method: 'POST',
@@ -205,13 +230,15 @@ const MyAccount = ({ userData }) => {
         body: JSON.stringify(requestBody)
       });
       
-      console.log('[MFA Toggle] Response status:', response.status);
+      console.log('[MFA Toggle] Response received - status:', response.status);
+      console.log('[MFA Toggle] Response ok:', response.ok);
       
       if (response.ok) {
         const data = await response.json();
         console.log('[MFA Toggle] Response data:', data);
         notifySuccess(data.message);
-        fetchMFASettings();
+        console.log('[MFA Toggle] Refreshing MFA settings...');
+        await fetchMFASettings();
         
         if (enabled && !mfaSettings?.hasActiveEnrollment) {
           console.log('[MFA Toggle] Redirecting to Auth0 MFA enrollment...');
@@ -223,13 +250,19 @@ const MyAccount = ({ userData }) => {
       } else {
         const errorText = await response.text();
         console.error('[MFA Toggle] API error:', response.status, errorText);
+        notifyError(`Failed to update MFA settings: ${response.status}`);
         throw new Error('Failed to update MFA settings');
       }
     } catch (error) {
-      console.error('[MFA Toggle] Error:', error);
-      notifyError('Failed to update MFA settings');
+      console.error('[MFA Toggle] ========== ERROR ==========');
+      console.error('[MFA Toggle] Error details:', error);
+      console.error('[MFA Toggle] Error message:', error.message);
+      console.error('[MFA Toggle] Error stack:', error.stack);
+      notifyError(`Failed to update MFA settings: ${error.message}`);
     } finally {
+      console.log('[MFA Toggle] ========== TOGGLE FINISHED ==========');
       setUpdatingMFA(false);
+      console.log('[MFA Toggle] Update state set to false');
     }
   };
   
@@ -438,6 +471,14 @@ const MyAccount = ({ userData }) => {
   const renderSecurityTab = () => {
     const user = profileData || userData || {};
     
+    console.log('[Security Tab] Rendering with states:', {
+      loadingMFA,
+      mfaSettings,
+      updatingMFA,
+      loadingSessions,
+      sessions: sessions?.length || 0
+    });
+    
     return (
       <div className="space-y-6">
         {/* Password Section */}
@@ -474,13 +515,13 @@ const MyAccount = ({ userData }) => {
             <ShieldCheckIcon className="w-6 h-6 text-gray-400" />
           </div>
           
-          {loadingMFA ? (
-            <div className="mt-4 flex items-center space-x-2">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-              <span className="text-sm text-gray-600">Loading MFA settings...</span>
-            </div>
-          ) : (
-            <div className="mt-6 space-y-4">
+          <div className="mt-6 space-y-4">
+            {loadingMFA && (
+              <div className="mb-4 flex items-center space-x-2">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                <span className="text-sm text-gray-600">Loading MFA settings...</span>
+              </div>
+            )}
               {/* MFA Toggle */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
@@ -489,7 +530,13 @@ const MyAccount = ({ userData }) => {
                       type="checkbox"
                       className="sr-only peer"
                       checked={mfaSettings?.enabled || false}
-                      onChange={(e) => handleToggleMFA(e.target.checked)}
+                      onChange={(e) => {
+                        console.log('[MFA Checkbox] Change event triggered');
+                        console.log('[MFA Checkbox] Checked value:', e.target.checked);
+                        console.log('[MFA Checkbox] Current mfaSettings:', mfaSettings);
+                        console.log('[MFA Checkbox] Calling handleToggleMFA...');
+                        handleToggleMFA(e.target.checked);
+                      }}
                       disabled={updatingMFA}
                     />
                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
@@ -583,7 +630,12 @@ const MyAccount = ({ userData }) => {
                   {/* Setup Button */}
                   {!mfaSettings?.hasActiveEnrollment && (
                     <button
-                      onClick={() => handleToggleMFA(true)}
+                      onClick={() => {
+                        console.log('[MFA Setup Button] Button clicked');
+                        console.log('[MFA Setup Button] Current mfaSettings:', mfaSettings);
+                        console.log('[MFA Setup Button] Calling handleToggleMFA(true)...');
+                        handleToggleMFA(true);
+                      }}
                       disabled={updatingMFA}
                       className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
                     >
@@ -593,8 +645,7 @@ const MyAccount = ({ userData }) => {
                 </div>
               )}
             </div>
-          )}
-        </div>
+          </div>
 
         {/* Login History */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">

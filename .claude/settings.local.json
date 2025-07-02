@@ -109,7 +109,17 @@
       "Bash(pnpm start:*)",
       "Bash(pkill:*)",
       "Bash(expo start:*)",
-      "Bash(npx expo install:*)"
+      "Bash(npx expo install:*)",
+      "Bash(/bin/bash -c \"cd /Users/kuoldeng/projectx && pwd && git status\")",
+      "Bash(git --git-dir=/Users/kuoldeng/projectx/.git --work-tree=/Users/kuoldeng/projectx add frontend/pyfactor_next/src/app/api/taxes/suggestions/route.js)",
+      "Bash(/Users/kuoldeng/projectx/deploy_tax_debug.sh:*)",
+      "Bash(./deploy_tax_debug.sh:*)",
+      "Bash(bash:*)",
+      "Bash(git -C /Users/kuoldeng/projectx status)",
+      "Bash(/usr/bin/git -C /Users/kuoldeng/projectx status)",
+      "Bash(sh -c 'cd /Users/kuoldeng/projectx && git status')",
+      "Bash(exec bash -c 'cd /Users/kuoldeng/projectx && git status')",
+      "Bash(ZDOTDIR=/tmp bash -c 'cd /Users/kuoldeng/projectx && git status')"
     ],
     "deny": []
   }

@@ -4,6 +4,13 @@ import { cookies } from 'next/headers';
 import { ManagementClient } from 'auth0';
 
 // Initialize Auth0 Management Client
+console.log('[MFA API] Initializing Auth0 Management Client with:', {
+  domain: process.env.AUTH0_DOMAIN || 'NOT SET',
+  hasM2MClientId: !!(process.env.AUTH0_M2M_CLIENT_ID || process.env.AUTH0_MANAGEMENT_CLIENT_ID),
+  hasM2MSecret: !!(process.env.AUTH0_M2M_CLIENT_SECRET || process.env.AUTH0_MANAGEMENT_CLIENT_SECRET),
+  clientId: process.env.AUTH0_M2M_CLIENT_ID ? 'M2M_CLIENT_ID' : process.env.AUTH0_MANAGEMENT_CLIENT_ID ? 'MANAGEMENT_CLIENT_ID' : 'NONE'
+});
+
 const management = new ManagementClient({
   domain: process.env.AUTH0_DOMAIN,
   clientId: process.env.AUTH0_M2M_CLIENT_ID || process.env.AUTH0_MANAGEMENT_CLIENT_ID,
@@ -16,11 +23,18 @@ const management = new ManagementClient({
  */
 export async function GET(request) {
   try {
+    console.log('[MFA API GET] Starting request...');
     const cookieStore = await cookies();
     const sidCookie = cookieStore.get('sid');
     const sessionTokenCookie = cookieStore.get('session_token');
     
+    console.log('[MFA API GET] Cookies:', { 
+      hasSid: !!sidCookie, 
+      hasSessionToken: !!sessionTokenCookie 
+    });
+    
     if (!sidCookie && !sessionTokenCookie) {
+      console.error('[MFA API GET] No authentication cookies found');
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
     
@@ -48,11 +62,31 @@ export async function GET(request) {
       return NextResponse.json({ error: 'User ID not found' }, { status: 400 });
     }
     
+    console.log('[MFA API GET] Getting user from Auth0 with ID:', auth0UserId);
+    
     // Get user from Auth0
-    const user = await management.getUser({ id: auth0UserId });
+    let user;
+    try {
+      user = await management.getUser({ id: auth0UserId });
+      console.log('[MFA API GET] Auth0 user retrieved:', { 
+        id: user.user_id, 
+        email: user.email,
+        hasMetadata: !!user.user_metadata
+      });
+    } catch (auth0Error) {
+      console.error('[MFA API GET] Auth0 getUser error:', auth0Error);
+      throw auth0Error;
+    }
     
     // Get MFA enrollments
-    const enrollments = await management.getGuardianEnrollments({ id: auth0UserId });
+    let enrollments = [];
+    try {
+      enrollments = await management.getGuardianEnrollments({ id: auth0UserId });
+      console.log('[MFA API GET] MFA enrollments retrieved:', enrollments.length);
+    } catch (enrollmentError) {
+      console.error('[MFA API GET] Auth0 getGuardianEnrollments error:', enrollmentError);
+      // Continue with empty enrollments if this fails
+    }
     
     const mfaSettings = {
       enabled: user.user_metadata?.mfa_enabled || false,

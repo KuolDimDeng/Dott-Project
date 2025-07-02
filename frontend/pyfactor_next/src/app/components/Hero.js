@@ -5,6 +5,7 @@ import * as React from 'react';
 import Image from 'next/image';
 import AuthButton from '@/components/AuthButton';
 import { useTranslation } from 'react-i18next';
+import HeroSlideshow from './HeroSlideshow';
 
 // Fallback image URL - gray placeholder with "Logo" text
 const FALLBACK_LOGO = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTQwIiBoZWlnaHQ9IjQwIiB2aWV3Qm94PSIwIDAgMTQwIDQwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxNDAiIGhlaWdodD0iNDAiIGZpbGw9IiNGMkYyRjIiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzk5OSIgZm9udC1mYW1pbHk9InN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNHB4Ij5Mb2dvPC90ZXh0Pjwvc3ZnPg==';
@@ -33,20 +34,8 @@ export default function Hero() {
             </span>
           </h1>
           
-          <div className="mt-10 max-w-3xl mx-auto">
-            <div className="sm:flex sm:justify-center">
-              <div className="relative w-full sm:max-w-md">
-                <Image
-                  src="/static/images/Office-Working-1--Streamline-Brooklyn.png"
-                  alt={t('heroImageAlt', 'Business Management Software')}
-                  width={500}
-                  height={350}
-                  loading="eager"
-                  className="w-full h-auto object-cover rounded-lg shadow-2xl"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-white/50 via-transparent to-transparent rounded-lg"></div>
-              </div>
-            </div>
+          <div className="mt-10">
+            <HeroSlideshow />
           </div>
           
           <p className="mt-12 text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
