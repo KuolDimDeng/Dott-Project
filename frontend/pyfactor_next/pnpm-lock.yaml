@@ -86,6 +86,9 @@ importers:
       '@types/react-datepicker':
         specifier: ^7.0.0
         version: 7.0.0(react-dom@18.3.1)(react@18.3.1)
+      auth0:
+        specifier: ^4.27.0
+        version: 4.27.0
       autoprefixer:
         specifier: ^10
         version: 10.4.21(postcss@8.5.3)
@@ -5765,6 +5768,15 @@ packages:
   /attr-accept@2.2.5:
     resolution: {integrity: sha512-0bDNnY/u6pPwHDMoF0FieU354oBi0a8rD9FcsLwzcGWbc8KS8KPIi7y+s13OlVY+gMWc/9xEMUgNE6Qm8ZllYQ==}
     engines: {node: '>=4'}
+    dev: false
+
+  /auth0@4.27.0:
+    resolution: {integrity: sha512-4FGgjzKCH/f7rQLQVR5dM30asjOObeW3PyHa8bQrS4rKkuv22JoNxox26fb1FZ3hI4zEgbVbPm9x7pHrljZzrw==}
+    engines: {node: '>=18'}
+    dependencies:
+      jose: 4.15.9
+      undici-types: 6.21.0
+      uuid: 9.0.1
     dev: false
 
   /autoprefixer@10.4.21(postcss@8.5.3):
