@@ -6,8 +6,8 @@ import { ManagementClient } from 'auth0';
 // Initialize Auth0 Management Client
 const management = new ManagementClient({
   domain: process.env.AUTH0_DOMAIN,
-  clientId: process.env.AUTH0_M2M_CLIENT_ID,
-  clientSecret: process.env.AUTH0_M2M_CLIENT_SECRET,
+  clientId: process.env.AUTH0_M2M_CLIENT_ID || process.env.AUTH0_MANAGEMENT_CLIENT_ID,
+  clientSecret: process.env.AUTH0_M2M_CLIENT_SECRET || process.env.AUTH0_MANAGEMENT_CLIENT_SECRET,
   scope: 'read:users update:users read:users_app_metadata update:users_app_metadata'
 });
 
