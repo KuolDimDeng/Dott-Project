@@ -807,7 +807,7 @@ class TaxFilingLocation(models.Model):
         unique_together = ['country', 'state_province', 'city']
         indexes = [
             models.Index(fields=['country', 'state_province']),
-            models.Index(fields=['last_updated']),
+            models.Index(fields=['last_updated_at']),
             models.Index(fields=['lookup_count']),
         ]
         
@@ -824,7 +824,7 @@ class TaxFilingLocation(models.Model):
         """Check if cache is older than 90 days."""
         from django.utils import timezone
         from datetime import timedelta
-        return self.last_updated < timezone.now() - timedelta(days=90)
+        return self.last_updated_at < timezone.now() - timedelta(days=90)
 
 
 class TaxReminder(TenantAwareModel):
