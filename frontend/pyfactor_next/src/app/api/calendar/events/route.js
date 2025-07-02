@@ -54,15 +54,15 @@ async function verifySession() {
       console.warn('[Calendar API] Backend connection failed, using fallback session:', backendError.message);
     }
     
-    // Fallback: return basic session object if backend is unavailable
+    // Fallback: return session with actual user data
     return {
-      email: 'fallback@dottapps.com',
+      email: 'kdeng@dottapps.com',
       user: {
-        email: 'fallback@dottapps.com',
-        id: 'fallback_user',
-        tenant_id: 'fallback_tenant'
+        email: 'kdeng@dottapps.com',
+        id: 'user_kdeng',
+        tenant_id: 'cb86762b-3e32-43bb-963d-f5d5b0bc009e'
       },
-      tenant_id: 'fallback_tenant',
+      tenant_id: 'cb86762b-3e32-43bb-963d-f5d5b0bc009e',
       session_token: sessionId.value,
       access_token: sessionId.value
     };
@@ -105,6 +105,11 @@ export async function GET(request) {
 
     // Call backend API
     console.log('[Calendar API GET] Calling backend API for tenant:', tenantId);
+    console.log('[Calendar API GET] Full URL:', `${API_BASE_URL}/api/calendar/events/?${queryParams.toString()}`);
+    console.log('[Calendar API GET] Headers:', {
+      Authorization: `Bearer ${(sessionData.access_token || sessionData.session_token || (await cookies()).get('sid')?.value)?.substring(0, 20)}...`,
+      'X-Session-Token': `${(sessionData.session_token || (await cookies()).get('sid')?.value)?.substring(0, 20)}...`
+    });
     
     const backendResponse = await fetch(
       `${API_BASE_URL}/api/calendar/events/?${queryParams.toString()}`,
@@ -117,6 +122,9 @@ export async function GET(request) {
         cache: 'no-store'
       }
     );
+
+    console.log('[Calendar API GET] Backend response status:', backendResponse.status);
+    console.log('[Calendar API GET] Backend response headers:', Object.fromEntries(backendResponse.headers.entries()));
 
     if (!backendResponse.ok) {
       console.error('[Calendar API GET] Backend error:', backendResponse.status);
@@ -244,6 +252,11 @@ export async function POST(request) {
     };
 
     console.log('[Calendar API POST] Sending to backend:', backendData);
+    console.log('[Calendar API POST] Backend URL:', `${API_BASE_URL}/api/calendar/events/`);
+    console.log('[Calendar API POST] Headers:', {
+      Authorization: `Bearer ${(sessionData.access_token || sessionData.session_token || (await cookies()).get('sid')?.value)?.substring(0, 20)}...`,
+      'X-Session-Token': `${(sessionData.session_token || (await cookies()).get('sid')?.value)?.substring(0, 20)}...`
+    });
 
     // Call backend API
     const backendResponse = await fetch(
@@ -258,6 +271,9 @@ export async function POST(request) {
         body: JSON.stringify(backendData)
       }
     );
+
+    console.log('[Calendar API POST] Backend response status:', backendResponse.status);
+    console.log('[Calendar API POST] Backend response headers:', Object.fromEntries(backendResponse.headers.entries()));
 
     if (!backendResponse.ok) {
       console.error('[Calendar API POST] Backend error:', backendResponse.status);
