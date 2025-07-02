@@ -56,29 +56,64 @@ export default function HeroSlideshow() {
     setCurrentIndex(index);
   };
 
-  const currentImage = placeholderImages[currentIndex];
+  const getSlideIndex = (offset) => {
+    const newIndex = currentIndex + offset;
+    if (newIndex < 0) return placeholderImages.length + newIndex;
+    if (newIndex >= placeholderImages.length) return newIndex - placeholderImages.length;
+    return newIndex;
+  };
 
   return (
-    <div className="relative w-full max-w-4xl mx-auto">
-      <div className="relative aspect-[3/2] overflow-hidden rounded-lg shadow-2xl bg-gray-100">
-        <Image
-          src={currentImage.src}
-          alt={currentImage.alt}
-          fill
-          className="object-cover"
-          priority={currentIndex === 0}
-        />
-        
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
-        
-        <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-          <h3 className="text-xl font-semibold mb-1">{currentImage.title}</h3>
-          <p className="text-sm opacity-90">{currentImage.description}</p>
+    <div className="relative w-full max-w-6xl mx-auto px-16">
+      <div className="relative h-[400px] flex items-center justify-center">
+        {/* Previous slide */}
+        <div className="absolute left-0 w-[35%] h-[80%] opacity-60 transform scale-90 -translate-x-8 z-10">
+          <div className="relative w-full h-full rounded-lg overflow-hidden shadow-lg">
+            <Image
+              src={placeholderImages[getSlideIndex(-1)].src}
+              alt={placeholderImages[getSlideIndex(-1)].alt}
+              fill
+              className="object-cover"
+            />
+            <div className="absolute inset-0 bg-black/20"></div>
+          </div>
         </div>
 
+        {/* Current slide - centered and larger */}
+        <div className="relative w-[60%] h-full z-20">
+          <div className="relative w-full h-full rounded-lg overflow-hidden shadow-2xl">
+            <Image
+              src={placeholderImages[currentIndex].src}
+              alt={placeholderImages[currentIndex].alt}
+              fill
+              className="object-cover"
+              priority
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+            <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
+              <h3 className="text-xl font-semibold mb-1">{placeholderImages[currentIndex].title}</h3>
+              <p className="text-sm opacity-90">{placeholderImages[currentIndex].description}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Next slide */}
+        <div className="absolute right-0 w-[35%] h-[80%] opacity-60 transform scale-90 translate-x-8 z-10">
+          <div className="relative w-full h-full rounded-lg overflow-hidden shadow-lg">
+            <Image
+              src={placeholderImages[getSlideIndex(1)].src}
+              alt={placeholderImages[getSlideIndex(1)].alt}
+              fill
+              className="object-cover"
+            />
+            <div className="absolute inset-0 bg-black/20"></div>
+          </div>
+        </div>
+
+        {/* Navigation buttons */}
         <button
           onClick={goToPrevious}
-          className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 p-2 rounded-full shadow-lg transition-all duration-200 hover:scale-110"
+          className="absolute left-0 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 p-2 rounded-full shadow-lg transition-all duration-200 hover:scale-110 z-30"
           aria-label="Previous slide"
         >
           <ChevronLeftIcon className="h-6 w-6" />
@@ -86,14 +121,15 @@ export default function HeroSlideshow() {
 
         <button
           onClick={goToNext}
-          className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 p-2 rounded-full shadow-lg transition-all duration-200 hover:scale-110"
+          className="absolute right-0 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 p-2 rounded-full shadow-lg transition-all duration-200 hover:scale-110 z-30"
           aria-label="Next slide"
         >
           <ChevronRightIcon className="h-6 w-6" />
         </button>
       </div>
 
-      <div className="flex justify-center mt-4 space-x-2">
+      {/* Dot indicators */}
+      <div className="flex justify-center mt-6 space-x-2">
         {placeholderImages.map((_, index) => (
           <button
             key={index}

@@ -31,16 +31,8 @@ export default function Hero() {
             </span>
           </h1>
           
-          <div className="mt-10">
-            <HeroSlideshow />
-          </div>
-          
-          <p className="mt-12 text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            {t('heroDescription', 'Run your international business with one powerful platform. Multi-currency invoicing, regional tax compliance, advanced inventory with barcode scanning, and local payment gateways - everything you need to succeed globally.')}
-          </p>
-          
           {/* Key Benefits */}
-          <div className="mt-8 flex flex-wrap justify-center gap-4 text-sm text-gray-600">
+          <div className="mt-6 flex flex-wrap justify-center gap-4 text-sm text-gray-600">
             <div className="flex items-center">
               <svg className="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -60,6 +52,14 @@ export default function Hero() {
               Accept card payments from customers*
             </div>
           </div>
+          
+          <div className="mt-10">
+            <HeroSlideshow />
+          </div>
+          
+          <p className="mt-12 text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+            {t('heroDescription', 'Run your international business with one powerful platform. Multi-currency invoicing, regional tax compliance, advanced inventory with barcode scanning, and local payment gateways - everything you need to succeed globally.')}
+          </p>
           
           <div className="mt-10">
             <AuthButton theme="light" />
