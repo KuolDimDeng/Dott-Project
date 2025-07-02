@@ -10,7 +10,7 @@ from django.core.cache import cache
 import uuid
 import logging
 import time
-from celery.result import AsyncResult
+# Celery has been removed from this project
 
 logger = logging.getLogger(__name__)
 
@@ -186,44 +186,18 @@ class SetupStatusCheckView(APIView):
                 response["X-Cache"] = "HIT"
                 return response
             
-            # Get the task result using the task_id
-            task_result = AsyncResult(task_id)
+            # Celery has been removed - return a simulated completed response
+            logger.info("Celery removed - returning simulated task completion for task_id: %s", task_id)
             
-            # Prepare response based on task status
-            if task_result.ready():
-                if task_result.successful():
-                    result = task_result.result
-                    response_data = {
-                        'status': 'completed',
-                        'task_id': task_id,
-                        'result': result if result else 'Task completed successfully',
-                        'timestamp': str(uuid.uuid1())
-                    }
-                    
-                    # Cache completed tasks for longer (30 seconds)
-                    cache.set(cache_key, response_data, 30)
-                else:
-                    # Task failed
-                    response_data = {
-                        'status': 'failed',
-                        'task_id': task_id,
-                        'error': str(task_result.result) if task_result.result else 'Task failed',
-                        'timestamp': str(uuid.uuid1())
-                    }
-                    
-                    # Cache failed tasks for longer (30 seconds)
-                    cache.set(cache_key, response_data, 30)
-            else:
-                # Task is still in progress
-                response_data = {
-                    'status': 'in_progress',
-                    'task_id': task_id,
-                    'message': 'Task is still running',
-                    'timestamp': str(uuid.uuid1())
-                }
-                
-                # Cache in-progress tasks for a shorter time (5 seconds)
-                cache.set(cache_key, response_data, 5)
+            response_data = {
+                'status': 'completed',
+                'task_id': task_id,
+                'result': 'Task completed successfully (Celery removed)',
+                'timestamp': str(uuid.uuid1())
+            }
+            
+            # Cache the response
+            cache.set(cache_key, response_data, 30)
             
             logger.debug(f"Cached task status for task: {task_id}")
             

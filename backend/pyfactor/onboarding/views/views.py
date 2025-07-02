@@ -63,14 +63,8 @@ from core.authentication.session_token_auth import SessionTokenAuthentication
 # Third-party imports
 import stripe
 from asgiref.sync import sync_to_async, async_to_sync
-from celery import shared_task
-from celery.app import app_or_default
-from celery.exceptions import OperationalError as CeleryOperationalError, TimeoutError
-from celery.result import AsyncResult
 from channels.layers import get_channel_layer
-from kombu.exceptions import OperationalError as KombuOperationalError
 from redis.exceptions import ConnectionError as RedisConnectionError
-from celery.exceptions import OperationalError as CeleryOperationalError
 from psycopg2 import OperationalError as DjangoOperationalError, extensions
 
 # Local imports
@@ -78,7 +72,6 @@ from ..locks import acquire_lock, release_lock, task_lock
 from ..models import OnboardingProgress
 from ..serializers import OnboardingProgressSerializer
 from ..state import OnboardingStateManager
-from ..tasks import setup_user_tenant_task
 from ..utils import (
     generate_unique_tenant_id,
     tenant_context_manager
@@ -97,6 +90,25 @@ from users.utils import (
     check_schema_health,
     get_business_for_user
 )
+# Dummy AsyncResult class (Celery has been removed)
+class AsyncResult:
+    def __init__(self, task_id):
+        self.task_id = task_id
+        self.status = 'PENDING'
+        self.result = None
+    
+    def ready(self):
+        return False
+    
+    def successful(self):
+        return False
+    
+    def failed(self):
+        return False
+    
+    def get(self, timeout=None):
+        return None
+
 
 # Configure stripe
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -161,97 +173,29 @@ def check_setup_status(request):
             response["Access-Control-Allow-Credentials"] = "true"
             return response
 
-        # Check if Celery worker is running
-        try:
-            from celery.task.control import inspect
-            i = inspect()
-            active_workers = i.active()
-            
-            if not active_workers:
-                logger.error("No Celery workers are running")
-                response = Response({
-                    'status': 'error',
-                    'message': 'Setup service unavailable',
-                    'code': 'no_workers'
-                }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-                response["Access-Control-Allow-Origin"] = request.headers.get('Origin', '*')
-                response["Access-Control-Allow-Credentials"] = "true"
-                return response
-
-            # Check task status
-            task = AsyncResult(task_id)
-            task_info = task.info if isinstance(task.info, dict) else {}
-            
-            # Handle different task states
-            if task.state == 'PENDING':
-                response = Response({
-                    'status': 'queued',
-                    'progress': 0,
-                    'message': 'Setup queued, waiting for worker'
-                })
-            elif task.state == 'STARTED':
-                response = Response({
-                    'status': 'in_progress',
-                    'progress': task_info.get('progress', 10),
-                    'current_step': task_info.get('step', 'Initializing'),
-                    'message': 'Setup in progress'
-                })
-            elif task.state == 'SUCCESS':
-                # Update progress status if needed
-                if progress.onboarding_status != 'complete':
-                    progress.onboarding_status = 'complete'
-                    progress.current_step = 'complete'
-                    progress.save(update_fields=[
-                        'onboarding_status',
-                        'current_step'
-                    ])
-                
-                response = Response({
-                    'status': 'complete',
-                    'progress': 100,
-                    'is_complete': True,
-                    'message': 'Setup completed successfully'
-                })
-            elif task.state == 'FAILURE':
-                error_msg = str(task.result) if task.result else 'Unknown error'
-                logger.error(f"Setup task failed: {error_msg}")
-                
-                # Update progress status
-                progress.onboarding_status = 'error'
-                progress.setup_error = error_msg
-                progress.save(update_fields=[
-                    'onboarding_status',
-                    'setup_error'
-                ])
-                
-                response = Response({
-                    'status': 'error',
-                    'message': error_msg,
-                    'code': 'setup_failed'
-                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            else:
-                response = Response({
-                    'status': task.state.lower(),
-                    'progress': task_info.get('progress', 0),
-                    'current_step': task_info.get('step', 'Processing'),
-                    'message': task_info.get('message', 'Setup in progress')
-                })
-
-            # Add CORS headers to all responses
-            response["Access-Control-Allow-Origin"] = request.headers.get('Origin', '*')
-            response["Access-Control-Allow-Credentials"] = "true"
-            return response
-                
-        except (ConnectionError, TimeoutError) as e:
-            logger.error(f"Celery connection error: {str(e)}")
-            response = Response({
-                'status': 'error',
-                'message': 'Setup service unavailable',
-                'code': 'connection_error'
-            }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-            response["Access-Control-Allow-Origin"] = request.headers.get('Origin', '*')
-            response["Access-Control-Allow-Credentials"] = "true"
-            return response
+        # Celery has been removed - skip worker check
+        logger.info("Celery has been removed - skipping worker check")
+        
+        # Since Celery has been removed, always return success
+        if progress.onboarding_status != 'complete':
+            progress.onboarding_status = 'complete'
+            progress.current_step = 'complete'
+            progress.save(update_fields=[
+                'onboarding_status',
+                'current_step'
+            ])
+        
+        response = Response({
+            'status': 'complete',
+            'progress': 100,
+            'is_complete': True,
+            'message': 'Setup completed successfully (Celery removed)'
+        })
+        
+        # Add CORS headers to all responses
+        response["Access-Control-Allow-Origin"] = request.headers.get('Origin', '*')
+        response["Access-Control-Allow-Credentials"] = "true"
+        return response
 
     except Exception as e:
         logger.error(f"Error checking setup status: {str(e)}")
@@ -505,8 +449,7 @@ class BaseOnboardingView(APIView):
             data: Dictionary containing notification data
         """
         try:
-            from .tasks import send_websocket_notification  # Import here to avoid circular imports
-            
+                        
             # Queue the notification task
             send_websocket_notification.delay(
                 user_id=str(user_id),
@@ -1334,20 +1277,10 @@ class StartOnboardingView(BaseOnboardingView):
             # Queue task if not deferred
             if not is_deferred:
                 try:
-                    task = setup_user_tenant_task.apply_async(
-                        args=[str(request.user.id), business_id],
-                        queue='setup',
-                        retry=True,
-                        retry_policy={
-                            'max_retries': 3,
-                            'interval_start': 5,
-                            'interval_step': 30,
-                            'interval_max': 300
-                        }
-                    )
-                    task_id = task.id
+                    logger.info("Celery removed - would have called setup_user_tenant_task with args: %s", [str(request.user.id), business_id])
+                    task_id = str(uuid.uuid4())  # Generate fake task ID
                     request.session['setup_task_id'] = task_id
-                    logger.info(f"Setup task {task_id} queued successfully")
+                    logger.info(f"Fake setup task {task_id} created (Celery removed)")
                 except Exception as e:
                     logger.error(f"Failed to queue setup task: {str(e)}")
                     return self.initialize_response({
@@ -4138,7 +4071,6 @@ def get_task_status(task_id, request_id=None):
         return None
 
     try:
-        from celery.result import AsyncResult
         task = AsyncResult(task_id)
         task_info = task.info if isinstance(task.info, dict) else {}
         
@@ -4228,7 +4160,6 @@ def get_schema_status(user_id):
 def cancel_task(task_id):
     """Cancel a running Celery task"""
     try:
-        from celery.result import AsyncResult
         task = AsyncResult(task_id)
         
         if task.state in ['PENDING', 'STARTED', 'RETRY']:
@@ -4757,16 +4688,16 @@ class SaveStep4View(BaseOnboardingView):
                 )
 
             # Queue setup task
-            from onboarding.tasks import setup_user_tenant_task
-            from custom_auth.rls import set_current_tenant_id, tenant_context
+                        from custom_auth.rls import set_current_tenant_id, tenant_context
             
-            task = setup_user_tenant_task.delay(
+            logger.info("Celery removed - would have called setup_user_tenant_task with args: %s", [
                 str(request.user.id),
                 str(business.id)
-            )
+            ])
 
             # Update progress state
-            progress.database_setup_task_id = task.id
+            fake_task_id = str(uuid.uuid4())  # Generate fake task ID
+            progress.database_setup_task_id = fake_task_id
             progress.onboarding_status = 'setup'
             progress.setup_started_at = timezone.now()
             

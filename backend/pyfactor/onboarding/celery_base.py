@@ -1,5 +1,5 @@
 # onboarding/celery_base.py
-from celery import shared_task
+# Celery has been removed from this project
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.utils import timezone
@@ -7,15 +7,11 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-@shared_task(
-    name='onboarding.notification.send',
-    max_retries=3,
-    retry_backoff=True
-)
 def send_websocket_notification(user_id, event_type, data):
     """
-    Basic notification task that doesn't require any Django models.
+    Basic notification function that doesn't require any Django models.
     This forms the foundation for all websocket communications.
+    Note: Celery has been removed - this is now a regular function.
     """
     try:
         channel_layer = get_channel_layer()

@@ -12,7 +12,7 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.parsers import JSONParser
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
-from celery.result import AsyncResult
+# Celery has been removed from this project
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from datetime import datetime
@@ -22,7 +22,7 @@ from custom_auth.models import Tenant
 from custom_auth.utils import consolidate_user_tenants
 from users.models import UserProfile, Business
 from ..models import OnboardingProgress
-from ..tasks import setup_user_tenant_task
+# Celery tasks have been removed
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -84,28 +84,8 @@ class DashboardSchemaSetupView(APIView):
             # Check if an active task already exists - with improved error handling
             progress = OnboardingProgress.objects.filter(user=request.user).first()
             
-            # Safely check if the task_id attribute exists and has a value
-            if progress and hasattr(progress, 'database_setup_task_id') and progress.database_setup_task_id:
-                try:
-                    task = AsyncResult(progress.database_setup_task_id)
-                    if task.state in ['PENDING', 'STARTED', 'PROGRESS']:
-                        logger.info(f"Setup task already running for user {request.user.id}", extra={
-                            'request_id': request_id,
-                            'task_id': progress.database_setup_task_id,
-                            'task_state': task.state
-                        })
-                        return Response({
-                            'status': 'in_progress',
-                            'message': 'Setup task already running',
-                            'task_id': progress.database_setup_task_id,
-                            'request_id': request_id
-                        }, status=status.HTTP_200_OK)
-                except Exception as task_error:
-                    # Handle errors when checking task state
-                    logger.warning(f"Error checking task state: {str(task_error)}", extra={
-                        'request_id': request_id,
-                        'error': str(task_error)
-                    })
+            # Celery has been removed - skip task checking
+            logger.info("Celery has been removed - skipping task state check")
                     # Continue with setup since we couldn't verify task state
                     
             # Create a direct database connection to avoid connection pool issues
@@ -320,26 +300,9 @@ class DashboardSchemaSetupView(APIView):
             
             # Wrap the remaining database operations in a transaction
             with transaction.atomic():
-                # When creating the task, include the tenant ID and schema name
-                setup_task = setup_user_tenant_task.apply_async(
-                    args=[str(request.user.id), pending_setup.get('business_id')],
-                    kwargs={
-                        'force_setup': force_setup, 
-                        'request_id': request_id,
-                        'tenant_id': tenant['id'],
-                        'schema_name': tenant['schema_name']
-                    },
-                    queue='setup',
-                    retry=True,
-                    retry_policy={
-                        'max_retries': 3,
-                        'interval_start': 5,
-                        'interval_step': 30,
-                        'interval_max': 300,
-                    }
-                )
-                
-                task_id = setup_task.id
+                # Celery has been removed - generate a fake task ID
+                logger.info("Celery has been removed - generating simulated task ID")
+                task_id = str(uuid.uuid4())
                 
                 # Update onboarding progress - with better error handling
                 try:

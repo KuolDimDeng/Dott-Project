@@ -1,5 +1,5 @@
 # onboarding/tasks_base.py
-from celery import shared_task
+# Celery has been removed from this project
 from django.utils import timezone
 import logging
 from asgiref.sync import async_to_sync
@@ -7,17 +7,11 @@ from channels.layers import get_channel_layer
 
 logger = logging.getLogger(__name__)
 
-@shared_task(
-    name='base.send_notification',
-    max_retries=3,
-    default_retry_delay=5,
-    autoretry_for=(Exception,),
-    retry_backoff=True
-)
 def send_notification_task(user_id, message_type, data):
     """
-    Base notification task that handles WebSocket communication without model dependencies.
-    This task serves as a foundation for all notification-related operations.
+    Base notification function that handles WebSocket communication without model dependencies.
+    This function serves as a foundation for all notification-related operations.
+    Note: Celery has been removed - this is now a regular function.
     
     Args:
         user_id: The ID of the user to notify
