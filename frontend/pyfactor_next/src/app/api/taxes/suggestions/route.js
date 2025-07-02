@@ -224,6 +224,13 @@ Format your response as JSON. Include all standard fields below, plus any additi
         
         taxData = JSON.parse(jsonString);
         console.log('[Tax Suggestions API] Successfully parsed JSON');
+        console.log('[Tax Suggestions API] Parsed data sample:', {
+          stateSalesTaxRate: taxData.stateSalesTaxRate,
+          localSalesTaxRate: taxData.localSalesTaxRate,
+          totalSalesTaxRate: taxData.totalSalesTaxRate,
+          hasProgressiveTax: taxData.hasProgressiveTax,
+          confidenceScore: taxData.confidenceScore
+        });
       } catch (parseError) {
         console.error('[Tax Suggestions API] Error parsing Claude response:', parseError);
         console.error('[Tax Suggestions API] Parse error details:', parseError.message);
