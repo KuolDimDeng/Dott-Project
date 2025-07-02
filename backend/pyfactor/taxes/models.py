@@ -173,7 +173,7 @@ class TaxFiling(AuditMixin, TenantAwareModel):
     class Meta:
         app_label = 'taxes'
         db_table = 'tax_filings'
-        ordering = ['-created']
+        ordering = ['-created_at']
         indexes = [
             models.Index(fields=['tenant_id', 'status']),
             models.Index(fields=['tenant_id', 'tax_type']),
@@ -498,13 +498,13 @@ class TaxDataEntryLog(TenantAwareModel):
     class Meta:
         app_label = 'taxes'
         indexes = [
-            models.Index(fields=['tenant_id', 'control_type', 'created']),
-            models.Index(fields=['user', 'created']),
-            models.Index(fields=['status', 'created']),
+            models.Index(fields=['tenant_id', 'control_type', 'created_at']),
+            models.Index(fields=['user', 'created_at']),
+            models.Index(fields=['status', 'created_at']),
         ]
         
     def __str__(self):
-        return f"{self.entry_type} - {self.control_type} - {self.status} - {self.created}"
+        return f"{self.entry_type} - {self.control_type} - {self.status} - {self.created_at}"
 
 
 class TaxDataAbuseReport(TenantAwareModel):
@@ -538,7 +538,7 @@ class TaxDataAbuseReport(TenantAwareModel):
     
     class Meta:
         app_label = 'taxes'
-        ordering = ['-created']
+        ordering = ['-created_at']
         
     def __str__(self):
         return f"{self.report_type} - {self.severity} - {self.status}"
@@ -1069,12 +1069,12 @@ class TaxSignatureRequest(TenantAwareModel):
     class Meta:
         app_label = 'taxes'
         db_table = 'tax_signature_requests'
-        ordering = ['-created']
+        ordering = ['-created_at']
         indexes = [
             models.Index(fields=['tenant_id', 'status']),
             models.Index(fields=['tenant_id', 'tax_form_type']),
             models.Index(fields=['provider_name', 'provider_request_id']),
-            models.Index(fields=['created']),
+            models.Index(fields=['created_at']),
         ]
     
     def __str__(self):
@@ -1133,7 +1133,7 @@ class TaxSignatureSigner(models.Model):
     class Meta:
         app_label = 'taxes'
         db_table = 'tax_signature_signers'
-        ordering = ['signing_order', 'created']
+        ordering = ['signing_order', 'created_at']
         unique_together = ('signature_request', 'email')
         indexes = [
             models.Index(fields=['signature_request', 'status']),
@@ -1373,8 +1373,8 @@ class FilingNotification(TenantAwareModel):
         db_table = 'tax_filing_notifications'
         indexes = [
             models.Index(fields=['confirmation', 'notification_type']),
-            models.Index(fields=['status', 'created']),
-            models.Index(fields=['tenant_id', 'created']),
+            models.Index(fields=['status', 'created_at']),
+            models.Index(fields=['tenant_id', 'created_at']),
         ]
     
     def __str__(self):
@@ -2439,7 +2439,7 @@ class YearEndTaxGeneration(TenantAwareModel):
         db_table = 'tax_year_end_generation'
         indexes = [
             models.Index(fields=['tenant_id', 'tax_year']),
-            models.Index(fields=['status', 'created']),
+            models.Index(fields=['status', 'created_at']),
         ]
         
     def __str__(self):
