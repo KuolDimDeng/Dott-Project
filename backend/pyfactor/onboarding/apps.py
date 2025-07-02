@@ -6,6 +6,5 @@ class OnboardingConfig(AppConfig):
     name = 'onboarding'
 
     def ready(self):
-        # Import tasks to register them with Celery
-        from . import tasks
-        from . import task_utils
+        # Celery has been removed from this project
+        pass
