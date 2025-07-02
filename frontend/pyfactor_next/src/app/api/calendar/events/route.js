@@ -104,20 +104,20 @@ export async function GET(request) {
     if (eventType) queryParams.append('event_type', eventType);
 
     // Call backend API
+    const sessionToken = sessionData.session_token || sessionData.access_token || (await cookies()).get('sid')?.value;
     console.log('[Calendar API GET] Calling backend API for tenant:', tenantId);
     console.log('[Calendar API GET] Full URL:', `${API_BASE_URL}/api/calendar/events/?${queryParams.toString()}`);
     console.log('[Calendar API GET] Headers:', {
-      Authorization: `Bearer ${(sessionData.access_token || sessionData.session_token || (await cookies()).get('sid')?.value)?.substring(0, 20)}...`,
-      'X-Session-Token': `${(sessionData.session_token || (await cookies()).get('sid')?.value)?.substring(0, 20)}...`
+      Authorization: `Session ${sessionToken?.substring(0, 20)}...`,
+      Cookie: `session_token=${sessionToken?.substring(0, 20)}...`
     });
-    
     const backendResponse = await fetch(
       `${API_BASE_URL}/api/calendar/events/?${queryParams.toString()}`,
       {
         headers: {
-          'Authorization': `Bearer ${sessionData.access_token || sessionData.session_token || (await cookies()).get('sid')?.value}`,
-          'Content-Type': 'application/json',
-          'X-Session-Token': sessionData.session_token || (await cookies()).get('sid')?.value
+          'Authorization': `Session ${sessionToken}`,
+          'Cookie': `session_token=${sessionToken}`,
+          'Content-Type': 'application/json'
         },
         cache: 'no-store'
       }
@@ -253,20 +253,21 @@ export async function POST(request) {
 
     console.log('[Calendar API POST] Sending to backend:', backendData);
     console.log('[Calendar API POST] Backend URL:', `${API_BASE_URL}/api/calendar/events/`);
-    console.log('[Calendar API POST] Headers:', {
-      Authorization: `Bearer ${(sessionData.access_token || sessionData.session_token || (await cookies()).get('sid')?.value)?.substring(0, 20)}...`,
-      'X-Session-Token': `${(sessionData.session_token || (await cookies()).get('sid')?.value)?.substring(0, 20)}...`
-    });
-
+    
     // Call backend API
+    const sessionToken = sessionData.session_token || sessionData.access_token || (await cookies()).get('sid')?.value;
+    console.log('[Calendar API POST] Headers:', {
+      Authorization: `Session ${sessionToken?.substring(0, 20)}...`,
+      Cookie: `session_token=${sessionToken?.substring(0, 20)}...`
+    });
     const backendResponse = await fetch(
       `${API_BASE_URL}/api/calendar/events/`,
       {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${sessionData.access_token || sessionData.session_token || (await cookies()).get('sid')?.value}`,
-          'Content-Type': 'application/json',
-          'X-Session-Token': sessionData.session_token || (await cookies()).get('sid')?.value
+          'Authorization': `Session ${sessionToken}`,
+          'Cookie': `session_token=${sessionToken}`,
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(backendData)
       }
@@ -386,14 +387,15 @@ export async function PUT(request) {
     // Call backend API
     console.log('[Calendar API PUT] Updating event:', id);
     
+    const sessionToken = sessionData.session_token || sessionData.access_token || (await cookies()).get('sid')?.value;
     const backendResponse = await fetch(
       `${API_BASE_URL}/api/calendar/events/${id}/`,
       {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${sessionData.access_token || sessionData.session_token || (await cookies()).get('sid')?.value}`,
-          'Content-Type': 'application/json',
-          'X-Session-Token': sessionData.session_token || (await cookies()).get('sid')?.value
+          'Authorization': `Session ${sessionToken}`,
+          'Cookie': `session_token=${sessionToken}`,
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(backendData)
       }
@@ -482,13 +484,15 @@ export async function DELETE(request) {
     // Call backend API
     console.log('[Calendar API DELETE] Deleting event:', id);
     
+    const sessionToken = sessionData.session_token || sessionData.access_token || (await cookies()).get('sid')?.value;
     const backendResponse = await fetch(
       `${API_BASE_URL}/api/calendar/events/${id}/`,
       {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${sessionData.access_token || sessionData.session_token || (await cookies()).get('sid')?.value}`,
-          'X-Session-Token': sessionData.session_token || (await cookies()).get('sid')?.value
+          'Authorization': `Session ${sessionToken}`,
+          'Cookie': `session_token=${sessionToken}`,
+          'Content-Type': 'application/json'
         }
       }
     );
