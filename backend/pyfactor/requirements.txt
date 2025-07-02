@@ -26,8 +26,6 @@ cryptography==45.0.3
 
 # Basic packages
 requests==2.32.3
-celery==5.5.3
-django-celery-beat==2.8.1
 
 # Additional essentials
 Pillow==10.4.0

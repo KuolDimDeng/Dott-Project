@@ -334,24 +334,7 @@ AUTHENTICATION_BACKENDS = [
     'allauth.account.auth_backends.AuthenticationBackend',  # For social auth (if needed)
 ]
 
-# Celery Configuration
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TASK_TRACK_STARTED = True
-CELERY_TASK_TIME_LIMIT = 1800              # 30 minutes max task time
-CELERY_TASK_SOFT_TIME_LIMIT = 25 * 60
-CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
-CELERY_TASK_PUBLISH_RETRY = True
-CELERY_TASK_PUBLISH_RETRY_POLICY = {
-    'max_retries': 3,
-    'interval_start': 0,
-    'interval_step': 0.2,
-    'interval_max': 0.5
-}
-CELERY_WORKER_PREFETCH_MULTIPLIER = 1
-CELERY_WORKER_MAX_TASKS_PER_CHILD = 1
-CELERY_WORKER_CONCURRENCY = 1              # Limit to a single worker
+# Celery has been removed from this project
 
 # Redis settings - support both REDIS_URL and individual settings
 REDIS_URL = os.environ.get('REDIS_URL')
@@ -380,14 +363,10 @@ if REDIS_URL or REDIS_HOST:
         else:
             REDIS_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}'
     
-    # Build Celery URLs with password if available
+    # Build cache location
     if REDIS_PASSWORD:
-        CELERY_BROKER_URL = f'redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/0'
-        CELERY_RESULT_BACKEND = f'redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/0'
         cache_location = f'redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/1'
     else:
-        CELERY_BROKER_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}/0'
-        CELERY_RESULT_BACKEND = f'redis://{REDIS_HOST}:{REDIS_PORT}/0'
         cache_location = f'redis://{REDIS_HOST}:{REDIS_PORT}/1'
     
     # Update your CACHES setting to use Redis when available
@@ -408,10 +387,8 @@ if REDIS_URL or REDIS_HOST:
         }
     }
 else:
-    # No Redis configured - use dummy cache backend and no Celery
+    # No Redis configured - use dummy cache backend
     REDIS_URL = None
-    CELERY_BROKER_URL = None
-    CELERY_RESULT_BACKEND = None
     
     CACHES = {
         'default': {
@@ -419,65 +396,10 @@ else:
         }
     }
 
-CELERY_REDIS_MAX_CONNECTIONS = 20
-CELERY_BROKER_TRANSPORT_OPTIONS = {
-    'socket_timeout': 10,
-    'socket_connect_timeout': 10,
-    'visibility_timeout': 43200,  # 12 hours
-    'max_connections': 20,
-    'retry_policy': {
-        'max_retries': 5
-    }
-}
-
 # Redis database numbers for different uses (only used when Redis is available)
 REDIS_SESSION_DB = int(os.environ.get('REDIS_SESSION_DB', 1))  # Session storage
 REDIS_TENANT_DB = 2  # Use a separate Redis database for tenant metadata
 REDIS_ONBOARDING_DB = 3  # Use a separate Redis database for onboarding sessions
-
-CELERY_SEND_TASK_SENT_EVENT = True
-CELERY_TASK_SEND_SENT_EVENT = True
-CELERY_TASK_REMOTE_TRACEBACKS = True
-CELERY_TASK_RESULT_EXPIRES = 60 * 60 * 24  # 24 hours
-
-# Add these Celery settings
-CELERY_TIMEZONE = TIME_ZONE
-CELERY_ENABLE_UTC = True
-CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
-
-# Task routing
-CELERY_TASK_ROUTES = {
-    'onboarding.tasks.setup_user_schema_task': {'queue': 'setup'},
-    'onboarding.tasks.*': {'queue': 'onboard'},
-    'custom_auth.tasks.create_tenant_schema': {'queue': 'tenant_ops'},
-    'custom_auth.tasks.migrate_tenant_schema': {'queue': 'tenant_ops'},
-}
-
-# Task default configuration
-CELERY_TASK_DEFAULT_QUEUE = 'default'
-CELERY_TASK_DEFAULT_EXCHANGE = 'default'
-CELERY_TASK_DEFAULT_ROUTING_KEY = 'default'
-
-# Result backend settings
-CELERY_RESULT_EXTENDED = True
-CELERY_RESULT_BACKEND_MAX_RETRIES = 10
-CELERY_RESULT_BACKEND_TRANSPORT_OPTIONS = {'retry_policy': {
-    'max_retries': 5
-}}
-# Celery monitoring
-CELERY_SEND_EVENTS = True
-CELERY_EVENT_QUEUE_EXPIRES = 60  # seconds
-CELERY_EVENT_QUEUE_TTL = 10  # seconds
-# Error handling
-CELERY_TASK_ACKS_LATE = True
-CELERY_TASK_REJECT_ON_WORKER_LOST = True
-CELERY_TASK_ANNOTATIONS = {
-    '*': {
-        'rate_limit': '10/s',
-        'acks_late': True,
-        'reject_on_worker_lost': True
-    }
-}
 
 CLAUDE_API_KEY = os.getenv('CLAUDE_API_KEY', '')
 CLAUDE_API_MODEL = os.getenv('CLAUDE_API_MODEL', 'claude-3-opus-20240229')
@@ -492,73 +414,7 @@ CLAUDE_SMART_INSIGHTS_MAX_TOKENS = int(os.getenv('CLAUDE_SMART_INSIGHTS_MAX_TOKE
 POSTHOG_API_KEY = os.getenv('POSTHOG_API_KEY', '')
 POSTHOG_HOST = os.getenv('POSTHOG_HOST', 'https://app.posthog.com')
 
-CELERY_QUEUES = {
-    'default': {
-        'exchange': 'default',
-        'routing_key': 'default',
-    },
-    'setup': {
-        'exchange': 'setup',
-        'routing_key': 'setup',
-    },
-    'onboarding': {
-        'exchange': 'onboarding',
-        'routing_key': 'onboarding',
-    },
-    'users': {
-        'exchange': 'users',
-        'routing_key': 'users',
-    },
-    'tenant_ops': {
-        'exchange': 'tenant_ops',
-        'routing_key': 'tenant_ops',
-}
-}
-
-# Define crontab function here to avoid import issues
-def get_crontab(*args, **kwargs):
-    try:
-        from celery.schedules import crontab
-        return crontab(*args, **kwargs)
-    except ImportError:
-        return None
-
-# Define a startup configuration function that will be called after Django initializes
-def configure_tasks():
-    """
-    Configure Celery tasks after Django has fully loaded.
-    This function should be imported and called from your AppConfig.ready()
-    """
-    return {
-        'cleanup_expired_onboarding': {
-            'task': 'onboarding.views.cleanup_expired_onboarding',
-            'schedule': get_crontab(hour='*/2'),  # Every 2 hours
-        },
-        'update_federal_tax_rates': {
-            'task': 'taxes.tasks.update_federal_tax_rates',
-            'schedule': get_crontab(day_of_week='1', hour='3', minute='0'),  # Every Monday at 3:00 AM
-        },
-        'update_state_tax_rates': {
-            'task': 'taxes.tasks.update_state_tax_rates',
-            'schedule': get_crontab(day_of_week='1', hour='4', minute='0'),  # Every Monday at 4:00 AM
-        },
-        'monitor_database_connections': {
-            'task': 'custom_auth.tasks.monitor_database_connections',
-            'schedule': get_crontab(minute='*/5'),  # Every 5 minutes
-        },
-        'check_and_migrate_tenant_schemas': {
-            'task': 'custom_auth.tasks.check_and_migrate_tenant_schemas',
-            'schedule': get_crontab(minute='*/15'),  # Every 15 minutes
-        },
-        'verify_tenant_schemas_daily': {
-            'task': 'onboarding.tasks.verify_all_tenant_schemas',
-            'schedule': timedelta(days=1),  # Run once per day
-        },
-    }
-
-# Initialize with an empty CELERY_BEAT_SCHEDULE to avoid the "Apps aren't loaded yet" error
-# It will be populated later in the Django lifecycle
-CELERY_BEAT_SCHEDULE = {}
+# Scheduled tasks have been removed with Celery
 
 # Session and authentication settings
 AUTH_USER_MODEL = 'custom_auth.User'
@@ -818,7 +674,6 @@ SHARED_APPS = (
     # 'django.contrib.messages',  # Requires Django sessions
     'django.contrib.staticfiles',
     'django.contrib.sites',
-    'django_celery_beat',
     'corsheaders',
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',
