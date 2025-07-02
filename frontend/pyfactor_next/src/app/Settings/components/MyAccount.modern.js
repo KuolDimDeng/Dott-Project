@@ -33,6 +33,9 @@ const MyAccount = ({ userData }) => {
   const [profilePhoto, setProfilePhoto] = useState(null);
   const [sessions, setSessions] = useState([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
+  const [mfaSettings, setMfaSettings] = useState(null);
+  const [loadingMFA, setLoadingMFA] = useState(true);
+  const [updatingMFA, setUpdatingMFA] = useState(false);
   const fileInputRef = useRef(null);
   
   const router = useRouter();
@@ -56,8 +59,9 @@ const MyAccount = ({ userData }) => {
   
   // Fetch login sessions when security tab is selected
   useEffect(() => {
-    if (selectedTab === 2) {
+    if (selectedTab === 1) {
       fetchLoginSessions();
+      fetchMFASettings();
     }
   }, [selectedTab]);
 
@@ -163,6 +167,99 @@ const MyAccount = ({ userData }) => {
     } catch (error) {
       console.error('Error ending session:', error);
       notifyError('Failed to end session');
+    }
+  };
+
+  const fetchMFASettings = async () => {
+    try {
+      setLoadingMFA(true);
+      const response = await fetch('/api/user/mfa');
+      if (response.ok) {
+        const data = await response.json();
+        setMfaSettings(data);
+      }
+    } catch (error) {
+      console.error('Error fetching MFA settings:', error);
+    } finally {
+      setLoadingMFA(false);
+    }
+  };
+  
+  const handleToggleMFA = async (enabled) => {
+    try {
+      setUpdatingMFA(true);
+      const response = await fetch('/api/user/mfa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          enabled, 
+          preferredMethod: mfaSettings?.preferredMethod || 'totp' 
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        notifySuccess(data.message);
+        fetchMFASettings();
+        
+        if (enabled && !mfaSettings?.hasActiveEnrollment) {
+          // Redirect to Auth0 MFA enrollment
+          setTimeout(() => {
+            window.location.href = `https://${process.env.NEXT_PUBLIC_AUTH0_DOMAIN}/mfa`;
+          }, 2000);
+        }
+      } else {
+        throw new Error('Failed to update MFA settings');
+      }
+    } catch (error) {
+      console.error('Error updating MFA:', error);
+      notifyError('Failed to update MFA settings');
+    } finally {
+      setUpdatingMFA(false);
+    }
+  };
+  
+  const handleMethodChange = async (method) => {
+    try {
+      setUpdatingMFA(true);
+      const response = await fetch('/api/user/mfa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          enabled: mfaSettings.enabled, 
+          preferredMethod: method 
+        })
+      });
+      
+      if (response.ok) {
+        notifySuccess('MFA method updated');
+        fetchMFASettings();
+      }
+    } catch (error) {
+      console.error('Error updating MFA method:', error);
+      notifyError('Failed to update MFA method');
+    } finally {
+      setUpdatingMFA(false);
+    }
+  };
+  
+  const handleRemoveEnrollment = async (enrollmentId) => {
+    if (!confirm('Are you sure you want to remove this MFA method?')) return;
+    
+    try {
+      const response = await fetch('/api/user/mfa', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enrollmentId })
+      });
+      
+      if (response.ok) {
+        notifySuccess('MFA method removed');
+        fetchMFASettings();
+      }
+    } catch (error) {
+      console.error('Error removing enrollment:', error);
+      notifyError('Failed to remove MFA method');
     }
   };
 
@@ -363,21 +460,125 @@ const MyAccount = ({ userData }) => {
             <ShieldCheckIcon className="w-6 h-6 text-gray-400" />
           </div>
           
-          <div className="mt-4">
-            {user.mfa_enabled || user.multifactor?.length > 0 ? (
-              <div className="flex items-center space-x-2">
-                <CheckBadgeIcon className="w-5 h-5 text-green-500" />
-                <span className="text-sm text-green-700">2FA is enabled</span>
+          {loadingMFA ? (
+            <div className="mt-4 flex items-center space-x-2">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+              <span className="text-sm text-gray-600">Loading MFA settings...</span>
+            </div>
+          ) : (
+            <div className="mt-6 space-y-4">
+              {/* MFA Toggle */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={mfaSettings?.enabled || false}
+                      onChange={(e) => handleToggleMFA(e.target.checked)}
+                      disabled={updatingMFA}
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                  <span className="text-sm font-medium text-gray-900">
+                    {mfaSettings?.enabled ? 'MFA Enabled' : 'MFA Disabled'}
+                  </span>
+                </div>
+                {mfaSettings?.enabled && mfaSettings?.hasActiveEnrollment && (
+                  <CheckBadgeIcon className="w-5 h-5 text-green-500" />
+                )}
               </div>
-            ) : (
-              <button
-                onClick={handleEnable2FA}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Enable 2FA
-              </button>
-            )}
-          </div>
+              
+              {/* MFA Methods */}
+              {mfaSettings?.enabled && (
+                <div className="mt-4 space-y-3">
+                  <p className="text-sm font-medium text-gray-700">Preferred Method</p>
+                  <div className="space-y-2">
+                    <label className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="mfa-method"
+                        value="totp"
+                        checked={mfaSettings?.preferredMethod === 'totp'}
+                        onChange={() => handleMethodChange('totp')}
+                        disabled={updatingMFA}
+                        className="mr-3"
+                      />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900">Authenticator App</p>
+                        <p className="text-xs text-gray-500">Use Google Authenticator, Authy, or similar</p>
+                      </div>
+                    </label>
+                    
+                    <label className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="mfa-method"
+                        value="email"
+                        checked={mfaSettings?.preferredMethod === 'email'}
+                        onChange={() => handleMethodChange('email')}
+                        disabled={updatingMFA}
+                        className="mr-3"
+                      />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900">Email</p>
+                        <p className="text-xs text-gray-500">Receive codes via email</p>
+                      </div>
+                    </label>
+                    
+                    <label className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="mfa-method"
+                        value="recovery-code"
+                        checked={mfaSettings?.preferredMethod === 'recovery-code'}
+                        onChange={() => handleMethodChange('recovery-code')}
+                        disabled={updatingMFA}
+                        className="mr-3"
+                      />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900">Recovery Codes</p>
+                        <p className="text-xs text-gray-500">One-time use backup codes</p>
+                      </div>
+                    </label>
+                  </div>
+                  
+                  {/* Active Enrollments */}
+                  {mfaSettings?.enrollments?.length > 0 && (
+                    <div className="mt-4">
+                      <p className="text-sm font-medium text-gray-700 mb-2">Active Methods</p>
+                      <div className="space-y-2">
+                        {mfaSettings.enrollments.map((enrollment) => (
+                          <div key={enrollment.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">{enrollment.name || enrollment.type}</p>
+                              <p className="text-xs text-gray-500">Added {new Date(enrollment.enrolledAt).toLocaleDateString()}</p>
+                            </div>
+                            <button
+                              onClick={() => handleRemoveEnrollment(enrollment.id)}
+                              className="text-sm text-red-600 hover:text-red-700"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Setup Button */}
+                  {!mfaSettings?.hasActiveEnrollment && (
+                    <button
+                      onClick={() => router.push('/settings/security/mfa')}
+                      className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Set Up MFA
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Login History */}

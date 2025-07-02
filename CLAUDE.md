@@ -246,7 +246,32 @@
   - `/src/app/dashboard/components/Drawer.js`
 - **Documentation**: Updated `/frontend/pyfactor_next/docs/TROUBLESHOOTING.md`
 
-### [18.0.0] - 2025-07-01 - CURRENT - Local Backend Testing Workflow
+### [18.0.0] - 2025-07-02 - CURRENT - MFA (Multi-Factor Authentication) Implementation
+- **Purpose**: User-controlled MFA settings with Auth0 integration
+- **Features**:
+  - MFA toggle in My Account security tab
+  - Support for TOTP, Email, and Recovery Codes
+  - Auth0 Management API integration
+  - User metadata storage for preferences
+  - Active enrollment management
+- **Components**:
+  - `/src/app/Settings/components/MyAccount.modern.js` - Enhanced security tab
+  - `/src/app/Settings/security/mfa/page.js` - MFA setup page
+  - `/src/app/api/user/mfa/route.js` - MFA management API
+- **Environment Variables**:
+  ```
+  AUTH0_DOMAIN=dev-cbyy63jovi6zrcos.us.auth0.com
+  AUTH0_M2M_CLIENT_ID=your-m2m-client-id
+  AUTH0_M2M_CLIENT_SECRET=your-m2m-client-secret
+  ```
+- **User Flow**:
+  1. Toggle MFA on/off in security settings
+  2. Select preferred method (TOTP recommended)
+  3. Complete Auth0 enrollment flow
+  4. Manage active enrollments
+- **Documentation**: `/docs/MFA_IMPLEMENTATION.md`
+
+### [19.0.0] - 2025-07-01 - CURRENT - Local Backend Testing Workflow
 - **Purpose**: Prevent deployment failures through comprehensive local testing
 - **Breaking Change**: ALL backend changes must be tested locally first using Docker
 - **Core Workflow**:
