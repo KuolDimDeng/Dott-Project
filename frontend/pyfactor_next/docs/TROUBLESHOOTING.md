@@ -590,6 +590,80 @@ LINE 4: WHERE table_schema = 'cb86762b-3...'
 
 ---
 
+## 🔧 **Issue: My Account Profile Tab Not Displaying User Name and Email**
+
+**Symptoms:**
+- My Account page shows empty fields for Full Name and Email Address
+- User menu dropdown displays name and email correctly
+- Profile API returns data but fields remain blank
+- Console shows profile data being fetched but not displayed
+
+**Root Cause Analysis:**
+1. **Data Source Mismatch**: Component was relying on API call instead of session data
+2. **Field Name Variations**: Different field names across data sources (name vs first_name/last_name vs given_name/family_name)
+3. **Session Data Not Used**: Unlike user menu, My Account wasn't using the useSession hook
+
+**Solution:**
+```javascript
+// Import useSession hook (same as user menu)
+import { useSession } from '@/hooks/useSession-v2';
+
+// Get session data in component
+const { session, loading: sessionLoading } = useSession();
+
+// Use session data to populate profile
+useEffect(() => {
+  if (session?.user && !sessionLoading) {
+    const sessionUser = session.user;
+    setProfileData(sessionUser);
+    setProfilePhoto(sessionUser.picture || sessionUser.profilePhoto);
+    setLoading(false);
+  } else if (!sessionLoading) {
+    // Fallback to API if no session
+    fetchProfileData();
+  }
+}, [session, sessionLoading]);
+
+// Merge all data sources when rendering
+const user = {
+  ...(userData || {}),
+  ...(profileData || {}),
+  ...(session?.user || {})  // Session data takes priority
+};
+
+// Handle all name field variations
+value={
+  user.name || 
+  `${user.first_name || user.firstName || user.given_name || ''} ${user.last_name || user.lastName || user.family_name || ''}`.trim() || 
+  ''
+}
+```
+
+**Key Changes:**
+1. Added `useSession` hook to get session data directly
+2. Session data used as primary source, API as fallback
+3. Merged all data sources with session taking priority
+4. Fixed name field to handle all field name variations
+
+**Verification Steps:**
+1. Check session contains user data: `session.user.email`, `session.user.name`
+2. Verify name displays correctly with all formats
+3. Email field shows session email
+4. Profile loads immediately without waiting for API
+
+**Prevention:**
+- Always use useSession hook for user data (consistent with user menu)
+- Handle all field name variations (name, first_name/last_name, given_name/family_name)
+- Use session as primary data source, API as fallback
+- Test with different user data formats
+
+**Related Files:**
+- `/src/app/Settings/components/MyAccount.modern.js`
+- `/src/hooks/useSession-v2.js`
+- `/src/app/dashboard/components/DashAppBar.js` (reference implementation)
+
+---
+
 ## 🔧 **Issue: Django REST Framework Paginated Response Not Displaying Data**
 
 **Symptoms:**

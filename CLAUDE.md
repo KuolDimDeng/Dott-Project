@@ -401,6 +401,7 @@
 - CHECK for cookies enabled before auth operations
 - VALIDATE sessions proactively
 - TEST edge cases thoroughly
+- ALWAYS use useSession hook for user data display (consistent across components)
 
 ---
 
@@ -535,3 +536,33 @@ Add `REDIS_URL` environment variable in Render dashboard
   - Scalable across all major tax types and states
 - **Documentation**: `/docs/TAX_FILING_IMPLEMENTATION.md`
 - **Status**: Production-ready, awaiting state API credentials and final deployment
+
+### [17.0.0] - 2025-01-11 - CURRENT - My Account Profile Display Fix
+- **Purpose**: Fix My Account profile tab to display user name and email from session
+- **Issue**: Profile tab showed empty fields despite user menu displaying data correctly
+- **Root Cause**: Component relied on API call instead of session data like user menu
+- **Solution**:
+  1. Added `useSession` hook to get user data directly from session
+  2. Session data used as primary source, API as fallback
+  3. Merged all data sources with session taking priority
+  4. Fixed name field to handle all variations:
+     - `name` (full name)
+     - `first_name` + `last_name`
+     - `given_name` + `family_name`
+     - `firstName` + `lastName`
+- **Implementation**:
+  ```javascript
+  import { useSession } from '@/hooks/useSession-v2';
+  const { session, loading: sessionLoading } = useSession();
+  
+  // Use session data to populate profile
+  useEffect(() => {
+    if (session?.user && !sessionLoading) {
+      setProfileData(session.user);
+      setLoading(false);
+    }
+  }, [session, sessionLoading]);
+  ```
+- **Key Learning**: Always use `useSession` hook for user data (consistent with user menu)
+- **Files Changed**: `/src/app/Settings/components/MyAccount.modern.js`
+- **Documentation**: Updated `/frontend/pyfactor_next/docs/TROUBLESHOOTING.md`
