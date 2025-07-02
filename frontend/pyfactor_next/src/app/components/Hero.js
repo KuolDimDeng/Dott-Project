@@ -29,9 +29,6 @@ export default function Hero() {
             <span className="block text-transparent bg-clip-text bg-gradient-to-r from-primary-main to-primary-light">
               Business Management Software
             </span>
-            <span className="block text-2xl sm:text-3xl mt-3 text-gray-700 font-medium">
-              Manage your business like a Pro
-            </span>
           </h1>
           
           <div className="mt-10">

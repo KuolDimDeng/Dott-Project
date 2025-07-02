@@ -59,7 +59,7 @@ export default function HeroSlideshow() {
   const currentImage = placeholderImages[currentIndex];
 
   return (
-    <div className="relative w-full max-w-3xl mx-auto">
+    <div className="relative w-full max-w-4xl mx-auto">
       <div className="relative aspect-[3/2] overflow-hidden rounded-lg shadow-2xl bg-gray-100">
         <Image
           src={currentImage.src}
