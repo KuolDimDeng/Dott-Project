@@ -583,10 +583,11 @@ const MyAccount = ({ userData }) => {
                   {/* Setup Button */}
                   {!mfaSettings?.hasActiveEnrollment && (
                     <button
-                      onClick={() => router.push('/settings/security/mfa')}
-                      className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      onClick={() => handleToggleMFA(true)}
+                      disabled={updatingMFA}
+                      className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
                     >
-                      Set Up MFA
+                      {updatingMFA ? 'Setting up...' : 'Set Up MFA'}
                     </button>
                   )}
                 </div>
