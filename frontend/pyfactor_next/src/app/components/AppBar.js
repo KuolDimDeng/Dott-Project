@@ -212,7 +212,7 @@ export default function AppBar() {
   return (
     <nav className="sticky top-0 z-50 bg-white shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-24 md:h-28">
+        <div className="flex justify-between h-20 md:h-22">
           {/* Logo */}
           <div className="flex-shrink-0 flex items-center">
             <div
@@ -224,7 +224,7 @@ export default function AppBar() {
                 alt="PyFactor Logo"
                 width={270}
                 height={90}
-                className="h-18 md:h-24 w-auto object-contain"
+                className="h-14 md:h-20 w-auto object-contain"
               />
             </div>
           </div>

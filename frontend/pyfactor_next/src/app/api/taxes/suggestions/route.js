@@ -334,8 +334,21 @@ Format your response as JSON. Include all standard fields below, plus any additi
       
     } catch (apiError) {
       console.error('[Tax Suggestions API] Claude API error:', apiError);
+      console.error('[Tax Suggestions API] Error type:', apiError.constructor.name);
+      console.error('[Tax Suggestions API] Error message:', apiError.message);
+      console.error('[Tax Suggestions API] Error stack:', apiError.stack);
+      
+      // Return more detailed error info for debugging
       return NextResponse.json(
-        { error: 'Failed to get tax suggestions. Please try again later.' },
+        { 
+          error: 'Failed to get tax suggestions. Please try again later.',
+          debugInfo: {
+            errorType: apiError.constructor.name,
+            errorMessage: apiError.message,
+            apiKeyExists: !!process.env.CLAUDE_TAX_API_KEY,
+            apiKeyLength: process.env.CLAUDE_TAX_API_KEY?.length
+          }
+        },
         { status: 500, headers: standardSecurityHeaders }
       );
     }
