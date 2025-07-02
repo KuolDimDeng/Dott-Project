@@ -710,10 +710,16 @@ export default function TaxSettings({ onNavigate }) {
       }
       
       const data = await response.json();
+      console.log('[TaxSettings] Full API response:', JSON.stringify(data, null, 2));
+      console.log('[TaxSettings] Response data keys:', Object.keys(data));
+      console.log('[TaxSettings] Response suggestedRates:', data.suggestedRates);
+      
       setTaxSuggestions(data);
       
       // Pre-fill custom rates with suggestions
       if (data.suggestedRates) {
+        console.log('[TaxSettings] Processing suggested rates...');
+        console.log('[TaxSettings] All suggested rates:', JSON.stringify(data.suggestedRates, null, 2));
         // Known fields that map to our form
         const knownFields = [
           'stateSalesTaxRate', 'localSalesTaxRate', 'totalSalesTaxRate',
@@ -748,14 +754,22 @@ export default function TaxSettings({ onNavigate }) {
           }
         });
         
-        setCustomRates(prev => ({
-          ...prev,
-          ...formattedKnownRates,
-          // Calculate totals if not provided
-          totalSalesTaxRate: formattedKnownRates.totalSalesTaxRate || 
-            (parseFloat(formattedKnownRates.stateSalesTaxRate || prev.stateSalesTaxRate || 0) + 
-             parseFloat(formattedKnownRates.localSalesTaxRate || prev.localSalesTaxRate || 0)).toFixed(2)
-        }));
+        console.log('[TaxSettings] Known rates:', knownRates);
+        console.log('[TaxSettings] Formatted known rates:', formattedKnownRates);
+        console.log('[TaxSettings] Unknown fields:', unknownFields);
+        
+        setCustomRates(prev => {
+          const newRates = {
+            ...prev,
+            ...formattedKnownRates,
+            // Calculate totals if not provided
+            totalSalesTaxRate: formattedKnownRates.totalSalesTaxRate || 
+              (parseFloat(formattedKnownRates.stateSalesTaxRate || prev.stateSalesTaxRate || 0) + 
+               parseFloat(formattedKnownRates.localSalesTaxRate || prev.localSalesTaxRate || 0)).toFixed(2)
+          };
+          console.log('[TaxSettings] Setting custom rates to:', newRates);
+          return newRates;
+        });
         
         // Store unknown fields for dynamic rendering
         if (Object.keys(unknownFields).length > 0) {

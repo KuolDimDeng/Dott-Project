@@ -16,6 +16,7 @@ try {
 export async function POST(request) {
   console.log('[Tax Suggestions API] Request received');
   console.log('[Tax Suggestions API] API Key exists:', !!process.env.CLAUDE_TAX_API_KEY);
+  console.log('[Tax Suggestions API] API Key first 10 chars:', process.env.CLAUDE_TAX_API_KEY?.substring(0, 10) + '...');
   console.log('[Tax Suggestions API] Anthropic client initialized:', !!anthropic);
   console.log('[Tax Suggestions API] Backend URL:', process.env.NEXT_PUBLIC_BACKEND_URL);
   
