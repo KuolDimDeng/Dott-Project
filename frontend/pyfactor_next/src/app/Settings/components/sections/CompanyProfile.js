@@ -123,11 +123,14 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
           }
         } else {
           console.warn('[CompanyProfile] Business API request failed:', businessResponse.status);
+          console.log('[CompanyProfile] Business API error details:', await businessResponse.text().catch(() => 'Could not read error'));
           
           // Fallback to profile API if business API fails
+          console.log('[CompanyProfile] Falling back to profile API');
           const profileResponse = await fetch('/api/user/profile');
           if (profileResponse.ok) {
             const userData = await profileResponse.json();
+            console.log('[CompanyProfile] Profile API data received:', userData);
             if (userData) {
               businessData = {
                 ...businessData,
@@ -140,9 +143,13 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
                 description: userData.description || businessData.description,
                 taxId: userData.taxId || businessData.taxId,
                 registrationNumber: userData.registrationNumber || businessData.registrationNumber,
-                yearEstablished: userData.yearEstablished || businessData.yearEstablished
+                yearEstablished: userData.yearEstablished || businessData.yearEstablished,
+                address: userData.address || businessData.address
               };
+              console.log('[CompanyProfile] Updated business data from profile API:', businessData);
             }
+          } else {
+            console.error('[CompanyProfile] Profile API also failed:', profileResponse.status);
           }
         }
       } catch (apiError) {
@@ -150,11 +157,36 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
         console.error('[CompanyProfile] API Error details:', apiError);
       }
 
-      // Also check user object for business data
+      // Also check user object for business data - this should come from the user session
       if (user) {
-        businessData.businessName = businessData.businessName || user.businessName || user['custom:businessname'] || '';
-        businessData.businessType = businessData.businessType || user.businessType || user['custom:businesstype'] || '';
+        console.log('[CompanyProfile] Checking user object for business data:', user);
+        businessData.businessName = businessData.businessName || user.businessName || user.business_name || user['custom:businessname'] || '';
+        businessData.businessType = businessData.businessType || user.businessType || user.business_type || user['custom:businesstype'] || '';
         businessData.email = businessData.email || user.email || '';
+        businessData.phone = businessData.phone || user.phone_number || user.phoneNumber || '';
+      }
+      
+      // Additional fallback: try to get user session data directly from session context
+      try {
+        console.log('[CompanyProfile] Attempting to get session data for business info');
+        const sessionResponse = await fetch('/api/auth/session-v2');
+        if (sessionResponse.ok) {
+          const sessionData = await sessionResponse.json();
+          console.log('[CompanyProfile] Session data received:', sessionData);
+          if (sessionData?.user) {
+            const sessionUser = sessionData.user;
+            businessData = {
+              ...businessData,
+              businessName: businessData.businessName || sessionUser.businessName || sessionUser.business_name || '',
+              businessType: businessData.businessType || sessionUser.businessType || sessionUser.business_type || '',
+              email: businessData.email || sessionUser.email || '',
+              phone: businessData.phone || sessionUser.phone_number || sessionUser.phoneNumber || ''
+            };
+            console.log('[CompanyProfile] Updated business data from session:', businessData);
+          }
+        }
+      } catch (sessionError) {
+        console.warn('[CompanyProfile] Could not fetch session data:', sessionError);
       }
 
       setCompanyData(businessData);
