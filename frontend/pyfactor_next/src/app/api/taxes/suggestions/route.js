@@ -119,11 +119,14 @@ SALES TAX:
 CORPORATE INCOME TAX:
 - Corporate Income Tax Rate (for businesses)
 
-PERSONAL INCOME TAX:
-- Check if the country uses progressive tax brackets
-- If progressive: provide all brackets with income ranges and rates
-- If flat rate: provide the single rate
-- For Kenya example: First KES 24,000: 10%, Next KES 8,333: 25%, etc.
+STATE PERSONAL INCOME TAX (NOT FEDERAL):
+- CRITICAL: This section is for STATE income tax ONLY, not federal income tax
+- Research the specific STATE's income tax structure
+- Check if the STATE uses progressive tax brackets or a flat rate
+- If the state has progressive brackets: provide the STATE's tax brackets
+- If the state has a flat rate: set hasProgressiveTax to false and provide flatPersonalIncomeTaxRate
+- DO NOT confuse federal income tax brackets with state income tax
+- Federal rates (10%, 12%, 22%, etc.) should NEVER appear in state tax fields
 
 SOCIAL INSURANCE:
 - Health Insurance (employee and employer rates)
@@ -143,10 +146,11 @@ ADDITIONAL TAXES:
 
 Format your response as JSON. Include all standard fields below, plus any additional country-specific fields.
 
-For Utah specifically, the sales tax rates should be:
-- State: 4.85%
-- Local (Layton): 1.35%
-- Total: 6.2%
+IMPORTANT DISTINCTIONS:
+- State Income Tax: The tax imposed by the individual STATE (e.g., Utah, California, Texas)
+- Federal Income Tax: The tax imposed by the US federal government (IRS)
+- These are COMPLETELY DIFFERENT - do not mix them up
+- The personalIncomeTaxBrackets field should contain STATE brackets only
 
 Return ONLY this JSON structure:
 {
@@ -154,16 +158,16 @@ Return ONLY this JSON structure:
   "localSalesTaxRate": number,
   "totalSalesTaxRate": number,
   "corporateIncomeTaxRate": number,
-  "hasProgressiveTax": boolean,
-  "personalIncomeTaxBrackets": [
+  "hasProgressiveTax": boolean,  // Does the STATE have progressive income tax?
+  "personalIncomeTaxBrackets": [  // STATE income tax brackets ONLY (not federal)
     {
       "minIncome": number,
       "maxIncome": number or null for highest bracket,
-      "rate": number,
-      "description": "string (e.g., 'First KES 24,000')"
+      "rate": number,  // STATE tax rate for this bracket
+      "description": "string describing STATE tax bracket"
     }
   ],
-  "flatPersonalIncomeTaxRate": number (if not progressive),
+  "flatPersonalIncomeTaxRate": number,  // STATE income tax rate if flat (not federal)
   "healthInsuranceRate": number,
   "healthInsuranceEmployerRate": number,
   "socialSecurityRate": number,

@@ -56,24 +56,24 @@ def get_tax_suggestions(request):
             return Response({
                 'suggestedRates': {
                     'stateSalesTaxRate': float(cache_hit.sales_tax_rate),
-                    'localSalesTaxRate': float(cache_hit.local_sales_tax_rate) if hasattr(cache_hit, 'local_sales_tax_rate') else 0,
-                    'totalSalesTaxRate': float(cache_hit.total_sales_tax_rate) if hasattr(cache_hit, 'total_sales_tax_rate') else float(cache_hit.sales_tax_rate),
-                    'corporateIncomeTaxRate': float(cache_hit.corporate_income_tax_rate) if hasattr(cache_hit, 'corporate_income_tax_rate') else 5,
-                    'hasProgressiveTax': cache_hit.has_progressive_tax if hasattr(cache_hit, 'has_progressive_tax') else False,
-                    'personalIncomeTaxBrackets': cache_hit.personal_income_tax_brackets if hasattr(cache_hit, 'personal_income_tax_brackets') else [],
+                    'localSalesTaxRate': float(cache_hit.local_sales_tax_rate),
+                    'totalSalesTaxRate': float(cache_hit.total_sales_tax_rate),
+                    'corporateIncomeTaxRate': float(cache_hit.corporate_income_tax_rate),
+                    'hasProgressiveTax': cache_hit.has_progressive_tax,
+                    'personalIncomeTaxBrackets': cache_hit.personal_income_tax_brackets,
                     'flatPersonalIncomeTaxRate': float(cache_hit.income_tax_rate),
-                    'healthInsuranceRate': float(cache_hit.health_insurance_rate) if hasattr(cache_hit, 'health_insurance_rate') else 0,
-                    'healthInsuranceEmployerRate': float(cache_hit.health_insurance_employer_rate) if hasattr(cache_hit, 'health_insurance_employer_rate') else 0,
-                    'socialSecurityRate': float(cache_hit.social_security_rate) if hasattr(cache_hit, 'social_security_rate') else 6.2,
-                    'socialSecurityEmployerRate': float(cache_hit.social_security_employer_rate) if hasattr(cache_hit, 'social_security_employer_rate') else 6.2,
+                    'healthInsuranceRate': float(cache_hit.health_insurance_rate),
+                    'healthInsuranceEmployerRate': float(cache_hit.health_insurance_employer_rate),
+                    'socialSecurityRate': float(cache_hit.social_security_rate),
+                    'socialSecurityEmployerRate': float(cache_hit.social_security_employer_rate),
                     'federalPayrollTaxRate': float(cache_hit.payroll_tax_rate),
-                    'statePayrollTaxRate': float(cache_hit.state_payroll_tax_rate) if hasattr(cache_hit, 'state_payroll_tax_rate') else 0,
+                    'statePayrollTaxRate': float(cache_hit.state_payroll_tax_rate),
                     'stateTaxWebsite': cache_hit.filing_website,
                     'stateTaxAddress': cache_hit.filing_address,
-                    'localTaxWebsite': cache_hit.local_tax_website if hasattr(cache_hit, 'local_tax_website') else '',
-                    'localTaxAddress': cache_hit.local_tax_address if hasattr(cache_hit, 'local_tax_address') else '',
+                    'localTaxWebsite': cache_hit.local_tax_website,
+                    'localTaxAddress': cache_hit.local_tax_address,
                     'federalTaxWebsite': 'https://www.irs.gov',
-                    'filingDeadlines': json.loads(cache_hit.filing_deadlines) if cache_hit.filing_deadlines else {}
+                    'filingDeadlines': cache_hit.filing_deadlines if isinstance(cache_hit.filing_deadlines, dict) else {}
                 },
                 'confidenceScore': cache_hit.confidence_score,
                 'notes': 'Retrieved from cache',
@@ -100,34 +100,48 @@ Business Information:
 - Type: {business_type}
 - Location: {city}, {state_province}, {country}
 
-Return ONLY valid JSON with the following structure (no other text):
+IMPORTANT INSTRUCTIONS:
+1. Provide actual tax rates for the SPECIFIC location given
+2. For personal income tax, return STATE tax rates ONLY, not federal rates
+3. Research whether this specific state has progressive brackets or a flat rate
+4. Do NOT confuse federal income tax brackets (10%, 12%, 22%, etc.) with state rates
+5. Return ONLY valid JSON with no other text
+
+Return the following JSON structure with ACTUAL rates for {state_province}:
 {{
-  "stateSalesTaxRate": 4.85,
-  "localSalesTaxRate": 1.35,
-  "totalSalesTaxRate": 6.2,
-  "corporateIncomeTaxRate": 5.0,
-  "hasProgressiveTax": false,
-  "personalIncomeTaxBrackets": [],
-  "flatPersonalIncomeTaxRate": 4.85,
-  "healthInsuranceRate": 0,
-  "healthInsuranceEmployerRate": 0,
-  "socialSecurityRate": 6.2,
-  "socialSecurityEmployerRate": 6.2,
-  "federalPayrollTaxRate": 7.65,
-  "statePayrollTaxRate": 0,
-  "stateTaxWebsite": "https://tax.utah.gov",
-  "stateTaxAddress": "210 N 1950 W, Salt Lake City, UT 84134",
-  "localTaxWebsite": "",
-  "localTaxAddress": "",
-  "federalTaxWebsite": "https://www.irs.gov",
+  "stateSalesTaxRate": number,  // State sales tax rate
+  "localSalesTaxRate": number,  // Local/city sales tax rate
+  "totalSalesTaxRate": number,  // Combined total sales tax
+  "corporateIncomeTaxRate": number,  // Corporate income tax rate
+  "hasProgressiveTax": boolean,  // Does STATE have progressive income tax?
+  "personalIncomeTaxBrackets": [  // STATE income tax brackets if progressive
+    {{
+      "minIncome": number,
+      "maxIncome": number or null,
+      "rate": number,
+      "description": "string"
+    }}
+  ],
+  "flatPersonalIncomeTaxRate": number,  // STATE income tax if flat
+  "healthInsuranceRate": number,
+  "healthInsuranceEmployerRate": number,
+  "socialSecurityRate": number,
+  "socialSecurityEmployerRate": number,
+  "federalPayrollTaxRate": number,
+  "statePayrollTaxRate": number,
+  "stateTaxWebsite": "string",
+  "stateTaxAddress": "string",
+  "localTaxWebsite": "string",
+  "localTaxAddress": "string",
+  "federalTaxWebsite": "string",
   "filingDeadlines": {{
-    "salesTax": "Last day of the month following the reporting period",
-    "incomeTax": "April 15",
-    "payrollTax": "Quarterly",
-    "corporateTax": "15th day of 4th month after year end"
+    "salesTax": "string",
+    "incomeTax": "string",
+    "payrollTax": "string",
+    "corporateTax": "string"
   }},
-  "confidenceScore": 95,
-  "notes": "Utah has a flat state income tax rate"
+  "confidenceScore": number,
+  "notes": "string"
 }}"""
 
         # Try up to 3 times to get valid JSON
@@ -143,7 +157,7 @@ Return ONLY valid JSON with the following structure (no other text):
                     model="claude-3-haiku-20240307",
                     max_tokens=1000,
                     temperature=0,
-                    system="You are a tax expert. Return ONLY valid JSON, no other text.",
+                    system="You are a tax expert providing accurate, up-to-date tax information for businesses worldwide. Always provide current 2024 tax rates. Be specific about state vs federal taxes. For US states, NEVER confuse federal income tax rates (10%, 12%, 22%, etc.) with state income tax rates. Always respond with ONLY valid JSON, no explanatory text.",
                     messages=[
                         {
                             "role": "user",
@@ -185,12 +199,24 @@ Return ONLY valid JSON with the following structure (no other text):
                 state_province=state_province,
                 city=city,
                 business_type=business_type,
-                sales_tax_rate=Decimal(str(tax_data.get('totalSalesTaxRate', 0))),
+                sales_tax_rate=Decimal(str(tax_data.get('stateSalesTaxRate', 0))),
+                local_sales_tax_rate=Decimal(str(tax_data.get('localSalesTaxRate', 0))),
+                total_sales_tax_rate=Decimal(str(tax_data.get('totalSalesTaxRate', 0))),
                 income_tax_rate=Decimal(str(tax_data.get('flatPersonalIncomeTaxRate', 0))),
+                corporate_income_tax_rate=Decimal(str(tax_data.get('corporateIncomeTaxRate', 0))),
+                has_progressive_tax=tax_data.get('hasProgressiveTax', False),
+                personal_income_tax_brackets=tax_data.get('personalIncomeTaxBrackets', []),
                 payroll_tax_rate=Decimal(str(tax_data.get('federalPayrollTaxRate', 0))),
+                state_payroll_tax_rate=Decimal(str(tax_data.get('statePayrollTaxRate', 0))),
+                health_insurance_rate=Decimal(str(tax_data.get('healthInsuranceRate', 0))),
+                health_insurance_employer_rate=Decimal(str(tax_data.get('healthInsuranceEmployerRate', 0))),
+                social_security_rate=Decimal(str(tax_data.get('socialSecurityRate', 6.2))),
+                social_security_employer_rate=Decimal(str(tax_data.get('socialSecurityEmployerRate', 6.2))),
                 filing_website=tax_data.get('stateTaxWebsite', ''),
                 filing_address=tax_data.get('stateTaxAddress', ''),
-                filing_deadlines=json.dumps(tax_data.get('filingDeadlines', {})),
+                local_tax_website=tax_data.get('localTaxWebsite', ''),
+                local_tax_address=tax_data.get('localTaxAddress', ''),
+                filing_deadlines=tax_data.get('filingDeadlines', {}),
                 confidence_score=tax_data.get('confidenceScore', 80),
                 source='claude_api',
                 expires_at=timezone.now() + timedelta(days=90)  # Cache for 90 days
