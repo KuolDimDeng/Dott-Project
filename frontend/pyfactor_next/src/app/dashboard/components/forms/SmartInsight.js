@@ -7,8 +7,15 @@ import { useRouter } from 'next/navigation';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
 import StandardSpinner, { CenteredSpinner, ButtonSpinner } from '@/components/ui/StandardSpinner';
-import SmartInsightVisualization from '@/components/SmartInsightVisualization';
 import { parseVisualizationData, shouldShowVisualization } from '@/utils/visualizationUtils';
+
+// Dynamic import for visualization to prevent SSR issues
+const SmartInsightVisualization = React.lazy(() => 
+  import('@/components/SmartInsightVisualization').catch(() => {
+    console.warn('Failed to load SmartInsightVisualization');
+    return { default: () => <div className="text-gray-500 text-sm">Charts unavailable</div> };
+  })
+);
 import {
   SparklesIcon,
   PaperAirplaneIcon,
@@ -417,12 +424,14 @@ export default function SmartInsight({ onNavigate }) {
                     <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                     
                     {/* Show visualizations for AI responses */}
-                    {message.type === 'ai' && message.hasVisualization && message.visualizations && (
+                    {message.type === 'ai' && message.hasVisualization && message.visualizations && typeof window !== 'undefined' && (
                       <div className="mt-3">
-                        <SmartInsightVisualization 
-                          visualizations={message.visualizations}
-                          className="max-w-full"
-                        />
+                        <React.Suspense fallback={<StandardSpinner size="small" />}>
+                          <SmartInsightVisualization 
+                            visualizations={message.visualizations}
+                            className="max-w-full"
+                          />
+                        </React.Suspense>
                       </div>
                     )}
                     

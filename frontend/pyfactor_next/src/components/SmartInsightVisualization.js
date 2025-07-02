@@ -1,19 +1,8 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement,
-} from 'chart.js';
 import { Bar, Line, Doughnut, Pie } from 'react-chartjs-2';
+import { setupChart } from '@/utils/chartSetup';
 import { 
   ChartBarIcon, 
   EyeIcon, 
@@ -21,18 +10,8 @@ import {
   ArrowsPointingOutIcon 
 } from '@heroicons/react/24/outline';
 
-// Register Chart.js components
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement
-);
+// Ensure Chart.js is set up
+setupChart();
 
 const SmartInsightVisualization = ({ visualizations, className = '' }) => {
   const [collapsedCharts, setCollapsedCharts] = useState(new Set());
