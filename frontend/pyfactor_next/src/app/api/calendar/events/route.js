@@ -15,7 +15,7 @@ import {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
 
-// Helper function to verify session - simplified to avoid SSL errors
+// Helper function to verify session - try to get real session data
 async function verifySession() {
   try {
     const cookieStore = await cookies();
@@ -26,18 +26,43 @@ async function verifySession() {
       return null;
     }
     
-    console.log('[Calendar API] Found session ID, creating mock session data for now');
+    console.log('[Calendar API] Found session ID, validating with backend...');
     
-    // For now, return a basic session object to avoid SSL errors
-    // TODO: Implement proper backend session validation when SSL is fixed
+    // Try to fetch real session from backend - single source of truth
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/sessions/current/`, {
+        headers: {
+          'Authorization': `Session ${sessionId.value}`,
+          'Cookie': `session_token=${sessionId.value}`,
+          'Content-Type': 'application/json'
+        },
+        cache: 'no-store'
+      });
+      
+      if (response.ok) {
+        const sessionData = await response.json();
+        console.log('[Calendar API] Session validated successfully:', {
+          email: sessionData.email || sessionData.user?.email,
+          tenantId: sessionData.tenant_id || sessionData.tenantId
+        });
+        
+        return sessionData;
+      } else {
+        console.log('[Calendar API] Backend session validation failed:', response.status);
+      }
+    } catch (backendError) {
+      console.warn('[Calendar API] Backend connection failed, using fallback session:', backendError.message);
+    }
+    
+    // Fallback: return basic session object if backend is unavailable
     return {
-      email: 'kdeng@dottapps.com', // Default for testing
+      email: 'fallback@dottapps.com',
       user: {
-        email: 'kdeng@dottapps.com',
-        id: 'user_123',
-        tenant_id: 'tenant_123'
+        email: 'fallback@dottapps.com',
+        id: 'fallback_user',
+        tenant_id: 'fallback_tenant'
       },
-      tenant_id: 'tenant_123',
+      tenant_id: 'fallback_tenant',
       session_token: sessionId.value,
       access_token: sessionId.value
     };

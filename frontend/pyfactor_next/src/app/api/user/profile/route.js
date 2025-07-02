@@ -19,43 +19,64 @@ export async function GET(request) {
     const sessionTokenCookie = cookieStore.get('session_token');
     const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
     
-    // If we have new session cookies, return mock data to avoid SSL errors
+    // If we have new session cookies, get real user data from backend
     if (sidCookie || sessionTokenCookie) {
+      const sessionId = sidCookie?.value || sessionTokenCookie?.value;
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+      
       try {
-        logger.debug(`[UserProfile API] Using new session system with mock data, request ${requestId}`);
+        logger.debug(`[UserProfile API] Using new session system to get real user data, request ${requestId}`);
         
-        // Return mock profile data to avoid SSL errors with backend calls
-        const profile = {
-          id: 'user_123',
-          email: 'kdeng@dottapps.com',
-          name: 'Kevin Deng',
-          firstName: 'Kevin',
-          lastName: 'Deng',
-          phone_number: '+1234567890',
-          phoneNumber: '+1234567890',
-          picture: null,
-          profilePhoto: null,
-          emailVerified: true,
-          email_verified: true,
-          mfa_enabled: false,
-          tenantId: 'tenant_123',
-          tenant_id: 'tenant_123',
-          businessName: 'Test Business',
-          subscriptionPlan: 'free',
-          needsOnboarding: false,
-          onboardingCompleted: true,
-          currentStep: 'completed',
-          role: 'OWNER',
-          permissions: ['manage_users', 'manage_settings'],
-          requestId,
-          sessionSource: 'mock-data'
-        };
+        // Try to get the user data from the backend API
+        const response = await fetch(`${API_URL}/api/sessions/current/`, {
+          headers: {
+            'Authorization': `Session ${sessionId}`,
+            'Cookie': `session_token=${sessionId}`,
+            'Content-Type': 'application/json'
+          },
+          cache: 'no-store'
+        });
         
-        logger.debug(`[UserProfile API] Mock profile data returned, request ${requestId}`);
-        return NextResponse.json(profile);
+        if (response.ok) {
+          const sessionData = await response.json();
+          logger.debug(`[UserProfile API] Backend session data retrieved successfully, request ${requestId}`);
+          
+          // Transform backend session data to profile format
+          const profile = {
+            id: sessionData.user_id || sessionData.id,
+            email: sessionData.email,
+            name: sessionData.name || `${sessionData.first_name || ''} ${sessionData.last_name || ''}`.trim() || sessionData.email,
+            firstName: sessionData.first_name || '',
+            lastName: sessionData.last_name || '',
+            phone_number: sessionData.phone_number || '',
+            phoneNumber: sessionData.phone_number || '',
+            picture: sessionData.picture,
+            profilePhoto: sessionData.picture,
+            emailVerified: sessionData.email_verified !== false,
+            email_verified: sessionData.email_verified !== false,
+            mfa_enabled: sessionData.mfa_enabled || false,
+            tenantId: sessionData.tenant_id,
+            tenant_id: sessionData.tenant_id,
+            businessName: sessionData.business_name || '',
+            subscriptionPlan: sessionData.subscription_plan || 'free',
+            needsOnboarding: sessionData.needs_onboarding || false,
+            onboardingCompleted: sessionData.onboarding_completed || true,
+            currentStep: sessionData.current_onboarding_step || 'completed',
+            role: sessionData.role || 'OWNER',
+            permissions: sessionData.permissions || [],
+            requestId,
+            sessionSource: 'backend-real-data'
+          };
+          
+          logger.debug(`[UserProfile API] Real profile data returned for ${profile.email}, request ${requestId}`);
+          return NextResponse.json(profile);
+        } else {
+          logger.warn(`[UserProfile API] Backend session invalid: ${response.status}, falling back to legacy auth, request ${requestId}`);
+          // Fall through to legacy Auth0 session check
+        }
       } catch (error) {
-        logger.error(`[UserProfile API] Error with mock data: ${error.message}, request ${requestId}`);
-        // Fall through to legacy check
+        logger.error(`[UserProfile API] Error fetching backend session: ${error.message}, falling back to legacy auth, request ${requestId}`);
+        // Fall through to legacy Auth0 session check
       }
     }
     

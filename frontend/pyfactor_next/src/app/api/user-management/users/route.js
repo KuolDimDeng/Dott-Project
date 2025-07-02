@@ -119,33 +119,64 @@ export async function POST(request) {
 }
 
 /**
- * Helper function to get session from request - simplified to avoid SSL errors
+ * Helper function to get session from request - get real user data from backend
  */
 async function getSession(request) {
   try {
-    // Check for session cookies to determine if user is authenticated
-    const cookieHeader = request.headers.get('cookie') || '';
-    const hasSidCookie = cookieHeader.includes('sid=');
-    const hasSessionCookie = cookieHeader.includes('session_token=') || cookieHeader.includes('appSession=');
+    // First try to get user info from session-v2 endpoint (internal call)
+    const sessionResponse = await fetch(`${request.nextUrl.origin}/api/auth/session-v2`, {
+      headers: {
+        cookie: request.headers.get('cookie') || ''
+      },
+      cache: 'no-store'
+    });
     
-    if (!hasSidCookie && !hasSessionCookie) {
-      logger.warn('[UserManagement] No session cookies found');
-      return null;
+    if (sessionResponse.ok) {
+      const sessionData = await sessionResponse.json();
+      if (sessionData && sessionData.user) {
+        logger.info('[UserManagement] Got real session data from session-v2');
+        return {
+          user: {
+            id: sessionData.user.sub || sessionData.user.id,
+            email: sessionData.user.email,
+            name: sessionData.user.name || sessionData.user.email,
+            tenantId: sessionData.user.tenantId || sessionData.user.tenant_id,
+            role: sessionData.user.role || 'OWNER',
+            mfa_enabled: sessionData.user.mfa_enabled || false,
+            permissions: sessionData.user.permissions || []
+          }
+        };
+      }
     }
     
-    // Return mock session data to avoid SSL errors
-    logger.info('[UserManagement] Session cookies found, returning mock session data');
-    return {
-      user: {
-        id: 'user_123',
-        email: 'kdeng@dottapps.com',
-        name: 'Kevin Deng',
-        tenantId: 'tenant_123',
-        role: 'OWNER',
-        mfa_enabled: false,
-        permissions: ['manage_users', 'manage_settings', 'view_reports']
+    // Fallback: try unified profile endpoint (internal call)
+    const profileResponse = await fetch(`${request.nextUrl.origin}/api/user/profile`, {
+      headers: {
+        cookie: request.headers.get('cookie') || ''
+      },
+      cache: 'no-store'
+    });
+    
+    if (profileResponse.ok) {
+      const profileData = await profileResponse.json();
+      if (profileData) {
+        logger.info('[UserManagement] Got real user data from profile endpoint');
+        return {
+          user: {
+            id: profileData.id || profileData.userId,
+            email: profileData.email,
+            name: profileData.name || profileData.email,
+            tenantId: profileData.tenantId || profileData.tenant_id,
+            role: profileData.role || 'OWNER',
+            mfa_enabled: profileData.mfa_enabled || false,
+            permissions: profileData.permissions || []
+          }
+        };
       }
-    };
+    }
+    
+    logger.warn('[UserManagement] No valid session found');
+    return null;
     
   } catch (error) {
     logger.error('[UserManagement] Session retrieval failed:', error);

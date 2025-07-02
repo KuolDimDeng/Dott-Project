@@ -33,8 +33,52 @@ export async function GET(request) {
     // Get session ID for backend call
     const sessionId = sidCookie?.value || sessionTokenCookie?.value;
     
-    // Skip backend call for now to avoid SSL errors
-    logger.info(`[Sessions API] Using mock data to avoid SSL errors, request ${requestId}`);
+    if (sessionId) {
+      // Try to use backend API to get real session data
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+      
+      try {
+        logger.info(`[Sessions API] Attempting to get real session data from backend, request ${requestId}`);
+        const response = await fetch(`${API_URL}/api/user/sessions/`, {
+          headers: {
+            'Authorization': `Session ${sessionId}`,
+            'Cookie': `session_token=${sessionId}`,
+            'Content-Type': 'application/json'
+          },
+          cache: 'no-store'
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          logger.info(`[Sessions API] Retrieved ${data.sessions?.length || 0} real sessions from backend, request ${requestId}`);
+          
+          // Transform backend data to match frontend expectations
+          const sessions = (data.sessions || []).map(session => ({
+            id: session.id,
+            browser: session.user_agent ? parseBrowser(session.user_agent) : 'Unknown Browser',
+            os: session.user_agent ? parseOS(session.user_agent) : 'Unknown OS',
+            device_type: session.device_type || detectDeviceType(session.user_agent),
+            location: session.ip_address ? `IP: ${session.ip_address}` : 'Unknown Location',
+            last_active: formatLastActive(session.last_activity),
+            is_current: session.is_current || session.id === sessionId,
+            created_at: session.created_at,
+            ip_address: session.ip_address
+          }));
+          
+          return NextResponse.json({
+            sessions,
+            requestId,
+            source: 'backend-real-data'
+          });
+        } else {
+          logger.warn(`[Sessions API] Backend request failed: ${response.status}, falling back to mock data, request ${requestId}`);
+          // Fall through to mock data
+        }
+      } catch (error) {
+        logger.warn(`[Sessions API] Backend connection error: ${error.message}, falling back to mock data, request ${requestId}`);
+        // Fall through to mock data
+      }
+    }
     
     // Mock data for development/fallback
     const mockSessions = [
