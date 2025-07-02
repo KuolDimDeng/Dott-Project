@@ -7,6 +7,8 @@ import { useRouter } from 'next/navigation';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
 import StandardSpinner, { CenteredSpinner, ButtonSpinner } from '@/components/ui/StandardSpinner';
+import SmartInsightVisualization from '@/components/SmartInsightVisualization';
+import { parseVisualizationData, shouldShowVisualization } from '@/utils/visualizationUtils';
 import {
   SparklesIcon,
   PaperAirplaneIcon,
@@ -32,10 +34,10 @@ const INSIGHT_CATEGORIES = [
     icon: ArrowTrendingUpIcon,
     color: 'blue',
     queries: [
-      "What's my revenue trend this month?",
-      "Which products are bestsellers?",
-      "Show me sales by customer segment",
-      "What's my average order value?"
+      "Show my revenue trend with a chart",
+      "Which products are bestsellers? Include a chart",
+      "Create a chart of sales by customer segment",
+      "What's my average order value trend?"
     ]
   },
   {
@@ -44,10 +46,10 @@ const INSIGHT_CATEGORIES = [
     icon: UserGroupIcon,
     color: 'green',
     queries: [
-      "Who are my top customers?",
-      "What's my customer retention rate?",
-      "Show me new vs returning customers",
-      "Which customers are at risk?"
+      "Show my top customers in a chart",
+      "What's my customer retention rate? Show as percentage chart",
+      "Create a visualization of new vs returning customers",
+      "Which customers are at risk? Include analysis chart"
     ]
   },
   {
@@ -56,10 +58,10 @@ const INSIGHT_CATEGORIES = [
     icon: ShoppingBagIcon,
     color: 'purple',
     queries: [
-      "What products need restocking?",
-      "Show me inventory turnover rates",
-      "Which items are slow-moving?",
-      "What's my current stock value?"
+      "What products need restocking? Show in a chart",
+      "Visualize inventory turnover rates",
+      "Create a chart of slow-moving vs fast-moving items",
+      "Show my current stock value breakdown"
     ]
   },
   {
@@ -68,10 +70,10 @@ const INSIGHT_CATEGORIES = [
     icon: ChartBarIcon,
     color: 'yellow',
     queries: [
-      "How is my business performing?",
-      "Compare this month to last month",
-      "What are my profit margins?",
-      "Show me expense breakdown"
+      "How is my business performing? Include charts",
+      "Compare this month to last month with visualizations",
+      "Show my profit margins in a chart",
+      "Create an expense breakdown visualization"
     ]
   }
 ];
@@ -225,7 +227,8 @@ export default function SmartInsight({ onNavigate }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          query: userMessage.content
+          query: userMessage.content,
+          include_visualization: true
         })
       });
 
@@ -236,6 +239,9 @@ export default function SmartInsight({ onNavigate }) {
 
       const data = await response.json();
       
+      // Parse visualizations from the response
+      const visualizations = parseVisualizationData(data.response);
+      
       const aiResponse = {
         id: Date.now() + 1,
         type: 'ai',
@@ -243,7 +249,9 @@ export default function SmartInsight({ onNavigate }) {
         timestamp: new Date(),
         usage: data.usage,
         tokensUsed: data.total_tokens,
-        creditsUsed: data.credits_used
+        creditsUsed: data.credits_used,
+        visualizations: visualizations,
+        hasVisualization: visualizations.length > 0
       };
       
       setMessages(prev => [...prev, aiResponse]);
@@ -398,7 +406,7 @@ export default function SmartInsight({ onNavigate }) {
                   className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-xs lg:max-w-2xl px-4 py-2 rounded-lg ${
+                    className={`max-w-xs lg:max-w-4xl px-4 py-2 rounded-lg ${
                       message.type === 'user'
                         ? 'bg-blue-600 text-white'
                         : message.isError
@@ -407,11 +415,32 @@ export default function SmartInsight({ onNavigate }) {
                     }`}
                   >
                     <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                    <p className="text-xs mt-1 opacity-75">
-                      {message.timestamp && typeof message.timestamp.toLocaleTimeString === 'function' 
-                        ? message.timestamp.toLocaleTimeString() 
-                        : 'Just now'}
-                    </p>
+                    
+                    {/* Show visualizations for AI responses */}
+                    {message.type === 'ai' && message.hasVisualization && message.visualizations && (
+                      <div className="mt-3">
+                        <SmartInsightVisualization 
+                          visualizations={message.visualizations}
+                          className="max-w-full"
+                        />
+                      </div>
+                    )}
+                    
+                    <div className="flex items-center justify-between mt-2">
+                      <p className="text-xs opacity-75">
+                        {message.timestamp && typeof message.timestamp.toLocaleTimeString === 'function' 
+                          ? message.timestamp.toLocaleTimeString() 
+                          : 'Just now'}
+                      </p>
+                      
+                      {/* Show visualization indicator */}
+                      {message.type === 'ai' && message.hasVisualization && (
+                        <div className="flex items-center text-xs opacity-75">
+                          <ChartBarIcon className="h-3 w-3 mr-1" />
+                          <span>{message.visualizations?.length || 0} chart{(message.visualizations?.length || 0) !== 1 ? 's' : ''}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))

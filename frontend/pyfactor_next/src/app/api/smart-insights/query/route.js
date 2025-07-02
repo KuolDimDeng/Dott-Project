@@ -7,7 +7,7 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.dottapps
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { query } = body;
+    const { query, include_visualization } = body;
 
     if (!query || typeof query !== 'string' || query.trim().length === 0) {
       return NextResponse.json(
@@ -37,7 +37,8 @@ export async function POST(request) {
         'Accept': 'application/json',
       },
       body: JSON.stringify({
-        query: query.trim()
+        query: query.trim(),
+        include_visualization: include_visualization || false
       }),
     });
 
