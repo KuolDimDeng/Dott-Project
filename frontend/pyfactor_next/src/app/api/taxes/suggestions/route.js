@@ -232,77 +232,76 @@ Return ONLY this JSON structure:
           console.log('[Tax Suggestions API] First 500 chars of response:', responseText.substring(0, 500));
         }
       
-      try {
-        // First try to find JSON by looking for the pattern
-        let jsonString = null;
-        
-        // Method 1: Look for JSON block in code fence
-        const codeFenceMatch = responseText.match(/```json\s*\n([\s\S]*?)\n```/);
-        if (codeFenceMatch) {
-          jsonString = codeFenceMatch[1];
-          console.log('[Tax Suggestions API] Found JSON in code fence');
-        }
-        
-        // Method 2: Look for JSON block without language specifier
-        if (!jsonString) {
-          const plainCodeFenceMatch = responseText.match(/```\s*\n([\s\S]*?)\n```/);
-          if (plainCodeFenceMatch) {
-            jsonString = plainCodeFenceMatch[1];
-            console.log('[Tax Suggestions API] Found JSON in plain code fence');
+        try {
+          // First try to find JSON by looking for the pattern
+          let jsonString = null;
+          
+          // Method 1: Look for JSON block in code fence
+          const codeFenceMatch = responseText.match(/```json\s*\n([\s\S]*?)\n```/);
+          if (codeFenceMatch) {
+            jsonString = codeFenceMatch[1];
+            console.log('[Tax Suggestions API] Found JSON in code fence');
+          }
+          
+          // Method 2: Look for JSON block without language specifier
+          if (!jsonString) {
+            const plainCodeFenceMatch = responseText.match(/```\s*\n([\s\S]*?)\n```/);
+            if (plainCodeFenceMatch) {
+              jsonString = plainCodeFenceMatch[1];
+              console.log('[Tax Suggestions API] Found JSON in plain code fence');
+            }
+          }
+          
+          // Method 3: Look for raw JSON object
+          if (!jsonString) {
+            const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              jsonString = jsonMatch[0];
+              console.log('[Tax Suggestions API] Found raw JSON object');
+            }
+          }
+          
+          if (!jsonString) {
+            console.log('[Tax Suggestions API] No JSON pattern found, Claude might have returned plain text');
+            console.log('[Tax Suggestions API] First 1000 chars of response:', responseText.substring(0, 1000));
+            throw new Error('No JSON found in response');
+          }
+          
+          console.log('[Tax Suggestions API] JSON found at position:', responseText.indexOf(jsonString));
+          console.log('[Tax Suggestions API] JSON length:', jsonString.length);
+          
+          // Clean the JSON string before parsing
+          jsonString = jsonString
+            .replace(/^\uFEFF/, '') // Remove BOM
+            .replace(/[\u200B-\u200D\uFEFF]/g, '') // Remove zero-width spaces
+            .trim();
+          
+          taxData = JSON.parse(jsonString);
+          console.log('[Tax Suggestions API] Successfully parsed JSON on attempt', attempt);
+          
+          // Validate that we got actual tax data
+          if (taxData && typeof taxData === 'object' && 
+              (taxData.stateSalesTaxRate > 0 || taxData.localSalesTaxRate > 0 || 
+               taxData.totalSalesTaxRate > 0)) {
+            console.log('[Tax Suggestions API] Valid tax data received');
+            break; // Success - exit retry loop
+          } else {
+            throw new Error('Parsed JSON contains all zero values');
+          }
+          
+        } catch (parseError) {
+          lastError = parseError;
+          console.error(`[Tax Suggestions API] Attempt ${attempt} - Error parsing:`, parseError.message);
+          
+          if (attempt < 3) {
+            console.log(`[Tax Suggestions API] Will retry with more explicit instructions`);
+            continue;
           }
         }
-        
-        // Method 3: Look for raw JSON object
-        if (!jsonString) {
-          const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            jsonString = jsonMatch[0];
-            console.log('[Tax Suggestions API] Found raw JSON object');
-          }
-        }
-        
-        if (!jsonString) {
-          console.log('[Tax Suggestions API] No JSON pattern found, Claude might have returned plain text');
-          console.log('[Tax Suggestions API] First 1000 chars of response:', responseText.substring(0, 1000));
-          throw new Error('No JSON found in response');
-        }
-        
-        console.log('[Tax Suggestions API] JSON found at position:', responseText.indexOf(jsonString));
-        console.log('[Tax Suggestions API] JSON length:', jsonString.length);
-        
-        // Clean the JSON string before parsing
-        jsonString = jsonString
-          .replace(/^\uFEFF/, '') // Remove BOM
-          .replace(/[\u200B-\u200D\uFEFF]/g, '') // Remove zero-width spaces
-          .trim();
-        
-        taxData = JSON.parse(jsonString);
-        console.log('[Tax Suggestions API] Successfully parsed JSON on attempt', attempt);
-        
-        // Validate that we got actual tax data
-        if (taxData && typeof taxData === 'object' && 
-            (taxData.stateSalesTaxRate > 0 || taxData.localSalesTaxRate > 0 || 
-             taxData.totalSalesTaxRate > 0)) {
-          console.log('[Tax Suggestions API] Valid tax data received');
-          break; // Success - exit retry loop
-        } else {
-          throw new Error('Parsed JSON contains all zero values');
-        }
-        
-      } catch (parseError) {
-        lastError = parseError;
-        console.error(`[Tax Suggestions API] Attempt ${attempt} - Error parsing:`, parseError.message);
-        
-        if (attempt < 3) {
-          console.log(`[Tax Suggestions API] Will retry with more explicit instructions`);
-          continue;
-        }
-        
+      } catch (attemptError) {
+        lastError = attemptError;
+        console.error(`[Tax Suggestions API] Attempt ${attempt} failed:`, attemptError.message);
       }
-    } catch (attemptError) {
-      lastError = attemptError;
-      console.error(`[Tax Suggestions API] Attempt ${attempt} failed:`, attemptError.message);
-    }
     }
     
     // If all attempts failed, use fallback data
@@ -346,68 +345,51 @@ Return ONLY this JSON structure:
     console.log('[Tax Suggestions API] Parsed tax data:', JSON.stringify(taxData, null, 2));
     
     return NextResponse.json({
-        suggestedRates: {
-          // Sales Tax breakdown
-          stateSalesTaxRate: taxData.stateSalesTaxRate,
-          localSalesTaxRate: taxData.localSalesTaxRate,
-          totalSalesTaxRate: taxData.totalSalesTaxRate,
-          
-          // Corporate Income Tax
-          corporateIncomeTaxRate: taxData.corporateIncomeTaxRate,
-          
-          // Personal Income Tax
-          hasProgressiveTax: taxData.hasProgressiveTax,
-          personalIncomeTaxBrackets: taxData.personalIncomeTaxBrackets,
-          flatPersonalIncomeTaxRate: taxData.flatPersonalIncomeTaxRate,
-          
-          // Social Insurance
-          healthInsuranceRate: taxData.healthInsuranceRate,
-          healthInsuranceEmployerRate: taxData.healthInsuranceEmployerRate,
-          socialSecurityRate: taxData.socialSecurityRate,
-          socialSecurityEmployerRate: taxData.socialSecurityEmployerRate,
-          
-          // Payroll Tax breakdown
-          federalPayrollTaxRate: taxData.federalPayrollTaxRate,
-          statePayrollTaxRate: taxData.statePayrollTaxRate,
-          
-          // Filing information
-          stateTaxWebsite: taxData.stateTaxWebsite,
-          stateTaxAddress: taxData.stateTaxAddress,
-          localTaxWebsite: taxData.localTaxWebsite,
-          localTaxAddress: taxData.localTaxAddress,
-          federalTaxWebsite: taxData.federalTaxWebsite || 'https://www.irs.gov',
-          
-          // Deadlines
-          filingDeadlines: taxData.filingDeadlines
-        },
-        confidenceScore: taxData.confidenceScore,
-        notes: taxData.notes,
-        source: 'claude_api'
-      }, { headers: standardSecurityHeaders });
-      
-    } catch (apiError) {
-      console.error('[Tax Suggestions API] Claude API error:', apiError);
-      console.error('[Tax Suggestions API] Error type:', apiError.constructor.name);
-      console.error('[Tax Suggestions API] Error message:', apiError.message);
-      console.error('[Tax Suggestions API] Error stack:', apiError.stack);
-      
-      // Return more detailed error info for debugging
-      return NextResponse.json(
-        { 
-          error: 'Failed to get tax suggestions. Please try again later.',
-          debugInfo: {
-            errorType: apiError.constructor.name,
-            errorMessage: apiError.message,
-            apiKeyExists: !!process.env.CLAUDE_TAX_API_KEY,
-            apiKeyLength: process.env.CLAUDE_TAX_API_KEY?.length
-          }
-        },
-        { status: 500, headers: standardSecurityHeaders }
-      );
-    }
+      suggestedRates: {
+        // Sales Tax breakdown
+        stateSalesTaxRate: taxData.stateSalesTaxRate,
+        localSalesTaxRate: taxData.localSalesTaxRate,
+        totalSalesTaxRate: taxData.totalSalesTaxRate,
+        
+        // Corporate Income Tax
+        corporateIncomeTaxRate: taxData.corporateIncomeTaxRate,
+        
+        // Personal Income Tax
+        hasProgressiveTax: taxData.hasProgressiveTax,
+        personalIncomeTaxBrackets: taxData.personalIncomeTaxBrackets,
+        flatPersonalIncomeTaxRate: taxData.flatPersonalIncomeTaxRate,
+        
+        // Social Insurance
+        healthInsuranceRate: taxData.healthInsuranceRate,
+        healthInsuranceEmployerRate: taxData.healthInsuranceEmployerRate,
+        socialSecurityRate: taxData.socialSecurityRate,
+        socialSecurityEmployerRate: taxData.socialSecurityEmployerRate,
+        
+        // Payroll Tax breakdown
+        federalPayrollTaxRate: taxData.federalPayrollTaxRate,
+        statePayrollTaxRate: taxData.statePayrollTaxRate,
+        
+        // Filing information
+        stateTaxWebsite: taxData.stateTaxWebsite,
+        stateTaxAddress: taxData.stateTaxAddress,
+        localTaxWebsite: taxData.localTaxWebsite,
+        localTaxAddress: taxData.localTaxAddress,
+        federalTaxWebsite: taxData.federalTaxWebsite || 'https://www.irs.gov',
+        
+        // Deadlines
+        filingDeadlines: taxData.filingDeadlines
+      },
+      confidenceScore: taxData.confidenceScore,
+      notes: taxData.notes,
+      source: 'claude_api'
+    }, { headers: standardSecurityHeaders });
     
   } catch (error) {
     console.error('[Tax Suggestions API] Error:', error);
+    console.error('[Tax Suggestions API] Error type:', error.constructor.name);
+    console.error('[Tax Suggestions API] Error message:', error.message);
+    console.error('[Tax Suggestions API] Error stack:', error.stack);
+    
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500, headers: standardSecurityHeaders }
