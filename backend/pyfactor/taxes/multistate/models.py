@@ -454,7 +454,7 @@ class NexusThresholdMonitoring(AuditMixin, TenantAwareModel):
         app_label = 'taxes'
         verbose_name = "Nexus Threshold Monitoring"
         verbose_name_plural = "Nexus Threshold Monitoring"
-        ordering = ['-created_at', '-priority']
+        ordering = ['-priority']
     
     def __str__(self):
         return f"{self.alert_type} - {self.state} - {self.priority}"

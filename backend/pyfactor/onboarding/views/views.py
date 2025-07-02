@@ -1699,13 +1699,8 @@ class CleanupOnboardingView(BaseOnboardingView):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-@shared_task(
-    bind=True,
-    max_retries=3,
-    default_retry_delay=300,
-    autoretry_for=(DjangoOperationalError, KombuOperationalError, CeleryOperationalError)
-)
-def cleanup_expired_onboarding(self):
+# Celery has been removed - this is now a regular function
+def cleanup_expired_onboarding():
     """Celery task for cleaning up expired onboarding records"""
     try:
         expired_time = timezone.now() - timedelta(hours=5)
@@ -4688,7 +4683,7 @@ class SaveStep4View(BaseOnboardingView):
                 )
 
             # Queue setup task
-                        from custom_auth.rls import set_current_tenant_id, tenant_context
+            from custom_auth.rls import set_current_tenant_id, tenant_context
             
             logger.info("Celery removed - would have called setup_user_tenant_task with args: %s", [
                 str(request.user.id),
