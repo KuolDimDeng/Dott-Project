@@ -14,7 +14,7 @@ from django.apps import apps
 from django.utils import timezone
 from django.core.management import call_command
 from django.db import transaction
-from celery import shared_task, chain
+# Celery has been removed from this project
 from asgiref.sync import sync_to_async
 from pyfactor.logging_config import get_logger
 from django.contrib.auth import get_user_model
@@ -482,7 +482,6 @@ def sync_cleanup_schema(tenant_id: uuid.UUID) -> None:
         logger.error(f"Error in sync cleanup: {str(e)}")
         raise
 
-@shared_task
 def cleanup_stale_schemas():
     """Periodic task to clean up stale tenants"""
     try:

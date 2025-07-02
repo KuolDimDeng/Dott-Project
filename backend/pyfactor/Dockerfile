@@ -22,7 +22,6 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
     echo "=== DEPENDENCY VERIFICATION ===" && \
     python -c "import stripe; print(f'✅ Stripe {stripe._version} installed successfully')" && \
     python -c "import jwcrypto; print(f'✅ JWCrypto installed successfully')" && \
-    python -c "import celery; print(f'✅ Celery {celery.__version__} installed successfully')" && \
     echo "=== ALL CRITICAL DEPENDENCIES VERIFIED ==="
 
 # Copy application code

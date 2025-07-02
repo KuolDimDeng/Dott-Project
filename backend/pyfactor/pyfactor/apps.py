@@ -50,26 +50,14 @@ class PyfactorConfig(AppConfig):
             connection_created.connect(lambda **kwargs: apply_database_performance_settings())
             
             # Configure Celery Beat schedule
-            self._configure_celery_beat()
+            # Celery has been removed - no longer configuring celery beat
             
         except Exception as e:
             logger.error(f"Error initializing Pyfactor app: {str(e)}", exc_info=True)
     
     def _configure_celery_beat(self):
-        """Configure Celery Beat schedule after Django is fully loaded"""
-        try:
-            # Import the Celery app
-            from pyfactor.celery import app as celery_app
-            
-            # Import the task configuration function
-            from pyfactor.settings import configure_tasks
-            
-            # Configure the beat schedule with the task configurations
-            celery_app.conf.beat_schedule = configure_tasks()
-            
-            logger.info("Celery Beat schedule configured successfully")
-        except Exception as e:
-            logger.error(f"Error configuring Celery Beat schedule: {str(e)}", exc_info=True)
+        """Celery has been removed from this project"""
+        pass
 
 
 class OnboardingConfig(AppConfig):
@@ -78,19 +66,11 @@ class OnboardingConfig(AppConfig):
 
     def ready(self):
         """
-        Import and register tasks when Django starts
-        This ensures Celery discovers and registers all tasks
+        Celery has been removed from this project
         """
         try:
-            # Import tasks module to register tasks
-            import onboarding.tasks
-            
-            # Get the Celery app instance
-            from pyfactor.celery import app
-            
-            # Explicitly register tasks if needed
-            app.tasks.register(onboarding.tasks.setup_user_schema_task)
-            app.tasks.register(onboarding.tasks.send_websocket_notification_task)
+            # No longer importing celery tasks
+            pass
 
         except Exception as e:
             import logging

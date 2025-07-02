@@ -20,7 +20,7 @@ from django.http import JsonResponse
 from rest_framework.decorators import api_view
 from rest_framework import status
 from django.core.cache import cache
-from .tasks import fetch_shopify_data
+# Celery tasks have been removed
 
 import traceback
 
@@ -104,10 +104,9 @@ def shopify_oauth_callback(request):
                 logger.debug(f"Storing access token for shop: {shop}")
                 store_access_token(shop, access_token)
                 
-                # Queue a background task to fetch Shopify data
-                logger.debug(f"Queueing background task to fetch Shopify data for shop: {shop}")
-                fetch_shopify_data.delay(shop, access_token)
-                logger.debug(f"Background task queued for shop: {shop}")
+                # Celery has been removed - Shopify data fetch would need to be done synchronously or via cron
+                logger.debug(f"Shopify integration completed for shop: {shop}")
+                # TODO: Implement synchronous data fetch or schedule via cron
 
                 return redirect(f"{settings.FRONTEND_URL}/dashboard/integrations?status=success&platform=shopify")
             except Exception as e:
