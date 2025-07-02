@@ -165,8 +165,14 @@ Return ONLY this JSON structure:
     console.log('[Tax Suggestions API] Prompt length:', prompt.length);
     console.log('[Tax Suggestions API] Full prompt:', prompt);
 
-    try {
-      console.log('[Tax Suggestions API] About to call Claude API with model: claude-3-haiku-20240307');
+    // Helper function to make Claude API call with retry logic
+    const callClaudeWithRetry = async (attemptNumber = 1, maxAttempts = 3) => {
+      console.log(`[Tax Suggestions API] Claude API attempt ${attemptNumber}/${maxAttempts}`);
+      
+      const retryPrompt = attemptNumber > 1 ? 
+        `Your previous response was not valid JSON. Please respond with ONLY valid JSON, no text before or after.\n\n${prompt}` : 
+        prompt;
+      
       const message = await anthropic.messages.create({
         model: 'claude-3-haiku-20240307',
         max_tokens: 1000,
@@ -175,11 +181,23 @@ Return ONLY this JSON structure:
         messages: [
           {
             role: 'user',
-            content: prompt
+            content: retryPrompt
           }
         ]
       });
-      console.log('[Tax Suggestions API] Claude API call successful');
+      
+      return message;
+    };
+    
+    let taxData = null;
+    let lastError = null;
+    
+    // Try up to 3 times to get valid JSON from Claude
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        console.log(`[Tax Suggestions API] Attempt ${attempt} - Calling Claude API`);
+        const message = await callClaudeWithRetry(attempt, 3);
+        console.log('[Tax Suggestions API] Claude API call successful');
       
       // Parse the response
       const responseText = message.content[0].text;

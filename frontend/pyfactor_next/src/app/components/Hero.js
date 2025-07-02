@@ -27,7 +27,7 @@ export default function Hero() {
           
           <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl">
             <span className="block text-transparent bg-clip-text bg-gradient-to-r from-primary-main to-primary-light">
-              Business Management Software
+              All-in-one Business Software
             </span>
           </h1>
           
