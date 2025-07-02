@@ -96,25 +96,58 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
         };
       }
 
-      // If no business name from profileData, try to fetch from API
-      if (!businessData.businessName && user) {
-        try {
-          const response = await fetch('/api/user/profile');
-          if (response.ok) {
-            const userData = await response.json();
+      // Always try to fetch complete business data from dedicated business API
+      try {
+        console.log('[CompanyProfile] Fetching business data from /api/user/business');
+        const businessResponse = await fetch('/api/user/business');
+        if (businessResponse.ok) {
+          const businessApiData = await businessResponse.json();
+          console.log('[CompanyProfile] Business API data received:', businessApiData);
+          
+          if (businessApiData && !businessApiData.error) {
+            // Use business API data as the primary source
+            businessData = {
+              businessName: businessApiData.businessName || businessData.businessName,
+              businessType: businessApiData.businessType || businessData.businessType,
+              email: businessApiData.email || businessData.email,
+              phone: businessApiData.phone || businessData.phone,
+              website: businessApiData.website || businessData.website,
+              address: businessApiData.address || businessData.address,
+              taxId: businessApiData.taxId || businessData.taxId,
+              registrationNumber: businessApiData.registrationNumber || businessData.registrationNumber,
+              yearEstablished: businessApiData.yearEstablished || businessData.yearEstablished,
+              industry: businessApiData.industry || businessData.industry,
+              description: businessApiData.description || businessData.description
+            };
+            console.log('[CompanyProfile] Updated business data from API:', businessData);
+          }
+        } else {
+          console.warn('[CompanyProfile] Business API request failed:', businessResponse.status);
+          
+          // Fallback to profile API if business API fails
+          const profileResponse = await fetch('/api/user/profile');
+          if (profileResponse.ok) {
+            const userData = await profileResponse.json();
             if (userData) {
               businessData = {
                 ...businessData,
                 businessName: userData.businessName || userData.business_name || businessData.businessName,
                 businessType: userData.businessType || userData.business_type || businessData.businessType,
                 email: userData.email || businessData.email,
-                phone: userData.phone || userData.phone_number || businessData.phone
+                phone: userData.phone || userData.phone_number || businessData.phone,
+                website: userData.website || businessData.website,
+                industry: userData.industry || businessData.industry,
+                description: userData.description || businessData.description,
+                taxId: userData.taxId || businessData.taxId,
+                registrationNumber: userData.registrationNumber || businessData.registrationNumber,
+                yearEstablished: userData.yearEstablished || businessData.yearEstablished
               };
             }
           }
-        } catch (apiError) {
-          logger.error('[CompanyProfile] Error fetching user profile:', apiError);
         }
+      } catch (apiError) {
+        logger.error('[CompanyProfile] Error fetching business data:', apiError);
+        console.error('[CompanyProfile] API Error details:', apiError);
       }
 
       // Also check user object for business data

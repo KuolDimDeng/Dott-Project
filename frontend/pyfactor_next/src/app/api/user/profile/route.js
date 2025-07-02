@@ -41,6 +41,40 @@ export async function GET(request) {
           const sessionData = await response.json();
           logger.debug(`[UserProfile API] Backend session data retrieved successfully, request ${requestId}`);
           
+          // Try to get additional business/tenant information
+          let businessInfo = {};
+          if (sessionData.tenant_id) {
+            try {
+              const businessResponse = await fetch(`${API_URL}/api/tenant/${sessionData.tenant_id}/`, {
+                headers: {
+                  'Authorization': `Session ${sessionId}`,
+                  'Cookie': `session_token=${sessionId}`,
+                  'Content-Type': 'application/json'
+                },
+                cache: 'no-store'
+              });
+              
+              if (businessResponse.ok) {
+                const businessData = await businessResponse.json();
+                logger.debug(`[UserProfile API] Business data retrieved successfully, request ${requestId}`);
+                businessInfo = {
+                  businessName: businessData.business_name || businessData.name || '',
+                  businessType: businessData.business_type || businessData.type || '',
+                  website: businessData.website || '',
+                  industry: businessData.industry || '',
+                  description: businessData.description || '',
+                  taxId: businessData.tax_id || businessData.ein || '',
+                  registrationNumber: businessData.registration_number || '',
+                  yearEstablished: businessData.year_established || '',
+                  address: businessData.address || {},
+                  tenant: businessData // Include full tenant data
+                };
+              }
+            } catch (businessError) {
+              logger.warn(`[UserProfile API] Could not fetch business data: ${businessError.message}`);
+            }
+          }
+          
           // Transform backend session data to profile format
           const profile = {
             id: sessionData.user_id || sessionData.id,
@@ -57,13 +91,24 @@ export async function GET(request) {
             mfa_enabled: sessionData.mfa_enabled || false,
             tenantId: sessionData.tenant_id,
             tenant_id: sessionData.tenant_id,
-            businessName: sessionData.business_name || '',
+            businessName: businessInfo.businessName || sessionData.business_name || '',
+            businessType: businessInfo.businessType || sessionData.business_type || '',
+            business_name: businessInfo.businessName || sessionData.business_name || '',
+            business_type: businessInfo.businessType || sessionData.business_type || '',
+            website: businessInfo.website || '',
+            industry: businessInfo.industry || '',
+            description: businessInfo.description || '',
+            taxId: businessInfo.taxId || '',
+            registrationNumber: businessInfo.registrationNumber || '',
+            yearEstablished: businessInfo.yearEstablished || '',
+            address: businessInfo.address || {},
             subscriptionPlan: sessionData.subscription_plan || 'free',
             needsOnboarding: sessionData.needs_onboarding || false,
             onboardingCompleted: sessionData.onboarding_completed || true,
             currentStep: sessionData.current_onboarding_step || 'completed',
             role: sessionData.role || 'OWNER',
             permissions: sessionData.permissions || [],
+            tenant: businessInfo.tenant || businessInfo, // Include full tenant object
             requestId,
             sessionSource: 'backend-real-data'
           };
