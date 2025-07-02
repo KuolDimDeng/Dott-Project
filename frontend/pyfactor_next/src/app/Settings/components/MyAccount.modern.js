@@ -149,10 +149,6 @@ const MyAccount = ({ userData }) => {
     window.location.href = `https://${process.env.NEXT_PUBLIC_AUTH0_DOMAIN}/dbconnections/change_password?client_id=${process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID}`;
   };
 
-  const handleEnable2FA = () => {
-    // Redirect to Auth0 MFA setup
-    router.push('/settings/security/mfa');
-  };
 
   const handleEndSession = async (sessionId) => {
     try {
@@ -172,14 +168,21 @@ const MyAccount = ({ userData }) => {
 
   const fetchMFASettings = async () => {
     try {
+      console.log('[MFA Settings] Starting fetch...');
       setLoadingMFA(true);
       const response = await fetch('/api/user/mfa');
+      console.log('[MFA Settings] Response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('[MFA Settings] Retrieved data:', data);
         setMfaSettings(data);
+      } else {
+        const errorText = await response.text();
+        console.error('[MFA Settings] API error:', response.status, errorText);
       }
     } catch (error) {
-      console.error('Error fetching MFA settings:', error);
+      console.error('[MFA Settings] Fetch error:', error);
     } finally {
       setLoadingMFA(false);
     }
@@ -187,32 +190,43 @@ const MyAccount = ({ userData }) => {
   
   const handleToggleMFA = async (enabled) => {
     try {
+      console.log('[MFA Toggle] Starting toggle, enabled:', enabled);
       setUpdatingMFA(true);
+      
+      const requestBody = { 
+        enabled, 
+        preferredMethod: mfaSettings?.preferredMethod || 'totp' 
+      };
+      console.log('[MFA Toggle] Request body:', requestBody);
+      
       const response = await fetch('/api/user/mfa', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          enabled, 
-          preferredMethod: mfaSettings?.preferredMethod || 'totp' 
-        })
+        body: JSON.stringify(requestBody)
       });
+      
+      console.log('[MFA Toggle] Response status:', response.status);
       
       if (response.ok) {
         const data = await response.json();
+        console.log('[MFA Toggle] Response data:', data);
         notifySuccess(data.message);
         fetchMFASettings();
         
         if (enabled && !mfaSettings?.hasActiveEnrollment) {
+          console.log('[MFA Toggle] Redirecting to Auth0 MFA enrollment...');
           // Redirect to Auth0 MFA enrollment
           setTimeout(() => {
             window.location.href = `https://${process.env.NEXT_PUBLIC_AUTH0_DOMAIN}/mfa`;
           }, 2000);
         }
       } else {
+        const errorText = await response.text();
+        console.error('[MFA Toggle] API error:', response.status, errorText);
         throw new Error('Failed to update MFA settings');
       }
     } catch (error) {
-      console.error('Error updating MFA:', error);
+      console.error('[MFA Toggle] Error:', error);
       notifyError('Failed to update MFA settings');
     } finally {
       setUpdatingMFA(false);
