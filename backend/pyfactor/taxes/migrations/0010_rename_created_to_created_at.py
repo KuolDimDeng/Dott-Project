@@ -5,7 +5,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('taxes', '0002_initial_data'),
+        ('taxes', '0009_add_payroll_tax_models'),
     ]
 
     operations = [
