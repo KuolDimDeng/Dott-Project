@@ -185,8 +185,12 @@ export default function TaxSettings({ onNavigate }) {
           // Only update fields that aren't already populated from user data
           setFormData(prev => ({
             ...prev,
-            // Keep user data for core fields, only update additional fields
+            // Keep user data for core fields, only update additional fields if empty
+            country: data.businessInfo.country || prev.country,
             street: data.businessInfo.street || prev.street,
+            stateProvince: data.businessInfo.stateProvince || prev.stateProvince,
+            city: data.businessInfo.city || prev.city,
+            postalCode: data.businessInfo.postalCode || prev.postalCode,
             emailForDocuments: data.businessInfo.emailForDocuments || prev.emailForDocuments,
             phone: data.businessInfo.phone || prev.phone
           }));
@@ -254,7 +258,21 @@ export default function TaxSettings({ onNavigate }) {
           
           // Pre-populate form with user data from session
           if (user) {
-            // Get country from onboardingProgress (primary) or fallback locations
+            console.log('[TaxSettings] Initializing with user data:', user);
+            
+            // Try to get additional profile data first
+            let profileData = null;
+            try {
+              const profileResponse = await fetch('/api/user/profile');
+              if (profileResponse.ok) {
+                profileData = await profileResponse.json();
+                console.log('[TaxSettings] Profile data loaded:', profileData);
+              }
+            } catch (profileError) {
+              console.warn('[TaxSettings] Could not load profile data:', profileError);
+            }
+            
+            // Get country from multiple possible locations with more comprehensive search
             const countryCode = user.onboardingProgress?.country || 
                                user.country || 
                                user.business_country || 
@@ -263,24 +281,67 @@ export default function TaxSettings({ onNavigate }) {
                                user.profile?.country ||
                                user.business?.country ||
                                user.businessDetails?.country ||
-                               '';
+                               user.address?.country ||
+                               user.business_address?.country ||
+                               user.businessAddress?.country ||
+                               profileData?.address?.country ||
+                               profileData?.country ||
+                               profileData?.business_country ||
+                               profileData?.tenant?.address?.country ||
+                               'US'; // Default to US if no country found
             
             const countryName = getCountryName(countryCode);
+            console.log('[TaxSettings] Country resolved:', { countryCode, countryName });
             
             // Get business info from onboarding progress if available
             const onboarding = user.onboardingProgress || {};
             
+            // Enhanced address resolution
+            const addressData = user.address || profileData?.address || {};
+            
             const initialFormData = {
-              businessName: onboarding.businessName || user.businessName || user.business_name || '',
-              businessType: onboarding.businessType || user.businessType || user.business_type || 'retail',
+              businessName: onboarding.businessName || 
+                           user.businessName || 
+                           user.business_name || 
+                           profileData?.businessName || 
+                           profileData?.business_name || '',
+              businessType: onboarding.businessType || 
+                           user.businessType || 
+                           user.business_type || 
+                           profileData?.businessType || 
+                           profileData?.business_type || 'retail',
               country: countryName,
-              street: user.street || user.address || onboarding.address || '',
-              stateProvince: user.stateProvince || user.state_province || user.state || onboarding.state || '',
-              city: user.city || onboarding.city || '',
-              postalCode: user.postalCode || user.postal_code || user.zip_code || onboarding.postalCode || '',
-              emailForDocuments: user.email || '',
-              phone: user.phone || onboarding.phone || ''
+              street: user.street || 
+                     user.address || 
+                     addressData.street || 
+                     onboarding.address || 
+                     profileData?.address?.street || '',
+              stateProvince: user.stateProvince || 
+                            user.state_province || 
+                            user.state || 
+                            addressData.state || 
+                            onboarding.state || 
+                            profileData?.address?.state || '',
+              city: user.city || 
+                   addressData.city || 
+                   onboarding.city || 
+                   profileData?.address?.city || '',
+              postalCode: user.postalCode || 
+                         user.postal_code || 
+                         user.zip_code || 
+                         addressData.zipCode || 
+                         addressData.zip_code || 
+                         onboarding.postalCode || 
+                         profileData?.address?.zipCode || '',
+              emailForDocuments: user.email || profileData?.email || '',
+              phone: user.phone || 
+                    user.phone_number || 
+                    onboarding.phone || 
+                    profileData?.phone || 
+                    profileData?.phone_number || ''
             };
+            
+            console.log('[TaxSettings] Initial form data:', initialFormData);
             
             setFormData(prev => ({
               ...prev,
