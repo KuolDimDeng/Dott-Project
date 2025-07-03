@@ -34,7 +34,7 @@ export async function GET(request) {
     }
 
     // Fetch users from local database (tenant-scoped)
-    const localUsers = await fetchLocalUsers(tenantId, currentUser);
+    const localUsers = await fetchLocalUsers(tenantId, currentUser, request);
     
     // Fetch Auth0 users for this tenant
     const auth0Users = await fetchAuth0UsersForTenant(tenantId);
@@ -143,7 +143,9 @@ async function getSession(request) {
             tenantId: sessionData.user.tenantId || sessionData.user.tenant_id,
             role: sessionData.user.role || 'OWNER',
             mfa_enabled: sessionData.user.mfa_enabled || false,
-            permissions: sessionData.user.permissions || []
+            permissions: sessionData.user.permissions || [],
+            sessionToken: sessionData.accessToken || sessionData.access_token,
+            sessionId: sessionData.sessionId || sessionData.sid
           }
         };
       }
@@ -169,7 +171,9 @@ async function getSession(request) {
             tenantId: profileData.tenantId || profileData.tenant_id,
             role: profileData.role || 'OWNER',
             mfa_enabled: profileData.mfa_enabled || false,
-            permissions: profileData.permissions || []
+            permissions: profileData.permissions || [],
+            sessionToken: profileData.accessToken || profileData.access_token,
+            sessionId: profileData.sessionId || profileData.sid
           }
         };
       }
@@ -188,15 +192,70 @@ async function getSession(request) {
 /**
  * Helper function to fetch local users from database
  */
-async function fetchLocalUsers(tenantId, currentUser) {
+async function fetchLocalUsers(tenantId, currentUser, request) {
   try {
-    // This should query your local database for tenant users
-    // For now, return the current user as the first user in the list
-    const users = [];
+    // Fetch users from backend RBAC API
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
     
-    // Add current user if they belong to this tenant
+    // Forward cookies for session-based authentication
+    const cookieHeader = request?.headers?.get('cookie') || '';
+    
+    const response = await fetch(`${backendUrl}/auth/rbac/users/`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cookie': cookieHeader,
+        'X-Tenant-ID': tenantId
+      },
+      cache: 'no-store'
+    });
+    
+    if (!response.ok) {
+      logger.warn(`[UserManagement] Backend API returned ${response.status}: ${response.statusText}`);
+      
+      // If backend is not available, return at least the current user
+      if (currentUser && currentUser.tenantId === tenantId) {
+        return [{
+          id: currentUser.id,
+          email: currentUser.email,
+          name: currentUser.name || currentUser.email,
+          role: currentUser.role || 'OWNER',
+          status: 'active',
+          tenantId: tenantId,
+          permissions: currentUser.permissions || [],
+          created_at: currentUser.created_at || new Date().toISOString(),
+          last_login: new Date().toISOString(),
+          mfa_enabled: currentUser.mfa_enabled || false,
+          invite_status: 'accepted'
+        }];
+      }
+      return [];
+    }
+    
+    const data = await response.json();
+    const users = Array.isArray(data) ? data : (data.results || data.users || []);
+    
+    // Transform backend user data to frontend format
+    return users.map(user => ({
+      id: user.id || user.user_id,
+      email: user.email,
+      name: user.name || user.full_name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email,
+      role: user.role || 'USER',
+      status: user.is_active ? 'active' : 'inactive',
+      tenantId: user.tenant_id || user.tenantId || tenantId,
+      permissions: user.permissions || user.page_access || [],
+      created_at: user.date_joined || user.created_at || new Date().toISOString(),
+      last_login: user.last_login || new Date().toISOString(),
+      mfa_enabled: user.mfa_enabled || false,
+      invite_status: user.invite_status || 'accepted'
+    }));
+    
+  } catch (error) {
+    logger.error('[UserManagement] Error fetching local users:', error);
+    
+    // Return at least the current user on error
     if (currentUser && currentUser.tenantId === tenantId) {
-      users.push({
+      return [{
         id: currentUser.id,
         email: currentUser.email,
         name: currentUser.name || currentUser.email,
@@ -208,16 +267,8 @@ async function fetchLocalUsers(tenantId, currentUser) {
         last_login: new Date().toISOString(),
         mfa_enabled: currentUser.mfa_enabled || false,
         invite_status: 'accepted'
-      });
+      }];
     }
-    
-    // TODO: Query actual database for all tenant users
-    // const dbUsers = await db.query('SELECT * FROM tenant_users WHERE tenant_id = ?', [tenantId]);
-    // users.push(...dbUsers);
-    
-    return users;
-  } catch (error) {
-    logger.error('[UserManagement] Error fetching local users:', error);
     return [];
   }
 }

@@ -15,7 +15,10 @@ export async function POST(request) {
     }
     
     // Get session from backend
-    const sessionResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/sessions/current/`, {
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+    console.log('[Tax Verify API] Backend URL:', backendUrl);
+    
+    const sessionResponse = await fetch(`${backendUrl}/api/sessions/current/`, {
       headers: {
         'Authorization': `Session ${sessionId.value}`,
         'Cookie': `session_token=${sessionId.value}`
@@ -52,7 +55,7 @@ export async function POST(request) {
     }
     
     // First, save the tax settings
-    const backendUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/taxes/settings/`;
+    const settingsUrl = `${backendUrl}/api/taxes/settings/`;
     const requestBody = {
           tenant_id: tenantId,
           business_name: businessInfo.businessName,
@@ -75,10 +78,10 @@ export async function POST(request) {
           ai_confidence_score: suggestions?.confidenceScore || null
         };
     
-    console.log('[Tax Verify API] Calling backend URL:', backendUrl);
+    console.log('[Tax Verify API] Calling backend URL:', settingsUrl);
     console.log('[Tax Verify API] Backend request body:', JSON.stringify(requestBody, null, 2));
     
-    const settingsResponse = await fetch(backendUrl, {
+    const settingsResponse = await fetch(settingsUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -101,7 +104,7 @@ export async function POST(request) {
     // Send confirmation email
     try {
       const emailResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/taxes/send-confirmation/`,
+        `${backendUrl}/api/taxes/send-confirmation/`,
         {
           method: 'POST',
           headers: {
