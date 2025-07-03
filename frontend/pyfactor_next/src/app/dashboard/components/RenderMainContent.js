@@ -187,7 +187,7 @@ const SettingsManagement = enhancedLazy(() => {
       };
     });
 }, 'Settings Management');
-const MyAccount = enhancedLazy(() => import('@/app/Settings/components/MyAccount'), 'My Account');
+const MyAccount = enhancedLazy(() => import('@/app/Settings/components/MyAccount.modern'), 'My Account');
 const HelpCenter = enhancedLazy(() => import('@/app/Settings/components/HelpCenter'), 'Help Center');
 const TermsAndConditions = enhancedLazy(() => import('@/app/Terms&Privacy/components/TermsOfUse'), 'Terms and Conditions');
 const PrivacyPolicy = enhancedLazy(() => import('@/app/Terms&Privacy/components/PrivacyPolicy'), 'Privacy Policy');
