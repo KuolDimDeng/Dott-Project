@@ -33,8 +33,9 @@ export function initPostHog() {
   });
 
   if (!posthogKey) {
-    console.error('[PostHog] NEXT_PUBLIC_POSTHOG_KEY not found. Analytics will be disabled.');
-    console.error('[PostHog] Please set NEXT_PUBLIC_POSTHOG_KEY in your environment variables');
+    console.warn('[PostHog] NEXT_PUBLIC_POSTHOG_KEY not found. Analytics will be disabled.');
+    console.warn('[PostHog] To enable analytics, set NEXT_PUBLIC_POSTHOG_KEY in your deployment environment variables');
+    // Return null to disable PostHog gracefully
     return null;
   }
 

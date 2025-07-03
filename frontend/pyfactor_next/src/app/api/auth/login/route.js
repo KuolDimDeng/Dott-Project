@@ -117,7 +117,7 @@ export async function GET(request) {
     
     // Get query parameters
     const { searchParams } = new URL(request.url);
-    const connection = searchParams.get('connection') || 'google-oauth2';
+    const connection = searchParams.get('connection'); // Remove default to google-oauth2
     const loginHint = searchParams.get('login_hint');
     const returnUrl = searchParams.get('return_url');
     const invitation = searchParams.get('invitation');
@@ -143,7 +143,7 @@ export async function GET(request) {
       code_challenge_method: 'S256'
     });
     
-    // Add connection parameter for social logins
+    // Add connection parameter if specified (e.g., google-oauth2, Username-Password-Authentication)
     if (connection) {
       authParams.append('connection', connection);
     }
