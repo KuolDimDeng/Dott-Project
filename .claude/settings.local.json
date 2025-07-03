@@ -120,7 +120,8 @@
       "Bash(sh -c 'cd /Users/kuoldeng/projectx && git status')",
       "Bash(exec bash -c 'cd /Users/kuoldeng/projectx && git status')",
       "Bash(ZDOTDIR=/tmp bash -c 'cd /Users/kuoldeng/projectx && git status')",
-      "Bash(./deploy_chart_fix.sh:*)"
+      "Bash(./deploy_chart_fix.sh:*)",
+      "Bash(npx eslint:*)"
     ],
     "deny": []
   }

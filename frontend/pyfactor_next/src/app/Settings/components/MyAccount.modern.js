@@ -968,44 +968,45 @@ const MyAccount = ({ userData }) => {
           
           {expandedSections.tax && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pl-7">
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Social Security / National Insurance Number
-              </label>
-              <input
-                type="password"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="•••-••-••••"
-              />
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Social Security / National Insurance Number
+                </label>
+                <input
+                  type="password"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="•••-••-••••"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Tax Filing Status</label>
+                <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                  <option>Single</option>
+                  <option>Married Filing Jointly</option>
+                  <option>Married Filing Separately</option>
+                  <option>Head of Household</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Federal Allowances (W-4)</label>
+                <input
+                  type="number"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="0"
+                  min="0"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">State Allowances</label>
+                <input
+                  type="number"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="0"
+                  min="0"
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Tax Filing Status</label>
-              <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                <option>Single</option>
-                <option>Married Filing Jointly</option>
-                <option>Married Filing Separately</option>
-                <option>Head of Household</option>
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Federal Allowances (W-4)</label>
-              <input
-                type="number"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="0"
-                min="0"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">State Allowances</label>
-              <input
-                type="number"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="0"
-                min="0"
-              />
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Pay Information */}
