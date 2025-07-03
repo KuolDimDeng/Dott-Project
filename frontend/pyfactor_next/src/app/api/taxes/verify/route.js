@@ -1,15 +1,34 @@
 import { NextResponse } from 'next/server';
-import sessionManagerEnhanced from '@/utils/sessionManager-v2-enhanced';
+import { cookies } from 'next/headers';
 
 export async function POST(request) {
   console.log('[Tax Verify API] POST request received');
   
   try {
-    // Verify session
-    const session = await sessionManagerEnhanced.getSession();
-    if (!session?.authenticated) {
+    // Verify session by checking for session cookie
+    const cookieStore = await cookies();
+    const sessionId = cookieStore.get('sid');
+    
+    if (!sessionId) {
+      console.log('[Tax Verify API] No session cookie found');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    
+    // Get session from backend
+    const sessionResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/sessions/current/`, {
+      headers: {
+        'Authorization': `Session ${sessionId.value}`,
+        'Cookie': `session_token=${sessionId.value}`
+      },
+      cache: 'no-store'
+    });
+    
+    if (!sessionResponse.ok) {
+      console.log('[Tax Verify API] Session validation failed:', sessionResponse.status);
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    const session = await sessionResponse.json();
     
     const data = await request.json();
     console.log('[Tax Verify API] Request data:', JSON.stringify(data, null, 2));
@@ -94,7 +113,7 @@ export async function POST(request) {
           body: JSON.stringify({
             tenant_id: tenantId,
             tax_settings_id: settingsResult.id,
-            recipient_email: session.email || session.user?.email,
+            recipient_email: session.email || session.user_email || businessInfo.emailForDocuments,
             signature: signature,
             location: `${businessInfo.city}, ${businessInfo.stateProvince}, ${businessInfo.country}`,
             tax_rates: {
