@@ -19,62 +19,6 @@ import {
 } from '@phosphor-icons/react';
 
 export default function AboutUs() {
-  const [statsVisible, setStatsVisible] = React.useState(false);
-  const statsRef = React.useRef(null);
-
-  React.useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setStatsVisible(true);
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (statsRef.current) {
-      observer.observe(statsRef.current);
-    }
-
-    return () => {
-      if (statsRef.current) {
-        observer.unobserve(statsRef.current);
-      }
-    };
-  }, []);
-
-  const AnimatedCounter = ({ end, suffix = '', duration = 2000 }) => {
-    const [count, setCount] = React.useState(0);
-    
-    React.useEffect(() => {
-      if (!statsVisible) return;
-      
-      let startTime;
-      let animationFrame;
-      
-      const animate = (timestamp) => {
-        if (!startTime) startTime = timestamp;
-        const progress = (timestamp - startTime) / duration;
-        
-        if (progress < 1) {
-          setCount(Math.floor(end * progress));
-          animationFrame = requestAnimationFrame(animate);
-        } else {
-          setCount(end);
-        }
-      };
-      
-      animationFrame = requestAnimationFrame(animate);
-      
-      return () => {
-        if (animationFrame) {
-          cancelAnimationFrame(animationFrame);
-        }
-      };
-    }, [statsVisible, end, duration]);
-    
-    return <span>{count}{suffix}</span>;
-  };
 
   const timeline = [
     {
@@ -149,12 +93,6 @@ export default function AboutUs() {
     }
   ];
 
-  const stats = [
-    { value: 15000, suffix: '+', label: 'Active Businesses' },
-    { value: 32, suffix: '', label: 'Countries' },
-    { value: 120, suffix: 'M', label: 'Monthly Volume' },
-    { value: 98, suffix: '%', label: 'Customer Satisfaction' }
-  ];
 
   return (
     <div className="min-h-screen bg-white">
@@ -192,27 +130,6 @@ export default function AboutUs() {
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section ref={statsRef} className="py-20 -mt-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-              {stats.map((stat, index) => (
-                <div key={index} className="text-center">
-                  <div className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
-                    {statsVisible ? (
-                      <AnimatedCounter end={stat.value} suffix={stat.suffix} />
-                    ) : (
-                      `0${stat.suffix}`
-                    )}
-                  </div>
-                  <div className="text-sm text-gray-600">{stat.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Story Section */}
       <section className="py-20 bg-gray-50">
@@ -234,8 +151,7 @@ export default function AboutUs() {
                   markets where traditional solutions fall short.
                 </p>
                 <p>
-                  Today, we're proud to serve over 15,000 businesses across 32 countries, 
-                  processing over $120 million in transactions monthly. But we're just getting started.
+                  Today, we're proud to serve businesses worldwide. But we're just getting started.
                 </p>
               </div>
             </div>
