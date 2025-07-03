@@ -565,7 +565,8 @@ class TaxDataEntryControlViewSet(viewsets.ModelViewSet):
 
 class TaxDataEntryLogViewSet(viewsets.ReadOnlyModelViewSet):
     """ViewSet for viewing tax data entry logs"""
-    queryset = TaxDataEntryLog.objects.all().order_by('-created_at')
+    # Temporary fix: use 'created' until migration runs
+    queryset = TaxDataEntryLog.objects.all().order_by('-created')
     serializer_class = TaxDataEntryLogSerializer
     permission_classes = [permissions.IsAuthenticated]
     
@@ -597,9 +598,11 @@ class TaxDataEntryLogViewSet(viewsets.ReadOnlyModelViewSet):
         from_date = self.request.query_params.get('from_date')
         to_date = self.request.query_params.get('to_date')
         if from_date:
-            queryset = queryset.filter(created_at__gte=from_date)
+            # Temporary fix: use 'created' until migration runs
+            queryset = queryset.filter(created__gte=from_date)
         if to_date:
-            queryset = queryset.filter(created_at__lte=to_date)
+            # Temporary fix: use 'created' until migration runs  
+            queryset = queryset.filter(created__lte=to_date)
         
         return queryset
     
@@ -624,7 +627,8 @@ class TaxDataEntryLogViewSet(viewsets.ReadOnlyModelViewSet):
 
 class TaxDataAbuseReportViewSet(viewsets.ModelViewSet):
     """ViewSet for managing tax data abuse reports"""
-    queryset = TaxDataAbuseReport.objects.all().order_by('-created_at')
+    # Temporary fix: use 'created' until migration runs
+    queryset = TaxDataAbuseReport.objects.all().order_by('-created')
     serializer_class = TaxDataAbuseReportSerializer
     permission_classes = [permissions.IsAuthenticated]
     
@@ -661,7 +665,8 @@ class TaxDataAbuseReportViewSet(viewsets.ModelViewSet):
 
 class TaxDataBlacklistViewSet(viewsets.ModelViewSet):
     """ViewSet for managing tax data blacklist"""
-    queryset = TaxDataBlacklist.objects.all().order_by('-created_at')
+    # Temporary fix: use 'created' until migration runs
+    queryset = TaxDataBlacklist.objects.all().order_by('-created')
     serializer_class = TaxDataBlacklistSerializer
     permission_classes = [permissions.IsAuthenticated]
     
