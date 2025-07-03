@@ -65,14 +65,18 @@ export async function middleware(request) {
   const isProtectedPath = protectedPaths.some(path => pathname.startsWith(path)) ||
                          pathname.match(/^\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\//);
   
+  // Skip auth check for auth routes to prevent redirect loops
+  const isAuthRoute = pathname.startsWith('/auth/');
+  
   console.log('[Middleware] Protected path check:', {
     isProtectedPath,
+    isAuthRoute,
     matchedPattern: protectedPaths.find(path => pathname.startsWith(path)) || 
                    (pathname.match(/^\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\//) ? 'tenant-uuid' : null)
   });
   
-  // Skip protection for API routes (they handle auth themselves)
-  if (isProtectedPath && !pathname.startsWith('/api/')) {
+  // Skip protection for API routes and auth routes (they handle auth themselves)
+  if (isProtectedPath && !pathname.startsWith('/api/') && !isAuthRoute) {
     console.log('[Middleware] Checking auth for protected route:', pathname);
     console.log('[Middleware] Session check - sid:', !!sid, 'sessionToken:', !!sessionToken);
     

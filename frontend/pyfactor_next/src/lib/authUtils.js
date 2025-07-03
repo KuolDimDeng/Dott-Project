@@ -50,6 +50,7 @@ const PUBLIC_ROUTES = [
   '/auth/reset-password',
   '/auth/verify',
   '/auth/verify-email',
+  '/auth/email-signin',  // Add email-signin to prevent redirect loops
   '/about',
   '/privacy',
   '/terms',
