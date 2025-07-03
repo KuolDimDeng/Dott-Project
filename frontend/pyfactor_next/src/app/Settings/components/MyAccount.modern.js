@@ -172,7 +172,9 @@ const MyAccount = ({ userData }) => {
 
   const handlePasswordChange = () => {
     // Redirect to Auth0 password reset
-    window.location.href = `https://${process.env.NEXT_PUBLIC_AUTH0_DOMAIN}/dbconnections/change_password?client_id=${process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID}`;
+    const auth0Domain = process.env.NEXT_PUBLIC_AUTH0_DOMAIN || 'auth.dottapps.com';
+    const auth0ClientId = process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || '';
+    window.location.href = `https://${auth0Domain}/dbconnections/change_password?client_id=${auth0ClientId}`;
   };
 
 
