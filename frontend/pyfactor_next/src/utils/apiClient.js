@@ -2804,3 +2804,8 @@ export const payrollApi = {
     }
   }
 };
+
+// Additional API exports for backward compatibility
+export const billApi = accountingApi;
+export const expenseApi = accountingApi;
+export const procurementApi = purchasesApi;
