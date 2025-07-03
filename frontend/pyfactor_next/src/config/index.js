@@ -59,7 +59,7 @@ export const APP_CONFIG = {
  
   app: {
     name: 'Dott',
-    title: 'Dott: Business Software', 
+    title: 'Dott: Complete Business Software', 
     description: 'Streamline your business operations with Dott',
     keywords: 'business management, finance, operations',
     favicon: '/static/images/favicon.png',
