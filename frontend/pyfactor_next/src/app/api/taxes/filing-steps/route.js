@@ -123,7 +123,7 @@ Format the response as JSON with the following structure:
 }`;
 
     const message = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 2500,
       temperature: 0.3, // Lower temperature for more consistent, factual responses
       messages: [

@@ -302,32 +302,32 @@
 
 ### [13.0.0] - 2025-01-12 - CURRENT - Claude API Integration Architecture
 - **Purpose**: Dual Claude API setup for feature separation and cost optimization
-- **UPDATED 2025-07-03**: All Claude API calls now use Claude 3.5 Sonnet for maximum accuracy
+- **UPDATED 2025-07-03**: All Claude API calls now use Claude Sonnet 4 for state-of-the-art accuracy
 - **Tax API Configuration**:
   - Environment Variable: `CLAUDE_API_KEY`
-  - Model: `claude-3-5-sonnet-20241022` (upgraded from opus/haiku for better accuracy)
+  - Model: `claude-sonnet-4-20250514` (upgraded to Sonnet 4 for best accuracy)
   - Purpose: Tax calculations, compliance checks, regulatory guidance
   - Usage: Tax modules requiring precise calculations and state/federal distinction
 - **Smart Insights API Configuration**:
   - Environment Variable: `CLAUDE_SMART_INSIGHTS_API_KEY`
-  - Model: `claude-3-5-sonnet-20241022` (upgraded for better business insights)
+  - Model: `claude-sonnet-4-20250514` (upgraded to Sonnet 4)
   - Purpose: Business intelligence, customer insights, revenue analysis
   - Credit System: 1 credit = $0.001 of API usage (min 1 credit/query)
   - Rate Limiting: 10 requests per minute via Redis
 - **Benefits**:
-  - **Maximum Accuracy**: Claude 3.5 Sonnet provides best-in-class accuracy
-  - **Better Instruction Following**: Superior at understanding complex tax distinctions
-  - **Feature Separation**: Independent API keys prevent cross-feature interference
+  - **State-of-the-Art Accuracy**: Claude Sonnet 4 achieves 72.7% on SWE-bench
+  - **Superior Instruction Following**: Best at understanding complex tax distinctions
+  - **Latest Training Data**: Most current tax information available
   - **Consistent Performance**: Single model across all features
 - **Environment Variables Required**:
   ```
   # Tax API
   CLAUDE_API_KEY=sk-ant-api03-...
-  CLAUDE_API_MODEL=claude-3-5-sonnet-20241022
+  CLAUDE_API_MODEL=claude-sonnet-4-20250514
   
   # Smart Insights API
   CLAUDE_SMART_INSIGHTS_API_KEY=sk-ant-api03-...
-  CLAUDE_SMART_INSIGHTS_MODEL=claude-3-5-sonnet-20241022
+  CLAUDE_SMART_INSIGHTS_MODEL=claude-sonnet-4-20250514
   CLAUDE_SMART_INSIGHTS_MAX_TOKENS=1000
   ```
 
@@ -563,19 +563,29 @@ Add `REDIS_URL` environment variable in Render dashboard
 - **Documentation**: `/docs/TAX_FILING_IMPLEMENTATION.md`
 - **Status**: Production-ready, awaiting state API credentials and final deployment
 
-### [20.0.0] - 2025-07-03 - CURRENT - Claude 3.5 Sonnet Model Upgrade
-- **Purpose**: Upgrade all Claude API integrations to use Claude 3.5 Sonnet for maximum accuracy
+### [20.0.0] - 2025-07-03 - CURRENT - Claude Sonnet 4 Model Upgrade
+- **Purpose**: Upgrade all Claude API integrations to use Claude Sonnet 4 for state-of-the-art accuracy
 - **Issue Resolved**: Tax API was confusing federal and state income tax rates
-- **Changes**:
-  - Tax Suggestions: `claude-3-haiku-20240307` → `claude-3-5-sonnet-20241022`
-  - Smart Insights: `claude-3-sonnet-20240229` → `claude-3-5-sonnet-20241022`
-  - Tax Filing Steps: `claude-3-haiku-20240307` → `claude-3-5-sonnet-20241022`
-  - Tax Filing Locations: `claude-3-haiku-20240307` → `claude-3-5-sonnet-20241022`
+- **Evolution**:
+  - Initial: `claude-3-haiku-20240307` (failed to distinguish state/federal taxes)
+  - Interim: `claude-3-5-sonnet-20241022` (better but still some issues)
+  - Current: `claude-sonnet-4-20250514` (best accuracy available)
+- **Changes Applied**:
+  - Tax Suggestions: → `claude-sonnet-4-20250514`
+  - Smart Insights: → `claude-sonnet-4-20250514`
+  - Tax Filing Steps: → `claude-sonnet-4-20250514`
+  - Tax Filing Locations: → `claude-sonnet-4-20250514`
+  - Test Claude: → `claude-sonnet-4-20250514`
 - **Benefits**:
-  - Superior instruction following for complex tax distinctions
-  - Better understanding of state vs federal tax requirements
-  - More accurate JSON formatting and response structure
-  - Consistent high-quality responses across all features
+  - 72.7% performance on SWE-bench (state-of-the-art)
+  - Superior understanding of tax jurisdictions and distinctions
+  - More reliable JSON formatting and structure
+  - Better instruction following for complex requirements
+  - Latest training data with current tax information
+- **Cost Analysis**:
+  - API cost per request: ~$0.018 (1.8 cents)
+  - User charge: $0.10 (10 cents)
+  - Healthy markup: 456% (5.6x)
 - **Files Updated**:
   - Backend: `/backend/pyfactor/taxes/views/tax_suggestions.py`
   - Backend: `/backend/pyfactor/pyfactor/settings.py`

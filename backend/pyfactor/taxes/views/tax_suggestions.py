@@ -156,7 +156,7 @@ Return the following JSON structure with ACTUAL rates for {state_province}:
                 
                 # Make the API call
                 message = client.messages.create(
-                    model="claude-3-5-sonnet-20241022",  # Latest Sonnet version - more capable than Haiku
+                    model="claude-sonnet-4-20250514",  # Sonnet 4 - latest and most accurate
                     max_tokens=1000,
                     temperature=0,
                     system="You are a tax expert providing accurate, up-to-date tax information for businesses worldwide. Always provide current 2024 tax rates. CRITICAL RULES: 1) For personalIncomeTaxBrackets field, ONLY include STATE income tax brackets, NEVER federal brackets. 2) Federal tax rates (10%, 12%, 22%, 24%, 32%, 35%, 37%) should NEVER appear in state tax fields. 3) Research the SPECIFIC STATE's actual income tax structure. 4) Utah has a FLAT state income tax of 4.65%, not progressive brackets. Always respond with ONLY valid JSON, no explanatory text.",
