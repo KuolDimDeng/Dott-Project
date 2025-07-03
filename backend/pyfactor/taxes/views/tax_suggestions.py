@@ -102,10 +102,12 @@ Business Information:
 
 IMPORTANT INSTRUCTIONS:
 1. Provide actual tax rates for the SPECIFIC location given
-2. For personal income tax, return STATE tax rates ONLY, not federal rates
+2. For personal income tax fields, return STATE tax rates ONLY, not federal rates
 3. Research whether this specific state has progressive brackets or a flat rate
-4. Do NOT confuse federal income tax brackets (10%, 12%, 22%, etc.) with state rates
-5. Return ONLY valid JSON with no other text
+4. CRITICAL: Federal income tax rates (10%, 12%, 22%, 24%, 32%, 35%, 37%) should NEVER appear in the personalIncomeTaxBrackets field
+5. Example: Utah has a FLAT state income tax of 4.65% (set hasProgressiveTax=false, flatPersonalIncomeTaxRate=4.65)
+6. Example: California has progressive STATE income tax from 1% to 13.3% (not federal rates!)
+7. Return ONLY valid JSON with no other text
 
 Return the following JSON structure with ACTUAL rates for {state_province}:
 {{
@@ -157,7 +159,7 @@ Return the following JSON structure with ACTUAL rates for {state_province}:
                     model="claude-3-haiku-20240307",
                     max_tokens=1000,
                     temperature=0,
-                    system="You are a tax expert providing accurate, up-to-date tax information for businesses worldwide. Always provide current 2024 tax rates. Be specific about state vs federal taxes. For US states, NEVER confuse federal income tax rates (10%, 12%, 22%, etc.) with state income tax rates. Always respond with ONLY valid JSON, no explanatory text.",
+                    system="You are a tax expert providing accurate, up-to-date tax information for businesses worldwide. Always provide current 2024 tax rates. CRITICAL RULES: 1) For personalIncomeTaxBrackets field, ONLY include STATE income tax brackets, NEVER federal brackets. 2) Federal tax rates (10%, 12%, 22%, 24%, 32%, 35%, 37%) should NEVER appear in state tax fields. 3) Research the SPECIFIC STATE's actual income tax structure. 4) Utah has a FLAT state income tax of 4.65%, not progressive brackets. Always respond with ONLY valid JSON, no explanatory text.",
                     messages=[
                         {
                             "role": "user",
