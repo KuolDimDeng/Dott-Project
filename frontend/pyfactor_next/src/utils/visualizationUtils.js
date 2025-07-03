@@ -1,5 +1,7 @@
 'use client';
 
+import { generateFallbackChart } from './visualizationFallback';
+
 export const parseVisualizationData = (responseText) => {
   const visualizations = [];
   
@@ -90,6 +92,12 @@ export const parseVisualizationData = (responseText) => {
     
   } catch (error) {
     console.error('Error parsing visualization data:', error);
+  }
+  
+  // If no visualizations were found, try fallback parsing
+  if (visualizations.length === 0 && shouldShowVisualization(responseText)) {
+    const fallbackCharts = generateFallbackChart(responseText);
+    visualizations.push(...fallbackCharts);
   }
   
   return visualizations;

@@ -426,6 +426,10 @@ class SmartInsightsViewSet(viewsets.ViewSet):
             response = client.messages.create(
                 model=settings.CLAUDE_SMART_INSIGHTS_MODEL,
                 max_tokens=settings.CLAUDE_SMART_INSIGHTS_MAX_TOKENS,
+                system="""You are a business intelligence assistant that helps analyze business data and create visualizations. 
+When users ask for charts, graphs, or visualizations, you MUST include chart data in JSON format within ```json code blocks.
+Never use ASCII art or text-based charts. Always use the proper JSON format for Chart.js compatibility.
+Supported chart types: bar, line, doughnut, pie.""",
                 messages=[
                     {
                         "role": "user",
@@ -435,6 +439,41 @@ BUSINESS DATA:
 {business_context}
 
 USER QUERY: {query_text}
+
+IMPORTANT INSTRUCTIONS FOR CHARTS:
+1. When the user asks for charts, visualizations, or includes words like "show", "display", "chart", "graph", "visualize":
+   - Include chart data in your response using this EXACT JSON format within code blocks:
+   
+   ```json
+   {{
+     "type": "bar",  // or "line", "doughnut", "pie"
+     "title": "Chart Title",
+     "data": {{
+       "labels": ["Label1", "Label2", "Label3"],
+       "datasets": [{{
+         "label": "Dataset Name",
+         "data": [10, 20, 30],
+         "backgroundColor": "rgba(59, 130, 246, 0.2)",
+         "borderColor": "rgba(59, 130, 246, 1)",
+         "borderWidth": 1
+       }}]
+     }},
+     "options": {{
+       "responsive": true,
+       "plugins": {{
+         "title": {{
+           "display": true,
+           "text": "Chart Title"
+         }}
+       }}
+     }}
+   }}
+   ```
+
+2. DO NOT use ASCII art or text-based charts like ┌─────┐
+3. Always include actual numeric data from the business context
+4. You can include multiple charts by using multiple JSON code blocks
+5. Include explanatory text along with the charts
 
 Please provide specific insights based on the actual business data above, not generic advice."""
                     }
