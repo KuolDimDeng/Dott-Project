@@ -228,7 +228,7 @@ const nextConfig = {
             value: [
               "default-src 'self'",
               // Remove unsafe-inline and unsafe-eval for scripts - use strict CSP
-              "script-src 'self' https://accounts.google.com https://dev-cbyy63jovi6zrcos.us.auth0.com https://js.stripe.com https://client.crisp.chat https://widget.crisp.chat https://cdn.plaid.com https://cdn.posthog.com https://app.posthog.com",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://dev-cbyy63jovi6zrcos.us.auth0.com https://js.stripe.com https://client.crisp.chat https://widget.crisp.chat https://cdn.plaid.com https://cdn.posthog.com https://app.posthog.com https://*.posthog.com",
               // Allow inline styles for now (can be removed later with CSS refactoring)
               "style-src 'self' 'unsafe-inline' https://client.crisp.chat",
               "font-src 'self' data: https://fonts.gstatic.com https://client.crisp.chat",

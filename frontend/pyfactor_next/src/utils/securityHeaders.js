@@ -20,11 +20,11 @@ export function addSecurityHeaders(response, nonce = null) {
   // TODO: Re-enable nonces after fixing Next.js Edge Runtime compatibility
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.auth0.com https://*.stripe.com https://*.googleapis.com https://*.gstatic.com https://*.google.com https://*.googletagmanager.com https://*.google-analytics.com https://client.crisp.chat https://*.crisp.chat",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.auth0.com https://*.stripe.com https://*.googleapis.com https://*.gstatic.com https://*.google.com https://*.googletagmanager.com https://*.google-analytics.com https://client.crisp.chat https://*.crisp.chat https://app.posthog.com https://*.posthog.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://client.crisp.chat",
     "font-src 'self' https://fonts.gstatic.com https://client.crisp.chat data:",
     "img-src 'self' data: blob: https:",
-    "connect-src 'self' https://*.auth0.com https://*.stripe.com https://*.googleapis.com wss://*.crisp.chat https://*.crisp.chat https://api.stripe.com https://api.dottapps.com https://auth.dottapps.com https://ipapi.co https://api.country.is https://ipinfo.io",
+    "connect-src 'self' https://*.auth0.com https://*.stripe.com https://*.googleapis.com wss://*.crisp.chat https://*.crisp.chat https://api.stripe.com https://api.dottapps.com https://auth.dottapps.com https://ipapi.co https://api.country.is https://ipinfo.io https://app.posthog.com https://*.posthog.com",
     "frame-src 'self' https://*.auth0.com https://*.stripe.com",
     "frame-ancestors 'none'",
     "object-src 'none'",
