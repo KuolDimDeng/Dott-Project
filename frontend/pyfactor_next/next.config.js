@@ -131,11 +131,9 @@ const nextConfig = {
       config.optimization.sideEffects = false;
     }
     
-    // Handle stubs
+    // Handle stubs (removed chart.js stubs to enable Smart Insights charts)
     config.resolve.alias = {
       ...config.resolve.alias,
-      'chart.js': path.resolve(__dirname, 'src/utils/stubs/chart-stub.js'),
-      'react-chartjs-2': path.resolve(__dirname, 'src/utils/stubs/react-chartjs-2-stub.js'),
       'react-datepicker': path.resolve(__dirname, 'src/utils/stubs/datepicker-stub.js'),
     };
 
@@ -150,10 +148,9 @@ const nextConfig = {
       tls: false,
     };
 
-    // Exclude canvas and other heavy dependencies
+    // Exclude heavy dependencies (removed canvas to enable Smart Insights charts)
     config.externals = [
       ...(config.externals || []),
-      { canvas: 'commonjs canvas' },
       'puppeteer',
       'puppeteer-core',
       'chrome-aws-lambda',
