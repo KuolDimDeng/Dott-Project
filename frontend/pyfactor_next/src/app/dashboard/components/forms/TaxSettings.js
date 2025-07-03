@@ -1114,10 +1114,10 @@ export default function TaxSettings({ onNavigate }) {
                       <div className="ml-2 flex-1 max-w-xs bg-blue-200 rounded-full h-2">
                         <div 
                           className="bg-blue-600 h-2 rounded-full"
-                          style={{ width: `${taxSuggestions.confidenceScore}%` }}
+                          style={{ width: `${taxSuggestions.confidenceScore * 100}%` }}
                         />
                       </div>
-                      <span className="ml-2 text-xs text-blue-600">{taxSuggestions.confidenceScore}%</span>
+                      <span className="ml-2 text-xs text-blue-600">{(taxSuggestions.confidenceScore * 100).toFixed(0)}%</span>
                     </div>
                   )}
                 </div>
