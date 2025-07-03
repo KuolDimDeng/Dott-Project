@@ -6,7 +6,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { usePathname } from 'next/navigation';
 import { isPublicRoute } from '@/lib/authUtils';
 import { AuthProvider } from '@/contexts/AuthContext';
-import { AmplifyProvider } from '@/providers/AmplifyProvider';
 import AuthWrapper from '@/app/AuthWrapper/AuthWrapper';
 import { logger } from '@/utils/logger';
 import { ToastProvider } from '@/components/Toast/ToastProvider';
@@ -85,23 +84,19 @@ function Providers({ children }) {
   return (
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
-        {/* Always use AmplifyProvider for auth routes, regardless of public status */}
+        {/* Always use AuthProvider for auth routes, regardless of public status */}
         {pathname.startsWith('/auth/') ? (
-          <AmplifyProvider>
-            <AuthProvider>
-              <PostHogProvider>
-                {children}
-              </PostHogProvider>
-            </AuthProvider>
-          </AmplifyProvider>
+          <AuthProvider>
+            <PostHogProvider>
+              {children}
+            </PostHogProvider>
+          </AuthProvider>
         ) : !isPublic ? (
-          <AmplifyProvider>
-            <AuthProvider>
-              <PostHogProvider>
-                <AuthWrapper>{children}</AuthWrapper>
-              </PostHogProvider>
-            </AuthProvider>
-          </AmplifyProvider>
+          <AuthProvider>
+            <PostHogProvider>
+              <AuthWrapper>{children}</AuthWrapper>
+            </PostHogProvider>
+          </AuthProvider>
         ) : (
           <AuthProvider>
             <PostHogProvider>

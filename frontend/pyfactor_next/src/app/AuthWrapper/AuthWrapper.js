@@ -1,7 +1,6 @@
 ///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/AuthWrapper/AuthWrapper.js
 import { useEffect, useState } from 'react';
 // No need to import configureAmplify as it's already done in amplifyUnified.js
-import { AmplifyProvider } from '@/providers/AmplifyProvider';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { SafeWrapper } from '@/utils/ContextFix';
 
