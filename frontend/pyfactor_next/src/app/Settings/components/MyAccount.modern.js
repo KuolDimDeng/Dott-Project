@@ -29,7 +29,9 @@ import {
   CalendarDaysIcon,
   AcademicCapIcon,
   CreditCardIcon,
-  UserCircleIcon
+  UserCircleIcon,
+  ChevronDownIcon,
+  ChevronUpIcon
 } from '@heroicons/react/24/outline';
 
 const MyAccount = ({ userData }) => {
@@ -50,6 +52,15 @@ const MyAccount = ({ userData }) => {
   const [loadingMFA, setLoadingMFA] = useState(true);
   const [updatingMFA, setUpdatingMFA] = useState(false);
   const fileInputRef = useRef(null);
+  
+  // Employment tab section visibility states
+  const [expandedSections, setExpandedSections] = useState({
+    banking: false,
+    tax: false,
+    pay: false,
+    benefits: false,
+    documents: false
+  });
   
   const router = useRouter();
   const { notifySuccess, notifyError } = useNotification();
@@ -846,13 +857,23 @@ const MyAccount = ({ userData }) => {
     );
   };
 
+  const toggleSection = (section) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
+
   const renderEmploymentTab = () => {
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-6">
         {/* Banking Information */}
         <div className="border-b pb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
+          <button
+            onClick={() => toggleSection('banking')}
+            className="w-full flex items-center justify-between mb-4 group hover:bg-gray-50 p-2 rounded-lg transition-colors"
+          >
+            <div className="text-left">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center">
                 <BanknotesIcon className="w-5 h-5 mr-2 text-green-600" />
                 Banking Information
@@ -861,9 +882,23 @@ const MyAccount = ({ userData }) => {
                 Direct deposit and payment details
               </p>
             </div>
-          </div>
+            <div className="flex items-center text-gray-500">
+              {expandedSections.banking ? (
+                <>
+                  <span className="text-xs mr-2">Hide</span>
+                  <ChevronUpIcon className="w-5 h-5" />
+                </>
+              ) : (
+                <>
+                  <span className="text-xs mr-2">Show</span>
+                  <ChevronDownIcon className="w-5 h-5" />
+                </>
+              )}
+            </div>
+          </button>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {expandedSections.banking && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pl-7">
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Bank Name</label>
               <input
@@ -875,17 +910,17 @@ const MyAccount = ({ userData }) => {
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Account Number</label>
               <input
-                type="text"
+                type="password"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter account number"
+                placeholder="••••••••••"
               />
             </div>
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Routing Number</label>
               <input
-                type="text"
+                type="password"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter routing number"
+                placeholder="•••••••••"
               />
             </div>
             <div className="space-y-2">
@@ -896,12 +931,16 @@ const MyAccount = ({ userData }) => {
               </select>
             </div>
           </div>
+          )}
         </div>
 
         {/* Tax Information */}
         <div className="border-b pb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
+          <button
+            onClick={() => toggleSection('tax')}
+            className="w-full flex items-center justify-between mb-4 group hover:bg-gray-50 p-2 rounded-lg transition-colors"
+          >
+            <div className="text-left">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center">
                 <DocumentDuplicateIcon className="w-5 h-5 mr-2 text-blue-600" />
                 Tax Information
@@ -910,17 +949,31 @@ const MyAccount = ({ userData }) => {
                 Social Security and tax withholding details
               </p>
             </div>
-          </div>
+            <div className="flex items-center text-gray-500">
+              {expandedSections.tax ? (
+                <>
+                  <span className="text-xs mr-2">Hide</span>
+                  <ChevronUpIcon className="w-5 h-5" />
+                </>
+              ) : (
+                <>
+                  <span className="text-xs mr-2">Show</span>
+                  <ChevronDownIcon className="w-5 h-5" />
+                </>
+              )}
+            </div>
+          </button>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {expandedSections.tax && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pl-7">
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
                 Social Security / National Insurance Number
               </label>
               <input
-                type="text"
+                type="password"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="XXX-XX-XXXX"
+                placeholder="•••-••-••••"
               />
             </div>
             <div className="space-y-2">
@@ -955,8 +1008,11 @@ const MyAccount = ({ userData }) => {
 
         {/* Pay Information */}
         <div className="border-b pb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
+          <button
+            onClick={() => toggleSection('pay')}
+            className="w-full flex items-center justify-between mb-4 group hover:bg-gray-50 p-2 rounded-lg transition-colors"
+          >
+            <div className="text-left">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center">
                 <CalendarDaysIcon className="w-5 h-5 mr-2 text-purple-600" />
                 Pay Information
@@ -965,39 +1021,59 @@ const MyAccount = ({ userData }) => {
                 View your paystubs and payment history
               </p>
             </div>
-            <button className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-              View All Paystubs
-            </button>
-          </div>
+            <div className="flex items-center text-gray-500">
+              {expandedSections.pay ? (
+                <>
+                  <span className="text-xs mr-2">Hide</span>
+                  <ChevronUpIcon className="w-5 h-5" />
+                </>
+              ) : (
+                <>
+                  <span className="text-xs mr-2">Show</span>
+                  <ChevronDownIcon className="w-5 h-5" />
+                </>
+              )}
+            </div>
+          </button>
           
-          <div className="space-y-3">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <p className="text-sm text-gray-600">Current Salary</p>
-                <p className="text-xl font-semibold text-gray-900">$0.00</p>
+          {expandedSections.pay && (
+            <div className="space-y-3 mt-4 pl-7">
+              <div className="flex justify-end mb-4">
+                <button className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                  View All Paystubs
+                </button>
               </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <p className="text-sm text-gray-600">Pay Frequency</p>
-                <p className="text-xl font-semibold text-gray-900">Monthly</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-600">Current Salary</p>
+                  <p className="text-xl font-semibold text-gray-900">$0.00</p>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-600">Pay Frequency</p>
+                  <p className="text-xl font-semibold text-gray-900">Monthly</p>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-600">Next Pay Date</p>
+                  <p className="text-xl font-semibold text-gray-900">--</p>
+                </div>
               </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <p className="text-sm text-gray-600">Next Pay Date</p>
-                <p className="text-xl font-semibold text-gray-900">--</p>
+              
+              {/* Recent Paystubs */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Recent Paystubs</h4>
+                <p className="text-sm text-gray-500 text-center py-8">No paystubs available</p>
               </div>
             </div>
-            
-            {/* Recent Paystubs */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h4 className="text-sm font-medium text-gray-700 mb-3">Recent Paystubs</h4>
-              <p className="text-sm text-gray-500 text-center py-8">No paystubs available</p>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Benefits & Deductions */}
         <div className="border-b pb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
+          <button
+            onClick={() => toggleSection('benefits')}
+            className="w-full flex items-center justify-between mb-4 group hover:bg-gray-50 p-2 rounded-lg transition-colors"
+          >
+            <div className="text-left">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center">
                 <CreditCardIcon className="w-5 h-5 mr-2 text-indigo-600" />
                 Benefits & Deductions
@@ -1006,9 +1082,23 @@ const MyAccount = ({ userData }) => {
                 Manage your benefits enrollment and deductions
               </p>
             </div>
-          </div>
+            <div className="flex items-center text-gray-500">
+              {expandedSections.benefits ? (
+                <>
+                  <span className="text-xs mr-2">Hide</span>
+                  <ChevronUpIcon className="w-5 h-5" />
+                </>
+              ) : (
+                <>
+                  <span className="text-xs mr-2">Show</span>
+                  <ChevronDownIcon className="w-5 h-5" />
+                </>
+              )}
+            </div>
+          </button>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {expandedSections.benefits && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pl-7">
             <div className="bg-gray-50 rounded-lg p-4">
               <h4 className="font-medium text-gray-900 mb-3">Active Benefits</h4>
               <div className="space-y-2 text-sm">
@@ -1044,12 +1134,16 @@ const MyAccount = ({ userData }) => {
               </div>
             </div>
           </div>
+          )}
         </div>
 
         {/* Documents */}
         <div>
-          <div className="flex items-center justify-between mb-4">
-            <div>
+          <button
+            onClick={() => toggleSection('documents')}
+            className="w-full flex items-center justify-between mb-4 group hover:bg-gray-50 p-2 rounded-lg transition-colors"
+          >
+            <div className="text-left">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center">
                 <AcademicCapIcon className="w-5 h-5 mr-2 text-orange-600" />
                 Employment Documents
@@ -1058,9 +1152,23 @@ const MyAccount = ({ userData }) => {
                 Important employment and tax documents
               </p>
             </div>
-          </div>
+            <div className="flex items-center text-gray-500">
+              {expandedSections.documents ? (
+                <>
+                  <span className="text-xs mr-2">Hide</span>
+                  <ChevronUpIcon className="w-5 h-5" />
+                </>
+              ) : (
+                <>
+                  <span className="text-xs mr-2">Show</span>
+                  <ChevronDownIcon className="w-5 h-5" />
+                </>
+              )}
+            </div>
+          </button>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {expandedSections.documents && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4 pl-7">
             <button className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-left">
               <div>
                 <p className="font-medium text-gray-900">W-2 Forms</p>
@@ -1089,7 +1197,8 @@ const MyAccount = ({ userData }) => {
               </div>
               <span className="text-gray-400">→</span>
             </button>
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Save Button */}
