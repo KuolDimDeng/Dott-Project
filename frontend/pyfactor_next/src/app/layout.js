@@ -2,6 +2,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Script from 'next/script';
 import SessionHeartbeat from '@/components/SessionHeartbeat';
+import Providers from '@/providers';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -29,7 +30,9 @@ export default function RootLayout({ children }) {
         {/* Session Heartbeat Component */}
         <SessionHeartbeat interval={60000} />
         
-        {children}
+        <Providers>
+          {children}
+        </Providers>
         
         {/* Crisp Chat Widget */}
         {process.env.NEXT_PUBLIC_CRISP_WEBSITE_ID && (

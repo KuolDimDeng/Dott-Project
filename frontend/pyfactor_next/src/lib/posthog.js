@@ -17,10 +17,19 @@ export function initPostHog() {
   const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY;
   const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://app.posthog.com';
 
+  // Debug: Check all NEXT_PUBLIC env vars
+  if (typeof window !== 'undefined') {
+    console.log('[PostHog] All NEXT_PUBLIC env vars:', 
+      Object.keys(process.env).filter(k => k.startsWith('NEXT_PUBLIC_'))
+    );
+  }
+
   console.log('[PostHog] Initializing with:', {
     key: posthogKey ? `${posthogKey.substring(0, 10)}...` : 'NOT SET',
     host: posthogHost,
-    environment: process.env.NODE_ENV
+    environment: process.env.NODE_ENV,
+    hasKey: !!posthogKey,
+    keyLength: posthogKey?.length || 0
   });
 
   if (!posthogKey) {

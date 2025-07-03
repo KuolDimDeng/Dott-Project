@@ -2,7 +2,7 @@
 
 
 import { useEffect } from 'react';
-import { Providers } from "@/app/providers";
+import Providers from "@/providers";
 import CircuitBreakerWrapper from "@/app/CircuitBreakerWrapper";
 import ClientProviders from "@/app/ClientProviders";
 import dynamic from 'next/dynamic';
