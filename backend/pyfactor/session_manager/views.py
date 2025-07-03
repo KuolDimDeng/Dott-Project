@@ -209,8 +209,8 @@ class SessionDetailView(APIView):
     authentication_classes = [SessionAuthentication]
     permission_classes = [IsAuthenticated]
     
-    def get(self, request):
-        """Get current session details"""
+    def get(self, request, session_id=None):
+        """Get current session details or specific session by ID"""
         try:
             session = request.session_obj
             
@@ -283,8 +283,8 @@ class SessionDetailView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     
-    def patch(self, request):
-        """Update current session"""
+    def patch(self, request, session_id=None):
+        """Update current session or specific session by ID"""
         try:
             session = request.session_obj
             
@@ -319,8 +319,8 @@ class SessionDetailView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     
-    def delete(self, request):
-        """Invalidate current session (logout)"""
+    def delete(self, request, session_id=None):
+        """Invalidate current session (logout) or specific session by ID"""
         try:
             session = request.session_obj
             

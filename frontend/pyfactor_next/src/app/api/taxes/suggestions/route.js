@@ -72,7 +72,8 @@ export async function POST(request) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Cookie': request.headers.get('cookie') || ''
+          'Cookie': request.headers.get('cookie') || '',
+          'X-Tenant-ID': tenantId
         },
         body: JSON.stringify({ businessInfo })
       });

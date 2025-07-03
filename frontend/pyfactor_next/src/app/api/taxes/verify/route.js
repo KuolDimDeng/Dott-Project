@@ -1,17 +1,18 @@
 import { NextResponse } from 'next/server';
-import { getSession } from '@/utils/sessionManager-v2-enhanced';
+import sessionManagerEnhanced from '@/utils/sessionManager-v2-enhanced';
 
 export async function POST(request) {
   console.log('[Tax Verify API] POST request received');
   
   try {
     // Verify session
-    const session = await getSession();
+    const session = await sessionManagerEnhanced.getSession();
     if (!session?.authenticated) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
     const data = await request.json();
+    console.log('[Tax Verify API] Request data:', JSON.stringify(data, null, 2));
     const { 
       tenantId, 
       businessInfo, 
@@ -32,16 +33,8 @@ export async function POST(request) {
     }
     
     // First, save the tax settings
-    const settingsResponse = await fetch(
-      `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/taxes/settings/`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cookie': request.headers.get('cookie') || ''
-        },
-        credentials: 'include',
-        body: JSON.stringify({
+    const backendUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/taxes/settings/`;
+    const requestBody = {
           tenant_id: tenantId,
           business_name: businessInfo.businessName,
           business_type: businessInfo.businessType,
@@ -49,56 +42,39 @@ export async function POST(request) {
           state_province: businessInfo.stateProvince,
           city: businessInfo.city,
           postal_code: businessInfo.postalCode,
-          // Sales tax breakdown
-          state_sales_tax_rate: parseFloat(taxRates.stateSalesTaxRate) || 0,
-          local_sales_tax_rate: parseFloat(taxRates.localSalesTaxRate) || 0,
-          total_sales_tax_rate: parseFloat(taxRates.totalSalesTaxRate) || 0,
-          
-          // Corporate income tax
-          corporate_income_tax_rate: parseFloat(taxRates.corporateIncomeTaxRate) || 0,
-          
-          // Personal income tax
-          has_progressive_tax: taxRates.hasProgressiveTax || false,
-          personal_income_tax_brackets: taxRates.personalIncomeTaxBrackets || [],
-          flat_personal_income_tax_rate: parseFloat(taxRates.flatPersonalIncomeTaxRate) || null,
-          
-          // Social insurance
-          health_insurance_rate: parseFloat(taxRates.healthInsuranceRate) || 0,
-          health_insurance_employer_rate: parseFloat(taxRates.healthInsuranceEmployerRate) || 0,
-          social_security_rate: parseFloat(taxRates.socialSecurityRate) || 0,
-          social_security_employer_rate: parseFloat(taxRates.socialSecurityEmployerRate) || 0,
-          
-          // Payroll taxes
-          federal_payroll_tax_rate: parseFloat(taxRates.federalPayrollTaxRate) || 0,
-          state_payroll_tax_rate: parseFloat(taxRates.statePayrollTaxRate) || 0,
-          
-          // Filing information
-          state_tax_website: taxRates.stateTaxWebsite || '',
-          state_tax_address: taxRates.stateTaxAddress || '',
-          local_tax_website: taxRates.localTaxWebsite || '',
-          local_tax_address: taxRates.localTaxAddress || '',
-          federal_tax_website: taxRates.federalTaxWebsite || '',
-          filing_deadlines: taxRates.filingDeadlines || {},
-          
-          // Enhanced features
-          locations: locations || [],
-          industry_settings: industrySettings || {},
-          validation_passed: validationPassed || false,
+          // Map to the actual model fields
+          sales_tax_rate: parseFloat(taxRates.totalSalesTaxRate) || parseFloat(taxRates.salesTaxRate) || 0,
+          income_tax_rate: parseFloat(taxRates.corporateIncomeTaxRate) || parseFloat(taxRates.incomeTaxRate) || 0,
           payroll_tax_rate: parseFloat(taxRates.payrollTaxRate) || 0,
-          filing_website: taxRates.filingWebsite,
-          filing_address: taxRates.filingAddress,
-          filing_deadlines: taxRates.filingDeadlines,
+          filing_website: taxRates.filingWebsite || taxRates.stateTaxWebsite || '',
+          filing_address: taxRates.filingAddress || taxRates.stateTaxAddress || '',
+          filing_deadlines: JSON.stringify(taxRates.filingDeadlines || {}),
+          approved_by_name: signature, // The signature is actually the name
           approved_by_signature: signature,
           approved_at: agreedAt,
           ai_suggested: suggestions ? true : false,
           ai_confidence_score: suggestions?.confidenceScore || null
-        })
-      }
-    );
+        };
+    
+    console.log('[Tax Verify API] Calling backend URL:', backendUrl);
+    console.log('[Tax Verify API] Backend request body:', JSON.stringify(requestBody, null, 2));
+    
+    const settingsResponse = await fetch(backendUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cookie': request.headers.get('cookie') || '',
+        'X-Tenant-ID': tenantId
+      },
+      credentials: 'include',
+      body: JSON.stringify(requestBody)
+    });
     
     if (!settingsResponse.ok) {
-      const error = await settingsResponse.text();
-      throw new Error(`Failed to save settings: ${error}`);
+      const errorText = await settingsResponse.text();
+      console.error('[Tax Verify API] Backend error response:', errorText);
+      console.error('[Tax Verify API] Backend status:', settingsResponse.status);
+      throw new Error(`Failed to save settings: ${errorText}`);
     }
     
     const settingsResult = await settingsResponse.json();
@@ -111,7 +87,8 @@ export async function POST(request) {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Cookie': request.headers.get('cookie') || ''
+            'Cookie': request.headers.get('cookie') || '',
+            'X-Tenant-ID': tenantId
           },
           credentials: 'include',
           body: JSON.stringify({
@@ -121,8 +98,8 @@ export async function POST(request) {
             signature: signature,
             location: `${businessInfo.city}, ${businessInfo.stateProvince}, ${businessInfo.country}`,
             tax_rates: {
-              sales: taxRates.salesTaxRate,
-              income: taxRates.incomeTaxRate,
+              sales: taxRates.totalSalesTaxRate || taxRates.salesTaxRate,
+              income: taxRates.corporateIncomeTaxRate || taxRates.incomeTaxRate,
               payroll: taxRates.payrollTaxRate
             }
           })
@@ -146,8 +123,9 @@ export async function POST(request) {
     
   } catch (error) {
     console.error('[Tax Verify API] Error:', error);
+    console.error('[Tax Verify API] Error stack:', error.stack);
     return NextResponse.json(
-      { error: 'Failed to verify and save tax settings' },
+      { error: error.message || 'Failed to verify and save tax settings' },
       { status: 500 }
     );
   }

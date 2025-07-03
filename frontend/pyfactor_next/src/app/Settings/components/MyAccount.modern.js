@@ -22,7 +22,14 @@ import {
   QuestionMarkCircleIcon,
   DocumentTextIcon,
   ShieldExclamationIcon,
-  ArrowPathIcon
+  ArrowPathIcon,
+  BriefcaseIcon,
+  BanknotesIcon,
+  DocumentDuplicateIcon,
+  CalendarDaysIcon,
+  AcademicCapIcon,
+  CreditCardIcon,
+  UserCircleIcon
 } from '@heroicons/react/24/outline';
 
 const MyAccount = ({ userData }) => {
@@ -839,11 +846,268 @@ const MyAccount = ({ userData }) => {
     );
   };
 
+  const renderEmploymentTab = () => {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-6">
+        {/* Banking Information */}
+        <div className="border-b pb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <BanknotesIcon className="w-5 h-5 mr-2 text-green-600" />
+                Banking Information
+              </h3>
+              <p className="text-sm text-gray-600 mt-1">
+                Direct deposit and payment details
+              </p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Bank Name</label>
+              <input
+                type="text"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Enter bank name"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Account Number</label>
+              <input
+                type="text"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Enter account number"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Routing Number</label>
+              <input
+                type="text"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Enter routing number"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Account Type</label>
+              <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <option>Checking</option>
+                <option>Savings</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Tax Information */}
+        <div className="border-b pb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <DocumentDuplicateIcon className="w-5 h-5 mr-2 text-blue-600" />
+                Tax Information
+              </h3>
+              <p className="text-sm text-gray-600 mt-1">
+                Social Security and tax withholding details
+              </p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Social Security / National Insurance Number
+              </label>
+              <input
+                type="text"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="XXX-XX-XXXX"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Tax Filing Status</label>
+              <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <option>Single</option>
+                <option>Married Filing Jointly</option>
+                <option>Married Filing Separately</option>
+                <option>Head of Household</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">Federal Allowances (W-4)</label>
+              <input
+                type="number"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="0"
+                min="0"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">State Allowances</label>
+              <input
+                type="number"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="0"
+                min="0"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Pay Information */}
+        <div className="border-b pb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <CalendarDaysIcon className="w-5 h-5 mr-2 text-purple-600" />
+                Pay Information
+              </h3>
+              <p className="text-sm text-gray-600 mt-1">
+                View your paystubs and payment history
+              </p>
+            </div>
+            <button className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+              View All Paystubs
+            </button>
+          </div>
+          
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <p className="text-sm text-gray-600">Current Salary</p>
+                <p className="text-xl font-semibold text-gray-900">$0.00</p>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <p className="text-sm text-gray-600">Pay Frequency</p>
+                <p className="text-xl font-semibold text-gray-900">Monthly</p>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <p className="text-sm text-gray-600">Next Pay Date</p>
+                <p className="text-xl font-semibold text-gray-900">--</p>
+              </div>
+            </div>
+            
+            {/* Recent Paystubs */}
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-gray-700 mb-3">Recent Paystubs</h4>
+              <p className="text-sm text-gray-500 text-center py-8">No paystubs available</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Benefits & Deductions */}
+        <div className="border-b pb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <CreditCardIcon className="w-5 h-5 mr-2 text-indigo-600" />
+                Benefits & Deductions
+              </h3>
+              <p className="text-sm text-gray-600 mt-1">
+                Manage your benefits enrollment and deductions
+              </p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h4 className="font-medium text-gray-900 mb-3">Active Benefits</h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Health Insurance</span>
+                  <span className="text-gray-900">--</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Dental Insurance</span>
+                  <span className="text-gray-900">--</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">401(k) Contribution</span>
+                  <span className="text-gray-900">--</span>
+                </div>
+              </div>
+            </div>
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h4 className="font-medium text-gray-900 mb-3">Time Off Balance</h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Vacation Days</span>
+                  <span className="text-gray-900">0 days</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Sick Days</span>
+                  <span className="text-gray-900">0 days</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Personal Days</span>
+                  <span className="text-gray-900">0 days</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Documents */}
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <AcademicCapIcon className="w-5 h-5 mr-2 text-orange-600" />
+                Employment Documents
+              </h3>
+              <p className="text-sm text-gray-600 mt-1">
+                Important employment and tax documents
+              </p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <button className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-left">
+              <div>
+                <p className="font-medium text-gray-900">W-2 Forms</p>
+                <p className="text-sm text-gray-600">Year-end tax statements</p>
+              </div>
+              <span className="text-gray-400">→</span>
+            </button>
+            <button className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-left">
+              <div>
+                <p className="font-medium text-gray-900">W-4 Form</p>
+                <p className="text-sm text-gray-600">Tax withholding certificate</p>
+              </div>
+              <span className="text-gray-400">→</span>
+            </button>
+            <button className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-left">
+              <div>
+                <p className="font-medium text-gray-900">I-9 Form</p>
+                <p className="text-sm text-gray-600">Employment eligibility</p>
+              </div>
+              <span className="text-gray-400">→</span>
+            </button>
+            <button className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-left">
+              <div>
+                <p className="font-medium text-gray-900">Direct Deposit Form</p>
+                <p className="text-sm text-gray-600">Payment authorization</p>
+              </div>
+              <span className="text-gray-400">→</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Save Button */}
+        <div className="flex justify-end pt-4">
+          <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            Save Employment Information
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   const tabs = [
     { id: 0, label: 'Profile', icon: UserIcon },
-    { id: 1, label: 'Security', icon: ShieldCheckIcon },
-    { id: 2, label: 'Preferences', icon: CogIcon },
-    { id: 3, label: 'Legal', icon: ScaleIcon },
+    { id: 1, label: 'Employment', icon: BriefcaseIcon },
+    { id: 2, label: 'Security', icon: ShieldCheckIcon },
+    { id: 3, label: 'Preferences', icon: CogIcon },
+    { id: 4, label: 'Legal', icon: ScaleIcon },
   ];
 
   return (
@@ -851,7 +1115,10 @@ const MyAccount = ({ userData }) => {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">My Account</h1>
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center">
+            <UserCircleIcon className="h-8 w-8 text-blue-600 mr-3" />
+            Profile
+          </h1>
           <p className="mt-2 text-gray-600">Manage your account settings and preferences</p>
         </div>
         
@@ -894,9 +1161,10 @@ const MyAccount = ({ userData }) => {
         {/* Tab Content */}
         <div>
           {selectedTab === 0 && renderProfileTab()}
-          {selectedTab === 1 && renderSecurityTab()}
-          {selectedTab === 2 && renderPreferencesTab()}
-          {selectedTab === 3 && renderLegalTab()}
+          {selectedTab === 1 && renderEmploymentTab()}
+          {selectedTab === 2 && renderSecurityTab()}
+          {selectedTab === 3 && renderPreferencesTab()}
+          {selectedTab === 4 && renderLegalTab()}
         </div>
       </div>
     </div>
