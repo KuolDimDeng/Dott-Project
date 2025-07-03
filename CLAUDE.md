@@ -302,31 +302,32 @@
 
 ### [13.0.0] - 2025-01-12 - CURRENT - Claude API Integration Architecture
 - **Purpose**: Dual Claude API setup for feature separation and cost optimization
+- **UPDATED 2025-07-03**: All Claude API calls now use Claude 3.5 Sonnet for maximum accuracy
 - **Tax API Configuration**:
   - Environment Variable: `CLAUDE_API_KEY`
-  - Model: `claude-3-opus-20240229` (high accuracy for tax computations)
+  - Model: `claude-3-5-sonnet-20241022` (upgraded from opus/haiku for better accuracy)
   - Purpose: Tax calculations, compliance checks, regulatory guidance
-  - Usage: Tax modules requiring precise calculations
+  - Usage: Tax modules requiring precise calculations and state/federal distinction
 - **Smart Insights API Configuration**:
   - Environment Variable: `CLAUDE_SMART_INSIGHTS_API_KEY`
-  - Model: `claude-3-sonnet-20240229` (cost-effective for general queries)
+  - Model: `claude-3-5-sonnet-20241022` (upgraded for better business insights)
   - Purpose: Business intelligence, customer insights, revenue analysis
   - Credit System: 1 credit = $0.001 of API usage (min 1 credit/query)
   - Rate Limiting: 10 requests per minute via Redis
 - **Benefits**:
-  - **Cost Optimization**: Sonnet for general queries, Opus for precision tasks
+  - **Maximum Accuracy**: Claude 3.5 Sonnet provides best-in-class accuracy
+  - **Better Instruction Following**: Superior at understanding complex tax distinctions
   - **Feature Separation**: Independent API keys prevent cross-feature interference
-  - **Specialized Models**: Different models optimized for different use cases
-  - **Budget Control**: Separate spending tracking and limits
+  - **Consistent Performance**: Single model across all features
 - **Environment Variables Required**:
   ```
-  # Tax API (existing)
+  # Tax API
   CLAUDE_API_KEY=sk-ant-api03-...
-  CLAUDE_API_MODEL=claude-3-opus-20240229
+  CLAUDE_API_MODEL=claude-3-5-sonnet-20241022
   
-  # Smart Insights API (new)
+  # Smart Insights API
   CLAUDE_SMART_INSIGHTS_API_KEY=sk-ant-api03-...
-  CLAUDE_SMART_INSIGHTS_MODEL=claude-3-sonnet-20240229
+  CLAUDE_SMART_INSIGHTS_MODEL=claude-3-5-sonnet-20241022
   CLAUDE_SMART_INSIGHTS_MAX_TOKENS=1000
   ```
 
@@ -561,6 +562,29 @@ Add `REDIS_URL` environment variable in Render dashboard
   - Scalable across all major tax types and states
 - **Documentation**: `/docs/TAX_FILING_IMPLEMENTATION.md`
 - **Status**: Production-ready, awaiting state API credentials and final deployment
+
+### [20.0.0] - 2025-07-03 - CURRENT - Claude 3.5 Sonnet Model Upgrade
+- **Purpose**: Upgrade all Claude API integrations to use Claude 3.5 Sonnet for maximum accuracy
+- **Issue Resolved**: Tax API was confusing federal and state income tax rates
+- **Changes**:
+  - Tax Suggestions: `claude-3-haiku-20240307` → `claude-3-5-sonnet-20241022`
+  - Smart Insights: `claude-3-sonnet-20240229` → `claude-3-5-sonnet-20241022`
+  - Tax Filing Steps: `claude-3-haiku-20240307` → `claude-3-5-sonnet-20241022`
+  - Tax Filing Locations: `claude-3-haiku-20240307` → `claude-3-5-sonnet-20241022`
+- **Benefits**:
+  - Superior instruction following for complex tax distinctions
+  - Better understanding of state vs federal tax requirements
+  - More accurate JSON formatting and response structure
+  - Consistent high-quality responses across all features
+- **Files Updated**:
+  - Backend: `/backend/pyfactor/taxes/views/tax_suggestions.py`
+  - Backend: `/backend/pyfactor/pyfactor/settings.py`
+  - Frontend: `/frontend/pyfactor_next/src/app/api/taxes/suggestions/route.js`
+  - Frontend: `/frontend/pyfactor_next/src/app/api/smart-insights/claude/route.js`
+  - Frontend: `/frontend/pyfactor_next/src/app/api/taxes/filing-steps/route.js`
+  - Frontend: `/frontend/pyfactor_next/src/app/api/taxes/filing-locations/route.js`
+  - Frontend: `/frontend/pyfactor_next/src/app/api/taxes/test-claude/route.js`
+- **Deployment**: Auto-deploy on push to Dott_Main_Dev_Deploy branch
 
 ### [17.0.0] - 2025-01-11 - CURRENT - My Account Profile Display Fix
 - **Purpose**: Fix My Account profile tab to display user name and email from session

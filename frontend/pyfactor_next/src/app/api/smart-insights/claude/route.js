@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 
 // Claude API configuration
 const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
-const CLAUDE_MODEL = 'claude-3-sonnet-20240229'; // You can change this to claude-3-opus-20240229 for better performance
+const CLAUDE_MODEL = 'claude-3-5-sonnet-20241022'; // Latest Claude 3.5 Sonnet - most capable and accurate
 
 // Rate limiting configuration
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute

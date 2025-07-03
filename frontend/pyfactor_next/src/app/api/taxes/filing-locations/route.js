@@ -113,7 +113,7 @@ Please provide information in the following JSON format:
 If any information is not available or not applicable, use empty string "". Focus on official government websites only. For the United States, include IRS for federal. For states, include the official state department of revenue or taxation.`;
 
     const message = await anthropic.messages.create({
-      model: 'claude-3-haiku-20240307',
+      model: 'claude-3-5-sonnet-20241022',
       max_tokens: 1500,
       temperature: 0.1, // Low temperature for factual accuracy
       messages: [
