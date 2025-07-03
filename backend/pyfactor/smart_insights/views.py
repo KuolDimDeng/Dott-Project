@@ -419,6 +419,14 @@ class SmartInsightsViewSet(viewsets.ViewSet):
             client = anthropic.Anthropic(api_key=settings.CLAUDE_SMART_INSIGHTS_API_KEY)
             print("[Smart Insights] Client initialized successfully")
             
+            # Check if query contains visualization keywords
+            viz_keywords = ['chart', 'graph', 'show', 'visualize', 'display', 'plot']
+            needs_chart = any(keyword in query_text.lower() for keyword in viz_keywords)
+            
+            # Modify query if it needs a chart
+            if needs_chart:
+                query_text = f"{query_text}\n\nIMPORTANT: Include a chart visualization in JSON format as shown in the instructions."
+            
             # Fetch business data for context
             business_context = self._get_business_context(request.user)
             
@@ -439,6 +447,8 @@ BUSINESS DATA:
 {business_context}
 
 USER QUERY: {query_text}
+
+CRITICAL: If the query mentions "chart", "graph", "show", "visualize", or "display", you MUST include at least one ```json code block with chart data, even if you also provide text explanation.
 
 IMPORTANT INSTRUCTIONS FOR CHARTS:
 1. When the user asks for charts, visualizations, or includes words like "show", "display", "chart", "graph", "visualize":
