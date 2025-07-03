@@ -249,10 +249,17 @@ export default function SmartInsight({ onNavigate }) {
       // Parse visualizations from the response
       const visualizations = parseVisualizationData(data.response);
       
+      // Remove JSON code blocks from the displayed content
+      let cleanContent = data.response;
+      if (visualizations.length > 0) {
+        // Remove all ```json...``` blocks from the display text
+        cleanContent = cleanContent.replace(/```json[\s\S]*?```/g, '').trim();
+      }
+      
       const aiResponse = {
         id: Date.now() + 1,
         type: 'ai',
-        content: data.response,
+        content: cleanContent,
         timestamp: new Date(),
         usage: data.usage,
         tokensUsed: data.total_tokens,
