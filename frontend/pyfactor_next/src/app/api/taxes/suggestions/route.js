@@ -203,7 +203,7 @@ Return ONLY this JSON structure:
         prompt;
       
       const message = await anthropic.messages.create({
-        model: 'claude-3-haiku-20240307',
+        model: 'claude-3-5-sonnet-20241022',  // Latest Sonnet version - more capable than Haiku
         max_tokens: 1000,
         temperature: 0,
         system: "You are a tax expert that provides accurate, up-to-date tax information for businesses worldwide. Always provide current 2024 tax rates. Be specific about state vs federal taxes. Always provide conservative estimates and include disclaimers when appropriate. CRITICAL: You must ONLY respond with valid JSON - no explanatory text, no markdown, just the JSON object.",

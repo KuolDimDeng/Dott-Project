@@ -359,32 +359,6 @@ export default function AboutUs() {
         </div>
       </section>
 
-      {/* Social Impact */}
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl p-8 md:p-12">
-            <div className="max-w-3xl">
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-                Making a Difference
-              </h2>
-              <p className="text-lg text-gray-700 mb-6">
-                Beyond software, we're committed to fostering entrepreneurship globally. 
-                Through workshops, educational content, and partnerships with organizations 
-                supporting underserved communities, we're building an ecosystem where every 
-                business can succeed.
-              </p>
-              <div className="bg-white/70 backdrop-blur rounded-xl p-6">
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">Dott Grants Program</h3>
-                <p className="text-gray-700">
-                  We provide free platform access to non-profits and social enterprises. 
-                  To date, we've supported over 200 organizations worldwide, amplifying 
-                  their impact through technology.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Footer spacing */}
       <div className="h-20"></div>
