@@ -54,7 +54,7 @@ ${user?.name || user?.email || 'A Dott User'}`;
     setStatus(null);
 
     try {
-      const response = await fetch('/api/auth/invites/send-friend/', {
+      const response = await fetch('/api/invite/send', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

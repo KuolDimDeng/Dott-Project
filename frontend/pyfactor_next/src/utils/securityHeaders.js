@@ -29,7 +29,7 @@ export function addSecurityHeaders(response, nonce = null) {
     "frame-ancestors 'none'",
     "object-src 'none'",
     "base-uri 'self'",
-    "form-action 'self' https://*.auth0.com https://*.stripe.com /api/auth/establish-session",
+    "form-action 'self' https://*.auth0.com https://*.stripe.com https://dottapps.com/api/auth/establish-session",
     "upgrade-insecure-requests"
   ].join('; ');
 

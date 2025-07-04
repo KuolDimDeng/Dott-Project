@@ -4,11 +4,10 @@ import { cookies } from 'next/headers';
 export async function POST(request) {
   try {
     // Check authentication by looking for session cookies
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const sidCookie = cookieStore.get('sid');
-    const sessionCookie = request.cookies.get('dott_auth_session') || request.cookies.get('appSession');
     
-    if (!sidCookie && !sessionCookie) {
+    if (!sidCookie) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -38,15 +37,17 @@ export async function POST(request) {
       subject: `${senderName || 'A business colleague'} invited you to Dott: All-in-One Business Management Platform`,
       message: message.trim(),
       sender_name: senderName || senderEmail || 'Dott User',
-      sender_email: senderEmail || session.user.email,
+      sender_email: senderEmail || 'noreply@dottapps.com',
       invite_url: 'https://dottapps.com/auth/signup'
     };
 
     // Send invitation via backend API
-    const backendResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com'}/auth/invites/send-friend/`, {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+    const backendResponse = await fetch(`${API_URL}/api/auth/invites/send-friend/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Session ${sidCookie.value}`,
         'Cookie': `sid=${sidCookie.value}; session_token=${sidCookie.value}`,
       },
       body: JSON.stringify(emailData)
