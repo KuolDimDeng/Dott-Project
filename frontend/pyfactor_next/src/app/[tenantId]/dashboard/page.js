@@ -113,7 +113,7 @@ export default function TenantDashboard() {
   // Initialize dashboard
   useEffect(() => {
     // Set page title
-    document.title = 'Dott: Complete Business Software';
+    document.title = 'Dott: Business Platform';
     
     const initializeDashboard = async () => {
       // Declare idToken at function scope so it's accessible in both try and catch blocks

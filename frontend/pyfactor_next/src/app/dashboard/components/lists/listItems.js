@@ -1990,14 +1990,14 @@ const MainListItems = ({
     },
     {
       icon: <NavIcons.InviteFriend className="w-5 h-5" />,
-      label: 'Invite a Friend',
+      label: 'Invite a Business Owner',
       onClick: () => {
-        // Create navigation event for Invite a Friend
+        // Create navigation event for Invite a Business Owner
         const navigationKey = `nav-${Date.now()}`;
         const payload = { 
           item: 'invite-friend', 
           navigationKey,
-          originalItem: 'Invite a Friend'
+          originalItem: 'Invite a Business Owner'
         };
         
         // Dispatch navigation events

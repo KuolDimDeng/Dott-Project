@@ -18,16 +18,27 @@ const InviteAFriend = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState(null); // 'success', 'error', or null
 
-  const defaultMessage = `Hi there!
+  const defaultMessage = `${user?.name || 'A colleague'} has invited you to join Dott!
 
-I've been using Dott for my business management and I think you'd love it too! It's an all-in-one platform that helps businesses streamline their operations with sales, inventory, customer management, invoicing, and more.
+Hello,
 
-Dott has helped me save hours every week and keep my business organized. I thought you might find it useful for your business too!
+I wanted to personally recommend Dott, a business management platform that has transformed how I run my operations. 
 
-You can check it out at: https://dottapps.com
+Dott brings together everything you need in one place:
+• Sales and customer management
+• Inventory tracking and control
+• Professional invoicing and payments
+• Financial reporting and analytics
+• Team collaboration tools
+
+Since implementing Dott, I've reduced administrative work by hours each week while gaining real-time insights into my business performance. The platform delivers enterprise-grade capabilities at a fraction of traditional software costs.
+
+I believe Dott would be particularly valuable for your business operations and growth goals.
+
+Start your free trial today: https://dottapps.com
 
 Best regards,
-${user?.name || user?.email || 'Your friend'}`;
+${user?.name || user?.email || 'A Dott User'}`;
 
   // Message is now fixed and doesn't change
 
@@ -89,7 +100,7 @@ ${user?.name || user?.email || 'Your friend'}`;
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-black mb-4 flex items-center">
           <UserPlusIcon className="h-6 w-6 text-blue-600 mr-2" />
-          Invite a Friend
+          Invite a Business Owner
         </h1>
         <p className="text-gray-600 text-lg">
           Know a business owner who would benefit from using Dott? Share Dott with your network and help them transform their business operations.
@@ -108,7 +119,7 @@ ${user?.name || user?.email || 'Your friend'}`;
             {/* Email Input */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Friend's Email Address
+                Business Owner's Email Address
               </label>
               <input
                 type="email"
@@ -116,7 +127,7 @@ ${user?.name || user?.email || 'Your friend'}`;
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="friend@example.com"
+                placeholder="business@example.com"
                 required
               />
             </div>
@@ -130,7 +141,7 @@ ${user?.name || user?.email || 'Your friend'}`;
                 <p className="text-sm text-gray-700 whitespace-pre-wrap">{defaultMessage}</p>
               </div>
               <p className="text-sm text-gray-500 mt-2">
-                This message will be sent to your friend.
+                This message will be sent to the business owner.
               </p>
             </div>
 
@@ -187,7 +198,7 @@ ${user?.name || user?.email || 'Your friend'}`;
               <div className="ml-4">
                 <h3 className="text-base font-medium text-gray-900">Enter Email</h3>
                 <p className="text-gray-600 text-sm">
-                  Add your friend's email address.
+                  Add the business owner's email address.
                 </p>
               </div>
             </div>

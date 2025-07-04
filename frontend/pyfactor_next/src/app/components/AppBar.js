@@ -296,6 +296,14 @@ export default function AppBar() {
               )}
             </div>
 
+            {/* Sign In Button */}
+            <button
+              onClick={() => router.push('/auth/signin')}
+              className="px-4 py-2 text-sm font-semibold text-blue-600 hover:text-blue-700 uppercase tracking-wider rounded-md border border-blue-600 hover:bg-blue-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50"
+            >
+              SIGN IN
+            </button>
+
             {/* Auth Button */}
             <AuthButton />
 

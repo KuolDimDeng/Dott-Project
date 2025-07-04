@@ -33,7 +33,7 @@ export async function POST(request) {
     // Prepare email data for backend
     const emailData = {
       to_email: email.trim(),
-      subject: `${senderName || 'A friend'} invited you to try Dott - Complete Business Management Platform`,
+      subject: `${senderName || 'A business colleague'} invited you to Dott: All-in-One Business Management Platform`,
       message: message.trim(),
       sender_name: senderName || senderEmail || 'Dott User',
       sender_email: senderEmail || session.user.email,
