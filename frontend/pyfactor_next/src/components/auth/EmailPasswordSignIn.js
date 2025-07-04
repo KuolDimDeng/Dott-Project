@@ -366,7 +366,7 @@ export default function EmailPasswordSignIn() {
         });
         
         // For non-onboarding flows, use secure session bridge
-        if (!finalUserData.needsOnboarding && bridgeToken) {
+        if (!finalUserData.needsOnboarding && !sessionResult.needs_onboarding && bridgeToken) {
           logger.info('[EmailPasswordSignIn] Using bridge token for session handoff');
           console.log('[EmailPasswordSignIn] DEBUG - Preparing session bridge with:', {
             hasBridgeToken: !!bridgeToken,
@@ -431,9 +431,19 @@ export default function EmailPasswordSignIn() {
       }
 
       // If we get here, something went wrong
-      logger.error('[EmailPasswordSignIn] Session creation failed');
-      showError('Session setup failed. Please try signing in again.');
-      setIsLoading(false);
+      logger.error('[EmailPasswordSignIn] Unexpected state - session created but no navigation happened');
+      
+      // As a last resort, if session is created, try direct navigation
+      if (sessionResult.success && sessionResult.user) {
+        console.log('[EmailPasswordSignIn] Attempting direct navigation as final fallback');
+        const fallbackUrl = sessionResult.needs_onboarding ? '/onboarding' : 
+                           sessionResult.tenant?.id ? `/${sessionResult.tenant.id}/dashboard` : 
+                           '/dashboard';
+        window.location.href = fallbackUrl;
+      } else {
+        showError('Session setup failed. Please try signing in again.');
+        setIsLoading(false);
+      }
     } catch (error) {
       logger.error('[EmailPasswordSignIn] Login error:', error);
       showError(error.message || 'Invalid email or password');

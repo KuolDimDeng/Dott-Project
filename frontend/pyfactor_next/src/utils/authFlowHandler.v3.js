@@ -129,32 +129,44 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
     // Store user data in session storage for other components to use
     sessionStorage.setItem('currentUser', JSON.stringify(userData));
     
-    // Step 3: Instead of fetching unified profile here, redirect to session-loading
-    // This prevents race conditions by ensuring backend session is fully established
-    console.log('[AuthFlowHandler.v3] RACE CONDITION FIX - Redirecting to session-loading...');
-    
-    // The session-loading page will:
-    // 1. Wait for backend session to be fully created
-    // 2. Fetch complete session data including onboarding status
-    // 3. Make the correct routing decision with all data available
-    
-    const redirectUrl = '/auth/session-loading';
-    
-    console.log('[AuthFlowHandler.v3] Using session-loading page to prevent race conditions', {
-      provisionalTenantId: data.tenant_id,
-      provisionalNeedsOnboarding: data.needs_onboarding,
-      redirectUrl,
-      reason: 'Ensuring backend session is fully established before routing'
-    });
-    
-    // Session updates are handled automatically by the backend in session-v2 system
-    // No need to manually update session as it's done server-side during auth flow
-    
-    // Return complete user data with redirect URL
-    return {
-      ...userData,
-      redirectUrl
-    };
+    // Step 3: Handle differently based on auth method
+    if (authMethod === 'email-password') {
+      // For email-password, return data without redirecting
+      // The EmailPasswordSignIn component handles the session bridge flow
+      console.log('[AuthFlowHandler.v3] Email-password auth - returning data for session bridge');
+      
+      return {
+        ...userData,
+        tenantId: data.tenant_id,
+        tenant_id: data.tenant_id,
+        needsOnboarding: data.needs_onboarding,
+        // Don't include redirectUrl for email-password
+        // Let EmailPasswordSignIn handle the routing
+      };
+    } else {
+      // For OAuth, redirect to session-loading to handle race conditions
+      console.log('[AuthFlowHandler.v3] OAuth auth - redirecting to session-loading...');
+      
+      // The session-loading page will:
+      // 1. Wait for backend session to be fully created
+      // 2. Fetch complete session data including onboarding status
+      // 3. Make the correct routing decision with all data available
+      
+      const redirectUrl = '/auth/session-loading';
+      
+      console.log('[AuthFlowHandler.v3] Using session-loading page to prevent race conditions', {
+        provisionalTenantId: data.tenant_id,
+        provisionalNeedsOnboarding: data.needs_onboarding,
+        redirectUrl,
+        reason: 'Ensuring backend session is fully established before routing'
+      });
+      
+      // For OAuth, actually perform the redirect
+      window.location.href = redirectUrl;
+      
+      // Return null to indicate redirect happened
+      return null;
+    }
     
   } catch (error) {
     console.error('[AuthFlowHandler.v3] Error in auth flow:', error);
