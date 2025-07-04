@@ -14,37 +14,13 @@ import StandardSpinner from '@/components/ui/StandardSpinner';
 const InviteAFriend = () => {
   const { user } = useSessionContext();
   const [email, setEmail] = useState('');
-  const [message, setMessage] = useState('');
+  // Fixed message - not editable by users
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState(null); // 'success', 'error', or null
 
   const defaultMessage = `Hi there!
 
-I've been using Dott for my business management and I think you'd love it too! Dott is an all-in-one platform that helps businesses streamline their operations with:
-
-🏢 Complete Business Management
-• Sales, inventory, and customer management
-• Invoicing and payment processing
-• Financial reporting and analytics
-• Tax management and compliance
-
-💼 Professional Features
-• Multi-user collaboration with role-based access
-• Real-time data synchronization
-• Automated workflows and notifications
-• Industry-standard security and data protection
-
-📊 Smart Business Insights
-• AI-powered analytics and recommendations
-• Performance tracking and KPIs
-• Custom reports and dashboards
-• Growth optimization tools
-
-🚀 Easy to Get Started
-• Quick onboarding process
-• Intuitive interface designed for business owners
-• Comprehensive support and training resources
-• Flexible pricing plans for businesses of all sizes
+I've been using Dott for my business management and I think you'd love it too! It's an all-in-one platform that helps businesses streamline their operations with sales, inventory, customer management, invoicing, and more.
 
 Dott has helped me save hours every week and keep my business organized. I thought you might find it useful for your business too!
 
@@ -53,9 +29,7 @@ You can check it out at: https://dottapps.com
 Best regards,
 ${user?.name || user?.email || 'Your friend'}`;
 
-  useState(() => {
-    setMessage(defaultMessage);
-  }, [user]);
+  // Message is now fixed and doesn't change
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -77,7 +51,7 @@ ${user?.name || user?.email || 'Your friend'}`;
         credentials: 'include',
         body: JSON.stringify({
           email: email.trim(),
-          message: message.trim(),
+          message: defaultMessage,
           senderName: user?.name || user?.email || 'A Dott User',
           senderEmail: user?.email
         }),
@@ -91,8 +65,7 @@ ${user?.name || user?.email || 'Your friend'}`;
           message: `Invitation sent successfully to ${email}!` 
         });
         setEmail('');
-        // Reset message to default
-        setMessage(defaultMessage);
+        // Message is fixed now, no need to reset
       } else {
         setStatus({ 
           type: 'error', 
@@ -114,16 +87,16 @@ ${user?.name || user?.email || 'Your friend'}`;
     <div className="max-w-4xl mx-auto p-6">
       {/* Header */}
       <div className="mb-8">
-        <div className="flex items-center mb-4">
-          <UserPlusIcon className="h-8 w-8 text-blue-600 mr-3" />
-          <h1 className="text-3xl font-bold text-gray-900">Invite a Friend</h1>
-        </div>
+        <h1 className="text-2xl font-bold text-black mb-4 flex items-center">
+          <UserPlusIcon className="h-6 w-6 text-blue-600 mr-2" />
+          Invite a Friend
+        </h1>
         <p className="text-gray-600 text-lg">
-          Share Dott with your friends and help them streamline their business operations.
+          Know a business owner who would benefit from using Dott? Share Dott with your network and help them transform their business operations.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
         {/* Invitation Form */}
         <div className="bg-white rounded-lg shadow-lg p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
@@ -148,21 +121,16 @@ ${user?.name || user?.email || 'Your friend'}`;
               />
             </div>
 
-            {/* Message Input */}
+            {/* Message Preview */}
             <div>
-              <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
-                Personal Message
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Invitation Message
               </label>
-              <textarea
-                id="message"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                rows="12"
-                className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                placeholder="Write a personal message to your friend..."
-              />
+              <div className="w-full px-4 py-3 border border-gray-200 rounded-md bg-gray-50">
+                <p className="text-sm text-gray-700 whitespace-pre-wrap">{defaultMessage}</p>
+              </div>
               <p className="text-sm text-gray-500 mt-2">
-                You can customize this message or use our default template.
+                This message will be sent to your friend.
               </p>
             </div>
 
@@ -203,65 +171,51 @@ ${user?.name || user?.email || 'Your friend'}`;
           </form>
         </div>
 
-        {/* Benefits Preview */}
+        {/* How It Works */}
         <div className="bg-white rounded-lg shadow-lg p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-6">
-            Why Your Friends Will Love Dott
+            How It Works
           </h2>
 
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div className="flex items-start">
               <div className="flex-shrink-0">
-                <div className="flex items-center justify-center h-10 w-10 rounded-md bg-blue-500 text-white">
-                  🏢
+                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-blue-100 text-blue-600 font-semibold">
+                  1
                 </div>
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-medium text-gray-900">Complete Business Management</h3>
-                <p className="text-gray-600">
-                  All-in-one platform for sales, inventory, customers, invoicing, and financial reporting.
+                <h3 className="text-base font-medium text-gray-900">Enter Email</h3>
+                <p className="text-gray-600 text-sm">
+                  Add your friend's email address.
                 </p>
               </div>
             </div>
 
             <div className="flex items-start">
               <div className="flex-shrink-0">
-                <div className="flex items-center justify-center h-10 w-10 rounded-md bg-green-500 text-white">
-                  📊
+                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-blue-100 text-blue-600 font-semibold">
+                  2
                 </div>
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-medium text-gray-900">Smart Analytics</h3>
-                <p className="text-gray-600">
-                  AI-powered insights and recommendations to help grow their business.
+                <h3 className="text-base font-medium text-gray-900">Send Invitation</h3>
+                <p className="text-gray-600 text-sm">
+                  We'll send them an invitation with your recommendation.
                 </p>
               </div>
             </div>
 
             <div className="flex items-start">
               <div className="flex-shrink-0">
-                <div className="flex items-center justify-center h-10 w-10 rounded-md bg-purple-500 text-white">
-                  🔒
+                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-blue-100 text-blue-600 font-semibold">
+                  3
                 </div>
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-medium text-gray-900">Enterprise Security</h3>
-                <p className="text-gray-600">
-                  Bank-grade security with role-based access controls and data protection.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                <div className="flex items-center justify-center h-10 w-10 rounded-md bg-orange-500 text-white">
-                  🚀
-                </div>
-              </div>
-              <div className="ml-4">
-                <h3 className="text-lg font-medium text-gray-900">Easy Setup</h3>
-                <p className="text-gray-600">
-                  Quick onboarding process with intuitive interface designed for business owners.
+                <h3 className="text-base font-medium text-gray-900">They Join Dott</h3>
+                <p className="text-gray-600 text-sm">
+                  Your friend can sign up and start using Dott for their business.
                 </p>
               </div>
             </div>
@@ -269,8 +223,7 @@ ${user?.name || user?.email || 'Your friend'}`;
 
           <div className="mt-8 p-4 bg-blue-50 rounded-md">
             <p className="text-sm text-blue-800">
-              <strong>Join thousands of businesses</strong> already using Dott to streamline their operations 
-              and grow their revenue. Free trial available!
+              <strong>Share Dott</strong> with colleagues and business partners to help them streamline their operations.
             </p>
           </div>
         </div>
