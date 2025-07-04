@@ -1843,7 +1843,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
       }
 
       // Handle Analytics views
-      if (view && (view.startsWith('analytics-') || view === 'kpi-data' || view === 'smart-insight' || view === 'smart-business' || view === 'ai-query' || view === 'import-export') || showAnalysisPage || showKPIDashboard) {
+      if (view && (view.startsWith('analytics-') || view === 'kpi-data' || view === 'smart-insight' || view === 'smart-business' || view === 'ai-query' || view === 'import-export' || view === 'invite-friend' || view === 'dott-status') || showAnalysisPage || showKPIDashboard) {
         console.log('[RenderMainContent] Rendering analytics view:', view);
         
         let AnalyticsComponent = null;
@@ -1878,6 +1878,20 @@ const RenderMainContent = React.memo(function RenderMainContent({
               AnalyticsComponent = lazy(() => import('./forms/ImportExport.js').catch(err => {
                 console.error('[RenderMainContent] Error loading ImportExport:', err);
                 return { default: () => <div className="p-4">Error loading Import/Export</div> };
+              }));
+              break;
+            case 'invite-friend':
+              componentName = 'InviteAFriend';
+              AnalyticsComponent = lazy(() => import('./invite/InviteAFriend.js').catch(err => {
+                console.error('[RenderMainContent] Error loading InviteAFriend:', err);
+                return { default: () => <div className="p-4">Error loading Invite a Friend</div> };
+              }));
+              break;
+            case 'dott-status':
+              componentName = 'DottStatus';
+              AnalyticsComponent = lazy(() => import('./status/DottStatus.js').catch(err => {
+                console.error('[RenderMainContent] Error loading DottStatus:', err);
+                return { default: () => <div className="p-4">Error loading Dott Status</div> };
               }));
               break;
             default:

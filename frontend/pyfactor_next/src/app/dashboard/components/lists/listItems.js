@@ -95,6 +95,16 @@ const NavIcons = {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
     </svg>
   ),
+  InviteFriend: (props) => (
+    <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+    </svg>
+  ),
+  StatusPage: (props) => (
+    <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  ),
   Receipt: (props) => (
     <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -1966,6 +1976,54 @@ const MainListItems = ({
         }
       },
     },
+    // Divider for special menu items
+    {
+      isDivider: true,
+    },
+    {
+      icon: <NavIcons.InviteFriend className="w-5 h-5" />,
+      label: 'Invite a Friend',
+      onClick: () => {
+        // Create navigation event for Invite a Friend
+        const navigationKey = `nav-${Date.now()}`;
+        const payload = { 
+          item: 'invite-friend', 
+          navigationKey,
+          originalItem: 'Invite a Friend'
+        };
+        
+        // Dispatch navigation events
+        window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+        window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+        
+        // Load Invite a Friend component
+        if (typeof handleAnalysisClick === 'function') {
+          handleAnalysisClick('invite-friend');
+        }
+      },
+    },
+    {
+      icon: <NavIcons.StatusPage className="w-5 h-5" />,
+      label: 'Dott Status',
+      onClick: () => {
+        // Create navigation event for Dott Status
+        const navigationKey = `nav-${Date.now()}`;
+        const payload = { 
+          item: 'dott-status', 
+          navigationKey,
+          originalItem: 'Dott Status'
+        };
+        
+        // Dispatch navigation events
+        window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+        window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+        
+        // Load Dott Status component
+        if (typeof handleAnalysisClick === 'function') {
+          handleAnalysisClick('dott-status');
+        }
+      },
+    },
   ];
 
   // Use menuItems directly (Settings is in the user dropdown menu)
@@ -2142,6 +2200,15 @@ const MainListItems = ({
   
   // Filter menuItems before rendering
   const renderFilteredMenuItem = (item, index) => {
+    // Handle divider items
+    if (item.isDivider) {
+      return (
+        <li key={index} className="my-4">
+          <hr className="border-gray-300 mx-3" />
+        </li>
+      );
+    }
+    
     // Check if user can see this menu item
     if (!canSeeMenuItem(item)) {
       return null;
