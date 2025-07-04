@@ -39,6 +39,7 @@ from .main_views import (
 )
 
 from custom_auth.rls_debug import rls_debug_view, fix_rls_view
+from custom_auth.views.friend_invite_views import send_friend_invitation
 
 class UUIDConverter:
     regex = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
@@ -137,4 +138,7 @@ urlpatterns = [
     
     # RBAC endpoints
     path('rbac/', include('custom_auth.urls_rbac')),
+    
+    # Friend invite endpoints
+    path('invites/send-friend/', send_friend_invitation, name='send-friend-invitation'),
 ]

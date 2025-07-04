@@ -255,6 +255,12 @@ export default function AppBar() {
             >
               {t('navContact', 'Contact')}
             </button>
+            <button 
+              className="px-3 py-2 text-gray-700 hover:text-blue-600 font-medium transition-colors duration-150"
+              onClick={() => router.push('/status')}
+            >
+              {t('navStatus', 'Status')}
+            </button>
           </div>
 
           {/* Right Side Controls */}
@@ -378,6 +384,15 @@ export default function AppBar() {
             }}
           >
             {t('navContact', 'Contact')}
+          </button>
+          <button
+            className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-100"
+            onClick={() => {
+              router.push('/status');
+              setIsMobileMenuOpen(false);
+            }}
+          >
+            {t('navStatus', 'Status')}
           </button>
         </div>
       </div>

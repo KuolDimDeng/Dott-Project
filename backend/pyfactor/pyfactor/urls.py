@@ -101,9 +101,6 @@ urlpatterns = [
     
     # Onboarding routes (includes Stripe webhook)
     path('api/onboarding/', include('onboarding.urls')),
-    
-    # Invites routes
-    path('api/invites/', include('invites.urls')),
 ]
 
 # Handle debug configuration properly

@@ -41,7 +41,7 @@ export async function POST(request) {
     };
 
     // Send invitation via backend API
-    const backendResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com'}/api/invites/send-friend/`, {
+    const backendResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com'}/auth/invites/send-friend/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

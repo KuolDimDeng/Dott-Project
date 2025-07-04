@@ -54,7 +54,7 @@ ${user?.name || user?.email || 'A Dott User'}`;
     setStatus(null);
 
     try {
-      const response = await fetch('/api/invite/send', {
+      const response = await fetch('/api/auth/invites/send-friend/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -103,7 +103,7 @@ ${user?.name || user?.email || 'A Dott User'}`;
           Invite a Business Owner
         </h1>
         <p className="text-gray-600 text-lg">
-          Know a business owner who would benefit from using Dott? Share Dott with your network and help them transform their business operations.
+          Do you know a business owner who would benefit from using Dott? Share Dott with your network and help them transform their business operations.
         </p>
       </div>
 

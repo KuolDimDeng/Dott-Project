@@ -102,7 +102,7 @@ const NavIcons = {
   ),
   StatusPage: (props) => (
     <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 13h4l3-11 4 22 3-11h4" />
     </svg>
   ),
   Receipt: (props) => (
@@ -2247,7 +2247,7 @@ const MainListItems = ({
           } ${
             hoveredItem === item.label
               ? 'text-white bg-blue-600 hover:bg-blue-700'
-              : 'text-gray-700 hover:bg-gray-100'
+              : 'text-blue-900 hover:bg-gray-100 hover:text-gray-900'
           } transition-colors duration-150`}
           onClick={(e) => {
             // If drawer is closed and item has subItems, open drawer and expand submenu

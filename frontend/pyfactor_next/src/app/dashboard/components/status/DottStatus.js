@@ -8,7 +8,7 @@ import {
   ClockIcon,
   ArrowTopRightOnSquareIcon,
   ArrowPathIcon,
-  SignalIcon
+  HeartIcon
 } from '@heroicons/react/24/outline';
 import StandardSpinner, { CenteredSpinner } from '@/components/ui/StandardSpinner';
 
@@ -170,7 +170,7 @@ const DottStatusContent = () => {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-2xl font-bold text-black mb-4 flex items-center">
-              <SignalIcon className="h-6 w-6 text-blue-600 mr-2" />
+              <HeartIcon className="h-6 w-6 text-blue-600 mr-2" />
               Dott Status
             </h1>
             <p className="text-gray-600">Current system status and uptime monitoring</p>
