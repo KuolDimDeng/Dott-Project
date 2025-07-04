@@ -891,6 +891,34 @@ const DashAppBar = ({
     setShowNotifications(false);
   };
 
+  // Handle clicks outside of user menu
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Check if click is outside both the menu and the profile button
+      if (
+        openMenu &&
+        userMenuRef.current &&
+        profileButtonRef.current &&
+        !userMenuRef.current.contains(event.target) &&
+        !profileButtonRef.current.contains(event.target)
+      ) {
+        handleClose();
+      }
+    };
+
+    // Add event listener when menu is open
+    if (openMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+    }
+
+    // Cleanup
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [openMenu, handleClose]);
+
   // Add CSS keyframes for animations
   const animationStyles = `
     @keyframes fadeIn {

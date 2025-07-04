@@ -752,7 +752,7 @@ DATABASES = {
             'connect_timeout': 10,
             'client_encoding': 'UTF8',
             'application_name': 'dott',
-            'sslmode': 'require',
+            'sslmode': os.getenv('DB_SSL_MODE', 'require'),
             'options': '',  # Allow router to control schema
             'keepalives': 1,
             'keepalives_idle': 30,
@@ -784,7 +784,7 @@ DATABASES = {
         'OPTIONS': {
             'connect_timeout': 10,
             'client_encoding': 'UTF8',
-            'sslmode': 'require',
+            'sslmode': os.getenv('DB_SSL_MODE', 'require'),
             'keepalives': 1,
             'keepalives_idle': 30,
             'keepalives_interval': 10,
