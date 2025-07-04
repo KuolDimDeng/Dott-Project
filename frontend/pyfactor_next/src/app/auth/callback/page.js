@@ -83,6 +83,10 @@ export default function Auth0CallbackPage() {
         
         // Only try to get session if we don't have a session token from URL
         console.log('[Auth0Callback] No session token in URL, checking for existing session');
+        
+        // Wait a moment for cookies to propagate from the OAuth callback
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         const sessionResponse = await fetch('/api/auth/session-v2', {
           credentials: 'include'
         });

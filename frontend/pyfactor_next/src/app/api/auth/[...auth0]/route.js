@@ -300,8 +300,23 @@ export async function GET(request, { params }) {
             
             const response = NextResponse.redirect(callbackUrl);
             
-            // Set session token as httpOnly cookie
+            // Set session token as httpOnly cookie - MUST use 'sid' for middleware
             if (sessionData.session_token) {
+              console.log('[Auth Route] Setting session cookies:', {
+                session_token: sessionData.session_token.substring(0, 8) + '...',
+                expires_at: sessionData.expires_at
+              });
+              
+              // Set 'sid' cookie which is what middleware looks for
+              response.cookies.set('sid', sessionData.session_token, {
+                httpOnly: true,
+                secure: true,
+                sameSite: 'lax',
+                maxAge: 86400, // 24 hours
+                path: '/'
+              });
+              
+              // Also set session_token for backward compatibility
               response.cookies.set('session_token', sessionData.session_token, {
                 httpOnly: true,
                 secure: true,
@@ -309,6 +324,10 @@ export async function GET(request, { params }) {
                 maxAge: 86400, // 24 hours
                 path: '/'
               });
+              
+              console.log('[Auth Route] Cookies set, redirecting to:', callbackUrl);
+            } else {
+              console.error('[Auth Route] No session token received from backend!');
             }
             
             return response;

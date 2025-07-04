@@ -22,6 +22,9 @@ export default function SessionLoading() {
         logger.info('[SessionLoading] Checking complete session data, attempt:', attempts + 1);
         setStatus('Verifying your account...');
         
+        // Log current cookies for debugging
+        console.log('[SessionLoading] Current cookies:', document.cookie);
+        
         // Check session-v2 for complete data including onboarding status
         const response = await fetch('/api/auth/session-v2', {
           credentials: 'include',
