@@ -249,12 +249,19 @@ export default function AppBar() {
             >
               {t('navAbout', 'About')}
             </button>
-            <button 
+            <a 
+              href="#contact"
               className="px-3 py-2 text-gray-700 hover:text-blue-600 font-medium transition-colors duration-150"
-              onClick={() => router.push('/contact')}
+              onClick={(e) => {
+                e.preventDefault();
+                const contactSection = document.getElementById('contact');
+                if (contactSection) {
+                  contactSection.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}
             >
               {t('navContact', 'Contact')}
-            </button>
+            </a>
             <button 
               className="px-3 py-2 text-gray-700 hover:text-blue-600 font-medium transition-colors duration-150"
               onClick={() => router.push('/status')}
@@ -376,15 +383,20 @@ export default function AppBar() {
           >
             {t('navAbout', 'About')}
           </button>
-          <button
+          <a
+            href="#contact"
             className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-100"
-            onClick={() => {
-              router.push('/contact');
+            onClick={(e) => {
+              e.preventDefault();
+              const contactSection = document.getElementById('contact');
+              if (contactSection) {
+                contactSection.scrollIntoView({ behavior: 'smooth' });
+              }
               setIsMobileMenuOpen(false);
             }}
           >
             {t('navContact', 'Contact')}
-          </button>
+          </a>
           <button
             className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-100"
             onClick={() => {
