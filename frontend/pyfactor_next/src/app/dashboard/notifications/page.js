@@ -268,7 +268,7 @@ const NotificationsPage = () => {
             <p className="mt-1 text-sm text-gray-500">
               {searchQuery || selectedCategory !== 'all' || selectedPriority !== 'all' || selectedStatus !== 'all'
                 ? 'No notifications match your filters.'
-                : 'You're all caught up!'}
+                : "You're all caught up!"}
             </p>
           </div>
         ) : (
