@@ -7,7 +7,7 @@ import {
   XCircleIcon,
   ClockIcon,
   ArrowPathIcon,
-  HeartIcon
+  SignalIcon
 } from '@heroicons/react/24/outline';
 import StandardSpinner from '@/components/ui/StandardSpinner';
 
@@ -142,7 +142,7 @@ export default function PublicStatusPage() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-2xl font-bold text-black mb-2 flex items-center">
-                <HeartIcon className="h-6 w-6 text-blue-600 mr-2" />
+                <SignalIcon className="h-6 w-6 text-blue-600 mr-2" />
                 Dott System Status
               </h1>
               <p className="text-gray-600">Current operational status of Dott services</p>

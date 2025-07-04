@@ -1,14 +1,24 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getServerSession } from '@/utils/session';
+import { cookies } from 'next/headers';
 
 export async function POST(request) {
   try {
     // Check authentication
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(request);
     if (!session?.user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    // Get session cookie for backend auth
+    const cookieStore = cookies();
+    const sidCookie = cookieStore.get('sid');
+    if (!sidCookie || !sidCookie.value) {
+      return NextResponse.json(
+        { error: 'Session not found' },
         { status: 401 }
       );
     }
@@ -45,7 +55,7 @@ export async function POST(request) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.accessToken}`,
+        'Cookie': `sid=${sidCookie.value}; session_token=${sidCookie.value}`,
       },
       body: JSON.stringify(emailData)
     });
