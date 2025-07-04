@@ -13,6 +13,7 @@ import Pricing from '@/app/components/Pricing';
 import FAQ from '@/app/components/FAQ';
 import ContactForm from '@/app/components/ContactForm';
 import Footer from '@/app/components/Footer';
+import CookieBanner from '@/components/Cookie/CookieBanner';
 
 // Add a function to clear tenant data
 const clearTenantData = () => {
@@ -108,6 +109,9 @@ export default function Home() {
       <div className="bg-white">
         <Footer />
       </div>
+      
+      {/* Cookie Banner */}
+      <CookieBanner />
     </main>
     </I18nextProvider>
     </>

@@ -14,6 +14,15 @@ export async function initPostHog() {
     return posthogClient;
   }
 
+  // Check for cookie consent before initializing analytics
+  if (typeof window !== 'undefined') {
+    const analyticsConsent = localStorage.getItem('analytics_consent');
+    if (analyticsConsent === 'false') {
+      console.log('[PostHog] Analytics disabled by user preference');
+      return null;
+    }
+  }
+
   // Use configuration from config file (which reads from env vars)
   let posthogKey = POSTHOG_KEY;
   let posthogHost = POSTHOG_HOST;
