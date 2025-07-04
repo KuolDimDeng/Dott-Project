@@ -287,6 +287,7 @@ const ReportsManagement = enhancedLazy(() => import('./crm/ReportsManagement'), 
 
 // Analytics Components
 const SmartInsight = enhancedLazy(() => import('./forms/SmartInsight.js'), 'Smart Insight AI');
+const ImportExport = enhancedLazy(() => import('./forms/ImportExport.js'), 'Import/Export');
 
 // Calendar Component
 const Calendar = enhancedLazy(() => import('./forms/Calendar.js'), 'Calendar');
@@ -1842,7 +1843,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
       }
 
       // Handle Analytics views
-      if (view && (view.startsWith('analytics-') || view === 'kpi-data' || view === 'smart-insight' || view === 'smart-business' || view === 'ai-query') || showAnalysisPage || showKPIDashboard) {
+      if (view && (view.startsWith('analytics-') || view === 'kpi-data' || view === 'smart-insight' || view === 'smart-business' || view === 'ai-query' || view === 'import-export') || showAnalysisPage || showKPIDashboard) {
         console.log('[RenderMainContent] Rendering analytics view:', view);
         
         let AnalyticsComponent = null;
@@ -1870,6 +1871,13 @@ const RenderMainContent = React.memo(function RenderMainContent({
               AnalyticsComponent = lazy(() => import('./forms/SmartInsight.js').catch(err => {
                 console.error('[RenderMainContent] Error loading SmartInsight:', err);
                 return { default: () => <div className="p-4">Error loading Smart Insight AI</div> };
+              }));
+              break;
+            case 'import-export':
+              componentName = 'ImportExport';
+              AnalyticsComponent = lazy(() => import('./forms/ImportExport.js').catch(err => {
+                console.error('[RenderMainContent] Error loading ImportExport:', err);
+                return { default: () => <div className="p-4">Error loading Import/Export</div> };
               }));
               break;
             default:

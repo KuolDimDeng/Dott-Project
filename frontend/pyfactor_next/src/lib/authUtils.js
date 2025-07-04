@@ -58,6 +58,7 @@ const PUBLIC_ROUTES = [
   '/auth/reset',
   '/auth/reset/confirm',
   '/auth/callback',
+  '/auth/session-bridge',  // Add session-bridge as public route
   '/api/health',
   '/api/public',
   '/api/login',
