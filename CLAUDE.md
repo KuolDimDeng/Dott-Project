@@ -1,5 +1,5 @@
 # CLAUDE.md - Dott Project Configuration
-*Last Updated: 2025-07-01*
+*Last Updated: 2025-07-04*
 
 ## Numbering System Guide
 - **Format**: `[MAJOR.MINOR.PATCH] - DATE - STATUS`
@@ -595,6 +595,41 @@ Add `REDIS_URL` environment variable in Render dashboard
   - Frontend: `/frontend/pyfactor_next/src/app/api/taxes/filing-locations/route.js`
   - Frontend: `/frontend/pyfactor_next/src/app/api/taxes/test-claude/route.js`
 - **Deployment**: Auto-deploy on push to Dott_Main_Dev_Deploy branch
+
+### [21.0.0] - 2025-07-04 - CURRENT - AI-Powered Import/Export Feature
+- **Purpose**: Enable easy data migration with AI-powered field mapping using Claude Sonnet 4
+- **Access Control**: Restricted to OWNER and ADMIN roles only
+- **Import Features**:
+  - Support for Products, Customers, Invoices, Bills, Chart of Accounts, Tax Rates, Vendors, Employees
+  - Excel/CSV file upload (QuickBooks OAuth ready for future)
+  - AI-powered field mapping with confidence scores (Green=95%+, Yellow=80-94%, Red=manual)
+  - User review and override capability for all mappings
+  - Skip unmapped fields option for flexibility
+  - Real-time progress tracking with statistics
+  - Automatic barcode generation for products
+- **Export Features**:
+  - Multiple formats: Excel, CSV, PDF, QuickBooks
+  - Date range filtering
+  - No usage limits (doesn't use AI)
+- **Usage Limits by Plan** (prevents API abuse):
+  - FREE: 3 imports/month, 3 AI analyses, 100 rows max, 1MB files
+  - PROFESSIONAL: 50 imports/month, 50 AI analyses, 5K rows max, 10MB files
+  - ENTERPRISE: 500 imports/month, 500 AI analyses, 50K rows max, 50MB files
+- **Cost Protection**:
+  - Separate tracking for imports vs AI analysis
+  - Monthly usage reset
+  - Clear visual indicators (blue=available, red=limit reached)
+  - Graceful fallback to manual mapping when AI limit reached
+- **Technical Implementation**:
+  - Frontend routes: `/dashboard/import-export/*`
+  - API endpoints: `/api/import-export/*`
+  - Claude Sonnet 4 for field analysis
+  - Session-based security with tenant isolation
+- **Value Proposition**:
+  - Removes #1 adoption barrier (fear of losing data)
+  - Competitors require manual field mapping
+  - AI suggestions save hours of setup time
+- **Documentation**: `/frontend/pyfactor_next/docs/IMPORT_EXPORT_FEATURE.md`
 
 ### [17.0.0] - 2025-01-11 - CURRENT - My Account Profile Display Fix
 - **Purpose**: Fix My Account profile tab to display user name and email from session
