@@ -631,6 +631,61 @@ Add `REDIS_URL` environment variable in Render dashboard
   - AI suggestions save hours of setup time
 - **Documentation**: `/frontend/pyfactor_next/docs/IMPORT_EXPORT_FEATURE.md`
 
+### [22.0.0] - 2025-07-04 - CURRENT - Comprehensive Notification System
+- **Purpose**: Real-time notification system with admin management, bell icon alerts, and 90-day history
+- **User Features**:
+  - Bell icon with unread count badge (shows 99+ for >99 notifications)
+  - Dropdown preview of recent notifications with quick actions
+  - Full notifications page at `/dashboard/notifications`
+  - 90-day retention with automatic cleanup
+  - Advanced filtering by category, priority, and read status
+  - Search functionality across titles and messages
+  - Toast notifications for new messages
+  - Time-ago formatting (e.g., "2 hours ago")
+  - Menu item in dashboard navigation for easy access
+- **Admin Portal** (`/admin`):
+  - Secure JWT authentication with IP whitelisting
+  - Create and send targeted notifications
+  - Targeting options: all users, by plan, by role, by country, active users
+  - Tax feedback management dashboard
+  - Engagement metrics and read rate tracking
+  - Comprehensive audit logging
+- **Technical Architecture**:
+  - Frontend: React hooks, useNotifications for polling
+  - Backend: Django models with tenant isolation
+  - API: RESTful endpoints for user and admin operations
+  - Real-time: 30-second polling (WebSocket ready)
+  - Security: JWT tokens, IP whitelisting, audit trails
+- **Notification Types**:
+  - Categories: announcements, updates, alerts, tax, payments, system
+  - Priorities: high (red), medium (yellow), low (green)
+  - Optional action buttons for quick navigation
+  - Expiration dates and auto-dismiss timers
+- **Database Models**:
+  - AdminUser: Staff with notification permissions
+  - Notification: Core notification data
+  - NotificationRecipient: Tenant-isolated delivery tracking
+  - NotificationTemplate: Reusable message templates
+  - AdminAuditLog: Complete action history
+- **Maintenance**:
+  - Daily cleanup command: `python manage.py cleanup_old_notifications`
+  - Options: --dry-run, --days=90, --batch-size=1000
+  - Automatic deletion of notifications older than 90 days
+  - Audit logging for all cleanup operations
+- **Performance**:
+  - Paginated API responses
+  - Efficient database queries with select_related
+  - Batch processing for large operations
+  - Client-side caching in useNotifications hook
+- **UI/UX Features**:
+  - Responsive design for all screen sizes
+  - Empty states with helpful messages
+  - Loading states with StandardSpinner
+  - Priority-based visual indicators
+  - Category badges for easy classification
+  - "Load more" pagination for smooth browsing
+- **Documentation**: `/frontend/pyfactor_next/docs/NOTIFICATION_SYSTEM.md`
+
 ### [17.0.0] - 2025-01-11 - CURRENT - My Account Profile Display Fix
 - **Purpose**: Fix My Account profile tab to display user name and email from session
 - **Issue**: Profile tab showed empty fields despite user menu displaying data correctly
