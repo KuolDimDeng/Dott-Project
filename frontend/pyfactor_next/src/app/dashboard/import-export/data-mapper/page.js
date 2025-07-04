@@ -100,6 +100,24 @@ const DataMapperPage = () => {
     captureEvent('data_mapper_ai_analysis_started');
     
     try {
+      // First check if user has AI analysis remaining
+      const limitsResponse = await fetch('/api/import-export/check-limits');
+      if (limitsResponse.ok) {
+        const limitsData = await limitsResponse.json();
+        if (!limitsData.remaining.canUseAI) {
+          setAnalyzing(false);
+          alert(`You've reached your monthly AI analysis limit (${limitsData.limits.aiAnalysisPerMonth}). Manual mapping is still available.`);
+          return;
+        }
+      }
+
+      // Update AI analysis usage
+      await fetch('/api/import-export/check-limits', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'ai_analysis' })
+      });
+
       // Call Claude API for field analysis
       const response = await fetch('/api/import-export/analyze-fields', {
         method: 'POST',

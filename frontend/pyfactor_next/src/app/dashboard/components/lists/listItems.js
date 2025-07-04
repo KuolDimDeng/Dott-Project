@@ -1975,6 +1975,7 @@ const MainListItems = ({
           handleAnalysisClick('import-export');
         }
       },
+      requiresAdmin: true, // Only show for OWNER and ADMIN roles
     },
     // Divider for special menu items
     {
@@ -2137,6 +2138,12 @@ const MainListItems = ({
         isOwnerOrAdmin: isOwnerOrAdmin(),
         subItemsCount: item.subItems?.length
       });
+    }
+    
+    // Check if item requires admin role
+    if (item.requiresAdmin) {
+      // Only OWNER and ADMIN can see admin-required items
+      return user?.role === 'OWNER' || user?.role === 'ADMIN';
     }
     
     // If user is OWNER or ADMIN, always show all items
