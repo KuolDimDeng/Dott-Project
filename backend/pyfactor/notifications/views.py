@@ -650,10 +650,20 @@ class UserNotificationView(APIView):
             page_size = min(int(request.GET.get('limit', 50)), 100)  # Max 100 per page
             unread_only = request.GET.get('unread_only', 'false').lower() == 'true'
             
+            # Apply 90-day retention filter
+            ninety_days_ago = timezone.now() - timedelta(days=90)
+            
             # Get notifications for this user's tenant
             queryset = NotificationRecipient.objects.filter(
-                tenant_id=tenant_id
+                tenant_id=tenant_id,
+                notification__created_at__gte=ninety_days_ago  # 90-day retention
             ).select_related('notification')
+            
+            # Also exclude expired notifications
+            queryset = queryset.filter(
+                Q(notification__expires_at__isnull=True) | 
+                Q(notification__expires_at__gt=timezone.now())
+            )
             
             if unread_only:
                 queryset = queryset.filter(is_read=False)

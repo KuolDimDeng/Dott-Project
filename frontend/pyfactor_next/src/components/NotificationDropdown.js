@@ -175,16 +175,15 @@ const NotificationDropdown = ({
       </div>
 
       {/* Footer */}
-      {notifications.length > 0 && (
-        <div className="p-3 border-t border-gray-200 bg-gray-50 rounded-b-lg">
-          <button
-            onClick={onClose}
-            className="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium"
-          >
-            View all notifications
-          </button>
-        </div>
-      )}
+      <div className="p-3 border-t border-gray-200 bg-gray-50 rounded-b-lg">
+        <a
+          href="/dashboard/notifications"
+          onClick={onClose}
+          className="block w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium"
+        >
+          View all notifications
+        </a>
+      </div>
     </div>
   );
 };
