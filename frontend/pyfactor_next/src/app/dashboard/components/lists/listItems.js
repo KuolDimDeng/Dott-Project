@@ -1982,26 +1982,6 @@ const MainListItems = ({
       },
       requiresAdmin: true, // Only show for OWNER and ADMIN roles
     },
-    {
-      icon: <NavIcons.Notification className="w-5 h-5" />,
-      label: 'Notifications',
-      onClick: () => {
-        // Create navigation event for Notifications
-        const navigationKey = `nav-${Date.now()}`;
-        const payload = { 
-          item: 'notifications', 
-          navigationKey,
-          originalItem: 'Notifications'
-        };
-        
-        // Dispatch navigation events
-        window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
-        window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
-        
-        // Navigate to notifications page
-        window.location.href = '/dashboard/notifications';
-      },
-    },
     // Spacer items to create visual separation
     {
       isSpacer: true,
