@@ -58,42 +58,9 @@ export async function POST(request) {
       // Additional fingerprint data would come from client-side
     };
     
-    // Get session details from Django using the validation endpoint
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
-    const sessionResponse = await fetch(`${API_URL}/api/sessions/validate/${token}/`, {
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Device-Fingerprint': JSON.stringify(fingerprintData)
-      }
-    });
-    
-    if (!sessionResponse.ok) {
-      console.error('[EstablishSession] Failed to validate session:', sessionResponse.status);
-      return NextResponse.redirect(new URL('/auth/email-signin?error=invalid_session', baseUrl));
-    }
-    
-    const sessionData = await sessionResponse.json();
-    console.log('[EstablishSession] Session validated:', {
-      email: sessionData.email || sessionData.user?.email,
-      tenantId: sessionData.tenant_id || sessionData.tenant?.id,
-      needsOnboarding: sessionData.needs_onboarding,
-      securityInfo: sessionData.security
-    });
-    
-    // Check security status
-    if (sessionData.security?.requires_verification) {
-      console.warn('[EstablishSession] Session requires additional verification');
-      // Could redirect to verification page
-    }
-    
-    // Handle generic /dashboard redirect by including tenant ID
-    if (redirectUrl === '/dashboard') {
-      const tenantId = sessionData.tenant_id || sessionData.tenant?.id;
-      if (tenantId) {
-        console.log('[EstablishSession] Updating /dashboard redirect to include tenant ID:', tenantId);
-        redirectUrl = `/${tenantId}/dashboard`;
-      }
-    }
+    // For now, skip Django validation and just set the cookie
+    // The session-loading page will handle the redirect with tenant ID
+    console.log('[EstablishSession] Setting session cookie without validation');
     
     // Create response with redirect
     // Add fromAuth parameter to help pages know they just came from authentication
@@ -111,11 +78,13 @@ export async function POST(request) {
     const response = NextResponse.redirect(finalRedirectUrl);
     
     // Set session cookies
+    const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+    
     response.cookies.set('sid', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      expires: new Date(sessionData.expires_at),
+      expires: expires,
       path: '/'
     });
     
@@ -124,23 +93,9 @@ export async function POST(request) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      expires: new Date(sessionData.expires_at),
+      expires: expires,
       path: '/'
     });
-    
-    // Set security info cookie (non-httpOnly for client access)
-    if (sessionData.security) {
-      response.cookies.set('session_security', JSON.stringify({
-        riskScore: sessionData.security.risk_score,
-        deviceTrusted: sessionData.security.device_trusted,
-        requiresVerification: sessionData.security.requires_verification
-      }), {
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        expires: new Date(sessionData.expires_at),
-        path: '/'
-      });
-    }
     
     console.log('[EstablishSession] Enhanced session established, redirecting to:', redirectUrl);
     

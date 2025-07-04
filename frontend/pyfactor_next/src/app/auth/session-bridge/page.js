@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function SessionBridge() {
   const router = useRouter();
+  const [sessionToken, setSessionToken] = useState('');
+  const [redirectUrl, setRedirectUrl] = useState('/dashboard');
 
   useEffect(() => {
     const processBridge = async () => {
@@ -74,44 +76,41 @@ export default function SessionBridge() {
           return;
         }
         
-        // Now use the actual session token
-        const sessionToken = bridgeResult.sessionToken;
+        // Set the session token in state to update the form
+        setSessionToken(bridgeResult.sessionToken);
+        setRedirectUrl(redirectUrl || '/dashboard');
         
-        // Submit form programmatically with the real session token
-        const form = document.getElementById('session-form');
-        console.log('[SessionBridge] Form element found:', !!form);
-        
-        if (form) {
-          // Update the token input with the real session token
-          const tokenInput = form.querySelector('input[name="token"]');
-          if (tokenInput) {
-            tokenInput.value = sessionToken;
-          }
+        // Wait for next render cycle to ensure form is updated
+        setTimeout(() => {
+          const form = document.getElementById('session-form');
+          console.log('[SessionBridge] Form element found:', !!form);
           
-          // Log all form inputs
-          const formData = new FormData(form);
-          const formEntries = {};
-          for (const [key, value] of formData.entries()) {
-            formEntries[key] = key === 'token' ? `${value.substring(0, 20)}...` : value;
-          }
-          
-          console.log('[SessionBridge] Submitting form with data:', {
-            action: form.action,
-            method: form.method,
-            tokenLength: sessionToken?.length,
-            isUUID: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionToken),
-            formData: formEntries
-          });
-          
-          // Add a small delay to ensure form is ready
-          setTimeout(() => {
+          if (form) {
+            // Log all form inputs
+            const formData = new FormData(form);
+            const formEntries = {};
+            for (const [key, value] of formData.entries()) {
+              formEntries[key] = key === 'token' ? `${value.substring(0, 20)}...` : value;
+            }
+            
+            console.log('[SessionBridge] Submitting form with data:', {
+              action: form.action,
+              method: form.method,
+              tokenLength: bridgeResult.sessionToken?.length,
+              isUUID: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bridgeResult.sessionToken),
+              formData: formEntries
+            });
+            
+            // Submit the form
             console.log('[SessionBridge] Actually submitting form now');
             form.submit();
-          }, 100);
-        } else {
-          console.error('[SessionBridge] Form element not found!');
-          router.push('/auth/signin?error=form_not_found');
-        }
+          } else {
+            console.error('[SessionBridge] Form element not found!');
+            // As a fallback, try direct navigation with session cookie
+            console.log('[SessionBridge] Attempting direct navigation as fallback');
+            router.push(redirectUrl || '/dashboard');
+          }
+        }, 200); // Increased delay to ensure state update
       } catch (error) {
         console.error('[SessionBridge] Error exchanging bridge token:', error);
         router.push('/auth/signin?error=bridge_error');
@@ -125,37 +124,20 @@ export default function SessionBridge() {
     processBridge();
   }, [router]);
 
-  // Get bridge data for form
-  let token = '';
-  let redirectUrl = '/dashboard';
-  
-  if (typeof window !== 'undefined') {
-    const bridgeData = sessionStorage.getItem('session_bridge');
-    if (bridgeData) {
-      try {
-        const parsed = JSON.parse(bridgeData);
-        token = parsed.token;
-        redirectUrl = parsed.redirectUrl;
-      } catch (e) {
-        // Ignore parse errors
-      }
-    }
-  }
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
         <p className="mt-4 text-gray-600">Securing your session...</p>
         
-        {/* Hidden form for POST submission */}
+        {/* Hidden form for POST submission - uses state values */}
         <form 
           id="session-form"
           method="POST" 
           action="/api/auth/establish-session"
           style={{ display: 'none' }}
         >
-          <input type="hidden" name="token" value={token} />
+          <input type="hidden" name="token" value={sessionToken} />
           <input type="hidden" name="redirectUrl" value={redirectUrl} />
           <input type="hidden" name="timestamp" value={Date.now()} />
         </form>
