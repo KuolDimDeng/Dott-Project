@@ -292,6 +292,9 @@ const ImportExport = enhancedLazy(() => import('./forms/ImportExport.js'), 'Impo
 // Calendar Component
 const Calendar = enhancedLazy(() => import('./forms/Calendar.js'), 'Calendar');
 
+// Notifications
+const NotificationsPage = enhancedLazy(() => import('../notifications/page.js'), 'Notifications');
+
 // Social Components
 const InviteAFriend = enhancedLazy(() => import('./invite/InviteAFriend.js'), 'Invite a Friend');
 const DottStatus = enhancedLazy(() => import('./status/DottStatus.js'), 'Dott Status');
@@ -1996,6 +1999,18 @@ const RenderMainContent = React.memo(function RenderMainContent({
         );
       }
 
+      // Notifications view handling
+      if (view === 'notifications') {
+        const notificationsComponentKey = `notifications-${navigationKey || 'default'}`;
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup componentKey={notificationsComponentKey}>
+              <NotificationsPage />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
+      }
+
       // Sales view handling
       if (view && view.startsWith('sales-')) {
         const salesComponentKey = `sales-${navigationKey || 'default'}`;
@@ -2109,6 +2124,9 @@ const RenderMainContent = React.memo(function RenderMainContent({
               break;
             case 'invoices':
               handleSetView('invoice-management');
+              break;
+            case 'notifications':
+              handleSetView('notifications');
               break;
             case 'settings':
               handleSetView('settings');

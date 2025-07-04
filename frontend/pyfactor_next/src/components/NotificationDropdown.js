@@ -176,13 +176,25 @@ const NotificationDropdown = ({
 
       {/* Footer */}
       <div className="p-3 border-t border-gray-200 bg-gray-50 rounded-b-lg">
-        <a
-          href="/dashboard/notifications"
-          onClick={onClose}
+        <button
+          onClick={() => {
+            onClose();
+            // Dispatch navigation event to show notifications in main content area
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'notifications', 
+              navigationKey,
+              originalItem: 'Notifications'
+            };
+            
+            // Dispatch navigation events
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+          }}
           className="block w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium"
         >
           View all notifications
-        </a>
+        </button>
       </div>
     </div>
   );
