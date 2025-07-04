@@ -39,16 +39,23 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
-# Build arguments for API URLs (can be overridden at build time)
+# Copy all environment variables that start with NEXT_PUBLIC_ from build environment
+# This allows Render to pass them without explicitly declaring each one
 ARG NEXT_PUBLIC_API_URL
-ARG NEXT_PUBLIC_APP_URL
-# Remove PostHog ARGs since we'll fetch them at runtime
-ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
-ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
+ARG NEXT_PUBLIC_BASE_URL
+ARG NEXT_PUBLIC_POSTHOG_KEY
+ARG NEXT_PUBLIC_POSTHOG_HOST
+ARG NEXT_PUBLIC_AUTH0_DOMAIN
+ARG NEXT_PUBLIC_AUTH0_CLIENT_ID
+ARG NEXT_PUBLIC_AUTH0_AUDIENCE
+ARG NEXT_PUBLIC_CRISP_WEBSITE_ID
+ARG NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+ARG NEXT_PUBLIC_PLAID_ENV
 
 # Run the optimized production build
-# Using specific build command for Render optimization
-RUN pnpm run build:render
+# The build script will use the ARGs passed by Render
+RUN --mount=type=cache,id=nextjs,target=/app/.next/cache \
+    sh scripts/render-build.sh
 
 # ========================================
 # Stage 4: Production runner

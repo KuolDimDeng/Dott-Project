@@ -1,13 +1,15 @@
 // PostHog configuration
-// This file provides PostHog configuration with fallbacks
+// The PostHog public key (phc_*) is designed to be public and client-side visible
+// It can only send events, not read or modify data
 
 export const posthogConfig = {
-  // Try environment variables first, then use hardcoded values
-  key: process.env.NEXT_PUBLIC_POSTHOG_KEY || 'phc_Ipk4w3yYAtCvGfauUWgemvQOqSmxX2xqmtYAnuMcAgX',
+  // PostHog public key - this is safe to expose client-side
+  // Configure domain restrictions in PostHog dashboard for additional security
+  key: process.env.NEXT_PUBLIC_POSTHOG_KEY || null,
   host: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://app.posthog.com',
   
   // Feature flags
-  enabled: true,
+  enabled: !!process.env.NEXT_PUBLIC_POSTHOG_KEY,
   capturePageviews: true,
   capturePageleaves: true,
   

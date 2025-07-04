@@ -15,28 +15,15 @@ export async function initPostHog() {
     return posthogClient;
   }
 
-  // Use configuration from config file (includes fallbacks)
+  // Use configuration from config file (which reads from env vars)
   let posthogKey = POSTHOG_KEY;
   let posthogHost = POSTHOG_HOST;
 
-  // If still not found, try fetching from API endpoint as last resort
-  if (!posthogKey || posthogKey === 'NOT_SET') {
-    console.log('[PostHog] Configuration not found, fetching from API...');
-    try {
-      const response = await fetch('/api/config/posthog');
-      if (response.ok) {
-        const config = await response.json();
-        if (config.key) {
-          posthogKey = config.key;
-          posthogHost = config.host || posthogHost;
-          console.log('[PostHog] Configuration loaded from API');
-        }
-      } else {
-        console.error('[PostHog] Failed to fetch configuration from API');
-      }
-    } catch (error) {
-      console.error('[PostHog] Error fetching configuration:', error);
-    }
+  // Log configuration source
+  if (posthogKey) {
+    console.log('[PostHog] Configuration loaded from environment variables');
+  } else {
+    console.log('[PostHog] No PostHog configuration found');
   }
 
   // Debug: Check all NEXT_PUBLIC env vars
