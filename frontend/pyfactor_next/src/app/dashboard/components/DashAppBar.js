@@ -57,6 +57,8 @@ import { useSession } from '@/hooks/useSession-v2';
 import { useProfile } from '@/hooks/useProfile';
 import { useAuth0Data } from '@/hooks/useAuth0Data';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useNotifications } from '@/hooks/useNotifications';
+import NotificationDropdown from '@/components/NotificationDropdown';
 import { APP_NAME, CREATE_NEW_ITEM_OPTIONS } from '@/config/constants';
 import { businessTypes, legalStructures } from '@/app/utils/businessData';
 
@@ -186,9 +188,19 @@ const DashAppBar = ({
   const [businessName, setBusinessName] = useState(null);
   const [fetchedBusinessName, setFetchedBusinessName] = useState(null);
   const [isDesktop, setIsDesktop] = useState(true);
+  const [showNotifications, setShowNotifications] = useState(false);
   
   // Get user permissions
   const { isOwner, isAdmin, isOwnerOrAdmin } = usePermissions();
+  
+  // Get notification data
+  const { 
+    notifications, 
+    unreadCount, 
+    loading: notificationsLoading, 
+    markAsRead, 
+    markAllAsRead 
+  } = useNotifications();
   
   // Add a flag to track if we've attempted to fetch profile data
   const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
@@ -869,6 +881,16 @@ const DashAppBar = ({
     }
   };
 
+  // Handle notification bell click
+  const handleNotificationClick = () => {
+    setShowNotifications(!showNotifications);
+  };
+
+  // Handle closing notification dropdown
+  const handleCloseNotifications = () => {
+    setShowNotifications(false);
+  };
+
   // Add CSS keyframes for animations
   const animationStyles = `
     @keyframes fadeIn {
@@ -1317,9 +1339,9 @@ const DashAppBar = ({
 
               {/* Notification button */}
               <button
-                className="hidden sm:flex items-center justify-center p-2 text-white hover:bg-white/10 rounded-full mr-2"
-                onClick={() => handleShowNotification('info')}
-                title="Show Notification"
+                className="hidden sm:flex items-center justify-center p-2 text-white hover:bg-white/10 rounded-full mr-2 relative"
+                onClick={handleNotificationClick}
+                title="Notifications"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -1335,6 +1357,12 @@ const DashAppBar = ({
                     d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
                   />
                 </svg>
+                {/* Notification badge */}
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full min-w-[1rem] h-4">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
               </button>
 
               {/* Home button */}
@@ -1484,6 +1512,18 @@ const DashAppBar = ({
           onClose={() => setShowSubscriptionPopup(false)}
           onSubscriptionClick={handleSubscriptionClick}
           onShowNotification={handleShowNotification}
+        />
+      )}
+
+      {/* Notification dropdown */}
+      {showNotifications && (
+        <NotificationDropdown
+          notifications={notifications}
+          unreadCount={unreadCount}
+          onClose={handleCloseNotifications}
+          onMarkAsRead={markAsRead}
+          onMarkAllAsRead={markAllAsRead}
+          loading={notificationsLoading}
         />
       )}
 
