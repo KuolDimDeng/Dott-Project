@@ -3,17 +3,26 @@ Notification system models for admin-to-user communication
 """
 import uuid
 from django.db import models
-from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
+from django.contrib.auth.hashers import make_password, check_password
 from custom_auth.tenant_base_model import TenantAwareModel
 from audit.mixins import AuditMixin
 
 
-class AdminUser(AbstractUser):
+class AdminUser(models.Model):
     """
-    Extended user model for Dott staff with admin permissions
+    Admin user model for Dott staff with notification permissions
+    Separate from regular users to avoid conflicts
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    # Basic auth fields
+    username = models.CharField(max_length=150, unique=True)
+    email = models.EmailField(unique=True)
+    password = models.CharField(max_length=128)
+    first_name = models.CharField(max_length=150, blank=True)
+    last_name = models.CharField(max_length=150, blank=True)
+    is_active = models.BooleanField(default=True)
     
     # Staff identification
     employee_id = models.CharField(max_length=20, unique=True, null=True, blank=True)
@@ -48,6 +57,7 @@ class AdminUser(AbstractUser):
     slack_user_id = models.CharField(max_length=50, blank=True)
     
     # Session management
+    last_login = models.DateTimeField(null=True, blank=True)
     last_login_ip = models.GenericIPAddressField(null=True, blank=True)
     failed_login_attempts = models.IntegerField(default=0)
     account_locked_until = models.DateTimeField(null=True, blank=True)
@@ -63,6 +73,19 @@ class AdminUser(AbstractUser):
     
     def __str__(self):
         return f"{self.get_full_name()} ({self.admin_role})"
+    
+    def get_full_name(self):
+        """Return the first_name plus the last_name, with a space in between."""
+        full_name = f'{self.first_name} {self.last_name}'
+        return full_name.strip()
+    
+    def set_password(self, raw_password):
+        """Set password using Django's password hashing"""
+        self.password = make_password(raw_password)
+    
+    def check_password(self, raw_password):
+        """Check password against hash"""
+        return check_password(raw_password, self.password)
     
     @property
     def is_locked(self):
@@ -142,6 +165,17 @@ class Notification(AuditMixin, models.Model):
         ('announcement', 'Announcement'),
         ('tax_update', 'Tax Update'),
     ], default='info')
+    
+    # Category
+    category = models.CharField(max_length=50, blank=True, null=True, choices=[
+        ('announcement', 'Announcement'),
+        ('update', 'Update'),
+        ('alert', 'Alert'),
+        ('promotion', 'Promotion'),
+        ('system', 'System'),
+        ('tax', 'Tax Update'),
+        ('payment', 'Payment'),
+    ])
     
     # Targeting
     TARGET_TYPE_CHOICES = [
@@ -271,7 +305,7 @@ class AdminAuditLog(models.Model):
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
-    admin_user = models.ForeignKey(AdminUser, on_delete=models.PROTECT, related_name='audit_logs')
+    admin_user = models.ForeignKey(AdminUser, on_delete=models.PROTECT, related_name='audit_logs', null=True, blank=True)
     action = models.CharField(max_length=50, choices=[
         ('login', 'Login'),
         ('logout', 'Logout'),
@@ -283,6 +317,7 @@ class AdminAuditLog(models.Model):
         ('update_user', 'Update User'),
         ('delete_data', 'Delete Data'),
         ('change_permissions', 'Change Permissions'),
+        ('cleanup_notifications', 'Cleanup Old Notifications'),
     ])
     
     # Context
@@ -310,7 +345,8 @@ class AdminAuditLog(models.Model):
         ]
     
     def __str__(self):
-        return f"{self.admin_user.username} - {self.action} at {self.timestamp}"
+        username = self.admin_user.username if self.admin_user else 'System'
+        return f"{username} - {self.action} at {self.timestamp}"
 
 
 class UserNotificationSettings(TenantAwareModel):

@@ -1,30 +1,24 @@
 """
-URL configuration for notification system
+URL configuration for the notifications app
 """
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
+from django.urls import path
 from . import views
 
+app_name = 'notifications'
+
 urlpatterns = [
-    # Admin authentication
-    path('admin/login/', views.AdminLoginView.as_view(), name='admin-login'),
-    
-    # Admin dashboard
-    path('admin/dashboard/', views.AdminDashboardView.as_view(), name='admin-dashboard'),
-    
-    # Tax feedback management
-    path('admin/feedback/', views.TaxFeedbackManagementView.as_view(), name='admin-feedback'),
-    path('admin/feedback/<uuid:feedback_id>/', views.TaxFeedbackManagementView.as_view(), name='admin-feedback-detail'),
-    
-    # Notification management
-    path('admin/notifications/', views.NotificationManagementView.as_view(), name='admin-notifications'),
-    path('admin/notifications/<uuid:notification_id>/send/', views.send_notification, name='send-notification'),
-    
-    # Templates
-    path('admin/templates/', views.get_notification_templates, name='notification-templates'),
-    
     # User notification endpoints
-    path('user/', views.UserNotificationView.as_view(), name='user-notifications'),
-    path('user/<uuid:notification_id>/mark-read/', views.mark_notification_read, name='mark-notification-read'),
-    path('user/mark-all-read/', views.mark_all_notifications_read, name='mark-all-notifications-read'),
+    path('user/', views.UserNotificationListView.as_view(), name='user-notifications'),
+    path('user/<uuid:notification_id>/mark-read/', views.MarkNotificationReadView.as_view(), name='mark-read'),
+    path('user/mark-all-read/', views.MarkAllNotificationsReadView.as_view(), name='mark-all-read'),
+    
+    # Admin endpoints
+    path('admin/login/', views.AdminLoginView.as_view(), name='admin-login'),
+    path('admin/dashboard/', views.AdminDashboardView.as_view(), name='admin-dashboard'),
+    path('admin/feedback/', views.TaxFeedbackListView.as_view(), name='tax-feedback'),
+    path('admin/feedback/<uuid:feedback_id>/', views.TaxFeedbackDetailView.as_view(), name='tax-feedback-detail'),
+    path('admin/notifications/', views.AdminNotificationListView.as_view(), name='admin-notifications'),
+    path('admin/notifications/create/', views.CreateNotificationView.as_view(), name='create-notification'),
+    path('admin/notifications/<uuid:notification_id>/send/', views.SendNotificationView.as_view(), name='send-notification'),
+    path('admin/templates/', views.NotificationTemplateListView.as_view(), name='notification-templates'),
 ]
