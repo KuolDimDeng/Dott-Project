@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { PostHogProvider as PHProvider } from 'posthog-js/react';
 import { initPostHog, identifyUser, resetUser, capturePageView } from '@/lib/posthog';
 import { useAuth } from '@/contexts/AuthContext';
+import { getPageName, trackEvent, EVENTS } from '@/utils/posthogTracking';
 
 export default function PostHogProvider({ children }) {
   const router = useRouter();
@@ -58,15 +59,18 @@ export default function PostHogProvider({ children }) {
       return;
     }
 
-    const pageName = pathname.split('/').filter(Boolean).join(' > ') || 'Home';
+    const pageName = getPageName(pathname);
     console.log('[PostHogProvider] Tracking pageview for:', pageName);
     
     capturePageView(pageName, {
       path: pathname,
+      pageName: pageName,
       authenticated: isAuthenticated,
+      userEmail: user?.email,
+      userRole: user?.role,
       timestamp: new Date().toISOString()
     });
-  }, [pathname, isAuthenticated, posthog]);
+  }, [pathname, isAuthenticated, posthog, user]);
 
   // Check network and debug info
   useEffect(() => {

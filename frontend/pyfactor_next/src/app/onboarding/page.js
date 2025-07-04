@@ -8,9 +8,12 @@ import { onboardingStateMachine, ONBOARDING_STATES } from '@/utils/onboardingSta
 import OnboardingFlowV2 from '@/components/Onboarding/OnboardingFlow.v2';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { captureEvent } from '@/lib/posthog';
+import { usePostHog } from 'posthog-js/react';
+import { trackEvent, EVENTS } from '@/utils/posthogTracking';
 
 export default function OnboardingPageV2() {
   const router = useRouter();
+  const posthog = usePostHog();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -60,12 +63,20 @@ export default function OnboardingPageV2() {
         tenantId: session.user?.tenantId
       });
       
-      // Track onboarding page view
+      // Track onboarding page view and started event
       captureEvent('onboarding_page_viewed', {
         needs_onboarding: session.user?.needsOnboarding,
         onboarding_completed: session.user?.onboardingCompleted,
         has_tenant_id: !!session.user?.tenantId
       });
+      
+      // Track onboarding started if they need onboarding
+      if (session.user?.needsOnboarding === true) {
+        trackEvent(posthog, EVENTS.ONBOARDING_STARTED, {
+          email: session.user?.email,
+          userId: session.user?.sub || session.user?.id
+        });
+      }
 
       // CRITICAL: Only check backend's onboarding status
       // Backend's needsOnboarding is the single source of truth

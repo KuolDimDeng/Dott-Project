@@ -11,6 +11,8 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import BusinessInfoFormV2 from './BusinessInfoForm.v2';
 import SubscriptionSelectionFormV2 from './SubscriptionSelectionForm.v2';
 import { captureEvent } from '@/lib/posthog';
+import { usePostHog } from 'posthog-js/react';
+import { trackEvent, EVENTS } from '@/utils/posthogTracking';
 
 /**
  * Enhanced Onboarding Flow Component
@@ -18,6 +20,7 @@ import { captureEvent } from '@/lib/posthog';
  */
 export default function OnboardingFlowV2() {
   const router = useRouter();
+  const posthog = usePostHog();
   const [loading, setLoading] = useState(true);
   const [currentState, setCurrentState] = useState(null);
   const [formData, setFormData] = useState({});
@@ -107,6 +110,15 @@ export default function OnboardingFlowV2() {
         has_tenant_id: !!response.tenant_id
       });
       
+      // Track onboarding step completed
+      trackEvent(posthog, EVENTS.ONBOARDING_STEP_COMPLETED, {
+        step: 'business_info',
+        businessName: data.businessName,
+        businessType: data.businessType,
+        country: data.country,
+        legalStructure: data.legalStructure
+      });
+      
       // Update state machine
       await onboardingStateMachine.submitBusinessInfo(data);
       
@@ -152,6 +164,20 @@ export default function OnboardingFlowV2() {
         plan: plan,
         billing_cycle: billingCycle,
         is_free_plan: plan === 'free'
+      });
+      
+      // Track subscription plan selected event
+      trackEvent(posthog, EVENTS.SUBSCRIPTION_SELECTED, {
+        plan: plan,
+        billingCycle: billingCycle,
+        isFreePlan: plan === 'free'
+      });
+      
+      // Track onboarding step completed
+      trackEvent(posthog, EVENTS.ONBOARDING_STEP_COMPLETED, {
+        step: 'subscription_selection',
+        plan: plan,
+        billingCycle: billingCycle
       });
       
       // Update state machine
@@ -225,6 +251,17 @@ export default function OnboardingFlowV2() {
           business_type: data.businessType,
           country: data.country,
           tenant_id: tenantId
+        });
+        
+        // Track onboarding completed event
+        trackEvent(posthog, EVENTS.ONBOARDING_COMPLETED, {
+          plan: data.selectedPlan,
+          billingCycle: data.billingCycle,
+          businessType: data.businessType,
+          businessName: data.businessName,
+          country: data.country,
+          legalStructure: data.legalStructure,
+          tenantId: tenantId
         });
         
         // Session updates are handled automatically by backend in session-v2 system

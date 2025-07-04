@@ -8,10 +8,13 @@ import { sessionManagerEnhanced } from '@/utils/sessionManager-v2-enhanced';
 import { secureLogin } from '@/utils/secureAuth';
 import { securityLogger } from '@/utils/securityLogger';
 import { anomalyDetector } from '@/utils/anomalyDetection';
+import { usePostHog } from 'posthog-js/react';
+import { trackEvent, EVENTS } from '@/utils/posthogTracking';
 
 export default function EmailPasswordSignIn() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const posthog = usePostHog();
   const [isSignup, setIsSignup] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -140,6 +143,9 @@ export default function EmailPasswordSignIn() {
   const handleSignup = async () => {
     const { email, password, confirmPassword, firstName, lastName } = formData;
 
+    // Track sign up started
+    trackEvent(posthog, EVENTS.SIGN_UP_STARTED, { email });
+
     if (!firstName || !lastName) {
       showError('Please enter your first and last name');
       return;
@@ -176,6 +182,9 @@ export default function EmailPasswordSignIn() {
         throw new Error(signupData.error || 'Error creating account');
       }
 
+      // Track sign up completed
+      trackEvent(posthog, EVENTS.SIGN_UP_COMPLETED, { email });
+
       // Show success message and redirect to login
       setIsLoading(false);
       showError('Account created successfully! Please check your email to verify your account before signing in.', 'success');
@@ -195,6 +204,9 @@ export default function EmailPasswordSignIn() {
 
   const handleLogin = async () => {
     const { email, password } = formData;
+
+    // Track sign in started
+    trackEvent(posthog, EVENTS.SIGN_IN_STARTED, { email });
 
     try {
       // Get client IP and user agent for anomaly detection
@@ -333,6 +345,13 @@ export default function EmailPasswordSignIn() {
       // If session was created successfully, use secure bridge
       if (sessionResult.success) {
         logger.info('[EmailPasswordSignIn] Session created successfully');
+        
+        // Track sign in completed
+        trackEvent(posthog, EVENTS.SIGN_IN_COMPLETED, { 
+          email,
+          userId: authResult.user?.sub,
+          method: 'email-password'
+        });
         
         // Check for anomalies in successful login
         await anomalyDetector.checkLoginAttempt(email, ip, userAgent, true);
