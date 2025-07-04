@@ -29,8 +29,8 @@ const SettingsManagement = () => {
   const { notifySuccess, notifyError } = useNotification();
   const { isOwner, isAdmin, isOwnerOrAdmin } = usePermissions();
   
-  // State management
-  const [activeSection, setActiveSection] = useState('user-management');
+  // State management - Initialize to null to wait for permissions
+  const [activeSection, setActiveSection] = useState(null);
   const [loading, setLoading] = useState(false);
   
   // Settings sections configuration - updated based on requirements
@@ -81,9 +81,16 @@ const SettingsManagement = () => {
     section => section.id === activeSection
   )?.component;
 
-  // Set default section if current is not available
+  // Set default section when permissions are loaded
   useEffect(() => {
-    if (!availableSections.find(section => section.id === activeSection)) {
+    // If activeSection is null (initial load) and we have available sections
+    if (activeSection === null && availableSections.length > 0) {
+      // Prefer user-management if available, otherwise use first available
+      const userManagementSection = availableSections.find(s => s.id === 'user-management');
+      setActiveSection(userManagementSection ? 'user-management' : availableSections[0].id);
+    }
+    // If current section is not available anymore (permissions changed)
+    else if (activeSection && !availableSections.find(section => section.id === activeSection)) {
       setActiveSection(availableSections[0]?.id || 'company-profile');
     }
   }, [activeSection, availableSections]);

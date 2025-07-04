@@ -42,6 +42,9 @@ const MyAccount = ({ userData }) => {
   const [profilePhoto, setProfilePhoto] = useState(null);
   const [sessions, setSessions] = useState([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editedData, setEditedData] = useState({});
+  const [savingProfile, setSavingProfile] = useState(false);
   const [mfaSettings, setMfaSettings] = useState({
     enabled: false,
     preferredMethod: 'totp',
@@ -74,6 +77,19 @@ const MyAccount = ({ userData }) => {
       const sessionUser = session.user;
       setProfileData(sessionUser);
       setProfilePhoto(sessionUser.picture || sessionUser.profilePhoto || sessionUser.profile_photo);
+      
+      // Initialize edited data with current values
+      const firstName = sessionUser.first_name || sessionUser.firstName || sessionUser.given_name || '';
+      const lastName = sessionUser.last_name || sessionUser.lastName || sessionUser.family_name || '';
+      const fullName = sessionUser.name || `${firstName} ${lastName}`.trim() || '';
+      
+      setEditedData({
+        firstName: firstName,
+        lastName: lastName,
+        email: sessionUser.email || '',
+        phone_number: sessionUser.phone_number || ''
+      });
+      
       setLoading(false);
     } else if (!sessionLoading) {
       // If no session user data, fetch from API as fallback
@@ -101,6 +117,17 @@ const MyAccount = ({ userData }) => {
         const profile = data.profile || data;
         setProfileData(profile);
         setProfilePhoto(profile.profilePhoto || profile.profile_photo || profile.picture);
+        
+        // Initialize edited data
+        const firstName = profile.first_name || profile.firstName || profile.given_name || '';
+        const lastName = profile.last_name || profile.lastName || profile.family_name || '';
+        
+        setEditedData({
+          firstName: firstName,
+          lastName: lastName,
+          email: profile.email || '',
+          phone_number: profile.phone_number || ''
+        });
       } else {
         notifyError('Failed to load profile data');
       }
@@ -110,6 +137,73 @@ const MyAccount = ({ userData }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      setSavingProfile(true);
+      
+      const response = await fetch('/api/user/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          firstName: editedData.firstName,
+          lastName: editedData.lastName,
+          phone_number: editedData.phone_number,
+        }),
+      });
+
+      if (response.ok) {
+        const updatedData = await response.json();
+        
+        // Update local state
+        setProfileData({
+          ...profileData,
+          first_name: editedData.firstName,
+          last_name: editedData.lastName,
+          name: `${editedData.firstName} ${editedData.lastName}`.trim(),
+          phone_number: editedData.phone_number,
+        });
+        
+        setEditMode(false);
+        notifySuccess('Profile updated successfully');
+        
+        // Refresh session data to reflect changes
+        // TODO: Consider refreshing session data without full page reload
+        // For now, we'll just update the local state
+      } else {
+        const error = await response.json();
+        notifyError(error.message || 'Failed to update profile');
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      notifyError('Failed to update profile');
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    // Reset edited data to current profile data
+    const user = {
+      ...(userData || {}),
+      ...(profileData || {}),
+      ...(session?.user || {})
+    };
+    
+    const firstName = user.first_name || user.firstName || user.given_name || '';
+    const lastName = user.last_name || user.lastName || user.family_name || '';
+    
+    setEditedData({
+      firstName: firstName,
+      lastName: lastName,
+      email: user.email || '',
+      phone_number: user.phone_number || ''
+    });
+    
+    setEditMode(false);
   };
 
   const fetchLoginSessions = async () => {
@@ -412,29 +506,27 @@ const MyAccount = ({ userData }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Full Name
+                First Name
               </label>
               <input
                 type="text"
-                value={
-                  user.name || 
-                  `${user.first_name || user.firstName || user.given_name || ''} ${user.last_name || user.lastName || user.family_name || ''}`.trim() || 
-                  ''
-                }
+                value={editMode ? editedData.firstName : user.first_name || user.firstName || user.given_name || ''}
+                onChange={(e) => setEditedData({ ...editedData, firstName: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                readOnly
+                readOnly={!editMode}
               />
             </div>
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Username
+                Last Name
               </label>
               <input
                 type="text"
-                value={user.nickname || user.username || user.email?.split('@')[0] || ''}
+                value={editMode ? editedData.lastName : user.last_name || user.lastName || user.family_name || ''}
+                onChange={(e) => setEditedData({ ...editedData, lastName: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                readOnly
+                readOnly={!editMode}
               />
             </div>
             
@@ -446,8 +538,9 @@ const MyAccount = ({ userData }) => {
                 <input
                   type="email"
                   value={user.email || ''}
-                  className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed"
                   readOnly
+                  title="Email cannot be changed here for security reasons"
                 />
                 {user.email_verified && (
                   <CheckBadgeIcon className="absolute right-3 top-2.5 w-5 h-5 text-green-500" />
@@ -459,6 +552,11 @@ const MyAccount = ({ userData }) => {
                   Email not verified
                 </p>
               )}
+              {editMode && (
+                <p className="mt-1 text-xs text-gray-500">
+                  Email cannot be changed here for security reasons
+                </p>
+              )}
             </div>
             
             <div>
@@ -467,21 +565,41 @@ const MyAccount = ({ userData }) => {
               </label>
               <input
                 type="tel"
-                value={user.phone_number || ''}
+                value={editMode ? editedData.phone_number : user.phone_number || ''}
+                onChange={(e) => setEditedData({ ...editedData, phone_number: e.target.value })}
                 placeholder="Not provided"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                readOnly
+                readOnly={!editMode}
               />
             </div>
           </div>
           
-          <div className="mt-6 flex justify-end">
-            <button
-              onClick={() => router.push('/settings/profile/edit')}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Edit Profile
-            </button>
+          <div className="mt-6 flex justify-end gap-3">
+            {editMode ? (
+              <>
+                <button
+                  onClick={handleCancelEdit}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  disabled={savingProfile}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveProfile}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  disabled={savingProfile}
+                >
+                  {savingProfile ? 'Saving...' : 'Save Changes'}
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setEditMode(true)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Edit Profile
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -253,58 +253,138 @@ export async function GET(request) {
 }
 
 /**
- * POST handler for updating user profile
+ * PUT handler for updating user profile
  */
-export async function POST(request) {
-  logger.info('[API] User profile POST request received');
+export async function PUT(request) {
   try {
-    // Get request body
-    const profileData = await request.json();
-    logger.debug('[API] User profile POST data:', profileData);
-    
-    // Get Auth0 session for validation
     const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('appSession');
+    const sidCookie = cookieStore.get('sid');
     
-    if (!sessionCookie) {
-      return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
-      );
+    if (!sidCookie) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    // Parse session data
-    let sessionData;
-    try {
-      sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
-    } catch (parseError) {
-      return NextResponse.json(
-        { error: 'Invalid session' },
-        { status: 401 }
-      );
-    }
-    
-    if (!sessionData.user) {
-      return NextResponse.json(
-        { error: 'No user data in session' },
-        { status: 401 }
-      );
-    }
-    
-    // For now, just return the updated data
-    // In a full implementation, this would update the user's profile in the backend
-    
-    return NextResponse.json({
-      ...profileData,
-      updated_at: new Date().toISOString(),
-      status: 'success',
-      message: 'Profile update simulated for Auth0. In production, this would update user attributes.'
+    // Get session data to get user info
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+    const sessionResponse = await fetch(`${API_URL}/api/sessions/current/`, {
+      headers: {
+        'Authorization': `Session ${sidCookie.value}`,
+        'Cookie': `session_token=${sidCookie.value}`
+      },
+      cache: 'no-store'
     });
+    
+    if (!sessionResponse.ok) {
+      return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
+    }
+    
+    const sessionData = await sessionResponse.json();
+    const userId = sessionData.auth0_id || sessionData.sub;
+    
+    if (!userId) {
+      logger.error('[Profile API] No Auth0 user ID found in session');
+      return NextResponse.json({ error: 'User ID not found' }, { status: 400 });
+    }
+    
+    // Get request body
+    const body = await request.json();
+    const { firstName, lastName, phone_number } = body;
+    
+    // Validate input
+    if (!firstName || !lastName) {
+      return NextResponse.json({ error: 'First name and last name are required' }, { status: 400 });
+    }
+    
+    // Update Auth0 user profile if Management API credentials are available
+    const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN || 'dev-cbyy63jovi6zrcos.us.auth0.com';
+    const AUTH0_M2M_CLIENT_ID = process.env.AUTH0_M2M_CLIENT_ID;
+    const AUTH0_M2M_CLIENT_SECRET = process.env.AUTH0_M2M_CLIENT_SECRET;
+    
+    if (AUTH0_M2M_CLIENT_ID && AUTH0_M2M_CLIENT_SECRET) {
+      try {
+        // Get Auth0 Management API token
+        const tokenResponse = await fetch(`https://${AUTH0_DOMAIN}/oauth/token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            client_id: AUTH0_M2M_CLIENT_ID,
+            client_secret: AUTH0_M2M_CLIENT_SECRET,
+            audience: `https://${AUTH0_DOMAIN}/api/v2/`,
+            grant_type: 'client_credentials'
+          })
+        });
+
+        if (tokenResponse.ok) {
+          const { access_token } = await tokenResponse.json();
+          
+          const updateData = {
+            name: `${firstName} ${lastName}`.trim(),
+            given_name: firstName,
+            family_name: lastName,
+            user_metadata: {
+              first_name: firstName,
+              last_name: lastName,
+              phone_number: phone_number || ''
+            }
+          };
+          
+          const auth0Response = await fetch(`https://${AUTH0_DOMAIN}/api/v2/users/${encodeURIComponent(userId)}`, {
+            method: 'PATCH',
+            headers: {
+              'Authorization': `Bearer ${access_token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(updateData)
+          });
+          
+          if (!auth0Response.ok) {
+            const errorData = await auth0Response.json();
+            logger.error('[Profile API] Auth0 update failed:', errorData);
+          } else {
+            logger.info('[Profile API] Auth0 profile updated successfully');
+          }
+        }
+      } catch (auth0Error) {
+        logger.error('[Profile API] Auth0 update error:', auth0Error);
+        // Continue with backend update
+      }
+    }
+    
+    // Update backend profile
+    const backendResponse = await fetch(`${API_URL}/api/users/profile/`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Session ${sidCookie.value}`,
+        'Cookie': `session_token=${sidCookie.value}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        first_name: firstName,
+        last_name: lastName,
+        name: `${firstName} ${lastName}`.trim(),
+        phone_number: phone_number || ''
+      })
+    });
+    
+    if (!backendResponse.ok) {
+      const errorData = await backendResponse.json();
+      logger.error('[Profile API] Backend update failed:', errorData);
+      return NextResponse.json({ 
+        error: errorData.error || 'Failed to update profile' 
+      }, { status: backendResponse.status });
+    }
+    
+    const updatedProfile = await backendResponse.json();
+    
+    // Return success
+    return NextResponse.json({
+      success: true,
+      profile: updatedProfile,
+      message: 'Profile updated successfully'
+    });
+    
   } catch (error) {
-    logger.error('[API] User profile POST error:', error.message);
-    return NextResponse.json({ 
-      error: 'Failed to update user profile',
-      message: error.message 
-    }, { status: 500 });
+    logger.error('[Profile API] Error updating profile:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 } 

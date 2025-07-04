@@ -242,14 +242,25 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include' // Ensure cookies are sent
       });
 
       if (!response.ok) {
+        // Log the actual error for debugging
+        const errorText = await response.text().catch(() => 'No error details');
+        logger.error('[UserManagement] API error:', { 
+          status: response.status, 
+          statusText: response.statusText,
+          error: errorText 
+        });
+        
         // If the API doesn't exist yet, fall back to current user only
         if (response.status === 404) {
           throw new Error('User management API not implemented yet');
+        } else if (response.status === 401) {
+          throw new Error('Authentication required');
         }
-        throw new Error('Failed to fetch users');
+        throw new Error(`Failed to fetch users: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
