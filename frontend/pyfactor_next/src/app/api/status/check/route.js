@@ -18,15 +18,9 @@ export async function GET(request) {
         checkType: 'external'
       },
       {
-        id: 'database',
-        name: 'Database',
-        description: 'PostgreSQL database cluster',
-        checkType: 'database'
-      },
-      {
         id: 'auth',
         name: 'Authentication',
-        description: 'Auth0 authentication services',
+        description: 'Authentication services',
         url: 'https://dev-cbyy63jovi6zrcos.us.auth0.com/.well-known/openid-configuration',
         checkType: 'external'
       },
