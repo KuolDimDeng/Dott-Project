@@ -4,9 +4,12 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function SessionBridge() {
+  console.log('🔥 SessionBridge component file loaded!');
   const router = useRouter();
   const [sessionToken, setSessionToken] = useState('');
   const [redirectUrl, setRedirectUrl] = useState('/dashboard');
+  
+  console.log('🔥 SessionBridge component variables initialized');
 
   useEffect(() => {
     const processBridge = async () => {

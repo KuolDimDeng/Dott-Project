@@ -3,21 +3,25 @@
 
 echo "🚀 Starting Render build process..."
 
-# Export all NEXT_PUBLIC_ environment variables for the build
-export NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL}"
-export NEXT_PUBLIC_BASE_URL="${NEXT_PUBLIC_BASE_URL}"
-export NEXT_PUBLIC_POSTHOG_KEY="${NEXT_PUBLIC_POSTHOG_KEY}"
-export NEXT_PUBLIC_POSTHOG_HOST="${NEXT_PUBLIC_POSTHOG_HOST}"
-export NEXT_PUBLIC_AUTH0_DOMAIN="${NEXT_PUBLIC_AUTH0_DOMAIN}"
-export NEXT_PUBLIC_AUTH0_CLIENT_ID="${NEXT_PUBLIC_AUTH0_CLIENT_ID}"
-export NEXT_PUBLIC_AUTH0_AUDIENCE="${NEXT_PUBLIC_AUTH0_AUDIENCE}"
-export NEXT_PUBLIC_CRISP_WEBSITE_ID="${NEXT_PUBLIC_CRISP_WEBSITE_ID}"
-export NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}"
-export NEXT_PUBLIC_PLAID_ENV="${NEXT_PUBLIC_PLAID_ENV}"
+# Debug: Show all environment variables at build time
+echo "📋 All environment variables available:"
+env | sort
 
-# Debug: Show which NEXT_PUBLIC vars are set (without values)
-echo "📋 Available NEXT_PUBLIC environment variables:"
-env | grep "^NEXT_PUBLIC_" | cut -d'=' -f1
+# Debug: Show which NEXT_PUBLIC vars are set (with partial values for debugging)
+echo ""
+echo "📋 NEXT_PUBLIC environment variables:"
+env | grep "^NEXT_PUBLIC_" | while read -r line; do
+    var_name=$(echo "$line" | cut -d'=' -f1)
+    var_value=$(echo "$line" | cut -d'=' -f2-)
+    if [ -n "$var_value" ]; then
+        echo "$var_name=${var_value:0:10}... (length: ${#var_value})"
+    else
+        echo "$var_name=(empty)"
+    fi
+done
+
+# These environment variables should already be set as ENV in the Dockerfile
+# No need to re-export them, they're already available
 
 # Run the build
 echo "🔨 Running pnpm build:render..."
