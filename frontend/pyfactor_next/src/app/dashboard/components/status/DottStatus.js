@@ -107,15 +107,6 @@ const DottStatusContent = () => {
           uptime: 'Unknown',
           responseTime: 'N/A',
           lastChecked: new Date().toISOString()
-        },
-        {
-          id: 'database',
-          name: 'Database',
-          description: 'PostgreSQL database cluster',
-          status: 'unknown',
-          uptime: 'Unknown',
-          responseTime: 'N/A',
-          lastChecked: new Date().toISOString()
         }
       ]);
     } finally {

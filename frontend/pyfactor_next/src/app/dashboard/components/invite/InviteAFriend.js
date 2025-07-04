@@ -107,8 +107,8 @@ ${user?.name || user?.email || 'A Dott User'}`;
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
-        {/* Invitation Form */}
+      {/* Invitation Form - Single column, centered */}
+      <div className="max-w-md mx-auto">
         <div className="bg-white rounded-lg shadow-lg p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
             <EnvelopeIcon className="h-5 w-5 text-blue-600 mr-2" />
@@ -130,19 +130,6 @@ ${user?.name || user?.email || 'A Dott User'}`;
                 placeholder="business@example.com"
                 required
               />
-            </div>
-
-            {/* Message Preview */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Invitation Message
-              </label>
-              <div className="w-full px-4 py-3 border border-gray-200 rounded-md bg-gray-50">
-                <p className="text-sm text-gray-700 whitespace-pre-wrap">{defaultMessage}</p>
-              </div>
-              <p className="text-sm text-gray-500 mt-2">
-                This message will be sent to the business owner.
-              </p>
             </div>
 
             {/* Status Message */}
@@ -180,63 +167,6 @@ ${user?.name || user?.email || 'A Dott User'}`;
               )}
             </button>
           </form>
-        </div>
-
-        {/* How It Works */}
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">
-            How It Works
-          </h2>
-
-          <div className="space-y-4">
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-blue-100 text-blue-600 font-semibold">
-                  1
-                </div>
-              </div>
-              <div className="ml-4">
-                <h3 className="text-base font-medium text-gray-900">Enter Email</h3>
-                <p className="text-gray-600 text-sm">
-                  Add the business owner's email address.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-blue-100 text-blue-600 font-semibold">
-                  2
-                </div>
-              </div>
-              <div className="ml-4">
-                <h3 className="text-base font-medium text-gray-900">Send Invitation</h3>
-                <p className="text-gray-600 text-sm">
-                  We'll send them an invitation with your recommendation.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-blue-100 text-blue-600 font-semibold">
-                  3
-                </div>
-              </div>
-              <div className="ml-4">
-                <h3 className="text-base font-medium text-gray-900">They Join Dott</h3>
-                <p className="text-gray-600 text-sm">
-                  Your friend can sign up and start using Dott for their business.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-8 p-4 bg-blue-50 rounded-md">
-            <p className="text-sm text-blue-800">
-              <strong>Share Dott</strong> with colleagues and business partners to help them streamline their operations.
-            </p>
-          </div>
         </div>
       </div>
     </div>
