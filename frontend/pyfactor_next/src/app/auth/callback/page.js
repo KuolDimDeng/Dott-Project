@@ -205,6 +205,23 @@ export default function Auth0CallbackPage() {
           redirectUrl: backendUser.redirectUrl
         });
         
+        // Identify user in PostHog for OAuth flow
+        try {
+          const { identifyUser } = await import('@/lib/posthog');
+          const userDataForPostHog = {
+            ...sessionData.user,
+            ...backendUser,
+            tenant_id: backendUser.tenantId,
+            business_name: backendUser.businessName,
+            subscription_plan: backendUser.subscription_plan || backendUser.subscriptionPlan,
+            role: backendUser.role || 'USER'
+          };
+          identifyUser(userDataForPostHog);
+          console.log('[Auth0Callback] PostHog identification completed for OAuth user');
+        } catch (error) {
+          console.error('[Auth0Callback] Failed to identify user in PostHog:', error);
+        }
+        
         // Mark redirect as handled to prevent loops
         setRedirectHandled(true);
         

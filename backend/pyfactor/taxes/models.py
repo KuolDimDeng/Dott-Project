@@ -677,15 +677,38 @@ class TaxRateCache(models.Model):
     city = models.CharField(max_length=100, db_index=True)
     business_type = models.CharField(max_length=50, db_index=True)
     
-    # Cached rates
-    sales_tax_rate = models.DecimalField(max_digits=5, decimal_places=2)
-    income_tax_rate = models.DecimalField(max_digits=5, decimal_places=2)
-    payroll_tax_rate = models.DecimalField(max_digits=5, decimal_places=2)
+    # Cached rates - Sales Tax
+    sales_tax_rate = models.DecimalField(max_digits=6, decimal_places=4, default=0)
+    local_sales_tax_rate = models.DecimalField(max_digits=6, decimal_places=4, default=0)
+    total_sales_tax_rate = models.DecimalField(max_digits=6, decimal_places=4, default=0)
+    
+    # Income Tax
+    income_tax_rate = models.DecimalField(max_digits=6, decimal_places=4, default=0)  # Flat rate
+    corporate_income_tax_rate = models.DecimalField(max_digits=6, decimal_places=4, default=0)
+    has_progressive_tax = models.BooleanField(default=False)
+    personal_income_tax_brackets = models.JSONField(default=list, blank=True)
+    
+    # Social Insurance
+    health_insurance_rate = models.DecimalField(max_digits=6, decimal_places=4, default=0)
+    health_insurance_employer_rate = models.DecimalField(max_digits=6, decimal_places=4, default=0)
+    social_security_rate = models.DecimalField(max_digits=6, decimal_places=4, default=0)
+    social_security_employer_rate = models.DecimalField(max_digits=6, decimal_places=4, default=0)
+    
+    # Payroll Tax
+    payroll_tax_rate = models.DecimalField(max_digits=6, decimal_places=4, default=0)  # Federal
+    state_payroll_tax_rate = models.DecimalField(max_digits=6, decimal_places=4, default=0)
     
     # Cached filing info
-    filing_website = models.URLField(max_length=500, blank=True)
-    filing_address = models.TextField(blank=True)
-    filing_deadlines = models.TextField(blank=True)
+    filing_website = models.URLField(max_length=500, blank=True)  # State website
+    filing_address = models.TextField(blank=True)  # State address
+    local_tax_website = models.URLField(max_length=500, blank=True)
+    local_tax_address = models.TextField(blank=True)
+    federal_tax_website = models.URLField(max_length=500, blank=True, default='https://www.irs.gov')
+    filing_deadlines = models.JSONField(default=dict, blank=True)
+    
+    # Source citations
+    source_citations = models.JSONField(default=list, blank=True, 
+        help_text="URLs or references where the data was found")
     
     # Metadata
     confidence_score = models.IntegerField(default=0)
@@ -2444,3 +2467,138 @@ class YearEndTaxGeneration(TenantAwareModel):
         
     def __str__(self):
         return f"{self.get_generation_type_display()} - {self.tax_year} - {self.get_status_display()}"
+
+
+class TaxRateCorrection(TenantAwareModel):
+    """
+    Stores user corrections to tax rates when they override AI suggestions.
+    These corrections are tenant-specific and take precedence over cached rates.
+    """
+    # Location key
+    country = models.CharField(max_length=100, db_index=True)
+    state_province = models.CharField(max_length=100, db_index=True)
+    city = models.CharField(max_length=100, db_index=True)
+    business_type = models.CharField(max_length=50, db_index=True)
+    
+    # Corrected rates (all optional - only override what's changed)
+    state_sales_tax_rate = models.DecimalField(max_digits=6, decimal_places=4, null=True, blank=True)
+    local_sales_tax_rate = models.DecimalField(max_digits=6, decimal_places=4, null=True, blank=True)
+    corporate_income_tax_rate = models.DecimalField(max_digits=6, decimal_places=4, null=True, blank=True)
+    
+    # Progressive tax info
+    has_progressive_tax = models.BooleanField(null=True, blank=True)
+    personal_income_tax_brackets = models.JSONField(null=True, blank=True)
+    flat_personal_income_tax_rate = models.DecimalField(max_digits=6, decimal_places=4, null=True, blank=True)
+    
+    # Social insurance rates
+    health_insurance_rate = models.DecimalField(max_digits=6, decimal_places=4, null=True, blank=True)
+    health_insurance_employer_rate = models.DecimalField(max_digits=6, decimal_places=4, null=True, blank=True)
+    social_security_rate = models.DecimalField(max_digits=6, decimal_places=4, null=True, blank=True)
+    social_security_employer_rate = models.DecimalField(max_digits=6, decimal_places=4, null=True, blank=True)
+    
+    # Payroll tax rates
+    federal_payroll_tax_rate = models.DecimalField(max_digits=6, decimal_places=4, null=True, blank=True)
+    state_payroll_tax_rate = models.DecimalField(max_digits=6, decimal_places=4, null=True, blank=True)
+    
+    # Filing information corrections
+    state_tax_website = models.URLField(max_length=500, blank=True)
+    state_tax_address = models.TextField(blank=True)
+    local_tax_website = models.URLField(max_length=500, blank=True)
+    local_tax_address = models.TextField(blank=True)
+    federal_tax_website = models.URLField(max_length=500, blank=True)
+    
+    # Filing deadlines
+    filing_deadlines = models.JSONField(null=True, blank=True)
+    
+    # Source citations
+    source_urls = models.JSONField(default=list, blank=True, help_text="URLs where user found correct information")
+    correction_notes = models.TextField(blank=True, help_text="User notes about the correction")
+    
+    # Metadata
+    corrected_by = models.EmailField()
+    confidence_level = models.CharField(max_length=20, choices=[
+        ('high', 'High - From official source'),
+        ('medium', 'Medium - From reliable source'),
+        ('low', 'Low - Unsure but better than AI'),
+    ], default='medium')
+    is_active = models.BooleanField(default=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        app_label = 'taxes'
+        db_table = 'tax_rate_corrections'
+        unique_together = ['tenant_id', 'country', 'state_province', 'city', 'business_type']
+        indexes = [
+            models.Index(fields=['tenant_id', 'is_active']),
+            models.Index(fields=['country', 'state_province', 'city']),
+        ]
+    
+    def __str__(self):
+        return f"Correction for {self.city}, {self.state_province}, {self.country} by {self.corrected_by}"
+
+
+class TaxRateFeedback(TenantAwareModel):
+    """
+    Stores user feedback about tax rate accuracy to improve the system over time.
+    """
+    # Location key
+    country = models.CharField(max_length=100, db_index=True)
+    state_province = models.CharField(max_length=100, db_index=True)
+    city = models.CharField(max_length=100, db_index=True)
+    business_type = models.CharField(max_length=50, db_index=True)
+    
+    # Feedback type
+    FEEDBACK_TYPE_CHOICES = [
+        ('accurate', 'Rates are accurate'),
+        ('inaccurate', 'Rates are inaccurate'),
+        ('partially_accurate', 'Some rates are wrong'),
+        ('missing_taxes', 'Missing some taxes'),
+        ('outdated', 'Rates are outdated'),
+    ]
+    feedback_type = models.CharField(max_length=20, choices=FEEDBACK_TYPE_CHOICES)
+    
+    # Specific field feedback
+    inaccurate_fields = models.JSONField(default=list, blank=True, 
+        help_text="List of field names that are inaccurate")
+    
+    # Details
+    feedback_details = models.TextField(blank=True)
+    suggested_sources = models.TextField(blank=True, help_text="Sources for correct information")
+    
+    # What rates were shown to the user (for tracking)
+    displayed_rates = models.JSONField(default=dict)
+    ai_confidence_score = models.IntegerField(null=True, blank=True)
+    
+    # User info
+    submitted_by = models.EmailField()
+    user_role = models.CharField(max_length=50, blank=True)
+    
+    # Status
+    STATUS_CHOICES = [
+        ('pending', 'Pending Review'),
+        ('reviewed', 'Reviewed'),
+        ('resolved', 'Resolved'),
+        ('invalid', 'Invalid Feedback'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    reviewed_by = models.EmailField(blank=True)
+    resolution_notes = models.TextField(blank=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        app_label = 'taxes'
+        db_table = 'tax_rate_feedback'
+        indexes = [
+            models.Index(fields=['status', 'created_at']),
+            models.Index(fields=['country', 'state_province', 'city']),
+            models.Index(fields=['feedback_type']),
+        ]
+    
+    def __str__(self):
+        return f"{self.get_feedback_type_display()} - {self.city}, {self.state_province} by {self.submitted_by}"

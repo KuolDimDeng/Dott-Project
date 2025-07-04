@@ -262,3 +262,73 @@ class UserProfileView(APIView):
                 {"error": "Failed to fetch profile data"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+    
+    def put(self, request):
+        """
+        Update user profile data
+        """
+        try:
+            user = request.user
+            data = request.data
+            
+            logger.info(f"Profile update request from user: {user.email} with data: {data}")
+            
+            # Update first and last name
+            if 'first_name' in data:
+                user.first_name = data['first_name']
+                if hasattr(user, 'given_name'):
+                    user.given_name = data['first_name']
+            
+            if 'last_name' in data:
+                user.last_name = data['last_name']
+                if hasattr(user, 'family_name'):
+                    user.family_name = data['last_name']
+            
+            # Update full name
+            if 'name' in data:
+                user.name = data['name']
+            elif 'first_name' in data and 'last_name' in data:
+                full_name = f"{data['first_name']} {data['last_name']}".strip()
+                if hasattr(user, 'name'):
+                    user.name = full_name
+            
+            # Update phone number
+            if 'phone_number' in data:
+                if hasattr(user, 'phone_number'):
+                    user.phone_number = data['phone_number']
+                # Also update in UserProfile if it exists
+                if hasattr(user, 'profile'):
+                    user.profile.phone_number = data['phone_number']
+                    user.profile.save(update_fields=['phone_number'])
+            
+            # Save user changes
+            update_fields = []
+            if 'first_name' in data:
+                update_fields.append('first_name')
+            if 'last_name' in data:
+                update_fields.append('last_name')
+            if hasattr(user, 'name') and 'name' in data:
+                update_fields.append('name')
+            if hasattr(user, 'given_name') and 'first_name' in data:
+                update_fields.append('given_name')
+            if hasattr(user, 'family_name') and 'last_name' in data:
+                update_fields.append('family_name')
+            if hasattr(user, 'phone_number') and 'phone_number' in data:
+                update_fields.append('phone_number')
+            
+            if update_fields:
+                user.save(update_fields=update_fields)
+            else:
+                user.save()
+            
+            logger.info(f"Successfully updated profile for user: {user.email}")
+            
+            # Return updated profile data
+            return self.get(request)
+            
+        except Exception as e:
+            logger.error(f"Error updating user profile: {str(e)}", exc_info=True)
+            return Response(
+                {"error": "Failed to update profile"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

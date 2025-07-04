@@ -37,7 +37,9 @@ export default function PostHogProvider({ children }) {
     console.log('[PostHogProvider] User auth state changed:', {
       isAuthenticated,
       hasUser: !!user,
-      userId: user?.sub || user?.id
+      userId: user?.sub || user?.id || user?.email,
+      userEmail: user?.email,
+      userName: user?.name
     });
 
     if (!posthog) {
@@ -45,10 +47,14 @@ export default function PostHogProvider({ children }) {
       return;
     }
 
-    if (isAuthenticated && user) {
-      console.log('[PostHogProvider] User authenticated, identifying...');
-      identifyUser(user);
-    } else {
+    if (isAuthenticated && user && user.email) {
+      console.log('[PostHogProvider] User authenticated, identifying with complete data...');
+      
+      // Create a timeout to ensure this runs after any other identification calls
+      setTimeout(() => {
+        identifyUser(user);
+      }, 100);
+    } else if (!isAuthenticated) {
       console.log('[PostHogProvider] User not authenticated, resetting...');
       resetUser();
     }

@@ -123,6 +123,12 @@ IMPORTANT ACCURACY INSTRUCTIONS:
 4. RESPONSE FORMAT:
    - Return ONLY valid JSON with no other text
    - Include source references in the notes field where possible
+   - Provide sourceCitations array with specific sources for tax rates
+
+5. SOURCE CITATIONS REQUIRED:
+   - Provide specific sources for your tax rate information
+   - Include official government website URLs where possible
+   - Indicate the type of source (official, government, reliable, estimate)
 
 Return the following JSON structure with ACTUAL rates for {state_province}:
 {{
@@ -158,7 +164,14 @@ Return the following JSON structure with ACTUAL rates for {state_province}:
     "corporateTax": "string"
   }},
   "confidenceScore": number,
-  "notes": "string"
+  "notes": "string",
+  "sourceCitations": [
+    {{
+      "source": "string",
+      "url": "string",
+      "type": "string"
+    }}
+  ]
 }}"""
 
         # Try up to 3 times to get valid JSON
@@ -234,6 +247,7 @@ Return the following JSON structure with ACTUAL rates for {state_province}:
                 local_tax_website=tax_data.get('localTaxWebsite', ''),
                 local_tax_address=tax_data.get('localTaxAddress', ''),
                 filing_deadlines=tax_data.get('filingDeadlines', {}),
+                source_citations=tax_data.get('sourceCitations', []),
                 confidence_score=tax_data.get('confidenceScore', 80),
                 source='claude_api',
                 expires_at=timezone.now() + timedelta(days=90)  # Cache for 90 days
@@ -244,6 +258,7 @@ Return the following JSON structure with ACTUAL rates for {state_province}:
                 'suggestedRates': tax_data,
                 'confidenceScore': tax_data.get('confidenceScore', 80),
                 'notes': tax_data.get('notes', ''),
+                'sourceCitations': tax_data.get('sourceCitations', []),
                 'source': 'claude_api'
             })
         else:

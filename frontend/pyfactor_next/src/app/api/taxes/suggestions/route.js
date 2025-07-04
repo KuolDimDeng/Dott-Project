@@ -136,6 +136,12 @@ IMPORTANT INSTRUCTIONS FOR ACCURACY:
    - Pay attention to currency denominations and income thresholds
    - Ensure you're using current year rates, not outdated information
 
+6. SOURCE CITATIONS REQUIRED:
+   - Provide specific sources for your tax rate information
+   - Include official government website URLs where possible
+   - Indicate the type of source (official, government, reliable, estimate)
+   - For each major tax type, cite the source used
+
 Please provide comprehensive tax information:
 
 SALES TAX:
@@ -214,6 +220,13 @@ Return ONLY this JSON structure:
   },
   "confidenceScore": number,
   "notes": "string",
+  "sourceCitations": [
+    {
+      "source": "string",  // Name of source (e.g., "South Sudan Revenue Authority")
+      "url": "string",     // URL if available
+      "type": "string"     // "official", "government", "reliable", "estimate"
+    }
+  ],
   // Add any additional country-specific fields here
 }`;
 
@@ -412,6 +425,7 @@ Return ONLY this JSON structure:
       },
       confidenceScore: taxData.confidenceScore,
       notes: taxData.notes,
+      sourceCitations: taxData.sourceCitations || [],
       source: 'claude_api'
     }, { headers: standardSecurityHeaders });
     

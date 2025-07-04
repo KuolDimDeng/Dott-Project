@@ -152,21 +152,32 @@ export function identifyUser(user) {
     return;
   }
 
+  // Extract user ID - prefer sub, then id, then email
   const userId = user.sub || user.id || user.email;
+  
+  // Build complete name from various sources
+  const firstName = user.firstName || user.first_name || user.given_name || '';
+  const lastName = user.lastName || user.last_name || user.family_name || '';
+  const fullName = user.name || `${firstName} ${lastName}`.trim() || user.email?.split('@')[0] || 'User';
+  
   const userProperties = {
     email: user.email,
-    name: user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
+    name: fullName,
+    first_name: firstName,
+    last_name: lastName,
     tenant_id: user.tenant_id || user.tenantId,
-    tenant_name: user.tenant_name || user.tenantName,
+    tenant_name: user.tenant_name || user.tenantName || user.businessName || user.business_name,
     subscription_plan: user.subscription_plan || user.subscriptionPlan,
-    onboarding_completed: user.onboarding_completed || user.onboardingCompleted,
+    onboarding_completed: user.onboarding_completed || user.onboardingCompleted || !user.needsOnboarding,
     created_at: user.created_at || user.createdAt,
-    role: user.role
+    role: user.role || 'USER',
+    business_name: user.businessName || user.business_name,
+    user_id: userId
   };
 
-  // Filter out undefined/null values
+  // Filter out undefined/null/empty values
   Object.keys(userProperties).forEach(key => {
-    if (userProperties[key] === undefined || userProperties[key] === null) {
+    if (userProperties[key] === undefined || userProperties[key] === null || userProperties[key] === '') {
       delete userProperties[key];
     }
   });
@@ -174,14 +185,30 @@ export function identifyUser(user) {
   console.log('[PostHog] Identifying user:', userId, 'with properties:', userProperties);
   
   try {
+    // Reset any previous identification to ensure clean state
+    posthogClient.reset(false); // false = don't generate new anonymous ID
+    
+    // Identify the user
     posthogClient.identify(userId, userProperties);
     console.log('[PostHog] User identified successfully');
     
-    // Force capture an event to ensure identification is sent
-    posthogClient.capture('user_identified', {
-      ...userProperties,
-      identification_source: 'auth_flow'
+    // Set super properties that persist across all events
+    posthogClient.register({
+      user_email: user.email,
+      user_name: fullName,
+      user_role: user.role || 'USER',
+      tenant_id: user.tenant_id || user.tenantId
     });
+    
+    // Force capture an event to ensure identification is sent immediately
+    posthogClient.capture('$identify', {
+      ...userProperties,
+      identification_source: 'auth_flow',
+      timestamp: new Date().toISOString()
+    });
+    
+    // Flush the queue to ensure events are sent
+    posthogClient.flush();
   } catch (error) {
     console.error('[PostHog] Failed to identify user:', error);
   }

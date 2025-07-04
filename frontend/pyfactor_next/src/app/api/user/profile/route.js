@@ -351,7 +351,7 @@ export async function PUT(request) {
     }
     
     // Update backend profile
-    const backendResponse = await fetch(`${API_URL}/api/users/profile/`, {
+    const backendResponse = await fetch(`${API_URL}/api/user/profile/`, {
       method: 'PUT',
       headers: {
         'Authorization': `Session ${sidCookie.value}`,

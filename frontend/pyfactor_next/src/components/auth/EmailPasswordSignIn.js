@@ -393,6 +393,20 @@ export default function EmailPasswordSignIn() {
       if (sessionResult.success) {
         logger.info('[EmailPasswordSignIn] Session created successfully');
         
+        // Identify user in PostHog with complete data
+        if (posthog) {
+          const { identifyUser } = await import('@/lib/posthog');
+          const userDataForPostHog = {
+            ...authResult.user,
+            ...finalUserData,
+            tenant_id: finalUserData?.tenantId || finalUserData?.tenant_id || sessionResult.tenant?.id,
+            business_name: sessionResult.tenant?.name || finalUserData?.businessName,
+            subscription_plan: sessionResult.tenant?.subscription_plan || finalUserData?.subscription_plan,
+            role: finalUserData?.role || sessionResult.user?.role || 'USER'
+          };
+          identifyUser(userDataForPostHog);
+        }
+        
         // Track sign in completed
         trackEvent(posthog, EVENTS.SIGN_IN_COMPLETED, { 
           email,
