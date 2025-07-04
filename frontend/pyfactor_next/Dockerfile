@@ -42,12 +42,9 @@ ENV NODE_ENV=production
 # Build arguments for API URLs (can be overridden at build time)
 ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_APP_URL
-ARG NEXT_PUBLIC_POSTHOG_KEY
-ARG NEXT_PUBLIC_POSTHOG_HOST
+# Remove PostHog ARGs since we'll fetch them at runtime
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
-ENV NEXT_PUBLIC_POSTHOG_KEY=${NEXT_PUBLIC_POSTHOG_KEY}
-ENV NEXT_PUBLIC_POSTHOG_HOST=${NEXT_PUBLIC_POSTHOG_HOST}
 
 # Run the optimized production build
 # Using specific build command for Render optimization

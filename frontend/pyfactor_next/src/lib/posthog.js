@@ -1,9 +1,10 @@
 import posthog from 'posthog-js';
 import { PostHogProvider } from 'posthog-js/react';
+import { POSTHOG_KEY, POSTHOG_HOST } from '@/config/posthog';
 
 let posthogClient = null;
 
-export function initPostHog() {
+export async function initPostHog() {
   if (typeof window === 'undefined') {
     console.log('[PostHog] Running on server, skipping initialization');
     return null;
@@ -14,8 +15,29 @@ export function initPostHog() {
     return posthogClient;
   }
 
-  const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY;
-  const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://app.posthog.com';
+  // Use configuration from config file (includes fallbacks)
+  let posthogKey = POSTHOG_KEY;
+  let posthogHost = POSTHOG_HOST;
+
+  // If still not found, try fetching from API endpoint as last resort
+  if (!posthogKey || posthogKey === 'NOT_SET') {
+    console.log('[PostHog] Configuration not found, fetching from API...');
+    try {
+      const response = await fetch('/api/config/posthog');
+      if (response.ok) {
+        const config = await response.json();
+        if (config.key) {
+          posthogKey = config.key;
+          posthogHost = config.host || posthogHost;
+          console.log('[PostHog] Configuration loaded from API');
+        }
+      } else {
+        console.error('[PostHog] Failed to fetch configuration from API');
+      }
+    } catch (error) {
+      console.error('[PostHog] Error fetching configuration:', error);
+    }
+  }
 
   // Debug: Check all NEXT_PUBLIC env vars
   if (typeof window !== 'undefined') {

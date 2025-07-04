@@ -1453,6 +1453,82 @@ if (productData && productData.id) {
 
 ---
 
+## 🔧 **Issue: Sign-In Page Infinite Redirect Loop**
+
+**Symptoms:**
+- Sign-in page rapidly redirects between `/auth/signin` and `/auth/email-signin`
+- Console shows "Application error: a client-side exception has occurred"
+- PostHogProvider keeps mounting/unmounting repeatedly
+- Browser console shows path changes multiple times per second
+- AmplifyUnified fetchAuthSession called repeatedly despite Auth0 being used
+- CSP error: "Couldn't parse invalid host /api/auth/establish-session signin"
+
+**Root Cause Analysis:**
+1. **Multiple Redirect Layers**: Middleware, AuthContext, and signin page were all trying to redirect simultaneously
+2. **Middleware Session Checks**: Middleware was checking for sessions on auth pages and redirecting them
+3. **Missing Public Route**: `/auth/email-signin` wasn't marked as a public route in authUtils
+4. **Import Errors**: djangoApiClient.js was empty, causing module import failures
+
+**Solution:**
+
+1. **Fix Middleware to Exclude Auth Routes**:
+```javascript
+// In middleware.js - Skip session checks for auth routes
+if (pathname.startsWith('/auth/')) {
+  console.log('[Middleware] Skipping auth route');
+  return NextResponse.next();
+}
+```
+
+2. **Add Email-Signin to Public Routes**:
+```javascript
+// In authUtils.js
+const publicRoutes = [
+  '/auth/signin',
+  '/auth/email-signin',  // Add this
+  '/auth/signup',
+  // ... other public routes
+];
+```
+
+3. **Fix djangoApiClient.js Import**:
+```javascript
+// Django API client placeholder
+import { axiosInstance } from '@/lib/axiosConfig';
+
+// Export djangoApiClient as a placeholder that uses axiosInstance
+export const djangoApiClient = axiosInstance;
+export const djangoApi = axiosInstance;
+export default axiosInstance;
+```
+
+4. **Remove Redirect from Signin Page**:
+```javascript
+// Instead of redirecting, render the component directly
+return <EmailPasswordSignIn />;
+```
+
+**Verification Steps:**
+1. Navigate to /auth/signin - should show login form without redirecting
+2. Check console - no PostHogProvider mounting/unmounting loop
+3. No rapid path changes in console logs
+4. Sign-in form displays and functions properly
+
+**Prevention:**
+- Don't have multiple layers trying to redirect the same routes
+- Always exclude auth routes from middleware session checks
+- Ensure all auth pages are marked as public routes
+- Fix import errors before deployment to avoid client-side exceptions
+- Test auth flows thoroughly after any routing changes
+
+**Related Issues:**
+- Client-side exceptions from missing module exports
+- PostHogProvider configuration issues
+- Middleware and AuthContext conflicts
+- Auth0 vs Amplify configuration mismatches
+
+---
+
 ## 📋 **Issue Reporting Template**
 
 When documenting new issues, use this format:

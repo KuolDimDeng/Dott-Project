@@ -15,13 +15,16 @@ export default function PostHogProvider({ children }) {
   // Initialize PostHog on mount
   useEffect(() => {
     console.log('[PostHogProvider] Component mounted, initializing PostHog...');
-    const client = initPostHog();
-    if (client) {
-      console.log('[PostHogProvider] PostHog client obtained successfully');
-      setPosthog(client);
-    } else {
-      console.error('[PostHogProvider] Failed to initialize PostHog client');
-    }
+    const initializePostHog = async () => {
+      const client = await initPostHog();
+      if (client) {
+        console.log('[PostHogProvider] PostHog client obtained successfully');
+        setPosthog(client);
+      } else {
+        console.error('[PostHogProvider] Failed to initialize PostHog client');
+      }
+    };
+    initializePostHog();
   }, []);
 
   // Handle user identification
