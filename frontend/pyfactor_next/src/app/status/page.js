@@ -122,7 +122,7 @@ export default function PublicStatusPage() {
               <img
                 src="/static/images/PyfactorLandingpage.png"
                 alt="Dott Logo"
-                className="h-10 w-auto object-contain"
+                className="h-20 w-auto object-contain"
               />
             </a>
             <a 
