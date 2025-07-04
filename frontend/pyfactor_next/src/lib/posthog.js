@@ -234,4 +234,4 @@ export function capturePageView(pageName, properties = {}) {
   }
 }
 
-export { PostHogProvider };
+// PostHogProvider is exported from components/PostHogWrapper.js instead
