@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 import { useNotification } from '@/context/NotificationContext';
 import { useSession } from '@/hooks/useSession-v2';
 import Image from 'next/image';
+import TermsOfServiceInternal from './legal/TermsOfServiceInternal';
+import PrivacyPolicyInternal from './legal/PrivacyPolicyInternal';
+import CookiePolicyInternal from './legal/CookiePolicyInternal';
 import { 
   UserIcon,
   ShieldCheckIcon,
@@ -54,6 +57,7 @@ const MyAccount = ({ userData }) => {
   });
   const [loadingMFA, setLoadingMFA] = useState(true);
   const [updatingMFA, setUpdatingMFA] = useState(false);
+  const [showLegalDocument, setShowLegalDocument] = useState(null);
   const fileInputRef = useRef(null);
   
   // Employment tab section visibility states
@@ -888,47 +892,30 @@ const MyAccount = ({ userData }) => {
   };
 
   const renderLegalTab = () => {
+    // If a legal document is selected, show it
+    if (showLegalDocument) {
+      return (
+        <div>
+          <button
+            onClick={() => setShowLegalDocument(null)}
+            className="mb-4 flex items-center px-4 py-2 text-sm text-gray-700 hover:text-gray-900 transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to Legal Documents
+          </button>
+          
+          {showLegalDocument === 'terms' && <TermsOfServiceInternal />}
+          {showLegalDocument === 'privacy' && <PrivacyPolicyInternal />}
+          {showLegalDocument === 'cookies' && <CookiePolicyInternal />}
+        </div>
+      );
+    }
+
+    // Show the legal documents menu
     return (
       <div className="space-y-6">
-        {/* Help & Support */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-start justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Help & Support</h3>
-              <p className="mt-1 text-sm text-gray-600">
-                Get help when you need it
-              </p>
-            </div>
-            <QuestionMarkCircleIcon className="w-6 h-6 text-gray-400" />
-          </div>
-          
-          <div className="mt-4 space-y-3">
-            <a
-              href="/help-center"
-              className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              <span className="text-sm font-medium text-gray-900">Help Center</span>
-              <span className="text-gray-400">→</span>
-            </a>
-            
-            <a
-              href="mailto:support@dottapps.com"
-              className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              <span className="text-sm font-medium text-gray-900">Email Support</span>
-              <span className="text-gray-400">→</span>
-            </a>
-            
-            <button
-              onClick={() => window.Crisp?.push(['do', 'chat:open'])}
-              className="w-full flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-left"
-            >
-              <span className="text-sm font-medium text-gray-900">Live Chat</span>
-              <span className="text-gray-400">→</span>
-            </button>
-          </div>
-        </div>
-
         {/* Legal Documents */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           <div className="flex items-start justify-between">
@@ -942,35 +929,29 @@ const MyAccount = ({ userData }) => {
           </div>
           
           <div className="mt-4 space-y-3">
-            <a
-              href="/terms"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+            <button
+              onClick={() => setShowLegalDocument('terms')}
+              className="w-full flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-left"
             >
               <span className="text-sm font-medium text-gray-900">Terms of Service</span>
-              <span className="text-gray-400">↗</span>
-            </a>
+              <span className="text-gray-400">→</span>
+            </button>
             
-            <a
-              href="/privacy"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+            <button
+              onClick={() => setShowLegalDocument('privacy')}
+              className="w-full flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-left"
             >
               <span className="text-sm font-medium text-gray-900">Privacy Policy</span>
-              <span className="text-gray-400">↗</span>
-            </a>
+              <span className="text-gray-400">→</span>
+            </button>
             
-            <a
-              href="/cookies"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+            <button
+              onClick={() => setShowLegalDocument('cookies')}
+              className="w-full flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-left"
             >
               <span className="text-sm font-medium text-gray-900">Cookie Policy</span>
-              <span className="text-gray-400">↗</span>
-            </a>
+              <span className="text-gray-400">→</span>
+            </button>
           </div>
         </div>
       </div>
@@ -1368,7 +1349,10 @@ const MyAccount = ({ userData }) => {
                         : 'text-gray-500 hover:text-gray-700'
                       }
                     `}
-                    onClick={() => setSelectedTab(tab.id)}
+                    onClick={() => {
+                      setSelectedTab(tab.id);
+                      setShowLegalDocument(null); // Reset legal document view when switching tabs
+                    }}
                   >
                     <span className="flex items-center justify-center space-x-2">
                       <Icon className={`w-5 h-5 ${selectedTab === tab.id ? 'text-blue-600' : 'text-gray-400'}`} />
