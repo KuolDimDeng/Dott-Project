@@ -1,24 +1,16 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from '@/utils/session';
 import { cookies } from 'next/headers';
 
 export async function POST(request) {
   try {
-    // Check authentication
-    const session = await getServerSession(request);
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    // Get session cookie for backend auth
+    // Check authentication by looking for session cookies
     const cookieStore = cookies();
     const sidCookie = cookieStore.get('sid');
-    if (!sidCookie || !sidCookie.value) {
+    const sessionCookie = request.cookies.get('dott_auth_session') || request.cookies.get('appSession');
+    
+    if (!sidCookie && !sessionCookie) {
       return NextResponse.json(
-        { error: 'Session not found' },
+        { error: 'Unauthorized' },
         { status: 401 }
       );
     }

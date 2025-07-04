@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from '@/utils/session';
 
 export async function GET(request) {
   try {
-    // Check if user is authenticated
-    const session = await getServerSession(request);
-    if (!session || !session.user) {
+    // Check if user is authenticated by looking for session cookies
+    const sidCookie = request.cookies.get('sid');
+    const sessionCookie = request.cookies.get('dott_auth_session') || request.cookies.get('appSession');
+    
+    if (!sidCookie && !sessionCookie) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
