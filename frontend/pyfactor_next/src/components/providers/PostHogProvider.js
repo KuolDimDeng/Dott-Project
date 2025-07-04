@@ -4,14 +4,18 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { PostHogProvider as PHProvider } from 'posthog-js/react';
 import { initPostHog, identifyUser, resetUser, capturePageView } from '@/lib/posthog';
-import { useAuth } from '@/contexts/AuthContext';
+import { useSession } from '@/hooks/useSession-v2';
 import { getPageName, trackEvent, EVENTS } from '@/utils/posthogTracking';
 
 export default function PostHogProvider({ children }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, isAuthenticated } = useAuth();
+  const { session, loading: sessionLoading } = useSession();
   const [posthog, setPosthog] = useState(null);
+  
+  // Extract user and auth status from session
+  const user = session?.user;
+  const isAuthenticated = session?.authenticated;
 
   // Initialize PostHog on mount
   useEffect(() => {
