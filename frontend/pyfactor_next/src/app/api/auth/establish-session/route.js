@@ -8,7 +8,9 @@ import deviceFingerprint from '@/utils/deviceFingerprint';
  */
 
 export async function POST(request) {
+  console.log('[EstablishSession] ========== ENDPOINT CALLED ==========');
   try {
+    console.log('[EstablishSession] Reading form data...');
     const formData = await request.formData();
     const token = formData.get('token');
     const redirectUrl = formData.get('redirectUrl') || '/';
@@ -17,6 +19,16 @@ export async function POST(request) {
     const baseUrl = process.env.NODE_ENV === 'production' 
       ? 'https://dottapps.com' 
       : request.url.split('/').slice(0, 3).join('/');
+      
+    console.log('[EstablishSession] ✅ Form data received successfully');
+    console.log('[EstablishSession] Form data details:', {
+      hasToken: !!token,
+      tokenType: typeof token,
+      tokenLength: token ? token.length : 0,
+      tokenPreview: token ? token.substring(0, 50) + '...' : 'none',
+      redirectUrl: redirectUrl,
+      baseUrl: baseUrl
+    });
     
     console.log('[EstablishSession] Form data received:', {
       hasToken: !!token,
