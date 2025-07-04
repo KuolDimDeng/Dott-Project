@@ -1,7 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, AlertTriangle, XCircle, Clock, ExternalLink, RefreshCw } from 'lucide-react';
+import { 
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  XCircleIcon,
+  ClockIcon,
+  ArrowTopRightOnSquareIcon,
+  ArrowPathIcon
+} from '@heroicons/react/24/outline';
 import StandardSpinner, { CenteredSpinner } from '@/components/ui/StandardSpinner';
 
 const DottStatus = () => {
@@ -156,13 +163,13 @@ const DottStatus = () => {
   const getStatusIcon = (status) => {
     switch (status) {
       case 'operational':
-        return <CheckCircle className="h-5 w-5 text-green-600" />;
+        return <CheckCircleIcon className="h-5 w-5 text-green-600" />;
       case 'degraded':
-        return <AlertTriangle className="h-5 w-5 text-yellow-600" />;
+        return <ExclamationTriangleIcon className="h-5 w-5 text-yellow-600" />;
       case 'outage':
-        return <XCircle className="h-5 w-5 text-red-600" />;
+        return <XCircleIcon className="h-5 w-5 text-red-600" />;
       default:
-        return <Clock className="h-5 w-5 text-gray-600" />;
+        return <ClockIcon className="h-5 w-5 text-gray-600" />;
     }
   };
 
@@ -216,7 +223,7 @@ const DottStatus = () => {
               </>
             ) : (
               <>
-                <RefreshCw className="h-4 w-4 mr-2" />
+                <ArrowPathIcon className="h-4 w-4 mr-2" />
                 Refresh
               </>
             )}
@@ -280,7 +287,7 @@ const DottStatus = () => {
                             rel="noopener noreferrer"
                             className="ml-2 text-gray-400 hover:text-blue-600"
                           >
-                            <ExternalLink className="h-4 w-4" />
+                            <ArrowTopRightOnSquareIcon className="h-4 w-4" />
                           </a>
                         )}
                       </div>

@@ -292,6 +292,10 @@ const ImportExport = enhancedLazy(() => import('./forms/ImportExport.js'), 'Impo
 // Calendar Component
 const Calendar = enhancedLazy(() => import('./forms/Calendar.js'), 'Calendar');
 
+// Social Components
+const InviteAFriend = enhancedLazy(() => import('./invite/InviteAFriend.js'), 'Invite a Friend');
+const DottStatus = enhancedLazy(() => import('./status/DottStatus.js'), 'Dott Status');
+
 // Add a custom error boundary component
 class LazyLoadErrorBoundary extends React.Component {
   constructor(props) {
@@ -2014,6 +2018,52 @@ const RenderMainContent = React.memo(function RenderMainContent({
           <ContentWrapperWithKey>
             <SuspenseWithCleanup componentKey={calendarComponentKey}>
               <Calendar />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
+      }
+
+      // Analytics view handling (Smart Insights, Import/Export)
+      if (view === 'smart-insights') {
+        const smartInsightsComponentKey = `smart-insights-${navigationKey || 'default'}`;
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup componentKey={smartInsightsComponentKey}>
+              <SmartInsight />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
+      }
+
+      if (view === 'import-export') {
+        const importExportComponentKey = `import-export-${navigationKey || 'default'}`;
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup componentKey={importExportComponentKey}>
+              <ImportExport />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
+      }
+
+      // Social view handling (Invite a Friend, Dott Status)
+      if (view === 'invite-a-friend') {
+        const inviteComponentKey = `invite-a-friend-${navigationKey || 'default'}`;
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup componentKey={inviteComponentKey}>
+              <InviteAFriend />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
+      }
+
+      if (view === 'dott-status') {
+        const statusComponentKey = `dott-status-${navigationKey || 'default'}`;
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup componentKey={statusComponentKey}>
+              <DottStatus />
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>
         );

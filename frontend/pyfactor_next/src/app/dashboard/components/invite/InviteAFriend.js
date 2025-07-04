@@ -2,7 +2,13 @@
 
 import React, { useState } from 'react';
 import { useSessionContext } from '@/providers/SessionProvider';
-import { Send, UserPlus, Mail, CheckCircle, AlertCircle } from 'lucide-react';
+import { 
+  PaperAirplaneIcon,
+  UserPlusIcon,
+  EnvelopeIcon,
+  CheckCircleIcon,
+  ExclamationCircleIcon 
+} from '@heroicons/react/24/outline';
 import StandardSpinner from '@/components/ui/StandardSpinner';
 
 const InviteAFriend = () => {
@@ -109,7 +115,7 @@ ${user?.name || user?.email || 'Your friend'}`;
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center mb-4">
-          <UserPlus className="h-8 w-8 text-blue-600 mr-3" />
+          <UserPlusIcon className="h-8 w-8 text-blue-600 mr-3" />
           <h1 className="text-3xl font-bold text-gray-900">Invite a Friend</h1>
         </div>
         <p className="text-gray-600 text-lg">
@@ -121,7 +127,7 @@ ${user?.name || user?.email || 'Your friend'}`;
         {/* Invitation Form */}
         <div className="bg-white rounded-lg shadow-lg p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
-            <Mail className="h-5 w-5 text-blue-600 mr-2" />
+            <EnvelopeIcon className="h-5 w-5 text-blue-600 mr-2" />
             Send Invitation
           </h2>
 
@@ -168,9 +174,9 @@ ${user?.name || user?.email || 'Your friend'}`;
                   : 'bg-red-50 border border-red-200 text-red-800'
               }`}>
                 {status.type === 'success' ? (
-                  <CheckCircle className="h-5 w-5 mr-2" />
+                  <CheckCircleIcon className="h-5 w-5 mr-2" />
                 ) : (
-                  <AlertCircle className="h-5 w-5 mr-2" />
+                  <ExclamationCircleIcon className="h-5 w-5 mr-2" />
                 )}
                 {status.message}
               </div>
@@ -189,7 +195,7 @@ ${user?.name || user?.email || 'Your friend'}`;
                 </>
               ) : (
                 <>
-                  <Send className="h-4 w-4 mr-2" />
+                  <PaperAirplaneIcon className="h-4 w-4 mr-2" />
                   Send Invitation
                 </>
               )}
