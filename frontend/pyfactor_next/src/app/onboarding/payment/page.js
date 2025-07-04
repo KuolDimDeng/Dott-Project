@@ -10,7 +10,7 @@ import {
   useElements,
 } from '@stripe/react-stripe-js';
 import { DynamicStripeProvider } from '@/components/payment/DynamicStripeProvider';
-import { useAuth } from '@/hooks/auth';
+import { useSession } from '@/hooks/useSession-v2';
 import { logger } from '@/utils/logger';
 import { refreshSessionData, waitForSessionUpdate } from '@/utils/sessionRefresh';
 // Removed sessionStatus import - using session-v2 system
@@ -20,7 +20,8 @@ function PaymentForm({ plan, billingCycle }) {
   const stripe = useStripe();
   const elements = useElements();
   const router = useRouter();
-  const { user } = useAuth();
+  const { session, loading: sessionLoading } = useSession();
+  const user = session?.user;
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
@@ -288,20 +289,32 @@ function PaymentForm({ plan, billingCycle }) {
         headers: Object.fromEntries(response.headers.entries()),
       });
 
-      // Check if response is JSON
+      // Check if response is JSON and handle parsing errors gracefully
       const contentType = response.headers.get('content-type');
       let result;
-      if (contentType && contentType.includes('application/json')) {
-        result = await response.json();
-        logger.info('Response JSON:', result);
-      } else {
-        const text = await response.text();
-        logger.error('Non-JSON response from subscription endpoint:', {
-          status: response.status,
-          contentType: contentType,
-          text: text,
-        });
-        throw new Error(`Invalid response from payment server (${response.status}): ${text}`);
+      
+      try {
+        if (contentType && contentType.includes('application/json')) {
+          result = await response.json();
+          logger.info('Response JSON:', result);
+        } else {
+          const text = await response.text();
+          logger.error('Non-JSON response from subscription endpoint:', {
+            status: response.status,
+            contentType: contentType,
+            text: text,
+          });
+          throw new Error(`Payment System Error: Server returned invalid response (${response.status}). Please refresh the page or contact support.`);
+        }
+      } catch (parseError) {
+        // Handle JSON parsing errors specifically
+        if (parseError.message.includes('JSON.parse')) {
+          logger.error('JSON parsing failed:', parseError);
+          const text = await response.text();
+          logger.error('Raw response text:', text);
+          throw new Error('Payment System Error: Unable to process server response. Please refresh the page or contact support.');
+        }
+        throw parseError;
       }
 
       if (!response.ok) {
