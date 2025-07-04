@@ -9,7 +9,7 @@ import uuid
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('custom_auth', '0001_initial'),
+        ('custom_auth', '0011_merge_20250626_1549'),
     ]
 
     operations = [

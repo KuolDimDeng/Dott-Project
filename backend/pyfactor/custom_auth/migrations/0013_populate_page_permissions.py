@@ -49,7 +49,7 @@ def reverse_populate_page_permissions(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('custom_auth', '0002_add_rbac_models'),
+        ('custom_auth', '0012_add_rbac_models'),
     ]
 
     operations = [

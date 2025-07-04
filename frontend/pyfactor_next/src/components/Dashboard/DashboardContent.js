@@ -416,27 +416,51 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   }, [setShowCreateMenu]);
 
   const handleDrawerItemClick = useCallback((option) => {
-    console.log(`Drawer item clicked: ${option}`);
+    console.log(`[DashboardContent] Drawer item clicked: ${option}`);
     
-    // Reset states first
+    // Reset states first - this will close profile view if it's open
     resetAllStates();
+    
+    // Generate a unique navigation key for component remounting
+    const navKey = `nav-${option}-${Date.now()}`;
+    console.log(`[DashboardContent] Setting navigationKey for ${option}: ${navKey}`);
     
     // Handle different navigation options
     switch(option) {
       case 'home':
-        setShowHome(true);
+        updateState({ 
+          showHome: true, 
+          view: 'home',
+          navigationKey: navKey 
+        });
         break;
       case 'main-dashboard':
-        setShowMainDashboard(true);
+        updateState({ 
+          showMainDashboard: true, 
+          view: 'main-dashboard',
+          navigationKey: navKey 
+        });
         break;
       case 'kpi-dashboard':
-        setShowKPIDashboard(true);
+        updateState({ 
+          showKPIDashboard: true, 
+          view: 'kpi-dashboard',
+          navigationKey: navKey 
+        });
         break;
       default:
         // For other options, update the view directly
-        setView(option);
+        updateState({ 
+          view: option,
+          navigationKey: navKey 
+        });
     }
-  }, [resetAllStates, setShowHome, setShowMainDashboard, setShowKPIDashboard, setView]);
+    
+    // Also update the navigation key separately to ensure component remounting
+    setNavigationKey(navKey);
+    
+    console.log(`[DashboardContent] Navigation completed for ${option} with key ${navKey}`);
+  }, [resetAllStates, updateState, setNavigationKey]);
 
   // Handle main dashboard click - shows the business overview
   const handleMainDashboardClick = useCallback(() => {
@@ -742,11 +766,26 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   }, [handleCloseCreateMenu, handleShowCreateOptions, handleSalesClick]);
 
   const handleUserProfileClick = useCallback(() => {
-    setShowMyAccount(true);
-    setShowHelpCenter(false);
-    setSelectedSettingsOption(null);
+    console.log('[DashboardContent] User Profile clicked');
+    resetAllStates();
+    
+    // Force a re-render with a new navigation key
+    const newNavKey = `profile-${Date.now()}`;
+    console.log(`[DashboardContent] Updating navigationKey to: ${newNavKey}`);
+    
+    // Use updateState to set all states at once
+    updateState({
+      showMyAccount: true,
+      showHelpCenter: false,
+      selectedSettingsOption: null,
+      navigationKey: newNavKey
+    });
+    
+    // Also update the navigation key separately to ensure component remounting
+    setNavigationKey(newNavKey);
+    
     handleClose();
-  }, [setShowMyAccount, setShowHelpCenter, setSelectedSettingsOption, handleClose]);
+  }, [resetAllStates, updateState, setNavigationKey, handleClose]);
 
   const handleSettingsClick = useCallback(() => {
     console.log('[DashboardContent] Settings button clicked - Starting Settings navigation');
@@ -754,17 +793,19 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
       // Reset all other states first
       resetAllStates();
       
-      // Set the necessary states to show the Settings view
-      setShowMyAccount(false);
-      setShowHelpCenter(false);
-      
-      // Set the selected settings option to 'Settings'
-      console.log('[DashboardContent] Setting selectedSettingsOption to "Settings"');
-      setSelectedSettingsOption('Settings');
-      
       // Force a re-render with a new navigation key
       const newNavKey = `settings-${Date.now()}`;
       console.log(`[DashboardContent] Updating navigationKey to: ${newNavKey}`);
+      
+      // Use updateState to set all states at once
+      updateState({
+        showMyAccount: false,
+        showHelpCenter: false,
+        selectedSettingsOption: 'Settings',
+        navigationKey: newNavKey
+      });
+      
+      // Also update the navigation key separately to ensure component remounting
       setNavigationKey(newNavKey);
       
       // Close the menu
@@ -774,20 +815,27 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     } catch (error) {
       console.error('[DashboardContent] Error in handleSettingsClick:', error);
     }
-  }, [resetAllStates, setShowMyAccount, setShowHelpCenter, setSelectedSettingsOption, setNavigationKey, handleClose]);
+  }, [resetAllStates, updateState, setNavigationKey, handleClose]);
 
   const handleHelpClick = useCallback(() => {
     console.log('[DashboardContent] Help Center clicked');
     resetAllStates();
-    setShowHelpCenter(true);
     
     // Force a re-render with a new navigation key
     const newNavKey = `help-center-${Date.now()}`;
     console.log(`[DashboardContent] Updating navigationKey to: ${newNavKey}`);
+    
+    // Use updateState to set all states at once
+    updateState({
+      showHelpCenter: true,
+      navigationKey: newNavKey
+    });
+    
+    // Also update the navigation key separately to ensure component remounting
     setNavigationKey(newNavKey);
     
     handleClose();
-  }, [resetAllStates, setShowHelpCenter, setNavigationKey, handleClose]);
+  }, [resetAllStates, updateState, setNavigationKey, handleClose]);
 
   const handlePrivacyClick = useCallback(() => {
     window.open('/privacy', '_blank');

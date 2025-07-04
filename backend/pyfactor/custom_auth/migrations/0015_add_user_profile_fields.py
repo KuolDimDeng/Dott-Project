@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('custom_auth', '0001_initial'),  # Update this to your latest migration
+        ('custom_auth', '0014_set_first_user_as_owner'),
     ]
 
     operations = [

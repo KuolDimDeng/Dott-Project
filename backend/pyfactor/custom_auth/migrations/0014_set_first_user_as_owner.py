@@ -30,7 +30,7 @@ def reverse_set_tenant_first_user_as_owner(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('custom_auth', '0003_populate_page_permissions'),
+        ('custom_auth', '0013_populate_page_permissions'),
     ]
 
     operations = [
