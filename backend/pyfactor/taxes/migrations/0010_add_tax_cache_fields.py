@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('taxes', '0010_rename_created_to_created_at'),
+        ('taxes', '0009_add_payroll_tax_models'),
     ]
 
     operations = [
