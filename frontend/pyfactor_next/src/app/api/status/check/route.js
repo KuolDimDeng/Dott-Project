@@ -1,28 +1,38 @@
 import { NextResponse } from 'next/server';
+import { getServerSession } from '@/utils/session';
 
 export async function GET(request) {
   try {
+    // Check if user is authenticated
+    const session = await getServerSession(request);
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
     const services = [
       {
         id: 'frontend',
         name: 'Dott Frontend',
         description: 'Main application interface',
-        url: 'https://dottapps.com/api/health',
+        url: process.env.NEXT_PUBLIC_APP_URL ? `${process.env.NEXT_PUBLIC_APP_URL}/api/health` : 'https://dottapps.com/api/health',
         checkType: 'internal'
       },
       {
         id: 'backend',
         name: 'Dott API',
         description: 'Backend services and API',
-        url: 'https://api.dottapps.com/health/',
+        url: process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_URL}/health/` : 'https://api.dottapps.com/health/',
         checkType: 'external'
       },
       {
         id: 'auth',
         name: 'Authentication',
         description: 'Authentication services',
-        url: 'https://dev-cbyy63jovi6zrcos.us.auth0.com/.well-known/openid-configuration',
-        checkType: 'external'
+        url: process.env.AUTH0_ISSUER_BASE_URL ? `${process.env.AUTH0_ISSUER_BASE_URL}/.well-known/openid-configuration` : 'https://auth.dottapps.com/.well-known/openid-configuration',
+        checkType: 'external',
+        hideUrl: true // Don't expose Auth0 domain
       },
       {
         id: 'platform',
@@ -45,37 +55,6 @@ export async function GET(request) {
             // For services we can't directly check
             status = 'operational';
             responseTime = 'N/A';
-          } else if (service.checkType === 'database') {
-            // Check database connection through our health endpoint
-            try {
-              const dbCheckResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/health`, {
-                method: 'GET',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-              });
-              
-              if (dbCheckResponse.ok) {
-                const data = await dbCheckResponse.json();
-                // If backend is connected, database is likely operational
-                if (data.database === 'connected' || data.backend === 'connected') {
-                  status = 'operational';
-                } else if (data.database === 'unknown' && data.backend === 'connected') {
-                  // Backend works, so database must be up
-                  status = 'operational';
-                } else {
-                  status = 'degraded';
-                }
-                details = { database: data.database, backend: data.backend };
-              } else {
-                status = 'degraded';
-              }
-            } catch (error) {
-              console.error('Database check error:', error);
-              // If we can't check, assume operational (don't alarm users unnecessarily)
-              status = 'operational';
-              details = { note: 'Status check unavailable' };
-            }
           } else if (service.url) {
             // Check external services
             const startTime = Date.now();
@@ -113,10 +92,10 @@ export async function GET(request) {
               if (fetchError.name === 'AbortError') {
                 status = 'degraded';
                 responseTime = 'Timeout';
-                details = { error: 'Request timeout' };
+                details = { error: 'Service temporarily unavailable' };
               } else {
                 status = 'outage';
-                details = { error: fetchError.message };
+                details = { error: 'Service temporarily unavailable' };
               }
             }
           }
@@ -142,14 +121,24 @@ export async function GET(request) {
             uptime: 'Unknown',
             responseTime: 'N/A',
             lastChecked: new Date().toISOString(),
-            details: { error: error.message }
+            details: { error: 'Status check failed' }
           };
         }
       })
     );
 
+    // Remove sensitive URLs from response
+    const sanitizedServices = serviceStatuses.map(service => {
+      const { url, hideUrl, ...safeService } = service;
+      // Only include URL if not marked as hidden
+      if (!hideUrl && url && !url.includes('auth0') && !url.includes('render')) {
+        safeService.hasHealthCheck = true;
+      }
+      return safeService;
+    });
+
     return NextResponse.json({
-      services: serviceStatuses,
+      services: sanitizedServices,
       lastUpdated: new Date().toISOString(),
       overallStatus: calculateOverallStatus(serviceStatuses)
     });
