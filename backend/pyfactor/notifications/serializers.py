@@ -2,7 +2,6 @@
 Serializers for the notification system
 """
 from rest_framework import serializers
-from taxes.models import TaxSuggestionFeedback
 from .models import (
     AdminUser, Notification, NotificationRecipient,
     NotificationTemplate, AdminAuditLog, UserNotificationSettings
@@ -127,18 +126,3 @@ class UserNotificationSettingsSerializer(serializers.ModelSerializer):
         read_only_fields = ['updated_at']
 
 
-class TaxFeedbackSerializer(serializers.ModelSerializer):
-    """
-    Serializer for tax suggestion feedback
-    """
-    class Meta:
-        model = TaxSuggestionFeedback
-        fields = [
-            'id', 'tenant_id', 'user_email', 'country_code', 'country_name',
-            'business_type', 'tax_type', 'original_suggestion', 'user_feedback',
-            'correct_info', 'confidence_score', 'status', 'resolution_notes',
-            'reviewed_by', 'reviewed_at', 'created_at', 'updated_at'
-        ]
-        read_only_fields = [
-            'id', 'tenant_id', 'user_email', 'created_at', 'updated_at'
-        ]

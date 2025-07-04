@@ -2602,3 +2602,68 @@ class TaxRateFeedback(TenantAwareModel):
     
     def __str__(self):
         return f"{self.get_feedback_type_display()} - {self.city}, {self.state_province} by {self.submitted_by}"
+
+
+class TaxSuggestionFeedback(TenantAwareModel):
+    """
+    Stores user feedback about AI tax suggestions to improve accuracy
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user_email = models.EmailField(db_index=True)
+    
+    # Location information
+    country_code = models.CharField(max_length=2, db_index=True)
+    country_name = models.CharField(max_length=100)
+    business_type = models.CharField(max_length=100, db_index=True)
+    
+    # Tax type the feedback is about
+    tax_type = models.CharField(max_length=50, choices=[
+        ('sales', 'Sales Tax'),
+        ('income', 'Income Tax'),
+        ('payroll', 'Payroll Tax'),
+        ('property', 'Property Tax'),
+        ('excise', 'Excise Tax'),
+        ('other', 'Other')
+    ], db_index=True)
+    
+    # Feedback content
+    original_suggestion = models.TextField(help_text="The original AI suggestion")
+    user_feedback = models.TextField(help_text="User's feedback about the suggestion")
+    correct_info = models.TextField(blank=True, help_text="Correct information provided by user")
+    
+    # Confidence score from AI
+    confidence_score = models.DecimalField(
+        max_digits=3, decimal_places=2,
+        validators=[MinValueValidator(0), MaxValueValidator(1)],
+        null=True, blank=True,
+        help_text="AI confidence score (0-1)"
+    )
+    
+    # Status tracking
+    STATUS_CHOICES = [
+        ('pending', 'Pending Review'),
+        ('reviewed', 'Reviewed'),
+        ('resolved', 'Resolved')
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', db_index=True)
+    
+    # Resolution details
+    resolution_notes = models.TextField(blank=True)
+    reviewed_by = models.CharField(max_length=200, blank=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        app_label = 'taxes'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status', 'created_at']),
+            models.Index(fields=['country_code', 'business_type']),
+            models.Index(fields=['tax_type', 'status']),
+        ]
+    
+    def __str__(self):
+        return f"Tax Suggestion Feedback: {self.tax_type} for {self.country_name} - {self.status}"

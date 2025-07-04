@@ -15,7 +15,6 @@ from rest_framework.response import Response
 from rest_framework.permissions import BasePermission, AllowAny
 
 from custom_auth.permissions import TenantAccessPermission
-from taxes.models import TaxSuggestionFeedback
 
 from .models import (
     AdminUser, Notification, NotificationRecipient, 
@@ -24,7 +23,7 @@ from .models import (
 from .serializers import (
     NotificationSerializer, NotificationRecipientSerializer,
     NotificationTemplateSerializer, AdminAuditLogSerializer,
-    TaxFeedbackSerializer, AdminUserSerializer
+    AdminUserSerializer
 )
 
 
@@ -304,6 +303,24 @@ class TaxFeedbackListView(APIView):
     permission_classes = [AdminPermission]
     
     def get(self, request):
+        # Import here to avoid circular import issues
+        from taxes.models import TaxSuggestionFeedback
+        from rest_framework import serializers
+        
+        # Define serializer inline to avoid circular imports
+        class TaxFeedbackSerializer(serializers.ModelSerializer):
+            class Meta:
+                model = TaxSuggestionFeedback
+                fields = [
+                    'id', 'tenant_id', 'user_email', 'country_code', 'country_name',
+                    'business_type', 'tax_type', 'original_suggestion', 'user_feedback',
+                    'correct_info', 'confidence_score', 'status', 'resolution_notes',
+                    'reviewed_by', 'reviewed_at', 'created_at', 'updated_at'
+                ]
+                read_only_fields = [
+                    'id', 'tenant_id', 'user_email', 'created_at', 'updated_at'
+                ]
+        
         if not request.admin_user.can_view_feedback:
             return Response({
                 'error': 'Permission denied'
@@ -346,6 +363,24 @@ class TaxFeedbackDetailView(APIView):
     permission_classes = [AdminPermission]
     
     def patch(self, request, feedback_id):
+        # Import here to avoid circular import issues
+        from taxes.models import TaxSuggestionFeedback
+        from rest_framework import serializers
+        
+        # Define serializer inline to avoid circular imports
+        class TaxFeedbackSerializer(serializers.ModelSerializer):
+            class Meta:
+                model = TaxSuggestionFeedback
+                fields = [
+                    'id', 'tenant_id', 'user_email', 'country_code', 'country_name',
+                    'business_type', 'tax_type', 'original_suggestion', 'user_feedback',
+                    'correct_info', 'confidence_score', 'status', 'resolution_notes',
+                    'reviewed_by', 'reviewed_at', 'created_at', 'updated_at'
+                ]
+                read_only_fields = [
+                    'id', 'tenant_id', 'user_email', 'created_at', 'updated_at'
+                ]
+        
         if not request.admin_user.can_view_feedback:
             return Response({
                 'error': 'Permission denied'
