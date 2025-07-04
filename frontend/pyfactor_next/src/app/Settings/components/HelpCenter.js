@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Button, TextField, Card } from '@/components/ui/TailwindComponents';
+import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 
 const HelpCenter = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [openAccordions, setOpenAccordions] = useState({});
 
-  // Mock FAQs
+  // Expanded industry-standard FAQs
   const faqs = [
     {
       question: 'How do I create an invoice?',
@@ -27,22 +28,66 @@ const HelpCenter = () => {
       question: 'Can I customize my invoice templates?',
       answer: 'Yes, you can customize invoice templates by going to "Settings" > "Invoice Settings", where you can adjust the layout, add your logo, and change colors to match your brand.'
     },
-  ];
-
-  // Mock popular articles
-  const popularArticles = [
-    { 
-      title: 'Getting Started Guide', 
-      description: 'Learn the basics of setting up your account and using the platform.'
+    {
+      question: 'How do I export my data?',
+      answer: 'You can export your data from most screens using the export button (usually at the top right). We support CSV, Excel, and PDF formats for most data types including invoices, customers, and reports.'
     },
-    { 
-      title: 'Invoice Management', 
-      description: 'Everything you need to know about creating and managing invoices.'
+    {
+      question: 'Is my data secure?',
+      answer: 'Yes, we use bank-level security with 256-bit SSL encryption, regular backups, and SOC 2 compliance. All data is stored in secure data centers with 24/7 monitoring and regular security audits.'
     },
-    { 
-      title: 'Payment Processing', 
-      description: 'Learn about different payment methods and how to process payments.'
+    {
+      question: 'Can I integrate with other software?',
+      answer: 'We offer integrations with popular accounting software, payment processors, and business tools. Check the Integrations section in Settings or contact support for specific integration requests.'
     },
+    {
+      question: 'How do I manage user permissions?',
+      answer: 'As an admin or owner, go to Settings > User Management to add users and set their permissions. You can control access to specific features and data based on user roles.'
+    },
+    {
+      question: 'What happens if I exceed my plan limits?',
+      answer: 'You\'ll receive notifications when approaching plan limits. You can upgrade your plan anytime from Settings > Billing. We never stop your service abruptly - you\'ll have time to upgrade or manage your usage.'
+    },
+    {
+      question: 'How do I cancel my subscription?',
+      answer: 'You can cancel your subscription from Settings > Billing > Manage Subscription. Your data remains accessible until the end of your billing period, and you can export it anytime.'
+    },
+    {
+      question: 'Can I recover deleted data?',
+      answer: 'Deleted items are moved to a trash/recycle bin for 30 days before permanent deletion. You can restore items from the trash during this period. For permanent deletions, contact support within 7 days.'
+    },
+    {
+      question: 'How do I set up recurring invoices?',
+      answer: 'When creating an invoice, select "Make Recurring" and set the frequency (weekly, monthly, etc.). The system will automatically generate and send invoices based on your schedule.'
+    },
+    {
+      question: 'What tax features are available?',
+      answer: 'We support multiple tax rates, automatic tax calculations, tax reports, and compliance with major tax regulations. You can configure tax settings in Settings > Tax Configuration.'
+    },
+    {
+      question: 'How do I track inventory?',
+      answer: 'Enable inventory tracking in Settings, then add products with stock levels. The system automatically updates inventory when you create invoices or record purchases.'
+    },
+    {
+      question: 'Can I work offline?',
+      answer: 'While most features require an internet connection, we offer limited offline functionality for critical operations. Data syncs automatically when you reconnect.'
+    },
+    {
+      question: 'How do I handle refunds?',
+      answer: 'Create a credit note from the original invoice or payment. This can be applied to future invoices or processed as a refund through your payment processor.'
+    },
+    {
+      question: 'What browsers are supported?',
+      answer: 'We support the latest versions of Chrome, Firefox, Safari, and Edge. For the best experience, we recommend using Chrome or Firefox with JavaScript enabled.'
+    },
+    {
+      question: 'How do I reset my password?',
+      answer: 'Click "Forgot Password" on the login page and follow the email instructions. For security, password reset links expire after 24 hours.'
+    },
+    {
+      question: 'Can I have multiple businesses?',
+      answer: 'Yes, you can manage multiple businesses from one account. Switch between businesses using the dropdown in the top navigation bar.'
+    }
   ];
 
   const handleSearchChange = (event) => {
@@ -64,9 +109,13 @@ const HelpCenter = () => {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">
+      <h1 className="text-2xl font-bold mb-2 flex items-center">
+        <QuestionMarkCircleIcon className="h-6 w-6 text-blue-600 mr-2" />
         Help Center
       </h1>
+      <p className="text-gray-600 mb-6">
+        Find answers to common questions and learn how to make the most of Dott's features
+      </p>
 
       <div className="grid grid-cols-1 gap-6">
         <div className="w-full">
@@ -129,29 +178,6 @@ const HelpCenter = () => {
                 </p>
               )}
             </div>
-
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold mb-4">
-                Popular Articles
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {popularArticles.map((article, index) => (
-                  <Card key={index}>
-                    <div className="p-4 flex-grow">
-                      <h3 className="font-medium text-lg mb-2">{article.title}</h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-300">
-                        {article.description}
-                      </p>
-                    </div>
-                    <div className="px-4 pb-4">
-                      <Button variant="text">
-                        Read More
-                      </Button>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </div>
           </div>
 
           <div className="space-y-6">
@@ -165,66 +191,12 @@ const HelpCenter = () => {
               <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
                 Can't find what you're looking for? Our support team is here to help.
               </p>
-              <Button 
-                variant="primary" 
-                fullWidth
-                className="mb-4"
-              >
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                Submit a Support Ticket
-              </Button>
-              <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
-                For urgent matters, contact us directly:
+              <p className="text-sm mb-4">
+                Email: <a href="mailto:support@dottapps.com" className="text-blue-600 hover:underline">support@dottapps.com</a>
               </p>
-              <p className="text-sm mb-2">
-                Email: <a href="mailto:support@pyfactor.com" className="text-blue-600 hover:underline">support@pyfactor.com</a>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                We typically respond within 24 hours during business days.
               </p>
-              <p className="text-sm mb-2">
-                Phone: <a href="tel:+12345678901" className="text-blue-600 hover:underline">+1 (234) 567-8901</a>
-              </p>
-              <p className="text-sm mb-2">
-                Hours: Monday-Friday, 9AM-6PM EST
-              </p>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-              <div className="flex items-center mb-4">
-                <svg className="w-6 h-6 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                </svg>
-                <h2 className="text-xl font-semibold">Community</h2>
-              </div>
-              <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
-                Join our user community to connect with other users and share experiences.
-              </p>
-              <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-                <li>
-                  <a href="#" className="flex items-center py-3 hover:text-blue-600">
-                    <svg className="w-5 h-5 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path>
-                    </svg>
-                    <span>User Forums</span>
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="flex items-center py-3 hover:text-blue-600">
-                    <svg className="w-5 h-5 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-                    </svg>
-                    <span>Video Tutorials</span>
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="flex items-center py-3 hover:text-blue-600">
-                    <svg className="w-5 h-5 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                    </svg>
-                    <span>Documentation</span>
-                  </a>
-                </li>
-              </ul>
             </div>
           </div>
         </div>
@@ -233,4 +205,4 @@ const HelpCenter = () => {
   );
 };
 
-export default HelpCenter; 
+export default HelpCenter;
