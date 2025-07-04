@@ -131,7 +131,7 @@ export function identifyUser(user) {
     id: user.sub || user.id,
     email: user.email,
     name: user.name,
-    tenant_id: user.tenant_id
+    tenant_id: user.tenant_id || user.tenantId
   } : 'NO USER');
 
   if (!posthogClient) {
@@ -144,23 +144,36 @@ export function identifyUser(user) {
     return;
   }
 
-  const userId = user.sub || user.id;
+  const userId = user.sub || user.id || user.email;
   const userProperties = {
     email: user.email,
-    name: user.name,
-    tenant_id: user.tenant_id,
-    tenant_name: user.tenant_name,
-    subscription_plan: user.subscription_plan,
-    onboarding_completed: user.onboarding_completed,
-    created_at: user.created_at,
+    name: user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
+    tenant_id: user.tenant_id || user.tenantId,
+    tenant_name: user.tenant_name || user.tenantName,
+    subscription_plan: user.subscription_plan || user.subscriptionPlan,
+    onboarding_completed: user.onboarding_completed || user.onboardingCompleted,
+    created_at: user.created_at || user.createdAt,
     role: user.role
   };
+
+  // Filter out undefined/null values
+  Object.keys(userProperties).forEach(key => {
+    if (userProperties[key] === undefined || userProperties[key] === null) {
+      delete userProperties[key];
+    }
+  });
 
   console.log('[PostHog] Identifying user:', userId, 'with properties:', userProperties);
   
   try {
     posthogClient.identify(userId, userProperties);
     console.log('[PostHog] User identified successfully');
+    
+    // Force capture an event to ensure identification is sent
+    posthogClient.capture('user_identified', {
+      ...userProperties,
+      identification_source: 'auth_flow'
+    });
   } catch (error) {
     console.error('[PostHog] Failed to identify user:', error);
   }
