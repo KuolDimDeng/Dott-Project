@@ -10,11 +10,13 @@ import { securityLogger } from '@/utils/securityLogger';
 import { anomalyDetector } from '@/utils/anomalyDetection';
 import { usePostHog } from 'posthog-js/react';
 import { trackEvent, EVENTS } from '@/utils/posthogTracking';
+import { useSession } from '@/hooks/useSession-v2';
 
 export default function EmailPasswordSignIn() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const posthog = usePostHog();
+  const { session, loading: sessionLoading, isAuthenticated } = useSession();
   const [isSignup, setIsSignup] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -30,6 +32,51 @@ export default function EmailPasswordSignIn() {
     lastName: '',
     rememberMe: false
   });
+
+  console.log('🔍 [EmailPasswordSignIn] Component loaded at:', new Date().toISOString());
+  console.log('🔍 [EmailPasswordSignIn] Current URL:', typeof window !== 'undefined' ? window.location.href : 'SSR');
+  console.log('🔍 [EmailPasswordSignIn] Search params:', searchParams.toString());
+  console.log('🔍 [EmailPasswordSignIn] Session check:', {
+    sessionLoading,
+    isAuthenticated,
+    hasSession: !!session,
+    userEmail: session?.user?.email,
+    needsOnboarding: session?.user?.needsOnboarding,
+    tenantId: session?.user?.tenantId
+  });
+
+  // Check if user is already authenticated and redirect
+  useEffect(() => {
+    console.log('🔍 [EmailPasswordSignIn] Auth check effect triggered:', {
+      sessionLoading,
+      isAuthenticated,
+      hasSession: !!session,
+      userEmail: session?.user?.email,
+      needsOnboarding: session?.user?.needsOnboarding,
+      tenantId: session?.user?.tenantId
+    });
+    
+    if (!sessionLoading && isAuthenticated && session?.user) {
+      console.log('🔍 [EmailPasswordSignIn] User already authenticated, redirecting...');
+      
+      // Determine redirect URL based on onboarding status
+      let redirectUrl;
+      if (session.user.needsOnboarding) {
+        redirectUrl = '/onboarding';
+        console.log('🔍 [EmailPasswordSignIn] User needs onboarding, redirecting to:', redirectUrl);
+      } else if (session.user.tenantId) {
+        redirectUrl = `/${session.user.tenantId}/dashboard`;
+        console.log('🔍 [EmailPasswordSignIn] User has tenant, redirecting to:', redirectUrl);
+      } else {
+        redirectUrl = '/dashboard';
+        console.log('🔍 [EmailPasswordSignIn] User authenticated, redirecting to default dashboard:', redirectUrl);
+      }
+      
+      console.log('🔍 [EmailPasswordSignIn] Performing redirect to:', redirectUrl);
+      router.push(redirectUrl);
+      return;
+    }
+  }, [sessionLoading, isAuthenticated, session, router]);
 
   // Check for error from URL params (e.g., from Google OAuth)
   useEffect(() => {
@@ -481,6 +528,28 @@ export default function EmailPasswordSignIn() {
       await handleLogin();
     }
   };
+
+  // Show loading spinner while checking session
+  if (sessionLoading) {
+    console.log('🔍 [EmailPasswordSignIn] Showing session loading state');
+    return (
+      <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
+        <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-md text-center">
+          <div className="text-center">
+            <img 
+              className="mx-auto h-20 w-auto" 
+              src="https://dottapps.com/static/images/PyfactorLandingpage.png" 
+              alt="Dott" 
+            />
+            <h2 className="mt-6 text-2xl font-bold text-gray-900">Checking your session...</h2>
+            <div className="mt-4 flex justify-center">
+              <div className="loader"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

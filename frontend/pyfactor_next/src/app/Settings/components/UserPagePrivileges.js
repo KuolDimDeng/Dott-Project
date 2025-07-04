@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/TailwindComponents';
-import { useAuth } from '@/context/AuthContext';
+import { useSessionContext } from '@/providers/SessionProvider';
 import { useNotification } from '@/context/NotificationContext';
 import { logger } from '@/utils/logger';
 // Removed AWS Cognito utils import - now using Auth0
@@ -82,7 +82,7 @@ const ALL_PAGE_IDS = PAGE_CATEGORIES.flatMap(category =>
 );
 
 const UserPagePrivileges = () => {
-  const { user } = useAuth();
+  const { user } = useSessionContext();
   const { notifySuccess, notifyError } = useNotification();
   const isMounted = useRef(true);
   

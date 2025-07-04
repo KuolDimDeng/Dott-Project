@@ -2,14 +2,14 @@
 
 
 import React from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useSessionContext } from '@/providers/SessionProvider';
 import EmployeeInfo from './components/EmployeeInfo';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user } = useSessionContext();
 
   // Get user initials for avatar
   const getUserInitials = () => {

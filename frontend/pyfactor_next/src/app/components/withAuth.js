@@ -3,12 +3,12 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useSessionContext } from '@/providers/SessionProvider';
 
 export default function withAuth(Component) {
   return function WithAuth(props) {
     const router = useRouter();
-    const { isAuthenticated, isLoading } = useAuth();
+    const { isAuthenticated, loading: isLoading } = useSessionContext();
     const [isClient, setIsClient] = useState(false);
     
     useEffect(() => {

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Button, TextField } from '@/components/ui/TailwindComponents';
-import { useAuth } from '@/context/AuthContext';
+import { useSessionContext } from '@/providers/SessionProvider';
 import { useNotification } from '@/context/NotificationContext';
 import { extractTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
@@ -11,7 +11,7 @@ import api from '@/utils/api';
 import { getCacheValue, setCacheValue } from '@/utils/appCache';
 
 const UserMenuPrivileges = () => {
-  const { user } = useAuth();
+  const { user } = useSessionContext();
   const { notifySuccess, notifyError } = useNotification();
   const isMounted = useRef(true);
   

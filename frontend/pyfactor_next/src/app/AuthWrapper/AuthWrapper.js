@@ -1,29 +1,44 @@
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/AuthWrapper/AuthWrapper.js
-import { useEffect, useState } from 'react';
-// No need to import configureAmplify as it's already done in amplifyUnified.js
+'use client';
+
+import { useSessionContext } from '@/providers/SessionProvider';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { SafeWrapper } from '@/utils/ContextFix';
 
 export function AuthWrapper({ children }) {
-  const [isInitialized, setIsInitialized] = useState(false);
+  const { isAuthenticated, loading, user } = useSessionContext();
+  const router = useRouter();
+
+  console.log('🔧 [AuthWrapper] Auth check:', {
+    loading,
+    isAuthenticated,
+    hasUser: !!user,
+    userEmail: user?.email
+  });
 
   useEffect(() => {
-    if (typeof window === 'undefined') {
-      setIsInitialized(true);
-      return;
+    // Only redirect if not loading and not authenticated
+    if (!loading && !isAuthenticated) {
+      console.log('🔧 [AuthWrapper] User not authenticated, redirecting to signin');
+      router.push('/auth/signin');
     }
+  }, [loading, isAuthenticated, router]);
 
-    // Auth is already configured in amplifyUnified.js
-    setIsInitialized(true);
-  }, []);
-
-  // During server-side rendering or after initialization, render children
-  if (typeof window === 'undefined' || isInitialized) {
-    return <SafeWrapper>{children}</SafeWrapper>;
+  // Show loading spinner while checking session
+  if (loading) {
+    console.log('🔧 [AuthWrapper] Showing loading spinner');
+    return <LoadingSpinner />;
   }
 
-  // On client-side, wait for initialization
-  return <LoadingSpinner />; // Show loading spinner while initializing
+  // If not authenticated, don't render children (redirect will happen)
+  if (!isAuthenticated) {
+    console.log('🔧 [AuthWrapper] Not authenticated, rendering loading');
+    return <LoadingSpinner />;
+  }
+
+  console.log('🔧 [AuthWrapper] User authenticated, rendering children');
+  return <SafeWrapper>{children}</SafeWrapper>;
 }
 
 export default AuthWrapper;

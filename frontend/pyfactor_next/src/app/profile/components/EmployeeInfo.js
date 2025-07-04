@@ -2,13 +2,13 @@
 
 
 import React from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useSessionContext } from '@/providers/SessionProvider';
 import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 
 const EmployeeInfo = () => {
-  const { employee } = useAuth();
+  const { employee } = useSessionContext();
 
   if (!employee) {
     return (

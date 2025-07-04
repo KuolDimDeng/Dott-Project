@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useAuth } from '@/context/AuthContext';
+import { useSessionContext } from '@/providers/SessionProvider';
 import { useNotification } from '@/context/NotificationContext';
 import { useProfile } from '@/hooks/useProfile';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -24,7 +24,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 const SettingsManagement = () => {
-  const { user } = useAuth();
+  const { user } = useSessionContext();
   const { profileData, loading: profileLoading } = useProfile();
   const { notifySuccess, notifyError } = useNotification();
   const { isOwner, isAdmin, isOwnerOrAdmin } = usePermissions();
