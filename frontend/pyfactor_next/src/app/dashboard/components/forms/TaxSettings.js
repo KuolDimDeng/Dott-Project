@@ -120,6 +120,16 @@ export default function TaxSettings({ onNavigate }) {
   // Tax data state
   const [taxSuggestions, setTaxSuggestions] = useState(null);
   const [additionalTaxFields, setAdditionalTaxFields] = useState({}); // For dynamic fields from API
+  
+  // Manual override and feedback
+  const [manualOverrideMode, setManualOverrideMode] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [feedbackForm, setFeedbackForm] = useState({
+    type: '',
+    details: '',
+    inaccurateFields: [],
+    suggestedSources: ''
+  });
   const [customRates, setCustomRates] = useState({
     // Sales Tax breakdown
     stateSalesTaxRate: '',
@@ -1125,6 +1135,102 @@ export default function TaxSettings({ onNavigate }) {
             </div>
           )}
           
+          {/* Source Citations and Actions Section */}
+          {taxSuggestions && (
+            <div className="mb-6 space-y-4">
+              {/* Source Citations */}
+              {taxSuggestions.sourceCitations && taxSuggestions.sourceCitations.length > 0 && (
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                  <h4 className="text-sm font-medium text-gray-900 mb-2 flex items-center">
+                    <DocumentDuplicateIcon className="h-4 w-4 mr-1" />
+                    Sources Used
+                  </h4>
+                  <div className="space-y-2">
+                    {taxSuggestions.sourceCitations.map((citation, idx) => (
+                      <div key={idx} className="text-sm">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mr-2 ${
+                          citation.type === 'official' ? 'bg-green-100 text-green-800' :
+                          citation.type === 'government' ? 'bg-blue-100 text-blue-800' :
+                          citation.type === 'reliable' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {citation.type}
+                        </span>
+                        <span className="text-gray-700">{citation.source}</span>
+                        {citation.url && (
+                          <a 
+                            href={citation.url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="ml-2 text-blue-600 hover:text-blue-800 underline"
+                          >
+                            Visit Source
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Action Buttons */}
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={() => {
+                    // Enable manual override mode
+                    setManualOverrideMode(!manualOverrideMode);
+                  }}
+                  className={`flex items-center px-4 py-2 rounded-lg border transition-colors ${
+                    manualOverrideMode 
+                      ? 'bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100' 
+                      : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <PencilIcon className="h-4 w-4 mr-2" />
+                  {manualOverrideMode ? 'Exit Override Mode' : 'Override Rates'}
+                </button>
+                
+                <button
+                  onClick={() => setShowFeedbackModal(true)}
+                  className="flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <ExclamationTriangleIcon className="h-4 w-4 mr-2" />
+                  Report Inaccuracy
+                </button>
+                
+                {/* Verification Links */}
+                <div className="flex items-center text-sm text-gray-600">
+                  <ShieldCheckIcon className="h-4 w-4 mr-1" />
+                  <span className="mr-2">Verify rates:</span>
+                  <a 
+                    href={`https://www.google.com/search?q="${formData.country}"+revenue+authority+tax+rates`}
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-800 underline mr-3"
+                  >
+                    Search Government Sites
+                  </a>
+                </div>
+              </div>
+              
+              {/* Manual Override Notice */}
+              {manualOverrideMode && (
+                <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                  <div className="flex items-start">
+                    <ExclamationCircleIcon className="h-5 w-5 text-orange-600 mt-0.5 mr-2" />
+                    <div>
+                      <p className="text-sm font-medium text-orange-900">Manual Override Mode Active</p>
+                      <p className="text-sm text-orange-700 mt-1">
+                        You can now manually edit any tax rates below. Your changes will be saved as corrections 
+                        and used for future suggestions in this location.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          
           {/* Sales Tax Section */}
           <div className="mb-6">
             <div 
@@ -1805,6 +1911,147 @@ export default function TaxSettings({ onNavigate }) {
           </div>
         )}
       </div>
+      
+      {/* Feedback Modal for reporting inaccuracies */}
+      {showFeedbackModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg max-w-2xl w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <ExclamationTriangleIcon className="h-5 w-5 mr-2 text-orange-500" />
+              Report Tax Rate Inaccuracy
+            </h3>
+            
+            <div className="space-y-4">
+              {/* Feedback Type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  What type of issue did you find?
+                </label>
+                <select
+                  value={feedbackForm.type}
+                  onChange={(e) => setFeedbackForm(prev => ({ ...prev, type: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select issue type...</option>
+                  <option value="inaccurate">Rates are completely wrong</option>
+                  <option value="partially_accurate">Some rates are wrong</option>
+                  <option value="missing_taxes">Missing some taxes</option>
+                  <option value="outdated">Rates are outdated</option>
+                </select>
+              </div>
+              
+              {/* Specific Fields */}
+              {feedbackForm.type === 'partially_accurate' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Which specific fields are incorrect?
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {Object.keys(customRates).map(field => (
+                      <label key={field} className="flex items-center text-sm">
+                        <input
+                          type="checkbox"
+                          checked={feedbackForm.inaccurateFields.includes(field)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setFeedbackForm(prev => ({
+                                ...prev,
+                                inaccurateFields: [...prev.inaccurateFields, field]
+                              }));
+                            } else {
+                              setFeedbackForm(prev => ({
+                                ...prev,
+                                inaccurateFields: prev.inaccurateFields.filter(f => f !== field)
+                              }));
+                            }
+                          }}
+                          className="mr-2"
+                        />
+                        {field.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Details */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Please describe the issue and provide correct information if known
+                </label>
+                <textarea
+                  value={feedbackForm.details}
+                  onChange={(e) => setFeedbackForm(prev => ({ ...prev, details: e.target.value }))}
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Example: The sales tax rate should be 8.5%, not 7.25%. I found this on the official state revenue website..."
+                />
+              </div>
+              
+              {/* Suggested Sources */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Sources for correct information (optional)
+                </label>
+                <textarea
+                  value={feedbackForm.suggestedSources}
+                  onChange={(e) => setFeedbackForm(prev => ({ ...prev, suggestedSources: e.target.value }))}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Official website URLs, government documents, etc."
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowFeedbackModal(false);
+                  setFeedbackForm({ type: '', details: '', inaccurateFields: [], suggestedSources: '' });
+                }}
+                className="px-4 py-2 text-gray-700 hover:text-gray-900"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    const response = await fetch('/api/taxes/feedback', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      credentials: 'include',
+                      body: JSON.stringify({
+                        tenantId,
+                        businessInfo: formData,
+                        feedbackType: feedbackForm.type,
+                        details: feedbackForm.details,
+                        inaccurateFields: feedbackForm.inaccurateFields,
+                        suggestedSources: feedbackForm.suggestedSources,
+                        displayedRates: customRates,
+                        aiConfidenceScore: taxSuggestions?.confidenceScore
+                      })
+                    });
+                    
+                    if (response.ok) {
+                      toast.success('Thank you for your feedback! This helps us improve our tax suggestions.');
+                      setShowFeedbackModal(false);
+                      setFeedbackForm({ type: '', details: '', inaccurateFields: [], suggestedSources: '' });
+                    } else {
+                      throw new Error('Failed to submit feedback');
+                    }
+                  } catch (error) {
+                    toast.error('Failed to submit feedback. Please try again.');
+                  }
+                }}
+                disabled={!feedbackForm.type || !feedbackForm.details}
+                className="flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Submit Feedback
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

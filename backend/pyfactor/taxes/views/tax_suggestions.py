@@ -77,6 +77,7 @@ def get_tax_suggestions(request):
                 },
                 'confidenceScore': cache_hit.confidence_score,
                 'notes': 'Retrieved from cache',
+                'sourceCitations': cache_hit.source_citations if hasattr(cache_hit, 'source_citations') else [],
                 'source': 'cache'
             })
         
