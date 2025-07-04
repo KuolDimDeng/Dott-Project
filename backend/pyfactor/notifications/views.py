@@ -14,8 +14,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import BasePermission, AllowAny
 
-from custom_auth.permissions import TenantUserPermission
-from custom_auth.api.views.base_views import BaseAPIView
+from custom_auth.permissions import TenantAccessPermission
 from taxes.models import TaxSuggestionFeedback
 
 from .models import (
@@ -191,16 +190,16 @@ class AdminDashboardView(APIView):
         return Response(stats)
 
 
-class UserNotificationListView(BaseAPIView):
+class UserNotificationListView(APIView):
     """
     List notifications for the authenticated user
     """
-    permission_classes = [TenantUserPermission]
+    permission_classes = [TenantAccessPermission]
     
     def get(self, request):
         # Get user's tenant ID from session
-        tenant_id = request.tenant_id
-        user_email = request.user.get('email')
+        tenant_id = request.session.get('tenant_id')
+        user_email = request.session.get('user', {}).get('email') or (request.user.email if hasattr(request.user, 'email') else None)
         
         if not user_email:
             return Response({
@@ -242,15 +241,15 @@ class UserNotificationListView(BaseAPIView):
         })
 
 
-class MarkNotificationReadView(BaseAPIView):
+class MarkNotificationReadView(APIView):
     """
     Mark a notification as read
     """
-    permission_classes = [TenantUserPermission]
+    permission_classes = [TenantAccessPermission]
     
     def post(self, request, notification_id):
-        tenant_id = request.tenant_id
-        user_email = request.user.get('email')
+        tenant_id = request.session.get('tenant_id')
+        user_email = request.session.get('user', {}).get('email') or (request.user.email if hasattr(request.user, 'email') else None)
         
         recipient = get_object_or_404(
             NotificationRecipient,
@@ -272,15 +271,15 @@ class MarkNotificationReadView(BaseAPIView):
         return Response({'success': True})
 
 
-class MarkAllNotificationsReadView(BaseAPIView):
+class MarkAllNotificationsReadView(APIView):
     """
     Mark all notifications as read for a user
     """
-    permission_classes = [TenantUserPermission]
+    permission_classes = [TenantAccessPermission]
     
     def post(self, request):
-        tenant_id = request.tenant_id
-        user_email = request.user.get('email')
+        tenant_id = request.session.get('tenant_id')
+        user_email = request.session.get('user', {}).get('email') or (request.user.email if hasattr(request.user, 'email') else None)
         
         # Update all unread notifications
         updated = NotificationRecipient.objects.filter(
