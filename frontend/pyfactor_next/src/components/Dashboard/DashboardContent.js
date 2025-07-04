@@ -1313,6 +1313,9 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
       const { item, navigationKey: newKey } = event.detail;
       console.log(`[DashboardContent] Menu navigation event received: ${item}, key: ${newKey}`);
       
+      // Reset all states first to clear any user menu pages
+      resetAllStates();
+      
       // Update navigation key to force remounting of components
       setNavigationKey(newKey);
       
@@ -1336,7 +1339,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     return () => {
       window.removeEventListener('menuNavigation', handleMenuNavigation);
     };
-  }, [setView, setNavigationKey, handleMainDashboardClick]);
+  }, [setView, setNavigationKey, handleMainDashboardClick, resetAllStates]);
 
   // Just use a single useEffect for fetching employees on mount
   useEffect(() => {
