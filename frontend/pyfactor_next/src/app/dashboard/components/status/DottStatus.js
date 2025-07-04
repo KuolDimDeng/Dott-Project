@@ -11,46 +11,53 @@ import {
 } from '@heroicons/react/24/outline';
 import StandardSpinner, { CenteredSpinner } from '@/components/ui/StandardSpinner';
 
-const DottStatus = () => {
+// Error boundary to catch and handle component errors
+class StatusErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('DottStatus Error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="max-w-6xl mx-auto p-6">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+            <h2 className="text-xl font-semibold text-red-800 mb-2">
+              Status Page Error
+            </h2>
+            <p className="text-red-600">
+              Unable to load the status page. Please try refreshing.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Refresh Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+const DottStatusContent = () => {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(new Date());
 
-  // Service status configuration
-  const serviceConfig = [
-    {
-      id: 'frontend',
-      name: 'Dott Frontend',
-      description: 'Main application interface',
-      url: 'https://dottapps.com',
-      renderService: 'dott-front'
-    },
-    {
-      id: 'backend',
-      name: 'Dott API',
-      description: 'Backend services and API',
-      url: 'https://api.dottapps.com',
-      renderService: 'dott-api'
-    },
-    {
-      id: 'database',
-      name: 'Database',
-      description: 'PostgreSQL database cluster',
-      renderService: 'dott-db'
-    },
-    {
-      id: 'auth',
-      name: 'Authentication',
-      description: 'Auth0 authentication services',
-      url: 'https://auth.dottapps.com'
-    },
-    {
-      id: 'render-platform',
-      name: 'Render Platform',
-      description: 'Hosting platform services',
-      url: 'https://render.com'
-    }
-  ];
+  // Service configuration is now fetched from API
 
   useEffect(() => {
     fetchServiceStatus();
@@ -63,87 +70,55 @@ const DottStatus = () => {
     setLoading(true);
     
     try {
-      // Check our own services
-      const statusPromises = serviceConfig.map(async (service) => {
-        const status = await checkServiceStatus(service);
-        return {
-          ...service,
-          ...status
-        };
+      const response = await fetch('/api/status/check', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
       });
 
-      const results = await Promise.all(statusPromises);
-      setServices(results);
-      setLastUpdated(new Date());
+      if (!response.ok) {
+        throw new Error(`Status check failed: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setServices(data.services || []);
+      setLastUpdated(new Date(data.lastUpdated));
     } catch (error) {
       console.error('Error fetching service status:', error);
-      // Set all services to unknown status on error
-      setServices(serviceConfig.map(service => ({
-        ...service,
-        status: 'unknown',
-        uptime: 'Unknown',
-        responseTime: 'N/A',
-        lastChecked: new Date().toISOString()
-      })));
+      // Show error state with some default services
+      setServices([
+        {
+          id: 'frontend',
+          name: 'Dott Frontend',
+          description: 'Main application interface',
+          status: 'unknown',
+          uptime: 'Unknown',
+          responseTime: 'N/A',
+          lastChecked: new Date().toISOString()
+        },
+        {
+          id: 'backend',
+          name: 'Dott API',
+          description: 'Backend services and API',
+          status: 'unknown',
+          uptime: 'Unknown',
+          responseTime: 'N/A',
+          lastChecked: new Date().toISOString()
+        },
+        {
+          id: 'database',
+          name: 'Database',
+          description: 'PostgreSQL database cluster',
+          status: 'unknown',
+          uptime: 'Unknown',
+          responseTime: 'N/A',
+          lastChecked: new Date().toISOString()
+        }
+      ]);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const checkServiceStatus = async (service) => {
-    try {
-      // For services with URLs, do a simple fetch to check availability
-      if (service.url) {
-        const startTime = Date.now();
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-
-        try {
-          const response = await fetch(service.url, {
-            method: 'HEAD',
-            mode: 'no-cors', // Avoid CORS issues
-            signal: controller.signal
-          });
-          
-          clearTimeout(timeoutId);
-          const responseTime = Date.now() - startTime;
-          
-          return {
-            status: 'operational',
-            uptime: '99.9%', // Mock uptime - in production you'd get this from monitoring
-            responseTime: `${responseTime}ms`,
-            lastChecked: new Date().toISOString()
-          };
-        } catch (fetchError) {
-          clearTimeout(timeoutId);
-          if (fetchError.name === 'AbortError') {
-            return {
-              status: 'degraded',
-              uptime: 'Unknown',
-              responseTime: 'Timeout',
-              lastChecked: new Date().toISOString()
-            };
-          }
-          throw fetchError;
-        }
-      } else {
-        // For services without URLs (like database), return mock status
-        // In production, you'd check these through your monitoring API
-        return {
-          status: Math.random() > 0.1 ? 'operational' : 'degraded', // 90% chance operational
-          uptime: `${(99.0 + Math.random()).toFixed(2)}%`,
-          responseTime: `${Math.floor(Math.random() * 100 + 50)}ms`,
-          lastChecked: new Date().toISOString()
-        };
-      }
-    } catch (error) {
-      console.error(`Error checking ${service.name}:`, error);
-      return {
-        status: 'unknown',
-        uptime: 'Unknown',
-        responseTime: 'N/A',
-        lastChecked: new Date().toISOString()
-      };
     }
   };
 
@@ -371,5 +346,12 @@ const DottStatus = () => {
     </div>
   );
 };
+
+// Wrap the component with error boundary
+const DottStatus = () => (
+  <StatusErrorBoundary>
+    <DottStatusContent />
+  </StatusErrorBoundary>
+);
 
 export default DottStatus;

@@ -1977,6 +1977,13 @@ const MainListItems = ({
       },
       requiresAdmin: true, // Only show for OWNER and ADMIN roles
     },
+    // Spacer items to create visual separation
+    {
+      isSpacer: true,
+    },
+    {
+      isSpacer: true,
+    },
     // Divider for special menu items
     {
       isDivider: true,
@@ -2207,6 +2214,15 @@ const MainListItems = ({
   
   // Filter menuItems before rendering
   const renderFilteredMenuItem = (item, index) => {
+    // Handle spacer items
+    if (item.isSpacer) {
+      return (
+        <li key={index} className="h-4" aria-hidden="true">
+          {/* Empty spacer for visual separation */}
+        </li>
+      );
+    }
+    
     // Handle divider items
     if (item.isDivider) {
       return (
