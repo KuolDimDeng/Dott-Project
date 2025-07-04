@@ -308,12 +308,27 @@ export default function EmailPasswordSignIn() {
       }
 
       // Use unified auth flow handler
+      console.log('[EmailPasswordSignIn] About to call handlePostAuthFlow');
       const { handlePostAuthFlow } = await import('@/utils/authFlowHandler.v3');
       const finalUserData = await handlePostAuthFlow({
         user: authResult.user,
         accessToken: authResult.access_token,
         idToken: authResult.id_token
       }, 'email-password');
+      
+      console.log('[EmailPasswordSignIn] handlePostAuthFlow returned:', {
+        hasData: !!finalUserData,
+        redirectUrl: finalUserData?.redirectUrl,
+        needsOnboarding: finalUserData?.needsOnboarding,
+        tenantId: finalUserData?.tenantId || finalUserData?.tenant_id
+      });
+      
+      // Check if handlePostAuthFlow returned null (account closed or error)
+      if (!finalUserData) {
+        console.log('[EmailPasswordSignIn] handlePostAuthFlow returned null, likely redirected already');
+        setIsLoading(false);
+        return;
+      }
 
       // If session was created successfully, use secure bridge
       if (sessionResult.success) {
