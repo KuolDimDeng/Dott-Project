@@ -329,21 +329,36 @@ export default function EmailPasswordSignIn() {
           'email-password'
         );
         
-        // Build redirect URL
+        // Build redirect URL - IGNORE the authFlowHandler redirect for session-loading
         let redirectUrl;
-        if (finalUserData.redirectUrl) {
-          redirectUrl = finalUserData.redirectUrl;
-        } else if (finalUserData.needsOnboarding) {
+        // The authFlowHandler.v3 returns '/auth/session-loading' but we handle sessions differently
+        // for email/password login with the session bridge pattern
+        if (finalUserData.needsOnboarding || sessionResult.needs_onboarding) {
           redirectUrl = '/onboarding';
-        } else if (finalUserData.tenantId) {
-          redirectUrl = `/${finalUserData.tenantId}/dashboard`;
+        } else if (finalUserData.tenantId || finalUserData.tenant_id) {
+          redirectUrl = `/${finalUserData.tenantId || finalUserData.tenant_id}/dashboard`;
+        } else if (sessionResult.tenant?.id) {
+          redirectUrl = `/${sessionResult.tenant.id}/dashboard`;
         } else {
           redirectUrl = '/dashboard';
         }
         
+        console.log('[EmailPasswordSignIn] Determined redirect URL:', {
+          redirectUrl,
+          needsOnboarding: finalUserData.needsOnboarding || sessionResult.needs_onboarding,
+          tenantId: finalUserData.tenantId || finalUserData.tenant_id || sessionResult.tenant?.id,
+          authFlowHandlerRedirect: finalUserData.redirectUrl // This is /auth/session-loading
+        });
+        
         // For non-onboarding flows, use secure session bridge
         if (!finalUserData.needsOnboarding && bridgeToken) {
           logger.info('[EmailPasswordSignIn] Using bridge token for session handoff');
+          console.log('[EmailPasswordSignIn] DEBUG - Preparing session bridge with:', {
+            hasBridgeToken: !!bridgeToken,
+            bridgeTokenLength: bridgeToken?.length,
+            redirectUrl: redirectUrl,
+            needsOnboarding: finalUserData.needsOnboarding
+          });
           
           // Store bridge token in sessionStorage for bridge
           const bridgeData = {
@@ -352,16 +367,48 @@ export default function EmailPasswordSignIn() {
             timestamp: Date.now()
           };
           
+          console.log('[EmailPasswordSignIn] DEBUG - Setting sessionStorage:', {
+            key: 'session_bridge',
+            data: bridgeData
+          });
+          
           sessionStorage.setItem('session_bridge', JSON.stringify(bridgeData));
           
+          // Verify storage
+          const storedData = sessionStorage.getItem('session_bridge');
+          console.log('[EmailPasswordSignIn] DEBUG - Verified sessionStorage:', {
+            stored: !!storedData,
+            canParse: !!storedData && (() => { try { JSON.parse(storedData); return true; } catch { return false; } })()
+          });
+          
           // Redirect to session bridge
-          router.push('/auth/session-bridge');
+          console.log('[EmailPasswordSignIn] DEBUG - About to navigate to /auth/session-bridge');
+          console.log('[EmailPasswordSignIn] DEBUG - Router state:', {
+            pathname: window.location.pathname,
+            isReady: router.isReady
+          });
+          
+          // Use window.location as a fallback to ensure navigation
+          const bridgeUrl = '/auth/session-bridge';
+          console.log('[EmailPasswordSignIn] DEBUG - Navigating to:', bridgeUrl);
+          
+          // Try router.push first
+          router.push(bridgeUrl).then(() => {
+            console.log('[EmailPasswordSignIn] DEBUG - Router.push completed');
+          }).catch((err) => {
+            console.error('[EmailPasswordSignIn] DEBUG - Router.push failed:', err);
+            // Fallback to window.location
+            console.log('[EmailPasswordSignIn] DEBUG - Using window.location fallback');
+            window.location.href = bridgeUrl;
+          });
         } else if (!finalUserData.needsOnboarding && !bridgeToken) {
           // Fallback: direct redirect if bridge token creation failed
           logger.warn('[EmailPasswordSignIn] No bridge token available, using direct redirect');
+          console.log('[EmailPasswordSignIn] DEBUG - Direct redirect to:', redirectUrl);
           router.push(redirectUrl);
         } else {
           // Direct redirect for onboarding (doesn't need session bridge)
+          console.log('[EmailPasswordSignIn] DEBUG - Onboarding redirect to:', redirectUrl);
           router.push(redirectUrl);
         }
         

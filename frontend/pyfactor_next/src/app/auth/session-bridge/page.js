@@ -3,8 +3,12 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+console.log('🚨 SessionBridge PAGE FILE LOADED AT:', new Date().toISOString());
+console.log('🚨 Current URL:', typeof window !== 'undefined' ? window.location.href : 'SSR');
+
 export default function SessionBridge() {
-  console.log('🔥 SessionBridge component file loaded!');
+  console.log('🔥 SessionBridge component FUNCTION called!');
+  console.log('🔥 SessionBridge rendering at:', new Date().toISOString());
   const router = useRouter();
   const [sessionToken, setSessionToken] = useState('');
   const [redirectUrl, setRedirectUrl] = useState('/dashboard');
