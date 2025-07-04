@@ -1,5 +1,4 @@
 import posthog from 'posthog-js';
-import { PostHogProvider } from 'posthog-js/react';
 import { POSTHOG_KEY, POSTHOG_HOST } from '@/config/posthog';
 
 let posthogClient = null;
