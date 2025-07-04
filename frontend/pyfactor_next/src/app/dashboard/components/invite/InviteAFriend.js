@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useSessionContext } from '@/providers/SessionProvider';
 import { Send, UserPlus, Mail, CheckCircle, AlertCircle } from 'lucide-react';
+import StandardSpinner from '@/components/ui/StandardSpinner';
 
 const InviteAFriend = () => {
   const { user } = useSessionContext();
@@ -183,7 +184,7 @@ ${user?.name || user?.email || 'Your friend'}`;
             >
               {isLoading ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  <StandardSpinner size="small" color="white" className="inline mr-2" />
                   Sending...
                 </>
               ) : (

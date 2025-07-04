@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { CheckCircle, AlertTriangle, XCircle, Clock, ExternalLink, RefreshCw } from 'lucide-react';
+import StandardSpinner, { CenteredSpinner } from '@/components/ui/StandardSpinner';
 
 const DottStatus = () => {
   const [services, setServices] = useState([]);
@@ -208,8 +209,17 @@ const DottStatus = () => {
             disabled={loading}
             className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors duration-200"
           >
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
+            {loading ? (
+              <>
+                <StandardSpinner size="small" color="white" className="inline mr-2" />
+                Refreshing...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh
+              </>
+            )}
           </button>
         </div>
 
@@ -248,10 +258,12 @@ const DottStatus = () => {
 
         <div className="divide-y divide-gray-200">
           {loading && services.length === 0 ? (
-            <div className="p-8 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Checking service status...</p>
-            </div>
+            <CenteredSpinner 
+              size="default" 
+              text="Checking service status..." 
+              showText={true}
+              minHeight="h-32"
+            />
           ) : (
             services.map((service) => (
               <div key={service.id} className="p-6">
