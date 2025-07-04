@@ -100,14 +100,29 @@ Business Information:
 - Type: {business_type}
 - Location: {city}, {state_province}, {country}
 
-IMPORTANT INSTRUCTIONS:
-1. Provide actual tax rates for the SPECIFIC location given
-2. For personal income tax fields, return STATE tax rates ONLY, not federal rates
-3. Research whether this specific state has progressive brackets or a flat rate
-4. CRITICAL: Federal income tax rates (10%, 12%, 22%, 24%, 32%, 35%, 37%) should NEVER appear in the personalIncomeTaxBrackets field
-5. Example: Utah has a FLAT state income tax of 4.65% (set hasProgressiveTax=false, flatPersonalIncomeTaxRate=4.65)
-6. Example: California has progressive STATE income tax from 1% to 13.3% (not federal rates!)
-7. Return ONLY valid JSON with no other text
+IMPORTANT ACCURACY INSTRUCTIONS:
+1. ALWAYS prioritize official government sources:
+   - Look for the country's Revenue Authority website (e.g., "National Revenue Authority", "Revenue Service")
+   - Check Ministry of Finance or similar government departments
+   - For {country}, specifically search for their official tax authority website
+   - Use ONLY official government rates, not estimates
+
+2. DATA SOURCES TO CHECK:
+   - Official government tax authority websites
+   - Revenue authority publications and tax schedules
+   - Current tax laws and financial acts for 2024
+   - For developing countries, check recent tax reforms
+
+3. ACCURACY REQUIREMENTS:
+   - Provide actual tax rates for the SPECIFIC location given
+   - For personal income tax fields, return STATE/PROVINCIAL tax rates ONLY, not federal rates
+   - Research whether this specific state/province has progressive brackets or a flat rate
+   - Verify all rates against official government sources
+   - If you cannot find official data, indicate low confidence
+
+4. RESPONSE FORMAT:
+   - Return ONLY valid JSON with no other text
+   - Include source references in the notes field where possible
 
 Return the following JSON structure with ACTUAL rates for {state_province}:
 {{
@@ -159,7 +174,7 @@ Return the following JSON structure with ACTUAL rates for {state_province}:
                     model="claude-sonnet-4-20250514",  # Sonnet 4 - latest and most accurate
                     max_tokens=1000,
                     temperature=0,
-                    system="You are a tax expert providing accurate, up-to-date tax information for businesses worldwide. Always provide current 2024 tax rates. CRITICAL RULES: 1) For personalIncomeTaxBrackets field, ONLY include STATE income tax brackets, NEVER federal brackets. 2) Federal tax rates (10%, 12%, 22%, 24%, 32%, 35%, 37%) should NEVER appear in state tax fields. 3) Research the SPECIFIC STATE's actual income tax structure. 4) Utah has a FLAT state income tax of 4.65%, not progressive brackets. Always respond with ONLY valid JSON, no explanatory text.",
+                    system="You are a tax expert providing accurate, up-to-date tax information for businesses worldwide. CRITICAL ACCURACY REQUIREMENT: You must research and use ONLY official government tax rates from revenue authorities, tax departments, or ministry of finance websites. For each country, look for their specific revenue authority (e.g., South Sudan Revenue Authority, Kenya Revenue Authority, IRS). Always provide current 2024 tax rates from official sources. Be specific about state/provincial vs federal taxes. If you cannot find official data, indicate low confidence in your response. Always respond with ONLY valid JSON, no explanatory text.",
                     messages=[
                         {
                             "role": "user",

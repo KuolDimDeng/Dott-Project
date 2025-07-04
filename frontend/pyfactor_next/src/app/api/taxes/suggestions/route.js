@@ -103,12 +103,38 @@ Business Information:
 - Type: ${businessType}
 - Location: ${city}, ${stateProvince}, ${country}
 
-IMPORTANT: 
-- Use the most current tax rates as of 2024
-- For countries with progressive personal income tax (like Kenya, USA), provide tax brackets
-- Include ALL relevant taxes for the location, even if not listed in the structure below
-- Any additional country-specific taxes should be included as extra fields
-- YOU MUST RESPOND WITH VALID JSON ONLY - NO ADDITIONAL TEXT BEFORE OR AFTER THE JSON
+IMPORTANT INSTRUCTIONS FOR ACCURACY:
+1. ALWAYS prioritize official government sources:
+   - Look for the country's Revenue Authority website (e.g., "National Revenue Authority", "Revenue Service", "Tax Authority")
+   - Check Ministry of Finance or similar government departments
+   - For ${country}, specifically look for their official tax authority website
+   - Use ONLY official government rates, not estimates or approximations
+
+2. DATA SOURCES TO CHECK:
+   - Official government tax authority websites
+   - Revenue authority publications and tax schedules
+   - Ministry of Finance official documents
+   - Current tax laws and regulations for 2024
+   - For developing countries, check recent tax reforms or updates
+
+3. ACCURACY REQUIREMENTS:
+   - Use the most current tax rates as of 2024
+   - Verify all rates against official government sources
+   - For countries with progressive personal income tax, provide EXACT tax brackets as published
+   - Include ALL relevant taxes for the location, even if not listed in the structure below
+   - Any additional country-specific taxes should be included as extra fields
+   - If you cannot find official data, clearly indicate uncertainty in the notes field
+
+4. RESPONSE FORMAT:
+   - YOU MUST RESPOND WITH VALID JSON ONLY - NO ADDITIONAL TEXT BEFORE OR AFTER THE JSON
+   - Include source references in the notes field where possible
+   - If you find discrepancies between sources, use the most official/recent data
+
+5. VERIFICATION STEPS:
+   - Cross-reference multiple official sources when available
+   - Look for the most recent tax amendments or financial acts
+   - Pay attention to currency denominations and income thresholds
+   - Ensure you're using current year rates, not outdated information
 
 Please provide comprehensive tax information:
 
@@ -207,7 +233,7 @@ Return ONLY this JSON structure:
         model: 'claude-sonnet-4-20250514',  // Sonnet 4 - latest and most accurate
         max_tokens: 1000,
         temperature: 0,
-        system: "You are a tax expert that provides accurate, up-to-date tax information for businesses worldwide. Always provide current 2024 tax rates. Be specific about state vs federal taxes. Always provide conservative estimates and include disclaimers when appropriate. CRITICAL: You must ONLY respond with valid JSON - no explanatory text, no markdown, just the JSON object.",
+        system: "You are a tax expert that provides accurate, up-to-date tax information for businesses worldwide. CRITICAL ACCURACY REQUIREMENT: You must research and use ONLY official government tax rates from revenue authorities, tax departments, or ministry of finance websites. For each country, look for their specific revenue authority (e.g., South Sudan Revenue Authority, Kenya Revenue Authority). Always provide current 2024 tax rates from official sources. Be specific about state vs federal taxes. If you cannot find official data, indicate low confidence in your response. CRITICAL: You must ONLY respond with valid JSON - no explanatory text, no markdown, just the JSON object.",
         messages: [
           {
             role: 'user',
