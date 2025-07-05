@@ -157,8 +157,9 @@ class AdminLoginView(APIView):
         )
         
         return Response({
-            'token': token,
-            'admin': AdminUserSerializer(admin_user).data
+            'access_token': token,
+            'refresh_token': token,  # For simplicity, use same token
+            'user': AdminUserSerializer(admin_user).data
         })
 
 
