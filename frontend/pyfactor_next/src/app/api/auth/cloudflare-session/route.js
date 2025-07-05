@@ -30,21 +30,54 @@ export async function POST(request) {
     });
     
     // Call backend Cloudflare session endpoint
-    const response = await fetch(`${API_URL}/api/sessions/cloudflare/create/`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        // Forward Cloudflare headers
-        ...(cfConnectingIp && { 'CF-Connecting-IP': cfConnectingIp }),
-        ...(cfRay && { 'CF-Ray': cfRay }),
-        ...(cfCountry && { 'CF-IPCountry': cfCountry }),
-        // Add origin for CORS
-        'Origin': origin,
-        // Forward the real user agent
-        'User-Agent': request.headers.get('user-agent') || 'NextJS-Frontend'
-      },
-      body: JSON.stringify(data)
-    });
+    console.log('[CloudflareSession] Calling backend:', `${API_URL}/api/sessions/cloudflare/create/`);
+    let response;
+    try {
+      response = await fetch(`${API_URL}/api/sessions/cloudflare/create/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // Forward Cloudflare headers
+          ...(cfConnectingIp && { 'CF-Connecting-IP': cfConnectingIp }),
+          ...(cfRay && { 'CF-Ray': cfRay }),
+          ...(cfCountry && { 'CF-IPCountry': cfCountry }),
+          // Add origin for CORS
+          'Origin': origin,
+          // Forward the real user agent
+          'User-Agent': request.headers.get('user-agent') || 'NextJS-Frontend'
+        },
+        body: JSON.stringify(data)
+      });
+    } catch (fetchError) {
+      console.error('[CloudflareSession] Network error:', {
+        message: fetchError.message,
+        type: fetchError.constructor.name,
+        cause: fetchError.cause,
+        apiUrl: API_URL
+      });
+      
+      // Check if this is a DNS error
+      if (fetchError.message.includes('ENOTFOUND') || 
+          fetchError.message.includes('getaddrinfo') ||
+          fetchError.message.includes('DNS')) {
+        return NextResponse.json({
+          error: 'Backend unavailable',
+          message: 'The backend server is temporarily unavailable. This is likely a DNS issue that should resolve shortly.',
+          details: `DNS lookup failed for ${API_URL}`,
+          debugInfo: {
+            apiUrl: API_URL,
+            errorType: 'DNS_RESOLUTION_FAILED',
+            timestamp: new Date().toISOString()
+          }
+        }, { status: 503 });
+      }
+      
+      return NextResponse.json({
+        error: 'Network error',
+        message: fetchError.message,
+        details: 'Unable to connect to backend server'
+      }, { status: 503 });
+    }
     
     if (!response.ok) {
       const errorText = await response.text();

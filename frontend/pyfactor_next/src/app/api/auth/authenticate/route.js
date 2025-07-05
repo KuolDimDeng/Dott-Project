@@ -104,14 +104,25 @@ export async function POST(request) {
     });
     
     // Make token request
-    const tokenResponse = await fetch(tokenEndpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify(tokenBody)
-    });
+    let tokenResponse;
+    try {
+      tokenResponse = await fetch(tokenEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(tokenBody)
+      });
+    } catch (fetchError) {
+      addDebugEntry('Network error during token request', {
+        message: fetchError.message,
+        type: fetchError.constructor.name,
+        cause: fetchError.cause,
+        endpoint: tokenEndpoint
+      });
+      throw new Error(`Network error: ${fetchError.message}`);
+    }
     
     const responseText = await tokenResponse.text();
     let tokenData;
@@ -217,12 +228,23 @@ export async function POST(request) {
     // Get user info using the access token
     addDebugEntry('Fetching user info', { hasAccessToken: !!tokenData.access_token });
     
-    const userInfoResponse = await fetch(`https://${auth0Domain}/userinfo`, {
-      headers: {
-        'Authorization': `Bearer ${tokenData.access_token}`,
-        'Accept': 'application/json'
-      }
-    });
+    let userInfoResponse;
+    try {
+      userInfoResponse = await fetch(`https://${auth0Domain}/userinfo`, {
+        headers: {
+          'Authorization': `Bearer ${tokenData.access_token}`,
+          'Accept': 'application/json'
+        }
+      });
+    } catch (fetchError) {
+      addDebugEntry('Network error fetching user info', {
+        message: fetchError.message,
+        type: fetchError.constructor.name,
+        endpoint: `https://${auth0Domain}/userinfo`
+      });
+      // Don't throw here, continue without user info
+      userInfoResponse = { ok: false };
+    }
     
     let userInfo = {};
     if (userInfoResponse.ok) {
