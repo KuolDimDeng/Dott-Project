@@ -389,7 +389,9 @@ const sentryWebpackPluginOptions = {
   automaticVercelMonitors: true,
 };
 
-// Export with Sentry if configured, otherwise export normally
-module.exports = process.env.NEXT_PUBLIC_SENTRY_DSN 
-  ? withSentryConfig(nextConfig, sentryWebpackPluginOptions)
-  : nextConfig;
+// Always export with Sentry configuration
+console.log('[Build] Configuring Sentry...');
+console.log('[Build] NEXT_PUBLIC_SENTRY_DSN:', process.env.NEXT_PUBLIC_SENTRY_DSN ? 'Set' : 'Not set');
+
+// Always use Sentry configuration
+module.exports = withSentryConfig(nextConfig, sentryWebpackPluginOptions);

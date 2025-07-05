@@ -6,14 +6,17 @@ import * as Sentry from '@sentry/nextjs';
 import { initSentryInstrumentation } from '@/utils/sentry-web-vitals';
 
 // Log initialization
-console.log('[Sentry Client] Initializing with DSN:', 'https://74deffcfad997262710d99acb797fef8@o4509614361804800.ingest.us.sentry.io/4509614433304576');
+const DSN = process.env.NEXT_PUBLIC_SENTRY_DSN || 'https://74deffcfad997262710d99acb797fef8@o4509614361804800.ingest.us.sentry.io/4509614433304576';
+console.log('[Sentry Client] Starting initialization...');
+console.log('[Sentry Client] DSN from env:', process.env.NEXT_PUBLIC_SENTRY_DSN ? 'Yes' : 'No');
+console.log('[Sentry Client] Using DSN:', DSN);
 console.log('[Sentry Client] Environment:', process.env.NODE_ENV);
 console.log('[Sentry Client] Trace Sample Rate:', process.env.NODE_ENV === 'production' ? 0.1 : 1.0);
 console.log('[Sentry Client] Profile Sample Rate:', process.env.NODE_ENV === 'production' ? 0.05 : 1.0);
 
 // Initialize Sentry for the browser
 Sentry.init({
-  dsn: 'https://74deffcfad997262710d99acb797fef8@o4509614361804800.ingest.us.sentry.io/4509614433304576',
+  dsn: DSN,
 
   // Adjust this value in production, or use tracesSampler for greater control
   tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
