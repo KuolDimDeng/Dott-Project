@@ -25,6 +25,7 @@ done
 
 # Run the build
 echo "🔨 Running pnpm build:render..."
+echo "📋 NODE_OPTIONS: ${NODE_OPTIONS}"
 pnpm run build:render
 
 echo "✅ Build completed!"

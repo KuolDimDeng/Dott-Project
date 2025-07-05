@@ -76,7 +76,7 @@ RUN echo "=== Build Environment Debug ===" && \
 
 # Run the optimized production build with increased memory
 # The build script will use the ARGs passed by Render
-ENV NODE_OPTIONS="--max-old-space-size=4096"
+ENV NODE_OPTIONS="--max-old-space-size=6144"
 RUN --mount=type=cache,id=nextjs,target=/app/.next/cache \
     sh scripts/render-build.sh
 
