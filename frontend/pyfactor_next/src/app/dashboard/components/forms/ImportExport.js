@@ -8,10 +8,12 @@ import StandardSpinner from '@/components/ui/StandardSpinner';
 import { useSession } from '@/hooks/useSession-v2';
 import * as Sentry from '@sentry/nextjs';
 import { logger } from '@/utils/logger';
+import { useSentryTracking } from '@/hooks/useSentryTracking';
 
 const ImportExport = () => {
   const router = useRouter();
   const { session, loading: sessionLoading } = useSession();
+  const { trackUserAction, trackPageView, trackPerformance, captureError } = useSentryTracking();
   const [mode, setMode] = useState(null); // null, 'import', 'export'
   const [selectedDataTypes, setSelectedDataTypes] = useState([]);
   const [importSource, setImportSource] = useState(null);
@@ -24,8 +26,12 @@ const ImportExport = () => {
   // Track page view and check limits
   useEffect(() => {
     captureEvent('import_export_page_viewed');
+    trackPageView('Import/Export', { 
+      userRole: session?.user?.role,
+      subscriptionPlan: session?.user?.subscriptionPlan 
+    });
     checkImportLimits();
-  }, []);
+  }, [trackPageView, session]);
 
   const checkImportLimits = async () => {
     const span = Sentry.startSpan({ name: 'check-import-limits' });

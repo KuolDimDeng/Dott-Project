@@ -10,6 +10,7 @@ import AuthWrapper from '@/app/AuthWrapper/AuthWrapper';
 import { logger } from '@/utils/logger';
 import { ToastProvider } from '@/components/Toast/ToastProvider';
 import PostHogProvider from '@/components/providers/PostHogProvider';
+import { SentryErrorBoundary } from '@/components/ErrorBoundary/SentryErrorBoundary';
 
 // Create a new QueryClient instance with error logging
 const queryClient = new QueryClient({
@@ -82,20 +83,22 @@ function Providers({ children }) {
   logger.debug('[Providers] Rendering providers tree');
   
   return (
-    <QueryClientProvider client={queryClient}>
-      <ToastProvider>
-        {/* Use SessionProvider for all routes */}
-        <SessionProvider>
-          <PostHogProvider>
-            {!isPublic && !pathname.startsWith('/auth/') ? (
-              <AuthWrapper>{children}</AuthWrapper>
-            ) : (
-              children
-            )}
-          </PostHogProvider>
-        </SessionProvider>
-      </ToastProvider>
-    </QueryClientProvider>
+    <SentryErrorBoundary showDialog={process.env.NODE_ENV === 'production'}>
+      <QueryClientProvider client={queryClient}>
+        <ToastProvider>
+          {/* Use SessionProvider for all routes */}
+          <SessionProvider>
+            <PostHogProvider>
+              {!isPublic && !pathname.startsWith('/auth/') ? (
+                <AuthWrapper>{children}</AuthWrapper>
+              ) : (
+                children
+              )}
+            </PostHogProvider>
+          </SessionProvider>
+        </ToastProvider>
+      </QueryClientProvider>
+    </SentryErrorBoundary>
   );
 }
 

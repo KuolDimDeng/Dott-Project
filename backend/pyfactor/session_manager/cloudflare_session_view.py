@@ -9,6 +9,7 @@ from django.views import View
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
+from django.core.cache import cache
 from rest_framework import status
 from custom_auth.models import User
 from .models import UserSession
@@ -61,24 +62,47 @@ class CloudflareSessionCreateView(View):
                 except User.DoesNotExist:
                     logger.warning(f"[CloudflareSession] User not found for Auth0 sub: {auth0_sub}")
             
-            # Try email authentication
-            if not user and email:
+            # Try email authentication - ONLY if Auth0 authentication failed
+            if not user and email and not auth0_sub:
+                # Rate limiting check for direct email/password attempts
+                cache_key = f"cloudflare_login_attempts_{real_ip}_{email}"
+                attempts = cache.get(cache_key, 0)
+                if attempts >= 5:  # Max 5 attempts per hour
+                    logger.warning(f"[CloudflareSession] Rate limit exceeded for IP: {real_ip}, email: {email}")
+                    return JsonResponse({
+                        'error': 'Too many login attempts. Please try again later.'
+                    }, status=429)
+                
                 try:
                     user = User.objects.get(email=email)
                     logger.info(f"[CloudflareSession] Found user by email: {email}")
                     
-                    # If password provided, verify it
-                    if password and hasattr(user, 'check_password'):
-                        if not user.check_password(password):
-                            logger.warning(f"[CloudflareSession] Invalid password for user: {email}")
-                            return JsonResponse({
-                                'error': 'Invalid credentials'
-                            }, status=401)
+                    # REQUIRE password for direct email authentication
+                    if not password:
+                        logger.warning(f"[CloudflareSession] Password required for email authentication: {email}")
+                        return JsonResponse({
+                            'error': 'Password required'
+                        }, status=401)
+                    
+                    # Verify password
+                    if not user.check_password(password):
+                        # Increment failed attempts
+                        cache.set(cache_key, attempts + 1, 3600)  # 1 hour
+                        logger.warning(f"[CloudflareSession] Invalid password for user: {email}")
+                        return JsonResponse({
+                            'error': 'Invalid credentials'
+                        }, status=401)
+                    
+                    # Clear failed attempts on successful authentication
+                    cache.delete(cache_key)
+                    
                 except User.DoesNotExist:
+                    # Increment failed attempts even for non-existent users
+                    cache.set(cache_key, attempts + 1, 3600)
                     logger.warning(f"[CloudflareSession] User not found for email: {email}")
                     return JsonResponse({
-                        'error': 'User not found'
-                    }, status=404)
+                        'error': 'Invalid credentials'  # Don't reveal if user exists
+                    }, status=401)
             
             if not user:
                 return JsonResponse({
@@ -154,9 +178,14 @@ class CloudflareSessionCreateView(View):
                 path='/'
             )
             
-            # Add CORS headers for Cloudflare
-            origin = request.META.get('HTTP_ORIGIN', 'https://dottapps.com')
-            if origin in ['https://dottapps.com', 'https://www.dottapps.com', 'https://api.dottapps.com']:
+            # Add CORS headers for Cloudflare with strict origin validation
+            allowed_origins = [
+                'https://dottapps.com',
+                'https://www.dottapps.com',
+                'https://api.dottapps.com'
+            ]
+            origin = request.META.get('HTTP_ORIGIN')
+            if origin and origin in allowed_origins:
                 response['Access-Control-Allow-Origin'] = origin
                 response['Access-Control-Allow-Credentials'] = 'true'
             

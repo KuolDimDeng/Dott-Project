@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { generateCSRFToken } from '@/utils/csrf';
+import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/utils/logger';
 
 /**
  * PERMANENT FIX: Server-Side Session Management - Version 2
@@ -12,19 +14,28 @@ import { generateCSRFToken } from '@/utils/csrf';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
 
 export async function GET(request) {
-  try {
+  return await Sentry.startSpan(
+    { name: 'GET /api/auth/session-v2', op: 'http.server' },
+    async () => {
+      try {
     const cookieStore = await cookies();
     const sessionId = cookieStore.get('sid') || cookieStore.get('session_token');
     
-    if (!sessionId) {
-      console.log('[Session-V2] No session ID found');
+        if (!sessionId) {
+          logger.info('[Session-V2] No session ID found');
       // Add CORS headers for Cloudflare
       const response = NextResponse.json({ 
         authenticated: false
       }, { status: 401 });
       
       const origin = request.headers.get('origin');
-      if (origin && (origin.includes('dottapps.com') || origin === 'https://dottapps.com')) {
+      const allowedOrigins = [
+        'https://dottapps.com',
+        'https://www.dottapps.com',
+        'https://api.dottapps.com'
+      ];
+      
+      if (origin && allowedOrigins.includes(origin)) {
         response.headers.set('Access-Control-Allow-Origin', origin);
         response.headers.set('Access-Control-Allow-Credentials', 'true');
       }
@@ -32,10 +43,11 @@ export async function GET(request) {
       return response;
     }
     
-    console.log('[Session-V2] Found session ID, validating with backend...');
-    
-    // Fetch session from backend - single source of truth
-    const response = await fetch(`${API_URL}/api/sessions/current/`, {
+        logger.info('[Session-V2] Found session ID, validating with backend...');
+        
+        // Fetch session from backend - single source of truth
+        const startTime = Date.now();
+        const response = await fetch(`${API_URL}/api/sessions/current/`, {
       headers: {
         'Authorization': `Session ${sessionId.value}`,
         'Cookie': `session_token=${sessionId.value}`
@@ -43,8 +55,11 @@ export async function GET(request) {
       cache: 'no-store' // Never cache session data
     });
     
-    if (!response.ok) {
-      console.log('[Session-V2] Backend validation failed:', response.status);
+        const duration = Date.now() - startTime;
+        logger.api('GET', `${API_URL}/api/sessions/current/`, response.status, duration);
+        
+        if (!response.ok) {
+          logger.warn('[Session-V2] Backend validation failed', { status: response.status });
       // Clear invalid session
       const res = NextResponse.json({ 
         authenticated: false
@@ -136,12 +151,17 @@ export async function GET(request) {
       }
     });
     
-  } catch (error) {
-    console.error('[Session-V2] Error:', error);
-    return NextResponse.json({ 
-      authenticated: false
-    }, { status: 500 });
-  }
+      } catch (error) {
+        logger.error('[Session-V2] Error', error);
+        Sentry.captureException(error, {
+          tags: { endpoint: 'session-v2-get' }
+        });
+        return NextResponse.json({ 
+          authenticated: false
+        }, { status: 500 });
+      }
+    }
+  );
 }
 
 export async function POST(request) {

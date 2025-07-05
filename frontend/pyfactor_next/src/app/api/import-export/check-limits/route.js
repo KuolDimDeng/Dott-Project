@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/utils/logger';
 
 // Import limits by subscription plan
 const IMPORT_LIMITS = {
@@ -40,25 +42,40 @@ function getUserImportKey(userId) {
 }
 
 export async function GET(request) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+  return await Sentry.startSpan(
+    { name: 'GET /api/import-export/check-limits', op: 'http.server' },
+    async () => {
+      try {
+        const session = await getServerSession(authOptions);
+        if (!session?.user) {
+          logger.warn('Unauthorized access attempt to check-limits');
+          return NextResponse.json(
+            { error: 'Unauthorized' },
+            { status: 401 }
+          );
+        }
 
-    const userPlan = getUserPlan(session.user);
-    const limits = IMPORT_LIMITS[userPlan] || IMPORT_LIMITS.FREE;
-    const usageKey = getUserImportKey(session.user.id);
-    
-    // Get current usage (in production, fetch from Redis/DB)
-    const currentUsage = importUsageCache.get(usageKey) || {
-      importsUsed: 0,
-      aiAnalysisUsed: 0,
-      lastImportDate: null
-    };
+        const userPlan = getUserPlan(session.user);
+        const limits = IMPORT_LIMITS[userPlan] || IMPORT_LIMITS.FREE;
+        const usageKey = getUserImportKey(session.user.id);
+        
+        // Track user plan in Sentry
+        Sentry.setTag('user.plan', userPlan);
+        
+        // Get current usage (in production, fetch from Redis/DB)
+        const fetchUsageSpan = Sentry.startInactiveSpan({ name: 'fetch-import-usage' });
+        const currentUsage = importUsageCache.get(usageKey) || {
+          importsUsed: 0,
+          aiAnalysisUsed: 0,
+          lastImportDate: null
+        };
+        fetchUsageSpan.end();
+        
+        logger.info('Import limits checked', { 
+          userId: session.user.id,
+          plan: userPlan,
+          usage: currentUsage
+        });
 
     // Calculate remaining limits
     const remaining = {
@@ -76,13 +93,19 @@ export async function GET(request) {
       resetDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString()
     });
 
-  } catch (error) {
-    console.error('Check limits error:', error);
-    return NextResponse.json(
-      { error: 'Failed to check limits' },
-      { status: 500 }
-    );
-  }
+      } catch (error) {
+        logger.error('Check limits error', error);
+        Sentry.captureException(error, {
+          tags: { endpoint: 'import-export-check-limits' },
+          user: { id: session?.user?.id }
+        });
+        return NextResponse.json(
+          { error: 'Failed to check limits' },
+          { status: 500 }
+        );
+      }
+    }
+  );
 }
 
 // Increment usage when import is performed

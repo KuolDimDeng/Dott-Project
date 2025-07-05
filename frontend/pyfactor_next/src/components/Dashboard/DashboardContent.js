@@ -20,6 +20,7 @@ import Drawer from '@/app/dashboard/components/Drawer';
 import { logger } from '@/utils/logger';
 import ErrorBoundary from '../../app/dashboard/components/ErrorBoundary';
 import { useRouter } from 'next/navigation';
+import * as Sentry from '@sentry/nextjs';
 // import { getCurrentUser, fetchUserAttributes  } from '@/config/amplifyUnified'; // Removed - no longer using Cognito
 import renderForm from '../../app/dashboard/components/RenderForm';
 import dynamic from 'next/dynamic';
@@ -48,6 +49,29 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   const { user, isAuthenticated, logout } = useAuth();
   const router = useRouter();
   const { showNotification } = useNotification();
+  
+  // Performance monitoring for dashboard render
+  const renderStartTime = useRef(Date.now());
+  
+  useEffect(() => {
+    const span = Sentry.startSpan({ name: 'dashboard-content-render' });
+    const renderTime = Date.now() - renderStartTime.current;
+    logger.performance('DashboardContent render', renderTime);
+    span.end();
+    
+    // Set user context for Sentry
+    if (user) {
+      Sentry.setUser({
+        id: user.id,
+        email: user.email,
+        tenantId: user.tenant_id,
+      });
+    }
+    
+    return () => {
+      span.end();
+    };
+  }, [user]);
   const { tenantStatus, tenantError, tenantId: hookTenantId, retry } = useEnsureTenant();
   // Use prop tenant ID if available, otherwise use the one from the hook
   const effectiveTenantId = propTenantId || hookTenantId;
