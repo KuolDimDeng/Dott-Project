@@ -279,6 +279,14 @@ export default function EmailPasswordSignIn() {
       console.log('[EmailPasswordSignIn] Login result:', loginResult);
 
       if (!loginResponse.ok) {
+        // Handle rate limiting (429 status)
+        if (loginResponse.status === 429) {
+          const retryAfter = loginResult.retryAfter || 900; // Default to 15 minutes
+          const minutes = Math.ceil(retryAfter / 60);
+          showError(`Too many login attempts. Please try again in ${minutes} minutes. This is a security measure to protect your account.`);
+          return;
+        }
+        
         // Get client IP and user agent for anomaly detection
         const userAgent = navigator.userAgent;
         const ip = 'client'; // In production, get from header

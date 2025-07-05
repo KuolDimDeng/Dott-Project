@@ -5,11 +5,11 @@
  * Tests DNS resolution and provides cache clearing instructions
  */
 
-const dns = require('dns').promises;
-const https = require('https');
-const { exec } = require('child_process');
-const util = require('util');
-const execPromise = util.promisify(exec);
+import { promises as dns } from 'dns';
+import https from 'https';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+const execPromise = promisify(exec);
 
 const API_DOMAIN = 'api.dottapps.com';
 const API_URL = `https://${API_DOMAIN}`;
