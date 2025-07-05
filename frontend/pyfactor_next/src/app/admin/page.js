@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
-import AdminLogin from './components/AdminLogin';
+import EnhancedAdminLogin from './components/EnhancedAdminLogin';
 import AdminDashboard from './components/AdminDashboard';
 import { useAdminAuth } from './hooks/useAdminAuth';
 import StandardSpinner, { CenteredSpinner } from '@/components/ui/StandardSpinner';
@@ -37,7 +37,7 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {!isAuthenticated ? (
-        <AdminLogin onLogin={login} />
+        <EnhancedAdminLogin onLogin={login} />
       ) : (
         <AdminDashboard adminUser={adminUser} onLogout={logout} />
       )}

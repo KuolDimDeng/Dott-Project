@@ -25,6 +25,8 @@ from .serializers import (
     NotificationTemplateSerializer, AdminAuditLogSerializer,
     AdminUserSerializer
 )
+from .admin_views import EnhancedAdminPermission
+from .admin_security import SecurityHeaders, rate_limit
 
 
 class AdminPermission(BasePermission):
@@ -167,7 +169,7 @@ class AdminDashboardView(APIView):
     """
     Admin dashboard statistics
     """
-    permission_classes = [AdminPermission]
+    permission_classes = [EnhancedAdminPermission]
     
     def _get_pending_feedback_count(self):
         """Safely get pending feedback count, handling migration state"""
@@ -178,6 +180,7 @@ class AdminDashboardView(APIView):
             # Model not available yet or migration not run
             return 0
     
+    @rate_limit('api')
     def get(self, request):
         # Get statistics
         stats = {
@@ -308,8 +311,9 @@ class TaxFeedbackListView(APIView):
     """
     List tax suggestion feedback for admin review
     """
-    permission_classes = [AdminPermission]
+    permission_classes = [EnhancedAdminPermission]
     
+    @rate_limit('api')
     def get(self, request):
         # Import here to avoid circular import issues
         try:
@@ -375,8 +379,9 @@ class TaxFeedbackDetailView(APIView):
     """
     Update tax feedback status
     """
-    permission_classes = [AdminPermission]
+    permission_classes = [EnhancedAdminPermission]
     
+    @rate_limit('api')
     def patch(self, request, feedback_id):
         # Import here to avoid circular import issues
         try:
@@ -433,8 +438,9 @@ class AdminNotificationListView(APIView):
     """
     List all notifications for admin
     """
-    permission_classes = [AdminPermission]
+    permission_classes = [EnhancedAdminPermission]
     
+    @rate_limit('api')
     def get(self, request):
         if not request.admin_user.can_send_notifications:
             return Response({
@@ -450,8 +456,9 @@ class CreateNotificationView(APIView):
     """
     Create a new notification
     """
-    permission_classes = [AdminPermission]
+    permission_classes = [EnhancedAdminPermission]
     
+    @rate_limit('api')
     def post(self, request):
         if not request.admin_user.can_send_notifications:
             return Response({
@@ -495,8 +502,9 @@ class SendNotificationView(APIView):
     """
     Send a notification to recipients
     """
-    permission_classes = [AdminPermission]
+    permission_classes = [EnhancedAdminPermission]
     
+    @rate_limit('api')
     def post(self, request, notification_id):
         if not request.admin_user.can_send_notifications:
             return Response({
@@ -543,7 +551,7 @@ class NotificationTemplateListView(APIView):
     """
     List notification templates
     """
-    permission_classes = [AdminPermission]
+    permission_classes = [EnhancedAdminPermission]
     
     def get(self, request):
         templates = NotificationTemplate.objects.filter(is_active=True).order_by('category', 'name')

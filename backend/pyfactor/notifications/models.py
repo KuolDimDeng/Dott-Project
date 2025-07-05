@@ -62,6 +62,12 @@ class AdminUser(models.Model):
     failed_login_attempts = models.IntegerField(default=0)
     account_locked_until = models.DateTimeField(null=True, blank=True)
     
+    # MFA settings
+    mfa_enabled = models.BooleanField(default=False)
+    mfa_secret = models.CharField(max_length=32, blank=True)
+    mfa_backup_codes = models.JSONField(default=list, blank=True)
+    mfa_recovery_email = models.EmailField(blank=True)
+    
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -347,6 +353,57 @@ class AdminAuditLog(models.Model):
     def __str__(self):
         username = self.admin_user.username if self.admin_user else 'System'
         return f"{username} - {self.action} at {self.timestamp}"
+
+
+class AdminSession(models.Model):
+    """
+    Admin session management with refresh tokens
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    admin_user = models.ForeignKey(AdminUser, on_delete=models.CASCADE, related_name='sessions')
+    
+    # Tokens
+    access_token = models.TextField()
+    refresh_token = models.TextField(unique=True)
+    csrf_token = models.CharField(max_length=255)
+    
+    # Session info
+    ip_address = models.GenericIPAddressField()
+    user_agent = models.TextField()
+    
+    # MFA verification
+    mfa_verified = models.BooleanField(default=False)
+    mfa_verified_at = models.DateTimeField(null=True, blank=True)
+    
+    # Activity tracking
+    last_activity = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    
+    # Status
+    is_active = models.BooleanField(default=True)
+    revoked_at = models.DateTimeField(null=True, blank=True)
+    revoke_reason = models.CharField(max_length=100, blank=True)
+    
+    class Meta:
+        db_table = 'admin_sessions'
+        indexes = [
+            models.Index(fields=['refresh_token']),
+            models.Index(fields=['admin_user', 'is_active']),
+            models.Index(fields=['expires_at']),
+        ]
+    
+    def __str__(self):
+        return f"Session for {self.admin_user.username} from {self.ip_address}"
+    
+    def is_expired(self):
+        return timezone.now() > self.expires_at
+    
+    def revoke(self, reason=''):
+        self.is_active = False
+        self.revoked_at = timezone.now()
+        self.revoke_reason = reason
+        self.save()
 
 
 class UserNotificationSettings(TenantAwareModel):

@@ -2,19 +2,10 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { standardSecurityHeaders } from '@/utils/responseHeaders';
 
-// Enhanced security headers for admin portal
 const adminSecurityHeaders = {
   ...standardSecurityHeaders,
-  'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.dottapps.com wss://api.dottapps.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self';",
   'X-Frame-Options': 'DENY',
-  'X-Content-Type-Options': 'nosniff',
-  'X-XSS-Protection': '1; mode=block',
-  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
-  'Referrer-Policy': 'strict-origin-when-cross-origin',
-  'Permissions-Policy': 'geolocation=(), microphone=(), camera=()',
   'Cache-Control': 'no-store, no-cache, must-revalidate, private',
-  'Pragma': 'no-cache',
-  'Expires': '0'
 };
 
 export async function POST(request) {
@@ -23,7 +14,7 @@ export async function POST(request) {
     
     // Forward the request to Django backend
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.dottapps.com';
-    const response = await fetch(`${backendUrl}/api/notifications/admin/login/`, {
+    const response = await fetch(`${backendUrl}/api/notifications/admin/mfa/verify/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -35,8 +26,8 @@ export async function POST(request) {
 
     const data = await response.json();
 
-    // If login successful and not MFA required, store tokens in cookies
-    if (response.status === 200 && data.access_token && !data.mfa_required) {
+    // If MFA verification successful, store tokens in cookies
+    if (response.status === 200 && data.access_token) {
       const cookieStore = cookies();
       
       // Store tokens in httpOnly cookies
@@ -72,7 +63,7 @@ export async function POST(request) {
     });
 
   } catch (error) {
-    console.error('[Admin Login API] Error:', error);
+    console.error('[Admin MFA Verify API] Error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500, headers: adminSecurityHeaders }
