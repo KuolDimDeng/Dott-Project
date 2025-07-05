@@ -14,13 +14,22 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
 export async function GET(request) {
   try {
     const cookieStore = await cookies();
-    const sessionId = cookieStore.get('sid');
+    const sessionId = cookieStore.get('sid') || cookieStore.get('session_token');
     
     if (!sessionId) {
       console.log('[Session-V2] No session ID found');
-      return NextResponse.json({ 
+      // Add CORS headers for Cloudflare
+      const response = NextResponse.json({ 
         authenticated: false
       }, { status: 401 });
+      
+      const origin = request.headers.get('origin');
+      if (origin && (origin.includes('dottapps.com') || origin === 'https://dottapps.com')) {
+        response.headers.set('Access-Control-Allow-Origin', origin);
+        response.headers.set('Access-Control-Allow-Credentials', 'true');
+      }
+      
+      return response;
     }
     
     console.log('[Session-V2] Found session ID, validating with backend...');

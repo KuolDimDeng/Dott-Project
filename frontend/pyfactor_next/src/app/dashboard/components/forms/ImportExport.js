@@ -6,6 +6,8 @@ import { ChevronRightIcon, ArrowUpTrayIcon, ArrowDownTrayIcon, CloudArrowUpIcon,
 import { captureEvent } from '@/lib/posthog';
 import StandardSpinner from '@/components/ui/StandardSpinner';
 import { useSession } from '@/hooks/useSession-v2';
+import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/utils/logger';
 
 const ImportExport = () => {
   const router = useRouter();
@@ -26,16 +28,24 @@ const ImportExport = () => {
   }, []);
 
   const checkImportLimits = async () => {
+    const span = Sentry.startSpan({ name: 'check-import-limits' });
     try {
       const response = await fetch('/api/import-export/check-limits');
       if (response.ok) {
         const data = await response.json();
         setLimits(data);
+        logger.info('Import limits checked successfully', { limits: data });
+      } else {
+        throw new Error(`Failed to check limits: ${response.status}`);
       }
     } catch (error) {
-      console.error('Failed to check limits:', error);
+      logger.error('Failed to check limits', error);
+      Sentry.captureException(error, {
+        tags: { component: 'ImportExport', action: 'checkLimits' }
+      });
     } finally {
       setCheckingLimits(false);
+      span.end();
     }
   };
 

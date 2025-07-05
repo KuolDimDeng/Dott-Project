@@ -12,11 +12,14 @@ from .views import (
 from .views_fixed import SessionCreateViewFixed as SessionCreateView
 from .security_views import get_active_sessions
 from .views_validation import SessionValidateView
+from .cloudflare_session_view import CloudflareSessionCreateView
 
 app_name = 'sessions'
 
 urlpatterns = [
     # Session management
+    # Cloudflare-compatible session creation
+    path('cloudflare/create/', CloudflareSessionCreateView.as_view(), name='cloudflare-session-create'),
     # Re-enabled session endpoints for Google OAuth flow
     path('create/', SessionCreateView.as_view(), name='session-create'),
     path('current/', SessionDetailView.as_view(), name='session-current'),

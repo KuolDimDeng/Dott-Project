@@ -311,14 +311,15 @@ export default function EmailPasswordSignIn() {
         throw new Error(authResult.message || authResult.error || 'Authentication failed');
       }
 
-      // Create secure session (cookie-based)
-      const sessionResponse = await fetch('/api/auth/session-v2', {
+      // Create secure session using Cloudflare-compatible endpoint
+      const sessionResponse = await fetch('/api/auth/cloudflare-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include', // Important: include cookies for cross-subdomain
         body: JSON.stringify({
-          accessToken: authResult.access_token,
-          idToken: authResult.id_token,
+          email: authResult.user.email,
+          auth0_token: authResult.access_token,
+          auth0_sub: authResult.user.sub,
           user: authResult.user
         })
       });

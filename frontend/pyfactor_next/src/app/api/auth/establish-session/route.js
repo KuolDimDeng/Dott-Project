@@ -89,24 +89,29 @@ export async function POST(request) {
     
     const response = NextResponse.redirect(finalRedirectUrl);
     
-    // Set session cookies
+    // Set session cookies with Cloudflare compatibility
     const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+    
+    // Get domain for cookie setting
+    const cookieDomain = process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined;
     
     response.cookies.set('sid', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' for cross-site with Cloudflare
       expires: expires,
-      path: '/'
+      path: '/',
+      domain: cookieDomain
     });
     
     // Also set session_token for compatibility
     response.cookies.set('session_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' for cross-site with Cloudflare
       expires: expires,
-      path: '/'
+      path: '/',
+      domain: cookieDomain
     });
     
     console.log('[EstablishSession] Enhanced session established, redirecting to:', redirectUrl);

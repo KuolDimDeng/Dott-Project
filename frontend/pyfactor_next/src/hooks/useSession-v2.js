@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { sessionManagerEnhanced } from '@/utils/sessionManager-v2-enhanced';
 import StandardSpinner from '@/components/ui/StandardSpinner';
+import { identifyUser, clearUser } from '@/utils/sentry';
 
 export function useSession() {
   const [session, setSession] = useState(null);
@@ -27,6 +28,15 @@ export function useSession() {
       console.log('[useSession] User data:', sessionData?.user);
       console.log('[useSession] User role:', sessionData?.user?.role);
       setSession(sessionData);
+      
+      // Identify user in Sentry if session exists
+      if (sessionData?.user) {
+        identifyUser({
+          id: sessionData.user.id || sessionData.user.email,
+          email: sessionData.user.email,
+          name: sessionData.user.name,
+        });
+      }
     } catch (err) {
       console.error('[useSession] Error loading session:', err);
       setError(err.message);
@@ -64,6 +74,8 @@ export function useSession() {
   const logout = useCallback(async () => {
     try {
       setLoading(true);
+      // Clear user from Sentry before logout
+      clearUser();
       await sessionManagerEnhanced.logout();
       // Note: logout redirects, so this might not run
     } catch (err) {
