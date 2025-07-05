@@ -154,9 +154,47 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-fallback-key-change-in-pro
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False').lower() in ('true', '1', 'yes')
+
+# Cloudflare proxy configuration
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+USE_X_FORWARDED_PORT = True
+
+# Cloudflare IP handling
+# Get real client IP from CF-Connecting-IP header
+REAL_IP_HEADER = 'HTTP_CF_CONNECTING_IP'
+
+# Trust Cloudflare proxy IPs
+CLOUDFLARE_IPS = [
+    # IPv4
+    '173.245.48.0/20',
+    '103.21.244.0/22',
+    '103.22.200.0/22',
+    '103.31.4.0/22',
+    '141.101.64.0/18',
+    '108.162.192.0/18',
+    '190.93.240.0/20',
+    '188.114.96.0/20',
+    '197.234.240.0/22',
+    '198.41.128.0/17',
+    '162.158.0.0/15',
+    '104.16.0.0/13',
+    '104.24.0.0/14',
+    '172.64.0.0/13',
+    '131.0.72.0/22',
+    # IPv6
+    '2400:cb00::/32',
+    '2606:4700::/32',
+    '2803:f800::/32',
+    '2405:b500::/32',
+    '2405:8100::/32',
+    '2a06:98c0::/29',
+    '2c0f:f248::/32',
+]
+
+# SSL redirect only in production
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Configure DEBUG toolbar
 DEBUG_TOOLBAR_CONFIG = {
@@ -175,6 +213,14 @@ if allowed_hosts_env:
 else:
     # Fallback for local development
     ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.onrender.com', '*']
+
+# Add Cloudflare domains
+ALLOWED_HOSTS.extend([
+    'dottapps.com',
+    'www.dottapps.com',
+    'api.dottapps.com',
+    '.dottapps.com',  # Allow all subdomains
+])
 
 print(f"✅ ALLOWED_HOSTS configured: {ALLOWED_HOSTS}")
 
@@ -266,16 +312,36 @@ CORS_EXPOSE_HEADERS = ['access-token',
 # Add this new setting for preflight caching
 CORS_PREFLIGHT_MAX_AGE = 86400
 
-# Add these security headers
+# Security headers for Cloudflare compatibility
 SECURE_HSTS_SECONDS = 31536000  # 1 year
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
+
+# Additional security headers for production
+if not DEBUG:
+    # Force HTTPS cookies
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    
+    # Strict CSP compatible with Cloudflare
+    CSP_DEFAULT_SRC = ("'self'",)
+    CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'", "'unsafe-eval'", 
+                      "https://js.stripe.com", "https://client.crisp.chat",
+                      "https://cdn.plaid.com", "https://app.posthog.com")
+    CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", "https://fonts.googleapis.com")
+    CSP_FONT_SRC = ("'self'", "data:", "https://fonts.gstatic.com")
+    CSP_IMG_SRC = ("'self'", "data:", "https:", "blob:")
+    CSP_CONNECT_SRC = ("'self'", "https://api.dottapps.com", "https://auth.dottapps.com",
+                       "https://*.stripe.com", "wss://*.crisp.chat", "https://*.crisp.chat",
+                       "https://*.plaid.com", "https://app.posthog.com")
+    CSP_FRAME_SRC = ("'self'", "https://js.stripe.com", "https://auth.dottapps.com",
+                     "https://client.crisp.chat", "https://*.plaid.com")
 
 # Update CSRF settings
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
 CSRF_COOKIE_HTTPONLY = False  # Must be false for JavaScript access
 CSRF_USE_SESSIONS = False
 CSRF_COOKIE_NAME = 'csrftoken'
@@ -289,7 +355,13 @@ CSRF_TRUSTED_ORIGINS = [
     # Production - Dott domains
     "https://dottapps.com",
     "https://www.dottapps.com",
-    "https://api.dottapps.com"
+    "https://api.dottapps.com",
+    # Cloudflare domains
+    "https://*.dottapps.com",
+    # Allow HTTP for Cloudflare flexible SSL
+    "http://dottapps.com",
+    "http://www.dottapps.com",
+    "http://api.dottapps.com"
 ]
 
 # Authentication settings for dj-rest-auth and allauth
@@ -576,6 +648,8 @@ logging.config.dictConfig(LOGGING)
 
 MIDDLEWARE = [
 'django.middleware.security.SecurityMiddleware',
+'whitenoise.middleware.WhiteNoiseMiddleware',  # Add WhiteNoise for static files
+'pyfactor.middleware.cloudflare_middleware.CloudflareMiddleware',  # Cloudflare IP handling
 'custom_auth.cors.CorsMiddleware',
 'corsheaders.middleware.CorsMiddleware',
 'django.middleware.common.CommonMiddleware',
@@ -925,6 +999,13 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+
+# Static files cache control for Cloudflare
+STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
+
+# Add cache headers for static files
+WHITENOISE_MAX_AGE = 31536000  # 1 year
+WHITENOISE_SKIP_COMPRESS_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'zip', 'gz', 'tgz', 'bz2', 'tbz', 'xz', 'br']
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
