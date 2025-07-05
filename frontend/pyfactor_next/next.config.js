@@ -21,6 +21,9 @@ const nextConfig = {
   
   // Optimize for Render's infrastructure
   experimental: {
+    // Enable instrumentation hook for Sentry
+    instrumentationHook: true,
+    
     // Server actions configuration (Next.js 15 format)
     serverActions: {
       bodySizeLimit: '2mb',

@@ -295,6 +295,12 @@ export default function EmailPasswordSignIn() {
           return;
         }
         
+        // Check for Cloudflare DNS error
+        if (loginResult.details && loginResult.details.includes('DNS points to prohibited IP')) {
+          showError('The API server is temporarily unavailable due to DNS configuration. Please contact support or try again later.');
+          return;
+        }
+        
         // Check if we need to fallback to Universal Login
         if (loginResult.requiresUniversalLogin) {
           logger.info('[EmailPasswordSignIn] Password grant not enabled, redirecting to Universal Login');
