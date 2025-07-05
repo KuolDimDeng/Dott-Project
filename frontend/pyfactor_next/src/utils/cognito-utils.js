@@ -4,7 +4,7 @@
 
 import { fetchUserAttributes  } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
-import { getCacheValue, setCacheValue } from '@/utils/appCache';
+import { getCacheValue, setCacheValue } from @/utils/appCache';
 
 export const ONBOARDING_STATES = {
   NOT_STARTED: 'not_started',

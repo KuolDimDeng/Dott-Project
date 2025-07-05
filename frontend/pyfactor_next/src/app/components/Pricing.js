@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getCurrentUserPricing } from '@/utils/currencyUtils';
-import { getCacheValue } from '@/utils/appCache';
+import { getCacheValue } from @/utils/appCache';
 import { debugCacheState, forceRefreshCountryDetection } from '@/utils/cacheCleaner';
 import Link from 'next/link';
 

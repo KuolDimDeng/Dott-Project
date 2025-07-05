@@ -3,7 +3,7 @@
 import { auth0Utils } from '@/config/auth0';
 
 import { logger } from '@/utils/logger';
-import { getCacheValue, setCacheValue } from '@/utils/appCache';
+import { getCacheValue, setCacheValue } from @/utils/appCache';
 
 // Token cache keys
 const TOKEN_CACHE_KEY = 'auth_tokens';

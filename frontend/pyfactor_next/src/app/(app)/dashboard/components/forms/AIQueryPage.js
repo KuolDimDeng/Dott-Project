@@ -4,7 +4,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button, TextField, Card, Dialog } from '@/components/ui/TailwindComponents';
 import { logger } from '@/utils/logger';
-import { getCacheValue, setCacheValue, removeCacheValue } from '@/utils/appCache';
+import { getCacheValue, setCacheValue, removeCacheValue } from @/utils/appCache';
 
 // Mock function to simulate API call to AI service
 const queryAI = async (query, businessData) => {

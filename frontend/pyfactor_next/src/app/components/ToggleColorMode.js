@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getThemePreference, saveThemePreference } from '@/utils/userPreferences';
-import { getCacheValue, setCacheValue } from '@/utils/appCache';
+import { getCacheValue, setCacheValue } from @/utils/appCache';
 
 export default function ToggleColorMode() {
   const { t } = useTranslation();

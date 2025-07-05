@@ -7,7 +7,7 @@ import { getSubscriptionPlanColor } from '@/utils/userAttributes';
 import { logger } from '@/utils/logger';
 import { forceRedirect, storeRedirectDebugInfo, safeParseJson } from '@/utils/redirectUtils';
 import ErrorBoundary from '@/components/ErrorBoundary/ErrorBoundary';
-import { setCacheValue } from '@/utils/appCache';
+import { setCacheValue } from @/utils/appCache';
 import { retryLoadScript } from '@/utils/networkMonitor';
 
 const SubscriptionPopup = ({ open, onClose, isOpen }) => {

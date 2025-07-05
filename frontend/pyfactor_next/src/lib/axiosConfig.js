@@ -2,7 +2,7 @@
 // Uses dynamic imports for client-only dependencies
 
 import axios from 'axios';
-import { appCache } from '../utils/appCache';
+import { appCache } from '@/utils/appCache';
 import { logger } from '@/utils/logger';
 import { createAxiosRetryInterceptor, withRetry } from '@/utils/retryUtils';
 import https from 'https';

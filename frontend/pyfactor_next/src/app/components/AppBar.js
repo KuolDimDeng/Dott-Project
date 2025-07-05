@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { saveLanguagePreference, getLanguagePreference } from '@/utils/userPreferences';
-import { setCacheValue } from '@/utils/appCache';
+import { setCacheValue } from @/utils/appCache';
 import AuthButton from '@/components/AuthButton';
 
 // Public landing page navbar

@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '@/store/authStore';
 import { logger } from '@/utils/logger';
-import { appCache } from '@/utils/appCache';
+import { appCache } from @/utils/appCache';
 import { fetchAuthSession } from '@/config/amplifyUnified';
 import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 

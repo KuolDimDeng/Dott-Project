@@ -5,7 +5,7 @@
  * Includes caching and fallback mechanisms
  */
 
-import { getCacheValue, setCacheValue } from '@/utils/appCache';
+import { getCacheValue, setCacheValue } from @/utils/appCache';
 
 // Cache TTL for exchange rates (1 hour)
 const EXCHANGE_RATE_CACHE_TTL = 60 * 60 * 1000;

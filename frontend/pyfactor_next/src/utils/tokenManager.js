@@ -5,7 +5,7 @@
  * Uses Cognito attributes and AppCache instead of cookies
  */
 
-import { setCacheValue, getCacheValue } from '@/utils/appCache';
+import { setCacheValue, getCacheValue } from @/utils/appCache';
 import { logger } from '@/utils/logger';
 
 /**

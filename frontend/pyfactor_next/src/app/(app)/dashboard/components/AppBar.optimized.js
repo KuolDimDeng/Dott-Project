@@ -19,7 +19,7 @@ import { useNotification } from '@/context/NotificationContext';
 import { logger } from '@/utils/logger';
 import { Avatar, Box } from '@/components/ui/TailwindComponents';
 import SubscriptionPopup from './SubscriptionPopup';
-import { getCacheValue, setCacheValue } from '@/utils/appCache';
+import { getCacheValue, setCacheValue } from @/utils/appCache';
 
 const AppBar = ({
   drawerOpen,

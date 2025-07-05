@@ -5,7 +5,7 @@
  * Uses AppCache instead of cookies or localStorage for better security
  */
 
-import { getCacheValue, setCacheValue } from '@/utils/appCache';
+import { getCacheValue, setCacheValue } from @/utils/appCache';
 import { logger } from '@/utils/logger';
 
 // Constants for cache keys

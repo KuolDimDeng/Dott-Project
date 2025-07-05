@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { getThemePreference } from '@/utils/userPreferences';
-import { getCacheValue } from '@/utils/appCache';
+import { getCacheValue } from @/utils/appCache';
 
 export default function ThemeRegistry({ children }) {
   const [mounted, setMounted] = useState(false);

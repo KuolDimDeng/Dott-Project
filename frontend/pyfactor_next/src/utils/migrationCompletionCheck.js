@@ -5,7 +5,7 @@
  * and to mark migrations as complete in a Cognito-compatible way
  */
 
-import { getCacheValue, setCacheValue } from '@/utils/appCache';
+import { getCacheValue, setCacheValue } from @/utils/appCache';
 import { saveUserPreference } from '@/utils/userPreferences';
 import { logger } from '@/utils/logger';
 

@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { logger } from '@/utils/logger';
-import { appCache } from '@/utils/appCache';
+import { appCache } from @/utils/appCache';
 import { fetchAuthSession } from '@/config/amplifyUnified';
 import { Dialog } from '@headlessui/react';
 import { 

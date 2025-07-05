@@ -1,6 +1,6 @@
 'use client';
 
-import { appCache } from '../utils/appCache';
+import { appCache } from '@/utils/appCache';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { CenteredSpinner } from '@/components/ui/StandardSpinner';

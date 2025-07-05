@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { isTokenExpired, refreshToken } from '@/utils/authTokenUtils';
 import { saveUserPreference, getUserPreference } from '@/utils/userPreferences';
-import { getCacheValue, setCacheValue } from '@/utils/appCache';
+import { getCacheValue, setCacheValue } from @/utils/appCache';
 import { logger } from '@/utils/logger';
 
 // Auth-specific preference keys

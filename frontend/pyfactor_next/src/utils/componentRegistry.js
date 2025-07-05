@@ -62,7 +62,7 @@ export const lightweightComponents = {
 
 export const heavyComponents = {
   'ProductManagement': {
-    path: '@/app/dashboard/components/forms/ProductManagement',
+    path: '@/app/(app)/dashboard/components/forms/ProductManagement',
     memoryFootprint: 'high',
     optimizations: [
       'Lazy loading',
@@ -72,7 +72,7 @@ export const heavyComponents = {
     ]
   },
   'AnalyticsDashboard': {
-    path: '@/app/dashboard/components/forms/AnalyticsDashboard',
+    path: '@/app/(app)/dashboard/components/forms/AnalyticsDashboard',
     memoryFootprint: 'medium',
     optimizations: [
       'Lazy chart rendering',
@@ -81,7 +81,7 @@ export const heavyComponents = {
     ]
   },
   'SmartInsight': {
-    path: '@/app/dashboard/components/forms/SmartInsight',
+    path: '@/app/(app)/dashboard/components/forms/SmartInsight',
     memoryFootprint: 'medium',
     optimizations: [
       'Streaming responses',

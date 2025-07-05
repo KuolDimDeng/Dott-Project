@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { saveUserPreference } from '@/utils/userPreferences';
-import { getCacheValue, setCacheValue } from '@/utils/appCache';
+import { getCacheValue, setCacheValue } from @/utils/appCache';
 
 /**
  * Custom hook for managing user's view preferences

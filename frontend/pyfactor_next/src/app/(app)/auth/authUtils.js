@@ -5,7 +5,7 @@
  */
 
 import { getSession } from '@auth0/nextjs-auth0';
-import { appCache } from '../../utils/appCache';
+import { appCache } from '@/utils/appCache';
 import { getTenantId } from '../../utils/tenantStorage';
 
 /**

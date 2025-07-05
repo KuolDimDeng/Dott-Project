@@ -6,7 +6,7 @@
  */
 
 import { logger } from '@/utils/logger';
-import { getCacheValue, setCacheValue } from '@/utils/appCache';
+import { getCacheValue, setCacheValue } from @/utils/appCache';
 
 // Cache configuration
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours

@@ -3,7 +3,7 @@
 
 
 
-import { appCache } from '../utils/appCache';
+import { appCache } from '@/utils/appCache';
 import { logger } from '@/utils/logger';
 
 // Initialize global app cache if it doesn't exist

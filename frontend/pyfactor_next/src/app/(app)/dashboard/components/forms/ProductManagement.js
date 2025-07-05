@@ -17,7 +17,7 @@ import { apiClient } from '@/utils/apiClient';
 import axios from 'axios';
 import { logger } from '@/utils/logger';
 import { extractTenantId, getSecureTenantId } from '@/utils/tenantUtils';
-import { getCacheValue } from '@/utils/appCache';
+import { getCacheValue } from @/utils/appCache';
 import { CubeIcon } from '@heroicons/react/24/outline';
 import { captureEvent } from '@/lib/posthog';
 

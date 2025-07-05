@@ -6,7 +6,7 @@ import { userService } from '@/services/userService';
 import { useUser } from '@/contexts/UserContext';
 import { fetchAuthSession  } from '@/config/amplifyUnified';
 import { setTokens } from '@/utils/tenantUtils';
-import { getCacheValue, setCacheValue } from '@/utils/appCache';
+import { getCacheValue, setCacheValue } from @/utils/appCache';
 
 // This component is currently not used directly in the app
 // It might be causing conflicts with ProductManagement.js

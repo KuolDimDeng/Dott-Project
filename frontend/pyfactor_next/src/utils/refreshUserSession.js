@@ -1,4 +1,4 @@
-import { appCache } from '../utils/appCache';
+import { appCache } from '@/utils/appCache';
 import { logger } from '@/utils/logger';
 import { parseJwt } from '@/lib/authUtils';
 

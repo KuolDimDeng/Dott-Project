@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { appCache } from '../../../utils/appCache';
+import { appCache } from '@/utils/appCache';
 import { useSession } from '@/hooks/useSession-v2';
 import { useSecureAuth } from '@/hooks/useSecureAuth';
 

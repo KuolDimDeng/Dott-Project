@@ -1,4 +1,4 @@
-import { appCache } from '../utils/appCache';
+import { appCache } from '@/utils/appCache';
 
 /**
  * OAuth Testing Utilities

@@ -8,7 +8,7 @@ import { logger } from '@/utils/logger';
 // Removed AWS Cognito utils import - now using Auth0
 import { employeeApi } from '@/utils/apiClient';
 import api from '@/utils/api';
-import { getCacheValue } from '@/utils/appCache';
+import { getCacheValue } from @/utils/appCache';
 
 // Define all available pages grouped by category
 const PAGE_CATEGORIES = [

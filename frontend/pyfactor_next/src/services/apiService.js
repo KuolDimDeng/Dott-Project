@@ -1,6 +1,6 @@
 'use client';
 
-import { appCache } from '../utils/appCache';
+import { appCache } from '@/utils/appCache';
 
 
 import { axiosInstance, retryRequest } from '@/lib/axiosConfig';

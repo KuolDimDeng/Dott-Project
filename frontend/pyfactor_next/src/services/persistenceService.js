@@ -1,5 +1,5 @@
 // src/services/persistenceService.js
-import { appCache } from '../utils/appCache';
+import { appCache } from '@/utils/appCache';
 import { logger } from '@/utils/logger';
 
 export const STORAGE_KEYS = {

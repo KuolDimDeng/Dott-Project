@@ -20,7 +20,7 @@ export async function migrateUserDataToCognito() {
     
     // Import userPreferences utils
     const { saveUserPreference, PREF_KEYS } = await import('@/utils/userPreferences');
-    const { setCacheValue } = await import('@/utils/appCache');
+    const { setCacheValue } = await import(@/utils/appCache');
     
     // Check and migrate tenantId from cookies or localStorage
     const localTenantId = getCookie('tenantId') || localStorage.getItem('tenantId');

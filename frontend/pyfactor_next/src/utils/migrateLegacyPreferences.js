@@ -3,7 +3,7 @@
  */
 
 import { saveUserPreference, saveUserPreferences, PREF_KEYS } from '@/utils/userPreferences';
-import { setCacheValue } from '@/utils/appCache';
+import { setCacheValue } from @/utils/appCache';
 import { isMigrationComplete, markMigrationComplete } from '@/utils/migrationCompletionCheck';
 import { logger } from '@/utils/logger';
 

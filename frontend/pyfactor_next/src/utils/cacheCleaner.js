@@ -4,7 +4,7 @@
  * Utility for clearing incorrect cached country detection data
  */
 
-import { getCacheValue, setCacheValue, clearCacheKey } from '@/utils/appCache';
+import { getCacheValue, setCacheValue, clearCacheKey } from @/utils/appCache';
 
 /**
  * Clear all country detection related cache

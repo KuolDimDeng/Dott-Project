@@ -5,7 +5,7 @@
 
 
 
-import { appCache } from '../../utils/appCache';
+import { appCache } from '@/utils/appCache';
 import { useState, useEffect, useCallback } from 'react';
 import { logger } from '@/utils/logger';
 import DashboardWrapper from './DashboardWrapper';

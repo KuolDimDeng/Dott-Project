@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useTranslation } from 'react-i18next';
 import { saveUserPreferences, PREF_KEYS } from '@/utils/userPreferences';
-import { getCacheValue, setCacheValue } from '@/utils/appCache';
+import { getCacheValue, setCacheValue } from @/utils/appCache';
 
 /**
  * Cookie consent banner component

@@ -1,4 +1,4 @@
-import { appCache } from '../utils/appCache';
+import { appCache } from '@/utils/appCache';
 import { fetchAuthSession  } from '@/config/amplifyUnified';
 import { logger } from './logger';
 import { logMemoryUsage, trackMemory, detectMemorySpike } from '@/utils/memoryDebug';

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { logger } from '@/utils/logger';
-import { getCacheValue } from '@/utils/appCache';
+import { getCacheValue } from @/utils/appCache';
 
 const TransactionList = () => {
   const [transactions, setTransactions] = useState([]);

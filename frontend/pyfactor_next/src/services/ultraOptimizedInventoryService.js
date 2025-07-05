@@ -1,4 +1,4 @@
-import { appCache } from '../utils/appCache';
+import { appCache } from '@/utils/appCache';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import { inventoryCache } from '@/utils/cacheUtils';

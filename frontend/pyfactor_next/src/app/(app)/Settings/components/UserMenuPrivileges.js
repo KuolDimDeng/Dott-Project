@@ -8,7 +8,7 @@ import { extractTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
 import { employeeApi } from '@/utils/apiClient';
 import api from '@/utils/api';
-import { getCacheValue, setCacheValue } from '@/utils/appCache';
+import { getCacheValue, setCacheValue } from @/utils/appCache';
 
 const UserMenuPrivileges = () => {
   const { user } = useSessionContext();

@@ -7,7 +7,7 @@ import Link from 'next/link';
 // Auth0 doesn't use separate signUp - redirect to login with signup hint
 import { logger } from '@/utils/logger';
 import { clearAllAuthData } from '@/utils/authUtils';
-import { setCacheValue } from '@/utils/appCache';
+import { setCacheValue } from @/utils/appCache';
 import { handleAuthError, checkCookiesEnabled } from '@/utils/authErrorHandler';
 import { captureEvent } from '@/lib/posthog';
 

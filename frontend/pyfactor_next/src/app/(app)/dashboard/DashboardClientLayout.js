@@ -10,7 +10,7 @@ import { useRouter } from 'next/navigation';
 import { fetchAuthSession, signOut } from '@/config/amplifyUnified';
 import { SessionProvider } from '@/contexts/SessionContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
-import { ClientDataSync } from '@/app/dashboard/DashboardClient';
+import { ClientDataSync } from '@/app/(app)/dashboard/DashboardClient';
 import { NotificationProvider } from '@/context/NotificationContext';
 import { fetchCurrentUserMenuPrivileges } from '@/utils/menuPrivileges';
 import { loadStripeScript } from '@/utils/stripeUtils';

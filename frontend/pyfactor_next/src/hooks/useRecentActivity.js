@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { saveUserPreference, getUserPreference } from '@/utils/userPreferences';
-import { getCacheValue, setCacheValue } from '@/utils/appCache';
+import { getCacheValue, setCacheValue } from @/utils/appCache';
 
 const RECENT_ACTIVITY_LIMIT = 10;
 const CACHE_KEY = 'recent_activity';

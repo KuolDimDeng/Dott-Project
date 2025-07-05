@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getCacheValue } from '@/utils/appCache';
+import { getCacheValue } from @/utils/appCache';
 import CustomerForm from '../components/forms/CustomerForm';
 import CustomerList from '../components/lists/CustomerList';
 import CustomerDetails from '../components/forms/CustomerDetails';

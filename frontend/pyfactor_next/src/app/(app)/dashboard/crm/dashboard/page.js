@@ -7,7 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardWrapper from '../../DashboardWrapper';
 import { fetchAuthSession } from '@/config/amplifyUnified';
-import { appCache } from '@/utils/appCache';
+import { appCache } from @/utils/appCache';
 
 const CRMDashboard = () => {
   const router = useRouter();

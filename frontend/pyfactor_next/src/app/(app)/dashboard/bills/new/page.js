@@ -3,7 +3,7 @@
 
 import React from 'react';
 import DashboardWrapper from '../../DashboardWrapper';
-import BillManagement from '@/app/dashboard/components/forms/BillManagement';
+import BillManagement from '@/app/(app)/dashboard/components/forms/BillManagement';
 
 /**
  * Page component for creating a new bill

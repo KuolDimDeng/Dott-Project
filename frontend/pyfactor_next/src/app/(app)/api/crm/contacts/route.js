@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { logger } from '@/utils/logger';
-import { appCache } from '@/utils/appCache';
+import { appCache } from @/utils/appCache';
 
 /**
  * API route to handle CRM contacts

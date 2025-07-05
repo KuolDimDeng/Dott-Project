@@ -9,7 +9,7 @@ import {
   updateOnboardingData,
   PREF_KEYS 
 } from '@/utils/userPreferences';
-import { getCacheValue, setCacheValue } from '@/utils/appCache';
+import { getCacheValue, setCacheValue } from @/utils/appCache';
 
 /**
  * Hook for managing onboarding state

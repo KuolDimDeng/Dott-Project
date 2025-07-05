@@ -3,7 +3,7 @@
 
 import React from 'react';
 import DashboardWrapper from '../../DashboardWrapper';
-import ServiceManagement from '@/app/dashboard/components/forms/ServiceManagement';
+import ServiceManagement from '@/app/(app)/dashboard/components/forms/ServiceManagement';
 
 /**
  * Page component for creating a new service

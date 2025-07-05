@@ -3,7 +3,7 @@
 
 import React from 'react';
 import DashboardWrapper from '../../DashboardWrapper';
-import EstimateManagement from '@/app/dashboard/components/forms/EstimateManagement';
+import EstimateManagement from '@/app/(app)/dashboard/components/forms/EstimateManagement';
 
 /**
  * Page component for creating a new estimate

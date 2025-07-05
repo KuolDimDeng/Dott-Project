@@ -3,10 +3,10 @@
 
 import i18next from 'i18next';
 // Import appCache if needed for language preferences
-// import { appCache } from './utils/appCache';
+// import { appCache } from @/utils/appCache';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
-import { appCache } from './utils/appCache';
+import { appCache } from @/utils/appCache';
 import { i18n as i18nConfig } from '../next-i18next.config.mjs';
 import { getCognitoLanguageDetector, saveLanguagePreference } from '@/utils/userPreferences';
 import { getLanguageForCountry } from '@/services/countryDetectionService';

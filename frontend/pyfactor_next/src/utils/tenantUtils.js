@@ -1,4 +1,4 @@
-import { appCache } from '../utils/appCache';
+import { appCache } from '@/utils/appCache';
 import { sessionManagerEnhanced } from '@/utils/sessionManager-v2-enhanced';
 
 /**

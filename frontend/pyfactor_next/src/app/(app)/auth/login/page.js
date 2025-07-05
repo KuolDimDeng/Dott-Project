@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 import { CheckCircleIcon } from '@heroicons/react/24/outline';
 import { logger } from '@/utils/logger';
-import SignInForm from '@/app/auth/components/SignInForm';
+import SignInForm from '@/app/(app)/auth/components/SignInForm';
 
 export default function LoginPage() {
   const searchParams = useSearchParams();

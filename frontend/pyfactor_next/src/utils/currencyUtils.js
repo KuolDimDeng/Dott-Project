@@ -5,7 +5,7 @@
  */
 
 import { getCurrencyForCountry, convertFromUSD, formatCurrency } from '@/services/wiseApiService';
-import { getCacheValue } from '@/utils/appCache';
+import { getCacheValue } from @/utils/appCache';
 
 // Base pricing in USD
 export const BASE_PRICING_USD = {

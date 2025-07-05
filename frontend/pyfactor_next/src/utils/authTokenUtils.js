@@ -3,7 +3,7 @@
  */
 
 import { fetchAuthSession, fetchUserAttributes  } from '@/config/amplifyUnified';
-import { getCacheValue, setCacheValue } from '@/utils/appCache';
+import { getCacheValue, setCacheValue } from @/utils/appCache';
 import { logger } from '@/utils/logger';
 
 // Cache keys

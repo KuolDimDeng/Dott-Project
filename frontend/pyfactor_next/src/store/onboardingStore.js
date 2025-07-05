@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware';
 import { logger } from '@/utils/logger';
 import { updateOnboardingStep, validateBusinessInfo } from '@/utils/onboardingUtils';
 import { saveUserPreferences, PREF_KEYS } from '@/utils/userPreferences';
-import { setCacheValue, getCacheValue } from '@/utils/appCache';
+import { setCacheValue, getCacheValue } from @/utils/appCache';
 
 const useOnboardingStore = create(
   persist(
