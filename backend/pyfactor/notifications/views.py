@@ -178,9 +178,7 @@ class AdminDashboardView(APIView):
             ).count(),
             'total_recipients': NotificationRecipient.objects.count(),
             'unread_count': NotificationRecipient.objects.filter(is_read=False).count(),
-            'pending_feedback': TaxSuggestionFeedback.objects.filter(
-                status='pending'
-            ).count(),
+            'pending_feedback': 0,  # Temporarily disabled until migration runs
             'recent_notifications': NotificationSerializer(
                 Notification.objects.order_by('-created_at')[:10],
                 many=True
