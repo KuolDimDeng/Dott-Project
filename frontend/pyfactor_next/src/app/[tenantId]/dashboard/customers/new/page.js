@@ -3,7 +3,7 @@
 
 import { useParams } from 'next/navigation';
 import CustomerForm from '@/app/(app)/dashboard/components/forms/CustomerForm';
-import DashboardWrapper from '@/app/dashboard/DashboardWrapper';
+import DashboardWrapper from '@/app/(app)/dashboard/DashboardWrapper';
 import { logger } from '@/utils/logger';
 
 /**

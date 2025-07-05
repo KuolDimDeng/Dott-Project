@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { axiosInstance } from '@/lib/axiosConfig';
 import debounce from 'lodash/debounce';
-import { ChatIcon, SendIcon, CloseIcon } from '@/app/components/icons';
+import { ChatIcon, SendIcon, CloseIcon } from '@/components/icons';
 import { getCacheValue } from @/utils/appCache';
 
 const Chatbot = ({ userName, backgroundColor = 'bg-white dark:bg-gray-800' }) => {

@@ -4,7 +4,7 @@ import InvoicePreview from './InvoicePreview';
 import InvoiceTemplateBuilder from './InvoiceTemplateBuilder';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
-import ModernFormLayout from '@/app/components/ModernFormLayout';
+import ModernFormLayout from '@/components/ModernFormLayout';
 
 const InvoiceForm = ({ mode = 'create' }) => {
   const [activeTab, setActiveTab] = useState(0);

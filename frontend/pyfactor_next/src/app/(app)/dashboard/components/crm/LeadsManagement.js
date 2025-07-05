@@ -14,7 +14,7 @@ import {
   VisibilityIcon,
   DownloadIcon,
   ConvertIcon
-} from '@/app/components/icons';
+} from '@/components/icons';
 
 const LeadsManagement = () => {
   const [leads, setLeads] = useState([]);

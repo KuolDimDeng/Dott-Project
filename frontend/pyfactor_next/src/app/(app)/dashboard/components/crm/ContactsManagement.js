@@ -14,7 +14,7 @@ import {
   SearchIcon,
   FilterListIcon,
   VisibilityIcon
-} from '@/app/components/icons';
+} from '@/components/icons';
 
 const ContactsManagement = () => {
   const router = useRouter();

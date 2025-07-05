@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { getSubscriptionPlanColor } from '@/utils/userAttributes';
 import SubscriptionPopup from '../../dashboard/components/SubscriptionPopup';
 import { useNotification } from '@/context/NotificationContext';
-import AuditTrail from '@/app/dashboard/components/AuditTrail';
+import AuditTrail from '@/app/(app)/dashboard/components/AuditTrail';
 
 const MyAccount = ({ userData }) => {
   const [selectedTab, setSelectedTab] = useState(0);

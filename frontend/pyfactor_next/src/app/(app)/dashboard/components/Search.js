@@ -1,5 +1,5 @@
 import React from 'react';
-import { SearchIcon } from '@/app/components/icons';
+import { SearchIcon } from '@/components/icons';
 
 const SearchComponent = () => {
   return (

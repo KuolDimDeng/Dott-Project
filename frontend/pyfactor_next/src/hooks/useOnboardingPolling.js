@@ -4,7 +4,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { logger } from '@/utils/logger';
 import { getOnboardingStatus } from '@/utils/onboardingUtils';
-import useOnboardingStore from '@/app/onboarding/store/onboardingStore';
+import useOnboardingStore from '@/app/(app)/onboarding/store/onboardingStore';
 
 const POLLING_INTERVAL = 10000; // 10 seconds
 

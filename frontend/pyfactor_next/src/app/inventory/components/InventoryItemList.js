@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { inventoryService } from '@/services/inventoryService';
 import { logger } from '@/utils/logger';
-import { EditIcon, DeleteIcon, AddIcon, RefreshIcon, CloseIcon } from '@/app/components/icons';
+import { EditIcon, DeleteIcon, AddIcon, RefreshIcon, CloseIcon } from '@/components/icons';
 
 // Component for displaying and managing inventory items
 const InventoryItemList = () => {

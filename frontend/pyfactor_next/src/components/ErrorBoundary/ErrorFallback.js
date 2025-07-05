@@ -3,7 +3,7 @@
 // src/components/ErrorBoundary/ErrorFallback.js
 
 import React from 'react';
-import { ErrorOutlineIcon } from '@/app/components/icons';
+import { ErrorOutlineIcon } from '@/components/icons';
 
 function ErrorFallback({ error, resetErrorBoundary }) {
   return (

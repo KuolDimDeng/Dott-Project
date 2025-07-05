@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import AuditTrail from '@/app/dashboard/components/AuditTrail';
+import AuditTrail from '@/app/(app)/dashboard/components/AuditTrail';
 
 const SecuritySettings = () => {
   const [activeTab, setActiveTab] = useState('audit-trail');

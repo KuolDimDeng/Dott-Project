@@ -2,7 +2,7 @@
 
 import React from 'react';
 import PayrollTaxDashboard from '@components/Taxes/payroll/PayrollTaxDashboard';
-import withPageAccess from '@/app/dashboard/components/withPageAccess';
+import withPageAccess from '@/app/(app)/dashboard/components/withPageAccess';
 
 function PayrollTaxPage() {
   return (

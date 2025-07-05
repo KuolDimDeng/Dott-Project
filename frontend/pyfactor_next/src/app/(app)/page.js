@@ -5,14 +5,14 @@ import i18nInstance from '@/i18n';
 
 import { useEffect } from 'react';
 import { initializeCountryDetection } from '@/services/countryDetectionService';
-import AppBar from '@/app/components/AppBar';
-import Hero from '@/app/components/Hero';
-import Features from '@/app/components/Features';
-import Highlights from '@/app/components/Highlights';
-import Pricing from '@/app/components/Pricing';
-import FAQ from '@/app/components/FAQ';
-import ContactForm from '@/app/components/ContactForm';
-import Footer from '@/app/components/Footer';
+import AppBar from '@/components/AppBar';
+import Hero from '@/components/Hero';
+import Features from '@/components/Features';
+import Highlights from '@/components/Highlights';
+import Pricing from '@/components/Pricing';
+import FAQ from '@/components/FAQ';
+import ContactForm from '@/components/ContactForm';
+import Footer from '@/components/Footer';
 import CookieBanner from '@/components/Cookie/CookieBanner';
 
 // Add a function to clear tenant data

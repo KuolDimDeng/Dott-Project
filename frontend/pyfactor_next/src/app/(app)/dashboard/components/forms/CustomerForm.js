@@ -3,7 +3,7 @@ import { useRouter } from 'next/navigation'; // Updated import for Next.js 14
 import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import { useToast } from '@/components/Toast/ToastProvider';
-import ModernFormLayout from '@/app/components/ModernFormLayout';
+import ModernFormLayout from '@/components/ModernFormLayout';
 import { getCacheValue } from @/utils/appCache';
 import { getTenantId } from '@/utils/tenantUtils';
 

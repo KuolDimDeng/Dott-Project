@@ -13,7 +13,7 @@ import {
   SearchIcon,
   FilterListIcon,
   VisibilityIcon
-} from '@/app/components/icons';
+} from '@/components/icons';
 import { toast } from 'react-hot-toast';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 

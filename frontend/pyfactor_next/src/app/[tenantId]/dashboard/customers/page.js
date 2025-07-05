@@ -4,9 +4,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import CustomerForm from '@/app/(app)/dashboard/components/forms/CustomerForm';
-import CustomerList from '@/app/dashboard/components/lists/CustomerList';
+import CustomerList from '@/app/(app)/dashboard/components/lists/CustomerList';
 import CustomerDetails from '@/app/(app)/dashboard/components/forms/CustomerDetails';
-import DashboardWrapper from '@/app/dashboard/DashboardWrapper';
+import DashboardWrapper from '@/app/(app)/dashboard/DashboardWrapper';
 import { logger } from '@/utils/logger';
 
 /**
