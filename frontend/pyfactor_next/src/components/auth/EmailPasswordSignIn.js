@@ -252,10 +252,15 @@ export default function EmailPasswordSignIn() {
   const handleLogin = async () => {
     const { email, password } = formData;
 
+    console.log('[EmailPasswordSignIn] handleLogin called with email:', email);
+    console.log('[EmailPasswordSignIn] Password length:', password?.length);
+
     // Track sign in started
     trackEvent(posthog, EVENTS.SIGN_IN_STARTED, { email });
 
     try {
+      console.log('[EmailPasswordSignIn] Attempting login via /api/auth/email-login');
+      
       // Use simplified email login endpoint
       const loginResponse = await fetch('/api/auth/email-login', {
         method: 'POST',
@@ -267,7 +272,11 @@ export default function EmailPasswordSignIn() {
         })
       });
 
+      console.log('[EmailPasswordSignIn] Login response status:', loginResponse.status);
+      console.log('[EmailPasswordSignIn] Login response headers:', loginResponse.headers);
+
       const loginResult = await loginResponse.json();
+      console.log('[EmailPasswordSignIn] Login result:', loginResult);
 
       if (!loginResponse.ok) {
         // Get client IP and user agent for anomaly detection
@@ -511,12 +520,21 @@ export default function EmailPasswordSignIn() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('[EmailPasswordSignIn] Form submitted, isSignup:', isSignup);
+    console.log('[EmailPasswordSignIn] Form data:', { 
+      email: formData.email, 
+      hasPassword: !!formData.password,
+      passwordLength: formData.password?.length 
+    });
+    
     setIsLoading(true);
     setError('');
 
     if (isSignup) {
+      console.log('[EmailPasswordSignIn] Calling handleSignup');
       await handleSignup();
     } else {
+      console.log('[EmailPasswordSignIn] Calling handleLogin');
       await handleLogin();
     }
   };

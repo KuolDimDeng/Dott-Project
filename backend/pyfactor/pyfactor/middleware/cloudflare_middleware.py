@@ -26,6 +26,18 @@ class CloudflareMiddleware(MiddlewareMixin):
             except ValueError:
                 logger.warning(f"Invalid IP range in CLOUDFLARE_IPS: {ip_range}")
     
+    def _get_visitor_scheme(self, request):
+        """Extract scheme from CF-Visitor header safely"""
+        cf_visitor = request.META.get('HTTP_CF_VISITOR', '')
+        if isinstance(cf_visitor, str) and cf_visitor:
+            try:
+                import json
+                visitor_data = json.loads(cf_visitor)
+                return visitor_data.get('scheme', '')
+            except (json.JSONDecodeError, AttributeError):
+                pass
+        return ''
+    
     def process_request(self, request):
         """
         Process incoming request to extract real client IP from Cloudflare headers.
@@ -65,7 +77,7 @@ class CloudflareMiddleware(MiddlewareMixin):
             'is_cloudflare': is_cloudflare,
             'ray_id': request.META.get('HTTP_CF_RAY'),
             'country': request.META.get('HTTP_CF_IPCOUNTRY'),
-            'visitor_scheme': request.META.get('HTTP_CF_VISITOR', {}).get('scheme'),
+            'visitor_scheme': self._get_visitor_scheme(request),
         }
         
         return None
