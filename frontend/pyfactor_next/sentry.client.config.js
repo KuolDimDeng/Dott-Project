@@ -5,6 +5,12 @@
 import * as Sentry from '@sentry/nextjs';
 import { initSentryInstrumentation } from '@/utils/sentry-web-vitals';
 
+// Log initialization
+console.log('[Sentry Client] Initializing with DSN:', 'https://74deffcfad997262710d99acb797fef8@o4509614361804800.ingest.us.sentry.io/4509614433304576');
+console.log('[Sentry Client] Environment:', process.env.NODE_ENV);
+console.log('[Sentry Client] Trace Sample Rate:', process.env.NODE_ENV === 'production' ? 0.1 : 1.0);
+console.log('[Sentry Client] Profile Sample Rate:', process.env.NODE_ENV === 'production' ? 0.05 : 1.0);
+
 // Initialize Sentry for the browser
 Sentry.init({
   dsn: 'https://74deffcfad997262710d99acb797fef8@o4509614361804800.ingest.us.sentry.io/4509614433304576',
@@ -16,7 +22,7 @@ Sentry.init({
   profilesSampleRate: process.env.NODE_ENV === 'production' ? 0.05 : 1.0,
 
   // Setting this option to true will print useful information to the console while you're setting up Sentry.
-  debug: false,
+  debug: true,
 
   // Enable session replay
   replaysOnErrorSampleRate: 1.0,
@@ -170,14 +176,58 @@ Sentry.init({
   
   // Sampling configuration
   sampleRate: process.env.NODE_ENV === 'production' ? 0.25 : 1.0,
+  
+  // Callback to verify initialization
+  beforeSend(event, hint) {
+    console.log('[Sentry Client] Event being sent:', event.type || 'error', event);
+    return event;
+  },
+
+  // Log when transactions are created
+  beforeSendTransaction(transaction) {
+    console.log('[Sentry Client] Transaction being sent:', transaction.transaction, transaction);
+    return transaction;
+  }
 });
+
+// Verify Sentry is initialized
+console.log('[Sentry Client] Initialization complete');
+console.log('[Sentry Client] Current hub active:', Sentry.getCurrentHub().getClient() !== undefined);
 
 // Initialize custom Web Vitals and instrumentation after Sentry is ready
 if (typeof window !== 'undefined') {
+  // Add a global function to test Sentry
+  window.testSentry = () => {
+    console.log('[Sentry Client] Test error triggered');
+    try {
+      Sentry.captureException(new Error('Test error from production'));
+      Sentry.captureMessage('Test message from production', 'info');
+      console.log('[Sentry Client] Test events sent successfully');
+    } catch (error) {
+      console.error('[Sentry Client] Failed to send test events:', error);
+    }
+  };
+  
+  console.log('[Sentry Client] Test function available: window.testSentry()');
+  
   // Wait for the page to be fully loaded
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initSentryInstrumentation);
   } else {
     initSentryInstrumentation();
   }
+  
+  // Send a breadcrumb when page loads
+  window.addEventListener('load', () => {
+    console.log('[Sentry Client] Page loaded, adding breadcrumb');
+    Sentry.addBreadcrumb({
+      message: 'Page loaded successfully',
+      level: 'info',
+      category: 'navigation',
+      data: {
+        url: window.location.href,
+        timestamp: new Date().toISOString()
+      }
+    });
+  });
 }
