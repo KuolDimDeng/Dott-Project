@@ -75,6 +75,7 @@ class EnhancedRowLevelSecurityMiddleware:
             '/api/onboarding/force-complete/',  # Force complete endpoint
             '/force-complete/',  # Legacy force complete endpoint
             '/api/notifications/admin/',  # Admin notification portal endpoints
+            '/api/notifications/user/',   # User notification endpoints - authenticated but no tenant required
         ]
         
         # Auth0 tenant management endpoints - require Auth0 authentication but can lookup/create tenant IDs
