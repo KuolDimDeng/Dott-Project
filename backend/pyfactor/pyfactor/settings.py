@@ -519,14 +519,11 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
 FILE_UPLOAD_PERMISSIONS = 0o644
 
-# Security Settings
-SECURE_BROWSER_XSS_FILTER = True
-SECURE_CONTENT_TYPE_NOSNIFF = True
-X_FRAME_OPTIONS = 'DENY'
-if not DEBUG:
-    SECURE_HSTS_SECONDS = 31536000
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
+# Security Settings (duplicated for clarity - remove if causing issues)
+# These are already set above but included here for organization
+# SECURE_BROWSER_XSS_FILTER = True
+# SECURE_CONTENT_TYPE_NOSNIFF = True
+# X_FRAME_OPTIONS = 'DENY'
     
 DJANGO_ALLOW_ASYNC_UNSAFE = True  # Only for development
 
@@ -1053,4 +1050,40 @@ DEVICE_BLOCK_DURATION_HOURS = 1
 
 # Security event retention
 SECURITY_EVENT_RETENTION_DAYS = 90
+# =====================================
+
+# ===== CLOUDFLARE CONFIGURATION =====
+# Enable Cloudflare proxy support
+CLOUDFLARE_PROXY_ENABLED = not DEBUG
+
+# Cache control for different content types
+CACHE_CONTROL_MAX_AGE = {
+    'static': 31536000,  # 1 year for static files
+    'media': 86400,      # 1 day for media files
+    'api': 0,            # No cache for API responses
+    'html': 300,         # 5 minutes for HTML pages
+}
+
+# Cloudflare Page Rules compatibility
+APPEND_SLASH = True
+PREPEND_WWW = False
+
+# Response headers for Cloudflare
+DEFAULT_RESPONSE_HEADERS = {
+    'X-Powered-By': 'Dott Platform',
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+}
+
+# Rate limiting (works with Cloudflare rate limiting)
+RATELIMIT_ENABLE = True
+RATELIMIT_USE_CACHE = 'default'
+RATELIMIT_VIEW = 'custom_auth.views.ratelimit_exceeded'
+
+# Cloudflare-specific logging
+if CLOUDFLARE_PROXY_ENABLED:
+    LOGGING['formatters']['cloudflare'] = {
+        'format': '%(asctime)s [%(cf_ray)s] %(levelname)s %(message)s',
+        'datefmt': '%Y-%m-%d %H:%M:%S',
+    }
 # =====================================

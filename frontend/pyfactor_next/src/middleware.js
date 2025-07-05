@@ -7,10 +7,17 @@ export async function middleware(request) {
   const url = new URL(request.url);
   const pathname = url.pathname;
   
+  // Get real IP from Cloudflare headers
+  const cfConnectingIp = request.headers.get('cf-connecting-ip');
+  const xForwardedFor = request.headers.get('x-forwarded-for');
+  const realIp = cfConnectingIp || xForwardedFor?.split(',')[0] || request.ip || 'unknown';
+  
   // Detailed session tracking logs
   console.log('[Middleware] ========== REQUEST START ==========');
   console.log('[Middleware] Path:', pathname);
   console.log('[Middleware] Method:', request.method);
+  console.log('[Middleware] Real IP:', realIp);
+  console.log('[Middleware] CF Ray ID:', request.headers.get('cf-ray'));
   
   // Log all cookies for debugging
   const cookies = request.cookies;
@@ -140,6 +147,18 @@ export async function middleware(request) {
   // For all other routes, apply security headers and continue normally
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-pathname', pathname);
+  
+  // Pass through real IP information
+  if (cfConnectingIp) {
+    requestHeaders.set('x-real-ip', cfConnectingIp);
+    requestHeaders.set('x-forwarded-for', cfConnectingIp);
+  }
+  
+  // Add Cloudflare headers to internal requests
+  const cfRayId = request.headers.get('cf-ray');
+  const cfCountry = request.headers.get('cf-ipcountry');
+  if (cfRayId) requestHeaders.set('x-cf-ray', cfRayId);
+  if (cfCountry) requestHeaders.set('x-cf-country', cfCountry);
   
   const response = NextResponse.next({
     request: {

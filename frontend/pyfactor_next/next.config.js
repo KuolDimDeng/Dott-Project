@@ -173,8 +173,16 @@ const nextConfig = {
     domains: [
       'api.dottapps.com',
       'dottapps.com',
+      'www.dottapps.com',
       'via.placeholder.com',
       'images.unsplash.com',
+      'cdn.dottapps.com',  // For future CDN usage
+    ],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**.dottapps.com',
+      },
     ],
   },
   
@@ -185,9 +193,40 @@ const nextConfig = {
   // Security headers and caching
   async headers() {
     return [
-      // Cache static assets
+      // Cache static assets aggressively
       {
-        source: '/:all*(js|css|jpg|jpeg|png|gif|ico|woff|woff2)',
+        source: '/_next/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+        ],
+      },
+      {
+        source: '/fonts/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        source: '/images/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=86400, stale-while-revalidate=604800',
+          },
+        ],
+      },
+      {
+        source: '/:all*(js|css|jpg|jpeg|png|gif|ico|woff|woff2|svg)',
         headers: [
           {
             key: 'Cache-Control',
@@ -205,7 +244,7 @@ const nextConfig = {
           },
           {
             key: 'Strict-Transport-Security',
-            value: 'max-age=31536000; includeSubDomains'
+            value: 'max-age=63072000; includeSubDomains; preload'
           },
           {
             key: 'X-Frame-Options',
@@ -224,25 +263,55 @@ const nextConfig = {
             value: 'strict-origin-when-cross-origin'
           },
           {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()'
+          },
+          {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              // Remove unsafe-inline and unsafe-eval for scripts - use strict CSP
+              // Scripts - still need unsafe-inline for Next.js
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://dev-cbyy63jovi6zrcos.us.auth0.com https://js.stripe.com https://client.crisp.chat https://widget.crisp.chat https://cdn.plaid.com https://cdn.posthog.com https://app.posthog.com https://*.posthog.com",
-              // Allow inline styles for now (can be removed later with CSS refactoring)
-              "style-src 'self' 'unsafe-inline' https://client.crisp.chat",
+              // Styles
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://client.crisp.chat",
+              // Fonts
               "font-src 'self' data: https://fonts.gstatic.com https://client.crisp.chat",
-              "img-src 'self' data: https: blob:",
-              "connect-src 'self' https://*.auth0.com https://*.stripe.com https://*.googleapis.com wss://*.crisp.chat https://*.crisp.chat https://api.stripe.com https://api.dottapps.com https://auth.dottapps.com https://ipapi.co https://api.country.is https://ipinfo.io https://ipgeolocation.io https://*.plaid.com https://app.posthog.com https://*.posthog.com",
+              // Images
+              "img-src 'self' data: https: blob: https://*.dottapps.com",
+              // Connections - add Cloudflare domains
+              "connect-src 'self' https://*.auth0.com https://*.stripe.com https://*.googleapis.com wss://*.crisp.chat https://*.crisp.chat https://api.stripe.com https://api.dottapps.com https://auth.dottapps.com https://dottapps.com https://www.dottapps.com https://ipapi.co https://api.country.is https://ipinfo.io https://ipgeolocation.io https://*.plaid.com https://app.posthog.com https://*.posthog.com https://*.cloudflare.com",
+              // Frames
               "frame-src 'self' https://accounts.google.com https://dev-cbyy63jovi6zrcos.us.auth0.com https://js.stripe.com https://auth.dottapps.com https://client.crisp.chat https://*.plaid.com",
+              // Objects
               "object-src 'none'",
+              // Base URI
               "base-uri 'self'",
-              "form-action 'self'",
+              // Form actions
+              "form-action 'self' https://auth.dottapps.com",
+              // Upgrade insecure requests
               "upgrade-insecure-requests"
             ].join('; ')
           }
         ]
-      }
+      },
+      // API routes should not be cached
+      {
+        source: '/api/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          },
+          {
+            key: 'Pragma',
+            value: 'no-cache',
+          },
+          {
+            key: 'Expires',
+            value: '0',
+          },
+        ],
+      },
     ];
   },
 
