@@ -15,9 +15,17 @@ export async function POST(request) {
     }
     
     console.log('[EmailLogin] Attempting login for:', email);
+    console.log('[EmailLogin] Environment:', {
+      baseUrl: process.env.NEXT_PUBLIC_BASE_URL,
+      auth0Domain: process.env.AUTH0_CUSTOM_DOMAIN,
+      hasClientId: !!process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID,
+      hasClientSecret: !!process.env.AUTH0_CLIENT_SECRET
+    });
     
     // First authenticate with Auth0
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://dottapps.com';
+    console.log('[EmailLogin] Calling authenticate endpoint:', `${baseUrl}/api/auth/authenticate`);
+    
     const authResponse = await fetch(`${baseUrl}/api/auth/authenticate`, {
       method: 'POST',
       headers: {
@@ -27,9 +35,15 @@ export async function POST(request) {
       body: JSON.stringify({ email, password })
     });
     
+    console.log('[EmailLogin] Auth response status:', authResponse.status);
+    
     if (!authResponse.ok) {
       const error = await authResponse.json();
-      console.error('[EmailLogin] Authentication failed:', error);
+      console.error('[EmailLogin] Authentication failed:', {
+        status: authResponse.status,
+        error: error,
+        message: error.message || error.error
+      });
       return NextResponse.json(error, { status: authResponse.status });
     }
     

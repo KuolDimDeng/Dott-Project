@@ -61,6 +61,16 @@ class CloudflareSessionCreateView(View):
                     logger.info(f"[CloudflareSession] Found user by Auth0 sub: {user.email}")
                 except User.DoesNotExist:
                     logger.warning(f"[CloudflareSession] User not found for Auth0 sub: {auth0_sub}")
+                    # If we have an email from Auth0, try to find the user by email and update their auth0_sub
+                    if email:
+                        try:
+                            user = User.objects.get(email=email)
+                            logger.info(f"[CloudflareSession] Found user by email: {email}, updating auth0_sub")
+                            user.auth0_sub = auth0_sub
+                            user.save(update_fields=['auth0_sub'])
+                            logger.info(f"[CloudflareSession] Updated auth0_sub for user: {email}")
+                        except User.DoesNotExist:
+                            logger.warning(f"[CloudflareSession] User not found for email: {email}")
             
             # Try email authentication - ONLY if Auth0 authentication failed
             if not user and email and not auth0_sub:
@@ -137,9 +147,13 @@ class CloudflareSessionCreateView(View):
                     'auth0_sub': user.auth0_sub,
                     'subscription_plan': getattr(user, 'subscription_plan', 'free'),
                     'role': getattr(user, 'role', 'user'),
-                    'onboarding_completed': getattr(user, 'onboarding_completed', False)
+                    'onboarding_completed': getattr(user, 'onboarding_completed', False),
+                    'needsOnboarding': not getattr(user, 'onboarding_completed', False)
                 }
             }
+            
+            # Add needsOnboarding at top level too
+            response_data['needsOnboarding'] = not getattr(user, 'onboarding_completed', False)
             
             # Add tenant info if available
             if hasattr(user, 'tenant') and user.tenant:
@@ -149,6 +163,7 @@ class CloudflareSessionCreateView(View):
                     'business_name': getattr(user.tenant, 'business_name', user.tenant.name)
                 }
                 response_data['user']['tenant_id'] = str(user.tenant.id)
+                response_data['user']['tenantId'] = str(user.tenant.id)  # Also add camelCase version
             
             # Create response with proper CORS headers for Cloudflare
             response = JsonResponse(response_data)
