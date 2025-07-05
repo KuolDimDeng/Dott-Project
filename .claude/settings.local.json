@@ -122,7 +122,8 @@
       "Bash(ZDOTDIR=/tmp bash -c 'cd /Users/kuoldeng/projectx && git status')",
       "Bash(./deploy_chart_fix.sh:*)",
       "Bash(npx eslint:*)",
-      "Bash(pip3 install:*)"
+      "Bash(pip3 install:*)",
+      "Bash(NODE_ENV=production NODE_OPTIONS=\"--max-old-space-size=6144\" pnpm build)"
     ],
     "deny": []
   }
