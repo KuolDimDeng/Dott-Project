@@ -116,8 +116,14 @@ const ImportExport = () => {
   };
 
   const handleModeSelect = (selectedMode) => {
+    const startTime = Date.now();
     setMode(selectedMode);
     captureEvent(`import_export_mode_selected`, { mode: selectedMode });
+    trackUserAction('Mode Selected', { 
+      mode: selectedMode,
+      userPlan: session?.user?.subscriptionPlan 
+    });
+    trackPerformance('mode-selection', startTime);
   };
 
   const handleImportSourceSelect = (source) => {
@@ -165,6 +171,13 @@ const ImportExport = () => {
       fileName: file.name,
       fileSize: file.size,
       dataTypes: selectedDataTypes 
+    });
+    
+    trackUserAction('File Upload Started', {
+      fileName: file.name,
+      fileSize: file.size,
+      dataTypes: selectedDataTypes,
+      fileType: file.type
     });
 
     // Update usage count
