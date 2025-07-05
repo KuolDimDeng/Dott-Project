@@ -17,6 +17,7 @@ export async function POST(request) {
     const cfConnectingIp = request.headers.get('cf-connecting-ip');
     const cfRay = request.headers.get('cf-ray');
     const cfCountry = request.headers.get('cf-ipcountry');
+    const origin = request.headers.get('origin') || 'https://dottapps.com';
     
     console.log('[CloudflareSession] Request data:', {
       hasEmail: !!data.email,
@@ -24,7 +25,8 @@ export async function POST(request) {
       hasAuth0Token: !!data.auth0_token,
       hasAuth0Sub: !!data.auth0_sub,
       cfRay: cfRay,
-      cfCountry: cfCountry
+      cfCountry: cfCountry,
+      origin: origin
     });
     
     // Call backend Cloudflare session endpoint
@@ -37,11 +39,11 @@ export async function POST(request) {
         ...(cfRay && { 'CF-Ray': cfRay }),
         ...(cfCountry && { 'CF-IPCountry': cfCountry }),
         // Add origin for CORS
-        'Origin': 'https://dottapps.com'
+        'Origin': origin,
+        // Forward the real user agent
+        'User-Agent': request.headers.get('user-agent') || 'NextJS-Frontend'
       },
-      body: JSON.stringify(data),
-      // Important: include credentials for cookies
-      credentials: 'include'
+      body: JSON.stringify(data)
     });
     
     if (!response.ok) {
@@ -58,23 +60,47 @@ export async function POST(request) {
       userEmail: sessionData.user?.email
     });
     
-    // Create response
-    const frontendResponse = NextResponse.json(sessionData);
+    // Create response with success flag
+    const responseData = {
+      success: true,
+      authenticated: sessionData.authenticated,
+      session_token: sessionData.session_token,
+      user: sessionData.user,
+      tenant: sessionData.tenant,
+      needs_onboarding: sessionData.user?.needsOnboarding || sessionData.needsOnboarding || false
+    };
+    
+    const frontendResponse = NextResponse.json(responseData);
     
     // Set cookies on frontend response with Cloudflare-compatible settings
     if (sessionData.session_token) {
+      const isProduction = process.env.NODE_ENV === 'production';
+      
+      // For production with Cloudflare, use specific settings
       const cookieOptions = {
         httpOnly: true,
-        secure: true,
-        sameSite: 'none', // Allow cross-site for Cloudflare
+        secure: isProduction, // Only secure in production
+        sameSite: isProduction ? 'lax' : 'lax', // Use 'lax' for better compatibility
         maxAge: 86400, // 24 hours
-        path: '/',
-        domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
+        path: '/'
+        // Don't set domain to allow it to default to current domain
       };
+      
+      console.log('[CloudflareSession] Setting cookies with options:', cookieOptions);
       
       frontendResponse.cookies.set('sid', sessionData.session_token, cookieOptions);
       frontendResponse.cookies.set('session_token', sessionData.session_token, cookieOptions);
+      
+      // Clear any old cookies that might interfere
+      const oldCookies = ['dott_auth_session', 'appSession', 'session_pending'];
+      oldCookies.forEach(name => {
+        frontendResponse.cookies.delete(name);
+      });
     }
+    
+    // Add CORS headers for Cloudflare
+    frontendResponse.headers.set('Access-Control-Allow-Origin', origin);
+    frontendResponse.headers.set('Access-Control-Allow-Credentials', 'true');
     
     return frontendResponse;
     

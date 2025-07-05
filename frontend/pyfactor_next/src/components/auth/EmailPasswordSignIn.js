@@ -256,29 +256,29 @@ export default function EmailPasswordSignIn() {
     trackEvent(posthog, EVENTS.SIGN_IN_STARTED, { email });
 
     try {
-      // Get client IP and user agent for anomaly detection
-      const userAgent = navigator.userAgent;
-      const ip = 'client'; // In production, get from header
-      
-      const authResponse = await fetch('/api/auth/authenticate', {
+      // Use simplified email login endpoint
+      const loginResponse = await fetch('/api/auth/email-login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' ,
-        credentials: 'include'},
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           email,
-          password,
-          connection: 'Username-Password-Authentication'
+          password
         })
       });
 
-      const authResult = await authResponse.json();
+      const loginResult = await loginResponse.json();
 
-      if (!authResponse.ok) {
+      if (!loginResponse.ok) {
+        // Get client IP and user agent for anomaly detection
+        const userAgent = navigator.userAgent;
+        const ip = 'client'; // In production, get from header
+        
         // Check for anomalies in failed login
         const anomalies = await anomalyDetector.checkLoginAttempt(email, ip, userAgent, false);
         
         // Log failed login attempt
-        await securityLogger.loginFailed(email, authResult.error || 'Authentication failed', 'email-password');
+        await securityLogger.loginFailed(email, loginResult.error || 'Authentication failed', 'email-password');
         
         // If high-risk anomalies detected, show additional security message
         if (anomalies.some(a => a.severity === 'high')) {
@@ -287,7 +287,7 @@ export default function EmailPasswordSignIn() {
         }
         
         // Check if we need to fallback to Universal Login
-        if (authResult.requiresUniversalLogin) {
+        if (loginResult.requiresUniversalLogin) {
           logger.info('[EmailPasswordSignIn] Password grant not enabled, redirecting to Universal Login');
           // Redirect to standard Auth0 login
           window.location.href = '/api/auth/login';
@@ -295,62 +295,39 @@ export default function EmailPasswordSignIn() {
         }
         
         // Check for email verification error
-        if ((authResult.error === 'invalid_grant' || authResult.error === 'email_not_verified') && 
-            (authResult.message?.includes('email') || authResult.message?.includes('verify'))) {
+        if ((loginResult.error === 'invalid_grant' || loginResult.error === 'email_not_verified') && 
+            (loginResult.message?.includes('email') || loginResult.message?.includes('verify'))) {
           setShowResendVerification(true);
           throw new Error('Please verify your email address before signing in. Check your inbox for the verification email.');
         }
         
         // Check if error description mentions email verification
-        if (authResult.message?.toLowerCase().includes('verify') || 
-            authResult.message?.toLowerCase().includes('verification')) {
+        if (loginResult.message?.toLowerCase().includes('verify') || 
+            loginResult.message?.toLowerCase().includes('verification')) {
           setShowResendVerification(true);
           throw new Error('Please verify your email address before signing in. Check your inbox for the verification email.');
         }
         
-        throw new Error(authResult.message || authResult.error || 'Authentication failed');
+        throw new Error(loginResult.message || loginResult.error || 'Authentication failed');
       }
 
-      // Create secure session using Cloudflare-compatible endpoint
-      const sessionResponse = await fetch('/api/auth/cloudflare-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // Important: include cookies for cross-subdomain
-        body: JSON.stringify({
-          email: authResult.user.email,
-          auth0_token: authResult.access_token,
-          auth0_sub: authResult.user.sub,
-          user: authResult.user
-        })
+      // Login was successful and session was created
+      logger.info('[EmailPasswordSignIn] Login successful:', {
+        success: loginResult.success,
+        hasUser: !!loginResult.user,
+        hasTenant: !!loginResult.tenant,
+        needsOnboarding: loginResult.needs_onboarding
       });
-
-      if (!sessionResponse.ok) {
-        throw new Error('Failed to create session');
-      }
-
-      const sessionResult = await sessionResponse.json();
-      
-      logger.info('[EmailPasswordSignIn] Session response:', {
-        success: sessionResult.success,
-        hasUser: !!sessionResult.user,
-        hasTenant: !!sessionResult.tenant,
-        needsOnboarding: sessionResult.needs_onboarding
-      });
-      
-      // Check if session was created successfully
-      if (!sessionResult.success) {
-        throw new Error('Failed to create session');
-      }
       
       // Create bridge token for immediate availability using the real session token
       const bridgeResponse = await fetch('/api/auth/bridge-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          sessionToken: sessionResult.session_token, // Use the actual session token from backend
-          userId: authResult.user.sub,
-          tenantId: sessionResult.tenant?.id || authResult.user.tenantId || authResult.user.tenant_id,
-          email: authResult.user.email
+          sessionToken: loginResult.session_token,
+          userId: loginResult.user?.sub,
+          tenantId: loginResult.tenant?.id || loginResult.user?.tenantId || loginResult.user?.tenant_id,
+          email: loginResult.user?.email
         })
       });
       
@@ -371,9 +348,9 @@ export default function EmailPasswordSignIn() {
       console.log('[EmailPasswordSignIn] About to call handlePostAuthFlow');
       const { handlePostAuthFlow } = await import('@/utils/authFlowHandler.v3');
       const finalUserData = await handlePostAuthFlow({
-        user: authResult.user,
-        accessToken: authResult.access_token,
-        idToken: authResult.id_token
+        user: loginResult.user,
+        accessToken: loginResult.access_token,
+        idToken: loginResult.id_token
       }, 'email-password');
       
       console.log('[EmailPasswordSignIn] handlePostAuthFlow returned:', {
@@ -391,19 +368,19 @@ export default function EmailPasswordSignIn() {
       }
 
       // If session was created successfully, use secure bridge
-      if (sessionResult.success) {
+      if (loginResult.success) {
         logger.info('[EmailPasswordSignIn] Session created successfully');
         
         // Identify user in PostHog with complete data
         if (posthog) {
           const { identifyUser } = await import('@/lib/posthog');
           const userDataForPostHog = {
-            ...authResult.user,
+            ...loginResult.user,
             ...finalUserData,
-            tenant_id: finalUserData?.tenantId || finalUserData?.tenant_id || sessionResult.tenant?.id,
-            business_name: sessionResult.tenant?.name || finalUserData?.businessName,
-            subscription_plan: sessionResult.tenant?.subscription_plan || finalUserData?.subscription_plan,
-            role: finalUserData?.role || sessionResult.user?.role || 'USER'
+            tenant_id: finalUserData?.tenantId || finalUserData?.tenant_id || loginResult.tenant?.id,
+            business_name: loginResult.tenant?.name || finalUserData?.businessName,
+            subscription_plan: loginResult.tenant?.subscription_plan || finalUserData?.subscription_plan,
+            role: finalUserData?.role || loginResult.user?.role || 'USER'
           };
           identifyUser(userDataForPostHog);
         }
@@ -411,7 +388,7 @@ export default function EmailPasswordSignIn() {
         // Track sign in completed
         trackEvent(posthog, EVENTS.SIGN_IN_COMPLETED, { 
           email,
-          userId: authResult.user?.sub,
+          userId: loginResult.user?.sub,
           method: 'email-password'
         });
         

@@ -1,5 +1,5 @@
 # CLAUDE.md - Dott Project Configuration
-*Last Updated: 2025-07-04*
+*Last Updated: 2025-07-05*
 
 ## Numbering System Guide
 - **Format**: `[MAJOR.MINOR.PATCH] - DATE - STATUS`
@@ -681,6 +681,39 @@ Add `REDIS_URL` environment variable in Render dashboard
   - DDoS protection and threat filtering
   - Edge caching for static content
 - **Documentation**: Integrated into settings files
+
+### [25.0.0] - 2025-07-05 - CURRENT - Cloudflare-Compatible Session Handling
+- **Purpose**: Fix session creation issues when using Cloudflare proxy
+- **Issue**: Sessions failing to create due to cookie restrictions with Cloudflare
+- **Solution Implemented**:
+  - Created `CloudflareAuth0Authentication` for flexible auth handling
+  - Added `CloudflareSessionCreateView` with proper proxy support
+  - Updated cookie settings: `SameSite=None` for cross-site compatibility
+  - Added strict origin validation (exact domain matching)
+  - Implemented rate limiting (5 attempts/hour per IP+email)
+- **Security Enhancements**:
+  - User enumeration protection (same error for invalid users)
+  - Comprehensive audit logging for failed attempts
+  - CORS headers for whitelisted domains only
+  - Real IP extraction from Cloudflare headers
+  - Cache-based rate limiting with Redis/database fallback
+- **Cookie Configuration**:
+  - `httpOnly: true` (XSS protection)
+  - `secure: true` (HTTPS only)
+  - `sameSite: 'none'` (required for Cloudflare)
+  - `domain: '.dottapps.com'` (cross-subdomain sharing)
+- **Backend Endpoints**:
+  - `/api/sessions/cloudflare/create/` - Cloudflare-aware session creation
+  - Accepts both JWT tokens and email/password authentication
+  - Extracts CF-Ray, CF-Connecting-IP for tracking
+- **Frontend Updates**:
+  - `/api/auth/cloudflare-session` - Frontend proxy endpoint
+  - Updated `EmailPasswordSignIn` to use Cloudflare endpoint
+  - Fixed session retrieval to check both `sid` and `session_token`
+- **Files Created/Modified**:
+  - Backend: `cloudflare_auth.py`, `cloudflare_session_view.py`
+  - Frontend: `/api/auth/cloudflare-session/route.js`
+  - Updated: `EmailPasswordSignIn.js`, `session-v2/route.js`
 
 ### [22.0.0] - 2025-07-04 - CURRENT - Comprehensive Notification System
 - **Purpose**: Real-time notification system with admin management, bell icon alerts, and 90-day history

@@ -23,24 +23,10 @@ export async function GET(request) {
     
         if (!sessionId) {
           logger.info('[Session-V2] No session ID found');
-      // Add CORS headers for Cloudflare
-      const response = NextResponse.json({ 
+      // Return unauthenticated response
+      return NextResponse.json({ 
         authenticated: false
       }, { status: 401 });
-      
-      const origin = request.headers.get('origin');
-      const allowedOrigins = [
-        'https://dottapps.com',
-        'https://www.dottapps.com',
-        'https://api.dottapps.com'
-      ];
-      
-      if (origin && allowedOrigins.includes(origin)) {
-        response.headers.set('Access-Control-Allow-Origin', origin);
-        response.headers.set('Access-Control-Allow-Credentials', 'true');
-      }
-      
-      return response;
     }
     
         logger.info('[Session-V2] Found session ID, validating with backend...');
@@ -179,12 +165,19 @@ export async function POST(request) {
       }, { status: 400 });
     }
     
+    // Get Cloudflare headers if available
+    const cfConnectingIp = request.headers.get('cf-connecting-ip');
+    const origin = request.headers.get('origin') || 'https://dottapps.com';
+    
     // Create session with Django backend using Auth0 token
     const authResponse = await fetch(`${API_URL}/api/sessions/create/`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`
+        'Authorization': `Bearer ${accessToken}`,
+        // Forward Cloudflare headers if available
+        ...(cfConnectingIp && { 'CF-Connecting-IP': cfConnectingIp }),
+        'Origin': origin
       },
       body: JSON.stringify({ 
         // Send empty body - Django will create session from the Auth0 token
@@ -221,22 +214,20 @@ export async function POST(request) {
       session_token: sessionData.session_token // Include session token in response
     });
     
-    response.cookies.set('sid', sessionData.session_token, {
+    const isProduction = process.env.NODE_ENV === 'production';
+    const cookieOptions = {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: isProduction,
+      sameSite: 'lax',  // Use 'lax' for better compatibility with Cloudflare
       expires: new Date(sessionData.expires_at),
       path: '/'
-    });
+      // Don't set domain to allow it to default to current domain
+    };
+    
+    response.cookies.set('sid', sessionData.session_token, cookieOptions);
     
     // Also set the session_token cookie for backward compatibility
-    response.cookies.set('session_token', sessionData.session_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      expires: new Date(sessionData.expires_at),
-      path: '/'
-    });
+    response.cookies.set('session_token', sessionData.session_token, cookieOptions);
     
     // Clear all old cookies that were causing conflicts
     const oldCookies = [

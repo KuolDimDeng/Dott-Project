@@ -3,6 +3,7 @@
 // https://docs.sentry.io/platforms/javascript/guides/nextjs/
 
 import * as Sentry from '@sentry/nextjs';
+import { initSentryInstrumentation } from '@/utils/sentry-web-vitals';
 
 // Initialize Sentry for the browser
 Sentry.init({
@@ -10,6 +11,9 @@ Sentry.init({
 
   // Adjust this value in production, or use tracesSampler for greater control
   tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+
+  // Profiling sample rate (production should be lower to control costs)
+  profilesSampleRate: process.env.NODE_ENV === 'production' ? 0.05 : 1.0,
 
   // Setting this option to true will print useful information to the console while you're setting up Sentry.
   debug: false,
@@ -19,10 +23,31 @@ Sentry.init({
   replaysSessionSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
 
   integrations: [
-    // Browser Tracing integration
+    // Browser Tracing integration with enhanced options
     Sentry.browserTracingIntegration({
       // Set 'tracePropagationTargets' to control for which URLs distributed tracing should be enabled
       tracePropagationTargets: [
+        'localhost',
+        /^https:\/\/api\.dottapps\.com/,
+        /^https:\/\/dottapps\.com/,
+        /^http:\/\/localhost:3000/,
+        /^https:\/\/127\.0\.0\.1/,
+      ],
+      // Enable tracing for fetch and XHR requests
+      traceFetch: true,
+      traceXHR: true,
+      // Track route changes
+      routingInstrumentation: Sentry.nextRouterInstrumentation,
+      // Track components
+      trackComponents: true,
+      // Track idle transactions
+      idleTimeout: 5000,
+      // Track long animations
+      enableLongAnimationFrame: true,
+      // Track INP (Interaction to Next Paint)
+      enableInp: true,
+      // Additional tracing origins
+      tracingOrigins: [
         'localhost',
         /^https:\/\/api\.dottapps\.com/,
         /^https:\/\/dottapps\.com/,
@@ -32,26 +57,55 @@ Sentry.init({
     Sentry.replayIntegration({
       maskAllText: true,
       blockAllMedia: true,
+      // Capture slow clicks
+      slowClickTimeout: 3000,
+      // Capture network details
+      networkDetailAllowUrls: [
+        'https://api.dottapps.com',
+        'https://dottapps.com',
+      ],
+      // Capture console logs in replays
+      collectFonts: true,
+    }),
+    // Capture Console Errors
+    Sentry.captureConsoleIntegration({
+      levels: ['error', 'warn'],
+    }),
+    // Session tracking
+    Sentry.sessionTimingIntegration(),
+    // Browser profiling (requires @sentry/profiling-node)
+    Sentry.browserProfilingIntegration(),
+    // HTTP client errors
+    Sentry.httpClientIntegration({
+      failedRequestStatusCodes: [400, 599],
+      failedRequestTargets: [
+        'https://api.dottapps.com',
+      ],
     }),
   ],
+
+  // Enable automatic session tracking
+  autoSessionTracking: true,
+  
+  // Session tracking configuration
+  sessionTrackingIntervalMillis: 30000,
 
   // Performance Monitoring
   tracingOptions: {
     trackComponents: true,
   },
 
-  // Capture Console Errors
-  integrations: [
-    Sentry.captureConsoleIntegration({
-      levels: ['error', 'warn'],
-    }),
-  ],
-
   // Release tracking
   release: process.env.NEXT_PUBLIC_SENTRY_RELEASE,
 
   // Environment
   environment: process.env.NODE_ENV || 'development',
+
+  // Transport options for better performance
+  transportOptions: {
+    // Keep connections alive
+    keepalive: true,
+  },
 
   // Before sending an event to Sentry
   beforeSend(event, hint) {
@@ -64,6 +118,15 @@ Sentry.init({
       }
     }
     return event;
+  },
+
+  // Before sending transaction
+  beforeSendTransaction(transaction) {
+    // Add custom context to transactions
+    if (transaction.contexts?.trace?.op === 'navigation') {
+      transaction.setTag('navigation.type', 'page-load');
+    }
+    return transaction;
   },
 
   // Ignore specific errors
@@ -84,10 +147,37 @@ Sentry.init({
     'consent_required',
   ],
 
+  // Ignore specific transactions
+  ignoreTransactions: [
+    // Health check endpoints
+    '/api/health',
+    '/api/metrics',
+    // Static assets
+    '/_next/static',
+  ],
+
   // Only send errors from our own scripts
   allowUrls: [
     /https:\/\/dottapps\.com/,
     /https:\/\/www\.dottapps\.com/,
     /https:\/\/api\.dottapps\.com/,
+    // Also allow localhost in development
+    /http:\/\/localhost:3000/,
   ],
+
+  // Default integrations to disable (if needed)
+  defaultIntegrations: false,
+  
+  // Sampling configuration
+  sampleRate: process.env.NODE_ENV === 'production' ? 0.25 : 1.0,
 });
+
+// Initialize custom Web Vitals and instrumentation after Sentry is ready
+if (typeof window !== 'undefined') {
+  // Wait for the page to be fully loaded
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initSentryInstrumentation);
+  } else {
+    initSentryInstrumentation();
+  }
+}

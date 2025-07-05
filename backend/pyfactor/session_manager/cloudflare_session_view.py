@@ -156,14 +156,17 @@ class CloudflareSessionCreateView(View):
             # Set session cookie with Cloudflare-compatible settings
             max_age = getattr(settings, 'SESSION_TTL', 86400)  # 24 hours
             
+            # Use Lax for better compatibility with Cloudflare
+            samesite_policy = 'Lax' if not settings.DEBUG else 'Lax'
+            
             response.set_cookie(
                 'sid',
                 session_data['session_token'],
                 max_age=max_age,
                 httponly=True,
-                secure=True,  # Always use secure with Cloudflare
-                samesite='None',  # Allow cross-site for Cloudflare
-                domain='.dottapps.com' if not settings.DEBUG else None,
+                secure=not settings.DEBUG,  # Secure only in production
+                samesite=samesite_policy,
+                domain=None,  # Let browser handle domain
                 path='/'
             )
             
@@ -172,9 +175,9 @@ class CloudflareSessionCreateView(View):
                 session_data['session_token'],
                 max_age=max_age,
                 httponly=True,
-                secure=True,
-                samesite='None',
-                domain='.dottapps.com' if not settings.DEBUG else None,
+                secure=not settings.DEBUG,
+                samesite=samesite_policy,
+                domain=None,  # Let browser handle domain
                 path='/'
             )
             
