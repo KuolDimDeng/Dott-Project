@@ -27,12 +27,7 @@ export default function RootLayout({ children }) {
         <meta httpEquiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()" />
       </head>
       <body className={inter.className}>
-        {/* Session Heartbeat Component */}
-        <SessionHeartbeat interval={60000} />
-        
-        <Providers>
-          {children}
-        </Providers>
+        {children}
         
         {/* Crisp Chat Widget */}
         {process.env.NEXT_PUBLIC_CRISP_WEBSITE_ID && (
