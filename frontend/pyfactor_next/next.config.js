@@ -389,9 +389,15 @@ const sentryWebpackPluginOptions = {
   automaticVercelMonitors: true,
 };
 
-// Always export with Sentry configuration
-console.log('[Build] Configuring Sentry...');
-console.log('[Build] NEXT_PUBLIC_SENTRY_DSN:', process.env.NEXT_PUBLIC_SENTRY_DSN ? 'Set' : 'Not set');
+// Check if Sentry should be enabled
+const sentryDSN = process.env.NEXT_PUBLIC_SENTRY_DSN || 'https://74deffcfad997262710d99acb797fef8@o4509614361804800.ingest.us.sentry.io/4509614433304576';
+const enableSentry = !!sentryDSN;
 
-// Always use Sentry configuration
-module.exports = withSentryConfig(nextConfig, sentryWebpackPluginOptions);
+console.log('[Build] Sentry configuration:');
+console.log('[Build] - DSN from env:', process.env.NEXT_PUBLIC_SENTRY_DSN ? 'Yes' : 'No (using fallback)');
+console.log('[Build] - Sentry enabled:', enableSentry);
+
+// Export with or without Sentry based on DSN availability
+module.exports = enableSentry 
+  ? withSentryConfig(nextConfig, sentryWebpackPluginOptions)
+  : nextConfig;
