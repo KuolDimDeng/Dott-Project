@@ -631,6 +631,57 @@ Add `REDIS_URL` environment variable in Render dashboard
   - AI suggestions save hours of setup time
 - **Documentation**: `/frontend/pyfactor_next/docs/IMPORT_EXPORT_FEATURE.md`
 
+### [23.0.0] - 2025-07-05 - CURRENT - Sentry Error Tracking and Performance Monitoring
+- **Purpose**: Comprehensive error tracking, performance monitoring, and structured logging
+- **Package**: `@sentry/nextjs` installed and configured
+- **Features**:
+  - Automatic JavaScript error capture with stack traces
+  - Performance monitoring with custom spans
+  - Session replay for visual debugging
+  - Structured logging with `logger.fmt` template literals
+  - User context and breadcrumb tracking
+  - API error monitoring and tracing
+- **Configuration Files**:
+  - `sentry.client.config.js` - Client-side with session replay
+  - `sentry.server.config.js` - Server-side with auto-instrumentation
+  - `sentry.edge.config.js` - Edge runtime configuration
+- **Integration Examples**:
+  - Error boundary in `providers.js`
+  - Performance tracking in `ImportExport.js`
+  - API monitoring in route handlers
+  - Custom hook `useSentryTracking.js`
+- **DSN**: `https://860a81d8cdd7fe266706e3bba9138feb@o4509614361804800.ingest.us.sentry.io/4509614365343744`
+- **Test Page**: `/dashboard/test-sentry` for verification
+- **Documentation**: `/frontend/pyfactor_next/SENTRY_SETUP_SUMMARY.md`
+
+### [24.0.0] - 2025-07-05 - CURRENT - Cloudflare Integration for Enhanced Security and Performance
+- **Purpose**: Integrate Cloudflare proxy for better security, caching, and global performance
+- **Features Configured**:
+  - Page Rules for static assets, admin area, and API endpoints
+  - Security headers and CSP compatibility
+  - Real IP forwarding from CF-Connecting-IP
+  - Cache control optimization for different content types
+  - CSRF protection with Cloudflare domains
+- **Page Rules Created**:
+  1. `*dottapps.com/static/*` - Cache Everything, 1 month TTL
+  2. `*dottapps.com/admin/*` - Cache Bypass, High Security
+  3. `*dottapps.com/api/*` - Cache Bypass, High Security
+- **Backend Updates**:
+  - Django settings configured for proxy headers
+  - CloudflareMiddleware for IP validation and caching
+  - WhiteNoise integration for static file serving
+  - Updated ALLOWED_HOSTS and CSRF_TRUSTED_ORIGINS
+- **Frontend Updates**:
+  - Security headers in next.config.js
+  - Cache control for static assets
+  - Middleware for real IP forwarding
+- **Benefits**:
+  - 70-90% bandwidth savings
+  - 50-200ms faster page loads globally
+  - DDoS protection and threat filtering
+  - Edge caching for static content
+- **Documentation**: Integrated into settings files
+
 ### [22.0.0] - 2025-07-04 - CURRENT - Comprehensive Notification System
 - **Purpose**: Real-time notification system with admin management, bell icon alerts, and 90-day history
 - **User Features**:

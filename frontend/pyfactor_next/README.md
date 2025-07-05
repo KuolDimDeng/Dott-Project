@@ -4,6 +4,16 @@ This is the Next.js frontend for the PyFactor application.
 
 ## Recent Updates
 
+### January 05, 2025
+
+- **Integrated Sentry for Error Tracking and Performance Monitoring**
+  - Added comprehensive error tracking with `@sentry/nextjs`
+  - Implemented performance monitoring for API calls and user interactions
+  - Added structured logging with `logger.fmt` template literals
+  - Enabled session replay for visual debugging
+  - Created test page at `/dashboard/test-sentry` for verification
+  - See [Sentry Setup Documentation](./SENTRY_SETUP_SUMMARY.md)
+
 ### January 17, 2025
 
 - **Implemented Redis-based Session Management**
@@ -211,6 +221,26 @@ This project implements customer management features with in-memory caching for 
    ```bash
    npm run dev
    ```
+
+## Error Tracking and Monitoring
+
+### Sentry Integration
+
+The application uses Sentry for comprehensive error tracking and performance monitoring:
+
+- **Error Tracking**: Automatic capture of JavaScript errors with full stack traces
+- **Performance Monitoring**: Tracks API calls, page loads, and user interactions
+- **Session Replay**: Visual reproduction of user sessions for debugging
+- **Structured Logging**: Uses `logger.fmt` for consistent log formatting
+- **User Context**: Associates errors with user information and subscription data
+
+#### Configuration Files:
+- `sentry.client.config.js`: Client-side error tracking
+- `sentry.server.config.js`: Server-side monitoring
+- `sentry.edge.config.js`: Edge runtime configuration
+
+#### Testing Sentry:
+Visit `/dashboard/test-sentry` to test the integration and verify events are being sent.
 
 ## Architecture
 
