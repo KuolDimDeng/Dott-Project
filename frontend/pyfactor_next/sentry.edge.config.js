@@ -6,7 +6,7 @@ import * as Sentry from '@sentry/nextjs';
 
 // Initialize Sentry for edge runtime
 Sentry.init({
-  dsn: 'https://860a81d8cdd7fe266706e3bba9138feb@o4509614361804800.ingest.us.sentry.io/4509614365343744',
+  dsn: 'https://74deffcfad997262710d99acb797fef8@o4509614361804800.ingest.us.sentry.io/4509614433304576',
 
   // Adjust this value in production, or use tracesSampler for greater control
   tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,

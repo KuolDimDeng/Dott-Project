@@ -650,7 +650,7 @@ Add `REDIS_URL` environment variable in Render dashboard
   - Performance tracking in `ImportExport.js`
   - API monitoring in route handlers
   - Custom hook `useSentryTracking.js`
-- **DSN**: `https://860a81d8cdd7fe266706e3bba9138feb@o4509614361804800.ingest.us.sentry.io/4509614365343744`
+- **DSN**: `https://74deffcfad997262710d99acb797fef8@o4509614361804800.ingest.us.sentry.io/4509614433304576`
 - **Test Page**: `/dashboard/test-sentry` for verification
 - **Documentation**: `/frontend/pyfactor_next/SENTRY_SETUP_SUMMARY.md`
 

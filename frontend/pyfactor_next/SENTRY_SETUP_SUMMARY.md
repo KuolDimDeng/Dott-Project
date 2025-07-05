@@ -96,7 +96,7 @@ trackUserAction('Button Clicked', {
 
 ### DSN
 ```
-https://860a81d8cdd7fe266706e3bba9138feb@o4509614361804800.ingest.us.sentry.io/4509614365343744
+https://74deffcfad997262710d99acb797fef8@o4509614361804800.ingest.us.sentry.io/4509614433304576
 ```
 
 ### Environment Variables Added
