@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { usePathname } from 'next/navigation';
 import { isPublicRoute } from '@/lib/authUtils';
 import { SessionProvider } from '@/providers/SessionProvider';
-import AuthWrapper from '@/app/(app)/AuthWrapper/AuthWrapper';
+import AuthWrapper from '@/app/AuthWrapper/AuthWrapper';
 import { logger } from '@/utils/logger';
 import { ToastProvider } from '@/components/Toast/ToastProvider';
 import PostHogProvider from '@/components/providers/PostHogProvider';

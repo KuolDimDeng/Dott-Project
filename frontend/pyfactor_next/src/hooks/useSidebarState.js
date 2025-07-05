@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { saveUserPreference, getSidebarCollapsedState, saveSidebarCollapsedState, PREF_KEYS } from '@/utils/userPreferences';
-import { getCacheValue, setCacheValue } from @/utils/appCache';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
 import { logger } from '@/utils/logger';
 
 const CACHE_KEY = 'sidebar_collapsed';

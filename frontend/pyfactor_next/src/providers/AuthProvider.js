@@ -1,5 +1,5 @@
 import { useUser } from '@auth0/nextjs-auth0';
-import { setAppCacheItem, getAppCacheItem, removeAppCacheItem, clearAppCache, initAppCache } from @/utils/appCache';
+import { setAppCacheItem, getAppCacheItem, removeAppCacheItem, clearAppCache, initAppCache } from '@/utils/appCache';
 import { useRouter } from 'next/navigation';
 import { createContext, useContext, useState, useEffect } from 'react';
 

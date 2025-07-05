@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { saveLanguagePreference, PREF_KEYS } from '@/utils/userPreferences';
-import { getCacheValue, setCacheValue } from @/utils/appCache';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
 
 /**
  * Hook for managing language preferences

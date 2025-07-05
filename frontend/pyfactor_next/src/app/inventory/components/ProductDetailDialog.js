@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { unifiedInventoryService } from '@/services/unifiedInventoryService';
 import { logger } from '@/utils/logger';
-import AuditTrail from '@/app/(app)/dashboard/components/AuditTrail';
+import AuditTrail from '@/app/dashboard/components/AuditTrail';
 import {
   CloseIcon,
   EditIcon,
@@ -15,7 +15,7 @@ import {
   BarcodeIcon,
   CalendarTodayIcon,
   InfoOutlinedIcon
-} from '@/components/icons';
+} from '@/app/components/icons';
 
 /**
  * Enhanced ProductDetailDialog Component

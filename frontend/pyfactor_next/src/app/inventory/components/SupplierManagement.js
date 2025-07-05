@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { supplierService } from '@/services/supplierService';
 import { logger } from '@/utils/logger';
 import { toast } from 'react-hot-toast';
-import { getCacheValue } from @/utils/appCache';
+import { getCacheValue } from '@/utils/appCache';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import axios from 'axios';
 

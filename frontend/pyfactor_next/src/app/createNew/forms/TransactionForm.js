@@ -7,7 +7,7 @@ import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import { useNotification } from '@/context/NotificationContext';
 import { format } from 'date-fns';
-import ModernFormLayout from '@/components/ModernFormLayout';
+import ModernFormLayout from '@/app/components/ModernFormLayout';
 
 // SVG icon components
 const AccountBalanceIcon = () => (

@@ -7,7 +7,7 @@ import { logger } from '@/utils/logger';
 import dynamic from 'next/dynamic';
 import DashboardLoader from '@/components/DashboardLoader';
 import { saveUserPreference, PREF_KEYS } from '@/utils/userPreferences';
-import { setCacheValue } from @/utils/appCache';
+import { setCacheValue } from '@/utils/appCache';
 
 // Dynamically import DashboardContent to avoid SSR issues
 const DashboardContent = dynamic(

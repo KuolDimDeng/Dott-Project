@@ -138,7 +138,14 @@ export async function middleware(request) {
   }
   
   // For all other routes, apply security headers and continue normally
-  const response = NextResponse.next();
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-pathname', pathname);
+  
+  const response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
   console.log('[Middleware] ========== REQUEST END ==========');
   return addSecurityHeaders(response);
 }

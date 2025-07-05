@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { clearCache } from @/utils/appCache';
+import { clearCache } from '@/utils/appCache';
 
 export default function ResetPage() {
   const router = useRouter();

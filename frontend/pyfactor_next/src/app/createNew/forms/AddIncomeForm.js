@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import { useToast } from '@/components/Toast/ToastProvider';
-import UnpaidInvoicesList from '../../dashboard/components/lists/UnpaidInvoicesList'; // Adjust the import path as needed
+import UnpaidInvoicesList from '@/app/dashboard/components/lists/UnpaidInvoicesList';
 import { format } from 'date-fns';
 
 const AddIncomeForm = ({ onClose }) => {

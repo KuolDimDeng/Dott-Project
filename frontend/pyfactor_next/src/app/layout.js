@@ -3,6 +3,7 @@ import "./globals.css";
 import Script from 'next/script';
 import SessionHeartbeat from '@/components/SessionHeartbeat';
 import Providers from '@/providers';
+import { headers } from 'next/headers';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -20,6 +21,11 @@ export const viewport = {
 };
 
 export default function RootLayout({ children }) {
+  // Get the pathname from headers
+  const headersList = headers();
+  const pathname = headersList.get('x-pathname') || '';
+  const isAdminRoute = pathname.startsWith('/admin');
+
   return (
     <html lang="en">
       <head>
@@ -27,10 +33,22 @@ export default function RootLayout({ children }) {
         <meta httpEquiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()" />
       </head>
       <body className={inter.className}>
-        {children}
+        {/* Admin routes bypass providers */}
+        {isAdminRoute ? (
+          children
+        ) : (
+          <>
+            {/* Session Heartbeat Component */}
+            <SessionHeartbeat interval={60000} />
+            
+            <Providers>
+              {children}
+            </Providers>
+          </>
+        )}
         
-        {/* Crisp Chat Widget */}
-        {process.env.NEXT_PUBLIC_CRISP_WEBSITE_ID && (
+        {/* Crisp Chat Widget - only for non-admin routes */}
+        {!isAdminRoute && process.env.NEXT_PUBLIC_CRISP_WEBSITE_ID && (
           <Script
             id="crisp-chat"
             strategy="afterInteractive"

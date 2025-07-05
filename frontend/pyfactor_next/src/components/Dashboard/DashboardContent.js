@@ -15,8 +15,8 @@ import React, { useState, useCallback, useEffect, lazy, Suspense, useMemo, useRe
 import useClientEffect from '@/hooks/useClientEffect';
 import { useStore } from '@/store/authStore';
 import { Box, Container, Typography, Alert, Button } from '@/components/ui/TailwindComponents';
-import DashAppBar from '../../app/dashboard/components/DashAppBar';
-import Drawer from '../../app/dashboard/components/Drawer';
+import DashAppBar from '@/app/dashboard/components/DashAppBar';
+import Drawer from '@/app/dashboard/components/Drawer';
 import { logger } from '@/utils/logger';
 import ErrorBoundary from '../../app/dashboard/components/ErrorBoundary';
 import { useRouter } from 'next/navigation';

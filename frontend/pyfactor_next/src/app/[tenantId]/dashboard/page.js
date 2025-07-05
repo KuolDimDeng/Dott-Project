@@ -7,7 +7,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { logger } from '@/utils/logger';
 import { DashboardProvider } from '@/context/DashboardContext';
-import DashboardContent from '@/app/(app)/dashboard/DashboardContent';
+import DashboardContent from '@/app/dashboard/DashboardContent';
 import DashboardLoader from '@/components/DashboardLoader';
 import { storeTenantId, getTenantIdFromCognito } from '@/utils/tenantUtils';
 import { NotificationProvider } from '@/context/NotificationContext';

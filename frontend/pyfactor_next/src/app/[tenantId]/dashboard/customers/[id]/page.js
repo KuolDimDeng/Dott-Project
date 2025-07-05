@@ -2,8 +2,8 @@
 
 
 import { useParams } from 'next/navigation';
-import CustomerDetails from '@/app/(app)/dashboard/components/forms/CustomerDetails';
-import DashboardWrapper from '@/app/(app)/dashboard/DashboardWrapper';
+import CustomerDetails from '@/app/dashboard/components/forms/CustomerDetails';
+import DashboardWrapper from '@/app/dashboard/DashboardWrapper';
 import { logger } from '@/utils/logger';
 
 /**

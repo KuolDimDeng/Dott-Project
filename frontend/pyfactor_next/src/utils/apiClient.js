@@ -7,7 +7,7 @@ import { getTenantId } from './tenantUtils';
 // Removed duplicate import
 import { logger } from './logger';
 import axios from 'axios';
-import { getAppCacheItem, setAppCacheItem } from @/utils/appCache';
+import { getAppCacheItem, setAppCacheItem } from '@/utils/appCache';
 import { fetchWithAuth } from '@/utils/api';
 import { djangoApi } from './djangoApiClient';
 

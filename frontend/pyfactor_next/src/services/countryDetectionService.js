@@ -5,7 +5,7 @@
  * Uses multiple detection methods with fallbacks
  */
 
-import { getCacheValue, setCacheValue } from @/utils/appCache';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
 import { saveUserPreference, getUserPreference } from '@/utils/userPreferences';
 
 // Cache TTL for country detection (24 hours)

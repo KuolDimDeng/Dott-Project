@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTenant } from '@/context/TenantContext';
 import { logger } from '@/utils/logger';
-import AppBar from '@/components/AppBar';
+import AppBar from '@/app/components/AppBar';
 
 export default function CreateTenantPage() {
   const router = useRouter();

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supplierService } from '@/services/supplierService';
 import { logger } from '@/utils/logger';
-import { EditIcon, DeleteIcon, AddIcon, RefreshIcon, CloseIcon } from '@/components/icons';
+import { EditIcon, DeleteIcon, AddIcon, RefreshIcon, CloseIcon } from '@/app/components/icons';
 
 // Component for displaying and managing inventory suppliers
 const SupplierList = () => {

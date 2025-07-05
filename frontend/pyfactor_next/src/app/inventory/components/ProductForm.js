@@ -10,7 +10,7 @@ import {
   StorageIcon,
   DetailsIcon,
   CloseIcon
-} from '@/components/icons';
+} from '@/app/components/icons';
 
 /**
  * Enhanced Product Form Component with Tailwind CSS

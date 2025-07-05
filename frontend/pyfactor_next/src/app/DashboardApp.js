@@ -20,7 +20,7 @@ import { toast } from 'react-hot-toast';
 import DashboardShell from '@/components/Dashboard/DashboardShell';
 import { useAuth } from '@/hooks/useAuth';
 import { saveUserPreferences, getOnboardingStatus, PREF_KEYS } from '@/utils/userPreferences';
-import { getCacheValue, setCacheValue } from @/utils/appCache';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
 
 // App Cache keys
 const CACHE_KEYS = {
