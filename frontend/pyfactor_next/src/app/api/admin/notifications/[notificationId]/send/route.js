@@ -15,7 +15,8 @@ export async function POST(request, { params }) {
     const { notificationId } = params;
 
     // Forward the request to Django backend
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/notifications/admin/notifications/${notificationId}/send/`, {
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.dottapps.com';
+    const response = await fetch(`${backendUrl}/api/notifications/admin/notifications/${notificationId}/send/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

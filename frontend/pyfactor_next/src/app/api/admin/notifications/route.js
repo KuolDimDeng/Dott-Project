@@ -17,7 +17,8 @@ export async function GET(request) {
     const queryString = searchParams.toString();
 
     // Forward the request to Django backend
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/notifications/admin/notifications/?${queryString}`, {
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.dottapps.com';
+    const response = await fetch(`${backendUrl}/api/notifications/admin/notifications/?${queryString}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -57,7 +58,8 @@ export async function POST(request) {
     const body = await request.json();
 
     // Forward the request to Django backend
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/notifications/admin/notifications/`, {
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.dottapps.com';
+    const response = await fetch(`${backendUrl}/api/notifications/admin/notifications/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
