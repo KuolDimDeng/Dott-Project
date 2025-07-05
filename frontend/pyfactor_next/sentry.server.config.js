@@ -3,7 +3,6 @@
 // https://docs.sentry.io/platforms/javascript/guides/nextjs/
 
 import * as Sentry from '@sentry/nextjs';
-import { ProfilingIntegration } from '@sentry/profiling-node';
 
 // Initialize Sentry for the server
 Sentry.init({
@@ -21,45 +20,16 @@ Sentry.init({
   // Uncomment the line below to enable Spotlight (https://spotlightjs.com)
   // spotlight: process.env.NODE_ENV === 'development',
 
-  // Performance monitoring
+  // Performance monitoring - using simpler integrations to avoid compatibility issues
   integrations: [
-    // Automatically instrument Node.js libraries and frameworks
-    ...Sentry.autoDiscoverNodePerformanceMonitoringIntegrations(),
-    // Add Node.js profiling
-    new ProfilingIntegration(),
-    // Prisma ORM integration
-    Sentry.prismaIntegration(),
-    // GraphQL integration
-    Sentry.graphqlIntegration({
-      ignoreResolveSpans: false,
-      ignoreTrivialResolveSpans: true,
-    }),
     // HTTP integration for tracking outgoing requests
     Sentry.httpIntegration({
       tracing: true,
       breadcrumbs: true,
     }),
-    // Console integration
-    Sentry.consoleIntegration(),
-    // Context lines integration (shows code context in errors)
-    Sentry.contextLinesIntegration({
-      frameContextLines: 7,
-    }),
-    // Local variables integration (captures local variables)
-    Sentry.localVariablesIntegration({
-      captureAllExceptions: true,
-    }),
-    // Request data integration
-    Sentry.requestDataIntegration({
-      include: {
-        cookies: true,
-        data: true,
-        headers: true,
-        ip: true,
-        query_string: true,
-        url: true,
-        user: true,
-      },
+    // Capture console errors
+    Sentry.captureConsoleIntegration({
+      levels: ['error', 'warn']
     }),
   ],
 
