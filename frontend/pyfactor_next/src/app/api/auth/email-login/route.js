@@ -48,21 +48,34 @@ export async function POST(request) {
     }
     
     const authData = await authResponse.json();
-    console.log('[EmailLogin] Auth successful, creating session...');
+    console.log('[EmailLogin] Auth successful, creating session...', {
+      hasAccessToken: !!authData.access_token,
+      hasUser: !!authData.user,
+      userEmail: authData.user?.email,
+      userSub: authData.user?.sub
+    });
     
     // Create session using cloudflare endpoint
+    const sessionPayload = {
+      email: authData.user.email,
+      auth0_token: authData.access_token,
+      auth0_sub: authData.user.sub,
+      user: authData.user
+    };
+    
+    console.log('[EmailLogin] Session payload:', {
+      email: sessionPayload.email,
+      hasAuth0Token: !!sessionPayload.auth0_token,
+      auth0Sub: sessionPayload.auth0_sub
+    });
+    
     const sessionResponse = await fetch(`${baseUrl}/api/auth/cloudflare-session`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-Forwarded-For': request.headers.get('x-forwarded-for') || request.headers.get('cf-connecting-ip'),
       },
-      body: JSON.stringify({
-        email: authData.user.email,
-        auth0_token: authData.access_token,
-        auth0_sub: authData.user.sub,
-        user: authData.user
-      })
+      body: JSON.stringify(sessionPayload)
     });
     
     if (!sessionResponse.ok) {

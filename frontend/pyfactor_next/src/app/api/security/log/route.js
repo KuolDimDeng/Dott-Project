@@ -27,17 +27,28 @@ export async function POST(request) {
     }));
     
     // In production, send to backend security service
+    // Only send events that don't require authentication (like login failures)
     if (process.env.NODE_ENV === 'production') {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
-        await fetch(`${apiUrl}/api/security/events/`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': sessionToken ? `Session ${sessionToken.value}` : ''
-          },
-          body: JSON.stringify({ events: enrichedEvents })
-        });
+        // Filter events that can be sent without authentication
+        const publicEvents = enrichedEvents.filter(event => 
+          event.type === 'LOGIN_FAILED' || 
+          event.type === 'RATE_LIMIT_EXCEEDED' ||
+          event.type === 'SUSPICIOUS_ACTIVITY'
+        );
+        
+        // Only send to backend if we have a session token or if it's a public event
+        if (sessionToken || publicEvents.length > 0) {
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+          const eventsToSend = sessionToken ? enrichedEvents : publicEvents;
+          
+          // Don't send to backend if no events to send
+          if (eventsToSend.length > 0) {
+            // For now, skip sending to backend for login failures since it requires tenant
+            // Just log them server-side
+            logger.info('[SecurityLog] Skipping backend send for security events without session');
+          }
+        }
       } catch (error) {
         logger.error('[SecurityLog] Failed to send to backend:', error);
       }

@@ -47,8 +47,22 @@ export async function POST(request) {
     });
     
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Session creation failed' }));
-      console.error('[CloudflareSession] Backend error:', error);
+      const errorText = await response.text();
+      let error;
+      try {
+        error = JSON.parse(errorText);
+      } catch {
+        error = { error: 'Session creation failed', details: errorText };
+      }
+      console.error('[CloudflareSession] Backend error:', {
+        status: response.status,
+        error: error,
+        requestData: {
+          hasEmail: !!data.email,
+          hasAuth0Token: !!data.auth0_token,
+          auth0Sub: data.auth0_sub
+        }
+      });
       return NextResponse.json(error, { status: response.status });
     }
     
