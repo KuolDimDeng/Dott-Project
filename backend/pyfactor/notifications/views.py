@@ -169,6 +169,15 @@ class AdminDashboardView(APIView):
     """
     permission_classes = [AdminPermission]
     
+    def _get_pending_feedback_count(self):
+        """Safely get pending feedback count, handling migration state"""
+        try:
+            from taxes.models import TaxSuggestionFeedback
+            return TaxSuggestionFeedback.objects.filter(status='pending').count()
+        except (ImportError, Exception):
+            # Model not available yet or migration not run
+            return 0
+    
     def get(self, request):
         # Get statistics
         stats = {
@@ -178,7 +187,7 @@ class AdminDashboardView(APIView):
             ).count(),
             'total_recipients': NotificationRecipient.objects.count(),
             'unread_count': NotificationRecipient.objects.filter(is_read=False).count(),
-            'pending_feedback': 0,  # Temporarily disabled until migration runs
+            'pending_feedback': self._get_pending_feedback_count(),
             'recent_notifications': NotificationSerializer(
                 Notification.objects.order_by('-created_at')[:10],
                 many=True
@@ -303,7 +312,14 @@ class TaxFeedbackListView(APIView):
     
     def get(self, request):
         # Import here to avoid circular import issues
-        from taxes.models import TaxSuggestionFeedback
+        try:
+            from taxes.models import TaxSuggestionFeedback
+        except ImportError:
+            # Model not available yet
+            return Response({
+                'error': 'Tax feedback system is being deployed. Please try again in a few minutes.'
+            }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        
         from rest_framework import serializers
         
         # Define serializer inline to avoid circular imports
@@ -363,7 +379,14 @@ class TaxFeedbackDetailView(APIView):
     
     def patch(self, request, feedback_id):
         # Import here to avoid circular import issues
-        from taxes.models import TaxSuggestionFeedback
+        try:
+            from taxes.models import TaxSuggestionFeedback
+        except ImportError:
+            # Model not available yet
+            return Response({
+                'error': 'Tax feedback system is being deployed. Please try again in a few minutes.'
+            }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        
         from rest_framework import serializers
         
         # Define serializer inline to avoid circular imports
