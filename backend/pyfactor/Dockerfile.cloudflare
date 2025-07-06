@@ -1,0 +1,124 @@
+FROM python:3.12-slim
+
+# Install system dependencies including supervisor for process management
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    python3-dev \
+    libpq-dev \
+    postgresql-client \
+    curl \
+    netcat-traditional \
+    supervisor \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install cloudflared
+RUN wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 && \
+    mv cloudflared-linux-amd64 /usr/local/bin/cloudflared && \
+    chmod +x /usr/local/bin/cloudflared
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements first for better caching
+COPY requirements-render.txt ./
+
+# Install Python dependencies with verification
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir -r requirements-render.txt && \
+    echo "=== DEPENDENCY VERIFICATION ===" && \
+    python -c "import stripe; print(f'✅ Stripe {stripe._version} installed successfully')" && \
+    python -c "import jwcrypto; print(f'✅ JWCrypto installed successfully')" && \
+    echo "=== ALL CRITICAL DEPENDENCIES VERIFIED ==="
+
+# Copy application code
+COPY . .
+
+# Create necessary directories
+RUN mkdir -p staticfiles logs media /etc/cloudflared
+
+# Create supervisor configuration
+RUN echo '[supervisord]' > /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'nodaemon=true' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'logfile=/dev/stdout' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'logfile_maxbytes=0' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'loglevel=info' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo '' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo '[program:django]' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'command=/app/start-django.sh' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'stdout_logfile=/dev/stdout' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'stdout_logfile_maxbytes=0' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'stderr_logfile=/dev/stderr' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'stderr_logfile_maxbytes=0' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'autorestart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'priority=10' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo '' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo '[program:cloudflared]' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'command=/app/start-tunnel.sh' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'stdout_logfile=/dev/stdout' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'stdout_logfile_maxbytes=0' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'stderr_logfile=/dev/stderr' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'stderr_logfile_maxbytes=0' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'autorestart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'priority=5' >> /etc/supervisor/conf.d/supervisord.conf
+
+# Create Django startup script
+RUN echo '#!/bin/bash' > /app/start-django.sh && \
+    echo 'set -e' >> /app/start-django.sh && \
+    echo '' >> /app/start-django.sh && \
+    echo 'echo "=== Django Application Startup ===" ' >> /app/start-django.sh && \
+    echo 'echo "Time: $(date)" ' >> /app/start-django.sh && \
+    echo 'echo "Python: $(python --version)" ' >> /app/start-django.sh && \
+    echo 'echo "Working directory: $(pwd)" ' >> /app/start-django.sh && \
+    echo 'echo "DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE" ' >> /app/start-django.sh && \
+    echo '' >> /app/start-django.sh && \
+    echo 'echo "Testing Django configuration..." ' >> /app/start-django.sh && \
+    echo 'python -c "import django; django.setup(); print(\"Django setup successful\")" || (echo "ERROR: Django setup failed!"; exit 1)' >> /app/start-django.sh && \
+    echo '' >> /app/start-django.sh && \
+    echo 'echo "Collecting static files..." ' >> /app/start-django.sh && \
+    echo 'python manage.py collectstatic --noinput --verbosity 0' >> /app/start-django.sh && \
+    echo '' >> /app/start-django.sh && \
+    echo 'echo "Starting Gunicorn server..." ' >> /app/start-django.sh && \
+    echo 'exec gunicorn pyfactor.wsgi:application \' >> /app/start-django.sh && \
+    echo '    --bind 0.0.0.0:8000 \' >> /app/start-django.sh && \
+    echo '    --workers 2 \' >> /app/start-django.sh && \
+    echo '    --worker-class gthread \' >> /app/start-django.sh && \
+    echo '    --threads 4 \' >> /app/start-django.sh && \
+    echo '    --timeout 120 \' >> /app/start-django.sh && \
+    echo '    --keep-alive 5 \' >> /app/start-django.sh && \
+    echo '    --max-requests 1000 \' >> /app/start-django.sh && \
+    echo '    --max-requests-jitter 100 \' >> /app/start-django.sh && \
+    echo '    --access-logfile - \' >> /app/start-django.sh && \
+    echo '    --error-logfile - \' >> /app/start-django.sh && \
+    echo '    --log-level info' >> /app/start-django.sh && \
+    chmod +x /app/start-django.sh
+
+# Create Cloudflare tunnel startup script
+RUN echo '#!/bin/bash' > /app/start-tunnel.sh && \
+    echo 'set -e' >> /app/start-tunnel.sh && \
+    echo '' >> /app/start-tunnel.sh && \
+    echo 'echo "=== Cloudflare Tunnel Startup ===" ' >> /app/start-tunnel.sh && \
+    echo 'echo "Time: $(date)" ' >> /app/start-tunnel.sh && \
+    echo '' >> /app/start-tunnel.sh && \
+    echo '# Wait for Django to be ready' >> /app/start-tunnel.sh && \
+    echo 'echo "Waiting for Django to start..." ' >> /app/start-tunnel.sh && \
+    echo 'sleep 10' >> /app/start-tunnel.sh && \
+    echo '' >> /app/start-tunnel.sh && \
+    echo '# Check if tunnel token is provided' >> /app/start-tunnel.sh && \
+    echo 'if [ -z "$CLOUDFLARE_TUNNEL_TOKEN" ]; then' >> /app/start-tunnel.sh && \
+    echo '    echo "WARNING: CLOUDFLARE_TUNNEL_TOKEN not set, skipping tunnel startup"' >> /app/start-tunnel.sh && \
+    echo '    echo "To enable Cloudflare Tunnel, set CLOUDFLARE_TUNNEL_TOKEN environment variable"' >> /app/start-tunnel.sh && \
+    echo '    # Keep the process alive so supervisor doesnt restart' >> /app/start-tunnel.sh && \
+    echo '    while true; do sleep 3600; done' >> /app/start-tunnel.sh && \
+    echo 'else' >> /app/start-tunnel.sh && \
+    echo '    echo "Starting Cloudflare Tunnel..."' >> /app/start-tunnel.sh && \
+    echo '    exec cloudflared tunnel --no-autoupdate run --token $CLOUDFLARE_TUNNEL_TOKEN' >> /app/start-tunnel.sh && \
+    echo 'fi' >> /app/start-tunnel.sh && \
+    chmod +x /app/start-tunnel.sh
+
+# Expose port 8000
+EXPOSE 8000
+
+# Use supervisor to manage both processes
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
