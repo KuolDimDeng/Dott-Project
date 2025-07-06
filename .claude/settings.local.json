@@ -126,7 +126,9 @@
       "Bash(NODE_ENV=production NODE_OPTIONS=\"--max-old-space-size=6144\" pnpm build)",
       "Bash(NODE_ENV=production NODE_OPTIONS=\"--max-old-space-size=6144\" pnpm run build:render)",
       "Bash(dig:*)",
-      "Bash(nslookup:*)"
+      "Bash(nslookup:*)",
+      "Bash(sudo dscacheutil:*)",
+      "Bash(sudo killall:*)"
     ],
     "deny": []
   }
