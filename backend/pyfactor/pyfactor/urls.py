@@ -13,6 +13,7 @@ from .health_check import health_check, root_health_check, detailed_health_check
 # Import diagnostic view
 from custom_auth.api.views.diagnostic_views import DiagnosticView, RestoreAccountView
 
+@csrf_exempt
 def test_sentry(request):
     """Test endpoint for Sentry integration"""
     if request.method == 'GET':
