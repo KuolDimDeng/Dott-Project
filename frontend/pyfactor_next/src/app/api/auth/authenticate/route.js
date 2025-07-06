@@ -1,18 +1,14 @@
 import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
-import { checkRateLimit, rateLimitResponse } from '@/middleware/rateLimit';
 
 /**
  * Direct Email/Password Authentication Endpoint
  * Handles authentication through Auth0's Resource Owner Password Grant
  * Uses custom domain for embedded login experience
+ * Note: Rate limiting is handled by Auth0, not at the frontend level
  */
 export async function POST(request) {
-  // Check rate limit first
-  const rateLimitResult = checkRateLimit(request, 'auth');
-  if (rateLimitResult.limited) {
-    return rateLimitResponse(rateLimitResult);
-  }
+  // Auth0 handles rate limiting, no need for frontend rate limiting
 
   const startTime = Date.now();
   const debugLog = [];

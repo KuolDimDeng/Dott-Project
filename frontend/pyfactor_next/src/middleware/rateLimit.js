@@ -2,11 +2,7 @@ import { LRUCache } from 'lru-cache';
 
 // Create different rate limiters for different endpoints
 const rateLimiters = {
-  // Strict limit for authentication endpoints
-  auth: new LRUCache({
-    max: 1000, // Store up to 1000 IP addresses
-    ttl: 60 * 60 * 1000, // 1 hour
-  }),
+  // Auth rate limiting is handled by Auth0, not here
   
   // Moderate limit for payment endpoints
   payment: new LRUCache({
@@ -22,12 +18,8 @@ const rateLimiters = {
 };
 
 // Rate limit configurations
+// Note: Auth rate limiting is handled by Auth0, not at the frontend level
 const limits = {
-  auth: {
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 1000, // Effectively disabled - Auth0 handles auth rate limiting
-    message: 'Too many authentication attempts. Please try again later.'
-  },
   payment: {
     windowMs: 60 * 60 * 1000, // 1 hour
     max: 10, // 10 payment attempts per hour
@@ -68,6 +60,12 @@ function getClientIp(request) {
  * Check if request should be rate limited
  */
 export function checkRateLimit(request, type = 'api') {
+  // Auth rate limiting is handled by Auth0, not here
+  if (type === 'auth') {
+    console.log('[RateLimit] Auth rate limiting is handled by Auth0, skipping frontend rate limit');
+    return { limited: false };
+  }
+  
   const ip = getClientIp(request);
   const limiter = rateLimiters[type];
   const limit = limits[type];
