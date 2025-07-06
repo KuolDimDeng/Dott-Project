@@ -54,6 +54,7 @@ const PUBLIC_ROUTES = [
   '/about',
   '/privacy',
   '/terms',
+  '/status',  // Public status page
   // Add new public routes to break redirect loops
   '/auth/reset',
   '/auth/reset/confirm',
