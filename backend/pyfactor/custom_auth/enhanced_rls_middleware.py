@@ -76,6 +76,7 @@ class EnhancedRowLevelSecurityMiddleware:
             '/force-complete/',  # Legacy force complete endpoint
             '/api/notifications/admin/',  # Admin notification portal endpoints
             '/api/notifications/user/',   # User notification endpoints - authenticated but no tenant required
+            '/api/test-sentry/',  # Sentry test endpoint - public for testing
         ]
         
         # Auth0 tenant management endpoints - require Auth0 authentication but can lookup/create tenant IDs
