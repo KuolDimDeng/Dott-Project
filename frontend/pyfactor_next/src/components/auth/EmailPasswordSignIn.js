@@ -265,7 +265,7 @@ export default function EmailPasswordSignIn() {
     trackEvent(posthog, EVENTS.SIGN_IN_STARTED, { email });
 
     try {
-      console.log('[EmailPasswordSignIn] Attempting login via /api/auth/email-login');
+      console.log('[EmailPasswordSignIn] Attempting login via /api/auth/consolidated-login');
       
       // Use consolidated login endpoint for atomic operation
       const loginResponse = await fetch('/api/auth/consolidated-login', {
