@@ -25,7 +25,7 @@ const rateLimiters = {
 const limits = {
   auth: {
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // TEMPORARILY INCREASED FROM 5 TO 100 FOR DEBUGGING
+    max: 1000, // Effectively disabled - Auth0 handles auth rate limiting
     message: 'Too many authentication attempts. Please try again later.'
   },
   payment: {
