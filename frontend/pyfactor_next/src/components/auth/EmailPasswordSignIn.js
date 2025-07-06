@@ -406,6 +406,7 @@ export default function EmailPasswordSignIn() {
         });
         
         // Get client IP and user agent for anomaly detection
+        const userAgent = navigator.userAgent;
         const ip = 'client'; // In production, get from header
         
         // Check for anomalies in successful login
