@@ -19,7 +19,9 @@ export async function POST(request) {
       baseUrl: process.env.NEXT_PUBLIC_BASE_URL,
       auth0Domain: process.env.AUTH0_CUSTOM_DOMAIN,
       hasClientId: !!process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID,
-      hasClientSecret: !!process.env.AUTH0_CLIENT_SECRET
+      hasClientSecret: !!process.env.AUTH0_CLIENT_SECRET,
+      apiUrl: process.env.NEXT_PUBLIC_API_URL,
+      backendApiUrl: process.env.BACKEND_API_URL
     });
     
     // First authenticate with Auth0
@@ -98,6 +100,12 @@ export async function POST(request) {
     });
     
     console.log('[EmailLogin] Calling cloudflare-session endpoint:', `${baseUrl}/api/auth/cloudflare-session`);
+    console.log('[EmailLogin] CloudflareSession URL analysis:', {
+      baseUrl: baseUrl,
+      fullUrl: `${baseUrl}/api/auth/cloudflare-session`,
+      isLocalhost: baseUrl.includes('localhost'),
+      isHttps: baseUrl.startsWith('https')
+    });
     let sessionResponse;
     try {
       sessionResponse = await fetch(`${baseUrl}/api/auth/cloudflare-session`, {
@@ -122,8 +130,21 @@ export async function POST(request) {
     }
     
     if (!sessionResponse.ok) {
-      const error = await sessionResponse.json();
-      console.error('[EmailLogin] Session creation failed:', error);
+      const errorText = await sessionResponse.text();
+      let error;
+      try {
+        error = JSON.parse(errorText);
+      } catch {
+        error = { error: 'Session creation failed', details: errorText };
+      }
+      console.error('[EmailLogin] Session creation failed:', {
+        status: sessionResponse.status,
+        statusText: sessionResponse.statusText,
+        error: error,
+        isCloudflareError: errorText.includes('Cloudflare'),
+        hasError1000: errorText.includes('Error 1000') || errorText.includes('DNS points to prohibited IP'),
+        responseHeaders: Object.fromEntries(sessionResponse.headers.entries())
+      });
       return NextResponse.json(error, { status: sessionResponse.status });
     }
     

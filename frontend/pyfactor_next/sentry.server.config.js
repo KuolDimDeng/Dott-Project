@@ -88,17 +88,22 @@ Sentry.init({
 
   // Before sending transaction
   beforeSendTransaction(transaction) {
+    // Initialize tags if not present
+    if (!transaction.tags) {
+      transaction.tags = {};
+    }
+
     // Add custom tags to transactions
     if (transaction.transaction?.includes('/api/')) {
-      transaction.setTag('transaction.type', 'api');
+      transaction.tags['transaction.type'] = 'api';
     } else {
-      transaction.setTag('transaction.type', 'page');
+      transaction.tags['transaction.type'] = 'page';
     }
 
     // Track slow transactions
     const duration = transaction.timestamp - transaction.start_timestamp;
     if (duration > 3) {
-      transaction.setTag('performance.slow', true);
+      transaction.tags['performance.slow'] = true;
     }
 
     return transaction;

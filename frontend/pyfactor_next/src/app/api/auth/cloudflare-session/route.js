@@ -6,6 +6,12 @@ import { NextResponse } from 'next/server';
  */
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+console.log('[CloudflareSession] API_URL configuration:', {
+  NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+  API_URL: API_URL,
+  NODE_ENV: process.env.NODE_ENV,
+  timestamp: new Date().toISOString()
+});
 
 export async function POST(request) {
   try {
@@ -33,6 +39,12 @@ export async function POST(request) {
     const timestamp = Date.now();
     const endpoint = `${API_URL}/api/sessions/cloudflare/create/?_t=${timestamp}`;
     console.log('[CloudflareSession] Calling backend:', endpoint);
+    console.log('[CloudflareSession] Full URL breakdown:', {
+      protocol: new URL(endpoint).protocol,
+      hostname: new URL(endpoint).hostname,
+      pathname: new URL(endpoint).pathname,
+      searchParams: new URL(endpoint).searchParams.toString()
+    });
     let response;
     try {
       response = await fetch(endpoint, {
@@ -58,7 +70,9 @@ export async function POST(request) {
         message: fetchError.message,
         type: fetchError.constructor.name,
         cause: fetchError.cause,
-        apiUrl: API_URL
+        apiUrl: API_URL,
+        stack: fetchError.stack,
+        endpoint: endpoint
       });
       
       // Check if this is a DNS error
@@ -86,6 +100,14 @@ export async function POST(request) {
     
     if (!response.ok) {
       const errorText = await response.text();
+      console.error('[CloudflareSession] Raw error response:', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries()),
+        errorTextLength: errorText.length,
+        isCloudflareError: errorText.includes('Cloudflare'),
+        hasError1000: errorText.includes('Error 1000') || errorText.includes('DNS points to prohibited IP')
+      });
       let error;
       try {
         error = JSON.parse(errorText);
