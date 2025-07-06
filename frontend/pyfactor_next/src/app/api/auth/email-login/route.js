@@ -74,6 +74,10 @@ export async function POST(request) {
         message: error.message || error.error,
         debugLog: error.debugLog
       });
+      
+      // IMPORTANT: Return auth errors immediately - don't try to create session
+      // This preserves specific error messages like "Wrong email or password"
+      // or "Please verify your email address"
       return NextResponse.json(error, { status: authResponse.status });
     }
     

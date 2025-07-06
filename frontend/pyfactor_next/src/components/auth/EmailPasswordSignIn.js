@@ -327,17 +327,25 @@ export default function EmailPasswordSignIn() {
         if ((loginResult.error === 'invalid_grant' || loginResult.error === 'email_not_verified') && 
             (loginResult.message?.includes('email') || loginResult.message?.includes('verify'))) {
           setShowResendVerification(true);
-          throw new Error('Please verify your email address before signing in. Check your inbox for the verification email.');
+          showError('Please verify your email address before signing in. Check your inbox for the verification email.');
+          setIsLoading(false);
+          return;
         }
         
         // Check if error description mentions email verification
         if (loginResult.message?.toLowerCase().includes('verify') || 
             loginResult.message?.toLowerCase().includes('verification')) {
           setShowResendVerification(true);
-          throw new Error('Please verify your email address before signing in. Check your inbox for the verification email.');
+          showError('Please verify your email address before signing in. Check your inbox for the verification email.');
+          setIsLoading(false);
+          return;
         }
         
-        throw new Error(loginResult.message || loginResult.error || 'Authentication failed');
+        // Display the actual error message from Auth0
+        // This will show messages like "Wrong email or password" instead of generic errors
+        showError(loginResult.message || loginResult.error || 'Authentication failed');
+        setIsLoading(false);
+        return;
       }
 
       // Login was successful and session was created
@@ -421,12 +429,15 @@ export default function EmailPasswordSignIn() {
           method: 'email-password'
         });
         
+        // Get client IP and user agent for anomaly detection
+        const ip = 'client'; // In production, get from header
+        
         // Check for anomalies in successful login
         await anomalyDetector.checkLoginAttempt(email, ip, userAgent, true);
         
         // Log successful login
         await securityLogger.loginSuccess(
-          authResult.user?.sub,
+          loginResult.user?.sub,
           email,
           'email-password'
         );
@@ -435,25 +446,25 @@ export default function EmailPasswordSignIn() {
         let redirectUrl;
         // The authFlowHandler.v3 returns '/auth/session-loading' but we handle sessions differently
         // for email/password login with the session bridge pattern
-        if (finalUserData.needsOnboarding || sessionResult.needs_onboarding) {
+        if (finalUserData.needsOnboarding || loginResult.needs_onboarding) {
           redirectUrl = '/onboarding';
         } else if (finalUserData.tenantId || finalUserData.tenant_id) {
           redirectUrl = `/${finalUserData.tenantId || finalUserData.tenant_id}/dashboard`;
-        } else if (sessionResult.tenant?.id) {
-          redirectUrl = `/${sessionResult.tenant.id}/dashboard`;
+        } else if (loginResult.tenant?.id) {
+          redirectUrl = `/${loginResult.tenant.id}/dashboard`;
         } else {
           redirectUrl = '/dashboard';
         }
         
         console.log('[EmailPasswordSignIn] Determined redirect URL:', {
           redirectUrl,
-          needsOnboarding: finalUserData.needsOnboarding || sessionResult.needs_onboarding,
-          tenantId: finalUserData.tenantId || finalUserData.tenant_id || sessionResult.tenant?.id,
+          needsOnboarding: finalUserData.needsOnboarding || loginResult.needs_onboarding,
+          tenantId: finalUserData.tenantId || finalUserData.tenant_id || loginResult.tenant?.id,
           authFlowHandlerRedirect: finalUserData.redirectUrl // This is /auth/session-loading
         });
         
         // For non-onboarding flows, use secure session bridge
-        if (!finalUserData.needsOnboarding && !sessionResult.needs_onboarding && bridgeToken) {
+        if (!finalUserData.needsOnboarding && !loginResult.needs_onboarding && bridgeToken) {
           logger.info('[EmailPasswordSignIn] Using bridge token for session handoff');
           console.log('[EmailPasswordSignIn] DEBUG - Preparing session bridge with:', {
             hasBridgeToken: !!bridgeToken,
@@ -521,10 +532,10 @@ export default function EmailPasswordSignIn() {
       logger.error('[EmailPasswordSignIn] Unexpected state - session created but no navigation happened');
       
       // As a last resort, if session is created, try direct navigation
-      if (sessionResult.success && sessionResult.user) {
+      if (loginResult.success && loginResult.user) {
         console.log('[EmailPasswordSignIn] Attempting direct navigation as final fallback');
-        const fallbackUrl = sessionResult.needs_onboarding ? '/onboarding' : 
-                           sessionResult.tenant?.id ? `/${sessionResult.tenant.id}/dashboard` : 
+        const fallbackUrl = loginResult.needs_onboarding ? '/onboarding' : 
+                           loginResult.tenant?.id ? `/${loginResult.tenant.id}/dashboard` : 
                            '/dashboard';
         window.location.href = fallbackUrl;
       } else {
