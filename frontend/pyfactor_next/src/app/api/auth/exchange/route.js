@@ -30,12 +30,25 @@ export async function GET(request) {
     try {
       console.log('[Auth0 Exchange] Exchanging code for tokens...');
       
+      // Check which redirect URI was used - if the callback came to /auth/oauth-callback,
+      // we need to use that as the redirect_uri for token exchange
+      const referer = request.headers.get('referer');
+      const isOAuthCallbackPage = referer && referer.includes('/auth/oauth-callback');
+      
+      // Auth0 might be configured to use /auth/oauth-callback as the callback URL
+      // Try the OAuth callback URL first, fallback to API callback if that fails
+      let redirectUri = `${process.env.NEXT_PUBLIC_BASE_URL}/auth/oauth-callback`;
+      
+      console.log('[Auth0 Exchange] Initial redirect_uri attempt:', redirectUri);
+      console.log('[Auth0 Exchange] Referer:', referer);
+      console.log('[Auth0 Exchange] Base URL:', process.env.NEXT_PUBLIC_BASE_URL);
+      
       const tokenRequestBody = {
         grant_type: 'authorization_code',
         client_id: process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID,
         client_secret: process.env.AUTH0_CLIENT_SECRET,
         code: code,
-        redirect_uri: `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/callback`,
+        redirect_uri: redirectUri,
       };
       
       console.log('[Auth0 Exchange] Token request body:', {
@@ -43,11 +56,13 @@ export async function GET(request) {
         client_id: tokenRequestBody.client_id,
         redirect_uri: tokenRequestBody.redirect_uri,
         has_code: !!tokenRequestBody.code,
-        has_client_secret: !!tokenRequestBody.client_secret
+        has_client_secret: !!tokenRequestBody.client_secret,
+        referer: referer,
+        baseUrl: process.env.NEXT_PUBLIC_BASE_URL
       });
       
-      // Exchange code for tokens
-      const tokenResponse = await fetch(`https://${process.env.NEXT_PUBLIC_AUTH0_DOMAIN}/oauth/token`, {
+      // Try to exchange code for tokens
+      let tokenResponse = await fetch(`https://${process.env.NEXT_PUBLIC_AUTH0_DOMAIN}/oauth/token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -55,22 +70,93 @@ export async function GET(request) {
         body: JSON.stringify(tokenRequestBody),
       });
       
-      console.log('[Auth0 Exchange] Token response status:', {
+      console.log('[Auth0 Exchange] First token response status:', {
         status: tokenResponse.status,
         statusText: tokenResponse.statusText,
-        ok: tokenResponse.ok
+        ok: tokenResponse.ok,
+        redirect_uri_used: redirectUri
       });
       
+      // If the first attempt fails with invalid_grant, try the alternative redirect URI
+      if (!tokenResponse.ok && tokenResponse.status === 400) {
+        const errorText = await tokenResponse.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { error: 'unknown' };
+        }
+        
+        // If it's a redirect_uri mismatch, try the alternative
+        if (errorData.error === 'invalid_grant' && errorData.error_description?.includes('redirect_uri')) {
+          console.log('[Auth0 Exchange] Redirect URI mismatch detected, trying alternative...');
+          
+          // Try the alternative redirect URI
+          const alternativeRedirectUri = redirectUri.includes('/auth/oauth-callback')
+            ? `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/callback`
+            : `${process.env.NEXT_PUBLIC_BASE_URL}/auth/oauth-callback`;
+          
+          console.log('[Auth0 Exchange] Trying alternative redirect_uri:', alternativeRedirectUri);
+          
+          tokenRequestBody.redirect_uri = alternativeRedirectUri;
+          
+          // Retry with alternative redirect URI
+          tokenResponse = await fetch(`https://${process.env.NEXT_PUBLIC_AUTH0_DOMAIN}/oauth/token`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(tokenRequestBody),
+          });
+          
+          console.log('[Auth0 Exchange] Alternative token response status:', {
+            status: tokenResponse.status,
+            statusText: tokenResponse.statusText,
+            ok: tokenResponse.ok,
+            redirect_uri_used: alternativeRedirectUri
+          });
+          
+          // Update redirectUri for logging
+          redirectUri = alternativeRedirectUri;
+        }
+      }
+      
       if (!tokenResponse.ok) {
-        const errorData = await tokenResponse.text();
+        const errorText = await tokenResponse.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { error_description: errorText };
+        }
+        
         console.error('[Auth0 Exchange] Token exchange failed:', {
           status: tokenResponse.status,
           statusText: tokenResponse.statusText,
-          error: errorData
+          error: errorData,
+          error_description: errorData.error_description,
+          error_code: errorData.error,
+          redirect_uri_used: redirectUri,
+          auth0_domain: process.env.NEXT_PUBLIC_AUTH0_DOMAIN
         });
+        
+        // Common Auth0 errors
+        let userMessage = 'Authentication failed. Please try again.';
+        if (errorData.error === 'invalid_grant') {
+          if (errorData.error_description?.includes('redirect_uri')) {
+            userMessage = 'Configuration error: Redirect URI mismatch. Please contact support.';
+          } else if (errorData.error_description?.includes('code')) {
+            userMessage = 'The authorization code has expired or is invalid. Please try signing in again.';
+          }
+        } else if (errorData.error === 'unauthorized_client') {
+          userMessage = 'Configuration error: Client not authorized. Please contact support.';
+        }
+        
         return NextResponse.json({ 
           error: 'Token exchange failed',
-          details: errorData,
+          message: userMessage,
+          details: errorData.error_description || errorText,
+          error_code: errorData.error,
           status: tokenResponse.status
         }, { status: 400 });
       }
@@ -117,6 +203,42 @@ export async function GET(request) {
         picture: user.picture
       });
       
+      // Try to create backend session first
+      let backendSession = null;
+      try {
+        console.log('[Auth0 Exchange] Creating backend session...');
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+        
+        // Use the cloudflare-session endpoint for better compatibility
+        const sessionResponse = await fetch(`${apiUrl}/api/sessions/cloudflare/create/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${tokens.access_token}`,
+          },
+          body: JSON.stringify({
+            auth0_token: tokens.access_token,
+            auth0_sub: user.sub,
+            email: user.email,
+            name: user.name
+          })
+        });
+        
+        if (sessionResponse.ok) {
+          backendSession = await sessionResponse.json();
+          console.log('[Auth0 Exchange] Backend session created:', {
+            authenticated: backendSession.authenticated,
+            hasSessionToken: !!backendSession.session_token,
+            needsOnboarding: backendSession.needs_onboarding
+          });
+        } else {
+          const errorData = await sessionResponse.json();
+          console.error('[Auth0 Exchange] Backend session creation failed:', errorData);
+        }
+      } catch (error) {
+        console.error('[Auth0 Exchange] Error creating backend session:', error);
+      }
+      
       // Create session data
       const sessionData = {
         user: user,
@@ -124,11 +246,20 @@ export async function GET(request) {
         idToken: tokens.id_token,
         refreshToken: tokens.refresh_token,
         accessTokenExpiresAt: Date.now() + (tokens.expires_in * 1000),
-        state: exchangeState
+        state: exchangeState,
+        // Include backend session info if available
+        backendAuthenticated: backendSession?.authenticated || false,
+        backendSessionToken: backendSession?.session_token,
+        needsOnboarding: backendSession?.needs_onboarding || false
       };
       
       // Set session cookies and return success
-      const response = NextResponse.json({ success: true, user: user });
+      const response = NextResponse.json({ 
+        success: true, 
+        user: user,
+        authenticated: backendSession?.authenticated || false,
+        needsOnboarding: backendSession?.needs_onboarding || false
+      });
       
       // Set the Auth0 session cookie
       const sessionCookie = Buffer.from(JSON.stringify(sessionData)).toString('base64');
@@ -139,6 +270,24 @@ export async function GET(request) {
         maxAge: tokens.expires_in || 3600,
         path: '/'
       });
+      
+      // Set backend session token if available
+      if (backendSession?.session_token) {
+        response.cookies.set('sid', backendSession.session_token, {
+          httpOnly: true,
+          secure: true,
+          sameSite: 'lax',
+          maxAge: 86400, // 24 hours
+          path: '/'
+        });
+        response.cookies.set('session_token', backendSession.session_token, {
+          httpOnly: true,
+          secure: true,
+          sameSite: 'lax',
+          maxAge: 86400, // 24 hours
+          path: '/'
+        });
+      }
       
       // Also set individual tokens for easier access
       response.cookies.set('auth0_access_token', tokens.access_token, {

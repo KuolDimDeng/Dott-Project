@@ -99,6 +99,12 @@ export default function EmailPasswordSignIn() {
     } else if (errorParam === 'invalid_session') {
       setError('Your session has expired. Please sign in again.');
       setErrorType('error');
+    } else if (errorParam === 'token_exchange_failed') {
+      setError('Sign in with Google failed. Please try using email/password or contact support.');
+      setErrorType('error');
+    } else if (errorParam === 'oauth_configuration_error') {
+      setError('Google sign-in is temporarily unavailable due to a configuration issue. Please use email/password login.');
+      setErrorType('error');
     }
   }, [searchParams]);
 

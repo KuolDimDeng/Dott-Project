@@ -155,11 +155,11 @@ export async function POST(request) {
           fetchError.message.includes('DNS')) {
         return NextResponse.json({
           error: 'Backend unavailable',
-          message: 'The backend server is temporarily unavailable. This is likely a DNS issue that should resolve shortly.',
-          details: `DNS lookup failed for ${API_URL}`,
+          message: 'Unable to connect to the backend server. Please try again later.',
+          details: 'Connection failed',
           debugInfo: {
             apiUrl: API_URL,
-            errorType: 'DNS_RESOLUTION_FAILED',
+            errorType: 'CONNECTION_FAILED',
             timestamp: new Date().toISOString()
           }
         }, { status: 503 });
@@ -209,19 +209,19 @@ export async function POST(request) {
           : 'Unknown error'
       });
       
-      // If it's a DNS error, provide a more user-friendly message
+      // If it's a Cloudflare Error 1000, provide a more user-friendly message
       if (error.details && error.details.includes('DNS points to prohibited IP')) {
-        console.error('[CloudflareSession] Detected DNS/Cloudflare Error 1000');
+        console.error('[CloudflareSession] Detected Cloudflare Error 1000');
         return NextResponse.json({
-          error: 'DNS Configuration Issue',
-          message: 'The API server is temporarily unavailable due to DNS configuration. Please contact support or try again later.',
+          error: 'Service temporarily unavailable',
+          message: 'The backend service is temporarily unavailable. Please try again later.',
           technicalDetails: {
             originalError: error.error,
             apiUrl: API_URL,
-            suggestion: 'The API domain is resolving to a Cloudflare IP which is prohibited. DNS configuration needs to be updated.',
+            errorType: 'CLOUDFLARE_ERROR_1000',
             actualErrorText: errorText.substring(0, 500),
             isHtmlError: errorText.includes('<!DOCTYPE'),
-            errorCode: response.headers.get('cf-error-code') || 'unknown'
+            errorCode: response.headers.get('cf-error-code') || '1000'
           }
         }, { status: 503 });
       }

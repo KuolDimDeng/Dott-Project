@@ -51,10 +51,22 @@ export default function Auth0OAuthCallbackPage() {
         if (!exchangeResponse.ok) {
           const errorData = await exchangeResponse.json();
           console.error('[OAuth Callback] Token exchange failed:', errorData);
-          setError('Token exchange failed: ' + (errorData.error || 'Unknown error'));
-          setTimeout(() => {
-            router.push('/auth/signin?error=token_exchange_failed');
-          }, 3000);
+          
+          // Use the user-friendly message if available
+          const errorMessage = errorData.message || errorData.error || 'Authentication failed';
+          setError(errorMessage);
+          
+          // Check for specific error types
+          if (errorData.error_code === 'invalid_grant' || errorData.details?.includes('redirect_uri')) {
+            console.error('[OAuth Callback] Redirect URI mismatch detected');
+            setTimeout(() => {
+              router.push('/auth/signin?error=oauth_configuration_error');
+            }, 3000);
+          } else {
+            setTimeout(() => {
+              router.push('/auth/signin?error=token_exchange_failed');
+            }, 3000);
+          }
           return;
         }
 
