@@ -14,8 +14,8 @@ from django.core.cache import cache
 
 from custom_auth.models import User
 from onboarding.models import OnboardingProgress
-from ..models import UserSession
-from ..services import session_service
+from .models import UserSession
+from .services import session_service
 
 logger = logging.getLogger(__name__)
 

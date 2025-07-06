@@ -38,6 +38,8 @@ export async function POST(request) {
     
     // Step 2: Call consolidated backend endpoint
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://dott-api-y26w.onrender.com';
+    console.log('[ConsolidatedLogin] Calling backend consolidated-auth at:', `${API_URL}/api/sessions/consolidated-auth/`);
+    
     const consolidatedResponse = await fetch(`${API_URL}/api/sessions/consolidated-auth/`, {
       method: 'POST',
       headers: {
@@ -57,7 +59,22 @@ export async function POST(request) {
     });
     
     if (!consolidatedResponse.ok) {
-      const error = await consolidatedResponse.json();
+      const contentType = consolidatedResponse.headers.get('content-type');
+      let error;
+      
+      if (contentType && contentType.includes('application/json')) {
+        error = await consolidatedResponse.json();
+      } else {
+        // Backend returned HTML (likely error page), extract text
+        const text = await consolidatedResponse.text();
+        console.error('[ConsolidatedLogin] Backend returned HTML:', text.substring(0, 500));
+        error = { 
+          error: 'Backend error', 
+          message: 'The backend service is not responding correctly',
+          details: consolidatedResponse.status === 404 ? 'Endpoint not found' : 'Internal server error'
+        };
+      }
+      
       console.error('[ConsolidatedLogin] Session creation failed:', error);
       return NextResponse.json(error, { status: consolidatedResponse.status });
     }
