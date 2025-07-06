@@ -716,3 +716,80 @@ def get_business_for_user(user):
         logger = logging.getLogger(__name__)
         logger.error(f"Error getting business for user {user.id}: {str(e)}")
         return None
+
+
+def get_user_subscription_status(user):
+    """
+    Get comprehensive subscription status for a user
+    Returns dict with subscription details and access permissions
+    """
+    try:
+        # Get user's business subscription
+        if hasattr(user, 'userprofile') and user.userprofile.business:
+            business = user.userprofile.business
+            from users.models import Subscription
+            subscription = Subscription.objects.filter(business=business).first()
+            
+            if not subscription:
+                return {
+                    'plan': 'free',
+                    'status': 'active',
+                    'has_access': True,
+                    'in_grace_period': False,
+                    'grace_period_ends': None,
+                    'failed_payment_count': 0
+                }
+            
+            # Check if grace period has expired
+            if subscription.grace_period_expired and subscription.status != 'suspended':
+                subscription.suspend_subscription()
+            
+            return {
+                'plan': subscription.selected_plan,
+                'status': subscription.status,
+                'has_access': subscription.should_have_access,
+                'in_grace_period': subscription.is_in_grace_period,
+                'grace_period_ends': subscription.grace_period_ends,
+                'failed_payment_count': subscription.failed_payment_count,
+                'billing_cycle': subscription.billing_cycle,
+                'stripe_subscription_id': subscription.stripe_subscription_id
+            }
+            
+        else:
+            # User has no business, default to free
+            return {
+                'plan': 'free',
+                'status': 'active', 
+                'has_access': True,
+                'in_grace_period': False,
+                'grace_period_ends': None,
+                'failed_payment_count': 0
+            }
+            
+    except Exception as e:
+        # Log error and default to free plan
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error getting subscription status for user {user.id}: {str(e)}")
+        
+        return {
+            'plan': 'free',
+            'status': 'active',
+            'has_access': True,
+            'in_grace_period': False,
+            'grace_period_ends': None,
+            'failed_payment_count': 0
+        }
+
+
+def check_subscription_access(user, feature=None):
+    """
+    Check if user has access to paid features
+    Optional feature parameter for future feature-specific checks
+    """
+    subscription_status = get_user_subscription_status(user)
+    
+    if subscription_status['plan'] == 'free':
+        return False
+    
+    return subscription_status['has_access']

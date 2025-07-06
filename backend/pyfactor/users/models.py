@@ -178,6 +178,14 @@ class BusinessDetails(models.Model):
         db_table = 'users_business_details'
 
 class Subscription(models.Model):
+    SUBSCRIPTION_STATUS_CHOICES = [
+        ('active', 'Active'),
+        ('past_due', 'Past Due'),
+        ('grace_period', 'Grace Period'),
+        ('suspended', 'Suspended'),
+        ('canceled', 'Canceled')
+    ]
+    
     business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name='subscriptions')
     selected_plan = models.CharField(
         max_length=20,
@@ -196,9 +204,69 @@ class Subscription(models.Model):
             default='monthly'
         )
     stripe_subscription_id = models.CharField(max_length=255, null=True, blank=True, unique=True)
+    
+    # Grace period fields
+    status = models.CharField(
+        max_length=20,
+        choices=SUBSCRIPTION_STATUS_CHOICES,
+        default='active'
+    )
+    grace_period_ends = models.DateTimeField(null=True, blank=True)
+    failed_payment_count = models.IntegerField(default=0)
+    last_payment_attempt = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return f"Subscription {self.pk if self.pk else 'unsaved'}"
+    
+    @property
+    def is_in_grace_period(self):
+        """Check if subscription is currently in grace period"""
+        from django.utils import timezone
+        return (
+            self.status in ['past_due', 'grace_period'] and 
+            self.grace_period_ends and 
+            self.grace_period_ends > timezone.now()
+        )
+    
+    @property
+    def grace_period_expired(self):
+        """Check if grace period has expired"""
+        from django.utils import timezone
+        return (
+            self.grace_period_ends and 
+            self.grace_period_ends <= timezone.now()
+        )
+    
+    @property
+    def should_have_access(self):
+        """Determine if user should have paid plan access"""
+        return self.status == 'active' or self.is_in_grace_period
+    
+    def start_grace_period(self, days=7):
+        """Start grace period for failed payment"""
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        self.status = 'grace_period'
+        self.grace_period_ends = timezone.now() + timedelta(days=days)
+        self.failed_payment_count += 1
+        self.last_payment_attempt = timezone.now()
+        self.save(update_fields=['status', 'grace_period_ends', 'failed_payment_count', 'last_payment_attempt'])
+    
+    def suspend_subscription(self):
+        """Suspend subscription after grace period expires"""
+        self.status = 'suspended'
+        self.is_active = False
+        self.grace_period_ends = None
+        self.save(update_fields=['status', 'is_active', 'grace_period_ends'])
+    
+    def reactivate_subscription(self):
+        """Reactivate subscription after successful payment"""
+        self.status = 'active'
+        self.is_active = True
+        self.grace_period_ends = None
+        self.failed_payment_count = 0
+        self.save(update_fields=['status', 'is_active', 'grace_period_ends', 'failed_payment_count'])
 
 class BusinessMember(models.Model):
     ROLE_CHOICES = [

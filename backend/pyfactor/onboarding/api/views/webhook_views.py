@@ -182,17 +182,27 @@ def stripe_webhook(request):
         # Handle invoice payment succeeded
         elif event.type == 'invoice.payment_succeeded':
             invoice = event.data.object
-            logger.info(f"Payment succeeded for invoice {invoice.id}, amount: ${invoice.amount_paid / 100}")
+            subscription_id = invoice.subscription
+            logger.info(f"Payment succeeded for invoice {invoice.id}, subscription: {subscription_id}, amount: ${invoice.amount_paid / 100}")
             
             # Update subscription payment date if needed
-            if invoice.subscription:
+            if subscription_id:
                 try:
+                    from users.models import Subscription
                     # Find subscription by stripe ID
-                    sub_models = Subscription.objects.filter(stripe_subscription_id=invoice.subscription)
-                    for sub_model in sub_models:
-                        sub_model.is_active = True
-                        sub_model.save()
-                        logger.info(f"Updated payment success for subscription {sub_model.id}")
+                    subscription = Subscription.objects.filter(stripe_subscription_id=subscription_id).first()
+                    
+                    if subscription:
+                        # Reactivate subscription (clears grace period if any)
+                        subscription.reactivate_subscription()
+                        logger.info(f"Reactivated subscription {subscription.id} after successful payment")
+                        
+                        # TODO: Send email notification about successful payment and reactivation
+                        # send_payment_success_notification(subscription.business.owner_email)
+                        
+                    else:
+                        logger.error(f"Could not find subscription with Stripe ID: {subscription_id}")
+                        
                 except Exception as e:
                     logger.error(f"Error updating payment success: {str(e)}")
             
@@ -201,10 +211,33 @@ def stripe_webhook(request):
         # Handle invoice payment failed
         elif event.type == 'invoice.payment_failed':
             invoice = event.data.object
-            logger.warning(f"Payment failed for invoice {invoice.id}, amount: ${invoice.amount_due / 100}")
+            subscription_id = invoice.subscription
+            logger.warning(f"Payment failed for invoice {invoice.id}, subscription: {subscription_id}, amount: ${invoice.amount_due / 100}")
             
-            # You might want to send email notification or update subscription status
-            # For now, just log the failure
+            try:
+                # Find the subscription in our database
+                from users.models import Subscription
+                subscription = Subscription.objects.filter(stripe_subscription_id=subscription_id).first()
+                
+                if subscription:
+                    # Determine grace period length based on attempt count
+                    grace_period_days = 7  # Default 7 days
+                    if subscription.failed_payment_count >= 2:
+                        grace_period_days = 3  # Shorter grace period for repeated failures
+                    
+                    # Start grace period
+                    subscription.start_grace_period(days=grace_period_days)
+                    
+                    logger.info(f"Started {grace_period_days}-day grace period for subscription {subscription.id} (attempt #{subscription.failed_payment_count})")
+                    
+                    # TODO: Send email notification to user about failed payment and grace period
+                    # send_payment_failed_notification(subscription.business.owner_email, grace_period_days)
+                    
+                else:
+                    logger.error(f"Could not find subscription with Stripe ID: {subscription_id}")
+                    
+            except Exception as e:
+                logger.error(f"Error handling payment failure: {str(e)}")
             
             return HttpResponse(status=200)
         

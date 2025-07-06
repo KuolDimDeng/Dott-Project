@@ -19,6 +19,7 @@ from .business_views import (
 )
 from .api.checkout.checkout_session import create_checkout_session
 from .api.subscription_views import subscription_status
+from .api.subscription_status_views import subscription_status as grace_period_status, retry_payment
 from rest_framework_simplejwt.views import TokenRefreshView
 
 # Create a router for the menu privileges API
@@ -41,6 +42,8 @@ urlpatterns = [
     path('refresh-token/', TokenRefreshView.as_view(), name='refresh-token'),
     path('webhook/stripe/', stripe_webhook, name='stripe_webhook'),
     path('api/subscription/status/', subscription_status, name='subscription_status'),
+    path('api/subscription/grace-status/', grace_period_status, name='grace_period_status'),
+    path('api/subscription/retry-payment/', retry_payment, name='retry_payment'),
     # Include the router URLs
     path('api/', include(router.urls)),
 ]
