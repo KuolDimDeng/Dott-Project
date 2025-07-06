@@ -51,9 +51,11 @@ export async function POST(request) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // Force no cache
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          // Force no cache and DNS refresh
+          'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
           'Pragma': 'no-cache',
+          'Expires': '0',
+          'X-DNS-Prefetch-Control': 'off',
           // Forward Cloudflare headers
           ...(cfConnectingIp && { 'CF-Connecting-IP': cfConnectingIp }),
           ...(cfRay && { 'CF-Ray': cfRay }),
