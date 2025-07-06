@@ -13,7 +13,7 @@ from .views_fixed import SessionCreateViewFixed as SessionCreateView
 from .security_views import get_active_sessions
 from .views_validation import SessionValidateView
 from .cloudflare_session_view import CloudflareSessionCreateView
-from .views.consolidated_auth_view import ConsolidatedAuthView
+from .consolidated_auth_view import ConsolidatedAuthView
 
 app_name = 'sessions'
 
