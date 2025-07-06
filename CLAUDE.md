@@ -1,5 +1,5 @@
 # CLAUDE.md - Dott Project Configuration
-*Last Updated: 2025-07-05*
+*Last Updated: 2025-07-06*
 
 ## Numbering System Guide
 - **Format**: `[MAJOR.MINOR.PATCH] - DATE - STATUS`
@@ -347,6 +347,56 @@
 - **Business Context**: All queries include actual customer, product, and sales data
 - **Free Credits**: One-time allocation based on subscription plan (5/10/20)
 - **Documentation**: `/backend/pyfactor/docs/SMART_INSIGHTS_PRICING_MODEL.md`
+
+### [26.0.0] - 2025-07-06 - CURRENT - Grace Period System for Subscription Payment Failures
+- **Purpose**: Customer-friendly handling of subscription payment failures with automated grace periods
+- **Features**:
+  - 7-day grace period for first payment failure (3 days for repeated failures)
+  - Automatic subscription suspension after grace period expires
+  - Automatic reactivation on successful payment
+  - Comprehensive Stripe webhook integration
+  - Management commands for processing expired grace periods
+  - API endpoints for grace period status and payment retry
+- **Database Changes**:
+  - Added `status` field with choices: active, past_due, grace_period, suspended, canceled
+  - Added `grace_period_ends` timestamp field
+  - Added `failed_payment_count` counter
+  - Added `last_payment_attempt` timestamp
+- **Subscription Model Methods**:
+  - `start_grace_period(days=7)` - Initiate grace period on payment failure
+  - `suspend_subscription()` - Suspend after grace period expires
+  - `reactivate_subscription()` - Reactivate on successful payment
+  - `is_in_grace_period` property - Check if currently in grace period
+  - `should_have_access` property - Determine if user should have paid features
+- **Stripe Webhooks Enhanced**:
+  - `invoice.payment_failed` - Automatically starts grace period
+  - `invoice.payment_succeeded` - Automatically reactivates subscription
+- **Management Commands**:
+  - `python manage.py process_grace_periods --dry-run` - Test grace period processing
+  - `python manage.py process_grace_periods` - Process expired grace periods (daily cron job)
+- **API Endpoints**:
+  - `GET /api/users/api/subscription/grace-status/` - Get grace period status
+  - `POST /api/users/api/subscription/retry-payment/` - Trigger payment retry
+- **Utility Functions**:
+  - `get_user_subscription_status(user)` - Comprehensive subscription status
+  - `check_subscription_access(user, feature=None)` - Check paid feature access
+- **Grace Period Flow**:
+  1. Payment fails → Status: `grace_period` (7-day grace period)
+  2. During grace → User keeps full access with warnings
+  3. Grace expires → Status: `suspended` (limited access)
+  4. Payment succeeds → Status: `active` (full restoration)
+- **Files Created/Modified**:
+  - `/backend/pyfactor/users/models.py` - Enhanced Subscription model
+  - `/backend/pyfactor/onboarding/api/views/webhook_views.py` - Enhanced webhooks
+  - `/backend/pyfactor/users/management/commands/process_grace_periods.py` - Management command
+  - `/backend/pyfactor/users/api/subscription_status_views.py` - Grace period API
+  - `/backend/pyfactor/users/utils.py` - Subscription utility functions
+  - `/backend/pyfactor/users/migrations/0006_add_grace_period_fields.py` - Database migration
+- **Documentation**: `/backend/pyfactor/docs/GRACE_PERIOD_IMPLEMENTATION.md`
+- **Production Setup**:
+  - **Required**: Set up daily cron job: `0 9 * * * python manage.py process_grace_periods`
+  - **Optional**: Implement email notifications during grace period
+  - **Recommended**: Monitor grace period conversion rates and payment patterns
 
 ---
 
