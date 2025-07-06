@@ -128,7 +128,7 @@ class CloudflareSessionCreateView(View):
             }
             
             # Use session service to create session
-            session_data = session_service.create_session(
+            session = session_service.create_session(
                 user=user,
                 access_token=auth0_token or '',
                 request_meta=request_meta
@@ -139,7 +139,7 @@ class CloudflareSessionCreateView(View):
             # Prepare response with session data
             response_data = {
                 'authenticated': True,
-                'session_token': session_data['session_token'],
+                'session_token': str(session.session_id),
                 'user': {
                     'id': str(user.id),
                     'email': user.email,
@@ -176,7 +176,7 @@ class CloudflareSessionCreateView(View):
             
             response.set_cookie(
                 'sid',
-                session_data['session_token'],
+                str(session.session_id),
                 max_age=max_age,
                 httponly=True,
                 secure=not settings.DEBUG,  # Secure only in production
@@ -187,7 +187,7 @@ class CloudflareSessionCreateView(View):
             
             response.set_cookie(
                 'session_token',
-                session_data['session_token'],
+                str(session.session_id),
                 max_age=max_age,
                 httponly=True,
                 secure=not settings.DEBUG,

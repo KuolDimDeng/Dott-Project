@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-let BACKEND_URL = process.env.BACKEND_API_URL || 'https://dott-api.onrender.com';
+let BACKEND_URL = process.env.BACKEND_API_URL || 'https://dott-api-y26w.onrender.com';
 
 // Ensure BACKEND_URL always has a protocol
 if (BACKEND_URL && !BACKEND_URL.startsWith('http://') && !BACKEND_URL.startsWith('https://')) {

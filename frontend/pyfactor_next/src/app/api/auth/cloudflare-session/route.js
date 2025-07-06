@@ -5,8 +5,8 @@ import { NextResponse } from 'next/server';
  * Creates sessions directly with the backend using Cloudflare-friendly settings
  */
 
-// Temporarily use direct Render URL to bypass tunnel DNS issues
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://dott-api.onrender.com';
+// Use the correct Render backend URL with suffix
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://dott-api-y26w.onrender.com';
 console.log('[CloudflareSession] API_URL configuration:', {
   NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
   API_URL: API_URL,
