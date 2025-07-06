@@ -97,7 +97,7 @@ const featureComparison = [
 
 export default function Pricing() {
   const { t } = useTranslation();
-  const [annual, setAnnual] = useState(false);
+  const [billingPeriod, setBillingPeriod] = useState('monthly'); // 'monthly', '6month', 'annual'
   const [dynamicPricing, setDynamicPricing] = useState(null);
   const [userCountry, setUserCountry] = useState('US');
   const [hasDiscount, setHasDiscount] = useState(false);
@@ -143,7 +143,12 @@ export default function Pricing() {
       description: 'Perfect for freelancers and small businesses',
       price: { 
         monthly: 'FREE', 
+        '6month': 'FREE',
         annual: 'FREE' 
+      },
+      savings: {
+        '6month': '$0',
+        annual: '$0'
       },
       features: [
         '1 user',
@@ -163,10 +168,17 @@ export default function Pricing() {
         monthly: hasDiscount && userCountry !== 'US' ? 
           (dynamicPricing?.professional?.monthly?.formatted || '$7.50') :
           '$15',
+        '6month': hasDiscount && userCountry !== 'US' ? 
+          (dynamicPricing?.professional?.sixMonth?.formatted || '$37.50') :
+          '$75',
         annual: hasDiscount && userCountry !== 'US' ? 
           (dynamicPricing?.professional?.annual?.formatted ? 
             `${dynamicPricing.professional.annual.formatted.split('/')[0]}` : '$72') :
           '$144'
+      },
+      savings: {
+        '6month': hasDiscount && userCountry !== 'US' ? '$7.50' : '$15',
+        annual: hasDiscount && userCountry !== 'US' ? '$18' : '$36'
       },
       features: [
         'Up to 3 users',
@@ -177,8 +189,8 @@ export default function Pricing() {
         'Multi-location support'
       ],
       cta: 'Get Professional',
-      highlight: true,
-      popular: true,
+      highlight: false,
+      popular: billingPeriod === '6month',
     },
     {
       name: 'Enterprise',
@@ -187,10 +199,17 @@ export default function Pricing() {
         monthly: hasDiscount && userCountry !== 'US' ? 
           (dynamicPricing?.enterprise?.monthly?.formatted || '$22.50') :
           '$45',
+        '6month': hasDiscount && userCountry !== 'US' ? 
+          (dynamicPricing?.enterprise?.sixMonth?.formatted || '$112.50') :
+          '$225',
         annual: hasDiscount && userCountry !== 'US' ? 
           (dynamicPricing?.enterprise?.annual?.formatted ? 
             `${dynamicPricing.enterprise.annual.formatted.split('/')[0]}` : '$216') :
           '$432'
+      },
+      savings: {
+        '6month': hasDiscount && userCountry !== 'US' ? '$22.50' : '$45',
+        annual: hasDiscount && userCountry !== 'US' ? '$54' : '$108'
       },
       features: [
         'Unlimited users',
@@ -202,7 +221,7 @@ export default function Pricing() {
         'API access'
       ],
       cta: 'Get Enterprise',
-      highlight: false,
+      highlight: billingPeriod === 'annual',
       popular: false,
     },
   ];
@@ -243,20 +262,29 @@ export default function Pricing() {
         <div className="mt-10 flex justify-center">
           <div className="relative bg-white p-1 rounded-full shadow-md inline-flex">
             <button
-              onClick={() => setAnnual(false)}
-              className={`relative px-6 py-3 text-sm font-medium rounded-full transition-all duration-200 ${
-                !annual ? 'bg-primary-main text-white shadow-sm' : 'text-gray-700 hover:text-gray-900'
+              onClick={() => setBillingPeriod('monthly')}
+              className={`relative px-4 sm:px-6 py-3 text-sm font-medium rounded-full transition-all duration-200 ${
+                billingPeriod === 'monthly' ? 'bg-primary-main text-white shadow-sm' : 'text-gray-700 hover:text-gray-900'
               }`}
             >
-              Monthly billing
+              Monthly
             </button>
             <button
-              onClick={() => setAnnual(true)}
-              className={`relative px-6 py-3 text-sm font-medium rounded-full transition-all duration-200 flex items-center ${
-                annual ? 'bg-primary-main text-white shadow-sm' : 'text-gray-700 hover:text-gray-900'
+              onClick={() => setBillingPeriod('6month')}
+              className={`relative px-4 sm:px-6 py-3 text-sm font-medium rounded-full transition-all duration-200 flex items-center ${
+                billingPeriod === '6month' ? 'bg-primary-main text-white shadow-sm' : 'text-gray-700 hover:text-gray-900'
               }`}
             >
-              Annual billing
+              6 Months
+              <span className="ml-2 bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full">POPULAR</span>
+            </button>
+            <button
+              onClick={() => setBillingPeriod('annual')}
+              className={`relative px-4 sm:px-6 py-3 text-sm font-medium rounded-full transition-all duration-200 flex items-center ${
+                billingPeriod === 'annual' ? 'bg-primary-main text-white shadow-sm' : 'text-gray-700 hover:text-gray-900'
+              }`}
+            >
+              Annual
               <span className="ml-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">SAVE 20%</span>
             </button>
           </div>
@@ -290,18 +318,27 @@ export default function Pricing() {
                 <div className="mt-8">
                   <div className="flex items-baseline">
                     <span className="text-5xl font-extrabold text-gray-900">
-                      {plan.name === 'Basic' ? 'FREE' : annual ? plan.price.annual : plan.price.monthly}
+                      {plan.name === 'Basic' ? 'FREE' : plan.price[billingPeriod]}
                     </span>
                     {plan.name !== 'Basic' && (
                       <span className="ml-2 text-xl text-gray-500">
-                        {annual ? '/year' : '/month'}
+                        {billingPeriod === 'monthly' ? '/month' : billingPeriod === '6month' ? '/6 months' : '/year'}
                       </span>
                     )}
                   </div>
-                  {plan.name !== 'Basic' && annual && (
-                    <p className="mt-1 text-sm text-green-600 font-medium">
-                      Save {hasDiscount ? '$36' : '$36'} per year
-                    </p>
+                  {plan.name !== 'Basic' && billingPeriod === '6month' && (
+                    <div className="mt-1">
+                      <p className="text-sm text-orange-600 font-medium">
+                        Save {plan.savings['6month']} (${(parseFloat(plan.price['6month'].replace('$', '')) / 6).toFixed(2)}/mo)
+                      </p>
+                    </div>
+                  )}
+                  {plan.name !== 'Basic' && billingPeriod === 'annual' && (
+                    <div className="mt-1">
+                      <p className="text-sm text-green-600 font-medium">
+                        Save {plan.savings.annual} (${(parseFloat(plan.price.annual.replace('$', '')) / 12).toFixed(2)}/mo)
+                      </p>
+                    </div>
                   )}
                 </div>
 
@@ -318,13 +355,15 @@ export default function Pricing() {
 
                 <div className="mt-10">
                   <Link
-                    href="/api/auth/login"
+                    href={plan.name === 'Basic' ? '/api/auth/login' : `/api/auth/login?plan=${plan.name.toLowerCase()}&billing=${billingPeriod}`}
                     className={`block w-full text-center px-6 py-4 rounded-lg font-semibold transition-all duration-200 ${
-                      plan.highlight
-                        ? 'bg-primary-main hover:bg-primary-dark text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
-                        : plan.name === 'Basic'
-                          ? 'bg-white border-2 border-primary-main text-primary-main hover:bg-primary-light hover:text-white'
-                          : 'bg-purple-600 hover:bg-purple-700 text-white'
+                      plan.popular && billingPeriod === '6month'
+                        ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
+                        : plan.highlight && billingPeriod === 'annual'
+                          ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
+                          : plan.name === 'Basic'
+                            ? 'bg-white border-2 border-primary-main text-primary-main hover:bg-primary-light hover:text-white'
+                            : 'bg-primary-main hover:bg-primary-dark text-white'
                     }`}
                   >
                     {plan.cta}

@@ -143,5 +143,7 @@ SUBSCRIPTION_TYPES = [
 
 BILLING_CYCLES = [
     ('monthly', 'Monthly'),
-    ('annual', 'Annual')
+    ('6month', '6 Months'),
+    ('annual', 'Annual'),
+    ('yearly', 'Yearly')  # Added for compatibility with frontend variations
 ]

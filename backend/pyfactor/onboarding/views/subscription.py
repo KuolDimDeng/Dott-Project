@@ -36,7 +36,7 @@ class SubscriptionSaveView(APIView):
     parser_classes = [JSONParser]
     
     VALID_PLANS = ['free', 'professional', 'enterprise']
-    VALID_BILLING_CYCLES = ['monthly', 'annual']
+    VALID_BILLING_CYCLES = ['monthly', '6month', 'annual', 'yearly']
     
     def validate_subscription_data(self, data):
         """Validates subscription data"""

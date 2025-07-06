@@ -162,8 +162,8 @@ function PaymentForm({ plan, billingCycle }) {
 
   const getPrice = () => {
     const prices = {
-      professional: { monthly: 15, yearly: 144 },
-      enterprise: { monthly: 45, yearly: 432 }
+      professional: { monthly: 15, '6month': 75, yearly: 144 },
+      enterprise: { monthly: 45, '6month': 225, yearly: 432 }
     };
     return prices[plan.toLowerCase()]?.[billingCycle] || 0;
   };
@@ -497,7 +497,7 @@ function PaymentForm({ plan, billingCycle }) {
           <span className="text-gray-600">{plan} Plan</span>
           <span className="text-gray-400">•</span>
           <span className="font-semibold text-gray-900">
-            ${getPrice()}/{billingCycle === 'monthly' ? 'month' : 'year'}
+            ${getPrice()}/{billingCycle === 'monthly' ? 'month' : billingCycle === '6month' ? '6 months' : 'year'}
           </span>
         </div>
       </div>
@@ -629,7 +629,7 @@ function PaymentForm({ plan, billingCycle }) {
               Processing Payment...
             </span>
           ) : (
-            `Subscribe for $${getPrice()}/${billingCycle === 'monthly' ? 'mo' : 'yr'}`
+            `Subscribe for $${getPrice()}/${billingCycle === 'monthly' ? 'mo' : billingCycle === '6month' ? '6mo' : 'yr'}`
           )}
         </button>
 

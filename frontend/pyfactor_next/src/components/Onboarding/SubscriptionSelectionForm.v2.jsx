@@ -14,6 +14,7 @@ const PLANS = [
     description: 'Perfect for small businesses just getting started',
     price: 'Free',
     monthlyPrice: 0,
+    sixMonthPrice: 0,
     yearlyPrice: 0,
     features: [
       'Income and expense tracking',
@@ -33,6 +34,7 @@ const PLANS = [
     description: 'Everything growing businesses need to thrive',
     price: '$15/mo',
     monthlyPrice: 15,
+    sixMonthPrice: 75, // 17% discount
     yearlyPrice: 144, // 20% discount
     features: [
       'Everything in Basic',
@@ -40,6 +42,7 @@ const PLANS = [
       'Unlimited storage',
       'Priority support',
       'All features included',
+      '17% discount on 6-month',
       '20% discount on annual'
     ],
     popular: true,
@@ -51,6 +54,7 @@ const PLANS = [
     description: 'Unlimited scale for ambitious organizations',
     price: '$45/mo',
     monthlyPrice: 45,
+    sixMonthPrice: 225, // 17% discount
     yearlyPrice: 432, // 20% discount
     features: [
       'Everything in Professional',
@@ -58,6 +62,7 @@ const PLANS = [
       'Custom onboarding',
       'Dedicated support',
       'All features included',
+      '17% discount on 6-month',
       '20% discount on annual'
     ],
     premium: true,
@@ -77,7 +82,7 @@ export default function SubscriptionSelectionFormV2({
   onBack
 }) {
   const [selectedPlan, setSelectedPlan] = useState(initialData.selectedPlan || '');
-  const [billingCycle, setBillingCycle] = useState(initialData.billingCycle || 'monthly');
+  const [billingCycle, setBillingCycle] = useState(initialData.billingCycle || 'monthly'); // 'monthly', '6month', 'yearly'
   const { currency, setCurrency } = useCurrencyDetection();
 
   const handlePlanSelect = async (planId) => {
@@ -124,8 +129,20 @@ export default function SubscriptionSelectionFormV2({
             Monthly
           </button>
           <button
+            onClick={() => handleBillingCycleChange('6month')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center ${
+              billingCycle === '6month'
+                ? 'bg-white text-gray-900 shadow'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+            disabled={submitting}
+          >
+            6 Months
+            <span className="ml-1 bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full">POPULAR</span>
+          </button>
+          <button
             onClick={() => handleBillingCycleChange('yearly')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center ${
               billingCycle === 'yearly'
                 ? 'bg-white text-gray-900 shadow'
                 : 'text-gray-600 hover:text-gray-900'
@@ -154,9 +171,9 @@ export default function SubscriptionSelectionFormV2({
             }`}
           >
             {/* Popular badge */}
-            {plan.popular && (
+            {plan.popular && billingCycle === '6month' && (
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                <span className="bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+                <span className="bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full">
                   MOST POPULAR
                 </span>
               </div>
@@ -182,11 +199,16 @@ export default function SubscriptionSelectionFormV2({
                 ) : (
                   <div>
                     <div className="text-3xl font-bold">
-                      ${billingCycle === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice}
+                      ${billingCycle === 'monthly' ? plan.monthlyPrice : billingCycle === '6month' ? plan.sixMonthPrice : plan.yearlyPrice}
                       <span className="text-base font-normal text-gray-600">
-                        /{billingCycle === 'monthly' ? 'month' : 'year'}
+                        /{billingCycle === 'monthly' ? 'month' : billingCycle === '6month' ? '6 months' : 'year'}
                       </span>
                     </div>
+                    {billingCycle === '6month' && plan.id !== 'free' && (
+                      <div className="text-sm text-orange-600 mt-1">
+                        Save ${plan.monthlyPrice * 6 - plan.sixMonthPrice} (${(plan.sixMonthPrice / 6).toFixed(2)}/mo)
+                      </div>
+                    )}
                     {billingCycle === 'yearly' && plan.id !== 'free' && (
                       <div className="text-sm text-green-600 mt-1">
                         Save ${plan.monthlyPrice * 12 - plan.yearlyPrice} per year
@@ -216,6 +238,8 @@ export default function SubscriptionSelectionFormV2({
               className={`w-full py-2 px-4 rounded-md font-medium transition-colors ${
                 submitting
                   ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                  : plan.popular && billingCycle === '6month'
+                  ? 'bg-orange-600 text-white hover:bg-orange-700'
                   : plan.popular
                   ? 'bg-blue-600 text-white hover:bg-blue-700'
                   : plan.premium

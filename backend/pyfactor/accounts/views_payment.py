@@ -33,12 +33,16 @@ def create_payment_intent(request):
         
         plan_prices = {
             'professional': {
-                'monthly': 1500,  # $15.00 in cents
-                'annual': 16200   # $162.00 (10% discount)
+                'monthly': 1500,    # $15.00 in cents
+                '6month': 7500,     # $75.00 in cents (17% discount)
+                'annual': 14400,    # $144.00 in cents (20% discount)
+                'yearly': 14400     # $144.00 in cents (20% discount)
             },
             'enterprise': {
-                'monthly': 4500,  # $45.00 in cents
-                'annual': 43200   # $432.00 (20% discount)
+                'monthly': 4500,    # $45.00 in cents
+                '6month': 22500,    # $225.00 in cents (17% discount)
+                'annual': 43200,    # $432.00 in cents (20% discount)
+                'yearly': 43200     # $432.00 in cents (20% discount)
             }
         }
         
@@ -238,11 +242,15 @@ def create_subscription(request):
         price_map = {
             'professional': {
                 'monthly': getattr(settings, 'STRIPE_PRICE_PROFESSIONAL_MONTHLY', 'price_1RZMDhFls6i75mQBM7o13PWb'),
-                'yearly': getattr(settings, 'STRIPE_PRICE_PROFESSIONAL_YEARLY', 'price_1RZMDhFls6i75mQB2M0DOulV')
+                '6month': getattr(settings, 'STRIPE_PRICE_PROFESSIONAL_6MONTH', 'price_1RZMDhFls6i75mQBxxxxxx6M'),  # TODO: Replace with actual Stripe price ID
+                'yearly': getattr(settings, 'STRIPE_PRICE_PROFESSIONAL_YEARLY', 'price_1RZMDhFls6i75mQB2M0DOulV'),
+                'annual': getattr(settings, 'STRIPE_PRICE_PROFESSIONAL_YEARLY', 'price_1RZMDhFls6i75mQB2M0DOulV')  # Handle both 'yearly' and 'annual'
             },
             'enterprise': {
                 'monthly': getattr(settings, 'STRIPE_PRICE_ENTERPRISE_MONTHLY', 'price_1RZMDhFls6i75mQB9kMjeKtx'),
-                'yearly': getattr(settings, 'STRIPE_PRICE_ENTERPRISE_YEARLY', 'price_1RZMDiFls6i75mQBqQwHnERW')
+                '6month': getattr(settings, 'STRIPE_PRICE_ENTERPRISE_6MONTH', 'price_1RZMDhFls6i75mQByyyyyy6M'),  # TODO: Replace with actual Stripe price ID
+                'yearly': getattr(settings, 'STRIPE_PRICE_ENTERPRISE_YEARLY', 'price_1RZMDiFls6i75mQBqQwHnERW'),
+                'annual': getattr(settings, 'STRIPE_PRICE_ENTERPRISE_YEARLY', 'price_1RZMDiFls6i75mQBqQwHnERW')  # Handle both 'yearly' and 'annual'
             }
         }
         logger.debug(f"Price map: {price_map}")
