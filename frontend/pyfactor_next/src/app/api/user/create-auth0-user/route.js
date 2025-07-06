@@ -87,7 +87,7 @@ export async function POST(request) {
     }
     
     // Call the new user-sync endpoint
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/auth0/user-sync`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'https://dottapps.com'}/api/auth0/user-sync`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
