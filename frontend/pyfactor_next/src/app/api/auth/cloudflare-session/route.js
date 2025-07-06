@@ -29,14 +29,19 @@ export async function POST(request) {
       origin: origin
     });
     
-    // Call backend Cloudflare session endpoint
-    console.log('[CloudflareSession] Calling backend:', `${API_URL}/api/sessions/cloudflare/create/`);
+    // Call backend Cloudflare session endpoint with cache bypass
+    const timestamp = Date.now();
+    const endpoint = `${API_URL}/api/sessions/cloudflare/create/?_t=${timestamp}`;
+    console.log('[CloudflareSession] Calling backend:', endpoint);
     let response;
     try {
-      response = await fetch(`${API_URL}/api/sessions/cloudflare/create/`, {
+      response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          // Force no cache
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
           // Forward Cloudflare headers
           ...(cfConnectingIp && { 'CF-Connecting-IP': cfConnectingIp }),
           ...(cfRay && { 'CF-Ray': cfRay }),
