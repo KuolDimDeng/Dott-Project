@@ -141,7 +141,7 @@ const CookieBanner = () => {
               <p className="text-sm text-gray-600">
                 We use cookies to enhance your experience, analyze usage, and provide essential functionality. 
                 By continuing to use our site, you consent to our use of cookies.{' '}
-                <NextLink href="/Terms&Privacy/CookiePolicy" className="text-blue-600 hover:underline">
+                <NextLink href="/cookie-policy" className="text-blue-600 hover:underline">
                   Learn more
                 </NextLink>
               </p>
