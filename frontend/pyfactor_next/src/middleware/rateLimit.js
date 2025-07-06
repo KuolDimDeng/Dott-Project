@@ -25,7 +25,7 @@ const rateLimiters = {
 const limits = {
   auth: {
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // 5 requests per window
+    max: 100, // TEMPORARILY INCREASED FROM 5 TO 100 FOR DEBUGGING
     message: 'Too many authentication attempts. Please try again later.'
   },
   payment: {
