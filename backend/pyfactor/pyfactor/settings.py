@@ -25,6 +25,11 @@ from datetime import timedelta
 from dotenv import load_dotenv
 # from cryptography.fernet import Fernet  # Commented out to avoid import issues
 
+# Initialize Sentry for error tracking and monitoring
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.logging import LoggingIntegration
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -40,6 +45,67 @@ if os.path.exists(dotenv_path):
     print(f"✅ Loaded environment variables from: {dotenv_path}")
 else:
     print("❌ Warning: .env file not found!")
+
+# Initialize Sentry SDK
+SENTRY_DSN = os.getenv('SENTRY_DSN', 'https://128106efe0719c134878b177b736f27f@o4509614361804800.ingest.us.sentry.io/4509619782549504')
+
+if SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[
+            DjangoIntegration(
+                transaction_style='url',
+                middleware_spans=True,
+                signals_spans=True,
+                cache_spans=True,
+            ),
+            LoggingIntegration(
+                level=logging.INFO,        # Capture info and above as breadcrumbs
+                event_level=logging.ERROR   # Send errors as events
+            ),
+        ],
+        # Set traces_sample_rate to 1.0 to capture 100%
+        # of transactions for performance monitoring.
+        traces_sample_rate=0.1 if os.getenv('ENVIRONMENT') == 'production' else 1.0,
+        # Set profiles_sample_rate to 1.0 to profile 100%
+        # of sampled transactions.
+        profiles_sample_rate=0.05 if os.getenv('ENVIRONMENT') == 'production' else 1.0,
+        # Send user data (PII) for better debugging
+        send_default_pii=True,
+        # Environment
+        environment=os.getenv('ENVIRONMENT', 'development'),
+        # Release tracking
+        release=os.getenv('SENTRY_RELEASE', 'dott-api@1.0.0'),
+        # Filter sensitive data
+        before_send=lambda event, hint: filter_sensitive_data(event),
+        # Ignore specific errors
+        ignore_errors=[
+            'django.core.exceptions.DisallowedHost',
+            'django.core.exceptions.ObjectDoesNotExist',
+            'django.db.utils.OperationalError',
+        ],
+        # Debug mode
+        debug=False,
+    )
+    print(f"✅ Sentry initialized for {os.getenv('ENVIRONMENT', 'development')} environment")
+
+def filter_sensitive_data(event):
+    """Filter out sensitive data before sending to Sentry"""
+    if 'request' in event and event['request']:
+        # Remove sensitive headers
+        if 'headers' in event['request']:
+            sensitive_headers = ['authorization', 'cookie', 'x-api-key', 'x-auth-token']
+            for header in sensitive_headers:
+                event['request']['headers'].pop(header, None)
+        
+        # Remove sensitive data from request body
+        if 'data' in event['request']:
+            sensitive_fields = ['password', 'token', 'secret', 'api_key', 'stripe_token']
+            if isinstance(event['request']['data'], dict):
+                for field in sensitive_fields:
+                    event['request']['data'].pop(field, None)
+    
+    return event
 
 
 

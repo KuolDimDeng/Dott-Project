@@ -49,3 +49,6 @@ user-agents==2.2.0
 # MFA/2FA Support
 pyotp==2.9.0
 qrcode==8.0
+
+# Error tracking and monitoring
+sentry-sdk[django]==2.19.2

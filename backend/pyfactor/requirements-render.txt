@@ -123,6 +123,9 @@ lxml==5.3.0
 # User agent parsing - CRITICAL for session tracking
 user-agents==2.2.0
 
+# Error tracking and monitoring
+sentry-sdk[django]==2.19.2
+
 # Google OAuth2 - Used in onboarding views  
 google-auth==2.38.0
 google-auth-httplib2==0.2.0
