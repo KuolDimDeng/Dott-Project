@@ -110,6 +110,15 @@ export async function POST(request) {
       isLocalhost: baseUrl.includes('localhost'),
       isHttps: baseUrl.startsWith('https')
     });
+    
+    // Add backend API URL check
+    console.log('[EmailLogin] Backend API configuration:', {
+      NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+      BACKEND_API_URL: process.env.BACKEND_API_URL,
+      defaultBackend: 'https://api.dottapps.com',
+      timestamp: new Date().toISOString()
+    });
+    
     let sessionResponse;
     try {
       sessionResponse = await fetch(`${baseUrl}/api/auth/cloudflare-session`, {
@@ -124,12 +133,19 @@ export async function POST(request) {
       console.error('[EmailLogin] Session fetch error:', {
         message: fetchError.message,
         stack: fetchError.stack,
-        type: fetchError.constructor.name
+        type: fetchError.constructor.name,
+        code: fetchError.code,
+        errno: fetchError.errno,
+        syscall: fetchError.syscall
       });
       return NextResponse.json({ 
         error: 'Session creation network error', 
         message: fetchError.message,
-        details: 'Unable to create session'
+        details: 'Unable to create session',
+        debugInfo: {
+          errorType: fetchError.constructor.name,
+          errorCode: fetchError.code
+        }
       }, { status: 503 });
     }
     

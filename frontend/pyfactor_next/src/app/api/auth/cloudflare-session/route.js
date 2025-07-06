@@ -5,7 +5,8 @@ import { NextResponse } from 'next/server';
  * Creates sessions directly with the backend using Cloudflare-friendly settings
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+// Temporarily use direct Render URL to bypass tunnel DNS issues
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://dott-api.onrender.com';
 console.log('[CloudflareSession] API_URL configuration:', {
   NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
   API_URL: API_URL,
@@ -32,14 +33,14 @@ async function testDNSResolution(hostname) {
 export async function POST(request) {
   try {
     console.log('[CloudflareSession] Creating session through Cloudflare-compatible endpoint');
+    console.log('[CloudflareSession] Node version:', process.version);
+    console.log('[CloudflareSession] Platform:', process.platform);
     
-    // Test DNS resolution for the API URL (skip in production as it may fail in containers)
-    if (process.env.NODE_ENV !== 'production') {
-      const apiHostname = new URL(API_URL).hostname;
-      const dnsTest = await testDNSResolution(apiHostname);
-      console.log('[CloudflareSession] DNS resolution test:', dnsTest);
-    } else {
-      console.log('[CloudflareSession] Skipping DNS test in production environment');
+    // Check if we're in Render environment
+    if (process.env.RENDER) {
+      console.log('[CloudflareSession] Running in Render environment');
+      console.log('[CloudflareSession] Render service:', process.env.RENDER_SERVICE_NAME);
+      console.log('[CloudflareSession] Render instance:', process.env.RENDER_INSTANCE_ID);
     }
     
     const data = await request.json();
@@ -89,44 +90,58 @@ export async function POST(request) {
     // Add pre-flight test to check connectivity
     console.log('[CloudflareSession] Testing connectivity to backend...');
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+      
       const testResponse = await fetch(`${API_URL}/health/`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
           'User-Agent': 'Dott-Frontend-Test'
-        }
+        },
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
+      
       console.log('[CloudflareSession] Health check response:', {
         status: testResponse.status,
         ok: testResponse.ok,
         headers: Object.fromEntries(testResponse.headers.entries())
       });
+      
+      // If health check returns HTML (Cloudflare error page), log it
+      const contentType = testResponse.headers.get('content-type');
+      if (contentType && contentType.includes('text/html')) {
+        const text = await testResponse.text();
+        console.error('[CloudflareSession] Received HTML instead of JSON:', text.substring(0, 500));
+      }
     } catch (testError) {
       console.error('[CloudflareSession] Health check failed:', {
         message: testError.message,
         type: testError.constructor.name,
-        code: testError.code
+        code: testError.code,
+        isTimeout: testError.name === 'AbortError'
       });
     }
     let response;
     try {
+      console.log('[CloudflareSession] Making request with headers:', {
+        'Content-Type': 'application/json',
+        'Origin': origin,
+        'User-Agent': request.headers.get('user-agent') || 'NextJS-Frontend'
+      });
+      
       response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // Force no cache and DNS refresh
-          'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
-          'Pragma': 'no-cache',
-          'Expires': '0',
-          'X-DNS-Prefetch-Control': 'off',
-          // Forward Cloudflare headers
-          ...(cfConnectingIp && { 'CF-Connecting-IP': cfConnectingIp }),
-          ...(cfRay && { 'CF-Ray': cfRay }),
-          ...(cfCountry && { 'CF-IPCountry': cfCountry }),
           // Add origin for CORS
           'Origin': origin,
           // Forward the real user agent
-          'User-Agent': request.headers.get('user-agent') || 'NextJS-Frontend'
+          'User-Agent': request.headers.get('user-agent') || 'NextJS-Frontend',
+          // Add Accept header
+          'Accept': 'application/json'
         },
         body: JSON.stringify(data)
       });
@@ -211,7 +226,17 @@ export async function POST(request) {
       
       // If it's a Cloudflare Error 1000, provide a more user-friendly message
       if (error.details && error.details.includes('DNS points to prohibited IP')) {
-        console.error('[CloudflareSession] Detected Cloudflare Error 1000');
+        console.error('[CloudflareSession] Detected Cloudflare Error 1000 - DNS configuration issue');
+        console.error('[CloudflareSession] DNS Error Details:', {
+          apiUrl: API_URL,
+          parsedUrl: {
+            protocol: new URL(API_URL).protocol,
+            hostname: new URL(API_URL).hostname,
+            port: new URL(API_URL).port || 'default'
+          },
+          suggestion: 'The API URL may be pointing to a Cloudflare IP instead of the actual backend server',
+          timestamp: new Date().toISOString()
+        });
         return NextResponse.json({
           error: 'Service temporarily unavailable',
           message: 'The backend service is temporarily unavailable. Please try again later.',
@@ -221,7 +246,8 @@ export async function POST(request) {
             errorType: 'CLOUDFLARE_ERROR_1000',
             actualErrorText: errorText.substring(0, 500),
             isHtmlError: errorText.includes('<!DOCTYPE'),
-            errorCode: response.headers.get('cf-error-code') || '1000'
+            errorCode: response.headers.get('cf-error-code') || '1000',
+            suggestion: 'DNS configuration issue - API may be pointing to Cloudflare IP'
           }
         }, { status: 503 });
       }
