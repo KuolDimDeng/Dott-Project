@@ -33,10 +33,14 @@ export async function POST(request) {
   try {
     console.log('[CloudflareSession] Creating session through Cloudflare-compatible endpoint');
     
-    // Test DNS resolution for the API URL
-    const apiHostname = new URL(API_URL).hostname;
-    const dnsTest = await testDNSResolution(apiHostname);
-    console.log('[CloudflareSession] DNS resolution test:', dnsTest);
+    // Test DNS resolution for the API URL (skip in production as it may fail in containers)
+    if (process.env.NODE_ENV !== 'production') {
+      const apiHostname = new URL(API_URL).hostname;
+      const dnsTest = await testDNSResolution(apiHostname);
+      console.log('[CloudflareSession] DNS resolution test:', dnsTest);
+    } else {
+      console.log('[CloudflareSession] Skipping DNS test in production environment');
+    }
     
     const data = await request.json();
     
@@ -218,6 +222,21 @@ export async function POST(request) {
             actualErrorText: errorText.substring(0, 500),
             isHtmlError: errorText.includes('<!DOCTYPE'),
             errorCode: response.headers.get('cf-error-code') || 'unknown'
+          }
+        }, { status: 503 });
+      }
+      
+      // Check if it's a Cloudflare challenge page
+      if (errorText.includes('<!DOCTYPE') && errorText.includes('Cloudflare')) {
+        console.error('[CloudflareSession] Received Cloudflare challenge page instead of JSON');
+        return NextResponse.json({
+          error: 'Cloudflare Challenge',
+          message: 'The request was blocked by Cloudflare security. Please try again.',
+          technicalDetails: {
+            apiUrl: API_URL,
+            suggestion: 'Cloudflare is challenging the request. This might be due to bot protection.',
+            isHtmlError: true,
+            htmlPreview: errorText.substring(0, 200)
           }
         }, { status: 503 });
       }
