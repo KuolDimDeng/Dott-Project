@@ -251,6 +251,8 @@ class TokenRefreshMiddleware(MiddlewareMixin):
             '/api/health-check',
             '/api/auth/error',
             '/api/auth/_log',
+            '/api/sessions/',  # Add sessions endpoints
+            '/health/',  # Add health endpoint
             '/static/',
             '/media/'
         ]

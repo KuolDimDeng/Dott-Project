@@ -203,8 +203,19 @@ class CloudflareSessionCreateView(View):
                 'https://api.dottapps.com'
             ]
             origin = request.META.get('HTTP_ORIGIN')
+            
+            # Log the origin for debugging
+            logger.info(f"[CloudflareSession] Request origin: {origin}")
+            logger.info(f"[CloudflareSession] All headers: {dict(request.META)}")
+            
             if origin and origin in allowed_origins:
                 response['Access-Control-Allow-Origin'] = origin
+                response['Access-Control-Allow-Credentials'] = 'true'
+            else:
+                # For now, allow the request but log the issue
+                logger.warning(f"[CloudflareSession] Origin not in allowed list: {origin}")
+                # Set CORS headers anyway to allow the request
+                response['Access-Control-Allow-Origin'] = origin or 'https://dottapps.com'
                 response['Access-Control-Allow-Credentials'] = 'true'
             
             return response

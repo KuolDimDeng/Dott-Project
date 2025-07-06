@@ -30,6 +30,7 @@ class SessionMiddleware(MiddlewareMixin):
             '/api/auth/callback',
             '/api/health',
             '/admin',
+            '/api/sessions/cloudflare/create',  # Add cloudflare session creation
         ]
     
     def process_request(self, request):

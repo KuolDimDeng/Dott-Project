@@ -71,6 +71,17 @@ export async function POST(request) {
       fullUrl: endpoint
     });
     
+    // Add DNS resolution logging
+    console.log('[CloudflareSession] Attempting to resolve DNS for:', new URL(endpoint).hostname);
+    console.log('[CloudflareSession] Environment check:', {
+      NODE_ENV: process.env.NODE_ENV,
+      NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+      BACKEND_API_URL: process.env.BACKEND_API_URL,
+      isProduction: process.env.NODE_ENV === 'production',
+      isRender: !!process.env.RENDER,
+      renderServiceName: process.env.RENDER_SERVICE_NAME
+    });
+    
     // Add pre-flight test to check connectivity
     console.log('[CloudflareSession] Testing connectivity to backend...');
     try {
