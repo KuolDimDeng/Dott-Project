@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-const BACKEND_URL = process.env.BACKEND_API_URL || 'https://api.dottapps.com';
+const BACKEND_URL = process.env.BACKEND_API_URL || 'https://dott-api-y26w.onrender.com';
 
 /**
  * Proxy all backend API calls through Next.js
