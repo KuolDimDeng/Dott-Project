@@ -436,9 +436,17 @@ export default function EmailPasswordSignIn() {
         
         // Session is already created by consolidated auth, just redirect
         logger.info('[EmailPasswordSignIn] Redirecting to:', redirectUrl);
+        console.log('[EmailPasswordSignIn] About to call router.push with:', redirectUrl);
         
         // Simple direct navigation - session cookies are already set by backend
-        router.push(redirectUrl);
+        try {
+          await router.push(redirectUrl);
+          console.log('[EmailPasswordSignIn] Router.push completed successfully');
+        } catch (routerError) {
+          console.error('[EmailPasswordSignIn] Router.push failed:', routerError);
+          // Fallback to window.location
+          window.location.href = redirectUrl;
+        }
         return;
       }
       
