@@ -267,8 +267,8 @@ export default function EmailPasswordSignIn() {
     try {
       console.log('[EmailPasswordSignIn] Attempting login via /api/auth/email-login');
       
-      // Use simplified email login endpoint
-      const loginResponse = await fetch('/api/auth/email-login', {
+      // Use consolidated login endpoint for atomic operation
+      const loginResponse = await fetch('/api/auth/consolidated-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -360,61 +360,25 @@ export default function EmailPasswordSignIn() {
         return;
       }
 
-      // Login was successful and session was created
+      // Login was successful and session was created atomically
       logger.info('[EmailPasswordSignIn] Login successful:', {
         success: loginResult.success,
         hasUser: !!loginResult.user,
         hasTenant: !!loginResult.tenant,
-        needsOnboarding: loginResult.needs_onboarding
+        needsOnboarding: loginResult.needs_onboarding,
+        sessionToken: loginResult.session_token
       });
       
-      // Create bridge token for immediate availability using the real session token
-      const bridgeResponse = await fetch('/api/auth/bridge-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionToken: loginResult.session_token,
-          userId: loginResult.user?.sub,
-          tenantId: loginResult.tenant?.id || loginResult.user?.tenantId || loginResult.user?.tenant_id,
-          email: loginResult.user?.email
-        })
-      });
-      
-      let bridgeToken = null;
-      if (bridgeResponse.ok) {
-        const bridgeData = await bridgeResponse.json();
-        bridgeToken = bridgeData.bridgeToken;
-        logger.info('[EmailPasswordSignIn] Bridge token created for session handoff');
-      }
-      
-      // DEPRECATED: Remove localStorage usage after testing
-      // Only keeping temporarily for backward compatibility
-      if (process.env.NODE_ENV === 'development') {
-        console.warn('[SecurityWarning] localStorage usage is deprecated. Use secure cookies instead.');
-      }
-
-      // Use unified auth flow handler
-      console.log('[EmailPasswordSignIn] About to call handlePostAuthFlow');
-      const { handlePostAuthFlow } = await import('@/utils/authFlowHandler.v3');
-      const finalUserData = await handlePostAuthFlow({
-        user: loginResult.user,
-        accessToken: loginResult.access_token,
-        idToken: loginResult.id_token
-      }, 'email-password');
-      
-      console.log('[EmailPasswordSignIn] handlePostAuthFlow returned:', {
-        hasData: !!finalUserData,
-        redirectUrl: finalUserData?.redirectUrl,
-        needsOnboarding: finalUserData?.needsOnboarding,
-        tenantId: finalUserData?.tenantId || finalUserData?.tenant_id
-      });
-      
-      // Check if handlePostAuthFlow returned null (account closed or error)
-      if (!finalUserData) {
-        console.log('[EmailPasswordSignIn] handlePostAuthFlow returned null, likely redirected already');
-        setIsLoading(false);
-        return;
-      }
+      // With consolidated auth, we have all the data we need
+      // No need for separate auth flow handler
+      const finalUserData = {
+        ...loginResult.user,
+        tenant_id: loginResult.tenant_id || loginResult.tenant?.id,
+        tenantId: loginResult.tenant_id || loginResult.tenant?.id,
+        needsOnboarding: loginResult.needs_onboarding,
+        businessName: loginResult.tenant?.name,
+        subscription_plan: loginResult.tenant?.subscription_plan || loginResult.user?.subscription_plan
+      };
 
       // If session was created successfully, use secure bridge
       if (loginResult.success) {
@@ -454,14 +418,10 @@ export default function EmailPasswordSignIn() {
           'email-password'
         );
         
-        // Build redirect URL - IGNORE the authFlowHandler redirect for session-loading
+        // Build redirect URL based on onboarding status
         let redirectUrl;
-        // The authFlowHandler.v3 returns '/auth/session-loading' but we handle sessions differently
-        // for email/password login with the session bridge pattern
-        if (finalUserData.needsOnboarding || loginResult.needs_onboarding) {
+        if (loginResult.needs_onboarding) {
           redirectUrl = '/onboarding';
-        } else if (finalUserData.tenantId || finalUserData.tenant_id) {
-          redirectUrl = `/${finalUserData.tenantId || finalUserData.tenant_id}/dashboard`;
         } else if (loginResult.tenant?.id) {
           redirectUrl = `/${loginResult.tenant.id}/dashboard`;
         } else {
@@ -470,90 +430,21 @@ export default function EmailPasswordSignIn() {
         
         console.log('[EmailPasswordSignIn] Determined redirect URL:', {
           redirectUrl,
-          needsOnboarding: finalUserData.needsOnboarding || loginResult.needs_onboarding,
-          tenantId: finalUserData.tenantId || finalUserData.tenant_id || loginResult.tenant?.id,
-          authFlowHandlerRedirect: finalUserData.redirectUrl // This is /auth/session-loading
+          needsOnboarding: loginResult.needs_onboarding,
+          tenantId: loginResult.tenant?.id
         });
         
-        // For non-onboarding flows, use secure session bridge
-        if (!finalUserData.needsOnboarding && !loginResult.needs_onboarding && bridgeToken) {
-          logger.info('[EmailPasswordSignIn] Using bridge token for session handoff');
-          console.log('[EmailPasswordSignIn] DEBUG - Preparing session bridge with:', {
-            hasBridgeToken: !!bridgeToken,
-            bridgeTokenLength: bridgeToken?.length,
-            redirectUrl: redirectUrl,
-            needsOnboarding: finalUserData.needsOnboarding
-          });
-          
-          // Store bridge token in sessionStorage for bridge
-          const bridgeData = {
-            token: bridgeToken, // This is the bridge token from backend, NOT the JWT
-            redirectUrl: redirectUrl,
-            timestamp: Date.now()
-          };
-          
-          console.log('[EmailPasswordSignIn] DEBUG - Setting sessionStorage:', {
-            key: 'session_bridge',
-            data: bridgeData
-          });
-          
-          sessionStorage.setItem('session_bridge', JSON.stringify(bridgeData));
-          
-          // Verify storage
-          const storedData = sessionStorage.getItem('session_bridge');
-          console.log('[EmailPasswordSignIn] DEBUG - Verified sessionStorage:', {
-            stored: !!storedData,
-            canParse: !!storedData && (() => { try { JSON.parse(storedData); return true; } catch { return false; } })()
-          });
-          
-          // Redirect to session bridge
-          console.log('[EmailPasswordSignIn] DEBUG - About to navigate to /auth/session-bridge');
-          console.log('[EmailPasswordSignIn] DEBUG - Router state:', {
-            pathname: window.location.pathname,
-            isReady: router.isReady
-          });
-          
-          // Use window.location as a fallback to ensure navigation
-          const bridgeUrl = '/auth/session-bridge';
-          console.log('[EmailPasswordSignIn] DEBUG - Navigating to:', bridgeUrl);
-          
-          // Try router.push first
-          router.push(bridgeUrl).then(() => {
-            console.log('[EmailPasswordSignIn] DEBUG - Router.push completed');
-          }).catch((err) => {
-            console.error('[EmailPasswordSignIn] DEBUG - Router.push failed:', err);
-            // Fallback to window.location
-            console.log('[EmailPasswordSignIn] DEBUG - Using window.location fallback');
-            window.location.href = bridgeUrl;
-          });
-        } else if (!finalUserData.needsOnboarding && !bridgeToken) {
-          // Fallback: direct redirect if bridge token creation failed
-          logger.warn('[EmailPasswordSignIn] No bridge token available, using direct redirect');
-          console.log('[EmailPasswordSignIn] DEBUG - Direct redirect to:', redirectUrl);
-          router.push(redirectUrl);
-        } else {
-          // Direct redirect for onboarding (doesn't need session bridge)
-          console.log('[EmailPasswordSignIn] DEBUG - Onboarding redirect to:', redirectUrl);
-          router.push(redirectUrl);
-        }
+        // Session is already created by consolidated auth, just redirect
+        logger.info('[EmailPasswordSignIn] Redirecting to:', redirectUrl);
         
+        // Simple direct navigation - session cookies are already set by backend
+        router.push(redirectUrl);
         return;
       }
-
-      // If we get here, something went wrong
-      logger.error('[EmailPasswordSignIn] Unexpected state - session created but no navigation happened');
       
-      // As a last resort, if session is created, try direct navigation
-      if (loginResult.success && loginResult.user) {
-        console.log('[EmailPasswordSignIn] Attempting direct navigation as final fallback');
-        const fallbackUrl = loginResult.needs_onboarding ? '/onboarding' : 
-                           loginResult.tenant?.id ? `/${loginResult.tenant.id}/dashboard` : 
-                           '/dashboard';
-        window.location.href = fallbackUrl;
-      } else {
-        showError('Session setup failed. Please try signing in again.');
-        setIsLoading(false);
-      }
+      // If we get here, login failed
+      showError('Login failed. Please try again.');
+      setIsLoading(false);
     } catch (error) {
       logger.error('[EmailPasswordSignIn] Login error:', error);
       showError(error.message || 'Invalid email or password');

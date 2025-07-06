@@ -13,11 +13,14 @@ from .views_fixed import SessionCreateViewFixed as SessionCreateView
 from .security_views import get_active_sessions
 from .views_validation import SessionValidateView
 from .cloudflare_session_view import CloudflareSessionCreateView
+from .views.consolidated_auth_view import ConsolidatedAuthView
 
 app_name = 'sessions'
 
 urlpatterns = [
     # Session management
+    # Consolidated auth endpoint (atomic operation)
+    path('consolidated-auth/', ConsolidatedAuthView.as_view(), name='consolidated-auth'),
     # Cloudflare-compatible session creation
     path('cloudflare/create/', CloudflareSessionCreateView.as_view(), name='cloudflare-session-create'),
     # Re-enabled session endpoints for Google OAuth flow
