@@ -143,7 +143,12 @@ export async function POST(request) {
         error: error,
         isCloudflareError: errorText.includes('Cloudflare'),
         hasError1000: errorText.includes('Error 1000') || errorText.includes('DNS points to prohibited IP'),
-        responseHeaders: Object.fromEntries(sessionResponse.headers.entries())
+        isDNSError: errorText.includes('DNS points to prohibited IP'),
+        responseHeaders: Object.fromEntries(sessionResponse.headers.entries()),
+        errorTextSnippet: errorText.substring(0, 500),
+        fullErrorLength: errorText.length,
+        sessionEndpoint: `${baseUrl}/api/auth/cloudflare-session`,
+        timestamp: new Date().toISOString()
       });
       return NextResponse.json(error, { status: sessionResponse.status });
     }
