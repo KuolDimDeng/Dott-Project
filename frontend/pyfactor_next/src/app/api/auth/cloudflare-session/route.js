@@ -13,7 +13,9 @@ console.log('[CloudflareSession] API_URL configuration:', {
   timestamp: new Date().toISOString(),
   BACKEND_API_URL: process.env.BACKEND_API_URL,
   isUsingDefault: !process.env.NEXT_PUBLIC_API_URL,
-  hostHeader: 'N/A' // Will be set in request
+  hostHeader: 'N/A', // Will be set in request
+  apiHostname: new URL(API_URL).hostname,
+  apiProtocol: new URL(API_URL).protocol
 });
 
 // Helper function to test DNS resolution
@@ -65,8 +67,32 @@ export async function POST(request) {
       protocol: new URL(endpoint).protocol,
       hostname: new URL(endpoint).hostname,
       pathname: new URL(endpoint).pathname,
-      searchParams: new URL(endpoint).searchParams.toString()
+      searchParams: new URL(endpoint).searchParams.toString(),
+      fullUrl: endpoint
     });
+    
+    // Add pre-flight test to check connectivity
+    console.log('[CloudflareSession] Testing connectivity to backend...');
+    try {
+      const testResponse = await fetch(`${API_URL}/health/`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'Dott-Frontend-Test'
+        }
+      });
+      console.log('[CloudflareSession] Health check response:', {
+        status: testResponse.status,
+        ok: testResponse.ok,
+        headers: Object.fromEntries(testResponse.headers.entries())
+      });
+    } catch (testError) {
+      console.error('[CloudflareSession] Health check failed:', {
+        message: testError.message,
+        type: testError.constructor.name,
+        code: testError.code
+      });
+    }
     let response;
     try {
       response = await fetch(endpoint, {
@@ -170,13 +196,17 @@ export async function POST(request) {
       
       // If it's a DNS error, provide a more user-friendly message
       if (error.details && error.details.includes('DNS points to prohibited IP')) {
+        console.error('[CloudflareSession] Detected DNS/Cloudflare Error 1000');
         return NextResponse.json({
           error: 'DNS Configuration Issue',
           message: 'The API server is temporarily unavailable due to DNS configuration. Please contact support or try again later.',
           technicalDetails: {
             originalError: error.error,
             apiUrl: API_URL,
-            suggestion: 'The API domain is resolving to a Cloudflare IP which is prohibited. DNS configuration needs to be updated.'
+            suggestion: 'The API domain is resolving to a Cloudflare IP which is prohibited. DNS configuration needs to be updated.',
+            actualErrorText: errorText.substring(0, 500),
+            isHtmlError: errorText.includes('<!DOCTYPE'),
+            errorCode: response.headers.get('cf-error-code') || 'unknown'
           }
         }, { status: 503 });
       }
