@@ -9,7 +9,8 @@ const TransactionList = () => {
     const fetchTransactions = async () => {
       try {
         const token = getCacheValue('token');
-        const response = await fetch('https://127.0.0.1:8000/api/transactions/', {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+    const response = await fetch(`${apiUrl}/api/transactions/`, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',

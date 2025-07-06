@@ -12,7 +12,7 @@ const UnpaidInvoicesList = ({ onSelect }) => {
   const fetchInvoices = async (pageNum) => {
     setLoading(true);
     try {
-      const response = await axiosInstance.get('https://127.0.0.1:8000/api/unpaid-invoices/', {
+      const response = await axiosInstance.get('/api/unpaid-invoices/', {
         params: { page: pageNum, page_size: 10 },
       });
       if (pageNum === 1) {
