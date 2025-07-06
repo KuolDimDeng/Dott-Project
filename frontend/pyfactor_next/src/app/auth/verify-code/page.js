@@ -24,7 +24,7 @@ export default function VerifyCode() {
       setEmail(storedEmail);
     } else {
       // Redirect to signup if no email
-      router.push('/auth/email-signin');
+      router.push('/auth/signin');
     }
   }, [searchParams, router]);
 
@@ -47,7 +47,7 @@ export default function VerifyCode() {
       if (response.ok) {
         sessionStorage.removeItem('verification_email');
         // Redirect to login with success message
-        router.push('/auth/email-signin?verified=true');
+        router.push('/auth/signin?verified=true');
       } else {
         setError(data.error || 'Invalid verification code');
       }

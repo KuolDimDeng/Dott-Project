@@ -52,7 +52,7 @@ export default function OnboardingPageV2() {
       
       if (!session.authenticated) {
         logger.warn('[OnboardingPage.v2] Not authenticated, redirecting to login');
-        router.push('/auth/email-signin');
+        router.push('/auth/signin');
         return;
       }
 
@@ -156,7 +156,7 @@ export default function OnboardingPageV2() {
           <h2 className="text-2xl font-bold text-red-600 mb-4">Error</h2>
           <p className="text-gray-600 mb-6">{error}</p>
           <button 
-            onClick={() => router.push('/auth/email-signin')}
+            onClick={() => router.push('/auth/signin')}
             className="w-full py-2 px-4 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
             Return to Sign In

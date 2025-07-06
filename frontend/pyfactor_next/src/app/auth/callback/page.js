@@ -304,7 +304,7 @@ export default function Auth0CallbackPage() {
         
         // Redirect to login page after showing error
         setTimeout(() => {
-          router.push('/auth/email-signin?error=auth_failed');
+          router.push('/auth/signin?error=auth_failed');
         }, 3000);
       }
     };
