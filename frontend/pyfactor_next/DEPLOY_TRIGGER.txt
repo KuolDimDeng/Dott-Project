@@ -1,2 +1,2 @@
-Deploy Trigger: 2025-01-16T13:56:00Z
-Purpose: Trigger deployment of authentication fixes (commit 71c5f92c)
+Deploy Trigger: 2025-07-06T05:06:00Z
+Purpose: Force redeployment to pick up updated NEXT_PUBLIC_API_URL environment variable
