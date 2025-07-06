@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server';
  * Creates sessions directly with the backend using Cloudflare-friendly settings
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://dott-api-y26w.onrender.com';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
 console.log('[CloudflareSession] API_URL configuration:', {
   NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
   API_URL: API_URL,

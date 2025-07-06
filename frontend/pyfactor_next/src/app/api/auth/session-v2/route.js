@@ -11,7 +11,7 @@ import { logger } from '@/utils/logger';
  * to resolve onboarding status conflicts permanently.
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://dott-api-y26w.onrender.com';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
 
 export async function GET(request) {
   return await Sentry.startSpan(
