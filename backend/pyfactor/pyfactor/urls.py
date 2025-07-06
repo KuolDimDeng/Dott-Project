@@ -4,12 +4,28 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
+from django.http import JsonResponse
+import sentry_sdk
 
 # Import health check view
 from .health_check import health_check, root_health_check, detailed_health_check
 
 # Import diagnostic view
 from custom_auth.api.views.diagnostic_views import DiagnosticView, RestoreAccountView
+
+def test_sentry(request):
+    """Test endpoint for Sentry integration"""
+    if request.method == 'GET':
+        # Send a test message to Sentry
+        sentry_sdk.capture_message("Test message from Django backend API", level="info")
+        return JsonResponse({
+            "status": "success", 
+            "message": "Test message sent to Sentry",
+            "environment": settings.DEBUG and "development" or "production"
+        })
+    elif request.method == 'POST':
+        # Trigger a test error
+        raise Exception("Test error from Django backend API!")
 
 class UUIDConverter:
     regex = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
@@ -32,6 +48,9 @@ urlpatterns = [
     path('health-check/', health_check, name='health_check_alt'),
     path('healthz', health_check, name='health_check_render'),  # Render health check endpoint
     path('health/detailed/', detailed_health_check, name='detailed_health_check'),
+    
+    # Sentry test endpoint
+    path('api/test-sentry/', test_sentry, name='test_sentry'),
     
     # Diagnostic endpoints removed from production
     
