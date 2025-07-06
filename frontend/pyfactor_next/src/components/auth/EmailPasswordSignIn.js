@@ -313,7 +313,17 @@ export default function EmailPasswordSignIn() {
         if (loginResult.error === 'Backend unavailable' || 
             loginResult.error === 'Service temporarily unavailable' ||
             (loginResult.details && loginResult.details.includes('Connection failed'))) {
-          showError('Unable to connect to the server. Please try again in a few moments.');
+          // Log the technical details to help diagnose
+          console.error('[EmailPasswordSignIn] Backend unavailable details:', loginResult.technicalDetails);
+          
+          // Check if it's the Cloudflare DNS error
+          if (loginResult.technicalDetails && 
+              (loginResult.technicalDetails.errorType === 'CLOUDFLARE_ERROR_1000' ||
+               loginResult.technicalDetails.originalError === 'DNS points to prohibited IP')) {
+            showError('DNS configuration error. The API is pointing to an invalid address. Please contact support.');
+          } else {
+            showError('Unable to connect to the server. Please try again in a few moments.');
+          }
           return;
         }
         
