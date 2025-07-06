@@ -17,7 +17,12 @@ const BASE_URL = typeof window !== 'undefined'
       ? window.location.origin 
       : window.location.origin.replace('http:', 'https:'))
   : process.env.NEXT_PUBLIC_API_URL || `${PROTOCOL}://127.0.0.1:3000`;
-const BACKEND_API_URL = process.env.BACKEND_API_URL || `${PROTOCOL}://127.0.0.1:8000`;
+
+// Ensure BACKEND_API_URL always has a protocol
+let BACKEND_API_URL = process.env.BACKEND_API_URL || `${PROTOCOL}://127.0.0.1:8000`;
+if (BACKEND_API_URL && !BACKEND_API_URL.startsWith('http://') && !BACKEND_API_URL.startsWith('https://')) {
+  BACKEND_API_URL = `https://${BACKEND_API_URL}`;
+}
 
 // Create main axios instance for API calls
 const axiosInstance = axios.create({

@@ -21,7 +21,12 @@ serverAxiosInstance.interceptors.request.use(
     // Set a proper base URL for backend API requests
     if (config.url?.startsWith('/api/') && !config.baseURL) {
       // Use environment variable or fallback to localhost
-      const backendUrl = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:8000';
+      let backendUrl = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:8000';
+      
+      // Ensure backendUrl always has a protocol
+      if (backendUrl && !backendUrl.startsWith('http://') && !backendUrl.startsWith('https://')) {
+        backendUrl = `https://${backendUrl}`;
+      }
       
       // Log the baseURL being used for debugging
       logger.debug('[ServerAxiosConfig] Setting backend URL for server request:', { 

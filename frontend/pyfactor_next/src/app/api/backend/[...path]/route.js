@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-const BACKEND_URL = process.env.BACKEND_API_URL || 'https://api.dottapps.com';
+let BACKEND_URL = process.env.BACKEND_API_URL || 'https://api.dottapps.com';
+
+// Ensure BACKEND_URL always has a protocol
+if (BACKEND_URL && !BACKEND_URL.startsWith('http://') && !BACKEND_URL.startsWith('https://')) {
+  BACKEND_URL = `https://${BACKEND_URL}`;
+}
 
 /**
  * Proxy all backend API calls through Next.js

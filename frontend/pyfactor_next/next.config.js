@@ -3,7 +3,13 @@ const path = require('path');
 const { withSentryConfig } = require('@sentry/nextjs');
 
 // Optimized Next.js configuration for Render deployments
-const BACKEND_API_URL = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+let BACKEND_API_URL = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+
+// Ensure BACKEND_API_URL always has a protocol
+if (BACKEND_API_URL && !BACKEND_API_URL.startsWith('http://') && !BACKEND_API_URL.startsWith('https://')) {
+  BACKEND_API_URL = `https://${BACKEND_API_URL}`;
+  console.log(`[Build] Added https:// protocol to BACKEND_API_URL: ${BACKEND_API_URL}`);
+}
 
 // Suppress build-time logging for faster builds
 if (process.env.NODE_ENV === 'production' && !process.env.SENTRY_DEBUG) {
