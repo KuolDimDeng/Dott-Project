@@ -233,25 +233,25 @@ export default function AppBar() {
           <div className="hidden md:flex md:items-center md:space-x-6">
             <a 
               href="#features"
-              className="px-3 py-2 text-gray-700 hover:text-blue-600 font-medium transition-colors duration-150"
+              className="px-3 py-3 text-gray-700 hover:text-blue-600 font-medium transition-colors duration-150 leading-normal"
             >
               {t('navFeatures', 'Features')}
             </a>
             <a 
               href="#pricing"
-              className="px-3 py-2 text-gray-700 hover:text-blue-600 font-medium transition-colors duration-150"
+              className="px-3 py-3 text-gray-700 hover:text-blue-600 font-medium transition-colors duration-150 leading-normal"
             >
               {t('navPricing', 'Pricing')}
             </a>
             <button 
-              className="px-3 py-2 text-gray-700 hover:text-blue-600 font-medium transition-colors duration-150"
+              className="px-3 py-3 text-gray-700 hover:text-blue-600 font-medium transition-colors duration-150 leading-normal"
               onClick={() => router.push('/about')}
             >
               {t('navAbout', 'About')}
             </button>
             <a 
               href="#contact"
-              className="px-3 py-2 text-gray-700 hover:text-blue-600 font-medium transition-colors duration-150"
+              className="px-3 py-3 text-gray-700 hover:text-blue-600 font-medium transition-colors duration-150 leading-normal"
               onClick={(e) => {
                 e.preventDefault();
                 const contactSection = document.getElementById('contact');
@@ -263,7 +263,7 @@ export default function AppBar() {
               {t('navContact', 'Contact')}
             </a>
             <button 
-              className="px-3 py-2 text-gray-700 hover:text-blue-600 font-medium transition-colors duration-150"
+              className="px-3 py-3 text-gray-700 hover:text-blue-600 font-medium transition-colors duration-150 leading-normal"
               onClick={() => router.push('/status')}
             >
               {t('navStatus', 'Status')}

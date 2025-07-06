@@ -105,7 +105,7 @@ export default function AboutUs() {
               className="flex items-center gap-2 text-gray-700 hover:text-gray-900 transition-colors"
             >
               <ArrowLeft size={20} weight="bold" />
-              <span className="font-medium">Back to Home</span>
+              <span className="font-medium leading-relaxed">Back to Home</span>
             </Link>
           </div>
         </div>
@@ -238,7 +238,7 @@ export default function AboutUs() {
           <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-4">
             Our Values
           </h2>
-          <p className="text-xl text-center text-gray-600 mb-16 max-w-2xl mx-auto">
+          <p className="text-xl text-center text-gray-600 mb-16 max-w-2xl mx-auto leading-relaxed">
             The principles that guide every decision we make
           </p>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
