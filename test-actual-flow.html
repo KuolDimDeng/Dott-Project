@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Actual Login Flow</title>
+</head>
+<body>
+    <h1>Test Actual Login Flow</h1>
+    <p>This mimics what happens when you login on dottapps.com</p>
+    <button onclick="testActualFlow()">Test Login Flow</button>
+    <div id="result"></div>
+    
+    <script>
+    async function testActualFlow() {
+        const result = document.getElementById('result');
+        result.innerHTML = '<h3>Starting login flow...</h3>';
+        
+        try {
+            // Step 1: Authenticate with Auth0
+            result.innerHTML += '<p>1. Authenticating with Auth0...</p>';
+            
+            const authResponse = await fetch('https://dottapps.com/api/auth/authenticate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: 'kdeng@dottapps.com',
+                    password: 'YOUR_PASSWORD_HERE' // Replace this
+                })
+            });
+            
+            const authData = await authResponse.json();
+            
+            if (!authResponse.ok) {
+                result.innerHTML += `<p style="color: red;">Auth0 failed: ${JSON.stringify(authData)}</p>`;
+                return;
+            }
+            
+            result.innerHTML += '<p style="color: green;">✓ Auth0 authentication successful</p>';
+            result.innerHTML += `<p>Got access token: ${authData.access_token?.substring(0, 20)}...</p>`;
+            
+            // Step 2: Call email-login endpoint
+            result.innerHTML += '<p>2. Calling email-login endpoint...</p>';
+            
+            const loginResponse = await fetch('https://dottapps.com/api/auth/email-login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    email: 'kdeng@dottapps.com',
+                    password: 'YOUR_PASSWORD_HERE' // Replace this
+                })
+            });
+            
+            const loginData = await loginResponse.json();
+            
+            if (!loginResponse.ok) {
+                result.innerHTML += `<p style="color: red;">Login failed: ${JSON.stringify(loginData)}</p>`;
+                if (loginData.details && loginData.details.includes('DNS points to prohibited IP')) {
+                    result.innerHTML += '<p style="color: red;"><strong>Found the Error 1000!</strong></p>';
+                    result.innerHTML += '<p>The error is coming from the email-login endpoint when it tries to create a session.</p>';
+                }
+                return;
+            }
+            
+            result.innerHTML += '<p style="color: green;">✓ Login successful!</p>';
+            
+        } catch (error) {
+            result.innerHTML += `<p style="color: red;">Error: ${error.toString()}</p>`;
+        }
+    }
+    </script>
+</body>
+</html>

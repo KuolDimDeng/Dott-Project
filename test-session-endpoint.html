@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Session Endpoint Test</title>
+</head>
+<body>
+    <h1>Session Endpoint Test</h1>
+    <button onclick="testSessionEndpoint()">Test Session Endpoint</button>
+    <button onclick="testWithCredentials()">Test with Credentials</button>
+    <div id="result"></div>
+    
+    <script>
+    async function testSessionEndpoint() {
+        const result = document.getElementById('result');
+        result.innerHTML = 'Testing session endpoint...';
+        
+        try {
+            const response = await fetch('https://api.dottapps.com/api/sessions/cloudflare/create/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Origin': 'https://dottapps.com'
+                },
+                body: JSON.stringify({
+                    test: 'connection'
+                })
+            });
+            
+            const text = await response.text();
+            let parsed;
+            try {
+                parsed = JSON.parse(text);
+            } catch {
+                parsed = text;
+            }
+            
+            result.innerHTML = `
+                <h3>Response from Session Endpoint:</h3>
+                <p>Status: ${response.status}</p>
+                <p>Headers: ${JSON.stringify(Object.fromEntries(response.headers))}</p>
+                <p>Body: <pre>${typeof parsed === 'string' ? parsed.substring(0, 500) : JSON.stringify(parsed, null, 2)}</pre></p>
+            `;
+        } catch (error) {
+            result.innerHTML = `<h3>Error:</h3><pre>${error.toString()}\n${error.stack}</pre>`;
+        }
+    }
+    
+    async function testWithCredentials() {
+        const result = document.getElementById('result');
+        result.innerHTML = 'Testing with actual credentials format...';
+        
+        try {
+            const response = await fetch('https://api.dottapps.com/api/sessions/cloudflare/create/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Origin': 'https://dottapps.com'
+                },
+                body: JSON.stringify({
+                    email: 'test@example.com',
+                    password: 'testpassword',
+                    auth0_token: 'dummy_token',
+                    auth0_sub: 'auth0|test'
+                })
+            });
+            
+            const text = await response.text();
+            let parsed;
+            try {
+                parsed = JSON.parse(text);
+            } catch {
+                parsed = text;
+            }
+            
+            result.innerHTML = `
+                <h3>Response with Credentials Format:</h3>
+                <p>Status: ${response.status}</p>
+                <p>Headers: ${JSON.stringify(Object.fromEntries(response.headers))}</p>
+                <p>Body: <pre>${typeof parsed === 'string' ? parsed.substring(0, 1000) : JSON.stringify(parsed, null, 2)}</pre></p>
+            `;
+        } catch (error) {
+            result.innerHTML = `<h3>Error:</h3><pre>${error.toString()}\n${error.stack}</pre>`;
+        }
+    }
+    </script>
+</body>
+</html>

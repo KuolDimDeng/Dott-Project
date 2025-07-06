@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Frontend API Test</title>
+</head>
+<body>
+    <h1>Frontend API Test</h1>
+    <button onclick="testFrontendAuth()">Test Frontend Auth Flow</button>
+    <button onclick="testCloudflareSession()">Test Cloudflare Session</button>
+    <div id="result"></div>
+    
+    <script>
+    async function testFrontendAuth() {
+        const result = document.getElementById('result');
+        result.innerHTML = 'Testing frontend email-login endpoint...';
+        
+        try {
+            const response = await fetch('https://dottapps.com/api/auth/email-login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    email: 'test@example.com',
+                    password: 'testpassword'
+                })
+            });
+            
+            const text = await response.text();
+            let parsed;
+            try {
+                parsed = JSON.parse(text);
+            } catch {
+                parsed = text;
+            }
+            
+            result.innerHTML = `
+                <h3>Response from Frontend Email-Login:</h3>
+                <p>Status: ${response.status}</p>
+                <p>Headers: ${JSON.stringify(Object.fromEntries(response.headers))}</p>
+                <p>Body: <pre>${typeof parsed === 'string' ? parsed.substring(0, 1000) + '...' : JSON.stringify(parsed, null, 2)}</pre></p>
+            `;
+        } catch (error) {
+            result.innerHTML = `<h3>Error:</h3><pre>${error.toString()}\n${error.stack}</pre>`;
+        }
+    }
+    
+    async function testCloudflareSession() {
+        const result = document.getElementById('result');
+        result.innerHTML = 'Testing cloudflare-session endpoint directly...';
+        
+        try {
+            const response = await fetch('https://dottapps.com/api/auth/cloudflare-session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    email: 'test@example.com',
+                    auth0_token: 'dummy_token',
+                    auth0_sub: 'auth0|test',
+                    user: {
+                        email: 'test@example.com',
+                        sub: 'auth0|test'
+                    }
+                })
+            });
+            
+            const text = await response.text();
+            let parsed;
+            try {
+                parsed = JSON.parse(text);
+            } catch {
+                parsed = text;
+            }
+            
+            result.innerHTML = `
+                <h3>Response from Cloudflare-Session:</h3>
+                <p>Status: ${response.status}</p>
+                <p>Headers: ${JSON.stringify(Object.fromEntries(response.headers))}</p>
+                <p>Body: <pre>${typeof parsed === 'string' ? parsed.substring(0, 1000) + '...' : JSON.stringify(parsed, null, 2)}</pre></p>
+            `;
+        } catch (error) {
+            result.innerHTML = `<h3>Error:</h3><pre>${error.toString()}\n${error.stack}</pre>`;
+        }
+    }
+    </script>
+</body>
+</html>

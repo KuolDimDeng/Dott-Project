@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+</head>
+<body>
+    <h1>Direct API Test</h1>
+    <button onclick="testAPI()">Test API Directly</button>
+    <button onclick="testRenderAPI()">Test Render Domain</button>
+    <div id="result"></div>
+    
+    <script>
+    async function testAPI() {
+        const result = document.getElementById('result');
+        result.innerHTML = 'Testing api.dottapps.com...';
+        
+        try {
+            const response = await fetch('https://api.dottapps.com/health/');
+            const text = await response.text();
+            result.innerHTML = `
+                <h3>Response from api.dottapps.com:</h3>
+                <p>Status: ${response.status}</p>
+                <p>Headers: ${JSON.stringify(Object.fromEntries(response.headers))}</p>
+                <p>Body: ${text.substring(0, 500)}...</p>
+            `;
+        } catch (error) {
+            result.innerHTML = `<h3>Error:</h3><pre>${error.toString()}</pre>`;
+        }
+    }
+    
+    async function testRenderAPI() {
+        const result = document.getElementById('result');
+        result.innerHTML = 'Testing Render domain directly...';
+        
+        try {
+            const response = await fetch('https://dott-api-y26w.onrender.com/health/');
+            const text = await response.text();
+            result.innerHTML = `
+                <h3>Response from Render:</h3>
+                <p>Status: ${response.status}</p>
+                <p>Headers: ${JSON.stringify(Object.fromEntries(response.headers))}</p>
+                <p>Body: ${text.substring(0, 500)}...</p>
+            `;
+        } catch (error) {
+            result.innerHTML = `<h3>Error:</h3><pre>${error.toString()}</pre>`;
+        }
+    }
+    </script>
+</body>
+</html>
