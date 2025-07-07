@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0007_userprofile_metadata_and_more'),  # Adjust this to the latest migration
+        ('users', '0007_convert_admin_to_owner'),
     ]
 
     operations = [
