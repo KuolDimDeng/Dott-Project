@@ -380,6 +380,16 @@ export default function EmailPasswordSignIn() {
         subscription_plan: loginResult.tenant?.subscription_plan || loginResult.user?.subscription_plan
       };
 
+      // Determine redirect URL based on onboarding status
+      let redirectUrl;
+      if (loginResult.needs_onboarding) {
+        redirectUrl = '/onboarding';
+      } else if (loginResult.tenant?.id) {
+        redirectUrl = `/${loginResult.tenant.id}/dashboard`;
+      } else {
+        redirectUrl = '/dashboard';
+      }
+
       // If session was created successfully, use secure bridge
       if (loginResult.success && loginResult.useSessionBridge) {
         logger.info('[EmailPasswordSignIn] Session created successfully, using session bridge');
