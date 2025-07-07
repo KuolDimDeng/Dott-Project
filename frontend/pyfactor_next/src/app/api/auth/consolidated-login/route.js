@@ -97,9 +97,22 @@ export async function POST(request) {
     });
     
     // Forward session cookies from backend
-    const setCookieHeader = consolidatedResponse.headers.get('set-cookie');
-    if (setCookieHeader) {
-      response.headers.set('set-cookie', setCookieHeader);
+    const setCookieHeaders = consolidatedResponse.headers.getSetCookie?.() || [];
+    if (setCookieHeaders.length > 0) {
+      // Set multiple cookies properly
+      setCookieHeaders.forEach(cookie => {
+        response.headers.append('set-cookie', cookie);
+      });
+      console.log('[ConsolidatedLogin] Forwarded cookies:', setCookieHeaders.length);
+    } else {
+      // Fallback for older Node.js versions
+      const setCookieHeader = consolidatedResponse.headers.get('set-cookie');
+      if (setCookieHeader) {
+        response.headers.set('set-cookie', setCookieHeader);
+        console.log('[ConsolidatedLogin] Forwarded single cookie:', setCookieHeader.substring(0, 50));
+      } else {
+        console.warn('[ConsolidatedLogin] No set-cookie headers found in backend response');
+      }
     }
     
     return response;
