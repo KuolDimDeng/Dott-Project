@@ -18,6 +18,9 @@ from .business_views import (
     CreateCheckoutSessionView
 )
 from .api.checkout.checkout_session import create_checkout_session
+from .api.checkout.checkout_session_v2 import create_checkout_session_v2, get_subscription_pricing
+from .api.checkout.mobile_money_checkout import create_mobile_money_checkout, verify_mobile_money_payment
+from .api.payment_methods import get_payment_methods, check_mobile_money_support
 from .api.subscription_views import subscription_status
 from .api.subscription_status_views import subscription_status as grace_period_status, retry_payment
 from rest_framework_simplejwt.views import TokenRefreshView
@@ -44,6 +47,13 @@ urlpatterns = [
     path('api/subscription/status/', subscription_status, name='subscription_status'),
     path('api/subscription/grace-status/', grace_period_status, name='grace_period_status'),
     path('api/subscription/retry-payment/', retry_payment, name='retry_payment'),
+    # Payment methods and mobile money
+    path('api/payment-methods/', get_payment_methods, name='get_payment_methods'),
+    path('api/mobile-money/check-support/', check_mobile_money_support, name='check_mobile_money_support'),
+    path('api/checkout/create-v2/', create_checkout_session_v2, name='create_checkout_session_v2'),
+    path('api/checkout/mobile-money/', create_mobile_money_checkout, name='create_mobile_money_checkout'),
+    path('api/checkout/mobile-money/verify/', verify_mobile_money_payment, name='verify_mobile_money_payment'),
+    path('api/subscription/pricing/', get_subscription_pricing, name='get_subscription_pricing'),
     # Include the router URLs
     path('api/', include(router.urls)),
 ]
