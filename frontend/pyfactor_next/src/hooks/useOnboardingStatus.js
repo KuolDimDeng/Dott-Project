@@ -4,12 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from '@/hooks/useSession-v2';
 import { logger } from '@/utils/logger';
-import {
-  getOnboardingStatus,
-  updateOnboardingStatus,
-  validateToken,
-  refreshSession,
-} from '@/lib/authUtils';
+import { getOnboardingStatus } from '@/services/api/onboarding';
 import { validateOnboardingState } from '@/utils/userAttributes';
 
 const POLL_INTERVAL = 5000; // 5 seconds
@@ -31,26 +26,21 @@ export function useOnboardingStatus() {
     }
 
     try {
-      // Validate token first
-      const isValid = await validateToken();
-      if (!isValid) {
-        await refreshSession();
-      }
-
-      // Get status from Cognito user attributes
+      // Get onboarding status from API
       const onboardingStatus = await getOnboardingStatus();
       if (!onboardingStatus) {
         throw new Error('Failed to get onboarding status');
       }
 
-      // Validate the status
-      const validatedStatus = validateOnboardingState(onboardingStatus);
-
+      // Extract status from response
+      const currentStatus = onboardingStatus.onboarding_status || onboardingStatus.status || 'not_started';
+      const isComplete = onboardingStatus.onboarding_completed || currentStatus === 'complete';
+      
       setStatus({
-        status: validatedStatus,
-        lastStep: validatedStatus,
-        completedAt:
-          validatedStatus === 'complete' ? new Date().toISOString() : null,
+        status: currentStatus,
+        lastStep: onboardingStatus.current_step || currentStatus,
+        completedAt: isComplete ? new Date().toISOString() : null,
+        raw: onboardingStatus
       });
       setError(null);
       setRetryCount(0);
@@ -75,25 +65,13 @@ export function useOnboardingStatus() {
       }
 
       try {
-        // Validate the new status
-        const validatedStatus = validateOnboardingState(newStatus);
-
-        // Validate token before update
-        const isValid = await validateToken();
-        if (!isValid) {
-          await refreshSession();
-        }
-
-        // Update status in Cognito
-        await updateOnboardingStatus(validatedStatus);
-
+        // For now, just update the local state
+        // TODO: Implement backend update when needed
         const updatedStatus = {
-          status: validatedStatus,
-          lastStep: lastStep
-            ? validateOnboardingState(lastStep)
-            : validatedStatus,
+          status: newStatus,
+          lastStep: lastStep || newStatus,
           completedAt:
-            validatedStatus === 'complete' ? new Date().toISOString() : null,
+            newStatus === 'complete' ? new Date().toISOString() : null,
         };
 
         setStatus(updatedStatus);
