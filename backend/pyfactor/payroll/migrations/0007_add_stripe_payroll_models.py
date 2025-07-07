@@ -4,6 +4,7 @@ from django.db import migrations, models
 import django.db.models.deletion
 import uuid
 from decimal import Decimal
+from django.conf import settings
 
 
 class Migration(migrations.Migration):
@@ -61,7 +62,7 @@ class Migration(migrations.Migration):
                 ('error_message', models.TextField(blank=True)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
-                ('approved_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='auth.user')),
+                ('approved_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL)),
                 ('payroll_run', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='stripe_payment', to='payroll.payrollrun')),
             ],
             options={
