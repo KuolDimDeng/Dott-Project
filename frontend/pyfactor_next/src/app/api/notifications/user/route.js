@@ -28,6 +28,16 @@ export async function GET(request) {
       },
     });
 
+    // Check if response is JSON
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      console.error('[User Notifications API] Non-JSON response:', response.status, contentType);
+      return NextResponse.json(
+        { error: 'Invalid response from backend', notifications: [] },
+        { status: 200, headers: standardSecurityHeaders }
+      );
+    }
+
     const data = await response.json();
 
     return NextResponse.json(data, { 
