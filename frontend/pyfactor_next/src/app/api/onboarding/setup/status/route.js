@@ -11,6 +11,27 @@ export async function GET(request) {
   // Generate unique request ID for tracing
   const requestId = crypto.randomUUID();
   
+  // Add comprehensive logging at the start
+  logger.info('[SetupStatus] Request received', {
+    requestId,
+    url: request.url,
+    headers: {
+      authorization: request.headers.get('Authorization') ? 'Present' : 'Missing',
+      xIdToken: request.headers.get('X-Id-Token') ? 'Present' : 'Missing',
+      userAgent: request.headers.get('User-Agent'),
+      cfRay: request.headers.get('CF-Ray'),
+      origin: request.headers.get('Origin'),
+      referer: request.headers.get('Referer')
+    },
+    cookies: {
+      accessToken: request.cookies.get('accessToken') ? 'Present' : 'Missing',
+      idToken: request.cookies.get('idToken') ? 'Present' : 'Missing',
+      setupProgress: request.cookies.get('setupProgress')?.value,
+      sid: request.cookies.get('sid') ? 'Present' : 'Missing',
+      sessionToken: request.cookies.get('session_token') ? 'Present' : 'Missing'
+    }
+  });
+  
   try {
     // Get cache-busting parameter
     const url = new URL(request.url);
@@ -147,13 +168,23 @@ export async function GET(request) {
     });
     
     // Determine the target backend URL
-    const backendApiUrl = process.env.BACKEND_API_URL || 'https://127.0.0.1:8000';
+    const backendApiUrl = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
     let statusUrl = `${backendApiUrl}/api/onboarding/setup/status/?ts=${timestamp}`;
     
     // Add retry information to the request
     if (isRetry) {
       statusUrl += `&retry=${isRetry}&currentRetry=${currentRetry}&maxRetries=${maxRetries}`;
     }
+    
+    logger.info('[SetupStatus] Backend request details', {
+      requestId,
+      backendApiUrl,
+      statusUrl,
+      hasAccessToken: !!accessToken,
+      hasIdToken: !!idToken,
+      userId,
+      lastProgress
+    });
     
     // If progress is already very high (92%+), consider it done
     if (lastProgress >= 92) {
@@ -197,6 +228,16 @@ export async function GET(request) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
       
+      logger.info('[SetupStatus] Sending backend request', {
+        requestId,
+        url: statusUrl,
+        headers: {
+          Authorization: accessToken ? `Bearer ${accessToken.substring(0, 10)}...` : 'Missing',
+          'X-Id-Token': idToken ? `${idToken.substring(0, 10)}...` : 'Missing',
+          'X-User-ID': userId || 'unknown'
+        }
+      });
+      
       const statusResponse = await fetch(statusUrl, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -212,6 +253,17 @@ export async function GET(request) {
       });
       
       clearTimeout(timeoutId);
+      
+      logger.info('[SetupStatus] Backend response received', {
+        requestId,
+        status: statusResponse.status,
+        statusText: statusResponse.statusText,
+        ok: statusResponse.ok,
+        headers: {
+          contentType: statusResponse.headers.get('content-type'),
+          cfRay: statusResponse.headers.get('cf-ray')
+        }
+      });
       
       if (statusResponse.ok) {
         backendStatus = await statusResponse.json();
@@ -404,7 +456,9 @@ export async function GET(request) {
     } catch (fetchError) {
       backendError = {
         message: fetchError.message,
-        name: fetchError.name
+        name: fetchError.name,
+        cause: fetchError.cause,
+        stack: process.env.NODE_ENV === 'development' ? fetchError.stack : undefined
       };
       
       // Check if this was a timeout
@@ -414,7 +468,14 @@ export async function GET(request) {
         requestId,
         error: backendError,
         isTimeout,
-        lastProgress
+        lastProgress,
+        url: statusUrl,
+        errorType: fetchError.constructor.name,
+        errorDetails: {
+          message: fetchError.message,
+          name: fetchError.name,
+          cause: fetchError.cause?.message || fetchError.cause
+        }
       });
     }
     

@@ -165,6 +165,26 @@ export async function middleware(request) {
       headers: requestHeaders,
     },
   });
+  
+  // Add CSP debugging headers for the dashboard
+  if (pathname.startsWith('/dashboard') || pathname === '/api/debug/csp-check') {
+    response.headers.set('X-CSP-Debug', 'active');
+    response.headers.set('X-CSP-Timestamp', new Date().toISOString());
+    
+    // Log current CSP configuration
+    const currentCSP = response.headers.get('content-security-policy');
+    if (currentCSP) {
+      console.log('[Middleware] CSP Debug - Current CSP:', {
+        hasCloudflare: currentCSP.includes('cloudflare.com'),
+        hasSentry: currentCSP.includes('sentry.io'),
+        hasIngestSentry: currentCSP.includes('ingest.sentry.io'),
+        length: currentCSP.length
+      });
+    } else {
+      console.log('[Middleware] CSP Debug - No CSP header found');
+    }
+  }
+  
   console.log('[Middleware] ========== REQUEST END ==========');
   return addSecurityHeaders(response);
 }
