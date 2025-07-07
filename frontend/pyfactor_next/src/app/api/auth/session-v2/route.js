@@ -55,7 +55,12 @@ export async function GET(request) {
         }
     
         const duration = Date.now() - startTime;
-        logger.api('GET', `${API_URL}/api/sessions/validate/${sessionId.value}/`, response.status, duration);
+        logger.info('[Session-V2] API call completed', {
+          method: 'GET',
+          url: `${API_URL}/api/sessions/validate/${sessionId.value}/`,
+          status: response.status,
+          duration: `${duration}ms`
+        });
         
         if (!response.ok) {
           // Get error details
