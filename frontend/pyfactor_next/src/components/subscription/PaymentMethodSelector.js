@@ -68,18 +68,30 @@ export default function PaymentMethodSelector({ selectedMethod, onMethodChange, 
             className={`relative rounded-lg border ${
               selectedMethod?.id === method.id
                 ? 'border-blue-600 bg-blue-50'
+                : method.recommended
+                ? 'border-green-500 bg-green-50 hover:border-green-600'
                 : 'border-gray-300 bg-white hover:border-gray-400'
             } p-4 cursor-pointer transition-all`}
           >
+            {method.recommended && (
+              <div className="absolute -top-2 left-4">
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                  Recommended
+                </span>
+              </div>
+            )}
+            
             <div className="flex items-start">
               <div className="flex-shrink-0">
                 {method.id === 'card' ? (
                   <CreditCardIcon className={`h-6 w-6 ${
-                    selectedMethod?.id === method.id ? 'text-blue-600' : 'text-gray-400'
+                    selectedMethod?.id === method.id ? 'text-blue-600' : 
+                    method.recommended ? 'text-green-600' : 'text-gray-400'
                   }`} />
                 ) : (
                   <DevicePhoneMobileIcon className={`h-6 w-6 ${
-                    selectedMethod?.id === method.id ? 'text-blue-600' : 'text-gray-400'
+                    selectedMethod?.id === method.id ? 'text-blue-600' : 
+                    method.recommended ? 'text-green-600' : 'text-gray-400'
                   }`} />
                 )}
               </div>
@@ -96,6 +108,11 @@ export default function PaymentMethodSelector({ selectedMethod, onMethodChange, 
                 <p className="mt-1 text-sm text-gray-500">
                   {method.description}
                 </p>
+                {method.note && (
+                  <p className="mt-1 text-xs font-medium text-gray-600">
+                    {method.note}
+                  </p>
+                )}
                 {method.providers && method.providers.length > 0 && (
                   <p className="mt-1 text-xs text-gray-400">
                     Available: {method.providers.join(', ')}

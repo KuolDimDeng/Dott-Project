@@ -76,16 +76,20 @@ class MobileMoneyCountry(models.Model):
     @classmethod
     def get_payment_methods(cls, country_code):
         """Get available payment methods for a country"""
-        payment_methods = [
-            {
-                'id': 'card',
-                'name': 'Credit/Debit Card',
-                'provider': 'stripe',
-                'icon': 'credit-card',
-                'description': 'Pay with Visa, Mastercard, or other cards'
-            }
-        ]
+        payment_methods = []
         
+        # Always add Stripe card option
+        payment_methods.append({
+            'id': 'card',
+            'name': 'Credit/Debit Card (USD)',
+            'provider': 'stripe',
+            'icon': 'credit-card',
+            'description': 'Pay in USD with Visa, Mastercard, or other cards',
+            'currency': 'USD',
+            'note': 'Charged in USD, your bank will convert'
+        })
+        
+        # Add mobile money if available
         try:
             mm_country = cls.objects.get(
                 country_code=country_code.upper(),
@@ -93,7 +97,8 @@ class MobileMoneyCountry(models.Model):
                 paystack_enabled=True
             )
             
-            payment_methods.append({
+            # Put mobile money first for supported countries
+            payment_methods.insert(0, {
                 'id': 'mobile_money',
                 'name': mm_country.display_name,
                 'provider': 'paystack',
@@ -101,7 +106,9 @@ class MobileMoneyCountry(models.Model):
                 'description': f'Pay with {", ".join(mm_country.providers)}',
                 'currency': mm_country.currency_code,
                 'is_beta': mm_country.is_beta,
-                'providers': mm_country.providers
+                'providers': mm_country.providers,
+                'recommended': True,
+                'note': f'Pay in {mm_country.currency_code} - no conversion fees'
             })
         except cls.DoesNotExist:
             pass

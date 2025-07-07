@@ -57,6 +57,8 @@ def create_checkout_session_v2(request):
             logger.warning(f"No business found for user {user.id}")
         
         # Get appropriate Stripe price ID
+        # Note: Stripe always charges in USD - customer's bank handles conversion
+        # This avoids double conversion and keeps accounting simple
         price_id = get_stripe_price_id(plan_type, billing_cycle, is_discounted)
         
         if not price_id:

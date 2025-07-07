@@ -152,8 +152,8 @@ class WiseCurrencyService:
                     # Get conversion rate
                     rate_info = self.get_exchange_rate('USD', target_currency, usd_amount)
                     
-                    # Add 1% markup for currency conversion
-                    local_amount = rate_info['target_amount'] * 1.01
+                    # Add 3% markup to cover conversion losses
+                    local_amount = rate_info['target_amount'] * 1.03
                     
                     converted_prices[plan][cycle] = round(local_amount, 0)  # Round to nearest whole number
                     converted_prices[plan][f'{cycle}_display'] = self._format_currency(local_amount, target_currency)
