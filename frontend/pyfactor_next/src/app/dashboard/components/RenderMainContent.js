@@ -2094,16 +2094,6 @@ const RenderMainContent = React.memo(function RenderMainContent({
         );
       }
 
-      if (view === 'import-export') {
-        const importExportComponentKey = `import-export-${navigationKey || 'default'}`;
-        return (
-          <ContentWrapperWithKey>
-            <SuspenseWithCleanup componentKey={importExportComponentKey}>
-              <ImportExport />
-            </SuspenseWithCleanup>
-          </ContentWrapperWithKey>
-        );
-      }
 
       // Social view handling (Invite a Friend, Dott Status)
       if (view === 'invite-a-friend') {
