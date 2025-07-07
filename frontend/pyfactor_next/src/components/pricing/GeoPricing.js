@@ -23,14 +23,18 @@ export default function GeoPricing() {
         pricing: {
           professional: {
             monthly: 15,
+            six_month: 78,
             yearly: 144,
             monthly_display: '$15.00',
+            six_month_display: '$78.00',
             yearly_display: '$144.00'
           },
           enterprise: {
             monthly: 45,
+            six_month: 234,
             yearly: 432,
             monthly_display: '$45.00',
+            six_month_display: '$234.00',
             yearly_display: '$432.00'
           }
         }
@@ -51,7 +55,7 @@ export default function GeoPricing() {
   const plans = [
     {
       name: 'Free',
-      price: { monthly: '$0', yearly: '$0' },
+      price: { monthly: '$0', six_month: '$0', yearly: '$0' },
       description: 'Perfect for getting started',
       features: [
         '1 user',
@@ -67,10 +71,12 @@ export default function GeoPricing() {
       name: 'Professional',
       price: {
         monthly: pricing.pricing.professional.monthly_display,
+        six_month: pricing.pricing.professional.six_month_display,
         yearly: pricing.pricing.professional.yearly_display
       },
       originalPrice: pricing.discount_percentage > 0 ? {
         monthly: '$15.00',
+        six_month: '$78.00',
         yearly: '$144.00'
       } : null,
       description: 'For growing businesses',
@@ -89,10 +95,12 @@ export default function GeoPricing() {
       name: 'Enterprise',
       price: {
         monthly: pricing.pricing.enterprise.monthly_display,
+        six_month: pricing.pricing.enterprise.six_month_display,
         yearly: pricing.pricing.enterprise.yearly_display
       },
       originalPrice: pricing.discount_percentage > 0 ? {
         monthly: '$45.00',
+        six_month: '$234.00',
         yearly: '$432.00'
       } : null,
       description: 'For large organizations',
@@ -140,6 +148,17 @@ export default function GeoPricing() {
             </button>
             <button
               className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                billingCycle === 'six_month'
+                  ? 'bg-white text-gray-900 shadow'
+                  : 'text-gray-500'
+              }`}
+              onClick={() => setBillingCycle('six_month')}
+            >
+              6 Months
+              <span className="ml-1 text-green-600 text-xs">Save 13%</span>
+            </button>
+            <button
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
                 billingCycle === 'yearly'
                   ? 'bg-white text-gray-900 shadow'
                   : 'text-gray-500'
@@ -180,7 +199,7 @@ export default function GeoPricing() {
                     {plan.price[billingCycle]}
                   </span>
                   <span className="ml-2 text-gray-500">
-                    /{billingCycle === 'monthly' ? 'month' : 'year'}
+                    /{billingCycle === 'monthly' ? 'month' : billingCycle === 'six_month' ? '6 months' : 'year'}
                   </span>
                 </div>
                 {plan.originalPrice && (

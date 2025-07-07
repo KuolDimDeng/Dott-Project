@@ -38,7 +38,7 @@ def create_checkout_session_v2(request):
     if plan_type not in ['professional', 'enterprise']:
         return Response({"error": "Invalid plan type"}, status=400)
     
-    if billing_cycle not in ['monthly', 'yearly']:
+    if billing_cycle not in ['monthly', 'six_month', 'yearly']:
         return Response({"error": "Invalid billing cycle"}, status=400)
     
     try:
@@ -174,13 +174,17 @@ def get_subscription_pricing(request):
         # Calculate prices
         if is_discounted:
             professional_monthly = 7.50
+            professional_six_month = 39.00
             professional_yearly = 72.00
             enterprise_monthly = 22.50
+            enterprise_six_month = 117.00
             enterprise_yearly = 216.00
         else:
             professional_monthly = 15.00
+            professional_six_month = 78.00
             professional_yearly = 144.00
             enterprise_monthly = 45.00
+            enterprise_six_month = 234.00
             enterprise_yearly = 432.00
         
         return Response({
@@ -190,26 +194,38 @@ def get_subscription_pricing(request):
             'pricing': {
                 'professional': {
                     'monthly': professional_monthly,
+                    'six_month': professional_six_month,
                     'yearly': professional_yearly,
                     'monthly_display': f'${professional_monthly:.2f}',
+                    'six_month_display': f'${professional_six_month:.2f}',
                     'yearly_display': f'${professional_yearly:.2f}',
-                    'monthly_savings': professional_yearly / 12 - professional_monthly
+                    'six_month_monthly_rate': professional_six_month / 6,
+                    'yearly_monthly_rate': professional_yearly / 12,
+                    'six_month_savings': (professional_monthly * 6) - professional_six_month,
+                    'yearly_savings': (professional_monthly * 12) - professional_yearly
                 },
                 'enterprise': {
                     'monthly': enterprise_monthly,
+                    'six_month': enterprise_six_month,
                     'yearly': enterprise_yearly,
                     'monthly_display': f'${enterprise_monthly:.2f}',
+                    'six_month_display': f'${enterprise_six_month:.2f}',
                     'yearly_display': f'${enterprise_yearly:.2f}',
-                    'monthly_savings': enterprise_yearly / 12 - enterprise_monthly
+                    'six_month_monthly_rate': enterprise_six_month / 6,
+                    'yearly_monthly_rate': enterprise_yearly / 12,
+                    'six_month_savings': (enterprise_monthly * 6) - enterprise_six_month,
+                    'yearly_savings': (enterprise_monthly * 12) - enterprise_yearly
                 }
             },
             'stripe_price_ids': {
                 'professional': {
                     'monthly': get_stripe_price_id('professional', 'monthly', is_discounted),
+                    'six_month': get_stripe_price_id('professional', 'six_month', is_discounted),
                     'yearly': get_stripe_price_id('professional', 'yearly', is_discounted)
                 },
                 'enterprise': {
                     'monthly': get_stripe_price_id('enterprise', 'monthly', is_discounted),
+                    'six_month': get_stripe_price_id('enterprise', 'six_month', is_discounted),
                     'yearly': get_stripe_price_id('enterprise', 'yearly', is_discounted)
                 }
             }

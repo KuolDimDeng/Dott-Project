@@ -148,13 +148,17 @@ class GetPricingForCountryView(APIView):
             # Calculate prices
             if discount > 0:
                 professional_monthly = 7.50  # $15 * 0.5
+                professional_six_month = 39.00  # $78 * 0.5
                 professional_yearly = 72.00  # $144 * 0.5
                 enterprise_monthly = 22.50   # $45 * 0.5
+                enterprise_six_month = 117.00  # $234 * 0.5
                 enterprise_yearly = 216.00   # $432 * 0.5
             else:
                 professional_monthly = 15.00
+                professional_six_month = 78.00
                 professional_yearly = 144.00
                 enterprise_monthly = 45.00
+                enterprise_six_month = 234.00
                 enterprise_yearly = 432.00
             
             return Response({
@@ -163,24 +167,30 @@ class GetPricingForCountryView(APIView):
                 'pricing': {
                     'professional': {
                         'monthly': professional_monthly,
+                        'six_month': professional_six_month,
                         'yearly': professional_yearly,
                         'monthly_display': f'${professional_monthly:.2f}',
+                        'six_month_display': f'${professional_six_month:.2f}',
                         'yearly_display': f'${professional_yearly:.2f}'
                     },
                     'enterprise': {
                         'monthly': enterprise_monthly,
+                        'six_month': enterprise_six_month,
                         'yearly': enterprise_yearly,
                         'monthly_display': f'${enterprise_monthly:.2f}',
+                        'six_month_display': f'${enterprise_six_month:.2f}',
                         'yearly_display': f'${enterprise_yearly:.2f}'
                     }
                 },
                 'original_pricing': {
                     'professional': {
                         'monthly': 15.00,
+                        'six_month': 78.00,
                         'yearly': 144.00
                     },
                     'enterprise': {
                         'monthly': 45.00,
+                        'six_month': 234.00,
                         'yearly': 432.00
                     }
                 }
@@ -195,14 +205,18 @@ class GetPricingForCountryView(APIView):
                 'pricing': {
                     'professional': {
                         'monthly': 15.00,
+                        'six_month': 78.00,
                         'yearly': 144.00,
                         'monthly_display': '$15.00',
+                        'six_month_display': '$78.00',
                         'yearly_display': '$144.00'
                     },
                     'enterprise': {
                         'monthly': 45.00,
+                        'six_month': 234.00,
                         'yearly': 432.00,
                         'monthly_display': '$45.00',
+                        'six_month_display': '$234.00',
                         'yearly_display': '$432.00'
                     }
                 }

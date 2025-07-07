@@ -10,10 +10,12 @@ from django.conf import settings
 STRIPE_PRICES_REGULAR = {
     'professional': {
         'monthly': os.getenv('STRIPE_PRICE_PRO_MONTHLY', 'price_professional_monthly'),
+        'six_month': os.getenv('STRIPE_PRICE_PRO_SIX_MONTH', 'price_professional_six_month'),
         'yearly': os.getenv('STRIPE_PRICE_PRO_YEARLY', 'price_professional_yearly'),
     },
     'enterprise': {
         'monthly': os.getenv('STRIPE_PRICE_ENT_MONTHLY', 'price_enterprise_monthly'),
+        'six_month': os.getenv('STRIPE_PRICE_ENT_SIX_MONTH', 'price_enterprise_six_month'),
         'yearly': os.getenv('STRIPE_PRICE_ENT_YEARLY', 'price_enterprise_yearly'),
     }
 }
@@ -22,10 +24,12 @@ STRIPE_PRICES_REGULAR = {
 STRIPE_PRICES_DISCOUNTED = {
     'professional': {
         'monthly': os.getenv('STRIPE_PRICE_PRO_MONTHLY_DISCOUNTED', 'price_professional_monthly_discounted'),
+        'six_month': os.getenv('STRIPE_PRICE_PRO_SIX_MONTH_DISCOUNTED', 'price_professional_six_month_discounted'),
         'yearly': os.getenv('STRIPE_PRICE_PRO_YEARLY_DISCOUNTED', 'price_professional_yearly_discounted'),
     },
     'enterprise': {
         'monthly': os.getenv('STRIPE_PRICE_ENT_MONTHLY_DISCOUNTED', 'price_enterprise_monthly_discounted'),
+        'six_month': os.getenv('STRIPE_PRICE_ENT_SIX_MONTH_DISCOUNTED', 'price_enterprise_six_month_discounted'),
         'yearly': os.getenv('STRIPE_PRICE_ENT_YEARLY_DISCOUNTED', 'price_enterprise_yearly_discounted'),
     }
 }
@@ -37,7 +41,7 @@ def get_stripe_price_id(plan_type, billing_cycle='monthly', is_discounted=False)
     
     Args:
         plan_type: 'professional' or 'enterprise'
-        billing_cycle: 'monthly' or 'yearly'
+        billing_cycle: 'monthly', 'six_month', or 'yearly'
         is_discounted: Boolean indicating if discounted price should be used
     
     Returns:
@@ -65,6 +69,11 @@ Professional Monthly Discounted:
 - Recurring: Monthly
 - Price ID: price_professional_monthly_discounted
 
+Professional 6-Month Discounted:
+- Amount: $39.00
+- Recurring: Every 6 months
+- Price ID: price_professional_six_month_discounted
+
 Professional Yearly Discounted:
 - Amount: $72.00
 - Recurring: Yearly
@@ -75,6 +84,11 @@ Enterprise Monthly Discounted:
 - Recurring: Monthly
 - Price ID: price_enterprise_monthly_discounted
 
+Enterprise 6-Month Discounted:
+- Amount: $117.00
+- Recurring: Every 6 months
+- Price ID: price_enterprise_six_month_discounted
+
 Enterprise Yearly Discounted:
 - Amount: $216.00
 - Recurring: Yearly
@@ -82,7 +96,9 @@ Enterprise Yearly Discounted:
 
 4. Update your environment variables:
 STRIPE_PRICE_PRO_MONTHLY_DISCOUNTED=price_xxx
+STRIPE_PRICE_PRO_SIX_MONTH_DISCOUNTED=price_xxx
 STRIPE_PRICE_PRO_YEARLY_DISCOUNTED=price_xxx
 STRIPE_PRICE_ENT_MONTHLY_DISCOUNTED=price_xxx
+STRIPE_PRICE_ENT_SIX_MONTH_DISCOUNTED=price_xxx
 STRIPE_PRICE_ENT_YEARLY_DISCOUNTED=price_xxx
 """

@@ -26,12 +26,16 @@ This creates:
 #### Professional Plan
 - **Monthly Discounted**: $7.50/month
   - Price ID: `price_professional_monthly_discounted`
+- **6-Month Discounted**: $39.00/6 months
+  - Price ID: `price_professional_six_month_discounted`
 - **Yearly Discounted**: $72.00/year
   - Price ID: `price_professional_yearly_discounted`
 
 #### Enterprise Plan
 - **Monthly Discounted**: $22.50/month
   - Price ID: `price_enterprise_monthly_discounted`
+- **6-Month Discounted**: $117.00/6 months
+  - Price ID: `price_enterprise_six_month_discounted`
 - **Yearly Discounted**: $216.00/year
   - Price ID: `price_enterprise_yearly_discounted`
 
@@ -39,8 +43,10 @@ This creates:
 ```bash
 # .env file
 STRIPE_PRICE_PRO_MONTHLY_DISCOUNTED=price_professional_monthly_discounted
+STRIPE_PRICE_PRO_SIX_MONTH_DISCOUNTED=price_professional_six_month_discounted
 STRIPE_PRICE_PRO_YEARLY_DISCOUNTED=price_professional_yearly_discounted
 STRIPE_PRICE_ENT_MONTHLY_DISCOUNTED=price_enterprise_monthly_discounted
+STRIPE_PRICE_ENT_SIX_MONTH_DISCOUNTED=price_enterprise_six_month_discounted
 STRIPE_PRICE_ENT_YEARLY_DISCOUNTED=price_enterprise_yearly_discounted
 ```
 
