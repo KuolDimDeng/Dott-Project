@@ -1421,7 +1421,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     drawerOpen
   });
   
-  return (
+  const dashboardContent = (
     <DashboardErrorBoundary>
       <ErrorBoundary>
         <NotificationProvider>
@@ -1475,7 +1475,13 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
       </NotificationProvider>
     </ErrorBoundary>
   </DashboardErrorBoundary>
-
+  );
+  
+  // Render the POS System outside the error boundary
+  return (
+    <>
+      {dashboardContent}
+      
       {/* POS System */}
       <POSSystem
         isOpen={showPOSSystem}
@@ -1485,7 +1491,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
           // Optionally refresh data or show confirmation
         }}
       />
-    </ErrorBoundary>
+    </>
   );
 }
 
