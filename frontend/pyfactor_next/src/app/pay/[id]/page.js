@@ -18,7 +18,7 @@ export default function PayInvoicePage() {
 
   const fetchInvoice = async () => {
     try {
-      const response = await fetch(`/api/invoices/${params.id}/public`);
+      const response = await fetch(`/api/payments/invoice-details/${params.id}/`);
       if (!response.ok) {
         throw new Error('Invoice not found');
       }
@@ -33,6 +33,12 @@ export default function PayInvoicePage() {
   };
 
   const handlePayment = async () => {
+    // Check if payment is available
+    if (!invoice.payment_available) {
+      toast.error(invoice.payment_setup_message || 'Payment processing is not available for this invoice');
+      return;
+    }
+
     setIsProcessing(true);
     try {
       // Create Stripe checkout session
@@ -42,14 +48,15 @@ export default function PayInvoicePage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          invoice_id: invoice.id,
-          success_url: `${window.location.origin}/pay/${invoice.id}/success`,
+          invoice_id: params.id,
+          success_url: `${window.location.origin}/pay/${params.id}/success`,
           cancel_url: window.location.href
         })
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create payment session');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create payment session');
       }
 
       const { checkout_url } = await response.json();
@@ -59,7 +66,7 @@ export default function PayInvoicePage() {
       
     } catch (error) {
       console.error('Error processing payment:', error);
-      toast.error('Failed to process payment. Please try again.');
+      toast.error(error.message || 'Failed to process payment. Please try again.');
       setIsProcessing(false);
     }
   };
@@ -148,15 +155,17 @@ export default function PayInvoicePage() {
                 <div className="flex justify-between">
                   <span className="text-gray-500">Date</span>
                   <span className="font-medium text-gray-900">
-                    {format(new Date(invoice.invoice_date), 'MMM dd, yyyy')}
+                    {format(new Date(invoice.created_date), 'MMM dd, yyyy')}
                   </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Due Date</span>
-                  <span className="font-medium text-gray-900">
-                    {format(new Date(invoice.due_date), 'MMM dd, yyyy')}
-                  </span>
-                </div>
+                {invoice.due_date && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Due Date</span>
+                    <span className="font-medium text-gray-900">
+                      {format(new Date(invoice.due_date), 'MMM dd, yyyy')}
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-gray-500">Status</span>
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -168,77 +177,18 @@ export default function PayInvoicePage() {
               </div>
             </div>
 
-            {/* Line Items */}
-            <div className="mb-8">
-              <h3 className="text-sm font-medium text-gray-700 mb-4">Items</h3>
-              <div className="border border-gray-200 rounded-lg overflow-hidden">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Description
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Qty
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Price
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Amount
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {invoice.items?.map((item, index) => (
-                      <tr key={index}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {item.description || item.name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                          {item.quantity}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                          ${parseFloat(item.price).toFixed(2)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                          ${(parseFloat(item.price) * item.quantity).toFixed(2)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+            {/* Invoice Description */}
+            <div className="mb-8 p-4 bg-gray-50 rounded-lg">
+              <h3 className="text-sm font-medium text-gray-700 mb-2">Invoice Description</h3>
+              <p className="text-sm text-gray-900">{invoice.description}</p>
             </div>
 
             {/* Totals */}
             <div className="border-t border-gray-200 pt-6">
               <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Subtotal</span>
-                  <span className="text-gray-900">${parseFloat(invoice.subtotal || 0).toFixed(2)}</span>
-                </div>
-                {invoice.discount_amount > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Discount</span>
-                    <span className="text-gray-900">-${parseFloat(invoice.discount_amount).toFixed(2)}</span>
-                  </div>
-                )}
-                {invoice.tax_amount > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Tax</span>
-                    <span className="text-gray-900">${parseFloat(invoice.tax_amount).toFixed(2)}</span>
-                  </div>
-                )}
-                {invoice.shipping_cost > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Shipping</span>
-                    <span className="text-gray-900">${parseFloat(invoice.shipping_cost).toFixed(2)}</span>
-                  </div>
-                )}
                 <div className="flex justify-between text-lg font-medium pt-4 border-t">
                   <span className="text-gray-900">Total Due</span>
-                  <span className="text-gray-900">${parseFloat(invoice.total_amount).toFixed(2)}</span>
+                  <span className="text-gray-900">${parseFloat(invoice.amount).toFixed(2)} {invoice.currency}</span>
                 </div>
               </div>
             </div>
@@ -246,31 +196,47 @@ export default function PayInvoicePage() {
             {/* Payment Button */}
             {!isAlreadyPaid ? (
               <div className="mt-8">
-                <button
-                  onClick={handlePayment}
-                  disabled={isProcessing}
-                  className="w-full flex justify-center items-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isProcessing ? (
-                    <>
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                {invoice.payment_available ? (
+                  <>
+                    <button
+                      onClick={handlePayment}
+                      disabled={isProcessing}
+                      className="w-full flex justify-center items-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isProcessing ? (
+                        <>
+                          <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Pay ${parseFloat(invoice.amount).toFixed(2)} with Card
+                        </>
+                      )}
+                    </button>
+                    <p className="mt-3 text-center text-sm text-gray-500">
+                      Secure payment processed by Stripe. Your card details are never stored.
+                    </p>
+                  </>
+                ) : (
+                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div className="flex items-center">
+                      <svg className="h-5 w-5 text-yellow-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                       </svg>
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      Pay ${parseFloat(invoice.total_amount).toFixed(2)} with Card
-                    </>
-                  )}
-                </button>
-                <p className="mt-3 text-center text-sm text-gray-500">
-                  Secure payment processed by Stripe. Your card details are never stored.
-                </p>
+                      <p className="text-yellow-800 font-medium">Online payment not available</p>
+                    </div>
+                    <p className="mt-1 text-sm text-yellow-700">
+                      {invoice.payment_setup_message || 'Please contact the business directly to arrange payment.'}
+                    </p>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="mt-8 p-4 bg-green-50 rounded-lg">

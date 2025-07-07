@@ -43,6 +43,11 @@ class Business(models.Model):
     stripe_onboarding_complete = models.BooleanField(default=False, help_text="Whether Stripe Connect onboarding is complete")
     stripe_charges_enabled = models.BooleanField(default=False, help_text="Whether the connected account can accept charges")
     stripe_payouts_enabled = models.BooleanField(default=False, help_text="Whether the connected account can receive payouts")
+    
+    # Stripe Customer fields for ACH debits (payroll)
+    stripe_customer_id = models.CharField(max_length=100, blank=True, help_text="Stripe Customer ID for ACH debits")
+    default_bank_token = models.CharField(max_length=100, blank=True, help_text="Payment method ID for ACH debits")
+    ach_mandate_id = models.CharField(max_length=100, blank=True, help_text="ACH mandate for recurring debits")
 
     # Helper property for linter - Django automatically creates this reverse relationship
     @property

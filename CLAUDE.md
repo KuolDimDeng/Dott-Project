@@ -849,3 +849,37 @@ Add `REDIS_URL` environment variable in Render dashboard
 - **Key Learning**: Always use `useSession` hook for user data (consistent with user menu)
 - **Files Changed**: `/src/app/Settings/components/MyAccount.modern.js`
 - **Documentation**: Updated `/frontend/pyfactor_next/docs/TROUBLESHOOTING.md`
+
+### [23.0.0] - 2025-07-07 - CURRENT - Stripe Connect Invoice Payments
+- **Purpose**: Enable businesses to accept online invoice payments with 2.5% + $0.30 platform fee for Dott
+- **Database Changes**:
+  - Added to Business model: `stripe_account_id`, `stripe_onboarding_complete`, `stripe_charges_enabled`, `stripe_payouts_enabled`
+  - Migration: `/backend/pyfactor/users/migrations/0008_add_stripe_connect_fields.py`
+- **Backend Implementation**:
+  - **Stripe Connect Management** (`/backend/pyfactor/payments/stripe_connect.py`):
+    - `POST /api/payments/stripe-connect/create-account/` - Creates Stripe Connect Express account
+    - `POST /api/payments/stripe-connect/onboarding-link/` - Generates onboarding URL
+    - `GET /api/payments/stripe-connect/account-status/` - Retrieves account status
+    - `POST /api/payments/stripe-connect/refresh-onboarding/` - Refreshes incomplete onboarding
+  - **Invoice Payment Processing** (`/backend/pyfactor/payments/invoice_checkout.py`):
+    - `POST /api/payments/stripe/create-invoice-checkout/` - Creates checkout with platform fee
+    - `POST /api/payments/invoice-payment-link/` - Generates shareable payment links
+    - `GET /api/payments/invoice-details/<id>/` - Public invoice details endpoint
+- **Platform Fee Structure**:
+  - **Rate**: 2.5% + $0.30 per transaction
+  - **Implementation**: Uses Stripe's `application_fee_amount` and `transfer_data`
+  - **Example**: $100 invoice → Customer pays $100 → Business receives $97.20 → Dott receives $2.80
+- **Frontend Components**:
+  - **Payment Settings** (`/dashboard/settings/payments/`): Complete Stripe Connect onboarding flow
+  - **Invoice Actions**: Added "Pay Invoice" button that generates and copies payment link
+  - **Payment Page** (`/pay/[id]/`): Public invoice payment with Stripe Checkout integration
+- **User Experience**:
+  - **Business Owner**: Settings → Payments → Set Up Online Payments → Complete Stripe onboarding → Accept payments
+  - **Customer**: Receive invoice link → Click Pay → Secure Stripe checkout → Payment confirmation
+- **Security**:
+  - Tenant isolation enforced
+  - Business authentication required for setup
+  - Public payment pages (no customer auth needed)
+  - Platform fees tracked in metadata
+- **Revenue Model**: Scalable platform fee on every invoice payment processed through Dott
+- **Documentation**: `/STRIPE_CONNECT_INVOICE_PAYMENTS.md`

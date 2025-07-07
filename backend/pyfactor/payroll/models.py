@@ -28,8 +28,13 @@ class PayrollRun(TenantAwareModel):
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, choices=[
         ('draft', 'Draft'),
-        ('processing', 'Processing'),
+        ('pending_approval', 'Pending Approval'),
+        ('approved', 'Approved'),
+        ('funding', 'Collecting Funds'),
+        ('funded', 'Funds Collected'),
+        ('distributing', 'Distributing'),
         ('completed', 'Completed'),
+        ('failed', 'Failed'),
         ('cancelled', 'Cancelled')
     ], default='draft')
 

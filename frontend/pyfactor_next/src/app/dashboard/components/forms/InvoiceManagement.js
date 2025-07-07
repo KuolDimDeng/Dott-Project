@@ -906,6 +906,43 @@ const InvoiceManagement = () => {
     }
   };
 
+  const handlePayInvoice = async (invoice) => {
+    try {
+      const response = await fetch('/api/payments/invoice-payment-link/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          invoice_id: invoice.id
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create payment link');
+      }
+
+      const data = await response.json();
+      
+      // Copy payment URL to clipboard
+      await navigator.clipboard.writeText(data.payment_url);
+      toast.success('Payment link copied to clipboard!');
+      
+      // Optionally open in new tab
+      window.open(data.payment_url, '_blank');
+      
+    } catch (error) {
+      logger.error('[InvoiceManagement] Error creating payment link:', error);
+      if (error.message.includes('not completed payment setup')) {
+        toast.error('Please complete Stripe Connect setup in Settings to enable online payments');
+      } else {
+        toast.error('Failed to create payment link');
+      }
+    }
+  };
+
   // Filter items based on search
   const filterItems = (items) => {
     if (!searchTerm) return items;
