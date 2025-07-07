@@ -23,7 +23,15 @@ export async function POST(request) {
     
     // Forward the request to Django backend
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.dottapps.com';
-    const response = await fetch(`${backendUrl}/api/notifications/admin/login/`, {
+    const fullUrl = `${backendUrl}/api/notifications/admin/login/`;
+    
+    console.log('[Admin Login API] Request details:', {
+      url: fullUrl,
+      method: 'POST',
+      body: { username: body.username, password: '***' }
+    });
+    
+    const response = await fetch(fullUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -32,6 +40,18 @@ export async function POST(request) {
       },
       body: JSON.stringify(body),
     });
+
+    // Check if response is JSON
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      console.error('[Admin Login API] Non-JSON response:', response.status, contentType);
+      const text = await response.text();
+      console.error('[Admin Login API] Response body:', text.substring(0, 500));
+      return NextResponse.json(
+        { error: 'Invalid response from backend' },
+        { status: 500, headers: adminSecurityHeaders }
+      );
+    }
 
     const data = await response.json();
 
@@ -73,6 +93,20 @@ export async function POST(request) {
 
   } catch (error) {
     console.error('[Admin Login API] Error:', error);
+    console.error('[Admin Login API] Error details:', {
+      message: error.message,
+      cause: error.cause,
+      stack: error.stack
+    });
+    
+    // Provide more specific error messages
+    if (error.message.includes('fetch failed')) {
+      return NextResponse.json(
+        { error: 'Unable to connect to backend server' },
+        { status: 503, headers: adminSecurityHeaders }
+      );
+    }
+    
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500, headers: adminSecurityHeaders }
