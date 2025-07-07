@@ -164,6 +164,92 @@ for the full message or use the non-minified dev environment for full errors
 
 ---
 
+## Session Cookie Persistence Issue (Authentication Loop)
+
+**Issue**: After successful authentication, users are redirected back to signin page because session cookies aren't being set properly.
+
+**Symptoms**:
+- Login succeeds (session token created in backend)
+- User is redirected to dashboard
+- Middleware shows no cookies: `[Middleware] All cookies: []`
+- User is immediately redirected back to signin
+- Infinite authentication loop
+
+**Root Cause**:
+- Next.js API routes don't properly forward Set-Cookie headers from backend responses
+- The backend Django service sets cookies in its response, but these are lost when the Next.js API route returns its own response
+- Using `response.headers.append('Set-Cookie', ...)` or `cookies().set()` in the API route doesn't work reliably in production
+
+**Solution**: Use the Session Bridge Pattern
+1. **Don't set cookies in API routes** - Return session data instead
+2. **Use sessionStorage** as temporary storage during redirect
+3. **Session Bridge page** handles cookie setting through a form POST
+
+**Implementation**:
+
+1. **Consolidated Login API** (`/api/auth/consolidated-login/route.js`):
+   ```javascript
+   // Don't try to set cookies here
+   return NextResponse.json({
+     success: true,
+     ...authData,
+     ...sessionData,
+     useSessionBridge: true,
+     sessionToken: sessionData.session_token
+   });
+   ```
+
+2. **EmailPasswordSignIn Component**:
+   ```javascript
+   if (loginResult.success && loginResult.useSessionBridge) {
+     // Store session data in sessionStorage for the bridge
+     const bridgeData = {
+       token: loginResult.sessionToken,
+       redirectUrl: redirectUrl,
+       timestamp: Date.now(),
+       email: loginResult.user?.email,
+       tenantId: loginResult.tenant?.id
+     };
+     
+     sessionStorage.setItem('session_bridge', JSON.stringify(bridgeData));
+     router.push('/auth/session-bridge');
+     return;
+   }
+   ```
+
+3. **Session Bridge Page** (`/auth/session-bridge/page.js`):
+   - Retrieves data from sessionStorage
+   - Exchanges token via GET to `/api/auth/bridge-session`
+   - Submits form POST to `/api/auth/establish-session`
+   - Form POST properly sets cookies and redirects
+
+4. **Establish Session API** (`/api/auth/establish-session/route.js`):
+   ```javascript
+   // Form POST handler that sets cookies and redirects
+   const formData = await request.formData();
+   const token = formData.get('token');
+   
+   const cookieStore = await cookies();
+   cookieStore.set('sid', token, cookieOptions);
+   cookieStore.set('session_token', token, cookieOptions);
+   
+   return NextResponse.redirect(new URL(redirectUrl, request.url));
+   ```
+
+**Why This Works**:
+- Form POST requests handle cookies differently than API responses
+- The redirect response from establish-session properly sets cookies
+- Session bridge provides a clean handoff between authentication and session establishment
+
+**Files Changed**:
+- `/src/app/api/auth/consolidated-login/route.js`
+- `/src/components/auth/EmailPasswordSignIn.js`
+- `/src/app/auth/session-bridge/page.js`
+- `/src/app/api/auth/bridge-session/route.js`
+- `/src/app/api/auth/establish-session/route.js`
+
+---
+
 ## POS System - Camera Scanner CSP Errors
 
 **Issue**: Camera scanner shows CSP errors and "Camera not found" messages.
