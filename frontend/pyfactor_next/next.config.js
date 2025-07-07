@@ -283,7 +283,9 @@ const nextConfig = {
             value: [
               "default-src 'self'",
               // Scripts - still need unsafe-inline for Next.js
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://dev-cbyy63jovi6zrcos.us.auth0.com https://js.stripe.com https://client.crisp.chat https://widget.crisp.chat https://cdn.plaid.com https://cdn.posthog.com https://app.posthog.com https://*.posthog.com",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://auth.dottapps.com https://dev-cbyy63jovi6zrcos.us.auth0.com https://js.stripe.com https://client.crisp.chat https://widget.crisp.chat https://cdn.plaid.com https://cdn.posthog.com https://app.posthog.com https://*.posthog.com",
+              // Workers - needed for PostHog session recording
+              "worker-src 'self' blob:",
               // Styles
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://client.crisp.chat",
               // Fonts
@@ -293,7 +295,7 @@ const nextConfig = {
               // Connections - add Cloudflare domains
               "connect-src 'self' https://*.auth0.com https://*.stripe.com https://*.googleapis.com wss://*.crisp.chat https://*.crisp.chat https://api.stripe.com https://api.dottapps.com https://auth.dottapps.com https://dottapps.com https://www.dottapps.com https://ipapi.co https://api.country.is https://ipinfo.io https://ipgeolocation.io https://*.plaid.com https://app.posthog.com https://*.posthog.com https://*.cloudflare.com",
               // Frames
-              "frame-src 'self' https://accounts.google.com https://dev-cbyy63jovi6zrcos.us.auth0.com https://js.stripe.com https://auth.dottapps.com https://client.crisp.chat https://*.plaid.com",
+              "frame-src 'self' https://accounts.google.com https://auth.dottapps.com https://dev-cbyy63jovi6zrcos.us.auth0.com https://js.stripe.com https://client.crisp.chat https://*.plaid.com",
               // Objects
               "object-src 'none'",
               // Base URI

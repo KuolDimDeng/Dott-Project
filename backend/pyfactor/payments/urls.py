@@ -2,6 +2,8 @@
 from django.urls import path
 from . import views
 from . import webhook_handlers
+from . import stripe_connect
+from . import invoice_checkout
 
 # Import payment views from accounts app for Stripe integration
 from accounts import views_payment
@@ -23,4 +25,18 @@ urlpatterns = [
     
     # Payment recording endpoint
     path('record/', views.record_payment, name='record_payment'),
+    
+    # Stripe Connect Express endpoints
+    path('stripe-connect/create-account/', stripe_connect.create_stripe_connect_account, name='create_stripe_connect_account'),
+    path('stripe-connect/onboarding-link/', stripe_connect.create_onboarding_link, name='create_onboarding_link'),
+    path('stripe-connect/account-status/', stripe_connect.get_account_status, name='get_account_status'),
+    path('stripe-connect/refresh-onboarding/', stripe_connect.refresh_onboarding_link, name='refresh_onboarding_link'),
+    
+    # Invoice payment endpoints
+    path('invoice-checkout/', invoice_checkout.create_invoice_checkout, name='create_invoice_checkout'),
+    path('invoice-payment-link/', invoice_checkout.create_invoice_payment_link, name='create_invoice_payment_link'),
+    path('invoice-details/<uuid:invoice_id>/', invoice_checkout.get_invoice_details, name='get_invoice_details'),
+    
+    # Stripe-specific invoice checkout (matches frontend expectation)
+    path('stripe/create-invoice-checkout/', invoice_checkout.create_invoice_checkout, name='stripe_create_invoice_checkout'),
 ]

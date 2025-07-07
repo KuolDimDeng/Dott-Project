@@ -37,6 +37,12 @@ class Business(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)  # This matches 'updated_at' in your DB
     business_num = models.CharField(max_length=6, unique=True, null=True, blank=True)
+    
+    # Stripe Connect fields
+    stripe_account_id = models.CharField(max_length=255, null=True, blank=True, unique=True, help_text="Stripe Connect Express account ID")
+    stripe_onboarding_complete = models.BooleanField(default=False, help_text="Whether Stripe Connect onboarding is complete")
+    stripe_charges_enabled = models.BooleanField(default=False, help_text="Whether the connected account can accept charges")
+    stripe_payouts_enabled = models.BooleanField(default=False, help_text="Whether the connected account can receive payouts")
 
     # Helper property for linter - Django automatically creates this reverse relationship
     @property
