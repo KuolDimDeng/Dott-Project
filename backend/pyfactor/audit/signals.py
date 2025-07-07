@@ -194,6 +194,9 @@ def audit_post_delete(sender, instance, **kwargs):
 @receiver(user_logged_in)
 def audit_user_login(sender, request, user, **kwargs):
     """Log successful user login."""
+    if not user:
+        return
+        
     try:
         AuditLog.log_action(
             user=user,
@@ -202,8 +205,8 @@ def audit_user_login(sender, request, user, **kwargs):
             model_name='User',
             object_id=str(user.pk),
             object_repr=str(user),
-            ip_address=request.META.get('REMOTE_ADDR'),
-            user_agent=request.META.get('HTTP_USER_AGENT'),
+            ip_address=request.META.get('REMOTE_ADDR') if request else None,
+            user_agent=request.META.get('HTTP_USER_AGENT') if request else None,
             is_successful=True,
             extra_data={
                 'username': user.username,
@@ -228,8 +231,8 @@ def audit_user_logout(sender, request, user, **kwargs):
             model_name='User',
             object_id=str(user.pk),
             object_repr=str(user),
-            ip_address=request.META.get('REMOTE_ADDR'),
-            user_agent=request.META.get('HTTP_USER_AGENT'),
+            ip_address=request.META.get('REMOTE_ADDR') if request else None,
+            user_agent=request.META.get('HTTP_USER_AGENT') if request else None,
             is_successful=True,
         )
     except Exception as e:
@@ -245,8 +248,8 @@ def audit_failed_login(sender, credentials, request, **kwargs):
             action='failed_attempt',
             model_name='User',
             object_repr=f"Failed login for {credentials.get('username', 'unknown')}",
-            ip_address=request.META.get('REMOTE_ADDR'),
-            user_agent=request.META.get('HTTP_USER_AGENT'),
+            ip_address=request.META.get('REMOTE_ADDR') if request else None,
+            user_agent=request.META.get('HTTP_USER_AGENT') if request else None,
             is_successful=False,
             error_message="Invalid credentials",
             extra_data={

@@ -31,8 +31,8 @@ def track_event(user_id, event_name, properties=None):
     
     try:
         posthog.capture(
-            user_id,
-            event_name,
+            distinct_id=str(user_id),
+            event=event_name,
             properties=properties or {}
         )
     except Exception as e:
@@ -56,8 +56,8 @@ def identify_user(user):
         properties = {k: v for k, v in properties.items() if v is not None}
         
         posthog.identify(
-            str(user.id),
-            properties
+            distinct_id=str(user.id),
+            properties=properties
         )
     except Exception as e:
         logger.error(f"Error identifying user in PostHog: {str(e)}")

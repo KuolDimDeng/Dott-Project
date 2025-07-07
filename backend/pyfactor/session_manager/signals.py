@@ -32,8 +32,8 @@ def sync_session_onboarding_status(sender, instance, created, **kwargs):
                 progress = OnboardingProgress.objects.select_for_update().get(user=instance.user)
                 
                 # Determine the correct onboarding status
-                needs_onboarding = progress.status != 'complete'
-                onboarding_completed = progress.status == 'complete'
+                needs_onboarding = progress.onboarding_status != 'complete'
+                onboarding_completed = progress.onboarding_status == 'complete'
                 onboarding_step = progress.current_step if progress.current_step else 'business_info'
                 
                 # Only update if values are different from defaults

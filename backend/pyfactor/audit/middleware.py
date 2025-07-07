@@ -20,7 +20,7 @@ def get_current_request():
 def get_current_user():
     """Get the current user from thread-local storage."""
     request = get_current_request()
-    if request and hasattr(request, 'user') and request.user.is_authenticated:
+    if request and hasattr(request, 'user') and request.user and request.user.is_authenticated:
         return request.user
     return None
 
@@ -34,7 +34,7 @@ def get_current_tenant_id():
             return request.tenant_id
         elif hasattr(request, 'session') and 'tenant_id' in request.session:
             return request.session.get('tenant_id')
-        elif hasattr(request, 'user') and request.user.is_authenticated:
+        elif hasattr(request, 'user') and request.user and request.user.is_authenticated:
             # Try to get from user's tenant relationship
             try:
                 if hasattr(request.user, 'tenant'):
@@ -118,7 +118,7 @@ class AuditMiddleware(MiddlewareMixin):
             from .models import AuditLog
             
             # Don't log if user is not authenticated (except for login attempts)
-            if not request.user.is_authenticated and not request.path.endswith('/login/'):
+            if (not hasattr(request, 'user') or not request.user or not request.user.is_authenticated) and not request.path.endswith('/login/'):
                 return
             
             # Get view name
@@ -130,7 +130,7 @@ class AuditMiddleware(MiddlewareMixin):
             
             # Log the access
             AuditLog.log_action(
-                user=request.user if request.user.is_authenticated else None,
+                user=request.user if (hasattr(request, 'user') and request.user and request.user.is_authenticated) else None,
                 tenant_id=get_current_tenant_id(),
                 action='viewed' if request.method == 'GET' else 'accessed',
                 model_name='API',
