@@ -6,7 +6,7 @@ import i18next from 'i18next';
 // import { appCache } from '@/utils/appCache';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
-import { appCache } from '@/utils/appCache';
+import { appCache, setCacheValue } from '@/utils/appCache';
 import { i18n as i18nConfig } from '../next-i18next.config.mjs';
 import { getCognitoLanguageDetector, saveLanguagePreference } from '@/utils/userPreferences';
 import { getLanguageForCountry } from '@/services/countryDetectionService';
@@ -154,11 +154,20 @@ if (typeof window !== 'undefined' && !i18nInstance.isInitialized) {
       lookup() {
         try {
           // Get country from cache if available
-          if (typeof window !== 'undefined') { // appCache.getAll() removed during Auth0 migration
-            const country = null; // appCache.getAll().user_country - removed during Auth0 migration
-            if (country) {
-              const language = getLanguageForCountry(country);
-              console.log(`🌍 Country detector: ${country} -> ${language}`);
+          if (typeof window !== 'undefined') {
+            // Try to get from appCache
+            const cachedCountry = appCache.get('user_country');
+            if (cachedCountry) {
+              const language = getLanguageForCountry(cachedCountry);
+              console.log(`🌍 Country detector (from cache): ${cachedCountry} -> ${language}`);
+              return language;
+            }
+            
+            // Also check localStorage as fallback
+            const storedCountry = localStorage.getItem('detected_country');
+            if (storedCountry) {
+              const language = getLanguageForCountry(storedCountry);
+              console.log(`🌍 Country detector (from localStorage): ${storedCountry} -> ${language}`);
               return language;
             }
           }
@@ -184,7 +193,7 @@ if (typeof window !== 'undefined' && !i18nInstance.isInitialized) {
         ns: ['common', 'onboarding'],
         defaultNS: 'common',
         detection: {
-          order: ['localStorage', 'navigator', 'htmlTag'],
+          order: ['localStorage', 'countryDetector', 'navigator', 'htmlTag'],
           lookupFromPathIndex: 0,
           checkWhitelist: true,
           caches: ['localStorage'], // Use localStorage for faster access

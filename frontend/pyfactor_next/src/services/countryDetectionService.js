@@ -81,6 +81,15 @@ export async function detectUserCountry() {
 
     console.log('✅ Detected user country:', detectedCountry);
     
+    // Store in localStorage for language detector
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('detected_country', detectedCountry);
+      }
+    } catch (e) {
+      console.warn('Could not store country in localStorage:', e);
+    }
+    
     // Debug: Check discount eligibility
     const isEligibleForDiscount = isDevelopingCountry(detectedCountry);
     console.log(`💰 Country ${detectedCountry} discount eligibility: ${isEligibleForDiscount}`);
@@ -204,26 +213,64 @@ function detectCountryByLanguage() {
  */
 export function getLanguageForCountry(countryCode) {
   const countryToLanguage = {
+    // English-speaking countries
     'US': 'en', 'GB': 'en', 'CA': 'en', 'AU': 'en', 'NZ': 'en', 'IE': 'en',
-    'ZA': 'en', 'IN': 'en', 'PK': 'en', 'BD': 'en', 'LK': 'en', 'MY': 'en',
-    'SG': 'en', 'PH': 'en', 'KE': 'en', 'UG': 'en', 'TZ': 'en', 'ZW': 'en',
+    'ZA': 'en', 'IN': 'hi', 'PK': 'en', 'BD': 'en', 'LK': 'en', 'MY': 'en',
+    'SG': 'en', 'PH': 'en', 'UG': 'en', 'ZW': 'en', 'ZM': 'en', 'BW': 'en',
+    'GH': 'en', 'NG': 'en', // Nigeria uses English as official language
+    
+    // Swahili-speaking countries
+    'KE': 'sw', // Kenya - Swahili
+    'TZ': 'sw', // Tanzania - Swahili
+    
+    // French-speaking countries
     'FR': 'fr', 'BE': 'fr', 'CH': 'fr', 'LU': 'fr', 'MC': 'fr',
+    'SN': 'fr', 'CI': 'fr', 'CM': 'fr', 'CD': 'fr', 'CG': 'fr',
+    'GA': 'fr', 'BF': 'fr', 'ML': 'fr', 'NE': 'fr', 'TD': 'fr',
+    'TG': 'fr', 'BJ': 'fr', 'GN': 'fr', 'MG': 'fr', 'DJ': 'fr',
+    
+    // Spanish-speaking countries
     'ES': 'es', 'MX': 'es', 'AR': 'es', 'CO': 'es', 'PE': 'es', 'VE': 'es',
-    'DE': 'de', 'AT': 'de',
-    'IT': 'it', 'SM': 'it', 'VA': 'it',
-    'PT': 'pt', 'BR': 'pt',
-    'RU': 'ru', 'BY': 'ru', 'KZ': 'ru',
+    'CL': 'es', 'EC': 'es', 'GT': 'es', 'CU': 'es', 'BO': 'es', 'DO': 'es',
+    'HN': 'es', 'PY': 'es', 'SV': 'es', 'NI': 'es', 'CR': 'es', 'PA': 'es',
+    'UY': 'es', 'GQ': 'es',
+    
+    // Portuguese-speaking countries
+    'PT': 'pt', 'BR': 'pt', 'AO': 'pt', 'MZ': 'pt', 'CV': 'pt',
+    'GW': 'pt', 'ST': 'pt', 'TL': 'pt',
+    
+    // German-speaking countries
+    'DE': 'de', 'AT': 'de', 'LI': 'de',
+    
+    // Russian-speaking countries
+    'RU': 'ru', 'BY': 'ru', 'KZ': 'ru', 'KG': 'ru', 'TJ': 'ru',
+    
+    // Chinese-speaking regions
     'CN': 'zh', 'TW': 'zh', 'HK': 'zh', 'MO': 'zh',
-    'JP': 'ja',
-    'KR': 'ko',
+    
+    // Arabic-speaking countries
     'SA': 'ar', 'AE': 'ar', 'EG': 'ar', 'JO': 'ar', 'LB': 'ar',
-    'NL': 'nl', 'BE': 'nl',
-    'TR': 'tr',
-    'ID': 'id',
-    'VN': 'vi',
-    'TH': 'th',
-    'HI': 'hi',
-    'NG': 'ha', // Nigeria - Hausa
+    'KW': 'ar', 'QA': 'ar', 'BH': 'ar', 'OM': 'ar', 'YE': 'ar',
+    'SY': 'ar', 'IQ': 'ar', 'LY': 'ar', 'TN': 'ar', 'DZ': 'ar',
+    'MA': 'ar', 'SD': 'ar',
+    
+    // Other Asian languages
+    'JP': 'ja', // Japanese
+    'KR': 'ko', // Korean
+    'ID': 'id', // Indonesian
+    'VN': 'vi', // Vietnamese
+    'TH': 'en', // Thailand - English (no Thai translation yet)
+    
+    // Other European languages
+    'IT': 'it', 'SM': 'it', 'VA': 'it', // Italian
+    'NL': 'nl', 'SR': 'nl', // Dutch
+    'TR': 'tr', // Turkish
+    
+    // African languages
+    'ET': 'am', // Ethiopia - Amharic
+    // 'NG': 'ha', // Nigeria - Could use Hausa, but English is more common
+    // 'NG': 'yo', // Nigeria - Could use Yoruba, but English is more common
+    
     // Add more mappings as needed
   };
   
@@ -271,9 +318,27 @@ export async function initializeCountryDetection() {
       console.error('❌ Failed to save country detection preferences:', error);
     }
     
+    // Log the detected language for debugging
+    console.log(`🌍 Country ${country} maps to language: ${language}`);
+    
     return { country, language, isDeveloping };
   } catch (error) {
     console.error('❌ Error initializing country detection:', error);
     return { country: 'US', language: 'en', isDeveloping: false };
+  }
+}
+
+/**
+ * Clear manual language selection to allow geo-based detection
+ * Used when you want to reset to automatic language detection
+ */
+export function clearManualLanguageSelection() {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('i18nextLng');
+      console.log('🔄 Cleared manual language selection');
+    }
+  } catch (error) {
+    console.error('❌ Error clearing manual language selection:', error);
   }
 }

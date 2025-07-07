@@ -40,6 +40,17 @@ export default function Home() {
       try {
         const { country, language, isDeveloping } = await initializeCountryDetection();
         console.log('✅ Country detection initialized:', { country, language, isDeveloping });
+        
+        // Check if user has manually selected a language before
+        const userSelectedLanguage = localStorage.getItem('i18nextLng');
+        
+        // If no manual selection, set language based on country
+        if (!userSelectedLanguage) {
+          console.log(`🌐 Setting language to ${language} based on country ${country}`);
+          i18nInstance.changeLanguage(language);
+        } else {
+          console.log(`🌐 User has manually selected language: ${userSelectedLanguage}, respecting their choice`);
+        }
       } catch (error) {
         console.error('❌ Error initializing country detection:', error);
       }

@@ -18,6 +18,16 @@ export default function AppBar() {
   useEffect(() => {
     async function initializeLanguageFromPreferences() {
       try {
+        // Check if user has manually selected a language
+        const manuallySelected = localStorage.getItem('i18nextLng');
+        
+        // If user manually selected a language, respect that choice
+        if (manuallySelected) {
+          console.log('📌 User has manually selected language:', manuallySelected);
+          return; // Don't override manual selection
+        }
+        
+        // Otherwise, try to get from saved preferences
         const savedLanguage = await getLanguagePreference();
         if (savedLanguage && savedLanguage !== i18n.language) {
           const langExists = supportedLanguages.find(lang => lang.code === savedLanguage);
@@ -32,7 +42,7 @@ export default function AppBar() {
     }
     
     initializeLanguageFromPreferences();
-  }, [i18n]);
+  }, []);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const menuRef = useRef(null);
