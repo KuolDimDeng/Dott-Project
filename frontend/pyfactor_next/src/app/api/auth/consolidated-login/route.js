@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 
 /**
  * Consolidated login endpoint that handles authentication atomically
@@ -96,22 +97,88 @@ export async function POST(request) {
       tenant_id: sessionData.tenant?.id || sessionData.tenant_id
     });
     
-    // Forward session cookies from backend
+    // Parse and set cookies properly
+    // Next.js doesn't forward set-cookie headers automatically, we need to parse them
+    const cookieStore = cookies();
+    
+    // Get all set-cookie headers from backend
     const setCookieHeaders = consolidatedResponse.headers.getSetCookie?.() || [];
+    console.log('[ConsolidatedLogin] Backend set-cookie headers:', setCookieHeaders.length);
+    
     if (setCookieHeaders.length > 0) {
-      // Set multiple cookies properly
-      setCookieHeaders.forEach(cookie => {
-        response.headers.append('set-cookie', cookie);
+      // Parse each cookie and set it
+      setCookieHeaders.forEach(cookieString => {
+        // Parse cookie string (e.g., "sid=abc123; Path=/; HttpOnly; Secure")
+        const [nameValue, ...attributes] = cookieString.split(';').map(s => s.trim());
+        const [name, value] = nameValue.split('=');
+        
+        // Parse cookie attributes
+        const cookieOptions = {
+          value,
+          httpOnly: true,
+          secure: true,
+          sameSite: 'lax',
+          path: '/'
+        };
+        
+        // Parse additional attributes
+        attributes.forEach(attr => {
+          const [key, val] = attr.split('=').map(s => s.trim());
+          if (key.toLowerCase() === 'max-age') {
+            cookieOptions.maxAge = parseInt(val);
+          } else if (key.toLowerCase() === 'domain') {
+            cookieOptions.domain = val;
+          } else if (key.toLowerCase() === 'samesite') {
+            cookieOptions.sameSite = val.toLowerCase();
+          }
+        });
+        
+        console.log('[ConsolidatedLogin] Setting cookie:', name, 'with options:', cookieOptions);
+        cookieStore.set(name, value, cookieOptions);
       });
-      console.log('[ConsolidatedLogin] Forwarded cookies:', setCookieHeaders.length);
     } else {
-      // Fallback for older Node.js versions
+      // Fallback - check for single set-cookie header
       const setCookieHeader = consolidatedResponse.headers.get('set-cookie');
       if (setCookieHeader) {
-        response.headers.set('set-cookie', setCookieHeader);
-        console.log('[ConsolidatedLogin] Forwarded single cookie:', setCookieHeader.substring(0, 50));
+        console.log('[ConsolidatedLogin] Found single set-cookie header');
+        // For single header, we'll set the session cookies manually
+        if (sessionData.session_token) {
+          cookieStore.set('sid', sessionData.session_token, {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'lax',
+            path: '/',
+            maxAge: 86400 // 24 hours
+          });
+          cookieStore.set('session_token', sessionData.session_token, {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'lax',
+            path: '/',
+            maxAge: 86400 // 24 hours
+          });
+          console.log('[ConsolidatedLogin] Manually set session cookies for:', sessionData.session_token);
+        }
       } else {
-        console.warn('[ConsolidatedLogin] No set-cookie headers found in backend response');
+        console.warn('[ConsolidatedLogin] No set-cookie headers found, setting cookies manually');
+        // If no cookies from backend, set them ourselves
+        if (sessionData.session_token) {
+          cookieStore.set('sid', sessionData.session_token, {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'lax',
+            path: '/',
+            maxAge: 86400 // 24 hours
+          });
+          cookieStore.set('session_token', sessionData.session_token, {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'lax',
+            path: '/',
+            maxAge: 86400 // 24 hours
+          });
+          console.log('[ConsolidatedLogin] Fallback: Set session cookies for:', sessionData.session_token);
+        }
       }
     }
     
