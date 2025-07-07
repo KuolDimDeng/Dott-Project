@@ -85,17 +85,42 @@ export default function PostHogProvider({ children }) {
   // Check network and debug info
   useEffect(() => {
     if (posthog) {
-      console.log('[PostHogProvider] PostHog debug info:', {
-        apiHost: posthog.config?.api_host,
-        persistence: posthog.config?.persistence,
-        distinctId: posthog.get_distinct_id?.(),
-        sessionId: posthog.get_session_id?.(),
-        isFeatureEnabled: !!posthog.isFeatureEnabled
-      });
+      try {
+        // Safely access posthog methods that might not exist in production builds
+        const debugInfo = {
+          apiHost: posthog.config?.api_host,
+          persistence: posthog.config?.persistence,
+          distinctId: 'N/A',
+          sessionId: 'N/A',
+          isFeatureEnabled: !!posthog.isFeatureEnabled
+        };
+        
+        // Safely try to get distinct ID
+        if (typeof posthog.get_distinct_id === 'function') {
+          try {
+            debugInfo.distinctId = posthog.get_distinct_id();
+          } catch (e) {
+            console.warn('[PostHogProvider] Error getting distinct ID:', e);
+          }
+        }
+        
+        // Safely try to get session ID
+        if (typeof posthog.get_session_id === 'function') {
+          try {
+            debugInfo.sessionId = posthog.get_session_id();
+          } catch (e) {
+            console.warn('[PostHogProvider] Error getting session ID:', e);
+          }
+        }
+        
+        console.log('[PostHogProvider] PostHog debug info:', debugInfo);
 
-      // Check if PostHog can reach the server
-      if (typeof window !== 'undefined' && window.navigator.onLine === false) {
-        console.error('[PostHogProvider] Browser is offline - events will be queued');
+        // Check if PostHog can reach the server
+        if (typeof window !== 'undefined' && window.navigator.onLine === false) {
+          console.error('[PostHogProvider] Browser is offline - events will be queued');
+        }
+      } catch (error) {
+        console.error('[PostHogProvider] Error in debug info collection:', error);
       }
     }
   }, [posthog]);

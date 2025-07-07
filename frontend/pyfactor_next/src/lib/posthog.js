@@ -105,11 +105,11 @@ export async function initPostHog() {
           console.log('=== PostHog Debug Info ===');
           console.log('API Key:', posthogKey ? `${posthogKey.substring(0, 10)}...` : 'NOT SET');
           console.log('API Host:', posthogHost);
-          console.log('Distinct ID:', posthogClient.get_distinct_id());
-          console.log('Session ID:', posthogClient.get_session_id());
+          console.log('Distinct ID:', typeof posthogClient.get_distinct_id === 'function' ? posthogClient.get_distinct_id() : 'Method not available');
+          console.log('Session ID:', typeof posthogClient.get_session_id === 'function' ? posthogClient.get_session_id() : 'Method not available');
           console.log('Queue Length:', posthogClient._request_queue?.length || 0);
           console.log('LocalStorage Keys:', Object.keys(localStorage).filter(k => k.includes('posthog')));
-          console.log('Is Identified:', posthogClient._isIdentified());
+          console.log('Is Identified:', typeof posthogClient._isIdentified === 'function' ? posthogClient._isIdentified() : 'Method not available');
           console.log('========================');
         },
         sendTestEvent: () => {
