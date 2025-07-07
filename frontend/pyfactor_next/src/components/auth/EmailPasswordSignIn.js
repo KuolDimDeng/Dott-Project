@@ -381,8 +381,20 @@ export default function EmailPasswordSignIn() {
       };
 
       // If session was created successfully, use secure bridge
-      if (loginResult.success) {
-        logger.info('[EmailPasswordSignIn] Session created successfully');
+      if (loginResult.success && loginResult.useSessionBridge) {
+        logger.info('[EmailPasswordSignIn] Session created successfully, using session bridge');
+        
+        // Store session data in sessionStorage for the bridge
+        const bridgeData = {
+          token: loginResult.sessionToken || loginResult.session_token,
+          redirectUrl: redirectUrl,
+          timestamp: Date.now(),
+          email: loginResult.user?.email,
+          tenantId: loginResult.tenant?.id || loginResult.tenant_id
+        };
+        
+        console.log('[EmailPasswordSignIn] Storing bridge data in sessionStorage');
+        sessionStorage.setItem('session_bridge', JSON.stringify(bridgeData));
         
         // Identify user in PostHog with complete data
         if (posthog) {
@@ -404,6 +416,13 @@ export default function EmailPasswordSignIn() {
           userId: loginResult.user?.sub,
           method: 'email-password'
         });
+        
+        // Redirect to session bridge page
+        console.log('[EmailPasswordSignIn] Redirecting to session bridge...');
+        router.push('/auth/session-bridge');
+        return;
+      } else if (loginResult.success) {
+        logger.info('[EmailPasswordSignIn] Session created successfully (no bridge)');
         
         // Get client IP and user agent for anomaly detection
         const userAgent = navigator.userAgent;

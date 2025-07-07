@@ -59,6 +59,13 @@ export async function POST(request) {
       })
     });
     
+    // Log backend response headers to debug cookie setting
+    console.log('[ConsolidatedLogin] Backend response headers:', Object.fromEntries(consolidatedResponse.headers));
+    const setCookieHeaders = consolidatedResponse.headers.getSetCookie ? 
+      consolidatedResponse.headers.getSetCookie() : 
+      consolidatedResponse.headers.get('set-cookie');
+    console.log('[ConsolidatedLogin] Backend Set-Cookie headers:', setCookieHeaders);
+    
     if (!consolidatedResponse.ok) {
       const contentType = consolidatedResponse.headers.get('content-type');
       let error;
@@ -97,26 +104,30 @@ export async function POST(request) {
       tenant_id: sessionData.tenant?.id || sessionData.tenant_id
     });
     
-    // Set cookies using Next.js cookies() API
+    // Don't try to set cookies here - the client will use session bridge
     if (sessionData.session_token) {
-      const cookieStore = await cookies();
-      const cookieOptions = {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 86400 // 24 hours
-      };
+      console.log('[ConsolidatedLogin] Session token received:', sessionData.session_token);
+      console.log('[ConsolidatedLogin] Will use session bridge for cookie setting');
       
-      // Set both sid and session_token cookies
-      cookieStore.set('sid', sessionData.session_token, cookieOptions);
-      cookieStore.set('session_token', sessionData.session_token, cookieOptions);
-      
-      console.log('[ConsolidatedLogin] Set session cookies for:', sessionData.session_token);
+      // Add a flag to indicate session bridge should be used
+      response = NextResponse.json({
+        ...response.body,
+        success: true,
+        ...authData,  // Auth0 tokens
+        ...sessionData,  // Session and user data
+        // Ensure consistent field names
+        needs_onboarding: sessionData.needs_onboarding,
+        tenant_id: sessionData.tenant?.id || sessionData.tenant_id,
+        // Add session bridge indicator
+        useSessionBridge: true,
+        sessionToken: sessionData.session_token
+      });
     } else {
       console.error('[ConsolidatedLogin] No session token in response!');
+      console.error('[ConsolidatedLogin] Session data:', sessionData);
     }
     
+    console.log('[ConsolidatedLogin] Returning response for session bridge...');
     return response;
     
   } catch (error) {
