@@ -29,6 +29,10 @@ def track_event(user_id, event_name, properties=None):
     if not POSTHOG_AVAILABLE or not hasattr(settings, 'POSTHOG_API_KEY') or not settings.POSTHOG_API_KEY:
         return
     
+    # Check if PostHog has been initialized with API key
+    if not hasattr(posthog, 'project_api_key') or not posthog.project_api_key:
+        return
+    
     try:
         posthog.capture(
             distinct_id=str(user_id),
@@ -41,6 +45,10 @@ def track_event(user_id, event_name, properties=None):
 def identify_user(user):
     """Identify a user in PostHog"""
     if not POSTHOG_AVAILABLE or not hasattr(settings, 'POSTHOG_API_KEY') or not settings.POSTHOG_API_KEY:
+        return
+    
+    # Check if PostHog has been initialized with API key
+    if not hasattr(posthog, 'project_api_key') or not posthog.project_api_key:
         return
     
     try:
