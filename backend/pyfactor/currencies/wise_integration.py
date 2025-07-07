@@ -81,9 +81,10 @@ class WiseCurrencyService:
             # Get quote from Wise
             quote_url = f"{WISE_API_BASE}/v1/quotes"
             quote_data = {
-                "sourceCurrency": source_currency,
-                "targetCurrency": target_currency,
+                "source": source_currency,
+                "target": target_currency,
                 "sourceAmount": float(amount),
+                "rateType": "FIXED",
                 "profile": self.profile_id
             }
             
