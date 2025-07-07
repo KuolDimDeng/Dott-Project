@@ -32,23 +32,44 @@ export async function GET(request) {
         logger.info('[Session-V2] Found session ID, validating with backend...');
         
         // Fetch session from backend - single source of truth
+        // Use the validate endpoint which is designed for session validation
         const startTime = Date.now();
-        const response = await fetch(`${API_URL}/api/sessions/current/`, {
+        const response = await fetch(`${API_URL}/api/sessions/validate/${sessionId.value}/`, {
       headers: {
-        'Authorization': `Session ${sessionId.value}`,
-        'Cookie': `session_token=${sessionId.value}`
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
       },
       cache: 'no-store' // Never cache session data
     });
     
         const duration = Date.now() - startTime;
-        logger.api('GET', `${API_URL}/api/sessions/current/`, response.status, duration);
+        logger.api('GET', `${API_URL}/api/sessions/validate/${sessionId.value}/`, response.status, duration);
         
         if (!response.ok) {
-          logger.warn('[Session-V2] Backend validation failed', { status: response.status });
+          // Get error details
+          let errorDetails = '';
+          try {
+            const errorData = await response.json();
+            errorDetails = errorData.error || errorData.detail || JSON.stringify(errorData);
+          } catch (e) {
+            errorDetails = await response.text();
+          }
+          
+          logger.warn('[Session-V2] Backend validation failed', { 
+            status: response.status,
+            error: errorDetails,
+            sessionId: sessionId.value.substring(0, 8) + '...'
+          });
+          
+          // If it's a 404, the session endpoint might not exist
+          if (response.status === 404) {
+            logger.error('[Session-V2] Session endpoint not found, check backend URLs');
+          }
+          
       // Clear invalid session
       const res = NextResponse.json({ 
-        authenticated: false
+        authenticated: false,
+        error: errorDetails
       }, { status: 401 });
       res.cookies.delete('sid');
       return res;
@@ -138,12 +159,17 @@ export async function GET(request) {
     });
     
       } catch (error) {
-        logger.error('[Session-V2] Error', error);
+        logger.error('[Session-V2] Error:', {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
         Sentry.captureException(error, {
           tags: { endpoint: 'session-v2-get' }
         });
         return NextResponse.json({ 
-          authenticated: false
+          authenticated: false,
+          error: error.message
         }, { status: 500 });
       }
     }
