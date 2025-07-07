@@ -31,6 +31,10 @@ class OnboardingStatusView(APIView):
             user = request.user
             logger.info(f"[OnboardingStatus] Checking status for user: {user.email}")
             
+            # Set tenant context for RLS
+            if hasattr(user, 'tenant') and user.tenant:
+                set_tenant_context(user.tenant.id)
+            
             # Get OnboardingProgress from database
             progress = OnboardingProgress.objects.filter(user=user).first()
             
@@ -71,11 +75,14 @@ class OnboardingStatusView(APIView):
             })
             
         except Exception as e:
-            logger.error(f"[OnboardingStatus] Error: {str(e)}")
+            logger.error(f"[OnboardingStatus] Error: {str(e)}", exc_info=True)
             return Response({
                 'error': 'Failed to get onboarding status',
                 'detail': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        finally:
+            # Always clear tenant context
+            clear_tenant_context()
 
 
 class ForceCompleteOnboardingView(APIView):

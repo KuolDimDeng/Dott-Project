@@ -3,7 +3,10 @@ from django.utils.deprecation import MiddlewareMixin
 from pyfactor.analytics import track_api_call, init_posthog
 
 # Initialize PostHog when the middleware loads
-init_posthog()
+try:
+    init_posthog()
+except Exception as e:
+    print(f"Warning: Failed to initialize PostHog: {e}")
 
 class AnalyticsMiddleware(MiddlewareMixin):
     """Middleware to track API calls and performance metrics"""

@@ -26,9 +26,14 @@ from dotenv import load_dotenv
 # from cryptography.fernet import Fernet  # Commented out to avoid import issues
 
 # Initialize Sentry for error tracking and monitoring
-import sentry_sdk
-from sentry_sdk.integrations.django import DjangoIntegration
-from sentry_sdk.integrations.logging import LoggingIntegration
+try:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+    from sentry_sdk.integrations.logging import LoggingIntegration
+    SENTRY_AVAILABLE = True
+except ImportError:
+    SENTRY_AVAILABLE = False
+    print("Warning: Sentry SDK not installed. Error tracking will be disabled.")
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -49,7 +54,7 @@ else:
 # Initialize Sentry SDK
 SENTRY_DSN = os.getenv('SENTRY_DSN', 'https://128106efe0719c134878b177b736f27f@o4509614361804800.ingest.us.sentry.io/4509619782549504')
 
-if SENTRY_DSN:
+if SENTRY_AVAILABLE and SENTRY_DSN:
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         integrations=[
@@ -88,6 +93,8 @@ if SENTRY_DSN:
         debug=False,
     )
     print(f"✅ Sentry initialized for {os.getenv('ENVIRONMENT', 'development')} environment")
+elif SENTRY_DSN:
+    print("❌ Sentry SDK not available but DSN provided. Install sentry-sdk to enable error tracking.")
 
 def filter_sensitive_data(event):
     """Filter out sensitive data before sending to Sentry"""
@@ -314,6 +321,10 @@ CORS_ALLOWED_ORIGINS = [
     'https://dottapps.com',
     'https://www.dottapps.com',
     'https://api.dottapps.com',
+    # Sentry domains for error tracking
+    'https://sentry.io',
+    'https://o4509614361804800.ingest.us.sentry.io',
+    'https://browser.sentry-cdn.com',
     # Legacy domains (can be removed later)
     'https://pyfactor.ai',
     'https://*.pyfactor.ai',
