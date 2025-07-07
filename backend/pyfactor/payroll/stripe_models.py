@@ -150,9 +150,81 @@ class EmployeePayoutRecord(TenantAwareModel):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
+    # Additional fields for multi-provider support
+    payment_provider = models.CharField(
+        max_length=20,
+        choices=[
+            ('stripe', 'Stripe'),
+            ('wise', 'Wise'),
+            ('mobile_money', 'Mobile Money'),
+            ('paystack', 'Paystack'),
+        ],
+        default='stripe',
+        blank=True
+    )
+    wise_batch_id = models.CharField(max_length=100, blank=True, help_text="Wise batch ID if using Wise")
+    mobile_money_reference = models.CharField(max_length=100, blank=True, help_text="Mobile money transaction reference")
+    
     def __str__(self):
         return f"Payout to {self.employee.first_name} {self.employee.last_name} - {self.payout_status}"
     
     class Meta:
         verbose_name = "Employee Payout Record"
         verbose_name_plural = "Employee Payout Records"
+
+
+class EmployeePaymentSetup(models.Model):
+    """
+    Track employee payment method setup across different providers
+    """
+    tenant_id = models.UUIDField(blank=True, null=True, db_column='tenant_id')
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='payment_setups')
+    
+    payment_provider = models.CharField(
+        max_length=20,
+        choices=[
+            ('stripe', 'Stripe Connect'),
+            ('wise', 'Wise Transfer'),
+            ('mobile_money', 'Mobile Money'),
+        ]
+    )
+    
+    setup_status = models.CharField(
+        max_length=20,
+        choices=[
+            ('pending', 'Pending Setup'),
+            ('invitation_sent', 'Invitation Sent'),
+            ('active', 'Active'),
+            ('failed', 'Failed'),
+            ('suspended', 'Suspended'),
+        ],
+        default='pending'
+    )
+    
+    # Provider-specific identifiers
+    provider_reference_id = models.CharField(max_length=100, blank=True, help_text="Provider's reference ID")
+    
+    # Mobile money specific
+    mobile_money_provider = models.CharField(
+        max_length=50,
+        blank=True,
+        help_text="Specific mobile money provider (mpesa, mtn_momo, etc)"
+    )
+    mobile_money_number = models.CharField(max_length=20, blank=True, help_text="Mobile money phone number")
+    
+    # Wise specific
+    wise_recipient_id = models.CharField(max_length=100, blank=True)
+    
+    # Metadata
+    invitation_sent_at = models.DateTimeField(null=True, blank=True)
+    setup_completed_at = models.DateTimeField(null=True, blank=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+    
+    # Audit
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Employee Payment Setup'
+        verbose_name_plural = 'Employee Payment Setups'
+        unique_together = [['employee', 'payment_provider']]

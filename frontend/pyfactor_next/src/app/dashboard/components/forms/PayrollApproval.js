@@ -96,7 +96,7 @@ const PayrollApproval = ({
 
   // Calculate totals with platform fee
   const totalNetPay = payrollRun?.total_net_pay || 0;
-  const platformFeeRate = 0.024; // 2.4%
+  const platformFeeRate = 0.024; // 2.4% flat rate for all providers
   const platformFee = totalNetPay * platformFeeRate;
   const totalWithFee = totalNetPay + platformFee;
 
@@ -250,7 +250,8 @@ const PayrollApproval = ({
                 I authorize Dott to debit my bank account for the total amount of{' '}
                 <span className="font-bold">{formatCurrency(totalWithFee, currency)}</span> to fund this payroll.
                 I understand that this includes a platform fee of {formatCurrency(platformFee, currency)} (2.4%).
-                The funds will be distributed to employees on {formatDate(payrollRun.pay_date)}.
+                The funds will be distributed to employees on {formatDate(payrollRun.pay_date)} via their selected payment methods
+                (bank transfer, Wise, or mobile money).
               </span>
             </label>
           </div>

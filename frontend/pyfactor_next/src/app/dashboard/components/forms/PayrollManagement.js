@@ -8,6 +8,7 @@ import { loadStripeScript } from '@/utils/stripeUtils';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
 import PayrollRunSummary from './PayrollRunSummary';
+import PayrollApproval from './PayrollApproval';
 import { CenteredSpinner, ButtonSpinner } from '@/components/ui/StandardSpinner';
 
 const PayrollManagement = ({ initialTab = 'run-payroll' }) => {
@@ -46,6 +47,10 @@ const PayrollManagement = ({ initialTab = 'run-payroll' }) => {
   });
   const [businessCountry, setBusinessCountry] = useState('');
   const [payrollAdmin, setPayrollAdmin] = useState('');
+  
+  // Approval flow state
+  const [showApproval, setShowApproval] = useState(false);
+  const [calculatedPayrollRun, setCalculatedPayrollRun] = useState(null);
 
   useEffect(() => {
     // Set AWS RDS as the data source
@@ -306,6 +311,8 @@ const PayrollManagement = ({ initialTab = 'run-payroll' }) => {
         bi_weekly_start_date: biWeeklyStartDate ? format(biWeeklyStartDate, 'yyyy-MM-dd') : null,
       }, config);
       
+      // Store the calculated payroll run data
+      setCalculatedPayrollRun(response.data);
       setPayrollSummary(response.data);
       setOpenConfirmDialog(true);
     } catch (error) {
@@ -316,6 +323,12 @@ const PayrollManagement = ({ initialTab = 'run-payroll' }) => {
   };
 
   const confirmRunPayroll = async () => {
+    // Close the confirmation dialog and show the approval screen
+    setOpenConfirmDialog(false);
+    setShowApproval(true);
+  };
+  
+  const handlePayrollApproval = async (approvalData) => {
     setLoading(true);
     try {
       // First create the payroll run in our system
@@ -329,21 +342,35 @@ const PayrollManagement = ({ initialTab = 'run-payroll' }) => {
         bi_weekly_start_date: biWeeklyStartDate ? format(biWeeklyStartDate, 'yyyy-MM-dd') : null,
       });
       
-      // Get the payroll run ID from the response
       const payrollRunId = payrollResponse.data.id;
       
-      // Now initiate the Stripe Connect payment
-      await initiateStripePayment(payrollRunId);
+      // Approve the payroll with signature
+      await axiosInstance.post('/api/payroll/approve/', {
+        ...approvalData,
+        payroll_run_id: payrollRunId,
+      });
       
-      setOpenConfirmDialog(false);
-      toast.success('Payroll run successfully initiated');
+      // Initiate funding collection
+      await axiosInstance.post('/api/payroll/collect-funds/', {
+        payroll_run_id: payrollRunId,
+      });
+      
+      setShowApproval(false);
+      toast.success('Payroll approved and funding initiated');
       
       // Refresh scheduled payrolls after successful run
       fetchScheduledPayrolls();
+      
+      // Reset form
+      setStartDate(null);
+      setEndDate(null);
+      setSelectedEmployees([]);
+      setSelectAll(false);
+      
     } catch (error) {
-      const errorMessage = error.response?.data?.detail || error.message || 'Error running payroll';
+      const errorMessage = error.response?.data?.detail || error.message || 'Error approving payroll';
       toast.error(errorMessage);
-      console.error('Error running payroll:', error);
+      console.error('Error approving payroll:', error);
     } finally {
       setLoading(false);
     }
@@ -470,6 +497,21 @@ const PayrollManagement = ({ initialTab = 'run-payroll' }) => {
     }
     return periods;
   };
+
+  // Show approval screen if needed
+  if (showApproval && calculatedPayrollRun) {
+    return (
+      <PayrollApproval
+        payrollRun={calculatedPayrollRun}
+        onApprove={handlePayrollApproval}
+        onCancel={() => {
+          setShowApproval(false);
+          setCalculatedPayrollRun(null);
+        }}
+        currency={currencyInfo?.code || 'USD'}
+      />
+    );
+  }
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">

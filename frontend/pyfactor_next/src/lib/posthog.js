@@ -70,16 +70,29 @@ export async function initPostHog() {
         console.log('[PostHog] Successfully loaded!');
         console.log('[PostHog] Session ID:', posthog.get_session_id());
         console.log('[PostHog] Distinct ID:', posthog.get_distinct_id());
+        console.log('[PostHog] Available methods:', Object.keys(posthog).filter(k => typeof posthog[k] === 'function').join(', '));
         
         if (process.env.NODE_ENV === 'development') {
           console.log('[PostHog] Enabling debug mode for development');
-          posthog.debug();
+          if (typeof posthog.debug === 'function') {
+            posthog.debug();
+          }
         }
       },
       bootstrap: {
         distinctID: undefined,
         isIdentifiedID: false
-      }
+      },
+      // Additional configuration for better compatibility
+      disable_session_recording: false,
+      session_recording: {
+        maskAllInputs: false,
+        maskTextContent: false,
+        // Add blob URL support for web workers
+        recordCrossOriginIframes: false
+      },
+      // Opt out of using web workers if they cause issues
+      opt_out_useWorker: true
     });
 
     console.log('[PostHog] Client initialized successfully');
@@ -109,8 +122,12 @@ export async function initPostHog() {
         },
         forceFlush: () => {
           console.log('Forcing flush...');
-          posthogClient.flush();
-          console.log('Flush complete!');
+          if (typeof posthogClient.flush === 'function') {
+            posthogClient.flush();
+            console.log('Flush complete!');
+          } else {
+            console.warn('flush() method not available');
+          }
         }
       };
       console.log('[PostHog] Debug helper added to window.posthogDebug');
@@ -207,8 +224,25 @@ export function identifyUser(user) {
       timestamp: new Date().toISOString()
     });
     
-    // Flush the queue to ensure events are sent
-    posthogClient.flush();
+    // Try to send events immediately
+    // Note: flush() may not be available in all PostHog versions
+    if (typeof posthogClient.flush === 'function') {
+      try {
+        posthogClient.flush();
+      } catch (flushError) {
+        console.warn('[PostHog] flush() failed:', flushError);
+      }
+    } else if (typeof posthogClient._send_request === 'function') {
+      // Alternative method for older versions
+      try {
+        posthogClient._send_request();
+      } catch (sendError) {
+        console.warn('[PostHog] _send_request() failed:', sendError);
+      }
+    } else {
+      // Events will be sent on next batch interval
+      console.log('[PostHog] Events queued for batch sending');
+    }
   } catch (error) {
     console.error('[PostHog] Failed to identify user:', error);
   }

@@ -75,8 +75,12 @@ export default function PostHogTestPage() {
   const forceFlush = () => {
     if (window.posthog) {
       addLog('Forcing flush...');
-      window.posthog.flush();
-      addLog('Flush complete');
+      if (typeof window.posthog.flush === 'function') {
+        window.posthog.flush();
+        addLog('Flush complete');
+      } else {
+        addLog('flush() method not available on PostHog instance');
+      }
       setTimeout(checkQueue, 500);
     }
   };

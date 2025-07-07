@@ -285,7 +285,7 @@ const nextConfig = {
               // Scripts - still need unsafe-inline for Next.js
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://auth.dottapps.com https://dev-cbyy63jovi6zrcos.us.auth0.com https://js.stripe.com https://client.crisp.chat https://widget.crisp.chat https://cdn.plaid.com https://cdn.posthog.com https://app.posthog.com https://*.posthog.com",
               // Workers - needed for PostHog session recording
-              "worker-src 'self' blob:",
+              "worker-src 'self' blob: https://app.posthog.com https://*.posthog.com",
               // Styles
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://client.crisp.chat",
               // Fonts

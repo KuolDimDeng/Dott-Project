@@ -143,6 +143,7 @@ STRIPE_PRICE_PROFESSIONAL_YEARLY = os.getenv('STRIPE_PRICE_PROFESSIONAL_YEARLY',
 STRIPE_PRICE_ENTERPRISE_MONTHLY = os.getenv('STRIPE_PRICE_ENTERPRISE_MONTHLY', 'placeholder_enterprise_monthly')
 STRIPE_PRICE_ENTERPRISE_YEARLY = os.getenv('STRIPE_PRICE_ENTERPRISE_YEARLY', 'placeholder_enterprise_yearly')
 STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', 'placeholder_webhook_secret')
+STRIPE_PAYROLL_WEBHOOK_SECRET = os.getenv('STRIPE_PAYROLL_WEBHOOK_SECRET', 'placeholder_payroll_webhook_secret')
 STRIPE_MODE = os.getenv('STRIPE_MODE', 'test')  # 'test' or 'live'
 
 # Print warning for development mode

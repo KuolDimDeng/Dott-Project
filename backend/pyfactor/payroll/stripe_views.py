@@ -347,3 +347,206 @@ def employee_bank_status(request):
             {'error': 'Internal server error'}, 
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def calculate_payroll(request):
+    """
+    Calculate payroll for the given period
+    """
+    try:
+        from .payroll_service import PayrollService
+        
+        user_profile = UserProfile.objects.get(user=request.user)
+        business = user_profile.business
+        tenant_id = user_profile.tenant_id
+        
+        if not business or not tenant_id:
+            return Response(
+                {'error': 'Business or tenant not found'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Extract dates from request
+        start_date = request.data.get('start_date')
+        end_date = request.data.get('end_date')
+        
+        if not start_date or not end_date:
+            return Response(
+                {'error': 'Start date and end date are required'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Convert string dates to date objects
+        from datetime import datetime
+        start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+        
+        # Calculate payroll
+        service = PayrollService()
+        payroll_run = service.calculate_payroll(
+            business=business,
+            pay_period_start=start_date,
+            pay_period_end=end_date,
+            tenant_id=tenant_id
+        )
+        
+        # Get employee details for the response
+        from hr.models import Employee
+        from .models import PayrollTransaction
+        
+        transactions = PayrollTransaction.objects.filter(
+            payroll_run=payroll_run,
+            tenant_id=tenant_id
+        ).select_related('employee')
+        
+        employee_data = []
+        for transaction in transactions:
+            employee_data.append({
+                'employeeId': str(transaction.employee.id),
+                'employeeName': f"{transaction.employee.first_name} {transaction.employee.last_name}",
+                'grossPay': float(transaction.gross_pay),
+                'totalDeductions': float(transaction.taxes),
+                'netPay': float(transaction.net_pay),
+                'federalTax': float(transaction.federal_tax),
+                'stateTax': float(transaction.state_tax),
+                'socialSecurity': float(transaction.social_security_tax),
+                'medicare': float(transaction.medicare_tax),
+            })
+        
+        return Response({
+            'id': str(payroll_run.id),
+            'start_date': payroll_run.start_date.isoformat(),
+            'end_date': payroll_run.end_date.isoformat(),
+            'pay_date': payroll_run.pay_date.isoformat(),
+            'status': payroll_run.status,
+            'employee_count': len(employee_data),
+            'total_gross_pay': float(payroll_run.total_amount),
+            'total_net_pay': float(sum(t.net_pay for t in transactions)),
+            'employees': employee_data,
+        }, status=status.HTTP_200_OK)
+        
+    except UserProfile.DoesNotExist:
+        return Response(
+            {'error': 'User profile not found'}, 
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        logger.error(f"Error calculating payroll: {str(e)}")
+        return Response(
+            {'error': str(e)}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['POST']) 
+@permission_classes([IsAuthenticated])
+def approve_payroll(request):
+    """
+    Approve payroll with digital signature
+    """
+    try:
+        from .payroll_service import PayrollService
+        
+        user_profile = UserProfile.objects.get(user=request.user)
+        
+        # Extract approval data
+        payroll_run_id = request.data.get('payroll_run_id')
+        signature_name = request.data.get('signature_name')
+        signature_date = request.data.get('signature_date')
+        selected_bank_account_id = request.data.get('selected_bank_account_id')
+        ip_address = request.data.get('ip_address')
+        
+        if not all([payroll_run_id, signature_name, signature_date, selected_bank_account_id]):
+            return Response(
+                {'error': 'Missing required approval fields'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Convert date string to date object
+        from datetime import datetime
+        signature_date = datetime.strptime(signature_date, '%Y-%m-%d').date()
+        
+        # Approve payroll
+        service = PayrollService()
+        success = service.approve_payroll(
+            payroll_run_id=payroll_run_id,
+            approved_by=request.user,
+            signature_name=signature_name,
+            signature_date=signature_date,
+            selected_bank_account_id=selected_bank_account_id,
+            ip_address=ip_address
+        )
+        
+        if success:
+            return Response({
+                'success': True,
+                'message': 'Payroll approved successfully'
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response(
+                {'error': 'Failed to approve payroll'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+    except UserProfile.DoesNotExist:
+        return Response(
+            {'error': 'User profile not found'}, 
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        logger.error(f"Error approving payroll: {str(e)}")
+        return Response(
+            {'error': str(e)}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def collect_payroll_funds(request):
+    """
+    Initiate ACH collection of payroll funds from employer
+    """
+    try:
+        from .payroll_service import PayrollService
+        from .models import PayrollRun
+        
+        user_profile = UserProfile.objects.get(user=request.user)
+        
+        payroll_run_id = request.data.get('payroll_run_id')
+        if not payroll_run_id:
+            return Response(
+                {'error': 'Payroll run ID required'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Get payroll run
+        payroll_run = PayrollRun.objects.get(
+            id=payroll_run_id,
+            tenant_id=user_profile.tenant_id
+        )
+        
+        # Collect funds
+        service = PayrollService()
+        payment_intent = service.collect_payroll_funds(payroll_run)
+        
+        return Response({
+            'success': True,
+            'payment_intent_id': payment_intent.id,
+            'status': payment_intent.status,
+            'message': 'Fund collection initiated'
+        }, status=status.HTTP_200_OK)
+        
+    except PayrollRun.DoesNotExist:
+        return Response(
+            {'error': 'Payroll run not found'}, 
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        logger.error(f"Error collecting funds: {str(e)}")
+        return Response(
+            {'error': str(e)}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

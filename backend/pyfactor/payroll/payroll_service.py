@@ -202,7 +202,7 @@ class PayrollService:
     
     def distribute_payroll(self, payroll_run):
         """
-        Step 4: Pay each employee (called via webhook when funds clear)
+        Step 4: Pay each employee using appropriate payment provider
         """
         # Verify funds have cleared
         if payroll_run.status != 'funded':
@@ -215,92 +215,31 @@ class PayrollService:
         stripe_payment.distribution_started_at = timezone.now()
         stripe_payment.save()
         
-        success_count = 0
-        failed_count = 0
+        # Use universal processor to handle multi-provider payments
+        from .universal_processor import UniversalPayrollProcessor
+        processor = UniversalPayrollProcessor()
         
-        # Pay each employee
-        for payment in payroll_run.payrolltransaction_set.all():
-            try:
-                # Get employee's Stripe account
-                stripe_account = EmployeeStripeAccount.objects.get(
-                    employee=payment.employee,
-                    tenant_id=payroll_run.tenant_id
-                )
-                
-                if not stripe_account.stripe_account_id or not stripe_account.payouts_enabled:
-                    raise ValueError(f"Employee {payment.employee.id} has not completed bank setup")
-                
-                # Create payout record
-                payout_record = EmployeePayoutRecord.objects.create(
-                    tenant_id=payroll_run.tenant_id,
-                    payroll_transaction=payment,
-                    employee=payment.employee,
-                    payout_amount=payment.net_pay,
-                    payout_status='pending',
-                    initiated_at=timezone.now()
-                )
-                
-                # Create transfer to employee's Connect account
-                transfer = stripe.Transfer.create(
-                    amount=int(payment.net_pay * 100),  # Convert to cents
-                    currency='usd',
-                    destination=stripe_account.stripe_account_id,
-                    description=f'Salary - {payment.employee.first_name} {payment.employee.last_name}',
-                    metadata={
-                        'payroll_payment_id': str(payment.id),
-                        'employee_id': str(payment.employee.id),
-                        'pay_period': f"{payroll_run.start_date} to {payroll_run.end_date}",
-                        'type': 'salary'
-                    },
-                    transfer_group=f'payroll_{payroll_run.id}',
-                )
-                
-                # Then trigger payout to their bank
-                payout = stripe.Payout.create(
-                    amount=int(payment.net_pay * 100),
-                    currency='usd',
-                    stripe_account=stripe_account.stripe_account_id,
-                    description=f'Salary payout - {payroll_run.pay_date}',
-                    metadata={
-                        'payroll_payment_id': str(payment.id),
-                        'payout_record_id': str(payout_record.id)
-                    }
-                )
-                
-                # Update payout record
-                payout_record.stripe_transfer_id = transfer.id
-                payout_record.stripe_payout_id = payout.id
-                payout_record.payout_status = 'processing'
-                payout_record.expected_arrival_date = timezone.now().date() + timedelta(days=2)
-                payout_record.save()
-                
-                success_count += 1
-                
-                # Create pay statement
-                self._create_pay_statement(payment, payroll_run)
-                
-            except Exception as e:
-                # Handle failed payment
-                logger.error(f"Failed to pay employee {payment.employee.id}: {str(e)}")
-                
-                if 'payout_record' in locals():
-                    payout_record.payout_status = 'failed'
-                    payout_record.failure_message = str(e)
-                    payout_record.save()
-                
-                failed_count += 1
+        results = processor.process_payroll(payroll_run)
         
-        # Update payroll run status
-        if failed_count == 0:
+        # Create pay statements for successful payments
+        for payment in payroll_run.payrolltransaction_set.filter(
+            payout_record__payout_status__in=['processing', 'paid']
+        ):
+            self._create_pay_statement(payment, payroll_run)
+        
+        # Update payroll run status based on results
+        if results['failed'] == 0:
             payroll_run.status = 'completed'
             stripe_payment.distribution_completed_at = timezone.now()
-        else:
+        elif results['successful'] > 0:
             payroll_run.status = 'partially_completed'
+        else:
+            payroll_run.status = 'failed'
         
         payroll_run.save()
         stripe_payment.save()
         
-        return success_count, failed_count
+        return results['successful'], results['failed']
     
     def _create_pay_statement(self, payment, payroll_run):
         """Create pay statement for employee"""

@@ -104,9 +104,11 @@ export default function PostHogDiagnostic() {
 
   const forceFlush = () => {
     console.log('[PostHog Diagnostic] Forcing flush...');
-    if (window.posthog) {
+    if (window.posthog && typeof window.posthog.flush === 'function') {
       window.posthog.flush();
       console.log('[PostHog Diagnostic] Flush called');
+    } else {
+      console.warn('[PostHog Diagnostic] flush() method not available');
     }
   };
 
