@@ -9,6 +9,7 @@ const VendorGrid = ({
   onEdit,
   onDelete,
   onView,
+  onToggleStatus,
   displayMode
 }) => {
   const formatPhone = (phone) => {
@@ -45,8 +46,15 @@ const VendorGrid = ({
               {/* Vendor Number */}
               <div className="text-xs text-gray-500 mb-1">{vendor.vendor_number}</div>
 
-              {/* Vendor Name */}
-              <h3 className="text-lg font-semibold text-gray-900 mb-2 pr-8">{vendor.vendor_name}</h3>
+              {/* Vendor Name and Status */}
+              <div className="flex items-start justify-between mb-2">
+                <h3 className="text-lg font-semibold text-gray-900 pr-2">{vendor.vendor_name}</h3>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                  vendor.is_active !== false ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                }`}>
+                  {vendor.is_active !== false ? 'Active' : 'Inactive'}
+                </span>
+              </div>
 
               {/* Contact Info */}
               <div className="space-y-1 text-sm text-gray-600 mb-3">
@@ -85,6 +93,22 @@ const VendorGrid = ({
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleStatus(vendor);
+                  }}
+                  className={`p-2 ${vendor.is_active !== false ? 'text-yellow-600 hover:bg-yellow-50' : 'text-green-600 hover:bg-green-50'} rounded-md transition-colors`}
+                  title={vendor.is_active !== false ? "Deactivate" : "Activate"}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {vendor.is_active !== false ? (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                    ) : (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    )}
                   </svg>
                 </button>
                 <button

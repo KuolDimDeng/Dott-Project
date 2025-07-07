@@ -10,6 +10,7 @@ const VendorTable = ({
   onEdit,
   onDelete,
   onView,
+  onToggleStatus,
   sortConfig,
   onSort,
   displayMode
@@ -123,6 +124,9 @@ const VendorTable = ({
                 </div>
               </th>
             )}
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Status
+            </th>
             <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
               Actions
             </th>
@@ -170,6 +174,13 @@ const VendorTable = ({
                   {formatDate(vendor.created_at)}
                 </td>
               )}
+              <td className="px-6 py-4 whitespace-nowrap text-sm">
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                  vendor.is_active !== false ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                }`}>
+                  {vendor.is_active !== false ? 'Active' : 'Inactive'}
+                </span>
+              </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium" onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-end gap-2">
                   <button
@@ -182,6 +193,22 @@ const VendorTable = ({
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleStatus(vendor);
+                    }}
+                    className={vendor.is_active !== false ? "text-yellow-600 hover:text-yellow-900" : "text-green-600 hover:text-green-900"}
+                    title={vendor.is_active !== false ? "Deactivate" : "Activate"}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      {vendor.is_active !== false ? (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                      ) : (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      )}
                     </svg>
                   </button>
                   <button

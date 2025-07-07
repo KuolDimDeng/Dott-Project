@@ -220,6 +220,39 @@ class VendorService {
     }
   }
 
+  async toggleVendorStatus(vendorId) {
+    try {
+      const headers = await this.getAuthHeaders();
+      const response = await fetch(`/api/vendors/${vendorId}`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ action: 'toggle-status' })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      // Clear cache after status change
+      this.cache.clear();
+      
+      return {
+        success: true,
+        message: data.message,
+        is_active: data.is_active
+      };
+    } catch (error) {
+      logger.error('Error toggling vendor status:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
   async getVendorStats() {
     const cacheKey = this.getCacheKey('getVendorStats');
     const cachedData = this.getFromCache(cacheKey);

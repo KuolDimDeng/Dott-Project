@@ -498,4 +498,46 @@ def procurement_list(request):
     serializer = ProcurementSerializer(procurements, many=True, context={'database_name': database_name})
     return Response(serializer.data)
 
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_vendor(request, pk):
+    user = request.user
+    database_name = get_user_database(user)
+
+    try:
+        vendor = Vendor.objects.using(database_name).get(pk=pk)
+        vendor_name = vendor.vendor_name
+        vendor.delete()
+        logger.info(f"Vendor {vendor_name} deleted by user {user.email}")
+        return Response({'message': f'Vendor {vendor_name} deleted successfully'}, status=status.HTTP_200_OK)
+    except Vendor.DoesNotExist:
+        return Response({'error': 'Vendor not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.exception(f"Error deleting vendor: {str(e)}")
+        return Response({'error': 'Failed to delete vendor'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def toggle_vendor_status(request, pk):
+    user = request.user
+    database_name = get_user_database(user)
+
+    try:
+        vendor = Vendor.objects.using(database_name).get(pk=pk)
+        vendor.is_active = not vendor.is_active
+        vendor.save()
+        
+        status_text = "activated" if vendor.is_active else "deactivated"
+        logger.info(f"Vendor {vendor.vendor_name} {status_text} by user {user.email}")
+        
+        return Response({
+            'message': f'Vendor {vendor.vendor_name} {status_text} successfully',
+            'is_active': vendor.is_active
+        }, status=status.HTTP_200_OK)
+    except Vendor.DoesNotExist:
+        return Response({'error': 'Vendor not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.exception(f"Error toggling vendor status: {str(e)}")
+        return Response({'error': 'Failed to update vendor status'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 

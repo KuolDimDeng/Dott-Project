@@ -56,6 +56,7 @@ class Vendor(models.Model):
     phone = models.CharField(max_length=20, blank=True, null=True)
     is_1099_vendor = models.BooleanField(default=False)
     tax_id = models.CharField(max_length=20, blank=True, null=True)  # For EIN or SSN
+    is_active = models.BooleanField(default=True)  # Active/Inactive status
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 

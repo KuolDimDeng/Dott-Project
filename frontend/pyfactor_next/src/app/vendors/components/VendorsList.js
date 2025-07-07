@@ -137,7 +137,7 @@ const VendorsList = () => {
   };
 
   const handleDeleteVendor = async (vendorId) => {
-    if (!window.confirm('Are you sure you want to delete this vendor?')) {
+    if (!window.confirm('Are you sure you want to delete this vendor? This will permanently delete all related bills, purchase orders, procurements, and purchases.')) {
       return;
     }
 
@@ -153,6 +153,31 @@ const VendorsList = () => {
     } catch (error) {
       logger.error('Error deleting vendor:', error);
       toast.error('Failed to delete vendor');
+    }
+  };
+
+  const handleToggleVendorStatus = async (vendor) => {
+    const action = vendor.is_active ? 'deactivate' : 'activate';
+    const confirmMessage = vendor.is_active 
+      ? 'Are you sure you want to deactivate this vendor? They will not appear in dropdown lists.' 
+      : 'Are you sure you want to activate this vendor?';
+    
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      const response = await VendorService.toggleVendorStatus(vendor.id);
+      if (response.success) {
+        toast.success(response.message || `Vendor ${action}d successfully`);
+        fetchVendors();
+        fetchStats();
+      } else {
+        toast.error(response.error || `Failed to ${action} vendor`);
+      }
+    } catch (error) {
+      logger.error('Error toggling vendor status:', error);
+      toast.error(`Failed to ${action} vendor`);
     }
   };
 
@@ -369,6 +394,7 @@ const VendorsList = () => {
                   onEdit={handleEditVendor}
                   onDelete={handleDeleteVendor}
                   onView={handleViewVendor}
+                  onToggleStatus={handleToggleVendorStatus}
                   sortConfig={sortConfig}
                   onSort={handleSort}
                   displayMode={displayMode}
@@ -381,6 +407,7 @@ const VendorsList = () => {
                   onEdit={handleEditVendor}
                   onDelete={handleDeleteVendor}
                   onView={handleViewVendor}
+                  onToggleStatus={handleToggleVendorStatus}
                   displayMode={displayMode}
                 />
               )}
