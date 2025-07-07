@@ -29,18 +29,30 @@ export async function GET(request) {
       }, { status: 401 });
     }
     
-        logger.info('[Session-V2] Found session ID, validating with backend...');
+        logger.info('[Session-V2] Found session ID, validating with backend...', {
+          sessionId: sessionId.value.substring(0, 8) + '...',
+          cookieName: sessionId.name
+        });
         
         // Fetch session from backend - single source of truth
         // Use the validate endpoint which is designed for session validation
         const startTime = Date.now();
-        const response = await fetch(`${API_URL}/api/sessions/validate/${sessionId.value}/`, {
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      },
-      cache: 'no-store' // Never cache session data
-    });
+        let response;
+        try {
+          response = await fetch(`${API_URL}/api/sessions/validate/${sessionId.value}/`, {
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            },
+            cache: 'no-store' // Never cache session data
+          });
+        } catch (fetchError) {
+          logger.error('[Session-V2] Failed to fetch session from backend:', {
+            error: fetchError.message,
+            sessionId: sessionId.value.substring(0, 8) + '...'
+          });
+          throw new Error('Failed to validate session with backend');
+        }
     
         const duration = Date.now() - startTime;
         logger.api('GET', `${API_URL}/api/sessions/validate/${sessionId.value}/`, response.status, duration);
@@ -75,8 +87,18 @@ export async function GET(request) {
       return res;
     }
     
-    const sessionData = await response.json();
-    console.log('[Session-V2] Full backend response:', JSON.stringify(sessionData, null, 2));
+    let sessionData;
+    try {
+      sessionData = await response.json();
+      console.log('[Session-V2] Full backend response:', JSON.stringify(sessionData, null, 2));
+    } catch (parseError) {
+      logger.error('[Session-V2] Failed to parse response JSON:', {
+        error: parseError.message,
+        responseStatus: response.status,
+        responseHeaders: Object.fromEntries(response.headers)
+      });
+      throw new Error('Invalid response from backend');
+    }
     console.log('[Session-V2] Backend session valid:', {
       email: sessionData.email || sessionData.user?.email,
       tenantId: sessionData.tenant_id || sessionData.tenant?.id,
