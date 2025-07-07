@@ -93,40 +93,33 @@ export async function detectUserCountry() {
 }
 
 /**
- * Detect country by IP address using multiple services
+ * Detect country by IP address using backend API
  */
 async function detectCountryByIP() {
-  const services = [
-    'https://ipapi.co/country_code/',
-    'https://api.country.is/',
-    'https://ipinfo.io/country'
-  ];
-
-  for (const service of services) {
-    try {
-      const response = await fetch(service, { 
-        method: 'GET',
-        headers: { 'Accept': 'application/json' }
-      });
+  try {
+    // Use backend API instead of direct external calls to avoid CORS issues
+    const response = await fetch('/api/pricing/by-country', { 
+      method: 'GET',
+      headers: { 
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      cache: 'no-cache'
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      const countryCode = data.country_code;
       
-      if (response.ok) {
-        let countryCode;
-        
-        if (service.includes('country.is')) {
-          const data = await response.json();
-          countryCode = data.country;
-        } else {
-          countryCode = await response.text();
-        }
-        
-        if (countryCode && countryCode.length === 2) {
-          console.log(`✅ Detected country via ${service}: ${countryCode}`);
-          return countryCode.toUpperCase();
-        }
+      if (countryCode && countryCode.length === 2) {
+        console.log(`✅ Detected country via backend API: ${countryCode}`);
+        return countryCode.toUpperCase();
       }
-    } catch (error) {
-      console.warn(`⚠️ Failed to detect country via ${service}:`, error.message);
+    } else {
+      console.warn('⚠️ Backend country detection failed:', response.status);
     }
+  } catch (error) {
+    console.warn('⚠️ Failed to detect country via backend API:', error.message);
   }
   
   return null;

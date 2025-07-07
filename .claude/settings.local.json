@@ -130,7 +130,8 @@
       "Bash(sudo dscacheutil:*)",
       "Bash(sudo killall:*)",
       "Bash(DJANGO_SETTINGS_MODULE=pyfactor.settings python3 -c \"import django; django.setup(); print(''✅ Django settings loaded successfully'')\")",
-      "Bash(DJANGO_SETTINGS_MODULE=pyfactor.settings python3 -c \"import django; django.setup(); print(''✅ Django settings loaded successfully with all packages'')\")"
+      "Bash(DJANGO_SETTINGS_MODULE=pyfactor.settings python3 -c \"import django; django.setup(); print(''✅ Django settings loaded successfully with all packages'')\")",
+      "WebFetch(domain:docs.wise.com)"
     ],
     "deny": []
   }
