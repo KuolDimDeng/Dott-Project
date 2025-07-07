@@ -24,19 +24,34 @@ export async function POST(request) {
     
     // Set session cookies
     const cookieStore = await cookies();
+    
+    // In production, set domain to allow cookie sharing across subdomains
+    const isProduction = process.env.NODE_ENV === 'production';
     const cookieOptions = {
       httpOnly: true,
       secure: true,
       sameSite: 'lax',
       path: '/',
-      maxAge: 86400 // 24 hours
+      maxAge: 86400, // 24 hours
+      ...(isProduction && { domain: '.dottapps.com' }) // Allow cookies on all subdomains
     };
     
-    console.log('[EstablishSession] Setting session cookies...');
+    console.log('[EstablishSession] Setting session cookies with options:', cookieOptions);
+    console.log('[EstablishSession] Is production:', isProduction);
+    console.log('[EstablishSession] NODE_ENV:', process.env.NODE_ENV);
     
     // Set both sid and session_token cookies
     cookieStore.set('sid', token, cookieOptions);
     cookieStore.set('session_token', token, cookieOptions);
+    
+    // Debug: Verify cookies were set
+    const verifySet = await cookies();
+    const sidCookie = verifySet.get('sid');
+    const sessionCookie = verifySet.get('session_token');
+    console.log('[EstablishSession] Cookies after setting:', {
+      sid: sidCookie ? 'Set successfully' : 'Failed to set',
+      session_token: sessionCookie ? 'Set successfully' : 'Failed to set'
+    });
     
     console.log('[EstablishSession] Session cookies set, redirecting to:', redirectUrl);
     
@@ -45,8 +60,18 @@ export async function POST(request) {
     
     console.log('[EstablishSession] Full redirect URL:', fullRedirectUrl.toString());
     
-    // Redirect to the target URL
-    return NextResponse.redirect(fullRedirectUrl);
+    // Create redirect response with proper headers
+    const redirectResponse = NextResponse.redirect(fullRedirectUrl);
+    
+    // Ensure cookies are set in the redirect response
+    redirectResponse.cookies.set('sid', token, cookieOptions);
+    redirectResponse.cookies.set('session_token', token, cookieOptions);
+    
+    // Add cache control headers to prevent caching
+    redirectResponse.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+    redirectResponse.headers.set('Pragma', 'no-cache');
+    
+    return redirectResponse;
     
   } catch (error) {
     console.error('[EstablishSession] Error:', error);

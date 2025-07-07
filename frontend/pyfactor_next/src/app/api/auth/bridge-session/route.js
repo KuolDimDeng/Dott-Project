@@ -24,12 +24,16 @@ export async function GET(request) {
     // The token IS the session token (UUID from backend)
     // We just need to set it as a cookie
     const cookieStore = await cookies();
+    
+    // In production, set domain to allow cookie sharing across subdomains
+    const isProduction = process.env.NODE_ENV === 'production';
     const cookieOptions = {
       httpOnly: true,
       secure: true,
       sameSite: 'lax',
       path: '/',
-      maxAge: 86400 // 24 hours
+      maxAge: 86400, // 24 hours
+      ...(isProduction && { domain: '.dottapps.com' }) // Allow cookies on all subdomains
     };
     
     console.log('[BridgeSession] Setting session cookies...');
