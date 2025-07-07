@@ -38,8 +38,20 @@ class DiscountVerificationService:
         return request.META.get('REMOTE_ADDR')
     
     @staticmethod
-    def get_country_from_ip(ip_address):
+    def get_country_from_ip(ip_address, request=None):
         """Get country code from IP address using ipapi.co"""
+        # First check if Cloudflare already provided the country
+        if request and hasattr(request, 'cloudflare') and request.cloudflare.get('country'):
+            country_code = request.cloudflare['country']
+            logger.info(f"Using Cloudflare country detection: {country_code}")
+            return country_code
+        
+        # Also check the META header directly
+        if request and request.META.get('HTTP_CF_IPCOUNTRY'):
+            country_code = request.META.get('HTTP_CF_IPCOUNTRY')
+            logger.info(f"Using Cloudflare country header: {country_code}")
+            return country_code
+        
         cache_key = f"geo_{ip_address}"
         cached_data = cache.get(cache_key)
         

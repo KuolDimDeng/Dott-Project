@@ -137,7 +137,14 @@ class GetPricingForCountryView(APIView):
             # If not provided, get from IP
             if not country_code:
                 ip_address = DiscountVerificationService.get_client_ip(request)
-                country_code = DiscountVerificationService.get_country_from_ip(ip_address)
+                
+                # Debug logging
+                logger.info(f"Pricing API - Client IP: {ip_address}")
+                logger.info(f"Pricing API - CF-Connecting-IP: {request.META.get('HTTP_CF_CONNECTING_IP')}")
+                logger.info(f"Pricing API - CF-IPCountry: {request.META.get('HTTP_CF_IPCOUNTRY')}")
+                logger.info(f"Pricing API - X-Forwarded-For: {request.META.get('HTTP_X_FORWARDED_FOR')}")
+                
+                country_code = DiscountVerificationService.get_country_from_ip(ip_address, request)
             
             if not country_code:
                 # Default to US pricing

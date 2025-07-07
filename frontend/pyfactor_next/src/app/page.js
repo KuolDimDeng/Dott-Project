@@ -9,7 +9,8 @@ import AppBar from '@/app/components/AppBar';
 import Hero from '@/app/components/Hero';
 import Features from '@/app/components/Features';
 import Highlights from '@/app/components/Highlights';
-import Pricing from '@/app/components/Pricing';
+// import Pricing from '@/app/components/Pricing';
+import GeoPricing from '@/components/pricing/GeoPricing';
 import FAQ from '@/app/components/FAQ';
 import ContactForm from '@/app/components/ContactForm';
 import Footer from '@/app/components/Footer';
@@ -92,7 +93,7 @@ export default function Home() {
       
       {/* Pricing Section - Light cyan background */}
       <div className="bg-cyan-50">
-        <Pricing />
+        <GeoPricing />
       </div>
       
       {/* FAQ Section - Light amber background */}

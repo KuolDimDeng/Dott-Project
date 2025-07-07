@@ -5,9 +5,21 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const country = searchParams.get('country');
     
-    // Get client IP for geo-location
+    // Get client IP for geo-location (Cloudflare aware)
+    const cfIp = request.headers.get('cf-connecting-ip');
+    const cfCountry = request.headers.get('cf-ipcountry') || request.headers.get('x-cf-country');
     const forwarded = request.headers.get('x-forwarded-for');
-    const ip = forwarded ? forwarded.split(',')[0] : request.headers.get('x-real-ip');
+    const realIp = request.headers.get('x-real-ip');
+    const ip = cfIp || (forwarded ? forwarded.split(',')[0] : realIp);
+    
+    // Log for debugging
+    console.log('[Pricing API] Headers:', {
+      cfIp,
+      cfCountry,
+      forwarded,
+      realIp,
+      finalIp: ip
+    });
     
     // Build query params
     const params = new URLSearchParams();
@@ -24,6 +36,8 @@ export async function GET(request) {
           'Content-Type': 'application/json',
           'X-Forwarded-For': ip || '',
           'X-Real-IP': ip || '',
+          'CF-Connecting-IP': cfIp || '',
+          'CF-IPCountry': cfCountry || '',
         },
       }
     );
