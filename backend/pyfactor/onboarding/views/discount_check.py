@@ -11,6 +11,7 @@ from django.db import transaction
 from users.models import Business, BusinessDetails
 from users.discount_service import DiscountVerificationService
 from users.discount_models import DevelopingCountry
+from currencies.wise_integration import wise_service
 
 
 logger = logging.getLogger(__name__)
@@ -144,15 +145,51 @@ class GetPricingForCountryView(APIView):
             
             # Check if eligible for discount
             discount = DevelopingCountry.get_discount(country_code)
+            is_discounted = discount > 0
             
-            # Calculate prices
-            if discount > 0:
-                professional_monthly = 7.50  # $15 * 0.5
-                professional_six_month = 39.00  # $78 * 0.5
-                professional_yearly = 72.00  # $144 * 0.5
-                enterprise_monthly = 22.50   # $45 * 0.5
-                enterprise_six_month = 117.00  # $234 * 0.5
-                enterprise_yearly = 216.00   # $432 * 0.5
+            # Get currency-converted pricing via Wise
+            try:
+                pricing_data = wise_service.convert_subscription_pricing(
+                    country_code=country_code,
+                    is_discounted=is_discounted
+                )
+                
+                # If Wise conversion successful, use local currency
+                if pricing_data.get('currency') != 'USD':
+                    return Response({
+                        'country_code': country_code.upper(),
+                        'discount_percentage': discount,
+                        'currency': pricing_data['currency'],
+                        'pricing': {
+                            'professional': pricing_data['professional'],
+                            'enterprise': pricing_data['enterprise']
+                        },
+                        'exchange_info': pricing_data.get('exchange_info', {}),
+                        'original_pricing_usd': {
+                            'professional': {
+                                'monthly': 15.00 if not is_discounted else 7.50,
+                                'six_month': 78.00 if not is_discounted else 39.00,
+                                'yearly': 144.00 if not is_discounted else 72.00
+                            },
+                            'enterprise': {
+                                'monthly': 45.00 if not is_discounted else 22.50,
+                                'six_month': 234.00 if not is_discounted else 117.00,
+                                'yearly': 432.00 if not is_discounted else 216.00
+                            }
+                        }
+                    }, status=status.HTTP_200_OK)
+            except Exception as e:
+                logger.warning(f"Wise conversion failed for {country_code}: {str(e)}")
+                # Fall back to USD pricing
+            
+            # Fallback to USD pricing
+            if is_discounted:
+                professional_monthly = 7.50
+                professional_six_month = 39.00
+                professional_yearly = 72.00
+                enterprise_monthly = 22.50
+                enterprise_six_month = 117.00
+                enterprise_yearly = 216.00
             else:
                 professional_monthly = 15.00
                 professional_six_month = 78.00
@@ -164,6 +201,7 @@ class GetPricingForCountryView(APIView):
             return Response({
                 'country_code': country_code.upper(),
                 'discount_percentage': discount,
+                'currency': 'USD',
                 'pricing': {
                     'professional': {
                         'monthly': professional_monthly,

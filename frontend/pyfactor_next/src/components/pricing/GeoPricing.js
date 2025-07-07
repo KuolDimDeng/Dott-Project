@@ -130,6 +130,23 @@ export default function GeoPricing() {
             <p className="text-green-600 text-sm mt-1">
               Supporting businesses in {pricing.country_code}
             </p>
+            {pricing.currency && pricing.currency !== 'USD' && (
+              <p className="text-green-600 text-sm mt-1">
+                Prices shown in {pricing.currency} with current exchange rates
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Local Currency Banner */}
+        {pricing.currency && pricing.currency !== 'USD' && pricing.discount_percentage === 0 && (
+          <div className="mb-8 bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+            <p className="text-blue-800 font-semibold">
+              💱 Prices shown in {pricing.currency} (local currency)
+            </p>
+            <p className="text-blue-600 text-sm mt-1">
+              Converted at current exchange rates with 1% processing fee
+            </p>
           </div>
         )}
 
@@ -244,6 +261,20 @@ export default function GeoPricing() {
               Regional pricing is automatically applied based on your location.
               <br />
               Verification may be required within 30 days.
+            </p>
+          )}
+          {pricing.currency && pricing.currency !== 'USD' && (
+            <p className="mt-2 text-sm">
+              Prices converted from USD using current exchange rates.
+              <br />
+              Final charges may vary slightly based on exchange rate fluctuations.
+            </p>
+          )}
+          {pricing.exchange_info && (
+            <p className="mt-2 text-xs text-gray-500">
+              Exchange rate: 1 USD = {pricing.exchange_info.rate?.toFixed(4)} {pricing.currency}
+              <br />
+              Last updated: {new Date(pricing.exchange_info.last_updated).toLocaleString()}
             </p>
           )}
         </div>

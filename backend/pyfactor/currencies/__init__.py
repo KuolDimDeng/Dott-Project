@@ -1,0 +1,1 @@
+# Currencies module for handling currency conversion and localization
