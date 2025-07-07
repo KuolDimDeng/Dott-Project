@@ -97,20 +97,20 @@ export async function POST(request) {
       tenant_id: sessionData.tenant?.id || sessionData.tenant_id
     });
     
-    // Set cookies in the response
-    // We need to set cookies via response headers in Next.js App Router
+    // Set cookies using Next.js cookies() API
     if (sessionData.session_token) {
-      const cookieOptions = [
-        'HttpOnly',
-        'Secure',
-        'SameSite=Lax',
-        'Path=/',
-        `Max-Age=86400` // 24 hours
-      ].join('; ');
+      const cookieStore = await cookies();
+      const cookieOptions = {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 86400 // 24 hours
+      };
       
       // Set both sid and session_token cookies
-      response.headers.append('Set-Cookie', `sid=${sessionData.session_token}; ${cookieOptions}`);
-      response.headers.append('Set-Cookie', `session_token=${sessionData.session_token}; ${cookieOptions}`);
+      cookieStore.set('sid', sessionData.session_token, cookieOptions);
+      cookieStore.set('session_token', sessionData.session_token, cookieOptions);
       
       console.log('[ConsolidatedLogin] Set session cookies for:', sessionData.session_token);
     } else {
