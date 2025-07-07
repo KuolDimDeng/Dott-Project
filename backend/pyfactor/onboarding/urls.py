@@ -41,6 +41,9 @@ try:
 except ImportError:
     complete_all_onboarding = None
 
+# Import discount URLs
+from .urls_discount import urlpatterns as discount_urls
+
 
 app_name = 'onboarding'
 
@@ -125,3 +128,6 @@ if complete_all_onboarding:
     urlpatterns.append(
         path('api/onboarding/complete-all/', complete_all_onboarding, name='complete-all-onboarding')
     )
+
+# Add discount URLs
+urlpatterns += discount_urls
