@@ -13,7 +13,7 @@ from users.models import UserProfile
 from hr.models import Employee
 from .payment_providers import get_available_payment_methods, get_optimal_provider
 from .universal_processor import UniversalPayrollProcessor
-from .models import EmployeePaymentSetup
+from .stripe_models import EmployeePaymentSetup
 
 logger = logging.getLogger(__name__)
 

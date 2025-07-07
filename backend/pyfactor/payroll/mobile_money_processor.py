@@ -37,7 +37,7 @@ class MobileMoneyProcessor:
         """
         Set up mobile money for employee - just need phone number
         """
-        from .models import EmployeePaymentSetup
+        from .stripe_models import EmployeePaymentSetup
         
         if not employee.phone_number:
             return {
@@ -305,7 +305,7 @@ class MobileMoneyProcessor:
         Get employee's mobile money setup
         """
         try:
-            from .models import EmployeePaymentSetup
+            from .stripe_models import EmployeePaymentSetup
             return EmployeePaymentSetup.objects.get(
                 employee=employee,
                 payment_provider='mobile_money'

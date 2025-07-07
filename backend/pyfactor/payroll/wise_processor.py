@@ -56,7 +56,7 @@ class WisePayrollProcessor:
                 invitation = response.json()
                 
                 # Store invitation ID
-                from .models import EmployeePaymentSetup
+                from .stripe_models import EmployeePaymentSetup
                 setup, created = EmployeePaymentSetup.objects.get_or_create(
                     employee=employee,
                     defaults={
