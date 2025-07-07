@@ -153,7 +153,7 @@ def remove_additional_countries(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0011_add_regional_discount_fields'),
+        ('users', '0011_add_regional_discount_models'),
     ]
 
     operations = [

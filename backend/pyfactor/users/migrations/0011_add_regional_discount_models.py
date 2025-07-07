@@ -84,7 +84,7 @@ def reverse_populate_countries(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0010_merge_20250707_1415'),
+        ('users', '0010_merge_migrations'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
