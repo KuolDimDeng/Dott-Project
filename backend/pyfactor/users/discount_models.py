@@ -1,5 +1,16 @@
 """
 Regional discount models for developing countries
+
+COVERAGE: After migration 0012, this system covers 128 developing countries:
+- Africa: 53 countries (comprehensive coverage of all African developing nations)
+- Asia: 27 countries (including Central Asia and Middle East)
+- Pacific: 12 countries (island nations)
+- Caribbean & Latin America: 27 countries
+- Eastern Europe: 4 countries
+- Middle East & North Africa: 5 countries
+
+All countries receive a 50% discount on subscription pricing to ensure
+global accessibility of business tools.
 """
 import uuid
 from django.db import models
