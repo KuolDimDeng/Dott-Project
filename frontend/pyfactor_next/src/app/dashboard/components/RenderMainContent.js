@@ -38,32 +38,51 @@ console.log('[RenderMainContent] Preparing to load components');
 
 // Enhanced lazy load with retry
 const enhancedLazy = (importFn, componentName) => {
+  console.error(`[RenderMainContent] enhancedLazy called for ${componentName}`);
   return React.lazy(() => {
-    return importFn().catch(err => {
-      console.error(`Error loading ${componentName}:`, err);
-      return {
-        default: (props) => (
-          <ErrorFallback 
-            error={err} 
-            componentName={componentName} 
-            retry={() => window.location.reload()}
-          />
-        )
-      };
-    });
+    console.error(`[RenderMainContent] Lazy loading ${componentName}...`);
+    return importFn()
+      .then(module => {
+        console.error(`[RenderMainContent] Successfully loaded ${componentName}`);
+        return module;
+      })
+      .catch(err => {
+        console.error(`[RenderMainContent] Error loading ${componentName}:`, err);
+        console.error(`[RenderMainContent] Error stack:`, err.stack);
+        return {
+          default: (props) => (
+            <ErrorFallback 
+              error={err} 
+              componentName={componentName} 
+              retry={() => window.location.reload()}
+            />
+          )
+        };
+      });
   });
 };
 
 // Content Wrapper component
-const ContentWrapper = ({ children, className = '' }) => (
-  <div className={`flex-grow w-full h-full m-0 p-2 sm:p-3 md:p-4 flex flex-col box-border overflow-auto relative z-10 main-content-wrapper ${className}`}>
-    {children}
-  </div>
-);
+const ContentWrapper = ({ children, className = '' }) => {
+  console.error('[RenderMainContent] ContentWrapper rendering');
+  try {
+    return (
+      <div className={`flex-grow w-full h-full m-0 p-2 sm:p-3 md:p-4 flex flex-col box-border overflow-auto relative z-10 main-content-wrapper ${className}`}>
+        {children}
+      </div>
+    );
+  } catch (error) {
+    console.error('[RenderMainContent] ERROR in ContentWrapper:', error);
+    console.error('[RenderMainContent] Error stack:', error.stack);
+    return <div>Error in ContentWrapper: {error.message}</div>;
+  }
+};
 
 // Lazy load all components with enhanced error handling
+console.error('[RenderMainContent] About to lazy load components');
 const CustomerList = enhancedLazy(() => import('./lists/CustomerList.js'), 'Customer List');
 const CustomerManagement = enhancedLazy(() => import('./forms/CustomerManagement.js'), 'Customer Management');
+console.error('[RenderMainContent] CustomerManagement lazy component created');
 const InvoiceTemplateBuilder = enhancedLazy(() => import('./forms/InvoiceTemplateBuilder.js'), 'Invoice Template Builder');
 const TransactionForm = enhancedLazy(() => import('../../createNew/forms/TransactionForm.js'), 'Transaction Form');
 const TransactionList = enhancedLazy(() => import('./lists/TransactionList.js'), 'Transaction List');
@@ -520,7 +539,15 @@ const RenderMainContent = React.memo(function RenderMainContent({
   navigationKey = 'default'
 }) {
   // Debug log to see what view is being passed
-  console.log('[RenderMainContent] Component rendered with view:', view, 'navigationKey:', navigationKey);
+  console.error('[RenderMainContent] Component rendered with view:', view, 'navigationKey:', navigationKey);
+  console.error('[RenderMainContent] All props:', {
+    showCustomerList,
+    view,
+    navigationKey,
+    showMainDashboard,
+    showHome,
+    selectedSettingsOption
+  });
   
   // Store current view state for cleanup on navigation
   const [lastView, setLastView] = useState(view);
@@ -1831,22 +1858,39 @@ const RenderMainContent = React.memo(function RenderMainContent({
       // Continue with the normal content if tenant status is good
       // CRM view handling
       if (view && view.startsWith('crm-')) {
+        console.error('[RenderMainContent] Handling CRM view:', view);
         const crmComponentKey = `crm-${navigationKey || 'default'}`;
-        return (
-          <ContentWrapperWithKey>
-            <SuspenseWithCleanup componentKey={crmComponentKey}>
-              {view === 'crm-dashboard' && <CRMDashboard />}
-              {view === 'crm-contacts' && <ContactsManagement />}
-              {view === 'crm-customers' && <CustomersManagement />}
-              {view === 'crm-leads' && <LeadsManagement />}
-              {view === 'crm-opportunities' && <OpportunitiesManagement />}
-              {view === 'crm-deals' && <DealsManagement />}
-              {view === 'crm-activities' && <ActivitiesManagement />}
-              {view === 'crm-campaigns' && <CampaignsManagement />}
-              {view === 'crm-reports' && <ReportsManagement />}
-            </SuspenseWithCleanup>
-          </ContentWrapperWithKey>
-        );
+        try {
+          return (
+            <ContentWrapperWithKey>
+              <SuspenseWithCleanup componentKey={crmComponentKey}>
+                {console.error('[RenderMainContent] Rendering CRM component for view:', view)}
+                {view === 'crm-dashboard' && <CRMDashboard />}
+                {view === 'crm-contacts' && <ContactsManagement />}
+                {view === 'crm-customers' && <CustomersManagement />}
+                {view === 'crm-leads' && <LeadsManagement />}
+                {view === 'crm-opportunities' && <OpportunitiesManagement />}
+                {view === 'crm-deals' && <DealsManagement />}
+                {view === 'crm-activities' && <ActivitiesManagement />}
+                {view === 'crm-campaigns' && <CampaignsManagement />}
+                {view === 'crm-reports' && <ReportsManagement />}
+              </SuspenseWithCleanup>
+            </ContentWrapperWithKey>
+          );
+        } catch (error) {
+          console.error('[RenderMainContent] ERROR in CRM view handling:', error);
+          console.error('[RenderMainContent] Error stack:', error.stack);
+          return (
+            <ContentWrapperWithKey>
+              <div className="p-4">
+                <h2 className="text-xl font-semibold text-red-600">Error Loading CRM Component</h2>
+                <p className="mt-2">View: {view}</p>
+                <p className="mt-2">Error: {error.message}</p>
+                <pre className="mt-2 text-sm">{error.stack}</pre>
+              </div>
+            </ContentWrapperWithKey>
+          );
+        }
       }
 
       // Handle Analytics views
@@ -2292,14 +2336,51 @@ const RenderMainContent = React.memo(function RenderMainContent({
         ActiveComponent = InvoiceTemplateBuilder;
         componentProps = { onClose: handleCloseInvoiceBuilder };
       } else if (showCustomerList) {
-        // Use CustomerManagement component for customer management
-        return (
-          <ContentWrapperWithKey>
-            <SuspenseWithCleanup componentKey={`customer-management-${sectionComponentKey}`}>
-              <CustomerManagement />
-            </SuspenseWithCleanup>
-          </ContentWrapperWithKey>
-        );
+        console.error('[RenderMainContent] showCustomerList is true, rendering CustomerManagement');
+        try {
+          // Use CustomerManagement component for customer management
+          return (
+            <ContentWrapperWithKey>
+              <ErrorBoundary fallback={
+                <div className="p-4">
+                  <h2 className="text-xl font-semibold text-red-600">Customer Management Error</h2>
+                  <p className="mt-2">Failed to load the customer management component.</p>
+                  <button 
+                    onClick={() => window.location.reload()} 
+                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
+                    Reload Page
+                  </button>
+                </div>
+              }>
+                <SuspenseWithCleanup 
+                  componentKey={`customer-management-${sectionComponentKey}`}
+                  fallback={
+                    <div className="p-4">
+                      <h2 className="text-xl font-semibold">Loading Customer Management...</h2>
+                      <StandardSpinner size="large" />
+                    </div>
+                  }
+                >
+                  {console.error('[RenderMainContent] About to render CustomerManagement component')}
+                  <CustomerManagement />
+                </SuspenseWithCleanup>
+              </ErrorBoundary>
+            </ContentWrapperWithKey>
+          );
+        } catch (error) {
+          console.error('[RenderMainContent] ERROR rendering CustomerManagement:', error);
+          console.error('[RenderMainContent] Error stack:', error.stack);
+          return (
+            <ContentWrapperWithKey>
+              <div className="p-4">
+                <h2 className="text-xl font-semibold text-red-600">Error Loading Customer Management</h2>
+                <p className="mt-2">Error: {error.message}</p>
+                <pre className="mt-2 text-sm">{error.stack}</pre>
+              </div>
+            </ContentWrapperWithKey>
+          );
+        }
       } else if (showCustomerDetails && selectedCustomer) {
         ActiveComponent = CustomerDetails;
         componentProps = { customer: selectedCustomer, onBack: handleBackToCustomerDetails };

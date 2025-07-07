@@ -34,6 +34,7 @@ import { ToastProvider } from '@/components/Toast/ToastProvider';
 import DashboardLoader from '@/components/DashboardLoader';
 import { ensureAuthProvider } from '@/utils/refreshUserSession';
 import POSSystem from '../../app/dashboard/components/pos/POSSystem';
+import DashboardErrorBoundary from './DashboardErrorBoundary';
 
 // Lazy load components to reduce initial memory usage
 const RenderMainContent = lazy(() =>
@@ -54,23 +55,31 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   const renderStartTime = useRef(Date.now());
   
   useEffect(() => {
-    const span = Sentry.startSpan({ name: 'dashboard-content-render' });
-    const renderTime = Date.now() - renderStartTime.current;
-    logger.performance('DashboardContent render', renderTime);
-    span.end();
-    
-    // Set user context for Sentry
-    if (user) {
-      Sentry.setUser({
-        id: user.id,
-        email: user.email,
-        tenantId: user.tenant_id,
-      });
-    }
-    
-    return () => {
+    try {
+      console.error('[DashboardContent] useEffect - Starting dashboard content render');
+      const span = Sentry.startSpan({ name: 'dashboard-content-render' });
+      const renderTime = Date.now() - renderStartTime.current;
+      logger.performance('DashboardContent render', renderTime);
       span.end();
-    };
+      
+      // Set user context for Sentry
+      if (user) {
+        console.error('[DashboardContent] useEffect - Setting user context:', user);
+        Sentry.setUser({
+          id: user.id,
+          email: user.email,
+          tenantId: user.tenant_id,
+        });
+      }
+      
+      return () => {
+        console.error('[DashboardContent] useEffect - Cleanup');
+        span.end();
+      };
+    } catch (error) {
+      console.error('[DashboardContent] ERROR in useEffect:', error);
+      console.error('[DashboardContent] Error stack:', error.stack);
+    }
   }, [user]);
   const { tenantStatus, tenantError, tenantId: hookTenantId, retry } = useEnsureTenant();
   // Use prop tenant ID if available, otherwise use the one from the hook
@@ -236,23 +245,32 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   
   // Create optimized state setter that uses functional updates to prevent unnecessary renders
   const updateState = useCallback((updates) => {
-    setUiState(prev => {
-      // If updates is a function, call it with prev
-      if (typeof updates === 'function') {
-        return updates(prev);
-      }
-      
-      // Check if any values are actually changing to prevent unnecessary renders
-      const hasChanges = Object.entries(updates).some(
-        ([key, value]) => prev[key] !== value
-      );
-      
-      // If no changes, return the previous state reference to avoid a re-render
-      if (!hasChanges) return prev;
-      
-      // Otherwise, apply the updates
-      return { ...prev, ...updates };
-    });
+    try {
+      console.error('[DashboardContent] updateState called with:', typeof updates === 'function' ? 'function' : updates);
+      setUiState(prev => {
+        // If updates is a function, call it with prev
+        if (typeof updates === 'function') {
+          console.error('[DashboardContent] updateState - Calling function update');
+          return updates(prev);
+        }
+        
+        // Check if any values are actually changing to prevent unnecessary renders
+        const hasChanges = Object.entries(updates).some(
+          ([key, value]) => prev[key] !== value
+        );
+        
+        console.error('[DashboardContent] updateState - hasChanges:', hasChanges);
+        
+        // If no changes, return the previous state reference to avoid a re-render
+        if (!hasChanges) return prev;
+        
+        // Otherwise, apply the updates
+        return { ...prev, ...updates };
+      });
+    } catch (error) {
+      console.error('[DashboardContent] ERROR in updateState:', error);
+      console.error('[DashboardContent] Error stack:', error.stack);
+    }
   }, []);
   
   // Memoize commonly used callbacks with optimized equality checks
@@ -1395,13 +1413,24 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     loadEmployees();
   }, []);
 
+  console.error('[DashboardContent] About to render main JSX');
+  console.error('[DashboardContent] Current state:', {
+    view,
+    showCustomerList: uiState.showCustomerList,
+    navigationKey,
+    drawerOpen
+  });
+  
   return (
-    <ErrorBoundary>
-      <NotificationProvider>
-        <ToastProvider>
+    <DashboardErrorBoundary>
+      <ErrorBoundary>
+        <NotificationProvider>
+          <ToastProvider>
           <div className="flex min-h-screen flex-col">
+            {console.error('[DashboardContent] Rendering DashAppBar')}
             <DashAppBar {...dashAppBarProps} />
             <div className="flex flex-grow pt-16 relative">
+              {console.error('[DashboardContent] Rendering Drawer')}
               <Drawer {...drawerProps} />
               
               <div 
@@ -1420,18 +1449,32 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
                 }}
                 key={`content-container-${navigationKey}`}
               >
+                {console.error('[DashboardContent] About to render RenderMainContent in Suspense')}
                 <Suspense fallback={<LoadingComponent />}>
-                  <RenderMainContent 
-                    {...mainContentProps} 
-                    navigationKey={navigationKey}
-                    selectedSettingsOption={selectedSettingsOption} 
-                  />
+                  {(() => {
+                    try {
+                      console.error('[DashboardContent] Rendering RenderMainContent with props:', mainContentProps);
+                      return (
+                        <RenderMainContent 
+                          {...mainContentProps} 
+                          navigationKey={navigationKey}
+                          selectedSettingsOption={selectedSettingsOption} 
+                        />
+                      );
+                    } catch (error) {
+                      console.error('[DashboardContent] ERROR rendering RenderMainContent:', error);
+                      console.error('[DashboardContent] Error stack:', error.stack);
+                      return <div>Error rendering content: {error.message}</div>;
+                    }
+                  })()}
                 </Suspense>
               </div>
             </div>
           </div>
         </ToastProvider>
       </NotificationProvider>
+    </ErrorBoundary>
+  </DashboardErrorBoundary>
 
       {/* POS System */}
       <POSSystem

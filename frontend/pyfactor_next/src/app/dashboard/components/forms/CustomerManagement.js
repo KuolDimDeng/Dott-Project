@@ -3,6 +3,11 @@
 import React, { useState, useEffect, useCallback, useRef, Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { toast } from 'react-hot-toast';
+
+// Debug Headless UI imports
+console.error('[CustomerManagement] Dialog:', typeof Dialog, Dialog);
+console.error('[CustomerManagement] Transition:', typeof Transition, Transition);
+console.error('[CustomerManagement] Fragment:', typeof Fragment, Fragment);
 import { customerApi } from '@/utils/apiClient';
 import { getCacheValue } from '@/utils/appCache';
 import { logger } from '@/utils/logger';
@@ -10,17 +15,23 @@ import { UserGroupIcon } from '@heroicons/react/24/outline';
 
 import StandardSpinner, { ButtonSpinner, CenteredSpinner } from '@/components/ui/StandardSpinner';
 const CustomerManagement = () => {
-  // State management
-  const [customers, setCustomers] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState(null);
-  const [isCreating, setIsCreating] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [showCustomerDetails, setShowCustomerDetails] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [customerToDelete, setCustomerToDelete] = useState(null);
+  console.error('[CustomerManagement] Component function called');
+  
+  try {
+    console.error('[CustomerManagement] About to initialize state');
+    // State management
+    const [customers, setCustomers] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [selectedCustomer, setSelectedCustomer] = useState(null);
+    const [isCreating, setIsCreating] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [showCustomerDetails, setShowCustomerDetails] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [customerToDelete, setCustomerToDelete] = useState(null);
+    
+    console.error('[CustomerManagement] State initialized successfully');
   
   // Refs
   const isMounted = useRef(true);
@@ -41,15 +52,24 @@ const CustomerManagement = () => {
   });
 
   useEffect(() => {
-    isMounted.current = true;
-    fetchCustomers();
-    return () => {
-      isMounted.current = false;
-    };
+    try {
+      console.error('[CustomerManagement] useEffect called');
+      isMounted.current = true;
+      fetchCustomers();
+      return () => {
+        console.error('[CustomerManagement] useEffect cleanup');
+        isMounted.current = false;
+      };
+    } catch (error) {
+      console.error('[CustomerManagement] ERROR in useEffect:', error);
+      console.error('[CustomerManagement] Error stack:', error.stack);
+    }
   }, []);
 
   const fetchCustomers = useCallback(async () => {
+    console.error('[CustomerManagement] fetchCustomers called');
     try {
+      console.error('[CustomerManagement] About to setIsLoading');
       setIsLoading(true);
       console.log('[CustomerManagement] Fetching customers...');
       
@@ -57,7 +77,9 @@ const CustomerManagement = () => {
       // No need to send tenant ID from frontend
       
       try {
+        console.error('[CustomerManagement] About to call customerApi.getAll');
         const data = await customerApi.getAll();
+        console.error('[CustomerManagement] API call completed');
         console.log('[CustomerManagement] Raw API response:', data);
         
         // Handle paginated response from Django REST framework
@@ -631,7 +653,12 @@ const CustomerManagement = () => {
   };
 
   // Delete confirmation dialog
-  const renderDeleteDialog = () => (
+  const renderDeleteDialog = () => {
+    console.error('[CustomerManagement] renderDeleteDialog - deleteDialogOpen:', deleteDialogOpen);
+    console.error('[CustomerManagement] Transition.Root:', typeof Transition.Root, Transition.Root);
+    
+    try {
+      return (
     <Transition.Root show={deleteDialogOpen} as={Fragment}>
       <Dialog as="div" className="relative z-10" onClose={setDeleteDialogOpen}>
         <Transition.Child
@@ -699,7 +726,13 @@ const CustomerManagement = () => {
         </div>
       </Dialog>
     </Transition.Root>
-  );
+      );
+    } catch (error) {
+      console.error('[CustomerManagement] ERROR in renderDeleteDialog:', error);
+      console.error('[CustomerManagement] Error stack:', error.stack);
+      return null;
+    }
+  };
 
   return (
     <div className="p-6 bg-gray-50">
@@ -859,9 +892,49 @@ const CustomerManagement = () => {
       )}
       
       {/* Delete Confirmation Dialog */}
+      {console.error('[CustomerManagement] About to render delete dialog')}
       {renderDeleteDialog()}
     </div>
   );
+  } catch (error) {
+    console.error('[CustomerManagement] ERROR in main return:', error);
+    console.error('[CustomerManagement] Error stack:', error.stack);
+    return (
+      <div className="p-6 bg-gray-50">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          <h2 className="font-bold">Error in Customer Management Component</h2>
+          <p className="mt-2">Error: {error.message}</p>
+          <pre className="mt-2 text-sm">{error.stack}</pre>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+          >
+            Reload Page
+          </button>
+        </div>
+      </div>
+    );
+  }
+  } catch (componentError) {
+    console.error('[CustomerManagement] CRITICAL ERROR in component:', componentError);
+    console.error('[CustomerManagement] Component error stack:', componentError.stack);
+    return (
+      <div className="p-6 bg-gray-50">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          <h2 className="font-bold">Critical Error in Customer Management</h2>
+          <p className="mt-2">The component failed to load properly.</p>
+          <p className="mt-2">Error: {componentError.message}</p>
+          <pre className="mt-2 text-sm">{componentError.stack}</pre>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+          >
+            Reload Page
+          </button>
+        </div>
+      </div>
+    );
+  }
 };
 
 export default CustomerManagement; 
