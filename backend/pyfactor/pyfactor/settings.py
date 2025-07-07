@@ -569,7 +569,7 @@ CLAUDE_SMART_INSIGHTS_MODEL = os.getenv('CLAUDE_SMART_INSIGHTS_MODEL', 'claude-s
 CLAUDE_SMART_INSIGHTS_MAX_TOKENS = int(os.getenv('CLAUDE_SMART_INSIGHTS_MAX_TOKENS', '1000'))
 
 # PostHog Analytics Configuration
-POSTHOG_API_KEY = os.getenv('POSTHOG_API_KEY', '')
+POSTHOG_API_KEY = os.getenv('POSTHOG_API_KEY', None)
 POSTHOG_HOST = os.getenv('POSTHOG_HOST', 'https://app.posthog.com')
 
 # Scheduled tasks have been removed with Celery

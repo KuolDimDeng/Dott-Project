@@ -1,12 +1,22 @@
 import time
+import logging
 from django.utils.deprecation import MiddlewareMixin
 from pyfactor.analytics import track_api_call, init_posthog
 
+logger = logging.getLogger(__name__)
+
 # Initialize PostHog when the middleware loads
+_analytics_enabled = False
 try:
     init_posthog()
+    # Check if analytics is actually enabled
+    from pyfactor.analytics import _posthog_initialized
+    _analytics_enabled = _posthog_initialized
+    if not _analytics_enabled:
+        logger.info("Analytics middleware: PostHog not enabled (no API key)")
 except Exception as e:
-    print(f"Warning: Failed to initialize PostHog: {e}")
+    logger.warning(f"Analytics middleware: Failed to initialize PostHog: {e}")
+    _analytics_enabled = False
 
 class AnalyticsMiddleware(MiddlewareMixin):
     """Middleware to track API calls and performance metrics"""
@@ -17,6 +27,10 @@ class AnalyticsMiddleware(MiddlewareMixin):
     
     def process_response(self, request, response):
         """Track the API call after processing"""
+        # Skip if analytics is not enabled
+        if not _analytics_enabled:
+            return response
+            
         # Skip tracking for static files and non-API endpoints
         if request.path.startswith('/static/') or request.path.startswith('/media/'):
             return response
@@ -33,12 +47,16 @@ class AnalyticsMiddleware(MiddlewareMixin):
         
         # Track API endpoints
         if request.path.startswith('/api/'):
-            track_api_call(
-                user_id=user_id,
-                endpoint=request.path,
-                method=request.method,
-                status_code=response.status_code,
-                duration_ms=duration_ms
-            )
+            try:
+                track_api_call(
+                    user_id=user_id,
+                    endpoint=request.path,
+                    method=request.method,
+                    status_code=response.status_code,
+                    duration_ms=duration_ms
+                )
+            except Exception as e:
+                # Silently fail - don't let analytics errors break the response
+                logger.debug(f"Failed to track API call: {e}")
         
         return response
