@@ -96,18 +96,30 @@ export async function GET(request) {
       console.log('🔄 [Auth0Exchange] Response headers:', Object.fromEntries(tokenResponse.headers.entries()));
       console.log('🔄 [Auth0Exchange] ========== END TOKEN RESPONSE ==========');
       
-      // If the first attempt fails with invalid_grant, try the alternative redirect URI
-      if (!tokenResponse.ok && tokenResponse.status === 400) {
-        const errorText = await tokenResponse.text();
+      // Handle token exchange failure
+      if (!tokenResponse.ok) {
+        let errorText;
         let errorData;
+        
+        // Read the response body only once
         try {
+          errorText = await tokenResponse.text();
           errorData = JSON.parse(errorText);
-        } catch {
-          errorData = { error: 'unknown' };
+        } catch (e) {
+          errorData = { error: 'unknown', error_description: errorText || 'Failed to parse error response' };
         }
         
-        // If it's a redirect_uri mismatch, try the alternative
-        if (errorData.error === 'invalid_grant' && errorData.error_description?.includes('redirect_uri')) {
+        console.log('🔄 [Auth0Exchange] Token exchange failed, analyzing error:', {
+          status: tokenResponse.status,
+          error: errorData.error,
+          error_description: errorData.error_description
+        });
+        
+        // If the first attempt fails with invalid_grant due to redirect_uri mismatch, try alternative
+        if (tokenResponse.status === 400 && 
+            errorData.error === 'invalid_grant' && 
+            errorData.error_description?.includes('redirect_uri')) {
+          
           console.log('[Auth0 Exchange] Redirect URI mismatch detected, trying alternative...');
           
           // Try the alternative redirect URI
@@ -137,17 +149,22 @@ export async function GET(request) {
           
           // Update redirectUri for logging
           redirectUri = alternativeRedirectUri;
+          
+          // If still not ok, read the new error
+          if (!tokenResponse.ok) {
+            try {
+              errorText = await tokenResponse.text();
+              errorData = JSON.parse(errorText);
+            } catch (e) {
+              errorData = { error_description: errorText || 'Failed to parse error response' };
+            }
+          }
         }
       }
       
+      // Final check after potential retry
       if (!tokenResponse.ok) {
-        const errorText = await tokenResponse.text();
-        let errorData;
-        try {
-          errorData = JSON.parse(errorText);
-        } catch {
-          errorData = { error_description: errorText };
-        }
+        // errorData is already populated from above
         
         console.error('[Auth0 Exchange] Token exchange failed:', {
           status: tokenResponse.status,
