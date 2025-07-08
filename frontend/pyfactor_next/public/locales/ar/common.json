@@ -58,6 +58,11 @@
   "heroImageAlt": "صورة توضيحية لإدارة الأعمال",
   "heroVideoTitle": "عرض توضيحي لبرنامج دوت",
   "searchLanguages": "بحث في اللغات...",
+  "navFeatures": "الميزات",
+  "navPricing": "الأسعار",
+  "navAbout": "حول",
+  "navContact": "اتصل بنا",
+  "navStatus": "الحالة",
   "footer": {
     "home": "الرئيسية",
     "features": "الميزات",

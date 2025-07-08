@@ -55,6 +55,11 @@
   "heroImageAlt": "Illustratie bedrijfsbeheer",
   "heroVideoTitle": "Dott Software Demo",
   "searchLanguages": "Zoek talen...",
+  "navFeatures": "Functies",
+  "navPricing": "Prijzen",
+  "navAbout": "Over ons",
+  "navContact": "Contact",
+  "navStatus": "Status",
   "footer": {
     "home": "Home",
     "features": "Functies",

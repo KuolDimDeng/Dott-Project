@@ -58,6 +58,11 @@
   "heroImageAlt": "Ilustração de Gestão Empresarial",
   "heroVideoTitle": "Demonstração do Software Dott",
   "searchLanguages": "Buscar idiomas...",
+  "navFeatures": "Recursos",
+  "navPricing": "Preços",
+  "navAbout": "Sobre",
+  "navContact": "Contato",
+  "navStatus": "Status",
   "footer": {
     "home": "Início",
     "features": "Recursos",

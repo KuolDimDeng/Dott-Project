@@ -58,6 +58,11 @@
   "heroImageAlt": "业务管理插图",
   "heroVideoTitle": "Dott软件演示",
   "searchLanguages": "搜索语言...",
+  "navFeatures": "功能",
+  "navPricing": "定价",
+  "navAbout": "关于我们",
+  "navContact": "联系我们",
+  "navStatus": "状态",
   "footer": {
     "home": "首页",
     "features": "功能",

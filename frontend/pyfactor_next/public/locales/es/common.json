@@ -58,6 +58,11 @@
   "heroImageAlt": "Ilustración de Gestión Empresarial",
   "heroVideoTitle": "Demostración del Software Dott",
   "searchLanguages": "Buscar idiomas...",
+  "navFeatures": "Características",
+  "navPricing": "Precios",
+  "navAbout": "Acerca de",
+  "navContact": "Contacto",
+  "navStatus": "Estado",
   "footer": {
     "home": "Inicio",
     "features": "Características",

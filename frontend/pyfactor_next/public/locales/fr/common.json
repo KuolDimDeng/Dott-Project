@@ -58,6 +58,11 @@
   "heroImageAlt": "Illustration de Gestion d'Entreprise",
   "heroVideoTitle": "Démo du Logiciel Dott",
   "searchLanguages": "Rechercher des langues...",
+  "navFeatures": "Fonctionnalités",
+  "navPricing": "Tarifs",
+  "navAbout": "À propos",
+  "navContact": "Contact",
+  "navStatus": "Statut",
   "footer": {
     "home": "Accueil",
     "features": "Fonctionnalités",

@@ -55,6 +55,11 @@
   "heroImageAlt": "Ilustrasi Manajemen Bisnis",
   "heroVideoTitle": "Demo Software Dott",
   "searchLanguages": "Cari bahasa...",
+  "navFeatures": "Fitur",
+  "navPricing": "Harga",
+  "navAbout": "Tentang",
+  "navContact": "Kontak",
+  "navStatus": "Status",
   "footer": {
     "home": "Beranda",
     "features": "Fitur",

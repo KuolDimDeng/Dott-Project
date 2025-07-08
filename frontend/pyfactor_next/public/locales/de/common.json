@@ -58,6 +58,11 @@
   "heroImageAlt": "Geschäftsmanagement-Illustration",
   "heroVideoTitle": "Dott Software Demo",
   "searchLanguages": "Sprachen suchen...",
+  "navFeatures": "Funktionen",
+  "navPricing": "Preise",
+  "navAbout": "Über uns",
+  "navContact": "Kontakt",
+  "navStatus": "Status",
   "footer": {
     "home": "Startseite",
     "features": "Funktionen",

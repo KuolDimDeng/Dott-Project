@@ -58,6 +58,11 @@
   "heroImageAlt": "Business Management Illustration",
   "heroVideoTitle": "Dott Software Demo",
   "searchLanguages": "Search languages...",
+  "navFeatures": "Features",
+  "navPricing": "Pricing", 
+  "navAbout": "About",
+  "navContact": "Contact",
+  "navStatus": "Status",
   "footer": {
     "home": "Home",
     "features": "Features", 
