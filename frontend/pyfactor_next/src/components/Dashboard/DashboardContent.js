@@ -226,6 +226,9 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     
     // Modal visibility
     showPOSSystem: false,
+    
+    // Payroll wizard visibility
+    showPayrollWizard: false,
   });
   
   // Destructure state for easier access
@@ -236,7 +239,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     products, services, showKPIDashboard, showMainDashboard, showHome,
     showInventoryItems, showInventoryManagement, showForm, formOption,
     showHRDashboard, showEmployeeManagement, showTimesheetManagement, hrSection, showMyAccount, showHelpCenter,
-    showCreateMenu, showCreateOptions, showBenefitsManagement, showPOSSystem
+    showCreateMenu, showCreateOptions, showBenefitsManagement, showPOSSystem, showPayrollWizard
   } = uiState;
   
   // Computed values - memoize these values
@@ -434,6 +437,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
       // Reset modal states
       showPOSSystem: false,
       showCreateMenu: false,
+      showPayrollWizard: false,
       isCreating: false,
       isEditing: false
     });
@@ -1348,6 +1352,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     showConnectBank: view === 'connect-bank',
     showInventoryItems: view === 'inventory-items',
     showPayrollManagement: view === 'payroll-management',
+    showPayrollWizard: view === 'payroll-wizard' || showPayrollWizard,
     handleCreateCustomer: () => console.log('Create customer flow'),
     showMyAccount,
     showHelpCenter,
@@ -1361,7 +1366,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     navigationKey, selectedSettingsOption,
     // We already have view listed above, but it's critical for all the conditional flags
     // that depend on it like showDownloadTransactions: view === 'download-transactions'
-    showBenefitsManagement, uiState]);
+    showBenefitsManagement, showPayrollWizard, uiState]);
 
   // Listen for menu navigation events
   useEffect(() => {
