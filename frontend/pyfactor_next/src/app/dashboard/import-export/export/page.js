@@ -85,19 +85,6 @@ const ExportPage = () => {
     });
 
     try {
-      // Simulate export progress
-      const progressInterval = setInterval(() => {
-        setExportProgress(prev => {
-          if (prev >= 100) {
-            clearInterval(progressInterval);
-            return 100;
-          }
-          return prev + 10;
-        });
-      }, 200);
-
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2500));
 
       // In production, this would call an API endpoint to generate the export
       const response = await fetch('/api/import-export/export-data', {
@@ -118,24 +105,40 @@ const ExportPage = () => {
         throw new Error('Export failed');
       }
 
-      // For demo, create a mock download
-      const mockData = {
-        filename: `dott_export_${dataTypes.join('_')}_${new Date().toISOString().split('T')[0]}.${selectedFormat === 'excel' ? 'xlsx' : selectedFormat}`,
-        size: '2.4 MB',
-        records: 1847
-      };
+      // Handle the response - it should be a file blob
+      const blob = await response.blob();
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      
+      // Set filename
+      const timestamp = new Date().toISOString().split('T')[0];
+      const filename = `dott_export_${dataTypes.join('_')}_${timestamp}.${selectedFormat === 'excel' ? 'xlsx' : selectedFormat}`;
+      a.download = filename;
+      
+      // Trigger download
+      document.body.appendChild(a);
+      a.click();
+      
+      // Cleanup
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
 
       captureEvent('export_completed', {
-        ...mockData,
+        filename,
         dataTypes,
         format: selectedFormat
       });
 
-      // Simulate download
-      alert(`Export complete!\n\nFile: ${mockData.filename}\nSize: ${mockData.size}\nRecords: ${mockData.records}\n\n(In production, file would download automatically)`);
+      // Show success message
+      alert('Export complete! Your download should start automatically.');
       
-      // Reset and go back
-      router.push('/dashboard/import-export');
+      // Reset and go back after a short delay
+      setTimeout(() => {
+        router.push('/dashboard/import-export');
+      }, 2000);
 
     } catch (error) {
       console.error('Export error:', error);

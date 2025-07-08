@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronRightIcon, ArrowUpTrayIcon, ArrowDownTrayIcon, CloudArrowUpIcon, DocumentTextIcon, InformationCircleIcon, ArrowsRightLeftIcon } from '@heroicons/react/24/outline';
+import { ChevronRightIcon, ArrowUpTrayIcon, ArrowDownTrayIcon, CloudArrowUpIcon, DocumentTextIcon, InformationCircleIcon, ArrowsUpDownIcon } from '@heroicons/react/24/outline';
 import { captureEvent } from '@/lib/posthog';
 import StandardSpinner from '@/components/ui/StandardSpinner';
 import { useSession } from '@/hooks/useSession-v2';
@@ -326,7 +326,7 @@ const ImportExport = () => {
     return (
       <div className="max-w-4xl mx-auto p-6">
         <h1 className="text-2xl font-bold text-black mb-4 flex items-center">
-          <ArrowsRightLeftIcon className="h-6 w-6 text-blue-600 mr-2" />
+          <ArrowsUpDownIcon className="h-6 w-6 text-blue-600 mr-2" />
           Import/Export Data
         </h1>
         <p className="text-gray-600 mb-8">

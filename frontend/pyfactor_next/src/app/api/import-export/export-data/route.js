@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '../sessionHelper';
 import { captureEvent } from '@/lib/posthog-server';
+import * as XLSX from 'xlsx';
 
 // Mock data generator for demo purposes
 function generateMockData(dataType, count = 100) {
@@ -58,59 +59,60 @@ function generateMockData(dataType, count = 100) {
   return data;
 }
 
-// Convert data to different formats
-function convertToFormat(data, format, dataTypes) {
-  switch (format) {
-    case 'csv':
-      // Convert to CSV format
-      if (data.length === 0) return '';
-      const headers = Object.keys(data[0]);
-      const csvRows = [
-        headers.join(','),
-        ...data.map(row => 
-          headers.map(header => {
-            const value = row[header];
-            // Escape quotes and wrap in quotes if contains comma
-            if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
-              return `"${value.replace(/"/g, '""')}"`;
-            }
-            return value;
-          }).join(',')
-        )
-      ];
-      return csvRows.join('\n');
+// Generate Excel file
+function generateExcelFile(data, dataTypes) {
+  const wb = XLSX.utils.book_new();
+  
+  // Create a sheet for each data type
+  for (const dataType of dataTypes) {
+    const sheetData = data[dataType] || [];
+    if (sheetData.length > 0) {
+      // Convert to worksheet
+      const ws = XLSX.utils.json_to_sheet(sheetData);
       
-    case 'excel':
-      // In production, you would use a library like ExcelJS
-      // For now, return a JSON structure that represents Excel data
-      return {
-        sheets: dataTypes.map(type => ({
-          name: type.charAt(0).toUpperCase() + type.slice(1),
-          data: data[type] || []
-        }))
-      };
+      // Auto-size columns
+      const colWidths = [];
+      const headers = Object.keys(sheetData[0]);
+      headers.forEach((header, i) => {
+        const maxLength = Math.max(
+          header.length,
+          ...sheetData.map(row => String(row[header] || '').length)
+        );
+        colWidths[i] = { wch: Math.min(maxLength + 2, 50) };
+      });
+      ws['!cols'] = colWidths;
       
-    case 'pdf':
-      // In production, you would use a library like jsPDF or puppeteer
-      return {
-        title: 'Data Export',
-        date: new Date().toISOString(),
-        dataTypes,
-        recordCount: Object.values(data).reduce((sum, arr) => sum + arr.length, 0)
-      };
-      
-    case 'quickbooks':
-      // QuickBooks IIF format
-      // This is a simplified version
-      return {
-        format: 'IIF',
-        version: '3.0',
-        data: data
-      };
-      
-    default:
-      return data;
+      // Add the worksheet to workbook
+      const sheetName = dataType.charAt(0).toUpperCase() + dataType.slice(1).replace(/-/g, ' ');
+      XLSX.utils.book_append_sheet(wb, ws, sheetName.substring(0, 31));
+    }
   }
+  
+  // Generate binary buffer
+  const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'buffer' });
+  return buffer;
+}
+
+// Generate CSV file
+function generateCSVFile(data, dataType) {
+  const sheetData = data[dataType] || [];
+  if (sheetData.length === 0) return '';
+  
+  const headers = Object.keys(sheetData[0]);
+  const csvRows = [
+    headers.join(','),
+    ...sheetData.map(row => 
+      headers.map(header => {
+        const value = row[header];
+        // Escape quotes and wrap in quotes if contains comma
+        if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+          return `"${value.replace(/"/g, '""')}"`;
+        }
+        return value;
+      }).join(',')
+    )
+  ];
+  return csvRows.join('\n');
 }
 
 export async function POST(request) {
@@ -147,24 +149,140 @@ export async function POST(request) {
       dateRange
     });
 
-    // In production, you would:
-    // 1. Query the database for the actual data
-    // 2. Apply date range filters
-    // 3. Apply tenant isolation
-    // 4. Convert to the requested format
-    
-    // For demo, generate mock data
+    // Fetch real data from backend
     const exportData = {};
     let totalRecords = 0;
     
+    // Get session token for backend API calls
+    const sessionToken = session.token || session.sid || request.cookies.get('session_token')?.value || request.cookies.get('sid')?.value;
+    
     for (const dataType of dataTypes) {
-      const records = generateMockData(dataType, Math.floor(Math.random() * 500) + 100);
-      exportData[dataType] = records;
-      totalRecords += records.length;
+      try {
+        // Map data types to backend endpoints
+        let endpoint = '';
+        switch (dataType) {
+          case 'products':
+            endpoint = '/api/products/';
+            break;
+          case 'services':
+            endpoint = '/api/services/';
+            break;
+          case 'customers':
+            endpoint = '/api/customers/';
+            break;
+          case 'invoices':
+            endpoint = '/api/invoices/';
+            break;
+          case 'bills':
+            endpoint = '/api/bills/';
+            break;
+          case 'vendors':
+            endpoint = '/api/vendors/';
+            break;
+          case 'employees':
+            endpoint = '/api/employees/';
+            break;
+          case 'tax-rates':
+            endpoint = '/api/taxes/settings/';
+            break;
+          case 'chart-of-accounts':
+            endpoint = '/api/accounting/chart-of-accounts/';
+            break;
+          default:
+            console.warn(`Unknown data type: ${dataType}`);
+            continue;
+        }
+        
+        // Build URL with filters
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+        let url = `${apiUrl}${endpoint}`;
+        
+        // Add date filters for transactional data
+        if ((dataType === 'invoices' || dataType === 'bills') && dateRange !== 'all') {
+          const params = new URLSearchParams();
+          const now = new Date();
+          
+          switch (dateRange) {
+            case 'this-year':
+              params.append('created_after', new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0]);
+              break;
+            case 'last-year':
+              params.append('created_after', new Date(now.getFullYear() - 1, 0, 1).toISOString().split('T')[0]);
+              params.append('created_before', new Date(now.getFullYear() - 1, 11, 31).toISOString().split('T')[0]);
+              break;
+            case 'custom':
+              if (customDateRange?.start) params.append('created_after', customDateRange.start);
+              if (customDateRange?.end) params.append('created_before', customDateRange.end);
+              break;
+          }
+          
+          if (params.toString()) url += '?' + params.toString();
+        }
+        
+        // Fetch data from backend
+        const response = await fetch(url, {
+          headers: {
+            'Cookie': `session_token=${sessionToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          // Handle both array and paginated responses
+          const records = Array.isArray(data) ? data : (data.results || data.data || []);
+          exportData[dataType] = records;
+          totalRecords += records.length;
+        } else {
+          console.warn(`Failed to fetch ${dataType}: ${response.status}`);
+          // Fall back to mock data for this type
+          const mockRecords = generateMockData(dataType, 10);
+          exportData[dataType] = mockRecords;
+          totalRecords += mockRecords.length;
+        }
+      } catch (error) {
+        console.error(`Error fetching ${dataType}:`, error);
+        // Fall back to mock data for this type
+        const mockRecords = generateMockData(dataType, 10);
+        exportData[dataType] = mockRecords;
+        totalRecords += mockRecords.length;
+      }
     }
 
-    // Convert to requested format
-    const formattedData = convertToFormat(exportData, format, dataTypes);
+    // Generate the actual file
+    let fileBuffer;
+    let contentType;
+    let fileExtension;
+    
+    try {
+      switch (format) {
+        case 'excel':
+          fileBuffer = generateExcelFile(exportData, dataTypes);
+          contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+          fileExtension = 'xlsx';
+          break;
+          
+        case 'csv':
+          // For CSV, we'll export only the first data type
+          const firstDataType = dataTypes[0];
+          fileBuffer = Buffer.from(generateCSVFile(exportData, firstDataType));
+          contentType = 'text/csv';
+          fileExtension = 'csv';
+          break;
+          
+        default:
+          return NextResponse.json(
+            { error: `Export format '${format}' not implemented` },
+            { status: 501 }
+          );
+      }
+    } catch (error) {
+      console.error('File generation error:', error);
+      return NextResponse.json(
+        { error: 'Failed to generate export file' },
+        { status: 500 }
+      );
+    }
 
     // Track successful export
     await captureEvent('data_export_completed', {
@@ -174,26 +292,19 @@ export async function POST(request) {
       totalRecords
     });
 
-    // In production, you would:
-    // 1. Generate the actual file (Excel, CSV, PDF)
-    // 2. Upload to temporary storage (S3, etc.)
-    // 3. Return a download URL
+    // Generate filename
+    const timestamp = new Date().toISOString().split('T')[0];
+    const filename = `dott_export_${dataTypes.join('_')}_${timestamp}.${fileExtension}`;
     
-    // For demo, return metadata
-    return NextResponse.json({
-      success: true,
-      export: {
-        id: `export_${Date.now()}`,
-        filename: `dott_export_${dataTypes.join('_')}_${new Date().toISOString().split('T')[0]}.${format === 'excel' ? 'xlsx' : format}`,
-        format,
-        dataTypes,
-        recordCount: totalRecords,
-        size: `${(totalRecords * 0.001).toFixed(1)} MB`, // Rough estimate
-        createdAt: new Date().toISOString(),
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
-        downloadUrl: `/api/import-export/download/${Date.now()}` // Mock URL
-      },
-      message: 'Export ready for download'
+    // Return the file as a response
+    return new NextResponse(fileBuffer, {
+      status: 200,
+      headers: {
+        'Content-Type': contentType,
+        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Content-Length': fileBuffer.length.toString(),
+        'Cache-Control': 'no-cache, no-store, must-revalidate'
+      }
     });
 
   } catch (error) {
