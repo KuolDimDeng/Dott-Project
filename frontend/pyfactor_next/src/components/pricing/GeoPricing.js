@@ -1,10 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { CheckIcon } from '@heroicons/react/24/solid';
 
+// Helper function to format price in local currency
+function formatLocalPrice(usdPrice, exchangeRate) {
+  if (!exchangeRate || !exchangeRate.rate || !usdPrice) return '';
+  
+  // Extract numeric value from price string (e.g., "$15.00" -> 15)
+  const numericPrice = parseFloat(usdPrice.replace(/[^0-9.-]+/g, ''));
+  
+  // Calculate local price
+  const localPrice = numericPrice * exchangeRate.rate;
+  
+  // Format based on currency preferences
+  const { symbol, decimals } = exchangeRate.format;
+  const formattedPrice = decimals === 0 
+    ? Math.round(localPrice).toLocaleString()
+    : localPrice.toFixed(decimals).toLocaleString();
+  
+  return `${symbol}${formattedPrice}`;
+}
+
 export default function GeoPricing() {
   const [pricing, setPricing] = useState(null);
   const [loading, setLoading] = useState(true);
   const [billingCycle, setBillingCycle] = useState('monthly');
+  const [exchangeRate, setExchangeRate] = useState(null);
+  const [userCountry, setUserCountry] = useState('US');
 
   useEffect(() => {
     fetchPricing();
@@ -24,7 +45,31 @@ export default function GeoPricing() {
       const response = await fetch(apiUrl);
       const data = await response.json();
       console.log('💰 GeoPricing - API Response:', data);
+      console.log('💰 GeoPricing - Country detected:', data.country_code || countryOverride || 'US');
       setPricing(data);
+      
+      // Store the country for exchange rate
+      const detectedCountry = countryOverride || data.country_code || 'US';
+      setUserCountry(detectedCountry);
+      
+      // Fetch exchange rate for the user's country
+      if (detectedCountry !== 'US') {
+        try {
+          console.log(`💱 [GeoPricing] Fetching exchange rate for ${detectedCountry}`);
+          const rateResponse = await fetch(`/api/exchange-rates?country=${detectedCountry}`);
+          console.log(`💱 [GeoPricing] Exchange rate API status: ${rateResponse.status}`);
+          
+          if (rateResponse.ok) {
+            const rateData = await rateResponse.json();
+            console.log('💱 [GeoPricing] Exchange rate data:', rateData);
+            if (rateData.success) {
+              setExchangeRate(rateData);
+            }
+          }
+        } catch (error) {
+          console.error('💱 [GeoPricing] Failed to fetch exchange rate:', error);
+        }
+      }
     } catch (error) {
       console.error('Error fetching pricing:', error);
       // Set default pricing
@@ -239,6 +284,12 @@ export default function GeoPricing() {
                     </span>
                   </p>
                 )}
+                {/* Exchange Rate Display for paid plans */}
+                {plan.name !== 'Free' && exchangeRate && exchangeRate.currency !== 'USD' && (
+                  <p className="text-lg text-gray-600 mt-2">
+                    ({formatLocalPrice(plan.price[billingCycle], exchangeRate)})*
+                  </p>
+                )}
               </div>
 
               <ul className="mt-8 space-y-4">
@@ -288,6 +339,29 @@ export default function GeoPricing() {
             </p>
           )}
         </div>
+        
+        {/* Exchange Rate Disclaimer */}
+        {exchangeRate && exchangeRate.currency !== 'USD' && (
+          <div className="mt-8 text-center">
+            <p className="text-sm text-gray-500">
+              * {exchangeRate.disclaimer || 'Exchange rate is estimated and may vary. Actual rates depend on payment provider.'}
+            </p>
+            {exchangeRate.source && (
+              <p className="text-xs text-gray-400 mt-1">
+                Source: {exchangeRate.source}
+              </p>
+            )}
+          </div>
+        )}
+        
+        {/* Payment Methods Note - Only for Kenya */}
+        {userCountry === 'KE' && (
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-600">
+              💳 Pay with credit card (USD) or M-Pesa (KES)
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

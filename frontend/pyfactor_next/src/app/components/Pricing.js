@@ -134,18 +134,29 @@ export default function Pricing() {
         const isDeveloping = await getCacheValue('user_is_developing_country') || false;
         
         // Fetch exchange rate for the user's country
+        console.log(`💱 [Pricing] Checking exchange rate for country: ${country}`);
         if (country !== 'US') {
           try {
+            console.log(`💱 [Pricing] Fetching exchange rate from /api/exchange-rates?country=${country}`);
             const rateResponse = await fetch(`/api/exchange-rates?country=${country}`);
+            console.log(`💱 [Pricing] Exchange rate API response status: ${rateResponse.status}`);
             if (rateResponse.ok) {
               const rateData = await rateResponse.json();
+              console.log('💱 [Pricing] Exchange rate data:', rateData);
               if (rateData.success) {
                 setExchangeRate(rateData);
+                console.log(`💱 [Pricing] Exchange rate set: ${rateData.currency} @ ${rateData.rate}`);
+              } else {
+                console.warn('💱 [Pricing] Exchange rate API returned success: false', rateData);
               }
+            } else {
+              console.warn(`💱 [Pricing] Exchange rate API returned error: ${rateResponse.status}`);
             }
           } catch (error) {
-            console.log('Failed to fetch exchange rate:', error);
+            console.error('💱 [Pricing] Failed to fetch exchange rate:', error);
           }
+        } else {
+          console.log('💱 [Pricing] Country is US, no exchange rate needed');
         }
         
         // Special check for USA - should NEVER have discount
@@ -166,6 +177,7 @@ export default function Pricing() {
         setDynamicPricing(pricing);
         setUserCountry(country);
         setHasDiscount(shouldHaveDiscount);
+        console.log(`💱 [Pricing] Final state - Country: ${country}, Has Discount: ${shouldHaveDiscount}, Exchange Rate:`, exchangeRate);
       } catch (error) {
         console.error('❌ Error loading dynamic pricing:', error);
       }
@@ -173,6 +185,13 @@ export default function Pricing() {
     
     loadDynamicPricing();
   }, []);
+  
+  // Log when exchange rate changes
+  useEffect(() => {
+    if (exchangeRate) {
+      console.log('💱 [Pricing] Exchange rate updated:', exchangeRate);
+    }
+  }, [exchangeRate]);
 
   const plans = [
     {

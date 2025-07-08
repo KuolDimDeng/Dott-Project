@@ -990,7 +990,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
       }
       
       // Handle Payroll views
-      if (view && view.startsWith('payroll-') || view === 'run-payroll' || view === 'payroll-transactions' || view === 'payroll-reports' || showPayrollManagement || showPayrollDashboard || showPayrollTransactions || showPayrollReport || showPayrollWizard) {
+      if (view && view.startsWith('payroll-') || view === 'run-payroll' || view === 'payroll-transactions' || view === 'payroll-reports' || showPayrollManagement || showPayrollDashboard || showPayrollTransactions || showPayrollReport) {
         console.log('[RenderMainContent] Rendering payroll view:', view);
         
         let PayrollComponent = null;
@@ -1062,16 +1062,6 @@ const RenderMainContent = React.memo(function RenderMainContent({
             <ContentWrapperWithKey>
               <SuspenseWithCleanup componentKey={`payroll-management-${navigationKey || 'default'}`}>
                 <PayrollManagement />
-              </SuspenseWithCleanup>
-            </ContentWrapperWithKey>
-          );
-        }
-        
-        if (showPayrollWizard) {
-          return (
-            <ContentWrapperWithKey>
-              <SuspenseWithCleanup componentKey={`payroll-wizard-${navigationKey || 'default'}`}>
-                <PayrollWizard />
               </SuspenseWithCleanup>
             </ContentWrapperWithKey>
           );

@@ -71,6 +71,8 @@ export async function GET(request) {
   const targetCurrency = countryCurrencyMap[country] || 'USD';
   const baseCurrency = searchParams.get('base') || 'USD';
   
+  console.log(`🌍 [ExchangeRate API] Request received - Country: ${country}, Target Currency: ${targetCurrency}, Base: ${baseCurrency}`);
+  
   try {
     // If requesting USD, no conversion needed
     if (targetCurrency === 'USD' && baseCurrency === 'USD') {
@@ -85,62 +87,81 @@ export async function GET(request) {
 
     // Try Wise API first (public endpoint)
     try {
-      const wiseResponse = await fetch(
-        `https://api.wise.com/v1/rates?source=${baseCurrency}&target=${targetCurrency}`,
-        {
-          headers: {
-            'Accept': 'application/json',
-          }
+      const wiseUrl = `https://api.wise.com/v1/rates?source=${baseCurrency}&target=${targetCurrency}`;
+      console.log(`🌍 [ExchangeRate API] Calling Wise API: ${wiseUrl}`);
+      
+      const wiseResponse = await fetch(wiseUrl, {
+        headers: {
+          'Accept': 'application/json',
         }
-      );
+      });
+      
+      console.log(`🌍 [ExchangeRate API] Wise API response status: ${wiseResponse.status}`);
 
       if (wiseResponse.ok) {
         const wiseData = await wiseResponse.json();
+        console.log('🌍 [ExchangeRate API] Wise API data:', wiseData);
         const rate = wiseData[0]?.rate || 1;
         
-        return NextResponse.json({
+        const result = {
           success: true,
           rate: rate,
           currency: targetCurrency,
           source: 'Wise',
           format: currencyFormats[targetCurrency] || { symbol: targetCurrency, decimals: 2 },
           disclaimer: 'Exchange rate is estimated and may vary. Source: Wise.'
-        });
+        };
+        
+        console.log('🌍 [ExchangeRate API] Returning Wise result:', result);
+        return NextResponse.json(result);
+      } else {
+        console.warn(`🌍 [ExchangeRate API] Wise API failed with status: ${wiseResponse.status}`);
       }
     } catch (wiseError) {
-      console.log('Wise API failed, falling back to exchangerate-api');
+      console.error('🌍 [ExchangeRate API] Wise API error:', wiseError.message);
+      console.log('🌍 [ExchangeRate API] Falling back to exchangerate-api');
     }
 
     // Fallback to exchangerate-api.com
-    const response = await fetch(
-      `https://v6.exchangerate-api.com/v6/41fc0bfadd338697395e482f/latest/${baseCurrency}`
-    );
+    const fallbackUrl = `https://v6.exchangerate-api.com/v6/41fc0bfadd338697395e482f/latest/${baseCurrency}`;
+    console.log(`🌍 [ExchangeRate API] Calling fallback API: ${fallbackUrl}`);
+    
+    const response = await fetch(fallbackUrl);
+    console.log(`🌍 [ExchangeRate API] Fallback API response status: ${response.status}`);
     
     if (!response.ok) {
       throw new Error(`Exchange rate API error: ${response.status}`);
     }
     
     const data = await response.json();
-    const rate = data.conversion_rates[targetCurrency] || 1;
+    console.log(`🌍 [ExchangeRate API] Fallback API conversion rates available:`, Object.keys(data.conversion_rates || {}).length);
     
-    return NextResponse.json({
+    const rate = data.conversion_rates[targetCurrency] || 1;
+    console.log(`🌍 [ExchangeRate API] Rate for ${targetCurrency}: ${rate}`);
+    
+    const result = {
       success: true,
       rate: rate,
       currency: targetCurrency,
       source: 'ExchangeRate-API',
       format: currencyFormats[targetCurrency] || { symbol: targetCurrency, decimals: 2 },
       disclaimer: 'Exchange rate is estimated and may vary. Actual rates depend on payment provider.'
-    });
+    };
+    
+    console.log('🌍 [ExchangeRate API] Returning fallback result:', result);
+    return NextResponse.json(result);
     
   } catch (error) {
-    console.error('Error fetching exchange rates:', error);
-    return NextResponse.json({
+    console.error('🌍 [ExchangeRate API] Critical error:', error);
+    const errorResult = {
       success: false,
       rate: 1,
       currency: targetCurrency,
       source: 'Default',
       format: { symbol: targetCurrency, decimals: 2 },
       error: 'Unable to fetch exchange rate'
-    });
+    };
+    console.log('🌍 [ExchangeRate API] Returning error result:', errorResult);
+    return NextResponse.json(errorResult);
   }
 }
