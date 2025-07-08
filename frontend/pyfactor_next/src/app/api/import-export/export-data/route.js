@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getSession } from '../sessionHelper';
 import { captureEvent } from '@/lib/posthog-server';
 
 // Mock data generator for demo purposes
@@ -117,7 +116,7 @@ function convertToFormat(data, format, dataTypes) {
 export async function POST(request) {
   try {
     // Check authentication
-    const session = await getServerSession(authOptions);
+    const session = await getSession();
     if (!session?.user?.tenant_id) {
       return NextResponse.json(
         { error: 'Unauthorized' },

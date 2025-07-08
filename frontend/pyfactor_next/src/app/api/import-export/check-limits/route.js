@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getSession } from '../sessionHelper';
 import * as Sentry from '@sentry/nextjs';
 import { logger } from '@/utils/logger';
 
@@ -30,9 +29,10 @@ const IMPORT_LIMITS = {
 const importUsageCache = new Map();
 
 function getUserPlan(user) {
-  // This should check the actual subscription plan from your database
-  // For now, return based on user metadata or default to FREE
-  return user.subscriptionPlan || 'FREE';
+  // Check subscription plan from user data
+  const plan = user.subscription_plan || user.subscriptionPlan || 'free';
+  // Convert to uppercase for consistency
+  return plan.toUpperCase();
 }
 
 function getUserImportKey(userId) {
@@ -46,7 +46,7 @@ export async function GET(request) {
     { name: 'GET /api/import-export/check-limits', op: 'http.server' },
     async () => {
       try {
-        const session = await getServerSession(authOptions);
+        const session = await getSession();
         if (!session?.user) {
           logger.warn('Unauthorized access attempt to check-limits');
           return NextResponse.json(
@@ -111,7 +111,7 @@ export async function GET(request) {
 // Increment usage when import is performed
 export async function POST(request) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getSession();
     if (!session?.user) {
       return NextResponse.json(
         { error: 'Unauthorized' },

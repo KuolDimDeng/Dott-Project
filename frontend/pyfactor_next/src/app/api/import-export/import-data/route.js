@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { getSession } from '../sessionHelper';
 import { captureEvent } from '@/lib/posthog-server';
 
 // This is a placeholder for the actual database import logic
@@ -60,7 +59,7 @@ async function importToDatabase(dataType, records, mappings, tenantId) {
 export async function POST(request) {
   try {
     // Check authentication
-    const session = await getServerSession(authOptions);
+    const session = await getSession();
     if (!session?.user?.tenant_id) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -139,7 +138,7 @@ export async function POST(request) {
 // GET endpoint to check import status
 export async function GET(request) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getSession();
     if (!session?.user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
