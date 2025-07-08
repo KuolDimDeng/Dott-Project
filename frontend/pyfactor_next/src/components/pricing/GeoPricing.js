@@ -17,7 +17,7 @@ function formatLocalPrice(usdPrice, exchangeRate) {
     ? Math.round(localPrice).toLocaleString()
     : localPrice.toFixed(decimals).toLocaleString();
   
-  return `${symbol}${formattedPrice}`;
+  return `${symbol} ${formattedPrice}`;
 }
 
 export default function GeoPricing() {
@@ -309,7 +309,7 @@ export default function GeoPricing() {
                 )}
                 {/* Exchange Rate Display for paid plans */}
                 {plan.name !== 'Free' && exchangeRate && exchangeRate.currency !== 'USD' && (
-                  <p className="text-xl font-semibold text-blue-600 mt-2">
+                  <p className="text-xl font-semibold text-green-600 mt-2">
                     ({formatLocalPrice(plan.price[billingCycle], exchangeRate)})*
                   </p>
                 )}

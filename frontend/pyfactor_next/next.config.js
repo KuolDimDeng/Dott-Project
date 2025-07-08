@@ -67,6 +67,12 @@ const nextConfig = {
     AUTH0_CLIENT_SECRET: process.env.AUTH0_CLIENT_SECRET,
     AUTH0_DOMAIN: process.env.AUTH0_DOMAIN,
     AUTH0_SECRET: process.env.AUTH0_SECRET,
+    // Claude API configuration for tax suggestions
+    CLAUDE_API_KEY: process.env.CLAUDE_API_KEY,
+    CLAUDE_TAX_API_KEY: process.env.CLAUDE_TAX_API_KEY,
+    CLAUDE_API_MODEL: process.env.CLAUDE_API_MODEL,
+    CLAUDE_SMART_INSIGHTS_API_KEY: process.env.CLAUDE_SMART_INSIGHTS_API_KEY,
+    CLAUDE_SMART_INSIGHTS_MODEL: process.env.CLAUDE_SMART_INSIGHTS_MODEL,
   },
   
   // Page extensions
