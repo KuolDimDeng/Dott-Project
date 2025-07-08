@@ -2,6 +2,53 @@ import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
 import { validateTenantAccess } from '@/utils/auth.server';
 
+export async function GET(request, { params }) {
+  try {
+    // Validate tenant access
+    const tenantValidation = await validateTenantAccess(request);
+    if (!tenantValidation.success) {
+      return NextResponse.json({ error: tenantValidation.error }, { status: 401 });
+    }
+    
+    const { vendorId } = params;
+    
+    if (!vendorId) {
+      return NextResponse.json(
+        { error: 'Vendor ID is required' },
+        { status: 400 }
+      );
+    }
+    
+    // Call backend get endpoint
+    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/purchases/api/vendors/${vendorId}/`;
+    const response = await fetch(backendUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': request.headers.get('Authorization'),
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      return NextResponse.json(
+        { error: error.error || 'Failed to fetch vendor' },
+        { status: response.status }
+      );
+    }
+    
+    const result = await response.json();
+    return NextResponse.json(result);
+    
+  } catch (error) {
+    logger.error('Error fetching vendor:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch vendor' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(request, { params }) {
   try {
     // Validate tenant access
@@ -44,6 +91,55 @@ export async function DELETE(request, { params }) {
     logger.error('Error deleting vendor:', error);
     return NextResponse.json(
       { error: 'Failed to delete vendor' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request, { params }) {
+  try {
+    // Validate tenant access
+    const tenantValidation = await validateTenantAccess(request);
+    if (!tenantValidation.success) {
+      return NextResponse.json({ error: tenantValidation.error }, { status: 401 });
+    }
+    
+    const { vendorId } = params;
+    const data = await request.json();
+    
+    if (!vendorId) {
+      return NextResponse.json(
+        { error: 'Vendor ID is required' },
+        { status: 400 }
+      );
+    }
+    
+    // Call backend update endpoint
+    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/purchases/api/vendors/${vendorId}/`;
+    const response = await fetch(backendUrl, {
+      method: 'PUT',
+      headers: {
+        'Authorization': request.headers.get('Authorization'),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      return NextResponse.json(
+        { error: error.error || 'Failed to update vendor' },
+        { status: response.status }
+      );
+    }
+    
+    const result = await response.json();
+    return NextResponse.json(result);
+    
+  } catch (error) {
+    logger.error('Error updating vendor:', error);
+    return NextResponse.json(
+      { error: 'Failed to update vendor' },
       { status: 500 }
     );
   }

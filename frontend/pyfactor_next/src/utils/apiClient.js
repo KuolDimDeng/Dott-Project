@@ -1041,24 +1041,90 @@ export const taxApi = {
 // Vendor related API methods - Using local proxy pattern (industry standard)
 export const vendorApi = {
   async getAll(params = {}) {
-    // Use the existing supplierApi since vendors and suppliers are the same
-    return supplierApi.getAll(params);
+    const response = await fetch('/api/vendors', {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
+    }
+    
+    return response.json();
   },
   
   async getById(id, params = {}) {
-    return supplierApi.getById(id, params);
+    const response = await fetch(`/api/vendors/${id}`, {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
+    }
+    
+    return response.json();
   },
   
   async create(data, params = {}) {
-    return supplierApi.create(data, params);
+    const response = await fetch('/api/vendors', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
+    }
+    
+    return response.json();
   },
   
   async update(id, data, params = {}) {
-    return supplierApi.update(id, data, params);
+    const response = await fetch(`/api/vendors/${id}`, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
+    }
+    
+    return response.json();
   },
   
   async delete(id, params = {}) {
-    return supplierApi.delete(id, params);
+    const response = await fetch(`/api/vendors/${id}`, {
+      method: 'DELETE',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
+    }
+    
+    return response.json();
   },
   
   async toggleStatus(id, params = {}) {

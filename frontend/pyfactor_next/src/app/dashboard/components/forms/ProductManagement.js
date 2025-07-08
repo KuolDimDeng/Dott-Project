@@ -453,6 +453,8 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
   const [showCustomerDetails, setShowCustomerDetails] = useState(false);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [detailsError, setDetailsError] = useState(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState(null);
   const [productData, setProductData] = useState({
     name: '',
     description: '',
@@ -1024,47 +1026,48 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
   }, []);
 
   // Handle product deletion
-  const handleDeleteProduct = useCallback(async (productId) => {
-    if (!productId || !window.confirm('Are you sure you want to delete this product?')) {
-      return;
-    }
+  const handleDeleteProduct = useCallback(async () => {
+    if (!productToDelete?.id) return;
     
     try {
-      setIsLoading(true);
-      console.log(`[ProductManagement] Attempting to delete product with ID: ${productId}`);
+      setIsSubmitting(true);
+      console.log(`[ProductManagement] Attempting to delete product with ID: ${productToDelete.id}`);
       
       const tenantId = await getUserTenantId();
       
       // Use RLS for deletion with tenant ID in headers
-      await axios.delete(`/api/inventory/products/${productId}`, {
+      await axios.delete(`/api/inventory/products/${productToDelete.id}`, {
         headers: {
           'x-tenant-id': tenantId
         }
       });
       
-      console.log(`[ProductManagement] Successfully deleted product with ID: ${productId}`);
-      setSuccessMessage('Product deleted successfully');
+      console.log(`[ProductManagement] Successfully deleted product with ID: ${productToDelete.id}`);
+      toast.success('Product deleted successfully');
       
       // Track product deletion
       captureEvent('product_deleted', {
-        product_id: productId
+        product_id: productToDelete.id,
+        product_name: productToDelete.name
       });
       
-      // Refresh the product list
-      fetchProducts();
+      // Update products list without refetching
+      setProducts(prev => prev.filter(prod => prod.id !== productToDelete.id));
+      setDeleteDialogOpen(false);
+      setProductToDelete(null);
       
-      // If the deleted product was selected, clear selection
-      if (selectedProduct && selectedProduct.id === productId) {
+      // If deleted product was selected, clear selection
+      if (selectedProduct && selectedProduct.id === productToDelete.id) {
         setSelectedProduct(null);
         setActiveTab(2); // Go back to list view
       }
     } catch (error) {
       console.error('[ProductManagement] Error deleting product:', error);
-      setErrorMessage(`Failed to delete product: ${error.message || 'Unknown error'}`);
+      toast.error(error.response?.data?.error || 'Failed to delete product');
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
-  }, [fetchProducts, selectedProduct]);
+  }, [productToDelete, selectedProduct]);
 
   // Create a FallbackComponent to show when the database has issues
   const DatabaseErrorFallback = () => (
@@ -2013,7 +2016,8 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
               className="px-2 py-1 text-xs font-medium rounded border border-red-700 text-red-700 hover:bg-red-50"
               onClick={(e) => {
                 e.stopPropagation();
-                handleDeleteProduct(row.original.id);
+                setProductToDelete(row.original);
+                setDeleteDialogOpen(true);
               }}
             >
               Delete
@@ -2277,7 +2281,10 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                   </svg>
                 </button>
                 <button
-                  onClick={() => handleDeleteProduct(product)}
+                  onClick={() => {
+                    setProductToDelete(product);
+                    setDeleteDialogOpen(true);
+                  }}
                   className="text-red-600 hover:text-red-900 mr-3"
                 >
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -2875,6 +2882,86 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
           }}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Transition.Root show={deleteDialogOpen} as={Fragment}>
+        <Dialog 
+          as="div" 
+          className="relative z-50" 
+          onClose={setDeleteDialogOpen}
+        >
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-200"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+          </Transition.Child>
+
+          <div className="fixed inset-0 z-10 overflow-y-auto">
+            <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+              <Transition.Child
+                as={Fragment}
+                enter="ease-out duration-300"
+                enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                enterTo="opacity-100 translate-y-0 sm:scale-100"
+                leave="ease-in duration-200"
+                leaveFrom="opacity-100 translate-y-0 sm:scale-100"
+                leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+              >
+                <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+                  <div className="sm:flex sm:items-start">
+                    <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                      <svg className="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                    </div>
+                    <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+                      <Dialog.Title as="h3" className="text-lg font-semibold leading-6 text-gray-900">
+                        Delete Product
+                      </Dialog.Title>
+                      <div className="mt-2">
+                        <p className="text-sm text-gray-500">
+                          Are you sure you want to delete "{productToDelete?.name}"? This action cannot be undone.
+                        </p>
+                        {productToDelete?.stockQuantity > 0 && (
+                          <p className="mt-2 text-sm text-yellow-600">
+                            <strong>Warning:</strong> This product has {productToDelete.stockQuantity} items in stock.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                    <button
+                      type="button"
+                      className="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto"
+                      onClick={handleDeleteProduct}
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? 'Deleting...' : 'Delete'}
+                    </button>
+                    <button
+                      type="button"
+                      className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
+                      onClick={() => {
+                        setDeleteDialogOpen(false);
+                        setProductToDelete(null);
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </Dialog.Panel>
+              </Transition.Child>
+            </div>
+          </div>
+        </Dialog>
+      </Transition.Root>
     </div>
   );
 };

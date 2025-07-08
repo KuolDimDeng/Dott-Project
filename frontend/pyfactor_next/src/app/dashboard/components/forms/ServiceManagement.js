@@ -8,6 +8,8 @@ import { getCacheValue } from '@/utils/appCache';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
 import { WrenchScrewdriverIcon } from '@heroicons/react/24/outline';
+import DeleteConfirmationDialog from '@/components/ui/DeleteConfirmationDialog';
+import { canDeleteItem } from '@/utils/accountingRestrictions';
 
 import StandardSpinner, { ButtonSpinner, CenteredSpinner } from '@/components/ui/StandardSpinner';
 // Tooltip component for field help
@@ -60,6 +62,7 @@ const ServiceManagement = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [serviceToDelete, setServiceToDelete] = useState(null);
   const [serviceError, setServiceError] = useState(null);
+  const [isDeletingService, setIsDeletingService] = useState(false);
   
   // Refs
   const isMounted = useRef(true);
@@ -297,6 +300,7 @@ const ServiceManagement = () => {
     
     console.log('[ServiceManagement] Deleting service:', serviceToDelete.id);
     
+    setIsDeletingService(true);
     try {
       const response = await fetch(`/api/inventory/services?id=${serviceToDelete.id}`, {
         method: 'DELETE',
@@ -309,7 +313,7 @@ const ServiceManagement = () => {
       
       console.log('[ServiceManagement] Service deleted successfully');
       
-      toast.success('Service deleted successfully!');
+      toast.success('Service deleted successfully and archived in audit trail!');
       setServices(services.filter(s => s.id !== serviceToDelete.id));
       setDeleteDialogOpen(false);
       setServiceToDelete(null);
@@ -321,6 +325,8 @@ const ServiceManagement = () => {
     } catch (error) {
       console.error('[ServiceManagement] Error deleting service:', error);
       toast.error('Failed to delete service.');
+    } finally {
+      setIsDeletingService(false);
     }
   };
 
@@ -812,73 +818,30 @@ const ServiceManagement = () => {
   };
 
   // Delete confirmation dialog
-  const renderDeleteDialog = () => (
-    <Transition.Root show={deleteDialogOpen} as={Fragment}>
-      <div className="fixed inset-0 z-50 overflow-y-auto">
-        <div className="flex min-h-screen items-center justify-center p-4 text-center sm:items-center sm:p-0">
-          <Transition.Child
-            as={Fragment}
-            enter="ease-out duration-300"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="ease-in duration-200"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={() => setDeleteDialogOpen(false)} />
-          </Transition.Child>
-
-          <Transition.Child
-            as={Fragment}
-            enter="ease-out duration-300"
-            enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-            enterTo="opacity-100 translate-y-0 sm:scale-100"
-            leave="ease-in duration-200"
-            leaveFrom="opacity-100 translate-y-0 sm:scale-100"
-            leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-          >
-            <div className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
-              <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
-                <div className="sm:flex sm:items-start">
-                  <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-                    <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c0 1.378 1.068 2.508 2.428 2.574 1.351.066 2.7.103 4.051.103 2.787 0 5.532-.138 8.206-.361M12 9c-2.549 0-5.058.168-7.51.486M12 9l3.75-3.75M12 9l-3.75-3.75m9.344 10.301c1.36-.066 2.428-1.196 2.428-2.574V5.25m0 8.526c0 1.378-1.068 2.508-2.428 2.574M19.594 13.776V5.25m0 0a2.25 2.25 0 00-2.25-2.25h-10.5a2.25 2.25 0 00-2.25 2.25v8.526c0 1.378 1.068 2.508 2.428 2.574" />
-                    </svg>
-                  </div>
-                  <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
-                    <h3 className="text-base font-semibold leading-6 text-gray-900">
-                      Delete Service
-                    </h3>
-                    <div className="mt-2">
-                      <p className="text-sm text-gray-500">
-                        Are you sure you want to delete <span className="font-medium">{serviceToDelete?.name}</span>? This action cannot be undone.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-                <button
-                  type="button"
-                  className="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto"
-                  onClick={handleDeleteService}
-                >
-                  Delete
-                </button>
-                <button
-                  type="button"
-                  className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
-                  onClick={() => setDeleteDialogOpen(false)}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </Transition.Child>
-        </div>
-      </div>
-    </Transition.Root>
-  );
+  const renderDeleteDialog = () => {
+    if (!serviceToDelete) return null;
+    
+    const deletionCheck = canDeleteItem('services', serviceToDelete);
+    
+    return (
+      <DeleteConfirmationDialog
+        isOpen={deleteDialogOpen}
+        onClose={() => {
+          setDeleteDialogOpen(false);
+          setServiceToDelete(null);
+        }}
+        onConfirm={handleDeleteService}
+        itemName={serviceToDelete.name}
+        itemType="Service"
+        isDeleting={isDeletingService}
+        customWarning={deletionCheck.warning}
+        accountingRestriction={!deletionCheck.allowed ? deletionCheck.message : null}
+        relatedRecordsMessage={deletionCheck.checkRelated ? 
+          `This will also delete related: ${deletionCheck.checkRelated.join(', ')}` : 
+          null}
+      />
+    );
+  };
 
   return (
     <div className="p-6 bg-gray-50">

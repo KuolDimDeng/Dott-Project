@@ -177,13 +177,30 @@ const VendorManagement = ({ newVendor: isNewVendor = false }) => {
     setError(null);
 
     try {
+      // Map frontend field names to backend field names
+      const vendorData = {
+        vendor_name: formData.name,
+        contact_person: formData.contact_person,
+        email: formData.email,
+        phone: formData.phone,
+        street: formData.street,
+        city: formData.city,
+        state: formData.state,
+        postcode: formData.postcode,
+        country: formData.country,
+        tax_id: formData.tax_id,
+        payment_terms: formData.payment_terms,
+        notes: formData.notes,
+        is_active: formData.is_active
+      };
+
       if (selectedVendor && tabValue === 0) {
         // Update existing vendor
-        await vendorApi.update(selectedVendor.id, formData);
+        await vendorApi.update(selectedVendor.id, vendorData);
         logger.info('[VendorManagement] Vendor updated successfully');
       } else {
         // Create new vendor
-        await vendorApi.create(formData);
+        await vendorApi.create(vendorData);
         logger.info('[VendorManagement] Vendor created successfully');
       }
       
@@ -200,7 +217,7 @@ const VendorManagement = ({ newVendor: isNewVendor = false }) => {
   const handleEdit = (vendor) => {
     setSelectedVendor(vendor);
     setFormData({
-      name: vendor.name || '',
+      name: vendor.vendor_name || vendor.name || '',
       contact_person: vendor.contact_person || '',
       email: vendor.email || '',
       phone: vendor.phone || '',
@@ -260,9 +277,9 @@ const VendorManagement = ({ newVendor: isNewVendor = false }) => {
   };
 
   const filteredVendors = vendors.filter(vendor =>
-    vendor.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    vendor.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    vendor.contact_person?.toLowerCase().includes(searchTerm.toLowerCase())
+    (vendor.vendor_name || vendor.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (vendor.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (vendor.contact_person || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const formatCurrency = (amount) => {
@@ -564,7 +581,7 @@ const VendorManagement = ({ newVendor: isNewVendor = false }) => {
           {tabValue === 1 && selectedVendor && (
             <div className="space-y-6">
               <div className="bg-gray-50 p-6 rounded-lg">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">{selectedVendor.name}</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">{selectedVendor.vendor_name || selectedVendor.name}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm font-medium text-gray-500">Contact Person</p>
@@ -689,7 +706,7 @@ const VendorManagement = ({ newVendor: isNewVendor = false }) => {
                       {filteredVendors.map((vendor) => (
                         <tr key={vendor.id} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {vendor.name}
+                            {vendor.vendor_name || vendor.name}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {vendor.contact_person || 'N/A'}
@@ -760,7 +777,7 @@ const VendorManagement = ({ newVendor: isNewVendor = false }) => {
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Delete Vendor</h3>
             <p className="text-sm text-gray-500 mb-4">
-              Are you sure you want to delete "{vendorToDelete?.name}"? 
+              Are you sure you want to delete "{vendorToDelete?.vendor_name || vendorToDelete?.name}"? 
             </p>
             <p className="text-sm text-red-600 font-medium mb-4">
               Warning: This will permanently delete all related bills, purchase orders, procurements, and purchases. This action cannot be undone.

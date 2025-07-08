@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';\nimport { toast } from 'react-hot-toast';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
 import { 
@@ -13,6 +13,8 @@ import {
   MagnifyingGlassIcon 
 } from '@heroicons/react/24/outline';
 import { billApi, vendorApi } from '@/utils/apiClient';
+import DeleteConfirmationDialog from '@/components/ui/DeleteConfirmationDialog';
+import { canDeleteItem } from '@/utils/accountingRestrictions';
 
 // Tooltip component for field help
 const FieldTooltip = ({ text }) => {
@@ -46,6 +48,7 @@ const BillManagement = ({ newBill: isNewBill = false }) => {
   const [error, setError] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [billToDelete, setBillToDelete] = useState(null);
+  const [isDeletingBill, setIsDeletingBill] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [tenantId, setTenantId] = useState(null);
   
@@ -231,10 +234,12 @@ const BillManagement = ({ newBill: isNewBill = false }) => {
         // Update existing bill
         await billApi.update(selectedBill.id, billData);
         logger.info('[BillManagement] Bill updated successfully');
+        toast.success('Bill updated successfully!');
       } else {
         // Create new bill
         await billApi.create(billData);
         logger.info('[BillManagement] Bill created successfully');
+        toast.success('Bill created successfully!');
       }
       
       await fetchBills();
@@ -242,6 +247,7 @@ const BillManagement = ({ newBill: isNewBill = false }) => {
     } catch (error) {
       logger.error('[BillManagement] Error saving bill:', error);
       setError(error.message || 'Failed to save bill');
+      toast.error('Failed to save bill.');
     } finally {
       setIsLoading(false);
     }
@@ -278,18 +284,25 @@ const BillManagement = ({ newBill: isNewBill = false }) => {
   const handleDelete = async () => {
     if (!billToDelete) return;
     
-    setIsLoading(true);
+    setIsDeletingBill(true);
     try {
       await billApi.delete(billToDelete.id);
       logger.info('[BillManagement] Bill deleted successfully');
+      toast.success('Bill deleted successfully and archived in audit trail!');
       await fetchBills();
       setShowDeleteModal(false);
       setBillToDelete(null);
+      
+      // Clear selected bill if it was the one being deleted
+      if (selectedBill?.id === billToDelete.id) {
+        setSelectedBill(null);
+      }
     } catch (error) {
       logger.error('[BillManagement] Error deleting bill:', error);
       setError('Failed to delete bill');
+      toast.error('Failed to delete bill.');
     } finally {
-      setIsLoading(false);
+      setIsDeletingBill(false);
     }
   };
 
@@ -875,31 +888,47 @@ const BillManagement = ({ newBill: isNewBill = false }) => {
         </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Delete Bill</h3>
-            <p className="text-sm text-gray-500 mb-4">
-              Are you sure you want to delete bill "{billToDelete?.bill_number}"? This action cannot be undone.
-            </p>
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                className="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={isLoading}
-                className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 disabled:opacity-50"
-              >
-                {isLoading ? 'Deleting...' : 'Delete'}
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Delete Confirmation Dialog */}
+      {showDeleteModal && billToDelete && (
+        (() => {
+          // Check if bill has accounting restrictions
+          const billWithPaymentStatus = {
+            ...billToDelete,
+            status: billToDelete.status || 'pending',
+            payment_made: billToDelete.payment_status === 'paid' || billToDelete.payment_status === 'partial'
+          };
+          
+          const deletionCheck = canDeleteItem('bills', billWithPaymentStatus);
+          
+          // Build custom warning based on bill status
+          let customWarning = null;
+          if (billToDelete.payment_status === 'paid') {
+            customWarning = "This bill has been paid. Consider voiding the payment first.";
+          } else if (billToDelete.payment_status === 'partial') {
+            customWarning = "This bill has partial payments. Consider voiding the payments first.";
+          } else if (billToDelete.status === 'posted') {
+            customWarning = "This bill has been posted and affects your financial records.";
+          }
+          
+          const billDisplayName = billToDelete.bill_number || 
+                                 `Bill from ${vendors.find(v => v.id === billToDelete.vendor_id)?.name || 'Unknown Vendor'}`;
+          
+          return (
+            <DeleteConfirmationDialog
+              isOpen={showDeleteModal}
+              onClose={() => {
+                setShowDeleteModal(false);
+                setBillToDelete(null);
+              }}
+              onConfirm={handleDelete}
+              itemName={billDisplayName}
+              itemType="Bill"
+              isDeleting={isDeletingBill}
+              customWarning={customWarning}
+              accountingRestriction={!deletionCheck.allowed ? deletionCheck.message : null}
+            />
+          );
+        })()
       )}
 
       <div className="text-xs text-gray-500 text-center">

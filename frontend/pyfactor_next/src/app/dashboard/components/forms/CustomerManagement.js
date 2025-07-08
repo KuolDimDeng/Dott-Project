@@ -1,24 +1,17 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef, Fragment } from 'react';
-import { Dialog, Transition } from '@headlessui/react';
 import { toast } from 'react-hot-toast';
-
-// Debug Headless UI imports
-console.error('[CustomerManagement] Dialog:', typeof Dialog, Dialog);
-console.error('[CustomerManagement] Transition:', typeof Transition, Transition);
-console.error('[CustomerManagement] Fragment:', typeof Fragment, Fragment);
 import { customerApi } from '@/utils/apiClient';
 import { getCacheValue } from '@/utils/appCache';
 import { logger } from '@/utils/logger';
 import { UserGroupIcon } from '@heroicons/react/24/outline';
+import DeleteConfirmationDialog from '@/components/ui/DeleteConfirmationDialog';
+import { canDeleteItem } from '@/utils/accountingRestrictions';
 
 import StandardSpinner, { ButtonSpinner, CenteredSpinner } from '@/components/ui/StandardSpinner';
 const CustomerManagement = () => {
-  console.error('[CustomerManagement] Component function called');
-  
   try {
-    console.error('[CustomerManagement] About to initialize state');
     // State management
     const [customers, setCustomers] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -30,8 +23,7 @@ const CustomerManagement = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [customerToDelete, setCustomerToDelete] = useState(null);
-    
-    console.error('[CustomerManagement] State initialized successfully');
+    const [isDeletingCustomer, setIsDeletingCustomer] = useState(false);
   
   // Refs
   const isMounted = useRef(true);
@@ -52,24 +44,15 @@ const CustomerManagement = () => {
   });
 
   useEffect(() => {
-    try {
-      console.error('[CustomerManagement] useEffect called');
-      isMounted.current = true;
-      fetchCustomers();
-      return () => {
-        console.error('[CustomerManagement] useEffect cleanup');
-        isMounted.current = false;
-      };
-    } catch (error) {
-      console.error('[CustomerManagement] ERROR in useEffect:', error);
-      console.error('[CustomerManagement] Error stack:', error.stack);
-    }
+    isMounted.current = true;
+    fetchCustomers();
+    return () => {
+      isMounted.current = false;
+    };
   }, []);
 
   const fetchCustomers = useCallback(async () => {
-    console.error('[CustomerManagement] fetchCustomers called');
     try {
-      console.error('[CustomerManagement] About to setIsLoading');
       setIsLoading(true);
       console.log('[CustomerManagement] Fetching customers...');
       
@@ -77,9 +60,7 @@ const CustomerManagement = () => {
       // No need to send tenant ID from frontend
       
       try {
-        console.error('[CustomerManagement] About to call customerApi.getAll');
         const data = await customerApi.getAll();
-        console.error('[CustomerManagement] API call completed');
         console.log('[CustomerManagement] Raw API response:', data);
         
         // Handle paginated response from Django REST framework
@@ -217,11 +198,12 @@ const CustomerManagement = () => {
     
     console.log('[CustomerManagement] Deleting customer:', customerToDelete.id);
     
+    setIsDeletingCustomer(true);
     try {
       await customerApi.delete(customerToDelete.id);
       console.log('[CustomerManagement] Customer deleted successfully');
       
-      toast.success('Customer deleted successfully!');
+      toast.success('Customer deleted successfully and archived in audit trail!');
       setCustomers(customers.filter(c => c.id !== customerToDelete.id));
       setDeleteDialogOpen(false);
       setCustomerToDelete(null);
@@ -233,6 +215,8 @@ const CustomerManagement = () => {
     } catch (error) {
       console.error('[CustomerManagement] Error deleting customer:', error);
       toast.error('Failed to delete customer.');
+    } finally {
+      setIsDeletingCustomer(false);
     }
   };
 
@@ -654,84 +638,59 @@ const CustomerManagement = () => {
 
   // Delete confirmation dialog
   const renderDeleteDialog = () => {
-    console.error('[CustomerManagement] renderDeleteDialog - deleteDialogOpen:', deleteDialogOpen);
-    console.error('[CustomerManagement] Transition.Root:', typeof Transition.Root, Transition.Root);
+    if (!customerToDelete) return null;
     
-    try {
-      return (
-    <Transition.Root show={deleteDialogOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-10" onClose={setDeleteDialogOpen}>
-        <Transition.Child
-          as={Fragment}
-          enter="ease-out duration-300"
-          enterFrom="opacity-0"
-          enterTo="opacity-100"
-          leave="ease-in duration-200"
-          leaveFrom="opacity-100"
-          leaveTo="opacity-0"
-        >
-          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
-        </Transition.Child>
-
-        <div className="fixed inset-0 z-10 overflow-y-auto">
-          <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-            <Transition.Child
-              as={Fragment}
-              enter="ease-out duration-300"
-              enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-              enterTo="opacity-100 translate-y-0 sm:scale-100"
-              leave="ease-in duration-200"
-              leaveFrom="opacity-100 translate-y-0 sm:scale-100"
-              leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-            >
-              <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
-                <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
-                  <div className="sm:flex sm:items-start">
-                    <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-                      <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c0 1.378 1.068 2.508 2.428 2.574 1.351.066 2.7.103 4.051.103 2.787 0 5.532-.138 8.206-.361M12 9c-2.549 0-5.058.168-7.51.486M12 9l3.75-3.75M12 9l-3.75-3.75m9.344 10.301c1.36-.066 2.428-1.196 2.428-2.574V5.25m0 8.526c0 1.378-1.068 2.508-2.428 2.574M19.594 13.776V5.25m0 0a2.25 2.25 0 00-2.25-2.25h-10.5a2.25 2.25 0 00-2.25 2.25v8.526c0 1.378 1.068 2.508 2.428 2.574" />
-                      </svg>
-                    </div>
-                    <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
-                      <Dialog.Title as="h3" className="text-base font-semibold leading-6 text-gray-900">
-                        Delete Customer
-                      </Dialog.Title>
-                      <div className="mt-2">
-                        <p className="text-sm text-gray-500">
-                          Are you sure you want to delete <span className="font-medium">{customerToDelete?.name}</span>? This action cannot be undone.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-                  <button
-                    type="button"
-                    className="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto"
-                    onClick={handleDeleteCustomer}
-                  >
-                    Delete
-                  </button>
-                  <button
-                    type="button"
-                    className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
-                    onClick={() => setDeleteDialogOpen(false)}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </Dialog.Panel>
-            </Transition.Child>
-          </div>
-        </div>
-      </Dialog>
-    </Transition.Root>
-      );
-    } catch (error) {
-      console.error('[CustomerManagement] ERROR in renderDeleteDialog:', error);
-      console.error('[CustomerManagement] Error stack:', error.stack);
-      return null;
+    // Check if customer has related transactions
+    // Use default values of 0 if the fields are not present
+    const invoicesCount = customerToDelete.invoices_count || 0;
+    const estimatesCount = customerToDelete.estimates_count || 0;
+    const paymentsCount = customerToDelete.payments_count || 0;
+    
+    const customerWithTransactions = {
+      ...customerToDelete,
+      has_transactions: invoicesCount > 0 || estimatesCount > 0 || paymentsCount > 0
+    };
+    
+    const deletionCheck = canDeleteItem('customers', customerWithTransactions);
+    
+    // Build related records message
+    let relatedRecordsMessage = '';
+    const relatedRecords = [];
+    if (invoicesCount > 0) {
+      relatedRecords.push(`${invoicesCount} invoice(s)`);
     }
+    if (estimatesCount > 0) {
+      relatedRecords.push(`${estimatesCount} estimate(s)`);
+    }
+    if (paymentsCount > 0) {
+      relatedRecords.push(`${paymentsCount} payment(s)`);
+    }
+    
+    if (relatedRecords.length > 0) {
+      relatedRecordsMessage = `This customer has ${relatedRecords.join(', ')}. These records will be archived but not deleted.`;
+    }
+    
+    const customerDisplayName = customerToDelete.business_name || 
+                               `${customerToDelete.first_name || ''} ${customerToDelete.last_name || ''}`.trim() || 
+                               customerToDelete.email;
+    
+    return (
+      <DeleteConfirmationDialog
+        isOpen={deleteDialogOpen}
+        onClose={() => {
+          setDeleteDialogOpen(false);
+          setCustomerToDelete(null);
+        }}
+        onConfirm={handleDeleteCustomer}
+        itemName={customerDisplayName}
+        itemType="Customer"
+        isDeleting={isDeletingCustomer}
+        hasRelatedRecords={relatedRecords.length > 0}
+        relatedRecordsMessage={relatedRecordsMessage}
+        customWarning={deletionCheck.warning}
+        accountingRestriction={!deletionCheck.allowed ? deletionCheck.message : null}
+      />
+    );
   };
 
   return (
@@ -892,7 +851,6 @@ const CustomerManagement = () => {
       )}
       
       {/* Delete Confirmation Dialog */}
-      {console.error('[CustomerManagement] About to render delete dialog')}
       {renderDeleteDialog()}
     </div>
   );
