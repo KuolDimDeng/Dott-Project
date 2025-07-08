@@ -159,6 +159,7 @@
     "security": "የድርጅት ደህንነት",
     "security.description": "የባንክ ደረጃ ደህንነት ከክልላዊ ተገዥነት ጋር"
   },
+  "faq_q_does_dott_support_mobile_money_payments": "Dott የሞባይል ገንዘብ ክፍያዎችን ይደግፋል?",
   "faq_a_does_dott_support_mobile_money_payments": "አዎን! በአፍሪካ እና እስያ ያሉ ታዋቂ የሞባይል ገንዘብ መድረኮችን እንደ ኤም-ፔሳ፣ ኤምቲኤን ሞባይል ገንዘብ፣ ኤርቴል ገንዘብ እና ሌሎችንም ውህደት እንደግፋለን። ይህ ንግድዎ የአካባቢ የክፍያ ዘዴዎችን በቀላሉ እንዲቀበል እና እንዲያስኬድ ያስችለዋል።",
   "faq_q_how_does_the_barcode_and_inventory_scanner_feature_work": "የባርኮድ እና የእቃ መጋዘን ስካነር ባህሪ እንዴት ይሰራል?",
   "faq_a_how_does_the_barcode_and_inventory_scanner_feature_work": "የእኛ ሙያዊ ዕቅድ ለእርስዎ የእቃ መጋዘን ዕቃዎች ባርኮዶችን የመፍጠር እና የማተም እና ለፈጣን የእቃ መጋዘን አስተዳደር ከብሉቱዝ ባርኮድ ስካነሮች ጋር የመገናኘት ችሎታን ያካትታል። ይህ ባህሪ ያለምንም ተጨማሪ ወጪ ተካቷል እና ከእኛ የእቃ መጋዘን አስተዳደር ስርዓት ጋር በቀላሉ ይሰራል።",
