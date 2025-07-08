@@ -26,7 +26,8 @@ import {
   DocumentDuplicateIcon,
   ShieldCheckIcon,
   ChartBarIcon,
-  GlobeAltIcon
+  GlobeAltIcon,
+  RocketLaunchIcon
 } from '@heroicons/react/24/outline';
 
 // Step indicator component
@@ -126,13 +127,14 @@ export default function TaxSettingsWizard({ onNavigate }) {
   // Claude suggestions state
   const [suggestions, setSuggestions] = useState({});
   
-  const totalSteps = 5;
+  const totalSteps = 6;
   const stepTitles = [
     'Business Information',
-    'Tax Rates',
+    'Tax Rates', 
     'Benefits & Insurance',
     'Filing Information',
-    'Review & Confirm'
+    'Review & Confirm',
+    'Ready to File?'
   ];
   
   // Form data for current step
@@ -486,10 +488,8 @@ export default function TaxSettingsWizard({ onNavigate }) {
       
       toast.success('Tax settings saved successfully! You are now ready for tax filing.');
       
-      // Navigate to tax filing or dashboard
-      if (onNavigate) {
-        onNavigate('taxFiling');
-      }
+      // Navigate to Step 6 (Ready to File)
+      setCurrentStep(6);
     } catch (error) {
       console.error('[TaxSettingsWizard] Error saving final settings:', error);
       toast.error('Failed to save tax settings. Please try again.');
@@ -1341,6 +1341,131 @@ export default function TaxSettingsWizard({ onNavigate }) {
           </div>
         );
         
+      case 6:
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-8">
+              <RocketLaunchIcon className="w-16 h-16 text-green-600 mx-auto mb-4" />
+              <h2 className="text-2xl font-semibold text-gray-900">Ready to File Your Taxes?</h2>
+              <p className="text-gray-600 mt-2 text-lg">Your tax settings are now complete! You're ready to start filing.</p>
+            </div>
+            
+            {/* Filing readiness checklist */}
+            <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+              <h3 className="text-lg font-medium text-green-900 mb-4 flex items-center">
+                <CheckCircleIcon className="h-6 w-6 mr-2" />
+                Tax Profile Complete
+              </h3>
+              <div className="space-y-3">
+                <div className="flex items-center text-green-700">
+                  <CheckCircleIcon className="h-5 w-5 mr-2" />
+                  <span>Business information configured</span>
+                </div>
+                <div className="flex items-center text-green-700">
+                  <CheckCircleIcon className="h-5 w-5 mr-2" />
+                  <span>Tax rates identified and verified</span>
+                </div>
+                <div className="flex items-center text-green-700">
+                  <CheckCircleIcon className="h-5 w-5 mr-2" />
+                  <span>Benefits and payroll taxes configured</span>
+                </div>
+                <div className="flex items-center text-green-700">
+                  <CheckCircleIcon className="h-5 w-5 mr-2" />
+                  <span>Filing information and deadlines set</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Available filing services */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white border-2 border-blue-200 rounded-lg p-6 hover:border-blue-400 transition-colors">
+                <div className="text-center">
+                  <DocumentTextIcon className="w-12 h-12 text-blue-600 mx-auto mb-3" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Tax Filing Service</h3>
+                  <p className="text-gray-600 mb-4">
+                    Let our experts handle your tax filing with accuracy guarantee and audit support.
+                  </p>
+                  <div className="space-y-2 text-sm text-gray-600 mb-4">
+                    <div>• Full-service preparation</div>
+                    <div>• E-filing included</div>
+                    <div>• 3-year audit support</div>
+                    <div>• Starting at $40</div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (onNavigate) {
+                        onNavigate('tax-filing');
+                      }
+                    }}
+                    className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Start Filing Now
+                  </button>
+                </div>
+              </div>
+              
+              <div className="bg-white border-2 border-gray-200 rounded-lg p-6 hover:border-gray-400 transition-colors">
+                <div className="text-center">
+                  <ChartBarIcon className="w-12 h-12 text-purple-600 mx-auto mb-3" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Tax Dashboard</h3>
+                  <p className="text-gray-600 mb-4">
+                    View your tax profile, track deadlines, and manage all tax-related activities.
+                  </p>
+                  <div className="space-y-2 text-sm text-gray-600 mb-4">
+                    <div>• Tax calendar & deadlines</div>
+                    <div>• Filing history</div>
+                    <div>• Settings management</div>
+                    <div>• Status tracking</div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (onNavigate) {
+                        onNavigate('taxes-dashboard');
+                      }
+                    }}
+                    className="w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    Go to Dashboard
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            {/* Alternative actions */}
+            <div className="bg-gray-50 rounded-lg p-6 text-center">
+              <h4 className="text-md font-medium text-gray-900 mb-3">Not ready to file yet?</h4>
+              <div className="flex flex-wrap justify-center gap-3">
+                <button
+                  onClick={() => setCurrentStep(5)}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100"
+                >
+                  Review Settings
+                </button>
+                <button
+                  onClick={() => {
+                    if (onNavigate) {
+                      onNavigate('dashboard');
+                    }
+                  }}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100"
+                >
+                  Return to Dashboard
+                </button>
+                <button
+                  onClick={() => {
+                    if (onNavigate) {
+                      onNavigate('taxes');
+                    }
+                  }}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100"
+                >
+                  Explore Tax Features
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+        
       default:
         return null;
     }
@@ -1383,7 +1508,7 @@ export default function TaxSettingsWizard({ onNavigate }) {
         </button>
         
         <div className="flex items-center space-x-3">
-          {currentStep < totalSteps ? (
+          {currentStep < 5 ? (
             <>
               <button
                 onClick={() => saveStepData()}
@@ -1399,24 +1524,37 @@ export default function TaxSettingsWizard({ onNavigate }) {
                 <ArrowRightIcon className="h-5 w-5 ml-2" />
               </button>
             </>
+          ) : currentStep === 5 ? (
+            <>
+              <button
+                onClick={() => saveStepData()}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+              >
+                Save Progress
+              </button>
+              <button
+                onClick={handleFinalSubmit}
+                disabled={isLoading}
+                className="flex items-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+              >
+                {isLoading ? (
+                  <>
+                    <StandardSpinner size="small" className="mr-2" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircleIcon className="h-5 w-5 mr-2" />
+                    Complete Setup
+                  </>
+                )}
+              </button>
+            </>
           ) : (
-            <button
-              onClick={handleFinalSubmit}
-              disabled={isLoading}
-              className="flex items-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
-            >
-              {isLoading ? (
-                <>
-                  <StandardSpinner size="small" className="mr-2" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <CheckCircleIcon className="h-5 w-5 mr-2" />
-                  Complete Setup
-                </>
-              )}
-            </button>
+            <div className="text-center text-gray-600">
+              <p className="text-sm">Your tax settings are now complete!</p>
+              <p className="text-xs">Choose an option above to continue.</p>
+            </div>
           )}
         </div>
       </div>
