@@ -1059,6 +1059,24 @@ export const vendorApi = {
   
   async delete(id, params = {}) {
     return supplierApi.delete(id, params);
+  },
+  
+  async toggleStatus(id, params = {}) {
+    const response = await fetch(`/api/vendors/${id}`, {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ action: 'toggle-status' })
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
+    }
+    
+    return response.json();
   }
 };
 

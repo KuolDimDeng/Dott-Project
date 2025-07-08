@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
-import { TruckIcon, QuestionMarkCircleIcon, PlusIcon, PencilIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
+import { TruckIcon, QuestionMarkCircleIcon, PlusIcon, PencilIcon, TrashIcon, EyeIcon, NoSymbolIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 import { vendorApi } from '@/utils/apiClient';
 
 // Tooltip component for field help
@@ -240,6 +240,20 @@ const VendorManagement = ({ newVendor: isNewVendor = false }) => {
     } catch (error) {
       logger.error('[VendorManagement] Error deleting vendor:', error);
       setError('Failed to delete vendor');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleToggleStatus = async (vendor) => {
+    setIsLoading(true);
+    try {
+      await vendorApi.toggleStatus(vendor.id);
+      logger.info('[VendorManagement] Vendor status toggled successfully');
+      await fetchVendors();
+    } catch (error) {
+      logger.error('[VendorManagement] Error toggling vendor status:', error);
+      setError('Failed to update vendor status');
     } finally {
       setIsLoading(false);
     }
@@ -693,25 +707,41 @@ const VendorManagement = ({ newVendor: isNewVendor = false }) => {
                               {vendor.is_active ? 'Active' : 'Inactive'}
                             </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                            <button
-                              onClick={() => handleView(vendor)}
-                              className="text-blue-600 hover:text-blue-900"
-                            >
-                              <EyeIcon className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleEdit(vendor)}
-                              className="text-indigo-600 hover:text-indigo-900"
-                            >
-                              <PencilIcon className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteClick(vendor)}
-                              className="text-red-600 hover:text-red-900"
-                            >
-                              <TrashIcon className="h-4 w-4" />
-                            </button>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={() => handleView(vendor)}
+                                className="text-blue-600 hover:text-blue-900"
+                                title="View"
+                              >
+                                <EyeIcon className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleEdit(vendor)}
+                                className="text-indigo-600 hover:text-indigo-900"
+                                title="Edit"
+                              >
+                                <PencilIcon className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleToggleStatus(vendor)}
+                                className={vendor.is_active ? "text-yellow-600 hover:text-yellow-900" : "text-green-600 hover:text-green-900"}
+                                title={vendor.is_active ? "Deactivate" : "Activate"}
+                              >
+                                {vendor.is_active ? (
+                                  <NoSymbolIcon className="h-4 w-4" />
+                                ) : (
+                                  <CheckCircleIcon className="h-4 w-4" />
+                                )}
+                              </button>
+                              <button
+                                onClick={() => handleDeleteClick(vendor)}
+                                className="text-red-600 hover:text-red-900"
+                                title="Delete"
+                              >
+                                <TrashIcon className="h-4 w-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -730,7 +760,10 @@ const VendorManagement = ({ newVendor: isNewVendor = false }) => {
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Delete Vendor</h3>
             <p className="text-sm text-gray-500 mb-4">
-              Are you sure you want to delete "{vendorToDelete?.name}"? This action cannot be undone.
+              Are you sure you want to delete "{vendorToDelete?.name}"? 
+            </p>
+            <p className="text-sm text-red-600 font-medium mb-4">
+              Warning: This will permanently delete all related bills, purchase orders, procurements, and purchases. This action cannot be undone.
             </p>
             <div className="flex justify-end space-x-3">
               <button
