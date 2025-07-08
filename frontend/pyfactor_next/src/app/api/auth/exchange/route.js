@@ -6,27 +6,26 @@ export async function GET(request) {
     const code = url.searchParams.get('code');
     const exchangeState = url.searchParams.get('state');
     
-    console.log('🔄 [Auth0Exchange] ========== TOKEN EXCHANGE REQUEST ==========');
+    console.log('🔄 [Auth0Exchange] ========== STEP 5: TOKEN EXCHANGE REQUEST RECEIVED ==========');
     console.log('🔄 [Auth0Exchange] Timestamp:', new Date().toISOString());
     console.log('🔄 [Auth0Exchange] Request URL:', request.url);
-    console.log('🔄 [Auth0Exchange] Has code:', !!code);
+    console.log('🔄 [Auth0Exchange] Authorization code:', code ? `${code.substring(0, 10)}...` : 'MISSING');
     console.log('🔄 [Auth0Exchange] Code length:', code?.length);
-    console.log('🔄 [Auth0Exchange] Code preview:', code ? `${code.substring(0, 10)}...` : 'none');
-    console.log('🔄 [Auth0Exchange] Has state:', !!exchangeState);
-    console.log('🔄 [Auth0Exchange] State value:', exchangeState);
-    console.log('🔄 [Auth0Exchange] Domain:', process.env.NEXT_PUBLIC_AUTH0_DOMAIN);
-    console.log('🔄 [Auth0Exchange] Client ID:', process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID);
-    console.log('🔄 [Auth0Exchange] Has client secret:', !!process.env.AUTH0_CLIENT_SECRET);
-    console.log('🔄 [Auth0Exchange] Base URL:', process.env.NEXT_PUBLIC_BASE_URL);
-    console.log('🔄 [Auth0Exchange] Redirect URI:', `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/callback`);
-    console.log('🔄 [Auth0Exchange] Environment check:', {
-      hasAuth0Domain: !!process.env.NEXT_PUBLIC_AUTH0_DOMAIN,
-      hasClientId: !!process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID,
-      hasClientSecret: !!process.env.AUTH0_CLIENT_SECRET,
-      hasBaseUrl: !!process.env.NEXT_PUBLIC_BASE_URL,
-      nodeEnv: process.env.NODE_ENV
+    console.log('🔄 [Auth0Exchange] State:', exchangeState || 'MISSING');
+    console.log('🔄 [Auth0Exchange] Available cookies:', {
+      auth0_state: !!request.cookies.get('auth0_state'),
+      auth0_verifier: !!request.cookies.get('auth0_verifier'),
+      appSession: !!request.cookies.get('appSession'),
+      sid: !!request.cookies.get('sid'),
+      all: request.cookies.getAll().map(c => c.name)
     });
-    console.log('🔄 [Auth0Exchange] ========== END REQUEST INFO ==========');
+    console.log('🔄 [Auth0Exchange] Environment:', {
+      domain: process.env.NEXT_PUBLIC_AUTH0_DOMAIN,
+      clientId: process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID,
+      hasClientSecret: !!process.env.AUTH0_CLIENT_SECRET,
+      baseUrl: process.env.NEXT_PUBLIC_BASE_URL
+    });
+    console.log('🔄 [Auth0Exchange] ========== END STEP 5 ==========');
     
     if (!code) {
       console.error('[Auth0 Exchange] Missing authorization code');
@@ -62,8 +61,16 @@ export async function GET(request) {
       console.log('[Auth0 Exchange] Base URL:', process.env.NEXT_PUBLIC_BASE_URL);
       
       // Get PKCE verifier from cookie (set during login)
+      console.log('🔄 [Auth0Exchange] ========== STEP 5A: RETRIEVING PKCE VERIFIER ==========');
       const verifier = request.cookies.get('auth0_verifier');
-      console.log('[Auth0 Exchange] PKCE verifier cookie:', !!verifier);
+      console.log('🔄 [Auth0Exchange] Looking for auth0_verifier cookie...');
+      console.log('🔄 [Auth0Exchange] PKCE verifier found:', !!verifier);
+      console.log('🔄 [Auth0Exchange] Verifier value:', verifier?.value ? `${verifier.value.substring(0, 10)}...` : 'NOT FOUND');
+      console.log('🔄 [Auth0Exchange] All cookies:', request.cookies.getAll().map(c => ({
+        name: c.name,
+        value: c.value ? `${c.value.substring(0, 10)}...` : 'empty'
+      })));
+      console.log('🔄 [Auth0Exchange] ========== END STEP 5A ==========');
       
       const tokenRequestBody = {
         grant_type: 'authorization_code',
@@ -76,7 +83,13 @@ export async function GET(request) {
       // Add PKCE verifier if available
       if (verifier?.value) {
         tokenRequestBody.code_verifier = verifier.value;
-        console.log('[Auth0 Exchange] Adding PKCE code_verifier to request');
+        console.log('🔄 [Auth0Exchange] ========== STEP 5B: ADDING PKCE VERIFIER ==========');
+        console.log('🔄 [Auth0Exchange] Added code_verifier to token request');
+        console.log('🔄 [Auth0Exchange] Verifier length:', verifier.value.length);
+        console.log('🔄 [Auth0Exchange] ========== END STEP 5B ==========');
+      } else {
+        console.log('🔄 [Auth0Exchange] ⚠️ WARNING: No PKCE verifier found in cookies!');
+        console.log('🔄 [Auth0Exchange] This will likely cause "Parameter code_verifier is required" error');
       }
       
       console.log('[Auth0 Exchange] Token request body:', {
@@ -99,13 +112,14 @@ export async function GET(request) {
         body: JSON.stringify(tokenRequestBody),
       });
       
-      console.log('🔄 [Auth0Exchange] ========== AUTH0 TOKEN RESPONSE ==========');
+      console.log('🔄 [Auth0Exchange] ========== STEP 5C: AUTH0 TOKEN RESPONSE ==========');
       console.log('🔄 [Auth0Exchange] Response status:', tokenResponse.status);
       console.log('🔄 [Auth0Exchange] Response status text:', tokenResponse.statusText);
       console.log('🔄 [Auth0Exchange] Response OK:', tokenResponse.ok);
       console.log('🔄 [Auth0Exchange] Redirect URI used:', redirectUri);
+      console.log('🔄 [Auth0Exchange] Had PKCE verifier:', !!tokenRequestBody.code_verifier);
       console.log('🔄 [Auth0Exchange] Response headers:', Object.fromEntries(tokenResponse.headers.entries()));
-      console.log('🔄 [Auth0Exchange] ========== END TOKEN RESPONSE ==========');
+      console.log('🔄 [Auth0Exchange] ========== END STEP 5C ==========');
       
       // Declare error variables in outer scope
       let errorText;
@@ -121,11 +135,25 @@ export async function GET(request) {
           errorData = { error: 'unknown', error_description: errorText || 'Failed to parse error response' };
         }
         
-        console.log('🔄 [Auth0Exchange] Token exchange failed, analyzing error:', {
+        console.log('🔄 [Auth0Exchange] ========== STEP 5D: TOKEN EXCHANGE FAILED ==========');
+        console.log('🔄 [Auth0Exchange] Error details:', {
           status: tokenResponse.status,
           error: errorData.error,
-          error_description: errorData.error_description
+          error_description: errorData.error_description,
+          hadPKCEVerifier: !!tokenRequestBody.code_verifier,
+          redirectUriUsed: redirectUri
         });
+        
+        // Log specific issue if PKCE verifier was missing
+        if (!tokenRequestBody.code_verifier && errorData.error_description?.includes('code_verifier')) {
+          console.log('🔄 [Auth0Exchange] ❌ ISSUE IDENTIFIED: PKCE verifier cookie was not found');
+          console.log('🔄 [Auth0Exchange] Possible causes:');
+          console.log('🔄 [Auth0Exchange]   - Cookie was not set in /api/auth/login');
+          console.log('🔄 [Auth0Exchange]   - Cookie expired (10 minute timeout)');
+          console.log('🔄 [Auth0Exchange]   - Cookie domain/path mismatch');
+          console.log('🔄 [Auth0Exchange]   - SameSite policy blocking cookie');
+        }
+        console.log('🔄 [Auth0Exchange] ========== END STEP 5D ==========');
         
         // If the first attempt fails with invalid_grant due to redirect_uri mismatch, try alternative
         if (tokenResponse.status === 400 && 

@@ -19,16 +19,17 @@ export default function Auth0OAuthCallbackPage() {
         const state = urlParams.get('state');
         const error = urlParams.get('error');
 
-        console.log('🔄 [OAuthCallback] ========== OAUTH CALLBACK RECEIVED ==========');
+        console.log('🔄 [OAuthCallback] ========== STEP 3: AUTH0 REDIRECTED TO /auth/oauth-callback ==========');
         console.log('🔄 [OAuthCallback] Timestamp:', new Date().toISOString());
-        console.log('🔄 [OAuthCallback] URL:', window.location.href);
+        console.log('🔄 [OAuthCallback] Full URL:', window.location.href);
         console.log('🔄 [OAuthCallback] Search params:', window.location.search);
-        console.log('🔄 [OAuthCallback] Has code:', !!code);
+        console.log('🔄 [OAuthCallback] Authorization code:', code ? `${code.substring(0, 10)}...` : 'MISSING');
         console.log('🔄 [OAuthCallback] Code length:', code?.length);
-        console.log('🔄 [OAuthCallback] Has state:', !!state);
-        console.log('🔄 [OAuthCallback] State value:', state);
-        console.log('🔄 [OAuthCallback] Error param:', error);
-        console.log('🔄 [OAuthCallback] ========== END CALLBACK PARAMS ==========');
+        console.log('🔄 [OAuthCallback] State:', state || 'MISSING');
+        console.log('🔄 [OAuthCallback] Error param:', error || 'none');
+        console.log('🔄 [OAuthCallback] Cookies available:', document.cookie);
+        console.log('🔄 [OAuthCallback] Next step: Exchange code for tokens');
+        console.log('🔄 [OAuthCallback] ========== END STEP 3 ==========');
 
         if (error) {
           console.error('[OAuth Callback] Auth0 error:', error);
@@ -50,9 +51,13 @@ export default function Auth0OAuthCallbackPage() {
 
         setStatus('Exchanging authorization code...');
 
-        console.log('🔄 [OAuthCallback] ========== STARTING TOKEN EXCHANGE ==========');
+        console.log('🔄 [OAuthCallback] ========== STEP 4: STARTING TOKEN EXCHANGE ==========');
         console.log('🔄 [OAuthCallback] Exchange URL:', `/api/auth/exchange?code=${code}&state=${state}`);
-        console.log('🔄 [OAuthCallback] About to call token exchange API...');
+        console.log('🔄 [OAuthCallback] Code preview:', code.substring(0, 20) + '...');
+        console.log('🔄 [OAuthCallback] State:', state);
+        console.log('🔄 [OAuthCallback] About to call /api/auth/exchange...');
+        console.log('🔄 [OAuthCallback] Expected: Exchange will retrieve PKCE verifier from cookie');
+        console.log('🔄 [OAuthCallback] ========== END STEP 4 ==========');
 
         // Call our API to exchange the code for tokens - Fixed URL to match dynamic route
         const exchangeResponse = await fetch(`/api/auth/exchange?code=${code}&state=${state}`);
