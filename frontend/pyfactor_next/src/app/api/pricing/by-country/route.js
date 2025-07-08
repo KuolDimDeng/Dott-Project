@@ -14,15 +14,18 @@ export async function GET(request) {
     
     // Enhanced debugging
     console.log('🎯 [Pricing API] === REQUEST START ===');
-    console.log('🎯 [Pricing API] URL:', request.url);
-    console.log('🎯 [Pricing API] Search params:', searchParams.toString());
+    console.log('🎯 [Pricing API] Full URL:', request.url);
+    console.log('🎯 [Pricing API] Method:', request.method);
+    console.log('🎯 [Pricing API] Search params object:', Object.fromEntries(searchParams.entries()));
     console.log('🎯 [Pricing API] Country from query:', country);
-    console.log('🎯 [Pricing API] Headers:', {
+    console.log('🎯 [Pricing API] All headers:', {
       cfIp,
       cfCountry,
       forwarded,
       realIp,
-      finalIp: ip
+      finalIp: ip,
+      userAgent: request.headers.get('user-agent'),
+      referer: request.headers.get('referer')
     });
     
     // Build query params
@@ -59,6 +62,15 @@ export async function GET(request) {
     
     if (result.country_code !== country && country) {
       console.warn('🎯 [Pricing API] ⚠️ MISMATCH: Requested', country, 'but got', result.country_code);
+      console.warn('🎯 [Pricing API] Backend might be ignoring country parameter');
+      
+      // Log the exact request we sent to backend
+      console.log('🎯 [Pricing API] Request sent to backend:', {
+        url: backendUrl,
+        headers: {
+          'CF-IPCountry': cfCountry || country || ''
+        }
+      });
     }
     
     if (!response.ok) {

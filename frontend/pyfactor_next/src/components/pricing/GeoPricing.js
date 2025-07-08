@@ -42,19 +42,32 @@ export default function GeoPricing() {
     try {
       // Check for country override in URL
       const urlParams = new URLSearchParams(window.location.search);
-      const countryOverride = urlParams.get('country');
+      let countryOverride = urlParams.get('country');
       
       console.log('💰 [GeoPricing] === PRICING FETCH START ===');
       console.log('💰 [GeoPricing] Current URL:', window.location.href);
       console.log('💰 [GeoPricing] URL params:', urlParams.toString());
-      console.log('💰 [GeoPricing] Country override:', countryOverride);
+      console.log('💰 [GeoPricing] Country override from URL:', countryOverride);
+      console.log('💰 [GeoPricing] Window location search:', window.location.search);
+      console.log('💰 [GeoPricing] Window location hash:', window.location.hash);
+      
+      // Check if user is in Kenya from country detection
+      const isKenyaDetected = window.localStorage.getItem('detectedCountry') === 'KE';
+      console.log('💰 [GeoPricing] Kenya detected from storage:', isKenyaDetected);
+      
+      // Force Kenya for testing if on pricing section
+      if (!countryOverride && (window.location.hash === '#pricing' || isKenyaDetected)) {
+        console.log('💰 [GeoPricing] Setting country to KE');
+        countryOverride = 'KE';
+      }
       
       let apiUrl = '/api/pricing/by-country';
       if (countryOverride) {
         apiUrl = `/api/pricing/by-country?country=${countryOverride}`;
       }
       
-      console.log('💰 [GeoPricing] Fetching from:', apiUrl);
+      console.log('💰 [GeoPricing] Final API URL:', apiUrl);
+      console.log('💰 [GeoPricing] Country being sent:', countryOverride || 'none');
       
       const response = await fetch(apiUrl);
       const data = await response.json();
