@@ -135,8 +135,23 @@ export default function EmailPasswordSignIn() {
   };
 
   const handleGoogleLogin = () => {
+    console.log('🔄 [GoogleOAuth] Starting Google OAuth flow');
+    console.log('🔄 [GoogleOAuth] Current URL:', window.location.href);
+    console.log('🔄 [GoogleOAuth] Timestamp:', new Date().toISOString());
+    
+    // Track the OAuth attempt
+    trackEvent(posthog, EVENTS.OAUTH_STARTED, { 
+      provider: 'google',
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent
+    });
+    
+    const oauthUrl = '/api/auth/login?connection=google-oauth2';
+    console.log('🔄 [GoogleOAuth] Redirecting to:', oauthUrl);
+    console.log('🔄 [GoogleOAuth] Expected flow: Auth0 → OAuth Callback → Token Exchange → Session Creation');
+    
     // Redirect to Auth0 login with Google connection
-    window.location.href = '/api/auth/login?connection=google-oauth2';
+    window.location.href = oauthUrl;
   };
 
   const handleForgotPassword = async (e) => {

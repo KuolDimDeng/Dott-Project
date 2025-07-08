@@ -48,7 +48,13 @@ export async function GET(request) {
   }
   
   try {
-    console.log('[Auth Login Route] Processing login request');
+    console.log('🔄 [Auth0Login] ========== GOOGLE OAUTH FLOW START ==========');
+    console.log('🔄 [Auth0Login] Processing login request at:', new Date().toISOString());
+    console.log('🔄 [Auth0Login] Request URL:', request.url);
+    console.log('🔄 [Auth0Login] Request method:', request.method);
+    console.log('🔄 [Auth0Login] User agent:', request.headers.get('user-agent'));
+    console.log('🔄 [Auth0Login] Referer:', request.headers.get('referer'));
+    console.log('🔄 [Auth0Login] Connection param:', searchParams.get('connection'));
     
     // Check for existing valid session first
     const sessionCookie = request.cookies.get('dott_auth_session');
@@ -161,7 +167,16 @@ export async function GET(request) {
     
     const authUrl = `https://${auth0Domain}/authorize?${authParams.toString()}`;
     
-    console.log('[Auth Login Route] Redirecting to Auth0:', authUrl);
+    console.log('🔄 [Auth0Login] ========== REDIRECTING TO AUTH0 ==========');
+    console.log('🔄 [Auth0Login] Auth0 URL:', authUrl);
+    console.log('🔄 [Auth0Login] Auth0 Domain:', auth0Domain);
+    console.log('🔄 [Auth0Login] Client ID:', clientId);
+    console.log('🔄 [Auth0Login] Redirect URI:', `${baseUrl}/api/auth/callback`);
+    console.log('🔄 [Auth0Login] Connection:', connection || 'default');
+    console.log('🔄 [Auth0Login] State:', state);
+    console.log('🔄 [Auth0Login] PKCE Challenge:', challenge);
+    console.log('🔄 [Auth0Login] Expected callback URL:', `${baseUrl}/auth/oauth-callback`);
+    console.log('🔄 [Auth0Login] ========== END AUTH0 REDIRECT ==========');
     
     // Create response with redirect
     const response = NextResponse.redirect(authUrl);

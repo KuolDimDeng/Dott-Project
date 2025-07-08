@@ -19,11 +19,16 @@ export default function Auth0OAuthCallbackPage() {
         const state = urlParams.get('state');
         const error = urlParams.get('error');
 
-        console.log('[OAuth Callback] Received:', { 
-          hasCode: !!code, 
-          hasState: !!state, 
-          error 
-        });
+        console.log('🔄 [OAuthCallback] ========== OAUTH CALLBACK RECEIVED ==========');
+        console.log('🔄 [OAuthCallback] Timestamp:', new Date().toISOString());
+        console.log('🔄 [OAuthCallback] URL:', window.location.href);
+        console.log('🔄 [OAuthCallback] Search params:', window.location.search);
+        console.log('🔄 [OAuthCallback] Has code:', !!code);
+        console.log('🔄 [OAuthCallback] Code length:', code?.length);
+        console.log('🔄 [OAuthCallback] Has state:', !!state);
+        console.log('🔄 [OAuthCallback] State value:', state);
+        console.log('🔄 [OAuthCallback] Error param:', error);
+        console.log('🔄 [OAuthCallback] ========== END CALLBACK PARAMS ==========');
 
         if (error) {
           console.error('[OAuth Callback] Auth0 error:', error);
@@ -45,12 +50,25 @@ export default function Auth0OAuthCallbackPage() {
 
         setStatus('Exchanging authorization code...');
 
+        console.log('🔄 [OAuthCallback] ========== STARTING TOKEN EXCHANGE ==========');
+        console.log('🔄 [OAuthCallback] Exchange URL:', `/api/auth/exchange?code=${code}&state=${state}`);
+        console.log('🔄 [OAuthCallback] About to call token exchange API...');
+
         // Call our API to exchange the code for tokens - Fixed URL to match dynamic route
         const exchangeResponse = await fetch(`/api/auth/exchange?code=${code}&state=${state}`);
         
+        console.log('🔄 [OAuthCallback] Exchange response status:', exchangeResponse.status);
+        console.log('🔄 [OAuthCallback] Exchange response headers:', Object.fromEntries(exchangeResponse.headers.entries()));
+        
         if (!exchangeResponse.ok) {
           const errorData = await exchangeResponse.json();
-          console.error('[OAuth Callback] Token exchange failed:', errorData);
+          console.error('❌ [OAuthCallback] ========== TOKEN EXCHANGE FAILED ==========');
+          console.error('❌ [OAuthCallback] Status:', exchangeResponse.status);
+          console.error('❌ [OAuthCallback] Error data:', errorData);
+          console.error('❌ [OAuthCallback] Error message:', errorData.message);
+          console.error('❌ [OAuthCallback] Error details:', errorData.details);
+          console.error('❌ [OAuthCallback] Error code:', errorData.error_code);
+          console.error('❌ [OAuthCallback] ========== END EXCHANGE ERROR ==========');
           
           // Use the user-friendly message if available
           const errorMessage = errorData.message || errorData.error || 'Authentication failed';
@@ -71,10 +89,14 @@ export default function Auth0OAuthCallbackPage() {
         }
 
         const exchangeData = await exchangeResponse.json();
-        console.log('[OAuth Callback] Token exchange successful:', { 
-          success: exchangeData.success,
-          user: exchangeData.user?.email 
-        });
+        console.log('✅ [OAuthCallback] ========== TOKEN EXCHANGE SUCCESS ==========');
+        console.log('✅ [OAuthCallback] Success:', exchangeData.success);
+        console.log('✅ [OAuthCallback] User email:', exchangeData.user?.email);
+        console.log('✅ [OAuthCallback] User name:', exchangeData.user?.name);
+        console.log('✅ [OAuthCallback] Authenticated:', exchangeData.authenticated);
+        console.log('✅ [OAuthCallback] Needs onboarding:', exchangeData.needsOnboarding);
+        console.log('✅ [OAuthCallback] Exchange data keys:', Object.keys(exchangeData));
+        console.log('✅ [OAuthCallback] ========== END EXCHANGE SUCCESS ==========');
 
         setStatus('Authentication successful! Redirecting...');
 

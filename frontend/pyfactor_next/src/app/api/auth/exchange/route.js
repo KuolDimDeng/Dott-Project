@@ -6,16 +6,27 @@ export async function GET(request) {
     const code = url.searchParams.get('code');
     const exchangeState = url.searchParams.get('state');
     
-    console.log('[Auth0 Exchange] Exchange request received:', {
-      hasCode: !!code,
-      codeLength: code?.length,
-      hasState: !!exchangeState,
-      domain: process.env.NEXT_PUBLIC_AUTH0_DOMAIN,
-      clientId: process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID,
+    console.log('🔄 [Auth0Exchange] ========== TOKEN EXCHANGE REQUEST ==========');
+    console.log('🔄 [Auth0Exchange] Timestamp:', new Date().toISOString());
+    console.log('🔄 [Auth0Exchange] Request URL:', request.url);
+    console.log('🔄 [Auth0Exchange] Has code:', !!code);
+    console.log('🔄 [Auth0Exchange] Code length:', code?.length);
+    console.log('🔄 [Auth0Exchange] Code preview:', code ? `${code.substring(0, 10)}...` : 'none');
+    console.log('🔄 [Auth0Exchange] Has state:', !!exchangeState);
+    console.log('🔄 [Auth0Exchange] State value:', exchangeState);
+    console.log('🔄 [Auth0Exchange] Domain:', process.env.NEXT_PUBLIC_AUTH0_DOMAIN);
+    console.log('🔄 [Auth0Exchange] Client ID:', process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID);
+    console.log('🔄 [Auth0Exchange] Has client secret:', !!process.env.AUTH0_CLIENT_SECRET);
+    console.log('🔄 [Auth0Exchange] Base URL:', process.env.NEXT_PUBLIC_BASE_URL);
+    console.log('🔄 [Auth0Exchange] Redirect URI:', `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/callback`);
+    console.log('🔄 [Auth0Exchange] Environment check:', {
+      hasAuth0Domain: !!process.env.NEXT_PUBLIC_AUTH0_DOMAIN,
+      hasClientId: !!process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID,
       hasClientSecret: !!process.env.AUTH0_CLIENT_SECRET,
-      redirectUri: `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/callback`,
-      baseUrl: process.env.NEXT_PUBLIC_BASE_URL
+      hasBaseUrl: !!process.env.NEXT_PUBLIC_BASE_URL,
+      nodeEnv: process.env.NODE_ENV
     });
+    console.log('🔄 [Auth0Exchange] ========== END REQUEST INFO ==========');
     
     if (!code) {
       console.error('[Auth0 Exchange] Missing authorization code');
@@ -23,8 +34,15 @@ export async function GET(request) {
     }
     
     if (!process.env.AUTH0_CLIENT_SECRET) {
-      console.error('[Auth0 Exchange] Missing AUTH0_CLIENT_SECRET environment variable');
-      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+      console.error('❌ [Auth0Exchange] ========== MISSING CLIENT SECRET ==========');
+      console.error('❌ [Auth0Exchange] AUTH0_CLIENT_SECRET environment variable not found');
+      console.error('❌ [Auth0Exchange] This is required for token exchange with Auth0');
+      console.error('❌ [Auth0Exchange] Available env vars:', Object.keys(process.env).filter(key => key.includes('AUTH')));
+      console.error('❌ [Auth0Exchange] ========== END CLIENT SECRET ERROR ==========');
+      return NextResponse.json({ 
+        error: 'Server configuration error',
+        details: 'AUTH0_CLIENT_SECRET environment variable not configured'
+      }, { status: 500 });
     }
     
     try {
@@ -70,12 +88,13 @@ export async function GET(request) {
         body: JSON.stringify(tokenRequestBody),
       });
       
-      console.log('[Auth0 Exchange] First token response status:', {
-        status: tokenResponse.status,
-        statusText: tokenResponse.statusText,
-        ok: tokenResponse.ok,
-        redirect_uri_used: redirectUri
-      });
+      console.log('🔄 [Auth0Exchange] ========== AUTH0 TOKEN RESPONSE ==========');
+      console.log('🔄 [Auth0Exchange] Response status:', tokenResponse.status);
+      console.log('🔄 [Auth0Exchange] Response status text:', tokenResponse.statusText);
+      console.log('🔄 [Auth0Exchange] Response OK:', tokenResponse.ok);
+      console.log('🔄 [Auth0Exchange] Redirect URI used:', redirectUri);
+      console.log('🔄 [Auth0Exchange] Response headers:', Object.fromEntries(tokenResponse.headers.entries()));
+      console.log('🔄 [Auth0Exchange] ========== END TOKEN RESPONSE ==========');
       
       // If the first attempt fails with invalid_grant, try the alternative redirect URI
       if (!tokenResponse.ok && tokenResponse.status === 400) {
