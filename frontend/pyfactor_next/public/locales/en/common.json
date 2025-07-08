@@ -58,6 +58,120 @@
   "heroImageAlt": "Business Management Illustration",
   "heroVideoTitle": "Dott Software Demo",
   "searchLanguages": "Search languages...",
+  "footer": {
+    "home": "Home",
+    "features": "Features", 
+    "pricing": "Pricing",
+    "about": "About Us",
+    "blog": "Blog",
+    "contact": "Contact",
+    "inventory": "Inventory Management",
+    "accounting": "Accounting",
+    "invoicing": "Invoicing",
+    "payments": "Payments",
+    "pos": "Point of Sale",
+    "careers": "Careers",
+    "press": "Press", 
+    "partners": "Partners",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "help": "Help Center",
+    "docs": "Documentation",
+    "status": "System Status",
+    "security": "Security",
+    "cookies": "Cookie Policy",
+    "rights": "All rights reserved.",
+    "tagline": "Making business management simple and efficient for companies around the world.",
+    "product": "Product",
+    "company": "Company",
+    "support": "Support",
+    "legal": "Legal"
+  },
+  "highlights": {
+    "eyebrow": "Key Benefits",
+    "heading": "Why businesses choose Dott",
+    "subheading": "Advanced features that set us apart from the competition and help your business grow.",
+    "mobile": {
+      "title": "Mobile Application",
+      "description": "Access your business data anytime, anywhere with our powerful mobile app. Manage inventory, process sales, and view real-time reports on the go."
+    },
+    "integration": {
+      "title": "Seamless Integrations", 
+      "description": "Connect with your favorite tools and services. Our platform integrates with payment processors, accounting software, e-commerce platforms, and more."
+    },
+    "ai": {
+      "title": "AI-Powered Insights",
+      "description": "Get smart recommendations and predictive analytics based on your business data. Our AI helps you forecast demand, optimize inventory, and identify growth opportunities."
+    },
+    "learnMore": "Learn more"
+  },
+  "faq": {
+    "eyebrow": "FAQ",
+    "heading": "Frequently asked questions", 
+    "subheading": "Find answers to common questions about our platform and services.",
+    "global": {
+      "question": "Does Dott work for businesses outside the US?",
+      "answer": "Yes, Dott is designed to work globally. We support multiple currencies, languages, and regional payment methods. Our platform complies with tax regulations in various countries, allowing you to run your business anywhere in the world."
+    },
+    "cost": {
+      "question": "How much does it cost?",
+      "answer": "We offer different pricing tiers based on your business needs. Our basic plan starts at $9.99/month, while our premium plan with advanced features costs $29.99/month. All plans include core features like inventory management, invoicing, and basic reporting. Visit our pricing page for a detailed comparison."
+    },
+    "onboarding": {
+      "question": "How long does it take to set up?",
+      "answer": "Most businesses get up and running with Dott in less than a day. Our intuitive setup wizard guides you through the process, and our customer success team is available to help if you need assistance. If you're migrating from another system, we offer tools to import your existing data."
+    },
+    "support": {
+      "question": "What kind of support do you offer?",
+      "answer": "We provide 24/7 customer support via chat, email, and phone. Our team is available in multiple languages to assist businesses across different time zones. Premium plans include dedicated account managers and priority support."
+    },
+    "data": {
+      "question": "Is my business data secure?",
+      "answer": "Yes, we take security seriously. Dott uses bank-level encryption to protect your data, regular security audits, and complies with GDPR and other regional data protection regulations. Your business data is backed up regularly and stored securely in the cloud."
+    },
+    "integration": {
+      "question": "Can I integrate with other tools I use?",
+      "answer": "Absolutely. Dott integrates with popular payment processors, accounting software, e-commerce platforms, and other business tools. We also offer an API for custom integrations. Check our integration page for a full list of supported services."
+    }
+  },
+  "contact": {
+    "eyebrow": "Contact Us",
+    "heading": "Get in touch",
+    "subheading": "Have questions about Dott? Our team is here to help you find the perfect solution for your business.",
+    "infoTitle": "Contact Information",
+    "infoSubtitle": "Fill out the form or contact us directly using the information below.",
+    "email": "Email",
+    "address": "Address", 
+    "social": "Follow Us",
+    "submitting": "Submitting your message...",
+    "success": "Thanks for reaching out! We'll get back to you shortly.",
+    "error": "Failed to send your message. Please try again or email us directly at support@dottapps.com.",
+    "form": {
+      "name": "Full Name",
+      "email": "Email Address",
+      "company": "Company",
+      "phone": "Phone Number",
+      "subject": "What can we help you with?",
+      "message": "Message",
+      "submit": "Send Message",
+      "sending": "Sending...",
+      "subject": {
+        "general": "General Inquiry",
+        "sales": "Sales Question", 
+        "support": "Technical Support",
+        "demo": "Request a Demo",
+        "partnership": "Partnership Opportunity"
+      }
+    },
+    "error": {
+      "name": "Name is required",
+      "email": {
+        "required": "Email is required",
+        "invalid": "Please enter a valid email address"
+      },
+      "message": "Message is required"
+    }
+  },
   "featuresTitle": "Global Business Features",
   "featuresSubtitle": "Everything you need to run your business efficiently across 100+ countries",
   "countriesSupported": "100+ Countries Supported",
