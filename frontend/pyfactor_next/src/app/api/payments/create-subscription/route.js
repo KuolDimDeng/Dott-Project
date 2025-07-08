@@ -119,7 +119,7 @@ export async function POST(request) {
     
     // Validate plan and billing cycle values
     const validPlans = ['free', 'professional', 'enterprise'];
-    const validBillingCycles = ['monthly', 'yearly'];
+    const validBillingCycles = ['monthly', '6month', 'yearly'];
     
     if (!validPlans.includes(plan.toLowerCase())) {
       return NextResponse.json({ 

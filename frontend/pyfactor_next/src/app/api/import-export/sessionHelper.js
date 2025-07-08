@@ -19,14 +19,14 @@ export async function getSession() {
       return null;
     }
 
-    // Fetch session from backend
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
-    const sessionUrl = `${apiUrl}/api/auth/session-v2/`;
-    console.log('[sessionHelper] Fetching session from:', sessionUrl);
+    // Use the local session-v2 endpoint which will handle the backend call
+    const host = process.env.NEXT_PUBLIC_HOST || 'http://localhost:3000';
+    const sessionUrl = `${host}/api/auth/session-v2`;
+    console.log('[sessionHelper] Fetching session from local proxy:', sessionUrl);
     
     const sessionResponse = await fetch(sessionUrl, {
       headers: {
-        'Cookie': `session_token=${sessionToken}`,
+        'Cookie': `session_token=${sessionToken}; sid=${sessionToken}`,
         'Content-Type': 'application/json'
       }
     });

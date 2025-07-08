@@ -71,6 +71,28 @@ const ImportExport = () => {
           tags: { component: 'ImportExport', action: 'checkLimits' }
         });
       }
+      
+      // Set default limits on error so the page still works
+      console.log('[ImportExport] Setting default limits due to error');
+      setLimits({
+        plan: 'FREE',
+        limits: {
+          importsPerMonth: 3,
+          aiAnalysisPerMonth: 3,
+          maxRowsPerImport: 100,
+          maxFileSize: 1048576 // 1MB
+        },
+        usage: {
+          importsUsed: 0,
+          aiAnalysisUsed: 0
+        },
+        remaining: {
+          imports: 3,
+          aiAnalysis: 3,
+          canImport: true,
+          canUseAI: true
+        }
+      });
     } finally {
       setCheckingLimits(false);
       if (span && span.end) {
@@ -96,10 +118,13 @@ const ImportExport = () => {
         });
       }
       
-      // Only check limits if session is loaded
+      // Only check limits if session is loaded and we have a user
       if (!sessionLoading && session?.user) {
         console.log('[ImportExport] Session loaded, checking import limits');
         checkImportLimits();
+      } else if (!sessionLoading) {
+        console.log('[ImportExport] No session user, skipping limit check');
+        setCheckingLimits(false);
       } else {
         console.log('[ImportExport] Waiting for session to load');
       }
@@ -323,8 +348,8 @@ const ImportExport = () => {
     }
   }, [importSource]);
 
-  // Check if user has admin/owner role
-  if (!sessionLoading && session?.user) {
+  // Check if user has admin/owner role - but only after session is loaded and limits are checked
+  if (!sessionLoading && !checkingLimits && session?.user) {
     const userRole = session.user.role;
     if (userRole !== 'OWNER' && userRole !== 'ADMIN') {
       return (

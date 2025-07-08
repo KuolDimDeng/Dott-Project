@@ -200,6 +200,11 @@ export default function SubscriptionSelectionFormV2({
       </div>
 
       {/* Plans Grid */}
+      {pricingLoading ? (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      ) : (
       <div className="grid gap-6 md:grid-cols-3">
         {PLANS.map((plan) => (
           <div
@@ -311,6 +316,7 @@ export default function SubscriptionSelectionFormV2({
           </div>
         ))}
       </div>
+      )}
 
       {/* Back button */}
       {onBack && (
