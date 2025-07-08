@@ -43,9 +43,10 @@ export default function Home() {
         
         // Check if user has manually selected a language before
         const userSelectedLanguage = localStorage.getItem('i18nextLng');
+        const userDidManuallySelect = localStorage.getItem('userManuallySelectedLanguage');
         
-        // If no manual selection, set language based on country
-        if (!userSelectedLanguage) {
+        // If no manual selection (user actually clicked the dropdown), set language based on country
+        if (!userSelectedLanguage || userDidManuallySelect !== 'true') {
           console.log(`🌐 Setting language to ${language} based on country ${country}`);
           i18nInstance.changeLanguage(language);
         } else {

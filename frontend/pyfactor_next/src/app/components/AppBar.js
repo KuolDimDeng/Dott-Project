@@ -20,9 +20,10 @@ export default function AppBar() {
       try {
         // Check if user has manually selected a language
         const manuallySelected = localStorage.getItem('i18nextLng');
+        const userDidManuallySelect = localStorage.getItem('userManuallySelectedLanguage');
         
-        // If user manually selected a language, respect that choice
-        if (manuallySelected) {
+        // Only respect the stored language if user actually clicked the language selector
+        if (manuallySelected && userDidManuallySelect === 'true') {
           console.log('📌 User has manually selected language:', manuallySelected);
           return; // Don't override manual selection
         }
@@ -192,6 +193,9 @@ export default function AppBar() {
       // Change the language in i18n
       await i18n.changeLanguage(language.code);
       setIsMenuOpen(false);
+      
+      // Mark that user manually selected a language
+      localStorage.setItem('userManuallySelectedLanguage', 'true');
       
       // Save language preference to user preferences
       try {
