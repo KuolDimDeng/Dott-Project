@@ -42,12 +42,23 @@ function getUserImportKey(userId) {
 }
 
 export async function GET(request) {
+  console.log('[check-limits] GET request received');
+  
   return await Sentry.startSpan(
     { name: 'GET /api/import-export/check-limits', op: 'http.server' },
     async () => {
       try {
+        console.log('[check-limits] Getting session...');
         const session = await getSession();
+        console.log('[check-limits] Session result:', {
+          hasSession: !!session,
+          hasUser: !!session?.user,
+          userId: session?.user?.id,
+          userEmail: session?.user?.email
+        });
+        
         if (!session?.user) {
+          console.error('[check-limits] No session user found, returning 401');
           logger.warn('Unauthorized access attempt to check-limits');
           return NextResponse.json(
             { error: 'Unauthorized' },

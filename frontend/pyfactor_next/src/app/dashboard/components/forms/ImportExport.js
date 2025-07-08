@@ -24,6 +24,9 @@ const ImportExport = () => {
   const fileInputRef = useRef(null);
 
   const checkImportLimits = useCallback(async () => {
+    console.log('[ImportExport] checkImportLimits called');
+    console.log('[ImportExport] Session state:', { session, loading: sessionLoading });
+    
     let span;
     try {
       span = Sentry.startSpan({ name: 'check-import-limits' });
@@ -32,20 +35,34 @@ const ImportExport = () => {
     }
     
     try {
-      const response = await fetch('/api/import-export/check-limits');
+      console.log('[ImportExport] Fetching /api/import-export/check-limits');
+      const response = await fetch('/api/import-export/check-limits', {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('[ImportExport] check-limits response:', {
+        status: response.status,
+        ok: response.ok,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('[ImportExport] Limits data received:', data);
         setLimits(data);
         if (logger && logger.info) {
           logger.info('Import limits checked successfully', { limits: data });
         }
       } else {
         const errorText = await response.text();
-        console.error(`Failed to check limits: ${response.status}`, errorText);
+        console.error(`[ImportExport] Failed to check limits: ${response.status}`, errorText);
         throw new Error(`Failed to check limits: ${response.status}`);
       }
     } catch (error) {
-      console.error('Failed to check limits:', error);
+      console.error('[ImportExport] Error in checkImportLimits:', error);
       if (logger && logger.error) {
         logger.error('Failed to check limits', error);
       }
@@ -60,10 +77,14 @@ const ImportExport = () => {
         span.end();
       }
     }
-  }, []);
+  }, [session, sessionLoading]);
 
   // Track page view and check limits
   useEffect(() => {
+    console.log('[ImportExport] useEffect triggered');
+    console.log('[ImportExport] Session loading state:', sessionLoading);
+    console.log('[ImportExport] Session data:', session);
+    
     try {
       if (captureEvent) {
         captureEvent('import_export_page_viewed');
@@ -74,11 +95,18 @@ const ImportExport = () => {
           subscriptionPlan: session?.user?.subscriptionPlan 
         });
       }
-      checkImportLimits();
+      
+      // Only check limits if session is loaded
+      if (!sessionLoading && session?.user) {
+        console.log('[ImportExport] Session loaded, checking import limits');
+        checkImportLimits();
+      } else {
+        console.log('[ImportExport] Waiting for session to load');
+      }
     } catch (error) {
-      console.error('Error in ImportExport useEffect:', error);
+      console.error('[ImportExport] Error in useEffect:', error);
     }
-  }, [trackPageView, session, checkImportLimits, captureEvent]);
+  }, [trackPageView, session, sessionLoading, checkImportLimits, captureEvent]);
 
   // Data types available for import/export
   const dataTypes = [
@@ -266,6 +294,9 @@ const ImportExport = () => {
   };
 
   const handleExportStart = () => {
+    console.log('[ImportExport] handleExportStart called');
+    console.log('[ImportExport] Selected data types:', selectedDataTypes);
+    
     if (selectedDataTypes.length === 0) {
       setError('Please select at least one data type to export');
       return;
@@ -276,11 +307,13 @@ const ImportExport = () => {
         captureEvent('export_started', { dataTypes: selectedDataTypes });
       }
     } catch (error) {
-      console.error('Error capturing export event:', error);
+      console.error('[ImportExport] Error capturing export event:', error);
     }
     
     // Navigate to export options
-    router.push(`/dashboard/import-export/export?types=${selectedDataTypes.join(',')}`);
+    const exportUrl = `/dashboard/import-export/export?types=${selectedDataTypes.join(',')}`;
+    console.log('[ImportExport] Navigating to:', exportUrl);
+    router.push(exportUrl);
   };
 
   // Reset file input when source changes

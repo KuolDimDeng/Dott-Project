@@ -69,6 +69,10 @@ const ExportPage = () => {
   ];
 
   const handleExport = async () => {
+    console.log('[ExportPage] handleExport called');
+    console.log('[ExportPage] Data types:', dataTypes);
+    console.log('[ExportPage] Selected format:', selectedFormat);
+    
     if (dataTypes.length === 0) {
       alert('No data types selected');
       return;
@@ -77,6 +81,7 @@ const ExportPage = () => {
     setExporting(true);
     setExportProgress(0);
     
+    console.log('[ExportPage] Capturing export_started event');
     captureEvent('export_started', {
       dataTypes,
       format: selectedFormat,
@@ -85,13 +90,16 @@ const ExportPage = () => {
     });
 
     try {
+      console.log('[ExportPage] Starting export process...');
 
       // In production, this would call an API endpoint to generate the export
+      console.log('[ExportPage] Calling /api/import-export/export-data');
       const response = await fetch('/api/import-export/export-data', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           dataTypes,
           format: selectedFormat,
@@ -101,7 +109,15 @@ const ExportPage = () => {
         })
       });
 
+      console.log('[ExportPage] Export response:', {
+        status: response.status,
+        ok: response.ok,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[ExportPage] Export failed:', errorText);
         throw new Error('Export failed');
       }
 

@@ -7,17 +7,33 @@ export async function getSession() {
     const cookieStore = cookies();
     const sessionToken = cookieStore.get('session_token')?.value || cookieStore.get('sid')?.value;
     
+    console.log('[sessionHelper] Looking for session token');
+    console.log('[sessionHelper] Cookies available:', {
+      session_token: !!cookieStore.get('session_token'),
+      sid: !!cookieStore.get('sid'),
+      token: sessionToken ? 'found' : 'not found'
+    });
+    
     if (!sessionToken) {
       logger.warn('No session token found in import-export');
       return null;
     }
 
     // Fetch session from backend
-    const sessionResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com'}/api/auth/session-v2/`, {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+    const sessionUrl = `${apiUrl}/api/auth/session-v2/`;
+    console.log('[sessionHelper] Fetching session from:', sessionUrl);
+    
+    const sessionResponse = await fetch(sessionUrl, {
       headers: {
         'Cookie': `session_token=${sessionToken}`,
         'Content-Type': 'application/json'
       }
+    });
+
+    console.log('[sessionHelper] Session response:', {
+      status: sessionResponse.status,
+      ok: sessionResponse.ok
     });
 
     if (!sessionResponse.ok) {
@@ -26,8 +42,19 @@ export async function getSession() {
     }
 
     const sessionData = await sessionResponse.json();
-    return { user: sessionData.user };
+    console.log('[sessionHelper] Session data retrieved:', {
+      hasUser: !!sessionData.user,
+      userId: sessionData.user?.id,
+      userEmail: sessionData.user?.email
+    });
+    
+    return { 
+      user: sessionData.user,
+      token: sessionToken,
+      sid: sessionToken
+    };
   } catch (error) {
+    console.error('[sessionHelper] Error getting session:', error);
     logger.error('Error getting session in import-export', error);
     return null;
   }

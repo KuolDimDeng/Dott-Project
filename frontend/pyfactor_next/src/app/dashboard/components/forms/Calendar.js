@@ -321,14 +321,35 @@ export default function Calendar({ onNavigate }) {
 
   // Handle date click
   const handleDateClick = (arg) => {
+    console.log('[Calendar] Date clicked:', arg.dateStr);
     setSelectedDate(arg.date);
     setSelectedEvent(null);
+    
+    // Format the date for datetime-local input
+    // If allDay is true, just use the date, otherwise add time
+    let startDateTime, endDateTime;
+    
+    if (arg.allDay) {
+      // For all-day events, use just the date
+      startDateTime = arg.dateStr;
+      endDateTime = arg.dateStr;
+    } else {
+      // For timed events, add a default time (9 AM to 10 AM)
+      const clickedDate = new Date(arg.date);
+      clickedDate.setHours(9, 0, 0, 0);
+      startDateTime = clickedDate.toISOString().slice(0, 16);
+      
+      const endDate = new Date(clickedDate);
+      endDate.setHours(10, 0, 0, 0);
+      endDateTime = endDate.toISOString().slice(0, 16);
+    }
+    
     setEventForm({
       title: '',
       type: 'appointment',
-      start: arg.dateStr,
-      end: arg.dateStr,
-      allDay: arg.allDay,
+      start: startDateTime,
+      end: endDateTime,
+      allDay: arg.allDay || false,
       description: '',
       location: '',
       sendReminder: true,
@@ -678,7 +699,7 @@ export default function Calendar({ onNavigate }) {
                     Start Date
                   </label>
                   <input
-                    type="datetime-local"
+                    type={eventForm.allDay ? "date" : "datetime-local"}
                     value={eventForm.start}
                     onChange={(e) => setEventForm({ ...eventForm, start: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -689,7 +710,7 @@ export default function Calendar({ onNavigate }) {
                     End Date
                   </label>
                   <input
-                    type="datetime-local"
+                    type={eventForm.allDay ? "date" : "datetime-local"}
                     value={eventForm.end}
                     onChange={(e) => setEventForm({ ...eventForm, end: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -702,7 +723,34 @@ export default function Calendar({ onNavigate }) {
                   <input
                     type="checkbox"
                     checked={eventForm.allDay}
-                    onChange={(e) => setEventForm({ ...eventForm, allDay: e.target.checked })}
+                    onChange={(e) => {
+                      const isAllDay = e.target.checked;
+                      if (isAllDay) {
+                        // Convert datetime to date only
+                        const startDate = eventForm.start.split('T')[0];
+                        const endDate = eventForm.end.split('T')[0];
+                        setEventForm({ 
+                          ...eventForm, 
+                          allDay: isAllDay,
+                          start: startDate,
+                          end: endDate
+                        });
+                      } else {
+                        // Convert date to datetime (9 AM default)
+                        const startDateTime = eventForm.start.includes('T') 
+                          ? eventForm.start 
+                          : `${eventForm.start}T09:00`;
+                        const endDateTime = eventForm.end.includes('T') 
+                          ? eventForm.end 
+                          : `${eventForm.end}T10:00`;
+                        setEventForm({ 
+                          ...eventForm, 
+                          allDay: isAllDay,
+                          start: startDateTime,
+                          end: endDateTime
+                        });
+                      }
+                    }}
                     className="mr-2"
                   />
                   <span className="text-sm text-gray-700">All day event</span>

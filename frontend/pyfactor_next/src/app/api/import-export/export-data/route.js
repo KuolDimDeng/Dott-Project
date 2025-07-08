@@ -116,23 +116,38 @@ function generateCSVFile(data, dataType) {
 }
 
 export async function POST(request) {
+  console.log('[export-data] POST request received');
+  
   try {
     // Check authentication
+    console.log('[export-data] Getting session...');
     const session = await getSession();
-    if (!session?.user?.tenant_id) {
+    console.log('[export-data] Session result:', {
+      hasSession: !!session,
+      hasUser: !!session?.user,
+      userId: session?.user?.id,
+      userEmail: session?.user?.email,
+      hasTenantId: !!session?.user?.tenant_id
+    });
+    
+    if (!session?.user) {
+      console.error('[export-data] No session user found, returning 401');
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
+    const body = await request.json();
+    console.log('[export-data] Request body:', body);
+    
     const { 
       dataTypes, 
       format = 'excel', 
       dateRange = 'all',
       customDateRange,
       options = {}
-    } = await request.json();
+    } = body;
 
     if (!dataTypes || !Array.isArray(dataTypes) || dataTypes.length === 0) {
       return NextResponse.json(

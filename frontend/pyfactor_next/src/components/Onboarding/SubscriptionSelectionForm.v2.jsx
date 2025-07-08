@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { logger } from '@/utils/logger';
 import { useCurrencyDetection } from '@/hooks/useCurrencyDetection';
 import PricingDisplay from './PricingDisplay';
@@ -83,7 +83,34 @@ export default function SubscriptionSelectionFormV2({
 }) {
   const [selectedPlan, setSelectedPlan] = useState(initialData.selectedPlan || '');
   const [billingCycle, setBillingCycle] = useState(initialData.billingCycle || 'monthly'); // 'monthly', '6month', 'yearly'
+  const [regionalPricing, setRegionalPricing] = useState(null);
+  const [pricingLoading, setPricingLoading] = useState(true);
   const { currency, setCurrency } = useCurrencyDetection();
+
+  // Fetch regional pricing based on country from business info
+  useEffect(() => {
+    const fetchRegionalPricing = async () => {
+      if (!initialData.country) {
+        setPricingLoading(false);
+        return;
+      }
+
+      try {
+        logger.info('[SubscriptionSelection] Fetching regional pricing for:', initialData.country);
+        const response = await fetch(`/api/pricing/by-country?country=${initialData.country}`);
+        const data = await response.json();
+        
+        logger.info('[SubscriptionSelection] Regional pricing data:', data);
+        setRegionalPricing(data);
+      } catch (error) {
+        logger.error('[SubscriptionSelection] Error fetching regional pricing:', error);
+      } finally {
+        setPricingLoading(false);
+      }
+    };
+
+    fetchRegionalPricing();
+  }, [initialData.country]);
 
   const handlePlanSelect = async (planId) => {
     setSelectedPlan(planId);
@@ -109,6 +136,23 @@ export default function SubscriptionSelectionFormV2({
       {parentError && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-700">
           {parentError}
+        </div>
+      )}
+
+      {/* Regional pricing notice */}
+      {regionalPricing && regionalPricing.discount_percentage > 0 && (
+        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded">
+          <div className="flex items-center">
+            <span className="text-2xl mr-2">🎉</span>
+            <div>
+              <p className="text-green-800 font-semibold">
+                {regionalPricing.discount_percentage}% off all plans!
+              </p>
+              <p className="text-green-700 text-sm">
+                Special pricing for businesses in {initialData.country}
+              </p>
+            </div>
+          </div>
         </div>
       )}
 
@@ -198,12 +242,27 @@ export default function SubscriptionSelectionFormV2({
                   <div className="text-3xl font-bold">Free</div>
                 ) : (
                   <div>
-                    <div className="text-3xl font-bold">
-                      ${billingCycle === 'monthly' ? plan.monthlyPrice : billingCycle === '6month' ? plan.sixMonthPrice : plan.yearlyPrice}
-                      <span className="text-base font-normal text-gray-600">
-                        /{billingCycle === 'monthly' ? 'month' : billingCycle === '6month' ? '6 months' : 'year'}
-                      </span>
-                    </div>
+                    {regionalPricing && regionalPricing.discount_percentage > 0 ? (
+                      <>
+                        <div className="text-3xl font-bold">
+                          ${billingCycle === 'monthly' 
+                            ? regionalPricing.pricing[plan.id]?.monthly 
+                            : billingCycle === '6month' 
+                            ? regionalPricing.pricing[plan.id]?.six_month 
+                            : regionalPricing.pricing[plan.id]?.yearly}
+                        </div>
+                        <div className="text-sm text-gray-500 line-through">
+                          ${billingCycle === 'monthly' ? plan.monthlyPrice : billingCycle === '6month' ? plan.sixMonthPrice : plan.yearlyPrice}
+                        </div>
+                        <div className="text-sm text-green-600 font-semibold">
+                          {regionalPricing.discount_percentage}% off
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-3xl font-bold">
+                        ${billingCycle === 'monthly' ? plan.monthlyPrice : billingCycle === '6month' ? plan.sixMonthPrice : plan.yearlyPrice}
+                      </div>
+                    )}
                     {billingCycle === '6month' && plan.id !== 'free' && (
                       <div className="text-sm text-orange-600 mt-1">
                         Save ${plan.monthlyPrice * 6 - plan.sixMonthPrice} (${(plan.sixMonthPrice / 6).toFixed(2)}/mo)
