@@ -143,7 +143,7 @@ export async function GET(request) {
     const authParams = new URLSearchParams({
       response_type: 'code',
       client_id: clientId,
-      redirect_uri: `${baseUrl}/api/auth/callback`,
+      redirect_uri: `${baseUrl}/auth/oauth-callback`,
       scope: 'openid profile email',
       audience: audience,
       state: state,
@@ -173,7 +173,7 @@ export async function GET(request) {
     console.log('🔄 [Auth0Login] Auth0 URL:', authUrl);
     console.log('🔄 [Auth0Login] Auth0 Domain:', auth0Domain);
     console.log('🔄 [Auth0Login] Client ID:', clientId);
-    console.log('🔄 [Auth0Login] Redirect URI:', `${baseUrl}/api/auth/callback`);
+    console.log('🔄 [Auth0Login] Redirect URI:', `${baseUrl}/auth/oauth-callback`);
     console.log('🔄 [Auth0Login] Connection:', connection || 'default');
     console.log('🔄 [Auth0Login] State:', state);
     console.log('🔄 [Auth0Login] PKCE Challenge:', challenge);
