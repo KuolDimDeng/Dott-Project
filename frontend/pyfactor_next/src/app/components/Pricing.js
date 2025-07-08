@@ -9,6 +9,25 @@ import Link from 'next/link';
 
 // This will be moved inside the component to use translation keys
 
+// Helper function to format price in local currency
+function formatLocalPrice(usdPrice, exchangeRate) {
+  if (!exchangeRate || !exchangeRate.rate) return '';
+  
+  // Extract numeric value from USD price string
+  const numericPrice = parseFloat(usdPrice.replace('$', '').replace(',', ''));
+  
+  // Calculate local price
+  const localPrice = numericPrice * exchangeRate.rate;
+  
+  // Format based on currency preferences
+  const { symbol, decimals } = exchangeRate.format;
+  const formattedPrice = decimals === 0 
+    ? Math.round(localPrice).toLocaleString()
+    : localPrice.toFixed(decimals).toLocaleString();
+  
+  return `${symbol}${formattedPrice}`;
+}
+
 export default function Pricing() {
   const { t } = useTranslation();
   const [billingPeriod, setBillingPeriod] = useState('monthly'); // 'monthly', '6month', 'annual'
@@ -16,6 +35,7 @@ export default function Pricing() {
   const [userCountry, setUserCountry] = useState('US');
   const [hasDiscount, setHasDiscount] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
+  const [exchangeRate, setExchangeRate] = useState(null);
   
   // Feature comparison data with translations
   const featureComparison = [
@@ -112,6 +132,21 @@ export default function Pricing() {
         const pricing = await getCurrentUserPricing();
         const country = await getCacheValue('user_country') || 'US';
         const isDeveloping = await getCacheValue('user_is_developing_country') || false;
+        
+        // Fetch exchange rate for the user's country
+        if (country !== 'US') {
+          try {
+            const rateResponse = await fetch(`/api/exchange-rates?country=${country}`);
+            if (rateResponse.ok) {
+              const rateData = await rateResponse.json();
+              if (rateData.success) {
+                setExchangeRate(rateData);
+              }
+            }
+          } catch (error) {
+            console.log('Failed to fetch exchange rate:', error);
+          }
+        }
         
         // Special check for USA - should NEVER have discount
         if (country === 'US' && isDeveloping) {
@@ -328,6 +363,14 @@ export default function Pricing() {
                       </span>
                     )}
                   </div>
+                  {/* Exchange Rate Display */}
+                  {plan.name !== 'Basic' && exchangeRate && exchangeRate.currency !== 'USD' && (
+                    <div className="mt-2">
+                      <p className="text-lg text-gray-600">
+                        ({formatLocalPrice(plan.price[billingPeriod], exchangeRate)})*
+                      </p>
+                    </div>
+                  )}
                   {plan.name !== 'Basic' && billingPeriod === '6month' && (
                     <div className="mt-1">
                       <p className="text-sm text-orange-600 font-medium">
@@ -477,6 +520,34 @@ export default function Pricing() {
                 </table>
               </div>
             </div>
+          </div>
+        )}
+        
+        {/* Exchange Rate Disclaimer */}
+        {exchangeRate && exchangeRate.currency !== 'USD' && (
+          <div className="mt-8 text-center">
+            <p className="text-sm text-gray-500">
+              * {exchangeRate.disclaimer || t('pricing.exchangeDisclaimer', 'Exchange rate is estimated and may vary. Actual rates depend on payment provider.')}
+            </p>
+            {exchangeRate.source && (
+              <p className="text-xs text-gray-400 mt-1">
+                {t('pricing.exchangeSource', 'Source: {{source}}', { source: exchangeRate.source })}
+              </p>
+            )}
+          </div>
+        )}
+        
+        {/* Payment Methods Note */}
+        {userCountry && userCountry !== 'US' && (
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-600">
+              {userCountry === 'KE' && t('pricing.paymentMethods.kenya', '💳 Pay with credit card (USD) or M-Pesa (KES)')}
+              {userCountry === 'NG' && t('pricing.paymentMethods.nigeria', '💳 Pay with credit card (USD) or local bank transfer (NGN)')}
+              {userCountry === 'ZA' && t('pricing.paymentMethods.southAfrica', '💳 Pay with credit card (USD) or EFT (ZAR)')}
+              {userCountry === 'IN' && t('pricing.paymentMethods.india', '💳 Pay with credit card (USD) or UPI/Razorpay (INR)')}
+              {userCountry === 'BR' && t('pricing.paymentMethods.brazil', '💳 Pay with credit card (USD) or PIX/Boleto (BRL)')}
+              {!['KE', 'NG', 'ZA', 'IN', 'BR'].includes(userCountry) && t('pricing.paymentMethods.default', '💳 Multiple payment methods available including credit cards and local options')}
+            </p>
           </div>
         )}
 

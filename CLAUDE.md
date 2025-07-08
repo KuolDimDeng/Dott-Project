@@ -398,6 +398,83 @@
   - **Optional**: Implement email notifications during grace period
   - **Recommended**: Monitor grace period conversion rates and payment patterns
 
+### [27.0.0] - 2025-07-08 - CURRENT - Payroll Wizard System
+- **Purpose**: Industry-standard 7-step guided payroll processing with AI assistance and employee pay stub access
+- **Architecture**: Complete wizard-based payroll flow from employee selection to payment distribution
+- **Core Features**:
+  - **Step 1**: Employee review and selection with hours tracking
+  - **Step 2**: Pay calculation with overtime and bonus adjustments
+  - **Step 3**: Tax deductions review (US Federal/State/FICA, Kenya PAYE/NHIF/NSSF)
+  - **Step 4**: Final approval with compliance checklist and PDF previews
+  - **Step 5**: Multi-method funding (ACH 0.8%, Card 2.9%, Balance free)
+  - **Step 6**: Real-time payment processing with live status tracking
+  - **Step 7**: Pay stub generation, notifications, and report distribution
+- **AI Integration**:
+  - Claude Sonnet 4 for overtime pattern analysis and suggestions
+  - Smart insights for payroll cost optimization
+  - Automated compliance and validation checks
+- **Employee Features**:
+  - Pay stub viewer integrated into Employment tab in user profile
+  - Year-based filtering with detailed breakdown modal
+  - PDF download functionality with professional formatting
+  - Earnings, deductions, and net pay transparency
+- **Technical Implementation**:
+  - **Frontend**: `/src/app/dashboard/components/forms/payroll/PayrollWizard.js`
+  - **Step Components**: Individual components for each wizard step
+  - **Routing**: Integrated into DashboardContent and RenderMainContent
+  - **Menu Integration**: Updated listItems.js with "Run Payroll Wizard" option
+  - **PayStub Viewer**: `/src/components/PayStubViewer.js` with modal support
+- **API Architecture** (`/api/payroll/`):
+  - `current/` - Get payroll progress, `save-progress/` - Save wizard state
+  - `calculate/` - Pay calculations, `deductions/` - Tax calculations
+  - `approve/` - Final approval, `fund-account/fund-card/fund-balance/` - Funding options
+  - `preflight-check/` - Pre-payment validation, `process-payments/` - Payment execution
+  - `generate-paystubs/send-notifications/generate-reports/` - Distribution
+  - `preview-pdf/preview-paystubs/` - Document previews
+  - `download-report/[type]/` - Report downloads, `complete/` - Finalization
+- **Pay Stub API** (`/api/paystubs/`):
+  - `route.js` - GET pay stubs by year, `[payStubId]/download/` - PDF download
+- **Multi-Country Support**:
+  - US: Federal/State taxes, FICA (Social Security, Medicare), ACH payments
+  - Kenya: PAYE, NHIF, NSSF, M-Pesa & bank transfers
+  - International: Wise transfers for global payments
+- **Payment Methods**:
+  - US: ACH Direct Deposit (1-2 business days)
+  - Kenya: M-Pesa & Bank Transfer (instant to 1 day)
+  - International: Wise transfers (1-3 business days)
+- **Security & Compliance**:
+  - Session-based authentication with tenant isolation
+  - PCI-compliant payment processing via Stripe/banking partners
+  - Complete audit trails and compliance reporting
+  - Bank-grade security with RLS and encryption
+- **Revenue Model**:
+  - Platform fee: 2.4% + transfer fees per payroll
+  - Transparent fee calculation and disclosure
+  - Competitive with industry standards (ADP, QuickBooks)
+- **User Experience**:
+  - Progress saving with step validation
+  - Mobile-responsive design with touch-friendly navigation
+  - Real-time updates and streaming payment progress
+  - Comprehensive error handling and recovery
+  - Industry-standard UI matching QuickBooks/ADP patterns
+- **Files Created**:
+  - `/src/app/dashboard/components/forms/payroll/PayrollWizard.js` - Main wizard
+  - `/src/app/dashboard/components/forms/payroll/steps/Step[1-7]_*.js` - Individual steps
+  - `/src/components/PayStubViewer.js` - Employee pay stub viewer
+  - Complete API route structure under `/api/payroll/` and `/api/paystubs/`
+- **Integration Points**:
+  - DashboardContent.js: Added payroll-wizard routing
+  - RenderMainContent.js: Added lazy loading and rendering
+  - listItems.js: Updated menu with wizard option
+  - MyAccount.modern.js: Added pay stub access to Employment tab
+- **Documentation**: `/frontend/pyfactor_next/docs/PAYROLL_WIZARD_IMPLEMENTATION.md`
+- **Benefits**:
+  - Reduces payroll processing time from hours to minutes
+  - Eliminates manual calculation errors
+  - Ensures tax compliance across jurisdictions
+  - Provides bank-grade security and audit trails
+  - Scales from small businesses to enterprise
+
 ---
 
 ## DEPRECATED CONFIGURATIONS (Replaced - Do Not Use)

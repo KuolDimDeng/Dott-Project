@@ -131,7 +131,8 @@
       "Bash(sudo killall:*)",
       "Bash(DJANGO_SETTINGS_MODULE=pyfactor.settings python3 -c \"import django; django.setup(); print(''✅ Django settings loaded successfully'')\")",
       "Bash(DJANGO_SETTINGS_MODULE=pyfactor.settings python3 -c \"import django; django.setup(); print(''✅ Django settings loaded successfully with all packages'')\")",
-      "WebFetch(domain:docs.wise.com)"
+      "WebFetch(domain:docs.wise.com)",
+      "Bash(git fetch:*)"
     ],
     "deny": []
   }
