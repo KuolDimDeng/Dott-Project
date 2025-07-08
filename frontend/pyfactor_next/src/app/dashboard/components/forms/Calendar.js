@@ -114,7 +114,30 @@ export default function Calendar({ onNavigate }) {
       
       console.log('[Calendar] Total events to display:', allEvents.length);
       console.log('[Calendar] All events:', allEvents);
+      
+      // Log first event details for debugging
+      if (allEvents.length > 0) {
+        console.log('[Calendar] First event details:', {
+          id: allEvents[0].id,
+          title: allEvents[0].title,
+          start: allEvents[0].start,
+          end: allEvents[0].end,
+          allDay: allEvents[0].allDay,
+          type: allEvents[0].type,
+          color: allEvents[0].color,
+          backgroundColor: allEvents[0].backgroundColor,
+          borderColor: allEvents[0].borderColor
+        });
+      }
+      
       setEvents(allEvents);
+      
+      // Force calendar to refresh
+      if (calendarRef) {
+        console.log('[Calendar] Forcing calendar refresh');
+        const calendarApi = calendarRef.getApi();
+        calendarApi.refetchEvents();
+      }
     } catch (error) {
       console.error('[Calendar] Error loading events:', error);
       toast.error('Failed to load calendar events');
@@ -137,10 +160,14 @@ export default function Calendar({ onNavigate }) {
         // Handle both array response and object with events property
         const events = Array.isArray(data) ? data : (data.events || []);
         console.log('[Calendar] Processed calendar events:', events);
-        return events.map(event => ({
+        const mappedEvents = events.map(event => ({
           ...event,
-          color: EVENT_TYPES[event.type]?.color || '#6B7280'
+          color: EVENT_TYPES[event.type]?.color || '#6B7280',
+          backgroundColor: event.backgroundColor || EVENT_TYPES[event.type]?.color || '#6B7280',
+          borderColor: event.borderColor || EVENT_TYPES[event.type]?.color || '#6B7280'
         }));
+        console.log('[Calendar] Mapped events with colors:', mappedEvents);
+        return mappedEvents;
       }
       console.log('[Calendar] Calendar events response not ok');
       return [];
@@ -489,6 +516,7 @@ export default function Calendar({ onNavigate }) {
       {/* Calendar */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
         <FullCalendar
+          key={events.length}
           ref={setCalendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
           initialView="dayGridMonth"
