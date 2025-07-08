@@ -29,6 +29,27 @@
   "aboutDescription2": "What sets Dott apart is our deep understanding of the unique challenges faced by small businesses, especially in emerging markets.",
   "missionStatement": "At Dott, our mission is to empower small businesses to thrive by providing them with affordable, accessible, and powerful management tools that simplify day-to-day operations.",
   "visionStatement": "We envision a world where small businesses have access to the same quality of management tools as large corporations, but tailored to their specific needs and scale.",
+  "hero": {
+    "title": "All-in-one Business Software",
+    "subtitle": "Free forever for basic features", 
+    "description": "Global business management with advanced inventory, barcode scanning, and regional payment solutions—all in one intuitive platform for businesses worldwide.",
+    "button": "Get Started for Free",
+    "trustedBy": "Trusted by 10,000+ businesses worldwide",
+    "imageAlt": "Business Management Illustration",
+    "videoTitle": "Dott Software Demo",
+    "paymentNote": "Payment processing fees may apply for certain transaction types",
+    "benefit": {
+      "free": "Free forever plan",
+      "invoicing": "Professional invoicing",
+      "pos": "Point of sale system",
+      "inventory": "Inventory management",
+      "payroll": "Payroll & HR tools",
+      "tax": "Tax compliance",
+      "insights": "AI-powered insights",
+      "mobileMoney": "Mobile money payments",
+      "cardPayments": "Card payments worldwide"
+    }
+  },
   "heroTitle": "All-in-one Business Software",
   "heroSubtitle": "Free forever for basic features",
   "heroDescription": "Global business management with advanced inventory, barcode scanning, and regional payment solutions—all in one intuitive platform for businesses worldwide.",
