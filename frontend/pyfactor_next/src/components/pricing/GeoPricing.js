@@ -12,7 +12,16 @@ export default function GeoPricing() {
 
   const fetchPricing = async () => {
     try {
-      const response = await fetch('/api/pricing/by-country');
+      // Check for country override in URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const countryOverride = urlParams.get('country');
+      
+      let apiUrl = '/api/pricing/by-country';
+      if (countryOverride) {
+        apiUrl = `/api/pricing/by-country?country=${countryOverride}`;
+      }
+      
+      const response = await fetch(apiUrl);
       const data = await response.json();
       console.log('💰 GeoPricing - API Response:', data);
       setPricing(data);
