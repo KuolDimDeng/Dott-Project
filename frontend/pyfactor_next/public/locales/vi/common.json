@@ -29,11 +29,211 @@
   "aboutDescription2": "Điều khiến Dott khác biệt là sự hiểu biết sâu sắc của chúng tôi về những thách thức độc đáo mà các doanh nghiệp nhỏ phải đối mặt, đặc biệt là ở các thị trường mới nổi.",
   "missionStatement": "Tại Dott, sứ mệnh của chúng tôi là trao quyền cho các doanh nghiệp nhỏ phát triển bằng cách cung cấp cho họ các công cụ quản lý giá cả phải chăng, dễ tiếp cận và mạnh mẽ để đơn giản hóa hoạt động hàng ngày.",
   "visionStatement": "Chúng tôi hình dung một thế giới nơi các doanh nghiệp nhỏ có thể tiếp cận các công cụ quản lý có chất lượng tương tự như các tập đoàn lớn, nhưng được điều chỉnh phù hợp với nhu cầu và quy mô cụ thể của họ.",
+  "hero": {
+    "title": "Phần mềm kinh doanh tất cả trong một",
+    "subtitle": "Miễn phí vĩnh viễn cho các tính năng cơ bản",
+    "description": "Quản lý doanh nghiệp toàn cầu với quản lý hàng tồn kho nâng cao, quét mã vạch và giải pháp thanh toán khu vực - tất cả trong một nền tảng trực quan cho doanh nghiệp trên toàn thế giới.",
+    "button": "Bắt đầu miễn phí",
+    "trustedBy": "Được tin dùng bởi hơn 10.000 doanh nghiệp trên toàn thế giới",
+    "imageAlt": "Minh họa Quản lý Doanh nghiệp",
+    "videoTitle": "Demo Phần mềm Dott",
+    "paymentNote": "Phí xử lý thanh toán có thể áp dụng cho một số loại giao dịch",
+    "benefit": {
+      "free": "Gói miễn phí vĩnh viễn",
+      "invoicing": "Hóa đơn chuyên nghiệp",
+      "pos": "Hệ thống điểm bán hàng",
+      "inventory": "Quản lý hàng tồn kho",
+      "payroll": "Công cụ lương và nhân sự",
+      "tax": "Tuân thủ thuế",
+      "insights": "Thông tin chi tiết từ AI",
+      "mobileMoney": "Thanh toán tiền di động",
+      "cardPayments": "Thanh toán thẻ toàn cầu"
+    }
+  },
   "heroTitle": "Phần mềm kinh doanh tất cả trong một",
   "heroDescription": "Quản lý doanh nghiệp toàn cầu với quản lý hàng tồn kho nâng cao, quét mã vạch và giải pháp thanh toán khu vực - tất cả trong một nền tảng trực quan cho doanh nghiệp trên toàn thế giới.",
   "heroImageAlt": "Minh họa Quản lý Doanh nghiệp",
   "heroVideoTitle": "Demo Phần mềm Dott",
   "searchLanguages": "Tìm kiếm ngôn ngữ...",
+  "footer": {
+    "home": "Trang chủ",
+    "features": "Tính năng",
+    "pricing": "Giá cả",
+    "about": "Giới thiệu",
+    "blog": "Blog",
+    "contact": "Liên hệ",
+    "inventory": "Quản lý hàng tồn kho",
+    "accounting": "Kế toán",
+    "invoicing": "Hóa đơn",
+    "payments": "Thanh toán",
+    "pos": "Điểm bán hàng",
+    "careers": "Tuyển dụng",
+    "press": "Báo chí",
+    "partners": "Đối tác",
+    "privacy": "Chính sách bảo mật",
+    "terms": "Điều khoản dịch vụ",
+    "help": "Trung tâm trợ giúp",
+    "docs": "Tài liệu",
+    "status": "Trạng thái hệ thống",
+    "security": "Bảo mật",
+    "cookies": "Chính sách Cookie",
+    "rights": "Mọi quyền được bảo lưu.",
+    "tagline": "Đơn giản hóa và tối ưu hóa quản lý doanh nghiệp cho các công ty toàn cầu.",
+    "product": "Sản phẩm",
+    "company": "Công ty",
+    "support": "Hỗ trợ",
+    "legal": "Pháp lý"
+  },
+  "highlights": {
+    "eyebrow": "Điểm nổi bật chính",
+    "heading": "Tại sao doanh nghiệp chọn Dott",
+    "subheading": "Các tính năng tiên tiến khiến chúng tôi khác biệt với đối thủ cạnh tranh và giúp doanh nghiệp của bạn phát triển.",
+    "mobile": {
+      "title": "Ứng dụng di động",
+      "description": "Truy cập dữ liệu doanh nghiệp của bạn mọi lúc, mọi nơi với ứng dụng di động mạnh mẽ của chúng tôi. Quản lý hàng tồn kho, xử lý bán hàng và xem báo cáo theo thời gian thực."
+    },
+    "integration": {
+      "title": "Tích hợp liền mạch",
+      "description": "Kết nối các công cụ và dịch vụ yêu thích của bạn. Nền tảng của chúng tôi tích hợp với bộ xử lý thanh toán, phần mềm kế toán, nền tảng thương mại điện tử và nhiều hơn nữa."
+    },
+    "support": {
+      "title": "Hỗ trợ 24/7",
+      "description": "Đội ngũ hỗ trợ chuyên gia của chúng tôi luôn sẵn sàng giúp bạn thành công. Nhận trợ giúp qua chat, email hoặc cuộc gọi điện thoại."
+    },
+    "security": {
+      "title": "Bảo mật cấp ngân hàng",
+      "description": "Dữ liệu của bạn được bảo vệ bằng mã hóa cấp quân sự và các giao thức bảo mật tốt nhất trong ngành. Tuân thủ GDPR, SOC 2 và các tiêu chuẩn bảo mật khác."
+    }
+  },
+  "faq": {
+    "eyebrow": "FAQ",
+    "heading": "Câu hỏi thường gặp",
+    "subheading": "Bạn có câu hỏi về nền tảng kinh doanh toàn cầu của chúng tôi? Chúng tôi có câu trả lời.",
+    "items": [
+      {
+        "question": "Dott là gì?",
+        "answer": "Dott là nền tảng quản lý doanh nghiệp toàn cầu hỗ trợ doanh nghiệp tại hơn 100 quốc gia. Nó kết hợp kế toán, bảng lương, nhân sự, quản lý hàng tồn kho với chức năng mã vạch và các tùy chọn thanh toán khác nhau, bao gồm tiền di động, trong một giải pháp trực quan."
+      },
+      {
+        "question": "Chi phí là bao nhiêu?",
+        "answer": "Chúng tôi cung cấp gói Basic miễn phí cho các doanh nghiệp khởi nghiệp và gói Professional với giá $15/tháng ($150/năm). Gói Professional bao gồm tất cả các tính năng, bao gồm in mã vạch và tích hợp máy quét, không có phí ẩn. Bạn có thể nâng cấp hoặc hạ cấp bất cứ lúc nào."
+      },
+      {
+        "question": "Bạn hỗ trợ những quốc gia nào?",
+        "answer": "Dott hỗ trợ doanh nghiệp tại hơn 100 quốc gia trên toàn thế giới, với các tính năng đặc biệt cho các khu vực cụ thể như tích hợp tiền di động tại Châu Phi, bao thanh toán hóa đơn tại Hoa Kỳ và Canada, và công cụ tuân thủ cho các môi trường quy định khác nhau."
+      },
+      {
+        "question": "Dott có hỗ trợ thanh toán tiền di động không?",
+        "answer": "Có! Chúng tôi hỗ trợ tích hợp với các nền tảng tiền di động phổ biến như M-Pesa, MTN Mobile Money, Airtel Money và những nền tảng khác ở Châu Phi và Châu Á. Điều này cho phép doanh nghiệp của bạn dễ dàng chấp nhận và xử lý các phương thức thanh toán địa phương."
+      },
+      {
+        "question": "Tính năng máy quét mã vạch và hàng tồn kho hoạt động như thế nào?",
+        "answer": "Gói Professional của chúng tôi bao gồm khả năng tạo và in mã vạch cho các mặt hàng trong kho của bạn và đồng bộ hóa với máy quét mã vạch Bluetooth để quản lý hàng tồn kho nhanh hơn. Tính năng này được bao gồm mà không mất thêm chi phí và hoạt động liền mạch với hệ thống quản lý hàng tồn kho của chúng tôi."
+      },
+      {
+        "question": "Dữ liệu của tôi có an toàn không?",
+        "answer": "Tuyệt đối. Chúng tôi sử dụng mã hóa bảo mật cấp ngân hàng và tuân theo các thực hành tốt nhất trong ngành để bảo vệ dữ liệu của bạn. Nền tảng của chúng tôi được lưu trữ trên cơ sở hạ tầng đám mây an toàn với nhiều lớp bảo mật, tính năng tuân thủ khu vực và sao lưu thường xuyên."
+      }
+    ]
+  },
+  "contact": {
+    "eyebrow": "Liên hệ",
+    "heading": "Hãy trò chuyện",
+    "subheading": "Chúng tôi rất vui được nghe từ bạn. Gửi cho chúng tôi một tin nhắn và chúng tôi sẽ phản hồi ngay khi có thể.",
+    "form": {
+      "name": "Tên",
+      "email": "Email",
+      "message": "Tin nhắn",
+      "submit": "Gửi tin nhắn",
+      "subject": {
+        "label": "Chủ đề",
+        "general": "Câu hỏi chung",
+        "sales": "Câu hỏi bán hàng",
+        "support": "Hỗ trợ kỹ thuật",
+        "partnership": "Đối tác",
+        "other": "Khác"
+      }
+    },
+    "info": {
+      "email": "hello@dottapps.com",
+      "phone": "+1 (555) 123-4567",
+      "address": "123 Business Street, Suite 100, New York, NY 10001"
+    }
+  },
+  "pricing": {
+    "eyebrow": "Giá cả",
+    "heading": "Gói cho mọi quy mô doanh nghiệp",
+    "subheading": "Bắt đầu miễn phí và nâng cấp khi doanh nghiệp của bạn phát triển.",
+    "monthly": "Hàng tháng",
+    "annually": "Hàng năm",
+    "save": "Tiết kiệm 20%",
+    "plans": {
+      "basic": {
+        "name": "Cơ bản",
+        "price": "Miễn phí",
+        "description": "Hoàn hảo cho freelancer và startup",
+        "features": [
+          "1 người dùng",
+          "Tối đa 100 giao dịch/tháng",
+          "Hóa đơn cơ bản",
+          "2GB lưu trữ",
+          "Hỗ trợ email"
+        ]
+      },
+      "professional": {
+        "name": "Chuyên nghiệp",
+        "price": "$15",
+        "priceAnnual": "$12",
+        "description": "Cho doanh nghiệp đang phát triển",
+        "popular": true,
+        "features": [
+          "Người dùng không giới hạn",
+          "Giao dịch không giới hạn",
+          "Tính năng nâng cao",
+          "30GB lưu trữ",
+          "Hỗ trợ ưu tiên"
+        ]
+      },
+      "enterprise": {
+        "name": "Doanh nghiệp",
+        "price": "$45",
+        "priceAnnual": "$36",
+        "description": "Cho các công ty đã thành lập",
+        "features": [
+          "Tất cả tính năng Professional",
+          "Lưu trữ không giới hạn",
+          "Quản lý tài khoản chuyên dụng",
+          "Truy cập API",
+          "SLA 99.9%"
+        ]
+      }
+    }
+  },
+  "auth": {
+    "signIn": "Đăng nhập",
+    "signUp": "Đăng ký",
+    "forgotPassword": "Quên mật khẩu?",
+    "resetPassword": "Đặt lại mật khẩu",
+    "createAccount": "Tạo tài khoản",
+    "alreadyHaveAccount": "Đã có tài khoản?",
+    "dontHaveAccount": "Chưa có tài khoản?",
+    "email": "Email",
+    "password": "Mật khẩu",
+    "confirmPassword": "Xác nhận mật khẩu",
+    "firstName": "Tên",
+    "lastName": "Họ",
+    "company": "Công ty",
+    "agreeToTerms": "Tôi đồng ý với Điều khoản Dịch vụ và Chính sách Bảo mật",
+    "signInWithGoogle": "Đăng nhập bằng Google",
+    "signUpWithGoogle": "Đăng ký bằng Google",
+    "or": "hoặc",
+    "checkEmail": "Kiểm tra email của bạn để biết hướng dẫn đặt lại mật khẩu.",
+    "passwordResetSent": "Email đặt lại mật khẩu đã được gửi.",
+    "invalidCredentials": "Email hoặc mật khẩu không hợp lệ.",
+    "accountCreated": "Tài khoản đã được tạo thành công! Vui lòng kiểm tra email của bạn để xác minh.",
+    "emailVerified": "Email đã được xác minh thành công!",
+    "pleaseVerifyEmail": "Vui lòng xác minh email của bạn trước khi tiếp tục."
+  },
   "featuresTitle": "Tính năng Kinh doanh Toàn cầu",
   "featuresSubtitle": "Tất cả những gì bạn cần để quản lý doanh nghiệp hiệu quả tại hơn 100 quốc gia",
   "countriesSupported": "Hỗ trợ hơn 100 quốc gia",

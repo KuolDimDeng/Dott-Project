@@ -29,6 +29,27 @@
   "aboutDescription2": "Kinachoifanya Dott iwe tofauti ni uelewa wetu wa kina wa changamoto za kipekee zinazokumba biashara ndogo, hasa katika masoko yanayoibuka.",
   "missionStatement": "Katika Dott, dhamira yetu ni kuwezesha biashara ndogo kustawi kwa kuwapa zana za usimamizi zinazofikika, zinazoweza kupatikana, na zenye nguvu ambazo hurahisisha shughuli za kila siku.",
   "visionStatement": "Tunaona ulimwengu ambapo biashara ndogo zina ufikiaji wa ubora sawa wa zana za usimamizi kama mashirika makubwa, lakini zimetengenezwa kulingana na mahitaji yao mahususi na ukubwa.",
+  "hero": {
+    "title": "Programu ya Biashara Yote-katika-Moja",
+    "subtitle": "Bure milele kwa vipengele vya msingi",
+    "description": "Usimamizi wa biashara wa kimataifa ukiwa na udhibiti wa bidhaa wa hali ya juu, usomaji wa msimbo wa pau, na suluhisho za malipo za kikanda - vyote katika jukwaa moja rahisi kwa biashara duniani kote.",
+    "button": "Anza bure",
+    "trustedBy": "Inaaminika na biashara zaidi ya 10,000 duniani kote",
+    "imageAlt": "Mchoro wa Usimamizi wa Biashara",
+    "videoTitle": "Onyesho la Programu ya Dott",
+    "paymentNote": "Ada za uchakataji wa malipo zinaweza kutumika kwa aina fulani za miamala",
+    "benefit": {
+      "free": "Mpango wa bure milele",
+      "invoicing": "Ankara za kitaalamu",
+      "pos": "Mfumo wa mahali pa mauzo",
+      "inventory": "Usimamizi wa bidhaa",
+      "payroll": "Zana za mishahara na rasilimali watu",
+      "tax": "Uzingatiaji wa kodi",
+      "insights": "Maarifa yanayoendeshwa na AI",
+      "mobileMoney": "Malipo ya pesa za simu",
+      "cardPayments": "Malipo ya kadi duniani kote"
+    }
+  },
   "heroTitle": "Programu ya Biashara Yote-katika-Moja",
   "heroDescription": "Usimamizi wa biashara wa kimataifa ukiwa na udhibiti wa bidhaa wa hali ya juu, usomaji wa msimbo wa pau, na suluhisho za malipo za kikanda - vyote katika jukwaa moja rahisi kwa biashara duniani kote.",
   "heroImageAlt": "Mchoro wa Usimamizi wa Biashara",
@@ -319,5 +340,299 @@
   "integration_subtitle": "Unganisha Dott na programu zako unazozipenda",
   "security_badge_1": "Usimbaji fiche wa kiwango cha benki",
   "security_badge_2": "Inakubaliana na GDPR",
-  "security_badge_3": "Muda wa kutenda kazi 99.9%"
+  "security_badge_3": "Muda wa kutenda kazi 99.9%",
+  "footer": {
+    "home": "Nyumbani",
+    "features": "Vipengele",
+    "pricing": "Bei",
+    "about": "Kuhusu Sisi",
+    "blog": "Blogu",
+    "contact": "Wasiliana",
+    "inventory": "Usimamizi wa Bidhaa",
+    "accounting": "Uhasibu",
+    "invoicing": "Ankara",
+    "payments": "Malipo",
+    "pos": "Mahali pa Mauzo",
+    "careers": "Kazi",
+    "press": "Vyombo vya Habari",
+    "partners": "Washirika",
+    "privacy": "Sera ya Faragha",
+    "terms": "Masharti ya Huduma",
+    "help": "Kituo cha Msaada",
+    "docs": "Nyaraka",
+    "status": "Hali ya Mfumo",
+    "security": "Usalama",
+    "cookies": "Sera ya Vidakuzi",
+    "rights": "Haki zote zimehifadhiwa.",
+    "tagline": "Kufanya usimamizi wa biashara kuwa rahisi na wenye ufanisi kwa makampuni duniani kote.",
+    "product": "Bidhaa",
+    "company": "Kampuni",
+    "support": "Msaada",
+    "legal": "Kisheria"
+  },
+  "highlights": {
+    "eyebrow": "Manufaa Makuu",
+    "heading": "Kwa nini biashara huchagua Dott",
+    "subheading": "Vipengele vya hali ya juu vinavyotutenga na washindani na kusaidia biashara yako kukua.",
+    "mobile": {
+      "title": "Programu ya Simu",
+      "description": "Fikia data ya biashara yako wakati wowote, mahali popote na programu yetu yenye nguvu ya simu. Simamia bidhaa, chakata mauzo, na ona ripoti za wakati halisi ukiwa njiani."
+    },
+    "integration": {
+      "title": "Miunganisho Isiyo na Matatizo",
+      "description": "Unganisha na zana na huduma unazozipenda. Jukwaa letu linaunganishwa na wachakataji malipo, programu za uhasibu, majukwaa ya biashara ya elektroniki, na zaidi."
+    },
+    "ai": {
+      "title": "Maarifa Yanayoendeshwa na AI",
+      "description": "Pata mapendekezo ya akili na uchanganuzi wa utabiri kulingana na data ya biashara yako. AI yetu inakusaidia kutabiri mahitaji, kuongeza ufanisi wa bidhaa, na kutambua fursa za ukuaji."
+    },
+    "learnMore": "Jifunze zaidi"
+  },
+  "faq": {
+    "eyebrow": "Maswali Yanayoulizwa Mara kwa Mara",
+    "heading": "Maswali yanayoulizwa mara kwa mara",
+    "subheading": "Pata majibu ya maswali ya kawaida kuhusu jukwaa letu na huduma.",
+    "global": {
+      "question": "Je, Dott inafanya kazi kwa biashara nje ya Marekani?",
+      "answer": "Ndiyo, Dott imeundwa kufanya kazi kimataifa. Tunaunga mkono sarafu nyingi, lugha, na njia za malipo za kikanda. Jukwaa letu linatii sheria za kodi katika nchi mbalimbali, likikuruhusu kuendesha biashara yako popote duniani."
+    },
+    "cost": {
+      "question": "Inagharimu kiasi gani?",
+      "answer": "Tunatoa miweka tofauti ya bei kulingana na mahitaji ya biashara yako. Mpango wetu wa msingi unaanza kwa $9.99/mwezi, wakati mpango wa premium ulio na vipengele vya hali ya juu unagharimu $29.99/mwezi. Mipango yote inajumuisha vipengele vya msingi kama usimamizi wa bidhaa, ankara, na ripoti za msingi. Tembelea ukurasa wetu wa bei kwa mulinganisho wa kina."
+    },
+    "onboarding": {
+      "question": "Inachukua muda gani kuanza?",
+      "answer": "Biashara nyingi huanza na Dott kwa muda wa chini ya siku moja. Mchakato wetu rahisi wa kuweka husaidia katika utaratibu, na timu yetu ya mafanikio ya wateja iko tayari kusaidia ikiwa unahitaji msaada. Ikiwa unahama kutoka mfumo mwingine, tunatoa zana za kuingiza data yako iliyopo."
+    },
+    "support": {
+      "question": "Mnatoa aina gani ya msaada?",
+      "answer": "Tunatoa msaada wa wateja saa 24/7 kupitia mazungumzo, barua pepe, na simu. Timu yetu inapatikana kwa lugha nyingi ili kusaidia biashara katika majira ya saa tofauti. Mipango ya premium inajumuisha wameneja wa akaunti waalifu na msaada wa kipaumbele."
+    },
+    "data": {
+      "question": "Je, data ya biashara yangu ni salama?",
+      "answer": "Ndiyo, tunachukua usalama kwa umakini. Dott hutumia usimbaji fiche wa kiwango cha benki kulinda data yako, ukaguzi wa usalama wa mara kwa mara, na kutii GDPR na sheria nyingine za ulinzi wa data za kikanda. Data ya biashara yako inawekwa kwa usalama kwenye wingu na kuhifadhiwa mara kwa mara."
+    },
+    "integration": {
+      "question": "Je, ninaweza kuunganisha na zana nyingine ninazotumia?",
+      "answer": "Kabisa. Dott inaunganishwa na wachakataji malipo maarufu, programu za uhasibu, majukwaa ya biashara ya elektroniki, na zana nyingine za biashara. Pia tunatoa API kwa miunganisho ya kibinafsi. Angalia ukurasa wetu wa miunganisho kwa orodha kamili ya huduma zinazotumika."
+    }
+  },
+  "contact": {
+    "eyebrow": "Wasiliana Nasi",
+    "heading": "Ongea nasi",
+    "subheading": "Una maswali kuhusu Dott? Timu yetu iko hapa kukusaidia kupata suluhisho kamili kwa biashara yako.",
+    "infoTitle": "Taarifa za Mawasiliano",
+    "infoSubtitle": "Jaza fomu au wasiliana nasi moja kwa moja kwa kutumia taarifa hapa chini.",
+    "email": "Barua pepe",
+    "address": "Anwani",
+    "social": "Tufuate",
+    "submitting": "Inatuma ujumbe wako...",
+    "success": "Asante kwa kutufikia! Tutakupigia upande huu hivi karibuni.",
+    "error": "Kushindwa kutuma ujumbe wako. Tafadhali jaribu tena au tutumiee barua pepe moja kwa moja kwa support@dottapps.com.",
+    "form": {
+      "name": "Jina Kamili",
+      "email": "Anwani ya Barua pepe",
+      "company": "Kampuni",
+      "phone": "Nambari ya Simu",
+      "message": "Ujumbe",
+      "submit": "Tuma Ujumbe",
+      "sending": "Inatuma...",
+      "subject": {
+        "label": "Tunaweza kukusaidia vipi?",
+        "general": "Hojaji ya Jumla",
+        "sales": "Swali la Mauzo",
+        "support": "Msaada wa Kiufundi",
+        "demo": "Omba Onyesho",
+        "partnership": "Fursa ya Ushirikiano"
+      }
+    },
+    "error": {
+      "name": "Jina linahitajika",
+      "email": {
+        "required": "Barua pepe inahitajika",
+        "invalid": "Tafadhali ingiza anwani halali ya barua pepe"
+      },
+      "message": "Ujumbe unahitajika"
+    }
+  },
+  "pricing": {
+    "eyebrow": "Bei Rahisi na Wazi",
+    "heading": "Chagua Mpango Muafaka kwa Biashara Yako",
+    "subheading": "Hakuna ada zilizofichwa. Hakuna kadi ya mkopo inayohitajika kwa mpango wa Msingi. Futa wakati wowote.",
+    "discount": {
+      "title": "Punguzo la 50% kwa Mipango Yote ya Kulipa!",
+      "subtitle": "Bei maalum kwa biashara {{country}} - Kuunga mkono ujasiriamali wa mtaa"
+    },
+    "billing": {
+      "monthly": "Kila Mwezi",
+      "sixMonths": "Miezi 6",
+      "annual": "Kila Mwaka",
+      "popular": "MAARUFU",
+      "save20": "OKOA 20%"
+    },
+    "period": {
+      "month": "/mwezi",
+      "sixMonths": "/miezi 6",
+      "year": "/mwaka"
+    },
+    "save": "Okoa {{amount}} ({{monthly}}/mwezi)",
+    "mostPopular": "MAARUFU ZAIDI",
+    "plans": {
+      "basic": {
+        "name": "Msingi",
+        "description": "Kamili kwa wafanyabiashara huru na biashara ndogo",
+        "features": {
+          "0": "Mtumiaji 1",
+          "1": "Hifadhi ya GB 3",
+          "2": "Vipengele vyote vya msingi",
+          "3": "Msaada wa msingi",
+          "4": "Ufikiaji wa programu ya simu"
+        },
+        "cta": "Anza Bure"
+      },
+      "professional": {
+        "name": "Kitaalamu",
+        "description": "Kwa biashara zinazokua zinazohitaji zaidi",
+        "features": {
+          "0": "Hadi watumiaji 3",
+          "1": "Hifadhi isiyo na kikomo",
+          "2": "Vipengele vyote vimejumuishwa",
+          "3": "Msaada wa kipaumbele",
+          "4": "Uchanganuzi wa hali ya juu",
+          "5": "Msaada wa maeneo mengi"
+        },
+        "cta": "Pata Kitaalamu"
+      },
+      "enterprise": {
+        "name": "Shirika",
+        "description": "Ukuaji usio na kikomo kwa mashirika makubwa",
+        "features": {
+          "0": "Watumiaji wasio na kikomo",
+          "1": "Kila kitu kisio na kikomo",
+          "2": "Vipengele vyote vimejumuishwa",
+          "3": "Msaada maalum",
+          "4": "Uongozaji wa kibinafsi",
+          "5": "Maarifa yanayoendeshwa na AI",
+          "6": "Ufikiaji wa API"
+        },
+        "cta": "Pata Shirika"
+      }
+    },
+    "comparison": {
+      "show": "Linganisha",
+      "hide": "Ficha",
+      "allFeatures": "Vipengele Vyote",
+      "title": "Mulinganisho wa Kina wa Vipengele",
+      "features": "Vipengele"
+    },
+    "features": {
+      "categories": {
+        "core": "Vipengele vya Msingi",
+        "business": "Usimamizi wa Biashara",
+        "inventory": "Bidhaa na POS",
+        "payments": "Malipo na Ankara",
+        "tax": "Kodi na Uzingatiaji",
+        "analytics": "Uchanganuzi na Ripoti",
+        "importExport": "Uingizaji/Usafirishaji",
+        "security": "Usalama na Uzingatiaji"
+      },
+      "users": "Watumiaji",
+      "users.basic": "Mtumiaji 1",
+      "users.professional": "Hadi watumiaji 3",
+      "users.enterprise": "Watumiaji wasio na kikomo",
+      "storage": "Hifadhi",
+      "storage.basic": "GB 3",
+      "storage.professional": "Bila kikomo",
+      "storage.enterprise": "Bila kikomo",
+      "support": "Msaada",
+      "support.basic": "Msaada wa msingi",
+      "support.professional": "Msaada wa kipaumbele",
+      "support.enterprise": "Msaada maalum",
+      "onboarding": "Uongozaji",
+      "onboarding.basic": "Kujitegemea",
+      "onboarding.professional": "Msaada wa barua pepe",
+      "onboarding.enterprise": "Uongozaji wa kibinafsi",
+      "income": "Ufuatiliaji wa Mapato na Matumizi",
+      "multicurrency": "Msaada wa Sarafu Nyingi",
+      "invoices": "Uundaji wa Ankara",
+      "reminders": "Vikumbusho vya Kiotomatiki",
+      "customers": "Usimamizi wa Wateja",
+      "products": "Orodha ya Bidhaa",
+      "inventory": "Ufuatiliaji wa Bidhaa",
+      "barcode": "Usomaji wa Msimbo wa Pau",
+      "barcodePrint": "Uchapishaji wa Msimbo wa Pau wa Kibinafsi",
+      "stockAlerts": "Arifa za Bidhaa Kidogo",
+      "multiLocation": "Bidhaa za Maeneo Mengi",
+      "pos": "Mfumo wa POS",
+      "offline": "Hali ya Nje ya Mtandao",
+      "stripe": "Miunganisho ya Stripe",
+      "paypal": "Miunganisho ya PayPal",
+      "mobileMoney": "Pesa za Simu (M-Pesa, n.k.)",
+      "regionalPayments": "Njia za Malipo za Kikanda",
+      "factoring": "Factoring ya Ankara",
+      "recurring": "Ankara za Mara kwa Mara",
+      "paymentLinks": "Viungo vya Malipo",
+      "taxCalc": "Mahesabu ya Kodi za Kikanda",
+      "vatGst": "Msaada wa VAT/GST",
+      "taxReports": "Ripoti za Kodi",
+      "eFiling": "Tayari kwa Kufailia kwa Elektroniki",
+      "multiRegion": "Uzingatiaji wa Maeneo Mengi",
+      "basicReports": "Ripoti za Msingi",
+      "customReports": "Ripoti za Kibinafsi",
+      "dashboard": "Dashibodi ya Wakati Halisi",
+      "profit": "Uchanganuzi wa Faida",
+      "cashFlow": "Utabiri wa Mtiririko wa Pesa",
+      "ai": "Mapendekezo ya AI",
+      "importExport": "Usimamizi wa Uingizaji/Usafirishaji",
+      "customs": "Nyaraka za Forodha",
+      "shipping": "Miunganisho ya Usafirishaji",
+      "trade": "Uzingatiaji wa Biashara",
+      "encryption": "Usimbaji Fiche wa Data",
+      "twoFactor": "Uthibitishaji wa Hatua Mbili",
+      "gdpr": "Uzingatiaji wa GDPR",
+      "soc2": "Uzingatiaji wa SOC2",
+      "customSecurity": "Sera za Usalama za Kibinafsi"
+    }
+  },
+  "auth": {
+    "step": "Hatua",
+    "of": "ya",
+    "secure": "Salama",
+    "trusted": "Inaaminika",
+    "signin": {
+      "welcome": "Karibu Tena",
+      "title": "Ingia kwenye akaunti yako",
+      "subtitle": "Huna akaunti?",
+      "createAccount": "Unda moja hapa",
+      "description": "Fikia dashibodi ya biashara yako na uendelee kukuza kampuni yako na zana zetu kamilifu.",
+      "feature1": "Uchanganuzi wa biashara wa wakati halisi",
+      "feature2": "Usimamizi salama wa data",
+      "feature3": "Msaada wa wateja saa 24/7",
+      "businesses": "Biashara zanatuamini",
+      "uptime": "Dhamana ya muda wa kutenda kazi"
+    },
+    "signup": {
+      "welcome": "Anza Safari Yako",
+      "title": "Unda akaunti yako",
+      "subtitle": "Tayari una akaunti?",
+      "signIn": "Ingia hapa",
+      "description": "Jiunge na maelfu ya biashara zinazomwamini PyFactor kusimamia shughuli zao kwa ufanisi.",
+      "benefit1": "Usanidi wa haraka kwa dakika",
+      "benefit2": "Zana za biashara za kitaalamu",
+      "benefit3": "Ripoti na uchanganuzi wa hali ya juu",
+      "benefit4": "Usalama wa kiwango cha benki",
+      "testimonial": "PyFactor imebadilisha jinsi tunavyosimamia shughuli za biashara yetu."
+    },
+    "verify": {
+      "title": "Thibitisha Barua pepe Yako",
+      "pageTitle": "Angalia barua pepe yako",
+      "pageSubtitle": "Tumetuma nambari ya uthibitishaji kwenye anwani yako ya barua pepe",
+      "description": "Tumetuma nambari ya uthibitishaji kwenye barua pepe yako. Tafadhali angalia sanduku lako la barua pepe na uingize nambari hapa chini.",
+      "step1": "Angalia sanduku lako la barua pepe",
+      "step2": "Tafuta barua pepe ya uthibitishaji",
+      "step3": "Ingiza nambari ya tarakimu 6",
+      "securityTitle": "Kwa nini thibitisha?",
+      "securityNote": "Uthibitishaji wa barua pepe unatusaidia kuhakikisha usalama wa akaunti yako na kuzuia ufikiaji usioruhusiwa."
+    }
+  }
 }

@@ -29,6 +29,27 @@
   "aboutDescription2": "Dott'u farklı kılan, özellikle gelişmekte olan pazarlarda, küçük işletmelerin karşılaştığı benzersiz zorlukları derinlemesine anlamamızdır.",
   "missionStatement": "Dott'ta misyonumuz, küçük işletmelere günlük operasyonları basitleştiren uygun, erişilebilir ve güçlü yönetim araçları sağlayarak başarılı olmalarını sağlamaktır.",
   "visionStatement": "Küçük işletmelerin, özel ihtiyaçlarına ve ölçeklerine göre uyarlanmış olarak, büyük şirketlerle aynı kalitede yönetim araçlarına erişebildiği bir dünya öngörüyoruz.",
+  "hero": {
+    "title": "Hepsi Bir Arada İşletme Yazılımı",
+    "subtitle": "Temel özelliklerle sonsuza kadar ücretsiz",
+    "description": "Gelişmiş envanter, barkod tarama ve bölgesel ödeme çözümleriyle küresel işletme yönetimi - tümü dünya çapındaki işletmeler için sezgisel bir platformda.",
+    "button": "Ücretsiz başlayın",
+    "trustedBy": "Dünya çapında 10.000'den fazla işletme tarafından güveniliyor",
+    "imageAlt": "İşletme Yönetimi İllüstrasyonu",
+    "videoTitle": "Dott Yazılım Demosu",
+    "paymentNote": "Belirli işlem türleri için ödeme işleme ücretleri uygulanabilir",
+    "benefit": {
+      "free": "Sonsuza kadar ücretsiz plan",
+      "invoicing": "Profesyonel faturalama",
+      "pos": "Satış noktası sistemi",
+      "inventory": "Envanter yönetimi",
+      "payroll": "Bordro ve İK araçları",
+      "tax": "Vergi uyumluluğu",
+      "insights": "Yapay zeka destekli içgörüler",
+      "mobileMoney": "Mobil para ödemeleri",
+      "cardPayments": "Dünya çapında kart ödemeleri"
+    }
+  },
   "heroTitle": "Hepsi Bir Arada İşletme Yazılımı",
   "heroDescription": "Gelişmiş envanter, barkod tarama ve bölgesel ödeme çözümleriyle küresel işletme yönetimi - tümü dünya çapındaki işletmeler için sezgisel bir platformda.",
   "heroImageAlt": "İşletme Yönetimi İllüstrasyonu",
@@ -319,5 +340,299 @@
   "integration_subtitle": "Dott'u favori uygulamalarınızla bağlayın",
   "security_badge_1": "Banka düzeyinde şifreleme",
   "security_badge_2": "GDPR uyumlu",
-  "security_badge_3": "%99,9 çalışma süresi"
+  "security_badge_3": "%99,9 çalışma süresi",
+  "footer": {
+    "home": "Ana Sayfa",
+    "features": "Özellikler",
+    "pricing": "Fiyatlandırma",
+    "about": "Hakkımızda",
+    "blog": "Blog",
+    "contact": "İletişim",
+    "inventory": "Envanter Yönetimi",
+    "accounting": "Muhasebe",
+    "invoicing": "Faturalama",
+    "payments": "Ödemeler",
+    "pos": "Satış Noktası",
+    "careers": "Kariyer",
+    "press": "Basın",
+    "partners": "Ortaklar",
+    "privacy": "Gizlilik Politikası",
+    "terms": "Hizmet Şartları",
+    "help": "Yardım Merkezi",
+    "docs": "Dokümantasyon",
+    "status": "Sistem Durumu",
+    "security": "Güvenlik",
+    "cookies": "Çerez Politikası",
+    "rights": "Tüm hakları saklıdır.",
+    "tagline": "Dünya çapındaki şirketler için işletme yönetimini basit ve verimli hale getirme.",
+    "product": "Ürün",
+    "company": "Şirket",
+    "support": "Destek",
+    "legal": "Yasal"
+  },
+  "highlights": {
+    "eyebrow": "Ana Avantajlar",
+    "heading": "İşletmeler neden Dott'u seçiyor",
+    "subheading": "Bizi rakiplerden ayıran ve işletmenizin büyümesine yardımcı olan gelişmiş özellikler.",
+    "mobile": {
+      "title": "Mobil Uygulama",
+      "description": "Güçlü mobil uygulamamızla işletme verilerinize her zaman, her yerden erişin. Hareket halindeyken envanteri yönetin, satışları işleyin ve gerçek zamanlı raporları görüntüleyin."
+    },
+    "integration": {
+      "title": "Sorunsuz Entegrasyonlar",
+      "description": "Favori araçlarınız ve hizmetlerinizle bağlantı kurun. Platformumuz ödeme işlemcileri, muhasebe yazılımları, e-ticaret platformları ve daha fazlasıyla entegre olur."
+    },
+    "ai": {
+      "title": "Yapay Zeka Destekli İçgörüler",
+      "description": "İşletme verilerinize dayanarak akıllı öneriler ve tahmine dayalı analizler elde edin. Yapay zekamız talep tahmininde bulunmanıza, envanteri optimize etmenize ve büyüme fırsatlarını belirlemenize yardımcı olur."
+    },
+    "learnMore": "Daha fazla bilgi"
+  },
+  "faq": {
+    "eyebrow": "SSS",
+    "heading": "Sıkça sorulan sorular",
+    "subheading": "Platformumuz ve hizmetlerimiz hakkında sık sorulan soruların cevaplarını bulun.",
+    "global": {
+      "question": "Dott ABD dışındaki işletmeler için çalışır mı?",
+      "answer": "Evet, Dott küresel olarak çalışacak şekilde tasarlanmıştır. Birden fazla para birimini, dili ve bölgesel ödeme yöntemlerini destekliyoruz. Platformumuz çeşitli ülkelerdeki vergi düzenlemelerine uygun olup, dünyanın herhangi bir yerinde işletmenizi yürütmenize olanak tanır."
+    },
+    "cost": {
+      "question": "Maliyeti ne kadar?",
+      "answer": "İşletme ihtiyaçlarınıza göre farklı fiyat seviyeleri sunuyoruz. Temel planımız ayda 9,99$ 'dan başlarken, gelişmiş özelliklerle premium planımız ayda 29,99$ tutmaktadır. Tüm planlar envanter yönetimi, faturalama ve temel raporlama gibi temel özellikleri içerir. Ayrıntılı karşılaştırma için fiyatlandırma sayfamızı ziyaret edin."
+    },
+    "onboarding": {
+      "question": "Kurulumu ne kadar sürer?",
+      "answer": "Çoğu işletme Dott'la bir günden az sürede çalışmaya başlar. Sezgisel kurulum sihirbazımız süreç boyunca size rehberlik eder ve yardıma ihtiyacınız olduğunda müşteri başarı ekibimiz hazırdır. Başka bir sistemden geçiş yapıyorsanız, mevcut verilerinizi içe aktarmak için araçlar sağlıyoruz."
+    },
+    "support": {
+      "question": "Ne tür destek sunuyorsunuz?",
+      "answer": "Sohbet, e-posta ve telefon yoluyla 7/24 müşteri desteği sağlıyoruz. Ekibimiz farklı saat dilimlerindeki işletmelere yardımcı olmak için birden fazla dilde hizmet verebilmektedir. Premium planlar özel hesap yöneticileri ve öncelikli destek içerir."
+    },
+    "data": {
+      "question": "İşletme verilerim güvende mi?",
+      "answer": "Evet, güvenliği ciddiye alıyoruz. Dott verilerinizi korumak için banka düzeyinde şifreleme kullanır, düzenli güvenlik denetimleri yapar ve GDPR ile diğer bölgesel veri koruma düzenlemelerine uyar. İşletme verileriniz düzenli olarak yedeklenir ve bulutta güvenli bir şekilde saklanır."
+    },
+    "integration": {
+      "question": "Kullandığım diğer araçlarla entegre olabilir miyim?",
+      "answer": "Kesinlikle. Dott popüler ödeme işlemcileri, muhasebe yazılımları, e-ticaret platformları ve diğer işletme araçlarıyla entegre olur. Ayrıca özel entegrasyonlar için API sunuyoruz. Desteklenen hizmetlerin tam listesi için entegrasyon sayfamızı kontrol edin."
+    }
+  },
+  "contact": {
+    "eyebrow": "Bizimle İletişime Geçin",
+    "heading": "İletişime geçin",
+    "subheading": "Dott hakkında sorularınız mı var? Ekibimiz işletmeniz için mükemmel çözümü bulmanıza yardımcı olmak için burada.",
+    "infoTitle": "İletişim Bilgileri",
+    "infoSubtitle": "Formu doldurun veya aşağıdaki bilgileri kullanarak doğrudan bizimle iletişime geçin.",
+    "email": "E-posta",
+    "address": "Adres",
+    "social": "Bizi Takip Edin",
+    "submitting": "Mesajınız gönderiliyor...",
+    "success": "Bize ulaştığınız için teşekkürler! Kısa süre içinde size geri döneceğiz.",
+    "error": "Mesajınız gönderilemedi. Lütfen tekrar deneyin veya doğrudan support@dottapps.com adresine e-posta gönderin.",
+    "form": {
+      "name": "Ad Soyad",
+      "email": "E-posta Adresi",
+      "company": "Şirket",
+      "phone": "Telefon Numarası",
+      "message": "Mesaj",
+      "submit": "Mesaj Gönder",
+      "sending": "Gönderiliyor...",
+      "subject": {
+        "label": "Size nasıl yardımcı olabiliriz?",
+        "general": "Genel Sorgu",
+        "sales": "Satış Sorusu",
+        "support": "Teknik Destek",
+        "demo": "Demo Talep Et",
+        "partnership": "Ortaklık Fırsatı"
+      }
+    },
+    "error": {
+      "name": "Ad gereklidir",
+      "email": {
+        "required": "E-posta gereklidir",
+        "invalid": "Lütfen geçerli bir e-posta adresi girin"
+      },
+      "message": "Mesaj gereklidir"
+    }
+  },
+  "pricing": {
+    "eyebrow": "Basit, Şeffaf Fiyatlandırma",
+    "heading": "İşletmeniz için Doğru Planı Seçin",
+    "subheading": "Gizli ücretler yok. Temel plan için kredi kartı gerekmiyor. İstediğiniz zaman iptal edin.",
+    "discount": {
+      "title": "Tüm Ücretli Planlarda %50 İndirim!",
+      "subtitle": "{{country}}'daki işletmeler için özel fiyatlandırma - Yerel girişimciliği destekleme"
+    },
+    "billing": {
+      "monthly": "Aylık",
+      "sixMonths": "6 Ay",
+      "annual": "Yıllık",
+      "popular": "POPÜLER",
+      "save20": "%20 TASARRUF"
+    },
+    "period": {
+      "month": "/ay",
+      "sixMonths": "/6 ay",
+      "year": "/yıl"
+    },
+    "save": "{{amount}} tasarruf edin ({{monthly}}/ay)",
+    "mostPopular": "EN POPÜLER",
+    "plans": {
+      "basic": {
+        "name": "Temel",
+        "description": "Serbest çalışanlar ve küçük işletmeler için mükemmel",
+        "features": {
+          "0": "1 kullanıcı",
+          "1": "3GB depolama",
+          "2": "Tüm temel özellikler",
+          "3": "Temel destek",
+          "4": "Mobil uygulama erişimi"
+        },
+        "cta": "Ücretsiz Başla"
+      },
+      "professional": {
+        "name": "Profesyonel",
+        "description": "Daha fazlaya ihtiyaç duyan büyüyen işletmeler için",
+        "features": {
+          "0": "3 kullanıcıya kadar",
+          "1": "Sınırsız depolama",
+          "2": "Tüm özellikler dahil",
+          "3": "Öncelikli destek",
+          "4": "Gelişmiş analitik",
+          "5": "Çok lokasyon desteği"
+        },
+        "cta": "Profesyonel Edinin"
+      },
+      "enterprise": {
+        "name": "Kurumsal",
+        "description": "Büyük organizasyonlar için sınırsız ölçek",
+        "features": {
+          "0": "Sınırsız kullanıcı",
+          "1": "Sınırsız her şey",
+          "2": "Tüm özellikler dahil",
+          "3": "Özel destek",
+          "4": "Özel uyum",
+          "5": "Yapay zeka destekli içgörüler",
+          "6": "API erişimi"
+        },
+        "cta": "Kurumsal Edinin"
+      }
+    },
+    "comparison": {
+      "show": "Karşılaştır",
+      "hide": "Gizle",
+      "allFeatures": "Tüm Özellikler",
+      "title": "Ayrıntılı Özellik Karşılaştırması",
+      "features": "Özellikler"
+    },
+    "features": {
+      "categories": {
+        "core": "Temel Özellikler",
+        "business": "İşletme Yönetimi",
+        "inventory": "Envanter ve POS",
+        "payments": "Ödemeler ve Faturalama",
+        "tax": "Vergi ve Uyumluluk",
+        "analytics": "Analitik ve Raporlama",
+        "importExport": "İthalat/İhracat",
+        "security": "Güvenlik ve Uyumluluk"
+      },
+      "users": "Kullanıcılar",
+      "users.basic": "1 kullanıcı",
+      "users.professional": "3 kullanıcıya kadar",
+      "users.enterprise": "Sınırsız kullanıcı",
+      "storage": "Depolama",
+      "storage.basic": "3GB",
+      "storage.professional": "Sınırsız",
+      "storage.enterprise": "Sınırsız",
+      "support": "Destek",
+      "support.basic": "Temel destek",
+      "support.professional": "Öncelikli destek",
+      "support.enterprise": "Özel destek",
+      "onboarding": "Uyum",
+      "onboarding.basic": "Self-servis",
+      "onboarding.professional": "E-posta yardımı",
+      "onboarding.enterprise": "Özel uyum",
+      "income": "Gelir ve Gider Takibi",
+      "multicurrency": "Çoklu Para Birimi Desteği",
+      "invoices": "Fatura Oluşturma",
+      "reminders": "Otomatik Hatırlatıcılar",
+      "customers": "Müşteri Yönetimi",
+      "products": "Ürün Kataloğu",
+      "inventory": "Envanter Takibi",
+      "barcode": "Barkod Tarama",
+      "barcodePrint": "Özel Barkod Yazdırma",
+      "stockAlerts": "Düşük Stok Uyarıları",
+      "multiLocation": "Çok Lokasyonlu Envanter",
+      "pos": "POS Sistemi",
+      "offline": "Çevrimdışı Mod",
+      "stripe": "Stripe Entegrasyonu",
+      "paypal": "PayPal Entegrasyonu",
+      "mobileMoney": "Mobil Para (M-Pesa, vb.)",
+      "regionalPayments": "Bölgesel Ödeme Yöntemleri",
+      "factoring": "Fatura Faktöringi",
+      "recurring": "Yinelenen Faturalar",
+      "paymentLinks": "Ödeme Bağlantıları",
+      "taxCalc": "Bölgesel Vergi Hesaplamaları",
+      "vatGst": "KDV/GST Desteği",
+      "taxReports": "Vergi Raporları",
+      "eFiling": "E-Dosyalama Hazır",
+      "multiRegion": "Çok Bölgeli Uyumluluk",
+      "basicReports": "Temel Raporlar",
+      "customReports": "Özel Raporlar",
+      "dashboard": "Gerçek Zamanlı Gösterge Paneli",
+      "profit": "Kar Analizi",
+      "cashFlow": "Nakit Akışı Tahmini",
+      "ai": "Yapay Zeka Önerileri",
+      "importExport": "İthalat/İhracat Yönetimi",
+      "customs": "Gümrük Belgeleri",
+      "shipping": "Kargo Entegrasyonu",
+      "trade": "Ticaret Uyumluluğu",
+      "encryption": "Veri Şifreleme",
+      "twoFactor": "İki Faktörlü Kimlik Doğrulama",
+      "gdpr": "GDPR Uyumluluğu",
+      "soc2": "SOC2 Uyumluluğu",
+      "customSecurity": "Özel Güvenlik Politikaları"
+    }
+  },
+  "auth": {
+    "step": "Adım",
+    "of": "/",
+    "secure": "Güvenli",
+    "trusted": "Güvenilir",
+    "signin": {
+      "welcome": "Tekrar Hoş Geldiniz",
+      "title": "Hesabınıza giriş yapın",
+      "subtitle": "Hesabınız yok mu?",
+      "createAccount": "Buradan bir tane oluşturun",
+      "description": "İşletme gösterge panelinize erişin ve kapsamlı araçlarımızla şirketinizi büyütmeye devam edin.",
+      "feature1": "Gerçek zamanlı işletme analitiği",
+      "feature2": "Güvenli veri yönetimi",
+      "feature3": "7/24 müşteri desteği",
+      "businesses": "İşletmeler bize güveniyor",
+      "uptime": "Çalışma süresi garantisi"
+    },
+    "signup": {
+      "welcome": "Yolculuğunuza Başlayın",
+      "title": "Hesabınızı oluşturun",
+      "subtitle": "Zaten hesabınız var mı?",
+      "signIn": "Buradan giriş yapın",
+      "description": "Operasyonlarını verimli bir şekilde yönetmek için PyFactor'a güvenen binlerce işletmeye katılın.",
+      "benefit1": "Dakikalar içinde hızlı kurulum",
+      "benefit2": "Profesyonel işletme araçları",
+      "benefit3": "Gelişmiş raporlama ve analitik",
+      "benefit4": "Banka düzeyinde güvenlik",
+      "testimonial": "PyFactor işletme operasyonlarımızı nasıl yönettiğimizi dönüştürdü."
+    },
+    "verify": {
+      "title": "E-postanızı Doğrulayın",
+      "pageTitle": "E-postanızı kontrol edin",
+      "pageSubtitle": "E-posta adresinize bir doğrulama kodu gönderdik",
+      "description": "E-postanıza bir doğrulama kodu gönderdik. Lütfen gelen kutunuzu kontrol edin ve aşağıya kodu girin.",
+      "step1": "E-posta gelen kutunuzu kontrol edin",
+      "step2": "Doğrulama e-postasını bulun",
+      "step3": "6 haneli kodu girin",
+      "securityTitle": "Neden doğrulama?",
+      "securityNote": "E-posta doğrulaması hesap güvenliğinizi sağlamamıza ve yetkisiz erişimi önlememize yardımcı olur."
+    }
+  }
 }

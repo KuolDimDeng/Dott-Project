@@ -29,11 +29,211 @@
   "aboutDescription2": "Wat Dott onderscheidt, is ons diepgaand begrip van de unieke uitdagingen waarmee kleine bedrijven worden geconfronteerd, vooral in opkomende markten.",
   "missionStatement": "Bij Dott is het onze missie om kleine bedrijven in staat te stellen te floreren door hen betaalbare, toegankelijke en krachtige managementtools te bieden die de dagelijkse activiteiten vereenvoudigen.",
   "visionStatement": "Wij zien een wereld voor ons waarin kleine bedrijven toegang hebben tot dezelfde kwaliteit managementtools als grote bedrijven, maar aangepast aan hun specifieke behoeften en schaal.",
+  "hero": {
+    "title": "All-in-one bedrijfssoftware",
+    "subtitle": "Voor altijd gratis voor basisfuncties",
+    "description": "Wereldwijd bedrijfsbeheer met geavanceerd voorraadbeheer, barcodescanning en regionale betalingsoplossingen - allemaal in één intuïtief platform voor bedrijven wereldwijd.",
+    "button": "Begin gratis",
+    "trustedBy": "Vertrouwd door meer dan 10.000 bedrijven wereldwijd",
+    "imageAlt": "Illustratie bedrijfsbeheer",
+    "videoTitle": "Dott Software Demo",
+    "paymentNote": "Betalingsverwerkingskosten kunnen van toepassing zijn voor bepaalde transactietypes",
+    "benefit": {
+      "free": "Gratis plan voor altijd",
+      "invoicing": "Professionele facturering",
+      "pos": "Point of sale systeem",
+      "inventory": "Voorraadbeheer",
+      "payroll": "Salarisadministratie en HR tools",
+      "tax": "Belasting compliance",
+      "insights": "AI-gedreven inzichten",
+      "mobileMoney": "Mobiele geld betalingen",
+      "cardPayments": "Wereldwijde kaartbetalingen"
+    }
+  },
   "heroTitle": "All-in-one bedrijfssoftware",
   "heroDescription": "Wereldwijd bedrijfsbeheer met geavanceerd voorraadbeheer, barcodescanning en regionale betalingsoplossingen - allemaal in één intuïtief platform voor bedrijven wereldwijd.",
   "heroImageAlt": "Illustratie bedrijfsbeheer",
   "heroVideoTitle": "Dott Software Demo",
   "searchLanguages": "Zoek talen...",
+  "footer": {
+    "home": "Home",
+    "features": "Functies",
+    "pricing": "Prijzen",
+    "about": "Over ons",
+    "blog": "Blog",
+    "contact": "Contact",
+    "inventory": "Voorraadbeheer",
+    "accounting": "Boekhouding",
+    "invoicing": "Facturering",
+    "payments": "Betalingen",
+    "pos": "Point of Sale",
+    "careers": "Carrières",
+    "press": "Pers",
+    "partners": "Partners",
+    "privacy": "Privacybeleid",
+    "terms": "Servicevoorwaarden",
+    "help": "Helpcentrum",
+    "docs": "Documentatie",
+    "status": "Systeemstatus",
+    "security": "Beveiliging",
+    "cookies": "Cookiebeleid",
+    "rights": "Alle rechten voorbehouden.",
+    "tagline": "Vereenvoudiging en stroomlijning van bedrijfsbeheer voor wereldwijde ondernemingen.",
+    "product": "Product",
+    "company": "Bedrijf",
+    "support": "Ondersteuning",
+    "legal": "Juridisch"
+  },
+  "highlights": {
+    "eyebrow": "Belangrijkste hoogtepunten",
+    "heading": "Waarom bedrijven kiezen voor Dott",
+    "subheading": "Geavanceerde functies die ons onderscheiden van concurrenten en uw bedrijf helpen groeien.",
+    "mobile": {
+      "title": "Mobiele app",
+      "description": "Krijg overal toegang tot uw bedrijfsgegevens met onze krachtige mobiele app. Beheer voorraad, verwerk verkopen en bekijk rapporten in realtime."
+    },
+    "integration": {
+      "title": "Naadloze integraties",
+      "description": "Verbind uw favoriete tools en services. Ons platform integreert met betalingsverwerkers, boekhoudsoftware, e-commerce platforms en meer."
+    },
+    "support": {
+      "title": "24/7 ondersteuning",
+      "description": "Ons toegewijde ondersteuningsteam is er altijd om u te helpen slagen. Krijg hulp via chat, e-mail of telefoon."
+    },
+    "security": {
+      "title": "Beveiliging op bankniveau",
+      "description": "Uw gegevens zijn beschermd met militaire encryptie en de beste beveiligingsprotocollen in de industrie. Voldoet aan GDPR, SOC 2 en andere beveiligingsstandaarden."
+    }
+  },
+  "faq": {
+    "eyebrow": "FAQ",
+    "heading": "Veelgestelde vragen",
+    "subheading": "Heeft u vragen over ons wereldwijde bedrijfsplatform? Wij hebben de antwoorden.",
+    "items": [
+      {
+        "question": "Wat is Dott?",
+        "answer": "Dott is een wereldwijd bedrijfsmanagementplatform dat bedrijven in meer dan 100 landen ondersteunt. Het combineert boekhouding, salarisadministratie, HR, voorraadbeheer met barcodefunctionaliteit, en verschillende betalingsopties, inclusief mobiel geld, in één intuïtieve oplossing."
+      },
+      {
+        "question": "Hoeveel kost het?",
+        "answer": "We bieden een gratis Basic-abonnement voor startups en een Professional-abonnement voor $15/maand ($150/jaar). Het Professional-abonnement bevat alle functies, inclusief barcode printen en scannerintegratie, zonder verborgen kosten. U kunt op elk moment upgraden of downgraden."
+      },
+      {
+        "question": "Welke landen ondersteunt u?",
+        "answer": "Dott ondersteunt bedrijven in meer dan 100 landen wereldwijd, met speciale functies voor specifieke regio's zoals mobiel geld integratie in Afrika, factuurfactoring in de VS en Canada, en compliance-tools voor verschillende regelgevingsomgevingen."
+      },
+      {
+        "question": "Ondersteunt Dott mobiele geldbetalingen?",
+        "answer": "Ja! We ondersteunen integratie met populaire mobiele geldplatforms zoals M-Pesa, MTN Mobile Money, Airtel Money en anderen in Afrika en Azië. Hierdoor kan uw bedrijf eenvoudig lokale betaalmethoden accepteren en verwerken."
+      },
+      {
+        "question": "Hoe werkt de barcode- en voorraadscanfunctie?",
+        "answer": "Ons Professional-abonnement bevat de mogelijkheid om barcodes te genereren en te printen voor uw voorraadartikelen en te synchroniseren met Bluetooth-barcodescanners voor sneller voorraadbeheer. Deze functie is inbegrepen zonder extra kosten en werkt naadloos samen met ons voorraadbeheerssysteem."
+      },
+      {
+        "question": "Zijn mijn gegevens veilig?",
+        "answer": "Absoluut. We gebruiken bankwaardige beveiligingsencryptie en volgen best practices in de industrie om uw gegevens te beschermen. Ons platform wordt gehost op veilige cloudinfrastructuur met meerdere beveiligingslagen, regionale compliance-functies en regelmatige back-ups."
+      }
+    ]
+  },
+  "contact": {
+    "eyebrow": "Contact",
+    "heading": "Laten we praten",
+    "subheading": "We horen graag van u. Stuur ons een bericht en we reageren zo snel mogelijk.",
+    "form": {
+      "name": "Naam",
+      "email": "E-mail",
+      "message": "Bericht",
+      "submit": "Bericht verzenden",
+      "subject": {
+        "label": "Onderwerp",
+        "general": "Algemene vraag",
+        "sales": "Verkoopvraag",
+        "support": "Technische ondersteuning",
+        "partnership": "Partnerschap",
+        "other": "Anders"
+      }
+    },
+    "info": {
+      "email": "hello@dottapps.com",
+      "phone": "+1 (555) 123-4567",
+      "address": "123 Business Street, Suite 100, New York, NY 10001"
+    }
+  },
+  "pricing": {
+    "eyebrow": "Prijzen",
+    "heading": "Plannen voor elke bedrijfsgrootte",
+    "subheading": "Begin gratis en upgrade naarmate uw bedrijf groeit.",
+    "monthly": "Maandelijks",
+    "annually": "Jaarlijks",
+    "save": "Bespaar 20%",
+    "plans": {
+      "basic": {
+        "name": "Basis",
+        "price": "Gratis",
+        "description": "Perfect voor freelancers en startups",
+        "features": [
+          "1 gebruiker",
+          "Tot 100 transacties/maand",
+          "Basis facturering",
+          "2GB opslag",
+          "E-mail ondersteuning"
+        ]
+      },
+      "professional": {
+        "name": "Professioneel",
+        "price": "$15",
+        "priceAnnual": "$12",
+        "description": "Voor groeiende bedrijven",
+        "popular": true,
+        "features": [
+          "Onbeperkt gebruikers",
+          "Onbeperkt transacties",
+          "Geavanceerde functies",
+          "30GB opslag",
+          "Prioriteit ondersteuning"
+        ]
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "price": "$45",
+        "priceAnnual": "$36",
+        "description": "Voor gevestigde bedrijven",
+        "features": [
+          "Alle Professional functies",
+          "Onbeperkte opslag",
+          "Toegewijde accountmanager",
+          "API toegang",
+          "99.9% SLA"
+        ]
+      }
+    }
+  },
+  "auth": {
+    "signIn": "Inloggen",
+    "signUp": "Registreren",
+    "forgotPassword": "Wachtwoord vergeten?",
+    "resetPassword": "Wachtwoord resetten",
+    "createAccount": "Account aanmaken",
+    "alreadyHaveAccount": "Heeft u al een account?",
+    "dontHaveAccount": "Heeft u nog geen account?",
+    "email": "E-mail",
+    "password": "Wachtwoord",
+    "confirmPassword": "Bevestig wachtwoord",
+    "firstName": "Voornaam",
+    "lastName": "Achternaam",
+    "company": "Bedrijf",
+    "agreeToTerms": "Ik ga akkoord met de Servicevoorwaarden en het Privacybeleid",
+    "signInWithGoogle": "Inloggen met Google",
+    "signUpWithGoogle": "Registreren met Google",
+    "or": "of",
+    "checkEmail": "Controleer uw e-mail voor instructies om uw wachtwoord te resetten.",
+    "passwordResetSent": "Wachtwoord reset e-mail is verzonden.",
+    "invalidCredentials": "Ongeldig e-mailadres of wachtwoord.",
+    "accountCreated": "Account succesvol aangemaakt! Controleer uw e-mail voor verificatie.",
+    "emailVerified": "E-mail succesvol geverifieerd!",
+    "pleaseVerifyEmail": "Verifieer uw e-mail voordat u doorgaat."
+  },
   "featuresTitle": "Wereldwijde bedrijfsfuncties",
   "featuresSubtitle": "Alles wat u nodig heeft om uw bedrijf efficiënt te beheren in meer dan 100 landen",
   "countriesSupported": "Ondersteuning in meer dan 100 landen",

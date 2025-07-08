@@ -29,11 +29,211 @@
   "aboutDescription2": "Yang membedakan Dott adalah pemahaman mendalam kami tentang tantangan unik yang dihadapi oleh bisnis kecil, terutama di pasar berkembang.",
   "missionStatement": "Di Dott, misi kami adalah memberdayakan bisnis kecil untuk berkembang dengan menyediakan alat manajemen yang terjangkau, mudah diakses, dan kuat yang menyederhanakan operasi sehari-hari.",
   "visionStatement": "Kami membayangkan dunia di mana bisnis kecil memiliki akses ke alat manajemen dengan kualitas yang sama seperti perusahaan besar, tetapi disesuaikan dengan kebutuhan dan skala spesifik mereka.",
+  "hero": {
+    "title": "Perangkat Lunak Bisnis All-in-One",
+    "subtitle": "Gratis selamanya untuk fitur dasar",
+    "description": "Manajemen bisnis global dengan inventaris canggih, pemindaian barcode, dan solusi pembayaran regional—semua dalam satu platform intuitif untuk bisnis di seluruh dunia.",
+    "button": "Mulai gratis",
+    "trustedBy": "Dipercaya oleh lebih dari 10.000 bisnis di seluruh dunia",
+    "imageAlt": "Ilustrasi Manajemen Bisnis",
+    "videoTitle": "Demo Software Dott",
+    "paymentNote": "Biaya pemrosesan pembayaran mungkin berlaku untuk jenis transaksi tertentu",
+    "benefit": {
+      "free": "Paket gratis selamanya",
+      "invoicing": "Fakturisasi profesional",
+      "pos": "Sistem point of sale",
+      "inventory": "Manajemen inventaris",
+      "payroll": "Alat penggajian dan SDM",
+      "tax": "Kepatuhan pajak",
+      "insights": "Wawasan bertenaga AI",
+      "mobileMoney": "Pembayaran mobile money",
+      "cardPayments": "Pembayaran kartu global"
+    }
+  },
   "heroTitle": "Perangkat Lunak Bisnis All-in-One",
   "heroDescription": "Manajemen bisnis global dengan inventaris canggih, pemindaian barcode, dan solusi pembayaran regional—semua dalam satu platform intuitif untuk bisnis di seluruh dunia.",
   "heroImageAlt": "Ilustrasi Manajemen Bisnis",
   "heroVideoTitle": "Demo Software Dott",
   "searchLanguages": "Cari bahasa...",
+  "footer": {
+    "home": "Beranda",
+    "features": "Fitur",
+    "pricing": "Harga",
+    "about": "Tentang Kami",
+    "blog": "Blog",
+    "contact": "Kontak",
+    "inventory": "Manajemen Inventaris",
+    "accounting": "Akuntansi",
+    "invoicing": "Fakturisasi",
+    "payments": "Pembayaran",
+    "pos": "Point of Sale",
+    "careers": "Karir",
+    "press": "Pers",
+    "partners": "Mitra",
+    "privacy": "Kebijakan Privasi",
+    "terms": "Ketentuan Layanan",
+    "help": "Pusat Bantuan",
+    "docs": "Dokumentasi",
+    "status": "Status Sistem",
+    "security": "Keamanan",
+    "cookies": "Kebijakan Cookie",
+    "rights": "Semua hak dilindungi.",
+    "tagline": "Menyederhanakan dan merampingkan manajemen bisnis untuk perusahaan global.",
+    "product": "Produk",
+    "company": "Perusahaan",
+    "support": "Dukungan",
+    "legal": "Hukum"
+  },
+  "highlights": {
+    "eyebrow": "Keunggulan Utama",
+    "heading": "Mengapa Bisnis Memilih Dott",
+    "subheading": "Fitur-fitur canggih yang membedakan kami dari kompetitor dan membantu bisnis Anda berkembang.",
+    "mobile": {
+      "title": "Aplikasi Mobile",
+      "description": "Akses data bisnis Anda kapan saja, di mana saja dengan aplikasi mobile kami yang canggih. Kelola inventaris, proses penjualan, dan lihat laporan secara real-time."
+    },
+    "integration": {
+      "title": "Integrasi Tanpa Batas",
+      "description": "Hubungkan alat dan layanan favorit Anda. Platform kami terintegrasi dengan pemroses pembayaran, software akuntansi, platform e-commerce, dan banyak lagi."
+    },
+    "support": {
+      "title": "Dukungan 24/7",
+      "description": "Tim dukungan ahli kami tersedia sepanjang waktu untuk membantu Anda sukses. Dapatkan bantuan melalui chat, email, atau panggilan telepon."
+    },
+    "security": {
+      "title": "Keamanan Tingkat Bank",
+      "description": "Data Anda dilindungi dengan enkripsi tingkat militer dan protokol keamanan terbaik di industri. Sesuai dengan GDPR, SOC 2, dan standar keamanan lainnya."
+    }
+  },
+  "faq": {
+    "eyebrow": "FAQ",
+    "heading": "Pertanyaan yang Sering Diajukan",
+    "subheading": "Punya pertanyaan tentang platform bisnis global kami? Kami punya jawabannya.",
+    "items": [
+      {
+        "question": "Apa itu Dott?",
+        "answer": "Dott adalah platform manajemen bisnis global yang mendukung bisnis di lebih dari 100 negara. Ini menggabungkan akuntansi, penggajian, SDM, manajemen inventaris dengan fungsionalitas barcode, dan berbagai opsi pembayaran, termasuk mobile money, dalam satu solusi intuitif."
+      },
+      {
+        "question": "Berapa biayanya?",
+        "answer": "Kami menawarkan paket Basic gratis untuk startup dan paket Professional seharga $15/bulan ($150/tahun). Paket Professional mencakup semua fitur, termasuk pencetakan barcode dan integrasi pemindai, tanpa biaya tersembunyi. Anda dapat meningkatkan atau menurunkan paket kapan saja."
+      },
+      {
+        "question": "Negara mana saja yang Anda dukung?",
+        "answer": "Dott mendukung bisnis di lebih dari 100 negara di seluruh dunia, dengan fitur khusus untuk wilayah tertentu seperti integrasi mobile money di Afrika, factoring faktur di AS dan Kanada, dan alat kepatuhan untuk berbagai lingkungan regulasi."
+      },
+      {
+        "question": "Apakah Dott mendukung pembayaran mobile money?",
+        "answer": "Ya! Kami mendukung integrasi dengan platform mobile money populer seperti M-Pesa, MTN Mobile Money, Airtel Money, dan lainnya di Afrika dan Asia. Ini memungkinkan bisnis Anda untuk dengan mudah menerima dan memproses metode pembayaran lokal."
+      },
+      {
+        "question": "Bagaimana cara kerja fitur pemindai barcode dan inventaris?",
+        "answer": "Paket Professional kami mencakup kemampuan untuk menghasilkan dan mencetak barcode untuk item inventaris Anda dan sinkronisasi dengan pemindai barcode Bluetooth untuk manajemen inventaris yang lebih cepat. Fitur ini disertakan tanpa biaya tambahan dan bekerja secara mulus dengan sistem manajemen inventaris kami."
+      },
+      {
+        "question": "Apakah data saya aman?",
+        "answer": "Tentu saja. Kami menggunakan enkripsi keamanan tingkat bank dan mengikuti praktik terbaik industri untuk melindungi data Anda. Platform kami dihosting pada infrastruktur cloud yang aman dengan beberapa lapisan keamanan, fitur kepatuhan regional, dan backup rutin."
+      }
+    ]
+  },
+  "contact": {
+    "eyebrow": "Kontak",
+    "heading": "Mari Berbicara",
+    "subheading": "Kami senang mendengar dari Anda. Kirimkan pesan dan kami akan merespons sesegera mungkin.",
+    "form": {
+      "name": "Nama",
+      "email": "Email",
+      "message": "Pesan",
+      "submit": "Kirim Pesan",
+      "subject": {
+        "label": "Subjek",
+        "general": "Pertanyaan Umum",
+        "sales": "Pertanyaan Penjualan",
+        "support": "Dukungan Teknis",
+        "partnership": "Kemitraan",
+        "other": "Lainnya"
+      }
+    },
+    "info": {
+      "email": "hello@dottapps.com",
+      "phone": "+1 (555) 123-4567",
+      "address": "123 Business Street, Suite 100, New York, NY 10001"
+    }
+  },
+  "pricing": {
+    "eyebrow": "Harga",
+    "heading": "Paket untuk Setiap Ukuran Bisnis",
+    "subheading": "Mulai gratis dan upgrade seiring berkembangnya bisnis Anda.",
+    "monthly": "Bulanan",
+    "annually": "Tahunan",
+    "save": "Hemat 20%",
+    "plans": {
+      "basic": {
+        "name": "Basic",
+        "price": "Gratis",
+        "description": "Sempurna untuk freelancer dan startup",
+        "features": [
+          "1 pengguna",
+          "Hingga 100 transaksi/bulan",
+          "Fakturisasi dasar",
+          "2GB penyimpanan",
+          "Dukungan email"
+        ]
+      },
+      "professional": {
+        "name": "Professional",
+        "price": "$15",
+        "priceAnnual": "$12",
+        "description": "Untuk bisnis yang berkembang",
+        "popular": true,
+        "features": [
+          "Pengguna tak terbatas",
+          "Transaksi tak terbatas",
+          "Fitur lanjutan",
+          "30GB penyimpanan",
+          "Dukungan prioritas"
+        ]
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "price": "$45",
+        "priceAnnual": "$36",
+        "description": "Untuk perusahaan mapan",
+        "features": [
+          "Semua fitur Professional",
+          "Penyimpanan tak terbatas",
+          "Manager akun khusus",
+          "Akses API",
+          "SLA 99.9%"
+        ]
+      }
+    }
+  },
+  "auth": {
+    "signIn": "Masuk",
+    "signUp": "Daftar",
+    "forgotPassword": "Lupa Kata Sandi?",
+    "resetPassword": "Reset Kata Sandi",
+    "createAccount": "Buat Akun",
+    "alreadyHaveAccount": "Sudah punya akun?",
+    "dontHaveAccount": "Belum punya akun?",
+    "email": "Email",
+    "password": "Kata Sandi",
+    "confirmPassword": "Konfirmasi Kata Sandi",
+    "firstName": "Nama Depan",
+    "lastName": "Nama Belakang",
+    "company": "Perusahaan",
+    "agreeToTerms": "Saya setuju dengan Ketentuan Layanan dan Kebijakan Privasi",
+    "signInWithGoogle": "Masuk dengan Google",
+    "signUpWithGoogle": "Daftar dengan Google",
+    "or": "atau",
+    "checkEmail": "Periksa email Anda untuk instruksi reset kata sandi.",
+    "passwordResetSent": "Email reset kata sandi telah dikirim.",
+    "invalidCredentials": "Email atau kata sandi tidak valid.",
+    "accountCreated": "Akun berhasil dibuat! Silakan periksa email Anda untuk verifikasi.",
+    "emailVerified": "Email berhasil diverifikasi!",
+    "pleaseVerifyEmail": "Silakan verifikasi email Anda sebelum melanjutkan."
+  },
   "featuresTitle": "Fitur Bisnis Global",
   "featuresSubtitle": "Semua yang Anda butuhkan untuk menjalankan bisnis Anda secara efisien di lebih dari 100 negara",
   "countriesSupported": "Mendukung Lebih dari 100 Negara",
@@ -42,6 +242,9 @@
   "new": "Baru",
   "pricingTitle": "Semua termasuk dalam paket Professional kami hanya dengan $15/bulan",
   "pricingDescription": "Tanpa biaya tersembunyi. Tanpa biaya tambahan untuk pencetakan barcode atau integrasi pemindai.",
+  "heroSubtitle": "Gratis selamanya untuk fitur dasar",
+  "heroButton": "Mulai gratis",
+  "heroTrustedBy": "Dipercaya oleh lebih dari 10.000 bisnis di seluruh dunia",
   "feature_global_accounting": "Akuntansi Global",
   "feature_global_accounting_desc": "Alat akuntansi yang mudah digunakan mendukung berbagai mata uang dan sistem pajak untuk bisnis di mana saja di dunia.",
   "feature_inventory_&_barcode_management": "Manajemen Inventaris & Barcode",
