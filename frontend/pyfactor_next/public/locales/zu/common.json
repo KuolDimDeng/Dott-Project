@@ -29,13 +29,11 @@
   "aboutDescription2": "Okwenza i-Dott ihluke ukuqonda kwethu okujulile kwezinselelo ezihlukile ezibhekene namabhizinisi amancane, ikakhulukazi emasizindeni adlondlobala.",
   "missionStatement": "E-Dott, umgomo wethu ukuguquzela amabhizinisi amancane ukuba aphumelele ngokubanika amathuluzi okuphatha afikeleleka kalula, atholakala kalula, futhi anamandla enza imisebenzi yansuku zonke ibe lula.",
   "visionStatement": "Sibona umhlaba lapho amabhizinisi amancane efinyelela kumathuluzi okuphatha aseqophelweni elifanayo nesamagcokama amakhulu, kodwa ahlinzekelwe izidingo zabo ezikhethekile kanye nosayizi.",
-  
-  "heroTitle": "Phatha ibhizinisi lakho njengomlawuli.",
+  "heroTitle": "Software Yebhizinisi Konke-Kunye",
   "heroDescription": "Ukuphatha ibhizinisi lomhlaba jikelele ngokulawula impahlakahle ngokusezingeni eliphezulu, ukuskena i-barcode, kanye nezixazululo zokukhokha zezifunda – konke kuyi-platform elula yamabhizinisi emhlabeni jikelele.",
   "heroImageAlt": "Umfanekiso wokuphatha ibhizinisi",
   "heroVideoTitle": "Ukuboniswa kwe-software ye-Dott",
   "searchLanguages": "Sesha izilimi...",
-  
   "featuresTitle": "Izici Zebhizinisi Lomhlaba Jikelele",
   "featuresSubtitle": "Konke okudingayo ukuphatha ibhizinisi lakho ngokulula emazweni angaphezu kwe-100",
   "countriesSupported": "Amazwe angaphezu kwe-100 axhasiwe",
@@ -44,7 +42,6 @@
   "new": "Kusha",
   "pricingTitle": "Konke kuhlanganisiwe kuhlelokusebenza lethu le-Professional nge-$15/ngenyanga kuphela",
   "pricingDescription": "Awekho amanani afihliwe. Awekho amanani angeziwe okuphrinta i-barcode noma ukuxhuma i-scanner.",
-  
   "feature_global_accounting": "I-Akhawunti Yomhlaba Jikelele",
   "feature_global_accounting_desc": "Amathuluzi e-akhawunti alula ukusetshenziswa axhasa izimali eziningi kanye nezinhlelo zentela zamabhizinisi noma kuphi emhlabeni.",
   "feature_inventory_&_barcode_management": "Ukulawula Impahlakahle & I-barcode",
@@ -61,35 +58,26 @@
   "feature_invoicing_&_factoring_desc": "Dala ama-invoysi anobuchule ngezimali eziningi kanye nezinketho ze-factoring zamabhizinisi e-US nase-Canada.",
   "feature_cross-border_commerce": "Uhwebo Lwamazwe Ngamazwe",
   "feature_cross-border_commerce_desc": "Phatha ukuthengisa emhlabeni jikelele, ukungenisa, ukuthumela ngaphandle, futhi ulandele izimiso zentela zezifunda ngokulula.",
-
   "highlights_title": "Kungani Ukhethe Inkundla Yethu Yomhlaba Jikelele",
   "highlights_subtitle": "Idizayinelwe ukuxhasa amabhizinisi ngokuqabuka imingcele ngokulawula kwempahla okunamandla",
-  
   "highlight_title_global_business_solution": "Isixazululo Sebhizinisi Lomhlaba Jikelele",
   "highlight_desc_global_business_solution": "Idizayinelwe amabhizinisi emhlabeni jikelele ngokuxhasa amazwe angaphezu kwe-100, izimali eziningi, kanye nezindlela zokukhokha ezikhethekile ngokwezifunda.",
-  
   "highlight_title_advanced_inventory_tools": "Amathuluzi Empahla Aphakeme",
   "highlight_desc_advanced_inventory_tools": "Ukuphrinta i-barcode nokuxhuma neskena se-Bluetooth kuhlanganisiwe kuhlelokusebenza lethu le-Professional ngaphandle kwezindleko ezingeziwe.",
-  
   "highlight_title_fast_&_efficient": "Kushesha & Kusebenza Kahle",
   "highlight_desc_fast_&_efficient": "I-platform esekelwe ku-cloud elungiselelwe ukushesha nokusebenza ngokulula, ikusize ukuphatha ibhizinisi lakho ngokushesha noma uphi.",
-  
   "highlight_title_secure_&_compliant": "Kuphephile & Kuyahambisana",
   "highlight_desc_secure_&_compliant": "Ukuvikeleka kwezinga lebhange nezici zokulandelwa kwezifunda kuqinisekisa ukuthi idatha yakho yebhizinisi iphephile futhi iyalandela izimiso zendawo.",
-  
   "highlight_title_global_support": "Ukuxhaswa Komhlaba Jikelele",
   "highlight_desc_global_support": "Ithimba lethu lokunakekela elinikezelwe liyaqonda izimo zamabhizinisi ezindaweni futhi liyatholakala emazingeni amaningi esikhathi kanye nezilimi.",
-  
   "highlights_pricing_title": "Zonke izici, kuhlanganise nokuphrinta i-barcode nokuxhuma neskena, kuhlanganisiwe kuhlelokusebenza lethu le-Professional nge-$15/ngenyanga kuphela",
   "highlights_pricing_subtitle": "Awekho amanani afihliwe. Awekho amasethi amanani anzima. Kuhlelo olulula olulodwa kuphela lamabhizinisi omhlaba jikelele.",
-
   "faq_title": "Imibuzo Ebuzwa Kaningi",
   "faq_subtitle": "Unemibuzo mayelana nenkundla yethu yebhizinisi lomhlaba jikelele? Sinezimpendulo.",
   "chip_countries": "Amazwe angaphezu kwe-100",
   "chip_barcode": "Ukuxhuma kwe-Barcode",
   "chip_currency": "Izimali Eziningi",
   "key_info": "Ulwazi Olubalulekile",
-  
   "faq_category_general": "Okujwayelekile",
   "faq_category_pricing": "Amanani & Amahlelo",
   "faq_category_global": "Ibhizinisi Lomhlaba Jikelele",
@@ -97,59 +85,43 @@
   "faq_category_payments": "Izinketho Zokukhokha",
   "faq_category_security": "Ukuphepha & Ukuhambisana",
   "faq_category_support": "Ukuxhasa & Usizo",
-  
   "faq_q_what_is_dott": "Yini i-Dott?",
   "faq_a_what_is_dott": "I-Dott iyinkundla yokuphatha ibhizinisi lomhlaba jikelele exhasa amabhizinisi emazweni angaphezu kwe-100. Ihlanganisa i-akhawunti, iholo, i-HR, ukulawula impahlakahle nokusebenza kwe-barcode, kanye nezinketho ezahlukahlukene zokukhokha, kuhlanganise nemali yeselula, kusixazululo esilula.",
-  
   "faq_q_how_much_does_it_cost": "Ibiza malini?",
   "faq_a_how_much_does_it_cost": "Sihlinzeka uhlelo lwe-Basic olumahhala lamabhizinisi asanda kuqala kanye nohlelo lwe-Professional lwe-$15/ngenyanga ($150/ngonyaka). Uhlelo lwe-Professional luhlanganisa zonke izici, kuhlanganise nokuphrinta i-barcode nokuxhuma neskena, ngaphandle kwezindleko ezifihliwe. Ungakhuphula noma wehlise noma nini.",
-  
   "faq_q_which_countries_do_you_support": "Yimaphi amazwe eniwaxhasayo?",
   "faq_a_which_countries_do_you_support": "I-Dott ixhasa amabhizinisi emazweni angaphezu kwe-100 emhlabeni jikelele, ngezici ezikhethekile zezifunda ezithile njengokuxhuma kwemali yeselula e-Africa, i-factoring ye-invoysi e-US nase-Canada, kanye namathuluzi okulawula ezimo eziningi ezilawulwayo.",
-  
   "faq_q_does_dott_support_mobile_money_payments": "Ingabe i-Dott ixhasa izinkokhelo zemali yeselula?",
   "faq_a_does_dott_support_mobile_money_payments": "Yebo! Sixhasa ukuxhuma nezinkundla zemali yeselula ezidumile njenge-M-Pesa, i-MTN Mobile Money, i-Airtel Money, nabanye e-Africa nase-Asia. Lokhu kuvumela ibhizinisi lakho ukwamukela nokuphatha kalula izindlela zokukhokha zasendaweni.",
-  
   "faq_q_how_does_the_barcode_and_inventory_scanner_feature_work": "Isici seskena se-barcode nesempahla sisebenza kanjani?",
   "faq_a_how_does_the_barcode_and_inventory_scanner_feature_work": "Uhlelo lwethu lwe-Professional luhlanganisa ikhono lokudala nokuprinta ama-barcode ezinto zakho zempahla kanye nokusincroniza neskena se-barcode se-Bluetooth ukuphatha kalula impahlakahle. Lesi sici sihlanganiswe ngaphandle kwezindleko ezingeziwe futhi sisebenza kahle nohlelokusebenza lethu lokulawula impahlakahle.",
-  
   "faq_q_is_my_data_secure": "Ingabe idatha yami iphephile?",
   "faq_a_is_my_data_secure": "Ngokuqinisekile. Sisebenzisa ukubethela okuvikelekile kwezinga lebhange futhi silandela izindlela ezingcono zemboni ukuvikela idatha yakho. Inkundla yethu igcinwe kumasevisi efu ephephile enezigaba eziningi zokuphepha, izici zokulawula kwezifunda, kanye nokwenza amabackup njalo.",
-  
   "faq_q_can_i_import_data_from_other_systems": "Ngingayingenisa idatha evela kwezinye izinhlelo?",
   "faq_a_can_i_import_data_from_other_systems": "Yebo, ungayingenisa idatha esuka ezindimeleni ezahlukahlukene, kuhlanganise i-Excel, i-CSV, kanye nezinye izinkundla ze-akhawunti. Sihlinzeka futhi nosizo lokuhamba kwamabhizinisi asuka kwezinye izinkundla, ngokuxhasa izindimela zedatha zamazwe ngamazwe.",
-  
   "faq_q_what_kind_of_support_do_you_offer": "Nhlobo yini yoxhaso enilunikezayo?",
   "faq_a_what_kind_of_support_do_you_offer": "Sihlinzeka ngoxhaso lwamakhasimende ngezikhathi eziningi nge-chat, i-imeyili, kanye namakholi ahleliwe. Ithimba lethu lihlanganisa izingcweti ezijwayelene nezindlela zebhizinisi zezifunda ukuhlinzeka ngosizo oluhambisanayo, noma ibhizinisi lakho lisebenza kuphi.",
-  
   "faq_q_how_does_multi-currency_support_work": "Uxhaso lwezimali eziningi lusebenza kanjani?",
   "faq_a_how_does_multi-currency_support_work": "I-Dott ikuvumela ukuthi usebenze ngezimali eziningi ngasikhathi sinye, ngokubuyekeza okuphothulwayo kwezintengo zokulula. Ungakhipha ama-invoysi kumakhasimende akho ngezimali zabo zasendaweni, ulandelele izindleko ngezimali ezahlukene, futhi ukhiqize imibiko ngemali oyikhethayo.",
-  
   "still_have_questions": "Usenamibuzo?",
   "contact_support": "Xhumana neqembu lethu loxhaso lomhlaba jikelele ku-support@dottapps.com",
-  
   "copyright_text": "I-Dott, LLC. Wonke amalungelo agodliwe.",
-  
   "footer_product": "Umkhiqizo",
   "footer_company": "Inkampani",
   "footer_legal": "Okusemthethweni",
-  
   "footer_link_features": "Izici",
   "footer_link_testimonials": "Ubufakazi",
   "footer_link_highlights": "Amaphuzu abalulekile",
   "footer_link_pricing": "Amanani",
   "footer_link_faqs": "Ama-FAQs",
-  
   "footer_link_about_us": "Mayelana nathi",
   "footer_link_careers": "Imisebenzi",
   "footer_link_press": "Abezindaba",
   "footer_link_blog": "I-Blog",
-  
   "footer_link_terms_of_use": "Imigomo yokusebenzisa",
   "footer_link_privacy_policy": "Inqubomgomo yobumfihlo",
   "footer_link_cookie_policy": "Inqubomgomo ye-cookie",
   "footer_link_contact": "Xhumana nathi",
-  
   "pricing_title": "Amanani alula, asobala",
   "pricing_subtitle": "Khetha uhlelo olulungele ibhizinisi lakho",
   "regional_pricing": "Amanani esifunda asetshenzisiwe: Izinga elikhululekile elithuthukisiwe nokwehliswa ngo-50% kwi-Enterprise ({0})",
@@ -157,35 +129,28 @@
   "compare_features_title": "Qhathanisa Zonke Izici Zohlelo",
   "developing_country_notice": "Izici ezithuthukisiwe ziyatholakala esifundeni sakho! Amanani nge-{0}",
   "currency_notice_compare": "Kuqhathanisa wonke amahlelo (Amanani nge-{0})",
-  
   "features_column": "Izici",
   "tier_basic": "Basic",
   "tier_professional": "Professional",
   "tier_enterprise": "Enterprise",
   "tier_recommended": "Iyanconywa",
   "tier_complete_solution": "Isixazululo Esiphelele",
-  
   "select_basic": "Khetha i-Basic",
   "select_professional": "Khetha i-Professional",
   "select_enterprise": "Khetha i-Enterprise",
-  
   "period_month": "inyanga",
   "period_year": "unyaka",
   "free": "Mahhala",
   "discount_applied": "50% Sokwehliswa Kwesifunda",
-  
   "billing_monthly": "Njalo ngenyanga",
   "billing_annual": "Njalo ngonyaka",
   "save_percentage": "Londoloza 17%",
-  
   "available_addons": "Okungenziwa okukhona:",
   "pricing_footer": "Amanani awahlanganisi intela esebenzayo. Ukubhalisa kuzozikhokha ngokwako. Khansela noma nini.",
   "developing_country_discount": "Amanani esifunda akhethekile asetshenzisiwe: Ukwehliswa ngo-50% kwizinga le-Enterprise",
-  
   "button_get_started_for_free": "QALA MAHHALA",
   "button_start_professional": "Qala i-Professional",
   "button_start_enterprise": "Qala i-Enterprise",
-  
   "category_core_business_tools": "Amathuluzi Ebhizinisi Ayisisekelo",
   "category_global_payment_solutions": "Izixazululo Zokukhokha Zomhlaba Jikelele",
   "category_inventory_management": "Ukulawula Impahlakahle",
@@ -195,7 +160,6 @@
   "category_business_tools": "Amathuluzi Ebhizinisi",
   "category_storage_&_access": "Ukugcina & Ukufinyelela",
   "category_support": "Ukuxhasa",
-  
   "feature_unlimited_users": "Abasebenzisi abangenamkhawulo",
   "feature_advanced_inventory_management_with_forecasting": "Ukulawula impahlakahle okuphezulu ngokubikezela",
   "feature_automated_invoicing_and_payment_reminders": "Ama-invoysi azenzakalelayo nezikhumbuzi zokukhokha",
@@ -206,7 +170,6 @@
   "feature_advanced_reporting_and_analytics": "Ukubika nokuhlaziya okuphezulu",
   "feature_ai-powered_business_insights": "Ulwazi lwebhizinisi olusebenza nge-AI",
   "feature_priority_support_with_dedicated_account_manager": "Ukuxhaswa okuphambili nomenenja we-akhawunti ozinikele",
-  
   "feature_1_user_included": "1 umsebenzisi ufakiwe",
   "feature_track_income_and_expenses": "Landela ingeniso nezindleko",
   "feature_basic_inventory_management": "Ukulawula kwemalahle okuyisisekelo",
@@ -215,7 +178,6 @@
   "feature_2_gb_of_storage": "2 GB yokugcina",
   "feature_basic_reporting": "Ukubika okuyisisekelo",
   "feature_email_support": "Ukuxhaswa kwe-imeyili",
-  
   "feature_unlimited_users_with_custom_roles": "Abasebenzisi abangenamkhawulo ngezindima ezithile",
   "feature_advanced_inventory_management_with_custom_categories": "Ukulawula kwempahlakahle okuphezulu ngezigaba ezithile",
   "feature_fully_branded_invoicing_with_automation": "Ama-invoysi angomakhi bokuthize ngokuzenzakalelayo",
@@ -224,7 +186,6 @@
   "feature_unlimited_storage": "Ukugcina okungenamkhawulo",
   "feature_custom_reporting_and_analytics": "Ukubika nokuhlaziya okwenziwe ngokwezifiso",
   "feature_advanced_ai_business_insights": "Ulwazi lwebhizinisi lwe-AI oluthuthukile ngokubikezela",
-  
   "feature_income_and_expense_tracking": "Ukulandela ingeniso nezindleko",
   "feature_invoice_creation": "Ukudala i-invoysi",
   "feature_automated_invoice_reminders": "Izikhumbuzi ze-invoysi ezizenzakalelayo",
@@ -248,13 +209,11 @@
   "feature_dedicated_account_manager": "Umenenja we-akhawunti ozinikele",
   "feature_payroll_&_tax_processing": "Ukuphatha kweholo & nentela",
   "feature_hr_&_crm_modules": "Amamojuli e-HR & CRM",
-  
   "feature_value_2gb": "2 GB",
   "feature_value_30gb": "30 GB",
   "feature_value_unlimited": "Okungenamkhawulo",
   "feature_value_add-on": "Okwengeziwe",
   "feature_value_discounted": "Okwehlisiwe",
-  
   "choose_your_plan": "Khetha Uhlelo Lwakho",
   "select_plan_description": "Khetha uhlelo olufanelana kangcono nezidingo zebhizinisi lakho",
   "best_value": "INANI ELIHAMBA PHAMBILI",
@@ -279,7 +238,6 @@
   "custom_roles_&_permissions": "Izindima & izimvume ezithile",
   "advanced_security_features": "Izici zokuphepha eziphezulu",
   "preferential_transaction_rates": "Izinga lokuhweba elinconyiwe",
-  
   "feature_single_user_account_with_view-only_accountant_access": "I-akhawunti yomsebenzisi oyedwa nokufinyelela kumbali-zimali okubuka kuphela",
   "feature_basic_income_and_expense_tracking": "Ukulandela ingeniso nezindleko okuyisisekelo",
   "feature_up_to_5_customizable_invoice_templates": "Amafomu e-invoysi afinyelela kwangu-5 angashintshwa",
@@ -307,10 +265,59 @@
   "feature_basic_offline_mode": "Indlela engaxhunyiwe eyisisekelo",
   "feature_mobile-optimized_experience": "Ukusebenza okulungiselelwe iselula",
   "feature_knowledge_base_access": "Ukufinyelela isisekelo solwazi",
-  
   "feature_value_5gb": "5 GB",
-  
   "complete_onboarding": "QEDA UKUBHALISWA",
   "your_dashboard": "I-DASHBOARD YAKHO",
-  "sign_in": "NGENA"
+  "sign_in": "NGENA",
+  "heroSubtitle": "Mahhala kuze kube phakade ngezici eziyisisekelo",
+  "heroButton": "Qala mahhala",
+  "heroTrustedBy": "Ithenjwa amabhizinisi angaphezu kuka-10,000 emhlabeni wonke",
+  "feature_inventory": "Ukuphatha Impahla",
+  "feature_inventory_desc": "Landelela amazinga esitoko, khiqiza amabhakhodi, uphate izindawo eziningi ngokuvuselelwa kwesikhathi sangempela.",
+  "feature_pos": "Indawo Yokuthengisa",
+  "feature_pos_desc": "Yamukela izinkokhelo, phatha ukuthengisa, ulandelele impahla ohlelweni lwe-POS olusebenziseka kalula.",
+  "feature_invoicing": "Ama-invoice Nezilinganiso",
+  "feature_invoicing_desc": "Dala ama-invoice ochwepheshe, amakhotheshini, nezikweletu eziphindaphindayo ngemizuzwana. Khokhwa ngokushesha.",
+  "feature_payroll": "Imiholo ne-HR",
+  "feature_payroll_desc": "Khokha abasebenzi, phatha izinzuzo, landelela ikhefu, uphathemadaba zonke izidingo ze-HR endaweni eyodwa.",
+  "feature_accounting": "I-Accounting Nemibiko",
+  "feature_accounting_desc": "Landelela imali engenayo, izindleko bese wenza imibiko yezimali. Hlala ulungele intela unyaka wonke.",
+  "feature_payments": "Izinkokhelo Zomhlaba",
+  "feature_payments_desc": "Yamukela amakhadi wesikweletu, ukudlulisela kwebhange, imali yomakhalekhukhwini, nezindlela zokukhokha ezingaphezu kuka-50 emhlabeni wonke.",
+  "feature_crm": "Ukuphatha Amakhasimende",
+  "feature_crm_desc": "Yakha ubudlelwano obuhlala njalo ngedatha yamakhasimende ehlelekile, amanothi, nomlando wokuxhumana.",
+  "feature_analytics": "Ukuhlaziya kwe-AI",
+  "feature_analytics_desc": "Thola ukuqonda okuhlakaniphile nokubikezela ukwenza izinqumo zebhizinisi ezingcono ngokuhlaziya okunamandla kwe-AI.",
+  "faq_q_is_it_really_free": "Ingabe i-Dott imahhala ngempela?",
+  "faq_a_is_it_really_free": "Yebo! Uhlelo lwethu Oluyisisekelo lumahhala kuze kube phakade ngaphandle kwekhadi lesikweletu. Lufaka izici ezibalulekile zama-freelancer namabhizinisi amancane aqalayo. Ungathuthukisa noma nini njengoba ibhizinisi lakho likhula.",
+  "faq_q_can_i_switch_plans": "Ngingashintsha izinhlelo noma nini?",
+  "faq_a_can_i_switch_plans": "Impela! Ungathuthukisa noma wehlise uhlelo lwakho noma nini. Izinguquko zisebenza ngokushesha futhi sizolinganisa noma yiziphi izinkokhelo. Azikho izinkontileka zesikhathi eside noma izindleko zokukhansela.",
+  "faq_q_do_you_offer_mobile_apps": "Ingabe ninikeza izinhlelo zokusebenza zeselula?",
+  "faq_a_do_you_offer_mobile_apps": "Yebo! I-Dott isebenza kahle kunoma iyiphi idivayisi ngesiphequluli sakho sewebhu. Futhi sinezinhlelo zokusebenza ezikhethekile ze-iOS ne-Android zokuphatha ibhizinisi lakho lapho uhamba. Zonke izici zivumelanisa ngesikhathi sangempela phakathi kwamadivayisi.",
+  "pricing_period_monthly": "Nyanga zonke",
+  "pricing_period_annual": "Minyaka yonke",
+  "pricing_save": "Yonga u-20%",
+  "pricing_plan_basic": "Okuyisisekelo",
+  "pricing_plan_basic_price": "R0",
+  "pricing_plan_basic_desc": "Okuphelele kuma-freelancer namabhizinisi aqalayo",
+  "pricing_plan_pro": "Ochwepheshe",
+  "pricing_plan_pro_price": "R225",
+  "pricing_plan_pro_price_annual": "R180",
+  "pricing_plan_pro_desc": "Yamabhizinisi akhulayo",
+  "pricing_plan_enterprise": "Inkampani",
+  "pricing_plan_enterprise_price": "R675",
+  "pricing_plan_enterprise_price_annual": "R540",
+  "pricing_plan_enterprise_desc": "Yamakhampani asunguliwe",
+  "pricing_most_popular": "Okudume Kakhulu",
+  "cta_title": "Ulungele ukukhulisa ibhizinisi lakho?",
+  "cta_subtitle": "Joyina amabhizinisi angaphezu kuka-10,000 asevele esebenzisa i-Dott",
+  "cta_button": "Qala isivivinyo samahhala",
+  "cta_no_credit_card": "Akudingeki ikhadi lesikweletu",
+  "testimonial_title": "Yini abathengi bethu abayishoyo",
+  "testimonial_subtitle": "Joyina izinkulungwane zamabhizinisi ajabulile",
+  "integration_title": "Isebenza namathuluzi osuvele uwasebenzisa",
+  "integration_subtitle": "Xhuma i-Dott nezinhlelo zakho ozithandayo",
+  "security_badge_1": "Ukubethela kweleveli yasebhange",
+  "security_badge_2": "Ihambisana ne-GDPR",
+  "security_badge_3": "99.9% isikhathi sokusebenza"
 }

@@ -29,13 +29,11 @@
   "aboutDescription2": "Dott'u farklı kılan, özellikle gelişmekte olan pazarlarda, küçük işletmelerin karşılaştığı benzersiz zorlukları derinlemesine anlamamızdır.",
   "missionStatement": "Dott'ta misyonumuz, küçük işletmelere günlük operasyonları basitleştiren uygun, erişilebilir ve güçlü yönetim araçları sağlayarak başarılı olmalarını sağlamaktır.",
   "visionStatement": "Küçük işletmelerin, özel ihtiyaçlarına ve ölçeklerine göre uyarlanmış olarak, büyük şirketlerle aynı kalitede yönetim araçlarına erişebildiği bir dünya öngörüyoruz.",
-  
-  "heroTitle": "İşletmenizi patron gibi yönetin.",
+  "heroTitle": "Hepsi Bir Arada İşletme Yazılımı",
   "heroDescription": "Gelişmiş envanter, barkod tarama ve bölgesel ödeme çözümleriyle küresel işletme yönetimi - tümü dünya çapındaki işletmeler için sezgisel bir platformda.",
   "heroImageAlt": "İşletme Yönetimi İllüstrasyonu",
   "heroVideoTitle": "Dott Yazılım Demosu",
   "searchLanguages": "Dil ara...",
-  
   "featuresTitle": "Küresel İşletme Özellikleri",
   "featuresSubtitle": "İşletmenizi 100'den fazla ülkede verimli bir şekilde yönetmek için ihtiyacınız olan her şey",
   "countriesSupported": "100'den fazla ülke destekleniyor",
@@ -44,7 +42,6 @@
   "new": "Yeni",
   "pricingTitle": "Profesyonel planımızda ayda sadece 15$ karşılığında her şey dahil",
   "pricingDescription": "Gizli ücretler yok. Barkod yazdırma veya tarayıcı entegrasyonu için ek ücret yok.",
-  
   "feature_global_accounting": "Küresel Muhasebe",
   "feature_global_accounting_desc": "Dünyanın herhangi bir yerindeki işletmeler için birden fazla para birimini ve vergi sistemini destekleyen kullanımı kolay muhasebe araçları.",
   "feature_inventory_&_barcode_management": "Envanter ve Barkod Yönetimi",
@@ -61,35 +58,26 @@
   "feature_invoicing_&_factoring_desc": "ABD ve Kanada'daki işletmeler için faktöring seçenekleriyle birden fazla para biriminde profesyonel faturalar oluşturun.",
   "feature_cross-border_commerce": "Sınır Ötesi Ticaret",
   "feature_cross-border_commerce_desc": "Uluslararası satışları, ithalatı, ihracatı yönetin ve bölgesel vergi düzenlemelerine sorunsuz bir şekilde uyun.",
-
   "highlights_title": "Küresel Platformumuzu Neden Seçmelisiniz",
   "highlights_subtitle": "Güçlü envanter yönetimiyle sınırlar arasında işletmeleri desteklemek için tasarlanmıştır",
-  
   "highlight_title_global_business_solution": "Küresel İşletme Çözümü",
   "highlight_desc_global_business_solution": "100'den fazla ülke, birden fazla para birimi ve bölgeye özel ödeme yöntemleri desteğiyle dünya çapındaki işletmeler için tasarlanmıştır.",
-  
   "highlight_title_advanced_inventory_tools": "Gelişmiş Envanter Araçları",
   "highlight_desc_advanced_inventory_tools": "Barkod yazdırma ve Bluetooth tarayıcı entegrasyonu, Profesyonel planımıza ek ücret olmadan dahildir.",
-  
   "highlight_title_fast_&_efficient": "Hızlı ve Verimli",
   "highlight_desc_fast_&_efficient": "Hız ve verimlilik için optimize edilmiş bulut tabanlı platform, nerede olursanız olun işletmenizi daha hızlı yönetmenize yardımcı olur.",
-  
   "highlight_title_secure_&_compliant": "Güvenli ve Uyumlu",
   "highlight_desc_secure_&_compliant": "Banka düzeyinde güvenlik ve bölgesel uyumluluk özellikleri, işletme verilerinizin güvende olduğunu ve yerel düzenlemelere uygun olduğunu garanti eder.",
-  
   "highlight_title_global_support": "Küresel Destek",
   "highlight_desc_global_support": "Özel destek ekibimiz yerel işletme ortamlarını anlar ve birden fazla zaman diliminde ve dilde mevcuttur.",
-  
   "highlights_pricing_title": "Barkod yazdırma ve tarayıcı entegrasyonu dahil tüm özellikler, Profesyonel planımızda ayda sadece 15$ karşılığında dahildir",
   "highlights_pricing_subtitle": "Gizli ücretler yok. Karmaşık fiyatlandırma seviyeleri yok. Küresel işletmeler için sadece basit bir plan.",
-
   "faq_title": "Sıkça Sorulan Sorular",
   "faq_subtitle": "Küresel işletme platformumuz hakkında sorularınız mı var? Cevaplarımız var.",
   "chip_countries": "100'den Fazla Ülke",
   "chip_barcode": "Barkod Entegrasyonu",
   "chip_currency": "Çoklu Para Birimi",
   "key_info": "Önemli Bilgiler",
-  
   "faq_category_general": "Genel",
   "faq_category_pricing": "Fiyatlandırma ve Planlar",
   "faq_category_global": "Küresel İşletme",
@@ -97,59 +85,43 @@
   "faq_category_payments": "Ödeme Seçenekleri",
   "faq_category_security": "Güvenlik ve Uyumluluk",
   "faq_category_support": "Destek ve Yardım",
-  
   "faq_q_what_is_dott": "Dott nedir?",
   "faq_a_what_is_dott": "Dott, 100'den fazla ülkede işletmeleri destekleyen küresel bir işletme yönetim platformudur. Muhasebe, bordro, İK, barkod işlevselliği ile envanter yönetimi ve mobil para dahil çeşitli ödeme seçeneklerini sezgisel bir çözümde birleştirir.",
-  
   "faq_q_how_much_does_it_cost": "Maliyeti ne kadar?",
   "faq_a_how_much_does_it_cost": "Yeni başlayan işletmeler için ücretsiz bir Temel plan ve ayda 15$ (yılda 150$) karşılığında bir Profesyonel plan sunuyoruz. Profesyonel plan, barkod yazdırma ve tarayıcı entegrasyonu dahil tüm özellikleri gizli ücretler olmadan içerir. İstediğiniz zaman yükseltme veya düşürme yapabilirsiniz.",
-  
   "faq_q_which_countries_do_you_support": "Hangi ülkeleri destekliyorsunuz?",
   "faq_a_which_countries_do_you_support": "Dott, dünya çapında 100'den fazla ülkede işletmeleri destekler ve Afrika'da mobil para entegrasyonu, ABD ve Kanada'da fatura faktöringi ve çeşitli düzenleyici ortamlar için uyumluluk araçları gibi belirli bölgeler için özel özellikler sunar.",
-  
   "faq_q_does_dott_support_mobile_money_payments": "Dott mobil para ödemelerini destekliyor mu?",
   "faq_a_does_dott_support_mobile_money_payments": "Evet! Afrika ve Asya'da M-Pesa, MTN Mobile Money, Airtel Money ve diğerleri gibi popüler mobil para platformlarıyla entegrasyonu destekliyoruz. Bu, işletmenizin yerel ödeme yöntemlerini kolayca kabul etmesini ve işlemesini sağlar.",
-  
   "faq_q_how_does_the_barcode_and_inventory_scanner_feature_work": "Barkod ve envanter tarayıcı özelliği nasıl çalışır?",
   "faq_a_how_does_the_barcode_and_inventory_scanner_feature_work": "Profesyonel planımız, envanter öğeleriniz için barkod oluşturma ve yazdırma ve daha hızlı envanter yönetimi için Bluetooth barkod tarayıcılarla senkronize etme yeteneğini içerir. Bu özellik ek maliyet olmadan dahildir ve envanter yönetim sistemimizle sorunsuz çalışır.",
-  
   "faq_q_is_my_data_secure": "Verilerim güvende mi?",
   "faq_a_is_my_data_secure": "Kesinlikle. Verilerinizi korumak için banka düzeyinde güvenlik şifrelemesi ve sektörün en iyi uygulamalarını kullanıyoruz. Platformumuz, birden fazla güvenlik katmanı, bölgesel uyumluluk özellikleri ve düzenli yedeklemelerle güvenli bulut altyapısında barındırılmaktadır.",
-  
   "faq_q_can_i_import_data_from_other_systems": "Diğer sistemlerden veri içe aktarabilir miyim?",
   "faq_a_can_i_import_data_from_other_systems": "Evet, Excel, CSV ve diğer muhasebe platformları dahil olmak üzere çeşitli formatlardan veri içe aktarabilirsiniz. Ayrıca, uluslararası veri formatları desteğiyle diğer platformlardan geçiş yapan işletmeler için taşıma yardımı da sağlıyoruz.",
-  
   "faq_q_what_kind_of_support_do_you_offer": "Ne tür bir destek sunuyorsunuz?",
   "faq_a_what_kind_of_support_do_you_offer": "Sohbet, e-posta ve planlanmış aramalar aracılığıyla birden fazla zaman diliminde müşteri desteği sunuyoruz. Ekibimiz, işletmenizin nerede faaliyet gösterdiğine bakılmaksızın ilgili destek sağlamak için bölgesel iş uygulamalarına aşina uzmanlar içerir.",
-  
   "faq_q_how_does_multi-currency_support_work": "Çoklu para birimi desteği nasıl çalışır?",
   "faq_a_how_does_multi-currency_support_work": "Dott, otomatik döviz kuru güncellemeleriyle aynı anda birden fazla para biriminde çalışmanıza olanak tanır. Müşterilerinize yerel para birimlerinde fatura kesebilir, farklı para birimlerinde harcamaları takip edebilir ve tercih ettiğiniz temel para biriminde raporlar oluşturabilirsiniz.",
-  
   "still_have_questions": "Hala sorularınız mı var?",
   "contact_support": "Küresel destek ekibimizle support@dottapps.com adresinden iletişime geçin",
-  
   "copyright_text": "Dott, LLC. Tüm hakları saklıdır.",
-  
   "footer_product": "Ürün",
   "footer_company": "Şirket",
   "footer_legal": "Yasal",
-  
   "footer_link_features": "Özellikler",
   "footer_link_testimonials": "Referanslar",
   "footer_link_highlights": "Öne Çıkanlar",
   "footer_link_pricing": "Fiyatlandırma",
   "footer_link_faqs": "SSS",
-  
   "footer_link_about_us": "Hakkımızda",
   "footer_link_careers": "Kariyer",
   "footer_link_press": "Basın",
   "footer_link_blog": "Blog",
-  
   "footer_link_terms_of_use": "Kullanım Şartları",
   "footer_link_privacy_policy": "Gizlilik Politikası",
   "footer_link_cookie_policy": "Çerez Politikası",
   "footer_link_contact": "İletişim",
-  
   "pricing_title": "Basit, şeffaf fiyatlandırma",
   "pricing_subtitle": "İşletmeniz için doğru planı seçin",
   "regional_pricing": "Bölgesel fiyatlandırma uygulandı: Geliştirilmiş ücretsiz seviye ve Kurumsal'da %50 indirim ({0})",
@@ -157,35 +129,28 @@
   "compare_features_title": "Tüm Plan Özelliklerini Karşılaştırın",
   "developing_country_notice": "Bölgeniz için geliştirilmiş özellikler mevcut! Fiyatlar {0} cinsinden",
   "currency_notice_compare": "Tüm planları karşılaştırma (Fiyatlar {0} cinsinden)",
-  
   "features_column": "Özellikler",
   "tier_basic": "Temel",
   "tier_professional": "Profesyonel",
   "tier_enterprise": "Kurumsal",
   "tier_recommended": "Önerilen",
   "tier_complete_solution": "Eksiksiz Çözüm",
-  
   "select_basic": "Temel'i Seç",
   "select_professional": "Profesyonel'i Seç",
   "select_enterprise": "Kurumsal'ı Seç",
-  
   "period_month": "ay",
   "period_year": "yıl",
   "free": "Ücretsiz",
   "discount_applied": "%50 Bölgesel İndirim",
-  
   "billing_monthly": "Aylık",
   "billing_annual": "Yıllık",
   "save_percentage": "%17 Tasarruf",
-  
   "available_addons": "Mevcut Eklentiler:",
   "pricing_footer": "Fiyatlara geçerli vergiler dahil değildir. Abonelikler otomatik olarak yenilenir. İstediğiniz zaman iptal edebilirsiniz.",
   "developing_country_discount": "Özel bölgesel fiyatlandırma uygulandı: Kurumsal seviyede %50 indirim",
-  
   "button_get_started_for_free": "ÜCRETSİZ BAŞLA",
   "button_start_professional": "Profesyonel'e Başla",
   "button_start_enterprise": "Kurumsal'a Başla",
-  
   "category_core_business_tools": "Temel İşletme Araçları",
   "category_global_payment_solutions": "Küresel Ödeme Çözümleri",
   "category_inventory_management": "Envanter Yönetimi",
@@ -195,7 +160,6 @@
   "category_business_tools": "İşletme Araçları",
   "category_storage_&_access": "Depolama ve Erişim",
   "category_support": "Destek",
-  
   "feature_unlimited_users": "Sınırsız kullanıcı",
   "feature_advanced_inventory_management_with_forecasting": "Tahminleme ile gelişmiş envanter yönetimi",
   "feature_automated_invoicing_and_payment_reminders": "Otomatik faturalama ve ödeme hatırlatıcıları",
@@ -206,7 +170,6 @@
   "feature_advanced_reporting_and_analytics": "Gelişmiş raporlama ve analitik",
   "feature_ai-powered_business_insights": "Yapay zeka destekli işletme içgörüleri",
   "feature_priority_support_with_dedicated_account_manager": "Özel hesap yöneticisi ile öncelikli destek",
-  
   "feature_1_user_included": "1 kullanıcı dahil",
   "feature_track_income_and_expenses": "Gelir ve giderleri takip edin",
   "feature_basic_inventory_management": "Temel envanter yönetimi",
@@ -215,7 +178,6 @@
   "feature_2_gb_of_storage": "2 GB depolama",
   "feature_basic_reporting": "Temel raporlama",
   "feature_email_support": "E-posta desteği",
-  
   "feature_unlimited_users_with_custom_roles": "Özel rollerle sınırsız kullanıcı",
   "feature_advanced_inventory_management_with_custom_categories": "Özel kategorilerle gelişmiş envanter yönetimi",
   "feature_fully_branded_invoicing_with_automation": "Otomasyonla tamamen markalı faturalama",
@@ -224,7 +186,6 @@
   "feature_unlimited_storage": "Sınırsız depolama",
   "feature_custom_reporting_and_analytics": "Özel raporlama ve analitik",
   "feature_advanced_ai_business_insights_with_forecasting": "Tahminleme ile gelişmiş yapay zeka işletme içgörüleri",
-  
   "feature_income_and_expense_tracking": "Gelir ve gider takibi",
   "feature_invoice_creation": "Fatura oluşturma",
   "feature_automated_invoice_reminders": "Otomatik fatura hatırlatıcıları",
@@ -248,13 +209,11 @@
   "feature_dedicated_account_manager": "Özel hesap yöneticisi",
   "feature_payroll_&_tax_processing": "Bordro ve vergi işleme",
   "feature_hr_&_crm_modules": "İK ve CRM modülleri",
-  
   "feature_value_2gb": "2 GB",
   "feature_value_30gb": "30 GB",
   "feature_value_unlimited": "Sınırsız",
   "feature_value_add-on": "Eklenti",
   "feature_value_discounted": "İndirimli",
-  
   "choose_your_plan": "Planınızı Seçin",
   "select_plan_description": "İşletme ihtiyaçlarınıza en uygun planı seçin",
   "best_value": "EN İYİ DEĞER",
@@ -279,7 +238,6 @@
   "custom_roles_&_permissions": "Özel roller ve izinler",
   "advanced_security_features": "Gelişmiş güvenlik özellikleri",
   "preferential_transaction_rates": "Tercihli işlem oranları",
-  
   "feature_single_user_account_with_view-only_accountant_access": "Sadece görüntüleme yetkisi olan muhasebeci erişimiyle tek kullanıcılı hesap",
   "feature_basic_income_and_expense_tracking": "Temel gelir ve gider takibi",
   "feature_up_to_5_customizable_invoice_templates": "5'e kadar özelleştirilebilir fatura şablonu",
@@ -307,10 +265,59 @@
   "feature_basic_offline_mode": "Temel çevrimdışı mod",
   "feature_mobile-optimized_experience": "Mobil optimize edilmiş deneyim",
   "feature_knowledge_base_access": "Bilgi tabanı erişimi",
-  
   "feature_value_5gb": "5 GB",
-  
   "complete_onboarding": "KAYDOLMAYI TAMAMLA",
   "your_dashboard": "GÖSTERGE PANELİNİZ",
-  "sign_in": "GİRİŞ YAP"
+  "sign_in": "GİRİŞ YAP",
+  "heroSubtitle": "Temel özelliklerle sonsuza kadar ücretsiz",
+  "heroButton": "Ücretsiz başlayın",
+  "heroTrustedBy": "Dünya çapında 10.000'den fazla işletme tarafından güveniliyor",
+  "feature_inventory": "Envanter Yönetimi",
+  "feature_inventory_desc": "Stok seviyelerini takip edin, barkod oluşturun ve gerçek zamanlı güncellemelerle birden fazla konumu yönetin.",
+  "feature_pos": "Satış Noktası",
+  "feature_pos_desc": "Kullanımı kolay POS sisteminden ödemeleri kabul edin, satışları yönetin ve envanteri takip edin.",
+  "feature_invoicing": "Faturalama ve Teklifler",
+  "feature_invoicing_desc": "Saniyeler içinde profesyonel faturalar, teklifler ve yinelenen faturalar oluşturun. Daha hızlı ödeme alın.",
+  "feature_payroll": "Bordro ve İK",
+  "feature_payroll_desc": "Çalışanlara ödeme yapın, yan hakları yönetin, izinleri takip edin ve tüm İK ihtiyaçlarını tek bir yerde halledin.",
+  "feature_accounting": "Muhasebe ve Raporlar",
+  "feature_accounting_desc": "Gelir ve giderleri takip edin ve finansal raporlar oluşturun. Yıl boyunca vergi için hazır kalın.",
+  "feature_payments": "Küresel Ödemeler",
+  "feature_payments_desc": "Kredi kartı, banka havalesi, mobil para ve dünya çapında 50'den fazla ödeme yöntemini kabul edin.",
+  "feature_crm": "Müşteri Yönetimi",
+  "feature_crm_desc": "Düzenli müşteri verileri, notlar ve iletişim geçmişi ile kalıcı ilişkiler kurun.",
+  "feature_analytics": "Yapay Zeka Analitiği",
+  "feature_analytics_desc": "Yapay zeka destekli analizlerle daha iyi iş kararları vermek için akıllı içgörüler ve tahminler elde edin.",
+  "faq_q_is_it_really_free": "Dott gerçekten ücretsiz mi?",
+  "faq_a_is_it_really_free": "Evet! Temel planımız kredi kartı gerektirmeden sonsuza kadar ücretsizdir. Serbest çalışanlar ve küçük başlangıçlar için temel özellikler içerir. İşletmeniz büyüdükçe istediğiniz zaman yükseltebilirsiniz.",
+  "faq_q_can_i_switch_plans": "İstediğim zaman plan değiştirebilir miyim?",
+  "faq_a_can_i_switch_plans": "Kesinlikle! Planınızı istediğiniz zaman yükseltebilir veya düşürebilirsiniz. Değişiklikler hemen yürürlüğe girer ve tüm ödemeleri orantılı olarak hesaplarız. Uzun vadeli sözleşme veya iptal ücreti yoktur.",
+  "faq_q_do_you_offer_mobile_apps": "Mobil uygulamalar sunuyor musunuz?",
+  "faq_a_do_you_offer_mobile_apps": "Evet! Dott, web tarayıcınız üzerinden herhangi bir cihazda mükemmel çalışır. Ayrıca hareket halindeyken işletmenizi yönetmek için özel iOS ve Android uygulamalarımız var. Tüm özellikler cihazlar arasında gerçek zamanlı olarak senkronize olur.",
+  "pricing_period_monthly": "Aylık",
+  "pricing_period_annual": "Yıllık",
+  "pricing_save": "%20 tasarruf edin",
+  "pricing_plan_basic": "Temel",
+  "pricing_plan_basic_price": "₺0",
+  "pricing_plan_basic_desc": "Serbest çalışanlar ve başlangıçlar için mükemmel",
+  "pricing_plan_pro": "Profesyonel",
+  "pricing_plan_pro_price": "₺450",
+  "pricing_plan_pro_price_annual": "₺360",
+  "pricing_plan_pro_desc": "Büyüyen işletmeler için",
+  "pricing_plan_enterprise": "Kurumsal",
+  "pricing_plan_enterprise_price": "₺1.350",
+  "pricing_plan_enterprise_price_annual": "₺1.080",
+  "pricing_plan_enterprise_desc": "Kurulmuş şirketler için",
+  "pricing_most_popular": "En Popüler",
+  "cta_title": "İşletmenizi büyütmeye hazır mısınız?",
+  "cta_subtitle": "Halihazırda Dott kullanan 10.000'den fazla işletmeye katılın",
+  "cta_button": "Ücretsiz deneme başlat",
+  "cta_no_credit_card": "Kredi kartı gerekmez",
+  "testimonial_title": "Müşterilerimiz ne diyor",
+  "testimonial_subtitle": "Binlerce mutlu işletmeye katılın",
+  "integration_title": "Zaten kullandığınız araçlarla çalışır",
+  "integration_subtitle": "Dott'u favori uygulamalarınızla bağlayın",
+  "security_badge_1": "Banka düzeyinde şifreleme",
+  "security_badge_2": "GDPR uyumlu",
+  "security_badge_3": "%99,9 çalışma süresi"
 }

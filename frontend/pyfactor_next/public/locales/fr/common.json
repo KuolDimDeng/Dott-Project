@@ -30,8 +30,11 @@
   "missionStatement": "Chez Dott, notre mission est de permettre aux petites entreprises de prospérer en leur fournissant des outils de gestion abordables, accessibles et puissants qui simplifient les opérations quotidiennes.",
   "visionStatement": "Nous envisageons un monde où les petites entreprises ont accès à la même qualité d'outils de gestion que les grandes entreprises, mais adaptés à leurs besoins et à leur échelle spécifiques.",
   
-  "heroTitle": "Gérez votre entreprise comme un patron.",
+  "heroTitle": "Logiciel d'entreprise tout-en-un",
+  "heroSubtitle": "Gratuit pour toujours avec les fonctionnalités de base",
   "heroDescription": "Gestion d'entreprise mondiale avec inventaire avancé, numérisation de codes-barres et solutions de paiement régionales - le tout dans une plateforme intuitive pour les entreprises du monde entier.",
+  "heroButton": "Commencer gratuitement",
+  "heroTrustedBy": "Fait confiance par plus de 10 000 entreprises dans le monde",
   "heroImageAlt": "Illustration de Gestion d'Entreprise",
   "heroVideoTitle": "Démo du Logiciel Dott",
   "searchLanguages": "Rechercher des langues...",
@@ -45,9 +48,22 @@
   "pricingTitle": "Tout inclus dans notre forfait Professionnel pour seulement 15$/mois",
   "pricingDescription": "Pas de frais cachés. Pas de frais supplémentaires pour l'impression de codes-barres ou l'intégration de scanners.",
   
-  "feature_global_accounting": "Comptabilité Mondiale",
-  "feature_global_accounting_desc": "Outils comptables faciles à utiliser prenant en charge plusieurs devises et systèmes fiscaux pour les entreprises du monde entier.",
-  "feature_inventory_&_barcode_management": "Gestion des Stocks et Codes-barres",
+  "feature_inventory": "Gestion des stocks",
+  "feature_inventory_desc": "Suivez les niveaux de stock, générez des codes-barres et gérez plusieurs emplacements avec des mises à jour en temps réel.",
+  "feature_pos": "Point de vente",
+  "feature_pos_desc": "Acceptez les paiements, gérez les ventes et suivez l'inventaire depuis un système PDV facile à utiliser.",
+  "feature_invoicing": "Facturation et devis",
+  "feature_invoicing_desc": "Créez des factures professionnelles, des devis et des factures récurrentes en quelques secondes. Soyez payé plus rapidement.",
+  "feature_payroll": "Paie et RH",
+  "feature_payroll_desc": "Payez les employés, gérez les avantages, suivez les congés et gérez tous les besoins RH en un seul endroit.",
+  "feature_accounting": "Comptabilité et rapports",
+  "feature_accounting_desc": "Suivez les revenus, les dépenses et générez des rapports financiers. Restez prêt pour les impôts toute l'année.",
+  "feature_payments": "Paiements mondiaux",
+  "feature_payments_desc": "Acceptez les cartes de crédit, virements bancaires, argent mobile et plus de 50 méthodes de paiement dans le monde.",
+  "feature_crm": "Gestion des clients",
+  "feature_crm_desc": "Construisez des relations durables avec des données clients organisées, des notes et l'historique des communications.",
+  "feature_analytics": "Analyses IA",
+  "feature_analytics_desc": "Obtenez des informations intelligentes et des prédictions pour prendre de meilleures décisions commerciales avec l'analyse alimentée par l'IA.",
   "feature_inventory_&_barcode_management_desc": "Suivez les niveaux de stock, imprimez des codes-barres et synchronisez avec des scanners Bluetooth pour une gestion efficace des stocks.",
   "feature_worldwide_payment_solutions": "Solutions de Paiement Mondiales",
   "feature_worldwide_payment_solutions_desc": "Acceptez les paiements dans le monde entier par cartes de crédit, virements bancaires, argent mobile et méthodes de paiement régionales.",
@@ -101,6 +117,9 @@
   "faq_q_what_is_dott": "Qu'est-ce que Dott ?",
   "faq_a_what_is_dott": "Dott est une plateforme de gestion d'entreprise mondiale qui soutient les entreprises dans plus de 100 pays. Elle combine la comptabilité, la paie, les RH, la gestion des stocks avec fonctionnalité de codes-barres, et diverses options de paiement, y compris l'argent mobile, dans une solution intuitive unique.",
   
+  "faq_q_is_it_really_free": "Est-ce que Dott est vraiment gratuit ?",
+  "faq_a_is_it_really_free": "Oui ! Notre forfait Basique est gratuit pour toujours sans carte de crédit requise. Il comprend des fonctionnalités essentielles pour les freelances et les petites startups. Vous pouvez passer à un forfait supérieur à tout moment à mesure que votre entreprise grandit.",
+  
   "faq_q_how_much_does_it_cost": "Combien ça coûte ?",
   "faq_a_how_much_does_it_cost": "Nous proposons un forfait Basique gratuit pour les startups et un forfait Professionnel à 15€/mois (150€/an). Le forfait Professionnel inclut toutes les fonctionnalités, y compris l'impression de codes-barres et l'intégration de scanners, sans frais cachés. Vous pouvez passer à un forfait supérieur ou inférieur à tout moment.",
   
@@ -109,6 +128,12 @@
   
   "faq_q_does_dott_support_mobile_money_payments": "Dott prend-il en charge les paiements par argent mobile ?",
   "faq_a_does_dott_support_mobile_money_payments": "Oui ! Nous prenons en charge l'intégration avec des plateformes d'argent mobile populaires comme M-Pesa, MTN Mobile Money, Airtel Money, et d'autres à travers l'Afrique et l'Asie. Cela permet à votre entreprise d'accepter et de traiter facilement les méthodes de paiement locales.",
+  
+  "faq_q_can_i_switch_plans": "Puis-je changer de forfait à tout moment ?",
+  "faq_a_can_i_switch_plans": "Absolument ! Vous pouvez passer à un forfait supérieur ou inférieur à tout moment. Les changements prennent effet immédiatement et nous proratiserons tous les paiements. Pas de contrats à long terme ni de frais d'annulation.",
+  
+  "faq_q_do_you_offer_mobile_apps": "Proposez-vous des applications mobiles ?",
+  "faq_a_do_you_offer_mobile_apps": "Oui ! Dott fonctionne parfaitement sur n'importe quel appareil via votre navigateur web. Nous avons également des applications dédiées iOS et Android pour gérer votre entreprise en déplacement. Toutes les fonctionnalités se synchronisent en temps réel entre les appareils.",
   
   "faq_q_how_does_the_barcode_and_inventory_scanner_feature_work": "Comment fonctionne la fonctionnalité de scanner de codes-barres et d'inventaire ?",
   "faq_a_how_does_the_barcode_and_inventory_scanner_feature_work": "Notre forfait Professionnel inclut la capacité de générer et d'imprimer des codes-barres pour vos articles d'inventaire et de synchroniser avec des scanners de codes-barres Bluetooth pour une gestion des stocks plus rapide. Cette fonctionnalité est incluse sans coût supplémentaire et fonctionne parfaitement avec notre système de gestion d'inventaire.",
@@ -127,6 +152,18 @@
   
   "still_have_questions": "Vous avez encore des questions ?",
   "contact_support": "Contactez notre équipe de support mondial à support@dottapps.com",
+  
+  "cta_title": "Prêt à faire grandir votre entreprise ?",
+  "cta_subtitle": "Rejoignez plus de 10 000 entreprises qui utilisent déjà Dott",
+  "cta_button": "Commencer l'essai gratuit",
+  "cta_no_credit_card": "Aucune carte de crédit requise",
+  "testimonial_title": "Ce que disent nos clients",
+  "testimonial_subtitle": "Rejoignez des milliers d'entreprises heureuses",
+  "integration_title": "Fonctionne avec les outils que vous utilisez déjà",
+  "integration_subtitle": "Connectez Dott avec vos applications préférées",
+  "security_badge_1": "Chiffrement de niveau bancaire",
+  "security_badge_2": "Conforme au RGPD",
+  "security_badge_3": "99,9% de disponibilité",
   
   "copyright_text": "Dott, LLC. Tous droits réservés.",
   
@@ -152,6 +189,21 @@
   
   "pricing_title": "Tarification simple et transparente",
   "pricing_subtitle": "Choisissez le forfait qui convient à votre entreprise",
+  "pricing_period_monthly": "Mensuel",
+  "pricing_period_annual": "Annuel",
+  "pricing_save": "Économisez 20%",
+  "pricing_plan_basic": "Basique",
+  "pricing_plan_basic_price": "0€",
+  "pricing_plan_basic_desc": "Parfait pour les freelances et startups",
+  "pricing_plan_pro": "Professionnel",
+  "pricing_plan_pro_price": "15€",
+  "pricing_plan_pro_price_annual": "12€",
+  "pricing_plan_pro_desc": "Pour les entreprises en croissance",
+  "pricing_plan_enterprise": "Entreprise",
+  "pricing_plan_enterprise_price": "45€",
+  "pricing_plan_enterprise_price_annual": "36€",
+  "pricing_plan_enterprise_desc": "Pour les entreprises établies",
+  "pricing_most_popular": "Le plus populaire",
   "regional_pricing": "Tarification régionale appliquée : Forfait gratuit amélioré et 50% de réduction sur Enterprise ({0})",
   "currency_notice": "Prix affichés dans votre devise locale : {0}",
   "compare_features_title": "Comparer toutes les fonctionnalités des forfaits",

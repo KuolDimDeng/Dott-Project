@@ -29,13 +29,11 @@
   "aboutDescription2": "Kinachoifanya Dott iwe tofauti ni uelewa wetu wa kina wa changamoto za kipekee zinazokumba biashara ndogo, hasa katika masoko yanayoibuka.",
   "missionStatement": "Katika Dott, dhamira yetu ni kuwezesha biashara ndogo kustawi kwa kuwapa zana za usimamizi zinazofikika, zinazoweza kupatikana, na zenye nguvu ambazo hurahisisha shughuli za kila siku.",
   "visionStatement": "Tunaona ulimwengu ambapo biashara ndogo zina ufikiaji wa ubora sawa wa zana za usimamizi kama mashirika makubwa, lakini zimetengenezwa kulingana na mahitaji yao mahususi na ukubwa.",
-  
-  "heroTitle": "Simamia biashara yako kama mkuu.",
+  "heroTitle": "Programu ya Biashara Yote-katika-Moja",
   "heroDescription": "Usimamizi wa biashara wa kimataifa ukiwa na udhibiti wa bidhaa wa hali ya juu, usomaji wa msimbo wa pau, na suluhisho za malipo za kikanda - vyote katika jukwaa moja rahisi kwa biashara duniani kote.",
   "heroImageAlt": "Mchoro wa Usimamizi wa Biashara",
   "heroVideoTitle": "Onyesho la Programu ya Dott",
   "searchLanguages": "Tafuta lugha...",
-  
   "featuresTitle": "Vipengele vya Biashara vya Kimataifa",
   "featuresSubtitle": "Kila kitu unachohitaji kusimamia biashara yako kwa ufanisi katika zaidi ya nchi 100",
   "countriesSupported": "Zaidi ya nchi 100 zinazotumika",
@@ -44,7 +42,6 @@
   "new": "Mpya",
   "pricingTitle": "Kila kitu kimejumuishwa katika Mpango wetu wa Kitaalamu kwa $15/mwezi tu",
   "pricingDescription": "Hakuna ada zilizofichwa. Hakuna gharama za ziada za uchapishaji wa msimbo wa pau au uunganishaji wa skana.",
-  
   "feature_global_accounting": "Uhasibu wa Kimataifa",
   "feature_global_accounting_desc": "Zana za uhasibu rahisi kutumia zinazounga mkono sarafu nyingi na mifumo ya kodi kwa biashara popote duniani.",
   "feature_inventory_&_barcode_management": "Udhibiti wa Bidhaa na Msimbo wa Pau",
@@ -61,35 +58,26 @@
   "feature_invoicing_&_factoring_desc": "Tengeneza ankara za kitaalamu katika sarafu nyingi pamoja na chaguo za factoring kwa biashara za Marekani na Kanada.",
   "feature_cross-border_commerce": "Biashara za Kimataifa",
   "feature_cross-border_commerce_desc": "Simamia mauzo ya kimataifa, uagizaji, usafirishaji na fuata kanuni za kikodi za kikanda kwa urahisi.",
-
   "highlights_title": "Kwa Nini Uchague Jukwaa Letu la Kimataifa",
   "highlights_subtitle": "Imebuniwa kusaidia biashara kutoka nchi mbalimbali na udhibiti wa bidhaa wenye nguvu",
-  
   "highlight_title_global_business_solution": "Suluhisho la Biashara la Kimataifa",
   "highlight_desc_global_business_solution": "Imebuniwa kwa biashara duniani kote ikiwa na msaada wa zaidi ya nchi 100, sarafu nyingi, na njia za malipo maalum za kikanda.",
-  
   "highlight_title_advanced_inventory_tools": "Zana za Udhibiti wa Bidhaa za Hali ya Juu",
   "highlight_desc_advanced_inventory_tools": "Uchapishaji wa msimbo wa pau na uunganishaji wa skana za Bluetooth umejumuishwa katika mpango wetu wa Kitaalamu bila malipo ya ziada.",
-  
   "highlight_title_fast_&_efficient": "Haraka na Yenye Ufanisi",
   "highlight_desc_fast_&_efficient": "Jukwaa linalotegemea wingu lililoimarishwa kwa kasi na ufanisi, linakusaidia kusimamia biashara yako haraka zaidi popote ulipo.",
-  
   "highlight_title_secure_&_compliant": "Salama na Inazingatia Sheria",
   "highlight_desc_secure_&_compliant": "Usalama wa kiwango cha benki na vipengele vya uzingatiaji wa kikanda huhakikisha data yako ya biashara ni salama na inatimiza kanuni za mtaa.",
-  
   "highlight_title_global_support": "Msaada wa Kimataifa",
   "highlight_desc_global_support": "Timu yetu ya msaada iliyojitokeza inaelewa mazingira ya biashara ya mitaa na inapatikana katika majira ya saa mengi na lugha mbali mbali.",
-  
   "highlights_pricing_title": "Vipengele vyote, ikijumuisha uchapishaji wa msimbo wa pau na uunganishaji wa skana, vimejumuishwa katika mpango wetu wa Kitaalamu kwa $15/mwezi tu",
   "highlights_pricing_subtitle": "Hakuna ada zilizofichwa. Hakuna viwango vya bei vya kugeuza. Mpango mmoja rahisi tu kwa biashara za kimataifa.",
-
   "faq_title": "Maswali Yanayoulizwa Mara kwa Mara",
   "faq_subtitle": "Una maswali kuhusu jukwaa letu la biashara la kimataifa? Tuna majibu.",
   "chip_countries": "Zaidi ya Nchi 100",
   "chip_barcode": "Uunganishaji wa Msimbo wa Pau",
   "chip_currency": "Sarafu Nyingi",
   "key_info": "Taarifa Muhimu",
-  
   "faq_category_general": "Jumla",
   "faq_category_pricing": "Bei na Mipango",
   "faq_category_global": "Biashara ya Kimataifa",
@@ -97,59 +85,43 @@
   "faq_category_payments": "Chaguzi za Malipo",
   "faq_category_security": "Usalama na Uzingatiaji",
   "faq_category_support": "Msaada na Usaidizi",
-  
   "faq_q_what_is_dott": "Dott ni nini?",
   "faq_a_what_is_dott": "Dott ni jukwaa la usimamizi wa biashara la kimataifa linalosaidia biashara katika zaidi ya nchi 100. Linaunganisha uhasibu, mishahara, rasilimali watu, udhibiti wa bidhaa na utendaji wa msimbo wa pau, na chaguo mbalimbali za malipo, ikijumuisha pesa za simu, katika suluhisho moja rahisi.",
-  
   "faq_q_how_much_does_it_cost": "Inagharimu kiasi gani?",
   "faq_a_how_much_does_it_cost": "Tunatoa mpango wa Msingi wa bure kwa biashara zinazojitokeza na mpango wa Kitaalamu kwa $15/mwezi ($150/mwaka). Mpango wa Kitaalamu unajumuisha vipengele vyote, ikijumuisha uchapishaji wa msimbo wa pau na uunganishaji wa skana, bila ada zilizofichwa. Unaweza kupandisha au kushuka ngazi wakati wowote.",
-  
   "faq_q_which_countries_do_you_support": "Ni nchi zipi mnazounga mkono?",
   "faq_a_which_countries_do_you_support": "Dott inasaidia biashara katika zaidi ya nchi 100 ulimwenguni kote, ukiwa na vipengele maalum kwa maeneo maalum kama vile uunganishaji wa pesa za simu Afrika, factoring ya ankara Marekani na Kanada, na zana za uzingatiaji kwa mazingira mbalimbali ya udhibiti.",
-  
   "faq_q_does_dott_support_mobile_money_payments": "Je, Dott inaunga mkono malipo ya pesa za simu?",
   "faq_a_does_dott_support_mobile_money_payments": "Ndiyo! Tunaunga mkono uunganishaji na majukwaa maarufu ya pesa za simu kama vile M-Pesa, MTN Mobile Money, Airtel Money, na mengine katika Afrika na Asia. Hii huruhusu biashara yako kupokea na kuchakata njia za malipo za mtaa kwa urahisi.",
-  
   "faq_q_how_does_the_barcode_and_inventory_scanner_feature_work": "Kipengele cha msomaji wa msimbo wa pau na bidhaa kinafanya kazi vipi?",
   "faq_a_how_does_the_barcode_and_inventory_scanner_feature_work": "Mpango wetu wa Kitaalamu unajumuisha uwezo wa kutengeneza na kuchapisha msimbo wa pau kwa bidhaa zako na kuunganisha na skana za msimbo wa pau za Bluetooth kwa udhibiti wa bidhaa wa haraka zaidi. Kipengele hiki kimejumuishwa bila gharama za ziada na kinafanya kazi vizuri na mfumo wetu wa udhibiti wa bidhaa.",
-  
   "faq_q_is_my_data_secure": "Je, data yangu ni salama?",
   "faq_a_is_my_data_secure": "Kabisa. Tunatumia usimbaji fiche wa usalama wa kiwango cha benki na kufuata desturi bora za tasnia ili kulinda data yako. Jukwaa letu linahifadhiwa kwenye miundombinu salama ya wingu iliyo na safu nyingi za usalama, vipengele vya uzingatiaji wa kikanda, na nakala rudufu za mara kwa mara.",
-  
   "faq_q_can_i_import_data_from_other_systems": "Je, ninaweza kuingiza data kutoka kwenye mifumo mingine?",
   "faq_a_can_i_import_data_from_other_systems": "Ndiyo, unaweza kuingiza data kutoka formati mbalimbali, ikijumuisha Excel, CSV, na majukwaa mengine ya uhasibu. Pia tunatoa usaidizi wa uhamishaji kwa biashara zinazobadilisha kutoka majukwaa mengine, ukiwa na msaada wa formati za data za kimataifa.",
-  
   "faq_q_what_kind_of_support_do_you_offer": "Mnatoa aina gani ya msaada?",
   "faq_a_what_kind_of_support_do_you_offer": "Tunatoa msaada wa wateja kupitia majira ya saa mbalimbali kupitia mazungumzo, barua pepe, na simu zilizopangwa. Timu yetu inajumuisha wataalamu wanaofahamu mazoea ya biashara ya kikanda ili kutoa msaada unaofaa, popote biashara yako inapoendeshwa.",
-  
   "faq_q_how_does_multi-currency_support_work": "Msaada wa sarafu nyingi unafanya kazi vipi?",
   "faq_a_how_does_multi-currency_support_work": "Dott inakuruhusu kufanya kazi na sarafu nyingi kwa wakati mmoja, ukiwa na masasisho ya otomatiki ya viwango vya ubadilishaji. Unaweza kutuma ankara kwa wateja wako katika sarafu zao za mtaa, kufuatilia matumizi katika sarafu tofauti, na kutengeneza ripoti katika sarafu yako ya msingi unayopendelea.",
-  
   "still_have_questions": "Bado una maswali?",
   "contact_support": "Wasiliana na timu yetu ya msaada ya kimataifa kupitia support@dottapps.com",
-  
   "copyright_text": "Dott, LLC. Haki zote zimehifadhiwa.",
-  
   "footer_product": "Bidhaa",
   "footer_company": "Kampuni",
   "footer_legal": "Kisheria",
-  
   "footer_link_features": "Vipengele",
   "footer_link_testimonials": "Ushuhuda",
   "footer_link_highlights": "Mambo Muhimu",
   "footer_link_pricing": "Bei",
   "footer_link_faqs": "Maswali",
-  
   "footer_link_about_us": "Kuhusu Sisi",
   "footer_link_careers": "Kazi",
   "footer_link_press": "Vyombo vya Habari",
   "footer_link_blog": "Blogu",
-  
   "footer_link_terms_of_use": "Masharti ya Matumizi",
   "footer_link_privacy_policy": "Sera ya Faragha",
   "footer_link_cookie_policy": "Sera ya Vidakuzi",
   "footer_link_contact": "Wasiliana",
-  
   "pricing_title": "Bei rahisi na wazi",
   "pricing_subtitle": "Chagua mpango unaofaa kwa biashara yako",
   "regional_pricing": "Bei za kikanda zimetumika: Kiwango cha bure kilichoimarishwa na punguzo la 50% kwa Enterprise ({0})",
@@ -157,35 +129,28 @@
   "compare_features_title": "Linganisha Vipengele Vyote vya Mpango",
   "developing_country_notice": "Vipengele vilivyoimarishwa vinapatikana kwa eneo lako! Bei katika {0}",
   "currency_notice_compare": "Kulinganisha mipango yote (Bei katika {0})",
-  
   "features_column": "Vipengele",
   "tier_basic": "Msingi",
   "tier_professional": "Kitaalamu",
   "tier_enterprise": "Shirika",
   "tier_recommended": "Inayopendekezwa",
   "tier_complete_solution": "Suluhisho Kamili",
-  
   "select_basic": "Chagua Msingi",
   "select_professional": "Chagua Kitaalamu",
   "select_enterprise": "Chagua Shirika",
-  
   "period_month": "mwezi",
   "period_year": "mwaka",
   "free": "Bure",
   "discount_applied": "Punguzo la 50% la Kikanda",
-  
   "billing_monthly": "Kila Mwezi",
   "billing_annual": "Kila Mwaka",
   "save_percentage": "Okoa 17%",
-  
   "available_addons": "Viambatisho Vilivyopo:",
   "pricing_footer": "Bei hazijumuishi kodi zinazotumika. Usajili unajifanyia upya kiotomatiki. Ghairi wakati wowote.",
   "developing_country_discount": "Bei maalum za kikanda zimetumika: Punguzo la 50% kwenye kiwango cha Shirika",
-  
   "button_get_started_for_free": "ANZA BURE",
   "button_start_professional": "Anza Kitaalamu",
   "button_start_enterprise": "Anza Shirika",
-  
   "category_core_business_tools": "Zana za Msingi za Biashara",
   "category_global_payment_solutions": "Suluhisho za Malipo za Kimataifa",
   "category_inventory_management": "Udhibiti wa Bidhaa",
@@ -195,7 +160,6 @@
   "category_business_tools": "Zana za Biashara",
   "category_storage_&_access": "Hifadhi na Ufikiaji",
   "category_support": "Msaada",
-  
   "feature_unlimited_users": "Watumiaji wasio na kikomo",
   "feature_advanced_inventory_management_with_forecasting": "Udhibiti wa bidhaa wa hali ya juu na utabiri",
   "feature_automated_invoicing_and_payment_reminders": "Ankara za kiotomatiki na vikumbusho vya malipo",
@@ -206,7 +170,6 @@
   "feature_advanced_reporting_and_analytics": "Ripoti na uchanganuzi wa hali ya juu",
   "feature_ai-powered_business_insights": "Ufahamu wa biashara unaoendeshwa na AI",
   "feature_priority_support_with_dedicated_account_manager": "Msaada wa kipaumbele na meneja wa akaunti aliyeteuliwa",
-  
   "feature_1_user_included": "Mtumiaji 1 amejumuishwa",
   "feature_track_income_and_expenses": "Fuatilia mapato na matumizi",
   "feature_basic_inventory_management": "Udhibiti wa bidhaa wa msingi",
@@ -215,7 +178,6 @@
   "feature_2_gb_of_storage": "GB 2 za hifadhi",
   "feature_basic_reporting": "Ripoti za msingi",
   "feature_email_support": "Msaada wa barua pepe",
-  
   "feature_unlimited_users_with_custom_roles": "Watumiaji wasio na kikomo na majukumu ya kibinafsi",
   "feature_advanced_inventory_management_with_custom_categories": "Udhibiti wa bidhaa wa hali ya juu na aina za kibinafsi",
   "feature_fully_branded_invoicing_with_automation": "Ankara kamili za kutengenezwa na kiotomatiki",
@@ -224,7 +186,6 @@
   "feature_unlimited_storage": "Hifadhi isiyo na kikomo",
   "feature_custom_reporting_and_analytics": "Ripoti na uchanganuzi wa kibinafsi",
   "feature_advanced_ai_business_insights_with_forecasting": "Ufahamu wa biashara wa AI wa hali ya juu pamoja na utabiri",
-  
   "feature_income_and_expense_tracking": "Ufuatiliaji wa mapato na matumizi",
   "feature_invoice_creation": "Uundaji wa ankara",
   "feature_automated_invoice_reminders": "Vikumbusho vya ankara vya kiotomatiki",
@@ -248,13 +209,11 @@
   "feature_dedicated_account_manager": "Meneja wa akaunti aliyeteuliwa",
   "feature_payroll_&_tax_processing": "Uchakataji wa mishahara na kodi",
   "feature_hr_&_crm_modules": "Moduli za Rasilimali Watu na CRM",
-  
   "feature_value_2gb": "GB 2",
   "feature_value_30gb": "GB 30",
   "feature_value_unlimited": "Bila kikomo",
   "feature_value_add-on": "Kiambatisho",
   "feature_value_discounted": "Iliyopunguzwa",
-  
   "choose_your_plan": "Chagua Mpango Wako",
   "select_plan_description": "Chagua mpango unaoendana vizuri na mahitaji ya biashara yako",
   "best_value": "THAMANI BORA",
@@ -279,7 +238,6 @@
   "custom_roles_&_permissions": "Majukumu na vibali vya kibinafsi",
   "advanced_security_features": "Vipengele vya usalama vya hali ya juu",
   "preferential_transaction_rates": "Viwango vya muamala vya upendeleo",
-  
   "feature_single_user_account_with_view-only_accountant_access": "Akaunti ya mtumiaji mmoja na ufikiaji wa mhasibu wa kuona-tu",
   "feature_basic_income_and_expense_tracking": "Ufuatiliaji wa msingi wa mapato na matumizi",
   "feature_up_to_5_customizable_invoice_templates": "Hadi violezo 5 vya ankara vinavyoweza kubadilishwa",
@@ -307,10 +265,59 @@
   "feature_basic_offline_mode": "Hali ya nje ya mtandao ya msingi",
   "feature_mobile-optimized_experience": "Uzoefu ulioimarishwa kwa simu",
   "feature_knowledge_base_access": "Ufikiaji wa kituo cha maarifa",
-  
   "feature_value_5gb": "GB 5",
-  
   "complete_onboarding": "KAMILISHA USAJILI",
   "your_dashboard": "DASHIBODI YAKO",
-  "sign_in": "INGIA"
+  "sign_in": "INGIA",
+  "heroSubtitle": "Bure milele kwa vipengele vya msingi",
+  "heroButton": "Anza bure",
+  "heroTrustedBy": "Inaaminika na biashara zaidi ya 10,000 duniani kote",
+  "feature_inventory": "Usimamizi wa Hesabu",
+  "feature_inventory_desc": "Fuatilia viwango vya hisa, tengeneza barcodi, na simamia maeneo mengi kwa sasisho za wakati halisi.",
+  "feature_pos": "Sehemu ya Mauzo",
+  "feature_pos_desc": "Pokea malipo, simamia mauzo, na fuatilia hesabu kutoka mfumo wa POS rahisi kutumia.",
+  "feature_invoicing": "Ankara na Makadirio",
+  "feature_invoicing_desc": "Unda ankara za kitaalamu, nukuu, na bili za mara kwa mara kwa sekunde. Lipwa haraka zaidi.",
+  "feature_payroll": "Mishahara na HR",
+  "feature_payroll_desc": "Lipa wafanyakazi, simamia faida, fuatilia likizo, na shughulikia mahitaji yote ya HR mahali pamoja.",
+  "feature_accounting": "Uhasibu na Ripoti",
+  "feature_accounting_desc": "Fuatilia mapato, gharama na tengeneza ripoti za kifedha. Jiandae kwa kodi mwaka mzima.",
+  "feature_payments": "Malipo ya Kimataifa",
+  "feature_payments_desc": "Pokea kadi za mkopo, uhamisho wa benki, pesa za simu na njia zaidi ya 50 za malipo duniani kote.",
+  "feature_crm": "Usimamizi wa Wateja",
+  "feature_crm_desc": "Jenga mahusiano ya kudumu na data iliyopangwa ya wateja, vidokezo na historia ya mawasiliano.",
+  "feature_analytics": "Uchambuzi wa AI",
+  "feature_analytics_desc": "Pata maarifa ya akili na utabiri wa kufanya maamuzi bora ya biashara na uchambuzi unaotumia AI.",
+  "faq_q_is_it_really_free": "Je, Dott ni bure kweli?",
+  "faq_a_is_it_really_free": "Ndiyo! Mpango wetu wa Msingi ni bure milele bila hitaji la kadi ya mkopo. Inajumuisha vipengele muhimu kwa wafanyabiashara huru na biashara ndogo za kuanza. Unaweza kuboresha wakati wowote biashara yako inavyokua.",
+  "faq_q_can_i_switch_plans": "Je, ninaweza kubadilisha mpango wakati wowote?",
+  "faq_a_can_i_switch_plans": "Kabisa! Unaweza kuboresha au kudidimiza mpango wako wakati wowote. Mabadiliko yanaanza mara moja na tutahesabu malipo yoyote kwa uwiano. Hakuna mikataba ya muda mrefu au ada za kufuta.",
+  "faq_q_do_you_offer_mobile_apps": "Je, mnatoa programu za simu?",
+  "faq_a_do_you_offer_mobile_apps": "Ndiyo! Dott inafanya kazi kikamilifu kwenye kifaa chochote kupitia kivinjari chako cha wavuti. Pia tuna programu maalum za iOS na Android za kusimamia biashara yako ukiwa safarini. Vipengele vyote vinasawazisha kwa wakati halisi kati ya vifaa.",
+  "pricing_period_monthly": "Kila mwezi",
+  "pricing_period_annual": "Kila mwaka",
+  "pricing_save": "Okoa 20%",
+  "pricing_plan_basic": "Msingi",
+  "pricing_plan_basic_price": "TSh0",
+  "pricing_plan_basic_desc": "Kamili kwa wafanyabiashara huru na biashara za kuanza",
+  "pricing_plan_pro": "Kitaalamu",
+  "pricing_plan_pro_price": "TSh35,000",
+  "pricing_plan_pro_price_annual": "TSh28,000",
+  "pricing_plan_pro_desc": "Kwa biashara zinazokua",
+  "pricing_plan_enterprise": "Kampuni",
+  "pricing_plan_enterprise_price": "TSh105,000",
+  "pricing_plan_enterprise_price_annual": "TSh84,000",
+  "pricing_plan_enterprise_desc": "Kwa makampuni yaliyojikita",
+  "pricing_most_popular": "Maarufu Zaidi",
+  "cta_title": "Uko tayari kukuza biashara yako?",
+  "cta_subtitle": "Jiunge na biashara zaidi ya 10,000 zinazotumia Dott tayari",
+  "cta_button": "Anza jaribio la bure",
+  "cta_no_credit_card": "Hakuna hitaji la kadi ya mkopo",
+  "testimonial_title": "Nini wateja wetu wanasema",
+  "testimonial_subtitle": "Jiunge na maelfu ya biashara zenye furaha",
+  "integration_title": "Inafanya kazi na zana unazotumia tayari",
+  "integration_subtitle": "Unganisha Dott na programu zako unazozipenda",
+  "security_badge_1": "Usimbaji fiche wa kiwango cha benki",
+  "security_badge_2": "Inakubaliana na GDPR",
+  "security_badge_3": "Muda wa kutenda kazi 99.9%"
 }

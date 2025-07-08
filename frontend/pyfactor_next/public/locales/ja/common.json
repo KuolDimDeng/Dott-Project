@@ -29,13 +29,11 @@
   "aboutDescription2": "Dottの特徴は、特に新興市場において、中小企業が直面するユニークな課題に対する深い理解です。",
   "missionStatement": "Dottでは、手頃な価格で利用しやすく、強力な管理ツールを提供することで、日常業務を簡素化し、中小企業の繁栄を支援することが私たちの使命です。",
   "visionStatement": "私たちは、中小企業が大企業と同じ品質の管理ツールにアクセスできる世界を構想していますが、それは彼らの特定のニーズと規模に合わせたものです。",
-  
-  "heroTitle": "ボスのようにビジネスを管理しましょう。",
+  "heroTitle": "オールインワンビジネスソフトウェア",
   "heroDescription": "高度な在庫管理、バーコードスキャン、および地域的な決済ソリューションを備えたグローバルビジネス管理 - すべて世界中のビジネス向けの直感的なプラットフォームに統合されています。",
   "heroImageAlt": "ビジネス管理イラスト",
   "heroVideoTitle": "Dottソフトウェアデモ",
   "searchLanguages": "言語を検索...",
-  
   "featuresTitle": "グローバルビジネス機能",
   "featuresSubtitle": "100カ国以上でビジネスを効率的に運営するために必要なすべて",
   "countriesSupported": "100カ国以上対応",
@@ -44,7 +42,6 @@
   "new": "新機能",
   "pricingTitle": "プロフェッショナルプランでは月額$15でこれらすべてが含まれています",
   "pricingDescription": "隠れた料金なし。バーコード印刷やスキャナー統合に追加料金はかかりません。",
-  
   "feature_global_accounting": "グローバル会計",
   "feature_global_accounting_desc": "世界中のどこのビジネスでも使いやすい、複数の通貨や税制をサポートする会計ツール。",
   "feature_inventory_&_barcode_management": "在庫＆バーコード管理",
@@ -61,35 +58,26 @@
   "feature_invoicing_&_factoring_desc": "米国とカナダのビジネス向けにファクタリングオプションを備えた、複数通貨でのプロフェッショナルな請求書を作成します。",
   "feature_cross-border_commerce": "クロスボーダーコマース",
   "feature_cross-border_commerce_desc": "国際的な販売、輸入、輸出を管理し、地域の税制に円滑に準拠します。",
-
   "highlights_title": "私たちのグローバルプラットフォームを選ぶ理由",
   "highlights_subtitle": "強力な在庫管理で国境を越えたビジネスをサポートするために設計されています",
-  
   "highlight_title_global_business_solution": "グローバルビジネスソリューション",
   "highlight_desc_global_business_solution": "100カ国以上のサポート、複数通貨、地域特有の支払い方法を備えた世界中のビジネス向けに設計されています。",
-  
   "highlight_title_advanced_inventory_tools": "高度な在庫ツール",
   "highlight_desc_advanced_inventory_tools": "バーコード印刷とBluetoothスキャナー統合は、追加料金なしでプロフェッショナルプランに含まれています。",
-  
   "highlight_title_fast_&_efficient": "迅速＆効率的",
   "highlight_desc_fast_&_efficient": "スピードと効率性に最適化されたクラウドベースのプラットフォームで、どこにいても迅速にビジネスを運営できます。",
-  
   "highlight_title_secure_&_compliant": "安全＆コンプライアント",
   "highlight_desc_secure_&_compliant": "銀行レベルのセキュリティと地域コンプライアンス機能により、ビジネスデータが安全で地域の規制を満たしていることを保証します。",
-  
   "highlight_title_global_support": "グローバルサポート",
   "highlight_desc_global_support": "専門のサポートチームは地域のビジネス環境を理解し、複数のタイムゾーンと言語で利用可能です。",
-  
   "highlights_pricing_title": "バーコード印刷とスキャナー統合を含むすべての機能が、プロフェッショナルプランでは月額$15だけで含まれています",
   "highlights_pricing_subtitle": "隠れた料金なし。複雑な料金体系なし。グローバルビジネス向けのシンプルな一つのプランだけです。",
-
   "faq_title": "よくある質問",
   "faq_subtitle": "私たちのグローバルビジネスプラットフォームについて質問がありますか？答えがあります。",
   "chip_countries": "100カ国以上",
   "chip_barcode": "バーコード統合",
   "chip_currency": "複数通貨",
   "key_info": "重要情報",
-  
   "faq_category_general": "一般",
   "faq_category_pricing": "料金＆プラン",
   "faq_category_global": "グローバルビジネス",
@@ -97,59 +85,43 @@
   "faq_category_payments": "支払いオプション",
   "faq_category_security": "セキュリティ＆コンプライアンス",
   "faq_category_support": "サポート＆ヘルプ",
-  
   "faq_q_what_is_dott": "Dottとは何ですか？",
   "faq_a_what_is_dott": "Dottは、100カ国以上のビジネスをサポートするグローバルビジネス管理プラットフォームです。会計、給与計算、人事、バーコード機能付き在庫管理、およびモバイルマネーを含む様々な支払いオプションを直感的なソリューションに組み合わせています。",
-  
   "faq_q_how_much_does_it_cost": "費用はいくらですか？",
   "faq_a_how_much_does_it_cost": "スタートアップには無料のベーシックプランを提供し、プロフェッショナルプランは月額$15（年間$150）です。プロフェッショナルプランには、バーコード印刷とスキャナー統合を含むすべての機能が含まれており、隠れた料金はありません。いつでもアップグレードまたはダウングレードが可能です。",
-  
   "faq_q_which_countries_do_you_support": "どの国をサポートしていますか？",
   "faq_a_which_countries_do_you_support": "Dottは世界中の100カ国以上のビジネスをサポートしており、アフリカでのモバイルマネー統合、米国とカナダでの請求書ファクタリング、様々な規制環境向けのコンプライアンスツールなど、特定の地域向けの特別機能を備えています。",
-  
   "faq_q_does_dott_support_mobile_money_payments": "Dottはモバイルマネー支払いをサポートしていますか？",
   "faq_a_does_dott_support_mobile_money_payments": "はい！アフリカとアジアでのM-Pesa、MTNモバイルマネー、Airtel Moneyなどの人気のあるモバイルマネープラットフォームとの統合をサポートしています。これにより、ビジネスは地域の支払い方法を簡単に受け入れて処理することができます。",
-  
   "faq_q_how_does_the_barcode_and_inventory_scanner_feature_work": "バーコードと在庫スキャナー機能はどのように機能しますか？",
   "faq_a_how_does_the_barcode_and_inventory_scanner_feature_work": "プロフェッショナルプランには、在庫アイテム用のバーコードを生成して印刷し、より迅速な在庫管理のためにBluetoothバーコードスキャナーと同期する機能が含まれています。この機能は追加コストなしで含まれ、当社の在庫管理システムとシームレスに連携します。",
-  
   "faq_q_is_my_data_secure": "私のデータは安全ですか？",
   "faq_a_is_my_data_secure": "はい、安全です。データを保護するために銀行レベルのセキュリティ暗号化と業界のベストプラクティスを採用しています。当社のプラットフォームは、複数のセキュリティレイヤー、地域コンプライアンス機能、定期的なバックアップを備えた安全なクラウドインフラストラクチャ上でホスティングされています。",
-  
   "faq_q_can_i_import_data_from_other_systems": "他のシステムからデータをインポートできますか？",
   "faq_a_can_i_import_data_from_other_systems": "はい、Excel、CSV、および他の会計プラットフォームなど、様々なフォーマットからデータをインポートできます。また、国際的なデータフォーマットのサポートにより、他のプラットフォームから切り替えるビジネスのための移行支援も提供しています。",
-  
   "faq_q_what_kind_of_support_do_you_offer": "どのようなサポートを提供していますか？",
   "faq_a_what_kind_of_support_do_you_offer": "チャット、メール、予定された通話を通じて、複数のタイムゾーンにわたるカスタマーサポートを提供しています。チームには地域のビジネス慣行に精通した専門家が含まれており、どこでビジネスが運営されていても関連するサポートを提供します。",
-  
   "faq_q_how_does_multi-currency_support_work": "複数通貨サポートはどのように機能しますか？",
   "faq_a_how_does_multi-currency_support_work": "Dottでは、自動為替レートの更新により、複数の通貨で同時に運営することができます。顧客を現地通貨で請求し、異なる通貨で経費を追跡し、好みの基本通貨でレポートを生成することができます。",
-  
   "still_have_questions": "まだ質問がありますか？",
   "contact_support": "グローバルサポートチームにsupport@dottapps.comでお問い合わせください",
-  
   "copyright_text": "Dott, LLC. All rights reserved.",
-  
   "footer_product": "製品",
   "footer_company": "会社",
   "footer_legal": "法的",
-  
   "footer_link_features": "機能",
   "footer_link_testimonials": "お客様の声",
   "footer_link_highlights": "ハイライト",
   "footer_link_pricing": "料金",
   "footer_link_faqs": "よくある質問",
-  
   "footer_link_about_us": "会社概要",
   "footer_link_careers": "採用情報",
   "footer_link_press": "プレス",
   "footer_link_blog": "ブログ",
-  
   "footer_link_terms_of_use": "利用規約",
   "footer_link_privacy_policy": "プライバシーポリシー",
   "footer_link_cookie_policy": "クッキーポリシー",
   "footer_link_contact": "お問い合わせ",
-  
   "pricing_title": "シンプルで透明な料金設定",
   "pricing_subtitle": "あなたのビジネスに適したプランを選びましょう",
   "regional_pricing": "地域別料金を適用: 拡張された無料層とエンタープライズの50%割引 ({0})",
@@ -157,35 +129,28 @@
   "compare_features_title": "すべてのプラン機能を比較",
   "developing_country_notice": "あなたの地域向けの拡張機能が利用可能です！価格は{0}です",
   "currency_notice_compare": "すべてのプランを比較 (価格は{0})",
-  
   "features_column": "機能",
   "tier_basic": "ベーシック",
   "tier_professional": "プロフェッショナル",
   "tier_enterprise": "エンタープライズ",
   "tier_recommended": "おすすめ",
   "tier_complete_solution": "完全なソリューション",
-  
   "select_basic": "ベーシックを選択",
   "select_professional": "プロフェッショナルを選択",
   "select_enterprise": "エンタープライズを選択",
-  
   "period_month": "月",
   "period_year": "年",
   "free": "無料",
   "discount_applied": "50%地域割引",
-  
   "billing_monthly": "月次",
   "billing_annual": "年次",
   "save_percentage": "17%節約",
-  
   "available_addons": "利用可能なアドオン:",
   "pricing_footer": "価格には適用される税金は含まれていません。サブスクリプションは自動更新されます。いつでもキャンセル可能です。",
   "developing_country_discount": "特別地域料金を適用: エンタープライズ層で50%割引",
-  
   "button_get_started_for_free": "無料で始める",
   "button_start_professional": "プロフェッショナルを始める",
   "button_start_enterprise": "エンタープライズを始める",
-  
   "category_core_business_tools": "コアビジネスツール",
   "category_global_payment_solutions": "グローバル決済ソリューション",
   "category_inventory_management": "在庫管理",
@@ -195,7 +160,6 @@
   "category_business_tools": "ビジネスツール",
   "category_storage_&_access": "ストレージ＆アクセス",
   "category_support": "サポート",
-  
   "feature_unlimited_users": "無制限ユーザー",
   "feature_advanced_inventory_management_with_forecasting": "予測機能付き高度な在庫管理",
   "feature_automated_invoicing_and_payment_reminders": "自動請求書発行と支払いリマインダー",
@@ -206,7 +170,6 @@
   "feature_advanced_reporting_and_analytics": "高度なレポートと分析",
   "feature_ai-powered_business_insights": "AI駆動のビジネスインサイト",
   "feature_priority_support_with_dedicated_account_manager": "専任アカウントマネージャー付き優先サポート",
-  
   "feature_1_user_included": "1ユーザー含む",
   "feature_track_income_and_expenses": "収入と経費の追跡",
   "feature_basic_inventory_management": "基本的な在庫管理",
@@ -215,7 +178,6 @@
   "feature_2_gb_of_storage": "2GBのストレージ",
   "feature_basic_reporting": "基本的なレポート",
   "feature_email_support": "メールサポート",
-  
   "feature_unlimited_users_with_custom_roles": "カスタムロール付き無制限ユーザー",
   "feature_advanced_inventory_management_with_custom_categories": "カスタムカテゴリ付き高度な在庫管理",
   "feature_fully_branded_invoicing_with_automation": "自動化付き完全ブランド化された請求書発行",
@@ -224,7 +186,6 @@
   "feature_unlimited_storage": "無制限ストレージ",
   "feature_custom_reporting_and_analytics": "カスタムレポートと分析",
   "feature_advanced_ai_business_insights_with_forecasting": "予測機能付き高度AIビジネスインサイト",
-  
   "feature_income_and_expense_tracking": "収入と経費の追跡",
   "feature_invoice_creation": "請求書作成",
   "feature_automated_invoice_reminders": "自動請求書リマインダー",
@@ -248,13 +209,11 @@
   "feature_dedicated_account_manager": "専任アカウントマネージャー",
   "feature_payroll_&_tax_processing": "給与＆税金処理",
   "feature_hr_&_crm_modules": "人事＆CRMモジュール",
-  
   "feature_value_2gb": "2GB",
   "feature_value_30gb": "30GB",
   "feature_value_unlimited": "無制限",
   "feature_value_add-on": "アドオン",
   "feature_value_discounted": "割引",
-  
   "choose_your_plan": "プランを選択",
   "select_plan_description": "ビジネスニーズに最適なプランを選択してください",
   "best_value": "最高の価値",
@@ -279,7 +238,6 @@
   "custom_roles_&_permissions": "カスタムロール＆権限",
   "advanced_security_features": "高度なセキュリティ機能",
   "preferential_transaction_rates": "優先取引レート",
-  
   "feature_single_user_account_with_view-only_accountant_access": "閲覧のみの会計士アクセス付き単一ユーザーアカウント",
   "feature_basic_income_and_expense_tracking": "基本的な収入と経費の追跡",
   "feature_up_to_5_customizable_invoice_templates": "最大5つのカスタマイズ可能な請求書テンプレート",
@@ -307,10 +265,59 @@
   "feature_basic_offline_mode": "基本的なオフラインモード",
   "feature_mobile-optimized_experience": "モバイル最適化体験",
   "feature_knowledge_base_access": "ナレッジベースアクセス",
-  
   "feature_value_5gb": "5GB",
-  
   "complete_onboarding": "オンボーディングを完了",
   "your_dashboard": "あなたのダッシュボード",
-  "sign_in": "サインイン"
+  "sign_in": "サインイン",
+  "heroSubtitle": "基本機能は永久無料",
+  "heroButton": "無料で始める",
+  "heroTrustedBy": "世界中の10,000社以上の企業から信頼されています",
+  "feature_inventory": "在庫管理",
+  "feature_inventory_desc": "在庫レベルを追跡し、バーコードを生成し、リアルタイムの更新で複数の場所を管理します。",
+  "feature_pos": "POSシステム",
+  "feature_pos_desc": "使いやすいPOSシステムから支払いを受け取り、売上を管理し、在庫を追跡します。",
+  "feature_invoicing": "請求書と見積もり",
+  "feature_invoicing_desc": "プロフェッショナルな請求書、見積もり、定期請求書を数秒で作成。より早く支払いを受けます。",
+  "feature_payroll": "給与と人事",
+  "feature_payroll_desc": "従業員への支払い、福利厚生の管理、休暇の追跡、すべての人事ニーズを1か所で処理します。",
+  "feature_accounting": "会計とレポート",
+  "feature_accounting_desc": "収入と支出を追跡し、財務レポートを生成します。年間を通じて税務準備を整えます。",
+  "feature_payments": "グローバル決済",
+  "feature_payments_desc": "クレジットカード、銀行振込、モバイルマネー、世界中で50以上の支払い方法を受け入れます。",
+  "feature_crm": "顧客管理",
+  "feature_crm_desc": "整理された顧客データ、メモ、コミュニケーション履歴で永続的な関係を構築します。",
+  "feature_analytics": "AI分析",
+  "feature_analytics_desc": "AIを活用した分析により、より良いビジネス上の意思決定のためのスマートな洞察と予測を得ます。",
+  "faq_q_is_it_really_free": "Dottは本当に無料ですか？",
+  "faq_a_is_it_really_free": "はい！ベーシックプランはクレジットカード不要で永久無料です。フリーランサーや小規模スタートアップに必要な機能が含まれています。ビジネスの成長に合わせていつでもアップグレードできます。",
+  "faq_q_can_i_switch_plans": "いつでもプランを変更できますか？",
+  "faq_a_can_i_switch_plans": "もちろんです！いつでもプランをアップグレードまたはダウングレードできます。変更はすぐに有効になり、支払いは日割り計算されます。長期契約やキャンセル料はありません。",
+  "faq_q_do_you_offer_mobile_apps": "モバイルアプリはありますか？",
+  "faq_a_do_you_offer_mobile_apps": "はい！DottはWebブラウザを通じてあらゆるデバイスで完璧に動作します。また、外出先でビジネスを管理するための専用のiOSおよびAndroidアプリもあります。すべての機能はデバイス間でリアルタイムに同期されます。",
+  "pricing_period_monthly": "月額",
+  "pricing_period_annual": "年額",
+  "pricing_save": "20%節約",
+  "pricing_plan_basic": "ベーシック",
+  "pricing_plan_basic_price": "¥0",
+  "pricing_plan_basic_desc": "フリーランサーとスタートアップに最適",
+  "pricing_plan_pro": "プロフェッショナル",
+  "pricing_plan_pro_price": "¥1,800",
+  "pricing_plan_pro_price_annual": "¥1,440",
+  "pricing_plan_pro_desc": "成長中のビジネス向け",
+  "pricing_plan_enterprise": "エンタープライズ",
+  "pricing_plan_enterprise_price": "¥5,400",
+  "pricing_plan_enterprise_price_annual": "¥4,320",
+  "pricing_plan_enterprise_desc": "確立された企業向け",
+  "pricing_most_popular": "最も人気",
+  "cta_title": "ビジネスを成長させる準備はできていますか？",
+  "cta_subtitle": "すでにDottを使用している10,000以上の企業に参加しましょう",
+  "cta_button": "無料トライアルを開始",
+  "cta_no_credit_card": "クレジットカード不要",
+  "testimonial_title": "お客様の声",
+  "testimonial_subtitle": "何千もの満足している企業に参加しましょう",
+  "integration_title": "すでに使用しているツールと連携",
+  "integration_subtitle": "お気に入りのアプリとDottを接続",
+  "security_badge_1": "銀行レベルの暗号化",
+  "security_badge_2": "GDPR準拠",
+  "security_badge_3": "99.9%の稼働時間"
 }

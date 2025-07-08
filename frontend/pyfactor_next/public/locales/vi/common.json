@@ -29,13 +29,11 @@
   "aboutDescription2": "Điều khiến Dott khác biệt là sự hiểu biết sâu sắc của chúng tôi về những thách thức độc đáo mà các doanh nghiệp nhỏ phải đối mặt, đặc biệt là ở các thị trường mới nổi.",
   "missionStatement": "Tại Dott, sứ mệnh của chúng tôi là trao quyền cho các doanh nghiệp nhỏ phát triển bằng cách cung cấp cho họ các công cụ quản lý giá cả phải chăng, dễ tiếp cận và mạnh mẽ để đơn giản hóa hoạt động hàng ngày.",
   "visionStatement": "Chúng tôi hình dung một thế giới nơi các doanh nghiệp nhỏ có thể tiếp cận các công cụ quản lý có chất lượng tương tự như các tập đoàn lớn, nhưng được điều chỉnh phù hợp với nhu cầu và quy mô cụ thể của họ.",
-  
-  "heroTitle": "Quản lý doanh nghiệp của bạn như một ông chủ.",
+  "heroTitle": "Phần mềm kinh doanh tất cả trong một",
   "heroDescription": "Quản lý doanh nghiệp toàn cầu với quản lý hàng tồn kho nâng cao, quét mã vạch và giải pháp thanh toán khu vực - tất cả trong một nền tảng trực quan cho doanh nghiệp trên toàn thế giới.",
   "heroImageAlt": "Minh họa Quản lý Doanh nghiệp",
   "heroVideoTitle": "Demo Phần mềm Dott",
   "searchLanguages": "Tìm kiếm ngôn ngữ...",
-  
   "featuresTitle": "Tính năng Kinh doanh Toàn cầu",
   "featuresSubtitle": "Tất cả những gì bạn cần để quản lý doanh nghiệp hiệu quả tại hơn 100 quốc gia",
   "countriesSupported": "Hỗ trợ hơn 100 quốc gia",
@@ -44,7 +42,6 @@
   "new": "Mới",
   "pricingTitle": "Tất cả đều bao gồm trong gói Professional của chúng tôi chỉ với $15/tháng",
   "pricingDescription": "Không có phí ẩn. Không có chi phí bổ sung cho in mã vạch hoặc tích hợp máy quét.",
-  
   "feature_global_accounting": "Kế toán Toàn cầu",
   "feature_global_accounting_desc": "Công cụ kế toán dễ sử dụng hỗ trợ nhiều loại tiền tệ và hệ thống thuế cho doanh nghiệp ở bất kỳ đâu trên thế giới.",
   "feature_inventory_&_barcode_management": "Quản lý Hàng tồn kho & Mã vạch",
@@ -61,35 +58,26 @@
   "feature_invoicing_&_factoring_desc": "Tạo hóa đơn chuyên nghiệp bằng nhiều loại tiền tệ với các tùy chọn bao thanh toán cho doanh nghiệp tại Hoa Kỳ và Canada.",
   "feature_cross-border_commerce": "Thương mại Xuyên biên giới",
   "feature_cross-border_commerce_desc": "Quản lý bán hàng quốc tế, nhập khẩu, xuất khẩu và tuân thủ quy định thuế khu vực một cách liền mạch.",
-
   "highlights_title": "Tại sao Chọn Nền tảng Toàn cầu của Chúng tôi",
   "highlights_subtitle": "Được thiết kế để hỗ trợ doanh nghiệp vượt qua biên giới với quản lý hàng tồn kho mạnh mẽ",
-  
   "highlight_title_global_business_solution": "Giải pháp Kinh doanh Toàn cầu",
   "highlight_desc_global_business_solution": "Được thiết kế cho doanh nghiệp trên toàn thế giới với hỗ trợ hơn 100 quốc gia, nhiều loại tiền tệ và phương thức thanh toán đặc thù theo khu vực.",
-  
   "highlight_title_advanced_inventory_tools": "Công cụ Quản lý Hàng tồn kho Nâng cao",
   "highlight_desc_advanced_inventory_tools": "In mã vạch và tích hợp máy quét Bluetooth được bao gồm trong gói Professional của chúng tôi mà không mất phí bổ sung.",
-  
   "highlight_title_fast_&_efficient": "Nhanh chóng & Hiệu quả",
   "highlight_desc_fast_&_efficient": "Nền tảng dựa trên đám mây được tối ưu hóa cho tốc độ và hiệu quả, giúp bạn điều hành doanh nghiệp nhanh hơn ở bất kỳ đâu.",
-  
   "highlight_title_secure_&_compliant": "An toàn & Tuân thủ",
   "highlight_desc_secure_&_compliant": "Bảo mật cấp ngân hàng và tính năng tuân thủ khu vực đảm bảo dữ liệu doanh nghiệp của bạn an toàn và đáp ứng quy định địa phương.",
-  
   "highlight_title_global_support": "Hỗ trợ Toàn cầu",
   "highlight_desc_global_support": "Đội ngũ hỗ trợ chuyên dụng của chúng tôi hiểu môi trường kinh doanh địa phương và có mặt ở nhiều múi giờ và ngôn ngữ khác nhau.",
-  
   "highlights_pricing_title": "Tất cả các tính năng, bao gồm in mã vạch và tích hợp máy quét, được bao gồm trong gói Professional của chúng tôi chỉ với $15/tháng",
   "highlights_pricing_subtitle": "Không có phí ẩn. Không có cấp giá phức tạp. Chỉ một kế hoạch đơn giản cho doanh nghiệp toàn cầu.",
-
   "faq_title": "Câu hỏi Thường gặp",
   "faq_subtitle": "Bạn có câu hỏi về nền tảng kinh doanh toàn cầu của chúng tôi? Chúng tôi có câu trả lời.",
   "chip_countries": "Hơn 100 Quốc gia",
   "chip_barcode": "Tích hợp Mã vạch",
   "chip_currency": "Đa tiền tệ",
   "key_info": "Thông tin Chính",
-  
   "faq_category_general": "Chung",
   "faq_category_pricing": "Giá cả & Gói",
   "faq_category_global": "Kinh doanh Toàn cầu",
@@ -97,59 +85,43 @@
   "faq_category_payments": "Tùy chọn Thanh toán",
   "faq_category_security": "Bảo mật & Tuân thủ",
   "faq_category_support": "Hỗ trợ & Trợ giúp",
-  
   "faq_q_what_is_dott": "Dott là gì?",
   "faq_a_what_is_dott": "Dott là nền tảng quản lý doanh nghiệp toàn cầu hỗ trợ doanh nghiệp tại hơn 100 quốc gia. Nó kết hợp kế toán, bảng lương, nhân sự, quản lý hàng tồn kho với chức năng mã vạch và các tùy chọn thanh toán khác nhau, bao gồm tiền di động, trong một giải pháp trực quan.",
-  
   "faq_q_how_much_does_it_cost": "Chi phí là bao nhiêu?",
   "faq_a_how_much_does_it_cost": "Chúng tôi cung cấp gói Basic miễn phí cho các doanh nghiệp khởi nghiệp và gói Professional với giá $15/tháng ($150/năm). Gói Professional bao gồm tất cả các tính năng, bao gồm in mã vạch và tích hợp máy quét, không có phí ẩn. Bạn có thể nâng cấp hoặc hạ cấp bất cứ lúc nào.",
-  
   "faq_q_which_countries_do_you_support": "Bạn hỗ trợ những quốc gia nào?",
   "faq_a_which_countries_do_you_support": "Dott hỗ trợ doanh nghiệp tại hơn 100 quốc gia trên toàn thế giới, với các tính năng đặc biệt cho các khu vực cụ thể như tích hợp tiền di động tại Châu Phi, bao thanh toán hóa đơn tại Hoa Kỳ và Canada, và công cụ tuân thủ cho các môi trường quy định khác nhau.",
-  
   "faq_q_does_dott_support_mobile_money_payments": "Dott có hỗ trợ thanh toán tiền di động không?",
   "faq_a_does_dott_support_mobile_money_payments": "Có! Chúng tôi hỗ trợ tích hợp với các nền tảng tiền di động phổ biến như M-Pesa, MTN Mobile Money, Airtel Money và những nền tảng khác ở Châu Phi và Châu Á. Điều này cho phép doanh nghiệp của bạn dễ dàng chấp nhận và xử lý các phương thức thanh toán địa phương.",
-  
   "faq_q_how_does_the_barcode_and_inventory_scanner_feature_work": "Tính năng máy quét mã vạch và hàng tồn kho hoạt động như thế nào?",
   "faq_a_how_does_the_barcode_and_inventory_scanner_feature_work": "Gói Professional của chúng tôi bao gồm khả năng tạo và in mã vạch cho các mặt hàng trong kho của bạn và đồng bộ hóa với máy quét mã vạch Bluetooth để quản lý hàng tồn kho nhanh hơn. Tính năng này được bao gồm mà không mất thêm chi phí và hoạt động liền mạch với hệ thống quản lý hàng tồn kho của chúng tôi.",
-  
   "faq_q_is_my_data_secure": "Dữ liệu của tôi có an toàn không?",
   "faq_a_is_my_data_secure": "Tuyệt đối. Chúng tôi sử dụng mã hóa bảo mật cấp ngân hàng và tuân theo các thực hành tốt nhất trong ngành để bảo vệ dữ liệu của bạn. Nền tảng của chúng tôi được lưu trữ trên cơ sở hạ tầng đám mây an toàn với nhiều lớp bảo mật, tính năng tuân thủ khu vực và sao lưu thường xuyên.",
-  
   "faq_q_can_i_import_data_from_other_systems": "Tôi có thể nhập dữ liệu từ các hệ thống khác không?",
   "faq_a_can_i_import_data_from_other_systems": "Có, bạn có thể nhập dữ liệu từ nhiều định dạng khác nhau, bao gồm Excel, CSV và các nền tảng kế toán khác. Chúng tôi cũng cung cấp hỗ trợ di chuyển cho các doanh nghiệp chuyển đổi từ các nền tảng khác, với hỗ trợ cho các định dạng dữ liệu quốc tế.",
-  
   "faq_q_what_kind_of_support_do_you_offer": "Bạn cung cấp loại hỗ trợ nào?",
   "faq_a_what_kind_of_support_do_you_offer": "Chúng tôi cung cấp hỗ trợ khách hàng qua nhiều múi giờ thông qua trò chuyện, email và cuộc gọi đã lên lịch. Đội ngũ của chúng tôi bao gồm các chuyên gia quen thuộc với thực tiễn kinh doanh khu vực để cung cấp hỗ trợ phù hợp, bất kể doanh nghiệp của bạn hoạt động ở đâu.",
-  
   "faq_q_how_does_multi-currency_support_work": "Hỗ trợ đa tiền tệ hoạt động như thế nào?",
   "faq_a_how_does_multi-currency_support_work": "Dott cho phép bạn hoạt động với nhiều loại tiền tệ cùng một lúc, với cập nhật tỷ giá hối đoái tự động. Bạn có thể lập hóa đơn cho khách hàng bằng tiền tệ địa phương của họ, theo dõi chi phí bằng các loại tiền tệ khác nhau và tạo báo cáo bằng tiền tệ cơ bản ưa thích của bạn.",
-  
   "still_have_questions": "Vẫn còn câu hỏi?",
   "contact_support": "Liên hệ với đội ngũ hỗ trợ toàn cầu của chúng tôi tại support@dottapps.com",
-  
   "copyright_text": "Dott, LLC. Mọi quyền được bảo lưu.",
-  
   "footer_product": "Sản phẩm",
   "footer_company": "Công ty",
   "footer_legal": "Pháp lý",
-  
   "footer_link_features": "Tính năng",
   "footer_link_testimonials": "Đánh giá",
   "footer_link_highlights": "Điểm nổi bật",
   "footer_link_pricing": "Giá cả",
   "footer_link_faqs": "FAQs",
-  
   "footer_link_about_us": "Về chúng tôi",
   "footer_link_careers": "Tuyển dụng",
   "footer_link_press": "Báo chí",
   "footer_link_blog": "Blog",
-  
   "footer_link_terms_of_use": "Điều khoản sử dụng",
   "footer_link_privacy_policy": "Chính sách bảo mật",
   "footer_link_cookie_policy": "Chính sách Cookie",
   "footer_link_contact": "Liên hệ",
-  
   "pricing_title": "Giá cả đơn giản, minh bạch",
   "pricing_subtitle": "Chọn gói phù hợp với doanh nghiệp của bạn",
   "regional_pricing": "Áp dụng giá khu vực: Cấp độ miễn phí nâng cao và giảm 50% cho Enterprise ({0})",
@@ -157,35 +129,28 @@
   "compare_features_title": "So sánh Tất cả Tính năng Gói",
   "developing_country_notice": "Có sẵn tính năng nâng cao cho khu vực của bạn! Giá tính bằng {0}",
   "currency_notice_compare": "So sánh tất cả các gói (Giá tính bằng {0})",
-  
   "features_column": "Tính năng",
   "tier_basic": "Basic",
   "tier_professional": "Professional",
   "tier_enterprise": "Enterprise",
   "tier_recommended": "Được khuyến nghị",
   "tier_complete_solution": "Giải pháp Hoàn chỉnh",
-  
   "select_basic": "Chọn Basic",
   "select_professional": "Chọn Professional",
   "select_enterprise": "Chọn Enterprise",
-  
   "period_month": "tháng",
   "period_year": "năm",
   "free": "Miễn phí",
   "discount_applied": "Giảm giá 50% Khu vực",
-  
   "billing_monthly": "Hàng tháng",
   "billing_annual": "Hàng năm",
   "save_percentage": "Tiết kiệm 17%",
-  
   "available_addons": "Tiện ích bổ sung có sẵn:",
   "pricing_footer": "Giá không bao gồm thuế áp dụng. Đăng ký tự động gia hạn. Hủy bất cứ lúc nào.",
   "developing_country_discount": "Áp dụng giá khu vực đặc biệt: Giảm 50% ở cấp Enterprise",
-  
   "button_get_started_for_free": "BẮT ĐẦU MIỄN PHÍ",
   "button_start_professional": "Bắt đầu Professional",
   "button_start_enterprise": "Bắt đầu Enterprise",
-  
   "category_core_business_tools": "Công cụ Kinh doanh Cốt lõi",
   "category_global_payment_solutions": "Giải pháp Thanh toán Toàn cầu",
   "category_inventory_management": "Quản lý Hàng tồn kho",
@@ -195,7 +160,6 @@
   "category_business_tools": "Công cụ Kinh doanh",
   "category_storage_&_access": "Lưu trữ & Truy cập",
   "category_support": "Hỗ trợ",
-  
   "feature_unlimited_users": "Người dùng không giới hạn",
   "feature_advanced_inventory_management_with_forecasting": "Quản lý hàng tồn kho nâng cao với dự báo",
   "feature_automated_invoicing_and_payment_reminders": "Lập hóa đơn tự động và nhắc nhở thanh toán",
@@ -206,7 +170,6 @@
   "feature_advanced_reporting_and_analytics": "Báo cáo và phân tích nâng cao",
   "feature_ai-powered_business_insights": "Thông tin chi tiết kinh doanh từ AI",
   "feature_priority_support_with_dedicated_account_manager": "Hỗ trợ ưu tiên với người quản lý tài khoản chuyên dụng",
-  
   "feature_1_user_included": "Bao gồm 1 người dùng",
   "feature_track_income_and_expenses": "Theo dõi thu nhập và chi phí",
   "feature_basic_inventory_management": "Quản lý hàng tồn kho cơ bản",
@@ -215,7 +178,6 @@
   "feature_2_gb_of_storage": "2 GB lưu trữ",
   "feature_basic_reporting": "Báo cáo cơ bản",
   "feature_email_support": "Hỗ trợ qua email",
-  
   "feature_unlimited_users_with_custom_roles": "Người dùng không giới hạn với vai trò tùy chỉnh",
   "feature_advanced_inventory_management_with_custom_categories": "Quản lý hàng tồn kho nâng cao với danh mục tùy chỉnh",
   "feature_fully_branded_invoicing_with_automation": "Hóa đơn được gắn thương hiệu đầy đủ với tự động hóa",
@@ -224,7 +186,6 @@
   "feature_unlimited_storage": "Lưu trữ không giới hạn",
   "feature_custom_reporting_and_analytics": "Báo cáo và phân tích tùy chỉnh",
   "feature_advanced_ai_business_insights_with_forecasting": "Thông tin chi tiết kinh doanh AI nâng cao với dự báo",
-  
   "feature_income_and_expense_tracking": "Theo dõi thu nhập và chi phí",
   "feature_invoice_creation": "Tạo hóa đơn",
   "feature_automated_invoice_reminders": "Nhắc nhở hóa đơn tự động",
@@ -248,15 +209,13 @@
   "feature_dedicated_account_manager": "Người quản lý tài khoản chuyên dụng",
   "feature_payroll_&_tax_processing": "Xử lý bảng lương & thuế",
   "feature_hr_&_crm_modules": "Mô-đun Nhân sự & CRM",
-  
   "feature_value_2gb": "2 GB",
   "feature_value_30gb": "30 GB",
   "feature_value_unlimited": "Không giới hạn",
   "feature_value_add-on": "Bổ sung",
   "feature_value_discounted": "Giảm giá",
-  
   "choose_your_plan": "Chọn Gói của Bạn",
-"select_plan_description": "Chọn gói phù hợp nhất với nhu cầu kinh doanh của bạn",
+  "select_plan_description": "Chọn gói phù hợp nhất với nhu cầu kinh doanh của bạn",
   "best_value": "GIÁ TRỊ TỐT NHẤT",
   "select_plan": "Chọn Gói",
   "basic_invoicing": "Lập hóa đơn cơ bản",
@@ -279,7 +238,6 @@
   "custom_roles_&_permissions": "Vai trò & quyền tùy chỉnh",
   "advanced_security_features": "Tính năng bảo mật nâng cao",
   "preferential_transaction_rates": "Tỷ lệ giao dịch ưu đãi",
-  
   "feature_single_user_account_with_view-only_accountant_access": "Tài khoản người dùng đơn với quyền truy cập chỉ xem cho kế toán viên",
   "feature_basic_income_and_expense_tracking": "Theo dõi thu nhập và chi phí cơ bản",
   "feature_up_to_5_customizable_invoice_templates": "Lên đến 5 mẫu hóa đơn tùy chỉnh",
@@ -307,10 +265,59 @@
   "feature_basic_offline_mode": "Chế độ ngoại tuyến cơ bản",
   "feature_mobile-optimized_experience": "Trải nghiệm tối ưu hóa cho di động",
   "feature_knowledge_base_access": "Truy cập cơ sở kiến thức",
-  
   "feature_value_5gb": "5 GB",
-  
   "complete_onboarding": "HOÀN THÀNH ĐĂNG KÝ",
   "your_dashboard": "BẢNG ĐIỀU KHIỂN CỦA BẠN",
-  "sign_in": "ĐĂNG NHẬP"
+  "sign_in": "ĐĂNG NHẬP",
+  "heroSubtitle": "Miễn phí vĩnh viễn cho các tính năng cơ bản",
+  "heroButton": "Bắt đầu miễn phí",
+  "heroTrustedBy": "Được tin dùng bởi hơn 10.000 doanh nghiệp trên toàn thế giới",
+  "feature_inventory": "Quản lý tồn kho",
+  "feature_inventory_desc": "Theo dõi mức tồn kho, tạo mã vạch và quản lý nhiều địa điểm với cập nhật thời gian thực.",
+  "feature_pos": "Điểm bán hàng",
+  "feature_pos_desc": "Chấp nhận thanh toán, quản lý doanh số và theo dõi hàng tồn kho từ hệ thống POS dễ sử dụng.",
+  "feature_invoicing": "Hóa đơn và báo giá",
+  "feature_invoicing_desc": "Tạo hóa đơn chuyên nghiệp, báo giá và hóa đơn định kỳ trong vài giây. Được thanh toán nhanh hơn.",
+  "feature_payroll": "Lương và nhân sự",
+  "feature_payroll_desc": "Trả lương nhân viên, quản lý phúc lợi, theo dõi nghỉ phép và xử lý tất cả nhu cầu nhân sự tại một nơi.",
+  "feature_accounting": "Kế toán và báo cáo",
+  "feature_accounting_desc": "Theo dõi thu nhập, chi phí và tạo báo cáo tài chính. Sẵn sàng cho thuế quanh năm.",
+  "feature_payments": "Thanh toán toàn cầu",
+  "feature_payments_desc": "Chấp nhận thẻ tín dụng, chuyển khoản ngân hàng, tiền di động và hơn 50 phương thức thanh toán trên toàn thế giới.",
+  "feature_crm": "Quản lý khách hàng",
+  "feature_crm_desc": "Xây dựng mối quan hệ lâu dài với dữ liệu khách hàng có tổ chức, ghi chú và lịch sử giao tiếp.",
+  "feature_analytics": "Phân tích AI",
+  "feature_analytics_desc": "Nhận thông tin chi tiết thông minh và dự đoán để đưa ra quyết định kinh doanh tốt hơn với phân tích do AI hỗ trợ.",
+  "faq_q_is_it_really_free": "Dott có thực sự miễn phí không?",
+  "faq_a_is_it_really_free": "Có! Gói Cơ bản của chúng tôi miễn phí vĩnh viễn mà không cần thẻ tín dụng. Nó bao gồm các tính năng cần thiết cho freelancer và startup nhỏ. Bạn có thể nâng cấp bất cứ lúc nào khi doanh nghiệp của bạn phát triển.",
+  "faq_q_can_i_switch_plans": "Tôi có thể chuyển đổi gói bất cứ lúc nào không?",
+  "faq_a_can_i_switch_plans": "Tất nhiên! Bạn có thể nâng cấp hoặc hạ cấp gói của mình bất cứ lúc nào. Thay đổi có hiệu lực ngay lập tức và chúng tôi sẽ tính toán theo tỷ lệ bất kỳ khoản thanh toán nào. Không có hợp đồng dài hạn hoặc phí hủy bỏ.",
+  "faq_q_do_you_offer_mobile_apps": "Bạn có cung cấp ứng dụng di động không?",
+  "faq_a_do_you_offer_mobile_apps": "Có! Dott hoạt động hoàn hảo trên mọi thiết bị thông qua trình duyệt web của bạn. Chúng tôi cũng có ứng dụng iOS và Android chuyên dụng để quản lý doanh nghiệp của bạn khi di chuyển. Tất cả các tính năng đồng bộ hóa theo thời gian thực trên các thiết bị.",
+  "pricing_period_monthly": "Hàng tháng",
+  "pricing_period_annual": "Hàng năm",
+  "pricing_save": "Tiết kiệm 20%",
+  "pricing_plan_basic": "Cơ bản",
+  "pricing_plan_basic_price": "0₫",
+  "pricing_plan_basic_desc": "Hoàn hảo cho freelancer và startup",
+  "pricing_plan_pro": "Chuyên nghiệp",
+  "pricing_plan_pro_price": "350.000₫",
+  "pricing_plan_pro_price_annual": "280.000₫",
+  "pricing_plan_pro_desc": "Cho doanh nghiệp đang phát triển",
+  "pricing_plan_enterprise": "Doanh nghiệp",
+  "pricing_plan_enterprise_price": "1.050.000₫",
+  "pricing_plan_enterprise_price_annual": "840.000₫",
+  "pricing_plan_enterprise_desc": "Cho các công ty đã thành lập",
+  "pricing_most_popular": "Phổ biến nhất",
+  "cta_title": "Sẵn sàng phát triển doanh nghiệp của bạn?",
+  "cta_subtitle": "Tham gia cùng hơn 10.000 doanh nghiệp đã sử dụng Dott",
+  "cta_button": "Bắt đầu dùng thử miễn phí",
+  "cta_no_credit_card": "Không cần thẻ tín dụng",
+  "testimonial_title": "Khách hàng nói gì",
+  "testimonial_subtitle": "Tham gia cùng hàng ngàn doanh nghiệp hạnh phúc",
+  "integration_title": "Hoạt động với các công cụ bạn đã sử dụng",
+  "integration_subtitle": "Kết nối Dott với các ứng dụng yêu thích của bạn",
+  "security_badge_1": "Mã hóa cấp ngân hàng",
+  "security_badge_2": "Tuân thủ GDPR",
+  "security_badge_3": "99,9% thời gian hoạt động"
 }

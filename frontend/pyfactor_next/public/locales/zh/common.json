@@ -29,13 +29,11 @@
   "aboutDescription2": "Dott的独特之处在于我们深刻理解小型企业面临的独特挑战，尤其是在新兴市场中。",
   "missionStatement": "在Dott，我们的使命是通过提供经济实惠、易于使用且功能强大的管理工具，帮助小型企业蓬勃发展，简化日常运营。",
   "visionStatement": "我们展望一个小型企业能够获得与大型企业相同质量的管理工具的世界，但这些工具会根据他们的特定需求和规模量身定制。",
-  
-  "heroTitle": "像老板一样管理您的业务。",
+  "heroTitle": "一体化商业软件",
   "heroDescription": "全球业务管理与高级库存管理、条形码扫描和区域支付解决方案 - 全部集成在一个直观的平台上，服务于全球企业。",
   "heroImageAlt": "业务管理插图",
   "heroVideoTitle": "Dott软件演示",
   "searchLanguages": "搜索语言...",
-  
   "featuresTitle": "全球业务功能",
   "featuresSubtitle": "在100多个国家高效管理您的业务所需的一切",
   "countriesSupported": "支持100多个国家",
@@ -44,7 +42,6 @@
   "new": "新功能",
   "pricingTitle": "我们的专业计划仅需每月$15，包含所有功能",
   "pricingDescription": "没有隐藏费用。没有条形码打印或扫描仪集成的额外费用。",
-  
   "feature_global_accounting": "全球会计",
   "feature_global_accounting_desc": "易于使用的会计工具，支持全球各地企业的多种货币和税务系统。",
   "feature_inventory_&_barcode_management": "库存和条形码管理",
@@ -61,35 +58,26 @@
   "feature_invoicing_&_factoring_desc": "以多种货币创建专业发票，并为美国和加拿大企业提供保理选项。",
   "feature_cross-border_commerce": "跨境商务",
   "feature_cross-border_commerce_desc": "管理国际销售、进口、出口，并无缝遵守区域税务法规。",
-
   "highlights_title": "为什么选择我们的全球平台",
   "highlights_subtitle": "专为支持跨境业务而设计，配备强大的库存管理",
-  
   "highlight_title_global_business_solution": "全球业务解决方案",
   "highlight_desc_global_business_solution": "专为全球企业设计，支持100多个国家、多种货币和区域特定的支付方式。",
-  
   "highlight_title_advanced_inventory_tools": "高级库存工具",
   "highlight_desc_advanced_inventory_tools": "条形码打印和蓝牙扫描仪集成包含在我们的专业计划中，无需额外费用。",
-  
   "highlight_title_fast_&_efficient": "快速高效",
   "highlight_desc_fast_&_efficient": "基于云的平台，为速度和效率而优化，帮助您无论身在何处都能更快管理业务。",
-  
   "highlight_title_secure_&_compliant": "安全合规",
   "highlight_desc_secure_&_compliant": "银行级安全和区域合规功能确保您的业务数据安全并符合当地法规。",
-  
   "highlight_title_global_support": "全球支持",
   "highlight_desc_global_support": "我们的专业支持团队了解当地业务环境，并提供多个时区和语言的服务。",
-  
   "highlights_pricing_title": "所有功能，包括条形码打印和扫描仪集成，都包含在我们的专业计划中，仅需每月$15",
   "highlights_pricing_subtitle": "没有隐藏费用。没有复杂的价格层级。仅一个简单计划适用于全球企业。",
-
   "faq_title": "常见问题",
   "faq_subtitle": "对我们的全球业务平台有疑问？我们有答案。",
   "chip_countries": "100多个国家",
   "chip_barcode": "条形码集成",
   "chip_currency": "多货币",
   "key_info": "重要信息",
-  
   "faq_category_general": "一般",
   "faq_category_pricing": "价格和计划",
   "faq_category_global": "全球业务",
@@ -97,59 +85,43 @@
   "faq_category_payments": "支付选项",
   "faq_category_security": "安全和合规",
   "faq_category_support": "支持和帮助",
-  
   "faq_q_what_is_dott": "Dott是什么？",
   "faq_a_what_is_dott": "Dott是一个支持100多个国家企业的全球业务管理平台。它将会计、工资、人力资源、带条形码功能的库存管理以及包括移动支付在内的各种支付选项整合在一个直观的解决方案中。",
-  
   "faq_q_how_much_does_it_cost": "费用是多少？",
   "faq_a_how_much_does_it_cost": "我们为初创企业提供免费的基础计划，以及每月$15（每年$150）的专业计划。专业计划包含所有功能，包括条形码打印和扫描仪集成，没有隐藏费用。您可以随时升级或降级。",
-  
   "faq_q_which_countries_do_you_support": "您支持哪些国家？",
   "faq_a_which_countries_do_you_support": "Dott支持全球100多个国家的企业，针对特定地区提供特别功能，例如非洲的移动支付集成、美国和加拿大的发票保理，以及适用于各种监管环境的合规工具。",
-  
   "faq_q_does_dott_support_mobile_money_payments": "Dott支持移动支付吗？",
   "faq_a_does_dott_support_mobile_money_payments": "是的！我们支持与非洲和亚洲流行的移动支付平台集成，如M-Pesa、MTN Mobile Money、Airtel Money等。这使您的企业能够轻松接受和处理本地支付方式。",
-  
   "faq_q_how_does_the_barcode_and_inventory_scanner_feature_work": "条形码和库存扫描仪功能如何工作？",
   "faq_a_how_does_the_barcode_and_inventory_scanner_feature_work": "我们的专业计划包括为您的库存项目生成和打印条形码，并与蓝牙条形码扫描仪同步以加快库存管理的能力。此功能无需额外费用，并与我们的库存管理系统无缝协作。",
-  
   "faq_q_is_my_data_secure": "我的数据安全吗？",
   "faq_a_is_my_data_secure": "绝对安全。我们使用银行级安全加密并遵循行业最佳实践来保护您的数据。我们的平台托管在安全的云基础设施上，具有多层安全保障、区域合规功能和定期备份。",
-  
   "faq_q_can_i_import_data_from_other_systems": "我能从其他系统导入数据吗？",
   "faq_a_can_i_import_data_from_other_systems": "是的，您可以从各种格式导入数据，包括Excel、CSV和其他会计平台。我们还为从其他平台转换的企业提供迁移帮助，支持国际数据格式。",
-  
   "faq_q_what_kind_of_support_do_you_offer": "您提供什么样的支持？",
   "faq_a_what_kind_of_support_do_you_offer": "我们通过聊天、电子邮件和预约通话在多个时区提供客户支持。我们的团队包括熟悉区域业务实践的专家，无论您的业务在哪里运营，都能提供相关支持。",
-  
   "faq_q_how_does_multi-currency_support_work": "多货币支持如何工作？",
   "faq_a_how_does_multi-currency_support_work": "Dott允许您同时使用多种货币，自动更新汇率。您可以用客户的本地货币向他们开具发票，跟踪不同货币的支出，并以您首选的基础货币生成报告。",
-  
   "still_have_questions": "还有问题？",
   "contact_support": "通过support@dottapps.com联系我们的全球支持团队",
-  
   "copyright_text": "Dott, LLC. 保留所有权利。",
-  
   "footer_product": "产品",
   "footer_company": "公司",
   "footer_legal": "法律",
-  
   "footer_link_features": "功能",
   "footer_link_testimonials": "客户评价",
   "footer_link_highlights": "亮点",
   "footer_link_pricing": "价格",
   "footer_link_faqs": "常见问题",
-  
   "footer_link_about_us": "关于我们",
   "footer_link_careers": "职业机会",
   "footer_link_press": "新闻",
   "footer_link_blog": "博客",
-  
   "footer_link_terms_of_use": "使用条款",
   "footer_link_privacy_policy": "隐私政策",
   "footer_link_cookie_policy": "Cookie政策",
   "footer_link_contact": "联系我们",
-  
   "pricing_title": "简单、透明的定价",
   "pricing_subtitle": "选择适合您业务的计划",
   "regional_pricing": "已应用区域定价：增强的免费层级和企业版50%折扣（{0}）",
@@ -157,35 +129,28 @@
   "compare_features_title": "比较所有计划功能",
   "developing_country_notice": "您所在地区有增强功能可用！价格以{0}计",
   "currency_notice_compare": "比较所有计划（价格以{0}计）",
-  
   "features_column": "功能",
   "tier_basic": "基础版",
   "tier_professional": "专业版",
   "tier_enterprise": "企业版",
   "tier_recommended": "推荐",
   "tier_complete_solution": "完整解决方案",
-  
   "select_basic": "选择基础版",
   "select_professional": "选择专业版",
   "select_enterprise": "选择企业版",
-  
   "period_month": "月",
   "period_year": "年",
   "free": "免费",
   "discount_applied": "50%区域折扣",
-  
   "billing_monthly": "按月付费",
   "billing_annual": "按年付费",
   "save_percentage": "节省17%",
-  
   "available_addons": "可用附加功能：",
   "pricing_footer": "价格不包括适用税款。订阅自动续订。可随时取消。",
   "developing_country_discount": "已应用特殊区域定价：企业级50%折扣",
-  
   "button_get_started_for_free": "免费开始使用",
   "button_start_professional": "开始使用专业版",
   "button_start_enterprise": "开始使用企业版",
-  
   "category_core_business_tools": "核心业务工具",
   "category_global_payment_solutions": "全球支付解决方案",
   "category_inventory_management": "库存管理",
@@ -195,7 +160,6 @@
   "category_business_tools": "业务工具",
   "category_storage_&_access": "存储和访问",
   "category_support": "支持",
-  
   "feature_unlimited_users": "无限用户",
   "feature_advanced_inventory_management_with_forecasting": "带预测功能的高级库存管理",
   "feature_automated_invoicing_and_payment_reminders": "自动发票和付款提醒",
@@ -206,7 +170,6 @@
   "feature_advanced_reporting_and_analytics": "高级报告和分析",
   "feature_ai-powered_business_insights": "AI驱动的业务洞察",
   "feature_priority_support_with_dedicated_account_manager": "优先支持，配备专属客户经理",
-  
   "feature_1_user_included": "包含1位用户",
   "feature_track_income_and_expenses": "跟踪收入和支出",
   "feature_basic_inventory_management": "基础库存管理",
@@ -215,7 +178,6 @@
   "feature_2_gb_of_storage": "2 GB存储空间",
   "feature_basic_reporting": "基础报告",
   "feature_email_support": "电子邮件支持",
-  
   "feature_unlimited_users_with_custom_roles": "带自定义角色的无限用户",
   "feature_advanced_inventory_management_with_custom_categories": "带自定义类别的高级库存管理",
   "feature_fully_branded_invoicing_with_automation": "带自动化的完全品牌化发票",
@@ -224,7 +186,6 @@
   "feature_unlimited_storage": "无限存储",
   "feature_custom_reporting_and_analytics": "自定义报告和分析",
   "feature_advanced_ai_business_insights_with_forecasting": "带预测功能的高级AI业务洞察",
-  
   "feature_income_and_expense_tracking": "收入和支出跟踪",
   "feature_invoice_creation": "发票创建",
   "feature_automated_invoice_reminders": "自动发票提醒",
@@ -248,13 +209,11 @@
   "feature_dedicated_account_manager": "专属客户经理",
   "feature_payroll_&_tax_processing": "工资和税务处理",
   "feature_hr_&_crm_modules": "人力资源和客户关系管理模块",
-  
   "feature_value_2gb": "2 GB",
   "feature_value_30gb": "30 GB",
   "feature_value_unlimited": "无限",
   "feature_value_add-on": "附加功能",
   "feature_value_discounted": "已折扣",
-  
   "choose_your_plan": "选择您的计划",
   "select_plan_description": "选择最适合您业务需求的计划",
   "best_value": "最佳价值",
@@ -279,7 +238,6 @@
   "custom_roles_&_permissions": "自定义角色和权限",
   "advanced_security_features": "高级安全功能",
   "preferential_transaction_rates": "优惠交易费率",
-  
   "feature_single_user_account_with_view-only_accountant_access": "单用户账户，附带只读会计师访问权限",
   "feature_basic_income_and_expense_tracking": "基础收入和支出跟踪",
   "feature_up_to_5_customizable_invoice_templates": "最多5个可自定义发票模板",
@@ -307,10 +265,59 @@
   "feature_basic_offline_mode": "基础离线模式",
   "feature_mobile-optimized_experience": "针对移动设备优化的体验",
   "feature_knowledge_base_access": "知识库访问",
-  
   "feature_value_5gb": "5 GB",
-  
   "complete_onboarding": "完成注册",
   "your_dashboard": "您的仪表盘",
-  "sign_in": "登录"
+  "sign_in": "登录",
+  "heroSubtitle": "基础功能永久免费",
+  "heroButton": "免费开始",
+  "heroTrustedBy": "全球超过10,000家企业信赖",
+  "feature_inventory": "库存管理",
+  "feature_inventory_desc": "跟踪库存水平，生成条形码，并通过实时更新管理多个位置。",
+  "feature_pos": "销售点",
+  "feature_pos_desc": "接受付款，管理销售，并通过易于使用的POS系统跟踪库存。",
+  "feature_invoicing": "发票和报价",
+  "feature_invoicing_desc": "在几秒钟内创建专业发票、报价和定期账单。更快收到付款。",
+  "feature_payroll": "工资和人力资源",
+  "feature_payroll_desc": "支付员工工资，管理福利，跟踪休假，并在一个地方处理所有人力资源需求。",
+  "feature_accounting": "会计和报告",
+  "feature_accounting_desc": "跟踪收入、支出并生成财务报告。全年保持税务准备。",
+  "feature_payments": "全球支付",
+  "feature_payments_desc": "接受信用卡、银行转账、移动支付和全球50多种支付方式。",
+  "feature_crm": "客户管理",
+  "feature_crm_desc": "通过有组织的客户数据、笔记和通信历史建立持久的关系。",
+  "feature_analytics": "AI分析",
+  "feature_analytics_desc": "通过AI驱动的分析获得智能洞察和预测，做出更好的商业决策。",
+  "faq_q_is_it_really_free": "Dott真的免费吗？",
+  "faq_a_is_it_really_free": "是的！我们的基础计划永久免费，无需信用卡。它包含自由职业者和小型初创企业的基本功能。随着业务增长，您可以随时升级。",
+  "faq_q_can_i_switch_plans": "我可以随时切换计划吗？",
+  "faq_a_can_i_switch_plans": "当然可以！您可以随时升级或降级您的计划。更改立即生效，我们将按比例计算任何付款。没有长期合同或取消费用。",
+  "faq_q_do_you_offer_mobile_apps": "你们提供移动应用吗？",
+  "faq_a_do_you_offer_mobile_apps": "是的！Dott通过您的网络浏览器在任何设备上都能完美运行。我们还有专门的iOS和Android应用程序，用于随时随地管理您的业务。所有功能在设备之间实时同步。",
+  "pricing_period_monthly": "月付",
+  "pricing_period_annual": "年付",
+  "pricing_save": "节省20%",
+  "pricing_plan_basic": "基础版",
+  "pricing_plan_basic_price": "¥0",
+  "pricing_plan_basic_desc": "适合自由职业者和初创企业",
+  "pricing_plan_pro": "专业版",
+  "pricing_plan_pro_price": "¥99",
+  "pricing_plan_pro_price_annual": "¥79",
+  "pricing_plan_pro_desc": "适合成长中的企业",
+  "pricing_plan_enterprise": "企业版",
+  "pricing_plan_enterprise_price": "¥299",
+  "pricing_plan_enterprise_price_annual": "¥239",
+  "pricing_plan_enterprise_desc": "适合成熟企业",
+  "pricing_most_popular": "最受欢迎",
+  "cta_title": "准备发展您的业务？",
+  "cta_subtitle": "加入已经使用Dott的10,000多家企业",
+  "cta_button": "开始免费试用",
+  "cta_no_credit_card": "无需信用卡",
+  "testimonial_title": "客户评价",
+  "testimonial_subtitle": "加入数千家满意的企业",
+  "integration_title": "与您已使用的工具配合使用",
+  "integration_subtitle": "将Dott与您喜爱的应用程序连接",
+  "security_badge_1": "银行级加密",
+  "security_badge_2": "符合GDPR",
+  "security_badge_3": "99.9%正常运行时间"
 }

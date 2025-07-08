@@ -29,13 +29,11 @@
   "aboutDescription2": "Wat Dott onderscheidt, is ons diepgaand begrip van de unieke uitdagingen waarmee kleine bedrijven worden geconfronteerd, vooral in opkomende markten.",
   "missionStatement": "Bij Dott is het onze missie om kleine bedrijven in staat te stellen te floreren door hen betaalbare, toegankelijke en krachtige managementtools te bieden die de dagelijkse activiteiten vereenvoudigen.",
   "visionStatement": "Wij zien een wereld voor ons waarin kleine bedrijven toegang hebben tot dezelfde kwaliteit managementtools als grote bedrijven, maar aangepast aan hun specifieke behoeften en schaal.",
-  
-  "heroTitle": "Beheer uw bedrijf als een baas.",
+  "heroTitle": "All-in-one bedrijfssoftware",
   "heroDescription": "Wereldwijd bedrijfsbeheer met geavanceerd voorraadbeheer, barcodescanning en regionale betalingsoplossingen - allemaal in één intuïtief platform voor bedrijven wereldwijd.",
   "heroImageAlt": "Illustratie bedrijfsbeheer",
   "heroVideoTitle": "Dott Software Demo",
   "searchLanguages": "Zoek talen...",
-  
   "featuresTitle": "Wereldwijde bedrijfsfuncties",
   "featuresSubtitle": "Alles wat u nodig heeft om uw bedrijf efficiënt te beheren in meer dan 100 landen",
   "countriesSupported": "Ondersteuning in meer dan 100 landen",
@@ -44,7 +42,6 @@
   "new": "Nieuw",
   "pricingTitle": "Alles inbegrepen in ons Professional-abonnement voor slechts $15/maand",
   "pricingDescription": "Geen verborgen kosten. Geen extra kosten voor barcode printen of scannerintegratie.",
-  
   "feature_global_accounting": "Wereldwijde boekhouding",
   "feature_global_accounting_desc": "Gebruiksvriendelijke boekhoudtools die meerdere valuta en belastingstelsels ondersteunen voor bedrijven overal ter wereld.",
   "feature_inventory_&_barcode_management": "Voorraad- & barcodebeheer",
@@ -61,35 +58,26 @@
   "feature_invoicing_&_factoring_desc": "Maak professionele facturen in meerdere valuta's met factoringopties voor bedrijven in de VS en Canada.",
   "feature_cross-border_commerce": "Grensoverschrijdende handel",
   "feature_cross-border_commerce_desc": "Beheer internationale verkopen, import, export en voldoe naadloos aan regionale belastingvoorschriften.",
-
   "highlights_title": "Waarom kiezen voor ons wereldwijde platform",
   "highlights_subtitle": "Ontworpen om bedrijven over grenzen heen te ondersteunen met krachtig voorraadbeheer",
-  
   "highlight_title_global_business_solution": "Wereldwijde bedrijfsoplossing",
   "highlight_desc_global_business_solution": "Ontworpen voor bedrijven wereldwijd met ondersteuning voor meer dan 100 landen, meerdere valuta's en regio-specifieke betaalmethoden.",
-  
   "highlight_title_advanced_inventory_tools": "Geavanceerde voorraadtools",
   "highlight_desc_advanced_inventory_tools": "Barcode printen en Bluetooth-scannerintegratie zijn inbegrepen in ons Professional-abonnement zonder extra kosten.",
-  
   "highlight_title_fast_&_efficient": "Snel & Efficiënt",
   "highlight_desc_fast_&_efficient": "Cloud-gebaseerd platform geoptimaliseerd voor snelheid en efficiëntie, helpt u uw bedrijf sneller te beheren waar u ook bent.",
-  
   "highlight_title_secure_&_compliant": "Veilig & Compliant",
   "highlight_desc_secure_&_compliant": "Bankniveau beveiliging en regionale compliance-functies zorgen ervoor dat uw bedrijfsgegevens veilig zijn en voldoen aan lokale regelgeving.",
-  
   "highlight_title_global_support": "Wereldwijde ondersteuning",
   "highlight_desc_global_support": "Ons toegewijde ondersteuningsteam begrijpt lokale bedrijfsomgevingen en is beschikbaar in meerdere tijdzones en talen.",
-  
   "highlights_pricing_title": "Alle functies, inclusief barcode printen en scannerintegratie, inbegrepen in ons Professional-abonnement voor slechts $15/maand",
   "highlights_pricing_subtitle": "Geen verborgen kosten. Geen ingewikkelde prijsniveaus. Gewoon één eenvoudig abonnement voor wereldwijde bedrijven.",
-
   "faq_title": "Veelgestelde vragen",
   "faq_subtitle": "Heeft u vragen over ons wereldwijde bedrijfsplatform? Wij hebben de antwoorden.",
   "chip_countries": "Meer dan 100 Landen",
   "chip_barcode": "Barcode-integratie",
   "chip_currency": "Multi-valuta",
   "key_info": "Belangrijke informatie",
-  
   "faq_category_general": "Algemeen",
   "faq_category_pricing": "Prijzen & Abonnementen",
   "faq_category_global": "Wereldwijd zakendoen",
@@ -97,59 +85,43 @@
   "faq_category_payments": "Betalingsopties",
   "faq_category_security": "Beveiliging & Compliance",
   "faq_category_support": "Ondersteuning & Hulp",
-  
   "faq_q_what_is_dott": "Wat is Dott?",
   "faq_a_what_is_dott": "Dott is een wereldwijd bedrijfsmanagementplatform dat bedrijven in meer dan 100 landen ondersteunt. Het combineert boekhouding, salarisadministratie, HR, voorraadbeheer met barcodefunctionaliteit, en verschillende betalingsopties, inclusief mobiel geld, in één intuïtieve oplossing.",
-  
   "faq_q_how_much_does_it_cost": "Hoeveel kost het?",
   "faq_a_how_much_does_it_cost": "We bieden een gratis Basic-abonnement voor startups en een Professional-abonnement voor $15/maand ($150/jaar). Het Professional-abonnement bevat alle functies, inclusief barcode printen en scannerintegratie, zonder verborgen kosten. U kunt op elk moment upgraden of downgraden.",
-  
   "faq_q_which_countries_do_you_support": "Welke landen ondersteunt u?",
   "faq_a_which_countries_do_you_support": "Dott ondersteunt bedrijven in meer dan 100 landen wereldwijd, met speciale functies voor specifieke regio's zoals mobiel geld integratie in Afrika, factuurfactoring in de VS en Canada, en compliance-tools voor verschillende regelgevingsomgevingen.",
-  
   "faq_q_does_dott_support_mobile_money_payments": "Ondersteunt Dott mobiele geldbetalingen?",
   "faq_a_does_dott_support_mobile_money_payments": "Ja! We ondersteunen integratie met populaire mobiele geldplatforms zoals M-Pesa, MTN Mobile Money, Airtel Money en anderen in Afrika en Azië. Hierdoor kan uw bedrijf eenvoudig lokale betaalmethoden accepteren en verwerken.",
-  
   "faq_q_how_does_the_barcode_and_inventory_scanner_feature_work": "Hoe werkt de barcode- en voorraadscanfunctie?",
   "faq_a_how_does_the_barcode_and_inventory_scanner_feature_work": "Ons Professional-abonnement bevat de mogelijkheid om barcodes te genereren en te printen voor uw voorraadartikelen en te synchroniseren met Bluetooth-barcodescanners voor sneller voorraadbeheer. Deze functie is inbegrepen zonder extra kosten en werkt naadloos samen met ons voorraadbeheerssysteem.",
-  
   "faq_q_is_my_data_secure": "Zijn mijn gegevens veilig?",
   "faq_a_is_my_data_secure": "Absoluut. We gebruiken bankwaardige beveiligingsencryptie en volgen best practices in de industrie om uw gegevens te beschermen. Ons platform wordt gehost op veilige cloudinfrastructuur met meerdere beveiligingslagen, regionale compliance-functies en regelmatige back-ups.",
-  
   "faq_q_can_i_import_data_from_other_systems": "Kan ik gegevens importeren uit andere systemen?",
   "faq_a_can_i_import_data_from_other_systems": "Ja, u kunt gegevens importeren uit verschillende formaten, waaronder Excel, CSV en andere boekhoudplatforms. We bieden ook migratiehulp voor bedrijven die overstappen van andere platforms, met ondersteuning voor internationale gegevensformaten.",
-  
   "faq_q_what_kind_of_support_do_you_offer": "Welke soort ondersteuning biedt u?",
   "faq_a_what_kind_of_support_do_you_offer": "We bieden klantenondersteuning over meerdere tijdzones via chat, e-mail en geplande gesprekken. Ons team bestaat uit experts die bekend zijn met regionale bedrijfspraktijken om relevante ondersteuning te bieden, waar uw bedrijf ook actief is.",
-  
   "faq_q_how_does_multi-currency_support_work": "Hoe werkt multi-valuta ondersteuning?",
   "faq_a_how_does_multi-currency_support_work": "Dott stelt u in staat om tegelijkertijd in meerdere valuta's te werken, met automatische wisselkoersupdates. U kunt uw klanten factureren in hun lokale valuta, uitgaven bijhouden in verschillende valuta's en rapporten genereren in uw voorkeursvaluta.",
-  
   "still_have_questions": "Nog vragen?",
   "contact_support": "Neem contact op met ons wereldwijde ondersteuningsteam op support@dottapps.com",
-  
   "copyright_text": "Dott, LLC. Alle rechten voorbehouden.",
-  
   "footer_product": "Product",
   "footer_company": "Bedrijf",
   "footer_legal": "Juridisch",
-  
   "footer_link_features": "Functies",
   "footer_link_testimonials": "Getuigenissen",
   "footer_link_highlights": "Hoogtepunten",
   "footer_link_pricing": "Prijzen",
   "footer_link_faqs": "FAQ's",
-  
   "footer_link_about_us": "Over ons",
   "footer_link_careers": "Carrières",
   "footer_link_press": "Pers",
   "footer_link_blog": "Blog",
-  
   "footer_link_terms_of_use": "Gebruiksvoorwaarden",
   "footer_link_privacy_policy": "Privacybeleid",
   "footer_link_cookie_policy": "Cookiebeleid",
   "footer_link_contact": "Contact",
-  
   "pricing_title": "Eenvoudige, transparante prijzen",
   "pricing_subtitle": "Kies het abonnement dat bij uw bedrijf past",
   "regional_pricing": "Regionale prijzen toegepast: Verbeterd gratis niveau en 50% korting op Enterprise ({0})",
@@ -157,35 +129,28 @@
   "compare_features_title": "Vergelijk alle abonnementsfuncties",
   "developing_country_notice": "Verbeterde functies beschikbaar voor uw regio! Prijzen in {0}",
   "currency_notice_compare": "Alle abonnementen vergelijken (Prijzen in {0})",
-  
   "features_column": "Functies",
   "tier_basic": "Basic",
   "tier_professional": "Professional",
   "tier_enterprise": "Enterprise",
   "tier_recommended": "Aanbevolen",
   "tier_complete_solution": "Complete oplossing",
-  
   "select_basic": "Kies Basic",
   "select_professional": "Kies Professional",
   "select_enterprise": "Kies Enterprise",
-  
   "period_month": "maand",
   "period_year": "jaar",
   "free": "Gratis",
   "discount_applied": "50% Regionale korting",
-  
   "billing_monthly": "Maandelijks",
   "billing_annual": "Jaarlijks",
   "save_percentage": "Bespaar 17%",
-  
   "available_addons": "Beschikbare add-ons:",
   "pricing_footer": "Prijzen zijn exclusief toepasselijke belastingen. Abonnementen worden automatisch verlengd. Annuleer wanneer u wilt.",
   "developing_country_discount": "Speciale regionale prijzen toegepast: 50% korting op Enterprise-niveau",
-  
   "button_get_started_for_free": "GRATIS AAN DE SLAG",
   "button_start_professional": "Start Professional",
   "button_start_enterprise": "Start Enterprise",
-  
   "category_core_business_tools": "Kern bedrijfstools",
   "category_global_payment_solutions": "Wereldwijde betalingsoplossingen",
   "category_inventory_management": "Voorraadbeheer",
@@ -195,7 +160,6 @@
   "category_business_tools": "Bedrijfstools",
   "category_storage_&_access": "Opslag & Toegang",
   "category_support": "Ondersteuning",
-  
   "feature_unlimited_users": "Onbeperkt aantal gebruikers",
   "feature_advanced_inventory_management_with_forecasting": "Geavanceerd voorraadbeheer met voorspelling",
   "feature_automated_invoicing_and_payment_reminders": "Geautomatiseerde facturering en betalingsherinneringen",
@@ -206,7 +170,6 @@
   "feature_advanced_reporting_and_analytics": "Geavanceerde rapportage en analyses",
   "feature_ai-powered_business_insights": "Door AI aangedreven bedrijfsinzichten",
   "feature_priority_support_with_dedicated_account_manager": "Prioriteitsondersteuning met toegewijde accountmanager",
-  
   "feature_1_user_included": "1 gebruiker inbegrepen",
   "feature_track_income_and_expenses": "Inkomsten en uitgaven bijhouden",
   "feature_basic_inventory_management": "Basis voorraadbeheer",
@@ -215,7 +178,6 @@
   "feature_2_gb_of_storage": "2 GB opslag",
   "feature_basic_reporting": "Basis rapportage",
   "feature_email_support": "E-mailondersteuning",
-  
   "feature_unlimited_users_with_custom_roles": "Onbeperkt aantal gebruikers met aangepaste rollen",
   "feature_advanced_inventory_management_with_custom_categories": "Geavanceerd voorraadbeheer met aangepaste categorieën",
   "feature_fully_branded_invoicing_with_automation": "Volledig gebrandde facturering met automatisering",
@@ -224,7 +186,6 @@
   "feature_unlimited_storage": "Onbeperkte opslag",
   "feature_custom_reporting_and_analytics": "Aangepaste rapportage en analyses",
   "feature_advanced_ai_business_insights_with_forecasting": "Geavanceerde AI-bedrijfsinzichten met voorspelling",
-  
   "feature_income_and_expense_tracking": "Inkomsten- en uitgavenregistratie",
   "feature_invoice_creation": "Factuurcreatie",
   "feature_automated_invoice_reminders": "Geautomatiseerde factuurherinneringen",
@@ -248,13 +209,11 @@
   "feature_dedicated_account_manager": "Toegewijde accountmanager",
   "feature_payroll_&_tax_processing": "Salaris- & belastingverwerking",
   "feature_hr_&_crm_modules": "HR & CRM modules",
-  
   "feature_value_2gb": "2 GB",
   "feature_value_30gb": "30 GB",
   "feature_value_unlimited": "Onbeperkt",
   "feature_value_add-on": "Add-on",
   "feature_value_discounted": "Met korting",
-  
   "choose_your_plan": "Kies uw abonnement",
   "select_plan_description": "Selecteer het abonnement dat het beste past bij uw bedrijfsbehoeften",
   "best_value": "BESTE WAARDE",
@@ -279,7 +238,6 @@
   "custom_roles_&_permissions": "Aangepaste rollen & rechten",
   "advanced_security_features": "Geavanceerde beveiligingsfuncties",
   "preferential_transaction_rates": "Preferentiële transactietarieven",
-  
   "feature_single_user_account_with_view-only_accountant_access": "Eén gebruikersaccount met alleen-lezen toegang voor accountant",
   "feature_basic_income_and_expense_tracking": "Basis inkomsten- en uitgavenregistratie",
   "feature_up_to_5_customizable_invoice_templates": "Tot 5 aanpasbare factuursjablonen",
@@ -307,10 +265,59 @@
   "feature_basic_offline_mode": "Basis offline modus",
   "feature_mobile-optimized_experience": "Mobiel-geoptimaliseerde ervaring",
   "feature_knowledge_base_access": "Toegang tot kennisbank",
-  
   "feature_value_5gb": "5 GB",
-  
   "complete_onboarding": "ONBOARDING VOLTOOIEN",
   "your_dashboard": "UW DASHBOARD",
-  "sign_in": "INLOGGEN"
+  "sign_in": "INLOGGEN",
+  "heroSubtitle": "Voor altijd gratis voor basisfuncties",
+  "heroButton": "Begin gratis",
+  "heroTrustedBy": "Vertrouwd door meer dan 10.000 bedrijven wereldwijd",
+  "feature_inventory": "Voorraadbeheer",
+  "feature_inventory_desc": "Volg voorraadniveaus, genereer barcodes en beheer meerdere locaties met realtime updates.",
+  "feature_pos": "Verkooppunt",
+  "feature_pos_desc": "Accepteer betalingen, beheer verkopen en volg voorraad vanuit een gebruiksvriendelijk POS-systeem.",
+  "feature_invoicing": "Facturatie en offertes",
+  "feature_invoicing_desc": "Maak professionele facturen, offertes en terugkerende rekeningen in seconden. Word sneller betaald.",
+  "feature_payroll": "Salarisadministratie en HR",
+  "feature_payroll_desc": "Betaal werknemers, beheer voordelen, volg verlof en handel alle HR-behoeften op één plek af.",
+  "feature_accounting": "Boekhouding en rapporten",
+  "feature_accounting_desc": "Volg inkomsten, uitgaven en genereer financiële rapporten. Blijf het hele jaar door klaar voor de belasting.",
+  "feature_payments": "Wereldwijde betalingen",
+  "feature_payments_desc": "Accepteer creditcards, bankoverschrijvingen, mobiel geld en meer dan 50 betaalmethoden wereldwijd.",
+  "feature_crm": "Klantbeheer",
+  "feature_crm_desc": "Bouw duurzame relaties op met georganiseerde klantgegevens, notities en communicatiegeschiedenis.",
+  "feature_analytics": "AI-analyse",
+  "feature_analytics_desc": "Krijg slimme inzichten en voorspellingen om betere zakelijke beslissingen te nemen met AI-aangedreven analyses.",
+  "faq_q_is_it_really_free": "Is Dott echt gratis?",
+  "faq_a_is_it_really_free": "Ja! Ons Basisplan is voor altijd gratis zonder creditcard. Het bevat essentiële functies voor freelancers en kleine startups. U kunt op elk moment upgraden naarmate uw bedrijf groeit.",
+  "faq_q_can_i_switch_plans": "Kan ik op elk moment van plan wisselen?",
+  "faq_a_can_i_switch_plans": "Absoluut! U kunt uw plan op elk moment upgraden of downgraden. Wijzigingen gaan onmiddellijk in en we zullen eventuele betalingen naar rato berekenen. Geen langetermijncontracten of annuleringskosten.",
+  "faq_q_do_you_offer_mobile_apps": "Bieden jullie mobiele apps aan?",
+  "faq_a_do_you_offer_mobile_apps": "Ja! Dott werkt perfect op elk apparaat via uw webbrowser. We hebben ook speciale iOS- en Android-apps om uw bedrijf onderweg te beheren. Alle functies synchroniseren in realtime tussen apparaten.",
+  "pricing_period_monthly": "Maandelijks",
+  "pricing_period_annual": "Jaarlijks",
+  "pricing_save": "Bespaar 20%",
+  "pricing_plan_basic": "Basis",
+  "pricing_plan_basic_price": "€0",
+  "pricing_plan_basic_desc": "Perfect voor freelancers en startups",
+  "pricing_plan_pro": "Professioneel",
+  "pricing_plan_pro_price": "€15",
+  "pricing_plan_pro_price_annual": "€12",
+  "pricing_plan_pro_desc": "Voor groeiende bedrijven",
+  "pricing_plan_enterprise": "Onderneming",
+  "pricing_plan_enterprise_price": "€45",
+  "pricing_plan_enterprise_price_annual": "€36",
+  "pricing_plan_enterprise_desc": "Voor gevestigde bedrijven",
+  "pricing_most_popular": "Meest populair",
+  "cta_title": "Klaar om uw bedrijf te laten groeien?",
+  "cta_subtitle": "Sluit u aan bij meer dan 10.000 bedrijven die al Dott gebruiken",
+  "cta_button": "Start gratis proefperiode",
+  "cta_no_credit_card": "Geen creditcard vereist",
+  "testimonial_title": "Wat onze klanten zeggen",
+  "testimonial_subtitle": "Sluit u aan bij duizenden tevreden bedrijven",
+  "integration_title": "Werkt met tools die u al gebruikt",
+  "integration_subtitle": "Verbind Dott met uw favoriete apps",
+  "security_badge_1": "Encryptie op bankniveau",
+  "security_badge_2": "GDPR-conform",
+  "security_badge_3": "99,9% uptime"
 }

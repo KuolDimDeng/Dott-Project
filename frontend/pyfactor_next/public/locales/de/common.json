@@ -29,13 +29,11 @@
   "aboutDescription2": "Was Dott auszeichnet, ist unser tiefes Verständnis für die einzigartigen Herausforderungen, mit denen kleine Unternehmen konfrontiert sind, insbesondere in aufstrebenden Märkten.",
   "missionStatement": "Bei Dott ist es unsere Mission, kleine Unternehmen zu befähigen, zu gedeihen, indem wir ihnen erschwingliche, zugängliche und leistungsstarke Management-Tools zur Verfügung stellen, die den täglichen Betrieb vereinfachen.",
   "visionStatement": "Wir stellen uns eine Welt vor, in der kleine Unternehmen Zugang zu denselben hochwertigen Management-Tools haben wie große Unternehmen, aber zugeschnitten auf ihre spezifischen Bedürfnisse und ihren Umfang.",
-  
-  "heroTitle": "Führe dein Unternehmen wie ein Chef.",
+  "heroTitle": "All-in-One Business-Software",
   "heroDescription": "Globales Geschäftsmanagement mit fortschrittlicher Bestandsverwaltung, Barcode-Scanning und regionalen Zahlungslösungen – alles in einer intuitiven Plattform für Unternehmen weltweit.",
   "heroImageAlt": "Geschäftsmanagement-Illustration",
   "heroVideoTitle": "Dott Software Demo",
   "searchLanguages": "Sprachen suchen...",
-  
   "featuresTitle": "Globale Geschäftsfunktionen",
   "featuresSubtitle": "Alles, was du brauchst, um dein Unternehmen in über 100 Ländern effizient zu führen",
   "countriesSupported": "Über 100 Länder unterstützt",
@@ -44,7 +42,6 @@
   "new": "Neu",
   "pricingTitle": "Alles in unserem Professional-Plan für nur 15$/Monat enthalten",
   "pricingDescription": "Keine versteckten Gebühren. Keine zusätzlichen Kosten für Barcode-Druck oder Scanner-Integration.",
-  
   "feature_global_accounting": "Globale Buchhaltung",
   "feature_global_accounting_desc": "Benutzerfreundliche Buchhaltungstools mit Unterstützung für mehrere Währungen und Steuersysteme für Unternehmen weltweit.",
   "feature_inventory_&_barcode_management": "Bestands- & Barcode-Verwaltung",
@@ -61,35 +58,26 @@
   "feature_invoicing_&_factoring_desc": "Erstellen Sie professionelle Rechnungen in mehreren Währungen mit Factoring-Optionen für Unternehmen in den USA und Kanada.",
   "feature_cross-border_commerce": "Grenzüberschreitender Handel",
   "feature_cross-border_commerce_desc": "Verwalten Sie internationale Verkäufe, Importe, Exporte und erfüllen Sie regionale Steuerbestimmungen nahtlos.",
-
   "highlights_title": "Warum unsere globale Plattform wählen",
   "highlights_subtitle": "Entwickelt, um Unternehmen über Grenzen hinweg mit leistungsstarker Bestandsverwaltung zu unterstützen",
-  
   "highlight_title_global_business_solution": "Globale Geschäftslösung",
   "highlight_desc_global_business_solution": "Entwickelt für Unternehmen weltweit mit Unterstützung für über 100 Länder, mehrere Währungen und regionsspezifische Zahlungsmethoden.",
-  
   "highlight_title_advanced_inventory_tools": "Fortschrittliche Bestandstools",
   "highlight_desc_advanced_inventory_tools": "Barcode-Druck und Bluetooth-Scanner-Integration sind in unserem Professional-Plan ohne zusätzliche Gebühren enthalten.",
-  
   "highlight_title_fast_&_efficient": "Schnell & Effizient",
   "highlight_desc_fast_&_efficient": "Cloud-basierte Plattform, optimiert für Geschwindigkeit und Effizienz, hilft dir, dein Unternehmen schneller zu führen, wo immer du bist.",
-  
   "highlight_title_secure_&_compliant": "Sicher & Konform",
   "highlight_desc_secure_&_compliant": "Bank-Level-Sicherheit und regionale Compliance-Funktionen stellen sicher, dass deine Unternehmensdaten sicher sind und lokale Vorschriften erfüllen.",
-  
   "highlight_title_global_support": "Globaler Support",
   "highlight_desc_global_support": "Unser engagiertes Support-Team versteht lokale Geschäftsumgebungen und ist in verschiedenen Zeitzonen und Sprachen verfügbar.",
-  
   "highlights_pricing_title": "Alle Funktionen, einschließlich Barcode-Druck und Scanner-Integration, in unserem Professional-Plan für nur 15$/Monat enthalten",
   "highlights_pricing_subtitle": "Keine versteckten Gebühren. Keine komplizierten Preisstufen. Nur ein einfacher Plan für globale Unternehmen.",
-
   "faq_title": "Häufig gestellte Fragen",
   "faq_subtitle": "Hast du Fragen zu unserer globalen Geschäftsplattform? Wir haben Antworten.",
   "chip_countries": "Über 100 Länder",
   "chip_barcode": "Barcode-Integration",
   "chip_currency": "Multi-Währung",
   "key_info": "Wichtige Informationen",
-  
   "faq_category_general": "Allgemein",
   "faq_category_pricing": "Preise & Pläne",
   "faq_category_global": "Globales Geschäft",
@@ -97,59 +85,43 @@
   "faq_category_payments": "Zahlungsoptionen",
   "faq_category_security": "Sicherheit & Compliance",
   "faq_category_support": "Support & Hilfe",
-  
   "faq_q_what_is_dott": "Was ist Dott?",
   "faq_a_what_is_dott": "Dott ist eine globale Geschäftsmanagement-Plattform, die Unternehmen in über 100 Ländern unterstützt. Sie kombiniert Buchhaltung, Lohnabrechnung, Personalwesen, Bestandsverwaltung mit Barcode-Funktionalität und verschiedene Zahlungsoptionen, einschließlich Mobile Money, in einer intuitiven Lösung.",
-  
   "faq_q_how_much_does_it_cost": "Wie viel kostet es?",
   "faq_a_how_much_does_it_cost": "Wir bieten einen kostenlosen Basic-Plan für Startups und einen Professional-Plan für 15$/Monat (150$/Jahr). Der Professional-Plan enthält alle Funktionen, einschließlich Barcode-Druck und Scanner-Integration, ohne versteckte Gebühren. Du kannst jederzeit upgraden oder downgraden.",
-  
   "faq_q_which_countries_do_you_support": "Welche Länder unterstützen Sie?",
   "faq_a_which_countries_do_you_support": "Dott unterstützt Unternehmen in über 100 Ländern weltweit, mit speziellen Funktionen für bestimmte Regionen wie Mobile-Money-Integration in Afrika, Rechnungs-Factoring in den USA und Kanada und Compliance-Tools für verschiedene regulatorische Umgebungen.",
-  
   "faq_q_does_dott_support_mobile_money_payments": "Unterstützt Dott Mobile-Money-Zahlungen?",
   "faq_a_does_dott_support_mobile_money_payments": "Ja! Wir unterstützen die Integration mit beliebten Mobile-Money-Plattformen wie M-Pesa, MTN Mobile Money, Airtel Money und anderen in Afrika und Asien. Dies ermöglicht deinem Unternehmen, lokale Zahlungsmethoden einfach zu akzeptieren und zu verarbeiten.",
-  
   "faq_q_how_does_the_barcode_and_inventory_scanner_feature_work": "Wie funktioniert die Barcode- und Inventarscanner-Funktion?",
   "faq_a_how_does_the_barcode_and_inventory_scanner_feature_work": "Unser Professional-Plan enthält die Möglichkeit, Barcodes für deine Inventarposten zu generieren und zu drucken sowie die Synchronisierung mit Bluetooth-Barcode-Scannern für eine schnellere Bestandsverwaltung. Diese Funktion ist ohne zusätzliche Kosten enthalten und arbeitet nahtlos mit unserem Bestandsverwaltungssystem zusammen.",
-  
   "faq_q_is_my_data_secure": "Sind meine Daten sicher?",
   "faq_a_is_my_data_secure": "Absolut. Wir verwenden Bank-Level-Sicherheitsverschlüsselung und folgen Branchenstandards, um deine Daten zu schützen. Unsere Plattform wird auf sicherer Cloud-Infrastruktur mit mehreren Sicherheitsebenen, regionalen Compliance-Funktionen und regelmäßigen Backups gehostet.",
-  
   "faq_q_can_i_import_data_from_other_systems": "Kann ich Daten aus anderen Systemen importieren?",
   "faq_a_can_i_import_data_from_other_systems": "Ja, du kannst Daten aus verschiedenen Formaten importieren, darunter Excel, CSV und andere Buchhaltungsplattformen. Wir bieten auch Migrationshilfe für Unternehmen, die von anderen Plattformen wechseln, mit Unterstützung für internationale Datenformate.",
-  
   "faq_q_what_kind_of_support_do_you_offer": "Welche Art von Support bieten Sie an?",
   "faq_a_what_kind_of_support_do_you_offer": "Wir bieten Kundensupport über mehrere Zeitzonen per Chat, E-Mail und geplante Anrufe. Unser Team umfasst Experten, die mit regionalen Geschäftspraktiken vertraut sind, um relevante Unterstützung zu bieten, egal wo dein Unternehmen tätig ist.",
-  
   "faq_q_how_does_multi-currency_support_work": "Wie funktioniert die Multi-Währungs-Unterstützung?",
   "faq_a_how_does_multi-currency_support_work": "Dott ermöglicht es dir, gleichzeitig in mehreren Währungen zu arbeiten, mit automatischen Wechselkursaktualisierungen. Du kannst deinen Kunden in ihrer lokalen Währung Rechnung stellen, Ausgaben in verschiedenen Währungen verfolgen und Berichte in deiner bevorzugten Basiswährung erstellen.",
-  
   "still_have_questions": "Noch Fragen?",
   "contact_support": "Kontaktiere unser globales Support-Team unter support@dottapps.com",
-  
   "copyright_text": "Dott, LLC. Alle Rechte vorbehalten.",
-  
   "footer_product": "Produkt",
   "footer_company": "Unternehmen",
   "footer_legal": "Rechtliches",
-  
   "footer_link_features": "Funktionen",
   "footer_link_testimonials": "Testimonials",
   "footer_link_highlights": "Highlights",
   "footer_link_pricing": "Preise",
   "footer_link_faqs": "FAQs",
-  
   "footer_link_about_us": "Über uns",
   "footer_link_careers": "Karriere",
   "footer_link_press": "Presse",
   "footer_link_blog": "Blog",
-  
   "footer_link_terms_of_use": "Nutzungsbedingungen",
   "footer_link_privacy_policy": "Datenschutzrichtlinie",
   "footer_link_cookie_policy": "Cookie-Richtlinie",
   "footer_link_contact": "Kontakt",
-  
   "pricing_title": "Einfache, transparente Preisgestaltung",
   "pricing_subtitle": "Wähle den Plan, der für dein Unternehmen am besten geeignet ist",
   "regional_pricing": "Regionale Preisgestaltung angewendet: Erweiterter kostenloser Tarif und 50% Rabatt auf Enterprise ({0})",
@@ -157,35 +129,28 @@
   "compare_features_title": "Vergleiche alle Plan-Funktionen",
   "developing_country_notice": "Erweiterte Funktionen für deine Region verfügbar! Preise in {0}",
   "currency_notice_compare": "Vergleich aller Pläne (Preise in {0})",
-  
   "features_column": "Funktionen",
   "tier_basic": "Basic",
   "tier_professional": "Professional",
   "tier_enterprise": "Enterprise",
   "tier_recommended": "Empfohlen",
   "tier_complete_solution": "Komplettlösung",
-  
   "select_basic": "Basic auswählen",
   "select_professional": "Professional auswählen",
   "select_enterprise": "Enterprise auswählen",
-  
   "period_month": "Monat",
   "period_year": "Jahr",
   "free": "Kostenlos",
   "discount_applied": "50% Regionaler Rabatt",
-  
   "billing_monthly": "Monatlich",
   "billing_annual": "Jährlich",
   "save_percentage": "Spare 17%",
-  
   "available_addons": "Verfügbare Add-ons:",
   "pricing_footer": "Preise beinhalten keine anwendbaren Steuern. Abonnements verlängern sich automatisch. Jederzeit kündbar.",
   "developing_country_discount": "Spezielle regionale Preisgestaltung angewendet: 50% Rabatt auf Enterprise-Tarif",
-  
   "button_get_started_for_free": "KOSTENLOS STARTEN",
   "button_start_professional": "Professional starten",
   "button_start_enterprise": "Enterprise starten",
-  
   "category_core_business_tools": "Kern-Geschäftstools",
   "category_global_payment_solutions": "Globale Zahlungslösungen",
   "category_inventory_management": "Bestandsverwaltung",
@@ -195,7 +160,6 @@
   "category_business_tools": "Geschäftstools",
   "category_storage_&_access": "Speicher & Zugriff",
   "category_support": "Support",
-  
   "feature_unlimited_users": "Unbegrenzte Benutzer",
   "feature_advanced_inventory_management_with_forecasting": "Fortschrittliche Bestandsverwaltung mit Prognose",
   "feature_automated_invoicing_and_payment_reminders": "Automatisierte Rechnungsstellung und Zahlungserinnerungen",
@@ -206,7 +170,6 @@
   "feature_advanced_reporting_and_analytics": "Fortschrittliche Berichte und Analysen",
   "feature_ai-powered_business_insights": "KI-gestützte Geschäftseinblicke",
   "feature_priority_support_with_dedicated_account_manager": "Prioritäts-Support mit dediziertem Account Manager",
-  
   "feature_1_user_included": "1 Benutzer inklusive",
   "feature_track_income_and_expenses": "Einnahmen und Ausgaben verfolgen",
   "feature_basic_inventory_management": "Grundlegende Bestandsverwaltung",
@@ -215,7 +178,6 @@
   "feature_2_gb_of_storage": "2 GB Speicher",
   "feature_basic_reporting": "Grundlegende Berichte",
   "feature_email_support": "E-Mail-Support",
-  
   "feature_unlimited_users_with_custom_roles": "Unbegrenzte Benutzer mit benutzerdefinierten Rollen",
   "feature_advanced_inventory_management_with_custom_categories": "Fortschrittliche Bestandsverwaltung mit benutzerdefinierten Kategorien",
   "feature_fully_branded_invoicing_with_automation": "Vollständig gebrandete Rechnungsstellung mit Automatisierung",
@@ -224,7 +186,6 @@
   "feature_unlimited_storage": "Unbegrenzter Speicher",
   "feature_custom_reporting_and_analytics": "Benutzerdefinierte Berichte und Analysen",
   "feature_advanced_ai_business_insights_with_forecasting": "Fortschrittliche KI-Geschäftseinblicke mit Prognose",
-  
   "feature_income_and_expense_tracking": "Einnahmen- und Ausgabenverfolgung",
   "feature_invoice_creation": "Rechnungserstellung",
   "feature_automated_invoice_reminders": "Automatisierte Rechnungserinnerungen",
@@ -248,13 +209,11 @@
   "feature_dedicated_account_manager": "Dedizierter Account Manager",
   "feature_payroll_&_tax_processing": "Lohnabrechnung & Steuerverarbeitung",
   "feature_hr_&_crm_modules": "Personalwesen & CRM-Module",
-  
   "feature_value_2gb": "2 GB",
   "feature_value_30gb": "30 GB",
   "feature_value_unlimited": "Unbegrenzt",
   "feature_value_add-on": "Add-on",
   "feature_value_discounted": "Reduziert",
-  
   "choose_your_plan": "Wähle deinen Plan",
   "select_plan_description": "Wähle den Plan, der am besten zu deinen Geschäftsanforderungen passt",
   "best_value": "BESTES ANGEBOT",
@@ -279,7 +238,6 @@
   "custom_roles_&_permissions": "Benutzerdefinierte Rollen & Berechtigungen",
   "advanced_security_features": "Fortschrittliche Sicherheitsfunktionen",
   "preferential_transaction_rates": "Bevorzugte Transaktionsraten",
-  
   "feature_single_user_account_with_view-only_accountant_access": "Einzelbenutzer-Konto mit Nur-Lese-Zugriff für Buchhalter",
   "feature_basic_income_and_expense_tracking": "Grundlegende Einnahmen- und Ausgabenverfolgung",
   "feature_up_to_5_customizable_invoice_templates": "Bis zu 5 anpassbare Rechnungsvorlagen",
@@ -307,10 +265,59 @@
   "feature_basic_offline_mode": "Grundlegender Offline-Modus",
   "feature_mobile-optimized_experience": "Für Mobilgeräte optimierte Erfahrung",
   "feature_knowledge_base_access": "Zugriff auf Wissensbasis",
-  
   "feature_value_5gb": "5 GB",
-  
   "complete_onboarding": "REGISTRIERUNG ABSCHLIESSEN",
   "your_dashboard": "DEIN DASHBOARD",
-  "sign_in": "ANMELDEN"
+  "sign_in": "ANMELDEN",
+  "heroSubtitle": "Für immer kostenlos mit Basisfunktionen",
+  "heroButton": "Kostenlos starten",
+  "heroTrustedBy": "Vertraut von über 10.000 Unternehmen weltweit",
+  "feature_inventory": "Bestandsverwaltung",
+  "feature_inventory_desc": "Verfolgen Sie Lagerbestände, generieren Sie Barcodes und verwalten Sie mehrere Standorte mit Echtzeit-Updates.",
+  "feature_pos": "Kassensystem",
+  "feature_pos_desc": "Akzeptieren Sie Zahlungen, verwalten Sie Verkäufe und verfolgen Sie Bestände über ein benutzerfreundliches POS-System.",
+  "feature_invoicing": "Rechnungsstellung & Angebote",
+  "feature_invoicing_desc": "Erstellen Sie professionelle Rechnungen, Angebote und wiederkehrende Rechnungen in Sekunden. Werden Sie schneller bezahlt.",
+  "feature_payroll": "Lohnabrechnung & HR",
+  "feature_payroll_desc": "Bezahlen Sie Mitarbeiter, verwalten Sie Leistungen, verfolgen Sie Urlaubstage und bewältigen Sie alle HR-Bedürfnisse an einem Ort.",
+  "feature_accounting": "Buchhaltung & Berichte",
+  "feature_accounting_desc": "Verfolgen Sie Einnahmen, Ausgaben und erstellen Sie Finanzberichte. Bleiben Sie das ganze Jahr über steuerbereit.",
+  "feature_payments": "Globale Zahlungen",
+  "feature_payments_desc": "Akzeptieren Sie Kreditkarten, Banküberweisungen, mobiles Geld und über 50 Zahlungsmethoden weltweit.",
+  "feature_crm": "Kundenverwaltung",
+  "feature_crm_desc": "Bauen Sie dauerhafte Beziehungen mit organisierten Kundendaten, Notizen und Kommunikationsverlauf auf.",
+  "feature_analytics": "KI-Analysen",
+  "feature_analytics_desc": "Erhalten Sie intelligente Einblicke und Prognosen für bessere Geschäftsentscheidungen mit KI-gestützten Analysen.",
+  "faq_q_is_it_really_free": "Ist Dott wirklich kostenlos?",
+  "faq_a_is_it_really_free": "Ja! Unser Basisplan ist für immer kostenlos ohne Kreditkarte. Er enthält wesentliche Funktionen für Freelancer und kleine Startups. Sie können jederzeit upgraden, wenn Ihr Unternehmen wächst.",
+  "faq_q_can_i_switch_plans": "Kann ich jederzeit den Plan wechseln?",
+  "faq_a_can_i_switch_plans": "Absolut! Sie können Ihren Plan jederzeit upgraden oder downgraden. Änderungen treten sofort in Kraft und wir werden alle Zahlungen anteilig berechnen. Keine langfristigen Verträge oder Stornierungsgebühren.",
+  "faq_q_do_you_offer_mobile_apps": "Bieten Sie mobile Apps an?",
+  "faq_a_do_you_offer_mobile_apps": "Ja! Dott funktioniert perfekt auf jedem Gerät über Ihren Webbrowser. Wir haben auch dedizierte iOS- und Android-Apps zur Verwaltung Ihres Unternehmens unterwegs. Alle Funktionen synchronisieren sich in Echtzeit zwischen Geräten.",
+  "pricing_period_monthly": "Monatlich",
+  "pricing_period_annual": "Jährlich",
+  "pricing_save": "20% sparen",
+  "pricing_plan_basic": "Basis",
+  "pricing_plan_basic_price": "0€",
+  "pricing_plan_basic_desc": "Perfekt für Freelancer und Startups",
+  "pricing_plan_pro": "Professional",
+  "pricing_plan_pro_price": "15€",
+  "pricing_plan_pro_price_annual": "12€",
+  "pricing_plan_pro_desc": "Für wachsende Unternehmen",
+  "pricing_plan_enterprise": "Unternehmen",
+  "pricing_plan_enterprise_price": "45€",
+  "pricing_plan_enterprise_price_annual": "36€",
+  "pricing_plan_enterprise_desc": "Für etablierte Unternehmen",
+  "pricing_most_popular": "Am beliebtesten",
+  "cta_title": "Bereit, Ihr Geschäft zu erweitern?",
+  "cta_subtitle": "Schließen Sie sich über 10.000 Unternehmen an, die bereits Dott nutzen",
+  "cta_button": "Kostenlose Testversion starten",
+  "cta_no_credit_card": "Keine Kreditkarte erforderlich",
+  "testimonial_title": "Was unsere Kunden sagen",
+  "testimonial_subtitle": "Schließen Sie sich Tausenden zufriedener Unternehmen an",
+  "integration_title": "Funktioniert mit Tools, die Sie bereits verwenden",
+  "integration_subtitle": "Verbinden Sie Dott mit Ihren Lieblings-Apps",
+  "security_badge_1": "Verschlüsselung auf Bankniveau",
+  "security_badge_2": "DSGVO-konform",
+  "security_badge_3": "99,9% Verfügbarkeit"
 }

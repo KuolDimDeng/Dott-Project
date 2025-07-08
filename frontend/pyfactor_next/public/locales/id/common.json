@@ -29,13 +29,11 @@
   "aboutDescription2": "Yang membedakan Dott adalah pemahaman mendalam kami tentang tantangan unik yang dihadapi oleh bisnis kecil, terutama di pasar berkembang.",
   "missionStatement": "Di Dott, misi kami adalah memberdayakan bisnis kecil untuk berkembang dengan menyediakan alat manajemen yang terjangkau, mudah diakses, dan kuat yang menyederhanakan operasi sehari-hari.",
   "visionStatement": "Kami membayangkan dunia di mana bisnis kecil memiliki akses ke alat manajemen dengan kualitas yang sama seperti perusahaan besar, tetapi disesuaikan dengan kebutuhan dan skala spesifik mereka.",
-  
-  "heroTitle": "Kelola bisnis Anda seperti bos.",
+  "heroTitle": "Perangkat Lunak Bisnis All-in-One",
   "heroDescription": "Manajemen bisnis global dengan inventaris canggih, pemindaian barcode, dan solusi pembayaran regional—semua dalam satu platform intuitif untuk bisnis di seluruh dunia.",
   "heroImageAlt": "Ilustrasi Manajemen Bisnis",
   "heroVideoTitle": "Demo Software Dott",
   "searchLanguages": "Cari bahasa...",
-  
   "featuresTitle": "Fitur Bisnis Global",
   "featuresSubtitle": "Semua yang Anda butuhkan untuk menjalankan bisnis Anda secara efisien di lebih dari 100 negara",
   "countriesSupported": "Mendukung Lebih dari 100 Negara",
@@ -44,7 +42,6 @@
   "new": "Baru",
   "pricingTitle": "Semua termasuk dalam paket Professional kami hanya dengan $15/bulan",
   "pricingDescription": "Tanpa biaya tersembunyi. Tanpa biaya tambahan untuk pencetakan barcode atau integrasi pemindai.",
-  
   "feature_global_accounting": "Akuntansi Global",
   "feature_global_accounting_desc": "Alat akuntansi yang mudah digunakan mendukung berbagai mata uang dan sistem pajak untuk bisnis di mana saja di dunia.",
   "feature_inventory_&_barcode_management": "Manajemen Inventaris & Barcode",
@@ -61,35 +58,26 @@
   "feature_invoicing_&_factoring_desc": "Buat faktur profesional dalam berbagai mata uang dengan opsi factoring untuk bisnis di AS dan Kanada.",
   "feature_cross-border_commerce": "Perdagangan Lintas Batas",
   "feature_cross-border_commerce_desc": "Kelola penjualan internasional, impor, ekspor, dan patuhi peraturan pajak regional dengan mulus.",
-
   "highlights_title": "Mengapa Memilih Platform Global Kami",
   "highlights_subtitle": "Dirancang untuk mendukung bisnis melintasi batas dengan manajemen inventaris yang kuat",
-  
   "highlight_title_global_business_solution": "Solusi Bisnis Global",
   "highlight_desc_global_business_solution": "Dirancang untuk bisnis di seluruh dunia dengan dukungan untuk lebih dari 100 negara, berbagai mata uang, dan metode pembayaran khusus regional.",
-  
   "highlight_title_advanced_inventory_tools": "Alat Inventaris Canggih",
   "highlight_desc_advanced_inventory_tools": "Pencetakan barcode dan integrasi pemindai Bluetooth termasuk dalam paket Professional kami tanpa biaya tambahan.",
-  
   "highlight_title_fast_&_efficient": "Cepat & Efisien",
   "highlight_desc_fast_&_efficient": "Platform berbasis cloud yang dioptimalkan untuk kecepatan dan efisiensi, membantu Anda menjalankan bisnis lebih cepat di mana pun Anda berada.",
-  
   "highlight_title_secure_&_compliant": "Aman & Patuh",
   "highlight_desc_secure_&_compliant": "Keamanan tingkat bank dan fitur kepatuhan regional memastikan data bisnis Anda aman dan memenuhi peraturan lokal.",
-  
   "highlight_title_global_support": "Dukungan Global",
   "highlight_desc_global_support": "Tim dukungan kami yang berdedikasi memahami lingkungan bisnis lokal dan tersedia di berbagai zona waktu dan bahasa.",
-  
   "highlights_pricing_title": "Semua fitur, termasuk pencetakan barcode dan integrasi pemindai, termasuk dalam paket Professional kami hanya dengan $15/bulan",
   "highlights_pricing_subtitle": "Tanpa biaya tersembunyi. Tanpa tingkatan harga yang rumit. Hanya satu paket sederhana untuk bisnis global.",
-
   "faq_title": "Pertanyaan yang Sering Diajukan",
   "faq_subtitle": "Punya pertanyaan tentang platform bisnis global kami? Kami punya jawabannya.",
   "chip_countries": "Lebih dari 100 Negara",
   "chip_barcode": "Integrasi Barcode",
   "chip_currency": "Multi-Mata Uang",
   "key_info": "Informasi Kunci",
-  
   "faq_category_general": "Umum",
   "faq_category_pricing": "Harga & Paket",
   "faq_category_global": "Bisnis Global",
@@ -97,59 +85,43 @@
   "faq_category_payments": "Opsi Pembayaran",
   "faq_category_security": "Keamanan & Kepatuhan",
   "faq_category_support": "Dukungan & Bantuan",
-  
   "faq_q_what_is_dott": "Apa itu Dott?",
   "faq_a_what_is_dott": "Dott adalah platform manajemen bisnis global yang mendukung bisnis di lebih dari 100 negara. Ini menggabungkan akuntansi, penggajian, SDM, manajemen inventaris dengan fungsionalitas barcode, dan berbagai opsi pembayaran, termasuk mobile money, dalam satu solusi intuitif.",
-  
   "faq_q_how_much_does_it_cost": "Berapa biayanya?",
   "faq_a_how_much_does_it_cost": "Kami menawarkan paket Basic gratis untuk startup dan paket Professional seharga $15/bulan ($150/tahun). Paket Professional mencakup semua fitur, termasuk pencetakan barcode dan integrasi pemindai, tanpa biaya tersembunyi. Anda dapat meningkatkan atau menurunkan paket kapan saja.",
-  
   "faq_q_which_countries_do_you_support": "Negara mana saja yang Anda dukung?",
   "faq_a_which_countries_do_you_support": "Dott mendukung bisnis di lebih dari 100 negara di seluruh dunia, dengan fitur khusus untuk wilayah tertentu seperti integrasi mobile money di Afrika, factoring faktur di AS dan Kanada, dan alat kepatuhan untuk berbagai lingkungan regulasi.",
-  
   "faq_q_does_dott_support_mobile_money_payments": "Apakah Dott mendukung pembayaran mobile money?",
   "faq_a_does_dott_support_mobile_money_payments": "Ya! Kami mendukung integrasi dengan platform mobile money populer seperti M-Pesa, MTN Mobile Money, Airtel Money, dan lainnya di Afrika dan Asia. Ini memungkinkan bisnis Anda untuk dengan mudah menerima dan memproses metode pembayaran lokal.",
-  
   "faq_q_how_does_the_barcode_and_inventory_scanner_feature_work": "Bagaimana cara kerja fitur pemindai barcode dan inventaris?",
   "faq_a_how_does_the_barcode_and_inventory_scanner_feature_work": "Paket Professional kami mencakup kemampuan untuk menghasilkan dan mencetak barcode untuk item inventaris Anda dan sinkronisasi dengan pemindai barcode Bluetooth untuk manajemen inventaris yang lebih cepat. Fitur ini disertakan tanpa biaya tambahan dan bekerja secara mulus dengan sistem manajemen inventaris kami.",
-  
   "faq_q_is_my_data_secure": "Apakah data saya aman?",
   "faq_a_is_my_data_secure": "Tentu saja. Kami menggunakan enkripsi keamanan tingkat bank dan mengikuti praktik terbaik industri untuk melindungi data Anda. Platform kami dihosting pada infrastruktur cloud yang aman dengan beberapa lapisan keamanan, fitur kepatuhan regional, dan backup rutin.",
-  
   "faq_q_can_i_import_data_from_other_systems": "Bisakah saya mengimpor data dari sistem lain?",
   "faq_a_can_i_import_data_from_other_systems": "Ya, Anda dapat mengimpor data dari berbagai format, termasuk Excel, CSV, dan platform akuntansi lainnya. Kami juga menyediakan bantuan migrasi untuk bisnis yang beralih dari platform lain, dengan dukungan untuk format data internasional.",
-  
   "faq_q_what_kind_of_support_do_you_offer": "Jenis dukungan apa yang Anda tawarkan?",
   "faq_a_what_kind_of_support_do_you_offer": "Kami menyediakan dukungan pelanggan di berbagai zona waktu melalui chat, email, dan panggilan terjadwal. Tim kami mencakup ahli yang familiar dengan praktik bisnis regional untuk memberikan bantuan yang relevan, di mana pun bisnis Anda beroperasi.",
-  
   "faq_q_how_does_multi-currency_support_work": "Bagaimana cara kerja dukungan multi-mata uang?",
   "faq_a_how_does_multi-currency_support_work": "Dott memungkinkan Anda beroperasi dalam beberapa mata uang secara bersamaan, dengan pembaruan nilai tukar otomatis. Anda dapat menagih pelanggan dalam mata uang lokal mereka, melacak pengeluaran dalam mata uang yang berbeda, dan menghasilkan laporan dalam mata uang dasar pilihan Anda.",
-  
   "still_have_questions": "Masih punya pertanyaan?",
   "contact_support": "Hubungi tim dukungan global kami di support@dottapps.com",
-  
   "copyright_text": "Dott, LLC. Hak cipta dilindungi undang-undang.",
-  
   "footer_product": "Produk",
   "footer_company": "Perusahaan",
   "footer_legal": "Legal",
-  
   "footer_link_features": "Fitur",
   "footer_link_testimonials": "Testimoni",
   "footer_link_highlights": "Sorotan",
   "footer_link_pricing": "Harga",
   "footer_link_faqs": "FAQ",
-  
   "footer_link_about_us": "Tentang Kami",
   "footer_link_careers": "Karir",
   "footer_link_press": "Pers",
   "footer_link_blog": "Blog",
-  
   "footer_link_terms_of_use": "Ketentuan Penggunaan",
   "footer_link_privacy_policy": "Kebijakan Privasi",
   "footer_link_cookie_policy": "Kebijakan Cookie",
   "footer_link_contact": "Kontak",
-  
   "pricing_title": "Harga sederhana dan transparan",
   "pricing_subtitle": "Pilih paket yang tepat untuk bisnis Anda",
   "regional_pricing": "Harga regional diterapkan: Tingkat gratis yang ditingkatkan dan diskon 50% pada Enterprise ({0})",
@@ -157,35 +129,28 @@
   "compare_features_title": "Bandingkan Semua Fitur Paket",
   "developing_country_notice": "Fitur yang ditingkatkan tersedia untuk wilayah Anda! Harga dalam {0}",
   "currency_notice_compare": "Membandingkan semua paket (Harga dalam {0})",
-  
   "features_column": "Fitur",
   "tier_basic": "Basic",
   "tier_professional": "Professional",
   "tier_enterprise": "Enterprise",
   "tier_recommended": "Direkomendasikan",
   "tier_complete_solution": "Solusi Lengkap",
-  
   "select_basic": "Pilih Basic",
   "select_professional": "Pilih Professional",
   "select_enterprise": "Pilih Enterprise",
-  
   "period_month": "bulan",
   "period_year": "tahun",
   "free": "Gratis",
   "discount_applied": "Diskon Regional 50%",
-  
   "billing_monthly": "Bulanan",
   "billing_annual": "Tahunan",
   "save_percentage": "Hemat 17%",
-  
   "available_addons": "Add-on yang Tersedia:",
   "pricing_footer": "Harga tidak termasuk pajak yang berlaku. Langganan diperpanjang secara otomatis. Batalkan kapan saja.",
   "developing_country_discount": "Harga regional khusus diterapkan: Diskon 50% pada tingkat Enterprise",
-  
   "button_get_started_for_free": "MULAI GRATIS",
   "button_start_professional": "Mulai Professional",
   "button_start_enterprise": "Mulai Enterprise",
-  
   "category_core_business_tools": "Alat Bisnis Inti",
   "category_global_payment_solutions": "Solusi Pembayaran Global",
   "category_inventory_management": "Manajemen Inventaris",
@@ -195,7 +160,6 @@
   "category_business_tools": "Alat Bisnis",
   "category_storage_&_access": "Penyimpanan & Akses",
   "category_support": "Dukungan",
-  
   "feature_unlimited_users": "Pengguna tak terbatas",
   "feature_advanced_inventory_management_with_forecasting": "Manajemen inventaris canggih dengan peramalan",
   "feature_automated_invoicing_and_payment_reminders": "Penagihan otomatis dan pengingat pembayaran",
@@ -206,7 +170,6 @@
   "feature_advanced_reporting_and_analytics": "Pelaporan dan analitik canggih",
   "feature_ai-powered_business_insights": "Wawasan bisnis berbasis AI",
   "feature_priority_support_with_dedicated_account_manager": "Dukungan prioritas dengan manajer akun khusus",
-  
   "feature_1_user_included": "1 pengguna termasuk",
   "feature_track_income_and_expenses": "Lacak pendapatan dan pengeluaran",
   "feature_basic_inventory_management": "Manajemen inventaris dasar",
@@ -215,7 +178,6 @@
   "feature_2_gb_of_storage": "2 GB penyimpanan",
   "feature_basic_reporting": "Pelaporan dasar",
   "feature_email_support": "Dukungan email",
-  
   "feature_unlimited_users_with_custom_roles": "Pengguna tak terbatas dengan peran khusus",
   "feature_advanced_inventory_management_with_custom_categories": "Manajemen inventaris canggih dengan kategori khusus",
   "feature_fully_branded_invoicing_with_automation": "Penagihan dengan brand lengkap dan otomatisasi",
@@ -224,7 +186,6 @@
   "feature_unlimited_storage": "Penyimpanan tak terbatas",
   "feature_custom_reporting_and_analytics": "Pelaporan dan analitik khusus",
   "feature_advanced_ai_business_insights_with_forecasting": "Wawasan bisnis AI canggih dengan peramalan",
-  
   "feature_income_and_expense_tracking": "Pelacakan pendapatan dan pengeluaran",
   "feature_invoice_creation": "Pembuatan faktur",
   "feature_automated_invoice_reminders": "Pengingat faktur otomatis",
@@ -248,13 +209,11 @@
   "feature_dedicated_account_manager": "Manajer akun khusus",
   "feature_payroll_&_tax_processing": "Pemrosesan penggajian & pajak",
   "feature_hr_&_crm_modules": "Modul SDM & CRM",
-  
   "feature_value_2gb": "2 GB",
   "feature_value_30gb": "30 GB",
   "feature_value_unlimited": "Tak terbatas",
   "feature_value_add-on": "Add-on",
   "feature_value_discounted": "Diskon",
-  
   "choose_your_plan": "Pilih Paket Anda",
   "select_plan_description": "Pilih paket yang paling sesuai dengan kebutuhan bisnis Anda",
   "best_value": "NILAI TERBAIK",
@@ -279,7 +238,6 @@
   "custom_roles_&_permissions": "Peran & izin khusus",
   "advanced_security_features": "Fitur keamanan canggih",
   "preferential_transaction_rates": "Tarif transaksi preferensial",
-  
   "feature_single_user_account_with_view-only_accountant_access": "Akun pengguna tunggal dengan akses akuntan hanya-lihat",
   "feature_basic_income_and_expense_tracking": "Pelacakan pendapatan dan pengeluaran dasar",
   "feature_up_to_5_customizable_invoice_templates": "Hingga 5 template faktur yang dapat disesuaikan",
@@ -307,10 +265,59 @@
   "feature_basic_offline_mode": "Mode offline dasar",
   "feature_mobile-optimized_experience": "Pengalaman yang dioptimalkan untuk mobile",
   "feature_knowledge_base_access": "Akses basis pengetahuan",
-  
   "feature_value_5gb": "5 GB",
-  
   "complete_onboarding": "LENGKAPI PENDAFTARAN",
   "your_dashboard": "DASHBOARD ANDA",
-  "sign_in": "MASUK"
+  "sign_in": "MASUK",
+  "heroSubtitle": "Gratis selamanya untuk fitur dasar",
+  "heroButton": "Mulai gratis",
+  "heroTrustedBy": "Dipercaya oleh lebih dari 10.000 bisnis di seluruh dunia",
+  "feature_inventory": "Manajemen Inventaris",
+  "feature_inventory_desc": "Lacak tingkat stok, buat barcode, dan kelola beberapa lokasi dengan pembaruan real-time.",
+  "feature_pos": "Point of Sale",
+  "feature_pos_desc": "Terima pembayaran, kelola penjualan, dan lacak inventaris dari sistem POS yang mudah digunakan.",
+  "feature_invoicing": "Faktur & Penawaran",
+  "feature_invoicing_desc": "Buat faktur profesional, penawaran, dan tagihan berulang dalam hitungan detik. Dibayar lebih cepat.",
+  "feature_payroll": "Penggajian & SDM",
+  "feature_payroll_desc": "Bayar karyawan, kelola tunjangan, lacak cuti, dan tangani semua kebutuhan SDM di satu tempat.",
+  "feature_accounting": "Akuntansi & Laporan",
+  "feature_accounting_desc": "Lacak pendapatan, pengeluaran, dan buat laporan keuangan. Tetap siap pajak sepanjang tahun.",
+  "feature_payments": "Pembayaran Global",
+  "feature_payments_desc": "Terima kartu kredit, transfer bank, uang elektronik, dan 50+ metode pembayaran di seluruh dunia.",
+  "feature_crm": "Manajemen Pelanggan",
+  "feature_crm_desc": "Bangun hubungan yang langgeng dengan data pelanggan yang terorganisir, catatan, dan riwayat komunikasi.",
+  "feature_analytics": "Analitik AI",
+  "feature_analytics_desc": "Dapatkan wawasan cerdas dan prediksi untuk membuat keputusan bisnis yang lebih baik dengan analitik bertenaga AI.",
+  "faq_q_is_it_really_free": "Apakah Dott benar-benar gratis?",
+  "faq_a_is_it_really_free": "Ya! Paket Dasar kami gratis selamanya tanpa kartu kredit. Ini mencakup fitur penting untuk freelancer dan startup kecil. Anda dapat meningkatkan kapan saja seiring pertumbuhan bisnis Anda.",
+  "faq_q_can_i_switch_plans": "Bisakah saya beralih paket kapan saja?",
+  "faq_a_can_i_switch_plans": "Tentu saja! Anda dapat meningkatkan atau menurunkan paket Anda kapan saja. Perubahan berlaku segera dan kami akan menghitung prorata pembayaran apa pun. Tidak ada kontrak jangka panjang atau biaya pembatalan.",
+  "faq_q_do_you_offer_mobile_apps": "Apakah Anda menawarkan aplikasi seluler?",
+  "faq_a_do_you_offer_mobile_apps": "Ya! Dott bekerja dengan sempurna di perangkat apa pun melalui browser web Anda. Kami juga memiliki aplikasi iOS dan Android khusus untuk mengelola bisnis Anda saat bepergian. Semua fitur disinkronkan secara real-time di seluruh perangkat.",
+  "pricing_period_monthly": "Bulanan",
+  "pricing_period_annual": "Tahunan",
+  "pricing_save": "Hemat 20%",
+  "pricing_plan_basic": "Dasar",
+  "pricing_plan_basic_price": "Rp0",
+  "pricing_plan_basic_desc": "Sempurna untuk freelancer dan startup",
+  "pricing_plan_pro": "Profesional",
+  "pricing_plan_pro_price": "Rp225.000",
+  "pricing_plan_pro_price_annual": "Rp180.000",
+  "pricing_plan_pro_desc": "Untuk bisnis yang berkembang",
+  "pricing_plan_enterprise": "Enterprise",
+  "pricing_plan_enterprise_price": "Rp675.000",
+  "pricing_plan_enterprise_price_annual": "Rp540.000",
+  "pricing_plan_enterprise_desc": "Untuk perusahaan mapan",
+  "pricing_most_popular": "Paling Populer",
+  "cta_title": "Siap mengembangkan bisnis Anda?",
+  "cta_subtitle": "Bergabunglah dengan 10.000+ bisnis yang sudah menggunakan Dott",
+  "cta_button": "Mulai uji coba gratis",
+  "cta_no_credit_card": "Tidak perlu kartu kredit",
+  "testimonial_title": "Apa kata pelanggan kami",
+  "testimonial_subtitle": "Bergabunglah dengan ribuan bisnis yang bahagia",
+  "integration_title": "Bekerja dengan alat yang sudah Anda gunakan",
+  "integration_subtitle": "Hubungkan Dott dengan aplikasi favorit Anda",
+  "security_badge_1": "Enkripsi tingkat bank",
+  "security_badge_2": "Sesuai GDPR",
+  "security_badge_3": "99,9% uptime"
 }
