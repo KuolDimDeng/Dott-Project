@@ -61,6 +61,10 @@ export async function GET(request) {
       console.log('[Auth0 Exchange] Referer:', referer);
       console.log('[Auth0 Exchange] Base URL:', process.env.NEXT_PUBLIC_BASE_URL);
       
+      // Get PKCE verifier from cookie (set during login)
+      const verifier = request.cookies.get('auth0_verifier');
+      console.log('[Auth0 Exchange] PKCE verifier cookie:', !!verifier);
+      
       const tokenRequestBody = {
         grant_type: 'authorization_code',
         client_id: process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID,
@@ -69,12 +73,19 @@ export async function GET(request) {
         redirect_uri: redirectUri,
       };
       
+      // Add PKCE verifier if available
+      if (verifier?.value) {
+        tokenRequestBody.code_verifier = verifier.value;
+        console.log('[Auth0 Exchange] Adding PKCE code_verifier to request');
+      }
+      
       console.log('[Auth0 Exchange] Token request body:', {
         grant_type: tokenRequestBody.grant_type,
         client_id: tokenRequestBody.client_id,
         redirect_uri: tokenRequestBody.redirect_uri,
         has_code: !!tokenRequestBody.code,
         has_client_secret: !!tokenRequestBody.client_secret,
+        has_code_verifier: !!tokenRequestBody.code_verifier,
         referer: referer,
         baseUrl: process.env.NEXT_PUBLIC_BASE_URL
       });
