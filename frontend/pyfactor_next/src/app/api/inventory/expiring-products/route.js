@@ -2,16 +2,17 @@
 // Fetches products nearing expiration from the database
 
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
 
 // GET - Fetch expiring products from database
 export async function GET(request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
+    // Check session cookie
+    const cookies = request.headers.get('cookie') || '';
+    const hasSession = cookies.includes('sid=') || cookies.includes('session_token=');
+    
+    if (!hasSession) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -49,7 +50,7 @@ export async function GET(request) {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.accessToken}`,
+          'Cookie': cookies,
           'X-Tenant-Id': tenantId
         }
       }

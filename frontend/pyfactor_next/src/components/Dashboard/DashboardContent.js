@@ -940,28 +940,43 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     console.log('[DashboardContent] handlePayrollClick called with option:', option);
     resetAllStates();
     
+    // Generate a unique navigation key for component remounting
+    const payrollNavKey = `payroll-${option}-${Date.now()}`;
+    console.log('[DashboardContent] Setting navigationKey for payroll:', payrollNavKey);
+    
     if (option === 'run-payroll') {
       // Specifically handle Run Payroll menu item
       updateState({ 
         view: 'payroll-management',
-        showPayrollManagement: true 
+        showPayrollManagement: true,
+        navigationKey: payrollNavKey
+      });
+    } else if (option === 'payroll-wizard') {
+      // Handle Payroll Wizard menu item
+      updateState({ 
+        view: 'payroll-wizard',
+        showPayrollWizard: true,
+        navigationKey: payrollNavKey
       });
     } else if (option === 'transactions') {
       updateState({ 
         view: 'payroll-transactions',
-        showPayrollTransactions: true 
+        showPayrollTransactions: true,
+        navigationKey: payrollNavKey
       });
     } else if (option === 'reports') {
       updateState({ 
         view: 'payroll-report',
-        showPayrollReport: true 
+        showPayrollReport: true,
+        navigationKey: payrollNavKey
       });
     } else {
       // Default to payroll dashboard
       updateState({ 
         view: 'payroll',
         showPayrollDashboard: true,
-        payrollSection: option || 'dashboard'
+        payrollSection: option || 'dashboard',
+        navigationKey: payrollNavKey
       });
     }
   }, [resetAllStates, updateState]);

@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 
-export default function AuthLayout({ children }) {
+export default function OnboardingLayout({ children }) {
   const { i18n } = useTranslation();
   const searchParams = useSearchParams();
   
@@ -15,7 +15,7 @@ export default function AuthLayout({ children }) {
       const langParam = searchParams.get('lang');
       if (langParam && langParam !== i18n.language) {
         await i18n.changeLanguage(langParam);
-        console.log('🌐 Auth page language set from URL parameter:', langParam);
+        console.log('🌐 Onboarding page language set from URL parameter:', langParam);
         return;
       }
       
@@ -25,7 +25,7 @@ export default function AuthLayout({ children }) {
       
       if (savedLang && userManuallySelected === 'true' && savedLang !== i18n.language) {
         await i18n.changeLanguage(savedLang);
-        console.log('🌐 Auth page language set from localStorage:', savedLang);
+        console.log('🌐 Onboarding page language set from localStorage:', savedLang);
       }
     };
     
@@ -33,4 +33,4 @@ export default function AuthLayout({ children }) {
   }, [searchParams, i18n]);
 
   return children;
-} 
+}

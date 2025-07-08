@@ -1462,26 +1462,26 @@ const MainListItems = ({
           value: 'dashboard' 
         },
         { 
-          label: 'Run Payroll', 
+          label: 'Run Payroll Wizard', 
           onClick: (value) => {
-            // Create navigation event for run payroll
+            // Create navigation event for payroll wizard
             const navigationKey = `nav-${Date.now()}`;
             const payload = { 
-              item: 'run-payroll', 
+              item: 'payroll-wizard', 
               navigationKey,
-              originalItem: 'Run Payroll'
+              originalItem: 'Run Payroll Wizard'
             };
             
             // Dispatch navigation events
             window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
             window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
             
-            // Load the RunPayroll component
+            // Load the PayrollWizard component
             if (typeof handlePayrollClick === 'function') {
-              handlePayrollClick('run-payroll');
+              handlePayrollClick('payroll-wizard');
             }
           }, 
-          value: 'run-payroll' 
+          value: 'payroll-wizard' 
         },
         { 
           label: 'Payroll Transactions', 

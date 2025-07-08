@@ -331,10 +331,10 @@ export default function AppBar() {
 
             {/* Sign In Button */}
             <button
-              onClick={() => router.push('/auth/signin')}
+              onClick={() => router.push(`/auth/signin?lang=${i18n.language || 'en'}`)}
               className="px-4 py-2 text-sm font-semibold text-blue-600 hover:text-blue-700 uppercase tracking-wider rounded-md border border-blue-600 hover:bg-blue-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50"
             >
-              SIGN IN
+              {t('navSignIn', 'SIGN IN')}
             </button>
 
             {/* Auth Button */}

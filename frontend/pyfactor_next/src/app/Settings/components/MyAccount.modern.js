@@ -36,6 +36,7 @@ import {
   ChevronDownIcon,
   ChevronUpIcon
 } from '@heroicons/react/24/outline';
+import PayStubViewer from '@/components/PayStubViewer';
 
 const MyAccount = ({ userData }) => {
   const [selectedTab, setSelectedTab] = useState(0);
@@ -58,6 +59,7 @@ const MyAccount = ({ userData }) => {
   const [loadingMFA, setLoadingMFA] = useState(true);
   const [updatingMFA, setUpdatingMFA] = useState(false);
   const [showLegalDocument, setShowLegalDocument] = useState(null);
+  const [showPayStubViewer, setShowPayStubViewer] = useState(false);
   const fileInputRef = useRef(null);
   
   // Employment tab section visibility states
@@ -1141,7 +1143,10 @@ const MyAccount = ({ userData }) => {
           {expandedSections.pay && (
             <div className="space-y-3 mt-4 pl-7">
               <div className="flex justify-end mb-4">
-                <button className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <button 
+                  onClick={() => setShowPayStubViewer(true)}
+                  className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
                   View All Paystubs
                 </button>
               </div>
@@ -1381,6 +1386,14 @@ const MyAccount = ({ userData }) => {
           {selectedTab === 4 && renderLegalTab()}
         </div>
       </div>
+
+      {/* PayStub Viewer Modal */}
+      {showPayStubViewer && (
+        <PayStubViewer 
+          isModal={true} 
+          onClose={() => setShowPayStubViewer(false)} 
+        />
+      )}
     </div>
   );
 };

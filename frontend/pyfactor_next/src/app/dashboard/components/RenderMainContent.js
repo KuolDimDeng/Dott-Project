@@ -142,6 +142,7 @@ const EmployeeManagement = enhancedLazy(() => {
     });
 }, 'Employee Management');
 const PayrollManagement = enhancedLazy(() => import('./forms/PayrollManagement.js'), 'Payroll Management');
+const PayrollWizard = enhancedLazy(() => import('./forms/payroll/PayrollWizard.js'), 'Payroll Wizard');
 const TimesheetManagement = enhancedLazy(() => import('./forms/TimesheetManagement.js'), 'Timesheet Management');
 const ChartOfAccountsManagement = enhancedLazy(() => import('./forms/ChartOfAccountsManagement.js'), 'Chart of Accounts Management');
 const JournalEntryManagement = enhancedLazy(() => import('./forms/JournalEntryManagement.js'), 'Journal Entry Management');
@@ -989,7 +990,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
       }
       
       // Handle Payroll views
-      if (view && view.startsWith('payroll-') || view === 'run-payroll' || view === 'payroll-transactions' || view === 'payroll-reports' || showPayrollManagement || showPayrollDashboard || showPayrollTransactions || showPayrollReport) {
+      if (view && view.startsWith('payroll-') || view === 'run-payroll' || view === 'payroll-transactions' || view === 'payroll-reports' || showPayrollManagement || showPayrollDashboard || showPayrollTransactions || showPayrollReport || showPayrollWizard) {
         console.log('[RenderMainContent] Rendering payroll view:', view);
         
         let PayrollComponent = null;
@@ -1012,6 +1013,13 @@ const RenderMainContent = React.memo(function RenderMainContent({
               PayrollComponent = lazy(() => import('./forms/PayrollManagement.js').catch(err => {
                 console.error('[RenderMainContent] Error loading PayrollManagement:', err);
                 return { default: () => <div className="p-4">Error loading Run Payroll</div> };
+              }));
+              break;
+            case 'payroll-wizard':
+              componentName = 'PayrollWizard';
+              PayrollComponent = lazy(() => import('./forms/payroll/PayrollWizard.js').catch(err => {
+                console.error('[RenderMainContent] Error loading PayrollWizard:', err);
+                return { default: () => <div className="p-4">Error loading Payroll Wizard</div> };
               }));
               break;
             case 'payroll-transactions':
@@ -1054,6 +1062,16 @@ const RenderMainContent = React.memo(function RenderMainContent({
             <ContentWrapperWithKey>
               <SuspenseWithCleanup componentKey={`payroll-management-${navigationKey || 'default'}`}>
                 <PayrollManagement />
+              </SuspenseWithCleanup>
+            </ContentWrapperWithKey>
+          );
+        }
+        
+        if (showPayrollWizard) {
+          return (
+            <ContentWrapperWithKey>
+              <SuspenseWithCleanup componentKey={`payroll-wizard-${navigationKey || 'default'}`}>
+                <PayrollWizard />
               </SuspenseWithCleanup>
             </ContentWrapperWithKey>
           );

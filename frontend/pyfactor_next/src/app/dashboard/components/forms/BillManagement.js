@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';\nimport { toast } from 'react-hot-toast';
+import React, { useState, useEffect, useCallback } from 'react';
+import { toast } from 'react-hot-toast';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
 import { 

@@ -38,7 +38,7 @@ export default function AuthButton({ size = 'medium', variant = 'primary', theme
     tenantId: null,
     loading: true
   });
-  const { t } = useTranslation('auth');
+  const { t, i18n } = useTranslation('auth');
 
   // Check Auth0 authentication and onboarding status
   useEffect(() => {
@@ -152,7 +152,8 @@ export default function AuthButton({ size = 'medium', variant = 'primary', theme
         text: t('complete_onboarding', 'COMPLETE ONBOARDING'),
         action: () => {
           // All onboarding steps now go to the simplified form
-          router.push('/onboarding');
+          const currentLang = i18n.language || 'en';
+          router.push(`/onboarding?lang=${currentLang}`);
         }
       };
     }
@@ -191,12 +192,14 @@ export default function AuthButton({ size = 'medium', variant = 'primary', theme
             
             // **FALLBACK: Redirect to onboarding instead of broken dashboard**
             logger.warn('[AuthButton] No tenant ID found, redirecting to onboarding');
-            router.push('/onboarding');
+            const currentLang = i18n.language || 'en';
+            router.push(`/onboarding?lang=${currentLang}`);
             
           } catch (error) {
             logger.error('[AuthButton] Error fetching tenant ID for dashboard redirect:', error);
             // **LAST RESORT: Redirect to onboarding instead of broken dashboard**
-            router.push('/onboarding');
+            const currentLang = i18n.language || 'en';
+            router.push(`/onboarding?lang=${currentLang}`);
           }
         }
       };
@@ -206,7 +209,9 @@ export default function AuthButton({ size = 'medium', variant = 'primary', theme
     return {
       text: t('get_started_for_free', 'GET STARTED FOR FREE'),
       action: () => {
-        router.push('/auth/signin');
+        // Get current language to pass to auth pages
+        const currentLang = i18n.language || 'en';
+        router.push(`/auth/signin?lang=${currentLang}`);
       }
     };
   };
