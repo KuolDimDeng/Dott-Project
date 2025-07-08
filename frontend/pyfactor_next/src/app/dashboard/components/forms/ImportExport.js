@@ -23,37 +23,62 @@ const ImportExport = () => {
   const [checkingLimits, setCheckingLimits] = useState(true);
   const fileInputRef = useRef(null);
 
-  // Track page view and check limits
-  useEffect(() => {
-    captureEvent('import_export_page_viewed');
-    trackPageView('Import/Export', { 
-      userRole: session?.user?.role,
-      subscriptionPlan: session?.user?.subscriptionPlan 
-    });
-    checkImportLimits();
-  }, [trackPageView, session]);
-
-  const checkImportLimits = async () => {
-    const span = Sentry.startSpan({ name: 'check-import-limits' });
+  const checkImportLimits = useCallback(async () => {
+    let span;
+    try {
+      span = Sentry.startSpan({ name: 'check-import-limits' });
+    } catch (sentryError) {
+      console.error('Failed to start Sentry span:', sentryError);
+    }
+    
     try {
       const response = await fetch('/api/import-export/check-limits');
       if (response.ok) {
         const data = await response.json();
         setLimits(data);
-        logger.info('Import limits checked successfully', { limits: data });
+        if (logger && logger.info) {
+          logger.info('Import limits checked successfully', { limits: data });
+        }
       } else {
+        const errorText = await response.text();
+        console.error(`Failed to check limits: ${response.status}`, errorText);
         throw new Error(`Failed to check limits: ${response.status}`);
       }
     } catch (error) {
-      logger.error('Failed to check limits', error);
-      Sentry.captureException(error, {
-        tags: { component: 'ImportExport', action: 'checkLimits' }
-      });
+      console.error('Failed to check limits:', error);
+      if (logger && logger.error) {
+        logger.error('Failed to check limits', error);
+      }
+      if (Sentry && Sentry.captureException) {
+        Sentry.captureException(error, {
+          tags: { component: 'ImportExport', action: 'checkLimits' }
+        });
+      }
     } finally {
       setCheckingLimits(false);
-      span.end();
+      if (span && span.end) {
+        span.end();
+      }
     }
-  };
+  }, []);
+
+  // Track page view and check limits
+  useEffect(() => {
+    try {
+      if (captureEvent) {
+        captureEvent('import_export_page_viewed');
+      }
+      if (trackPageView) {
+        trackPageView('Import/Export', { 
+          userRole: session?.user?.role,
+          subscriptionPlan: session?.user?.subscriptionPlan 
+        });
+      }
+      checkImportLimits();
+    } catch (error) {
+      console.error('Error in ImportExport useEffect:', error);
+    }
+  }, [trackPageView, session, checkImportLimits, captureEvent]);
 
   // Data types available for import/export
   const dataTypes = [
@@ -118,12 +143,23 @@ const ImportExport = () => {
   const handleModeSelect = (selectedMode) => {
     const startTime = Date.now();
     setMode(selectedMode);
-    captureEvent(`import_export_mode_selected`, { mode: selectedMode });
-    trackUserAction('Mode Selected', { 
-      mode: selectedMode,
-      userPlan: session?.user?.subscriptionPlan 
-    });
-    trackPerformance('mode-selection', startTime);
+    
+    try {
+      if (captureEvent) {
+        captureEvent(`import_export_mode_selected`, { mode: selectedMode });
+      }
+      if (trackUserAction) {
+        trackUserAction('Mode Selected', { 
+          mode: selectedMode,
+          userPlan: session?.user?.subscriptionPlan 
+        });
+      }
+      if (trackPerformance) {
+        trackPerformance('mode-selection', startTime);
+      }
+    } catch (error) {
+      console.error('Error in handleModeSelect tracking:', error);
+    }
   };
 
   const handleImportSourceSelect = (source) => {
