@@ -1158,10 +1158,10 @@ const RenderMainContent = React.memo(function RenderMainContent({
               break;
             case 'tax-settings':
             case 'taxes-settings':
-              componentName = 'TaxSettings';
-              TaxesComponent = lazy(() => import('./forms/TaxSettings.js').catch(err => {
-                console.error('[RenderMainContent] Error loading TaxSettings:', err);
-                return { default: () => <div className="p-4">Error loading Tax Settings</div> };
+              componentName = 'TaxSettingsWizard';
+              TaxesComponent = lazy(() => import('./forms/TaxSettingsWizard.js').catch(err => {
+                console.error('[RenderMainContent] Error loading TaxSettingsWizard:', err);
+                return { default: () => <div className="p-4">Error loading Tax Settings Wizard</div> };
               }));
               break;
             case 'tax-filing':
