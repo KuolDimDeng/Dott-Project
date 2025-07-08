@@ -5,13 +5,21 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CircularProgress } from '@/components/ui/TailwindComponents';
 
+// Global flag to prevent duplicate OAuth processing
+let oauthInProgress = false;
+
 export default function Auth0OAuthCallbackPage() {
   const router = useRouter();
   const [status, setStatus] = useState('Processing authentication...');
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    let mounted = true;
+    
     const handleOAuthCallback = async () => {
+      if (!mounted || oauthInProgress) return;
+      
+      oauthInProgress = true;
       try {
         // Get URL parameters
         const urlParams = new URLSearchParams(window.location.search);
@@ -112,15 +120,25 @@ export default function Auth0OAuthCallbackPage() {
 
       } catch (error) {
         console.error('[OAuth Callback] Unexpected error:', error);
-        setError('Unexpected error: ' + error.message);
-        setTimeout(() => {
-          router.push('/auth/signin?error=unexpected_error');
-        }, 3000);
+        if (mounted) {
+          setError('Unexpected error: ' + error.message);
+          setTimeout(() => {
+            if (mounted) {
+              router.push('/auth/signin?error=unexpected_error');
+            }
+          }, 3000);
+        }
+      } finally {
+        oauthInProgress = false;
       }
     };
 
     handleOAuthCallback();
-  }, [router]);
+    
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">

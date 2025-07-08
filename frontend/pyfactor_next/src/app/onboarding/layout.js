@@ -13,7 +13,7 @@ export default function OnboardingLayout({ children }) {
     const initializeLanguage = async () => {
       // First priority: URL parameter
       const langParam = searchParams.get('lang');
-      if (langParam && langParam !== i18n.language) {
+      if (langParam && langParam !== i18n.language && i18n.changeLanguage) {
         await i18n.changeLanguage(langParam);
         console.log('🌐 Onboarding page language set from URL parameter:', langParam);
         return;
@@ -23,7 +23,7 @@ export default function OnboardingLayout({ children }) {
       const savedLang = localStorage.getItem('i18nextLng');
       const userManuallySelected = localStorage.getItem('userManuallySelectedLanguage');
       
-      if (savedLang && userManuallySelected === 'true' && savedLang !== i18n.language) {
+      if (savedLang && userManuallySelected === 'true' && savedLang !== i18n.language && i18n.changeLanguage) {
         await i18n.changeLanguage(savedLang);
         console.log('🌐 Onboarding page language set from localStorage:', savedLang);
       }

@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Simple in-memory cache to prevent duplicate authorization code usage
+const usedCodes = new Set();
+const codeExpiryTime = new Map(); // Track when codes were used
+
 export async function GET(request) {
   try {
     const url = new URL(request.url);
@@ -30,6 +34,31 @@ export async function GET(request) {
     if (!code) {
       console.error('[Auth0 Exchange] Missing authorization code');
       return NextResponse.json({ error: 'Missing authorization code' }, { status: 400 });
+    }
+
+    // Check for duplicate authorization code usage
+    if (usedCodes.has(code)) {
+      console.log('❌ [Auth0Exchange] Authorization code already used (duplicate request detected)');
+      return NextResponse.json({ 
+        error: 'Token exchange failed',
+        message: 'The authorization code has already been used. Please try signing in again.',
+        details: 'Duplicate request detected',
+        error_code: 'code_reused',
+        status: 400
+      }, { status: 400 });
+    }
+
+    // Mark code as used and set expiry (10 minutes from now)
+    usedCodes.add(code);
+    codeExpiryTime.set(code, Date.now() + 10 * 60 * 1000);
+
+    // Clean up expired codes to prevent memory leak
+    const now = Date.now();
+    for (const [expiredCode, expiry] of codeExpiryTime.entries()) {
+      if (now > expiry) {
+        usedCodes.delete(expiredCode);
+        codeExpiryTime.delete(expiredCode);
+      }
     }
     
     if (!process.env.AUTH0_CLIENT_SECRET) {
