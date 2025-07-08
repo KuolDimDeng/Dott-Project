@@ -119,6 +119,46 @@
   "faq_q_which_countries_do_you_support": "Àwọn orílẹ̀-èdè wo ni ẹ̀yin ń ṣe àtìlẹ́yìn fún?",
   "faq_a_which_countries_do_you_support": "Dott ń ṣe àtìlẹ́yìn fún àwọn iṣẹ́ ní orílẹ̀-èdè tó ju 100 lọ ní gbogbo àgbáyé, pẹ̀lú àwọn ẹ̀yà pàtó fún àwọn agbègbè pàtó bí ìdàpọ̀ owó fóònù ní Afíríkà, factoring ìwé ìsanwó ní US àti Kánádà, àti àwọn irinṣẹ́ ìfàragbá fún àwọn àyíká ìbófin onírúrú.",
   "faq_q_does_dott_support_mobile_money_payments": "Ṣé Dott ń ṣe àtìlẹ́yìn fún àwọn ìsanwó owó fóònù?",
+  "features": {
+    "eyebrow": "Ojútùú Iṣẹ́ Tó Péye",
+    "heading": "Gbogbo Ohun Tí O Nílò Láti Dàgbà Ní Àgbáyé",
+    "subheading": "Àwọn irinṣẹ́ tó lágbára tí a ṣètò fún àwọn iṣẹ́ ọ̀dájú tí ń ṣiṣẹ́ kọjá àwọn aláàlà",
+    "operations": {
+      "title": "Ìṣàkóso Ìṣiṣẹ́",
+      "description": "Mú àwọn iṣẹ́ ojoojúmọ́ rẹ jẹ́ ìrọ̀rùn"
+    },
+    "financial": {
+      "title": "Ìṣàkóso Owó",
+      "description": "Ìṣàkóso pípé lórí owó iṣẹ́ rẹ"
+    },
+    "global": {
+      "title": "Àwọn Irinṣẹ́ Iṣẹ́ Àgbáyé",
+      "description": "Gbogbo ohun tí o nílò láti ṣiṣẹ́ ní àgbáyé"
+    },
+    "trust": {
+      "title": "A Kọ́ Fún Aabo & Ìfàragbá"
+    }
+  },
+  "feature": {
+    "inventory": "Ìṣàkóso Àjọjọpọ̀ Ọjà Tó Gbajúmọ̀",
+    "inventory.description": "Àtẹ̀lé ipò àjọjọpọ̀ ọjà ní àkókò gidi pẹ̀lú yíya báàkódù àti àtìlẹ́yìn ibí-púpọ̀",
+    "barcode": "Báàkódù & QR Code",
+    "barcode.description": "Ṣe àti ya àwọn báàkódù fún àwọn ọjà àti àwọn àkọsílẹ̀",
+    "pos": "Ipò Títà",
+    "pos.description": "Ètò POS ọ̀dájú pẹ̀lú àwọn agbára ailóníwọ̀lé",
+    "invoicing": "Ìwé Ìsanwó Owó-Púpọ̀",
+    "invoicing.description": "Àwọn ìwé ìsanwó ọ̀jọ́gbọ́n nínú owó 50+ pẹ̀lú ìyípadà adáṣe",
+    "tax": "Ìfàragbá Orí Agbègbè",
+    "tax.description": "Àwọn ìṣirò orí adáṣe fún orílẹ̀-èdè 100+",
+    "reporting": "Àṣàtúpalẹ̀ Owó",
+    "reporting.description": "Àwọn ìmọ̀ àkókò gidi pẹ̀lú àwọn ìdámọ̀ràn tí AI ń kó lọ",
+    "payments": "Àwọn Ẹnu-bodè Ìsanwó Agbègbè",
+    "payments.description": "Gba àwọn ìsanwó láti àwọn ọ̀nà abẹ́lé ní orílẹ̀-èdè kọ̀ọ̀kan",
+    "global": "Ìṣàkóso Ìgbé-wọlé/Ìfiránsẹ́",
+    "global.description": "Ṣàkóso àwọn àkọsílẹ̀ òwò àgbáyé àti ìfàragbá",
+    "security": "Aabo Ilé-iṣẹ́",
+    "security.description": "Aabo ipò banki pẹ̀lú ìfàragbá agbègbè"
+  }
   "faq_a_does_dott_support_mobile_money_payments": "Bẹ́ẹ̀ni! A ń ṣe àtìlẹ́yìn fún ìdàpọ̀ pẹ̀lú àwọn pẹ̀pẹ̀ owó fóònù tí ó gbajúmọ̀ bí M-Pesa, MTN Mobile Money, Airtel Money, àti àwọn míràn ní Afíríkà àti Ésíà. Èyí ń fún iṣẹ́ rẹ láàyè láti gba àti ṣe àwọn ọ̀nà ìsanwó abẹ́lé lọ́rọrùn.",
   "faq_q_how_does_the_barcode_and_inventory_scanner_feature_work": "Báwo ni ẹ̀yà skánà báàkódù àti àjọjọpọ̀ ọjà ṣe ń ṣiṣẹ́?",
   "faq_a_how_does_the_barcode_and_inventory_scanner_feature_work": "Ètò Ọ̀jọ́gbọ́n wa ní ṣàmú pẹ̀lú agbára láti ṣẹ̀dá àti tẹ àwọn báàkódù jáde fún àwọn ohun àjọjọpọ̀ ọjà rẹ àti ṣe ìbáṣepọ̀ pẹ̀lú àwọn skánà báàkódù Bluetooth fún ìṣàkóso àjọjọpọ̀ ọjà tí ó yára ju. Ẹ̀yà yìí jẹ́ ní ṣàmú láìsí ìdíyelé àfikún ó sì ń ṣiṣẹ́ aláìlábàwọ́n pẹ̀lú ètò ìṣàkóso àjọjọpọ̀ ọjà wa.",

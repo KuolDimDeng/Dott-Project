@@ -640,5 +640,84 @@
       "securityTitle": "Neden doğrulama?",
       "securityNote": "E-posta doğrulaması hesap güvenliğinizi sağlamamıza ve yetkisiz erişimi önlememize yardımcı olur."
     }
+  },
+  "features": {
+    "eyebrow": "Eksiksiz İş Çözümü",
+    "heading": "Küresel Büyüme İçin İhtiyaç Duyduğunuz Her Şey",
+    "subheading": "Sınırları aşan modern işletmeler için tasarlanmış güçlü araçlar",
+    "operations": {
+      "title": "Operasyon Yönetimi",
+      "description": "Günlük iş operasyonlarınızı sadeleştirin"
+    },
+    "financial": {
+      "title": "Finansal Yönetim",
+      "description": "İş finanslarınızüzerinde tam kontrol"
+    },
+    "global": {
+      "title": "Küresel İş Araçları",
+      "description": "Uluslararası faaliyet için ihtiyaç duyduğunuz her şey"
+    },
+    "trust": {
+      "title": "Güvenlik ve Uyumluluk İçin Yapıldı"
+    }
+  },
+  "feature": {
+    "inventory": "Gelişmiş Envanter Yönetimi",
+    "inventory.description": "Barkod tarama ve çoklu lokasyon desteği ile gerçek zamanlı stok takibi",
+    "barcode": "Barkod ve QR Kod",
+    "barcode.description": "Ürünler ve belgeler için barkod oluşturun ve tarayın",
+    "pos": "Satış Noktası",
+    "pos.description": "Offline özellikleri olan modern POS sistemi",
+    "invoicing": "Çoklu Para Birimi Faturalandırma",
+    "invoicing.description": "Otomatik dönüşümle 50+ para biriminde profesyonel faturalar",
+    "tax": "Bölgesel Vergi Uyumu",
+    "tax.description": "100+ ülke için otomatik vergi hesaplamaları",
+    "reporting": "Finansal Analitik",
+    "reporting.description": "AI destekli önerilerle gerçek zamanlı içgörüler",
+    "payments": "Bölgesel Ödeme Ağ Geçitleri",
+    "payments.description": "Her ülkede yerel yöntemlerle ödeme kabul edin",
+    "global": "İthalat/İhracat Yönetimi",
+    "global.description": "Uluslararası ticaret belgelerini ve uyumunu yönetin",
+    "security": "Kurumsal Güvenlik",
+    "security.description": "Bölgesel uyumla banka düzeyi güvenlik"
+  },
+  "highlights": {
+    "bluetooth": "Bluetooth tarayıcı entegrasyonu",
+    "printBarcodes": "Özel barkodları yazdırın",
+    "lowStock": "Düşük stok uyarıları",
+    "customLabel": "Özel etiket yazdırma",
+    "mobileScanning": "Mobil tarama",
+    "batchProcessing": "Toplu işleme",
+    "offlineMode": "Offline modu",
+    "multiplePayments": "Birden fazla ödeme yöntemi",
+    "receiptCustom": "Fiş özelleştirme",
+    "recurringInvoices": "Yinelenen faturalar",
+    "paymentReminders": "Ödeme hatırlatmaları",
+    "invoiceFactoring": "Fatura faktoring",
+    "vatGst": "KDV/GST desteği",
+    "taxReports": "Vergi raporları",
+    "eFilingReady": "E-dosyalama hazır",
+    "customDashboards": "Özel panolar",
+    "profitAnalysis": "Kâr analizi",
+    "cashFlowForecast": "Nakit akışı tahmini",
+    "mobileMoney": "Mobil para",
+    "bankTransfers": "Banka transferleri",
+    "digitalWallets": "Dijital cüzdanlar",
+    "customsDocuments": "Gümrük belgeleri",
+    "shippingIntegration": "Kargo entegrasyonu",
+    "tradeCompliance": "Ticaret uyumu",
+    "soc2Compliant": "SOC2 uyumlu",
+    "dataEncryption": "Veri şifreleme",
+    "gdprReady": "GDPR hazır"
+  },
+  "trust": {
+    "soc2Title": "SOC2 Uyumlu",
+    "soc2Desc": "Kurumsal güvenlik",
+    "encryptionTitle": "256-bit Şifreleme",
+    "encryptionDesc": "Banka düzeyi güvenlik",
+    "gdprTitle": "GDPR Hazır",
+    "gdprDesc": "Gizlilik uyumlu",
+    "uptimeTitle": "%99.9 Çalışma Süresi",
+    "uptimeDesc": "Her zaman kullanılabilir"
   }
 }

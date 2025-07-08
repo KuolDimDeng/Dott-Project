@@ -624,5 +624,84 @@
       "securityTitle": "Warum verifizieren?",
       "securityNote": "Die E-Mail-Verifizierung hilft uns, die Sicherheit Ihres Kontos zu gewährleisten und unbefugten Zugriff zu verhindern."
     }
+  },
+  "features": {
+    "eyebrow": "Vollständige Unternehmenslösung",
+    "heading": "Alles was Sie brauchen, um global zu wachsen",
+    "subheading": "Mächtige Tools für moderne Unternehmen, die grenzüberschreitend operieren",
+    "operations": {
+      "title": "Betriebsführung",
+      "description": "Optimieren Sie Ihre täglichen Geschäftsabläufe"
+    },
+    "financial": {
+      "title": "Finanzmanagement",
+      "description": "Vollständige Kontrolle über Ihre Unternehmensfinanzen"
+    },
+    "global": {
+      "title": "Globale Geschäftstools",
+      "description": "Alles was Sie für internationale Geschäfte brauchen"
+    },
+    "trust": {
+      "title": "Gebaut für Sicherheit & Compliance"
+    }
+  },
+  "feature": {
+    "inventory": "Erweiterte Bestandsverwaltung",
+    "inventory.description": "Echtzeit-Bestandsverfolgung mit Barcode-Scanning und Multi-Standort-Support",
+    "barcode": "Barcode & QR-Code",
+    "barcode.description": "Generieren und scannen Sie Barcodes für Produkte und Dokumente",
+    "pos": "Kassensystem",
+    "pos.description": "Modernes POS-System mit Offline-Fähigkeiten",
+    "invoicing": "Multi-Währungs-Rechnungsstellung",
+    "invoicing.description": "Professionelle Rechnungen in 50+ Währungen mit automatischer Umrechnung",
+    "tax": "Regionale Steuer-Compliance",
+    "tax.description": "Automatisierte Steuerberechnungen für 100+ Länder",
+    "reporting": "Finanzanalysen",
+    "reporting.description": "Echtzeit-Einblicke mit KI-gestützten Empfehlungen",
+    "payments": "Regionale Zahlungsgateways",
+    "payments.description": "Akzeptieren Sie Zahlungen über lokale Methoden in jedem Land",
+    "global": "Import/Export-Management",
+    "global.description": "Bearbeiten Sie internationale Handelsdokumentation und Compliance",
+    "security": "Unternehmenssicherheit",
+    "security.description": "Bank-Standard-Sicherheit mit regionaler Compliance"
+  },
+  "highlights": {
+    "bluetooth": "Bluetooth-Scanner-Integration",
+    "printBarcodes": "Benutzerdefinierte Barcodes drucken",
+    "lowStock": "Niedrigbestand-Warnungen",
+    "customLabel": "Benutzerdefinierter Etikettendruck",
+    "mobileScanning": "Mobiles Scannen",
+    "batchProcessing": "Stapelverarbeitung",
+    "offlineMode": "Offline-Modus",
+    "multiplePayments": "Mehrere Zahlungsmethoden",
+    "receiptCustom": "Beleg-Anpassung",
+    "recurringInvoices": "Wiederkehrende Rechnungen",
+    "paymentReminders": "Zahlungserinnerungen",
+    "invoiceFactoring": "Rechnungsfactoring",
+    "vatGst": "MwSt./GST-Support",
+    "taxReports": "Steuerberichte",
+    "eFilingReady": "E-Filing bereit",
+    "customDashboards": "Benutzerdefinierte Dashboards",
+    "profitAnalysis": "Gewinnanalyse",
+    "cashFlowForecast": "Cashflow-Prognose",
+    "mobileMoney": "Mobile Geldbörse",
+    "bankTransfers": "Banküberweisungen",
+    "digitalWallets": "Digitale Geldbörsen",
+    "customsDocuments": "Zolldokumente",
+    "shippingIntegration": "Versand-Integration",
+    "tradeCompliance": "Handels-Compliance",
+    "soc2Compliant": "SOC2-konform",
+    "dataEncryption": "Datenverschlüsselung",
+    "gdprReady": "DSGVO-bereit"
+  },
+  "trust": {
+    "soc2Title": "SOC2-konform",
+    "soc2Desc": "Unternehmenssicherheit",
+    "encryptionTitle": "256-Bit-Verschlüsselung",
+    "encryptionDesc": "Bank-Level-Sicherheit",
+    "gdprTitle": "DSGVO-bereit",
+    "gdprDesc": "Datenschutz-konform",
+    "uptimeTitle": "99.9% Verfügbarkeit",
+    "uptimeDesc": "Immer verfügbar"
   }
 }

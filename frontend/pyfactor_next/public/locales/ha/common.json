@@ -525,5 +525,45 @@
   "integration_subtitle": "Haɗa Dott da aikace-aikacen da kuka fi so",
   "security_badge_1": "Ɓoyayyen matakin banki",
   "security_badge_2": "Mai bin GDPR",
-  "security_badge_3": "99.9% lokacin aiki"
+  "security_badge_3": "99.9% lokacin aiki",
+  "features": {
+    "eyebrow": "Cikakken Magani na Kasuwanci",
+    "heading": "Duk Abin Da Kuke Bukata Don Girma a Duniya",
+    "subheading": "Kayan aiki masu ƙarfi da aka tsara don kasuwanci na zamani da ke aiki a kan iyakoki",
+    "operations": {
+      "title": "Sarrafa Ayyuka",
+      "description": "Sauƙaƙa ayyukan kasuwancin ku na yau da kullum"
+    },
+    "financial": {
+      "title": "Sarrafa Kuɗi",
+      "description": "Cikakken iko akan kuɗin kasuwancin ku"
+    },
+    "global": {
+      "title": "Kayan Aikin Kasuwanci na Duniya",
+      "description": "Duk abin da kuke bukata don aiki a duniya"
+    },
+    "trust": {
+      "title": "An Gina Don Tsaro da Cika Dokoki"
+    }
+  },
+  "feature": {
+    "inventory": "Ci-gaban Sarrafa Kayayyaki",
+    "inventory.description": "Bin diddigin matakan kayayyaki cikin lokaci na ainihi da daukar bayanin barcode da tallafin wurare da yawa",
+    "barcode": "Barcode da QR Code",
+    "barcode.description": "Samar da kuma daukar bayanin barcode don kayayyaki da takardu",
+    "pos": "Wurin Siyarwa",
+    "pos.description": "Tsarin POS na zamani da damar aiki ba tare da intanet ba",
+    "invoicing": "Lissafin Kuɗi da Yawa",
+    "invoicing.description": "Lissafin sana'a a cikin kuɗi sama da 50 tare da juyawa ta atomatik",
+    "tax": "Cika Harajin Yanki",
+    "tax.description": "Lissafin haraji ta atomatik don ƙasashe sama da 100",
+    "reporting": "Binciken Kuɗi",
+    "reporting.description": "Bayani na ainihi tare da shawarwarin da AI ke jagoranta",
+    "payments": "Hanyoyin Biyan Kuɗi na Yanki",
+    "payments.description": "Karɓi kuɗi ta hanyoyin gida a kowace ƙasa",
+    "global": "Sarrafa Shigo da Fitar",
+    "global.description": "Sarrafa takardun kasuwanci na ƙasashen waje da cika dokoki",
+    "security": "Tsaron Kamfani",
+    "security.description": "Tsaro mai matsayin banki da cika dokoki na yanki"
+  }
 }

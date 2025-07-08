@@ -525,5 +525,84 @@
   "integration_subtitle": "Kết nối Dott với các ứng dụng yêu thích của bạn",
   "security_badge_1": "Mã hóa cấp ngân hàng",
   "security_badge_2": "Tuân thủ GDPR",
-  "security_badge_3": "99,9% thời gian hoạt động"
+  "security_badge_3": "99,9% thời gian hoạt động",
+  "features": {
+    "eyebrow": "Giải pháp kinh doanh hoàn chỉnh",
+    "heading": "Mọi thứ bạn cần để phát triển toàn cầu",
+    "subheading": "Các công cụ mạnh mẽ được thiết kế cho các doanh nghiệp hiện đại hoạt động xuyên biên giới",
+    "operations": {
+      "title": "Quản lý vận hành",
+      "description": "Tối ưu hóa các hoạt động kinh doanh hàng ngày của bạn"
+    },
+    "financial": {
+      "title": "Quản lý tài chính",
+      "description": "Kiểm soát hoàn toàn tài chính doanh nghiệp của bạn"
+    },
+    "global": {
+      "title": "Công cụ kinh doanh toàn cầu",
+      "description": "Tất cả những gì bạn cần để hoạt động quốc tế"
+    },
+    "trust": {
+      "title": "Xây dựng cho bảo mật và tuân thủ"
+    }
+  },
+  "feature": {
+    "inventory": "Quản lý tồn kho nâng cao",
+    "inventory.description": "Theo dõi tồn kho thời gian thực với quét mã vạch và hỗ trợ nhiều địa điểm",
+    "barcode": "Mã vạch và QR",
+    "barcode.description": "Tạo và quét mã vạch cho sản phẩm và tài liệu",
+    "pos": "Điểm bán hàng",
+    "pos.description": "Hệ thống POS hiện đại với khả năng offline",
+    "invoicing": "Hóa đơn đa tiền tệ",
+    "invoicing.description": "Hóa đơn chuyên nghiệp bằng hơn 50 đồng tiền với chuyển đổi tự động",
+    "tax": "Tuân thủ thuế khu vực",
+    "tax.description": "Tính toán thuế tự động cho hơn 100 quốc gia",
+    "reporting": "Phân tích tài chính",
+    "reporting.description": "Thông tin chi tiết thời gian thực với đề xuất hỗ trợ AI",
+    "payments": "Cổng thanh toán khu vực",
+    "payments.description": "Chấp nhận thanh toán qua các phương thức địa phương ở mỗi quốc gia",
+    "global": "Quản lý xuất/nhập khẩu",
+    "global.description": "Xử lý tài liệu thương mại quốc tế và tuân thủ",
+    "security": "Bảo mật doanh nghiệp",
+    "security.description": "Bảo mật cấp ngân hàng với tuân thủ khu vực"
+  },
+  "highlights": {
+    "bluetooth": "Tích hợp máy quét Bluetooth",
+    "printBarcodes": "In mã vạch tùy chỉnh",
+    "lowStock": "Cảnh báo tồn kho thấp",
+    "customLabel": "In nhãn tùy chỉnh",
+    "mobileScanning": "Quét di động",
+    "batchProcessing": "Xử lý hàng loạt",
+    "offlineMode": "Chế độ offline",
+    "multiplePayments": "Nhiều phương thức thanh toán",
+    "receiptCustom": "Tùy chỉnh hóa đơn",
+    "recurringInvoices": "Hóa đơn định kỳ",
+    "paymentReminders": "Nhắc nhở thanh toán",
+    "invoiceFactoring": "Factoring hóa đơn",
+    "vatGst": "Hỗ trợ VAT/GST",
+    "taxReports": "Báo cáo thuế",
+    "eFilingReady": "Sẵn sàng nộp điện tử",
+    "customDashboards": "Trang tổng quan tùy chỉnh",
+    "profitAnalysis": "Phân tích lợi nhuận",
+    "cashFlowForecast": "Dự báo dòng tiền",
+    "mobileMoney": "Tiền di động",
+    "bankTransfers": "Chuyển khoản ngân hàng",
+    "digitalWallets": "Ví điện tử",
+    "customsDocuments": "Tài liệu hải quan",
+    "shippingIntegration": "Tích hợp vận chuyển",
+    "tradeCompliance": "Tuân thủ thương mại",
+    "soc2Compliant": "Tuân thủ SOC2",
+    "dataEncryption": "Mã hóa dữ liệu",
+    "gdprReady": "Sẵn sàng GDPR"
+  },
+  "trust": {
+    "soc2Title": "Tuân thủ SOC2",
+    "soc2Desc": "Bảo mật doanh nghiệp",
+    "encryptionTitle": "Mã hóa 256-bit",
+    "encryptionDesc": "Bảo mật cấp ngân hàng",
+    "gdprTitle": "Sẵn sàng GDPR",
+    "gdprDesc": "Tuân thủ quyền riêng tư",
+    "uptimeTitle": "99.9% thời gian hoạt động",
+    "uptimeDesc": "Luôn sẵn sàng"
+  }
 }

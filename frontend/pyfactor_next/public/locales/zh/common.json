@@ -624,5 +624,84 @@
       "securityTitle": "为什么要验证？",
       "securityNote": "电子邮件验证帮助我们确保您的账户安全并防止未经授权的访问。"
     }
+  },
+  "features": {
+    "eyebrow": "完整的企业解决方案",
+    "heading": "全球化增长所需的一切",
+    "subheading": "为跨国界运营的现代企业设计的强大工具",
+    "operations": {
+      "title": "运营管理",
+      "description": "简化您的日常业务运营"
+    },
+    "financial": {
+      "title": "财务管理",
+      "description": "全面控制您的企业财务"
+    },
+    "global": {
+      "title": "全球业务工具",
+      "description": "国际化运营所需的一切"
+    },
+    "trust": {
+      "title": "为安全和合规而构建"
+    }
+  },
+  "feature": {
+    "inventory": "高级库存管理",
+    "inventory.description": "实时库存跟踪，条码扫描和多地点支持",
+    "barcode": "条码和QR码",
+    "barcode.description": "为产品和文档生成和扫描条码",
+    "pos": "销售点系统",
+    "pos.description": "具有离线功能的现代POS系统",
+    "invoicing": "多货币发票",
+    "invoicing.description": "50+货币的专业发票，自动转换",
+    "tax": "地区税务合规",
+    "tax.description": "100+国家的自动税务计算",
+    "reporting": "财务分析",
+    "reporting.description": "实时洞察和AI推荐",
+    "payments": "地区支付网关",
+    "payments.description": "通过各国本地支付方式接受付款",
+    "global": "进出口管理",
+    "global.description": "处理国际贸易文档和合规",
+    "security": "企业安全",
+    "security.description": "银行级安全和地区合规"
+  },
+  "highlights": {
+    "bluetooth": "蓝牙扫描仪集成",
+    "printBarcodes": "打印定制条码",
+    "lowStock": "低库存警报",
+    "customLabel": "定制标签打印",
+    "mobileScanning": "移动扫描",
+    "batchProcessing": "批量处理",
+    "offlineMode": "离线模式",
+    "multiplePayments": "多种支付方式",
+    "receiptCustom": "收据定制",
+    "recurringInvoices": "循环发票",
+    "paymentReminders": "付款提醒",
+    "invoiceFactoring": "发票保理",
+    "vatGst": "增值税/GST支持",
+    "taxReports": "税务报告",
+    "eFilingReady": "电子申报就绪",
+    "customDashboards": "定制仪表板",
+    "profitAnalysis": "利润分析",
+    "cashFlowForecast": "现金流预测",
+    "mobileMoney": "移动支付",
+    "bankTransfers": "银行转账",
+    "digitalWallets": "数字钱包",
+    "customsDocuments": "海关文件",
+    "shippingIntegration": "运输集成",
+    "tradeCompliance": "贸易合规",
+    "soc2Compliant": "SOC2合规",
+    "dataEncryption": "数据加密",
+    "gdprReady": "GDPR就绪"
+  },
+  "trust": {
+    "soc2Title": "SOC2合规",
+    "soc2Desc": "企业安全",
+    "encryptionTitle": "256位加密",
+    "encryptionDesc": "银行级安全",
+    "gdprTitle": "GDPR就绪",
+    "gdprDesc": "隐私合规",
+    "uptimeTitle": "99.9%正常运行时间",
+    "uptimeDesc": "始终可用"
   }
 }

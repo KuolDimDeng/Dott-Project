@@ -624,5 +624,84 @@
       "securityTitle": "لماذا التحقق؟",
       "securityNote": "يساعدنا التحقق من البريد الإلكتروني في ضمان أمان حسابك ومنع الوصول غير المصرح به."
     }
+  },
+  "features": {
+    "eyebrow": "حل أعمال متكامل",
+    "heading": "كل ما تحتاجه للنمو عالمياً",
+    "subheading": "أدوات قوية مصممة للشركات العصرية التي تعمل عبر الحدود",
+    "operations": {
+      "title": "إدارة العمليات",
+      "description": "بسط عملياتك التجارية اليومية"
+    },
+    "financial": {
+      "title": "الإدارة المالية",
+      "description": "سيطرة كاملة على مالية عملك"
+    },
+    "global": {
+      "title": "أدوات الأعمال العالمية",
+      "description": "كل ما تحتاجه للعمل دولياً"
+    },
+    "trust": {
+      "title": "مبني للأمان والامتثال"
+    }
+  },
+  "feature": {
+    "inventory": "إدارة مخزون متقدمة",
+    "inventory.description": "تتبع المخزون في الوقت الفعلي مع مسح الباركود ودعم مواقع متعددة",
+    "barcode": "الباركود ورمز QR",
+    "barcode.description": "إنشاء ومسح الباركود للمنتجات والمستندات",
+    "pos": "نقطة البيع",
+    "pos.description": "نظام نقاط بيع حديث مع قدرات عمل بدون اتصال",
+    "invoicing": "فواتير متعددة العملات",
+    "invoicing.description": "فواتير مهنية بأكثر من 50 عملة مع تحويل تلقائي",
+    "tax": "امتثال ضريبي إقليمي",
+    "tax.description": "حسابات ضريبية تلقائية لأكثر من 100 دولة",
+    "reporting": "التحليل المالي",
+    "reporting.description": "رؤى في الوقت الفعلي مع توصيات مدعومة بالذكاء الاصطناعي",
+    "payments": "بوابات دفع إقليمية",
+    "payments.description": "قبول المدفوعات من خلال طرق محلية في كل دولة",
+    "global": "إدارة الاستيراد/التصدير",
+    "global.description": "معالجة وثائق التجارة الدولية والامتثال",
+    "security": "أمان المؤسسات",
+    "security.description": "أمان بمستوى مصرفي مع امتثال إقليمي"
+  },
+  "highlights": {
+    "bluetooth": "تكامل ماسح بلوتوث",
+    "printBarcodes": "طباعة باركود مخصص",
+    "lowStock": "تنبيهات انخفاض المخزون",
+    "customLabel": "طباعة تسميات مخصصة",
+    "mobileScanning": "مسح محمول",
+    "batchProcessing": "معالجة مجمعة",
+    "offlineMode": "وضع عدم اتصال",
+    "multiplePayments": "طرق دفع متعددة",
+    "receiptCustom": "تخصيص الإيصال",
+    "recurringInvoices": "فواتير متكررة",
+    "paymentReminders": "تذكيرات الدفع",
+    "invoiceFactoring": "تمويل الفواتير",
+    "vatGst": "دعم ضريبة القيمة المضافة/GST",
+    "taxReports": "تقارير ضريبية",
+    "eFilingReady": "جاهز للإيداع الإلكتروني",
+    "customDashboards": "لوحات تحكم مخصصة",
+    "profitAnalysis": "تحليل الأرباح",
+    "cashFlowForecast": "توقع التدفق النقدي",
+    "mobileMoney": "النقود المحمولة",
+    "bankTransfers": "التحاويل المصرفية",
+    "digitalWallets": "المحافظ الرقمية",
+    "customsDocuments": "وثائق جمركية",
+    "shippingIntegration": "تكامل الشحن",
+    "tradeCompliance": "امتثال تجاري",
+    "soc2Compliant": "متوافق مع SOC2",
+    "dataEncryption": "تشفير البيانات",
+    "gdprReady": "جاهز لقانون GDPR"
+  },
+  "trust": {
+    "soc2Title": "متوافق مع SOC2",
+    "soc2Desc": "أمان المؤسسات",
+    "encryptionTitle": "تشفير 256 بت",
+    "encryptionDesc": "أمان بمستوى مصرفي",
+    "gdprTitle": "جاهز لقانون GDPR",
+    "gdprDesc": "متوافق مع الخصوصية",
+    "uptimeTitle": "99.9% وقت تشغيل",
+    "uptimeDesc": "متاح دائماً"
   }
 }

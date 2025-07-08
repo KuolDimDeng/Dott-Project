@@ -624,5 +624,84 @@
       "securityTitle": "Why verify?",
       "securityNote": "Email verification helps us ensure your account security and prevents unauthorized access."
     }
+  },
+  "features": {
+    "eyebrow": "Complete Business Solution",
+    "heading": "Everything You Need to Grow Globally",
+    "subheading": "Powerful tools designed for modern businesses operating across borders",
+    "operations": {
+      "title": "Operations Management",
+      "description": "Streamline your daily business operations"
+    },
+    "financial": {
+      "title": "Financial Management",
+      "description": "Complete control over your business finances"
+    },
+    "global": {
+      "title": "Global Business Tools",
+      "description": "Everything you need to operate internationally"
+    },
+    "trust": {
+      "title": "Built for Security & Compliance"
+    }
+  },
+  "feature": {
+    "inventory": "Advanced Inventory Management",
+    "inventory.description": "Real-time stock tracking with barcode scanning and multi-location support",
+    "barcode": "Barcode & QR Code",
+    "barcode.description": "Generate and scan barcodes for products and documents",
+    "pos": "Point of Sale",
+    "pos.description": "Modern POS system with offline capabilities",
+    "invoicing": "Multi-Currency Invoicing",
+    "invoicing.description": "Professional invoices in 50+ currencies with automatic conversion",
+    "tax": "Regional Tax Compliance",
+    "tax.description": "Automated tax calculations for 100+ countries",
+    "reporting": "Financial Analytics",
+    "reporting.description": "Real-time insights with AI-powered recommendations",
+    "payments": "Regional Payment Gateways",
+    "payments.description": "Accept payments through local methods in each country",
+    "global": "Import/Export Management",
+    "global.description": "Handle international trade documentation and compliance",
+    "security": "Enterprise Security",
+    "security.description": "Bank-grade security with regional compliance"
+  },
+  "highlights": {
+    "bluetooth": "Bluetooth scanner integration",
+    "printBarcodes": "Print custom barcodes",
+    "lowStock": "Low stock alerts",
+    "customLabel": "Custom label printing",
+    "mobileScanning": "Mobile scanning",
+    "batchProcessing": "Batch processing",
+    "offlineMode": "Offline mode",
+    "multiplePayments": "Multiple payment methods",
+    "receiptCustom": "Receipt customization",
+    "recurringInvoices": "Recurring invoices",
+    "paymentReminders": "Payment reminders",
+    "invoiceFactoring": "Invoice factoring",
+    "vatGst": "VAT/GST support",
+    "taxReports": "Tax reports",
+    "eFilingReady": "E-filing ready",
+    "customDashboards": "Custom dashboards",
+    "profitAnalysis": "Profit analysis",
+    "cashFlowForecast": "Cash flow forecasting",
+    "mobileMoney": "Mobile money",
+    "bankTransfers": "Bank transfers",
+    "digitalWallets": "Digital wallets",
+    "customsDocuments": "Customs documents",
+    "shippingIntegration": "Shipping integration",
+    "tradeCompliance": "Trade compliance",
+    "soc2Compliant": "SOC2 compliant",
+    "dataEncryption": "Data encryption",
+    "gdprReady": "GDPR ready"
+  },
+  "trust": {
+    "soc2Title": "SOC2 Compliant",
+    "soc2Desc": "Enterprise security",
+    "encryptionTitle": "256-bit Encryption",
+    "encryptionDesc": "Bank-level security",
+    "gdprTitle": "GDPR Ready",
+    "gdprDesc": "Privacy compliant",
+    "uptimeTitle": "99.9% Uptime",
+    "uptimeDesc": "Always available"
   }
 }

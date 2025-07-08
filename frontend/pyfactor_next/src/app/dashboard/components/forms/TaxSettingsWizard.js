@@ -14,6 +14,7 @@ import {
   CheckCircleIcon,
   ExclamationCircleIcon,
   DocumentCheckIcon,
+  DocumentTextIcon,
   ClockIcon,
   BuildingOfficeIcon,
   UserIcon,

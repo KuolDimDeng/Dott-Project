@@ -640,5 +640,84 @@
       "securityTitle": "Kwa nini thibitisha?",
       "securityNote": "Uthibitishaji wa barua pepe unatusaidia kuhakikisha usalama wa akaunti yako na kuzuia ufikiaji usioruhusiwa."
     }
+  },
+  "features": {
+    "eyebrow": "Suluhisho Kamili la Biashara",
+    "heading": "Kila Kitu Unachohitaji Kukua Kimataifa",
+    "subheading": "Zana zenye nguvu zilizoundwa kwa biashara za kisasa zinazofanya kazi kupitia mipaka",
+    "operations": {
+      "title": "Usimamizi wa Uendeshaji",
+      "description": "Rahisisha shughuli zako za biashara za kila siku"
+    },
+    "financial": {
+      "title": "Usimamizi wa Kifedha",
+      "description": "Udhibiti kamili wa fedha za biashara yako"
+    },
+    "global": {
+      "title": "Zana za Biashara ya Kimataifa",
+      "description": "Kila kitu unachohitaji kufanya biashara kimataifa"
+    },
+    "trust": {
+      "title": "Imejengwa kwa Usalama na Kufuata Sheria"
+    }
+  },
+  "feature": {
+    "inventory": "Usimamizi wa Hisa wa Kiwango cha Juu",
+    "inventory.description": "Ufuatiliaji wa hisa wakati halisi ukiwa na upimaji wa msimbo na msaada wa maeneo mengi",
+    "barcode": "Msimbo wa Mwanga na QR",
+    "barcode.description": "Zalisha na upime misimbo ya bidhaa na hati",
+    "pos": "Mahali pa Mauzo",
+    "pos.description": "Mfumo wa kisasa wa POS na uwezo wa kufanya kazi bila mtandao",
+    "invoicing": "Kutoa Ankara za Sarafu Nyingi",
+    "invoicing.description": "Ankara za kitaalamu katika sarafu 50+ na ubadilishaji wa otomatiki",
+    "tax": "Kufuata Sheria za Kodi za Kikanda",
+    "tax.description": "Mahesabu ya kodi ya otomatiki kwa nchi 100+",
+    "reporting": "Uchanganuzi wa Kifedha",
+    "reporting.description": "Maarifa ya wakati halisi na mapendekezo yanayoongozwa na AI",
+    "payments": "Milango ya Malipo ya Kikanda",
+    "payments.description": "Pokea malipo kupitia njia za ndani katika kila nchi",
+    "global": "Usimamizi wa Kuagiza/Kuuza",
+    "global.description": "Shughulikia hati za biashara ya kimataifa na kufuata sheria",
+    "security": "Usalama wa Kampuni",
+    "security.description": "Usalama wa kiwango cha benki na kufuata sheria za kikanda"
+  },
+  "highlights": {
+    "bluetooth": "Ujumuishaji wa kipima Bluetooth",
+    "printBarcodes": "Chapisha misimbo maalum",
+    "lowStock": "Tahadhari za hisa chache",
+    "customLabel": "Uchapishaji wa lebo maalum",
+    "mobileScanning": "Upimaji wa simu",
+    "batchProcessing": "Uchakataji wa kundi",
+    "offlineMode": "Hali ya bila mtandao",
+    "multiplePayments": "Njia nyingi za malipo",
+    "receiptCustom": "Urembo wa risiti",
+    "recurringInvoices": "Ankara za kurudia",
+    "paymentReminders": "Vikumbusho vya malipo",
+    "invoiceFactoring": "Factoring ya ankara",
+    "vatGst": "Msaada wa VAT/GST",
+    "taxReports": "Ripoti za kodi",
+    "eFilingReady": "Tayari kwa uwasilishaji wa kielektroniki",
+    "customDashboards": "Dashibodi maalum",
+    "profitAnalysis": "Uchanganuzi wa faida",
+    "cashFlowForecast": "Utabiri wa mtiririko wa pesa",
+    "mobileMoney": "Pesa za simu",
+    "bankTransfers": "Uhamishaji wa benki",
+    "digitalWallets": "Pochi za kidijitali",
+    "customsDocuments": "Hati za forodha",
+    "shippingIntegration": "Ujumuishaji wa usafirishaji",
+    "tradeCompliance": "Kufuata sheria za biashara",
+    "soc2Compliant": "Inafuata SOC2",
+    "dataEncryption": "Usimbaji fiche wa data",
+    "gdprReady": "Tayari kwa GDPR"
+  },
+  "trust": {
+    "soc2Title": "Inafuata SOC2",
+    "soc2Desc": "Usalama wa kampuni",
+    "encryptionTitle": "Usimbaji fiche wa 256-bit",
+    "encryptionDesc": "Usalama wa kiwango cha benki",
+    "gdprTitle": "Tayari kwa GDPR",
+    "gdprDesc": "Inafuata faragha",
+    "uptimeTitle": "99.9% Wakati wa Kufanya Kazi",
+    "uptimeDesc": "Inapatikana kila wakati"
   }
 }

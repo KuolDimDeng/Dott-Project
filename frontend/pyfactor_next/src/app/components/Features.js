@@ -83,19 +83,19 @@ export default function Features() {
           title: t('feature.inventory', 'Advanced Inventory Management'),
           description: t('feature.inventory.description', 'Real-time stock tracking with barcode scanning and multi-location support'),
           icon: <InventoryIcon />,
-          highlights: ['Bluetooth scanner integration', 'Print custom barcodes', 'Low stock alerts']
+          highlights: [t('highlights.bluetooth', 'Bluetooth scanner integration'), t('highlights.printBarcodes', 'Print custom barcodes'), t('highlights.lowStock', 'Low stock alerts')]
         },
         {
           title: t('feature.barcode', 'Barcode & QR Code'),
           description: t('feature.barcode.description', 'Generate and scan barcodes for products and documents'),
           icon: <BarcodeIcon />,
-          highlights: ['Custom label printing', 'Mobile scanning', 'Batch processing']
+          highlights: [t('highlights.customLabel', 'Custom label printing'), t('highlights.mobileScanning', 'Mobile scanning'), t('highlights.batchProcessing', 'Batch processing')]
         },
         {
           title: t('feature.pos', 'Point of Sale'),
           description: t('feature.pos.description', 'Modern POS system with offline capabilities'),
           icon: <PaymentIcon />,
-          highlights: ['Offline mode', 'Multiple payment methods', 'Receipt customization']
+          highlights: [t('highlights.offlineMode', 'Offline mode'), t('highlights.multiplePayments', 'Multiple payment methods'), t('highlights.receiptCustom', 'Receipt customization')]
         }
       ]
     },
@@ -107,19 +107,19 @@ export default function Features() {
           title: t('feature.invoicing', 'Multi-Currency Invoicing'),
           description: t('feature.invoicing.description', 'Professional invoices in 50+ currencies with automatic conversion'),
           icon: <InvoiceIcon />,
-          highlights: ['Recurring invoices', 'Payment reminders', 'Invoice factoring']
+          highlights: [t('highlights.recurringInvoices', 'Recurring invoices'), t('highlights.paymentReminders', 'Payment reminders'), t('highlights.invoiceFactoring', 'Invoice factoring')]
         },
         {
           title: t('feature.tax', 'Regional Tax Compliance'),
           description: t('feature.tax.description', 'Automated tax calculations for 100+ countries'),
           icon: <TaxIcon />,
-          highlights: ['VAT/GST support', 'Tax reports', 'E-filing ready']
+          highlights: [t('highlights.vatGst', 'VAT/GST support'), t('highlights.taxReports', 'Tax reports'), t('highlights.eFilingReady', 'E-filing ready')]
         },
         {
           title: t('feature.reporting', 'Financial Analytics'),
           description: t('feature.reporting.description', 'Real-time insights with AI-powered recommendations'),
           icon: <ReportingIcon />,
-          highlights: ['Custom dashboards', 'Profit analysis', 'Cash flow forecasting']
+          highlights: [t('highlights.customDashboards', 'Custom dashboards'), t('highlights.profitAnalysis', 'Profit analysis'), t('highlights.cashFlowForecast', 'Cash flow forecasting')]
         }
       ]
     },
@@ -131,19 +131,19 @@ export default function Features() {
           title: t('feature.payments', 'Regional Payment Gateways'),
           description: t('feature.payments.description', 'Accept payments through local methods in each country'),
           icon: <PaymentIcon />,
-          highlights: ['Mobile money', 'Bank transfers', 'Digital wallets']
+          highlights: [t('highlights.mobileMoney', 'Mobile money'), t('highlights.bankTransfers', 'Bank transfers'), t('highlights.digitalWallets', 'Digital wallets')]
         },
         {
           title: t('feature.global', 'Import/Export Management'),
           description: t('feature.global.description', 'Handle international trade documentation and compliance'),
           icon: <GlobalIcon />,
-          highlights: ['Customs documents', 'Shipping integration', 'Trade compliance']
+          highlights: [t('highlights.customsDocuments', 'Customs documents'), t('highlights.shippingIntegration', 'Shipping integration'), t('highlights.tradeCompliance', 'Trade compliance')]
         },
         {
           title: t('feature.security', 'Enterprise Security'),
           description: t('feature.security.description', 'Bank-grade security with regional compliance'),
           icon: <SecurityIcon />,
-          highlights: ['SOC2 compliant', 'Data encryption', 'GDPR ready']
+          highlights: [t('highlights.soc2Compliant', 'SOC2 compliant'), t('highlights.dataEncryption', 'Data encryption'), t('highlights.gdprReady', 'GDPR ready')]
         }
       ]
     }
@@ -220,8 +220,8 @@ export default function Features() {
               <div className="mx-auto h-16 w-16 bg-primary-light/10 rounded-full flex items-center justify-center mb-3">
                 <SecurityIcon />
               </div>
-              <h4 className="font-semibold text-gray-900">SOC2 Compliant</h4>
-              <p className="text-sm text-gray-600 mt-1">Enterprise security</p>
+              <h4 className="font-semibold text-gray-900">{t('trust.soc2Title', 'SOC2 Compliant')}</h4>
+              <p className="text-sm text-gray-600 mt-1">{t('trust.soc2Desc', 'Enterprise security')}</p>
             </div>
             
             <div className="text-center">
@@ -230,8 +230,8 @@ export default function Features() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
               </div>
-              <h4 className="font-semibold text-gray-900">256-bit Encryption</h4>
-              <p className="text-sm text-gray-600 mt-1">Bank-level security</p>
+              <h4 className="font-semibold text-gray-900">{t('trust.encryptionTitle', '256-bit Encryption')}</h4>
+              <p className="text-sm text-gray-600 mt-1">{t('trust.encryptionDesc', 'Bank-level security')}</p>
             </div>
             
             <div className="text-center">
@@ -240,8 +240,8 @@ export default function Features() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
               </div>
-              <h4 className="font-semibold text-gray-900">GDPR Ready</h4>
-              <p className="text-sm text-gray-600 mt-1">Privacy compliant</p>
+              <h4 className="font-semibold text-gray-900">{t('trust.gdprTitle', 'GDPR Ready')}</h4>
+              <p className="text-sm text-gray-600 mt-1">{t('trust.gdprDesc', 'Privacy compliant')}</p>
             </div>
             
             <div className="text-center">
@@ -250,8 +250,8 @@ export default function Features() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <h4 className="font-semibold text-gray-900">99.9% Uptime</h4>
-              <p className="text-sm text-gray-600 mt-1">Always available</p>
+              <h4 className="font-semibold text-gray-900">{t('trust.uptimeTitle', '99.9% Uptime')}</h4>
+              <p className="text-sm text-gray-600 mt-1">{t('trust.uptimeDesc', 'Always available')}</p>
             </div>
           </div>
         </div>

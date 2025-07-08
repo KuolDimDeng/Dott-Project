@@ -624,5 +624,84 @@
       "securityTitle": "¿Por qué verificar?",
       "securityNote": "La verificación por correo electrónico nos ayuda a garantizar la seguridad de tu cuenta y prevenir el acceso no autorizado."
     }
+  },
+  "features": {
+    "eyebrow": "Solución Empresarial Completa",
+    "heading": "Todo lo que Necesitas para Crecer Globalmente",
+    "subheading": "Herramientas poderosas diseñadas para empresas modernas que operan a través de fronteras",
+    "operations": {
+      "title": "Gestión de Operaciones",
+      "description": "Simplifica tus operaciones comerciales diarias"
+    },
+    "financial": {
+      "title": "Gestión Financiera",
+      "description": "Control completo sobre las finanzas de tu negocio"
+    },
+    "global": {
+      "title": "Herramientas de Negocio Global",
+      "description": "Todo lo que necesitas para operar internacionalmente"
+    },
+    "trust": {
+      "title": "Diseñado para Seguridad y Cumplimiento"
+    }
+  },
+  "feature": {
+    "inventory": "Gestión Avanzada de Inventario",
+    "inventory.description": "Seguimiento de stock en tiempo real con escaneo de códigos de barras y soporte multi-ubicación",
+    "barcode": "Códigos de Barras y QR",
+    "barcode.description": "Genera y escanea códigos de barras para productos y documentos",
+    "pos": "Punto de Venta",
+    "pos.description": "Sistema POS moderno con capacidades offline",
+    "invoicing": "Facturación Multi-Moneda",
+    "invoicing.description": "Facturas profesionales en 50+ monedas con conversión automática",
+    "tax": "Cumplimiento Fiscal Regional",
+    "tax.description": "Cálculos fiscales automatizados para 100+ países",
+    "reporting": "Análisis Financiero",
+    "reporting.description": "Insights en tiempo real con recomendaciones impulsadas por IA",
+    "payments": "Pasarelas de Pago Regionales",
+    "payments.description": "Acepta pagos a través de métodos locales en cada país",
+    "global": "Gestión de Importación/Exportación",
+    "global.description": "Maneja documentación de comercio internacional y cumplimiento",
+    "security": "Seguridad Empresarial",
+    "security.description": "Seguridad de grado bancario con cumplimiento regional"
+  },
+  "highlights": {
+    "bluetooth": "Integración de escáner Bluetooth",
+    "printBarcodes": "Imprime códigos de barras personalizados",
+    "lowStock": "Alertas de stock bajo",
+    "customLabel": "Impresión de etiquetas personalizadas",
+    "mobileScanning": "Escaneo móvil",
+    "batchProcessing": "Procesamiento por lotes",
+    "offlineMode": "Modo offline",
+    "multiplePayments": "Múltiples métodos de pago",
+    "receiptCustom": "Personalización de recibos",
+    "recurringInvoices": "Facturas recurrentes",
+    "paymentReminders": "Recordatorios de pago",
+    "invoiceFactoring": "Factorización de facturas",
+    "vatGst": "Soporte VAT/GST",
+    "taxReports": "Reportes fiscales",
+    "eFilingReady": "Listo para presentación electrónica",
+    "customDashboards": "Dashboards personalizados",
+    "profitAnalysis": "Análisis de ganancias",
+    "cashFlowForecast": "Pronóstico de flujo de efectivo",
+    "mobileMoney": "Dinero móvil",
+    "bankTransfers": "Transferencias bancarias",
+    "digitalWallets": "Billeteras digitales",
+    "customsDocuments": "Documentos aduaneros",
+    "shippingIntegration": "Integración de envíos",
+    "tradeCompliance": "Cumplimiento comercial",
+    "soc2Compliant": "Cumple SOC2",
+    "dataEncryption": "Encriptación de datos",
+    "gdprReady": "Listo para GDPR"
+  },
+  "trust": {
+    "soc2Title": "Cumple SOC2",
+    "soc2Desc": "Seguridad empresarial",
+    "encryptionTitle": "Encriptación 256-bit",
+    "encryptionDesc": "Seguridad de nivel bancario",
+    "gdprTitle": "Listo para GDPR",
+    "gdprDesc": "Cumple con privacidad",
+    "uptimeTitle": "99.9% Tiempo Activo",
+    "uptimeDesc": "Siempre disponible"
   }
 }

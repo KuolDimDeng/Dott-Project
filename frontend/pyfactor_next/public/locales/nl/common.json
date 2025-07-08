@@ -525,5 +525,84 @@
   "integration_subtitle": "Verbind Dott met uw favoriete apps",
   "security_badge_1": "Encryptie op bankniveau",
   "security_badge_2": "GDPR-conform",
-  "security_badge_3": "99,9% uptime"
+  "security_badge_3": "99,9% uptime",
+  "features": {
+    "eyebrow": "Complete bedrijfsoplossing",
+    "heading": "Alles wat u nodig heeft om wereldwijd te groeien",
+    "subheading": "Krachtige tools ontworpen voor moderne bedrijven die grensoverschrijdend opereren",
+    "operations": {
+      "title": "Operationeel beheer",
+      "description": "Stroomlijn uw dagelijkse bedrijfsactiviteiten"
+    },
+    "financial": {
+      "title": "Financieel beheer",
+      "description": "Volledige controle over uw bedrijfsfinanciën"
+    },
+    "global": {
+      "title": "Wereldwijde bedrijfstools",
+      "description": "Alles wat u nodig heeft om internationaal te opereren"
+    },
+    "trust": {
+      "title": "Gebouwd voor veiligheid en compliance"
+    }
+  },
+  "feature": {
+    "inventory": "Geavanceerd voorraadbeheer",
+    "inventory.description": "Real-time voorraadtracking met barcodescanning en multi-locatie ondersteuning",
+    "barcode": "Barcode & QR-code",
+    "barcode.description": "Genereer en scan barcodes voor producten en documenten",
+    "pos": "Verkooppunt",
+    "pos.description": "Modern POS-systeem met offline mogelijkheden",
+    "invoicing": "Multi-valuta facturering",
+    "invoicing.description": "Professionele facturen in 50+ valuta's met automatische conversie",
+    "tax": "Regionale belastingcompliance",
+    "tax.description": "Geautomatiseerde belastingberekeningen voor 100+ landen",
+    "reporting": "Financiële analyses",
+    "reporting.description": "Real-time inzichten met AI-gedreven aanbevelingen",
+    "payments": "Regionale betalingsgateways",
+    "payments.description": "Accepteer betalingen via lokale methoden in elk land",
+    "global": "Import/export beheer",
+    "global.description": "Behandel internationale handelsdocumentatie en compliance",
+    "security": "Enterprise beveiliging",
+    "security.description": "Beveiliging op bankniveau met regionale compliance"
+  },
+  "highlights": {
+    "bluetooth": "Bluetooth scanner integratie",
+    "printBarcodes": "Aangepaste barcodes printen",
+    "lowStock": "Lage voorraad waarschuwingen",
+    "customLabel": "Aangepaste label printing",
+    "mobileScanning": "Mobiel scannen",
+    "batchProcessing": "Batchverwerking",
+    "offlineMode": "Offline modus",
+    "multiplePayments": "Meerdere betaalmethoden",
+    "receiptCustom": "Bonnetje aanpassing",
+    "recurringInvoices": "Terugkerende facturen",
+    "paymentReminders": "Betalingsherinneringen",
+    "invoiceFactoring": "Factuurfactoring",
+    "vatGst": "BTW/GST ondersteuning",
+    "taxReports": "Belastingrapporten",
+    "eFilingReady": "E-filing klaar",
+    "customDashboards": "Aangepaste dashboards",
+    "profitAnalysis": "Winstanalyse",
+    "cashFlowForecast": "Cashflow prognose",
+    "mobileMoney": "Mobiel geld",
+    "bankTransfers": "Bankoverschrijvingen",
+    "digitalWallets": "Digitale portemonnees",
+    "customsDocuments": "Douanedocumenten",
+    "shippingIntegration": "Verzendintegratie",
+    "tradeCompliance": "Handelscompliance",
+    "soc2Compliant": "SOC2 conform",
+    "dataEncryption": "Data encryptie",
+    "gdprReady": "GDPR klaar"
+  },
+  "trust": {
+    "soc2Title": "SOC2 conform",
+    "soc2Desc": "Enterprise beveiliging",
+    "encryptionTitle": "256-bit encryptie",
+    "encryptionDesc": "Beveiliging op bankniveau",
+    "gdprTitle": "GDPR klaar",
+    "gdprDesc": "Privacy conform",
+    "uptimeTitle": "99.9% uptime",
+    "uptimeDesc": "Altijd beschikbaar"
+  }
 }

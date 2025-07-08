@@ -624,5 +624,84 @@
       "securityTitle": "सत्यापित क्यों करें?",
       "securityNote": "ईमेल सत्यापन हमें आपके खाते की सुरक्षा सुनिश्चित करने और अनधिकृत पहुंच को रोकने में मदद करता है।"
     }
+  },
+  "features": {
+    "eyebrow": "पूर्ण बिजनेस समाधान",
+    "heading": "वैश्विक विकास के लिए सब कुछ",
+    "subheading": "सीमाओं के पार काम करने वाले आधुनिक बिजनेस के लिए डिज़ाइन किए गए शक्तिशाली उपकरण",
+    "operations": {
+      "title": "ओपरेशन मैनेजमेंट",
+      "description": "अपने दैनिक बिजनेस ओपरेशन को सरल बनाएं"
+    },
+    "financial": {
+      "title": "वित्तीय प्रबंधन",
+      "description": "अपने बिजनेस वित्त पर पूर्ण नियंत्रण"
+    },
+    "global": {
+      "title": "वैश्विक बिजनेस उपकरण",
+      "description": "अंतर्राष्ट्रीय संचालन के लिए जरूरी सब कुछ"
+    },
+    "trust": {
+      "title": "सुरक्षा और अनुपालन के लिए बनाया गया"
+    }
+  },
+  "feature": {
+    "inventory": "उन्नत इन्वेंटरी मैनेजमेंट",
+    "inventory.description": "बारकोड स्कैनिंग और मल्टी-लोकेशन सपोर्ट के साथ रीयल-टाइम स्टॉक ट्रैकिंग",
+    "barcode": "बारकोड और QR कोड",
+    "barcode.description": "उत्पादों और दस्तावेजों के लिए बारकोड जेनरेट और स्कैन करें",
+    "pos": "पॉइंट ऑफ सेल",
+    "pos.description": "ऑफलाइन क्षमताओं के साथ आधुनिक POS सिस्टम",
+    "invoicing": "मल्टी-करेंसी इन्वॉयसिंग",
+    "invoicing.description": "50+ मुद्राओं में आटोमेटिक कनवर्शन के साथ पेशेवर इन्वॉयस",
+    "tax": "क्षेत्रीय टैक्स कंप्लायंस",
+    "tax.description": "100+ देशों के लिए ऑटोमेशन टैक्स कैलकुलेशन",
+    "reporting": "वित्तीय एनालिटिक्स",
+    "reporting.description": "AI-पावर्ड रिकमेंडेशन के साथ रीयल-टाइम इनसाइट्स",
+    "payments": "क्षेत्रीय पेमेंट गेटवे",
+    "payments.description": "हर देश में स्थानीय मेथड के जरिए पेमेंट को स्वीकार करें",
+    "global": "इम्पोर्ट/एक्सपोर्ट मैनेजमेंट",
+    "global.description": "अंतर्राष्ट्रीय व्यापार दस्तावेज़ और अनुपालन को संभालें",
+    "security": "एंटरप्राइज सिक्योरिटी",
+    "security.description": "क्षेत्रीय अनुपालन के साथ बैंक-ग्रेड सिक्योरिटी"
+  },
+  "highlights": {
+    "bluetooth": "Bluetooth स्कैनर इंटिग्रेशन",
+    "printBarcodes": "कस्टम बारकोड प्रिंट करें",
+    "lowStock": "कम स्टॉक अलर्ट",
+    "customLabel": "कस्टम लेबल प्रिंटिंग",
+    "mobileScanning": "मोबाइल स्कैनिंग",
+    "batchProcessing": "बैच प्रोसेसिंग",
+    "offlineMode": "ऑफलाइन मोड",
+    "multiplePayments": "मल्टिपल पेमेंट मेथड",
+    "receiptCustom": "रसीद कस्टमाइजेशन",
+    "recurringInvoices": "रिकरिंग इन्वॉयस",
+    "paymentReminders": "पेमेंट रिमाइंडर",
+    "invoiceFactoring": "इन्वॉयस फैक्टरिंग",
+    "vatGst": "VAT/GST सपोर्ट",
+    "taxReports": "टैक्स रिपोर्ट्स",
+    "eFilingReady": "E-filing रेडी",
+    "customDashboards": "कस्टम डैशबोर्ड",
+    "profitAnalysis": "प्रॉफिट एनालिसिस",
+    "cashFlowForecast": "कैश फ्लो फोरकास्टिंग",
+    "mobileMoney": "मोबाइल मनी",
+    "bankTransfers": "बैंक ट्रांसफर",
+    "digitalWallets": "डिजिटल वॉलेट्स",
+    "customsDocuments": "कस्टम्स दस्तावेज",
+    "shippingIntegration": "शिपिंग इंटिग्रेशन",
+    "tradeCompliance": "ट्रेड कंप्लायंस",
+    "soc2Compliant": "SOC2 कंप्लायंट",
+    "dataEncryption": "डेटा एन्क्रिप्शन",
+    "gdprReady": "GDPR रेडी"
+  },
+  "trust": {
+    "soc2Title": "SOC2 कंप्लायंट",
+    "soc2Desc": "एंटरप्राइज सिक्योरिटी",
+    "encryptionTitle": "256-bit एन्क्रिप्शन",
+    "encryptionDesc": "बैंक-लेवल सिक्योरिटी",
+    "gdprTitle": "GDPR रेडी",
+    "gdprDesc": "प्राइवेसी कंप्लायंट",
+    "uptimeTitle": "99.9% अपटाइम",
+    "uptimeDesc": "हमेशा उपलब्ध"
   }
 }

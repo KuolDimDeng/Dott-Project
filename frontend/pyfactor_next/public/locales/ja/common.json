@@ -640,5 +640,84 @@
       "securityTitle": "なぜ確認が必要？",
       "securityNote": "メール確認により、アカウントのセキュリティを確保し、不正アクセスを防止します。"
     }
+  },
+  "features": {
+    "eyebrow": "完全なビジネスソリューション",
+    "heading": "グローバルに成長するためのすべて",
+    "subheading": "国境を超えて運営する現代企業のために設計された強力なツール",
+    "operations": {
+      "title": "運営管理",
+      "description": "日常のビジネス運営を簡素化"
+    },
+    "financial": {
+      "title": "財務管理",
+      "description": "ビジネス財務の完全な管理"
+    },
+    "global": {
+      "title": "グローバルビジネスツール",
+      "description": "国際的な運営に必要なすべて"
+    },
+    "trust": {
+      "title": "セキュリティとコンプライアンスのために構築"
+    }
+  },
+  "feature": {
+    "inventory": "高度な在庫管理",
+    "inventory.description": "バーコードスキャンとマルチロケーションサポートによるリアルタイム在庫追跡",
+    "barcode": "バーコードとQRコード",
+    "barcode.description": "製品や文書のバーコードを生成・スキャン",
+    "pos": "ポイントオブセール",
+    "pos.description": "オフライン機能付きのモダンなPOSシステム",
+    "invoicing": "マルチ通貨請求書",
+    "invoicing.description": "50+通貨のプロフェッショナル請求書と自動変換",
+    "tax": "地域税務コンプライアンス",
+    "tax.description": "100+国の自動税務計算",
+    "reporting": "財務分析",
+    "reporting.description": "AI駆動の推奨事項とリアルタイム洞察",
+    "payments": "地域決済ゲートウェイ",
+    "payments.description": "各国の現地決済方法で支払いを受け付け",
+    "global": "輸入/輸出管理",
+    "global.description": "国際貿易文書とコンプライアンスの取り扱い",
+    "security": "エンタープライズセキュリティ",
+    "security.description": "銀行グレードセキュリティと地域コンプライアンス"
+  },
+  "highlights": {
+    "bluetooth": "Bluetoothスキャナー連携",
+    "printBarcodes": "カスタムバーコード印刷",
+    "lowStock": "低在庫アラート",
+    "customLabel": "カスタムラベル印刷",
+    "mobileScanning": "モバイルスキャン",
+    "batchProcessing": "バッチ処理",
+    "offlineMode": "オフラインモード",
+    "multiplePayments": "複数決済方法",
+    "receiptCustom": "レシートカスタマイズ",
+    "recurringInvoices": "繰り返し請求書",
+    "paymentReminders": "支払いリマインダー",
+    "invoiceFactoring": "請求書ファクタリング",
+    "vatGst": "VAT/GSTサポート",
+    "taxReports": "税務レポート",
+    "eFilingReady": "電子申告対応",
+    "customDashboards": "カスタムダッシュボード",
+    "profitAnalysis": "利益分析",
+    "cashFlowForecast": "キャッシュフロー予測",
+    "mobileMoney": "モバイルマネー",
+    "bankTransfers": "銀行振込",
+    "digitalWallets": "デジタルウォレット",
+    "customsDocuments": "通関書類",
+    "shippingIntegration": "配送連携",
+    "tradeCompliance": "貿易コンプライアンス",
+    "soc2Compliant": "SOC2準拠",
+    "dataEncryption": "データ暗号化",
+    "gdprReady": "GDPR対応"
+  },
+  "trust": {
+    "soc2Title": "SOC2準拠",
+    "soc2Desc": "エンタープライズセキュリティ",
+    "encryptionTitle": "256ビット暗号化",
+    "encryptionDesc": "銀行レベルセキュリティ",
+    "gdprTitle": "GDPR対応",
+    "gdprDesc": "プライバシー準拠",
+    "uptimeTitle": "99.9%稼働率",
+    "uptimeDesc": "常時利用可能"
   }
 }

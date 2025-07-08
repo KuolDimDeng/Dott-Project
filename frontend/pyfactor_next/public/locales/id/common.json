@@ -528,5 +528,84 @@
   "integration_subtitle": "Hubungkan Dott dengan aplikasi favorit Anda",
   "security_badge_1": "Enkripsi tingkat bank",
   "security_badge_2": "Sesuai GDPR",
-  "security_badge_3": "99,9% uptime"
+  "security_badge_3": "99,9% uptime",
+  "features": {
+    "eyebrow": "Solusi Bisnis Lengkap",
+    "heading": "Semua yang Anda Butuhkan untuk Tumbuh Global",
+    "subheading": "Alat-alat canggih yang dirancang untuk bisnis modern yang beroperasi lintas batas",
+    "operations": {
+      "title": "Manajemen Operasi",
+      "description": "Sederhanakan operasi bisnis harian Anda"
+    },
+    "financial": {
+      "title": "Manajemen Keuangan",
+      "description": "Kontrol penuh atas keuangan bisnis Anda"
+    },
+    "global": {
+      "title": "Alat Bisnis Global",
+      "description": "Semua yang Anda butuhkan untuk beroperasi secara internasional"
+    },
+    "trust": {
+      "title": "Dibangun untuk Keamanan & Kepatuhan"
+    }
+  },
+  "feature": {
+    "inventory": "Manajemen Inventori Lanjutan",
+    "inventory.description": "Pelacakan stok real-time dengan pemindaian barcode dan dukungan multi-lokasi",
+    "barcode": "Barcode & QR Code",
+    "barcode.description": "Buat dan pindai barcode untuk produk dan dokumen",
+    "pos": "Point of Sale",
+    "pos.description": "Sistem POS modern dengan kemampuan offline",
+    "invoicing": "Faktur Multi-Mata Uang",
+    "invoicing.description": "Faktur profesional dalam 50+ mata uang dengan konversi otomatis",
+    "tax": "Kepatuhan Pajak Regional",
+    "tax.description": "Perhitungan pajak otomatis untuk 100+ negara",
+    "reporting": "Analitik Keuangan",
+    "reporting.description": "Wawasan real-time dengan rekomendasi bertenaga AI",
+    "payments": "Gateway Pembayaran Regional",
+    "payments.description": "Terima pembayaran melalui metode lokal di setiap negara",
+    "global": "Manajemen Impor/Ekspor",
+    "global.description": "Tangani dokumentasi perdagangan internasional dan kepatuhan",
+    "security": "Keamanan Enterprise",
+    "security.description": "Keamanan tingkat bank dengan kepatuhan regional"
+  },
+  "highlights": {
+    "bluetooth": "Integrasi scanner Bluetooth",
+    "printBarcodes": "Cetak barcode kustom",
+    "lowStock": "Peringatan stok rendah",
+    "customLabel": "Pencetakan label kustom",
+    "mobileScanning": "Pemindaian mobile",
+    "batchProcessing": "Pemrosesan batch",
+    "offlineMode": "Mode offline",
+    "multiplePayments": "Metode pembayaran ganda",
+    "receiptCustom": "Kustomisasi tanda terima",
+    "recurringInvoices": "Faktur berulang",
+    "paymentReminders": "Pengingat pembayaran",
+    "invoiceFactoring": "Faktoring faktur",
+    "vatGst": "Dukungan VAT/GST",
+    "taxReports": "Laporan pajak",
+    "eFilingReady": "Siap e-filing",
+    "customDashboards": "Dashboard kustom",
+    "profitAnalysis": "Analisis keuntungan",
+    "cashFlowForecast": "Prakiraan arus kas",
+    "mobileMoney": "Uang mobile",
+    "bankTransfers": "Transfer bank",
+    "digitalWallets": "Dompet digital",
+    "customsDocuments": "Dokumen bea cukai",
+    "shippingIntegration": "Integrasi pengiriman",
+    "tradeCompliance": "Kepatuhan perdagangan",
+    "soc2Compliant": "Sesuai SOC2",
+    "dataEncryption": "Enkripsi data",
+    "gdprReady": "Siap GDPR"
+  },
+  "trust": {
+    "soc2Title": "Sesuai SOC2",
+    "soc2Desc": "Keamanan enterprise",
+    "encryptionTitle": "Enkripsi 256-bit",
+    "encryptionDesc": "Keamanan tingkat bank",
+    "gdprTitle": "Siap GDPR",
+    "gdprDesc": "Sesuai privasi",
+    "uptimeTitle": "99.9% Uptime",
+    "uptimeDesc": "Selalu tersedia"
+  }
 }

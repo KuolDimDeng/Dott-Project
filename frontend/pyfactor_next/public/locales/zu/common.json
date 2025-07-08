@@ -119,6 +119,46 @@
   "faq_q_which_countries_do_you_support": "Yimaphi amazwe eniwaxhasayo?",
   "faq_a_which_countries_do_you_support": "I-Dott ixhasa amabhizinisi emazweni angaphezu kwe-100 emhlabeni jikelele, ngezici ezikhethekile zezifunda ezithile njengokuxhuma kwemali yeselula e-Africa, i-factoring ye-invoysi e-US nase-Canada, kanye namathuluzi okulawula ezimo eziningi ezilawulwayo.",
   "faq_q_does_dott_support_mobile_money_payments": "Ingabe i-Dott ixhasa izinkokhelo zemali yeselula?",
+  "features": {
+    "eyebrow": "Isixazululo Sebhizinisi Esiphelele",
+    "heading": "Konke Okudingayo Ukuze Ukhule Emhlabeni Jikelele",
+    "subheading": "Amathuluzi anamandla akhiwe amabhizinisi asemanje asebenza ngaphesheya kwemingcele",
+    "operations": {
+      "title": "Ukulawula Imisebenzi",
+      "description": "Yenza imisebenzi yakho yansuku zonke ibe lula"
+    },
+    "financial": {
+      "title": "Ukulawula Kwezezimali",
+      "description": "Ukulawula okugcwele kwezezimali zebhizinisi lakho"
+    },
+    "global": {
+      "title": "Amathuluzi Ebhizinisi Lomhlaba Jikelele",
+      "description": "Konke okudingayo ukuze usebenze emhlabeni wonke"
+    },
+    "trust": {
+      "title": "Yakhelwe Ukuphepha Nokuthobela"
+    }
+  },
+  "feature": {
+    "inventory": "Ukulawula Impahla Okuthuthukisiwe",
+    "inventory.description": "Ukulandelela izinga lempahlakahle ngesikhathi sangempela ngokuhlola i-barcode kanye nokusekelwa kwendawo eziningi",
+    "barcode": "I-Barcode ne-QR Code",
+    "barcode.description": "Khiqiza futhi uhlole ama-barcode ezinto nezincwadi",
+    "pos": "Isikhungo Sokuthengisa",
+    "pos.description": "Uhlelo lwe-POS lwesimanje olunamakhono angalungile",
+    "invoicing": "Ama-Invoice Ezimali Eziningi",
+    "invoicing.description": "Ama-invoice ochwepheshe ngezimali ezingaphezu kuka-50 ngokuguqula ngokuzenzakalayo",
+    "tax": "Ukuthobela Intela Yesifunda",
+    "tax.description": "Ukubala intela okuzenzakalayo emazweni angaphezu kwe-100",
+    "reporting": "Ukuhlaziya Kwezezimali",
+    "reporting.description": "Ulwazi lwangempela ngeziphakamiso eziqhutshwa yi-AI",
+    "payments": "Amasango Okukhokha Esifunda",
+    "payments.description": "Yamukela izinkokhelo ngezindlela zasendaweni ezweni ngalinye",
+    "global": "Ukulawula Ukungenisa/Ukuthumela Ngaphandle",
+    "global.description": "Phatha imibhalo yohwebo yamazwe ngamazwe nokuthobela",
+    "security": "Ukuphepha Kwenkampani",
+    "security.description": "Ukuphepha kwezinga lebhange nokuthobela kwesifunda"
+  }
   "faq_a_does_dott_support_mobile_money_payments": "Yebo! Sixhasa ukuxhuma nezinkundla zemali yeselula ezidumile njenge-M-Pesa, i-MTN Mobile Money, i-Airtel Money, nabanye e-Africa nase-Asia. Lokhu kuvumela ibhizinisi lakho ukwamukela nokuphatha kalula izindlela zokukhokha zasendaweni.",
   "faq_q_how_does_the_barcode_and_inventory_scanner_feature_work": "Isici seskena se-barcode nesempahla sisebenza kanjani?",
   "faq_a_how_does_the_barcode_and_inventory_scanner_feature_work": "Uhlelo lwethu lwe-Professional luhlanganisa ikhono lokudala nokuprinta ama-barcode ezinto zakho zempahla kanye nokusincroniza neskena se-barcode se-Bluetooth ukuphatha kalula impahlakahle. Lesi sici sihlanganiswe ngaphandle kwezindleko ezingeziwe futhi sisebenza kahle nohlelokusebenza lethu lokulawula impahlakahle.",

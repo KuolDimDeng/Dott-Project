@@ -119,6 +119,46 @@
   "faq_q_which_countries_do_you_support": "የትኞቹን አገሮች ትደግፋላችሁ?",
   "faq_a_which_countries_do_you_support": "Dott በዓለም ዙሪያ ከ100 በላይ አገሮችን ይደግፋል፣ በአፍሪካ የሞባይል ገንዘብ ውህደት፣ በዩኤስ እና ካናዳ የክፍያ መጠየቂያ ፋክቶሪንግ እና ለተለያዩ የደንብ አካባቢዎች የሚያገለግሉ የመገዛት መሳሪያዎች ያሉት ለተወሰኑ ክልሎች ልዩ ባህሪያት አሉት።",
   "faq_q_does_dott_support_mobile_money_payments": "Dott የሞባይል ገንዘብ ክፍያዎችን ይደግፋል?",
+  "features": {
+    "eyebrow": "ሙሉ የንግድ መፍትሄ",
+    "heading": "በዓለም ዙሪያ ለማደግ የሚያስፈልጉዎት ሁሉ",
+    "subheading": "ዘመናዊ ንግዶች ድንበሮችን ተሻግረው ለመሥራት የተነደፉ ጠንካራ መሳሪያዎች",
+    "operations": {
+      "title": "የስራ አስተዳደር",
+      "description": "የዕለት ተዕለት የንግድ ስራዎችዎን ያቀላሉ"
+    },
+    "financial": {
+      "title": "የፋይናንስ አስተዳደር",
+      "description": "በንግድዎ ፋይናንስ ላይ ሙሉ ቁጥጥር"
+    },
+    "global": {
+      "title": "ዓለም አቀፍ የንግድ መሳሪያዎች",
+      "description": "በዓለም አቀፍ ደረጃ ለመሥራት የሚያስፈልጉዎት ሁሉ"
+    },
+    "trust": {
+      "title": "ለደህንነት እና ተገዥነት የተገነባ"
+    }
+  },
+  "feature": {
+    "inventory": "የላቀ የእቃ መጋዘን አስተዳደር",
+    "inventory.description": "የእቃ መጠንን በእውነተኛ ጊዜ መከታተል በባርኮድ ስካን እና ባለብዙ ቦታ ድጋፍ",
+    "barcode": "ባርኮድ እና QR ኮድ",
+    "barcode.description": "ለምርቶች እና ሰነዶች ባርኮድ ይፍጠሩ እና ይቃኙ",
+    "pos": "የሽያጭ ነጥብ",
+    "pos.description": "ዘመናዊ POS ሲስተም ከመስመር ውጭ ችሎታዎች ጋር",
+    "invoicing": "ባለብዙ ምንዛሬ ክፍያ መጠየቂያ",
+    "invoicing.description": "በ50+ ምንዛሬዎች የባለሙያ ክፍያ መጠየቂያዎች ከራስ-ሰር ልወጣ ጋር",
+    "tax": "የክልል ታክስ ተገዥነት",
+    "tax.description": "ለ100+ አገሮች ራስ-ሰር ታክስ ሒሳቦች",
+    "reporting": "የፋይናንስ ትንተና",
+    "reporting.description": "በAI የተደገፉ ምክሮች ጋር በእውነተኛ ጊዜ ግንዛቤዎች",
+    "payments": "የክልል ክፍያ መግቢያዎች",
+    "payments.description": "በእያንዳንዱ አገር ውስጥ በአካባቢያዊ ዘዴዎች ክፍያዎችን ይቀበሉ",
+    "global": "የመግቢያ/መላኪያ አስተዳደር",
+    "global.description": "የዓለም አቀፍ የንግድ ሰነዶች እና ተገዥነትን ያስተናግዱ",
+    "security": "የድርጅት ደህንነት",
+    "security.description": "የባንክ ደረጃ ደህንነት ከክልላዊ ተገዥነት ጋር"
+  }
   "faq_a_does_dott_support_mobile_money_payments": "አዎን! በአፍሪካ እና እስያ ያሉ ታዋቂ የሞባይል ገንዘብ መድረኮችን እንደ ኤም-ፔሳ፣ ኤምቲኤን ሞባይል ገንዘብ፣ ኤርቴል ገንዘብ እና ሌሎችንም ውህደት እንደግፋለን። ይህ ንግድዎ የአካባቢ የክፍያ ዘዴዎችን በቀላሉ እንዲቀበል እና እንዲያስኬድ ያስችለዋል።",
   "faq_q_how_does_the_barcode_and_inventory_scanner_feature_work": "የባርኮድ እና የእቃ መጋዘን ስካነር ባህሪ እንዴት ይሰራል?",
   "faq_a_how_does_the_barcode_and_inventory_scanner_feature_work": "የእኛ ሙያዊ ዕቅድ ለእርስዎ የእቃ መጋዘን ዕቃዎች ባርኮዶችን የመፍጠር እና የማተም እና ለፈጣን የእቃ መጋዘን አስተዳደር ከብሉቱዝ ባርኮድ ስካነሮች ጋር የመገናኘት ችሎታን ያካትታል። ይህ ባህሪ ያለምንም ተጨማሪ ወጪ ተካቷል እና ከእኛ የእቃ መጋዘን አስተዳደር ስርዓት ጋር በቀላሉ ይሰራል።",
