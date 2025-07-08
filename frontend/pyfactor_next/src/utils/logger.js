@@ -191,6 +191,47 @@ export const logger = {
         }
       }
     }
+  },
+  
+  /**
+   * Log user actions (for Sentry tracking)
+   * @param {string} action - The action performed
+   * @param {any} data - Optional data associated with the action
+   */
+  userAction: (action, data) => {
+    logger.info(`User Action: ${action}`, data);
+  },
+  
+  /**
+   * Log performance metrics
+   * @param {string} operation - The operation name
+   * @param {number} duration - Duration in milliseconds
+   * @param {any} metadata - Optional metadata
+   */
+  performance: (operation, duration, metadata) => {
+    logger.info(`Performance: ${operation}`, { duration, ...metadata });
+  },
+  
+  /**
+   * Log API calls
+   * @param {string} method - HTTP method
+   * @param {string} url - API endpoint
+   * @param {number} status - HTTP status code
+   * @param {number} duration - Duration in milliseconds
+   * @param {any} data - Optional data
+   */
+  api: (method, url, status, duration, data) => {
+    logger.info(`API: ${method} ${url}`, { status, duration, ...data });
+  },
+  
+  /**
+   * Log feature flag usage
+   * @param {string} featureName - Name of the feature
+   * @param {boolean} enabled - Whether the feature is enabled
+   * @param {any} metadata - Optional metadata
+   */
+  featureFlag: (featureName, enabled, metadata) => {
+    logger.info(`Feature Flag: ${featureName}`, { enabled, ...metadata });
   }
 };
 

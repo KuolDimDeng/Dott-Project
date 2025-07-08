@@ -170,7 +170,14 @@ const ImportExport = () => {
     }
     
     setImportSource(source);
-    captureEvent('import_source_selected', { source: source.id });
+    
+    try {
+      if (captureEvent) {
+        captureEvent('import_source_selected', { source: source.id });
+      }
+    } catch (error) {
+      console.error('Error capturing event:', error);
+    }
     
     if (source.id === 'excel') {
       // Trigger file upload dialog
@@ -203,18 +210,31 @@ const ImportExport = () => {
     }
 
     setLoading(true);
-    captureEvent('import_file_uploaded', { 
-      fileName: file.name,
-      fileSize: file.size,
-      dataTypes: selectedDataTypes 
-    });
     
-    trackUserAction('File Upload Started', {
-      fileName: file.name,
-      fileSize: file.size,
-      dataTypes: selectedDataTypes,
-      fileType: file.type
-    });
+    try {
+      if (captureEvent) {
+        captureEvent('import_file_uploaded', { 
+          fileName: file.name,
+          fileSize: file.size,
+          dataTypes: selectedDataTypes 
+        });
+      }
+    } catch (error) {
+      console.error('Error capturing file upload event:', error);
+    }
+    
+    try {
+      if (trackUserAction) {
+        trackUserAction('File Upload Started', {
+          fileName: file.name,
+          fileSize: file.size,
+          dataTypes: selectedDataTypes,
+          fileType: file.type
+        });
+      }
+    } catch (error) {
+      console.error('Error tracking file upload:', error);
+    }
 
     // Update usage count
     try {
@@ -251,7 +271,13 @@ const ImportExport = () => {
       return;
     }
 
-    captureEvent('export_started', { dataTypes: selectedDataTypes });
+    try {
+      if (captureEvent) {
+        captureEvent('export_started', { dataTypes: selectedDataTypes });
+      }
+    } catch (error) {
+      console.error('Error capturing export event:', error);
+    }
     
     // Navigate to export options
     router.push(`/dashboard/import-export/export?types=${selectedDataTypes.join(',')}`);

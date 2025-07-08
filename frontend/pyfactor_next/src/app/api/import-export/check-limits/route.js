@@ -96,8 +96,7 @@ export async function GET(request) {
       } catch (error) {
         logger.error('Check limits error', error);
         Sentry.captureException(error, {
-          tags: { endpoint: 'import-export-check-limits' },
-          user: { id: session?.user?.id }
+          tags: { endpoint: 'import-export-check-limits' }
         });
         return NextResponse.json(
           { error: 'Failed to check limits' },
