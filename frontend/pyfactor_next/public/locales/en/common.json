@@ -287,12 +287,7 @@
     "exchangeDisclaimer": "Exchange rate is estimated and may vary. Actual rates depend on payment provider.",
     "exchangeSource": "Source: {{source}}",
     "paymentMethods": {
-      "kenya": "💳 Pay with credit card (USD) or M-Pesa (KES)",
-      "nigeria": "💳 Pay with credit card (USD) or local bank transfer (NGN)",
-      "southAfrica": "💳 Pay with credit card (USD) or EFT (ZAR)",
-      "india": "💳 Pay with credit card (USD) or UPI/Razorpay (INR)",
-      "brazil": "💳 Pay with credit card (USD) or PIX/Boleto (BRL)",
-      "default": "💳 Multiple payment methods available including credit cards and local options"
+      "kenya": "💳 Pay with credit card (USD) or M-Pesa (KES)"
     },
     "eyebrow": "Simple, Transparent Pricing",
     "heading": "Choose the Right Plan for Your Business",

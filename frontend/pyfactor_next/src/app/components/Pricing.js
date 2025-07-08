@@ -537,16 +537,11 @@ export default function Pricing() {
           </div>
         )}
         
-        {/* Payment Methods Note */}
-        {userCountry && userCountry !== 'US' && (
+        {/* Payment Methods Note - Currently only for Kenya */}
+        {userCountry === 'KE' && (
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
-              {userCountry === 'KE' && t('pricing.paymentMethods.kenya', '💳 Pay with credit card (USD) or M-Pesa (KES)')}
-              {userCountry === 'NG' && t('pricing.paymentMethods.nigeria', '💳 Pay with credit card (USD) or local bank transfer (NGN)')}
-              {userCountry === 'ZA' && t('pricing.paymentMethods.southAfrica', '💳 Pay with credit card (USD) or EFT (ZAR)')}
-              {userCountry === 'IN' && t('pricing.paymentMethods.india', '💳 Pay with credit card (USD) or UPI/Razorpay (INR)')}
-              {userCountry === 'BR' && t('pricing.paymentMethods.brazil', '💳 Pay with credit card (USD) or PIX/Boleto (BRL)')}
-              {!['KE', 'NG', 'ZA', 'IN', 'BR'].includes(userCountry) && t('pricing.paymentMethods.default', '💳 Multiple payment methods available including credit cards and local options')}
+              {t('pricing.paymentMethods.kenya', '💳 Pay with credit card (USD) or M-Pesa (KES)')}
             </p>
           </div>
         )}
