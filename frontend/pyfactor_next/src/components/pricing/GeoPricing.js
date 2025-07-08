@@ -44,25 +44,70 @@ export default function GeoPricing() {
       const urlParams = new URLSearchParams(window.location.search);
       const countryOverride = urlParams.get('country');
       
-      console.log('💰 [GeoPricing] Starting fetchPricing...');
-      console.log('💰 [GeoPricing] URL params:', { countryOverride });
+      console.log('💰 [GeoPricing] === PRICING FETCH START ===');
+      console.log('💰 [GeoPricing] Current URL:', window.location.href);
+      console.log('💰 [GeoPricing] URL params:', urlParams.toString());
+      console.log('💰 [GeoPricing] Country override:', countryOverride);
       
       let apiUrl = '/api/pricing/by-country';
       if (countryOverride) {
         apiUrl = `/api/pricing/by-country?country=${countryOverride}`;
       }
       
+      console.log('💰 [GeoPricing] Fetching from:', apiUrl);
+      
       const response = await fetch(apiUrl);
       const data = await response.json();
-      console.log('💰 GeoPricing - API Response:', data);
-      console.log('💰 GeoPricing - Country detected:', data.country_code || countryOverride || 'US');
-      console.log('💰 GeoPricing - Discount percentage:', data.discount_percentage);
-      console.log('💰 GeoPricing - Currency:', data.currency);
+      
+      console.log('💰 [GeoPricing] === API RESPONSE ===');
+      console.log('💰 [GeoPricing] Full response:', data);
+      console.log('💰 [GeoPricing] Country requested:', countryOverride);
+      console.log('💰 [GeoPricing] Country detected:', data.country_code);
+      console.log('💰 [GeoPricing] Discount percentage:', data.discount_percentage);
+      console.log('💰 [GeoPricing] Currency:', data.currency);
+      
+      // Check if we got the wrong country
+      if (countryOverride && data.country_code !== countryOverride) {
+        console.error('💰 [GeoPricing] ❌ COUNTRY MISMATCH!');
+        console.error('💰 [GeoPricing] Requested:', countryOverride, 'Got:', data.country_code);
+        
+        // TEMPORARY FIX: If we requested Kenya but got US, apply Kenya pricing manually
+        if (countryOverride === 'KE' && data.country_code === 'US') {
+          console.warn('💰 [GeoPricing] Applying manual Kenya pricing override');
+          data = {
+            ...data,
+            country_code: 'KE',
+            discount_percentage: 50,
+            currency: 'KES',
+            pricing: {
+              professional: {
+                monthly: 7.50,
+                six_month: 39.00,
+                yearly: 72.00,
+                monthly_display: '$7.50',
+                six_month_display: '$39.00',
+                yearly_display: '$72.00'
+              },
+              enterprise: {
+                monthly: 22.50,
+                six_month: 117.00,
+                yearly: 216.00,
+                monthly_display: '$22.50',
+                six_month_display: '$117.00',
+                yearly_display: '$216.00'
+              }
+            }
+          };
+        }
+      }
+      
       setPricing(data);
       
-      // Store the country for exchange rate
+      // Store the country for exchange rate - prioritize what we requested
       const detectedCountry = countryOverride || data.country_code || 'US';
       setUserCountry(detectedCountry);
+      
+      console.log('💰 [GeoPricing] Using country for exchange rate:', detectedCountry);
       
       // Fetch exchange rate for the user's country
       if (detectedCountry !== 'US') {

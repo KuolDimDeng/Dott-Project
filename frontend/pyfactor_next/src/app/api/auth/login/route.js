@@ -51,13 +51,19 @@ export async function GET(request) {
     // Get query parameters first - needed for logging
     const { searchParams } = new URL(request.url);
     
-    console.log('🔄 [Auth0Login] ========== GOOGLE OAUTH FLOW START ==========');
-    console.log('🔄 [Auth0Login] Processing login request at:', new Date().toISOString());
+    console.log('🔄 [Auth0Login] ========== STEP 2A: /api/auth/login RECEIVED REQUEST ==========');
+    console.log('🔄 [Auth0Login] Timestamp:', new Date().toISOString());
     console.log('🔄 [Auth0Login] Request URL:', request.url);
     console.log('🔄 [Auth0Login] Request method:', request.method);
     console.log('🔄 [Auth0Login] User agent:', request.headers.get('user-agent'));
     console.log('🔄 [Auth0Login] Referer:', request.headers.get('referer'));
     console.log('🔄 [Auth0Login] Connection param:', searchParams.get('connection'));
+    console.log('🔄 [Auth0Login] Cookies present:', {
+      auth0_state: !!request.cookies.get('auth0_state'),
+      auth0_verifier: !!request.cookies.get('auth0_verifier'),
+      appSession: !!request.cookies.get('appSession'),
+      sid: !!request.cookies.get('sid')
+    });
     
     // Check for existing valid session first
     const sessionCookie = request.cookies.get('dott_auth_session');
@@ -139,6 +145,13 @@ export async function GET(request) {
       .update(verifier)
       .digest('base64url');
     
+    console.log('🔄 [Auth0Login] ========== STEP 2B: GENERATED PKCE VALUES ==========');
+    console.log('🔄 [Auth0Login] State:', state);
+    console.log('🔄 [Auth0Login] Verifier:', verifier);
+    console.log('🔄 [Auth0Login] Challenge:', challenge);
+    console.log('🔄 [Auth0Login] Verifier length:', verifier.length);
+    console.log('🔄 [Auth0Login] Challenge method:', 'S256');
+    
     // Build Auth0 authorization URL
     const authParams = new URLSearchParams({
       response_type: 'code',
@@ -169,7 +182,7 @@ export async function GET(request) {
     
     const authUrl = `https://${auth0Domain}/authorize?${authParams.toString()}`;
     
-    console.log('🔄 [Auth0Login] ========== REDIRECTING TO AUTH0 ==========');
+    console.log('🔄 [Auth0Login] ========== STEP 2C: REDIRECTING TO AUTH0 ==========');
     console.log('🔄 [Auth0Login] Auth0 URL:', authUrl);
     console.log('🔄 [Auth0Login] Auth0 Domain:', auth0Domain);
     console.log('🔄 [Auth0Login] Client ID:', clientId);
@@ -178,7 +191,8 @@ export async function GET(request) {
     console.log('🔄 [Auth0Login] State:', state);
     console.log('🔄 [Auth0Login] PKCE Challenge:', challenge);
     console.log('🔄 [Auth0Login] Expected callback URL:', `${baseUrl}/auth/oauth-callback`);
-    console.log('🔄 [Auth0Login] ========== END AUTH0 REDIRECT ==========');
+    console.log('🔄 [Auth0Login] Next step: Auth0 will handle Google OAuth and redirect back');
+    console.log('🔄 [Auth0Login] ========== END STEP 2C ==========');
     
     // Create response with redirect
     const response = NextResponse.redirect(authUrl);
@@ -188,6 +202,14 @@ export async function GET(request) {
     
     // Set cookies for state and PKCE verifier
     const cookieOptions = `Path=/; HttpOnly; SameSite=Lax; Max-Age=600; Secure`;
+    
+    console.log('🔄 [Auth0Login] ========== STEP 2D: SETTING PKCE COOKIES ==========');
+    console.log('🔄 [Auth0Login] Setting auth0_state cookie:', state);
+    console.log('🔄 [Auth0Login] Setting auth0_verifier cookie:', verifier);
+    console.log('🔄 [Auth0Login] Cookie options:', cookieOptions);
+    console.log('🔄 [Auth0Login] Cookie domain:', 'default (current domain)');
+    console.log('🔄 [Auth0Login] Cookie expiry:', '600 seconds (10 minutes)');
+    
     response.headers.append('Set-Cookie', `auth0_state=${state}; ${cookieOptions}`);
     response.headers.append('Set-Cookie', `auth0_verifier=${verifier}; ${cookieOptions}`);
     

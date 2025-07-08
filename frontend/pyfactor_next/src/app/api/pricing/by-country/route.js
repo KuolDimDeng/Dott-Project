@@ -12,15 +12,17 @@ export async function GET(request) {
     const realIp = request.headers.get('x-real-ip');
     const ip = cfIp || (forwarded ? forwarded.split(',')[0] : realIp);
     
-    // Log for debugging
-    console.log('[Pricing API] Request details:', {
-      country: country,
+    // Enhanced debugging
+    console.log('🎯 [Pricing API] === REQUEST START ===');
+    console.log('🎯 [Pricing API] URL:', request.url);
+    console.log('🎯 [Pricing API] Search params:', searchParams.toString());
+    console.log('🎯 [Pricing API] Country from query:', country);
+    console.log('🎯 [Pricing API] Headers:', {
       cfIp,
       cfCountry,
       forwarded,
       realIp,
-      finalIp: ip,
-      backendUrl: `${process.env.NEXT_PUBLIC_API_URL}/onboarding/api/pricing/by-country/?${params}`
+      finalIp: ip
     });
     
     // Build query params
@@ -29,29 +31,35 @@ export async function GET(request) {
       params.append('country', country);
     }
     
+    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/onboarding/api/pricing/by-country/?${params}`;
+    console.log('🎯 [Pricing API] Backend URL:', backendUrl);
+    console.log('🎯 [Pricing API] Params sent to backend:', params.toString());
+    
     // Forward to Django backend (public endpoint)
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/onboarding/api/pricing/by-country/?${params}`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Forwarded-For': ip || '',
-          'X-Real-IP': ip || '',
-          'CF-Connecting-IP': cfIp || '',
-          'CF-IPCountry': cfCountry || '',
-        },
-      }
-    );
+    const response = await fetch(backendUrl, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Forwarded-For': ip || '',
+        'X-Real-IP': ip || '',
+        'CF-Connecting-IP': cfIp || '',
+        'CF-IPCountry': cfCountry || country || '', // Use country param as fallback
+      },
+    });
 
     const result = await response.json();
     
-    console.log('[Pricing API] Backend response:', {
-      status: response.status,
-      country_code: result.country_code,
-      discount_percentage: result.discount_percentage,
-      currency: result.currency
-    });
+    console.log('🎯 [Pricing API] Backend raw response:', result);
+    console.log('🎯 [Pricing API] === RESPONSE ANALYSIS ===');
+    console.log('🎯 [Pricing API] Status:', response.status);
+    console.log('🎯 [Pricing API] Country detected:', result.country_code);
+    console.log('🎯 [Pricing API] Discount %:', result.discount_percentage);
+    console.log('🎯 [Pricing API] Currency:', result.currency);
+    console.log('🎯 [Pricing API] Has pricing data:', !!result.pricing);
+    
+    if (result.country_code !== country && country) {
+      console.warn('🎯 [Pricing API] ⚠️ MISMATCH: Requested', country, 'but got', result.country_code);
+    }
     
     if (!response.ok) {
       return NextResponse.json(

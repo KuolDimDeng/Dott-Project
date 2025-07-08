@@ -131,28 +131,41 @@ class GetPricingForCountryView(APIView):
         - country: 2-letter country code (optional)
         """
         try:
+            # Enhanced debug logging
+            logger.info("=== PRICING API REQUEST START ===")
+            logger.info(f"Query params: {request.GET}")
+            logger.info(f"Headers: CF-IPCountry={request.META.get('HTTP_CF_IPCOUNTRY')}, CF-IP={request.META.get('HTTP_CF_CONNECTING_IP')}")
+            
             # First try to get country from query param
             country_code = request.GET.get('country')
+            logger.info(f"Country from query param: {country_code}")
             
             # If not provided, get from IP
             if not country_code:
                 ip_address = DiscountVerificationService.get_client_ip(request)
                 
                 # Debug logging
-                logger.info(f"Pricing API - Client IP: {ip_address}")
-                logger.info(f"Pricing API - CF-Connecting-IP: {request.META.get('HTTP_CF_CONNECTING_IP')}")
-                logger.info(f"Pricing API - CF-IPCountry: {request.META.get('HTTP_CF_IPCOUNTRY')}")
-                logger.info(f"Pricing API - X-Forwarded-For: {request.META.get('HTTP_X_FORWARDED_FOR')}")
+                logger.info(f"No country param, using IP detection")
+                logger.info(f"Client IP: {ip_address}")
+                logger.info(f"CF-Connecting-IP: {request.META.get('HTTP_CF_CONNECTING_IP')}")
+                logger.info(f"CF-IPCountry: {request.META.get('HTTP_CF_IPCOUNTRY')}")
+                logger.info(f"X-Forwarded-For: {request.META.get('HTTP_X_FORWARDED_FOR')}")
                 
                 country_code = DiscountVerificationService.get_country_from_ip(ip_address, request)
+                logger.info(f"Country from IP detection: {country_code}")
             
             if not country_code:
                 # Default to US pricing
+                logger.info("No country detected, defaulting to US")
                 country_code = 'US'
+            
+            logger.info(f"Final country code: {country_code}")
             
             # Check if eligible for discount
             discount = DevelopingCountry.get_discount(country_code)
             is_discounted = discount > 0
+            
+            logger.info(f"Discount check for {country_code}: {discount}% (is_discounted={is_discounted})")
             
             # Get currency-converted pricing via Wise
             try:

@@ -135,9 +135,15 @@ export default function EmailPasswordSignIn() {
   };
 
   const handleGoogleLogin = () => {
-    console.log('🔄 [GoogleOAuth] Starting Google OAuth flow');
-    console.log('🔄 [GoogleOAuth] Current URL:', window.location.href);
+    console.log('🔄 [GoogleOAuth] ========== STEP 1: USER CLICKED GOOGLE SIGN-IN ==========');
     console.log('🔄 [GoogleOAuth] Timestamp:', new Date().toISOString());
+    console.log('🔄 [GoogleOAuth] Current URL:', window.location.href);
+    console.log('🔄 [GoogleOAuth] User Agent:', navigator.userAgent);
+    console.log('🔄 [GoogleOAuth] Session Storage:', {
+      hasSession: !!sessionStorage.getItem('dott_session'),
+      hasAuth0: !!sessionStorage.getItem('auth0_session')
+    });
+    console.log('🔄 [GoogleOAuth] Cookies:', document.cookie);
     
     // Track the OAuth attempt
     trackEvent(posthog, EVENTS.OAUTH_STARTED, { 
@@ -147,8 +153,15 @@ export default function EmailPasswordSignIn() {
     });
     
     const oauthUrl = '/api/auth/login?connection=google-oauth2';
-    console.log('🔄 [GoogleOAuth] Redirecting to:', oauthUrl);
-    console.log('🔄 [GoogleOAuth] Expected flow: Auth0 → OAuth Callback → Token Exchange → Session Creation');
+    console.log('🔄 [GoogleOAuth] ========== STEP 2: REDIRECTING TO /api/auth/login ==========');
+    console.log('🔄 [GoogleOAuth] OAuth URL:', oauthUrl);
+    console.log('🔄 [GoogleOAuth] Expected flow:');
+    console.log('🔄 [GoogleOAuth]   1. /api/auth/login - Sets PKCE verifier cookie');
+    console.log('🔄 [GoogleOAuth]   2. Auth0 redirect with PKCE challenge');
+    console.log('🔄 [GoogleOAuth]   3. Google OAuth consent');
+    console.log('🔄 [GoogleOAuth]   4. Auth0 callback → /auth/oauth-callback');
+    console.log('🔄 [GoogleOAuth]   5. Token exchange with PKCE verifier');
+    console.log('🔄 [GoogleOAuth] ========== END STEP 2 ==========');
     
     // Redirect to Auth0 login with Google connection
     window.location.href = oauthUrl;
