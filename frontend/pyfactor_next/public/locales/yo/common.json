@@ -40,6 +40,27 @@
   "navContact": "Kan si wa",
   "navStatus": "Ipo",
   "navSignIn": "WỌLE",
+  "hero": {
+    "title": "Software Iṣowo Gbogbo-ninu-Ọkan",
+    "subtitle": "Ọ̀fẹ́ láéláé fún àwọn ẹ̀yà ìpìlẹ̀",
+    "description": "Ìṣàkóso iṣẹ́ àgbáyé pẹ̀lú ìṣàkóso àjọjọpọ̀ ọjà tó gbajúmọ̀, yíya báàkódù, àti àwọn ojútùú ìsanwó agbègbè - gbogbo rẹ̀ nínú ètò tó dára fún àwọn iṣẹ́ ní gbogbo àgbáyé.",
+    "button": "Bẹ̀rẹ̀ ọ̀fẹ́",
+    "trustedBy": "Àwọn iṣẹ́ tó ju 10,000 lọ ní gbogbo àgbáyé ló gbẹ́kẹ̀ lé",
+    "imageAlt": "Àwòrán Ìṣàkóso Iṣẹ́",
+    "videoTitle": "Ìfihan Sọfitíwà Dott",
+    "paymentNote": "Àwọn owo ìṣiṣẹ́ ìsanwó lè wà fún àwọn irú pàṣípàrọ̀ kan",
+    "benefit": {
+      "free": "Ètò ọ̀fẹ́ láéláé",
+      "invoicing": "Ìdá ìwé ìsanwó ọ̀jọ́gbọ́n",
+      "pos": "Ètò Ipò Títà",
+      "inventory": "Ìṣàkóso Àjọjọpọ̀ Ọjà",
+      "payroll": "Àwọn Irinṣẹ́ Ìsanwó & HR",
+      "tax": "Ìfaramọ́ Orí",
+      "insights": "Àwọn Ìmọ̀ Tí AI Ń Darí",
+      "mobileMoney": "Àwọn Ìsanwó Owó Fóònù",
+      "cardPayments": "Àwọn Ìsanwó Káàdì Àgbáyé"
+    }
+  },
   "featuresTitle": "Àwọn Ẹ̀yà Iṣẹ́ Àgbáyé",
   "featuresSubtitle": "Gbogbo ohun tí o nílò láti ṣàkóso iṣẹ́ rẹ pẹ̀lú ìmọ́ràn ní orílẹ̀-èdè tó ju 100 lọ",
   "countriesSupported": "Orílẹ̀-èdè tó ju 100 lọ tí a ń fi ṣe àtìlẹ́yìn",

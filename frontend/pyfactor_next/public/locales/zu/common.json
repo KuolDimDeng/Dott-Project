@@ -40,6 +40,27 @@
   "navContact": "Xhumana nathi",
   "navStatus": "Isimo",
   "navSignIn": "NGENA",
+  "hero": {
+    "title": "Software Yebhizinisi Konke-Kunye",
+    "subtitle": "Mahhala unomphela ngamagugu ayisisekelo",
+    "description": "Ukuphatha ibhizinisi lomhlaba jikelele ngokulawula impahlakahle ngokusezingeni eliphezulu, ukuskena i-barcode, kanye nezixazululo zokukhokha zezifunda – konke kuyi-platform elula yamabhizinisi emhlabeni jikelele.",
+    "button": "Qala mahhala",
+    "trustedBy": "Kuthenjwa amabhizinisi angaphezu kwe-10,000 emhlabeni jikelele",
+    "imageAlt": "Umfanekiso wokuphatha ibhizinisi",
+    "videoTitle": "Ukuboniswa kwe-software ye-Dott",
+    "paymentNote": "Izindleko zokucubungula izinkokhelo zingase zisebenze ezinhlobonhlobo ezithile zokuthengiselana",
+    "benefit": {
+      "free": "Uhlelo olumahhala unomphela",
+      "invoicing": "Ukudala ama-invoice ochwepheshe",
+      "pos": "Uhlelo lwesikhungo sokuthengisa",
+      "inventory": "Ukulawula izimpahla",
+      "payroll": "Amathuluzi e-payroll ne-HR",
+      "tax": "Ukuthobela izintela",
+      "insights": "Imininingwane eqhutshwa yi-AI",
+      "mobileMoney": "Izinkokhelo zemali yeselula",
+      "cardPayments": "Izinkokhelo zamakhadi emhlabeni jikelele"
+    }
+  },
   "featuresTitle": "Izici Zebhizinisi Lomhlaba Jikelele",
   "featuresSubtitle": "Konke okudingayo ukuphatha ibhizinisi lakho ngokulula emazweni angaphezu kwe-100",
   "countriesSupported": "Amazwe angaphezu kwe-100 axhasiwe",
