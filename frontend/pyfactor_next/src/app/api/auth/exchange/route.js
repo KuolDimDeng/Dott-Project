@@ -96,11 +96,12 @@ export async function GET(request) {
       console.log('🔄 [Auth0Exchange] Response headers:', Object.fromEntries(tokenResponse.headers.entries()));
       console.log('🔄 [Auth0Exchange] ========== END TOKEN RESPONSE ==========');
       
+      // Declare error variables in outer scope
+      let errorText;
+      let errorData;
+      
       // Handle token exchange failure
       if (!tokenResponse.ok) {
-        let errorText;
-        let errorData;
-        
         // Read the response body only once
         try {
           errorText = await tokenResponse.text();

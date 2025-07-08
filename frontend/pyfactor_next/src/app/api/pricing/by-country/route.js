@@ -13,12 +13,14 @@ export async function GET(request) {
     const ip = cfIp || (forwarded ? forwarded.split(',')[0] : realIp);
     
     // Log for debugging
-    console.log('[Pricing API] Headers:', {
+    console.log('[Pricing API] Request details:', {
+      country: country,
       cfIp,
       cfCountry,
       forwarded,
       realIp,
-      finalIp: ip
+      finalIp: ip,
+      backendUrl: `${process.env.NEXT_PUBLIC_API_URL}/onboarding/api/pricing/by-country/?${params}`
     });
     
     // Build query params
@@ -43,6 +45,13 @@ export async function GET(request) {
     );
 
     const result = await response.json();
+    
+    console.log('[Pricing API] Backend response:', {
+      status: response.status,
+      country_code: result.country_code,
+      discount_percentage: result.discount_percentage,
+      currency: result.currency
+    });
     
     if (!response.ok) {
       return NextResponse.json(

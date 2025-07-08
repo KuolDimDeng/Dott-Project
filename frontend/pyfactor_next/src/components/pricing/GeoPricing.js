@@ -56,6 +56,8 @@ export default function GeoPricing() {
       const data = await response.json();
       console.log('💰 GeoPricing - API Response:', data);
       console.log('💰 GeoPricing - Country detected:', data.country_code || countryOverride || 'US');
+      console.log('💰 GeoPricing - Discount percentage:', data.discount_percentage);
+      console.log('💰 GeoPricing - Currency:', data.currency);
       setPricing(data);
       
       // Store the country for exchange rate
@@ -200,19 +202,17 @@ export default function GeoPricing() {
         </div>
         
         {/* Discount Banner */}
-        {pricing.discount_percentage > 0 && (
-          <div className="mb-8 bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-            <p className="text-green-800 font-semibold">
-              🎉 You qualify for {pricing.discount_percentage}% regional pricing discount!
+        {pricing && pricing.discount_percentage > 0 && (
+          <div className="mb-8 bg-gradient-to-r from-green-500 to-emerald-600 text-white p-6 rounded-xl shadow-lg text-center">
+            <h3 className="text-2xl font-bold mb-2">
+              🎉 {pricing.discount_percentage}% Off All Plans!
+            </h3>
+            <p className="text-xl">
+              Special pricing for businesses in {pricing.country_code}
             </p>
-            <p className="text-green-600 text-sm mt-1">
-              Supporting businesses in {pricing.country_code}
+            <p className="text-sm mt-2 opacity-90">
+              Supporting local entrepreneurship with regional pricing
             </p>
-            {pricing.currency && pricing.currency !== 'USD' && (
-              <p className="text-green-600 text-sm mt-1">
-                Prices shown in {pricing.currency} with current exchange rates
-              </p>
-            )}
           </div>
         )}
 
