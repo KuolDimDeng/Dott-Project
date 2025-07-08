@@ -14,6 +14,7 @@ export default function GeoPricing() {
     try {
       const response = await fetch('/api/pricing/by-country');
       const data = await response.json();
+      console.log('💰 GeoPricing - API Response:', data);
       setPricing(data);
     } catch (error) {
       console.error('Error fetching pricing:', error);

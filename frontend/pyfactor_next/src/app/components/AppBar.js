@@ -14,6 +14,12 @@ export default function AppBar() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
   
+  // Debug language state
+  useEffect(() => {
+    console.log('🌐 AppBar - Current language:', i18n.language);
+    console.log('🌐 AppBar - Available languages:', i18n.languages);
+  }, [i18n.language]);
+  
   // Initialize language from user preferences on component mount
   useEffect(() => {
     async function initializeLanguageFromPreferences() {
