@@ -142,6 +142,145 @@
   "footer_link_privacy_policy": "Privacy Policy",
   "footer_link_cookie_policy": "Cookie Policy",
   "footer_link_contact": "Contact",
+  "pricing": {
+    "eyebrow": "Simple, Transparent Pricing",
+    "heading": "Choose the Right Plan for Your Business",
+    "subheading": "No hidden fees. No credit card required for Basic plan. Cancel anytime.",
+    "discount": {
+      "title": "50% Off All Paid Plans!",
+      "subtitle": "Special pricing for businesses in {{country}} - Supporting local entrepreneurship"
+    },
+    "billing": {
+      "monthly": "Monthly",
+      "sixMonths": "6 Months",
+      "annual": "Annual",
+      "popular": "POPULAR",
+      "save20": "SAVE 20%"
+    },
+    "period": {
+      "month": "/month",
+      "sixMonths": "/6 months",
+      "year": "/year"
+    },
+    "save": "Save {{amount}} ({{monthly}}/mo)",
+    "mostPopular": "MOST POPULAR",
+    "plans": {
+      "basic": {
+        "name": "Basic",
+        "description": "Perfect for freelancers and small businesses",
+        "features": {
+          "0": "1 user",
+          "1": "3GB storage",
+          "2": "All core features",
+          "3": "Basic support",
+          "4": "Mobile app access"
+        },
+        "cta": "Start Free"
+      },
+      "professional": {
+        "name": "Professional",
+        "description": "For growing businesses that need more",
+        "features": {
+          "0": "Up to 3 users",
+          "1": "Unlimited storage",
+          "2": "All features included",
+          "3": "Priority support",
+          "4": "Advanced analytics",
+          "5": "Multi-location support"
+        },
+        "cta": "Get Professional"
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "description": "Unlimited scale for large organizations",
+        "features": {
+          "0": "Unlimited users",
+          "1": "Unlimited everything",
+          "2": "All features included",
+          "3": "Dedicated support",
+          "4": "Custom onboarding",
+          "5": "AI-powered insights",
+          "6": "API access"
+        },
+        "cta": "Get Enterprise"
+      }
+    },
+    "comparison": {
+      "show": "Compare",
+      "hide": "Hide",
+      "allFeatures": "All Features",
+      "title": "Detailed Feature Comparison",
+      "features": "Features"
+    },
+    "features": {
+      "categories": {
+        "core": "Core Features",
+        "business": "Business Management",
+        "inventory": "Inventory & POS",
+        "payments": "Payments & Invoicing",
+        "tax": "Tax & Compliance",
+        "analytics": "Analytics & Reporting",
+        "importExport": "Import/Export",
+        "security": "Security & Compliance"
+      },
+      "users": "Users",
+      "users.basic": "1 user",
+      "users.professional": "Up to 3 users",
+      "users.enterprise": "Unlimited users",
+      "storage": "Storage",
+      "storage.basic": "3GB",
+      "storage.professional": "Unlimited",
+      "storage.enterprise": "Unlimited",
+      "support": "Support",
+      "support.basic": "Basic support",
+      "support.professional": "Priority support",
+      "support.enterprise": "Dedicated support",
+      "onboarding": "Onboarding",
+      "onboarding.basic": "Self-service",
+      "onboarding.professional": "Email assistance",
+      "onboarding.enterprise": "Custom onboarding",
+      "income": "Income & Expense Tracking",
+      "multicurrency": "Multi-Currency Support",
+      "invoices": "Invoice Creation",
+      "reminders": "Automated Reminders",
+      "customers": "Customer Management",
+      "products": "Product Catalog",
+      "inventory": "Inventory Tracking",
+      "barcode": "Barcode Scanning",
+      "barcodePrint": "Custom Barcode Printing",
+      "stockAlerts": "Low Stock Alerts",
+      "multiLocation": "Multi-Location Inventory",
+      "pos": "POS System",
+      "offline": "Offline Mode",
+      "stripe": "Stripe Integration",
+      "paypal": "PayPal Integration",
+      "mobileMoney": "Mobile Money (M-Pesa, etc.)",
+      "regionalPayments": "Regional Payment Methods",
+      "factoring": "Invoice Factoring",
+      "recurring": "Recurring Invoices",
+      "paymentLinks": "Payment Links",
+      "taxCalc": "Regional Tax Calculations",
+      "vatGst": "VAT/GST Support",
+      "taxReports": "Tax Reports",
+      "eFiling": "E-filing Ready",
+      "multiRegion": "Multi-Region Compliance",
+      "basicReports": "Basic Reports",
+      "customReports": "Custom Reports",
+      "dashboard": "Real-time Dashboard",
+      "profit": "Profit Analysis",
+      "cashFlow": "Cash Flow Forecasting",
+      "ai": "AI Recommendations",
+      "importExport": "Import/Export Management",
+      "customs": "Customs Documentation",
+      "shipping": "Shipping Integration",
+      "trade": "Trade Compliance",
+      "encryption": "Data Encryption",
+      "twoFactor": "Two-Factor Authentication",
+      "gdpr": "GDPR Compliance",
+      "soc2": "SOC2 Compliance",
+      "customSecurity": "Custom Security Policies"
+    }
+  },
   "pricing_title": "Simple, transparent pricing",
   "pricing_subtitle": "Choose the plan that's right for your business",
   "pricing_period_monthly": "Monthly",

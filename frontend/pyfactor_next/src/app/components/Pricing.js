@@ -7,93 +7,7 @@ import { getCacheValue } from '@/utils/appCache';
 import { debugCacheState, forceRefreshCountryDetection } from '@/utils/cacheCleaner';
 import Link from 'next/link';
 
-// Feature comparison data
-const featureComparison = [
-  {
-    category: 'Core Features',
-    features: [
-      { name: 'Users', basic: '1 user', professional: 'Up to 3 users', enterprise: 'Unlimited users' },
-      { name: 'Storage', basic: '3GB', professional: 'Unlimited', enterprise: 'Unlimited' },
-      { name: 'Support', basic: 'Basic support', professional: 'Priority support', enterprise: 'Dedicated support' },
-      { name: 'Onboarding', basic: 'Self-service', professional: 'Email assistance', enterprise: 'Custom onboarding' }
-    ]
-  },
-  {
-    category: 'Business Management',
-    features: [
-      { name: 'Income & Expense Tracking', basic: true, professional: true, enterprise: true },
-      { name: 'Multi-Currency Support', basic: true, professional: true, enterprise: true },
-      { name: 'Invoice Creation', basic: true, professional: true, enterprise: true },
-      { name: 'Automated Reminders', basic: true, professional: true, enterprise: true },
-      { name: 'Customer Management', basic: true, professional: true, enterprise: true },
-      { name: 'Product Catalog', basic: true, professional: true, enterprise: true }
-    ]
-  },
-  {
-    category: 'Inventory & POS',
-    features: [
-      { name: 'Inventory Tracking', basic: true, professional: true, enterprise: true },
-      { name: 'Barcode Scanning', basic: true, professional: true, enterprise: true },
-      { name: 'Custom Barcode Printing', basic: true, professional: true, enterprise: true },
-      { name: 'Low Stock Alerts', basic: true, professional: true, enterprise: true },
-      { name: 'Multi-Location Inventory', basic: false, professional: true, enterprise: true },
-      { name: 'POS System', basic: true, professional: true, enterprise: true },
-      { name: 'Offline Mode', basic: false, professional: true, enterprise: true }
-    ]
-  },
-  {
-    category: 'Payments & Invoicing',
-    features: [
-      { name: 'Stripe Integration', basic: true, professional: true, enterprise: true },
-      { name: 'PayPal Integration', basic: true, professional: true, enterprise: true },
-      { name: 'Mobile Money (M-Pesa, etc.)', basic: true, professional: true, enterprise: true },
-      { name: 'Regional Payment Methods', basic: true, professional: true, enterprise: true },
-      { name: 'Invoice Factoring', basic: false, professional: true, enterprise: true },
-      { name: 'Recurring Invoices', basic: false, professional: true, enterprise: true },
-      { name: 'Payment Links', basic: true, professional: true, enterprise: true }
-    ]
-  },
-  {
-    category: 'Tax & Compliance',
-    features: [
-      { name: 'Regional Tax Calculations', basic: true, professional: true, enterprise: true },
-      { name: 'VAT/GST Support', basic: true, professional: true, enterprise: true },
-      { name: 'Tax Reports', basic: true, professional: true, enterprise: true },
-      { name: 'E-filing Ready', basic: false, professional: true, enterprise: true },
-      { name: 'Multi-Region Compliance', basic: false, professional: true, enterprise: true }
-    ]
-  },
-  {
-    category: 'Analytics & Reporting',
-    features: [
-      { name: 'Basic Reports', basic: true, professional: true, enterprise: true },
-      { name: 'Custom Reports', basic: false, professional: true, enterprise: true },
-      { name: 'Real-time Dashboard', basic: true, professional: true, enterprise: true },
-      { name: 'Profit Analysis', basic: false, professional: true, enterprise: true },
-      { name: 'Cash Flow Forecasting', basic: false, professional: true, enterprise: true },
-      { name: 'AI Recommendations', basic: false, professional: false, enterprise: true }
-    ]
-  },
-  {
-    category: 'Import/Export',
-    features: [
-      { name: 'Import/Export Management', basic: false, professional: true, enterprise: true },
-      { name: 'Customs Documentation', basic: false, professional: true, enterprise: true },
-      { name: 'Shipping Integration', basic: false, professional: true, enterprise: true },
-      { name: 'Trade Compliance', basic: false, professional: false, enterprise: true }
-    ]
-  },
-  {
-    category: 'Security & Compliance',
-    features: [
-      { name: 'Data Encryption', basic: true, professional: true, enterprise: true },
-      { name: 'Two-Factor Authentication', basic: true, professional: true, enterprise: true },
-      { name: 'GDPR Compliance', basic: true, professional: true, enterprise: true },
-      { name: 'SOC2 Compliance', basic: false, professional: false, enterprise: true },
-      { name: 'Custom Security Policies', basic: false, professional: false, enterprise: true }
-    ]
-  }
-];
+// This will be moved inside the component to use translation keys
 
 export default function Pricing() {
   const { t } = useTranslation();
@@ -102,6 +16,94 @@ export default function Pricing() {
   const [userCountry, setUserCountry] = useState('US');
   const [hasDiscount, setHasDiscount] = useState(false);
   const [showComparison, setShowComparison] = useState(false);
+  
+  // Feature comparison data with translations
+  const featureComparison = [
+    {
+      category: t('pricing.features.categories.core', 'Core Features'),
+      features: [
+        { name: t('pricing.features.users', 'Users'), basic: t('pricing.features.users.basic', '1 user'), professional: t('pricing.features.users.professional', 'Up to 3 users'), enterprise: t('pricing.features.users.enterprise', 'Unlimited users') },
+        { name: t('pricing.features.storage', 'Storage'), basic: t('pricing.features.storage.basic', '3GB'), professional: t('pricing.features.storage.professional', 'Unlimited'), enterprise: t('pricing.features.storage.enterprise', 'Unlimited') },
+        { name: t('pricing.features.support', 'Support'), basic: t('pricing.features.support.basic', 'Basic support'), professional: t('pricing.features.support.professional', 'Priority support'), enterprise: t('pricing.features.support.enterprise', 'Dedicated support') },
+        { name: t('pricing.features.onboarding', 'Onboarding'), basic: t('pricing.features.onboarding.basic', 'Self-service'), professional: t('pricing.features.onboarding.professional', 'Email assistance'), enterprise: t('pricing.features.onboarding.enterprise', 'Custom onboarding') }
+      ]
+    },
+    {
+      category: t('pricing.features.categories.business', 'Business Management'),
+      features: [
+        { name: t('pricing.features.income', 'Income & Expense Tracking'), basic: true, professional: true, enterprise: true },
+        { name: t('pricing.features.multicurrency', 'Multi-Currency Support'), basic: true, professional: true, enterprise: true },
+        { name: t('pricing.features.invoices', 'Invoice Creation'), basic: true, professional: true, enterprise: true },
+        { name: t('pricing.features.reminders', 'Automated Reminders'), basic: true, professional: true, enterprise: true },
+        { name: t('pricing.features.customers', 'Customer Management'), basic: true, professional: true, enterprise: true },
+        { name: t('pricing.features.products', 'Product Catalog'), basic: true, professional: true, enterprise: true }
+      ]
+    },
+    {
+      category: t('pricing.features.categories.inventory', 'Inventory & POS'),
+      features: [
+        { name: t('pricing.features.inventory', 'Inventory Tracking'), basic: true, professional: true, enterprise: true },
+        { name: t('pricing.features.barcode', 'Barcode Scanning'), basic: true, professional: true, enterprise: true },
+        { name: t('pricing.features.barcodePrint', 'Custom Barcode Printing'), basic: true, professional: true, enterprise: true },
+        { name: t('pricing.features.stockAlerts', 'Low Stock Alerts'), basic: true, professional: true, enterprise: true },
+        { name: t('pricing.features.multiLocation', 'Multi-Location Inventory'), basic: false, professional: true, enterprise: true },
+        { name: t('pricing.features.pos', 'POS System'), basic: true, professional: true, enterprise: true },
+        { name: t('pricing.features.offline', 'Offline Mode'), basic: false, professional: true, enterprise: true }
+      ]
+    },
+    {
+      category: t('pricing.features.categories.payments', 'Payments & Invoicing'),
+      features: [
+        { name: t('pricing.features.stripe', 'Stripe Integration'), basic: true, professional: true, enterprise: true },
+        { name: t('pricing.features.paypal', 'PayPal Integration'), basic: true, professional: true, enterprise: true },
+        { name: t('pricing.features.mobileMoney', 'Mobile Money (M-Pesa, etc.)'), basic: true, professional: true, enterprise: true },
+        { name: t('pricing.features.regionalPayments', 'Regional Payment Methods'), basic: true, professional: true, enterprise: true },
+        { name: t('pricing.features.factoring', 'Invoice Factoring'), basic: false, professional: true, enterprise: true },
+        { name: t('pricing.features.recurring', 'Recurring Invoices'), basic: false, professional: true, enterprise: true },
+        { name: t('pricing.features.paymentLinks', 'Payment Links'), basic: true, professional: true, enterprise: true }
+      ]
+    },
+    {
+      category: t('pricing.features.categories.tax', 'Tax & Compliance'),
+      features: [
+        { name: t('pricing.features.taxCalc', 'Regional Tax Calculations'), basic: true, professional: true, enterprise: true },
+        { name: t('pricing.features.vatGst', 'VAT/GST Support'), basic: true, professional: true, enterprise: true },
+        { name: t('pricing.features.taxReports', 'Tax Reports'), basic: true, professional: true, enterprise: true },
+        { name: t('pricing.features.eFiling', 'E-filing Ready'), basic: false, professional: true, enterprise: true },
+        { name: t('pricing.features.multiRegion', 'Multi-Region Compliance'), basic: false, professional: true, enterprise: true }
+      ]
+    },
+    {
+      category: t('pricing.features.categories.analytics', 'Analytics & Reporting'),
+      features: [
+        { name: t('pricing.features.basicReports', 'Basic Reports'), basic: true, professional: true, enterprise: true },
+        { name: t('pricing.features.customReports', 'Custom Reports'), basic: false, professional: true, enterprise: true },
+        { name: t('pricing.features.dashboard', 'Real-time Dashboard'), basic: true, professional: true, enterprise: true },
+        { name: t('pricing.features.profit', 'Profit Analysis'), basic: false, professional: true, enterprise: true },
+        { name: t('pricing.features.cashFlow', 'Cash Flow Forecasting'), basic: false, professional: true, enterprise: true },
+        { name: t('pricing.features.ai', 'AI Recommendations'), basic: false, professional: false, enterprise: true }
+      ]
+    },
+    {
+      category: t('pricing.features.categories.importExport', 'Import/Export'),
+      features: [
+        { name: t('pricing.features.importExport', 'Import/Export Management'), basic: false, professional: true, enterprise: true },
+        { name: t('pricing.features.customs', 'Customs Documentation'), basic: false, professional: true, enterprise: true },
+        { name: t('pricing.features.shipping', 'Shipping Integration'), basic: false, professional: true, enterprise: true },
+        { name: t('pricing.features.trade', 'Trade Compliance'), basic: false, professional: false, enterprise: true }
+      ]
+    },
+    {
+      category: t('pricing.features.categories.security', 'Security & Compliance'),
+      features: [
+        { name: t('pricing.features.encryption', 'Data Encryption'), basic: true, professional: true, enterprise: true },
+        { name: t('pricing.features.twoFactor', 'Two-Factor Authentication'), basic: true, professional: true, enterprise: true },
+        { name: t('pricing.features.gdpr', 'GDPR Compliance'), basic: true, professional: true, enterprise: true },
+        { name: t('pricing.features.soc2', 'SOC2 Compliance'), basic: false, professional: false, enterprise: true },
+        { name: t('pricing.features.customSecurity', 'Custom Security Policies'), basic: false, professional: false, enterprise: true }
+      ]
+    }
+  ];
   
   // Load dynamic pricing based on user's country
   useEffect(() => {
@@ -139,8 +141,8 @@ export default function Pricing() {
 
   const plans = [
     {
-      name: 'Basic',
-      description: 'Perfect for freelancers and small businesses',
+      name: t('pricing.plans.basic.name', 'Basic'),
+      description: t('pricing.plans.basic.description', 'Perfect for freelancers and small businesses'),
       price: { 
         monthly: 'FREE', 
         '6month': 'FREE',
@@ -151,19 +153,19 @@ export default function Pricing() {
         annual: '$0'
       },
       features: [
-        '1 user',
-        '3GB storage',
-        'All core features',
-        'Basic support',
-        'Mobile app access'
+        t('pricing.plans.basic.features.0', '1 user'),
+        t('pricing.plans.basic.features.1', '3GB storage'),
+        t('pricing.plans.basic.features.2', 'All core features'),
+        t('pricing.plans.basic.features.3', 'Basic support'),
+        t('pricing.plans.basic.features.4', 'Mobile app access')
       ],
-      cta: 'Start Free',
+      cta: t('pricing.plans.basic.cta', 'Start Free'),
       highlight: false,
       popular: false,
     },
     {
-      name: 'Professional',
-      description: 'For growing businesses that need more',
+      name: t('pricing.plans.professional.name', 'Professional'),
+      description: t('pricing.plans.professional.description', 'For growing businesses that need more'),
       price: { 
         monthly: hasDiscount && userCountry !== 'US' ? 
           (dynamicPricing?.professional?.monthly?.formatted || '$7.50') :
@@ -181,20 +183,20 @@ export default function Pricing() {
         annual: hasDiscount && userCountry !== 'US' ? '$18' : '$36'
       },
       features: [
-        'Up to 3 users',
-        'Unlimited storage',
-        'All features included',
-        'Priority support',
-        'Advanced analytics',
-        'Multi-location support'
+        t('pricing.plans.professional.features.0', 'Up to 3 users'),
+        t('pricing.plans.professional.features.1', 'Unlimited storage'),
+        t('pricing.plans.professional.features.2', 'All features included'),
+        t('pricing.plans.professional.features.3', 'Priority support'),
+        t('pricing.plans.professional.features.4', 'Advanced analytics'),
+        t('pricing.plans.professional.features.5', 'Multi-location support')
       ],
-      cta: 'Get Professional',
+      cta: t('pricing.plans.professional.cta', 'Get Professional'),
       highlight: false,
       popular: billingPeriod === '6month',
     },
     {
-      name: 'Enterprise',
-      description: 'Unlimited scale for large organizations',
+      name: t('pricing.plans.enterprise.name', 'Enterprise'),
+      description: t('pricing.plans.enterprise.description', 'Unlimited scale for large organizations'),
       price: { 
         monthly: hasDiscount && userCountry !== 'US' ? 
           (dynamicPricing?.enterprise?.monthly?.formatted || '$22.50') :
@@ -212,15 +214,15 @@ export default function Pricing() {
         annual: hasDiscount && userCountry !== 'US' ? '$54' : '$108'
       },
       features: [
-        'Unlimited users',
-        'Unlimited everything',
-        'All features included',
-        'Dedicated support',
-        'Custom onboarding',
-        'AI-powered insights',
-        'API access'
+        t('pricing.plans.enterprise.features.0', 'Unlimited users'),
+        t('pricing.plans.enterprise.features.1', 'Unlimited everything'),
+        t('pricing.plans.enterprise.features.2', 'All features included'),
+        t('pricing.plans.enterprise.features.3', 'Dedicated support'),
+        t('pricing.plans.enterprise.features.4', 'Custom onboarding'),
+        t('pricing.plans.enterprise.features.5', 'AI-powered insights'),
+        t('pricing.plans.enterprise.features.6', 'API access')
       ],
-      cta: 'Get Enterprise',
+      cta: t('pricing.plans.enterprise.cta', 'Get Enterprise'),
       highlight: billingPeriod === 'annual',
       popular: false,
     },
@@ -234,10 +236,10 @@ export default function Pricing() {
             {t('pricing.eyebrow', 'Simple, Transparent Pricing')}
           </h2>
           <p className="mt-2 text-3xl font-extrabold text-gray-900 sm:text-4xl lg:text-5xl">
-            Choose the Right Plan for Your Business
+            {t('pricing.heading', 'Choose the Right Plan for Your Business')}
           </p>
           <p className="mt-4 max-w-2xl text-xl text-gray-600 mx-auto">
-            No hidden fees. No credit card required for Basic plan. Cancel anytime.
+            {t('pricing.subheading', 'No hidden fees. No credit card required for Basic plan. Cancel anytime.')}
           </p>
         </div>
 
@@ -249,11 +251,11 @@ export default function Pricing() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
               </svg>
               <span className="text-2xl font-bold">
-                50% Off All Paid Plans!
+                {t('pricing.discount.title', '50% Off All Paid Plans!')}
               </span>
             </div>
             <p className="text-lg opacity-90">
-              Special pricing for businesses in {userCountry} - Supporting local entrepreneurship
+              {t('pricing.discount.subtitle', 'Special pricing for businesses in {{country}} - Supporting local entrepreneurship', { country: userCountry })}
             </p>
           </div>
         )}
@@ -267,7 +269,7 @@ export default function Pricing() {
                 billingPeriod === 'monthly' ? 'bg-primary-main text-white shadow-sm' : 'text-gray-700 hover:text-gray-900'
               }`}
             >
-              Monthly
+              {t('pricing.billing.monthly', 'Monthly')}
             </button>
             <button
               onClick={() => setBillingPeriod('6month')}
@@ -275,8 +277,8 @@ export default function Pricing() {
                 billingPeriod === '6month' ? 'bg-primary-main text-white shadow-sm' : 'text-gray-700 hover:text-gray-900'
               }`}
             >
-              6 Months
-              <span className="ml-2 bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full">POPULAR</span>
+              {t('pricing.billing.sixMonths', '6 Months')}
+              <span className="ml-2 bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full">{t('pricing.billing.popular', 'POPULAR')}</span>
             </button>
             <button
               onClick={() => setBillingPeriod('annual')}
@@ -284,8 +286,8 @@ export default function Pricing() {
                 billingPeriod === 'annual' ? 'bg-primary-main text-white shadow-sm' : 'text-gray-700 hover:text-gray-900'
               }`}
             >
-              Annual
-              <span className="ml-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">SAVE 20%</span>
+              {t('pricing.billing.annual', 'Annual')}
+              <span className="ml-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">{t('pricing.billing.save20', 'SAVE 20%')}</span>
             </button>
           </div>
         </div>
@@ -306,7 +308,7 @@ export default function Pricing() {
               {plan.popular && (
                 <div className="absolute top-0 right-0 transform translate-x-1 -translate-y-1">
                   <div className="bg-gradient-to-r from-primary-main to-primary-dark text-white px-4 py-1 rounded-bl-lg rounded-tr-2xl text-sm font-bold">
-                    MOST POPULAR
+                    {t('pricing.mostPopular', 'MOST POPULAR')}
                   </div>
                 </div>
               )}
@@ -322,21 +324,27 @@ export default function Pricing() {
                     </span>
                     {plan.name !== 'Basic' && (
                       <span className="ml-2 text-xl text-gray-500">
-                        {billingPeriod === 'monthly' ? '/month' : billingPeriod === '6month' ? '/6 months' : '/year'}
+                        {billingPeriod === 'monthly' ? t('pricing.period.month', '/month') : billingPeriod === '6month' ? t('pricing.period.sixMonths', '/6 months') : t('pricing.period.year', '/year')}
                       </span>
                     )}
                   </div>
                   {plan.name !== 'Basic' && billingPeriod === '6month' && (
                     <div className="mt-1">
                       <p className="text-sm text-orange-600 font-medium">
-                        Save {plan.savings['6month']} (${(parseFloat(plan.price['6month'].replace('$', '')) / 6).toFixed(2)}/mo)
+                        {t('pricing.save', 'Save {{amount}} ({{monthly}}/mo)', { 
+                          amount: plan.savings['6month'], 
+                          monthly: `$${(parseFloat(plan.price['6month'].replace('$', '')) / 6).toFixed(2)}`
+                        })}
                       </p>
                     </div>
                   )}
                   {plan.name !== 'Basic' && billingPeriod === 'annual' && (
                     <div className="mt-1">
                       <p className="text-sm text-green-600 font-medium">
-                        Save {plan.savings.annual} (${(parseFloat(plan.price.annual.replace('$', '')) / 12).toFixed(2)}/mo)
+                        {t('pricing.save', 'Save {{amount}} ({{monthly}}/mo)', { 
+                          amount: plan.savings.annual, 
+                          monthly: `$${(parseFloat(plan.price.annual.replace('$', '')) / 12).toFixed(2)}`
+                        })}
                       </p>
                     </div>
                   )}
@@ -383,7 +391,7 @@ export default function Pricing() {
             <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
-            {showComparison ? 'Hide' : 'Compare'} All Features
+            {showComparison ? t('pricing.comparison.hide', 'Hide') : t('pricing.comparison.show', 'Compare')} {t('pricing.comparison.allFeatures', 'All Features')}
           </button>
         </div>
 
@@ -392,17 +400,17 @@ export default function Pricing() {
           <div className="mt-12 bg-white rounded-2xl shadow-xl overflow-hidden">
             <div className="px-6 py-8">
               <h3 className="text-2xl font-bold text-gray-900 text-center mb-8">
-                Detailed Feature Comparison
+                {t('pricing.comparison.title', 'Detailed Feature Comparison')}
               </h3>
               
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-gray-200">
-                      <th className="text-left py-4 px-4 font-semibold text-gray-900">Features</th>
-                      <th className="text-center py-4 px-4 font-semibold text-gray-900">Basic</th>
-                      <th className="text-center py-4 px-4 font-semibold text-gray-900 bg-primary-light/10">Professional</th>
-                      <th className="text-center py-4 px-4 font-semibold text-gray-900">Enterprise</th>
+                      <th className="text-left py-4 px-4 font-semibold text-gray-900">{t('pricing.comparison.features', 'Features')}</th>
+                      <th className="text-center py-4 px-4 font-semibold text-gray-900">{t('pricing.plans.basic.name', 'Basic')}</th>
+                      <th className="text-center py-4 px-4 font-semibold text-gray-900 bg-primary-light/10">{t('pricing.plans.professional.name', 'Professional')}</th>
+                      <th className="text-center py-4 px-4 font-semibold text-gray-900">{t('pricing.plans.enterprise.name', 'Enterprise')}</th>
                     </tr>
                   </thead>
                   <tbody>
