@@ -45,13 +45,14 @@ export async function POST(request) {
       );
     }
     
-    // Check Claude API key
+    // Check Claude API key - provide fallback if not available
     if (!CLAUDE_API_KEY) {
-      logger.error('[API] Claude API key not configured');
-      return NextResponse.json(
-        { error: 'Tax suggestions service not configured' },
-        { status: 503 }
-      );
+      logger.warn('[API] Claude API key not configured, providing basic fallback');
+      return NextResponse.json({
+        explanation: 'AI suggestions are temporarily unavailable. Please enter tax rates manually or consult your tax advisor.',
+        confidence: 0,
+        fallback: true
+      });
     }
     
     // Build context based on step type
@@ -196,7 +197,14 @@ Format all responses as valid JSON.`,
     if (!claudeResponse.ok) {
       const error = await claudeResponse.text();
       logger.error('[API] Claude API error:', error);
-      throw new Error('Failed to get tax suggestions');
+      
+      // Return fallback response instead of throwing error
+      return NextResponse.json({
+        explanation: 'AI suggestions are temporarily unavailable. Please enter tax rates manually or consult your tax advisor.',
+        confidence: 0,
+        fallback: true,
+        error: 'Claude API unavailable'
+      });
     }
     
     const claudeData = await claudeResponse.json();

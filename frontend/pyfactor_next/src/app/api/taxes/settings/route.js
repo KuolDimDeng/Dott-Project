@@ -25,30 +25,37 @@ export async function GET(request) {
       );
     }
     
-    // Fetch tax settings from backend
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com'}/api/taxes/settings/?tenant_id=${tenantId}`,
-      {
-        method: 'GET',
-        headers: {
-          'Cookie': request.headers.get('cookie') || ''
-        },
-        credentials: 'include'
+    // Try to fetch tax settings from backend, fallback to empty
+    let data = null;
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com'}/api/taxes/settings/?tenant_id=${tenantId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Cookie': request.headers.get('cookie') || ''
+          },
+          credentials: 'include',
+          timeout: 5000
+        }
+      );
+      
+      if (response.ok) {
+        data = await response.json();
+      } else if (response.status !== 404) {
+        console.warn(`[Tax Settings API] Backend responded with ${response.status}`);
       }
-    );
-    
-    if (!response.ok) {
-      if (response.status === 404) {
-        // No settings found, return empty
-        return NextResponse.json({
-          businessInfo: null,
-          taxRates: null
-        }, { headers: standardSecurityHeaders });
-      }
-      throw new Error(`Backend responded with ${response.status}`);
+    } catch (backendError) {
+      console.warn('[Tax Settings API] Backend not available:', backendError.message);
     }
     
-    const data = await response.json();
+    // Return empty settings if no data found (allows wizard to work)
+    if (!data) {
+      return NextResponse.json({
+        businessInfo: null,
+        taxRates: null
+      }, { headers: standardSecurityHeaders });
+    }
     
     return NextResponse.json({
       businessInfo: {
