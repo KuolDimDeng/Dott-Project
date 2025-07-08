@@ -85,8 +85,11 @@ export default function Calendar({ onNavigate }) {
   // Load events from multiple sources
   const loadEvents = async (tenantId) => {
     try {
+      console.log('[Calendar] loadEvents called with tenantId:', tenantId);
+      
       // Load calendar events
       const calendarEvents = await fetchCalendarEvents(tenantId);
+      console.log('[Calendar] Loaded calendar events:', calendarEvents.length);
       
       // Load employee birthdays
       const birthdays = await fetchEmployeeBirthdays(tenantId);
@@ -109,6 +112,8 @@ export default function Calendar({ onNavigate }) {
         ...productExpiries
       ];
       
+      console.log('[Calendar] Total events to display:', allEvents.length);
+      console.log('[Calendar] All events:', allEvents);
       setEvents(allEvents);
     } catch (error) {
       console.error('[Calendar] Error loading events:', error);
@@ -119,19 +124,25 @@ export default function Calendar({ onNavigate }) {
   // Fetch calendar events
   const fetchCalendarEvents = async (tenantId) => {
     try {
+      console.log('[Calendar] Fetching calendar events for tenant:', tenantId);
       const response = await fetch(`/api/calendar/events?tenantId=${tenantId}`, {
         credentials: 'include'
       });
       
+      console.log('[Calendar] Calendar events response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('[Calendar] Calendar events data:', data);
         // Handle both array response and object with events property
         const events = Array.isArray(data) ? data : (data.events || []);
+        console.log('[Calendar] Processed calendar events:', events);
         return events.map(event => ({
           ...event,
           color: EVENT_TYPES[event.type]?.color || '#6B7280'
         }));
       }
+      console.log('[Calendar] Calendar events response not ok');
       return [];
     } catch (error) {
       console.error('[Calendar] Error fetching calendar events:', error);
