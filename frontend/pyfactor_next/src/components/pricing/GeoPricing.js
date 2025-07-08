@@ -30,12 +30,22 @@ export default function GeoPricing() {
   useEffect(() => {
     fetchPricing();
   }, []);
+  
+  // Log exchange rate changes
+  useEffect(() => {
+    if (exchangeRate) {
+      console.log('💱 [GeoPricing] Exchange rate state updated:', exchangeRate);
+    }
+  }, [exchangeRate]);
 
   const fetchPricing = async () => {
     try {
       // Check for country override in URL
       const urlParams = new URLSearchParams(window.location.search);
       const countryOverride = urlParams.get('country');
+      
+      console.log('💰 [GeoPricing] Starting fetchPricing...');
+      console.log('💰 [GeoPricing] URL params:', { countryOverride });
       
       let apiUrl = '/api/pricing/by-country';
       if (countryOverride) {
@@ -174,8 +184,21 @@ export default function GeoPricing() {
   ];
 
   return (
-    <div className="py-12 px-4 sm:px-6 lg:px-8">
+    <div id="pricing" className="py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
+        {/* Pricing Header */}
+        <div className="text-center mb-12">
+          <h2 className="text-base font-semibold text-blue-600 uppercase tracking-wide">
+            Simple, Transparent Pricing
+          </h2>
+          <p className="mt-2 text-3xl font-extrabold text-gray-900 sm:text-4xl lg:text-5xl">
+            Choose the Right Plan for Your Business
+          </p>
+          <p className="mt-4 max-w-2xl text-xl text-gray-600 mx-auto">
+            No hidden fees. No credit card required for Free plan. Cancel anytime.
+          </p>
+        </div>
+        
         {/* Discount Banner */}
         {pricing.discount_percentage > 0 && (
           <div className="mb-8 bg-green-50 border border-green-200 rounded-lg p-4 text-center">
@@ -286,10 +309,17 @@ export default function GeoPricing() {
                 )}
                 {/* Exchange Rate Display for paid plans */}
                 {plan.name !== 'Free' && exchangeRate && exchangeRate.currency !== 'USD' && (
-                  <p className="text-lg text-gray-600 mt-2">
+                  <p className="text-xl font-semibold text-blue-600 mt-2">
                     ({formatLocalPrice(plan.price[billingCycle], exchangeRate)})*
                   </p>
                 )}
+                {/* Debug: Show exchange rate status */}
+                {console.log('💱 [GeoPricing] Rendering price card:', {
+                  planName: plan.name,
+                  exchangeRate: exchangeRate,
+                  currency: exchangeRate?.currency,
+                  shouldShowExchange: plan.name !== 'Free' && exchangeRate && exchangeRate.currency !== 'USD'
+                })}
               </div>
 
               <ul className="mt-8 space-y-4">

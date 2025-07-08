@@ -148,7 +148,7 @@ export default function Calendar({ onNavigate }) {
       
       if (response.ok) {
         const data = await response.json();
-        return data.birthdays.map(birthday => ({
+        return (data.birthdays || []).map(birthday => ({
           id: `birthday-${birthday.employeeId}`,
           title: `🎂 ${birthday.name}'s Birthday`,
           start: birthday.date,
@@ -175,7 +175,7 @@ export default function Calendar({ onNavigate }) {
       
       if (response.ok) {
         const data = await response.json();
-        return data.deadlines.map(deadline => ({
+        return (data.deadlines || []).map(deadline => ({
           id: `tax-${deadline.id}`,
           title: `📋 ${deadline.title}`,
           start: deadline.dueDate,
@@ -202,7 +202,7 @@ export default function Calendar({ onNavigate }) {
       
       if (response.ok) {
         const data = await response.json();
-        return data.payrollDates.map(payroll => ({
+        return (data.payrollDates || []).map(payroll => ({
           id: `payroll-${payroll.id}`,
           title: `💰 Payroll Processing`,
           start: payroll.date,
@@ -229,7 +229,7 @@ export default function Calendar({ onNavigate }) {
       
       if (response.ok) {
         const data = await response.json();
-        return data.products.map(product => ({
+        return (data.products || []).map(product => ({
           id: `expiry-${product.id}`,
           title: `⚠️ ${product.name} expires`,
           start: product.expiryDate,

@@ -68,14 +68,18 @@ export async function GET(request) {
       pricing: {
         professional: {
           monthly: 15.00,
+          six_month: 78.00,
           yearly: 144.00,
           monthly_display: '$15.00',
+          six_month_display: '$78.00',
           yearly_display: '$144.00'
         },
         enterprise: {
           monthly: 45.00,
+          six_month: 234.00,
           yearly: 432.00,
           monthly_display: '$45.00',
+          six_month_display: '$234.00',
           yearly_display: '$432.00'
         }
       }
