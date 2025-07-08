@@ -136,7 +136,26 @@ export default function Calendar({ onNavigate }) {
       if (calendarRef) {
         console.log('[Calendar] Forcing calendar refresh');
         const calendarApi = calendarRef.getApi();
-        calendarApi.refetchEvents();
+        
+        // Get current view date range
+        const view = calendarApi.view;
+        console.log('[Calendar] Current view range:', view.currentStart, 'to', view.currentEnd);
+        
+        // Remove all existing events
+        calendarApi.removeAllEvents();
+        
+        // Add all events
+        allEvents.forEach(event => {
+          console.log('[Calendar] Adding event to calendar:', {
+            title: event.title,
+            start: event.start,
+            end: event.end,
+            allDay: event.allDay
+          });
+          calendarApi.addEvent(event);
+        });
+        
+        console.log('[Calendar] Added events to calendar:', calendarApi.getEvents().length);
       }
     } catch (error) {
       console.error('[Calendar] Error loading events:', error);
@@ -160,12 +179,27 @@ export default function Calendar({ onNavigate }) {
         // Handle both array response and object with events property
         const events = Array.isArray(data) ? data : (data.events || []);
         console.log('[Calendar] Processed calendar events:', events);
-        const mappedEvents = events.map(event => ({
-          ...event,
-          color: EVENT_TYPES[event.type]?.color || '#6B7280',
-          backgroundColor: event.backgroundColor || EVENT_TYPES[event.type]?.color || '#6B7280',
-          borderColor: event.borderColor || EVENT_TYPES[event.type]?.color || '#6B7280'
-        }));
+        const mappedEvents = events.map(event => {
+          const eventData = {
+            id: event.id,
+            title: event.title,
+            start: event.start,
+            end: event.end || event.start,
+            allDay: event.allDay || false,
+            color: EVENT_TYPES[event.type]?.color || '#6B7280',
+            backgroundColor: event.backgroundColor || EVENT_TYPES[event.type]?.color || '#6B7280',
+            borderColor: event.borderColor || EVENT_TYPES[event.type]?.color || '#6B7280',
+            extendedProps: {
+              type: event.type,
+              description: event.description,
+              location: event.location,
+              editable: true,
+              sendReminder: event.sendReminder,
+              reminderMinutes: event.reminderMinutes
+            }
+          };
+          return eventData;
+        });
         console.log('[Calendar] Mapped events with colors:', mappedEvents);
         return mappedEvents;
       }
@@ -381,8 +415,23 @@ export default function Calendar({ onNavigate }) {
         console.log('[Calendar] Save successful, response data:', data);
         
         toast.success(selectedEvent ? 'Event updated!' : 'Event created!');
-        await loadEvents(tenantId);
+        
+        // Close modal immediately
         setShowEventModal(false);
+        setEventForm({
+          title: '',
+          type: 'appointment',
+          start: '',
+          end: '',
+          allDay: false,
+          description: '',
+          location: '',
+          sendReminder: true,
+          reminderMinutes: 30
+        });
+        
+        // Reload events to show the new event
+        await loadEvents(tenantId);
         
         // Send reminder notification if requested
         if (eventForm.sendReminder) {
@@ -516,7 +565,6 @@ export default function Calendar({ onNavigate }) {
       {/* Calendar */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
         <FullCalendar
-          key={events.length}
           ref={setCalendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
           initialView="dayGridMonth"
