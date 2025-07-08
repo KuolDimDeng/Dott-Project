@@ -21,6 +21,7 @@ const CURRENCY_SYMBOLS = {
   HKD: 'HK$',
   ZAR: 'R',
   AED: 'د.إ',
+  KES: 'KSh',
   // Add more as needed
 };
 
@@ -46,6 +47,7 @@ const EXCHANGE_RATES = {
   HKD: 7.82,
   ZAR: 18.92,
   AED: 3.67,
+  KES: 153.50,
 };
 
 // Country to currency mapping
@@ -69,6 +71,7 @@ const COUNTRY_CURRENCY = {
   HK: 'HKD',
   ZA: 'ZAR',
   AE: 'AED',
+  KE: 'KES',
   // European countries
   DE: 'EUR',
   FR: 'EUR',
@@ -117,9 +120,15 @@ export function useCurrencyDetection() {
         try {
           const geoResponse = await fetch('https://ipapi.co/json/');
           if (geoResponse.ok) {
-            const geoData = await geoResponse.json();
-            countryFromIP = geoData.country_code;
-            setDetectedCountry(geoData.country_name);
+            const contentType = geoResponse.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+              const geoData = await geoResponse.json();
+              // Validate the response has expected fields
+              if (geoData && geoData.country_code) {
+                countryFromIP = geoData.country_code;
+                setDetectedCountry(geoData.country_name);
+              }
+            }
           }
         } catch (error) {
           console.warn('Geolocation detection failed:', error);
