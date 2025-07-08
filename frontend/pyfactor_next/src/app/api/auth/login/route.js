@@ -48,6 +48,9 @@ export async function GET(request) {
   }
   
   try {
+    // Get query parameters first - needed for logging
+    const { searchParams } = new URL(request.url);
+    
     console.log('🔄 [Auth0Login] ========== GOOGLE OAUTH FLOW START ==========');
     console.log('🔄 [Auth0Login] Processing login request at:', new Date().toISOString());
     console.log('🔄 [Auth0Login] Request URL:', request.url);
@@ -121,8 +124,7 @@ export async function GET(request) {
       }, { status: 500 });
     }
     
-    // Get query parameters
-    const { searchParams } = new URL(request.url);
+    // Get additional query parameters
     const connection = searchParams.get('connection'); // Remove default to google-oauth2
     const loginHint = searchParams.get('login_hint');
     const returnUrl = searchParams.get('return_url');
