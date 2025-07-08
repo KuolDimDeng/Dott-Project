@@ -269,7 +269,6 @@ export default function SubscriptionSelectionFormV2({
       {/* Regional pricing note */}
       <div className="mt-8 text-center text-sm text-gray-600">
         <p>* Regional pricing available. Prices automatically adjusted based on your location.</p>
-        <p>* All plans include a 14-day money-back guarantee.</p>
       </div>
     </div>
   );

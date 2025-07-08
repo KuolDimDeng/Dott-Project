@@ -1673,5 +1673,82 @@ When documenting new issues, use this format:
 
 ---
 
-*Last Updated: 2025-06-24*
+---
+
+## 🔧 **Issue: Regional Pricing with Exchange Rates Not Displaying for Kenya**
+
+**Symptoms:**
+- URL parameter `?country=KE` added but pricing shows US dollars only
+- No 50% developing country discount applied for Kenya
+- Exchange rates successfully fetched (129.24 KES per USD) but not displayed
+- Backend returns US pricing despite Kenya being in developing_countries table
+- Console shows "Country detected: US" even when requesting Kenya
+
+**Root Cause Analysis:**
+1. **Backend Configuration**: Django migrations for developing countries not run
+   - `developing_countries` table was empty
+   - Kenya discount eligibility check returned false
+2. **Frontend Country Detection**: Query parameter not being properly forwarded to backend
+3. **API Response Mismatch**: Backend ignoring country parameter from frontend
+
+**Solution:**
+
+1. **Run Backend Migrations** (Required first):
+```bash
+# SSH into backend container
+python manage.py makemigrations --merge  # If conflicts exist
+python manage.py migrate
+python manage.py check_kenya_discount  # Verify Kenya is configured
+```
+
+2. **Frontend Debugging** (Already implemented):
+- Added comprehensive logging with 🎯 and 💱 prefixes
+- Created `/test-kenya` page for API testing
+- Added temporary Kenya pricing override when mismatch detected
+
+3. **Verification Output**:
+```
+✓ Kenya found in database
+  - Country: Kenya (KE)
+  - Income Level: lower_middle
+  - Discount: 50%
+  - Active: True
+
+✓ is_eligible("KE"): True
+✓ get_discount("KE"): 50%
+```
+
+**Implementation Details:**
+- Backend migrations populate developing countries with 50+ countries
+- Kenya classified as "lower_middle" income with 50% discount
+- Exchange rates fetched from Wise API (fallback to ExchangeRate-API)
+- Green text display with proper spacing for local currency
+
+**Verification Steps:**
+1. Visit `https://dottapps.com/?country=KE`
+2. Check pricing shows 50% discount banner
+3. Verify exchange rates display as "(KSh 1,970)*" in green
+4. Test `/test-kenya` endpoint for detailed diagnostics
+5. Check console for 💰 and 🎯 prefixed debug logs
+
+**Prevention:**
+- Always run migrations after adding new models or data
+- Test with actual backend data, not just frontend mocks
+- Use comprehensive logging during development
+- Verify both discount AND exchange rate functionality
+
+**Related Issues:**
+- Django migrations not auto-running on deployment
+- Frontend/backend parameter passing inconsistencies
+- Exchange rate API integration patterns
+
+**Files Changed:**
+- `/src/components/pricing/GeoPricing.js` - Added debugging and override
+- `/src/app/api/pricing/by-country/route.js` - Enhanced logging
+- `/backend/pyfactor/onboarding/views/discount_check.py` - Backend logging
+- `/backend/pyfactor/users/migrations/001*_developing_countries.py` - Data migrations
+
+---
+
+*Last Updated: 2025-07-08*
 *Next Review: When new patterns emerge*
