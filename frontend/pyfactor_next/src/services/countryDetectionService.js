@@ -38,6 +38,18 @@ const COUNTRY_CACHE_TTL = 24 * 60 * 60 * 1000;
  */
 export async function detectUserCountry() {
   try {
+    // Check for manual override via URL parameter (for testing)
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const overrideCountry = urlParams.get('country');
+      if (overrideCountry && overrideCountry.length === 2) {
+        console.log('🔧 Using manual country override from URL:', overrideCountry.toUpperCase());
+        const country = overrideCountry.toUpperCase();
+        setCacheValue('user_detected_country', country, { ttl: COUNTRY_CACHE_TTL });
+        return country;
+      }
+    }
+    
     // First check if we have a cached result
     const cachedCountry = getCacheValue('user_detected_country');
     if (cachedCountry) {
@@ -106,6 +118,8 @@ export async function detectUserCountry() {
  */
 async function detectCountryByIP() {
   try {
+    console.log('🌍 Attempting to detect country via API...');
+    
     // Use backend API instead of direct external calls to avoid CORS issues
     const response = await fetch('/api/pricing/by-country', { 
       method: 'GET',
@@ -118,6 +132,8 @@ async function detectCountryByIP() {
     
     if (response.ok) {
       const data = await response.json();
+      console.log('🌍 API Response:', data);
+      
       const countryCode = data.country_code;
       
       if (countryCode && countryCode.length === 2) {
@@ -340,5 +356,26 @@ export function clearManualLanguageSelection() {
     }
   } catch (error) {
     console.error('❌ Error clearing manual language selection:', error);
+  }
+}
+
+/**
+ * Clear country cache to force re-detection
+ * Useful for testing or when location changes
+ */
+export function clearCountryCache() {
+  try {
+    // Clear from appCache
+    setCacheValue('user_detected_country', null);
+    setCacheValue('user_country', null);
+    
+    // Clear from localStorage
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('detected_country');
+    }
+    
+    console.log('🔄 Cleared country cache');
+  } catch (error) {
+    console.error('❌ Error clearing country cache:', error);
   }
 }
