@@ -1649,6 +1649,117 @@ When documenting new issues, use this format:
 
 ---
 
+## 🔧 **Issue: Google OAuth Sign-In Multiple Loading Screens and Errors**
+
+**Issue**: Google OAuth sign-in shows multiple loading screens, error messages, and appears broken before eventually working.
+
+**Symptoms**:
+- Multiple "Processing authentication..." screens
+- Console shows double API calls to `/api/auth/exchange`
+- Authorization code errors: "The authorization code has expired or is invalid"
+- Language change errors: "t.changeLanguage is not a function"
+- 400/401 HTTP errors during authentication flow
+- User sees error messages then gets redirected back to sign-in
+
+**Root Cause Analysis**:
+1. **Double API Calls**: OAuth callback page was making duplicate requests due to `useEffect` dependency on `router` object causing re-renders
+2. **Authorization Code Reuse**: Same authorization code being used twice, making second call fail with "invalid_grant" error
+3. **Language Initialization Errors**: i18n `changeLanguage` function being called before library was fully initialized during SSR
+4. **Component Race Conditions**: Components updating state after unmounting
+
+**Solution Applied** (Deployed 2025-01-08):
+
+### 1. Fixed useEffect Dependencies
+```javascript
+// Before - causes re-renders and duplicate calls
+useEffect(() => {
+  handleOAuthCallback();
+}, [router]); // router dependency triggers multiple calls
+
+// After - prevents duplicate execution
+useEffect(() => {
+  let mounted = true;
+  
+  const handleOAuthCallback = async () => {
+    if (!mounted || oauthInProgress) return;
+    // ... existing code
+  };
+  
+  handleOAuthCallback();
+  
+  return () => {
+    mounted = false;
+  };
+}, []); // No dependencies, runs once
+```
+
+### 2. Added Request Deduplication
+```javascript
+// Global flag to prevent concurrent OAuth processing
+let oauthInProgress = false;
+
+const handleOAuthCallback = async () => {
+  if (!mounted || oauthInProgress) return;
+  
+  oauthInProgress = true;
+  try {
+    // OAuth processing
+  } finally {
+    oauthInProgress = false;
+  }
+};
+```
+
+### 3. Server-Side Authorization Code Protection
+```javascript
+// In /api/auth/exchange/route.js
+const usedCodes = new Set();
+const codeExpiryTime = new Map();
+
+// Check for duplicate usage
+if (usedCodes.has(code)) {
+  return NextResponse.json({ 
+    error: 'Token exchange failed',
+    message: 'The authorization code has already been used.',
+    error_code: 'code_reused'
+  }, { status: 400 });
+}
+
+// Mark as used with 10-minute expiry
+usedCodes.add(code);
+codeExpiryTime.set(code, Date.now() + 10 * 60 * 1000);
+```
+
+### 4. Fixed Language Change Errors
+```javascript
+// Before - crashes if changeLanguage doesn't exist
+if (langParam && langParam !== i18n.language) {
+  await i18n.changeLanguage(langParam);
+}
+
+// After - safe check for method existence
+if (langParam && langParam !== i18n.language && i18n.changeLanguage) {
+  await i18n.changeLanguage(langParam);
+}
+```
+
+**Files Modified**:
+- `/src/app/auth/oauth-callback/page.js` - Fixed useEffect and added deduplication
+- `/src/app/api/auth/exchange/route.js` - Added code reuse protection
+- `/src/app/auth/layout.js` - Fixed language change safety checks
+- `/src/app/onboarding/layout.js` - Fixed language change safety checks
+
+**Result**: 
+- ✅ Single API call instead of double calls
+- ✅ No authorization code reuse errors
+- ✅ Eliminated language change errors
+- ✅ Faster, smoother sign-in experience
+- ✅ No more error screens during OAuth flow
+
+**Prevention**: Always check useEffect dependencies for objects that may change on re-renders, and add proper request deduplication for critical authentication flows.
+
+---
+
 ## 📚 **Categories of Common Issues**
 
 ### Authentication & Session Management
