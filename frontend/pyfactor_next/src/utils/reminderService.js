@@ -1,17 +1,23 @@
 // Calendar Reminder Service
 // Manages scheduling and displaying reminders for calendar events
 
-import { toast } from 'react-hot-toast';
+// Note: We'll need to pass the toast function from the component since this is a utility class
 
 class ReminderService {
   constructor() {
     this.reminders = new Map(); // Store active reminders
     this.checkInterval = null;
     this.userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    this.toastFunction = null; // Will be set by the component
   }
 
-  // Initialize the reminder service
-  init() {
+  // Initialize the reminder service with toast function
+  init(toastFunction = null) {
+    // Store the toast function
+    if (toastFunction) {
+      this.toastFunction = toastFunction;
+    }
+    
     // Load existing reminders from localStorage
     this.loadReminders();
     
@@ -88,19 +94,20 @@ class ReminderService {
     });
     
     const eventTypeLabel = this.getEventTypeLabel(reminder.eventType);
-    const message = `${eventTypeLabel}: ${reminder.eventTitle} at ${eventTime}`;
+    const message = `🔔 ${eventTypeLabel}: ${reminder.eventTitle} at ${eventTime}`;
     
     console.log(`[ReminderService] Showing reminder: ${message}`);
-    console.log('[ReminderService] Toast library loaded:', typeof toast);
+    console.log('[ReminderService] Toast function available:', !!this.toastFunction);
     
-    // Show toast notification - use simpler styling that matches the app's toaster config
-    const toastId = toast(message, {
-      duration: 8000, // Increased duration
-      position: 'top-right',
-      icon: '🔔'
-    });
-    
-    console.log('[ReminderService] Toast created with ID:', toastId);
+    // Show toast notification using the custom toast system
+    if (this.toastFunction && this.toastFunction.info) {
+      this.toastFunction.info(message, 8000);
+      console.log('[ReminderService] Toast notification sent');
+    } else {
+      console.error('[ReminderService] Toast function not available - reminder cannot be displayed');
+      // Fallback to alert if toast not available
+      alert(message);
+    }
 
     // Also show browser notification if permission granted
     this.showBrowserNotification(reminder);

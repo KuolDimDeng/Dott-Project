@@ -20,11 +20,11 @@ import {
   DocumentTextIcon,
   ExclamationCircleIcon
 } from '@heroicons/react/24/outline';
-import { toast } from 'react-hot-toast';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { useSession } from '@/hooks/useSession-v2';
 import StandardSpinner, { CenteredSpinner } from '@/components/ui/StandardSpinner';
 import reminderService from '@/utils/reminderService';
+import { useToast } from '@/components/Toast/ToastProvider';
 
 // Event type configurations
 const EVENT_TYPES = {
@@ -122,6 +122,7 @@ const getTimezoneDisplayName = (timezone) => {
 export default function Calendar({ onNavigate }) {
   console.log('[Calendar] COMPONENT LOADED - DEBUG VERSION 2025-07-09-v2');
   const { user, loading: sessionLoading } = useSession();
+  const toast = useToast();
   const [events, setEvents] = useState([]);
   const [showEventModal, setShowEventModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
@@ -158,9 +159,9 @@ export default function Calendar({ onNavigate }) {
         if (id) {
           setTenantId(id);
           
-          // Initialize reminder service
-          reminderService.init();
-          console.log('[Calendar] Reminder service initialized');
+          // Initialize reminder service with toast function
+          reminderService.init(toast);
+          console.log('[Calendar] Reminder service initialized with toast');
           
           // Request notification permission if not already granted
           if ('Notification' in window && Notification.permission === 'default') {
@@ -963,11 +964,7 @@ export default function Calendar({ onNavigate }) {
           <button
             onClick={() => {
               console.log('[Calendar] Testing toast notification');
-              toast('Test notification!', {
-                duration: 5000,
-                position: 'top-right',
-                icon: '🔔'
-              });
+              toast.info('Test notification!', 5000);
             }}
             className="ml-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
           >
