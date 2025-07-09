@@ -537,8 +537,30 @@ export default function Calendar({ onNavigate }) {
           title: e.title,
           start: e.startStr,
           end: e.endStr,
-          allDay: e.allDay
+          allDay: e.allDay,
+          display: e.display,
+          backgroundColor: e.backgroundColor,
+          borderColor: e.borderColor
         })));
+        
+        // Check if events fall within view range
+        const view = calendarApi.view;
+        calendarEvents.forEach((event, index) => {
+          const eventStart = new Date(event.start);
+          const eventEnd = new Date(event.end || event.start);
+          const viewStart = view.currentStart;
+          const viewEnd = view.currentEnd;
+          
+          console.log(`[Calendar] Event ${index + 1} visibility check:`, {
+            title: event.title,
+            eventStart: eventStart.toISOString(),
+            eventEnd: eventEnd.toISOString(),
+            viewStart: viewStart.toISOString(),
+            viewEnd: viewEnd.toISOString(),
+            isInViewRange: eventStart >= viewStart && eventStart < viewEnd,
+            isVisible: event.display !== 'none'
+          });
+        });
       }
       
       // Check current view
@@ -554,6 +576,20 @@ export default function Calendar({ onNavigate }) {
         // Force re-render
         console.log('[Calendar] Forcing calendar re-render to show events');
         calendarApi.render();
+        
+        // Add a test event to verify calendar is working
+        console.log('[Calendar] Adding test event to verify calendar functionality');
+        const testEvent = {
+          id: 'test-event-' + Date.now(),
+          title: 'TEST EVENT - Today',
+          start: new Date().toISOString().split('T')[0], // Today's date
+          allDay: true,
+          backgroundColor: '#FF0000',
+          borderColor: '#FF0000'
+        };
+        console.log('[Calendar] Test event data:', testEvent);
+        calendarApi.addEvent(testEvent);
+        console.log('[Calendar] Test event added - should appear in red today');
       }
     }
   }, [calendarRef, events]);
