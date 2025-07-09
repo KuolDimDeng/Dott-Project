@@ -7,6 +7,7 @@ class ReminderService {
   constructor() {
     this.reminders = new Map(); // Store active reminders
     this.checkInterval = null;
+    this.userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   }
 
   // Initialize the reminder service
@@ -19,6 +20,11 @@ class ReminderService {
     
     // Clean up old reminders on init
     this.cleanupOldReminders();
+  }
+
+  // Update timezone (call this when user's timezone changes)
+  setTimezone(timezone) {
+    this.userTimezone = timezone;
   }
 
   // Schedule a reminder for an event
@@ -46,7 +52,7 @@ class ReminderService {
     // Persist to localStorage
     this.saveReminders();
     
-    console.log(`[ReminderService] Scheduled reminder for "${event.title}" at ${new Date(reminderTime).toLocaleString()}`);
+    console.log(`[ReminderService] Scheduled reminder for "${event.title}" at ${new Date(reminderTime).toLocaleString('en-US', { timeZone: this.userTimezone })}`);
   }
 
   // Calculate when to show the reminder
@@ -75,9 +81,10 @@ class ReminderService {
 
   // Display a reminder notification
   showReminder(reminder) {
-    const eventTime = new Date(reminder.eventStart).toLocaleTimeString([], { 
+    const eventTime = new Date(reminder.eventStart).toLocaleTimeString('en-US', { 
       hour: '2-digit', 
-      minute: '2-digit' 
+      minute: '2-digit',
+      timeZone: this.userTimezone
     });
     
     const eventTypeLabel = this.getEventTypeLabel(reminder.eventType);
@@ -126,9 +133,10 @@ class ReminderService {
     if (!('Notification' in window)) return;
     
     if (Notification.permission === 'granted') {
-      const eventTime = new Date(reminder.eventStart).toLocaleTimeString([], { 
+      const eventTime = new Date(reminder.eventStart).toLocaleTimeString('en-US', { 
         hour: '2-digit', 
-        minute: '2-digit' 
+        minute: '2-digit',
+        timeZone: this.userTimezone
       });
       
       new Notification(`${this.getEventTypeLabel(reminder.eventType)}`, {

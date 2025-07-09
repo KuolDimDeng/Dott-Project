@@ -133,7 +133,8 @@
       "Bash(DJANGO_SETTINGS_MODULE=pyfactor.settings python3 -c \"import django; django.setup(); print(''✅ Django settings loaded successfully with all packages'')\")",
       "WebFetch(domain:docs.wise.com)",
       "Bash(git fetch:*)",
-      "Bash(scp:*)"
+      "Bash(scp:*)",
+      "Bash(ssh:*)"
     ],
     "deny": []
   }

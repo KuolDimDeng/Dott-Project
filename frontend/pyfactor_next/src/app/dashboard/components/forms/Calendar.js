@@ -218,9 +218,11 @@ export default function Calendar({ onNavigate }) {
           });
           
           setUserTimezone(detectedTimezone);
+          reminderService.setTimezone(detectedTimezone);
           console.log('[Calendar] Auto-detected timezone saved:', detectedTimezone);
         } else {
           setUserTimezone(savedTimezone);
+          reminderService.setTimezone(savedTimezone);
           console.log('[Calendar] User timezone loaded:', savedTimezone);
         }
         
