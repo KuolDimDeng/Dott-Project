@@ -17,7 +17,7 @@ export default function EmailPasswordSignIn() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const posthog = usePostHog();
-  const { t } = useTranslation('auth');
+  const { t, i18n } = useTranslation('auth');
   const { session, loading: sessionLoading, isAuthenticated } = useSession();
   const [isSignup, setIsSignup] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -80,6 +80,15 @@ export default function EmailPasswordSignIn() {
     }
   }, [sessionLoading, isAuthenticated, session, router]);
 
+  // Handle language parameter from URL
+  useEffect(() => {
+    const langParam = searchParams.get('lang');
+    if (langParam && i18n.language !== langParam) {
+      console.log('🌍 [EmailPasswordSignIn] Setting language from URL:', langParam);
+      i18n.changeLanguage(langParam);
+    }
+  }, [searchParams, i18n]);
+
   // Check for error from URL params (e.g., from Google OAuth)
   useEffect(() => {
     // Set initial page title based on mode
@@ -108,7 +117,7 @@ export default function EmailPasswordSignIn() {
       setError(t('signin.errors.oauthConfigurationError'));
       setErrorType('error');
     }
-  }, [searchParams]);
+  }, [searchParams, t]);
 
   const toggleMode = () => {
     setIsSignup(!isSignup);
@@ -121,6 +130,14 @@ export default function EmailPasswordSignIn() {
     setShowConfirmPassword(false);
     // Update page title based on mode
     document.title = !isSignup ? 'Dott: Sign Up' : 'Dott: Sign In';
+    
+    // Preserve language parameter in URL
+    const langParam = searchParams.get('lang');
+    if (langParam) {
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.set('lang', langParam);
+      window.history.replaceState({}, '', newUrl.toString());
+    }
   };
 
   const showError = (message, type = 'error') => {
@@ -154,7 +171,15 @@ export default function EmailPasswordSignIn() {
       userAgent: navigator.userAgent
     });
     
-    const oauthUrl = '/api/auth/login?connection=google-oauth2';
+    // Preserve language parameter in OAuth flow
+    let oauthUrl = '/api/auth/login?connection=google-oauth2';
+    const langParam = searchParams.get('lang');
+    if (langParam) {
+      // Store language in sessionStorage to retrieve after OAuth callback
+      sessionStorage.setItem('oauth_language', langParam);
+      oauthUrl += `&ui_locales=${langParam}`;
+    }
+    
     console.log('🔄 [GoogleOAuth] ========== STEP 2: REDIRECTING TO /api/auth/login ==========');
     console.log('🔄 [GoogleOAuth] OAuth URL:', oauthUrl);
     console.log('🔄 [GoogleOAuth] Expected flow:');

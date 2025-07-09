@@ -55,10 +55,27 @@ import amOnboarding from '../public/locales/am/onboarding.json';
 import zuOnboarding from '../public/locales/zu/onboarding.json';
 import koOnboarding from '../public/locales/ko/onboarding.json';
 
-// Import auth namespaces - we'll add these after translation
+// Import auth namespaces
 import enAuth from '../public/locales/en/auth.json';
 import esAuth from '../public/locales/es/auth.json';
 import frAuth from '../public/locales/fr/auth.json';
+import ptAuth from '../public/locales/pt/auth.json';
+import deAuth from '../public/locales/de/auth.json';
+import zhAuth from '../public/locales/zh/auth.json';
+import arAuth from '../public/locales/ar/auth.json';
+import hiAuth from '../public/locales/hi/auth.json';
+import ruAuth from '../public/locales/ru/auth.json';
+import jaAuth from '../public/locales/ja/auth.json';
+import swAuth from '../public/locales/sw/auth.json';
+import trAuth from '../public/locales/tr/auth.json';
+import idAuth from '../public/locales/id/auth.json';
+import viAuth from '../public/locales/vi/auth.json';
+import nlAuth from '../public/locales/nl/auth.json';
+import haAuth from '../public/locales/ha/auth.json';
+import yoAuth from '../public/locales/yo/auth.json';
+import amAuth from '../public/locales/am/auth.json';
+import zuAuth from '../public/locales/zu/auth.json';
+import koAuth from '../public/locales/ko/auth.json';
 
 const resources = {
   en: {
@@ -78,71 +95,88 @@ const resources = {
   },
   pt: {
     common: ptCommon,
-    onboarding: ptOnboarding
+    onboarding: ptOnboarding,
+    auth: ptAuth
   },
   de: {
     common: deCommon,
-    onboarding: deOnboarding
+    onboarding: deOnboarding,
+    auth: deAuth
   },
   zh: {
     common: zhCommon,
-    onboarding: zhOnboarding
+    onboarding: zhOnboarding,
+    auth: zhAuth
   },
   ar: {
     common: arCommon,
-    onboarding: arOnboarding
+    onboarding: arOnboarding,
+    auth: arAuth
   },
   hi: {
     common: hiCommon,
-    onboarding: hiOnboarding
+    onboarding: hiOnboarding,
+    auth: hiAuth
   },
   ru: {
     common: ruCommon,
-    onboarding: ruOnboarding
+    onboarding: ruOnboarding,
+    auth: ruAuth
   },
   ja: {
     common: jaCommon,
-    onboarding: jaOnboarding
+    onboarding: jaOnboarding,
+    auth: jaAuth
   },
   sw: {
     common: swCommon,
-    onboarding: swOnboarding
+    onboarding: swOnboarding,
+    auth: swAuth
   },
   tr: {
     common: trCommon,
-    onboarding: trOnboarding
+    onboarding: trOnboarding,
+    auth: trAuth
   },
   id: {
     common: idCommon,
-    onboarding: idOnboarding
+    onboarding: idOnboarding,
+    auth: idAuth
   },
   vi: {
     common: viCommon,
-    onboarding: viOnboarding
+    onboarding: viOnboarding,
+    auth: viAuth
   },
   nl: {
     common: nlCommon,
-    onboarding: nlOnboarding
+    onboarding: nlOnboarding,
+    auth: nlAuth
   },
   ha: {
     common: haCommon,
-    onboarding: haOnboarding
+    onboarding: haOnboarding,
+    auth: haAuth
   },
   yo: {
     common: yoCommon,
-    onboarding: yoOnboarding
+    onboarding: yoOnboarding,
+    auth: yoAuth
   },
   am: {
     common: amCommon,
-    onboarding: amOnboarding
+    onboarding: amOnboarding,
+    auth: amAuth
   },
   zu: {
     common: zuCommon,
-    onboarding: zuOnboarding
+    onboarding: zuOnboarding,
+    auth: zuAuth
   },
   ko: {
     common: koCommon,
-    onboarding: koOnboarding
+    onboarding: koOnboarding,
+    auth: koAuth
   }
 };
 
@@ -201,7 +235,8 @@ if (typeof window !== 'undefined' && !i18nInstance.isInitialized) {
         ns: ['common', 'onboarding', 'auth'],
         defaultNS: 'common',
         detection: {
-          order: ['localStorage', 'countryDetector', 'navigator', 'htmlTag'],
+          order: ['querystring', 'localStorage', 'countryDetector', 'navigator', 'htmlTag'],
+          lookupQuerystring: 'lang',
           lookupFromPathIndex: 0,
           checkWhitelist: true,
           caches: ['localStorage'], // Use localStorage for faster access
