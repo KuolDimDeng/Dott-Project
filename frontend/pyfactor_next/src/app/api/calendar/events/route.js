@@ -96,6 +96,7 @@ export async function GET(request) {
       eventType,
       allParams: Object.fromEntries(searchParams.entries())
     });
+    console.log('[Calendar API GET] 🎯 REQUEST ANALYSIS - About to call backend API');
 
     if (!tenantId) {
       return NextResponse.json(
@@ -283,6 +284,7 @@ export async function POST(request) {
 
     console.log('[Calendar API POST] Sending to backend:', backendData);
     console.log('[Calendar API POST] Backend URL:', `${API_BASE_URL}/api/calendar/events/`);
+    console.log('[Calendar API POST] 🎯 ABOUT TO SAVE EVENT - This should persist to backend');
     
     // Call backend API
     const sessionToken = sessionData.session_token || sessionData.access_token || (await cookies()).get('sid')?.value;
