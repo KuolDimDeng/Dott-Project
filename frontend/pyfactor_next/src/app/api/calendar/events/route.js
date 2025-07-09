@@ -566,6 +566,8 @@ export async function PUT(request) {
 
     // Call backend API
     console.log('[Calendar API PUT] Updating event:', id);
+    console.log('[Calendar API PUT] Backend data being sent:', backendData);
+    console.log('[Calendar API PUT] Backend URL:', `${API_BASE_URL}/api/calendar/events/${id}/`);
     
     const sessionToken = sessionData.session_token || sessionData.access_token || (await cookies()).get('sid')?.value;
     const backendResponse = await fetch(
@@ -580,6 +582,9 @@ export async function PUT(request) {
         body: JSON.stringify(backendData)
       }
     );
+    
+    console.log('[Calendar API PUT] Backend response status:', backendResponse.status);
+    console.log('[Calendar API PUT] Backend response headers:', Object.fromEntries(backendResponse.headers.entries()));
 
     if (!backendResponse.ok) {
       console.error('[Calendar API PUT] Backend error:', backendResponse.status);
@@ -607,21 +612,59 @@ export async function PUT(request) {
       return NextResponse.json(transformedEvent);
     }
 
-    const updatedEvent = await backendResponse.json();
-    console.log('[Calendar API PUT] Backend updated event:', updatedEvent);
+    // Read response body once and handle non-JSON responses
+    const backendResponseText = await backendResponse.text();
+    console.log('[Calendar API PUT] Backend response text:', backendResponseText);
+    
+    let updatedEvent;
+    try {
+      updatedEvent = JSON.parse(backendResponseText);
+      console.log('[Calendar API PUT] Backend updated event:', updatedEvent);
+    } catch (parseError) {
+      console.error('[Calendar API PUT] Failed to parse backend response:', parseError);
+      console.error('[Calendar API PUT] Response was:', backendResponseText);
+      
+      // If parsing fails but request was successful, return success with the original data
+      if (backendResponse.ok) {
+        const transformedEvent = {
+          id: id,
+          title: eventData.title || backendData.title,
+          start: eventData.start || backendData.start_datetime,
+          end: eventData.end || eventData.start || backendData.end_datetime,
+          allDay: eventData.allDay || backendData.all_day,
+          type: eventData.type || backendData.event_type,
+          description: eventData.description || backendData.description,
+          location: eventData.location || backendData.location,
+          backgroundColor: getEventColor(eventData.type || backendData.event_type),
+          borderColor: getEventColor(eventData.type || backendData.event_type),
+          editable: true
+        };
+        
+        return NextResponse.json(transformedEvent);
+      }
+      
+      // Return error if parsing failed and request wasn't successful
+      return NextResponse.json(
+        { error: 'Failed to parse backend response', details: backendResponseText },
+        { status: 500 }
+      );
+    }
 
     // Transform response to calendar format
     const transformedEvent = {
-      id: updatedEvent.id,
+      id: updatedEvent.id || id,
       title: updatedEvent.title,
-      start: updatedEvent.start_datetime,
-      end: updatedEvent.end_datetime,
-      allDay: updatedEvent.all_day,
-      type: updatedEvent.event_type,
+      // Support both backend format (start_datetime) and frontend format (start)
+      start: updatedEvent.start_datetime || updatedEvent.start,
+      end: updatedEvent.end_datetime || updatedEvent.end || updatedEvent.start_datetime || updatedEvent.start,
+      // Support both backend format (all_day) and frontend format (allDay)
+      allDay: updatedEvent.all_day || updatedEvent.allDay || false,
+      // Support both backend format (event_type) and frontend format (type)
+      type: updatedEvent.event_type || updatedEvent.type,
       description: updatedEvent.description,
       location: updatedEvent.location,
-      backgroundColor: getEventColor(updatedEvent.event_type),
-      borderColor: getEventColor(updatedEvent.event_type),
+      backgroundColor: getEventColor(updatedEvent.event_type || updatedEvent.type),
+      borderColor: getEventColor(updatedEvent.event_type || updatedEvent.type),
       editable: true
     };
 
