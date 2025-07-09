@@ -17,8 +17,15 @@ export default function Auth0OAuthCallbackPage() {
     let mounted = true;
     
     const handleOAuthCallback = async () => {
-      if (!mounted || oauthInProgress) return;
+      console.log('🚀 [OAuthCallback] handleOAuthCallback function called');
+      console.log('🚀 [OAuthCallback] Mounted:', mounted, 'OAuth in progress:', oauthInProgress);
       
+      if (!mounted || oauthInProgress) {
+        console.log('🚀 [OAuthCallback] Exiting early - mounted:', mounted, 'oauthInProgress:', oauthInProgress);
+        return;
+      }
+      
+      console.log('🚀 [OAuthCallback] Setting oauthInProgress to true and proceeding...');
       oauthInProgress = true;
       try {
         // Get URL parameters
@@ -68,7 +75,19 @@ export default function Auth0OAuthCallbackPage() {
         console.log('🔄 [OAuthCallback] ========== END STEP 4 ==========');
 
         // Call our API to exchange the code for tokens - Fixed URL to match dynamic route
-        const exchangeResponse = await fetch(`/api/auth/exchange?code=${code}&state=${state}`);
+        let exchangeResponse;
+        try {
+          console.log('🔄 [OAuthCallback] Making fetch request to /api/auth/exchange...');
+          exchangeResponse = await fetch(`/api/auth/exchange?code=${code}&state=${state}`);
+          console.log('🔄 [OAuthCallback] Fetch completed, response received');
+        } catch (fetchError) {
+          console.error('❌ [OAuthCallback] Fetch request failed:', fetchError);
+          setError('Network error: ' + fetchError.message);
+          setTimeout(() => {
+            router.push('/auth/signin?error=network_error');
+          }, 3000);
+          return;
+        }
         
         console.log('🔄 [OAuthCallback] Exchange response status:', exchangeResponse.status);
         console.log('🔄 [OAuthCallback] Exchange response headers:', Object.fromEntries(exchangeResponse.headers.entries()));
@@ -140,11 +159,43 @@ export default function Auth0OAuthCallbackPage() {
     };
   }, []);
 
-  return (
-    <OAuthLoadingScreen 
-      status={status} 
-      error={error} 
-      showProgress={true}
-    />
+  // Fallback loading screen if OAuthLoadingScreen fails
+  const LoadingScreen = () => (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="text-center space-y-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+        <h2 className="text-xl font-semibold text-gray-900">Completing Authentication</h2>
+        <p className="text-gray-600">{status}</p>
+        
+        {error && (
+          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
+            <p className="text-red-800 text-sm">{error}</p>
+            <p className="text-red-600 text-xs mt-1">Redirecting to sign in...</p>
+          </div>
+        )}
+        
+        <div className="text-sm text-gray-500 space-y-1 mt-6">
+          <p>🔄 Processing OAuth callback</p>
+          <div className="text-xs text-left bg-gray-100 p-2 rounded">
+            <div>✓ Bypass Vercel DDoS protection</div>
+            <div>✓ Frontend callback handling</div>
+            <div>✓ Secure token exchange</div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
+
+  try {
+    return (
+      <OAuthLoadingScreen 
+        status={status} 
+        error={error} 
+        showProgress={true}
+      />
+    );
+  } catch (loadingError) {
+    console.error('[OAuthCallback] Error rendering OAuthLoadingScreen:', loadingError);
+    return <LoadingScreen />;
+  }
 } 
