@@ -4,6 +4,96 @@
 
 ---
 
+# Authentication Issues
+
+## Google OAuth Sign-in Stuck in Redirect Loop
+
+**Issue**: Google OAuth sign-in gets stuck in a rapid redirect loop between onboarding and signin pages, with multiple loading screens and authentication failures.
+
+**Symptoms**:
+- Multiple loading screens appear during OAuth flow
+- Rapid page reloading between `/auth/oauth-callback`, `/onboarding`, and `/auth/signin`
+- Console shows "OAuth already in progress" messages
+- Session validation returns 401 despite successful token exchange
+- User remains unauthenticated after OAuth callback
+
+**Root Causes**:
+1. **Race condition**: OAuth callback exits early on re-render due to global `oauthInProgress` flag
+2. **Timeout issues**: Fetch request to `/api/auth/exchange` hangs indefinitely
+3. **Session validation failure**: Backend expects Authorization header with session token
+4. **Cookie propagation**: React Router navigation happens before cookies are properly set
+
+**Solution**:
+
+1. **Fix race condition in OAuth callback** (`/src/app/auth/oauth-callback/page.js`):
+   ```javascript
+   // Check for code parameter before processing
+   const urlParams = new URLSearchParams(window.location.search);
+   const code = urlParams.get('code');
+   
+   if (!code) {
+     console.log('No code parameter, nothing to process');
+     return;
+   }
+   
+   if (oauthInProgress) {
+     console.log('OAuth already in progress for this code, exiting');
+     return;
+   }
+   ```
+
+2. **Add timeout handling for hanging requests**:
+   ```javascript
+   const controller = new AbortController();
+   const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+   
+   exchangeResponse = await fetch(`/api/auth/exchange?code=${code}&state=${state}`, {
+     signal: controller.signal,
+     headers: { 'Content-Type': 'application/json' },
+     credentials: 'include'
+   });
+   
+   clearTimeout(timeoutId);
+   ```
+
+3. **Fix session validation Authorization header** (`/src/app/api/auth/session-v2/route.js`):
+   ```javascript
+   response = await fetch(`${API_URL}/api/sessions/validate/${sessionId.value}/`, {
+     headers: {
+       'Accept': 'application/json',
+       'Content-Type': 'application/json',
+       'Authorization': `Session ${sessionId.value}` // Add this header
+     },
+     cache: 'no-store'
+   });
+   ```
+
+4. **Ensure proper cookie propagation before redirect**:
+   ```javascript
+   // Reset the flag before redirecting
+   oauthInProgress = false;
+   
+   // Wait for cookies to propagate and use full page reload
+   setTimeout(() => {
+     console.log('Executing redirect to /auth/callback');
+     window.location.href = '/auth/callback'; // Full page reload ensures cookies are set
+   }, 1000);
+   ```
+
+**Key Points**:
+- Always reset `oauthInProgress` flag in both success and error cases
+- Use `window.location.href` instead of React Router for OAuth redirects
+- Add proper error handling with user-friendly messages
+- Ensure session cookies are set before navigation
+
+**Related Files**:
+- `/src/app/auth/oauth-callback/page.js`
+- `/src/app/api/auth/exchange/route.js`
+- `/src/app/api/auth/session-v2/route.js`
+- `/src/utils/authFlowHandler.v3.js`
+
+---
+
 # Frontend Component Issues
 
 ## Dashboard Drawer Toggle Not Working
