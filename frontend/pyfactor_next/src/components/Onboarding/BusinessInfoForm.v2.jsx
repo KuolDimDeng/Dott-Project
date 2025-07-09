@@ -16,7 +16,7 @@ export default function BusinessInfoFormV2({ initialData = {}, onSubmit, submitt
     businessName: initialData.businessName || '',
     businessType: initialData.businessType || '',
     legalStructure: initialData.legalStructure || '',
-    country: initialData.country || 'United States',
+    country: initialData.country || 'US',  // Use country code
     dateFounded: initialData.dateFounded || new Date().toISOString().split('T')[0]
   });
   
@@ -26,7 +26,7 @@ export default function BusinessInfoFormV2({ initialData = {}, onSubmit, submitt
   // Convert countries object to array for dropdown
   const countryOptions = useMemo(() => {
     return Object.entries(countries).map(([code, country]) => ({
-      value: country.name,
+      value: code,  // Use country code as value instead of name
       label: country.name,
       code: code
     })).sort((a, b) => a.label.localeCompare(b.label));

@@ -14,6 +14,7 @@ import { useSession } from '@/hooks/useSession-v2';
 import { logger } from '@/utils/logger';
 import { refreshSessionData, waitForSessionUpdate } from '@/utils/sessionRefresh';
 import { safeJsonParse, handleFetchError } from '@/utils/responseParser';
+import { getCountryCode } from '@/utils/countryMapping';
 // Removed sessionStatus import - using session-v2 system
 
 // PaymentForm component that uses Stripe hooks
@@ -166,8 +167,12 @@ function PaymentForm({ plan, billingCycle }) {
       try {
         logger.info('[PaymentForm] Fetching regional pricing for:', country);
         
+        // Convert country name to country code
+        const countryCode = getCountryCode(country) || country;
+        logger.info('[PaymentForm] Country code:', countryCode);
+        
         // Fetch pricing for the country
-        const pricingResponse = await fetch(`/api/pricing/by-country?country=${country}`);
+        const pricingResponse = await fetch(`/api/pricing/by-country?country=${countryCode}`);
         if (pricingResponse.ok) {
           const pricingData = await safeJsonParse(pricingResponse, 'PaymentForm-RegionalPricing');
           logger.info('[PaymentForm] Regional pricing data:', pricingData);

@@ -18,6 +18,9 @@ export async function GET(request) {
     console.log('🎯 [Pricing API] Method:', request.method);
     console.log('🎯 [Pricing API] Search params object:', Object.fromEntries(searchParams.entries()));
     console.log('🎯 [Pricing API] Country from query:', country);
+    console.log('🎯 [Pricing API] Country type:', typeof country);
+    console.log('🎯 [Pricing API] Country length:', country ? country.length : 'null');
+    console.log('🎯 [Pricing API] Is 2-letter code?:', country && country.length === 2);
     console.log('🎯 [Pricing API] All headers:', {
       cfIp,
       cfCountry,

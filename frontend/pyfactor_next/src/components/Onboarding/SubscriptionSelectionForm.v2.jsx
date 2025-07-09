@@ -5,6 +5,39 @@ import { logger } from '@/utils/logger';
 import { useCurrencyDetection } from '@/hooks/useCurrencyDetection';
 import PricingDisplay from './PricingDisplay';
 import CurrencySelector from './CurrencySelector';
+import { countries } from 'countries-list';
+
+// Helper function to get country code from country name
+function getCountryCode(countryNameOrCode) {
+  // If it's already a 2-letter code, return it
+  if (countryNameOrCode && countryNameOrCode.length === 2) {
+    return countryNameOrCode.toUpperCase();
+  }
+  
+  // Find country code by name
+  for (const [code, country] of Object.entries(countries)) {
+    if (country.name === countryNameOrCode) {
+      return code;
+    }
+  }
+  
+  // Special cases for common variations
+  const specialCases = {
+    'United States': 'US',
+    'United States of America': 'US',
+    'USA': 'US',
+    'UK': 'GB',
+    'United Kingdom': 'GB'
+  };
+  
+  return specialCases[countryNameOrCode] || null;
+}
+
+// Helper function to get country name from code
+function getCountryName(countryCode) {
+  return countries[countryCode]?.name || countryCode;
+}
+import { getCountryCode, getCountryName } from '@/utils/countryMapping';
 
 // Subscription plans with updated pricing
 const PLANS = [
@@ -99,15 +132,23 @@ export default function SubscriptionSelectionFormV2({
       try {
         logger.info('[SubscriptionSelection] Fetching regional pricing for:', initialData.country);
         
+        // Convert country name to country code if needed
+        const countryCode = getCountryCode(initialData.country) || initialData.country;
+        logger.info('[SubscriptionSelection] Converting country:', {
+          input: initialData.country,
+          output: countryCode,
+          isCode: initialData.country?.length === 2
+        });
+        
         // Fetch pricing with country parameter
-        const response = await fetch(`/api/pricing/by-country?country=${encodeURIComponent(initialData.country)}`);
+        const response = await fetch(`/api/pricing/by-country?country=${encodeURIComponent(countryCode)}`);
         const data = await response.json();
         
         logger.info('[SubscriptionSelection] Regional pricing data:', data);
         setRegionalPricing(data);
         
         // Fetch available payment methods for the country
-        const paymentMethodsResponse = await fetch(`/api/payment-methods/available?country=${encodeURIComponent(initialData.country)}`);
+        const paymentMethodsResponse = await fetch(`/api/payment-methods/available?country=${encodeURIComponent(countryCode)}`);
         const paymentMethodsData = await paymentMethodsResponse.json();
         
         logger.info('[SubscriptionSelection] Available payment methods:', paymentMethodsData);
@@ -159,7 +200,7 @@ export default function SubscriptionSelectionFormV2({
                 {regionalPricing.discount_percentage}% off all plans!
               </p>
               <p className="text-green-700 text-sm">
-                Special pricing for businesses in {initialData.country}
+                Special pricing for businesses in {getCountryName(initialData.country) || initialData.country || 'your region'}
               </p>
             </div>
           </div>
