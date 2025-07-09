@@ -166,6 +166,25 @@ export default function Calendar({ onNavigate }) {
         // Handle both array response and object with events property
         const events = Array.isArray(data) ? data : (data.events || []);
         console.log('[Calendar] Processed calendar events:', events);
+        
+        // COMPARISON DEBUG: Analyze each event to understand the differences
+        events.forEach((event, index) => {
+          console.log(`🎯 [Calendar] RAW EVENT ${index + 1} ANALYSIS:`, {
+            id: event.id,
+            title: event.title,
+            start_datetime: event.start_datetime,
+            end_datetime: event.end_datetime,
+            start: event.start,
+            end: event.end,
+            allDay: event.allDay,
+            all_day: event.all_day,
+            type: event.type,
+            event_type: event.event_type,
+            isPlaceholder: event.title === "Test Event from API",
+            rawEventKeys: Object.keys(event)
+          });
+        });
+        
         const mappedEvents = events.map((event, index) => {
           console.log(`[Calendar] Processing event ${index + 1}/${events.length}:`, {
             id: event.id,
@@ -442,6 +461,23 @@ export default function Calendar({ onNavigate }) {
       if (response.ok) {
         const data = await response.json();
         console.log('[Calendar] Save successful, response data:', data);
+        
+        // COMPARISON DEBUG: Analyze the saved event structure
+        console.log(`🎯 [Calendar] SAVED EVENT ANALYSIS:`, {
+          id: data.id,
+          title: data.title,
+          start_datetime: data.start_datetime,
+          end_datetime: data.end_datetime,
+          start: data.start,
+          end: data.end,
+          allDay: data.allDay,
+          all_day: data.all_day,
+          type: data.type,
+          event_type: data.event_type,
+          backgroundColor: data.backgroundColor,
+          borderColor: data.borderColor,
+          savedEventKeys: Object.keys(data)
+        });
         
         toast.success(selectedEvent ? 'Event updated!' : 'Event created!');
         
