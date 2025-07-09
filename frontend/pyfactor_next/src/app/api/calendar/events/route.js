@@ -240,20 +240,24 @@ export async function GET(request) {
           start: e.start_datetime || e.start,
           type: e.event_type || e.type
         })));
+        
+        // Return in-memory events since backend is not working
+        console.log('[Calendar API GET] 🔄 RETURNING IN-MEMORY EVENTS INSTEAD OF BACKEND');
+        events = inMemoryEvents;
+      } else {
+        // Add a test event to verify API is working
+        console.log('[Calendar API GET] Adding Test Event from API to response');
+        events.push({
+          id: 'test-event-api',
+          title: 'Test Event from API',
+          start_datetime: new Date().toISOString(),
+          end_datetime: new Date(Date.now() + 3600000).toISOString(), // 1 hour later
+          all_day: false,
+          event_type: 'appointment',
+          description: 'This is a test event to verify the API is working',
+          location: 'API Test'
+        });
       }
-      
-      // Add a test event to verify API is working
-      console.log('[Calendar API GET] Adding Test Event from API to response');
-      events.push({
-        id: 'test-event-api',
-        title: 'Test Event from API',
-        start_datetime: new Date().toISOString(),
-        end_datetime: new Date(Date.now() + 3600000).toISOString(), // 1 hour later
-        all_day: false,
-        event_type: 'appointment',
-        description: 'This is a test event to verify the API is working',
-        location: 'API Test'
-      });
     }
     
     const transformedEvents = events.map(event => ({
