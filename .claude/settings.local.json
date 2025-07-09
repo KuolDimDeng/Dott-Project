@@ -134,7 +134,9 @@
       "WebFetch(domain:docs.wise.com)",
       "Bash(git fetch:*)",
       "Bash(scp:*)",
-      "Bash(ssh:*)"
+      "Bash(ssh:*)",
+      "Bash(do echo -n \"$lang: \")",
+      "Bash([ -f \"/Users/kuoldeng/projectx/frontend/pyfactor_next/public/locales/$lang/auth.json\" ])"
     ],
     "deny": []
   }
