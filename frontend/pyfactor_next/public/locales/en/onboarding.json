@@ -1,63 +1,229 @@
 {
   "businessInfo": {
-    "title": "Enter your business information",
-    "subtitle": "Tell us about your company",
-    "nameLabel": "Business name",
-    "addressLabel": "Business address",
-    "phoneLabel": "Business phone",
-    "emailLabel": "Business email",
-    "websiteLabel": "Website (optional)",
+    "title": "Business Information",
+    "subtitle": "Tell us about your business",
+    "step": "Step 1 of 3",
+    "businessNameLabel": "Business Name",
+    "businessNamePlaceholder": "Enter your business name",
+    "businessTypeLabel": "Business Type",
+    "businessTypePlaceholder": "Select your business type",
     "industryLabel": "Industry",
-    "nextButton": "Continue to subscription",
+    "industryPlaceholder": "Select your industry",
+    "legalStructureLabel": "Legal Structure",
+    "legalStructurePlaceholder": "Select legal structure",
+    "countryLabel": "Country",
+    "countryPlaceholder": "Select your country",
+    "stateLabel": "State/Province",
+    "statePlaceholder": "Select your state",
+    "dateFoundedLabel": "Date Founded",
+    "addressLabel": "Business Address",
+    "addressPlaceholder": "Enter your business address",
+    "phoneLabel": "Business Phone",
+    "phonePlaceholder": "+1 (555) 000-0000",
+    "emailLabel": "Business Email",
+    "emailPlaceholder": "business@example.com",
+    "websiteLabel": "Website (optional)",
+    "websitePlaceholder": "https://www.example.com",
+    "nextButton": "Continue to Subscription",
+    "skipButton": "Skip for now",
+    "businessTypes": {
+      "retail": "Retail",
+      "restaurant": "Restaurant",
+      "services": "Services",
+      "manufacturing": "Manufacturing",
+      "technology": "Technology",
+      "healthcare": "Healthcare",
+      "construction": "Construction",
+      "realestate": "Real Estate",
+      "nonprofit": "Non-Profit",
+      "other": "Other"
+    },
+    "legalStructures": {
+      "sole_proprietorship": "Sole Proprietorship",
+      "partnership": "Partnership",
+      "llc": "LLC",
+      "corporation": "Corporation",
+      "nonprofit": "Non-Profit",
+      "other": "Other"
+    },
     "errors": {
-      "nameRequired": "Business name is required",
-      "addressRequired": "Business address is required",
-      "phoneRequired": "Business phone is required",
-      "emailRequired": "Business email is required",
-      "emailInvalid": "Please enter a valid email address"
+      "businessNameRequired": "Business name is required",
+      "businessTypeRequired": "Business type is required",
+      "countryRequired": "Country is required",
+      "emailInvalid": "Please enter a valid email address",
+      "phoneInvalid": "Please enter a valid phone number",
+      "websiteInvalid": "Please enter a valid website URL"
     }
   },
   "subscription": {
-    "title": "Choose your subscription plan",
-    "subtitle": "Select a plan that matches your business needs",
-    "basic": "Basic",
-    "professional": "Professional",
-    "premium": "Premium",
-    "perMonth": "per month",
-    "selectPlan": "Select Plan",
-    "currentPlan": "Current Plan",
-    "features": {
-      "accounting": "Accounting and Bookkeeping",
-      "invoicing": "Invoicing and Billing",
-      "expenses": "Expense Tracking",
-      "payroll": "Payroll Processing",
-      "inventory": "Inventory Management",
-      "support": "24/7 Customer Support"
-    }
+    "title": "Choose Your Plan",
+    "subtitle": "Select the plan that best fits your business needs",
+    "step": "Step 2 of 3",
+    "billingCycle": {
+      "monthly": "Monthly",
+      "sixMonth": "6 Months",
+      "yearly": "Yearly",
+      "popular": "POPULAR",
+      "save": "Save {{percentage}}%"
+    },
+    "plans": {
+      "basic": {
+        "name": "Basic",
+        "description": "Perfect for small businesses just getting started",
+        "price": "Free",
+        "features": [
+          "Income and expense tracking",
+          "Invoice creation & reminders",
+          "Stripe & PayPal payments",
+          "Mobile money (M-Pesa, etc.)",
+          "Basic inventory tracking",
+          "Barcode scanning",
+          "3GB storage limit",
+          "1 user only"
+        ],
+        "buttonText": "Start for Free"
+      },
+      "professional": {
+        "name": "Professional",
+        "description": "Everything growing businesses need to thrive",
+        "price": "${{price}}/{{period}}",
+        "popularBadge": "MOST POPULAR",
+        "features": [
+          "Everything in Basic",
+          "Up to 3 users",
+          "Unlimited storage",
+          "Priority support",
+          "All features included",
+          "{{discount}}% discount on 6-month",
+          "{{yearlyDiscount}}% discount on annual"
+        ],
+        "buttonText": "Choose Professional"
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "description": "Unlimited scale for ambitious organizations",
+        "price": "${{price}}/{{period}}",
+        "premiumBadge": "PREMIUM",
+        "features": [
+          "Everything in Professional",
+          "Unlimited users",
+          "Custom onboarding",
+          "Dedicated support",
+          "All features included",
+          "{{discount}}% discount on 6-month",
+          "{{yearlyDiscount}}% discount on annual"
+        ],
+        "buttonText": "Choose Enterprise"
+      }
+    },
+    "regionalDiscount": {
+      "badge": "{{percentage}}% off all plans!",
+      "description": "Special pricing for businesses in {{country}}"
+    },
+    "backButton": "Back to Business Info",
+    "processing": "Processing...",
+    "note": "* Regional pricing available. Prices automatically adjusted based on your location."
   },
   "payment": {
-    "title": "Payment Details",
-    "subtitle": "Set up secure payment method",
-    "cardName": "Name on card",
-    "cardNumber": "Card number",
-    "expiry": "Expiration date",
-    "cvv": "CVV",
-    "saveCard": "Save card for future billing",
-    "confirmPayment": "Confirm Payment",
+    "title": "Complete Your Subscription",
+    "subtitle": "{{plan}} Plan • ${{price}}/{{period}}",
+    "step": "Step 3 of 3",
+    "discountBadge": "{{percentage}}% OFF",
+    "originalPrice": "Original: ${{price}}/{{period}}",
+    "regionalDiscountBanner": {
+      "title": "{{percentage}}% regional discount applied!",
+      "subtitle": "Special pricing for businesses in {{country}}"
+    },
+    "paymentMethod": {
+      "title": "Select Payment Method",
+      "card": {
+        "name": "Credit/Debit Card",
+        "description": "Visa, Mastercard, Amex"
+      },
+      "mpesa": {
+        "name": "M-Pesa",
+        "description": "Mobile Money",
+        "payInCurrency": "Pay in {{currency}}"
+      },
+      "flutterwave": {
+        "name": "Bank Transfer",
+        "description": "Pay via bank transfer"
+      },
+      "mtn": {
+        "name": "MTN Mobile Money",
+        "description": "Mobile Money Payment"
+      }
+    },
+    "cardPayment": {
+      "cardholderName": "Cardholder Name",
+      "cardholderNamePlaceholder": "John Doe",
+      "cardNumber": "Card Number",
+      "expiryDate": "Expiration Date",
+      "cvc": "CVC",
+      "postalCode": "Postal Code",
+      "postalCodePlaceholder": "12345"
+    },
+    "mobilePayment": {
+      "phoneNumber": "{{provider}} Phone Number",
+      "phoneNumberPlaceholder": "07XXXXXXXX",
+      "phoneNumberHint": "Enter your {{provider}} registered phone number",
+      "localPrice": "Price in {{currency}}: {{symbol}} {{amount}}",
+      "exchangeRate": "Exchange rate: 1 USD = {{rate}} {{currency}}",
+      "instructions": {
+        "title": "How {{provider}} payment works:",
+        "steps": [
+          "Click \"Pay with {{provider}}\" below",
+          "You'll receive a payment prompt on your phone",
+          "Enter your {{provider}} PIN to complete payment",
+          "You'll be redirected once payment is confirmed"
+        ]
+      }
+    },
+    "submitButton": {
+      "card": "Subscribe for ${{price}}/{{period}}",
+      "mobile": "Pay with {{provider}} - {{symbol}}{{amount}}",
+      "processing": "Processing Payment..."
+    },
+    "securityBadge": "Secured by Stripe",
+    "cancelNote": "You can cancel or change your plan anytime from your dashboard.",
     "errors": {
-      "nameRequired": "Name on card is required",
-      "cardRequired": "Card number is required",
-      "expiryRequired": "Expiration date is required",
-      "cvvRequired": "CVV is required"
+      "cardholderNameRequired": "Please enter the cardholder name",
+      "postalCodeRequired": "Please enter your postal code",
+      "phoneRequired": "Please enter your {{provider}} phone number",
+      "businessInfoMissing": "Business information is missing. Please complete the business setup step first.",
+      "paymentFailed": "Payment failed. Please try again.",
+      "cardDeclined": "Your card was declined. Please try a different card.",
+      "insufficientFunds": "Insufficient funds. Please check your balance.",
+      "networkError": "Network error. Please check your connection."
+    },
+    "success": {
+      "title": "Payment Successful!",
+      "message": "Redirecting to your dashboard...",
+      "mpesaTitle": "M-Pesa Payment Initiated!",
+      "mpesaMessage": "Check your phone for the M-Pesa payment prompt",
+      "mpesaHint": "Enter your PIN to complete the payment",
+      "redirecting": "Redirecting to your dashboard..."
     }
   },
-  "setup": {
-    "title": "Set up your Dott account",
-    "subtitle": "A few final details we need to know about your business",
-    "industryLabel": "Industry type",
-    "employeesLabel": "Number of employees",
-    "revenueLabel": "Estimated annual revenue",
-    "finishSetup": "Complete Setup",
-    "goToDashboard": "Go to Dashboard"
+  "completion": {
+    "title": "Welcome to Dott!",
+    "subtitle": "Your account is all set up",
+    "message": "You're ready to start managing your business finances",
+    "dashboardButton": "Go to Dashboard",
+    "setupComplete": "Setup Complete"
+  },
+  "errors": {
+    "sessionExpired": "Your session has expired. Please sign in again.",
+    "networkError": "Network error. Please check your connection.",
+    "genericError": "An error occurred. Please try again.",
+    "requiredField": "This field is required"
+  },
+  "navigation": {
+    "back": "Back",
+    "next": "Next",
+    "skip": "Skip",
+    "cancel": "Cancel",
+    "save": "Save",
+    "continue": "Continue"
   }
 }

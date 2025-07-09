@@ -55,10 +55,14 @@ import amOnboarding from '../public/locales/am/onboarding.json';
 import zuOnboarding from '../public/locales/zu/onboarding.json';
 import koOnboarding from '../public/locales/ko/onboarding.json';
 
+// Import auth namespaces - we'll add these after translation
+import enAuth from '../public/locales/en/auth.json';
+
 const resources = {
   en: {
     common: enCommon,
-    onboarding: enOnboarding
+    onboarding: enOnboarding,
+    auth: enAuth
   },
   es: {
     common: esCommon,
@@ -190,7 +194,7 @@ if (typeof window !== 'undefined' && !i18nInstance.isInitialized) {
         resources,
         fallbackLng: i18nConfig.defaultLocale,
         supportedLngs: i18nConfig.locales,
-        ns: ['common', 'onboarding'],
+        ns: ['common', 'onboarding', 'auth'],
         defaultNS: 'common',
         detection: {
           order: ['localStorage', 'countryDetector', 'navigator', 'htmlTag'],
@@ -262,7 +266,7 @@ if (typeof window !== 'undefined' && !i18nInstance.isInitialized) {
         resources,
         fallbackLng: i18nConfig.defaultLocale,
         supportedLngs: i18nConfig.locales,
-        ns: ['common', 'onboarding'],
+        ns: ['common', 'onboarding', 'auth'],
         defaultNS: 'common',
         interpolation: {
           escapeValue: false,

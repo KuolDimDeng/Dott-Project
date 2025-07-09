@@ -215,7 +215,8 @@ export async function GET(request) {
     }
 
     // Transform backend data to calendar format
-    const events = Array.isArray(backendData) ? backendData : (backendData.results || []);
+    // Backend returns paginated response with results array
+    const events = Array.isArray(backendData) ? backendData : (backendData.results || backendData.events || []);
     console.log('[Calendar API GET] DEBUGGING - Raw events from backend:', {
       count: events.length,
       events: events.map(e => ({

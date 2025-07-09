@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { logger } from '@/utils/logger';
 import Script from 'next/script';
 import { sessionManagerEnhanced } from '@/utils/sessionManager-v2-enhanced';
@@ -16,6 +17,7 @@ export default function EmailPasswordSignIn() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const posthog = usePostHog();
+  const { t } = useTranslation('auth');
   const { session, loading: sessionLoading, isAuthenticated } = useSession();
   const [isSignup, setIsSignup] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -228,17 +230,17 @@ export default function EmailPasswordSignIn() {
     trackEvent(posthog, EVENTS.SIGN_UP_STARTED, { email });
 
     if (!firstName || !lastName) {
-      showError('Please enter your first and last name');
+      showError(!firstName ? t('signup.errors.firstNameRequired') : t('signup.errors.lastNameRequired'));
       return;
     }
 
     if (password !== confirmPassword) {
-      showError('Passwords do not match');
+      showError(t('signup.errors.passwordMismatch'));
       return;
     }
 
     if (password.length < 8) {
-      showError('Password must be at least 8 characters long');
+      showError(t('signup.errors.passwordTooShort'));
       return;
     }
 
@@ -588,29 +590,29 @@ export default function EmailPasswordSignIn() {
               alt="Dott" 
             />
             <h2 className="mt-6 text-2xl font-bold text-gray-900">
-              {isSignup ? 'Create your account' : 'Welcome back'}
+              {isSignup ? t('signup.title') : t('signin.title')}
             </h2>
             <p className="mt-2 text-sm text-gray-600">
               {isSignup ? (
                 <>
-                  Already have an account?{' '}
+                  {t('signup.hasAccount')}{' '}
                   <button
                     type="button"
                     onClick={toggleMode}
                     className="font-medium text-indigo-600 hover:text-indigo-500"
                   >
-                    Sign in
+                    {t('signup.signinLink')}
                   </button>
                 </>
               ) : (
                 <>
-                  Don't have an account?{' '}
+                  {t('signin.noAccount')}{' '}
                   <button
                     type="button"
                     onClick={toggleMode}
                     className="font-medium text-indigo-600 hover:text-indigo-500"
                   >
-                    Sign up
+                    {t('signin.signupLink')}
                   </button>
                 </>
               )}
