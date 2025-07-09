@@ -1,5 +1,6 @@
 // Calendar Events API Endpoint
 // Handles CRUD operations for calendar events using real database
+// Updated: 2025-07-09 - Removed in-memory fallback, added detailed error logging
 
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
