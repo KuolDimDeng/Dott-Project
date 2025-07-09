@@ -4,18 +4,22 @@
  */
 import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
+import { cookies } from 'next/headers';
 import axios from 'axios';
 import https from 'https';
 
 // Get the backend API URL from environment variable or use default
-const BACKEND_API_URL = process.env.BACKEND_API_URL || 'https://127.0.0.1:8000';
+const BACKEND_API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
 
-// Create axios instance for backend requests with SSL verification disabled for local dev
+// Create axios instance for backend requests
 const backendAxios = axios.create({
   baseURL: `${BACKEND_API_URL}/api/hr`,
   timeout: 30000,
-  httpsAgent: new https.Agent({
-    rejectUnauthorized: false // Disable SSL certificate verification for local dev
+  // Only disable SSL verification in development
+  ...(process.env.NODE_ENV === 'development' && {
+    httpsAgent: new https.Agent({
+      rejectUnauthorized: false
+    })
   })
 });
 
@@ -27,11 +31,22 @@ const backendAxios = axios.create({
 function getForwardedHeaders(request) {
   const headers = {};
   
-  // Get the authorization header
-  const authHeader = request.headers.get('Authorization');
-  if (authHeader) {
-    headers['Authorization'] = authHeader;
-    logger.debug('[HR API Proxy] Using authorization header from request');
+  // Get session ID from sid cookie
+  const cookieStore = cookies();
+  const sidCookie = cookieStore.get('sid');
+  
+  if (sidCookie) {
+    headers['Authorization'] = `Session ${sidCookie.value}`;
+    logger.debug('[HR API Proxy] Using session ID from cookie');
+  } else {
+    // Fallback to authorization header if no cookie
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader) {
+      headers['Authorization'] = authHeader;
+      logger.debug('[HR API Proxy] Using authorization header from request');
+    } else {
+      logger.warn('[HR API Proxy] No authentication found');
+    }
   }
   
   // Get tenant-related headers
@@ -144,7 +159,7 @@ function handle403Error(error) {
  */
 export async function GET(request) {
   try {
-    logger.info('[HR API] Proxying employee GET request to backend');
+    logger.info('🚀 [HR API] === START GET /api/hr/employees ===');
     
     // Forward headers from the original request with enhanced auth
     const headers = getForwardedHeaders(request);
@@ -158,10 +173,11 @@ export async function GET(request) {
       debugHeaders.Authorization = 'Bearer [REDACTED]';
     }
     
-    logger.debug('[HR API] Forwarding request to backend with:', {
+    logger.info('[HR API] Request details:', {
       url: '/employees',
       headers: debugHeaders,
-      params
+      params,
+      backendUrl: `${BACKEND_API_URL}/api/hr/employees`
     });
     
     // Forward the request to the backend
@@ -171,7 +187,7 @@ export async function GET(request) {
     });
     
     // Log successful response
-    logger.info(`[HR API] Successfully proxied request, received ${response.status} response`);
+    logger.info(`✅ [HR API] Successfully proxied request, received ${response.status} response with ${response.data?.length || 0} employees`);
     
     // Return the response from the backend
     return NextResponse.json(response.data, { status: response.status });
@@ -217,10 +233,15 @@ export async function GET(request) {
  */
 export async function POST(request) {
   try {
-    logger.info('[HR API] Proxying employee POST request to backend');
+    logger.info('🚀 [HR API] === START POST /api/hr/employees ===');
     
     // Get the request body
     const body = await request.json();
+    
+    logger.info('[HR API] Creating employee with data:', {
+      ...body,
+      email: body.email ? `${body.email.substring(0, 3)}***@***` : 'not provided' // Mask email for privacy
+    });
     
     // Forward headers from the original request with enhanced auth
     const headers = getForwardedHeaders(request);
@@ -233,6 +254,8 @@ export async function POST(request) {
       headers,
       params
     });
+    
+    logger.info('✅ [HR API] Employee created successfully:', response.data?.id);
     
     // Return the response from the backend
     return NextResponse.json(response.data, { status: response.status });

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Fragment, useRef, useCallback, useMemo } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { toast } from 'react-hot-toast';
+import { useToast } from '@/components/Toast/ToastProvider';
 import { useRouter } from 'next/navigation';
 import { useTable, usePagination, useSortBy } from 'react-table';
 import { 
@@ -67,6 +67,7 @@ const FieldTooltip = ({ text, position = 'top' }) => {
  */
 function EmployeeManagement({ onNavigate }) {
   const router = useRouter();
+  const toast = useToast();
   
   // State management
   const [activeTab, setActiveTab] = useState('list');
@@ -93,7 +94,9 @@ function EmployeeManagement({ onNavigate }) {
     phone: '',
     position: '',
     department: '',
+    compensationType: 'SALARY', // Add compensation type
     salary: '',
+    wagePerHour: '', // Add hourly wage field
     hireDate: '',
     status: 'active',
     address: '',
@@ -111,17 +114,29 @@ function EmployeeManagement({ onNavigate }) {
   const fetchEmployees = async () => {
     try {
       setLoading(true);
+      logger.info('🚀 [EmployeeManagement] === START fetchEmployees ===');
       
       // Fetch employees and stats in parallel
       const [employeesData, statsData] = await Promise.all([
-        hrApi.employees.getAll().catch(() => []),
-        hrApi.employees.getStats().catch(() => ({ total: 0, active: 0, onLeave: 0, inactive: 0 }))
+        hrApi.employees.getAll().catch((err) => {
+          logger.error('❌ [EmployeeManagement] Failed to fetch employees:', err);
+          return [];
+        }),
+        hrApi.employees.getStats().catch((err) => {
+          logger.error('❌ [EmployeeManagement] Failed to fetch stats:', err);
+          return { total: 0, active: 0, onLeave: 0, inactive: 0 };
+        })
       ]);
+
+      logger.info('✅ [EmployeeManagement] Fetched data:', {
+        employeesCount: employeesData?.length || 0,
+        stats: statsData
+      });
 
       setEmployees(employeesData);
       setStats(statsData);
     } catch (error) {
-      console.error('Error fetching employees:', error);
+      logger.error('❌ [EmployeeManagement] Error in fetchEmployees:', error);
       toast.error('Failed to load employees');
       
       // Use demo data as fallback
@@ -136,7 +151,9 @@ function EmployeeManagement({ onNavigate }) {
           department: 'Engineering',
           status: 'active',
           hireDate: '2023-01-15',
-          salary: 75000
+          compensationType: 'SALARY',
+          salary: 75000,
+          wagePerHour: null
         },
         {
           id: '2',
@@ -148,7 +165,9 @@ function EmployeeManagement({ onNavigate }) {
           department: 'Product',
           status: 'active',
           hireDate: '2022-08-20',
-          salary: 85000
+          compensationType: 'SALARY',
+          salary: 85000,
+          wagePerHour: null
         }
       ];
       
@@ -317,7 +336,9 @@ function EmployeeManagement({ onNavigate }) {
       phone: employee.phone || '',
       position: employee.position || '',
       department: employee.department || '',
+      compensationType: employee.compensationType || 'SALARY',
       salary: employee.salary || '',
+      wagePerHour: employee.wagePerHour || '',
       hireDate: employee.hireDate || '',
       status: employee.status || 'active',
       address: employee.address || '',
@@ -345,7 +366,9 @@ function EmployeeManagement({ onNavigate }) {
       phone: '',
       position: '',
       department: '',
+      compensationType: 'SALARY',
       salary: '',
+      wagePerHour: '',
       hireDate: '',
       status: 'active',
       address: '',
@@ -379,14 +402,23 @@ function EmployeeManagement({ onNavigate }) {
     if (!validateForm()) return;
     
     try {
+      logger.info('🚀 [EmployeeManagement] === START handleSubmit ===');
+      logger.info('[EmployeeManagement] Form data:', {
+        ...formData,
+        email: formData.email ? `${formData.email.substring(0, 3)}***@***` : 'not provided'
+      });
+      
       if (selectedEmployee) {
         // Update existing employee
+        logger.info('[EmployeeManagement] Updating employee:', selectedEmployee.id);
         await hrApi.employees.update(selectedEmployee.id, formData);
         toast.success('Employee updated successfully');
         setIsEditModalOpen(false);
       } else {
         // Create new employee
-        await hrApi.employees.create(formData);
+        logger.info('[EmployeeManagement] Creating new employee');
+        const result = await hrApi.employees.create(formData);
+        logger.info('✅ [EmployeeManagement] Employee created:', result?.id);
         toast.success('Employee created successfully');
         setIsCreateModalOpen(false);
       }
@@ -395,8 +427,8 @@ function EmployeeManagement({ onNavigate }) {
       resetForm();
       setSelectedEmployee(null);
     } catch (error) {
-      console.error('Error saving employee:', error);
-      toast.error('Failed to save employee');
+      logger.error('❌ [EmployeeManagement] Error saving employee:', error);
+      toast.error(error.message || 'Failed to save employee');
     }
   };
 
@@ -639,16 +671,63 @@ function EmployeeManagement({ onNavigate }) {
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Salary
-              <FieldTooltip text="Annual salary amount in your local currency" />
+              Compensation Type
+              <FieldTooltip text="Choose between annual salary or hourly wage payment structure" />
             </label>
-            <input
-              type="number"
-              value={formData.salary}
-              onChange={(e) => setFormData({...formData, salary: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
+            <div className="flex space-x-4">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  value="SALARY"
+                  checked={formData.compensationType === 'SALARY'}
+                  onChange={(e) => setFormData({...formData, compensationType: e.target.value})}
+                  className="mr-2"
+                />
+                <span className="text-sm">Salary (Annual)</span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  value="WAGE"
+                  checked={formData.compensationType === 'WAGE'}
+                  onChange={(e) => setFormData({...formData, compensationType: e.target.value})}
+                  className="mr-2"
+                />
+                <span className="text-sm">Wage (Hourly)</span>
+              </label>
+            </div>
           </div>
+          
+          {formData.compensationType === 'SALARY' ? (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Annual Salary
+                <FieldTooltip text="Annual salary amount in your local currency" />
+              </label>
+              <input
+                type="number"
+                value={formData.salary}
+                onChange={(e) => setFormData({...formData, salary: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                placeholder="e.g., 75000"
+              />
+            </div>
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Hourly Wage
+                <FieldTooltip text="Hourly wage amount in your local currency" />
+              </label>
+              <input
+                type="number"
+                value={formData.wagePerHour}
+                onChange={(e) => setFormData({...formData, wagePerHour: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                placeholder="e.g., 25.50"
+                step="0.01"
+              />
+            </div>
+          )}
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">

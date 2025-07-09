@@ -1302,11 +1302,18 @@ export const hrApi = {
   // Employee management
   employees: {
     async getAll(params = {}) {
+      // Get tenant ID from the current path or session
+      const pathParts = window.location.pathname.split('/');
+      const tenantId = pathParts[1]; // Assuming /<tenantId>/dashboard pattern
+      
+      logger.info('🚀 [HRApi] Getting all employees', { tenantId });
+      
       const response = await fetch('/api/hr/employees', {
         method: 'GET',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          'X-Tenant-ID': tenantId || '',
         }
       });
       
@@ -1319,11 +1326,18 @@ export const hrApi = {
     },
     
     async getById(id, params = {}) {
+      // Get tenant ID from the current path or session
+      const pathParts = window.location.pathname.split('/');
+      const tenantId = pathParts[1]; // Assuming /<tenantId>/dashboard pattern
+      
+      logger.info('🚀 [HRApi] Getting employee by ID:', { id, tenantId });
+      
       const response = await fetch(`/api/hr/employees/${id}`, {
         method: 'GET',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          'X-Tenant-ID': tenantId || '',
         }
       });
       
@@ -1336,13 +1350,22 @@ export const hrApi = {
     },
     
     async create(data, params = {}) {
-      logger.info('[HRApi] Creating employee with data:', data);
+      // Get tenant ID from the current path or session
+      const pathParts = window.location.pathname.split('/');
+      const tenantId = pathParts[1]; // Assuming /<tenantId>/dashboard pattern
+      
+      logger.info('🚀 [HRApi] Creating employee with data:', {
+        ...data,
+        email: data.email ? `${data.email.substring(0, 3)}***@***` : 'not provided',
+        tenantId
+      });
       
       const response = await fetch('/api/hr/employees', {
         method: 'POST',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          'X-Tenant-ID': tenantId || '',
         },
         body: JSON.stringify(data)
       });
@@ -1358,11 +1381,18 @@ export const hrApi = {
     },
     
     async update(id, data, params = {}) {
+      // Get tenant ID from the current path or session
+      const pathParts = window.location.pathname.split('/');
+      const tenantId = pathParts[1]; // Assuming /<tenantId>/dashboard pattern
+      
+      logger.info('🚀 [HRApi] Updating employee:', { id, tenantId });
+      
       const response = await fetch(`/api/hr/employees/${id}`, {
         method: 'PUT',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          'X-Tenant-ID': tenantId || '',
         },
         body: JSON.stringify(data)
       });
@@ -1376,11 +1406,18 @@ export const hrApi = {
     },
     
     async delete(id, params = {}) {
+      // Get tenant ID from the current path or session
+      const pathParts = window.location.pathname.split('/');
+      const tenantId = pathParts[1]; // Assuming /<tenantId>/dashboard pattern
+      
+      logger.info('🚀 [HRApi] Deleting employee:', { id, tenantId });
+      
       const response = await fetch(`/api/hr/employees/${id}`, {
         method: 'DELETE',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          'X-Tenant-ID': tenantId || '',
         }
       });
       
@@ -1393,11 +1430,16 @@ export const hrApi = {
     },
 
     async getStats(params = {}) {
+      // Get tenant ID from the current path or session
+      const pathParts = window.location.pathname.split('/');
+      const tenantId = pathParts[1]; // Assuming /<tenantId>/dashboard pattern
+      
       const response = await fetch('/api/hr/employees/stats', {
         method: 'GET',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          'X-Tenant-ID': tenantId || '',
         }
       });
       
