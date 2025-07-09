@@ -114,6 +114,9 @@ export async function GET(request) {
     if (startDate) queryParams.append('start_date', startDate);
     if (endDate) queryParams.append('end_date', endDate);
     if (eventType) queryParams.append('event_type', eventType);
+    
+    // Add page_size to get all events (disable pagination)
+    queryParams.append('page_size', '1000');
 
     // Call backend API
     const sessionToken = sessionData.session_token || sessionData.access_token || (await cookies()).get('sid')?.value;
@@ -466,9 +469,25 @@ export async function POST(request) {
       return NextResponse.json(transformedEvent, { status: 201 });
     }
 
-    const createdEvent = await backendResponse.json();
-    console.log('[Calendar API POST] Backend created event:', createdEvent);
-    console.log('[Calendar API POST] 🎯 BACKEND SAVE SUCCESS - Event should now be in database');
+    // Read response body once
+    const backendResponseText = await backendResponse.text();
+    console.log('[Calendar API POST] Backend response text:', backendResponseText);
+    
+    let createdEvent;
+    try {
+      createdEvent = JSON.parse(backendResponseText);
+      console.log('[Calendar API POST] Backend created event:', createdEvent);
+      console.log('[Calendar API POST] 🎯 BACKEND SAVE SUCCESS - Event should now be in database');
+      console.log('[Calendar API POST] Event ID from backend:', createdEvent.id);
+    } catch (parseError) {
+      console.error('[Calendar API POST] Failed to parse backend response:', parseError);
+      console.error('[Calendar API POST] Response was:', backendResponseText);
+      // Return error response
+      return NextResponse.json(
+        { error: 'Failed to parse backend response', details: backendResponseText },
+        { status: 500 }
+      );
+    }
     
     // Also save to in-memory storage as a safety net
     console.log('[Calendar API POST] Also saving to in-memory storage as backup');
@@ -501,6 +520,41 @@ export async function POST(request) {
       borderColor: getEventColor(createdEvent.event_type || createdEvent.type),
       editable: true
     };
+
+    // VERIFICATION: Query backend to confirm event was saved
+    console.log('[Calendar API POST] 🔍 VERIFYING - Querying backend to confirm event was saved');
+    try {
+      const verifyResponse = await fetch(
+        `${API_BASE_URL}/api/calendar/events/?page_size=1000`,
+        {
+          headers: {
+            'Authorization': `Session ${sessionToken}`,
+            'Cookie': `session_token=${sessionToken}`,
+            'Content-Type': 'application/json'
+          },
+          cache: 'no-store'
+        }
+      );
+      
+      if (verifyResponse.ok) {
+        const verifyData = await verifyResponse.json();
+        const events = Array.isArray(verifyData) ? verifyData : (verifyData.results || []);
+        const foundEvent = events.find(e => e.id === createdEvent.id);
+        
+        if (foundEvent) {
+          console.log('[Calendar API POST] ✅ VERIFICATION SUCCESS - Event found in backend:', foundEvent.id);
+        } else {
+          console.error('[Calendar API POST] ❌ VERIFICATION FAILED - Event NOT found in backend!');
+          console.error('[Calendar API POST] Backend returned', events.length, 'events but our new event is missing');
+          console.error('[Calendar API POST] Event IDs in backend:', events.map(e => e.id));
+          console.error('[Calendar API POST] Looking for event ID:', createdEvent.id);
+        }
+      } else {
+        console.error('[Calendar API POST] ❌ VERIFICATION FAILED - Could not query backend');
+      }
+    } catch (verifyError) {
+      console.error('[Calendar API POST] ❌ VERIFICATION ERROR:', verifyError);
+    }
 
     return NextResponse.json(transformedEvent, { status: 201 });
   } catch (error) {
