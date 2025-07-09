@@ -170,9 +170,16 @@ export default function Auth0OAuthCallbackPage() {
         oauthInProgress = false;
         
         // Redirect to the main callback handler for onboarding logic
-        setTimeout(() => {
-          router.push('/auth/callback');
-        }, 500);
+        console.log('🚀 [OAuthCallback] About to redirect to /auth/callback');
+        
+        // Use router.replace to prevent back button issues
+        router.replace('/auth/callback').then(() => {
+          console.log('🚀 [OAuthCallback] Redirect to /auth/callback completed');
+        }).catch((err) => {
+          console.error('🚀 [OAuthCallback] Redirect failed:', err);
+          // Fallback to window.location if router fails
+          window.location.href = '/auth/callback';
+        });
 
       } catch (error) {
         console.error('[OAuth Callback] Unexpected error:', error);

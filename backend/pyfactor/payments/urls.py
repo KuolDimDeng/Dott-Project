@@ -4,6 +4,7 @@ from . import views
 from . import webhook_handlers
 from . import stripe_connect
 from . import invoice_checkout
+from . import tax_filing_checkout
 
 # Import payment views from accounts app for Stripe integration
 from accounts import views_payment
@@ -39,4 +40,7 @@ urlpatterns = [
     
     # Stripe-specific invoice checkout (matches frontend expectation)
     path('stripe/create-invoice-checkout/', invoice_checkout.create_invoice_checkout, name='stripe_create_invoice_checkout'),
+    
+    # Tax filing payment endpoints
+    path('create-filing-session/', tax_filing_checkout.create_filing_session, name='create_filing_session'),
 ]

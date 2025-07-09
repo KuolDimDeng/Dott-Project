@@ -14,7 +14,20 @@ export async function POST(request) {
     }
     
     const body = await request.json();
-    const { tenantId, taxType, serviceType, price, period, dueDate } = body;
+    const { 
+      tenantId, 
+      taxType, 
+      serviceType, 
+      price, 
+      basePrice,
+      complexityMultiplier,
+      discountPercentage,
+      isDeveloping,
+      period, 
+      dueDate,
+      formType,
+      formCount 
+    } = body;
     
     if (!tenantId || !taxType || !serviceType || !price) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -36,8 +49,14 @@ export async function POST(request) {
         tax_type: taxType,
         service_type: serviceType,
         price,
+        base_price: basePrice,
+        complexity_multiplier: complexityMultiplier || 1.0,
+        discount_percentage: discountPercentage || 0,
+        is_developing_country: isDeveloping || false,
         period,
         due_date: dueDate,
+        form_type: formType,
+        form_count: formCount,
         status: 'payment_pending',
         user_email: userResult.user.email,
         created_at: new Date().toISOString()
@@ -48,12 +67,33 @@ export async function POST(request) {
       throw new Error('Failed to create filing record');
     }
     
-    // Create Stripe payment session for the filing fee
-    const stripeResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/payments/create-filing-session/`, {
+    // Determine payment method based on user's country
+    let paymentMethod = 'stripe';
+    try {
+      const businessResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/business/`, {
+        headers: {
+          'X-Tenant-ID': tenantId,
+          'X-User-Email': userResult.user.email
+        }
+      });
+      
+      if (businessResponse.ok) {
+        const businessData = await businessResponse.json();
+        if (businessData.country === 'KE') {
+          paymentMethod = 'mpesa';
+        }
+      }
+    } catch (error) {
+      console.log('[api/taxes/filing/initiate] Using default payment method');
+    }
+    
+    // Create payment session for the filing fee
+    const paymentResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/payments/create-filing-session/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Tenant-ID': tenantId
+        'X-Tenant-ID': tenantId,
+        'X-User-Email': userResult.user.email
       },
       body: JSON.stringify({
         filing_id: filingId,
@@ -63,18 +103,21 @@ export async function POST(request) {
           tenant_id: tenantId,
           filing_id: filingId,
           tax_type: taxType,
-          service_type: serviceType
+          service_type: serviceType,
+          is_developing: isDeveloping,
+          discount_percentage: discountPercentage
         },
         success_url: `${process.env.NEXT_PUBLIC_FRONTEND_URL}/dashboard/tax-filing/success?filing_id=${filingId}`,
-        cancel_url: `${process.env.NEXT_PUBLIC_FRONTEND_URL}/dashboard/tax-filing/cancel`
+        cancel_url: `${process.env.NEXT_PUBLIC_FRONTEND_URL}/dashboard/tax-filing/cancel`,
+        payment_method: paymentMethod
       })
     });
     
-    if (!stripeResponse.ok) {
+    if (!paymentResponse.ok) {
       throw new Error('Failed to create payment session');
     }
     
-    const paymentData = await stripeResponse.json();
+    const paymentData = await paymentResponse.json();
     
     return NextResponse.json({
       success: true,

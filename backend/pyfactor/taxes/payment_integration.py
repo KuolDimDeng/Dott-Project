@@ -2,8 +2,10 @@
 import stripe
 import logging
 from decimal import Decimal
+from datetime import timedelta
 from django.conf import settings
 from django.urls import reverse
+from django.utils import timezone
 from taxes.models import TaxFiling
 
 logger = logging.getLogger(__name__)
@@ -116,35 +118,97 @@ def get_pricing_for_tax_filing(tax_type, service_type, filing_data=None):
     Returns:
         dict: Contains base_price, complexity_multiplier, final_price
     """
-    # Base pricing matrix
+    # Updated pricing matrix - matches frontend
     base_prices = {
         'sales': {
-            'fullService': 150,
-            'selfService': 50
+            'fullService': {'base': 75, 'quarterly': 75, 'annual': 300, 'multiState': 200},
+            'selfService': {'base': 35, 'quarterly': 35, 'annual': 140, 'multiState': 100}
         },
         'payroll': {
-            'fullService': 200,
-            'selfService': 75
+            'fullService': {'base': 125, 'quarterly941': 125, 'annual940': 150, 'completePackage': 450},
+            'selfService': {'base': 65, 'quarterly941': 65, 'annual940': 85, 'completePackage': 250}
         },
         'income': {
-            'fullService': 300,
-            'selfService': 100
+            'fullService': {'base': 250, 'soleProprietor': 250, 'llcSCorp': 395, 'cCorp': 595, 'perState': 75},
+            'selfService': {'base': 125, 'soleProprietor': 125, 'llcSCorp': 195, 'cCorp': 295, 'perState': 50}
+        },
+        'yearEnd': {
+            'fullService': {'base': 0, 'perForm': 2, 'minimum': 25},
+            'selfService': {'base': 0, 'perForm': 1, 'minimum': 15}
         }
     }
     
-    # Get base price
-    base_price = base_prices.get(tax_type, {}).get(service_type, 100)
+    # Get pricing category
+    pricing_category = base_prices.get(tax_type, {}).get(service_type, {})
+    if not pricing_category:
+        # Fallback pricing
+        return {
+            'base_price': 100,
+            'complexity_multiplier': 1.0,
+            'final_price': 100,
+            'currency': 'USD',
+            'discount': 0
+        }
+    
+    # Determine base price based on filing details
+    base_price = pricing_category.get('base', 100)
+    
+    if tax_type == 'sales':
+        period = filing_data.get('period', 'quarterly')
+        if period == 'quarterly':
+            base_price = pricing_category.get('quarterly', base_price)
+        elif period == 'annual':
+            base_price = pricing_category.get('annual', base_price)
+        elif filing_data.get('multiState'):
+            base_price = pricing_category.get('multiState', base_price)
+    
+    elif tax_type == 'payroll':
+        form_type = filing_data.get('formType', '941')
+        if form_type == '941':
+            base_price = pricing_category.get('quarterly941', base_price)
+        elif form_type == '940':
+            base_price = pricing_category.get('annual940', base_price)
+        elif form_type == 'complete':
+            base_price = pricing_category.get('completePackage', base_price)
+    
+    elif tax_type == 'income':
+        business_structure = filing_data.get('business_structure', 'sole_proprietor')
+        if business_structure == 'sole_proprietor':
+            base_price = pricing_category.get('soleProprietor', base_price)
+        elif business_structure in ['llc', 's_corp']:
+            base_price = pricing_category.get('llcSCorp', base_price)
+        elif business_structure == 'c_corp':
+            base_price = pricing_category.get('cCorp', base_price)
+        
+        # Add multi-state charges
+        state_count = len(filing_data.get('states', [])) if filing_data else 1
+        if state_count > 1:
+            base_price += (state_count - 1) * pricing_category.get('perState', 0)
+    
+    elif tax_type == 'yearEnd':
+        form_count = filing_data.get('formCount', 10)
+        base_price = max(
+            form_count * pricing_category.get('perForm', 1),
+            pricing_category.get('minimum', 15)
+        )
     
     # Calculate complexity multiplier
     complexity_multiplier = calculate_complexity_multiplier(tax_type, filing_data)
     
-    # Calculate final price
-    final_price = base_price * complexity_multiplier
+    # Check for developing country discount
+    discount = 0
+    if filing_data and filing_data.get('isDeveloping'):
+        discount = 50  # 50% discount
+    
+    # Calculate final price with discount
+    discount_multiplier = 1.0 - (discount / 100.0)
+    final_price = base_price * complexity_multiplier * discount_multiplier
     
     return {
         'base_price': base_price,
         'complexity_multiplier': complexity_multiplier,
-        'final_price': final_price,
+        'discount': discount,
+        'final_price': round(final_price),
         'currency': 'USD'
     }
 

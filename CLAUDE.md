@@ -135,6 +135,25 @@
 - **Pattern**: Unique prefixes, input/output logging, error context
 - **Example**: `console.log('🎯 [Component] === START ===');`
 
+### [29.0.0] - 2025-07-09 - CURRENT - Tax Filing Service Pricing Update
+- **Purpose**: Competitive pricing for tax filing services with developing country discounts
+- **Sales Tax Pricing**:
+  - Full Service: $75/filing (quarterly), $300/year, $200 multi-state
+  - Self Service: $35/filing (quarterly), $140/year, $100 multi-state
+- **Payroll Tax Pricing**:
+  - Full Service: $125 (Form 941), $150 (Form 940), $450 complete package
+  - Self Service: $65 (Form 941), $85 (Form 940), $250 complete package
+- **Income Tax Pricing**:
+  - Full Service: $250 sole prop, $395 LLC/S-Corp, $595 C-Corp (+$75/state)
+  - Self Service: $125 sole prop, $195 LLC/S-Corp, $295 C-Corp (+$50/state)
+- **W-2/1099 Generation**: $2/form full service, $1/form self service (min $25/$15)
+- **Developing Country Discount**: 50% off all prices (same as subscription)
+- **Payment Methods**: Stripe (worldwide), M-Pesa (Kenya automatic detection)
+- **Implementation**:
+  - Frontend: Dynamic pricing with async calculation and visual discount display
+  - Backend: Updated payment integration with regional pricing support
+  - API: Automatic country detection and payment method selection
+
 ---
 
 ## DEPRECATED CONFIGURATIONS (Do Not Use)

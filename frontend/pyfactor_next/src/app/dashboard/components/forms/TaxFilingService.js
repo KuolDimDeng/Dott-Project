@@ -5,6 +5,7 @@ import { toast } from 'react-hot-toast';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { useSession } from '@/hooks/useSession-v2';
 import StandardSpinner, { CenteredSpinner } from '@/components/ui/StandardSpinner';
+import { DEVELOPING_COUNTRIES } from '@/services/countryDetectionService';
 import { 
   DocumentTextIcon,
   SparklesIcon,
@@ -180,11 +181,19 @@ export default function TaxFilingService({ onNavigate }) {
     period: '',
     dueDate: '',
     estimatedRefund: null,
-    estimatedOwed: null
+    estimatedOwed: null,
+    formType: '',
+    formCount: 0
   });
   
   // Tax settings from configuration
   const [taxSettings, setTaxSettings] = useState(null);
+  
+  // Pricing state
+  const [pricingDisplay, setPricingDisplay] = useState({
+    fullService: { loading: false, price: 0, originalPrice: 0, discount: 0 },
+    selfService: { loading: false, price: 0, originalPrice: 0, discount: 0 }
+  });
   
   // Initialize
   useEffect(() => {
@@ -267,36 +276,109 @@ export default function TaxFilingService({ onNavigate }) {
     }
   };
   
-  // Calculate pricing based on complexity
-  const calculatePricing = (taxType, serviceType) => {
-    const basePrice = SERVICE_PRICING[serviceType].base;
+  // Get user's country and check if eligible for developing country discount
+  const getUserCountryAndDiscount = useCallback(async () => {
+    try {
+      // First check if we have business country info
+      const response = await fetch('/api/user/business', {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const businessData = await response.json();
+        const country = businessData.country || 'US';
+        
+        // Check if country is in developing countries list
+        const isDeveloping = DEVELOPING_COUNTRIES.includes(country);
+        
+        return { country, isDeveloping, discount: isDeveloping ? 0.5 : 1.0 };
+      }
+    } catch (error) {
+      console.error('[TaxFilingService] Error fetching country info:', error);
+    }
+    
+    // Default to US with no discount
+    return { country: 'US', isDeveloping: false, discount: 1.0 };
+  }, []);
+
+  // Calculate pricing based on tax type, service type, and complexity
+  const calculatePricing = useCallback(async (taxType, serviceType) => {
+    // Get country discount
+    const { discount, isDeveloping } = await getUserCountryAndDiscount();
+    
+    // Get base pricing for the specific tax type and service
+    const pricingCategory = SERVICE_PRICING[taxType]?.[serviceType];
+    if (!pricingCategory) {
+      console.error('[TaxFilingService] Invalid tax type or service type:', taxType, serviceType);
+      return 0;
+    }
+    
+    let basePrice = pricingCategory.base;
     let complexityMultiplier = 1;
     
-    // Add complexity factors
-    if (taxType === 'income') {
-      if (user?.businessStructure === 'corporation') {
-        complexityMultiplier = 1.5;
-      } else if (user?.businessStructure === 'partnership') {
-        complexityMultiplier = 1.3;
+    // Specific pricing based on tax type and filing details
+    if (taxType === 'sales') {
+      if (filingDetails.period === 'quarterly') {
+        basePrice = pricingCategory.quarterly;
+      } else if (filingDetails.period === 'annual') {
+        basePrice = pricingCategory.annual;
+      } else if (eligibilityResults?.multiState) {
+        basePrice = pricingCategory.multiState;
       }
     }
     
     if (taxType === 'payroll') {
-      const employeeCount = user?.employeeCount || 0;
-      if (employeeCount > 50) {
-        complexityMultiplier = 1.4;
-      } else if (employeeCount > 20) {
-        complexityMultiplier = 1.2;
+      if (filingDetails.formType === '941') {
+        basePrice = pricingCategory.quarterly941;
+      } else if (filingDetails.formType === '940') {
+        basePrice = pricingCategory.annual940;
+      } else if (filingDetails.formType === 'complete') {
+        basePrice = pricingCategory.completePackage;
       }
     }
     
-    // Multi-state filing
-    if (eligibilityResults?.multiState) {
-      complexityMultiplier *= 1.3;
+    if (taxType === 'income') {
+      const businessStructure = user?.businessStructure || 'sole_proprietor';
+      if (businessStructure === 'sole_proprietor') {
+        basePrice = pricingCategory.soleProprietor;
+      } else if (businessStructure === 'llc' || businessStructure === 's_corp') {
+        basePrice = pricingCategory.llcSCorp;
+      } else if (businessStructure === 'c_corp') {
+        basePrice = pricingCategory.cCorp;
+      }
+      
+      // Add per-state charges for multi-state
+      if (eligibilityResults?.multiState && eligibilityResults?.stateCount > 1) {
+        basePrice += (eligibilityResults.stateCount - 1) * pricingCategory.perState;
+      }
     }
     
-    return Math.round(basePrice * complexityMultiplier);
-  };
+    if (taxType === 'yearEnd') {
+      const formCount = filingDetails.formCount || 10;
+      basePrice = Math.max(
+        formCount * pricingCategory.perForm,
+        pricingCategory.minimum
+      );
+    }
+    
+    // Apply complexity multipliers
+    if (eligibilityResults?.highComplexity) {
+      complexityMultiplier = 1.5;
+    } else if (eligibilityResults?.mediumComplexity) {
+      complexityMultiplier = 1.2;
+    }
+    
+    // Calculate final price with discount
+    const finalPrice = Math.round(basePrice * complexityMultiplier * discount);
+    
+    return {
+      basePrice: Math.round(basePrice),
+      complexityMultiplier,
+      discount: isDeveloping ? 50 : 0,
+      finalPrice,
+      isDeveloping
+    };
+  }, [user, eligibilityResults, filingDetails, getUserCountryAndDiscount]);
   
   // Start filing process
   const startFiling = async () => {
@@ -305,10 +387,11 @@ export default function TaxFilingService({ onNavigate }) {
       return;
     }
     
-    const price = calculatePricing(selectedTaxType, selectedService);
-    
     try {
       setIsLoading(true);
+      
+      // Calculate pricing with discount
+      const pricingInfo = await calculatePricing(selectedTaxType, selectedService);
       
       const response = await fetch('/api/taxes/filing/initiate', {
         method: 'POST',
@@ -320,9 +403,15 @@ export default function TaxFilingService({ onNavigate }) {
           tenantId,
           taxType: selectedTaxType,
           serviceType: selectedService,
-          price,
+          price: pricingInfo.finalPrice,
+          basePrice: pricingInfo.basePrice,
+          complexityMultiplier: pricingInfo.complexityMultiplier,
+          discountPercentage: pricingInfo.discount,
+          isDeveloping: pricingInfo.isDeveloping,
           period: filingDetails.period,
-          dueDate: filingDetails.dueDate
+          dueDate: filingDetails.dueDate,
+          formType: filingDetails.formType,
+          formCount: filingDetails.formCount
         })
       });
       
@@ -346,6 +435,49 @@ export default function TaxFilingService({ onNavigate }) {
       setIsLoading(false);
     }
   };
+  
+  // Update pricing display when tax type or details change
+  useEffect(() => {
+    const updatePricingDisplay = async () => {
+      if (!selectedTaxType) return;
+      
+      setPricingDisplay(prev => ({
+        fullService: { ...prev.fullService, loading: true },
+        selfService: { ...prev.selfService, loading: true }
+      }));
+      
+      try {
+        // Calculate pricing for both service types
+        const [fullServicePricing, selfServicePricing] = await Promise.all([
+          calculatePricing(selectedTaxType, 'fullService'),
+          calculatePricing(selectedTaxType, 'selfService')
+        ]);
+        
+        setPricingDisplay({
+          fullService: {
+            loading: false,
+            price: fullServicePricing.finalPrice,
+            originalPrice: fullServicePricing.basePrice,
+            discount: fullServicePricing.discount
+          },
+          selfService: {
+            loading: false,
+            price: selfServicePricing.finalPrice,
+            originalPrice: selfServicePricing.basePrice,
+            discount: selfServicePricing.discount
+          }
+        });
+      } catch (error) {
+        console.error('[TaxFilingService] Error updating pricing display:', error);
+        setPricingDisplay(prev => ({
+          fullService: { ...prev.fullService, loading: false },
+          selfService: { ...prev.selfService, loading: false }
+        }));
+      }
+    };
+    
+    updatePricingDisplay();
+  }, [selectedTaxType, filingDetails, eligibilityResults, calculatePricing]);
   
   if (sessionLoading || !tenantId) {
     return <CenteredSpinner size="large" text="Loading tax filing service..." showText={true} />;
@@ -558,10 +690,26 @@ export default function TaxFilingService({ onNavigate }) {
                   <div className="flex items-center justify-between mb-4">
                     <UserGroupIcon className="h-8 w-8 text-blue-600" />
                     <div className="text-right">
-                      <p className="text-2xl font-bold text-gray-900">
-                        ${calculatePricing(selectedTaxType, 'fullService')}
-                      </p>
-                      <p className="text-xs text-gray-500">per filing</p>
+                      {pricingDisplay.fullService.loading ? (
+                        <StandardSpinner size="small" />
+                      ) : (
+                        <>
+                          <p className="text-2xl font-bold text-gray-900">
+                            ${pricingDisplay.fullService.price}
+                            {pricingDisplay.fullService.discount > 0 && (
+                              <span className="text-sm text-green-600 ml-2">
+                                ({pricingDisplay.fullService.discount}% off)
+                              </span>
+                            )}
+                          </p>
+                          {pricingDisplay.fullService.discount > 0 && (
+                            <p className="text-sm text-gray-500 line-through">
+                              ${pricingDisplay.fullService.originalPrice}
+                            </p>
+                          )}
+                          <p className="text-xs text-gray-500">per filing</p>
+                        </>
+                      )}
                     </div>
                   </div>
                   
@@ -600,10 +748,26 @@ export default function TaxFilingService({ onNavigate }) {
                   <div className="flex items-center justify-between mb-4">
                     <ComputerDesktopIcon className="h-8 w-8 text-purple-600" />
                     <div className="text-right">
-                      <p className="text-2xl font-bold text-gray-900">
-                        ${calculatePricing(selectedTaxType, 'selfService')}
-                      </p>
-                      <p className="text-xs text-gray-500">per filing</p>
+                      {pricingDisplay.selfService.loading ? (
+                        <StandardSpinner size="small" />
+                      ) : (
+                        <>
+                          <p className="text-2xl font-bold text-gray-900">
+                            ${pricingDisplay.selfService.price}
+                            {pricingDisplay.selfService.discount > 0 && (
+                              <span className="text-sm text-green-600 ml-2">
+                                ({pricingDisplay.selfService.discount}% off)
+                              </span>
+                            )}
+                          </p>
+                          {pricingDisplay.selfService.discount > 0 && (
+                            <p className="text-sm text-gray-500 line-through">
+                              ${pricingDisplay.selfService.originalPrice}
+                            </p>
+                          )}
+                          <p className="text-xs text-gray-500">per filing</p>
+                        </>
+                      )}
                     </div>
                   </div>
                   
