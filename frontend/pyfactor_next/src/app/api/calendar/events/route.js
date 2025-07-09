@@ -148,14 +148,17 @@ export async function GET(request) {
       const transformedEvents = events.map(event => ({
         id: event.id,
         title: event.title,
-        start: event.start_datetime,
-        end: event.end_datetime,
-        allDay: event.all_day || false,
-        type: event.event_type,
+        // Support both backend format (start_datetime) and frontend format (start)
+        start: event.start_datetime || event.start,
+        end: event.end_datetime || event.end || event.start_datetime || event.start,
+        // Support both backend format (all_day) and frontend format (allDay)
+        allDay: event.all_day || event.allDay || false,
+        // Support both backend format (event_type) and frontend format (type)
+        type: event.event_type || event.type,
         description: event.description,
         location: event.location,
-        backgroundColor: getEventColor(event.event_type),
-        borderColor: getEventColor(event.event_type),
+        backgroundColor: getEventColor(event.event_type || event.type),
+        borderColor: getEventColor(event.event_type || event.type),
         editable: true
       }));
       return NextResponse.json(transformedEvents);
@@ -190,14 +193,17 @@ export async function GET(request) {
     const transformedEvents = events.map(event => ({
       id: event.id,
       title: event.title,
-      start: event.start_datetime,
-      end: event.end_datetime,
-      allDay: event.all_day || false,
-      type: event.event_type,
+      // Support both backend format (start_datetime) and frontend format (start)
+      start: event.start_datetime || event.start,
+      end: event.end_datetime || event.end || event.start_datetime || event.start,
+      // Support both backend format (all_day) and frontend format (allDay)
+      allDay: event.all_day || event.allDay || false,
+      // Support both backend format (event_type) and frontend format (type)
+      type: event.event_type || event.type,
       description: event.description,
       location: event.location,
-      backgroundColor: getEventColor(event.event_type),
-      borderColor: getEventColor(event.event_type),
+      backgroundColor: getEventColor(event.event_type || event.type),
+      borderColor: getEventColor(event.event_type || event.type),
       editable: true,
       extendedProps: {
         reminder: event.reminder_minutes,
@@ -321,14 +327,17 @@ export async function POST(request) {
       const transformedEvent = {
         id: createdEvent.id,
         title: createdEvent.title,
-        start: createdEvent.start_datetime,
-        end: createdEvent.end_datetime,
-        allDay: createdEvent.all_day,
-        type: createdEvent.event_type,
+        // Support both backend format (start_datetime) and frontend format (start)
+        start: createdEvent.start_datetime || createdEvent.start,
+        end: createdEvent.end_datetime || createdEvent.end || createdEvent.start_datetime || createdEvent.start,
+        // Support both backend format (all_day) and frontend format (allDay)
+        allDay: createdEvent.all_day || createdEvent.allDay || false,
+        // Support both backend format (event_type) and frontend format (type)
+        type: createdEvent.event_type || createdEvent.type,
         description: createdEvent.description,
         location: createdEvent.location,
-        backgroundColor: getEventColor(createdEvent.event_type),
-        borderColor: getEventColor(createdEvent.event_type),
+        backgroundColor: getEventColor(createdEvent.event_type || createdEvent.type),
+        borderColor: getEventColor(createdEvent.event_type || createdEvent.type),
         editable: true
       };
       
@@ -338,18 +347,21 @@ export async function POST(request) {
     const createdEvent = await backendResponse.json();
     console.log('[Calendar API POST] Backend created event:', createdEvent);
 
-    // Transform response to calendar format
+    // Transform response to calendar format  
     const transformedEvent = {
       id: createdEvent.id,
       title: createdEvent.title,
-      start: createdEvent.start_datetime,
-      end: createdEvent.end_datetime,
-      allDay: createdEvent.all_day,
-      type: createdEvent.event_type,
+      // Support both backend format (start_datetime) and frontend format (start)
+      start: createdEvent.start_datetime || createdEvent.start,
+      end: createdEvent.end_datetime || createdEvent.end || createdEvent.start_datetime || createdEvent.start,
+      // Support both backend format (all_day) and frontend format (allDay)
+      allDay: createdEvent.all_day || createdEvent.allDay || false,
+      // Support both backend format (event_type) and frontend format (type)
+      type: createdEvent.event_type || createdEvent.type,
       description: createdEvent.description,
       location: createdEvent.location,
-      backgroundColor: getEventColor(createdEvent.event_type),
-      borderColor: getEventColor(createdEvent.event_type),
+      backgroundColor: getEventColor(createdEvent.event_type || createdEvent.type),
+      borderColor: getEventColor(createdEvent.event_type || createdEvent.type),
       editable: true
     };
 
