@@ -38,6 +38,7 @@ const EVENT_TYPES = {
 };
 
 export default function Calendar({ onNavigate }) {
+  console.log('[Calendar] COMPONENT LOADED - DEBUG VERSION 2025-07-09-v2');
   const { user, loading: sessionLoading } = useSession();
   const [events, setEvents] = useState([]);
   const [showEventModal, setShowEventModal] = useState(false);
