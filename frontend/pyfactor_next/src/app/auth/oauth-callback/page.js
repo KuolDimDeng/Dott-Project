@@ -78,11 +78,33 @@ export default function Auth0OAuthCallbackPage() {
         let exchangeResponse;
         try {
           console.log('🔄 [OAuthCallback] Making fetch request to /api/auth/exchange...');
-          exchangeResponse = await fetch(`/api/auth/exchange?code=${code}&state=${state}`);
+          
+          // Add timeout to prevent hanging requests
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+          
+          exchangeResponse = await fetch(`/api/auth/exchange?code=${code}&state=${state}`, {
+            signal: controller.signal,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include'
+          });
+          
+          clearTimeout(timeoutId);
           console.log('🔄 [OAuthCallback] Fetch completed, response received');
         } catch (fetchError) {
           console.error('❌ [OAuthCallback] Fetch request failed:', fetchError);
-          setError('Network error: ' + fetchError.message);
+          
+          if (fetchError.name === 'AbortError') {
+            setError('Request timeout - please try again');
+          } else {
+            setError('Network error: ' + fetchError.message);
+          }
+          
+          // Reset the global flag so user can try again
+          oauthInProgress = false;
+          
           setTimeout(() => {
             router.push('/auth/signin?error=network_error');
           }, 3000);
