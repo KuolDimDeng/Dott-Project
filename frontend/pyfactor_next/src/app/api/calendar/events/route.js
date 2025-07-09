@@ -140,6 +140,7 @@ export async function GET(request) {
 
     if (!backendResponse.ok) {
       console.error('[Calendar API GET] Backend error:', backendResponse.status);
+      console.error('[Calendar API GET] 🚨 BACKEND API CALL FAILED - Using fallback storage');
       try {
         const errorText = await backendResponse.text();
         console.error('[Calendar API GET] Error details:', errorText);
@@ -326,11 +327,34 @@ export async function POST(request) {
       );
     }
 
-    // Transform data for backend
+    // Transform data for backend - ensure proper datetime format
+    // Backend expects ISO 8601 format with timezone
+    const formatDateTimeForBackend = (dateStr, isAllDay) => {
+      if (!dateStr) return null;
+      
+      // If it's already in ISO format with timezone, return as-is
+      if (dateStr.includes('T') && (dateStr.includes('Z') || dateStr.includes('+'))) {
+        return dateStr;
+      }
+      
+      // If it's a date-only string (YYYY-MM-DD), add time
+      if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        // For all-day events, use noon to avoid timezone issues
+        return isAllDay ? `${dateStr}T12:00:00Z` : `${dateStr}T00:00:00Z`;
+      }
+      
+      // If it's datetime-local format (YYYY-MM-DDTHH:mm), add timezone
+      if (dateStr.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/)) {
+        return dateStr.includes('Z') ? dateStr : `${dateStr}:00Z`;
+      }
+      
+      return dateStr;
+    };
+    
     const backendData = {
       title: eventData.title,
-      start_datetime: eventData.start,
-      end_datetime: eventData.end || eventData.start,
+      start_datetime: formatDateTimeForBackend(eventData.start, eventData.allDay),
+      end_datetime: formatDateTimeForBackend(eventData.end || eventData.start, eventData.allDay),
       all_day: eventData.allDay || false,
       event_type: eventData.type || 'appointment',
       description: eventData.description || '',
@@ -368,6 +392,14 @@ export async function POST(request) {
       console.error('[Calendar API POST] Backend error:', backendResponse.status);
       const errorText = await backendResponse.text();
       console.error('[Calendar API POST] Error details:', errorText);
+      console.error('[Calendar API POST] Request that failed:', {
+        url: `${API_BASE_URL}/api/calendar/events/`,
+        method: 'POST',
+        headers: {
+          Authorization: `Session ${sessionToken?.substring(0, 20)}...`
+        },
+        body: backendData
+      });
       
       // Fallback to in-memory storage
       console.log('[Calendar API POST] Falling back to in-memory storage');

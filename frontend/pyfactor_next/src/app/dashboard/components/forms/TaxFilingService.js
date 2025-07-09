@@ -45,28 +45,121 @@ const TAX_TYPES = {
 };
 
 const SERVICE_PRICING = {
-  fullService: {
-    base: 40,
-    description: 'We handle everything - preparation, review, and filing',
-    features: [
-      'Tax form preparation by experts',
-      'Accuracy guarantee',
-      'E-filing included',
-      'Audit support for 3 years',
-      'Status tracking',
-      'Filing confirmation'
-    ]
+  sales: {
+    fullService: {
+      base: 75,
+      quarterly: 75,
+      annual: 300,
+      multiState: 200,
+      description: 'We handle everything - preparation, review, and filing',
+      features: [
+        'Tax form preparation by experts',
+        'Accuracy guarantee',
+        'E-filing included',
+        'Audit support for 3 years',
+        'Status tracking',
+        'Filing confirmation'
+      ]
+    },
+    selfService: {
+      base: 35,
+      quarterly: 35,
+      annual: 140,
+      multiState: 100,
+      description: 'We guide you through the process step-by-step',
+      features: [
+        'Step-by-step guidance',
+        'Form validation',
+        'E-filing submission',
+        'Basic support',
+        'Filing confirmation'
+      ]
+    }
   },
-  selfService: {
-    base: 20,
-    description: 'We guide you through the process step-by-step',
-    features: [
-      'Step-by-step guidance',
-      'Form validation',
-      'E-filing submission',
-      'Basic support',
-      'Filing confirmation'
-    ]
+  payroll: {
+    fullService: {
+      base: 125,
+      quarterly941: 125,
+      annual940: 150,
+      completePackage: 450,
+      description: 'Complete payroll tax filing service',
+      features: [
+        'Form 941/940 preparation',
+        'State filing included',
+        'E-filing and deposits',
+        'Penalty protection',
+        'Compliance guarantee'
+      ]
+    },
+    selfService: {
+      base: 65,
+      quarterly941: 65,
+      annual940: 85,
+      completePackage: 250,
+      description: 'Guided payroll tax filing',
+      features: [
+        'Step-by-step filing',
+        'Auto-calculations',
+        'E-filing support',
+        'Basic compliance help'
+      ]
+    }
+  },
+  income: {
+    fullService: {
+      base: 250,
+      soleProprietor: 250,
+      llcSCorp: 395,
+      cCorp: 595,
+      perState: 75,
+      description: 'Professional income tax preparation',
+      features: [
+        'Complete tax return preparation',
+        'Deduction maximization',
+        'Multi-state filing',
+        'Tax planning included',
+        'Audit representation'
+      ]
+    },
+    selfService: {
+      base: 125,
+      soleProprietor: 125,
+      llcSCorp: 195,
+      cCorp: 295,
+      perState: 50,
+      description: 'Guided income tax filing',
+      features: [
+        'Interview-based filing',
+        'Deduction finder',
+        'Error checking',
+        'E-filing included'
+      ]
+    }
+  },
+  yearEnd: {
+    fullService: {
+      base: 0,
+      perForm: 2,
+      minimum: 25,
+      description: 'W-2/1099 generation and filing',
+      features: [
+        'W-2/1099 preparation',
+        'E-filing to IRS/SSA',
+        'State filing',
+        'Employee distribution'
+      ]
+    },
+    selfService: {
+      base: 0,
+      perForm: 1,
+      minimum: 15,
+      description: 'DIY W-2/1099 generation',
+      features: [
+        'Form generation',
+        'E-filing support',
+        'Bulk processing'
+      ]
+    }
   }
 };
 
