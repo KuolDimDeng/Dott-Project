@@ -37,7 +37,7 @@ export async function GET(request) {
       params.append('country', country);
     }
     
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/onboarding/api/pricing/by-country/?${params}`;
+    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/api/pricing/by-country/?${params}`;
     console.log('🎯 [Pricing API] Backend URL:', backendUrl);
     console.log('🎯 [Pricing API] Params sent to backend:', params.toString());
     console.log('🎯 [Pricing API] Country parameter details:', {

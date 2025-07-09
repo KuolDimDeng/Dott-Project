@@ -140,6 +140,10 @@ class GetPricingForCountryView(APIView):
             country_code = request.GET.get('country')
             logger.info(f"Country from query param: {country_code}")
             
+            # Debug: Log raw query string
+            logger.info(f"Raw query string: {request.META.get('QUERY_STRING')}")
+            logger.info(f"All GET params: {dict(request.GET)}")
+            
             # If not provided, get from IP
             if not country_code:
                 ip_address = DiscountVerificationService.get_client_ip(request)
@@ -161,11 +165,21 @@ class GetPricingForCountryView(APIView):
             
             logger.info(f"Final country code: {country_code}")
             
+            # Ensure country code is uppercase
+            if country_code:
+                country_code = country_code.upper()
+            
             # Check if eligible for discount
             discount = DevelopingCountry.get_discount(country_code)
             is_discounted = discount > 0
             
             logger.info(f"Discount check for {country_code}: {discount}% (is_discounted={is_discounted})")
+            
+            # Debug: Direct database check
+            if country_code == 'KE':
+                kenya_exists = DevelopingCountry.objects.filter(country_code='KE').exists()
+                kenya_obj = DevelopingCountry.objects.filter(country_code='KE').first()
+                logger.info(f"KENYA DEBUG: exists={kenya_exists}, obj={kenya_obj}, discount={kenya_obj.discount_percentage if kenya_obj else 'N/A'}")
             
             # Get currency-converted pricing via Wise
             try:

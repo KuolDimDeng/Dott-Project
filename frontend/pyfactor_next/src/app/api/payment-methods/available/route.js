@@ -9,24 +9,14 @@ export async function GET(request) {
     logger.info('[PaymentMethods] Checking available methods for country:', country);
     
     // Define payment methods by country
+    // Currently only Kenya has M-Pesa enabled
     const paymentMethods = {
       // Kenya - M-Pesa is widely used
       'Kenya': ['card', 'mpesa'],
       'KE': ['card', 'mpesa'],
       
-      // Other African countries with mobile money
-      'Nigeria': ['card', 'flutterwave'],
-      'NG': ['card', 'flutterwave'],
-      'Ghana': ['card', 'mtn_mobile_money'],
-      'GH': ['card', 'mtn_mobile_money'],
-      'Uganda': ['card', 'mtn_mobile_money'],
-      'UG': ['card', 'mtn_mobile_money'],
-      'Tanzania': ['card', 'mpesa'],
-      'TZ': ['card', 'mpesa'],
-      'Rwanda': ['card', 'mtn_mobile_money'],
-      'RW': ['card', 'mtn_mobile_money'],
-      
-      // Default for other countries
+      // Other countries - card only for now
+      // Mobile money will be added later
       'default': ['card']
     };
     
@@ -52,21 +42,7 @@ export async function GET(request) {
             name: 'M-Pesa',
             description: 'Mobile Money Payment',
             icon: 'mobile',
-            countries: ['KE', 'TZ']
-          },
-          flutterwave: {
-            id: 'flutterwave',
-            name: 'Bank Transfer',
-            description: 'Pay via bank transfer',
-            icon: 'bank',
-            countries: ['NG']
-          },
-          mtn_mobile_money: {
-            id: 'mtn_mobile_money',
-            name: 'MTN Mobile Money',
-            description: 'Mobile Money Payment',
-            icon: 'mobile',
-            countries: ['GH', 'UG', 'RW']
+            countries: ['KE']
           }
         };
         

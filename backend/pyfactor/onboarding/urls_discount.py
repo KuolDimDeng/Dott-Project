@@ -6,6 +6,7 @@ from .views.discount_check import (
     CheckDiscountEligibilityView,
     GetPricingForCountryView
 )
+from .views.debug_kenya import DebugKenyaPricingView
 
 urlpatterns = [
     # Discount check during onboarding
@@ -20,5 +21,12 @@ urlpatterns = [
         'api/pricing/by-country/', 
         GetPricingForCountryView.as_view(), 
         name='pricing-by-country'
+    ),
+    
+    # Debug endpoint
+    path(
+        'api/debug/kenya-pricing/', 
+        DebugKenyaPricingView.as_view(), 
+        name='debug-kenya-pricing'
     ),
 ]
