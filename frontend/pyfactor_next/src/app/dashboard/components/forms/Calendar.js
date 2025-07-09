@@ -91,6 +91,34 @@ const formatDateTimeWithTimezone = (dateStr, timezone) => {
   }
 };
 
+// Helper function to get friendly timezone display name
+const getTimezoneDisplayName = (timezone) => {
+  const friendlyNames = {
+    'America/New_York': 'Eastern Time',
+    'America/Chicago': 'Central Time', 
+    'America/Denver': 'Mountain Time',
+    'America/Phoenix': 'Arizona Time',
+    'America/Los_Angeles': 'Pacific Time',
+    'America/Anchorage': 'Alaska Time',
+    'Pacific/Honolulu': 'Hawaii Time',
+    'Europe/London': 'Greenwich Mean Time',
+    'Europe/Paris': 'Central European Time',
+    'Asia/Tokyo': 'Japan Standard Time',
+    'Asia/Shanghai': 'China Standard Time',
+    'Asia/Kolkata': 'India Standard Time',
+    'Australia/Sydney': 'Australian Eastern Time',
+    'UTC': 'Coordinated Universal Time'
+  };
+  
+  const friendlyName = friendlyNames[timezone];
+  if (friendlyName) {
+    return `${friendlyName} (${timezone})`;
+  }
+  
+  // Fallback: convert underscores to spaces
+  return timezone.replace(/_/g, ' ');
+};
+
 export default function Calendar({ onNavigate }) {
   console.log('[Calendar] COMPONENT LOADED - DEBUG VERSION 2025-07-09-v2');
   const { user, loading: sessionLoading } = useSession();
@@ -822,7 +850,7 @@ export default function Calendar({ onNavigate }) {
               <p className="text-gray-600">
                 Manage appointments, deadlines, and reminders
                 <span className="ml-2 text-sm text-gray-500">
-                  • All times in {userTimezone.replace(/_/g, ' ')}
+                  • All times in {getTimezoneDisplayName(userTimezone)}
                 </span>
               </p>
             </div>
@@ -870,6 +898,7 @@ export default function Calendar({ onNavigate }) {
           ref={setCalendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
           initialView="dayGridMonth"
+          timeZone={userTimezone}
           headerToolbar={{
             left: 'prev,next today',
             center: 'title',
