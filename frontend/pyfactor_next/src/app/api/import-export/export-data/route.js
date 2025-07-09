@@ -169,7 +169,7 @@ export async function POST(request) {
     let totalRecords = 0;
     
     // Get session token for backend API calls
-    const sessionToken = session.token || session.sid || request.cookies.get('session_token')?.value || request.cookies.get('sid')?.value;
+    const sessionToken = session.token || session.sid;
     
     for (const dataType of dataTypes) {
       try {
