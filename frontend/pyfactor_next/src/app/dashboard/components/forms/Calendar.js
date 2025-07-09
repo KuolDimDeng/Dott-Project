@@ -24,6 +24,7 @@ import { toast } from 'react-hot-toast';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { useSession } from '@/hooks/useSession-v2';
 import StandardSpinner, { CenteredSpinner } from '@/components/ui/StandardSpinner';
+import reminderService from '@/utils/reminderService';
 
 // Event type configurations
 const EVENT_TYPES = {
@@ -69,6 +70,19 @@ export default function Calendar({ onNavigate }) {
         const id = await getSecureTenantId();
         if (id) {
           setTenantId(id);
+          
+          // Initialize reminder service
+          reminderService.init();
+          console.log('[Calendar] Reminder service initialized');
+          
+          // Request notification permission if not already granted
+          if ('Notification' in window && Notification.permission === 'default') {
+            const permission = await reminderService.requestNotificationPermission();
+            if (permission) {
+              console.log('[Calendar] Notification permission granted');
+            }
+          }
+          
           await loadEvents(id);
         }
       } catch (error) {
@@ -82,6 +96,11 @@ export default function Calendar({ onNavigate }) {
     if (!sessionLoading) {
       initialize();
     }
+    
+    // Cleanup on unmount
+    return () => {
+      reminderService.stopChecking();
+    };
   }, [sessionLoading]);
 
   // Load events from multiple sources
@@ -231,6 +250,18 @@ export default function Calendar({ onNavigate }) {
             allDay: eventData.allDay,
             color: eventData.color
           });
+          
+          // Schedule reminder for this event if it has reminder settings and is in the future
+          if (event.sendReminder && event.reminderMinutes && new Date(event.start) > new Date()) {
+            reminderService.scheduleReminder({
+              id: event.id,
+              title: event.title,
+              start: event.start,
+              type: event.type,
+              sendReminder: event.sendReminder,
+              reminderMinutes: event.reminderMinutes
+            });
+          }
           
           return eventData;
         });
@@ -510,10 +541,29 @@ export default function Calendar({ onNavigate }) {
         await loadEvents(tenantId);
         console.log('[Calendar] Events reload completed after save');
         
-        // Send reminder notification if requested
-        if (eventForm.sendReminder) {
-          console.log('[Calendar] Scheduling reminder');
-          scheduleReminder(eventForm);
+        // Handle reminders
+        if (selectedEvent) {
+          // Update reminder for edited event
+          console.log('[Calendar] Updating reminder for edited event');
+          reminderService.updateReminder({
+            id: data.id,
+            title: eventForm.title,
+            start: eventForm.start,
+            type: eventForm.type,
+            sendReminder: eventForm.sendReminder,
+            reminderMinutes: eventForm.reminderMinutes
+          });
+        } else if (eventForm.sendReminder && eventForm.reminderMinutes > 0) {
+          // Schedule reminder for new event
+          console.log('[Calendar] Scheduling reminder for new event');
+          reminderService.scheduleReminder({
+            id: data.id,
+            title: eventForm.title,
+            start: eventForm.start,
+            type: eventForm.type,
+            sendReminder: eventForm.sendReminder,
+            reminderMinutes: eventForm.reminderMinutes
+          });
         }
       } else {
         const errorData = await response.json().catch(() => ({}));
@@ -556,6 +606,10 @@ export default function Calendar({ onNavigate }) {
       });
       
       if (response.ok) {
+        // Cancel reminder for deleted event
+        reminderService.cancelReminder(selectedEvent.id);
+        console.log('[Calendar] Cancelled reminder for deleted event');
+        
         toast.success('Event deleted!');
         await loadEvents(tenantId);
         setShowEventModal(false);
@@ -570,11 +624,6 @@ export default function Calendar({ onNavigate }) {
     }
   };
 
-  // Schedule reminder (mock implementation)
-  const scheduleReminder = (event) => {
-    // In a real app, this would schedule a notification
-    console.log(`Reminder scheduled for ${event.title} - ${event.reminderMinutes} minutes before`);
-  };
 
   // Handle calendar debugging when calendarRef becomes available
   useEffect(() => {
@@ -651,29 +700,6 @@ export default function Calendar({ onNavigate }) {
     }
   }, [calendarRef, events]);
 
-  // Check for upcoming events and show toast notifications
-  useEffect(() => {
-    const checkUpcomingEvents = () => {
-      const now = new Date();
-      const soon = new Date(now.getTime() + 30 * 60000); // 30 minutes from now
-      
-      events.forEach(event => {
-        const eventStart = new Date(event.start);
-        if (eventStart > now && eventStart <= soon) {
-          toast(`Upcoming: ${event.title}`, {
-            icon: '⏰',
-            duration: 5000
-          });
-        }
-      });
-    };
-    
-    // Check every 5 minutes
-    const interval = setInterval(checkUpcomingEvents, 5 * 60000);
-    checkUpcomingEvents(); // Check immediately
-    
-    return () => clearInterval(interval);
-  }, [events]);
 
   if (sessionLoading || isLoading) {
     return <CenteredSpinner size="large" text="Loading calendar..." showText={true} />;
