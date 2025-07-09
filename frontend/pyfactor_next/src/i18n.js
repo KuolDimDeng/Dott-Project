@@ -57,6 +57,8 @@ import koOnboarding from '../public/locales/ko/onboarding.json';
 
 // Import auth namespaces - we'll add these after translation
 import enAuth from '../public/locales/en/auth.json';
+import esAuth from '../public/locales/es/auth.json';
+import frAuth from '../public/locales/fr/auth.json';
 
 const resources = {
   en: {
@@ -66,11 +68,13 @@ const resources = {
   },
   es: {
     common: esCommon,
-    onboarding: esOnboarding
+    onboarding: esOnboarding,
+    auth: esAuth
   },
   fr: {
     common: frCommon,
-    onboarding: frOnboarding
+    onboarding: frOnboarding,
+    auth: frAuth
   },
   pt: {
     common: ptCommon,

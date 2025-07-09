@@ -48,12 +48,15 @@
     },
     "errors": {
       "businessNameRequired": "Business name is required",
-      "businessTypeRequired": "Business type is required",
-      "countryRequired": "Country is required",
+      "businessNameTooShort": "Business name must be at least 2 characters",
+      "businessTypeRequired": "Please select a business type",
+      "legalStructureRequired": "Please select a legal structure",
+      "countryRequired": "Please select a country",
       "emailInvalid": "Please enter a valid email address",
       "phoneInvalid": "Please enter a valid phone number",
       "websiteInvalid": "Please enter a valid website URL"
-    }
+    },
+    "saving": "Saving..."
   },
   "subscription": {
     "title": "Choose Your Plan",

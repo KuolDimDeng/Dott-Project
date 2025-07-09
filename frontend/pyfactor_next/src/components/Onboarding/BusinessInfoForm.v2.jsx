@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { countries } from 'countries-list';
 import { businessTypes, legalStructures } from '@/app/utils/businessData';
 import { logger } from '@/utils/logger';
@@ -10,6 +11,7 @@ import { logger } from '@/utils/logger';
  * Integrates with the state machine and session manager
  */
 export default function BusinessInfoFormV2({ initialData = {}, onSubmit, submitting, error: parentError }) {
+  const { t } = useTranslation('onboarding');
   const [formData, setFormData] = useState({
     businessName: initialData.businessName || '',
     businessType: initialData.businessType || '',
@@ -80,24 +82,24 @@ export default function BusinessInfoFormV2({ initialData = {}, onSubmit, submitt
     switch (field) {
       case 'businessName':
         if (!formData.businessName.trim()) {
-          newErrors.businessName = 'Business name is required';
+          newErrors.businessName = t('businessInfo.errors.businessNameRequired');
         } else if (formData.businessName.length < 2) {
-          newErrors.businessName = 'Business name must be at least 2 characters';
+          newErrors.businessName = t('businessInfo.errors.businessNameTooShort', { defaultValue: 'Business name must be at least 2 characters' });
         }
         break;
       case 'businessType':
         if (!formData.businessType) {
-          newErrors.businessType = 'Please select a business type';
+          newErrors.businessType = t('businessInfo.errors.businessTypeRequired');
         }
         break;
       case 'legalStructure':
         if (!formData.legalStructure) {
-          newErrors.legalStructure = 'Please select a legal structure';
+          newErrors.legalStructure = t('businessInfo.errors.legalStructureRequired');
         }
         break;
       case 'country':
         if (!formData.country) {
-          newErrors.country = 'Please select a country';
+          newErrors.country = t('businessInfo.errors.countryRequired');
         }
         break;
     }
@@ -111,16 +113,16 @@ export default function BusinessInfoFormV2({ initialData = {}, onSubmit, submitt
     const newErrors = {};
     
     if (!formData.businessName.trim()) {
-      newErrors.businessName = 'Business name is required';
+      newErrors.businessName = t('businessInfo.errors.businessNameRequired');
     }
     if (!formData.businessType) {
-      newErrors.businessType = 'Please select a business type';
+      newErrors.businessType = t('businessInfo.errors.businessTypeRequired');
     }
     if (!formData.legalStructure) {
-      newErrors.legalStructure = 'Please select a legal structure';
+      newErrors.legalStructure = t('businessInfo.errors.legalStructureRequired');
     }
     if (!formData.country) {
-      newErrors.country = 'Please select a country';
+      newErrors.country = t('businessInfo.errors.countryRequired');
     }
     
     setErrors(newErrors);
@@ -159,7 +161,7 @@ export default function BusinessInfoFormV2({ initialData = {}, onSubmit, submitt
 
   return (
     <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6">
-      <h2 className="text-2xl font-bold mb-6">Tell us about your business</h2>
+      <h2 className="text-2xl font-bold mb-6">{t('businessInfo.subtitle')}</h2>
       
       {/* Error display */}
       {parentError && (
@@ -172,14 +174,14 @@ export default function BusinessInfoFormV2({ initialData = {}, onSubmit, submitt
         {/* Business Name */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Business Name *
+            {t('businessInfo.businessNameLabel')} *
           </label>
           <input
             type="text"
             value={formData.businessName}
             onChange={(e) => handleInputChange('businessName', e.target.value)}
             onBlur={() => handleBlur('businessName')}
-            placeholder="Enter your business name"
+            placeholder={t('businessInfo.businessNamePlaceholder')}
             className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               errors.businessName && touched.businessName ? 'border-red-500' : 'border-gray-300'
             }`}
@@ -193,7 +195,7 @@ export default function BusinessInfoFormV2({ initialData = {}, onSubmit, submitt
         {/* Business Type */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Business Type *
+            {t('businessInfo.businessTypeLabel')} *
           </label>
           <select
             value={formData.businessType}
@@ -204,7 +206,7 @@ export default function BusinessInfoFormV2({ initialData = {}, onSubmit, submitt
             }`}
             disabled={submitting}
           >
-            <option value="">Select business type</option>
+            <option value="">{t('businessInfo.businessTypePlaceholder')}</option>
             {businessTypeOptions.map(option => (
               <option key={option.value} value={option.value}>
                 {option.label}
@@ -219,7 +221,7 @@ export default function BusinessInfoFormV2({ initialData = {}, onSubmit, submitt
         {/* Legal Structure */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Legal Structure *
+            {t('businessInfo.legalStructureLabel')} *
           </label>
           <select
             value={formData.legalStructure}
@@ -230,7 +232,7 @@ export default function BusinessInfoFormV2({ initialData = {}, onSubmit, submitt
             }`}
             disabled={submitting}
           >
-            <option value="">Select legal structure</option>
+            <option value="">{t('businessInfo.legalStructurePlaceholder')}</option>
             {legalStructureOptions.map(option => (
               <option key={option.value} value={option.value}>
                 {option.label}
@@ -245,7 +247,7 @@ export default function BusinessInfoFormV2({ initialData = {}, onSubmit, submitt
         {/* Country */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Country *
+            {t('businessInfo.countryLabel')} *
           </label>
           <select
             value={formData.country}
@@ -256,7 +258,7 @@ export default function BusinessInfoFormV2({ initialData = {}, onSubmit, submitt
             }`}
             disabled={submitting}
           >
-            <option value="">Select country</option>
+            <option value="">{t('businessInfo.countryPlaceholder')}</option>
             {countryOptions.map(option => (
               <option key={option.code} value={option.value}>
                 {option.label}
@@ -271,7 +273,7 @@ export default function BusinessInfoFormV2({ initialData = {}, onSubmit, submitt
         {/* Date Founded */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Date Founded
+            {t('businessInfo.dateFoundedLabel')}
           </label>
           <input
             type="date"
@@ -295,7 +297,7 @@ export default function BusinessInfoFormV2({ initialData = {}, onSubmit, submitt
               : 'bg-blue-600 text-white hover:bg-blue-700'
           }`}
         >
-          {submitting ? 'Saving...' : 'Continue to Choose Plan'}
+          {submitting ? t('businessInfo.saving', { defaultValue: 'Saving...' }) : t('businessInfo.nextButton')}
         </button>
       </div>
     </form>

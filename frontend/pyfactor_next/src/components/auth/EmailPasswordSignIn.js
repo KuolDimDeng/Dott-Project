@@ -89,23 +89,23 @@ export default function EmailPasswordSignIn() {
     const emailParam = searchParams.get('email');
     
     if (errorParam === 'email_not_verified' && emailParam) {
-      setError('Please verify your email address before signing in. Check your inbox for the verification email.');
+      setError(t('signin.errors.emailNotVerified'));
       setShowResendVerification(true);
       setFormData(prev => ({ ...prev, email: emailParam }));
     } else if (errorParam === 'backend_unavailable') {
-      setError('Our servers are temporarily unavailable. Please try again in a few moments.');
+      setError(t('signin.errors.backendUnavailable'));
       setErrorType('error');
     } else if (errorParam === 'session_creation_failed') {
-      setError('Unable to sign in at this time. Please try again or use email/password login.');
+      setError(t('signin.errors.sessionCreationFailed'));
       setErrorType('error');
     } else if (errorParam === 'invalid_session') {
-      setError('Your session has expired. Please sign in again.');
+      setError(t('signin.errors.sessionExpired'));
       setErrorType('error');
     } else if (errorParam === 'token_exchange_failed') {
-      setError('Sign in with Google failed. Please try using email/password or contact support.');
+      setError(t('signin.errors.tokenExchangeFailed'));
       setErrorType('error');
     } else if (errorParam === 'oauth_configuration_error') {
-      setError('Google sign-in is temporarily unavailable due to a configuration issue. Please use email/password login.');
+      setError(t('signin.errors.oauthConfigurationError'));
       setErrorType('error');
     }
   }, [searchParams]);
@@ -173,7 +173,7 @@ export default function EmailPasswordSignIn() {
     e.preventDefault();
     
     if (!formData.email) {
-      showError('Please enter your email address first');
+      showError(t('signin.errors.enterEmailFirst'));
       return;
     }
 
@@ -186,18 +186,18 @@ export default function EmailPasswordSignIn() {
       });
 
       if (response.ok) {
-        showError('Password reset email sent! Check your inbox.');
+        showError(t('signin.errors.passwordResetSent'));
       } else {
-        showError('Error sending password reset email');
+        showError(t('signin.errors.passwordResetError'));
       }
     } catch (error) {
-      showError('Error sending password reset email');
+      showError(t('signin.errors.passwordResetError'));
     }
   };
 
   const handleResendVerification = async () => {
     if (!formData.email) {
-      showError('Please enter your email address');
+      showError(t('signup.verificationEmail.emailRequired'));
       return;
     }
 
@@ -211,13 +211,13 @@ export default function EmailPasswordSignIn() {
       });
 
       if (response.ok) {
-        showError('Verification email sent! Please check your inbox.', 'success');
+        showError(t('signup.verificationEmail.sent'), 'success');
         setShowResendVerification(false);
       } else {
-        showError('Error sending verification email. Please try again.');
+        showError(t('signup.verificationEmail.error'));
       }
     } catch (error) {
-      showError('Error sending verification email. Please try again.');
+      showError(t('signup.verificationEmail.error'));
     } finally {
       setIsLoading(false);
     }
@@ -270,7 +270,7 @@ export default function EmailPasswordSignIn() {
 
       // Show success message and redirect to login
       setIsLoading(false);
-      showError('Account created successfully! Please check your email to verify your account before signing in.', 'success');
+      showError(t('signup.errors.accountCreated'), 'success');
       
       // Switch to login mode after a delay
       setTimeout(() => {
@@ -511,11 +511,11 @@ export default function EmailPasswordSignIn() {
       }
       
       // If we get here, login failed
-      showError('Login failed. Please try again.');
+      showError(t('signin.errors.genericError'));
       setIsLoading(false);
     } catch (error) {
       logger.error('[EmailPasswordSignIn] Login error:', error);
-      showError(error.message || 'Invalid email or password');
+      showError(error.message || t('signin.errors.invalidCredentials'));
       setIsLoading(false);
     }
   };
@@ -553,7 +553,7 @@ export default function EmailPasswordSignIn() {
               src="https://dottapps.com/static/images/PyfactorLandingpage.png" 
               alt="Dott" 
             />
-            <h2 className="mt-6 text-2xl font-bold text-gray-900">Checking your session...</h2>
+            <h2 className="mt-6 text-2xl font-bold text-gray-900">{t('oauth.processing')}</h2>
             <div className="mt-4 flex justify-center">
               <div className="loader"></div>
             </div>
@@ -634,7 +634,7 @@ export default function EmailPasswordSignIn() {
                   type="button"
                   disabled={isLoading}
                 >
-                  Resend verification email
+                  {t('signup.verificationEmail.resendButton')}
                 </button>
               )}
             </div>
@@ -647,7 +647,7 @@ export default function EmailPasswordSignIn() {
               <div className="space-y-4">
                 <div>
                   <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
-                    First Name
+                    {t('signup.firstNameLabel')}
                   </label>
                   <input
                     id="firstName"
@@ -662,7 +662,7 @@ export default function EmailPasswordSignIn() {
                 </div>
                 <div>
                   <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
-                    Last Name
+                    {t('signup.lastNameLabel')}
                   </label>
                   <input
                     id="lastName"
@@ -681,7 +681,7 @@ export default function EmailPasswordSignIn() {
             {/* Email */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
+                {t(isSignup ? 'signup.emailLabel' : 'signin.emailLabel')}
               </label>
               <input
                 id="email"
@@ -699,7 +699,7 @@ export default function EmailPasswordSignIn() {
             {/* Password */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
+                {t(isSignup ? 'signup.passwordLabel' : 'signin.passwordLabel')}
               </label>
               <div className="mt-1 relative">
                 <input
@@ -735,7 +735,7 @@ export default function EmailPasswordSignIn() {
             {isSignup && (
               <div>
                 <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                  Confirm Password
+                  {t('signup.confirmPasswordLabel')}
                 </label>
                 <div className="mt-1 relative">
                   <input
@@ -781,7 +781,7 @@ export default function EmailPasswordSignIn() {
                     className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                   />
                   <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-900">
-                    Remember me
+                    {t('signin.rememberMe')}
                   </label>
                 </div>
                 <div className="text-sm">
@@ -790,7 +790,7 @@ export default function EmailPasswordSignIn() {
                     onClick={handleForgotPassword}
                     className="font-medium text-blue-600 hover:text-blue-800"
                   >
-                    Forgot password?
+                    {t('signin.forgotPassword')}
                   </button>
                 </div>
               </div>
@@ -802,7 +802,7 @@ export default function EmailPasswordSignIn() {
               disabled={isLoading}
               className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <span>{isSignup ? 'Create Account' : 'Sign in with Email'}</span>
+              <span>{isSignup ? t('signup.signupButton') : t('signin.signinButton')}</span>
               {isLoading && <div className="loader ml-2"></div>}
             </button>
           </form>
@@ -815,7 +815,7 @@ export default function EmailPasswordSignIn() {
                   <div className="w-full border-t border-gray-300"></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">or continue with</span>
+                  <span className="px-2 bg-white text-gray-500">{t('signin.orContinueWith')}</span>
                 </div>
               </div>
 
@@ -832,7 +832,7 @@ export default function EmailPasswordSignIn() {
                     <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                   </svg>
-                  Google
+                  {t('signin.googleSignin')}
                 </button>
               </div>
             </div>
@@ -840,13 +840,13 @@ export default function EmailPasswordSignIn() {
 
           {/* Terms */}
           <p className="mt-4 text-center text-sm text-gray-600">
-            By signing in, you agree to our{' '}
+            {isSignup ? t('signup.termsText') : t('signin.termsText', { defaultValue: 'By signing in, you agree to our' })}{' '}
             <a href="https://dottapps.com/terms" className="font-medium text-blue-600 hover:text-blue-800">
-              Terms of Service
+              {t('signup.termsLink')}
             </a>{' '}
-            and{' '}
+            {t('signup.andText')}{' '}
             <a href="https://dottapps.com/privacy" className="font-medium text-blue-600 hover:text-blue-800">
-              Privacy Policy
+              {t('signup.privacyLink')}
             </a>
           </p>
         </div>
