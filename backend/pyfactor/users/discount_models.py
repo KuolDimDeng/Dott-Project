@@ -66,13 +66,29 @@ class DevelopingCountry(models.Model):
     @classmethod
     def get_discount(cls, country_code):
         """Get discount percentage for a country"""
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"[DevelopingCountry.get_discount] Looking up discount for: '{country_code}'")
+        
         try:
+            normalized_code = country_code.upper() if country_code else ''
+            logger.info(f"[DevelopingCountry.get_discount] Normalized code: '{normalized_code}'")
+            
             country = cls.objects.get(
-                country_code=country_code.upper(),
+                country_code=normalized_code,
                 is_active=True
             )
+            logger.info(f"[DevelopingCountry.get_discount] Found country: {country.country_name} ({country.country_code}) - {country.discount_percentage}%")
             return country.discount_percentage
         except cls.DoesNotExist:
+            logger.warning(f"[DevelopingCountry.get_discount] Country not found: '{country_code}'")
+            # Log what countries ARE in the database
+            existing = list(cls.objects.filter(is_active=True).values_list('country_code', flat=True)[:5])
+            logger.info(f"[DevelopingCountry.get_discount] Sample active countries in DB: {existing}")
+            return 0
+        except Exception as e:
+            logger.error(f"[DevelopingCountry.get_discount] Error: {str(e)}")
             return 0
 
 

@@ -92,7 +92,12 @@ export default function SubscriptionSelectionFormV2({
   // Fetch regional pricing based on country from business info
   useEffect(() => {
     const fetchRegionalPricing = async () => {
+      console.log('🎯 [SubscriptionSelection] Initial data received:', initialData);
+      console.log('🎯 [SubscriptionSelection] Country value:', initialData.country);
+      console.log('🎯 [SubscriptionSelection] All initial data keys:', Object.keys(initialData));
+      
       if (!initialData.country) {
+        console.log('🎯 [SubscriptionSelection] No country data, skipping pricing fetch');
         setPricingLoading(false);
         return;
       }
@@ -108,8 +113,16 @@ export default function SubscriptionSelectionFormV2({
           isCode: initialData.country?.length === 2
         });
         
+        // Debug: Log the exact URL being called
+        const pricingUrl = `/api/pricing/by-country?country=${encodeURIComponent(countryCode)}`;
+        console.log('🎯 [SubscriptionSelection] Fetching pricing from URL:', pricingUrl);
+        console.log('🎯 [SubscriptionSelection] Country parameter:', countryCode);
+        
         // Fetch pricing with country parameter
-        const response = await fetch(`/api/pricing/by-country?country=${encodeURIComponent(countryCode)}`);
+        const response = await fetch(pricingUrl);
+        console.log('🎯 [SubscriptionSelection] Response status:', response.status);
+        console.log('🎯 [SubscriptionSelection] Response headers:', Object.fromEntries(response.headers.entries()));
+        
         const data = await response.json();
         
         logger.info('[SubscriptionSelection] Regional pricing data:', data);

@@ -19,9 +19,23 @@ export function DynamicStripeProvider({ children }) {
         // If not available, fetch from API
         if (!publishableKey) {
           console.log('[DynamicStripe] Fetching Stripe key from API...');
-          const response = await fetch('/api/config/stripe');
-          const data = await response.json();
-          publishableKey = data.publishableKey;
+          try {
+            const response = await fetch('/api/config/stripe');
+            if (!response.ok) {
+              throw new Error(`API returned ${response.status}`);
+            }
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+              console.error('[DynamicStripe] Response is not JSON, content-type:', contentType);
+              throw new Error('Response is not JSON');
+            }
+            const data = await response.json();
+            publishableKey = data.publishableKey;
+          } catch (err) {
+            console.error('[DynamicStripe] Failed to fetch key from API:', err);
+            // Fallback to hardcoded key if API fails
+            publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+          }
         }
 
         if (!publishableKey) {

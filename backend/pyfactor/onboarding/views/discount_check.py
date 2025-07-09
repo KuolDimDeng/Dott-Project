@@ -170,16 +170,36 @@ class GetPricingForCountryView(APIView):
                 country_code = country_code.upper()
             
             # Check if eligible for discount
+            logger.info(f"=== DISCOUNT CHECK START ===")
+            logger.info(f"Looking up country: '{country_code}'")
+            
+            # Debug: Check database directly
+            all_countries = DevelopingCountry.objects.filter(is_active=True).values_list('country_code', flat=True)
+            logger.info(f"Active developing countries in DB: {list(all_countries)[:10]}...") # First 10
+            
+            # Check if Kenya specifically exists
+            kenya_exists = DevelopingCountry.objects.filter(country_code='KE', is_active=True).exists()
+            logger.info(f"Kenya (KE) exists in DB: {kenya_exists}")
+            
+            # Get discount using the model method
             discount = DevelopingCountry.get_discount(country_code)
             is_discounted = discount > 0
             
-            logger.info(f"Discount check for {country_code}: {discount}% (is_discounted={is_discounted})")
+            logger.info(f"Discount lookup result: {discount}% (is_discounted={is_discounted})")
             
-            # Debug: Direct database check
+            # Extra debug for Kenya
             if country_code == 'KE':
-                kenya_exists = DevelopingCountry.objects.filter(country_code='KE').exists()
                 kenya_obj = DevelopingCountry.objects.filter(country_code='KE').first()
-                logger.info(f"KENYA DEBUG: exists={kenya_exists}, obj={kenya_obj}, discount={kenya_obj.discount_percentage if kenya_obj else 'N/A'}")
+                if kenya_obj:
+                    logger.info(f"KENYA FOUND: code={kenya_obj.country_code}, name={kenya_obj.country_name}, discount={kenya_obj.discount_percentage}%, active={kenya_obj.is_active}")
+                else:
+                    logger.info(f"KENYA NOT FOUND in database!")
+                    # Try case-insensitive search
+                    kenya_lower = DevelopingCountry.objects.filter(country_code__iexact='ke').first()
+                    if kenya_lower:
+                        logger.info(f"Found with case-insensitive search: {kenya_lower.country_code}")
+            
+            logger.info(f"=== DISCOUNT CHECK END ===")
             
             # Get currency-converted pricing via Wise
             try:
