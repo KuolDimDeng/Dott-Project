@@ -170,14 +170,36 @@ export default function Calendar({ onNavigate }) {
       
       if (response.ok) {
         const data = await response.json();
-        const savedTimezone = data.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
-        setUserTimezone(savedTimezone);
-        console.log('[Calendar] User timezone loaded:', savedTimezone);
+        const savedTimezone = data.timezone;
+        const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        
+        // If user has no timezone saved (existing user), auto-detect and save it
+        if (!savedTimezone || savedTimezone === 'UTC') {
+          console.log('[Calendar] No timezone saved, auto-detecting and saving:', detectedTimezone);
+          
+          // Save detected timezone to backend
+          await fetch('/api/user/timezone', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+              timezone: detectedTimezone
+            })
+          });
+          
+          setUserTimezone(detectedTimezone);
+          console.log('[Calendar] Auto-detected timezone saved:', detectedTimezone);
+        } else {
+          setUserTimezone(savedTimezone);
+          console.log('[Calendar] User timezone loaded:', savedTimezone);
+        }
         
         // Update form default timezone
         setEventForm(prev => ({
           ...prev,
-          timezone: savedTimezone
+          timezone: savedTimezone || detectedTimezone
         }));
       }
     } catch (error) {
