@@ -5,38 +5,6 @@ import { logger } from '@/utils/logger';
 import { useCurrencyDetection } from '@/hooks/useCurrencyDetection';
 import PricingDisplay from './PricingDisplay';
 import CurrencySelector from './CurrencySelector';
-import { countries } from 'countries-list';
-
-// Helper function to get country code from country name
-function getCountryCode(countryNameOrCode) {
-  // If it's already a 2-letter code, return it
-  if (countryNameOrCode && countryNameOrCode.length === 2) {
-    return countryNameOrCode.toUpperCase();
-  }
-  
-  // Find country code by name
-  for (const [code, country] of Object.entries(countries)) {
-    if (country.name === countryNameOrCode) {
-      return code;
-    }
-  }
-  
-  // Special cases for common variations
-  const specialCases = {
-    'United States': 'US',
-    'United States of America': 'US',
-    'USA': 'US',
-    'UK': 'GB',
-    'United Kingdom': 'GB'
-  };
-  
-  return specialCases[countryNameOrCode] || null;
-}
-
-// Helper function to get country name from code
-function getCountryName(countryCode) {
-  return countries[countryCode]?.name || countryCode;
-}
 import { getCountryCode, getCountryName } from '@/utils/countryMapping';
 
 // Subscription plans with updated pricing
