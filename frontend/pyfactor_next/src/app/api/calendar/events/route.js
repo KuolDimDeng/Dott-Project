@@ -144,6 +144,14 @@ export async function GET(request) {
       try {
         const errorText = await backendResponse.text();
         console.error('[Calendar API GET] Error details:', errorText);
+        
+        // Check for schema/migration issues
+        if (errorText.includes('no such table') || errorText.includes('does not exist') || 
+            errorText.includes('schema') || errorText.includes('migration')) {
+          console.error('[Calendar API GET] 🚨 DATABASE SCHEMA ISSUE DETECTED!');
+          console.error('[Calendar API GET] The calendar tables may not be created for this tenant.');
+          console.error('[Calendar API GET] Backend migration may be needed.');
+        }
       } catch (e) {
         console.error('[Calendar API GET] Could not read error response');
       }
@@ -400,6 +408,25 @@ export async function POST(request) {
         },
         body: backendData
       });
+      
+      // Check for schema/migration issues
+      if (errorText.includes('no such table') || errorText.includes('does not exist') || 
+          errorText.includes('schema') || errorText.includes('migration') ||
+          errorText.includes('relation') || errorText.includes('calendar_event')) {
+        console.error('[Calendar API POST] 🚨 DATABASE SCHEMA ISSUE DETECTED!');
+        console.error('[Calendar API POST] The calendar_event table does not exist for this tenant.');
+        console.error('[Calendar API POST] Backend schema setup required for tenant:', tenantId);
+        
+        // Return a more informative error to the user
+        return NextResponse.json(
+          { 
+            error: 'Database schema not initialized', 
+            details: 'Calendar tables need to be created for your account. Please contact support.',
+            tenantId: tenantId 
+          },
+          { status: 503 }
+        );
+      }
       
       // Fallback to in-memory storage
       console.log('[Calendar API POST] Falling back to in-memory storage');
