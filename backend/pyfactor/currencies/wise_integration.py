@@ -71,6 +71,18 @@ class WiseCurrencyService:
         Returns:
             Dict with rate and fee information
         """
+        # Check if API token is available
+        if not WISE_API_TOKEN:
+            logger.warning("No Wise API token available, using fixed rates")
+            # Return fixed rate for Kenya
+            if target_currency == 'KES':
+                return {
+                    'rate': 130.0,
+                    'target_amount': amount * 130.0,
+                    'timestamp': datetime.now().isoformat()
+                }
+            raise WiseError("No Wise API token configured")
+        
         cache_key = f"wise_rate_{source_currency}_{target_currency}_{amount}"
         cached_rate = cache.get(cache_key)
         
@@ -132,6 +144,11 @@ class WiseCurrencyService:
             # Return USD prices if currency not supported
             return self._get_usd_pricing(is_discounted)
         
+        # Special handling for Kenya - use fixed rate if Wise fails
+        if country_code.upper() == 'KE' and not WISE_API_TOKEN:
+            logger.warning("No Wise API token, using fixed rate for Kenya")
+            return self._get_kenya_fixed_pricing(is_discounted)
+        
         try:
             # Base USD prices
             usd_prices = self._get_usd_pricing(is_discounted)
@@ -152,8 +169,20 @@ class WiseCurrencyService:
                     # Get conversion rate
                     rate_info = self.get_exchange_rate('USD', target_currency, usd_amount)
                     
+                    # Debug logging for Kenya
+                    if country_code.upper() == 'KE':
+                        logger.info(f"Kenya pricing debug - {plan} {cycle}:")
+                        logger.info(f"  USD amount: ${usd_amount}")
+                        logger.info(f"  Rate info: {rate_info}")
+                        logger.info(f"  Target amount: {rate_info.get('target_amount', 'N/A')}")
+                    
                     # Add 3% markup to cover conversion losses
                     local_amount = rate_info['target_amount'] * 1.03
+                    
+                    # Ensure minimum pricing (at least 1 unit of local currency)
+                    if local_amount < 1:
+                        logger.warning(f"Local amount too small ({local_amount}), setting to minimum 1")
+                        local_amount = 1
                     
                     converted_prices[plan][cycle] = round(local_amount, 0)  # Round to nearest whole number
                     converted_prices[plan][f'{cycle}_display'] = self._format_currency(local_amount, target_currency)
@@ -177,7 +206,11 @@ class WiseCurrencyService:
             
         except WiseError as e:
             logger.error(f"Error converting prices for {country_code}: {str(e)}")
-            # Fallback to USD pricing
+            # Special fallback for Kenya
+            if country_code.upper() == 'KE':
+                logger.warning("Falling back to fixed Kenya pricing")
+                return self._get_kenya_fixed_pricing(is_discounted)
+            # Fallback to USD pricing for other countries
             return self._get_usd_pricing(is_discounted)
     
     def _get_usd_pricing(self, is_discounted=False):
@@ -265,6 +298,64 @@ class WiseCurrencyService:
     def is_currency_supported(self, country_code):
         """Check if country has supported currency"""
         return country_code.upper() in COUNTRY_CURRENCIES
+    
+    def _get_kenya_fixed_pricing(self, is_discounted=False):
+        """Get Kenya pricing with fixed exchange rate when Wise API is unavailable"""
+        # Use a fixed rate of 130 KES per USD (typical rate)
+        fixed_rate = 130.0
+        
+        if is_discounted:
+            return {
+                'currency': 'KES',
+                'professional': {
+                    'monthly': 975,  # $7.50 * 130
+                    'six_month': 5070,  # $39 * 130
+                    'yearly': 9360,  # $72 * 130
+                    'monthly_display': 'KSh975',
+                    'six_month_display': 'KSh5,070',
+                    'yearly_display': 'KSh9,360'
+                },
+                'enterprise': {
+                    'monthly': 2925,  # $22.50 * 130
+                    'six_month': 15210,  # $117 * 130
+                    'yearly': 28080,  # $216 * 130
+                    'monthly_display': 'KSh2,925',
+                    'six_month_display': 'KSh15,210',
+                    'yearly_display': 'KSh28,080'
+                },
+                'exchange_info': {
+                    'rate': fixed_rate,
+                    'markup_percentage': 0,
+                    'last_updated': datetime.now().isoformat(),
+                    'note': 'Fixed rate - Wise API unavailable'
+                }
+            }
+        else:
+            return {
+                'currency': 'KES',
+                'professional': {
+                    'monthly': 1950,  # $15 * 130
+                    'six_month': 10140,  # $78 * 130
+                    'yearly': 18720,  # $144 * 130
+                    'monthly_display': 'KSh1,950',
+                    'six_month_display': 'KSh10,140',
+                    'yearly_display': 'KSh18,720'
+                },
+                'enterprise': {
+                    'monthly': 5850,  # $45 * 130
+                    'six_month': 30420,  # $234 * 130
+                    'yearly': 56160,  # $432 * 130
+                    'monthly_display': 'KSh5,850',
+                    'six_month_display': 'KSh30,420',
+                    'yearly_display': 'KSh56,160'
+                },
+                'exchange_info': {
+                    'rate': fixed_rate,
+                    'markup_percentage': 0,
+                    'last_updated': datetime.now().isoformat(),
+                    'note': 'Fixed rate - Wise API unavailable'
+                }
+            }
 
 
 # Singleton instance
