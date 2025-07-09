@@ -88,6 +88,14 @@ export async function GET(request) {
     const startDate = searchParams.get('start');
     const endDate = searchParams.get('end');
     const eventType = searchParams.get('type');
+    
+    console.log('[Calendar API GET] DEBUGGING - All search params:', {
+      tenantId,
+      startDate,
+      endDate,
+      eventType,
+      allParams: Object.fromEntries(searchParams.entries())
+    });
 
     if (!tenantId) {
       return NextResponse.json(
@@ -168,6 +176,17 @@ export async function GET(request) {
 
     // Transform backend data to calendar format
     const events = Array.isArray(backendData) ? backendData : (backendData.results || []);
+    console.log('[Calendar API GET] DEBUGGING - Raw events from backend:', {
+      count: events.length,
+      events: events.map(e => ({
+        id: e.id,
+        title: e.title,
+        start: e.start_datetime,
+        end: e.end_datetime,
+        allDay: e.all_day
+      }))
+    });
+    
     const transformedEvents = events.map(event => ({
       id: event.id,
       title: event.title,
@@ -185,6 +204,11 @@ export async function GET(request) {
         created_by: event.created_by_name
       }
     }));
+    
+    console.log('[Calendar API GET] DEBUGGING - Transformed events:', {
+      count: transformedEvents.length,
+      events: transformedEvents
+    });
 
     return NextResponse.json(transformedEvents);
   } catch (error) {
