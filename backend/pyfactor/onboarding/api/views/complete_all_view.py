@@ -130,8 +130,24 @@ def complete_all_onboarding(request):
             if needs_name_update:
                 logger.info(f"[Complete-All] Name fields will be updated during save")
             
+            # Extract and set timezone from request data
+            timezone_value = request.data.get('timezone')
+            if timezone_value:
+                # Validate timezone
+                try:
+                    import pytz
+                    pytz.timezone(timezone_value)
+                    user.timezone = timezone_value
+                    logger.info(f"[Complete-All] Setting user timezone to: {timezone_value}")
+                except:
+                    logger.warning(f"[Complete-All] Invalid timezone: {timezone_value}, keeping default")
+            elif not user.timezone:
+                # Set default timezone if none provided
+                user.timezone = 'UTC'
+                logger.info(f"[Complete-All] Setting default timezone: UTC")
+            
             # Save all user updates
-            update_fields = ['onboarding_completed', 'onboarding_completed_at', 'subscription_plan']
+            update_fields = ['onboarding_completed', 'onboarding_completed_at', 'subscription_plan', 'timezone']
             if first_name:
                 update_fields.append('first_name')
             if last_name:

@@ -46,7 +46,8 @@ export async function POST(request) {
       businessName, 
       subscriptionPlan = 'free',
       planType = 'free',
-      paymentCompleted = (planType !== 'free')
+      paymentCompleted = (planType !== 'free'),
+      timezone = body.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone
     } = body;
     
     console.log('[OnboardingComplete] Completion request:', {
@@ -54,7 +55,8 @@ export async function POST(request) {
       businessName,
       subscriptionPlan,
       planType,
-      paymentCompleted
+      paymentCompleted,
+      timezone
     });
     
     // Check if user has tenant ID
@@ -77,6 +79,8 @@ export async function POST(request) {
         family_name: session.user?.family_name || '',
         first_name: session.user?.first_name || '',
         last_name: session.user?.last_name || '',
+        // Include timezone for global app support
+        timezone: timezone,
         // Legacy fields for backward compatibility
         tenant_id: tenantId,
         payment_completed: paymentCompleted,

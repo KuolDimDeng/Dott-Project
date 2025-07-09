@@ -38,6 +38,59 @@ const EVENT_TYPES = {
   reminder: { color: '#14B8A6', icon: BellIcon, label: 'Reminder' }
 };
 
+// Common timezones grouped by region
+const TIMEZONE_OPTIONS = [
+  { group: 'US & Canada', zones: [
+    { value: 'America/New_York', label: 'Eastern Time (ET)' },
+    { value: 'America/Chicago', label: 'Central Time (CT)' },
+    { value: 'America/Denver', label: 'Mountain Time (MT)' },
+    { value: 'America/Phoenix', label: 'Arizona Time' },
+    { value: 'America/Los_Angeles', label: 'Pacific Time (PT)' },
+    { value: 'America/Anchorage', label: 'Alaska Time' },
+    { value: 'Pacific/Honolulu', label: 'Hawaii Time' }
+  ]},
+  { group: 'Europe', zones: [
+    { value: 'Europe/London', label: 'London (GMT/BST)' },
+    { value: 'Europe/Paris', label: 'Paris (CET/CEST)' },
+    { value: 'Europe/Berlin', label: 'Berlin (CET/CEST)' },
+    { value: 'Europe/Moscow', label: 'Moscow (MSK)' }
+  ]},
+  { group: 'Asia', zones: [
+    { value: 'Asia/Tokyo', label: 'Tokyo (JST)' },
+    { value: 'Asia/Shanghai', label: 'China (CST)' },
+    { value: 'Asia/Kolkata', label: 'India (IST)' },
+    { value: 'Asia/Dubai', label: 'Dubai (GST)' }
+  ]},
+  { group: 'Africa', zones: [
+    { value: 'Africa/Nairobi', label: 'Nairobi (EAT)' },
+    { value: 'Africa/Lagos', label: 'Lagos (WAT)' },
+    { value: 'Africa/Johannesburg', label: 'Johannesburg (SAST)' }
+  ]},
+  { group: 'Australia & Pacific', zones: [
+    { value: 'Australia/Sydney', label: 'Sydney (AEST/AEDT)' },
+    { value: 'Australia/Perth', label: 'Perth (AWST)' },
+    { value: 'Pacific/Auckland', label: 'Auckland (NZST/NZDT)' }
+  ]}
+];
+
+// Helper function to format datetime for display with timezone
+const formatDateTimeWithTimezone = (dateStr, timezone) => {
+  if (!dateStr) return '';
+  try {
+    const date = new Date(dateStr);
+    return date.toLocaleString('en-US', { 
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch (e) {
+    return dateStr;
+  }
+};
+
 export default function Calendar({ onNavigate }) {
   console.log('[Calendar] COMPONENT LOADED - DEBUG VERSION 2025-07-09-v2');
   const { user, loading: sessionLoading } = useSession();
@@ -49,6 +102,7 @@ export default function Calendar({ onNavigate }) {
   const [tenantId, setTenantId] = useState(null);
   const [calendarRef, setCalendarRef] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [userTimezone, setUserTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
   
   // Form state for new/edit event
   const [eventForm, setEventForm] = useState({
@@ -60,7 +114,8 @@ export default function Calendar({ onNavigate }) {
     description: '',
     location: '',
     sendReminder: true,
-    reminderMinutes: 30
+    reminderMinutes: 30,
+    timezone: userTimezone
   });
 
   // Initialize and load data
@@ -83,6 +138,9 @@ export default function Calendar({ onNavigate }) {
             }
           }
           
+          // Load user's timezone from backend
+          await loadUserTimezone();
+          
           await loadEvents(id);
         }
       } catch (error) {
@@ -102,6 +160,31 @@ export default function Calendar({ onNavigate }) {
       reminderService.stopChecking();
     };
   }, [sessionLoading]);
+
+  // Load user's timezone from backend
+  const loadUserTimezone = async () => {
+    try {
+      const response = await fetch('/api/user/timezone', {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const savedTimezone = data.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+        setUserTimezone(savedTimezone);
+        console.log('[Calendar] User timezone loaded:', savedTimezone);
+        
+        // Update form default timezone
+        setEventForm(prev => ({
+          ...prev,
+          timezone: savedTimezone
+        }));
+      }
+    } catch (error) {
+      console.error('[Calendar] Error loading timezone:', error);
+      // Keep using auto-detected timezone as fallback
+    }
+  };
 
   // Load events from multiple sources
   const loadEvents = async (tenantId) => {
@@ -714,7 +797,12 @@ export default function Calendar({ onNavigate }) {
             <CalendarDaysIcon className="h-8 w-8 text-blue-600 mr-3" />
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Calendar</h1>
-              <p className="text-gray-600">Manage appointments, deadlines, and reminders</p>
+              <p className="text-gray-600">
+                Manage appointments, deadlines, and reminders
+                <span className="ml-2 text-sm text-gray-500">
+                  • All times in {userTimezone.replace(/_/g, ' ')}
+                </span>
+              </p>
             </div>
           </div>
           <button

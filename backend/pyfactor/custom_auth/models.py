@@ -127,6 +127,16 @@ class User(AbstractUser):
         help_text='User subscription plan'
     )
     
+    # Timezone field for global app support
+    timezone = models.CharField(
+        max_length=50,
+        default='UTC',
+        null=True,
+        blank=True,
+        help_text='User timezone (e.g., America/New_York)',
+        verbose_name='User Timezone'
+    )
+    
     # Account closure fields
     is_deleted = models.BooleanField(default=False, help_text='Soft delete flag - user account is closed')
     deleted_at = models.DateTimeField(null=True, blank=True, help_text='When the account was closed')

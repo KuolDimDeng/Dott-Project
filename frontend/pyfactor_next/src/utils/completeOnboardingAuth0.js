@@ -10,6 +10,9 @@ export async function completeOnboardingAuth0(onboardingData) {
   logger.info(`[completeOnboardingAuth0:${requestId}] Starting onboarding completion`);
   
   try {
+    // Auto-detect user's timezone for global app support
+    const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    
     // Call the consolidated onboarding API endpoint
     const response = await fetch('/api/onboarding/complete-all', {
       method: 'POST',
@@ -19,6 +22,7 @@ export async function completeOnboardingAuth0(onboardingData) {
       credentials: 'include',
       body: JSON.stringify({
         ...onboardingData,
+        timezone: onboardingData.timezone || detectedTimezone,
         requestId,
         timestamp: new Date().toISOString()
       })
