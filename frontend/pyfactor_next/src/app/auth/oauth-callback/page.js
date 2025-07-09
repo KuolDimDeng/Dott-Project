@@ -20,17 +20,29 @@ export default function Auth0OAuthCallbackPage() {
       console.log('🚀 [OAuthCallback] handleOAuthCallback function called');
       console.log('🚀 [OAuthCallback] Mounted:', mounted, 'OAuth in progress:', oauthInProgress);
       
-      if (!mounted || oauthInProgress) {
-        console.log('🚀 [OAuthCallback] Exiting early - mounted:', mounted, 'oauthInProgress:', oauthInProgress);
+      if (!mounted) {
+        console.log('🚀 [OAuthCallback] Component unmounted, exiting');
+        return;
+      }
+      
+      // Check if we already have a code parameter
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      
+      if (!code) {
+        console.log('🚀 [OAuthCallback] No code parameter, nothing to process');
+        return;
+      }
+      
+      if (oauthInProgress) {
+        console.log('🚀 [OAuthCallback] OAuth already in progress for this code, exiting');
         return;
       }
       
       console.log('🚀 [OAuthCallback] Setting oauthInProgress to true and proceeding...');
       oauthInProgress = true;
       try {
-        // Get URL parameters
-        const urlParams = new URLSearchParams(window.location.search);
-        const code = urlParams.get('code');
+        // Get state and error parameters (code already retrieved above)
         const state = urlParams.get('state');
         const error = urlParams.get('error');
 
@@ -154,6 +166,9 @@ export default function Auth0OAuthCallbackPage() {
 
         setStatus('Authentication successful! Redirecting...');
 
+        // Reset the flag before redirecting to allow callback page to work
+        oauthInProgress = false;
+        
         // Redirect to the main callback handler for onboarding logic
         setTimeout(() => {
           router.push('/auth/callback');

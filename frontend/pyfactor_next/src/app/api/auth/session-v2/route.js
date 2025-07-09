@@ -43,7 +43,8 @@ export async function GET(request) {
           response = await fetch(`${API_URL}/api/sessions/validate/${sessionId.value}/`, {
             headers: {
               'Accept': 'application/json',
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
+              'Authorization': `Session ${sessionId.value}` // Add session token as Authorization header
             },
             cache: 'no-store' // Never cache session data
           });
