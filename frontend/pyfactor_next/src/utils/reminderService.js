@@ -116,7 +116,7 @@ class ReminderService {
   // Get friendly label for event type
   getEventTypeLabel(type) {
     const labels = {
-      appointment: 'Calendar Appointment',
+      appointment: 'Calendar Alert',
       meeting: 'Meeting',
       task: 'Task Due',
       reminder: 'Reminder',
@@ -127,7 +127,7 @@ class ReminderService {
       delivery: 'Delivery'
     };
     
-    return labels[type] || 'Calendar Event';
+    return labels[type] || 'Calendar Alert';
   }
 
   // Show browser notification if permitted

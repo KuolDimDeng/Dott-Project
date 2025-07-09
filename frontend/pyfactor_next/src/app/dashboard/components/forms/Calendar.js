@@ -960,16 +960,6 @@ export default function Calendar({ onNavigate }) {
             <PlusIcon className="h-5 w-5 mr-2" />
             Add Event
           </button>
-          {/* Test Toast Button - Remove after testing */}
-          <button
-            onClick={() => {
-              console.log('[Calendar] Testing toast notification');
-              toast.info('Test notification!', 5000);
-            }}
-            className="ml-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-          >
-            Test Toast
-          </button>
         </div>
       </div>
 
