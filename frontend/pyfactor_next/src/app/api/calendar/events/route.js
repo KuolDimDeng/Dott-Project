@@ -288,7 +288,7 @@ export async function POST(request) {
 
     // Transform data for backend - ensure proper datetime format
     // Backend expects ISO 8601 format with timezone
-    const formatDateTimeForBackend = (dateStr, isAllDay) => {
+    const formatDateTimeForBackend = (dateStr, isAllDay, isEndDate = false) => {
       if (!dateStr) return null;
       
       // If it's already in ISO format with timezone, return as-is
@@ -298,8 +298,13 @@ export async function POST(request) {
       
       // If it's a date-only string (YYYY-MM-DD), add time
       if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        // For all-day events, use noon to avoid timezone issues
-        return isAllDay ? `${dateStr}T12:00:00Z` : `${dateStr}T00:00:00Z`;
+        // For all-day events:
+        // - Start time: beginning of day (00:00)
+        // - End time: end of day (23:59:59) to ensure it's after start time
+        if (isAllDay) {
+          return isEndDate ? `${dateStr}T23:59:59Z` : `${dateStr}T00:00:00Z`;
+        }
+        return `${dateStr}T00:00:00Z`;
       }
       
       // If it's datetime-local format (YYYY-MM-DDTHH:mm), add timezone
@@ -312,8 +317,8 @@ export async function POST(request) {
     
     const backendData = {
       title: eventData.title,
-      start_datetime: formatDateTimeForBackend(eventData.start, eventData.allDay),
-      end_datetime: formatDateTimeForBackend(eventData.end || eventData.start, eventData.allDay),
+      start_datetime: formatDateTimeForBackend(eventData.start, eventData.allDay, false),
+      end_datetime: formatDateTimeForBackend(eventData.end || eventData.start, eventData.allDay, true),
       all_day: eventData.allDay || false,
       event_type: eventData.type || 'appointment',
       description: eventData.description || '',
@@ -522,11 +527,33 @@ export async function PUT(request) {
       );
     }
 
+    // Use the same date formatting function
+    const formatDateTimeForBackend = (dateStr, isAllDay, isEndDate = false) => {
+      if (!dateStr) return null;
+      
+      if (dateStr.includes('T') && (dateStr.includes('Z') || dateStr.includes('+'))) {
+        return dateStr;
+      }
+      
+      if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        if (isAllDay) {
+          return isEndDate ? `${dateStr}T23:59:59Z` : `${dateStr}T00:00:00Z`;
+        }
+        return `${dateStr}T00:00:00Z`;
+      }
+      
+      if (dateStr.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/)) {
+        return dateStr.includes('Z') ? dateStr : `${dateStr}:00Z`;
+      }
+      
+      return dateStr;
+    };
+
     // Transform data for backend
     const backendData = {
       title: eventData.title,
-      start_datetime: eventData.start,
-      end_datetime: eventData.end || eventData.start,
+      start_datetime: formatDateTimeForBackend(eventData.start, eventData.allDay, false),
+      end_datetime: formatDateTimeForBackend(eventData.end || eventData.start, eventData.allDay, true),
       all_day: eventData.allDay || false,
       event_type: eventData.type || 'appointment',
       description: eventData.description || '',
