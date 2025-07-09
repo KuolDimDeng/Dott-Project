@@ -318,12 +318,51 @@ const ImportExport = () => {
     router.push('/dashboard/import-export/data-mapper');
   };
 
-  const handleExportStart = () => {
+  const handleExportStart = async () => {
     console.log('[ImportExport] handleExportStart called');
     console.log('[ImportExport] Selected data types:', selectedDataTypes);
+    console.log('[ImportExport] Session state:', { 
+      authenticated: session?.authenticated,
+      hasUser: !!session?.user,
+      userEmail: session?.user?.email,
+      userRole: session?.user?.role 
+    });
     
     if (selectedDataTypes.length === 0) {
       setError('Please select at least one data type to export');
+      return;
+    }
+
+    // Test the session validation before navigation
+    try {
+      console.log('[ImportExport] Testing session validation...');
+      const testResponse = await fetch('/api/import-export/check-limits', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('[ImportExport] Session test response:', {
+        status: testResponse.status,
+        ok: testResponse.ok,
+        headers: Object.fromEntries(testResponse.headers.entries())
+      });
+      
+      if (!testResponse.ok) {
+        const errorText = await testResponse.text();
+        console.error('[ImportExport] Session validation failed:', errorText);
+        setError('Session validation failed. Please refresh the page and try again.');
+        return;
+      }
+      
+      const testData = await testResponse.json();
+      console.log('[ImportExport] Session validation successful:', testData);
+      
+    } catch (error) {
+      console.error('[ImportExport] Session validation error:', error);
+      setError('Unable to validate session. Please refresh the page and try again.');
       return;
     }
 

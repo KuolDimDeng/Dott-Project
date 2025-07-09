@@ -46,10 +46,28 @@ export async function getSession() {
       // Get error details
       let errorDetails = '';
       try {
-        const errorData = await sessionResponse.json();
-        errorDetails = errorData.error || errorData.detail || JSON.stringify(errorData);
+        const responseContentType = sessionResponse.headers.get('content-type');
+        console.log('[sessionHelper] Backend error response content-type:', responseContentType);
+        
+        if (responseContentType && responseContentType.includes('application/json')) {
+          const errorData = await sessionResponse.json();
+          errorDetails = errorData.error || errorData.detail || JSON.stringify(errorData);
+        } else {
+          const errorText = await sessionResponse.text();
+          console.log('[sessionHelper] Backend returned non-JSON error:', errorText.substring(0, 500));
+          errorDetails = `Non-JSON response: ${sessionResponse.status} ${responseContentType}`;
+          
+          // Handle specific error types
+          if (errorText.includes('<!DOCTYPE html>') || errorText.includes('<html>')) {
+            errorDetails = 'Backend returned HTML error page instead of JSON';
+          } else if (errorText.includes('502 Bad Gateway') || errorText.includes('504 Gateway')) {
+            errorDetails = 'Backend service temporarily unavailable';
+          } else if (errorText.includes('403 Forbidden')) {
+            errorDetails = 'Session validation endpoint access denied';
+          }
+        }
       } catch (e) {
-        errorDetails = await sessionResponse.text();
+        errorDetails = `Failed to parse error response: ${e.message}`;
       }
       
       logger.warn('[sessionHelper] Backend validation failed', {
@@ -60,13 +78,32 @@ export async function getSession() {
       return null;
     }
 
-    const sessionData = await sessionResponse.json();
-    console.log('[sessionHelper] Session data retrieved:', {
-      hasUser: !!sessionData.user,
-      userId: sessionData.user?.id,
-      userEmail: sessionData.user?.email,
-      tenantId: sessionData.tenant_id || sessionData.tenant?.id
-    });
+    let sessionData;
+    try {
+      const responseContentType = sessionResponse.headers.get('content-type');
+      
+      if (responseContentType && responseContentType.includes('application/json')) {
+        sessionData = await sessionResponse.json();
+        console.log('[sessionHelper] Session data retrieved:', {
+          hasUser: !!sessionData.user,
+          userId: sessionData.user?.id,
+          userEmail: sessionData.user?.email,
+          tenantId: sessionData.tenant_id || sessionData.tenant?.id
+        });
+      } else {
+        const responseText = await sessionResponse.text();
+        console.error('[sessionHelper] Backend returned non-JSON response:', {
+          status: sessionResponse.status,
+          contentType: responseContentType,
+          text: responseText.substring(0, 500)
+        });
+        throw new Error('Backend returned non-JSON response');
+      }
+    } catch (parseError) {
+      console.error('[sessionHelper] Failed to parse session response:', parseError);
+      logger.error('[sessionHelper] Session response parse error', parseError);
+      return null;
+    }
     
     // Return session data in same format as session-v2
     const userData = sessionData.user || sessionData;
