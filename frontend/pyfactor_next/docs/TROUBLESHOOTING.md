@@ -2080,6 +2080,119 @@ python manage.py shell
 
 ---
 
+## 📅 **Issue: Calendar Events Not Persisting to Database**
+
+**Symptoms:**
+- Events save successfully (201 status) but don't appear on calendar after refresh
+- Events only visible until page reload, then disappear
+- Backend returns only test events, not newly created ones
+- Console shows events being saved to "in-memory storage"
+- Event IDs have different formats: `cal_1752073804967_w9xrhgzcz` (frontend) vs UUIDs (backend)
+
+**Root Cause Analysis:**
+1. **In-Memory Fallback Masking Issues**: Frontend had fallback to in-memory storage when backend failed
+   - This made it appear events were saving when they actually weren't persisting
+   - Silent failures prevented proper error diagnosis
+2. **Backend API Not Receiving Requests**: Events were not actually reaching the Django backend
+3. **Pagination Issue**: Backend returns paginated results (50 items per page by default)
+   - Frontend wasn't handling pagination, only showing first page
+4. **Database Schema Missing**: Initial issue was missing event tables for tenant
+   - Schema wasn't properly set up for the tenant
+5. **All-Day Event Validation**: Backend rejected events where start_datetime = end_datetime
+
+**Solution:**
+
+1. **Remove In-Memory Storage Fallback** (`/src/app/api/calendar/events/route.js`):
+   ```javascript
+   // OLD - Silent fallback
+   if (!backendResponse.ok) {
+     // Fallback to in-memory storage
+     const eventId = `cal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+     // ... save to memory
+   }
+   
+   // NEW - Show actual errors
+   if (!backendResponse.ok) {
+     const errorText = await backendResponse.text();
+     console.error('[Calendar API POST] ❌ BACKEND SAVE FAILED - NO FALLBACK');
+     return NextResponse.json({
+       error: 'Failed to save event to backend',
+       details: errorText,
+       status: backendResponse.status,
+       backendUrl: `${API_BASE_URL}/api/calendar/events/`
+     }, { status: backendResponse.status });
+   }
+   ```
+
+2. **Add Pagination Support**:
+   ```javascript
+   // Add page_size parameter to get all events
+   const queryParams = new URLSearchParams();
+   queryParams.append('page_size', '1000');
+   ```
+
+3. **Fix All-Day Event Validation**:
+   ```javascript
+   const formatDateTimeForBackend = (dateStr, isAllDay, isEndDate = false) => {
+     if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+       if (isAllDay) {
+         // Start: 00:00:00, End: 23:59:59 for same-day events
+         return isEndDate ? `${dateStr}T23:59:59Z` : `${dateStr}T00:00:00Z`;
+       }
+     }
+   };
+   ```
+
+4. **Enhanced Error Handling in UI**:
+   ```javascript
+   if (!response.ok) {
+     const errorData = await response.json();
+     console.error('[Calendar] ❌ Full error:', {
+       status: response.status,
+       error: errorData.error,
+       details: errorData.details,
+       backendUrl: errorData.backendUrl
+     });
+     alert(`Failed to save event:\n\n${errorData.details}`);
+   }
+   ```
+
+**Backend Schema Fix (if needed):**
+```bash
+# Run on backend container
+python manage.py migrate events --run-syncdb
+python /app/scripts/fix_calendar_schema_for_tenant.py
+```
+
+**Verification Steps:**
+1. Create event and check console for backend URL being called
+2. Look for 201 response with proper UUID in response
+3. Verify event appears after page refresh
+4. Check backend logs for POST requests to `/api/calendar/events/`
+
+**Key Learnings:**
+- Don't use silent fallbacks that mask real issues
+- Always show actual backend errors to users
+- Handle pagination in API responses
+- Ensure date validation logic matches between frontend and backend
+- Test persistence by refreshing page, not just UI updates
+
+**Debugging Process That Led to Solution:**
+1. Added extensive console logging to trace event flow
+2. Discovered events had different ID formats (frontend vs backend)
+3. Found "Test Event from API" was hardcoded fallback
+4. Identified backend was returning paginated results
+5. Removed in-memory storage to expose real errors
+6. Fixed date validation for all-day events
+
+**Files Modified:**
+- `/src/app/api/calendar/events/route.js` - API proxy with error handling
+- `/src/app/dashboard/components/forms/Calendar.js` - UI error display
+- `/backend/pyfactor/events/models.py` - Event model with validation
+- `/backend/pyfactor/events/views.py` - Event ViewSet with tenant isolation
+
+---
+
 ## 🔧 **Issue: Regional Pricing with Exchange Rates Not Displaying for Kenya**
 
 **Symptoms:**
