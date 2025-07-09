@@ -136,8 +136,12 @@ export default function Calendar({ onNavigate }) {
   const [eventForm, setEventForm] = useState({
     title: '',
     type: 'appointment',
-    start: '',
-    end: '',
+    startDate: '',
+    startTime: '09:00',
+    endDate: '',
+    endTime: '10:00',
+    start: '', // Combined datetime for backend
+    end: '', // Combined datetime for backend
     allDay: false,
     description: '',
     location: '',
@@ -544,11 +548,18 @@ export default function Calendar({ onNavigate }) {
       endDateTime = endDate.toISOString().slice(0, 16);
     }
     
+    // Set default date as the clicked date
+    const clickedDateStr = arg.dateStr;
+    
     setEventForm({
       title: '',
       type: 'appointment',
-      start: startDateTime,
-      end: endDateTime,
+      startDate: clickedDateStr,
+      startTime: '09:00',
+      endDate: clickedDateStr,
+      endTime: '10:00',
+      start: '', // Will be combined on save
+      end: '', // Will be combined on save
       allDay: arg.allDay || false,
       description: '',
       location: '',
@@ -569,11 +580,46 @@ export default function Calendar({ onNavigate }) {
     }
     
     setSelectedEvent(event);
+    
+    // Split datetime into date and time components
+    let startDate, startTime, endDate, endTime;
+    
+    if (event.allDay) {
+      // For all-day events, just use the date
+      startDate = event.startStr.split('T')[0];
+      endDate = event.endStr ? event.endStr.split('T')[0] : startDate;
+      startTime = '09:00';
+      endTime = '10:00';
+    } else {
+      // For timed events, split the datetime
+      if (event.startStr.includes('T')) {
+        const [sDate, sTimeWithTZ] = event.startStr.split('T');
+        startDate = sDate;
+        startTime = sTimeWithTZ.substring(0, 5); // Get HH:MM
+      } else {
+        startDate = event.startStr;
+        startTime = '09:00';
+      }
+      
+      if (event.endStr && event.endStr.includes('T')) {
+        const [eDate, eTimeWithTZ] = event.endStr.split('T');
+        endDate = eDate;
+        endTime = eTimeWithTZ.substring(0, 5); // Get HH:MM
+      } else {
+        endDate = event.endStr || startDate;
+        endTime = '10:00';
+      }
+    }
+    
     setEventForm({
       title: event.title,
       type: event.extendedProps.type || 'appointment',
-      start: event.startStr,
-      end: event.endStr || event.startStr,
+      startDate,
+      startTime,
+      endDate,
+      endTime,
+      start: event.startStr, // Keep original for reference
+      end: event.endStr || event.startStr, // Keep original for reference
       allDay: event.allDay,
       description: event.extendedProps.description || '',
       location: event.extendedProps.location || '',
@@ -596,6 +642,12 @@ export default function Calendar({ onNavigate }) {
       return;
     }
     
+    if (!eventForm.startDate || !eventForm.endDate) {
+      console.error('[Calendar] Missing date fields');
+      toast.error('Please select start and end dates');
+      return;
+    }
+    
     if (!tenantId) {
       console.error('[Calendar] No tenant ID available');
       toast.error('Unable to save event - no tenant ID');
@@ -605,18 +657,41 @@ export default function Calendar({ onNavigate }) {
     setIsSaving(true);
     
     try {
+      // Combine date and time fields for backend
+      let startDateTime, endDateTime;
+      
+      if (eventForm.allDay) {
+        // For all-day events, just use the date
+        startDateTime = eventForm.startDate;
+        endDateTime = eventForm.endDate;
+      } else {
+        // For timed events, combine date and time
+        startDateTime = `${eventForm.startDate}T${eventForm.startTime}`;
+        endDateTime = `${eventForm.endDate}T${eventForm.endTime}`;
+      }
+      
       const endpoint = selectedEvent 
         ? `/api/calendar/events/${selectedEvent.id}`
         : '/api/calendar/events';
       
       const method = selectedEvent ? 'PUT' : 'POST';
       
+      const requestBody = {
+        title: eventForm.title,
+        type: eventForm.type,
+        start: startDateTime,
+        end: endDateTime,
+        allDay: eventForm.allDay,
+        description: eventForm.description,
+        location: eventForm.location,
+        sendReminder: eventForm.sendReminder,
+        reminderMinutes: eventForm.reminderMinutes,
+        tenantId
+      };
+      
       console.log('[Calendar] Making request to:', endpoint);
       console.log('[Calendar] Method:', method);
-      console.log('[Calendar] Request body:', {
-        ...eventForm,
-        tenantId
-      });
+      console.log('[Calendar] Request body:', requestBody);
       
       const response = await fetch(endpoint, {
         method,
@@ -624,10 +699,7 @@ export default function Calendar({ onNavigate }) {
           'Content-Type': 'application/json'
         },
         credentials: 'include',
-        body: JSON.stringify({
-          ...eventForm,
-          tenantId
-        })
+        body: JSON.stringify(requestBody)
       });
       
       console.log('[Calendar] Response status:', response.status);
@@ -662,6 +734,10 @@ export default function Calendar({ onNavigate }) {
         setEventForm({
           title: '',
           type: 'appointment',
+          startDate: '',
+          startTime: '09:00',
+          endDate: '',
+          endTime: '10:00',
           start: '',
           end: '',
           allDay: false,
@@ -683,7 +759,7 @@ export default function Calendar({ onNavigate }) {
           reminderService.updateReminder({
             id: data.id,
             title: eventForm.title,
-            start: eventForm.start,
+            start: startDateTime, // Use the combined datetime we created for backend
             type: eventForm.type,
             sendReminder: eventForm.sendReminder,
             reminderMinutes: eventForm.reminderMinutes
@@ -694,7 +770,7 @@ export default function Calendar({ onNavigate }) {
           reminderService.scheduleReminder({
             id: data.id,
             title: eventForm.title,
-            start: eventForm.start,
+            start: startDateTime, // Use the combined datetime we created for backend
             type: eventForm.type,
             sendReminder: eventForm.sendReminder,
             reminderMinutes: eventForm.reminderMinutes
@@ -860,11 +936,16 @@ export default function Calendar({ onNavigate }) {
           <button
             onClick={() => {
               setSelectedEvent(null);
+              const today = new Date().toISOString().split('T')[0];
               setEventForm({
                 title: '',
                 type: 'appointment',
-                start: new Date().toISOString().split('T')[0],
-                end: new Date().toISOString().split('T')[0],
+                startDate: today,
+                startTime: '09:00',
+                endDate: today,
+                endTime: '10:00',
+                start: '',
+                end: '',
                 allDay: false,
                 description: '',
                 location: '',
@@ -1005,29 +1086,69 @@ export default function Calendar({ onNavigate }) {
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Start Date
-                  </label>
-                  <input
-                    type={eventForm.allDay ? "date" : "datetime-local"}
-                    value={eventForm.start}
-                    onChange={(e) => setEventForm({ ...eventForm, start: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+              <div className="space-y-4">
+                {/* Date Fields */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Start Date
+                    </label>
+                    <input
+                      type="date"
+                      value={eventForm.startDate}
+                      onChange={(e) => setEventForm({ ...eventForm, startDate: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      End Date
+                    </label>
+                    <input
+                      type="date"
+                      value={eventForm.endDate}
+                      onChange={(e) => setEventForm({ ...eventForm, endDate: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    End Date
-                  </label>
-                  <input
-                    type={eventForm.allDay ? "date" : "datetime-local"}
-                    value={eventForm.end}
-                    onChange={(e) => setEventForm({ ...eventForm, end: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+
+                {/* Time Fields - Only show if not all day */}
+                {!eventForm.allDay && (
+                  <>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Start Time
+                        </label>
+                        <input
+                          type="time"
+                          value={eventForm.startTime}
+                          onChange={(e) => setEventForm({ ...eventForm, startTime: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          End Time
+                        </label>
+                        <input
+                          type="time"
+                          value={eventForm.endTime}
+                          onChange={(e) => setEventForm({ ...eventForm, endTime: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      Times are in {getTimezoneDisplayName(userTimezone)}
+                    </div>
+                  </>
+                )}
               </div>
 
               <div>
@@ -1037,31 +1158,10 @@ export default function Calendar({ onNavigate }) {
                     checked={eventForm.allDay}
                     onChange={(e) => {
                       const isAllDay = e.target.checked;
-                      if (isAllDay) {
-                        // Convert datetime to date only
-                        const startDate = eventForm.start.split('T')[0];
-                        const endDate = eventForm.end.split('T')[0];
-                        setEventForm({ 
-                          ...eventForm, 
-                          allDay: isAllDay,
-                          start: startDate,
-                          end: endDate
-                        });
-                      } else {
-                        // Convert date to datetime (9 AM default)
-                        const startDateTime = eventForm.start.includes('T') 
-                          ? eventForm.start 
-                          : `${eventForm.start}T09:00`;
-                        const endDateTime = eventForm.end.includes('T') 
-                          ? eventForm.end 
-                          : `${eventForm.end}T10:00`;
-                        setEventForm({ 
-                          ...eventForm, 
-                          allDay: isAllDay,
-                          start: startDateTime,
-                          end: endDateTime
-                        });
-                      }
+                      setEventForm({ 
+                        ...eventForm, 
+                        allDay: isAllDay
+                      });
                     }}
                     className="mr-2"
                   />
