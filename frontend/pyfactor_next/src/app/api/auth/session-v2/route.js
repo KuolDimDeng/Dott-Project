@@ -94,14 +94,42 @@ export async function GET(request) {
     
     let sessionData;
     try {
-      sessionData = await response.json();
-      console.log('[Session-V2] Full backend response:', JSON.stringify(sessionData, null, 2));
+      const responseContentType = response.headers.get('content-type');
+      
+      if (responseContentType && responseContentType.includes('application/json')) {
+        sessionData = await response.json();
+        console.log('[Session-V2] Full backend response:', JSON.stringify(sessionData, null, 2));
+      } else {
+        const responseText = await response.text();
+        logger.error('[Session-V2] Non-JSON response from backend:', {
+          status: response.status,
+          contentType: responseContentType,
+          text: responseText.substring(0, 500)
+        });
+        
+        // Handle different types of non-JSON responses
+        if (responseText.includes('<!DOCTYPE html>') || responseText.includes('<html>')) {
+          throw new Error('Backend returned HTML page instead of session data');
+        } else if (responseText.includes('502 Bad Gateway') || responseText.includes('504 Gateway')) {
+          throw new Error('Backend service is temporarily unavailable');
+        } else if (responseText.includes('403 Forbidden') || responseText.includes('401 Unauthorized')) {
+          throw new Error('Session authentication failed');
+        } else {
+          throw new Error('Backend returned invalid response format');
+        }
+      }
     } catch (parseError) {
-      logger.error('[Session-V2] Failed to parse response JSON:', {
+      logger.error('[Session-V2] Failed to parse response:', {
         error: parseError.message,
         responseStatus: response.status,
         responseHeaders: Object.fromEntries(response.headers)
       });
+      
+      // If it's already our custom error, re-throw it
+      if (parseError.message.includes('Backend returned') || parseError.message.includes('Backend service')) {
+        throw parseError;
+      }
+      
       throw new Error('Invalid response from backend');
     }
     console.log('[Session-V2] Backend session valid:', {

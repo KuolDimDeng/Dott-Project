@@ -13,6 +13,7 @@ import { DynamicStripeProvider } from '@/components/payment/DynamicStripeProvide
 import { useSession } from '@/hooks/useSession-v2';
 import { logger } from '@/utils/logger';
 import { refreshSessionData, waitForSessionUpdate } from '@/utils/sessionRefresh';
+import { safeJsonParse, handleFetchError } from '@/utils/responseParser';
 // Removed sessionStatus import - using session-v2 system
 
 // PaymentForm component that uses Stripe hooks
@@ -42,7 +43,7 @@ function PaymentForm({ plan, billingCycle }) {
         });
         
         if (sessionResponse.ok) {
-          const sessionData = await sessionResponse.json();
+          const sessionData = await safeJsonParse(sessionResponse, 'PaymentForm-SessionData');
           
           // Enhanced debug logging
           console.log('🚨 [PaymentForm] Full session data:', JSON.stringify(sessionData, null, 2));
@@ -230,7 +231,7 @@ function PaymentForm({ plan, billingCycle }) {
         });
         
         if (sessionResponse.ok) {
-          const sessionData = await sessionResponse.json();
+          const sessionData = await safeJsonParse(sessionResponse, 'PaymentForm-CSRFToken');
           csrfToken = sessionData.csrfToken;
           logger.info('Got CSRF token from session');
         }
@@ -289,32 +290,20 @@ function PaymentForm({ plan, billingCycle }) {
         headers: Object.fromEntries(response.headers.entries()),
       });
 
-      // Check if response is JSON and handle parsing errors gracefully
-      const contentType = response.headers.get('content-type');
+      // Use safe JSON parsing utility
       let result;
-      
       try {
-        if (contentType && contentType.includes('application/json')) {
-          result = await response.json();
-          logger.info('Response JSON:', result);
-        } else {
-          const text = await response.text();
-          logger.error('Non-JSON response from subscription endpoint:', {
-            status: response.status,
-            contentType: contentType,
-            text: text,
-          });
-          throw new Error(`Payment System Error: Server returned invalid response (${response.status}). Please refresh the page or contact support.`);
-        }
+        result = await safeJsonParse(response, 'PaymentForm-CreateSubscription');
+        logger.info('Response JSON:', result);
       } catch (parseError) {
-        // Handle JSON parsing errors specifically
-        if (parseError.message.includes('JSON.parse')) {
-          logger.error('JSON parsing failed:', parseError);
-          const text = await response.text();
-          logger.error('Raw response text:', text);
-          throw new Error('Payment System Error: Unable to process server response. Please refresh the page or contact support.');
-        }
-        throw parseError;
+        // Convert parsing errors to user-friendly messages
+        const errorMessage = parseError.message.includes('Server returned') || 
+                            parseError.message.includes('Backend service') ||
+                            parseError.message.includes('Authentication expired')
+          ? `Payment System Error: ${parseError.message}`
+          : 'Payment System Error: Unable to process server response. Please refresh the page and try again.';
+        
+        throw new Error(errorMessage);
       }
 
       if (!response.ok) {

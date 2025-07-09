@@ -1786,6 +1786,210 @@ if (langParam && langParam !== i18n.language && i18n.changeLanguage) {
 
 ---
 
+## 📚 **Feature Documentation: Geo-Location Based Pricing System**
+
+**Overview**: The landing page automatically detects user location and displays pricing with regional discounts and local currency estimates. This documentation explains how each component works.
+
+### 1. **Geo-Location Detection Flow**
+
+The system uses multiple methods to detect user location:
+
+```
+User Visit → Cloudflare Headers → Backend API → Frontend Display
+```
+
+**Detection Priority Order**:
+1. URL parameter: `?country=KE` (highest priority - for testing)
+2. Cloudflare headers: `CF-IPCountry` (automatic geo-detection)
+3. IP-based detection: Using IP geolocation services
+4. Default: US pricing if detection fails
+
+**Implementation Details**:
+
+```javascript
+// Frontend: GeoPricing.js
+const urlParams = new URLSearchParams(window.location.search);
+let countryOverride = urlParams.get('country');  // Check URL first
+
+// API Route: /api/pricing/by-country/route.js
+const cfCountry = request.headers.get('cf-ipcountry');  // Cloudflare geo-detection
+const country = searchParams.get('country') || cfCountry || 'US';
+
+// Backend: discount_check.py
+country_code = request.GET.get('country')  # From query param
+if not country_code:
+    country_code = DiscountVerificationService.get_country_from_ip(ip_address, request)
+```
+
+### 2. **50% Developing Country Discount System**
+
+**Database Structure**:
+- Table: `developing_countries`
+- Fields: `country_code`, `country_name`, `income_level`, `discount_percentage`, `is_active`
+
+**Income Level Classifications**:
+- `low`: Low income countries
+- `lower_middle`: Lower middle income (e.g., Kenya, Nigeria)
+- `upper_middle`: Upper middle income (e.g., Brazil, Mexico)
+
+**Discount Application Flow**:
+
+```python
+# Backend: discount_models.py
+class DevelopingCountry(models.Model):
+    @classmethod
+    def get_discount(cls, country_code):
+        try:
+            country = cls.objects.get(
+                country_code=country_code.upper(),
+                is_active=True
+            )
+            return country.discount_percentage
+        except cls.DoesNotExist:
+            return 0
+
+# Backend: discount_check.py (GetPricingForCountryView)
+discount = DevelopingCountry.get_discount(country_code)
+is_discounted = discount > 0
+
+if is_discounted:
+    professional_monthly = 7.50   # 50% of $15
+    professional_yearly = 72.00   # 50% of $144
+else:
+    professional_monthly = 15.00
+    professional_yearly = 144.00
+```
+
+**Countries with 50% Discount** (Partial List):
+- Africa: Kenya (KE), Nigeria (NG), Ghana (GH), Egypt (EG), South Africa (ZA)
+- Asia: India (IN), Bangladesh (BD), Pakistan (PK), Philippines (PH)
+- Latin America: Mexico (MX), Brazil (BR), Colombia (CO)
+- Total: 100+ developing countries
+
+### 3. **Local Currency Estimation System**
+
+**Exchange Rate Sources** (Priority Order):
+1. **Wise API** (Primary - more accurate)
+2. **ExchangeRate-API** (Fallback - free tier)
+
+**Implementation Flow**:
+
+```javascript
+// Frontend: /api/exchange-rates/route.js
+const COUNTRY_TO_CURRENCY = {
+  'KE': { code: 'KES', symbol: 'KSh', name: 'Kenyan Shilling' },
+  'NG': { code: 'NGN', symbol: '₦', name: 'Nigerian Naira' },
+  'IN': { code: 'INR', symbol: '₹', name: 'Indian Rupee' },
+  // ... 50+ countries
+};
+
+// Try Wise API first
+const wiseUrl = `https://api.wise.com/v1/rates?source=USD&target=${currencyCode}`;
+const wiseResponse = await fetch(wiseUrl, {
+  headers: { 'Authorization': `Bearer ${WISE_API_TOKEN}` }
+});
+
+// Fallback to ExchangeRate-API
+if (!wiseResponse.ok) {
+  const fallbackUrl = `https://api.exchangerate-api.com/v4/latest/USD`;
+  // ... fetch and extract rate
+}
+
+// Frontend: GeoPricing.js - Display with formatting
+function formatLocalPrice(usdPrice, exchangeRate) {
+  const numericPrice = parseFloat(usdPrice.replace(/[^0-9.-]+/g, ''));
+  const localPrice = numericPrice * exchangeRate.rate;
+  
+  // Format based on currency preferences
+  const { symbol, decimals } = exchangeRate.format;
+  const formattedPrice = decimals === 0 
+    ? Math.round(localPrice).toLocaleString()
+    : localPrice.toFixed(decimals).toLocaleString();
+  
+  return `${symbol} ${formattedPrice}`;
+}
+```
+
+**Display Format**:
+- USD Price: `$7.50/month` (with 50% discount)
+- Local Currency: `(KSh 970)*` (in green text)
+- Disclaimer: "* Exchange rate is estimated and may vary"
+
+### 4. **Complete Data Flow Example (Kenya)**
+
+1. **User visits**: `https://dottapps.com/?country=KE`
+
+2. **Frontend Request**:
+   ```
+   GET /api/pricing/by-country?country=KE
+   ```
+
+3. **Backend Processing**:
+   ```python
+   # Check if Kenya is eligible for discount
+   discount = DevelopingCountry.get_discount('KE')  # Returns 50
+   
+   # Apply discount to pricing
+   professional_monthly = 15.00 * 0.5  # $7.50
+   ```
+
+4. **Frontend Exchange Rate**:
+   ```
+   GET /api/exchange-rates?country=KE
+   Response: { rate: 129.24, currency: "KES", symbol: "KSh" }
+   ```
+
+5. **Final Display**:
+   ```
+   Professional Plan
+   $7.50/month (̶$̶1̶5̶.̶0̶0̶)̶ 50% off
+   (KSh 970)*
+   ```
+
+### 5. **Testing and Verification**
+
+**Test URLs**:
+- Kenya: `https://dottapps.com/?country=KE`
+- Nigeria: `https://dottapps.com/?country=NG`
+- India: `https://dottapps.com/?country=IN`
+- Test endpoint: `https://dottapps.com/test-kenya`
+
+**Backend Verification Commands**:
+```bash
+# Check if country is configured
+python manage.py check_kenya_discount
+
+# List all developing countries
+python manage.py shell
+>>> from users.discount_models import DevelopingCountry
+>>> DevelopingCountry.objects.all().values_list('country_code', 'discount_percentage')
+```
+
+**Debug Logging Prefixes**:
+- 💰 - Pricing component logs
+- 💱 - Exchange rate logs
+- 🎯 - API route logs
+- 🌍 - Country detection logs
+
+### 6. **Common Configuration Issues**
+
+1. **Missing Migrations**:
+   ```bash
+   python manage.py migrate users
+   ```
+
+2. **Missing Environment Variables**:
+   ```
+   WISE_API_TOKEN=your_token_here
+   EXCHANGE_RATE_API_KEY=your_key_here
+   ```
+
+3. **Cache Issues**:
+   - Exchange rates cached for 1 hour
+   - Clear with: `localStorage.removeItem('detectedCountry')`
+
+---
+
 ## 🔧 **Issue: Regional Pricing with Exchange Rates Not Displaying for Kenya**
 
 **Symptoms:**

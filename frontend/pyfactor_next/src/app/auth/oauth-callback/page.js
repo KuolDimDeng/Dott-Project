@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CircularProgress } from '@/components/ui/TailwindComponents';
+import OAuthLoadingScreen from '@/components/auth/OAuthLoadingScreen';
 
 // Global flag to prevent duplicate OAuth processing
 let oauthInProgress = false;
@@ -116,7 +116,7 @@ export default function Auth0OAuthCallbackPage() {
         // Redirect to the main callback handler for onboarding logic
         setTimeout(() => {
           router.push('/auth/callback');
-        }, 1000);
+        }, 500);
 
       } catch (error) {
         console.error('[OAuth Callback] Unexpected error:', error);
@@ -141,28 +141,10 @@ export default function Auth0OAuthCallbackPage() {
   }, []);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="text-center space-y-4">
-        <CircularProgress size={48} />
-        <h2 className="text-xl font-semibold text-gray-900">Completing Authentication</h2>
-        <p className="text-gray-600">{status}</p>
-        
-        {error && (
-          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-red-800 text-sm">{error}</p>
-            <p className="text-red-600 text-xs mt-1">Redirecting to sign in...</p>
-          </div>
-        )}
-        
-        <div className="text-sm text-gray-500 space-y-1 mt-6">
-          <p>🔄 Processing OAuth callback</p>
-          <div className="text-xs text-left bg-gray-100 p-2 rounded">
-            <div>✓ Bypass Vercel DDoS protection</div>
-            <div>✓ Frontend callback handling</div>
-            <div>✓ Secure token exchange</div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <OAuthLoadingScreen 
+      status={status} 
+      error={error} 
+      showProgress={true}
+    />
   );
 } 

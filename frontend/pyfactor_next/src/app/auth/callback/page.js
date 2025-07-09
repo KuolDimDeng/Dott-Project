@@ -3,7 +3,72 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import StandardSpinner from '@/components/ui/StandardSpinner';
+import OAuthLoadingScreen from '@/components/auth/OAuthLoadingScreen';
+
+// Session verification function integrated from session-loading
+async function verifySessionAndRedirect(redirectUrl, router, setStatus) {
+  let attempts = 0;
+  const maxAttempts = 20;
+  
+  const checkSession = async () => {
+    try {
+      setStatus('Verifying your account...');
+      
+      // Check session-v2 for complete data including onboarding status
+      const response = await fetch('/api/auth/session-v2', {
+        credentials: 'include',
+        cache: 'no-store'
+      });
+      
+      if (response.ok) {
+        const sessionData = await response.json();
+        
+        if (sessionData.authenticated && sessionData.user) {
+          setStatus('Loading your workspace...');
+          
+          // Session is ready, proceed with redirect
+          console.log('[Auth0Callback] Session verified, redirecting to:', redirectUrl);
+          setTimeout(() => {
+            router.push(redirectUrl);
+          }, 300);
+          return true;
+        }
+      }
+      
+      attempts++;
+      if (attempts < maxAttempts) {
+        // Exponential backoff for retries
+        const delay = Math.min(500 * Math.pow(1.5, attempts), 3000);
+        setTimeout(() => checkSession(), delay);
+        
+        if (attempts > 5) {
+          setStatus('Taking a bit longer than usual...');
+        }
+      } else {
+        console.error('[Auth0Callback] Session not ready after max attempts');
+        setStatus('Session setup failed. Redirecting to sign in...');
+        setTimeout(() => {
+          router.push('/auth/signin?error=session_timeout');
+        }, 1500);
+      }
+      return false;
+    } catch (error) {
+      console.error('[Auth0Callback] Error checking session:', error);
+      attempts++;
+      if (attempts < maxAttempts) {
+        setTimeout(() => checkSession(), 1000);
+      } else {
+        setStatus('An error occurred. Please try again.');
+        setTimeout(() => {
+          router.push('/auth/signin?error=session_error');
+        }, 1500);
+      }
+      return false;
+    }
+  };
+
+  return checkSession();
+}
 
 export default function Auth0CallbackPage() {
   const router = useRouter();
@@ -276,8 +341,8 @@ export default function Auth0CallbackPage() {
           
           console.log('[Auth0Callback] Redirecting to:', backendUser.redirectUrl);
           
-          // Always use the session-loading page to ensure backend session is ready
-          router.replace(backendUser.redirectUrl);
+          // Instead of using session-loading, verify session directly here
+          await verifySessionAndRedirect(backendUser.redirectUrl, router, setStatus);
           return;
         }
         
@@ -286,15 +351,9 @@ export default function Auth0CallbackPage() {
         
         // Emergency fallback based on state
         if (backendUser.onboardingCompleted && backendUser.tenantId) {
-          setStatus('Loading your dashboard...');
-          setTimeout(() => {
-            router.replace(`/${backendUser.tenantId}/dashboard`);
-          }, 1000);
+          await verifySessionAndRedirect(`/${backendUser.tenantId}/dashboard`, router, setStatus);
         } else {
-          setStatus('Setting up your account...');
-          setTimeout(() => {
-            router.replace('/onboarding');
-          }, 1000);
+          await verifySessionAndRedirect('/onboarding', router, setStatus);
         }
         
       } catch (error) {
@@ -312,41 +371,10 @@ export default function Auth0CallbackPage() {
     handleCallback();
   }, [router, redirectHandled]);
 
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="max-w-md w-full space-y-8 text-center">
-          <div>
-            <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-              Authentication Error
-            </h2>
-            <p className="mt-2 text-sm text-red-600">
-              {error}
-            </p>
-            <p className="mt-4 text-sm text-gray-600">
-              Redirecting to login page...
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 text-center">
-        <div>
-          <div className="flex justify-center">
-            <StandardSpinner size="large" />
-          </div>
-          <h2 className="mt-6 text-2xl font-semibold text-gray-900">
-            {status}
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Please wait while we complete your authentication...
-          </p>
-        </div>
-      </div>
-    </div>
+    <OAuthLoadingScreen 
+      status={status} 
+      error={error}
+    />
   );
 }

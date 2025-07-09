@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import OAuthLoadingScreen from '@/components/auth/OAuthLoadingScreen';
 
 console.log('🚨 SessionBridge PAGE FILE LOADED AT:', new Date().toISOString());
 console.log('🚨 Current URL:', typeof window !== 'undefined' ? window.location.href : 'SSR');
@@ -12,6 +13,7 @@ export default function SessionBridge() {
   const router = useRouter();
   const [sessionToken, setSessionToken] = useState('');
   const [redirectUrl, setRedirectUrl] = useState('/dashboard');
+  const [status, setStatus] = useState('Securing your session...');
   
   console.log('🔥 SessionBridge component variables initialized');
 
@@ -65,6 +67,7 @@ export default function SessionBridge() {
       console.log('[SessionBridge] Bridge data cleared from sessionStorage');
 
       // First, exchange the bridge token for the actual session token
+      setStatus('Exchanging bridge token...');
       console.log('[SessionBridge] 🔄 Exchanging bridge token for session token...');
       console.log('[SessionBridge] Bridge token:', token?.substring(0, 20) + '...');
       
@@ -100,6 +103,7 @@ export default function SessionBridge() {
         }
         
         // Set the session token in state to update the form
+        setStatus('Establishing session...');
         console.log('[SessionBridge] 📝 Setting session token in state...');
         setSessionToken(bridgeResult.sessionToken);
         setRedirectUrl(redirectUrl || '/dashboard');
@@ -165,23 +169,20 @@ export default function SessionBridge() {
   }, [router]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-        <p className="mt-4 text-gray-600">Securing your session...</p>
-        
-        {/* Hidden form for POST submission - uses state values */}
-        <form 
-          id="session-form"
-          method="POST" 
-          action="/api/auth/establish-session"
-          style={{ display: 'none' }}
-        >
-          <input type="hidden" name="token" value={sessionToken} />
-          <input type="hidden" name="redirectUrl" value={redirectUrl} />
-          <input type="hidden" name="timestamp" value={Date.now()} />
-        </form>
-      </div>
+    <div>
+      <OAuthLoadingScreen status={status} />
+      
+      {/* Hidden form for POST submission - uses state values */}
+      <form 
+        id="session-form"
+        method="POST" 
+        action="/api/auth/establish-session"
+        style={{ display: 'none' }}
+      >
+        <input type="hidden" name="token" value={sessionToken} />
+        <input type="hidden" name="redirectUrl" value={redirectUrl} />
+        <input type="hidden" name="timestamp" value={Date.now()} />
+      </form>
     </div>
   );
 }

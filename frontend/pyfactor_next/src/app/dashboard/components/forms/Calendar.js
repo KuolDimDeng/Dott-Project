@@ -131,11 +131,13 @@ export default function Calendar({ onNavigate }) {
         });
       }
       
+      console.log('[Calendar] Setting events state with:', allEvents.length, 'events');
       setEvents(allEvents);
       
       // Force calendar to refresh
+      console.log('[Calendar] Calendar ref available:', !!calendarRef);
       if (calendarRef) {
-        console.log('[Calendar] Forcing calendar refresh');
+        console.log('[Calendar] Forcing calendar refresh with', allEvents.length, 'events');
         const calendarApi = calendarRef.getApi();
         
         // Get current view date range
@@ -143,20 +145,38 @@ export default function Calendar({ onNavigate }) {
         console.log('[Calendar] Current view range:', view.currentStart, 'to', view.currentEnd);
         
         // Remove all existing events
+        const existingEvents = calendarApi.getEvents();
+        console.log('[Calendar] Removing', existingEvents.length, 'existing events');
         calendarApi.removeAllEvents();
         
         // Add all events
-        allEvents.forEach(event => {
-          console.log('[Calendar] Adding event to calendar:', {
+        allEvents.forEach((event, index) => {
+          console.log(`[Calendar] Adding event ${index + 1}/${allEvents.length} to calendar:`, {
+            id: event.id,
             title: event.title,
             start: event.start,
             end: event.end,
-            allDay: event.allDay
+            allDay: event.allDay,
+            color: event.color
           });
-          calendarApi.addEvent(event);
+          try {
+            calendarApi.addEvent(event);
+            console.log(`[Calendar] Successfully added event ${index + 1}: ${event.title}`);
+          } catch (addError) {
+            console.error(`[Calendar] Error adding event ${index + 1}:`, addError);
+          }
         });
         
-        console.log('[Calendar] Added events to calendar:', calendarApi.getEvents().length);
+        const finalEventCount = calendarApi.getEvents().length;
+        console.log('[Calendar] Final events count on calendar:', finalEventCount);
+        console.log('[Calendar] Calendar refresh completed');
+        
+        // Force re-render
+        calendarApi.render();
+        console.log('[Calendar] Forced calendar re-render');
+      } else {
+        console.warn('[Calendar] Calendar ref not available, cannot force refresh');
+        console.log('[Calendar] Events will be displayed when calendar initializes');
       }
     } catch (error) {
       console.error('[Calendar] Error loading events:', error);
@@ -510,6 +530,46 @@ export default function Calendar({ onNavigate }) {
     // In a real app, this would schedule a notification
     console.log(`Reminder scheduled for ${event.title} - ${event.reminderMinutes} minutes before`);
   };
+
+  // Handle calendar refresh when both calendarRef and events are available
+  useEffect(() => {
+    console.log('[Calendar] useEffect - calendarRef and events sync check');
+    console.log('[Calendar] calendarRef available:', !!calendarRef);
+    console.log('[Calendar] events count:', events.length);
+    
+    if (calendarRef && events.length > 0) {
+      console.log('[Calendar] Both calendarRef and events available, syncing calendar');
+      const calendarApi = calendarRef.getApi();
+      
+      // Remove all existing events
+      const existingEvents = calendarApi.getEvents();
+      console.log('[Calendar] Sync: Removing', existingEvents.length, 'existing events');
+      calendarApi.removeAllEvents();
+      
+      // Add all current events
+      events.forEach((event, index) => {
+        console.log(`[Calendar] Sync: Adding event ${index + 1}/${events.length}:`, {
+          id: event.id,
+          title: event.title,
+          start: event.start,
+          end: event.end,
+          allDay: event.allDay
+        });
+        try {
+          calendarApi.addEvent(event);
+        } catch (addError) {
+          console.error(`[Calendar] Sync: Error adding event ${index + 1}:`, addError);
+        }
+      });
+      
+      const finalCount = calendarApi.getEvents().length;
+      console.log('[Calendar] Sync: Final events count on calendar:', finalCount);
+      
+      // Force re-render
+      calendarApi.render();
+      console.log('[Calendar] Sync: Forced calendar re-render');
+    }
+  }, [calendarRef, events]);
 
   // Check for upcoming events and show toast notifications
   useEffect(() => {

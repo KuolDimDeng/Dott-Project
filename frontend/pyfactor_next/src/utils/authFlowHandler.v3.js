@@ -144,28 +144,39 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
         // Let EmailPasswordSignIn handle the routing
       };
     } else {
-      // For OAuth, redirect to session-loading to handle race conditions
-      console.log('[AuthFlowHandler.v3] OAuth auth - redirecting to session-loading...');
+      // For OAuth, determine the redirect URL based on onboarding status
+      console.log('[AuthFlowHandler.v3] OAuth auth - determining redirect URL...');
       
-      // The session-loading page will:
-      // 1. Wait for backend session to be fully created
-      // 2. Fetch complete session data including onboarding status
-      // 3. Make the correct routing decision with all data available
+      let redirectUrl;
+      if (data.needs_onboarding) {
+        redirectUrl = '/onboarding';
+      } else if (data.tenant_id) {
+        redirectUrl = `/${data.tenant_id}/dashboard`;
+      } else {
+        // Fallback - shouldn't happen but handle gracefully
+        redirectUrl = '/onboarding';
+      }
       
-      const redirectUrl = '/auth/session-loading';
-      
-      console.log('[AuthFlowHandler.v3] Using session-loading page to prevent race conditions', {
-        provisionalTenantId: data.tenant_id,
-        provisionalNeedsOnboarding: data.needs_onboarding,
+      console.log('[AuthFlowHandler.v3] OAuth redirect URL determined', {
+        tenantId: data.tenant_id,
+        needsOnboarding: data.needs_onboarding,
         redirectUrl,
-        reason: 'Ensuring backend session is fully established before routing'
+        reason: 'Session verification now handled by callback page'
       });
       
-      // For OAuth, actually perform the redirect
-      window.location.href = redirectUrl;
-      
-      // Return null to indicate redirect happened
-      return null;
+      // Return the user data with redirect URL for callback page to handle
+      return {
+        ...data,
+        email: data.email,
+        businessName: data.business_name,
+        subscriptionPlan: data.subscription_plan,
+        role: data.role,
+        tenantId: data.tenant_id,
+        tenant_id: data.tenant_id,
+        needsOnboarding: data.needs_onboarding,
+        onboardingCompleted: !data.needs_onboarding,
+        redirectUrl: redirectUrl
+      };
     }
     
   } catch (error) {

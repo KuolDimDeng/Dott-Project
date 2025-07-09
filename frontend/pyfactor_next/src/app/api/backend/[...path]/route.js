@@ -115,16 +115,55 @@ async function proxyRequest(request, { params }, method) {
       }
     }
     
-    // Handle response body
+    // Handle response body with proper error handling
     let responseBody;
     const responseContentType = backendResponse.headers.get('content-type');
     
-    if (responseContentType?.includes('application/json')) {
-      responseBody = await backendResponse.json();
-    } else if (responseContentType?.includes('text')) {
-      responseBody = await backendResponse.text();
-    } else {
-      responseBody = await backendResponse.arrayBuffer();
+    try {
+      if (responseContentType?.includes('application/json')) {
+        responseBody = await backendResponse.json();
+      } else if (responseContentType?.includes('text')) {
+        responseBody = await backendResponse.text();
+        
+        // If we're expecting JSON but got text, this might be an error
+        if (path.includes('api/') && responseBody.includes('<!DOCTYPE html>')) {
+          console.log('[Backend Proxy] Backend returned HTML for API request:', {
+            path,
+            status: backendResponse.status,
+            contentType: responseContentType,
+            bodyPreview: responseBody.substring(0, 200)
+          });
+          
+          // Return structured error instead of HTML
+          return NextResponse.json({
+            error: 'Backend service returned HTML instead of API data',
+            details: `API endpoint ${path} returned HTML page`,
+            status: backendResponse.status
+          }, { status: 502 });
+        }
+      } else {
+        responseBody = await backendResponse.arrayBuffer();
+      }
+    } catch (error) {
+      console.error('[Backend Proxy] Error processing response body:', error);
+      
+      // Try to get raw response for debugging
+      try {
+        const rawText = await backendResponse.text();
+        console.log('[Backend Proxy] Raw response:', rawText.substring(0, 500));
+        
+        return NextResponse.json({
+          error: 'Backend response parsing failed',
+          details: error.message,
+          status: backendResponse.status
+        }, { status: 502 });
+      } catch (textError) {
+        return NextResponse.json({
+          error: 'Backend response completely invalid',
+          details: 'Unable to parse response in any format',
+          status: backendResponse.status
+        }, { status: 502 });
+      }
     }
     
     return new NextResponse(

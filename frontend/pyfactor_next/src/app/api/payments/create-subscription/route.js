@@ -168,16 +168,44 @@ export async function POST(request) {
       })
     });
     
-    // Get response
-    const responseText = await response.text();
+    // Get response with proper content-type handling
+    const responseContentType = response.headers.get('content-type');
     let responseData;
     
     try {
-      responseData = JSON.parse(responseText);
+      if (responseContentType && responseContentType.includes('application/json')) {
+        responseData = await response.json();
+      } else {
+        const responseText = await response.text();
+        logger.error('[CreateSubscription] Non-JSON response from backend:', {
+          status: response.status,
+          contentType: responseContentType,
+          text: responseText.substring(0, 500)
+        });
+        
+        // Handle different types of non-JSON responses
+        if (responseText.includes('<!DOCTYPE html>') || responseText.includes('<html>')) {
+          return NextResponse.json({ 
+            error: 'Backend service returned HTML instead of payment data. This may indicate a server configuration issue.' 
+          }, { status: 502 });
+        } else if (responseText.includes('502 Bad Gateway') || responseText.includes('504 Gateway')) {
+          return NextResponse.json({ 
+            error: 'Backend payment service is temporarily unavailable. Please try again in a few moments.' 
+          }, { status: 503 });
+        } else if (responseText.includes('403 Forbidden') || responseText.includes('401 Unauthorized')) {
+          return NextResponse.json({ 
+            error: 'Authentication expired. Please refresh the page and try again.' 
+          }, { status: 401 });
+        } else {
+          return NextResponse.json({ 
+            error: 'Payment service returned invalid response format' 
+          }, { status: 502 });
+        }
+      }
     } catch (error) {
-      logger.error('[CreateSubscription] Invalid backend response:', responseText);
+      logger.error('[CreateSubscription] Error parsing backend response:', error);
       return NextResponse.json({ 
-        error: 'Invalid response from payment server' 
+        error: 'Unable to process payment server response' 
       }, { status: 502 });
     }
     
