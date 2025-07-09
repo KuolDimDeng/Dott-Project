@@ -46,6 +46,7 @@ export default function Calendar({ onNavigate }) {
   const [isLoading, setIsLoading] = useState(true);
   const [tenantId, setTenantId] = useState(null);
   const [calendarRef, setCalendarRef] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
   
   // Form state for new/edit event
   const [eventForm, setEventForm] = useState({
@@ -402,6 +403,8 @@ export default function Calendar({ onNavigate }) {
       return;
     }
     
+    setIsSaving(true);
+    
     try {
       const endpoint = selectedEvent 
         ? `/api/calendar/events/${selectedEvent.id}`
@@ -470,6 +473,8 @@ export default function Calendar({ onNavigate }) {
       console.error('[Calendar] Error saving event:', error);
       console.error('[Calendar] Error stack:', error.stack);
       toast.error(error.message || 'Failed to save event');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -837,10 +842,24 @@ export default function Calendar({ onNavigate }) {
                     console.log('[Calendar] Save button clicked');
                     handleSaveEvent();
                   }}
-                  className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  disabled={isSaving}
+                  className={`flex items-center px-4 py-2 rounded-lg ${
+                    isSaving 
+                      ? 'bg-gray-400 cursor-not-allowed' 
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  } text-white`}
                 >
-                  <CheckIcon className="h-4 w-4 mr-1" />
-                  Save
+                  {isSaving ? (
+                    <>
+                      <StandardSpinner size="small" className="mr-2" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <CheckIcon className="h-4 w-4 mr-1" />
+                      Save
+                    </>
+                  )}
                 </button>
               </div>
             </div>
