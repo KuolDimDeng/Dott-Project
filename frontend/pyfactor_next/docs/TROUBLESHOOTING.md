@@ -2,6 +2,14 @@
 
 *This document contains recurring issues and their proven solutions to prevent re-debugging.*
 
+**Quick Navigation:**
+- [Authentication Issues](#authentication-issues)
+- [Frontend Component Issues](#frontend-component-issues)
+- [Calendar/Event Management](#calendarevent-management)
+- [HR Employee Management](#hr-employee-management) ⬅️ **NEW**
+- [API Integration Issues](#api-integration-issues)
+- [Performance Issues](#performance-issues)
+
 ---
 
 # Authentication Issues
@@ -2537,5 +2545,311 @@ python manage.py check_kenya_discount  # Verify Kenya is configured
 
 ---
 
-*Last Updated: 2025-07-09*
+# HR Employee Management
+
+## 403 Forbidden Error When Accessing Employees
+
+**Issue**: Employee management API returns 403 Forbidden error when trying to fetch or create employees.
+
+**Symptoms**:
+- Console shows "XHR GET https://dottapps.com/api/hr/employees [HTTP/3 403 181ms]"
+- Frontend displays "Access denied. Please check your permissions to view employees."
+- Employee list remains empty or shows loading state
+
+**Root Causes**:
+1. **Missing Authentication**: User session not properly authenticated
+2. **Invalid Tenant Headers**: Tenant ID not included in API requests
+3. **Backend Permission Issues**: HR endpoints require proper session validation
+4. **Middleware Problems**: Tenant isolation middleware blocking requests
+
+**Solution**:
+
+1. **Verify Session Authentication**:
+   ```javascript
+   // Check if user is properly authenticated
+   const session = await fetch('/api/auth/session-v2');
+   console.log('Session status:', session.status);
+   ```
+
+2. **Include Tenant Headers**:
+   ```javascript
+   // API client automatically includes tenant ID
+   const pathParts = window.location.pathname.split('/');
+   const tenantId = pathParts[1]; // Extract from URL
+   
+   headers: {
+     'X-Tenant-ID': tenantId,
+     'Content-Type': 'application/json'
+   }
+   ```
+
+3. **Backend Authentication Check**:
+   ```python
+   # HR views now require IsAuthenticated
+   @api_view(['GET', 'POST'])
+   @permission_classes([IsAuthenticated])  # Changed from AllowAny
+   def employee_list(request):
+       logger.info(f'User: {request.user.email}, Authenticated: {request.user.is_authenticated}')
+   ```
+
+**Files Modified**:
+- `/backend/pyfactor/hr/views.py` - Added proper authentication
+- `/src/utils/apiClient.js` - Added tenant header support
+- `/src/app/api/hr/employees/route.js` - Enhanced logging and error handling
+
+---
+
+## SSN/TIN Field Not Showing Correct Label
+
+**Issue**: Tax identification field shows wrong label (e.g., "SSN" for UK users instead of "National Insurance Number").
+
+**Symptoms**:
+- Country dropdown shows "United Kingdom" but field label remains "Social Security Number"
+- Placeholder text doesn't match expected format for selected country
+- Form validation errors for valid tax ID formats
+
+**Root Cause**: Country change handler not updating security number type properly.
+
+**Solution**:
+
+1. **Verify Country Mapping**:
+   ```javascript
+   const COUNTRY_TO_SECURITY_NUMBER = {
+     'UK': { type: 'NIN', label: 'National Insurance Number', placeholder: 'XX 12 34 56 X' },
+     'US': { type: 'SSN', label: 'Social Security Number', placeholder: 'XXX-XX-XXXX' },
+     'KE': { type: 'OTHER', label: 'Tax Identification Number', placeholder: 'Enter TIN' }
+   };
+   ```
+
+2. **Fix Country Change Handler**:
+   ```javascript
+   const handleCountryChange = (countryCode) => {
+     const securityInfo = getSecurityNumberInfo(countryCode);
+     setFormData(prev => ({
+       ...prev,
+       country: countryCode,
+       securityNumberType: securityInfo.type,
+       securityNumber: '' // Clear when country changes
+     }));
+   };
+   ```
+
+3. **Dynamic Label Rendering**:
+   ```javascript
+   <label className="block text-sm font-medium text-gray-700 mb-1">
+     {getSecurityNumberInfo(formData.country).label}
+     <FieldTooltip text={`Enter the employee's ${label.toLowerCase()}.`} />
+   </label>
+   ```
+
+**Files Modified**:
+- `/src/app/dashboard/components/forms/EmployeeManagement.js`
+
+---
+
+## Employee Creation Fails with Security Number
+
+**Issue**: Employee creation succeeds but SSN/TIN is not securely stored in Stripe.
+
+**Symptoms**:
+- Employee record created successfully
+- `ssn_stored_in_stripe` field remains `false`
+- Backend logs show Stripe storage errors
+- Only partial security number visible in database
+
+**Root Causes**:
+1. **Missing Stripe Configuration**: Secret key not properly set
+2. **API Integration Issues**: Stripe Connect not configured
+3. **Security Number Format**: Invalid format for selected country
+
+**Solution**:
+
+1. **Verify Stripe Configuration**:
+   ```bash
+   # Check environment variables
+   echo $STRIPE_SECRET_KEY
+   # Should start with sk_live_ or sk_test_
+   ```
+
+2. **Backend Storage Method**:
+   ```python
+   def save_ssn_to_stripe(self, ssn):
+       """Save SSN to Stripe securely"""
+       try:
+           if not settings.STRIPE_SECRET_KEY:
+               raise ValueError("Stripe secret key not configured")
+           
+           # Store in Stripe (implementation handles security)
+           self.ssn_last_four = ssn[-4:] if ssn else None
+           self.ssn_stored_in_stripe = True
+           self.save()
+           
+       except Exception as e:
+           logger.error(f'Stripe storage failed: {str(e)}')
+           raise
+   ```
+
+3. **Frontend Security Notice**:
+   ```javascript
+   <p className="text-xs text-gray-500 mt-1">
+     🔒 Securely encrypted and stored with Stripe for payroll processing
+   </p>
+   ```
+
+**Files Modified**:
+- `/backend/pyfactor/hr/models.py` - Enhanced `save_ssn_to_stripe()` method
+- `/backend/pyfactor/hr/views.py` - Added secure storage handling
+
+---
+
+## Compensation Type Toggle Not Working
+
+**Issue**: Switching between Salary and Wage options doesn't show/hide correct input fields.
+
+**Symptoms**:
+- Radio buttons change but form fields remain the same
+- Both salary and wage fields visible simultaneously
+- Form validation errors on unused fields
+
+**Root Cause**: React state not updating properly or conditional rendering logic incorrect.
+
+**Solution**:
+
+1. **Fix State Management**:
+   ```javascript
+   const [formData, setFormData] = useState({
+     compensationType: 'SALARY', // Default to salary
+     salary: '',
+     wagePerHour: ''
+   });
+   
+   // Use functional state updates
+   const handleTypeChange = (type) => {
+     setFormData(prev => ({
+       ...prev,
+       compensationType: type,
+       // Clear opposite field
+       ...(type === 'SALARY' ? { wagePerHour: '' } : { salary: '' })
+     }));
+   };
+   ```
+
+2. **Conditional Rendering**:
+   ```javascript
+   {formData.compensationType === 'SALARY' ? (
+     <div>
+       <label>Annual Salary</label>
+       <input 
+         type="number"
+         value={formData.salary}
+         onChange={(e) => setFormData(prev => ({...prev, salary: e.target.value}))}
+       />
+     </div>
+   ) : (
+     <div>
+       <label>Hourly Wage</label>
+       <input 
+         type="number"
+         value={formData.wagePerHour}
+         step="0.01"
+         onChange={(e) => setFormData(prev => ({...prev, wagePerHour: e.target.value}))}
+       />
+     </div>
+   )}
+   ```
+
+**Files Modified**:
+- `/src/app/dashboard/components/forms/EmployeeManagement.js`
+
+---
+
+## Employee Stats Not Loading
+
+**Issue**: Dashboard employee statistics show "0" for all values even when employees exist.
+
+**Symptoms**:
+- Total employees shows 0
+- Active/inactive counts are incorrect
+- API returns empty stats object
+
+**Root Cause**: Missing `/api/hr/employees/stats/` endpoint or incorrect data aggregation.
+
+**Solution**:
+
+1. **Create Stats Endpoint**:
+   ```python
+   @api_view(['GET'])
+   @permission_classes([IsAuthenticated])
+   def employee_stats(request):
+       employees = Employee.objects.all()
+       total = employees.count()
+       active = employees.filter(active=True).count()
+       inactive = employees.filter(active=False).count()
+       
+       return Response({
+           'total': total,
+           'active': active,
+           'onLeave': 0,  # Add this field to model if needed
+           'inactive': inactive,
+           'departments': Employee.objects.values('department').distinct().count()
+       })
+   ```
+
+2. **Add URL Route**:
+   ```python
+   # In hr/urls.py
+   urlpatterns = [
+       path('employees/stats/', views.employee_stats, name='employee-stats'),
+       path('employees/', views.employee_list, name='employee-list'),
+       # stats/ must come before <uuid:pk>/ to avoid conflicts
+   ]
+   ```
+
+**Files Modified**:
+- `/backend/pyfactor/hr/views.py` - Added `employee_stats` function
+- `/backend/pyfactor/hr/urls.py` - Added stats endpoint
+
+---
+
+## HR Employee Management Best Practices
+
+1. **Security First**:
+   - Never log full SSN/TIN numbers
+   - Always use Stripe for sensitive data storage
+   - Implement proper session authentication
+   - Use tenant isolation for multi-tenant setups
+
+2. **Global Considerations**:
+   - Support multiple tax ID types (SSN, NIN, TIN, etc.)
+   - Auto-detect tax ID format from country selection
+   - Provide clear format examples and validation
+   - Handle different wage/salary structures globally
+
+3. **User Experience**:
+   - Show clear security notices about data storage
+   - Provide real-time validation feedback
+   - Use appropriate input types and patterns
+   - Handle loading states and error messages gracefully
+
+4. **Development**:
+   - Test with real database, not demo data
+   - Verify authentication on all endpoints
+   - Include comprehensive logging for debugging
+   - Follow industry-standard HR data models
+
+5. **API Design**:
+   - Use consistent error response formats
+   - Include proper CORS headers for frontend integration
+   - Implement rate limiting on sensitive endpoints
+   - Version APIs for future compatibility
+
+**Key Files**:
+- Frontend: `/src/app/dashboard/components/forms/EmployeeManagement.js`
+- Backend: `/backend/pyfactor/hr/views.py`, `/backend/pyfactor/hr/models.py`
+- API: `/src/utils/apiClient.js`
+- Documentation: `/docs/EMPLOYEE_MANAGEMENT.md`
+
+---
+
+*Last Updated: 2025-01-09*
 *Next Review: When new patterns emerge*
