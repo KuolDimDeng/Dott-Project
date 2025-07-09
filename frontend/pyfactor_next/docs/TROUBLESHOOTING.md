@@ -2268,5 +2268,274 @@ python manage.py check_kenya_discount  # Verify Kenya is configured
 
 ---
 
-*Last Updated: 2025-07-08*
+# Calendar & Reminder Issues
+
+## Calendar Events Not Saving or Displaying
+
+**Issue**: Calendar events appear to save but don't persist or display on the calendar after page refresh.
+
+**Symptoms**:
+- Save button stays in "Saving..." state
+- Events disappear after refresh
+- Console shows successful save but events don't appear
+- All-day events cause validation errors
+- Dates show as one day earlier (timezone shifting)
+
+**Root Causes**:
+1. Field name mismatches between frontend and backend
+2. Missing database schema for calendar_event table
+3. In-memory storage instead of backend persistence
+4. Timezone conversion issues causing date shifts
+
+**Solution**:
+
+1. **Fix field name consistency**:
+   ```javascript
+   // Frontend was sending 'start_datetime' but backend expects 'start'
+   const requestBody = {
+     title: eventForm.title,
+     type: eventForm.type,
+     start: eventForm.start,  // Not start_datetime
+     end: eventForm.end,      // Not end_datetime
+     allDay: eventForm.allDay,
+     // ... other fields
+   };
+   ```
+
+2. **Create calendar schema via admin tool**:
+   - Navigate to `/dashboard/admin/fix-calendar-schema`
+   - Click "Initialize Calendar Schema"
+   - This creates the calendar_event table with proper structure
+
+3. **Remove in-memory storage**:
+   - Removed temporary event storage from Calendar component
+   - All events now persist to backend database
+
+4. **Fix timezone handling**:
+   - Add `timeZone={userTimezone}` to FullCalendar component
+   - Store user timezone in database
+   - Convert dates properly between UTC and local time
+
+**Files Changed**:
+- `/src/app/dashboard/components/forms/Calendar.js`
+- `/src/app/dashboard/admin/fix-calendar-schema/page.js`
+- `/backend/pyfactor/custom_auth/models.py` (added timezone field)
+
+---
+
+## Calendar Toast Notifications Not Showing
+
+**Issue**: Calendar reminder toast notifications don't appear even though console shows they're being triggered.
+
+**Symptoms**:
+- Console shows "[ReminderService] Showing reminder: ..." but no toast appears
+- Test toast button doesn't work
+- react-hot-toast import exists but toasts don't show
+
+**Root Cause**:
+- App uses custom ToastProvider, not react-hot-toast
+- Calendar and reminder service were importing wrong toast library
+- Toast functions weren't compatible between the two systems
+
+**Solution**:
+
+1. **Remove react-hot-toast import**:
+   ```javascript
+   // Remove this:
+   import { toast } from 'react-hot-toast';
+   
+   // Add this:
+   import { useToast } from '@/components/Toast/ToastProvider';
+   ```
+
+2. **Update reminder service to accept toast function**:
+   ```javascript
+   class ReminderService {
+     constructor() {
+       this.toastFunction = null; // Will be set by component
+     }
+     
+     init(toastFunction = null) {
+       if (toastFunction) {
+         this.toastFunction = toastFunction;
+       }
+     }
+     
+     showReminder(reminder) {
+       if (this.toastFunction && this.toastFunction.info) {
+         this.toastFunction.info(message, 8000);
+       }
+     }
+   }
+   ```
+
+3. **Pass toast to reminder service**:
+   ```javascript
+   const toast = useToast();
+   reminderService.init(toast);
+   ```
+
+**Why This Fix Works**:
+- Custom ToastProvider is already wrapped around dashboard content
+- useToast hook provides the correct toast API
+- Reminder service now uses the same toast system as rest of app
+
+**Files Changed**:
+- `/src/utils/reminderService.js`
+- `/src/app/dashboard/components/forms/Calendar.js`
+
+---
+
+## Calendar Date Shifting Issues (Timezone Problems)
+
+**Issue**: Calendar events saved for one date appear on the previous day (e.g., July 9 shows as July 8).
+
+**Symptoms**:
+- Event saved for 07/09 displays as 07/08
+- Reminders show for wrong dates
+- Times appear incorrect in different timezones
+- UTC conversion causing day boundary issues
+
+**Root Causes**:
+1. No timezone configuration in FullCalendar
+2. User timezone not stored or used
+3. UTC dates converting to previous day in local timezone
+4. Frontend and backend timezone mismatch
+
+**Solution**:
+
+1. **Add timezone support to FullCalendar**:
+   ```javascript
+   <FullCalendar
+     timeZone={userTimezone}  // Add this line
+     // ... other props
+   />
+   ```
+
+2. **Store user timezone in database**:
+   ```python
+   # Add to User model
+   timezone = models.CharField(
+       max_length=50,
+       default='UTC',
+       help_text='User timezone (e.g., America/New_York)'
+   )
+   ```
+
+3. **Auto-detect and save timezone**:
+   ```javascript
+   const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+   // Save to user profile on first login
+   ```
+
+4. **Fix reminder service timezone**:
+   ```javascript
+   reminderService.setTimezone(userTimezone);
+   ```
+
+**Implementation Strategy**:
+- Phase 1: Auto-detect timezone, save to profile (implemented)
+- Phase 2: Add timezone selector in settings (future)
+
+**Files Changed**:
+- `/backend/pyfactor/custom_auth/models.py`
+- `/backend/pyfactor/custom_auth/migrations/0002_add_user_timezone.py`
+- `/src/app/dashboard/components/forms/Calendar.js`
+- `/src/utils/reminderService.js`
+
+---
+
+## Calendar Form Date/Time Field Separation
+
+**Issue**: Combined datetime-local inputs were confusing and causing timezone issues.
+
+**Symptoms**:
+- Hard to edit just date or just time
+- Browser datetime-local picker issues
+- Confusion about what timezone is being used
+
+**Solution**:
+
+1. **Separate date and time fields**:
+   ```javascript
+   // Form state now has separate fields
+   const [eventForm, setEventForm] = useState({
+     startDate: '',
+     startTime: '09:00',
+     endDate: '',
+     endTime: '10:00',
+     // ... other fields
+   });
+   ```
+
+2. **Update form UI**:
+   ```javascript
+   <input type="date" value={eventForm.startDate} />
+   <input type="time" value={eventForm.startTime} />
+   ```
+
+3. **Combine for backend on save**:
+   ```javascript
+   if (eventForm.allDay) {
+     startDateTime = eventForm.startDate;
+     endDateTime = eventForm.endDate;
+   } else {
+     startDateTime = `${eventForm.startDate}T${eventForm.startTime}`;
+     endDateTime = `${eventForm.endDate}T${eventForm.endTime}`;
+   }
+   ```
+
+**Benefits**:
+- Clearer UI with separate inputs
+- Better mobile experience
+- No timezone ambiguity in form
+- Easier to implement all-day events
+
+**Files Changed**:
+- `/src/app/dashboard/components/forms/Calendar.js`
+
+---
+
+## Common Calendar Error Messages
+
+### "Permission denied to access property 'nodeType'"
+- **Cause**: Third-party analytics/recording library
+- **Impact**: None - doesn't affect calendar functionality
+- **Action**: Can be safely ignored
+
+### "Event update JSON parsing error"
+- **Cause**: Backend returning non-JSON response for PUT requests
+- **Solution**: Handle non-JSON responses gracefully in update handler
+
+### "403 Forbidden on /api/user/timezone"
+- **Cause**: API endpoint permissions issue
+- **Impact**: Timezone auto-detection may fail
+- **Workaround**: Timezone still works with browser detection
+
+---
+
+## Calendar Best Practices
+
+1. **Always test with actual backend**:
+   - Don't rely on frontend-only testing
+   - Verify events persist after refresh
+
+2. **Check timezone handling**:
+   - Test events across day boundaries
+   - Verify reminders show at correct times
+   - Test with users in different timezones
+
+3. **Use separate date/time fields**:
+   - Better UX than datetime-local
+   - Clearer timezone handling
+   - Works better on mobile
+
+4. **Initialize reminder service with toast**:
+   - Pass toast function on init
+   - Don't use react-hot-toast
+   - Use app's custom toast system
+
+---
+
+*Last Updated: 2025-07-09*
 *Next Review: When new patterns emerge*
