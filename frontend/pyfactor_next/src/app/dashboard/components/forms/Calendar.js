@@ -164,6 +164,14 @@ export default function Calendar({ onNavigate }) {
       if (response.ok) {
         const data = await response.json();
         console.log('[Calendar] Calendar events data:', data);
+        
+        // Check if we got an error response
+        if (data.error) {
+          console.error('[Calendar] ❌ API returned error:', data);
+          toast.error(`Failed to load events: ${data.error}`);
+          return [];
+        }
+        
         // Handle both array response and object with events property
         const events = Array.isArray(data) ? data : (data.events || []);
         console.log('[Calendar] Processed calendar events:', events);
@@ -509,10 +517,22 @@ export default function Calendar({ onNavigate }) {
         }
       } else {
         const errorData = await response.json().catch(() => ({}));
-        console.error('[Calendar] Save error response:', errorData);
-        console.error('[Calendar] Response status:', response.status);
-        console.error('[Calendar] Response headers:', response.headers);
-        throw new Error(errorData.error || `Failed to save event (${response.status})`);
+        console.error('[Calendar] ❌ Save failed with status:', response.status);
+        console.error('[Calendar] ❌ Error details:', errorData);
+        console.error('[Calendar] ❌ Backend URL:', errorData.backendUrl);
+        console.error('[Calendar] ❌ Full error object:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData.error,
+          details: errorData.details,
+          backendUrl: errorData.backendUrl
+        });
+        
+        // Show detailed error to user
+        const errorMessage = errorData.details || errorData.error || `Failed to save event (${response.status})`;
+        alert(`Failed to save event:\n\n${errorMessage}\n\nBackend URL: ${errorData.backendUrl || 'Unknown'}`);
+        
+        throw new Error(errorMessage);
       }
     } catch (error) {
       console.error('[Calendar] Error saving event:', error);

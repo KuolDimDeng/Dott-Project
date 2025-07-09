@@ -53,6 +53,13 @@ export async function GET(request) {
       },
     });
 
+    // Check if response is JSON before parsing
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      console.error('🎯 [Pricing API] Backend returned non-JSON response');
+      throw new Error('Backend returned invalid response format');
+    }
+    
     const result = await response.json();
     
     console.log('🎯 [Pricing API] Backend raw response:', result);
