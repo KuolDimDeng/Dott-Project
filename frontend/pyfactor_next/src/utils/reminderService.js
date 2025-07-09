@@ -90,25 +90,20 @@ class ReminderService {
     const eventTypeLabel = this.getEventTypeLabel(reminder.eventType);
     const message = `${eventTypeLabel}: ${reminder.eventTitle} at ${eventTime}`;
     
-    // Show toast notification
-    toast(message, {
-      duration: 6000,
+    console.log(`[ReminderService] Showing reminder: ${message}`);
+    console.log('[ReminderService] Toast library loaded:', typeof toast);
+    
+    // Show toast notification - use simpler styling that matches the app's toaster config
+    const toastId = toast(message, {
+      duration: 8000, // Increased duration
       position: 'top-right',
-      icon: '🔔',
-      style: {
-        background: '#3B82F6',
-        color: 'white',
-        fontWeight: '500',
-        borderRadius: '10px',
-        padding: '16px',
-        boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)'
-      }
+      icon: '🔔'
     });
+    
+    console.log('[ReminderService] Toast created with ID:', toastId);
 
     // Also show browser notification if permission granted
     this.showBrowserNotification(reminder);
-    
-    console.log(`[ReminderService] Showing reminder: ${message}`);
   }
 
   // Get friendly label for event type
@@ -189,8 +184,11 @@ class ReminderService {
       this.cleanupOldReminders();
     }, 30000);
     
-    // Also check immediately
-    this.checkReminders();
+    // Wait a bit before first check to ensure React is fully mounted
+    setTimeout(() => {
+      console.log('[ReminderService] Initial reminder check');
+      this.checkReminders();
+    }, 2000);
   }
 
   // Stop the reminder checking interval
