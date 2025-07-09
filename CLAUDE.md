@@ -154,6 +154,34 @@
   - Backend: Updated payment integration with regional pricing support
   - API: Automatic country detection and payment method selection
 
+### [30.0.0] - 2025-07-09 - CURRENT - Subscription Regional Pricing & Payment Methods
+- **Purpose**: Implement regional pricing with local payment methods for developing countries
+- **Subscription Plans**:
+  - Basic: Free forever (1 user, 3GB storage)
+  - Professional: $15/mo ($7.50 developing countries)
+  - Enterprise: $45/mo ($22.50 developing countries)
+- **Billing Cycles**: Monthly, 6-month (17% off), Yearly (20% off)
+- **Regional Pricing**:
+  - 128 developing countries get automatic 50% discount
+  - Detected from country selected during onboarding
+  - No manual codes needed - automatic application
+- **Payment Methods by Country**:
+  - Kenya: Credit Card (USD) or M-Pesa (KES)
+  - Nigeria: Credit Card or Flutterwave
+  - Ghana/Uganda/Rwanda: Credit Card or MTN Mobile Money
+  - Tanzania: Credit Card or M-Pesa
+  - Others: Credit Card only
+- **Implementation**:
+  - Payment page detects country from onboarding data
+  - Shows appropriate payment methods
+  - Displays local currency with exchange rate
+  - M-Pesa integration for Kenya users
+- **Key Files**:
+  - `/src/app/onboarding/payment/page.js` - Payment page with regional support
+  - `/src/app/api/payments/mpesa/initiate/route.js` - M-Pesa payment API
+  - `/src/app/api/payment-methods/available/route.js` - Payment method detection
+  - `/docs/SUBSCRIPTION_PRICING.md` - Complete pricing documentation
+
 ---
 
 ## DEPRECATED CONFIGURATIONS (Do Not Use)
@@ -178,8 +206,9 @@
 
 ### Current Pricing
 - **Basic** (Free): 1 user, 3GB storage
-- **Professional**: $15/mo or $144/year
-- **Enterprise**: $45/mo or $432/year
+- **Professional**: $15/mo or $144/year (50% off for developing countries)
+- **Enterprise**: $45/mo or $432/year (50% off for developing countries)
+- **Billing Options**: Monthly, 6-month (17% off), Yearly (20% off)
 
 ---
 

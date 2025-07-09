@@ -30,6 +30,11 @@ function PaymentForm({ plan, billingCycle }) {
   const [postalCode, setPostalCode] = useState('');
   const [tenantId, setTenantId] = useState(null);
   const [businessInfo, setBusinessInfo] = useState(null);
+  const [regionalPricing, setRegionalPricing] = useState(null);
+  const [country, setCountry] = useState(null);
+  const [paymentMethods, setPaymentMethods] = useState([]);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('card');
+  const [mpesaPhone, setMpesaPhone] = useState('');
 
   // Fetch session data to get tenant ID and business info from onboarding progress
   useEffect(() => {
@@ -81,6 +86,17 @@ function PaymentForm({ plan, billingCycle }) {
                              sessionData.businessType ||
                              sessionData.business_type ||
                              'Other';
+          
+          // Extract country from onboarding data
+          const userCountry = user?.country || 
+                            user?.onboardingProgress?.country ||
+                            sessionData.country ||
+                            sessionData.onboardingProgress?.country;
+          
+          if (userCountry) {
+            setCountry(userCountry);
+            logger.info('[PaymentForm] Country found:', userCountry);
+          }
           
           if (businessName) {
             setBusinessInfo({
@@ -142,6 +158,50 @@ function PaymentForm({ plan, billingCycle }) {
     fetchSessionAndBusinessInfo();
   }, []);
 
+  // Fetch regional pricing when country is available
+  useEffect(() => {
+    const fetchRegionalPricing = async () => {
+      if (!country || !plan) return;
+      
+      try {
+        logger.info('[PaymentForm] Fetching regional pricing for:', country);
+        
+        // Fetch pricing for the country
+        const pricingResponse = await fetch(`/api/pricing/by-country?country=${country}`);
+        if (pricingResponse.ok) {
+          const pricingData = await safeJsonParse(pricingResponse, 'PaymentForm-RegionalPricing');
+          logger.info('[PaymentForm] Regional pricing data:', pricingData);
+          setRegionalPricing(pricingData);
+          
+          // Check if this is a developing country that should have M-Pesa
+          if (country === 'Kenya' || country === 'KE') {
+            logger.info('[PaymentForm] Kenya detected, adding M-Pesa payment option');
+            setPaymentMethods(['card', 'mpesa']);
+            
+            // If discount is available and user is in Kenya, show M-Pesa as default
+            if (pricingData.discount_percentage > 0) {
+              setSelectedPaymentMethod('mpesa');
+            }
+          }
+        }
+        
+        // Fetch available payment methods from backend
+        const paymentMethodsResponse = await fetch(`/api/payment-methods/available?country=${country}`);
+        if (paymentMethodsResponse.ok) {
+          const methodsData = await safeJsonParse(paymentMethodsResponse, 'PaymentForm-PaymentMethods');
+          logger.info('[PaymentForm] Available payment methods:', methodsData);
+          if (methodsData.methods && methodsData.methods.length > 0) {
+            setPaymentMethods(methodsData.methods);
+          }
+        }
+      } catch (error) {
+        logger.error('[PaymentForm] Error fetching regional pricing:', error);
+      }
+    };
+    
+    fetchRegionalPricing();
+  }, [country, plan]);
+
   // Card element styling - modern design
   const cardElementOptions = {
     style: {
@@ -162,6 +222,26 @@ function PaymentForm({ plan, billingCycle }) {
   };
 
   const getPrice = () => {
+    // Use regional pricing if available
+    if (regionalPricing && regionalPricing.pricing) {
+      const planPricing = regionalPricing.pricing[plan.toLowerCase()];
+      if (planPricing) {
+        if (billingCycle === 'monthly') return planPricing.monthly;
+        if (billingCycle === '6month') return planPricing.six_month;
+        if (billingCycle === 'yearly') return planPricing.yearly;
+      }
+    }
+    
+    // Fallback to default prices
+    const prices = {
+      professional: { monthly: 15, '6month': 75, yearly: 144 },
+      enterprise: { monthly: 45, '6month': 225, yearly: 432 }
+    };
+    return prices[plan.toLowerCase()]?.[billingCycle] || 0;
+  };
+  
+  const getOriginalPrice = () => {
+    // Always return original USD price for comparison
     const prices = {
       professional: { monthly: 15, '6month': 75, yearly: 144 },
       enterprise: { monthly: 45, '6month': 225, yearly: 432 }
@@ -172,7 +252,7 @@ function PaymentForm({ plan, billingCycle }) {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (!stripe || !elements) {
+    if (selectedPaymentMethod === 'card' && (!stripe || !elements)) {
       logger.error('Stripe not loaded');
       return;
     }
@@ -181,6 +261,60 @@ function PaymentForm({ plan, billingCycle }) {
     setError(null);
 
     try {
+      // Handle M-Pesa payment
+      if (selectedPaymentMethod === 'mpesa') {
+        if (!mpesaPhone.trim()) {
+          throw new Error('Please enter your M-Pesa phone number');
+        }
+        
+        logger.info('[PaymentForm] Processing M-Pesa payment:', {
+          phone: mpesaPhone,
+          amount: getPrice(),
+          currency: regionalPricing?.currency || 'USD'
+        });
+        
+        // Create M-Pesa payment through backend
+        const mpesaResponse = await fetch('/api/payments/mpesa/initiate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            phone: mpesaPhone,
+            plan: plan.toLowerCase(),
+            billing_cycle: billingCycle,
+            amount: getPrice(),
+            currency: regionalPricing?.currency || 'USD',
+            country: country
+          }),
+        });
+        
+        const mpesaResult = await safeJsonParse(mpesaResponse, 'PaymentForm-MpesaInitiate');
+        
+        if (!mpesaResponse.ok) {
+          throw new Error(mpesaResult.error || 'M-Pesa payment initiation failed');
+        }
+        
+        // For M-Pesa, we'll get a payment reference and need to poll for status
+        logger.info('[PaymentForm] M-Pesa payment initiated:', mpesaResult);
+        
+        // Show success and instructions
+        setSuccess(true);
+        
+        // Poll for payment completion (or redirect to a status page)
+        setTimeout(() => {
+          if (tenantId) {
+            window.location.href = `/${tenantId}/dashboard?payment_pending=mpesa`;
+          } else {
+            window.location.href = '/dashboard?payment_pending=mpesa';
+          }
+        }, 3000);
+        
+        return;
+      }
+      
+      // Original card payment flow continues below
       // Validate required fields
       if (!cardholderName.trim()) {
         throw new Error('Please enter the cardholder name');
@@ -476,8 +610,19 @@ function PaymentForm({ plan, billingCycle }) {
           <svg className="w-16 h-16 text-green-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <h3 className="text-lg font-semibold text-green-800 mb-2">Payment Successful!</h3>
-          <p className="text-green-700">Redirecting to your dashboard...</p>
+          {selectedPaymentMethod === 'mpesa' ? (
+            <>
+              <h3 className="text-lg font-semibold text-green-800 mb-2">M-Pesa Payment Initiated!</h3>
+              <p className="text-green-700 mb-2">Check your phone for the M-Pesa payment prompt</p>
+              <p className="text-sm text-green-600">Enter your PIN to complete the payment</p>
+              <p className="text-sm text-gray-600 mt-4">Redirecting to your dashboard...</p>
+            </>
+          ) : (
+            <>
+              <h3 className="text-lg font-semibold text-green-800 mb-2">Payment Successful!</h3>
+              <p className="text-green-700">Redirecting to your dashboard...</p>
+            </>
+          )}
         </div>
       </div>
     );
@@ -494,11 +639,96 @@ function PaymentForm({ plan, billingCycle }) {
           <span className="font-semibold text-gray-900">
             ${getPrice()}/{billingCycle === 'monthly' ? 'month' : billingCycle === '6month' ? '6 months' : 'year'}
           </span>
+          {regionalPricing && regionalPricing.discount_percentage > 0 && (
+            <>
+              <span className="text-gray-400">•</span>
+              <span className="text-green-600 font-semibold">
+                {regionalPricing.discount_percentage}% OFF
+              </span>
+            </>
+          )}
         </div>
+        {regionalPricing && regionalPricing.discount_percentage > 0 && (
+          <div className="mt-2">
+            <span className="text-gray-500 line-through">
+              Original: ${getOriginalPrice()}/{billingCycle === 'monthly' ? 'month' : billingCycle === '6month' ? '6 months' : 'year'}
+            </span>
+          </div>
+        )}
       </div>
+      
+      {/* Regional Discount Banner */}
+      {regionalPricing && regionalPricing.discount_percentage > 0 && (
+        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <div className="flex items-center">
+            <span className="text-2xl mr-2">🎉</span>
+            <div>
+              <p className="text-green-800 font-semibold">
+                {regionalPricing.discount_percentage}% regional discount applied!
+              </p>
+              <p className="text-green-700 text-sm">
+                Special pricing for businesses in {country}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Payment Form Card */}
       <div className="bg-white rounded-2xl shadow-xl p-8 space-y-6">
+        {/* Payment Method Selection */}
+        {paymentMethods.length > 1 && (
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-3">
+              Select Payment Method
+            </label>
+            <div className="grid grid-cols-2 gap-4">
+              {paymentMethods.includes('card') && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedPaymentMethod('card')}
+                  className={`p-4 border-2 rounded-lg transition-all ${
+                    selectedPaymentMethod === 'card'
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <svg className="w-8 h-8 mx-auto mb-2 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                  <p className="font-medium">Credit/Debit Card</p>
+                  <p className="text-sm text-gray-500">Visa, Mastercard, Amex</p>
+                </button>
+              )}
+              {paymentMethods.includes('mpesa') && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedPaymentMethod('mpesa')}
+                  className={`p-4 border-2 rounded-lg transition-all ${
+                    selectedPaymentMethod === 'mpesa'
+                      ? 'border-green-500 bg-green-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="w-8 h-8 mx-auto mb-2 bg-green-600 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">M</span>
+                  </div>
+                  <p className="font-medium">M-Pesa</p>
+                  <p className="text-sm text-gray-500">Mobile Money</p>
+                  {regionalPricing && regionalPricing.currency !== 'USD' && (
+                    <p className="text-xs text-green-600 mt-1">
+                      Pay in {regionalPricing.currency}
+                    </p>
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+        
+        {/* Show card form only if card payment is selected */}
+        {selectedPaymentMethod === 'card' && (
+          <>
         {/* Cardholder Name */}
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -592,6 +822,51 @@ function PaymentForm({ plan, billingCycle }) {
             required
           />
         </div>
+          </>
+        )}
+        
+        {/* M-Pesa Payment Form */}
+        {selectedPaymentMethod === 'mpesa' && (
+          <>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                M-Pesa Phone Number
+              </label>
+              <input
+                type="tel"
+                value={mpesaPhone}
+                onChange={(e) => setMpesaPhone(e.target.value)}
+                placeholder="07XXXXXXXX"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all"
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">Enter your M-Pesa registered phone number</p>
+            </div>
+            
+            {regionalPricing && regionalPricing.currency !== 'USD' && (
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  <strong>Price in {regionalPricing.currency}:</strong> {' '}
+                  {regionalPricing.currency === 'KES' ? 'KSh' : regionalPricing.currency} {' '}
+                  {Math.round(getPrice() * (regionalPricing.exchange_info?.rate || 110))}
+                </p>
+                <p className="text-xs text-blue-600 mt-1">
+                  Exchange rate: 1 USD = {regionalPricing.exchange_info?.rate || 110} {regionalPricing.currency}
+                </p>
+              </div>
+            )}
+            
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h4 className="font-semibold text-gray-700 mb-2">How M-Pesa payment works:</h4>
+              <ol className="text-sm text-gray-600 space-y-1">
+                <li>1. Click "Pay with M-Pesa" below</li>
+                <li>2. You'll receive a payment prompt on your phone</li>
+                <li>3. Enter your M-Pesa PIN to complete payment</li>
+                <li>4. You'll be redirected once payment is confirmed</li>
+              </ol>
+            </div>
+          </>
+        )}
 
         {/* Error Message */}
         {error && (
@@ -608,10 +883,12 @@ function PaymentForm({ plan, billingCycle }) {
         {/* Submit Button */}
         <button
           type="submit"
-          disabled={!stripe || isProcessing}
+          disabled={(selectedPaymentMethod === 'card' && !stripe) || isProcessing}
           className={`w-full py-4 px-6 rounded-lg font-semibold text-white transition-all transform ${
-            !stripe || isProcessing
+            (selectedPaymentMethod === 'card' && !stripe) || isProcessing
               ? 'bg-gray-400 cursor-not-allowed'
+              : selectedPaymentMethod === 'mpesa'
+              ? 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 active:scale-[0.98] shadow-lg hover:shadow-xl'
               : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 active:scale-[0.98] shadow-lg hover:shadow-xl'
           }`}
         >
@@ -623,6 +900,8 @@ function PaymentForm({ plan, billingCycle }) {
               </svg>
               Processing Payment...
             </span>
+          ) : selectedPaymentMethod === 'mpesa' ? (
+            `Pay with M-Pesa - ${regionalPricing?.currency === 'KES' ? 'KSh' : '$'}${regionalPricing?.currency === 'KES' ? Math.round(getPrice() * (regionalPricing.exchange_info?.rate || 110)) : getPrice()}`
           ) : (
             `Subscribe for $${getPrice()}/${billingCycle === 'monthly' ? 'mo' : billingCycle === '6month' ? '6mo' : 'yr'}`
           )}
