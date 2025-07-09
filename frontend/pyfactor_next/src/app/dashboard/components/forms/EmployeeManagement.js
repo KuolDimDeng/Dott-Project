@@ -61,6 +61,68 @@ const FieldTooltip = ({ text, position = 'top' }) => {
   );
 };
 
+// Country to Security Number Type mapping
+const COUNTRY_TO_SECURITY_NUMBER = {
+  'US': { type: 'SSN', label: 'Social Security Number', placeholder: 'XXX-XX-XXXX', pattern: '\\d{3}-\\d{2}-\\d{4}' },
+  'UK': { type: 'NIN', label: 'National Insurance Number', placeholder: 'XX 12 34 56 X', pattern: '[A-Z]{2}\\d{6}[A-Z]' },
+  'CA': { type: 'SIN', label: 'Social Insurance Number', placeholder: 'XXX-XXX-XXX', pattern: '\\d{3}-\\d{3}-\\d{3}' },
+  'AU': { type: 'TFN', label: 'Tax File Number', placeholder: 'XXX XXX XXX', pattern: '\\d{3}\\s\\d{3}\\s\\d{3}' },
+  'SG': { type: 'NRIC', label: 'NRIC Number', placeholder: 'SXXXXXXXA', pattern: '[ST]\\d{7}[A-Z]' },
+  'IN': { type: 'PAN', label: 'PAN Card Number', placeholder: 'ABCDE1234F', pattern: '[A-Z]{5}\\d{4}[A-Z]' },
+  'BR': { type: 'CPF', label: 'CPF Number', placeholder: 'XXX.XXX.XXX-XX', pattern: '\\d{3}\\.\\d{3}\\.\\d{3}-\\d{2}' },
+  'MX': { type: 'CURP', label: 'CURP', placeholder: 'ABCD123456HEFGHI01', pattern: '[A-Z]{4}\\d{6}[HM][A-Z]{5}\\d{2}' },
+  'ES': { type: 'DNI', label: 'DNI Number', placeholder: '12345678X', pattern: '\\d{8}[A-Z]' },
+  'AR': { type: 'DNI', label: 'DNI Number', placeholder: '12.345.678', pattern: '\\d{2}\\.\\d{3}\\.\\d{3}' },
+  'HK': { type: 'HKID', label: 'Hong Kong ID Card', placeholder: 'A123456(7)', pattern: '[A-Z]\\d{6}\\(\\d\\)' },
+  'SE': { type: 'NINO', label: 'Personal Identity Number', placeholder: 'YYYYMMDD-XXXX', pattern: '\\d{8}-\\d{4}' },
+  'NL': { type: 'BSN', label: 'Citizen Service Number', placeholder: '123456789', pattern: '\\d{9}' },
+  'PL': { type: 'PESEL', label: 'PESEL Number', placeholder: '12345678901', pattern: '\\d{11}' },
+  'CL': { type: 'RUT', label: 'RUT Number', placeholder: '12.345.678-9', pattern: '\\d{1,2}\\.\\d{3}\\.\\d{3}-[\\dK]' },
+  'PK': { type: 'CNIC', label: 'CNIC Number', placeholder: '12345-1234567-1', pattern: '\\d{5}-\\d{7}-\\d' },
+  'MY': { type: 'MYKAD', label: 'MyKad Number', placeholder: '123456-12-3456', pattern: '\\d{6}-\\d{2}-\\d{4}' },
+  'ID': { type: 'KTP', label: 'KTP Number', placeholder: '1234567890123456', pattern: '\\d{16}' },
+  'PT': { type: 'NIF', label: 'NIF Number', placeholder: '123456789', pattern: '\\d{9}' },
+  'NZ': { type: 'IRD', label: 'IRD Number', placeholder: '123-456-789', pattern: '\\d{3}-\\d{3}-\\d{3}' },
+  'IE': { type: 'PPS', label: 'PPS Number', placeholder: '1234567X', pattern: '\\d{7}[A-Z]' },
+  'SA': { type: 'IQAMA', label: 'Iqama Number', placeholder: '1234567890', pattern: '\\d{10}' },
+  'SS': { type: 'OTHER', label: 'Tax Identification Number', placeholder: 'Enter TIN', pattern: '' }, // South Sudan
+  'KE': { type: 'OTHER', label: 'Tax Identification Number', placeholder: 'Enter TIN', pattern: '' }, // Kenya
+  'NG': { type: 'OTHER', label: 'Tax Identification Number', placeholder: 'Enter TIN', pattern: '' }, // Nigeria
+  'ZA': { type: 'OTHER', label: 'Tax Identification Number', placeholder: 'Enter TIN', pattern: '' }, // South Africa
+  'OTHER': { type: 'OTHER', label: 'Tax/National ID Number', placeholder: 'Enter ID number', pattern: '' }
+};
+
+// Common countries for dropdown
+const COUNTRIES = [
+  { code: 'US', name: 'United States' },
+  { code: 'UK', name: 'United Kingdom' },
+  { code: 'CA', name: 'Canada' },
+  { code: 'AU', name: 'Australia' },
+  { code: 'KE', name: 'Kenya' },
+  { code: 'NG', name: 'Nigeria' },
+  { code: 'ZA', name: 'South Africa' },
+  { code: 'SS', name: 'South Sudan' },
+  { code: 'IN', name: 'India' },
+  { code: 'SG', name: 'Singapore' },
+  { code: 'BR', name: 'Brazil' },
+  { code: 'MX', name: 'Mexico' },
+  { code: 'ES', name: 'Spain' },
+  { code: 'AR', name: 'Argentina' },
+  { code: 'HK', name: 'Hong Kong' },
+  { code: 'SE', name: 'Sweden' },
+  { code: 'NL', name: 'Netherlands' },
+  { code: 'PL', name: 'Poland' },
+  { code: 'CL', name: 'Chile' },
+  { code: 'PK', name: 'Pakistan' },
+  { code: 'MY', name: 'Malaysia' },
+  { code: 'ID', name: 'Indonesia' },
+  { code: 'PT', name: 'Portugal' },
+  { code: 'NZ', name: 'New Zealand' },
+  { code: 'IE', name: 'Ireland' },
+  { code: 'SA', name: 'Saudi Arabia' },
+  { code: 'OTHER', name: 'Other Country' }
+];
+
 /**
  * Employee Management Component
  * Industry-standard employee management with CRUD operations and standard UI
@@ -101,10 +163,29 @@ function EmployeeManagement({ onNavigate }) {
     status: 'active',
     address: '',
     emergencyContact: '',
-    emergencyPhone: ''
+    emergencyPhone: '',
+    securityNumberType: 'SSN', // Tax ID type based on country
+    securityNumber: '', // Full tax ID (will be stored securely in Stripe)
+    country: 'US' // Employee's country for tax ID type
   });
 
   const [formErrors, setFormErrors] = useState({});
+
+  // Helper function to get security number info based on country
+  const getSecurityNumberInfo = (countryCode) => {
+    return COUNTRY_TO_SECURITY_NUMBER[countryCode] || COUNTRY_TO_SECURITY_NUMBER['OTHER'];
+  };
+
+  // Update security number type when country changes
+  const handleCountryChange = (countryCode) => {
+    const securityInfo = getSecurityNumberInfo(countryCode);
+    setFormData(prev => ({
+      ...prev,
+      country: countryCode,
+      securityNumberType: securityInfo.type,
+      securityNumber: '' // Clear the number when country changes
+    }));
+  };
 
   // Fetch employees on component mount
   useEffect(() => {
@@ -133,46 +214,23 @@ function EmployeeManagement({ onNavigate }) {
         stats: statsData
       });
 
-      setEmployees(employeesData);
+      setEmployees(employeesData || []);
       setStats(statsData);
     } catch (error) {
       logger.error('❌ [EmployeeManagement] Error in fetchEmployees:', error);
-      toast.error('Failed to load employees');
       
-      // Use demo data as fallback
-      const demoEmployees = [
-        {
-          id: '1',
-          firstName: 'John',
-          lastName: 'Doe',
-          email: 'john.doe@company.com',
-          phone: '+1 (555) 123-4567',
-          position: 'Software Engineer',
-          department: 'Engineering',
-          status: 'active',
-          hireDate: '2023-01-15',
-          compensationType: 'SALARY',
-          salary: 75000,
-          wagePerHour: null
-        },
-        {
-          id: '2',
-          firstName: 'Jane',
-          lastName: 'Smith',
-          email: 'jane.smith@company.com',
-          phone: '+1 (555) 987-6543',
-          position: 'Product Manager',
-          department: 'Product',
-          status: 'active',
-          hireDate: '2022-08-20',
-          compensationType: 'SALARY',
-          salary: 85000,
-          wagePerHour: null
-        }
-      ];
+      // Show specific error messages based on error type
+      if (error.message.includes('403')) {
+        toast.error('Access denied. Please check your permissions to view employees.');
+      } else if (error.message.includes('401')) {
+        toast.error('Authentication required. Please sign in again.');
+      } else {
+        toast.error(`Failed to load employees: ${error.message}`);
+      }
       
-      setEmployees(demoEmployees);
-      setStats({ total: 2, active: 2, onLeave: 0, inactive: 0 });
+      // Set empty arrays instead of demo data to force real data usage
+      setEmployees([]);
+      setStats({ total: 0, active: 0, onLeave: 0, inactive: 0 });
     } finally {
       setLoading(false);
     }
@@ -343,7 +401,10 @@ function EmployeeManagement({ onNavigate }) {
       status: employee.status || 'active',
       address: employee.address || '',
       emergencyContact: employee.emergencyContact || '',
-      emergencyPhone: employee.emergencyPhone || ''
+      emergencyPhone: employee.emergencyPhone || '',
+      securityNumberType: employee.securityNumberType || 'SSN',
+      securityNumber: '', // Never populate - security best practice
+      country: employee.country || 'US'
     });
     setIsEditModalOpen(true);
   };
@@ -373,7 +434,10 @@ function EmployeeManagement({ onNavigate }) {
       status: 'active',
       address: '',
       emergencyContact: '',
-      emergencyPhone: ''
+      emergencyPhone: '',
+      securityNumberType: 'SSN',
+      securityNumber: '',
+      country: 'US'
     });
     setFormErrors({});
   };
@@ -386,6 +450,10 @@ function EmployeeManagement({ onNavigate }) {
     if (!formData.email.trim()) errors.email = 'Email is required';
     if (!formData.position.trim()) errors.position = 'Position is required';
     if (!formData.department.trim()) errors.department = 'Department is required';
+    if (!formData.securityNumber.trim()) {
+      const securityInfo = getSecurityNumberInfo(formData.country);
+      errors.securityNumber = `${securityInfo.label} is required for payroll processing`;
+    }
     
     // Email validation
     if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
@@ -740,6 +808,44 @@ function EmployeeManagement({ onNavigate }) {
               onChange={(e) => setFormData({...formData, hireDate: e.target.value})}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Country
+              <FieldTooltip text="Employee's country of residence for tax identification purposes" />
+            </label>
+            <select
+              value={formData.country}
+              onChange={(e) => handleCountryChange(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              {COUNTRIES.map(country => (
+                <option key={country.code} value={country.code}>{country.name}</option>
+              ))}
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {getSecurityNumberInfo(formData.country).label}
+              <FieldTooltip 
+                text={`Enter the employee's ${getSecurityNumberInfo(formData.country).label.toLowerCase()}. This information is encrypted and securely stored for payroll processing.`} 
+              />
+            </label>
+            <input
+              type="text"
+              value={formData.securityNumber}
+              onChange={(e) => setFormData({...formData, securityNumber: e.target.value})}
+              placeholder={getSecurityNumberInfo(formData.country).placeholder}
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 ${
+                formErrors.securityNumber ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+              }`}
+            />
+            {formErrors.securityNumber && <p className="text-red-500 text-xs mt-1">{formErrors.securityNumber}</p>}
+            <p className="text-xs text-gray-500 mt-1">
+              🔒 Securely encrypted and stored with Stripe for payroll processing
+            </p>
           </div>
           
           <div>

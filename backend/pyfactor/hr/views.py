@@ -118,7 +118,7 @@ def health_check(request):
 
 # Employee views
 @api_view(['GET', 'POST', 'OPTIONS'])
-@permission_classes([AllowAny])  # Allow unauthenticated access for debugging
+@permission_classes([IsAuthenticated])  # Require authentication
 @throttle_classes([EmployeeListRateThrottle])  # Apply custom throttle class
 def employee_list(request):
     """List all employees or create a new employee"""
@@ -146,10 +146,33 @@ def employee_list(request):
         return response
         
     if request.method == 'GET':
-        # Add CORS headers explicitly
-        employees = Employee.objects.all()
-        serializer = EmployeeSerializer(employees, many=True)
-        response = Response(serializer.data)
+        logger.info(f'🚀 [HR Employee List] GET request from user: {request.user.email if request.user.is_authenticated else "anonymous"}')
+        
+        try:
+            # Get tenant information from user
+            tenant_id = None
+            if hasattr(request.user, 'tenant_id'):
+                tenant_id = request.user.tenant_id
+            elif hasattr(request.user, 'tenant'):
+                tenant_id = request.user.tenant.id if request.user.tenant else None
+            
+            logger.info(f'🏢 [HR Employee List] User tenant_id: {tenant_id}')
+            
+            # For now, get all employees (Employee model doesn't have tenant isolation built-in)
+            # In the future, you might want to add a tenant_id field to Employee model
+            employees = Employee.objects.all()
+            
+            logger.info(f'✅ [HR Employee List] Found {employees.count()} employees')
+            
+            serializer = EmployeeSerializer(employees, many=True)
+            response = Response(serializer.data)
+            
+        except Exception as e:
+            logger.error(f'❌ [HR Employee List] Error fetching employees: {str(e)}')
+            return Response(
+                {'error': 'Failed to fetch employees', 'details': str(e)}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
         
         # Add explicit CORS headers
         response["Access-Control-Allow-Origin"] = request.headers.get('Origin', '*')
@@ -174,10 +197,41 @@ def employee_list(request):
         return response
     
     elif request.method == 'POST':
-        serializer = EmployeeSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            response = Response(serializer.data, status=status.HTTP_201_CREATED)
+        logger.info(f'🚀 [HR Employee Create] POST request from user: {request.user.email}')
+        logger.info(f'📄 [HR Employee Create] Request data keys: {list(request.data.keys())}')
+        
+        try:
+            # Handle the security number specially for Stripe storage
+            employee_data = request.data.copy()
+            security_number = employee_data.pop('securityNumber', None)
+            
+            serializer = EmployeeSerializer(data=employee_data)
+            if serializer.is_valid():
+                # Save the employee first
+                employee = serializer.save()
+                logger.info(f'✅ [HR Employee Create] Employee created with ID: {employee.id}')
+                
+                # Handle security number storage if provided
+                if security_number:
+                    try:
+                        # Use the model's secure storage method
+                        employee.save_ssn_to_stripe(security_number)
+                        logger.info(f'🔒 [HR Employee Create] Security number securely stored for employee {employee.id}')
+                    except Exception as e:
+                        logger.error(f'❌ [HR Employee Create] Failed to store security number: {str(e)}')
+                        # Don't fail the creation, just log the error
+                
+                response = Response(serializer.data, status=status.HTTP_201_CREATED)
+            else:
+                logger.error(f'❌ [HR Employee Create] Validation errors: {serializer.errors}')
+                response = Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            logger.error(f'❌ [HR Employee Create] Unexpected error: {str(e)}')
+            response = Response(
+                {'error': 'Failed to create employee', 'details': str(e)}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
             
             # Add explicit CORS headers for POST responses too
             response["Access-Control-Allow-Origin"] = request.headers.get('Origin', '*')
@@ -212,6 +266,44 @@ def employee_list(request):
             "X-Requires-Auth, x-schema-name, X-Schema-Name"
         )
         return response
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def employee_stats(request):
+    """Get employee statistics"""
+    try:
+        logger.info(f'🚀 [HR Employee Stats] GET request from user: {request.user.email}')
+        
+        # Get all employees
+        employees = Employee.objects.all()
+        total = employees.count()
+        
+        # Count by status - Employee model uses 'active' boolean field, not status
+        active = employees.filter(active=True).count()
+        inactive = employees.filter(active=False).count()
+        
+        # For now, we don't have "on leave" status in the Employee model
+        # This could be added later as a separate field or derived from other data
+        on_leave = 0
+        
+        stats = {
+            'total': total,
+            'active': active,
+            'onLeave': on_leave,  # Frontend expects camelCase
+            'inactive': inactive,
+            'newThisMonth': 0,  # Could be calculated based on date_joined
+            'departments': Employee.objects.values('department').distinct().count() if total > 0 else 0
+        }
+        
+        logger.info(f'✅ [HR Employee Stats] Returning stats: {stats}')
+        return Response(stats)
+        
+    except Exception as e:
+        logger.error(f'❌ [HR Employee Stats] Error: {str(e)}')
+        return Response(
+            {'error': 'Failed to fetch employee statistics', 'details': str(e)}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 @api_view(['GET', 'PUT', 'DELETE', 'OPTIONS'])
 @permission_classes([IsAuthenticated])
