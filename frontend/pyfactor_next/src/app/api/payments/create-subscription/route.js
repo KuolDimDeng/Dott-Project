@@ -4,6 +4,7 @@ import { logger } from '@/utils/logger';
 import { decrypt } from '@/utils/sessionEncryption';
 import { checkRateLimit, rateLimitResponse } from '@/middleware/rateLimit';
 import { csrfProtection } from '@/utils/csrf';
+import { safeJsonParse } from '@/utils/responseParser';
 
 /**
  * Backend proxy for Stripe subscription creation
@@ -51,7 +52,7 @@ export async function POST(request) {
         });
         
         if (response.ok) {
-          sessionData = await response.json();
+          sessionData = await safeJsonParse(response, 'CreateSubscription-SessionValidation');
           // For new session system, we use the session ID as the auth token
           accessToken = sessionId;
         } else {

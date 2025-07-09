@@ -247,7 +247,7 @@ function PaymentForm({ plan, billingCycle }) {
           });
           
           if (csrfResponse.ok) {
-            const csrfData = await csrfResponse.json();
+            const csrfData = await safeJsonParse(csrfResponse, 'PaymentForm-CSRFFallback');
             csrfToken = csrfData.csrfToken;
             logger.info('Got CSRF token from dedicated endpoint');
           }
@@ -383,11 +383,17 @@ function PaymentForm({ plan, billingCycle }) {
         });
         
         if (!completePaymentResponse.ok) {
-          const errorData = await completePaymentResponse.json().catch(() => ({}));
+          let errorData = {};
+          try {
+            errorData = await safeJsonParse(completePaymentResponse, 'PaymentForm-CompleteError');
+          } catch (parseError) {
+            // If we can't parse the error, use a generic message
+            logger.error('Failed to parse error response:', parseError);
+          }
           throw new Error(errorData.error || `Payment completion failed: ${completePaymentResponse.status}`);
         }
         
-        const completeResult = await completePaymentResponse.json();
+        const completeResult = await safeJsonParse(completePaymentResponse, 'PaymentForm-CompleteResult');
         console.log('🔍 [PaymentForm] Complete-all API response:', {
           success: completeResult.success,
           tenantId: completeResult.tenantId || completeResult.tenant_id,

@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { generateCSRFToken } from '@/utils/csrf';
 import * as Sentry from '@sentry/nextjs';
 import { logger } from '@/utils/logger';
+import { safeJsonParse } from '@/utils/responseParser';
 
 /**
  * PERMANENT FIX: Server-Side Session Management - Version 2
@@ -275,7 +276,7 @@ export async function POST(request) {
       }, { status: 401 });
     }
     
-    const sessionData = await authResponse.json();
+    const sessionData = await safeJsonParse(authResponse, 'Session-V2-Create');
     console.log('[Session-V2] Backend session created:', { 
       session_token: sessionData.session_token?.substring(0, 8) + '...',
       session_token_length: sessionData.session_token?.length,
