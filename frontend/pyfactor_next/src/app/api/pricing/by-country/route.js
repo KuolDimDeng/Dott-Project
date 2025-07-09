@@ -89,36 +89,9 @@ export async function GET(request) {
         }
       });
       
-      // If backend returns US pricing for Kenya, override with hardcoded Kenya pricing
+      // Log mismatch but don't override - let backend handle pricing
       if (country === 'KE' && result.country_code === 'US') {
-        console.log('🎯 [Pricing API] Applying Kenya pricing override');
-        return NextResponse.json({
-          country_code: 'KE',
-          discount_percentage: 50,
-          currency: 'KES',
-          pricing: {
-            professional: {
-              monthly: 7.50,
-              six_month: 37.50,
-              yearly: 72.00,
-              monthly_display: '$7.50',
-              six_month_display: '$37.50',
-              yearly_display: '$72.00'
-            },
-            enterprise: {
-              monthly: 22.50,
-              six_month: 112.50,
-              yearly: 216.00,
-              monthly_display: '$22.50',
-              six_month_display: '$112.50',
-              yearly_display: '$216.00'
-            }
-          }
-        }, {
-          headers: {
-            'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
-          },
-        });
+        console.log('🎯 [Pricing API] WARNING: Backend returned US pricing for Kenya request');
       }
     }
     

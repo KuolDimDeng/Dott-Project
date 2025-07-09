@@ -304,58 +304,35 @@ class WiseCurrencyService:
         # Use a fixed rate of 130 KES per USD (typical rate)
         fixed_rate = 130.0
         
-        if is_discounted:
-            return {
-                'currency': 'KES',
-                'professional': {
-                    'monthly': 975,  # $7.50 * 130
-                    'six_month': 5070,  # $39 * 130
-                    'yearly': 9360,  # $72 * 130
-                    'monthly_display': 'KSh975',
-                    'six_month_display': 'KSh5,070',
-                    'yearly_display': 'KSh9,360'
-                },
-                'enterprise': {
-                    'monthly': 2925,  # $22.50 * 130
-                    'six_month': 15210,  # $117 * 130
-                    'yearly': 28080,  # $216 * 130
-                    'monthly_display': 'KSh2,925',
-                    'six_month_display': 'KSh15,210',
-                    'yearly_display': 'KSh28,080'
-                },
-                'exchange_info': {
-                    'rate': fixed_rate,
-                    'markup_percentage': 0,
-                    'last_updated': datetime.now().isoformat(),
-                    'note': 'Fixed rate - Wise API unavailable'
-                }
+        # Get base USD prices
+        usd_prices = self._get_usd_pricing(is_discounted)
+        
+        # Convert to KES dynamically
+        return {
+            'currency': 'KES',
+            'professional': {
+                'monthly': round(usd_prices['professional']['monthly'] * fixed_rate),
+                'six_month': round(usd_prices['professional']['six_month'] * fixed_rate),
+                'yearly': round(usd_prices['professional']['yearly'] * fixed_rate),
+                'monthly_display': self._format_currency(usd_prices['professional']['monthly'] * fixed_rate, 'KES'),
+                'six_month_display': self._format_currency(usd_prices['professional']['six_month'] * fixed_rate, 'KES'),
+                'yearly_display': self._format_currency(usd_prices['professional']['yearly'] * fixed_rate, 'KES')
+            },
+            'enterprise': {
+                'monthly': round(usd_prices['enterprise']['monthly'] * fixed_rate),
+                'six_month': round(usd_prices['enterprise']['six_month'] * fixed_rate),
+                'yearly': round(usd_prices['enterprise']['yearly'] * fixed_rate),
+                'monthly_display': self._format_currency(usd_prices['enterprise']['monthly'] * fixed_rate, 'KES'),
+                'six_month_display': self._format_currency(usd_prices['enterprise']['six_month'] * fixed_rate, 'KES'),
+                'yearly_display': self._format_currency(usd_prices['enterprise']['yearly'] * fixed_rate, 'KES')
+            },
+            'exchange_info': {
+                'rate': fixed_rate,
+                'markup_percentage': 0,
+                'last_updated': datetime.now().isoformat(),
+                'note': 'Fixed rate - Wise API unavailable'
             }
-        else:
-            return {
-                'currency': 'KES',
-                'professional': {
-                    'monthly': 1950,  # $15 * 130
-                    'six_month': 10140,  # $78 * 130
-                    'yearly': 18720,  # $144 * 130
-                    'monthly_display': 'KSh1,950',
-                    'six_month_display': 'KSh10,140',
-                    'yearly_display': 'KSh18,720'
-                },
-                'enterprise': {
-                    'monthly': 5850,  # $45 * 130
-                    'six_month': 30420,  # $234 * 130
-                    'yearly': 56160,  # $432 * 130
-                    'monthly_display': 'KSh5,850',
-                    'six_month_display': 'KSh30,420',
-                    'yearly_display': 'KSh56,160'
-                },
-                'exchange_info': {
-                    'rate': fixed_rate,
-                    'markup_percentage': 0,
-                    'last_updated': datetime.now().isoformat(),
-                    'note': 'Fixed rate - Wise API unavailable'
-                }
-            }
+        }
 
 
 # Singleton instance
