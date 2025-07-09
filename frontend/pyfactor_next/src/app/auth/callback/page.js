@@ -292,6 +292,16 @@ export default function Auth0CallbackPage() {
         
         // Only create a session if we don't have one from the backend
         console.log('[Auth0Callback] No session token from backend, creating session');
+        console.log('[Auth0Callback] Session creation debug:', {
+          hasSessionDataAccessToken: !!sessionData.accessToken,
+          hasAccessToken: !!accessToken,
+          hasSessionDataIdToken: !!sessionData.idToken,
+          sessionDataKeys: sessionData ? Object.keys(sessionData) : [],
+          backendUserKeys: backendUser ? Object.keys(backendUser) : []
+        });
+        
+        const tokenToUse = sessionData.accessToken || accessToken;
+        console.log('[Auth0Callback] Access token for session creation:', tokenToUse ? `${tokenToUse.substring(0, 20)}...` : 'MISSING');
         
         try {
           const sessionCreateResponse = await fetch('/api/auth/session-v2', {
@@ -301,7 +311,7 @@ export default function Auth0CallbackPage() {
             },
             credentials: 'include',
             body: JSON.stringify({
-              accessToken: sessionData.accessToken || accessToken,
+              accessToken: tokenToUse,
               idToken: sessionData.idToken,
               user: {
                 ...sessionData.user,

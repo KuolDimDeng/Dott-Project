@@ -140,6 +140,9 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
         tenantId: data.tenant_id,
         tenant_id: data.tenant_id,
         needsOnboarding: data.needs_onboarding,
+        // Include auth tokens for session creation
+        accessToken: authData.accessToken,
+        idToken: authData.idToken,
         // Don't include redirectUrl for email-password
         // Let EmailPasswordSignIn handle the routing
       };
@@ -175,7 +178,10 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
         tenant_id: data.tenant_id,
         needsOnboarding: data.needs_onboarding,
         onboardingCompleted: !data.needs_onboarding,
-        redirectUrl: redirectUrl
+        redirectUrl: redirectUrl,
+        // CRITICAL: Include auth tokens for session creation
+        accessToken: authData.accessToken,
+        idToken: authData.idToken
       };
     }
     
