@@ -191,12 +191,27 @@ function PaymentForm({ plan, billingCycle }) {
         }
         
         // Fetch available payment methods from backend
-        const paymentMethodsResponse = await fetch(`/api/payment-methods/available?country=${country}`);
+        const paymentMethodsResponse = await fetch(`/api/payment-methods/available?country=${countryCode}`);
         if (paymentMethodsResponse.ok) {
           const methodsData = await safeJsonParse(paymentMethodsResponse, 'PaymentForm-PaymentMethods');
           logger.info('[PaymentForm] Available payment methods:', methodsData);
           if (methodsData.methods && methodsData.methods.length > 0) {
             setPaymentMethods(methodsData.methods);
+            logger.info('[PaymentForm] Payment methods set to:', methodsData.methods);
+            
+            // Debug log for M-Pesa
+            if (methodsData.methods.includes('mpesa')) {
+              logger.info('[PaymentForm] M-Pesa payment method is available!');
+            } else {
+              logger.warn('[PaymentForm] M-Pesa not in payment methods:', methodsData.methods);
+            }
+          }
+        } else {
+          logger.error('[PaymentForm] Failed to fetch payment methods');
+          // Fallback for Kenya
+          if (countryCode === 'KE' || country === 'Kenya') {
+            logger.info('[PaymentForm] Using fallback payment methods for Kenya');
+            setPaymentMethods(['card', 'mpesa']);
           }
         }
       } catch (error) {
@@ -682,6 +697,17 @@ function PaymentForm({ plan, billingCycle }) {
       {/* Payment Form Card */}
       <div className="bg-white rounded-2xl shadow-xl p-8 space-y-6">
         {/* Payment Method Selection */}
+        {/* Debug info */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mb-4 p-3 bg-gray-100 rounded text-xs">
+            <p>Country: {country}</p>
+            <p>Payment Methods: {JSON.stringify(paymentMethods)}</p>
+            <p>Selected: {selectedPaymentMethod}</p>
+            <p>Regional Pricing: {regionalPricing ? 'Yes' : 'No'}</p>
+            {regionalPricing && <p>Discount: {regionalPricing.discount_percentage}%</p>}
+          </div>
+        )}
+        
         {paymentMethods.length > 1 && (
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-3">
