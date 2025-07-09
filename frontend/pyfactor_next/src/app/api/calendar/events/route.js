@@ -97,6 +97,9 @@ export async function GET(request) {
       allParams: Object.fromEntries(searchParams.entries())
     });
     console.log('[Calendar API GET] 🎯 REQUEST ANALYSIS - About to call backend API');
+    console.log('[Calendar API GET] Session tenant ID:', sessionData.tenant_id || sessionData.user?.tenant_id);
+    console.log('[Calendar API GET] Request tenant ID:', tenantId);
+    console.log('[Calendar API GET] Do they match?', (sessionData.tenant_id || sessionData.user?.tenant_id) === tenantId);
 
     if (!tenantId) {
       return NextResponse.json(
@@ -146,6 +149,30 @@ export async function GET(request) {
       // Fallback to in-memory storage if backend not available
       console.log('[Calendar API GET] Falling back to in-memory storage due to backend error');
       const events = getEventsByTenant(tenantId);
+      console.log('[Calendar API GET] 🚨 IN-MEMORY FALLBACK - Found events:', events.length);
+      console.log('[Calendar API GET] In-memory events detail:', events.map(e => ({
+        id: e.id,
+        title: e.title,
+        tenant_id: e.tenant_id,
+        start: e.start_datetime || e.start,
+        type: e.event_type || e.type
+      })));
+      
+      // If no events in memory either, add the test event
+      if (events.length === 0) {
+        console.log('[Calendar API GET] No events in memory either - adding test event');
+        events.push({
+          id: 'test-event-api',
+          title: 'Test Event from API',
+          start: new Date().toISOString(),
+          end: new Date(Date.now() + 3600000).toISOString(),
+          allDay: false,
+          type: 'appointment',
+          description: 'This is a test event to verify the API is working',
+          location: 'API Test'
+        });
+      }
+      
       const transformedEvents = events.map(event => ({
         id: event.id,
         title: event.title,
@@ -190,6 +217,35 @@ export async function GET(request) {
         allDay: e.all_day
       }))
     });
+    
+    // CRITICAL DEBUG: If backend returns empty, check in-memory storage as well
+    if (events.length === 0) {
+      console.log('[Calendar API GET] 🚨 BACKEND RETURNED NO EVENTS - Checking in-memory storage');
+      const inMemoryEvents = getEventsByTenant(tenantId);
+      console.log('[Calendar API GET] In-memory storage has:', inMemoryEvents.length, 'events');
+      if (inMemoryEvents.length > 0) {
+        console.log('[Calendar API GET] 🚨 EVENTS EXIST IN MEMORY BUT NOT IN BACKEND!');
+        console.log('[Calendar API GET] In-memory events:', inMemoryEvents.map(e => ({
+          id: e.id,
+          title: e.title,
+          start: e.start_datetime || e.start,
+          type: e.event_type || e.type
+        })));
+      }
+      
+      // Add a test event to verify API is working
+      console.log('[Calendar API GET] Adding Test Event from API to response');
+      events.push({
+        id: 'test-event-api',
+        title: 'Test Event from API',
+        start_datetime: new Date().toISOString(),
+        end_datetime: new Date(Date.now() + 3600000).toISOString(), // 1 hour later
+        all_day: false,
+        event_type: 'appointment',
+        description: 'This is a test event to verify the API is working',
+        location: 'API Test'
+      });
+    }
     
     const transformedEvents = events.map(event => ({
       id: event.id,
@@ -348,6 +404,21 @@ export async function POST(request) {
 
     const createdEvent = await backendResponse.json();
     console.log('[Calendar API POST] Backend created event:', createdEvent);
+    console.log('[Calendar API POST] 🎯 BACKEND SAVE SUCCESS - Event should now be in database');
+    
+    // Also save to in-memory storage as a safety net
+    console.log('[Calendar API POST] Also saving to in-memory storage as backup');
+    const memoryEvent = {
+      ...createdEvent,
+      tenant_id: tenantId,
+      // Ensure both formats are present
+      start_datetime: createdEvent.start_datetime || eventData.start,
+      end_datetime: createdEvent.end_datetime || eventData.end || eventData.start,
+      all_day: createdEvent.all_day || eventData.allDay || false,
+      event_type: createdEvent.event_type || eventData.type || 'appointment'
+    };
+    addCalendarEvent(memoryEvent);
+    console.log('[Calendar API POST] Added to in-memory storage:', memoryEvent.id);
 
     // Transform response to calendar format  
     const transformedEvent = {

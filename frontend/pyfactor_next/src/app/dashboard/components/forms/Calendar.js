@@ -154,6 +154,7 @@ export default function Calendar({ onNavigate }) {
   const fetchCalendarEvents = async (tenantId) => {
     try {
       console.log('[Calendar] Fetching calendar events for tenant:', tenantId);
+      console.log('🎯🎯🎯 [Calendar] ABOUT TO CALL API ENDPOINT: /api/calendar/events');
       const response = await fetch(`/api/calendar/events?tenantId=${tenantId}`, {
         credentials: 'include'
       });
