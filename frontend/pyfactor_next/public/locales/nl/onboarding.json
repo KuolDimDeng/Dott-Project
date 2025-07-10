@@ -74,6 +74,14 @@
       "payroll": "Salarisadministratie",
       "inventory": "Voorraadbeheer",
       "support": "24/7 Klantenondersteuning"
+    },
+    "plans": {
+      "free": {
+        "name": "Basic",
+        "description": "Basic plan",
+        "price": "Free",
+        "buttonText": "Start"
+      }
     }
   },
   "payment": {

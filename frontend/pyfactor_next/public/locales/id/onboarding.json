@@ -74,6 +74,14 @@
       "payroll": "Pemrosesan Penggajian",
       "inventory": "Manajemen Inventaris",
       "support": "Dukungan Pelanggan 24/7"
+    },
+    "plans": {
+      "free": {
+        "name": "Basic",
+        "description": "Basic plan",
+        "price": "Free",
+        "buttonText": "Start"
+      }
     }
   },
   "payment": {

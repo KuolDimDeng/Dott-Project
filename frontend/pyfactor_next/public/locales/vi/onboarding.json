@@ -74,6 +74,14 @@
       "payroll": "Xử lý lương",
       "inventory": "Quản lý kho hàng",
       "support": "Hỗ trợ khách hàng 24/7"
+    },
+    "plans": {
+      "free": {
+        "name": "Basic",
+        "description": "Basic plan",
+        "price": "Free",
+        "buttonText": "Start"
+      }
     }
   },
   "payment": {

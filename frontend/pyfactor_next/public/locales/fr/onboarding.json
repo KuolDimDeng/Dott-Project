@@ -74,6 +74,14 @@
       "payroll": "Traitement de la paie",
       "inventory": "Gestion des stocks",
       "support": "Support client 24/7"
+    },
+    "plans": {
+      "free": {
+        "name": "Basic",
+        "description": "Basic plan",
+        "price": "Free",
+        "buttonText": "Start"
+      }
     }
   },
   "payment": {

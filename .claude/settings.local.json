@@ -136,7 +136,16 @@
       "Bash(scp:*)",
       "Bash(ssh:*)",
       "Bash(do echo -n \"$lang: \")",
-      "Bash([ -f \"/Users/kuoldeng/projectx/frontend/pyfactor_next/public/locales/$lang/auth.json\" ])"
+      "Bash([ -f \"/Users/kuoldeng/projectx/frontend/pyfactor_next/public/locales/$lang/auth.json\" ])",
+      "Bash(/tmp/check_free_translation.sh:*)",
+      "Bash(do)",
+      "Bash(file=\"/Users/kuoldeng/projectx/frontend/pyfactor_next/public/locales/$lang/onboarding.json\")",
+      "Bash(if [ -f \"$file\" ])",
+      "Bash(jq:*)",
+      "Bash(/dev/null)",
+      "Bash(then)",
+      "Bash(echo:*)",
+      "Bash(fi)"
     ],
     "deny": []
   }

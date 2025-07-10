@@ -74,6 +74,14 @@
       "payroll": "Обработка заработной платы",
       "inventory": "Управление запасами",
       "support": "Поддержка клиентов 24/7"
+    },
+    "plans": {
+      "free": {
+        "name": "Basic",
+        "description": "Basic plan",
+        "price": "Free",
+        "buttonText": "Start"
+      }
     }
   },
   "payment": {

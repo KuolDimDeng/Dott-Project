@@ -70,6 +70,22 @@
       "save": "Save {{percentage}}%"
     },
     "plans": {
+      "free": {
+        "name": "Basic",
+        "description": "Perfect for small businesses just getting started",
+        "price": "Free",
+        "features": [
+          "Income and expense tracking",
+          "Invoice creation & reminders",
+          "Stripe & PayPal payments",
+          "Mobile money (M-Pesa, etc.)",
+          "Basic inventory tracking",
+          "Barcode scanning",
+          "3GB storage limit",
+          "1 user only"
+        ],
+        "buttonText": "Start for Free"
+      },
       "basic": {
         "name": "Basic",
         "description": "Perfect for small businesses just getting started",

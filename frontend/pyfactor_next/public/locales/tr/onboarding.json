@@ -74,6 +74,14 @@
       "payroll": "Bordro İşlemleri",
       "inventory": "Envanter Yönetimi",
       "support": "7/24 Müşteri Desteği"
+    },
+    "plans": {
+      "free": {
+        "name": "Basic",
+        "description": "Basic plan",
+        "price": "Free",
+        "buttonText": "Start"
+      }
     }
   },
   "payment": {

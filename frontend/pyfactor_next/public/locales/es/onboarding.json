@@ -74,6 +74,14 @@
       "payroll": "Procesamiento de Nómina",
       "inventory": "Gestión de Inventario",
       "support": "Soporte al Cliente 24/7"
+    },
+    "plans": {
+      "free": {
+        "name": "Basic",
+        "description": "Basic plan",
+        "price": "Free",
+        "buttonText": "Start"
+      }
     }
   },
   "payment": {

@@ -74,6 +74,14 @@
       "payroll": "Ìṣètò Owó-ọ̀yà",
       "inventory": "Ìṣàkóso Ẹ̀kúnrẹ́rẹ́",
       "support": "Àtìlẹ́yìn Oníbàárà 24/7"
+    },
+    "plans": {
+      "free": {
+        "name": "Basic",
+        "description": "Basic plan",
+        "price": "Free",
+        "buttonText": "Start"
+      }
     }
   },
   "payment": {

@@ -74,6 +74,14 @@
       "payroll": "Ukuphathwa kweholo",
       "inventory": "Ukuphathwa kwempahla",
       "support": "Usizo lwamakhasimende 24/7"
+    },
+    "plans": {
+      "free": {
+        "name": "Basic",
+        "description": "Basic plan",
+        "price": "Free",
+        "buttonText": "Start"
+      }
     }
   },
   "payment": {

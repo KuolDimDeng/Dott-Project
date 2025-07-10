@@ -74,6 +74,14 @@
       "payroll": "معالجة الرواتب",
       "inventory": "إدارة المخزون",
       "support": "دعم العملاء على مدار الساعة"
+    },
+    "plans": {
+      "free": {
+        "name": "Basic",
+        "description": "Basic plan",
+        "price": "Free",
+        "buttonText": "Start"
+      }
     }
   },
   "payment": {

@@ -74,6 +74,14 @@
       "payroll": "የደመወዝ ክፍያ ሂደት",
       "inventory": "የእቃ ክምችት አያያዝ",
       "support": "24/7 የደንበኞች ድጋፍ"
+    },
+    "plans": {
+      "free": {
+        "name": "Basic",
+        "description": "Basic plan",
+        "price": "Free",
+        "buttonText": "Start"
+      }
     }
   },
   "payment": {

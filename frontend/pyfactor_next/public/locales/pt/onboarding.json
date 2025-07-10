@@ -74,6 +74,14 @@
       "payroll": "Processamento de Folha de Pagamento",
       "inventory": "Gestão de Estoque",
       "support": "Suporte ao Cliente 24/7"
+    },
+    "plans": {
+      "free": {
+        "name": "Basic",
+        "description": "Basic plan",
+        "price": "Free",
+        "buttonText": "Start"
+      }
     }
   },
   "payment": {

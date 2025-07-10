@@ -74,6 +74,14 @@
       "payroll": "工资处理",
       "inventory": "库存管理",
       "support": "24/7客户支持"
+    },
+    "plans": {
+      "free": {
+        "name": "Basic",
+        "description": "Basic plan",
+        "price": "Free",
+        "buttonText": "Start"
+      }
     }
   },
   "payment": {

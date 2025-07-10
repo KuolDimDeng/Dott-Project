@@ -74,6 +74,14 @@
       "payroll": "पेरोल प्रोसेसिंग",
       "inventory": "इन्वेंटरी प्रबंधन",
       "support": "24/7 ग्राहक सहायता"
+    },
+    "plans": {
+      "free": {
+        "name": "Basic",
+        "description": "Basic plan",
+        "price": "Free",
+        "buttonText": "Start"
+      }
     }
   },
   "payment": {

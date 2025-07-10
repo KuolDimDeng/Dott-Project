@@ -74,6 +74,14 @@
       "payroll": "급여 처리",
       "inventory": "재고 관리",
       "support": "24/7 고객 지원"
+    },
+    "plans": {
+      "free": {
+        "name": "Basic",
+        "description": "Basic plan",
+        "price": "Free",
+        "buttonText": "Start"
+      }
     }
   },
   "payment": {

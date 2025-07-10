@@ -74,6 +74,14 @@
       "payroll": "給与計算",
       "inventory": "在庫管理",
       "support": "24時間年中無休のカスタマーサポート"
+    },
+    "plans": {
+      "free": {
+        "name": "Basic",
+        "description": "Basic plan",
+        "price": "Free",
+        "buttonText": "Start"
+      }
     }
   },
   "payment": {

@@ -74,6 +74,14 @@
       "payroll": "Gehaltsabrechnung",
       "inventory": "Bestandsverwaltung",
       "support": "24/7 Kundensupport"
+    },
+    "plans": {
+      "free": {
+        "name": "Basic",
+        "description": "Basic plan",
+        "price": "Free",
+        "buttonText": "Start"
+      }
     }
   },
   "payment": {

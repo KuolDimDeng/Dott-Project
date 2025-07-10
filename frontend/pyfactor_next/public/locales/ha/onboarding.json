@@ -74,6 +74,14 @@
       "payroll": "Sarrafa biyan ma'aikata",
       "inventory": "Sarrafar kayayyaki",
       "support": "Taimako ga abokan ciniki 24/7"
+    },
+    "plans": {
+      "free": {
+        "name": "Basic",
+        "description": "Basic plan",
+        "price": "Free",
+        "buttonText": "Start"
+      }
     }
   },
   "payment": {
