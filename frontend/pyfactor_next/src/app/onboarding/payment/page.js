@@ -292,55 +292,80 @@ function PaymentForm({ plan, billingCycle, urlCountry }) {
     setError(null);
 
     try {
-      // Handle M-Pesa payment
+      // Handle M-Pesa payment via Paystack
       if (selectedPaymentMethod === 'mpesa') {
         if (!mpesaPhone.trim()) {
           throw new Error('Please enter your M-Pesa phone number');
         }
         
-        logger.info('[PaymentForm] Processing M-Pesa payment:', {
+        logger.info('[PaymentForm] Redirecting to Paystack for M-Pesa payment:', {
           phone: mpesaPhone,
+          plan: plan,
+          billingCycle: billingCycle,
           amount: getPrice(),
           currency: regionalPricing?.currency || 'USD'
         });
         
-        // Create M-Pesa payment through backend
-        const mpesaResponse = await fetch('/api/payments/mpesa/initiate', {
+        // Build Paystack payment page URL based on plan and billing cycle
+        let paystackUrl = '';
+        const planLower = plan.toLowerCase();
+        
+        if (planLower === 'professional') {
+          if (billingCycle === 'monthly') {
+            paystackUrl = 'https://paystack.shop/pay/professional-kenya-monthly';
+          } else if (billingCycle === '6month') {
+            paystackUrl = 'https://paystack.shop/pay/professional-kenya-6monthly';
+          } else if (billingCycle === 'yearly') {
+            paystackUrl = 'https://paystack.shop/pay/professional-yearly';
+          }
+        } else if (planLower === 'enterprise') {
+          if (billingCycle === 'monthly') {
+            paystackUrl = 'https://paystack.shop/pay/enterprise-kenya-monthly';
+          } else if (billingCycle === '6month') {
+            paystackUrl = 'https://paystack.shop/pay/enterprise-kenya-6monthly';
+          } else if (billingCycle === 'yearly') {
+            paystackUrl = 'https://paystack.shop/pay/enterprise-kenya-yearly';
+          }
+        }
+        
+        if (!paystackUrl) {
+          throw new Error('Invalid plan or billing cycle selected');
+        }
+        
+        // Pre-fill customer data in the URL
+        const params = new URLSearchParams({
+          email: user?.email || '',
+          phone: mpesaPhone,
+          first_name: user?.given_name || user?.first_name || '',
+          last_name: user?.family_name || user?.last_name || '',
+          'business name': businessInfo?.businessName || user?.businessName || '',
+          // Add reference to link back to user
+          ref: `dott_${user?.id || user?.email}_${Date.now()}`
+        });
+        
+        // Redirect to Paystack payment page
+        const redirectUrl = `${paystackUrl}?${params.toString()}`;
+        logger.info('[PaymentForm] Redirecting to Paystack:', redirectUrl);
+        
+        // Save payment intent to session for verification later
+        await fetch('/api/payments/save-pending', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           credentials: 'include',
           body: JSON.stringify({
-            phone: mpesaPhone,
-            plan: plan.toLowerCase(),
-            billing_cycle: billingCycle,
+            plan: plan,
+            billingCycle: billingCycle,
+            paymentMethod: 'mpesa',
             amount: getPrice(),
-            currency: regionalPricing?.currency || 'USD',
-            country: country
+            currency: 'KES',
+            paystackUrl: paystackUrl
           }),
         });
         
-        const mpesaResult = await safeJsonParse(mpesaResponse, 'PaymentForm-MpesaInitiate');
-        
-        if (!mpesaResponse.ok) {
-          throw new Error(mpesaResult.error || 'M-Pesa payment initiation failed');
-        }
-        
-        // For M-Pesa, we'll get a payment reference and need to poll for status
-        logger.info('[PaymentForm] M-Pesa payment initiated:', mpesaResult);
-        
-        // Show success and instructions
-        setSuccess(true);
-        
-        // Poll for payment completion (or redirect to a status page)
-        setTimeout(() => {
-          if (tenantId) {
-            window.location.href = `/${tenantId}/dashboard?payment_pending=mpesa`;
-          } else {
-            window.location.href = '/dashboard?payment_pending=mpesa';
-          }
-        }, 3000);
+        // Redirect to Paystack
+        window.location.href = redirectUrl;
         
         return;
       }
