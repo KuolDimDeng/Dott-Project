@@ -24,10 +24,18 @@ export async function POST(request) {
 
     const currentUser = session.user;
     const tenantId = currentUser.tenantId || currentUser.tenant_id;
+    const businessId = currentUser.business_id || currentUser.businessId;
     
     if (!tenantId) {
       return NextResponse.json(
         { error: 'Tenant context required' },
+        { status: 400 }
+      );
+    }
+    
+    if (!businessId) {
+      return NextResponse.json(
+        { error: 'Business context required' },
         { status: 400 }
       );
     }
@@ -66,6 +74,7 @@ export async function POST(request) {
       role: inviteData.role,
       permissions: inviteData.permissions,
       tenantId: tenantId,
+      businessId: businessId,
       invitedBy: currentUser.id,
       invitedByName: currentUser.name || currentUser.email
     });
@@ -130,6 +139,7 @@ async function validateSession(sessionId) {
       email: 'user@example.com',
       name: 'Current User',
       tenantId: 'tenant-123',
+      business_id: '8432ed61-16c8-4242-94fc-4c7e25ed5d07', // Mock business_id
       role: 'OWNER'
     }
   };
@@ -239,6 +249,7 @@ async function createInvitation(inviteData) {
     role: inviteData.role,
     permissions: inviteData.permissions,
     tenantId: inviteData.tenantId,
+    businessId: inviteData.businessId,
     invitedBy: inviteData.invitedBy,
     invitedByName: inviteData.invitedByName,
     status: 'pending',
@@ -289,6 +300,8 @@ async function sendAuth0Invitation(invitation) {
         password: generateTempPassword(),
         app_metadata: {
           tenantId: invitation.tenantId,
+          businessId: invitation.businessId,
+          business_id: invitation.businessId, // Also include snake_case for backend compatibility
           role: invitation.role,
           permissions: invitation.permissions,
           invitationId: invitation.id,
