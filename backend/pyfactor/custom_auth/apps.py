@@ -28,10 +28,10 @@ class CustomAuthConfig(AppConfig):
         except ImportError as e:
             logger.error(f"Error importing signals: {e}")
             
-        # Import employee sync signals
+        # Import employee sync utilities (signals are disabled - employee creation is now explicit)
         try:
-            from .employee_sync import create_employee_for_user
-            logger.info("✅ Employee-User sync signals registered")
+            from . import employee_sync
+            logger.info("✅ Employee-User sync utilities loaded")
         except ImportError as e:
             logger.error(f"Error importing employee sync: {e}")
             

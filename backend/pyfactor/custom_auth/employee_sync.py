@@ -25,38 +25,43 @@ def should_create_employee_for_user(user):
     return user.role in ['ADMIN', 'USER'] and user.is_active
 
 
-@receiver(post_save, sender=User)
-def create_employee_for_user(sender, instance, created, **kwargs):
+# DISABLED: Automatic employee creation is now optional via invitation form
+# @receiver(post_save, sender=User)
+# def create_employee_for_user(sender, instance, created, **kwargs):
+#     """
+#     Signal handler to create an employee record when a new user is created
+#     NOTE: This is disabled. Employee creation is now handled explicitly
+#     via the invitation form or manual creation.
+#     """
+#     pass
+
+
+def create_employee_for_user_explicit(user, **kwargs):
     """
-    Signal handler to create an employee record when a new user is created
+    Explicitly create an employee record for a user
+    This should be called when the invitation form has "create_employee" checked
     """
-    # Only process if user was just created
-    if not created:
-        return
-        
-    # Check if we should create an employee
-    if not should_create_employee_for_user(instance):
-        return
-        
     # Check if employee already exists
-    if hasattr(instance, 'employee_profile') and instance.employee_profile:
-        logger.info(f"Employee record already exists for user {instance.email}")
-        return
+    if hasattr(user, 'employee_profile') and user.employee_profile:
+        logger.info(f"Employee record already exists for user {user.email}")
+        return user.employee_profile
         
     try:
         with transaction.atomic():
             # Create employee record
             employee = Employee.objects.create(
-                user=instance,
-                email=instance.email,
-                first_name=instance.given_name or instance.name or '',
-                last_name=instance.family_name or '',
-                business_id=instance.business_id,
+                user=user,
+                email=user.email,
+                first_name=kwargs.get('first_name', user.given_name or user.name or ''),
+                last_name=kwargs.get('last_name', user.family_name or ''),
+                business_id=user.business_id,
                 active=True,
                 role='employee',  # Default employee role
-                employment_type='FT',  # Default to full-time
-                country='US',  # Default country - should be updated based on business
-                compensation_type='salary',  # Default compensation type
+                employment_type=kwargs.get('employment_type', 'FT'),  # Default to full-time
+                department=kwargs.get('department', ''),
+                job_title=kwargs.get('job_title', ''),
+                country=kwargs.get('country', 'US'),  # Default country
+                compensation_type=kwargs.get('compensation_type', 'salary'),
                 onboarded=False,  # They'll need to complete onboarding
                 security_number_type='SSN',  # Default - should be updated based on country
                 # Set required boolean fields to defaults
@@ -81,7 +86,7 @@ def create_employee_for_user(sender, instance, created, **kwargs):
                 overtime_rate=0,
                 days_per_week=5,
                 # Required for AbstractUser
-                username=instance.email,  # Use email as username
+                username=user.email,  # Use email as username
                 password='!',  # Set unusable password - they login via User account
             )
             
@@ -89,11 +94,16 @@ def create_employee_for_user(sender, instance, created, **kwargs):
             employee.set_unusable_password()
             employee.save()
             
-            logger.info(f"Created employee record {employee.employee_number} for user {instance.email}")
+            # Sync permissions if department or job_title provided
+            if kwargs.get('department') or kwargs.get('job_title'):
+                sync_employee_role_to_user_permissions(employee, user)
+            
+            logger.info(f"Created employee record {employee.employee_number} for user {user.email}")
+            return employee
             
     except Exception as e:
-        logger.error(f"Failed to create employee for user {instance.email}: {str(e)}")
-        # Don't raise - we don't want to break user creation
+        logger.error(f"Failed to create employee for user {user.email}: {str(e)}")
+        raise
 
 
 def sync_employee_role_to_user_permissions(employee, user=None):

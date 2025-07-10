@@ -76,7 +76,9 @@ export async function POST(request) {
       tenantId: tenantId,
       businessId: businessId,
       invitedBy: currentUser.id,
-      invitedByName: currentUser.name || currentUser.email
+      invitedByName: currentUser.name || currentUser.email,
+      createEmployee: inviteData.create_employee || false,
+      employeeData: inviteData.employee_data || null
     });
 
     // Send Auth0 invitation
@@ -255,7 +257,9 @@ async function createInvitation(inviteData) {
     status: 'pending',
     createdAt: new Date().toISOString(),
     expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
-    token: generateInviteToken()
+    token: generateInviteToken(),
+    createEmployee: inviteData.createEmployee || false,
+    employeeData: inviteData.employeeData || null
   };
   
   // Store invitation in database
@@ -306,7 +310,9 @@ async function sendAuth0Invitation(invitation) {
           permissions: invitation.permissions,
           invitationId: invitation.id,
           invitedBy: invitation.invitedBy,
-          inviteStatus: 'pending'
+          inviteStatus: 'pending',
+          createEmployee: invitation.createEmployee || false,
+          employeeData: invitation.employeeData || null
         },
         user_metadata: {
           invitedAt: invitation.createdAt,

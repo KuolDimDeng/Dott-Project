@@ -223,7 +223,13 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
   const [inviteData, setInviteData] = useState({
     email: '',
     role: 'USER',
-    permissions: []
+    permissions: [],
+    createEmployee: false,
+    employeeData: {
+      department: '',
+      jobTitle: '',
+      employmentType: 'FT'
+    }
   });
   const [expandedMenus, setExpandedMenus] = useState({});
 
@@ -372,7 +378,9 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
           email: inviteData.email,
           role: inviteData.role,
           permissions: inviteData.permissions,
-          send_invite: true
+          send_invite: true,
+          create_employee: inviteData.createEmployee,
+          employee_data: inviteData.createEmployee ? inviteData.employeeData : null
         }),
       });
 
@@ -385,7 +393,17 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
       
       notifySuccess(`Invitation sent to ${inviteData.email}`);
       setShowInviteModal(false);
-      setInviteData({ email: '', role: 'USER', permissions: [] });
+      setInviteData({ 
+        email: '', 
+        role: 'USER', 
+        permissions: [], 
+        createEmployee: false,
+        employeeData: {
+          department: '',
+          jobTitle: '',
+          employmentType: 'FT'
+        }
+      });
       
       // Refresh the users list to show the new pending user
       await fetchUsers();
@@ -777,6 +795,87 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
                   <option value="ADMIN">Admin</option>
                   <option value="USER">User</option>
                 </select>
+              </div>
+              
+              <div className="border-t border-gray-200 pt-4">
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="createEmployee"
+                    checked={inviteData.createEmployee}
+                    onChange={(e) => setInviteData({ ...inviteData, createEmployee: e.target.checked })}
+                    className="h-4 w-4 text-blue-600 rounded border-gray-300"
+                  />
+                  <label htmlFor="createEmployee" className="ml-2 text-sm font-medium text-gray-700">
+                    Create Employee Record
+                    <FieldTooltip content="Also create an HR employee record for this user. Useful for staff who need payroll processing." />
+                  </label>
+                </div>
+                
+                {inviteData.createEmployee && (
+                  <div className="mt-4 space-y-3 pl-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Department
+                      </label>
+                      <select
+                        value={inviteData.employeeData.department}
+                        onChange={(e) => setInviteData({
+                          ...inviteData,
+                          employeeData: { ...inviteData.employeeData, department: e.target.value }
+                        })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="">Select Department</option>
+                        <option value="Human Resources">Human Resources</option>
+                        <option value="Accounting">Accounting</option>
+                        <option value="Sales">Sales</option>
+                        <option value="Marketing">Marketing</option>
+                        <option value="Operations">Operations</option>
+                        <option value="IT">IT</option>
+                        <option value="Customer Service">Customer Service</option>
+                        <option value="Engineering">Engineering</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Job Title
+                      </label>
+                      <input
+                        type="text"
+                        value={inviteData.employeeData.jobTitle}
+                        onChange={(e) => setInviteData({
+                          ...inviteData,
+                          employeeData: { ...inviteData.employeeData, jobTitle: e.target.value }
+                        })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="e.g., Sales Manager, Accountant"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Employment Type
+                      </label>
+                      <select
+                        value={inviteData.employeeData.employmentType}
+                        onChange={(e) => setInviteData({
+                          ...inviteData,
+                          employeeData: { ...inviteData.employeeData, employmentType: e.target.value }
+                        })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="FT">Full Time</option>
+                        <option value="PT">Part Time</option>
+                      </select>
+                    </div>
+                    
+                    <div className="text-xs text-gray-500 mt-2">
+                      Note: Permissions will be automatically assigned based on department and job title.
+                    </div>
+                  </div>
+                )}
               </div>
 
               {inviteData.role === 'USER' && (

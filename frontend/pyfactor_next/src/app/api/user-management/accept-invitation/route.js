@@ -305,6 +305,7 @@ async function createLocalUserRecord(auth0User, invitation) {
       role: invitation.role,
       permissions: invitation.permissions,
       tenantId: invitation.tenantId,
+      businessId: invitation.businessId,
       status: 'active',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -314,6 +315,47 @@ async function createLocalUserRecord(auth0User, invitation) {
     
     // Store in local database
     await storeLocalUser(localUser);
+    
+    // Check if we should create an employee record
+    if (invitation.createEmployee && invitation.employeeData) {
+      try {
+        logger.info(`[UserManagement] Creating employee record for user ${auth0User.email}`);
+        
+        // Call backend API to create employee
+        const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+        const response = await fetch(`${backendUrl}/auth/create-employee-for-user/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Internal-Request': 'true' // Internal API key or auth mechanism
+          },
+          body: JSON.stringify({
+            user_email: auth0User.email,
+            user_id: localUser.id,
+            business_id: invitation.businessId,
+            employee_data: {
+              first_name: auth0User.given_name || auth0User.name || '',
+              last_name: auth0User.family_name || '',
+              email: auth0User.email,
+              department: invitation.employeeData.department || '',
+              job_title: invitation.employeeData.jobTitle || '',
+              employment_type: invitation.employeeData.employmentType || 'FT'
+            }
+          })
+        });
+        
+        if (!response.ok) {
+          logger.error(`[UserManagement] Failed to create employee: ${response.statusText}`);
+          // Don't throw - employee creation failure shouldn't block user creation
+        } else {
+          logger.info(`[UserManagement] Employee record created successfully for ${auth0User.email}`);
+        }
+        
+      } catch (error) {
+        logger.error('[UserManagement] Error creating employee record:', error);
+        // Don't throw - employee creation failure shouldn't block user creation
+      }
+    }
     
     return localUser;
     
