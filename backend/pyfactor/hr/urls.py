@@ -29,6 +29,7 @@ urlpatterns = [
     # Employee URLs
     path('employees/', views.employee_list, name='employee-list'),
     path('employees/stats/', views.employee_stats, name='employee-stats'),
+    path('employees/basic/', views.employee_basic_list, name='employee-basic-list'),
     path('employees/<uuid:pk>/', views.employee_detail, name='employee-detail'),
     path('employees/<uuid:pk>/permissions/', views.set_employee_permissions, name='set-employee-permissions'),
     path('permissions/available/', views.get_available_permissions, name='get-available-permissions'),

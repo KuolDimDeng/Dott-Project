@@ -6,6 +6,20 @@ from decimal import Decimal, InvalidOperation
 from datetime import datetime
 
 
+class EmployeeBasicSerializer(serializers.ModelSerializer):
+    """
+    Basic serializer for employee dropdown lists
+    """
+    full_name = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Employee
+        fields = ['id', 'employee_number', 'first_name', 'last_name', 'full_name', 'department', 'active']
+        
+    def get_full_name(self, obj):
+        return f"{obj.first_name} {obj.last_name}"
+
+
 class EmployeeSerializer(serializers.ModelSerializer):
     """
     Serializer for Employee model with sensitive information excluded
@@ -18,7 +32,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
             'date_joined', 'salary', 'active', 'onboarded', 'role',
             'street', 'city', 'postcode', 'country', 'compensation_type',
             'probation', 'probation_end_date', 'health_insurance_enrollment', 'pension_enrollment',
-            'direct_deposit', 'vacation_time', 'vacation_days_per_year'
+            'direct_deposit', 'vacation_time', 'vacation_days_per_year', 'supervisor'
         ]
         read_only_fields = ['id', 'employee_number']
 

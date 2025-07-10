@@ -18,11 +18,13 @@ import {
   EnvelopeIcon,
   PhoneIcon,
   MapPinIcon,
-  BriefcaseIcon
+  BriefcaseIcon,
+  ChevronDownIcon
 } from '@heroicons/react/24/outline';
 import { hrApi, payrollApi } from '@/utils/apiClient';
 import { logger } from '@/utils/logger';
 import { CenteredSpinner } from '@/components/ui/StandardSpinner';
+import { DEPARTMENTS, POSITIONS, EMPLOYMENT_TYPES } from '@/utils/employeeConstants';
 
 // Tooltip component for field help
 const FieldTooltip = ({ text, position = 'top' }) => {
@@ -130,10 +132,12 @@ const COUNTRIES = [
 function EmployeeManagement({ onNavigate }) {
   const router = useRouter();
   const toast = useToast();
+  const supervisorDropdownRef = useRef(null);
   
   // State management
   const [activeTab, setActiveTab] = useState('list'); // 'list', 'create', 'edit', 'view'
   const [employees, setEmployees] = useState([]);
+  const [basicEmployees, setBasicEmployees] = useState([]); // For supervisor dropdown
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState(null);
@@ -154,6 +158,8 @@ function EmployeeManagement({ onNavigate }) {
     dateOfBirth: '',
     position: '',
     department: '',
+    supervisor: '', // Supervisor employee ID
+    employmentType: 'FT', // Full-time or Part-time
     compensationType: 'SALARY', // Add compensation type
     salary: '',
     wagePerHour: '', // Add hourly wage field
@@ -179,11 +185,29 @@ function EmployeeManagement({ onNavigate }) {
   });
 
   const [formErrors, setFormErrors] = useState({});
+  const [supervisorSearch, setSupervisorSearch] = useState('');
+  const [showSupervisorDropdown, setShowSupervisorDropdown] = useState(false);
 
   // Helper function to get security number info based on country
   const getSecurityNumberInfo = (countryCode) => {
     return COUNTRY_TO_SECURITY_NUMBER[countryCode] || COUNTRY_TO_SECURITY_NUMBER['OTHER'];
   };
+  
+  // Filter employees for supervisor dropdown
+  const filteredSupervisors = useMemo(() => {
+    if (!supervisorSearch) return basicEmployees.filter(emp => emp.active && emp.id !== selectedEmployee?.id);
+    
+    const search = supervisorSearch.toLowerCase();
+    return basicEmployees.filter(emp => 
+      emp.active && 
+      emp.id !== selectedEmployee?.id &&
+      (emp.first_name?.toLowerCase().includes(search) ||
+       emp.last_name?.toLowerCase().includes(search) ||
+       emp.full_name?.toLowerCase().includes(search) ||
+       emp.employee_number?.toLowerCase().includes(search) ||
+       emp.department?.toLowerCase().includes(search))
+    );
+  }, [basicEmployees, supervisorSearch, selectedEmployee]);
 
   // Update security number type when country changes
   const handleCountryChange = (countryCode) => {
@@ -199,7 +223,37 @@ function EmployeeManagement({ onNavigate }) {
   // Fetch employees on component mount
   useEffect(() => {
     fetchEmployees();
+    fetchBasicEmployees();
   }, []);
+  
+  // Handle click outside supervisor dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (supervisorDropdownRef.current && !supervisorDropdownRef.current.contains(event.target)) {
+        setShowSupervisorDropdown(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const fetchBasicEmployees = async () => {
+    try {
+      logger.info('🚀 [EmployeeManagement] Fetching basic employee list for dropdowns');
+      
+      const response = await hrApi.employees.getBasic();
+      logger.info('✅ [EmployeeManagement] Fetched basic employee data:', {
+        count: response?.length || 0
+      });
+      
+      setBasicEmployees(response || []);
+    } catch (error) {
+      logger.error('❌ [EmployeeManagement] Error fetching basic employees:', error);
+      // Don't show error toast for dropdown data
+      setBasicEmployees([]);
+    }
+  };
 
   const fetchEmployees = async () => {
     try {
@@ -223,7 +277,33 @@ function EmployeeManagement({ onNavigate }) {
         stats: statsData
       });
 
-      setEmployees(employeesData || []);
+      // Map backend fields to frontend fields
+      const mappedEmployees = (employeesData || []).map(emp => ({
+        ...emp,
+        firstName: emp.first_name,
+        lastName: emp.last_name,
+        middleName: emp.middle_name,
+        phone: emp.phone_number,
+        dateOfBirth: emp.date_of_birth,
+        position: emp.job_title,
+        employmentType: emp.employment_type,
+        compensationType: emp.compensation_type,
+        zipCode: emp.zip_code,
+        emergencyContact: emp.emergency_contact,
+        emergencyPhone: emp.emergency_phone,
+        securityNumberType: emp.security_number_type,
+        hireDate: emp.date_joined,
+        probationEndDate: emp.probation_end_date,
+        healthInsuranceEnrollment: emp.health_insurance_enrollment,
+        pensionEnrollment: emp.pension_enrollment,
+        directDeposit: emp.direct_deposit,
+        vacationTime: emp.vacation_time,
+        vacationDaysPerYear: emp.vacation_days_per_year,
+        // Convert active boolean to status string
+        status: emp.active ? 'active' : 'inactive'
+      }));
+
+      setEmployees(mappedEmployees);
       setStats(statsData);
     } catch (error) {
       logger.error('❌ [EmployeeManagement] Error in fetchEmployees:', error);
@@ -391,7 +471,7 @@ function EmployeeManagement({ onNavigate }) {
 
   const handleView = (employee) => {
     setSelectedEmployee(employee);
-    setActiveTab('view');
+    setActiveTab('details');
   };
 
   const handleEdit = (employee) => {
@@ -401,9 +481,11 @@ function EmployeeManagement({ onNavigate }) {
       lastName: employee.lastName || '',
       email: employee.email || '',
       phone: employee.phone || '',
-      dateOfBirth: employee.date_of_birth || '',
+      dateOfBirth: employee.dateOfBirth || '',
       position: employee.position || '',
       department: employee.department || '',
+      supervisor: employee.supervisor || '',
+      employmentType: employee.employmentType || 'FT',
       compensationType: employee.compensationType || 'SALARY',
       salary: employee.salary || '',
       wagePerHour: employee.wagePerHour || '',
@@ -423,12 +505,11 @@ function EmployeeManagement({ onNavigate }) {
       country: employee.country || 'US',
       
       // Payroll and Benefits
-      directDeposit: employee.direct_deposit ? 'yes' : 'no',
-      vacationTime: employee.vacation_time ? 'yes' : 'no',
-      vacationDaysPerYear: employee.vacation_days_per_year || ''
+      directDeposit: employee.directDeposit ? 'yes' : 'no',
+      vacationTime: employee.vacationTime ? 'yes' : 'no',
+      vacationDaysPerYear: employee.vacationDaysPerYear || ''
     });
-    setSelectedEmployee(employee);
-    setActiveTab('edit');
+    setActiveTab('create');
   };
 
   const handleDelete = (employee) => {
@@ -451,6 +532,8 @@ function EmployeeManagement({ onNavigate }) {
       dateOfBirth: '',
       position: '',
       department: '',
+      supervisor: '',
+      employmentType: 'FT',
       compensationType: 'SALARY',
       salary: '',
       wagePerHour: '',
@@ -547,6 +630,10 @@ function EmployeeManagement({ onNavigate }) {
         last_name: formData.lastName,
         phone_number: formData.phone,
         date_of_birth: formData.dateOfBirth,
+        job_title: formData.position,
+        department: formData.department,
+        supervisor: formData.supervisor || null,
+        employment_type: formData.employmentType,
         compensation_type: formData.compensationType,
         wage_per_hour: formData.wagePerHour,
         hire_date: formData.hireDate,
@@ -580,7 +667,8 @@ function EmployeeManagement({ onNavigate }) {
       if (selectedEmployee) {
         // Update existing employee
         logger.info('[EmployeeManagement] Updating employee:', selectedEmployee.id);
-        await hrApi.employees.update(selectedEmployee.id, backendData);
+        const result = await hrApi.employees.update(selectedEmployee.id, backendData);
+        logger.info('✅ [EmployeeManagement] Employee updated:', result?.id);
         toast.success('Employee updated successfully');
       } else {
         // Create new employee
@@ -880,14 +968,20 @@ function EmployeeManagement({ onNavigate }) {
               Position/Title
               <FieldTooltip text="Official job title or position within the company" />
             </label>
-            <input
-              type="text"
+            <select
               value={formData.position}
               onChange={(e) => setFormData({...formData, position: e.target.value})}
               className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 ${
                 formErrors.position ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
               }`}
-            />
+            >
+              <option value="">Select Position</option>
+              {POSITIONS.map((position) => (
+                <option key={position} value={position}>
+                  {position}
+                </option>
+              ))}
+            </select>
             {formErrors.position && <p className="text-red-500 text-xs mt-1">{formErrors.position}</p>}
           </div>
           
@@ -904,14 +998,97 @@ function EmployeeManagement({ onNavigate }) {
               }`}
             >
               <option value="">Select Department</option>
-              <option value="Engineering">Engineering</option>
-              <option value="Sales">Sales</option>
-              <option value="Marketing">Marketing</option>
-              <option value="Operations">Operations</option>
-              <option value="HR">Human Resources</option>
-              <option value="Finance">Finance</option>
+              {DEPARTMENTS.map((dept) => (
+                <option key={dept} value={dept}>
+                  {dept}
+                </option>
+              ))}
             </select>
             {formErrors.department && <p className="text-red-500 text-xs mt-1">{formErrors.department}</p>}
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Supervisor
+              <FieldTooltip text="The employee who will supervise this person. Defaults to owner if not specified." />
+            </label>
+            <div className="relative" ref={supervisorDropdownRef}>
+              <input
+                type="text"
+                value={supervisorSearch}
+                onChange={(e) => {
+                  setSupervisorSearch(e.target.value);
+                  setShowSupervisorDropdown(true);
+                }}
+                onFocus={() => setShowSupervisorDropdown(true)}
+                placeholder="Search for supervisor..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+              {formData.supervisor && (
+                <div className="text-sm text-gray-600 mt-1">
+                  Selected: {basicEmployees.find(e => e.id === formData.supervisor)?.full_name || 
+                            `${basicEmployees.find(e => e.id === formData.supervisor)?.first_name} ${basicEmployees.find(e => e.id === formData.supervisor)?.last_name}`}
+                </div>
+              )}
+              
+              {showSupervisorDropdown && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData({...formData, supervisor: ''});
+                      setSupervisorSearch('');
+                      setShowSupervisorDropdown(false);
+                    }}
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 border-b"
+                  >
+                    No Supervisor (Use Owner)
+                  </button>
+                  {filteredSupervisors.map((emp) => (
+                    <button
+                      key={emp.id}
+                      type="button"
+                      onClick={() => {
+                        setFormData({...formData, supervisor: emp.id});
+                        setSupervisorSearch(`${emp.first_name} ${emp.last_name}`);
+                        setShowSupervisorDropdown(false);
+                      }}
+                      className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 flex justify-between items-center"
+                    >
+                      <div>
+                        <div className="font-medium">{emp.first_name} {emp.last_name}</div>
+                        <div className="text-xs text-gray-500">{emp.department} • {emp.job_title || emp.position}</div>
+                      </div>
+                      <span className="text-xs text-gray-400">{emp.employee_number}</span>
+                    </button>
+                  ))}
+                  {filteredSupervisors.length === 0 && (
+                    <div className="px-3 py-2 text-sm text-gray-500">No employees found</div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Employment Type
+              <FieldTooltip text="Specify if this is a full-time or part-time position" />
+            </label>
+            <div className="flex space-x-4">
+              {EMPLOYMENT_TYPES.map((type) => (
+                <label key={type.value} className="flex items-center">
+                  <input
+                    type="radio"
+                    value={type.value}
+                    checked={formData.employmentType === type.value}
+                    onChange={(e) => setFormData({...formData, employmentType: e.target.value})}
+                    className="mr-2"
+                  />
+                  <span className="text-sm">{type.label}</span>
+                </label>
+              ))}
+            </div>
           </div>
           
           <div>

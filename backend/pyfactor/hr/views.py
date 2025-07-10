@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from .models import Employee, Role, EmployeeRole, AccessPermission, PreboardingForm, PerformanceReview, PerformanceMetric, PerformanceRating, PerformanceGoal, FeedbackRecord, PerformanceSetting, Timesheet, TimesheetEntry, TimeOffRequest, TimeOffBalance, Benefits
 from .serializers import (
     EmployeeSerializer, 
+    EmployeeBasicSerializer,
     RoleSerializer, 
     EmployeeRoleSerializer, 
     AccessPermissionSerializer,
@@ -302,6 +303,30 @@ def employee_stats(request):
         logger.error(f'❌ [HR Employee Stats] Error: {str(e)}')
         return Response(
             {'error': 'Failed to fetch employee statistics', 'details': str(e)}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def employee_basic_list(request):
+    """Get basic employee list for dropdowns (supervisor selection, etc.)"""
+    try:
+        logger.info(f'🚀 [HR Employee Basic List] GET request from user: {request.user.email}')
+        
+        # Get only active employees with basic information
+        employees = Employee.objects.filter(active=True).only(
+            'id', 'employee_number', 'first_name', 'last_name', 'department'
+        )
+        
+        logger.info(f'✅ [HR Employee Basic List] Found {employees.count()} active employees')
+        
+        serializer = EmployeeBasicSerializer(employees, many=True)
+        return Response(serializer.data)
+        
+    except Exception as e:
+        logger.error(f'❌ [HR Employee Basic List] Error: {str(e)}')
+        return Response(
+            {'error': 'Failed to fetch employee list', 'details': str(e)}, 
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 

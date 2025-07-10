@@ -1449,6 +1449,30 @@ export const hrApi = {
       }
       
       return response.json();
+    },
+    
+    async getBasic(params = {}) {
+      // Get tenant ID from the current path or session
+      const pathParts = window.location.pathname.split('/');
+      const tenantId = pathParts[1]; // Assuming /<tenantId>/dashboard pattern
+      
+      logger.info('🚀 [HRApi] Getting basic employee list for dropdowns', { tenantId });
+      
+      const response = await fetch('/api/hr/employees/basic', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Tenant-ID': tenantId || '',
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || `HTTP ${response.status}`);
+      }
+      
+      return response.json();
     }
   },
 
