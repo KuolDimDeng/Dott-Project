@@ -6,6 +6,7 @@ import { logger } from '@/utils/logger';
 import PricingDisplay from './PricingDisplay';
 import { getCountryCode, getCountryName } from '@/utils/countryMapping';
 import { getCurrencyForCountry, formatCurrency, convertFromUSD } from '@/services/wiseApiService';
+import { isDevelopingCountry, getDiscountPercentage } from '@/utils/developingCountries';
 
 // Subscription plans with updated pricing
 const PLANS = [
@@ -154,10 +155,37 @@ export default function SubscriptionSelectionFormV2({
         console.log('🎯 [SubscriptionSelection] Discount percentage:', data.discount_percentage);
         console.log('🎯 [SubscriptionSelection] Pricing object:', data.pricing);
         
-        // Validate if we got correct pricing
-        if (countryCode === 'KE' && data.discount_percentage === 0) {
-          console.warn('🎯 [SubscriptionSelection] ⚠️ WARNING: Kenya should have 50% discount but got 0%');
+        // Validate if we got correct pricing for developing countries
+        if (isDevelopingCountry(countryCode) && data.discount_percentage === 0) {
+          const expectedDiscount = getDiscountPercentage(countryCode);
+          console.warn(`🎯 [SubscriptionSelection] ⚠️ WARNING: ${countryCode} should have ${expectedDiscount}% discount but got 0%`);
           console.warn('🎯 [SubscriptionSelection] Backend may not be processing country correctly');
+          console.warn(`🎯 [SubscriptionSelection] Applying client-side discount for ${countryCode}`);
+          
+          // Apply discount manually for developing countries
+          data.country_code = countryCode;
+          data.discount_percentage = expectedDiscount;
+          
+          // Apply discount to prices
+          const discountMultiplier = 1 - (expectedDiscount / 100);
+          if (data.pricing) {
+            data.pricing.professional = {
+              monthly: 15.00 * discountMultiplier,
+              six_month: 78.00 * discountMultiplier,
+              yearly: 144.00 * discountMultiplier,
+              monthly_display: `$${(15.00 * discountMultiplier).toFixed(2)}`,
+              six_month_display: `$${(78.00 * discountMultiplier).toFixed(2)}`,
+              yearly_display: `$${(144.00 * discountMultiplier).toFixed(2)}`
+            };
+            data.pricing.enterprise = {
+              monthly: 45.00 * discountMultiplier,
+              six_month: 234.00 * discountMultiplier,
+              yearly: 432.00 * discountMultiplier,
+              monthly_display: `$${(45.00 * discountMultiplier).toFixed(2)}`,
+              six_month_display: `$${(234.00 * discountMultiplier).toFixed(2)}`,
+              yearly_display: `$${(432.00 * discountMultiplier).toFixed(2)}`
+            };
+          }
         }
         
         setRegionalPricing(data);
@@ -318,7 +346,7 @@ export default function SubscriptionSelectionFormV2({
         {PLANS.map((plan) => (
           <div
             key={plan.id}
-            className={`relative rounded-lg border-2 p-6 ${
+            className={`relative rounded-lg border-2 p-6 overflow-hidden ${
               plan.popular 
                 ? 'border-blue-500 shadow-lg' 
                 : plan.premium 
@@ -347,8 +375,8 @@ export default function SubscriptionSelectionFormV2({
             )}
 
             <div className="text-center mb-4">
-              <h3 className="text-xl font-bold mb-2">{t(`subscription.plans.${plan.id}.name`)}</h3>
-              <p className="text-sm text-gray-600 mb-4">{t(`subscription.plans.${plan.id}.description`)}</p>
+              <h3 className="text-xl font-bold mb-2 break-words">{t(`subscription.plans.${plan.id}.name`)}</h3>
+              <p className="text-sm text-gray-600 mb-4 break-words">{t(`subscription.plans.${plan.id}.description`)}</p>
               
               {/* Pricing Display */}
               <div className="mb-4">

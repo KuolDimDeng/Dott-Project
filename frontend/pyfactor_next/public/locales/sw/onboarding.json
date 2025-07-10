@@ -73,6 +73,22 @@
       "save": "Okoa {{percentage}}%"
     },
     "plans": {
+      "free": {
+        "name": "Msingi",
+        "description": "Mzuri kwa biashara ndogo zinazoanza",
+        "price": "Bure",
+        "buttonText": "Anza Bure",
+        "features": [
+          "Ufuatiliaji wa mapato na matumizi",
+          "Uundaji wa ankara na ukumbuzi",
+          "Malipo ya Stripe & PayPal",
+          "Pesa za simu (M-Pesa, n.k.)",
+          "Ufuatiliaji wa msingi wa bidhaa",
+          "Uskani wa msimbo pau",
+          "Kikomo cha hifadhi GB 3",
+          "Mtumiaji 1 tu"
+        ]
+      },
       "basic": {
         "name": "Msingi",
         "description": "Mzuri kwa biashara ndogo zinazoanza",

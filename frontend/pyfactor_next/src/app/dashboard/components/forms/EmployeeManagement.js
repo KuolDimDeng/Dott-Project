@@ -685,7 +685,31 @@ function EmployeeManagement({ onNavigate }) {
       setActiveTab('list');
     } catch (error) {
       logger.error('❌ [EmployeeManagement] Error saving employee:', error);
-      toast.error(error.message || 'Failed to save employee');
+      
+      // Parse error message for user-friendly display
+      let userMessage = 'Failed to save employee. Please try again.';
+      
+      if (error.message) {
+        // Check for common error patterns
+        if (error.message.includes('does not exist')) {
+          userMessage = 'There was a database configuration issue. Please contact support.';
+        } else if (error.message.includes('duplicate') || error.message.includes('already exists')) {
+          userMessage = 'An employee with this email already exists.';
+        } else if (error.message.includes('validation') || error.message.includes('invalid')) {
+          userMessage = 'Please check your input data and try again.';
+        } else if (error.message.includes('permission') || error.message.includes('forbidden')) {
+          userMessage = 'You do not have permission to perform this action.';
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+          userMessage = 'Network error. Please check your connection and try again.';
+        } else if (error.message.includes('500') || error.message.includes('server')) {
+          userMessage = 'Server error. Please try again later or contact support.';
+        } else {
+          // For any other errors, show a simplified message
+          userMessage = 'Unable to save employee. Please try again.';
+        }
+      }
+      
+      toast.error(userMessage);
     }
   };
 
@@ -697,8 +721,17 @@ function EmployeeManagement({ onNavigate }) {
       setSelectedEmployee(null);
       fetchEmployees();
     } catch (error) {
-      console.error('Error deleting employee:', error);
-      toast.error('Failed to delete employee');
+      logger.error('❌ [EmployeeManagement] Error deleting employee:', error);
+      
+      // User-friendly error message
+      let userMessage = 'Failed to delete employee. Please try again.';
+      if (error.message && error.message.includes('permission')) {
+        userMessage = 'You do not have permission to delete this employee.';
+      } else if (error.message && error.message.includes('network')) {
+        userMessage = 'Network error. Please check your connection.';
+      }
+      
+      toast.error(userMessage);
     }
   };
 
