@@ -151,6 +151,7 @@ function EmployeeManagement({ onNavigate }) {
     lastName: '',
     email: '',
     phone: '',
+    dateOfBirth: '',
     position: '',
     department: '',
     compensationType: 'SALARY', // Add compensation type
@@ -169,7 +170,12 @@ function EmployeeManagement({ onNavigate }) {
     emergencyPhone: '',
     securityNumberType: 'SSN', // Tax ID type based on country
     securityNumber: '', // Full tax ID (will be stored securely in Stripe)
-    country: 'US' // Employee's country for tax ID type
+    country: 'US', // Employee's country for tax ID type
+    
+    // Payroll and Benefits
+    directDeposit: 'no', // 'yes' or 'no'
+    vacationTime: 'no', // 'yes' or 'no'
+    vacationDaysPerYear: '' // Number of vacation days if vacationTime is 'yes'
   });
 
   const [formErrors, setFormErrors] = useState({});
@@ -395,6 +401,7 @@ function EmployeeManagement({ onNavigate }) {
       lastName: employee.lastName || '',
       email: employee.email || '',
       phone: employee.phone || '',
+      dateOfBirth: employee.date_of_birth || '',
       position: employee.position || '',
       department: employee.department || '',
       compensationType: employee.compensationType || 'SALARY',
@@ -413,7 +420,12 @@ function EmployeeManagement({ onNavigate }) {
       emergencyPhone: employee.emergencyPhone || '',
       securityNumberType: employee.securityNumberType || 'SSN',
       securityNumber: '', // Never populate - security best practice
-      country: employee.country || 'US'
+      country: employee.country || 'US',
+      
+      // Payroll and Benefits
+      directDeposit: employee.direct_deposit ? 'yes' : 'no',
+      vacationTime: employee.vacation_time ? 'yes' : 'no',
+      vacationDaysPerYear: employee.vacation_days_per_year || ''
     });
     setSelectedEmployee(employee);
     setActiveTab('edit');
@@ -436,6 +448,7 @@ function EmployeeManagement({ onNavigate }) {
       lastName: '',
       email: '',
       phone: '',
+      dateOfBirth: '',
       position: '',
       department: '',
       compensationType: 'SALARY',
@@ -454,7 +467,12 @@ function EmployeeManagement({ onNavigate }) {
       emergencyPhone: '',
       securityNumberType: 'SSN',
       securityNumber: '',
-      country: 'US'
+      country: 'US',
+      
+      // Payroll and Benefits
+      directDeposit: 'no',
+      vacationTime: 'no',
+      vacationDaysPerYear: ''
     });
     setFormErrors({});
   };
@@ -477,6 +495,34 @@ function EmployeeManagement({ onNavigate }) {
       errors.email = 'Please enter a valid email address';
     }
     
+    // Date of birth validation
+    if (formData.dateOfBirth) {
+      const dob = new Date(formData.dateOfBirth);
+      const today = new Date();
+      const age = today.getFullYear() - dob.getFullYear();
+      const monthDiff = today.getMonth() - dob.getMonth();
+      const dayDiff = today.getDate() - dob.getDate();
+      const actualAge = monthDiff < 0 || (monthDiff === 0 && dayDiff < 0) ? age - 1 : age;
+      
+      if (actualAge < 16) {
+        errors.dateOfBirth = 'Employee must be at least 16 years old';
+      }
+      if (actualAge > 100) {
+        errors.dateOfBirth = 'Please enter a valid date of birth';
+      }
+    }
+    
+    // Vacation days validation
+    if (formData.vacationTime === 'yes' && !formData.vacationDaysPerYear) {
+      errors.vacationDaysPerYear = 'Please specify number of vacation days';
+    }
+    if (formData.vacationTime === 'yes' && formData.vacationDaysPerYear) {
+      const days = parseInt(formData.vacationDaysPerYear);
+      if (isNaN(days) || days < 0 || days > 365) {
+        errors.vacationDaysPerYear = 'Vacation days must be between 0 and 365';
+      }
+    }
+    
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -493,15 +539,53 @@ function EmployeeManagement({ onNavigate }) {
         email: formData.email ? `${formData.email.substring(0, 3)}***@***` : 'not provided'
       });
       
+      // Convert camelCase to snake_case for backend
+      const backendData = {
+        ...formData,
+        // Convert camelCase fields to snake_case
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        phone_number: formData.phone,
+        date_of_birth: formData.dateOfBirth,
+        compensation_type: formData.compensationType,
+        wage_per_hour: formData.wagePerHour,
+        hire_date: formData.hireDate,
+        zip_code: formData.zipCode,
+        emergency_contact: formData.emergencyContact,
+        emergency_phone: formData.emergencyPhone,
+        security_number_type: formData.securityNumberType,
+        security_number: formData.securityNumber,
+        // New fields - convert to snake_case
+        direct_deposit: formData.directDeposit === 'yes',
+        vacation_time: formData.vacationTime === 'yes',
+        vacation_days_per_year: formData.vacationTime === 'yes' ? parseInt(formData.vacationDaysPerYear) || 0 : 0
+      };
+      
+      // Remove camelCase fields to avoid duplication
+      delete backendData.firstName;
+      delete backendData.lastName;
+      delete backendData.dateOfBirth;
+      delete backendData.compensationType;
+      delete backendData.wagePerHour;
+      delete backendData.hireDate;
+      delete backendData.zipCode;
+      delete backendData.emergencyContact;
+      delete backendData.emergencyPhone;
+      delete backendData.securityNumberType;
+      delete backendData.securityNumber;
+      delete backendData.directDeposit;
+      delete backendData.vacationTime;
+      delete backendData.vacationDaysPerYear;
+      
       if (selectedEmployee) {
         // Update existing employee
         logger.info('[EmployeeManagement] Updating employee:', selectedEmployee.id);
-        await hrApi.employees.update(selectedEmployee.id, formData);
+        await hrApi.employees.update(selectedEmployee.id, backendData);
         toast.success('Employee updated successfully');
       } else {
         // Create new employee
         logger.info('[EmployeeManagement] Creating new employee');
-        const result = await hrApi.employees.create(formData);
+        const result = await hrApi.employees.create(backendData);
         logger.info('✅ [EmployeeManagement] Employee created:', result?.id);
         toast.success('Employee created successfully');
       }
@@ -708,6 +792,23 @@ function EmployeeManagement({ onNavigate }) {
               onChange={(e) => setFormData({...formData, phone: e.target.value})}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Date of Birth
+              <FieldTooltip text="Employee's date of birth (must be at least 16 years old)" />
+            </label>
+            <input
+              type="date"
+              value={formData.dateOfBirth}
+              onChange={(e) => setFormData({...formData, dateOfBirth: e.target.value})}
+              max={new Date(new Date().setFullYear(new Date().getFullYear() - 16)).toISOString().split('T')[0]}
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 ${
+                formErrors.dateOfBirth ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+              }`}
+            />
+            {formErrors.dateOfBirth && <p className="text-red-500 text-xs mt-1">{formErrors.dateOfBirth}</p>}
           </div>
           
           {/* Address Fields */}
@@ -922,6 +1023,9 @@ function EmployeeManagement({ onNavigate }) {
             <p className="text-xs text-gray-500 mt-1">
               🔒 Securely encrypted and stored with Stripe for payroll processing
             </p>
+            <p className="text-xs text-gray-600 mt-1">
+              Used on Quarterly and Annual Tax Forms. Incorrect SSN may result in penalties.
+            </p>
           </div>
           
           <div>
@@ -938,6 +1042,102 @@ function EmployeeManagement({ onNavigate }) {
               <option value="onLeave">On Leave</option>
               <option value="inactive">Inactive</option>
             </select>
+          </div>
+        </div>
+
+        {/* Payroll and Benefits */}
+        <div className="md:col-span-2 space-y-4">
+          <h4 className="text-md font-medium text-gray-900 border-b pb-2">Payroll and Benefits</h4>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Direct Deposit */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Direct Deposit
+                <FieldTooltip text="Enable direct deposit for automated payroll payments to employee's bank account" />
+              </label>
+              <div className="space-y-2">
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    value="yes"
+                    checked={formData.directDeposit === 'yes'}
+                    onChange={(e) => setFormData({...formData, directDeposit: e.target.value})}
+                    className="mr-2 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">Yes</span>
+                </label>
+                {formData.directDeposit === 'yes' && (
+                  <p className="ml-6 text-xs text-gray-500">
+                    This requires employee bank information. You can change this setting at any time.
+                  </p>
+                )}
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    value="no"
+                    checked={formData.directDeposit === 'no'}
+                    onChange={(e) => setFormData({...formData, directDeposit: e.target.value})}
+                    className="mr-2 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">No</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Vacation Time */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Vacation Time
+                <FieldTooltip text="Specify if this employee is eligible for paid vacation time" />
+              </label>
+              <div className="space-y-2">
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    value="yes"
+                    checked={formData.vacationTime === 'yes'}
+                    onChange={(e) => setFormData({...formData, vacationTime: e.target.value})}
+                    className="mr-2 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">Yes, offer vacation time</span>
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    value="no"
+                    checked={formData.vacationTime === 'no'}
+                    onChange={(e) => setFormData({...formData, vacationTime: e.target.value})}
+                    className="mr-2 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">No, don't offer vacation time</span>
+                </label>
+                
+                {/* Conditional Vacation Days Field */}
+                {formData.vacationTime === 'yes' && (
+                  <div className="mt-3 ml-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Vacation Days per Year
+                      <FieldTooltip text="Number of paid vacation days this employee receives annually" />
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="365"
+                      value={formData.vacationDaysPerYear}
+                      onChange={(e) => setFormData({...formData, vacationDaysPerYear: e.target.value})}
+                      placeholder="e.g. 15"
+                      className={`w-32 px-3 py-2 border rounded-md focus:outline-none focus:ring-1 ${
+                        formErrors.vacationDaysPerYear ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                      }`}
+                    />
+                    {formErrors.vacationDaysPerYear && (
+                      <p className="text-red-500 text-xs mt-1">{formErrors.vacationDaysPerYear}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -982,6 +1182,16 @@ function EmployeeManagement({ onNavigate }) {
               <div>
                 <p className="text-sm font-medium text-gray-900">Phone</p>
                 <p className="text-sm text-gray-600">{selectedEmployee.phone || 'Not provided'}</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              <CalendarIcon className="h-5 w-5 text-gray-400" />
+              <div>
+                <p className="text-sm font-medium text-gray-900">Date of Birth</p>
+                <p className="text-sm text-gray-600">
+                  {selectedEmployee.date_of_birth ? new Date(selectedEmployee.date_of_birth).toLocaleDateString() : 'Not provided'}
+                </p>
               </div>
             </div>
 
@@ -1060,6 +1270,38 @@ function EmployeeManagement({ onNavigate }) {
                   {selectedEmployee.compensationType === 'SALARY' 
                     ? `$${selectedEmployee.salary || 'Not specified'} annually`
                     : `$${selectedEmployee.wagePerHour || 'Not specified'} per hour`
+                  }
+                </p>
+              </div>
+            </div>
+
+            {/* Payroll & Benefits Info */}
+            <div className="flex items-center space-x-3">
+              <div className="h-5 w-5 text-gray-400 flex items-center justify-center">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-900">Direct Deposit</p>
+                <p className="text-sm text-gray-600">
+                  {selectedEmployee.direct_deposit ? 'Enabled' : 'Not enabled'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <div className="h-5 w-5 text-gray-400 flex items-center justify-center">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-900">Vacation Time</p>
+                <p className="text-sm text-gray-600">
+                  {selectedEmployee.vacation_time 
+                    ? `${selectedEmployee.vacation_days_per_year || 'Not specified'} days per year`
+                    : 'No vacation time offered'
                   }
                 </p>
               </div>

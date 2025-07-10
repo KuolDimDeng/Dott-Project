@@ -14,10 +14,11 @@ class EmployeeSerializer(serializers.ModelSerializer):
         model = Employee
         fields = [
             'id', 'employee_number', 'first_name', 'middle_name', 'last_name', 
-            'email', 'phone_number', 'job_title', 'department', 'employment_type',
+            'email', 'phone_number', 'date_of_birth', 'job_title', 'department', 'employment_type',
             'date_joined', 'salary', 'active', 'onboarded', 'role',
             'street', 'city', 'postcode', 'country', 'compensation_type',
-            'probation', 'probation_end_date', 'health_insurance_enrollment', 'pension_enrollment'
+            'probation', 'probation_end_date', 'health_insurance_enrollment', 'pension_enrollment',
+            'direct_deposit', 'vacation_time', 'vacation_days_per_year'
         ]
         read_only_fields = ['id', 'employee_number']
 

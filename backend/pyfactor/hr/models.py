@@ -137,6 +137,7 @@ class Employee(AbstractUser):
     site_access_privileges = models.JSONField(default=list)
     email = models.EmailField(unique=True, blank=False, null=False, default='')
     phone_number = PhoneNumberField(null=True, blank=True)
+    date_of_birth = models.DateField(null=True, blank=True, help_text="Employee's date of birth")
     department = models.CharField(max_length=100, null=True, blank=True)
     compensation_type = models.CharField(max_length=10, choices=COMPENSATION_TYPE_CHOICES, default='SALARY')
     salary = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -181,6 +182,15 @@ class Employee(AbstractUser):
     # Only store last 4 digits for reference/display
     ssn_last_four = models.CharField(max_length=4, blank=True, null=True)
     bank_account_last_four = models.CharField(max_length=4, blank=True, null=True)
+    
+    # Payroll and Benefits fields
+    direct_deposit = models.BooleanField(default=False)
+    vacation_time = models.BooleanField(default=False)
+    vacation_days_per_year = models.PositiveIntegerField(
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(365)],
+        help_text="Number of vacation days per year"
+    )
     
     tax_filing_status = models.CharField(max_length=2, choices=TAX_STATUS_CHOICES, blank=True, null=True)
     job_title = models.CharField(max_length=100, blank=True, null=True)
