@@ -10,16 +10,31 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import { captureEvent } from '@/lib/posthog';
 import { usePostHog } from 'posthog-js/react';
 import { trackEvent, EVENTS } from '@/utils/posthogTracking';
+import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 
 export default function OnboardingPageV2() {
   const router = useRouter();
   const posthog = usePostHog();
+  const { i18n: i18nInstance } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    // Check for language parameter and apply it
+    const urlParams = new URLSearchParams(window.location.search);
+    const langParam = urlParams.get('lang');
+    
+    if (langParam) {
+      console.log('🌐 [Onboarding] Language parameter detected:', langParam);
+      // Apply language immediately
+      i18nInstance.changeLanguage(langParam);
+      // Store for persistence
+      localStorage.setItem('preferredLanguage', langParam);
+    }
+    
     checkAuthAndInitialize();
-  }, []);
+  }, [i18nInstance]);
 
   const checkAuthAndInitialize = async () => {
     try {

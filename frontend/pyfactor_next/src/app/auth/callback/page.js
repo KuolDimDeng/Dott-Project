@@ -127,7 +127,9 @@ export default function Auth0CallbackPage() {
           // Always trust backend's onboarding status
           if (!onboardingCompleted) {
             // Backend says onboarding is not complete - go to onboarding
-            redirectInput.value = '/onboarding';
+            // Add language parameter if available
+            const savedLanguage = localStorage.getItem('preferredLanguage') || sessionStorage.getItem('oauth_language');
+            redirectInput.value = savedLanguage ? `/onboarding?lang=${savedLanguage}` : '/onboarding';
           } else if (backendTenantId) {
             // Onboarding is complete and we have a tenant
             redirectInput.value = `/${backendTenantId}/dashboard`;
@@ -363,7 +365,10 @@ export default function Auth0CallbackPage() {
         if (backendUser.onboardingCompleted && backendUser.tenantId) {
           await verifySessionAndRedirect(`/${backendUser.tenantId}/dashboard`, router, setStatus);
         } else {
-          await verifySessionAndRedirect('/onboarding', router, setStatus);
+          // Add language parameter if available
+          const savedLanguage = localStorage.getItem('preferredLanguage') || sessionStorage.getItem('oauth_language');
+          const onboardingUrl = savedLanguage ? `/onboarding?lang=${savedLanguage}` : '/onboarding';
+          await verifySessionAndRedirect(onboardingUrl, router, setStatus);
         }
         
       } catch (error) {

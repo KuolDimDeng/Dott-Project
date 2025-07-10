@@ -132,15 +132,12 @@ function EmployeeManagement({ onNavigate }) {
   const toast = useToast();
   
   // State management
-  const [activeTab, setActiveTab] = useState('list');
+  const [activeTab, setActiveTab] = useState('list'); // 'list', 'create', 'edit', 'view'
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false); // Keep delete modal for confirmation
   const [stats, setStats] = useState({
     total: 0,
     active: 0,
@@ -161,7 +158,13 @@ function EmployeeManagement({ onNavigate }) {
     wagePerHour: '', // Add hourly wage field
     hireDate: '',
     status: 'active',
-    address: '',
+    
+    // Address fields
+    street: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    
     emergencyContact: '',
     emergencyPhone: '',
     securityNumberType: 'SSN', // Tax ID type based on country
@@ -382,7 +385,7 @@ function EmployeeManagement({ onNavigate }) {
 
   const handleView = (employee) => {
     setSelectedEmployee(employee);
-    setIsViewModalOpen(true);
+    setActiveTab('view');
   };
 
   const handleEdit = (employee) => {
@@ -399,14 +402,21 @@ function EmployeeManagement({ onNavigate }) {
       wagePerHour: employee.wagePerHour || '',
       hireDate: employee.hireDate || '',
       status: employee.status || 'active',
-      address: employee.address || '',
+      
+      // Address fields
+      street: employee.street || '',
+      city: employee.city || '',
+      state: employee.state || '',
+      zipCode: employee.zipCode || '',
+      
       emergencyContact: employee.emergencyContact || '',
       emergencyPhone: employee.emergencyPhone || '',
       securityNumberType: employee.securityNumberType || 'SSN',
       securityNumber: '', // Never populate - security best practice
       country: employee.country || 'US'
     });
-    setIsEditModalOpen(true);
+    setSelectedEmployee(employee);
+    setActiveTab('edit');
   };
 
   const handleDelete = (employee) => {
@@ -416,7 +426,8 @@ function EmployeeManagement({ onNavigate }) {
 
   const handleCreate = () => {
     resetForm();
-    setIsCreateModalOpen(true);
+    setSelectedEmployee(null);
+    setActiveTab('create');
   };
 
   const resetForm = () => {
@@ -432,7 +443,13 @@ function EmployeeManagement({ onNavigate }) {
       wagePerHour: '',
       hireDate: '',
       status: 'active',
-      address: '',
+      
+      // Address fields
+      street: '',
+      city: '',
+      state: '',
+      zipCode: '',
+      
       emergencyContact: '',
       emergencyPhone: '',
       securityNumberType: 'SSN',
@@ -481,19 +498,19 @@ function EmployeeManagement({ onNavigate }) {
         logger.info('[EmployeeManagement] Updating employee:', selectedEmployee.id);
         await hrApi.employees.update(selectedEmployee.id, formData);
         toast.success('Employee updated successfully');
-        setIsEditModalOpen(false);
       } else {
         // Create new employee
         logger.info('[EmployeeManagement] Creating new employee');
         const result = await hrApi.employees.create(formData);
         logger.info('✅ [EmployeeManagement] Employee created:', result?.id);
         toast.success('Employee created successfully');
-        setIsCreateModalOpen(false);
       }
       
-      fetchEmployees();
+      // Refresh data and return to list
+      await fetchEmployees();
       resetForm();
       setSelectedEmployee(null);
+      setActiveTab('list');
     } catch (error) {
       logger.error('❌ [EmployeeManagement] Error saving employee:', error);
       toast.error(error.message || 'Failed to save employee');
@@ -692,6 +709,65 @@ function EmployeeManagement({ onNavigate }) {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
+          
+          {/* Address Fields */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Street Address
+              <FieldTooltip text="Employee's residential street address" />
+            </label>
+            <input
+              type="text"
+              value={formData.street}
+              onChange={(e) => setFormData({...formData, street: e.target.value})}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+              placeholder="123 Main Street"
+            />
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                City
+                <FieldTooltip text="City or town of residence" />
+              </label>
+              <input
+                type="text"
+                value={formData.city}
+                onChange={(e) => setFormData({...formData, city: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                placeholder="New York"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                State/Province
+                <FieldTooltip text="State, province, or region" />
+              </label>
+              <input
+                type="text"
+                value={formData.state}
+                onChange={(e) => setFormData({...formData, state: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                placeholder="NY"
+              />
+            </div>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              ZIP/Postal Code
+              <FieldTooltip text="ZIP code, postal code, or equivalent" />
+            </label>
+            <input
+              type="text"
+              value={formData.zipCode}
+              onChange={(e) => setFormData({...formData, zipCode: e.target.value})}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+              placeholder="10001"
+            />
+          </div>
         </div>
 
         {/* Employment Information */}
@@ -887,19 +963,124 @@ function EmployeeManagement({ onNavigate }) {
 
   const renderEmployeeDetails = () => (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <div className="text-center py-12">
-        <UserGroupIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Employee Details</h3>
-        <p className="text-gray-600 text-sm mb-4">
-          Select an employee from the list to view detailed information, performance metrics, and employment history.
-        </p>
-        <button 
-          onClick={() => setActiveTab('list')}
-          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          View Employee List
-        </button>
-      </div>
+      {selectedEmployee ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Personal Information */}
+          <div className="space-y-4">
+            <h4 className="text-md font-medium text-gray-900 border-b pb-2">Personal Information</h4>
+            
+            <div className="flex items-center space-x-3">
+              <EnvelopeIcon className="h-5 w-5 text-gray-400" />
+              <div>
+                <p className="text-sm font-medium text-gray-900">Email</p>
+                <p className="text-sm text-gray-600">{selectedEmployee.email}</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              <PhoneIcon className="h-5 w-5 text-gray-400" />
+              <div>
+                <p className="text-sm font-medium text-gray-900">Phone</p>
+                <p className="text-sm text-gray-600">{selectedEmployee.phone || 'Not provided'}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <MapPinIcon className="h-5 w-5 text-gray-400" />
+              <div>
+                <p className="text-sm font-medium text-gray-900">Address</p>
+                <div className="text-sm text-gray-600">
+                  {selectedEmployee.street && <p>{selectedEmployee.street}</p>}
+                  {(selectedEmployee.city || selectedEmployee.state || selectedEmployee.zipCode) && (
+                    <p>
+                      {selectedEmployee.city}{selectedEmployee.city && selectedEmployee.state && ', '}{selectedEmployee.state} {selectedEmployee.zipCode}
+                    </p>
+                  )}
+                  {!selectedEmployee.street && !selectedEmployee.city && !selectedEmployee.state && !selectedEmployee.zipCode && (
+                    <p>Not provided</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Employment Information */}
+          <div className="space-y-4">
+            <h4 className="text-md font-medium text-gray-900 border-b pb-2">Employment Information</h4>
+            
+            <div className="flex items-center space-x-3">
+              <BriefcaseIcon className="h-5 w-5 text-gray-400" />
+              <div>
+                <p className="text-sm font-medium text-gray-900">Position</p>
+                <p className="text-sm text-gray-600">{selectedEmployee.position}</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              <UserGroupIcon className="h-5 w-5 text-gray-400" />
+              <div>
+                <p className="text-sm font-medium text-gray-900">Department</p>
+                <p className="text-sm text-gray-600">{selectedEmployee.department}</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              <CalendarIcon className="h-5 w-5 text-gray-400" />
+              <div>
+                <p className="text-sm font-medium text-gray-900">Hire Date</p>
+                <p className="text-sm text-gray-600">
+                  {selectedEmployee.hireDate ? new Date(selectedEmployee.hireDate).toLocaleDateString() : 'Not provided'}
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              <CheckCircleIcon className="h-5 w-5 text-gray-400" />
+              <div>
+                <p className="text-sm font-medium text-gray-900">Status</p>
+                <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                  selectedEmployee.status === 'active' 
+                    ? 'bg-green-100 text-green-800'
+                    : selectedEmployee.status === 'onLeave'
+                    ? 'bg-yellow-100 text-yellow-800'
+                    : 'bg-gray-100 text-gray-800'
+                }`}>
+                  {selectedEmployee.status === 'active' ? 'Active' : selectedEmployee.status === 'onLeave' ? 'On Leave' : 'Inactive'}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <div className="h-5 w-5 text-gray-400 flex items-center justify-center">
+                <span className="text-xs font-bold">$</span>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-900">Compensation</p>
+                <p className="text-sm text-gray-600">
+                  {selectedEmployee.compensationType === 'SALARY' 
+                    ? `$${selectedEmployee.salary || 'Not specified'} annually`
+                    : `$${selectedEmployee.wagePerHour || 'Not specified'} per hour`
+                  }
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="text-center py-12">
+          <UserGroupIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Employee Details</h3>
+          <p className="text-gray-600 text-sm mb-4">
+            Select an employee from the list to view detailed information, performance metrics, and employment history.
+          </p>
+          <button 
+            onClick={() => setActiveTab('list')}
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            View Employee List
+          </button>
+        </div>
+      )}
     </div>
   );
 
@@ -1023,13 +1204,76 @@ function EmployeeManagement({ onNavigate }) {
   const renderContent = () => {
     switch (activeTab) {
       case 'create':
-        return renderEmployeeForm();
-      case 'details':
-        return renderEmployeeDetails();
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900">Create New Employee</h2>
+              <button
+                onClick={() => setActiveTab('list')}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Back to List
+              </button>
+            </div>
+            {renderEmployeeForm()}
+          </div>
+        );
+      case 'edit':
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900">
+                Edit Employee: {selectedEmployee?.firstName} {selectedEmployee?.lastName}
+              </h2>
+              <button
+                onClick={() => setActiveTab('list')}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Back to List
+              </button>
+            </div>
+            {renderEmployeeForm()}
+          </div>
+        );
+      case 'view':
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900">
+                Employee Details: {selectedEmployee?.firstName} {selectedEmployee?.lastName}
+              </h2>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => handleEdit(selectedEmployee)}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Edit Employee
+                </button>
+                <button
+                  onClick={() => setActiveTab('list')}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Back to List
+                </button>
+              </div>
+            </div>
+            {renderEmployeeDetails()}
+          </div>
+        );
       case 'list':
-        return renderEmployeeList();
       default:
-        return renderEmployeeList();
+        return (
+          <div className="space-y-6">
+            {/* Summary Cards */}
+            {renderSummaryCards()}
+            
+            {/* Search and Actions */}
+            {renderSearchAndActions()}
+            
+            {/* Employee List */}
+            {renderEmployeeList()}
+          </div>
+        );
     }
   };
 
@@ -1044,218 +1288,10 @@ function EmployeeManagement({ onNavigate }) {
         </div>
       </div>
 
-      {/* Summary Cards */}
-      {renderSummaryCards()}
-
-      {/* Search and Actions */}
-      {renderSearchAndActions()}
-
-      {/* Tab Navigation */}
-      {renderTabNavigation()}
-
       {/* Content */}
       {renderContent()}
 
-      {/* Create Employee Modal */}
-      <Transition appear show={isCreateModalOpen} as={Fragment}>
-        <Dialog as="div" className="relative z-50" onClose={() => setIsCreateModalOpen(false)}>
-          <Transition.Child
-            as={Fragment}
-            enter="ease-out duration-300"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="ease-in duration-200"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <div className="fixed inset-0 bg-black bg-opacity-25" />
-          </Transition.Child>
-
-          <div className="fixed inset-0 overflow-y-auto">
-            <div className="flex min-h-full items-center justify-center p-4 text-center">
-              <Transition.Child
-                as={Fragment}
-                enter="ease-out duration-300"
-                enterFrom="opacity-0 scale-95"
-                enterTo="opacity-100 scale-100"
-                leave="ease-in duration-200"
-                leaveFrom="opacity-100 scale-100"
-                leaveTo="opacity-0 scale-95"
-              >
-                <Dialog.Panel className="w-full max-w-4xl transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                  <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900 mb-4">
-                    Create New Employee
-                  </Dialog.Title>
-                  
-                  {renderEmployeeForm()}
-                </Dialog.Panel>
-              </Transition.Child>
-            </div>
-          </div>
-        </Dialog>
-      </Transition>
-
-      {/* Edit Employee Modal */}
-      <Transition appear show={isEditModalOpen} as={Fragment}>
-        <Dialog as="div" className="relative z-50" onClose={() => setIsEditModalOpen(false)}>
-          <Transition.Child
-            as={Fragment}
-            enter="ease-out duration-300"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="ease-in duration-200"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <div className="fixed inset-0 bg-black bg-opacity-25" />
-          </Transition.Child>
-
-          <div className="fixed inset-0 overflow-y-auto">
-            <div className="flex min-h-full items-center justify-center p-4 text-center">
-              <Transition.Child
-                as={Fragment}
-                enter="ease-out duration-300"
-                enterFrom="opacity-0 scale-95"
-                enterTo="opacity-100 scale-100"
-                leave="ease-in duration-200"
-                leaveFrom="opacity-100 scale-100"
-                leaveTo="opacity-0 scale-95"
-              >
-                <Dialog.Panel className="w-full max-w-4xl transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                  <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900 mb-4">
-                    Edit Employee: {selectedEmployee?.firstName} {selectedEmployee?.lastName}
-                  </Dialog.Title>
-                  
-                  {renderEmployeeForm()}
-                </Dialog.Panel>
-              </Transition.Child>
-            </div>
-          </div>
-        </Dialog>
-      </Transition>
-
-      {/* View Employee Modal */}
-      <Transition appear show={isViewModalOpen} as={Fragment}>
-        <Dialog as="div" className="relative z-50" onClose={() => setIsViewModalOpen(false)}>
-          <Transition.Child
-            as={Fragment}
-            enter="ease-out duration-300"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="ease-in duration-200"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <div className="fixed inset-0 bg-black bg-opacity-25" />
-          </Transition.Child>
-
-          <div className="fixed inset-0 overflow-y-auto">
-            <div className="flex min-h-full items-center justify-center p-4 text-center">
-              <Transition.Child
-                as={Fragment}
-                enter="ease-out duration-300"
-                enterFrom="opacity-0 scale-95"
-                enterTo="opacity-100 scale-100"
-                leave="ease-in duration-200"
-                leaveFrom="opacity-100 scale-100"
-                leaveTo="opacity-0 scale-95"
-              >
-                <Dialog.Panel className="w-full max-w-3xl transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                  <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900 mb-4">
-                    Employee Details: {selectedEmployee?.firstName} {selectedEmployee?.lastName}
-                  </Dialog.Title>
-                  
-                  {selectedEmployee && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-4">
-                        <div className="flex items-center space-x-3">
-                          <EnvelopeIcon className="h-5 w-5 text-gray-400" />
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">Email</p>
-                            <p className="text-sm text-gray-600">{selectedEmployee.email}</p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center space-x-3">
-                          <PhoneIcon className="h-5 w-5 text-gray-400" />
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">Phone</p>
-                            <p className="text-sm text-gray-600">{selectedEmployee.phone || 'Not provided'}</p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center space-x-3">
-                          <BriefcaseIcon className="h-5 w-5 text-gray-400" />
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">Position</p>
-                            <p className="text-sm text-gray-600">{selectedEmployee.position}</p>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-4">
-                        <div className="flex items-center space-x-3">
-                          <UserGroupIcon className="h-5 w-5 text-gray-400" />
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">Department</p>
-                            <p className="text-sm text-gray-600">{selectedEmployee.department}</p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center space-x-3">
-                          <CalendarIcon className="h-5 w-5 text-gray-400" />
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">Hire Date</p>
-                            <p className="text-sm text-gray-600">
-                              {selectedEmployee.hireDate ? new Date(selectedEmployee.hireDate).toLocaleDateString() : 'Not provided'}
-                            </p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center space-x-3">
-                          <CheckCircleIcon className="h-5 w-5 text-gray-400" />
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">Status</p>
-                            <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                              selectedEmployee.status === 'active' 
-                                ? 'bg-green-100 text-green-800'
-                                : selectedEmployee.status === 'onLeave'
-                                ? 'bg-yellow-100 text-yellow-800'
-                                : 'bg-gray-100 text-gray-800'
-                            }`}>
-                              {selectedEmployee.status === 'active' ? 'Active' : selectedEmployee.status === 'onLeave' ? 'On Leave' : 'Inactive'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div className="mt-6 flex justify-end space-x-3">
-                    <button
-                      onClick={() => {
-                        setIsViewModalOpen(false);
-                        handleEdit(selectedEmployee);
-                      }}
-                      className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
-                    >
-                      Edit Employee
-                    </button>
-                    <button
-                      onClick={() => setIsViewModalOpen(false)}
-                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
-                    >
-                      Close
-                    </button>
-                  </div>
-                </Dialog.Panel>
-              </Transition.Child>
-            </div>
-          </div>
-        </Dialog>
-      </Transition>
-
-      {/* Delete Confirmation Modal */}
+      {/* Delete Confirmation Modal - Keep this one for safety */}
       <Transition appear show={isDeleteModalOpen} as={Fragment}>
         <Dialog as="div" className="relative z-50" onClose={() => setIsDeleteModalOpen(false)}>
           <Transition.Child

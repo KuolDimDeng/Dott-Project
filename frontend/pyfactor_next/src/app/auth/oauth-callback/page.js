@@ -20,6 +20,18 @@ export default function Auth0OAuthCallbackPage() {
       console.log('🚀 [OAuthCallback] handleOAuthCallback function called');
       console.log('🚀 [OAuthCallback] Mounted:', mounted, 'OAuth in progress:', oauthInProgress);
       
+      // Recover language preference from sessionStorage
+      const savedLanguage = sessionStorage.getItem('oauth_language');
+      if (savedLanguage) {
+        console.log('🌐 [OAuthCallback] Recovering language preference:', savedLanguage);
+        // Store in localStorage for persistence
+        localStorage.setItem('preferredLanguage', savedLanguage);
+        // Apply language immediately if i18n is available
+        if (typeof window !== 'undefined' && window.i18n) {
+          window.i18n.changeLanguage(savedLanguage);
+        }
+      }
+      
       if (!mounted) {
         console.log('🚀 [OAuthCallback] Component unmounted, exiting');
         return;
