@@ -33,8 +33,12 @@ export async function GET(request) {
       );
     }
 
+    // Check if we should only return unlinked users
+    const url = new URL(request.url);
+    const unlinkedOnly = url.searchParams.get('unlinked') === 'true';
+    
     // Fetch users from local database (tenant-scoped)
-    const localUsers = await fetchLocalUsers(tenantId, currentUser, request);
+    const localUsers = await fetchLocalUsers(tenantId, currentUser, request, unlinkedOnly);
     
     // Fetch Auth0 users for this tenant
     const auth0Users = await fetchAuth0UsersForTenant(tenantId);
@@ -192,7 +196,7 @@ async function getSession(request) {
 /**
  * Helper function to fetch local users from database
  */
-async function fetchLocalUsers(tenantId, currentUser, request) {
+async function fetchLocalUsers(tenantId, currentUser, request, unlinkedOnly = false) {
   try {
     // Fetch users from backend RBAC API
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
@@ -200,7 +204,10 @@ async function fetchLocalUsers(tenantId, currentUser, request) {
     // Forward cookies for session-based authentication
     const cookieHeader = request?.headers?.get('cookie') || '';
     
-    const response = await fetch(`${backendUrl}/auth/rbac/users/`, {
+    // Add unlinked parameter if requested
+    const queryParams = unlinkedOnly ? '?unlinked=true' : '';
+    
+    const response = await fetch(`${backendUrl}/auth/rbac/users/${queryParams}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

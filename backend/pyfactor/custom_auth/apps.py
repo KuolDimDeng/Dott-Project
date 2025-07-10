@@ -28,6 +28,13 @@ class CustomAuthConfig(AppConfig):
         except ImportError as e:
             logger.error(f"Error importing signals: {e}")
             
+        # Import employee sync signals
+        try:
+            from .employee_sync import create_employee_for_user
+            logger.info("✅ Employee-User sync signals registered")
+        except ImportError as e:
+            logger.error(f"Error importing employee sync: {e}")
+            
         # Note: Removed AWS Cognito client initialization since using Auth0
         logger.info("Auth0 authentication configured - no AWS Cognito client needed")
         

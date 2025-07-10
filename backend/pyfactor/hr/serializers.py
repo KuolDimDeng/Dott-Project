@@ -43,7 +43,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
             'date_joined', 'salary', 'active', 'onboarded', 'role',
             'street', 'city', 'postcode', 'country', 'compensation_type',
             'probation', 'probation_end_date', 'health_insurance_enrollment', 'pension_enrollment',
-            'direct_deposit', 'vacation_time', 'vacation_days_per_year', 'supervisor'
+            'direct_deposit', 'vacation_time', 'vacation_days_per_year', 'supervisor', 'user'
         ]
         read_only_fields = ['id', 'employee_number']
 

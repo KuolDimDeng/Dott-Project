@@ -37,9 +37,15 @@ class UserManagementViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """Get users for the current tenant only"""
-        return User.objects.filter(
+        queryset = User.objects.filter(
             tenant=self.request.user.tenant
         ).select_related('tenant').prefetch_related('page_access__page')
+        
+        # Filter for unlinked users (users without an employee record)
+        if self.request.query_params.get('unlinked') == 'true':
+            queryset = queryset.filter(employee_profile__isnull=True)
+            
+        return queryset
     
     @action(detail=True, methods=['post'])
     def update_permissions(self, request, pk=None):

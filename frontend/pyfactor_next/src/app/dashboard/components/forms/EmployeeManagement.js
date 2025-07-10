@@ -163,6 +163,14 @@ function EmployeeManagement({ onNavigate }) {
   const [formErrors, setFormErrors] = useState({});
   const [supervisorSearch, setSupervisorSearch] = useState('');
   const [showSupervisorDropdown, setShowSupervisorDropdown] = useState(false);
+  
+  // User linking states
+  const [showUserLinking, setShowUserLinking] = useState(false);
+  const [availableUsers, setAvailableUsers] = useState([]);
+  const [selectedUserId, setSelectedUserId] = useState(null);
+  const [userSearch, setUserSearch] = useState('');
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const userDropdownRef = useRef(null);
 
   // Helper function to get security number info based on country
   const getSecurityNumberInfo = (countryCode) => {
@@ -217,6 +225,7 @@ function EmployeeManagement({ onNavigate }) {
   useEffect(() => {
     fetchEmployees();
     fetchBasicEmployees();
+    fetchAvailableUsers();
   }, []);
   
   // Handle click outside supervisor dropdown
@@ -224,6 +233,9 @@ function EmployeeManagement({ onNavigate }) {
     const handleClickOutside = (event) => {
       if (supervisorDropdownRef.current && !supervisorDropdownRef.current.contains(event.target)) {
         setShowSupervisorDropdown(false);
+      }
+      if (userDropdownRef.current && !userDropdownRef.current.contains(event.target)) {
+        setShowUserDropdown(false);
       }
     };
     
@@ -245,6 +257,37 @@ function EmployeeManagement({ onNavigate }) {
       logger.error('❌ [EmployeeManagement] Error fetching basic employees:', error);
       // Don't show error toast for dropdown data
       setBasicEmployees([]);
+    }
+  };
+  
+  const fetchAvailableUsers = async () => {
+    try {
+      logger.info('🚀 [EmployeeManagement] Fetching available users for linking');
+      
+      // Fetch users who don't have an employee record yet
+      const response = await fetch('/api/user-management/users?unlinked=true', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch users');
+      }
+      
+      const data = await response.json();
+      logger.info('✅ [EmployeeManagement] Fetched unlinked users:', {
+        count: data?.users?.length || 0
+      });
+      
+      if (data.users && Array.isArray(data.users)) {
+        setAvailableUsers(data.users);
+      }
+    } catch (error) {
+      logger.error('❌ [EmployeeManagement] Error fetching available users:', error);
+      // Don't show error to user as this is optional functionality
     }
   };
 
@@ -638,7 +681,9 @@ function EmployeeManagement({ onNavigate }) {
         // New fields - convert to snake_case
         direct_deposit: formData.directDeposit === 'yes',
         vacation_time: formData.vacationTime === 'yes',
-        vacation_days_per_year: formData.vacationTime === 'yes' ? parseInt(formData.vacationDaysPerYear) || 0 : 0
+        vacation_days_per_year: formData.vacationTime === 'yes' ? parseInt(formData.vacationDaysPerYear) || 0 : 0,
+        // User linking
+        user_id: selectedUserId || null
       };
       
       // Remove camelCase fields to avoid duplication
@@ -893,6 +938,95 @@ function EmployeeManagement({ onNavigate }) {
               }`}
             />
             {formErrors.email && <p className="text-red-500 text-xs mt-1">{formErrors.email}</p>}
+          </div>
+          
+          {/* User Account Linking */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Link to User Account
+                <FieldTooltip text="Connect this employee to an existing user account to grant system access" />
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowUserLinking(!showUserLinking)}
+                className="text-xs text-blue-600 hover:text-blue-700"
+              >
+                {showUserLinking ? 'Hide' : 'Link User'}
+              </button>
+            </div>
+            
+            {showUserLinking && (
+              <div className="relative" ref={userDropdownRef}>
+                <input
+                  type="text"
+                  value={userSearch}
+                  onChange={(e) => {
+                    setUserSearch(e.target.value);
+                    setShowUserDropdown(true);
+                  }}
+                  onFocus={() => setShowUserDropdown(true)}
+                  placeholder="Search for user by name or email..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+                
+                {selectedUserId && (
+                  <div className="mt-2 p-2 bg-blue-50 rounded-md flex items-center justify-between">
+                    <span className="text-sm text-blue-700">
+                      {availableUsers.find(u => u.id === selectedUserId)?.name || 
+                       availableUsers.find(u => u.id === selectedUserId)?.email}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedUserId(null);
+                        setUserSearch('');
+                      }}
+                      className="text-blue-600 hover:text-blue-700"
+                    >
+                      <XCircleIcon className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+                
+                {showUserDropdown && !selectedUserId && (
+                  <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                    {availableUsers
+                      .filter(user => 
+                        userSearch === '' || 
+                        user.name?.toLowerCase().includes(userSearch.toLowerCase()) ||
+                        user.email?.toLowerCase().includes(userSearch.toLowerCase())
+                      )
+                      .map(user => (
+                        <div
+                          key={user.id}
+                          onClick={() => {
+                            setSelectedUserId(user.id);
+                            setUserSearch(user.name || user.email);
+                            setShowUserDropdown(false);
+                          }}
+                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                        >
+                          <div className="text-sm font-medium text-gray-900">
+                            {user.name || 'No name'}
+                          </div>
+                          <div className="text-xs text-gray-500">{user.email}</div>
+                          <div className="text-xs text-gray-400">Role: {user.role}</div>
+                        </div>
+                      ))}
+                    {availableUsers.filter(user => 
+                        userSearch === '' || 
+                        user.name?.toLowerCase().includes(userSearch.toLowerCase()) ||
+                        user.email?.toLowerCase().includes(userSearch.toLowerCase())
+                      ).length === 0 && (
+                      <div className="px-4 py-2 text-sm text-gray-500">
+                        No unlinked users found
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           
           <div>
