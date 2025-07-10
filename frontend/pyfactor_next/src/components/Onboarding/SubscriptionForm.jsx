@@ -8,6 +8,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { logger } from '@/utils/logger';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { refreshSessionData } from '@/utils/sessionRefresh';
+import { useSession } from '@/hooks/useSession-v2';
 import { 
   COGNITO_ATTRIBUTES,
   COOKIE_NAMES, 
@@ -119,9 +120,11 @@ const isValidUUID = (uuid) => {
 export default function SubscriptionForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { session } = useSession();
   // Removed useOnboardingProgress - backend handles progress updates
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [billingCycle, setBillingCycle] = useState('monthly');
+  const [country, setCountry] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -133,6 +136,19 @@ export default function SubscriptionForm() {
     price: '0'
   });
   const { notifyInfo } = useNotification();
+  
+  // Extract country from session
+  useEffect(() => {
+    if (session?.user) {
+      const userCountry = session.user.country || 
+                         session.user.onboardingProgress?.country ||
+                         session.user.business_country;
+      if (userCountry) {
+        setCountry(userCountry);
+        logger.info('[SubscriptionForm] Country found in session:', userCountry);
+      }
+    }
+  }, [session]);
   
   // Handle URL params and stored data on mount
   useEffect(() => {
@@ -429,7 +445,9 @@ export default function SubscriptionForm() {
           }
         });
         setProcessingStatus('Preparing payment options...');
-        router.push(`/onboarding/payment?plan=${plan.id}&cycle=${billingCycle}&requestId=${requestId}`);
+        // Include country in payment URL if available
+        const countryParam = country ? `&country=${encodeURIComponent(country)}` : '';
+        router.push(`/onboarding/payment?plan=${plan.id}&cycle=${billingCycle}&requestId=${requestId}${countryParam}`);
       }
     } catch (e) {
       logger.error('[SubscriptionForm] Error during plan selection:', e);

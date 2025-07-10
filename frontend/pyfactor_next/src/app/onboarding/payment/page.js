@@ -656,7 +656,7 @@ function PaymentForm({ plan, billingCycle, urlCountry }) {
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold text-gray-900 mb-2">Complete Your Subscription</h2>
         <div className="flex items-center justify-center gap-2 text-lg">
-          <span className="text-gray-600">{plan} Plan</span>
+          <span className="text-gray-600">{plan.charAt(0).toUpperCase() + plan.slice(1)} Plan</span>
           <span className="text-gray-400">•</span>
           <span className="font-semibold text-gray-900">
             ${getPrice()}/{billingCycle === 'monthly' ? 'month' : billingCycle === '6month' ? '6 months' : 'year'}
