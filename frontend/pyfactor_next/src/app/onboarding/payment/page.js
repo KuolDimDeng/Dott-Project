@@ -178,6 +178,7 @@ function PaymentForm({ plan, billingCycle, urlCountry }) {
         if (pricingResponse.ok) {
           const pricingData = await safeJsonParse(pricingResponse, 'PaymentForm-RegionalPricing');
           logger.info('[PaymentForm] Regional pricing data:', pricingData);
+          console.log('🎯 [PaymentForm] Full regional pricing response:', JSON.stringify(pricingData, null, 2));
           setRegionalPricing(pricingData);
           
           // Check if this is a developing country that should have M-Pesa
@@ -244,6 +245,13 @@ function PaymentForm({ plan, billingCycle, urlCountry }) {
   };
 
   const getPrice = () => {
+    // Get base price
+    const prices = {
+      professional: { monthly: 15, '6month': 75, yearly: 144 },
+      enterprise: { monthly: 45, '6month': 225, yearly: 432 }
+    };
+    const basePrice = prices[plan.toLowerCase()]?.[billingCycle] || 0;
+    
     // Use regional pricing if available
     if (regionalPricing && regionalPricing.pricing) {
       const planPricing = regionalPricing.pricing[plan.toLowerCase()];
@@ -254,12 +262,13 @@ function PaymentForm({ plan, billingCycle, urlCountry }) {
       }
     }
     
-    // Fallback to default prices
-    const prices = {
-      professional: { monthly: 15, '6month': 75, yearly: 144 },
-      enterprise: { monthly: 45, '6month': 225, yearly: 432 }
-    };
-    return prices[plan.toLowerCase()]?.[billingCycle] || 0;
+    // If we have a discount percentage but no pricing data, apply discount manually
+    if (regionalPricing && regionalPricing.discount_percentage > 0) {
+      const discountMultiplier = 1 - (regionalPricing.discount_percentage / 100);
+      return Math.round(basePrice * discountMultiplier * 100) / 100; // Round to 2 decimal places
+    }
+    
+    return basePrice;
   };
   
   const getOriginalPrice = () => {
@@ -659,7 +668,13 @@ function PaymentForm({ plan, billingCycle, urlCountry }) {
           <span className="text-gray-600">{plan.charAt(0).toUpperCase() + plan.slice(1)} Plan</span>
           <span className="text-gray-400">•</span>
           <span className="font-semibold text-gray-900">
-            ${getPrice()}/{billingCycle === 'monthly' ? 'month' : billingCycle === '6month' ? '6 months' : 'year'}
+            {regionalPricing && regionalPricing.currency !== 'USD' ? (
+              <>
+                {regionalPricing.currency === 'KES' ? 'KSh' : regionalPricing.currency} {Math.round(getPrice() * (regionalPricing.exchange_info?.rate || 110))}/{billingCycle === 'monthly' ? 'month' : billingCycle === '6month' ? '6 months' : 'year'}
+              </>
+            ) : (
+              <>${getPrice()}/{billingCycle === 'monthly' ? 'month' : billingCycle === '6month' ? '6 months' : 'year'}</>
+            )}
           </span>
           {regionalPricing && regionalPricing.discount_percentage > 0 && (
             <>
@@ -673,7 +688,13 @@ function PaymentForm({ plan, billingCycle, urlCountry }) {
         {regionalPricing && regionalPricing.discount_percentage > 0 && (
           <div className="mt-2">
             <span className="text-gray-500 line-through">
-              Original: ${getOriginalPrice()}/{billingCycle === 'monthly' ? 'month' : billingCycle === '6month' ? '6 months' : 'year'}
+              Original: {regionalPricing.currency !== 'USD' ? (
+                <>
+                  {regionalPricing.currency === 'KES' ? 'KSh' : regionalPricing.currency} {Math.round(getOriginalPrice() * (regionalPricing.exchange_info?.rate || 110))}/{billingCycle === 'monthly' ? 'month' : billingCycle === '6month' ? '6 months' : 'year'}
+                </>
+              ) : (
+                <>${getOriginalPrice()}/{billingCycle === 'monthly' ? 'month' : billingCycle === '6month' ? '6 months' : 'year'}</>
+              )}
             </span>
           </div>
         )}
@@ -706,7 +727,16 @@ function PaymentForm({ plan, billingCycle, urlCountry }) {
             <p>Payment Methods: {JSON.stringify(paymentMethods)}</p>
             <p>Selected: {selectedPaymentMethod}</p>
             <p>Regional Pricing: {regionalPricing ? 'Yes' : 'No'}</p>
-            {regionalPricing && <p>Discount: {regionalPricing.discount_percentage}%</p>}
+            {regionalPricing && (
+              <>
+                <p>Discount: {regionalPricing.discount_percentage}%</p>
+                <p>Currency: {regionalPricing.currency}</p>
+                <p>Exchange Rate: {regionalPricing.exchange_info?.rate || 'N/A'}</p>
+                <p>Pricing Data: {JSON.stringify(regionalPricing.pricing || 'None')}</p>
+                <p>Calculated Price: ${getPrice()}</p>
+                <p>Original Price: ${getOriginalPrice()}</p>
+              </>
+            )}
           </div>
         )}
         
