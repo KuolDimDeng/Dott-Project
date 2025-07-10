@@ -123,3 +123,52 @@ def get_employee_by_cognito_user(user_id, user_attributes=None):
     except Exception as e:
         logger.error(f"Error in get_employee_by_cognito_user: {str(e)}")
         return None 
+
+
+def check_column_exists(table_name, column_name):
+    """
+    Check if a column exists in a table
+    """
+    from django.db import connection
+    
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT EXISTS (
+                SELECT 1 
+                FROM information_schema.columns 
+                WHERE table_name = %s 
+                AND column_name = %s
+            )
+        """, [table_name, column_name])
+        return cursor.fetchone()[0]
+
+
+def get_available_employee_fields():
+    """
+    Get list of available fields based on what exists in the database
+    """
+    base_fields = [
+        'id', 'employee_number', 'first_name', 'middle_name', 'last_name', 
+        'email', 'phone_number', 'job_title', 'department', 'employment_type',
+        'date_joined', 'salary', 'active', 'onboarded', 'role',
+        'street', 'city', 'postcode', 'country', 'compensation_type',
+        'probation', 'probation_end_date', 'health_insurance_enrollment', 
+        'pension_enrollment', 'supervisor'
+    ]
+    
+    # Check for optional fields that might not be migrated yet
+    optional_fields = {
+        'date_of_birth': 'date_of_birth',
+        'direct_deposit': 'direct_deposit',
+        'vacation_time': 'vacation_time',
+        'vacation_days_per_year': 'vacation_days_per_year'
+    }
+    
+    for field_name, column_name in optional_fields.items():
+        try:
+            if check_column_exists('hr_employee', column_name):
+                base_fields.append(field_name)
+        except Exception as e:
+            logger.warning(f"Could not check for column {column_name}: {str(e)}")
+    
+    return base_fields

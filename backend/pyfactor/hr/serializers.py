@@ -24,6 +24,17 @@ class EmployeeSerializer(serializers.ModelSerializer):
     """
     Serializer for Employee model with sensitive information excluded
     """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Dynamically set fields based on what's available in the database
+        from .utils import get_available_employee_fields
+        available_fields = get_available_employee_fields()
+        
+        # Remove fields that don't exist in the database
+        for field_name in list(self.fields.keys()):
+            if field_name not in available_fields:
+                self.fields.pop(field_name)
+    
     class Meta:
         model = Employee
         fields = [
