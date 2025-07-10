@@ -18,7 +18,7 @@ import { getCountryCode } from '@/utils/countryMapping';
 // Removed sessionStatus import - using session-v2 system
 
 // PaymentForm component that uses Stripe hooks
-function PaymentForm({ plan, billingCycle }) {
+function PaymentForm({ plan, billingCycle, urlCountry }) {
   const stripe = useStripe();
   const elements = useElements();
   const router = useRouter();
@@ -89,7 +89,8 @@ function PaymentForm({ plan, billingCycle }) {
                              'Other';
           
           // Extract country from onboarding data
-          const userCountry = user?.country || 
+          const userCountry = urlCountry ||
+                            user?.country || 
                             user?.onboardingProgress?.country ||
                             sessionData.country ||
                             sessionData.onboardingProgress?.country;
@@ -97,6 +98,7 @@ function PaymentForm({ plan, billingCycle }) {
           if (userCountry) {
             setCountry(userCountry);
             logger.info('[PaymentForm] Country found:', userCountry);
+            logger.info('[PaymentForm] Country source:', urlCountry ? 'URL' : 'Session');
           }
           
           if (businessName) {
@@ -966,10 +968,12 @@ export default function PaymentPage() {
   useEffect(() => {
     const planParam = searchParams.get('plan');
     const billingParam = searchParams.get('billing') || 'monthly';
+    const countryParam = searchParams.get('country');
 
     logger.info('PaymentPage initialized', {
       planParam,
       billingParam,
+      countryParam,
     });
 
     if (!planParam || planParam.toLowerCase() === 'free') {
@@ -995,7 +999,7 @@ export default function PaymentPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4">
       <DynamicStripeProvider>
-        <PaymentForm plan={plan} billingCycle={billingCycle} />
+        <PaymentForm plan={plan} billingCycle={billingCycle} urlCountry={searchParams.get('country')} />
       </DynamicStripeProvider>
     </div>
   );

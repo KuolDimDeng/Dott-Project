@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getDiscountPercentage, isDevelopingCountry } from '@/utils/developingCountries';
 
 export async function GET(request) {
   try {
@@ -31,18 +32,22 @@ export async function GET(request) {
       referer: request.headers.get('referer')
     });
     
-    // Build query params
+    // Build query params - ALWAYS include country parameter
     const params = new URLSearchParams();
-    if (country) {
-      params.append('country', country);
-    }
     
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/onboarding/api/pricing/by-country/?${params}`;
+    // Force country parameter to be sent
+    const countryToSend = country || cfCountry || 'US';
+    params.append('country', countryToSend);
+    
+    // Use production API URL directly if local backend is unavailable
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+    const backendUrl = `${apiUrl}/api/onboarding/api/pricing/by-country/?${params}`;
     console.log('🎯 [Pricing API] Backend URL:', backendUrl);
     console.log('🎯 [Pricing API] Params sent to backend:', params.toString());
     console.log('🎯 [Pricing API] Country parameter details:', {
       queryCountry: country,
       cfCountry: cfCountry,
+      countryToSend: countryToSend,
       headerValue: cfCountry || country || ''
     });
     
@@ -54,8 +59,9 @@ export async function GET(request) {
         'X-Forwarded-For': ip || '',
         'X-Real-IP': ip || '',
         'CF-Connecting-IP': cfIp || '',
-        'CF-IPCountry': cfCountry || country || '', // Use country param as fallback
-        'X-Country-Code': country || '', // Add explicit country header
+        'CF-IPCountry': countryToSend, // Always send the country
+        'X-Country-Code': countryToSend, // Add explicit country header
+        'X-Country-Override': country || '', // Original requested country
       },
     });
 
@@ -84,14 +90,44 @@ export async function GET(request) {
       console.log('🎯 [Pricing API] Request sent to backend:', {
         url: backendUrl,
         headers: {
-          'CF-IPCountry': cfCountry || country || '',
-          'X-Country-Code': country || ''
+          'CF-IPCountry': countryToSend,
+          'X-Country-Code': countryToSend
         }
       });
       
-      // Log mismatch but don't override - let backend handle pricing
-      if (country === 'KE' && result.country_code === 'US') {
-        console.log('🎯 [Pricing API] WARNING: Backend returned US pricing for Kenya request');
+      // Manual fallback for developing country pricing
+      if (country && isDevelopingCountry(country) && result.discount_percentage === 0) {
+        const discount = getDiscountPercentage(country);
+        console.log('🎯 [Pricing API] APPLYING MANUAL DISCOUNT for', country, ':', discount, '%');
+        
+        // Apply discount manually
+        result.country_code = country.toUpperCase();
+        result.discount_percentage = discount;
+        
+        // Calculate discounted prices
+        const discountMultiplier = 1 - (discount / 100);
+        
+        // Update pricing with discount
+        if (result.pricing) {
+          result.pricing.professional = {
+            monthly: 15.00 * discountMultiplier,
+            six_month: 78.00 * discountMultiplier,
+            yearly: 144.00 * discountMultiplier,
+            monthly_display: `$${(15.00 * discountMultiplier).toFixed(2)}`,
+            six_month_display: `$${(78.00 * discountMultiplier).toFixed(2)}`,
+            yearly_display: `$${(144.00 * discountMultiplier).toFixed(2)}`
+          };
+          result.pricing.enterprise = {
+            monthly: 45.00 * discountMultiplier,
+            six_month: 234.00 * discountMultiplier,
+            yearly: 432.00 * discountMultiplier,
+            monthly_display: `$${(45.00 * discountMultiplier).toFixed(2)}`,
+            six_month_display: `$${(234.00 * discountMultiplier).toFixed(2)}`,
+            yearly_display: `$${(432.00 * discountMultiplier).toFixed(2)}`
+          };
+        }
+        
+        console.log('🎯 [Pricing API] Manual discount applied:', result);
       }
     }
     

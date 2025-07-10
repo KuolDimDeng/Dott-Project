@@ -187,9 +187,10 @@ export default function OnboardingFlowV2() {
         // Complete onboarding for free plan
         await completeOnboarding(updatedData);
       } else {
-        // Redirect to payment
+        // Redirect to payment with country information
         setCurrentState(ONBOARDING_STATES.PAYMENT_PENDING);
-        router.push(`/onboarding/payment?plan=${plan}&billing=${billingCycle}`);
+        const country = formData.country || 'US';
+        router.push(`/onboarding/payment?plan=${plan}&billing=${billingCycle}&country=${encodeURIComponent(country)}`);
       }
       
     } catch (err) {

@@ -121,7 +121,20 @@
     },
     "regionalDiscount": {
       "badge": "{{percentage}}% off all plans!",
-      "description": "Special pricing for businesses in {{country}}"
+      "description": "Special pricing for businesses in {{country}}",
+      "percentOff": "{{percentage}}% off",
+      "yourRegion": "your region"
+    },
+    "paymentMethods": {
+      "mpesa": {
+        "title": "M-Pesa payment available!",
+        "description": "Pay conveniently with mobile money for your subscription",
+        "payInCurrency": "Pay in {{currency}}"
+      }
+    },
+    "savings": {
+      "sixMonth": "Save ${{amount}} (${{monthly}}/mo)",
+      "yearly": "Save ${{amount}} per year"
     },
     "backButton": "Back to Business Info",
     "processing": "Processing...",

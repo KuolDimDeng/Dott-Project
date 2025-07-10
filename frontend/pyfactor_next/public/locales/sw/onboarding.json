@@ -63,22 +63,85 @@
     }
   },
   "subscription": {
-    "title": "Chagua mpango wako wa usajili",
+    "title": "Chagua Mpango Wako",
     "subtitle": "Chagua mpango unaoendana na mahitaji ya biashara yako",
-    "basic": "Msingi",
-    "professional": "Kitaalamu",
-    "premium": "Bora",
-    "perMonth": "kwa mwezi",
-    "selectPlan": "Chagua Mpango",
-    "currentPlan": "Mpango wa Sasa",
-    "features": {
-      "accounting": "Uhasibu na Uwekaji wa Vitabu",
-      "invoicing": "Ankara na Malipo",
-      "expenses": "Ufuatiliaji wa Gharama",
-      "payroll": "Uchakataji wa Malipo",
-      "inventory": "Usimamizi wa Bidhaa",
-      "support": "Usaidizi wa Wateja 24/7"
-    }
+    "billingCycle": {
+      "monthly": "Kila Mwezi",
+      "sixMonth": "Miezi 6",
+      "yearly": "Mwaka",
+      "popular": "MAARUFU",
+      "save": "Okoa {{percentage}}%"
+    },
+    "plans": {
+      "basic": {
+        "name": "Msingi",
+        "description": "Mzuri kwa biashara ndogo zinazoanza",
+        "price": "Bure",
+        "features": [
+          "Ufuatiliaji wa mapato na matumizi",
+          "Uundaji wa ankara na ukumbuzi",
+          "Malipo ya Stripe & PayPal",
+          "Pesa za simu (M-Pesa, n.k.)",
+          "Ufuatiliaji wa msingi wa bidhaa",
+          "Uchomaji wa barcode",
+          "Kikomo cha hifadhi 3GB",
+          "Mtumiaji 1 tu"
+        ],
+        "buttonText": "Anza Bure"
+      },
+      "professional": {
+        "name": "Kitaalamu",
+        "description": "Kila kitu biashara zinazokua zinahitaji kustawi",
+        "price": "${{price}}/{{period}}",
+        "popularBadge": "MAARUFU ZAIDI",
+        "features": [
+          "Kila kitu katika Msingi",
+          "Hadi watumiaji 3",
+          "Hifadhi isiyo na kikomo",
+          "Usaidizi wa kipaumbele",
+          "Vipengele vyote vimejumuishwa",
+          "Punguzo la {{discount}}% kwa miezi 6",
+          "Punguzo la {{yearlyDiscount}}% kwa mwaka"
+        ],
+        "buttonText": "Chagua Kitaalamu"
+      },
+      "enterprise": {
+        "name": "Biashara",
+        "description": "Kipimo kisicho na kikomo kwa mashirika yenye malengo makubwa",
+        "price": "${{price}}/{{period}}",
+        "premiumBadge": "BORA",
+        "features": [
+          "Kila kitu katika Kitaalamu",
+          "Watumiaji wasio na kikomo",
+          "Uanzishaji maalum",
+          "Usaidizi wa kujitolea",
+          "Vipengele vyote vimejumuishwa",
+          "Punguzo la {{discount}}% kwa miezi 6",
+          "Punguzo la {{yearlyDiscount}}% kwa mwaka"
+        ],
+        "buttonText": "Chagua Biashara"
+      }
+    },
+    "regionalDiscount": {
+      "badge": "Punguzo la {{percentage}}% kwa mipango yote!",
+      "description": "Bei maalum kwa biashara zilizo {{country}}",
+      "percentOff": "Punguzo la {{percentage}}%",
+      "yourRegion": "eneo lako"
+    },
+    "paymentMethods": {
+      "mpesa": {
+        "title": "Malipo ya M-Pesa yanapatikana!",
+        "description": "Lipa kwa urahisi kwa pesa za simu kwa usajili wako",
+        "payInCurrency": "Lipa kwa {{currency}}"
+      }
+    },
+    "savings": {
+      "sixMonth": "Okoa ${{amount}} (${{monthly}}/mwezi)",
+      "yearly": "Okoa ${{amount}} kwa mwaka"
+    },
+    "backButton": "Rudi kwa Maelezo ya Biashara",
+    "processing": "Inachakata...",
+    "note": "* Bei za kikanda zinapatikana. Bei zinajipanga kiotomatiki kulingana na eneo lako."
   },
   "payment": {
     "title": "Maelezo ya Malipo",

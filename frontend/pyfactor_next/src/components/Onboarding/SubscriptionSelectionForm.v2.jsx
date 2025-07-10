@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { logger } from '@/utils/logger';
-import { useCurrencyDetection } from '@/hooks/useCurrencyDetection';
 import PricingDisplay from './PricingDisplay';
-import CurrencySelector from './CurrencySelector';
 import { getCountryCode, getCountryName } from '@/utils/countryMapping';
+import { getCurrencyForCountry, formatCurrency, convertFromUSD } from '@/services/wiseApiService';
 
 // Subscription plans with updated pricing
 const PLANS = [
@@ -82,22 +82,25 @@ export default function SubscriptionSelectionFormV2({
   error: parentError,
   onBack
 }) {
+  const { t } = useTranslation('onboarding');
   const [selectedPlan, setSelectedPlan] = useState(initialData.selectedPlan || '');
   const [billingCycle, setBillingCycle] = useState(initialData.billingCycle || 'monthly'); // 'monthly', '6month', 'yearly'
   const [regionalPricing, setRegionalPricing] = useState(null);
   const [pricingLoading, setPricingLoading] = useState(true);
   const [availablePaymentMethods, setAvailablePaymentMethods] = useState([]);
-  const { currency, setCurrency } = useCurrencyDetection();
+  const [localCurrency, setLocalCurrency] = useState(null);
+  const [exchangeRate, setExchangeRate] = useState(null);
 
   // Fetch regional pricing based on country from business info
   useEffect(() => {
     const fetchRegionalPricing = async () => {
+      console.log('🎯 [SubscriptionSelection] === START PRICING FETCH ===');
       console.log('🎯 [SubscriptionSelection] Initial data received:', initialData);
       console.log('🎯 [SubscriptionSelection] Country value:', initialData.country);
       console.log('🎯 [SubscriptionSelection] All initial data keys:', Object.keys(initialData));
       
       if (!initialData.country) {
-        console.log('🎯 [SubscriptionSelection] No country data, skipping pricing fetch');
+        console.log('🎯 [SubscriptionSelection] No country data, using default US pricing');
         setPricingLoading(false);
         return;
       }
@@ -113,31 +116,65 @@ export default function SubscriptionSelectionFormV2({
           isCode: initialData.country?.length === 2
         });
         
+        // Get local currency for the country
+        const localCurrencyCode = getCurrencyForCountry(countryCode);
+        setLocalCurrency(localCurrencyCode);
+        console.log('🎯 [SubscriptionSelection] Local currency:', localCurrencyCode);
+        
+        // Get exchange rate if not USD
+        if (localCurrencyCode !== 'USD') {
+          try {
+            const rate = await convertFromUSD(1, localCurrencyCode);
+            setExchangeRate(rate);
+            console.log('🎯 [SubscriptionSelection] Exchange rate: 1 USD =', rate, localCurrencyCode);
+          } catch (error) {
+            console.error('🎯 [SubscriptionSelection] Error getting exchange rate:', error);
+          }
+        }
+        
         // Debug: Log the exact URL being called
         const pricingUrl = `/api/pricing/by-country?country=${encodeURIComponent(countryCode)}`;
         console.log('🎯 [SubscriptionSelection] Fetching pricing from URL:', pricingUrl);
         console.log('🎯 [SubscriptionSelection] Country parameter:', countryCode);
         
         // Fetch pricing with country parameter
-        const response = await fetch(pricingUrl);
+        const response = await fetch(pricingUrl, {
+          headers: {
+            'X-Country-Override': countryCode // Force country override
+          }
+        });
         console.log('🎯 [SubscriptionSelection] Response status:', response.status);
         console.log('🎯 [SubscriptionSelection] Response headers:', Object.fromEntries(response.headers.entries()));
         
         const data = await response.json();
         
-        logger.info('[SubscriptionSelection] Regional pricing data:', data);
+        console.log('🎯 [SubscriptionSelection] === PRICING RESPONSE ===');
+        console.log('🎯 [SubscriptionSelection] Regional pricing data:', data);
+        console.log('🎯 [SubscriptionSelection] Country code returned:', data.country_code);
+        console.log('🎯 [SubscriptionSelection] Discount percentage:', data.discount_percentage);
+        console.log('🎯 [SubscriptionSelection] Pricing object:', data.pricing);
+        
+        // Validate if we got correct pricing
+        if (countryCode === 'KE' && data.discount_percentage === 0) {
+          console.warn('🎯 [SubscriptionSelection] ⚠️ WARNING: Kenya should have 50% discount but got 0%');
+          console.warn('🎯 [SubscriptionSelection] Backend may not be processing country correctly');
+        }
+        
         setRegionalPricing(data);
         
         // Fetch available payment methods for the country
         const paymentMethodsResponse = await fetch(`/api/payment-methods/available?country=${encodeURIComponent(countryCode)}`);
         const paymentMethodsData = await paymentMethodsResponse.json();
         
-        logger.info('[SubscriptionSelection] Available payment methods:', paymentMethodsData);
+        console.log('🎯 [SubscriptionSelection] Available payment methods:', paymentMethodsData);
+        console.log('🎯 [SubscriptionSelection] M-Pesa available?', paymentMethodsData.methods?.includes('mpesa'));
         setAvailablePaymentMethods(paymentMethodsData.methods || []);
       } catch (error) {
         logger.error('[SubscriptionSelection] Error fetching regional pricing:', error);
+        console.error('🎯 [SubscriptionSelection] Full error:', error);
       } finally {
         setPricingLoading(false);
+        console.log('🎯 [SubscriptionSelection] === END PRICING FETCH ===');
       }
     };
 
@@ -157,11 +194,27 @@ export default function SubscriptionSelectionFormV2({
     logger.info('[SubscriptionSelection] Billing cycle changed', { cycle });
   };
 
+  // Helper function to format price with local currency
+  const formatPriceWithLocalCurrency = (usdPrice, showPeriod = true) => {
+    if (!usdPrice || usdPrice === 0) return t('subscription.plans.basic.price');
+    
+    let priceDisplay = `$${usdPrice}`;
+    
+    // Add local currency equivalent if available
+    if (localCurrency && localCurrency !== 'USD' && exchangeRate) {
+      const localAmount = Math.round(usdPrice * exchangeRate);
+      const localFormatted = formatCurrency(localAmount, localCurrency);
+      priceDisplay += ` (${localFormatted})`;
+    }
+    
+    return priceDisplay;
+  };
+
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold mb-2">Choose Your Plan</h2>
-        <p className="text-gray-600">Select the plan that best fits your business needs</p>
+        <h2 className="text-2xl font-bold mb-2">{t('subscription.title')}</h2>
+        <p className="text-gray-600">{t('subscription.subtitle')}</p>
       </div>
 
       {/* Error display */}
@@ -178,39 +231,44 @@ export default function SubscriptionSelectionFormV2({
             <span className="text-2xl mr-2">🎉</span>
             <div>
               <p className="text-green-800 font-semibold">
-                {regionalPricing.discount_percentage}% off all plans!
+                {t('subscription.regionalDiscount.badge', { percentage: regionalPricing.discount_percentage })}
               </p>
               <p className="text-green-700 text-sm">
-                Special pricing for businesses in {getCountryName(initialData.country) || initialData.country || 'your region'}
+                {t('subscription.regionalDiscount.description', { 
+                  country: getCountryName(initialData.country) || initialData.country || t('subscription.regionalDiscount.yourRegion') 
+                })}
               </p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Payment methods notice for Kenya */}
+      {/* Payment methods notice for mobile money */}
       {availablePaymentMethods.length > 0 && availablePaymentMethods.includes('mpesa') && (
         <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded">
           <div className="flex items-center">
-            <svg className="w-6 h-6 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div>
-              <p className="text-blue-800 font-semibold">
-                M-Pesa payment available!
+              <p className="text-green-800 font-semibold">
+                {t('subscription.paymentMethods.mpesa.title')}
               </p>
-              <p className="text-blue-700 text-sm">
-                Pay conveniently with mobile money for your subscription
+              <p className="text-green-700 text-sm">
+                {t('subscription.paymentMethods.mpesa.description')}
               </p>
+              {localCurrency && localCurrency !== 'USD' && (
+                <p className="text-green-600 text-xs mt-1">
+                  {t('subscription.paymentMethods.mpesa.payInCurrency', { currency: localCurrency })}
+                </p>
+              )}
             </div>
           </div>
         </div>
       )}
 
-      {/* Currency Selector and Billing Cycle Toggle */}
-      <div className="flex justify-between items-center mb-8">
-        <CurrencySelector currency={currency} setCurrency={setCurrency} />
-        
+      {/* Billing Cycle Toggle */}
+      <div className="flex justify-center mb-8">
         <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
           <button
             onClick={() => handleBillingCycleChange('monthly')}
@@ -221,7 +279,7 @@ export default function SubscriptionSelectionFormV2({
             }`}
             disabled={submitting}
           >
-            Monthly
+            {t('subscription.billingCycle.monthly')}
           </button>
           <button
             onClick={() => handleBillingCycleChange('6month')}
@@ -232,8 +290,8 @@ export default function SubscriptionSelectionFormV2({
             }`}
             disabled={submitting}
           >
-            6 Months
-            <span className="ml-1 bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full">POPULAR</span>
+            {t('subscription.billingCycle.sixMonth')}
+            <span className="ml-1 bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full">{t('subscription.billingCycle.popular')}</span>
           </button>
           <button
             onClick={() => handleBillingCycleChange('yearly')}
@@ -244,8 +302,8 @@ export default function SubscriptionSelectionFormV2({
             }`}
             disabled={submitting}
           >
-            Yearly
-            <span className="ml-1 text-xs text-green-600 font-normal">Save 20%</span>
+            {t('subscription.billingCycle.yearly')}
+            <span className="ml-1 text-xs text-green-600 font-normal">{t('subscription.billingCycle.save', { percentage: 20 })}</span>
           </button>
         </div>
       </div>
@@ -274,7 +332,7 @@ export default function SubscriptionSelectionFormV2({
             {plan.popular && billingCycle === '6month' && (
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                 <span className="bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full">
-                  MOST POPULAR
+                  {t('subscription.plans.professional.popularBadge')}
                 </span>
               </div>
             )}
@@ -283,50 +341,59 @@ export default function SubscriptionSelectionFormV2({
             {plan.premium && (
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                 <span className="bg-purple-500 text-white text-xs font-bold px-3 py-1 rounded-full">
-                  PREMIUM
+                  {t('subscription.plans.enterprise.premiumBadge')}
                 </span>
               </div>
             )}
 
             <div className="text-center mb-4">
-              <h3 className="text-xl font-bold mb-2">{plan.name}</h3>
-              <p className="text-sm text-gray-600 mb-4">{plan.description}</p>
+              <h3 className="text-xl font-bold mb-2">{t(`subscription.plans.${plan.id}.name`)}</h3>
+              <p className="text-sm text-gray-600 mb-4">{t(`subscription.plans.${plan.id}.description`)}</p>
               
               {/* Pricing Display */}
               <div className="mb-4">
                 {plan.id === 'free' ? (
-                  <div className="text-3xl font-bold">Free</div>
+                  <div className="text-3xl font-bold">{t('subscription.plans.basic.price')}</div>
                 ) : (
                   <div>
                     {regionalPricing && regionalPricing.discount_percentage > 0 ? (
                       <>
                         <div className="text-3xl font-bold">
-                          ${billingCycle === 'monthly' 
-                            ? regionalPricing.pricing[plan.id]?.monthly 
-                            : billingCycle === '6month' 
-                            ? regionalPricing.pricing[plan.id]?.six_month 
-                            : regionalPricing.pricing[plan.id]?.yearly}
+                          {formatPriceWithLocalCurrency(
+                            billingCycle === 'monthly' 
+                              ? regionalPricing.pricing[plan.id]?.monthly 
+                              : billingCycle === '6month' 
+                              ? regionalPricing.pricing[plan.id]?.six_month 
+                              : regionalPricing.pricing[plan.id]?.yearly,
+                            false
+                          )}
                         </div>
                         <div className="text-sm text-gray-500 line-through">
                           ${billingCycle === 'monthly' ? plan.monthlyPrice : billingCycle === '6month' ? plan.sixMonthPrice : plan.yearlyPrice}
                         </div>
                         <div className="text-sm text-green-600 font-semibold">
-                          {regionalPricing.discount_percentage}% off
+                          {t('subscription.regionalDiscount.percentOff', { percentage: regionalPricing.discount_percentage })}
                         </div>
                       </>
                     ) : (
                       <div className="text-3xl font-bold">
-                        ${billingCycle === 'monthly' ? plan.monthlyPrice : billingCycle === '6month' ? plan.sixMonthPrice : plan.yearlyPrice}
+                        {formatPriceWithLocalCurrency(
+                          billingCycle === 'monthly' ? plan.monthlyPrice : billingCycle === '6month' ? plan.sixMonthPrice : plan.yearlyPrice,
+                          false
+                        )}
                       </div>
                     )}
                     {billingCycle === '6month' && plan.id !== 'free' && (
                       <div className="text-sm text-orange-600 mt-1">
-                        Save ${plan.monthlyPrice * 6 - plan.sixMonthPrice} (${(plan.sixMonthPrice / 6).toFixed(2)}/mo)
+                        {t('subscription.savings.sixMonth', { 
+                          amount: plan.monthlyPrice * 6 - plan.sixMonthPrice,
+                          monthly: (plan.sixMonthPrice / 6).toFixed(2)
+                        })}
                       </div>
                     )}
                     {billingCycle === 'yearly' && plan.id !== 'free' && (
                       <div className="text-sm text-green-600 mt-1">
-                        Save ${plan.monthlyPrice * 12 - plan.yearlyPrice} per year
+                        {t('subscription.savings.yearly', { amount: plan.monthlyPrice * 12 - plan.yearlyPrice })}
                       </div>
                     )}
                   </div>
@@ -336,14 +403,34 @@ export default function SubscriptionSelectionFormV2({
 
             {/* Features */}
             <ul className="space-y-2 mb-6">
-              {plan.features.map((feature, idx) => (
+              {plan.features.map((feature, idx) => {
+                // Translate features - check if it's a template feature
+                let translatedFeature = feature;
+                try {
+                  if (feature.includes('{{')) {
+                    // Handle template features like "{{discount}}% discount on 6-month"
+                    translatedFeature = t(`subscription.plans.${plan.id}.features.${idx}`, {
+                      discount: 17,
+                      yearlyDiscount: 20
+                    });
+                  } else {
+                    // Try to translate, fallback to original if not found
+                    const key = `subscription.plans.${plan.id}.features.${idx}`;
+                    translatedFeature = t(key, { defaultValue: feature });
+                  }
+                } catch (e) {
+                  // Fallback to original feature text
+                  translatedFeature = feature;
+                }
+                
+                return (
                 <li key={idx} className="flex items-start">
                   <svg className="w-5 h-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span className="text-sm text-gray-700">{feature}</span>
+                  <span className="text-sm text-gray-700">{translatedFeature}</span>
                 </li>
-              ))}
+              )})}
             </ul>
 
             {/* Select button */}
@@ -362,7 +449,7 @@ export default function SubscriptionSelectionFormV2({
                   : 'bg-gray-800 text-white hover:bg-gray-900'
               }`}
             >
-              {submitting && selectedPlan === plan.id ? 'Processing...' : plan.buttonText}
+              {submitting && selectedPlan === plan.id ? t('subscription.processing') : t(`subscription.plans.${plan.id}.buttonText`)}
             </button>
           </div>
         ))}
@@ -377,14 +464,14 @@ export default function SubscriptionSelectionFormV2({
             disabled={submitting}
             className="text-gray-600 hover:text-gray-800 underline"
           >
-            Back to Business Info
+            {t('subscription.backButton')}
           </button>
         </div>
       )}
 
       {/* Regional pricing note */}
       <div className="mt-8 text-center text-sm text-gray-600">
-        <p>* Regional pricing available. Prices automatically adjusted based on your location.</p>
+        <p>{t('subscription.note')}</p>
       </div>
     </div>
   );
