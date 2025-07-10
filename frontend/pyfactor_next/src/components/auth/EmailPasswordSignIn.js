@@ -175,9 +175,20 @@ export default function EmailPasswordSignIn() {
     let oauthUrl = '/api/auth/login?connection=google-oauth2';
     const langParam = searchParams.get('lang');
     if (langParam) {
+      console.log('🌐 [GoogleOAuth] Storing language for OAuth:', langParam);
       // Store language in sessionStorage to retrieve after OAuth callback
       sessionStorage.setItem('oauth_language', langParam);
+      // Also store in localStorage as backup
+      localStorage.setItem('preferredLanguage', langParam);
       oauthUrl += `&ui_locales=${langParam}`;
+    } else {
+      // If no URL param, check if we have a stored preference
+      const storedLang = localStorage.getItem('preferredLanguage') || localStorage.getItem('i18nextLng');
+      if (storedLang) {
+        console.log('🌐 [GoogleOAuth] Using stored language for OAuth:', storedLang);
+        sessionStorage.setItem('oauth_language', storedLang);
+        oauthUrl += `&ui_locales=${storedLang}`;
+      }
     }
     
     console.log('🔄 [GoogleOAuth] ========== STEP 2: REDIRECTING TO /api/auth/login ==========');
