@@ -7,7 +7,7 @@ import django.core.validators
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('hr', '0002_remove_employeerole_unique_employee_role_and_more'),
+        ('hr', '0002_employee_compensation_type_and_more'),
     ]
 
     operations = [
