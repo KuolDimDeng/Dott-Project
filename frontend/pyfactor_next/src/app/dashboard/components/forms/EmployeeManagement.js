@@ -25,6 +25,7 @@ import { hrApi, payrollApi } from '@/utils/apiClient';
 import { logger } from '@/utils/logger';
 import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 import { DEPARTMENTS, POSITIONS, EMPLOYMENT_TYPES } from '@/utils/employeeConstants';
+import { getAllCountries, getSSNInfoByCountry } from '@/utils/countrySSNMapping';
 
 // Tooltip component for field help
 const FieldTooltip = ({ text, position = 'top' }) => {
@@ -88,45 +89,20 @@ const COUNTRY_TO_SECURITY_NUMBER = {
   'IE': { type: 'PPS', label: 'PPS Number', placeholder: '1234567X', pattern: '\\d{7}[A-Z]' },
   'SA': { type: 'IQAMA', label: 'Iqama Number', placeholder: '1234567890', pattern: '\\d{10}' },
   'SS': { type: 'OTHER', label: 'Tax Identification Number', placeholder: 'Enter TIN', pattern: '' }, // South Sudan
-  'KE': { type: 'OTHER', label: 'Tax Identification Number', placeholder: 'Enter TIN', pattern: '' }, // Kenya
+  'KE': { type: 'KRA-PIN', label: 'KRA PIN', placeholder: 'A123456789X', pattern: '[A-Z]\\d{9}[A-Z]' }, // Kenya
   'NG': { type: 'OTHER', label: 'Tax Identification Number', placeholder: 'Enter TIN', pattern: '' }, // Nigeria
   'ZA': { type: 'OTHER', label: 'Tax Identification Number', placeholder: 'Enter TIN', pattern: '' }, // South Africa
   'OTHER': { type: 'OTHER', label: 'Tax/National ID Number', placeholder: 'Enter ID number', pattern: '' }
 };
 
-// Common countries for dropdown
-const COUNTRIES = [
-  { code: 'US', name: 'United States' },
-  { code: 'UK', name: 'United Kingdom' },
-  { code: 'CA', name: 'Canada' },
-  { code: 'AU', name: 'Australia' },
-  { code: 'KE', name: 'Kenya' },
-  { code: 'NG', name: 'Nigeria' },
-  { code: 'ZA', name: 'South Africa' },
-  { code: 'SS', name: 'South Sudan' },
-  { code: 'IN', name: 'India' },
-  { code: 'SG', name: 'Singapore' },
-  { code: 'BR', name: 'Brazil' },
-  { code: 'MX', name: 'Mexico' },
-  { code: 'ES', name: 'Spain' },
-  { code: 'AR', name: 'Argentina' },
-  { code: 'HK', name: 'Hong Kong' },
-  { code: 'SE', name: 'Sweden' },
-  { code: 'NL', name: 'Netherlands' },
-  { code: 'PL', name: 'Poland' },
-  { code: 'CL', name: 'Chile' },
-  { code: 'PK', name: 'Pakistan' },
-  { code: 'MY', name: 'Malaysia' },
-  { code: 'ID', name: 'Indonesia' },
-  { code: 'PT', name: 'Portugal' },
-  { code: 'NZ', name: 'New Zealand' },
-  { code: 'IE', name: 'Ireland' },
-  { code: 'SA', name: 'Saudi Arabia' },
-  { code: 'OTHER', name: 'Other Country' }
-];
+// Get comprehensive countries list from mapping
+const COUNTRIES = getAllCountries().map(country => ({
+  code: country.value,
+  name: country.label
+}));
 
 /**
- * Employee Management Component
+ * Employee Component
  * Industry-standard employee management with CRUD operations and standard UI
  */
 function EmployeeManagement({ onNavigate }) {
@@ -190,7 +166,24 @@ function EmployeeManagement({ onNavigate }) {
 
   // Helper function to get security number info based on country
   const getSecurityNumberInfo = (countryCode) => {
-    return COUNTRY_TO_SECURITY_NUMBER[countryCode] || COUNTRY_TO_SECURITY_NUMBER['OTHER'];
+    // First check if we have it in the old mapping for special cases
+    if (COUNTRY_TO_SECURITY_NUMBER[countryCode]) {
+      return COUNTRY_TO_SECURITY_NUMBER[countryCode];
+    }
+    
+    // Otherwise use the comprehensive mapping
+    const ssnInfo = getSSNInfoByCountry(countryCode);
+    if (ssnInfo) {
+      return {
+        type: countryCode,
+        label: ssnInfo.ssnName,
+        placeholder: ssnInfo.format === 'Variable' ? 'Enter Tax ID' : ssnInfo.format,
+        pattern: null // Pattern validation can be added based on format
+      };
+    }
+    
+    // Default for unknown countries
+    return COUNTRY_TO_SECURITY_NUMBER['OTHER'];
   };
   
   // Filter employees for supervisor dropdown
@@ -1735,7 +1728,7 @@ function EmployeeManagement({ onNavigate }) {
       <div className="flex items-center space-x-3">
         <UserGroupIcon className="h-8 w-8 text-blue-600" />
         <div>
-          <h1 className="text-2xl font-bold text-black">Employee Management</h1>
+          <h1 className="text-2xl font-bold text-black">Employee</h1>
           <p className="text-gray-600 mt-1">Manage your team members, track their information, and oversee employment details</p>
         </div>
       </div>
