@@ -159,9 +159,17 @@ def employee_list(request):
             
             logger.info(f'🏢 [HR Employee List] User tenant_id: {tenant_id}')
             
-            # For now, get all employees (Employee model doesn't have tenant isolation built-in)
-            # In the future, you might want to add a tenant_id field to Employee model
-            employees = Employee.objects.all()
+            # Get the user's business_id
+            business_id = None
+            if hasattr(request.user, 'business_id'):
+                business_id = request.user.business_id
+            
+            if not business_id:
+                logger.warning(f'⚠️ [HR Employee List] No business_id found for user: {request.user.email}')
+                return Response({'employees': []})
+            
+            # Filter employees by business_id
+            employees = Employee.objects.filter(business_id=business_id)
             
             logger.info(f'✅ [HR Employee List] Found {employees.count()} employees')
             
@@ -208,9 +216,21 @@ def employee_list(request):
             
             serializer = EmployeeSerializer(data=employee_data)
             if serializer.is_valid():
-                # Save the employee first
-                employee = serializer.save()
-                logger.info(f'✅ [HR Employee Create] Employee created with ID: {employee.id}')
+                # Get the user's business_id
+                business_id = None
+                if hasattr(request.user, 'business_id'):
+                    business_id = request.user.business_id
+                
+                if not business_id:
+                    logger.error(f'❌ [HR Employee Create] No business_id found for user: {request.user.email}')
+                    return Response(
+                        {'error': 'User must be associated with a business to create employees'}, 
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                
+                # Save the employee with business_id
+                employee = serializer.save(business_id=business_id)
+                logger.info(f'✅ [HR Employee Create] Employee created with ID: {employee.id} for business: {business_id}')
                 
                 # Handle security number storage if provided
                 if security_number:
@@ -275,8 +295,21 @@ def employee_stats(request):
     try:
         logger.info(f'🚀 [HR Employee Stats] GET request from user: {request.user.email}')
         
-        # Get all employees
-        employees = Employee.objects.all()
+        # Get the user's business_id
+        business_id = None
+        if hasattr(request.user, 'business_id'):
+            business_id = request.user.business_id
+        
+        if not business_id:
+            logger.warning(f'⚠️ [HR Employee Stats] No business_id found for user: {request.user.email}')
+            return Response({
+                'total_employees': 0,
+                'active_employees': 0,
+                'departments': []
+            })
+        
+        # Get all employees for the user's business
+        employees = Employee.objects.filter(business_id=business_id)
         total = employees.count()
         
         # Count by status - Employee model uses 'active' boolean field, not status
@@ -313,8 +346,20 @@ def employee_basic_list(request):
     try:
         logger.info(f'🚀 [HR Employee Basic List] GET request from user: {request.user.email}')
         
-        # Get only active employees with basic information
-        employees = Employee.objects.filter(active=True).only(
+        # Get the user's business_id
+        business_id = None
+        if hasattr(request.user, 'business_id'):
+            business_id = request.user.business_id
+        
+        if not business_id:
+            logger.warning(f'⚠️ [HR Employee Basic List] No business_id found for user: {request.user.email}')
+            return Response([])
+        
+        # Get only active employees with basic information from user's business
+        employees = Employee.objects.filter(
+            business_id=business_id,
+            active=True
+        ).only(
             'id', 'employee_number', 'first_name', 'last_name', 'department'
         )
         
@@ -357,10 +402,22 @@ def employee_detail(request, pk):
         response["Access-Control-Max-Age"] = "86400"
         return response
     
+    # Get the user's business_id
+    business_id = None
+    if hasattr(request.user, 'business_id'):
+        business_id = request.user.business_id
+    
+    if not business_id:
+        logger.error(f'❌ [HR Employee Detail] No business_id found for user: {request.user.email}')
+        return Response(
+            {'error': 'User must be associated with a business'}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
     try:
-        employee = Employee.objects.get(pk=pk)
+        employee = Employee.objects.get(pk=pk, business_id=business_id)
     except Employee.DoesNotExist:
-        response = Response(status=status.HTTP_404_NOT_FOUND)
+        response = Response({'error': 'Employee not found'}, status=status.HTTP_404_NOT_FOUND)
         # Even for errors, add CORS headers
         response["Access-Control-Allow-Origin"] = request.headers.get('Origin', '*')
         return response
