@@ -19,11 +19,15 @@ export default function OnboardingPageV2() {
   const { i18n: i18nInstance } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [initialStep, setInitialStep] = useState(null);
+  const [initialCountry, setInitialCountry] = useState(null);
 
   useEffect(() => {
     // Check for language parameter and apply it
     const urlParams = new URLSearchParams(window.location.search);
     const langParam = urlParams.get('lang');
+    const stepParam = urlParams.get('step');
+    const countryParam = urlParams.get('country');
     
     if (langParam) {
       console.log('🌐 [Onboarding] Language parameter detected:', langParam);
@@ -33,12 +37,12 @@ export default function OnboardingPageV2() {
       localStorage.setItem('preferredLanguage', langParam);
     }
     
-    checkAuthAndInitialize();
+    checkAuthAndInitialize(stepParam, countryParam);
   }, [i18nInstance]);
 
-  const checkAuthAndInitialize = async () => {
+  const checkAuthAndInitialize = async (requestedStep, requestedCountry) => {
     try {
-      logger.info('[OnboardingPage.v2] Checking authentication...');
+      logger.info('[OnboardingPage.v2] Checking authentication...', { requestedStep, requestedCountry });
       
       // Wait a moment for cookies to propagate if we just came from auth
       const urlParams = new URLSearchParams(window.location.search);
@@ -147,6 +151,8 @@ export default function OnboardingPageV2() {
       });
 
       // User needs onboarding, show the flow
+      setInitialStep(requestedStep);
+      setInitialCountry(requestedCountry);
       setLoading(false);
       
     } catch (error) {
@@ -181,5 +187,5 @@ export default function OnboardingPageV2() {
     );
   }
 
-  return <OnboardingFlowV2 />;
+  return <OnboardingFlowV2 initialStep={initialStep} initialCountry={initialCountry} />;
 }

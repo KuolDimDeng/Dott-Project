@@ -18,7 +18,7 @@ import { trackEvent, EVENTS } from '@/utils/posthogTracking';
  * Enhanced Onboarding Flow Component
  * Uses state machine for clear flow management
  */
-export default function OnboardingFlowV2() {
+export default function OnboardingFlowV2({ initialStep, initialCountry }) {
   const router = useRouter();
   const posthog = usePostHog();
   const [loading, setLoading] = useState(true);
@@ -30,7 +30,7 @@ export default function OnboardingFlowV2() {
   // Initialize state machine
   useEffect(() => {
     initializeOnboarding();
-  }, []);
+  }, [initialStep, initialCountry]);
 
   const initializeOnboarding = async () => {
     try {
@@ -62,7 +62,22 @@ export default function OnboardingFlowV2() {
       
       // Load saved progress
       const progress = await sessionManager.getOnboardingProgress();
-      setFormData(progress);
+      
+      // Override with URL parameters if provided
+      const updatedProgress = {
+        ...progress,
+        ...(initialCountry && { country: initialCountry })
+      };
+      
+      setFormData(updatedProgress);
+      
+      // Handle initial step request
+      if (initialStep === 'subscription' && state === ONBOARDING_STATES.BUSINESS_INFO && progress?.businessName) {
+        // User has completed business info and wants to go to subscription
+        logger.info('[OnboardingFlow] Navigating to subscription step from URL');
+        await onboardingStateMachine.transitionTo(ONBOARDING_STATES.SUBSCRIPTION_SELECTION);
+        setCurrentState(ONBOARDING_STATES.SUBSCRIPTION_SELECTION);
+      }
       
     } catch (err) {
       logger.error('[OnboardingFlow] Initialization error', err);
@@ -479,6 +494,11 @@ export default function OnboardingFlowV2() {
           <SubscriptionSelectionStep
             data={formData}
             onSelect={handleSubscriptionSelection}
+            onBack={() => {
+              // Go back to business info step
+              setCurrentState(ONBOARDING_STATES.BUSINESS_INFO);
+              onboardingStateMachine.transitionTo(ONBOARDING_STATES.BUSINESS_INFO);
+            }}
             submitting={submitting}
             error={error}
           />
@@ -510,31 +530,32 @@ function OnboardingProgress({ currentState }) {
   const currentIndex = steps.findIndex(s => s.state === currentState);
   
   return (
-    <div className="mb-8">
-      <div className="flex items-center justify-between">
-        {steps.map((step, idx) => (
-          <div key={step.state} className="flex-1 flex items-center">
-            <div className={`
-              w-10 h-10 rounded-full flex items-center justify-center
-              ${idx <= currentIndex ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'}
-            `}>
-              {idx + 1}
+    <div className="mb-12">
+      <div className="relative">
+        {/* Step circles and connecting lines */}
+        <div className="flex items-center justify-between">
+          {steps.map((step, idx) => (
+            <div key={step.state} className="flex-1 flex items-center">
+              <div className="relative flex flex-col items-center">
+                <div className={`
+                  w-10 h-10 rounded-full flex items-center justify-center z-10
+                  ${idx <= currentIndex ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'}
+                `}>
+                  {idx + 1}
+                </div>
+                <div className="mt-2 text-xs text-gray-600 whitespace-nowrap text-center">
+                  {step.label}
+                </div>
+              </div>
+              {idx < steps.length - 1 && (
+                <div className={`
+                  flex-1 h-1 -mt-6
+                  ${idx < currentIndex ? 'bg-blue-600' : 'bg-gray-300'}
+                `} />
+              )}
             </div>
-            {idx < steps.length - 1 && (
-              <div className={`
-                flex-1 h-1 mx-2
-                ${idx < currentIndex ? 'bg-blue-600' : 'bg-gray-300'}
-              `} />
-            )}
-          </div>
-        ))}
-      </div>
-      <div className="flex justify-between mt-2">
-        {steps.map((step) => (
-          <div key={step.state} className="text-xs text-gray-600">
-            {step.label}
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -553,11 +574,12 @@ function BusinessInfoStep({ data, onSubmit, submitting, error }) {
 }
 
 // Subscription selection step component
-function SubscriptionSelectionStep({ data, onSelect, submitting, error }) {
+function SubscriptionSelectionStep({ data, onSelect, onBack, submitting, error }) {
   return (
     <SubscriptionSelectionFormV2
       initialData={data}
       onSelect={onSelect}
+      onBack={onBack}
       submitting={submitting}
       error={error}
     />

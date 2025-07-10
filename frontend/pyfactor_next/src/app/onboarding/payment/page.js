@@ -953,6 +953,21 @@ function PaymentForm({ plan, billingCycle, urlCountry }) {
       <p className="mt-6 text-sm text-center text-gray-500">
         You can cancel or change your plan anytime from your dashboard.
       </p>
+      
+      {/* Back Button */}
+      <div className="mt-6 text-center">
+        <button
+          type="button"
+          onClick={() => {
+            // Navigate back to subscription selection with country preserved
+            const countryToPass = urlCountry || country;
+            router.push(`/onboarding?step=subscription${countryToPass ? `&country=${encodeURIComponent(countryToPass)}` : ''}`);
+          }}
+          className="text-gray-600 hover:text-gray-800 underline"
+        >
+          ← Back to plan selection
+        </button>
+      </div>
     </form>
   );
 }
