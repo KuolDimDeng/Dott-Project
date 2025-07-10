@@ -142,11 +142,7 @@ const Drawer = ({
     
     // Handle resize events
     const handleResize = () => {
-      // Force a resize event when window is resized
-      console.log('[Drawer] Window resize detected, dispatching resize event');
-      window.dispatchEvent(new Event('resize'));
-      
-      // Also dispatch drawer state changed event to ensure content updates
+      // Dispatch drawer state changed event to ensure content updates
       console.log('[Drawer] Re-dispatching drawerStateChanged on resize with state:', { isOpen, width: isOpen ? drawerWidth : iconOnlyWidth });
       window.dispatchEvent(new CustomEvent('drawerStateChanged', { 
         detail: { isOpen, width: isOpen ? drawerWidth : iconOnlyWidth } 
