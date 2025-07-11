@@ -12,6 +12,10 @@ from django.db import IntegrityError, transaction
 import uuid
 import json
 import traceback
+import requests
+from django.conf import settings
+from onboarding.models import OnboardingProgress
+from session_manager.services import session_service
 
 logger = logging.getLogger('Pyfactor')
 User = get_user_model()
@@ -403,4 +407,226 @@ class VerifyTenantView(APIView):
                 'status': 'error',
                 'message': 'Error verifying tenant',
                 'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class PasswordLoginView(APIView):
+    """
+    Authenticate user with email and password via Auth0
+    Creates a session and returns session details
+    Endpoint: POST /api/auth/password-login/
+    """
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        logger.info("🔐 [PASSWORD_LOGIN] === STARTING PASSWORD LOGIN FLOW ===")
+        logger.info(f"🔐 [PASSWORD_LOGIN] Request path: {request.path}")
+        logger.info(f"🔐 [PASSWORD_LOGIN] Request method: {request.method}")
+        logger.info(f"🔐 [PASSWORD_LOGIN] Request headers: {dict(request.headers)}")
+        logger.info(f"🔐 [PASSWORD_LOGIN] Request data: {request.data}")
+        
+        try:
+            # Extract credentials from request
+            email = request.data.get('email', '').strip().lower()
+            password = request.data.get('password', '')
+            
+            logger.info(f"🔐 [PASSWORD_LOGIN] Login attempt for email: {email}")
+            logger.info(f"🔐 [PASSWORD_LOGIN] Password length: {len(password)}")
+            
+            # Validate input
+            if not email or not password:
+                logger.error(f"🔐 [PASSWORD_LOGIN] Missing email or password - email: {bool(email)}, password: {bool(password)}")
+                return Response({
+                    'error': 'Email and password are required'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Get Auth0 configuration from environment
+            auth0_domain = settings.AUTH0_DOMAIN
+            client_id = settings.AUTH0_CLIENT_ID
+            client_secret = settings.AUTH0_CLIENT_SECRET
+            audience = settings.AUTH0_AUDIENCE or f'https://{auth0_domain}/api/v2/'
+            
+            logger.info(f"🔐 [PASSWORD_LOGIN] Auth0 config - Domain: {auth0_domain}, Audience: {audience}")
+            
+            # Authenticate with Auth0
+            auth_url = f'https://{auth0_domain}/oauth/token'
+            auth_payload = {
+                'grant_type': 'password',
+                'username': email,
+                'password': password,
+                'client_id': client_id,
+                'client_secret': client_secret,
+                'audience': audience,
+                'scope': 'openid profile email offline_access'
+            }
+            
+            logger.info(f"🔐 [PASSWORD_LOGIN] Sending auth request to Auth0: {auth_url}")
+            
+            try:
+                auth_response = requests.post(
+                    auth_url,
+                    json=auth_payload,
+                    headers={'Content-Type': 'application/json'},
+                    timeout=10
+                )
+                
+                logger.info(f"🔐 [PASSWORD_LOGIN] Auth0 response status: {auth_response.status_code}")
+                
+                if auth_response.status_code == 200:
+                    auth_data = auth_response.json()
+                    logger.info(f"🔐 [PASSWORD_LOGIN] Auth0 authentication successful")
+                    
+                    # Get user info from Auth0
+                    access_token = auth_data.get('access_token')
+                    userinfo_url = f'https://{auth0_domain}/userinfo'
+                    userinfo_response = requests.get(
+                        userinfo_url,
+                        headers={'Authorization': f'Bearer {access_token}'},
+                        timeout=10
+                    )
+                    
+                    if userinfo_response.status_code == 200:
+                        userinfo = userinfo_response.json()
+                        auth0_sub = userinfo.get('sub')
+                        logger.info(f"🔐 [PASSWORD_LOGIN] Got user info from Auth0, sub: {auth0_sub}")
+                    else:
+                        logger.error(f"🔐 [PASSWORD_LOGIN] Failed to get user info: {userinfo_response.status_code}")
+                        auth0_sub = auth_data.get('sub', f'auth0|{email}')
+                    
+                    # Get or create user
+                    with transaction.atomic():
+                        user, created = User.objects.get_or_create(
+                            auth0_sub=auth0_sub,
+                            defaults={
+                                'email': email,
+                                'username': email,
+                                'is_active': True
+                            }
+                        )
+                        
+                        if created:
+                            logger.info(f"🔐 [PASSWORD_LOGIN] Created new user: {user.id}")
+                        else:
+                            logger.info(f"🔐 [PASSWORD_LOGIN] Found existing user: {user.id}")
+                        
+                        # Check if user account is closed
+                        if hasattr(user, 'account_closed') and user.account_closed:
+                            logger.warning(f"🔐 [PASSWORD_LOGIN] User account is closed: {user.id}")
+                            return Response({
+                                'error': 'This account has been closed. Please contact support if you need assistance.'
+                            }, status=status.HTTP_403_FORBIDDEN)
+                        
+                        # Get tenant information
+                        tenant = Tenant.objects.filter(owner=user).first()
+                        tenant_data = None
+                        if tenant:
+                            tenant_data = {
+                                'id': str(tenant.id),
+                                'name': tenant.name
+                            }
+                            logger.info(f"🔐 [PASSWORD_LOGIN] User has tenant: {tenant.id}")
+                        else:
+                            logger.info(f"🔐 [PASSWORD_LOGIN] User has no tenant yet")
+                        
+                        # Check onboarding status
+                        try:
+                            onboarding = OnboardingProgress.objects.get(user=user)
+                            needs_onboarding = not onboarding.is_complete
+                            current_step = onboarding.current_step
+                            subscription_plan = onboarding.selected_plan
+                        except OnboardingProgress.DoesNotExist:
+                            needs_onboarding = not user.onboarding_completed
+                            current_step = 'business_info'
+                            subscription_plan = 'basic'
+                        
+                        # Create session
+                        remember_me = request.data.get('remember_me', False)
+                        session_duration = 7 * 24 * 60 * 60 if remember_me else 24 * 60 * 60  # 7 days or 24 hours
+                        
+                        session_data = session_service.create_session(
+                            user_id=user.id,
+                            tenant_id=str(tenant.id) if tenant else None,
+                            auth0_sub=auth0_sub,
+                            duration_seconds=session_duration
+                        )
+                        
+                        logger.info(f"🔐 [PASSWORD_LOGIN] Session created: {session_data['session_token']}")
+                        
+                        # Prepare response
+                        response_data = {
+                            'success': True,
+                            'session_token': session_data['session_token'],
+                            'session_id': session_data['session_token'],  # For compatibility
+                            'expires_at': session_data['expires_at'].isoformat(),
+                            'user': {
+                                'id': user.id,
+                                'email': user.email,
+                                'name': getattr(user, 'name', user.email),
+                                'picture': getattr(user, 'picture', ''),
+                                'role': getattr(user, 'role', 'USER')
+                            },
+                            'tenant': tenant_data,
+                            'tenant_id': str(tenant.id) if tenant else None,
+                            'tenantId': str(tenant.id) if tenant else None,  # For frontend compatibility
+                            'needs_onboarding': needs_onboarding,
+                            'onboarding_completed': not needs_onboarding,
+                            'current_step': current_step,
+                            'subscription_plan': subscription_plan,
+                            'auth0_sub': auth0_sub
+                        }
+                        
+                        # Create response with session cookie
+                        response = Response(response_data, status=status.HTTP_200_OK)
+                        
+                        # Set session cookie
+                        max_age = session_duration
+                        response.set_cookie(
+                            'session_token',
+                            session_data['session_token'],
+                            max_age=max_age,
+                            httponly=True,
+                            secure=True,
+                            samesite='Lax'
+                        )
+                        
+                        logger.info(f"🔐 [PASSWORD_LOGIN] Login successful for user: {user.id}")
+                        return response
+                        
+                elif auth_response.status_code == 401:
+                    logger.warning(f"🔐 [PASSWORD_LOGIN] Invalid credentials for: {email}")
+                    return Response({
+                        'error': 'Wrong email or password'
+                    }, status=status.HTTP_401_UNAUTHORIZED)
+                    
+                elif auth_response.status_code == 403:
+                    error_data = auth_response.json()
+                    logger.error(f"🔐 [PASSWORD_LOGIN] Auth0 403 error: {error_data}")
+                    return Response({
+                        'error': error_data.get('error_description', 'Authentication forbidden')
+                    }, status=status.HTTP_403_FORBIDDEN)
+                    
+                else:
+                    error_data = auth_response.json() if auth_response.text else {}
+                    logger.error(f"🔐 [PASSWORD_LOGIN] Auth0 error {auth_response.status_code}: {error_data}")
+                    return Response({
+                        'error': 'Authentication service error. Please try again later.'
+                    }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+                    
+            except requests.exceptions.Timeout:
+                logger.error("🔐 [PASSWORD_LOGIN] Auth0 request timeout")
+                return Response({
+                    'error': 'Authentication service timeout. Please try again.'
+                }, status=status.HTTP_504_GATEWAY_TIMEOUT)
+                
+            except requests.exceptions.RequestException as e:
+                logger.error(f"🔐 [PASSWORD_LOGIN] Auth0 request failed: {str(e)}")
+                return Response({
+                    'error': 'Authentication service unavailable. Please try again later.'
+                }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+                
+        except Exception as e:
+            logger.error(f"🔐 [PASSWORD_LOGIN] Unexpected error: {str(e)}")
+            logger.error(f"🔐 [PASSWORD_LOGIN] Traceback: {traceback.format_exc()}")
+            return Response({
+                'error': 'Internal server error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
