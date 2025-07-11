@@ -181,8 +181,9 @@ def complete_all_onboarding(request):
                     session.needs_onboarding = False
                     session.onboarding_completed = True
                     session.tenant = user.tenant  # Set the tenant foreign key relationship
+                    session.subscription_plan = user.subscription_plan  # Update subscription plan in session
                     session.save()
-                logger.info(f"Updated {sessions.count()} active sessions for user {user.email}")
+                logger.info(f"Updated {sessions.count()} active sessions for user {user.email} with subscription plan: {user.subscription_plan}")
             except Exception as e:
                 logger.warning(f"Error updating sessions: {e}")
                 # Don't fail the whole operation if session update fails
