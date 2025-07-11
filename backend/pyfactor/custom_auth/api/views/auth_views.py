@@ -86,6 +86,101 @@ class SignUpView(APIView):
                     'error': 'Password is required for email/password signup'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
+            # For email/password signup, create user in Auth0 first
+            if password and not auth0_sub:
+                logger.info(f"[SignUp:{request_id}] Creating user in Auth0")
+                
+                auth0_domain = settings.AUTH0_DOMAIN
+                auth0_client_id = settings.AUTH0_CLIENT_ID
+                auth0_client_secret = settings.AUTH0_CLIENT_SECRET
+                
+                # Create user in Auth0
+                signup_url = f'https://{auth0_domain}/dbconnections/signup'
+                signup_payload = {
+                    'client_id': auth0_client_id,
+                    'email': email,
+                    'password': password,
+                    'connection': 'Username-Password-Authentication',
+                    'given_name': given_name,
+                    'family_name': family_name,
+                    'name': name or f'{given_name} {family_name}'.strip(),
+                    'user_metadata': {
+                        'needs_onboarding': 'true',
+                        'onboarding_completed': 'false'
+                    }
+                }
+                
+                try:
+                    signup_response = requests.post(
+                        signup_url,
+                        json=signup_payload,
+                        headers={'Content-Type': 'application/json'},
+                        timeout=10
+                    )
+                    
+                    if signup_response.status_code == 200:
+                        auth0_user = signup_response.json()
+                        auth0_sub = f"auth0|{auth0_user.get('_id')}"
+                        logger.info(f"[SignUp:{request_id}] Auth0 user created: {auth0_sub}")
+                        
+                        # Trigger verification email
+                        try:
+                            # Get Management API token
+                            token_url = f'https://{auth0_domain}/oauth/token'
+                            token_payload = {
+                                'grant_type': 'client_credentials',
+                                'client_id': auth0_client_id,
+                                'client_secret': auth0_client_secret,
+                                'audience': f'https://{auth0_domain}/api/v2/'
+                            }
+                            
+                            token_response = requests.post(token_url, json=token_payload)
+                            if token_response.status_code == 200:
+                                access_token = token_response.json().get('access_token')
+                                
+                                # Send verification email
+                                verify_url = f'https://{auth0_domain}/api/v2/jobs/verification-email'
+                                verify_payload = {
+                                    'user_id': auth0_sub,
+                                    'client_id': auth0_client_id
+                                }
+                                
+                                verify_response = requests.post(
+                                    verify_url,
+                                    json=verify_payload,
+                                    headers={'Authorization': f'Bearer {access_token}'}
+                                )
+                                
+                                if verify_response.status_code in [200, 201]:
+                                    logger.info(f"[SignUp:{request_id}] Verification email sent")
+                                else:
+                                    logger.error(f"[SignUp:{request_id}] Failed to send verification email: {verify_response.text}")
+                        except Exception as e:
+                            logger.error(f"[SignUp:{request_id}] Error sending verification email: {str(e)}")
+                        
+                    else:
+                        error_data = signup_response.json() if signup_response.text else {}
+                        logger.error(f"[SignUp:{request_id}] Auth0 signup failed: {error_data}")
+                        
+                        # Handle specific Auth0 errors
+                        if error_data.get('code') == 'invalid_signup' and 'already exists' in error_data.get('message', ''):
+                            return Response({
+                                'success': False,
+                                'error': 'An account with this email already exists'
+                            }, status=status.HTTP_409_CONFLICT)
+                        
+                        return Response({
+                            'success': False,
+                            'error': error_data.get('description') or error_data.get('message') or 'Failed to create account'
+                        }, status=status.HTTP_400_BAD_REQUEST)
+                        
+                except Exception as e:
+                    logger.error(f"[SignUp:{request_id}] Auth0 request failed: {str(e)}")
+                    return Response({
+                        'success': False,
+                        'error': 'Failed to create account in authentication service'
+                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
             with transaction.atomic():
                 # Check if user already exists
                 existing_user = User.objects.filter(email=email).first()
@@ -146,10 +241,12 @@ class SignUpView(APIView):
                 
                 return Response({
                     'success': True,
-                    'message': 'User created successfully',
-                    'user_id': str(user.id),
-                    'onboarding_status': getattr(user, 'onboarding_status', 'not_started')
-                })
+                    'message': 'Account created successfully. Please check your email to verify your account.',
+                    'userId': str(user.id) if user else auth0_user.get('_id') if 'auth0_user' in locals() else None,
+                    'email': email,
+                    'requiresVerification': True,
+                    'verificationType': 'email-link'
+                }, status=status.HTTP_201_CREATED)
                 
         except IntegrityError as e:
             logger.error(f"[SignUp:{request_id}] IntegrityError: {str(e)}")
