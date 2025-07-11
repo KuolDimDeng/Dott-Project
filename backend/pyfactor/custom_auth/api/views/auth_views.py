@@ -106,7 +106,6 @@ class SignUpView(APIView):
                 # Create new user
                 user_data = {
                     'email': email,
-                    'username': email,  # Use email as username
                     'first_name': given_name or first_name,
                     'last_name': family_name or last_name,
                     'is_active': True,
@@ -525,7 +524,6 @@ class PasswordLoginView(APIView):
                             auth0_sub=auth0_sub,
                             defaults={
                                 'email': email,
-                                'username': email,
                                 'is_active': True
                             }
                         )
