@@ -32,6 +32,17 @@ export default function OnboardingCompletePage() {
           setStatus('redirecting');
           setMessage('Redirecting to dashboard...');
           
+          // Get subscription details from cookies
+          const getCookie = (name) => {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+          };
+          
+          const cookieSubscriptionPlan = getCookie('subscriptionPlan');
+          const cookieBillingCycle = getCookie('subscriptionInterval');
+          
           // Still complete onboarding
           await fetch('/api/onboarding/complete-all', {
             method: 'POST',
@@ -40,6 +51,8 @@ export default function OnboardingCompletePage() {
             },
             credentials: 'include',
             body: JSON.stringify({
+              subscriptionPlan: cookieSubscriptionPlan || 'free',
+              billingCycle: cookieBillingCycle || 'monthly',
               source: 'payment-complete',
               timestamp: new Date().toISOString()
             }),
@@ -81,6 +94,22 @@ export default function OnboardingCompletePage() {
         // Complete onboarding
         setMessage('Finalizing your account setup...');
         
+        // Get subscription details from cookies (where they were saved during payment selection)
+        const getCookie = (name) => {
+          const value = `; ${document.cookie}`;
+          const parts = value.split(`; ${name}=`);
+          if (parts.length === 2) return parts.pop().split(';').shift();
+          return null;
+        };
+        
+        const cookieSubscriptionPlan = getCookie('subscriptionPlan');
+        const cookieBillingCycle = getCookie('subscriptionInterval');
+        
+        logger.info('[OnboardingComplete] Cookie values:', {
+          subscriptionPlan: cookieSubscriptionPlan,
+          billingCycle: cookieBillingCycle
+        });
+        
         const completeResponse = await fetch('/api/onboarding/complete-all', {
           method: 'POST',
           headers: {
@@ -90,8 +119,8 @@ export default function OnboardingCompletePage() {
           body: JSON.stringify({
             paymentVerified: true,
             paymentReference: paymentRef,
-            subscriptionPlan: result.plan || session?.user?.subscription_plan,
-            billingCycle: result.billing_cycle || 'monthly',
+            subscriptionPlan: cookieSubscriptionPlan || result.plan || session?.user?.subscription_plan || 'free',
+            billingCycle: cookieBillingCycle || result.billing_cycle || 'monthly',
             source: 'paystack-payment',
             timestamp: new Date().toISOString()
           }),
