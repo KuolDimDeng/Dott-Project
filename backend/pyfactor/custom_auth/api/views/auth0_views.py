@@ -164,13 +164,13 @@ class Auth0UserCreateView(APIView):
                 # Log existing user role before any changes
                 logger.info(f"🚨 [ROLE_TRACKING] Existing user {user.id} current role: {user.role}")
                 
-                # TEMPORARY FIX: Force all users to OWNER role during signup
-                # This ensures no one gets stuck with USER role
-                if user.role != 'OWNER':
-                    logger.info(f"🚨 [ROLE_TRACKING] FORCE UPDATE: Changing role from {user.role} to OWNER for user {user.email}")
+                # Don't change role for existing users - they might be legitimate USER role
+                # Only set role for users who don't have one yet
+                if not hasattr(user, 'role') or not user.role:
                     user.role = 'OWNER'
+                    logger.info(f"🚨 [ROLE_TRACKING] Setting user role to OWNER for user without role")
                 else:
-                    logger.info(f"🚨 [ROLE_TRACKING] Keeping existing OWNER role: {user.role}")
+                    logger.info(f"🚨 [ROLE_TRACKING] Keeping existing user role: {user.role}")
                 
                 # Enhanced name extraction logic for Google OAuth
                 given_name = data.get('given_name', '').strip()

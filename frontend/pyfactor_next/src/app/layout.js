@@ -12,6 +12,15 @@ export const metadata = {
   description: "Business platform for accounting, inventory, HR, and transport management",
   keywords: "accounting, inventory management, HR software, transport management, business software",
   authors: [{ name: "Dott Apps" }],
+  manifest: "/static/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Dott Business",
+  },
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 export const viewport = {

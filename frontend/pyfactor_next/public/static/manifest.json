@@ -1,37 +1,96 @@
 
 {
-    "name": "Dott: Small Business Platform",
-    "short_name": "Pyfactor",
-    "description": "Comprehensive business management solution for small businesses",
-    "start_url": "/",
-    "display": "standalone",
-    "background_color": "#FFFFFF",
-    "theme_color": "#1976d2",
-    "orientation": "portrait-primary",
-    "icons": [
-      {
-        "src": "/static/images/favicon.png",
-        "sizes": "48x48",
-        "type": "image/png"
-      },
-      {
-        "src": "/static/images/icon-192.png",
-        "sizes": "192x192",
-        "type": "image/png"
-      },
-      {
-        "src": "/static/images/icon-512.png",
-        "sizes": "512x512",
-        "type": "image/png"
-      }
-    ],
-    "shortcuts": [
-      {
-        "name": "Dashboard",
-        "short_name": "Dashboard",
-        "description": "View your business dashboard",
-        "url": "/dashboard",
-        "icons": [{ "src": "/static/images/favicon.png", "sizes": "192x192" }]
-      }
-    ]
-  }
+  "name": "Dott Business",
+  "short_name": "Dott",
+  "description": "All-in-one business management platform for small businesses",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#1e40af",
+  "orientation": "any",
+  "categories": ["business", "finance", "productivity"],
+  "scope": "/",
+  "id": "com.dottapps.app",
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "/static/images/favicon.png",
+      "sizes": "48x48",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/images/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/images/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Quick Sale",
+      "short_name": "POS",
+      "description": "Create a quick sale",
+      "url": "/pos",
+      "icons": [{ "src": "/static/images/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Scan Product",
+      "short_name": "Scan",
+      "description": "Scan product barcode",
+      "url": "/inventory/scan",
+      "icons": [{ "src": "/static/images/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "New Invoice",
+      "short_name": "Invoice",
+      "description": "Create new invoice",
+      "url": "/invoices/new",
+      "icons": [{ "src": "/static/images/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "View business metrics",
+      "url": "/dashboard",
+      "icons": [{ "src": "/static/images/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/static/images/screenshot-dashboard.png",
+      "sizes": "1280x720",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/images/screenshot-pos.png",
+      "sizes": "1280x720",
+      "type": "image/png"
+    }
+  ],
+  "share_target": {
+    "action": "/share",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        {
+          "name": "files",
+          "accept": ["image/*", "application/pdf"]
+        }
+      ]
+    }
+  },
+  "related_applications": [],
+  "lang": "en-US",
+  "dir": "ltr"
+}
