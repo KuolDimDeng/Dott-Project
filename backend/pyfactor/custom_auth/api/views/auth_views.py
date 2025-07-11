@@ -517,7 +517,7 @@ class PasswordLoginView(APIView):
                             }, status=status.HTTP_403_FORBIDDEN)
                         
                         # Get tenant information
-                        tenant = Tenant.objects.filter(owner=user).first()
+                        tenant = Tenant.objects.filter(owner_id=user.id).first()
                         tenant_data = None
                         if tenant:
                             tenant_data = {
