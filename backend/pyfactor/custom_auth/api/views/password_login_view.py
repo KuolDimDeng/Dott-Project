@@ -33,6 +33,10 @@ class PasswordLoginView(APIView):
     
     def post(self, request):
         logger.info("🔐 [PASSWORD_LOGIN] === STARTING PASSWORD LOGIN FLOW ===")
+        logger.info(f"🔐 [PASSWORD_LOGIN] Request path: {request.path}")
+        logger.info(f"🔐 [PASSWORD_LOGIN] Request method: {request.method}")
+        logger.info(f"🔐 [PASSWORD_LOGIN] Request headers: {dict(request.headers)}")
+        logger.info(f"🔐 [PASSWORD_LOGIN] Request data: {request.data}")
         
         try:
             # Extract credentials from request
@@ -40,10 +44,11 @@ class PasswordLoginView(APIView):
             password = request.data.get('password', '')
             
             logger.info(f"🔐 [PASSWORD_LOGIN] Login attempt for email: {email}")
+            logger.info(f"🔐 [PASSWORD_LOGIN] Password length: {len(password)}")
             
             # Validate input
             if not email or not password:
-                logger.error("🔐 [PASSWORD_LOGIN] Missing email or password")
+                logger.error(f"🔐 [PASSWORD_LOGIN] Missing email or password - email: {bool(email)}, password: {bool(password)}")
                 return Response({
                     'error': 'Email and password are required'
                 }, status=status.HTTP_400_BAD_REQUEST)

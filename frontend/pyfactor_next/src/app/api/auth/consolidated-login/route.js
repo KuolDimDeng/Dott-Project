@@ -16,9 +16,17 @@ export async function POST(request) {
     }
     
     console.log('[ConsolidatedLogin] Starting atomic login flow for:', email);
+    console.log('[ConsolidatedLogin] Environment:', {
+      baseUrl: process.env.NEXT_PUBLIC_BASE_URL,
+      apiUrl: process.env.NEXT_PUBLIC_API_URL,
+      hasAuth0ClientSecret: !!process.env.AUTH0_CLIENT_SECRET,
+      hasAuth0Secret: !!process.env.AUTH0_SECRET
+    });
     
     // Step 1: Authenticate with Auth0
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://dottapps.com';
+    console.log('[ConsolidatedLogin] Auth endpoint:', `${baseUrl}/api/auth/authenticate`);
+    
     const authResponse = await fetch(`${baseUrl}/api/auth/authenticate`, {
       method: 'POST',
       headers: {
@@ -29,9 +37,19 @@ export async function POST(request) {
     });
     
     if (!authResponse.ok) {
-      const error = await authResponse.json();
-      console.error('[ConsolidatedLogin] Auth failed:', error);
+      const errorText = await authResponse.text();
+      console.error('[ConsolidatedLogin] Auth failed:', {
+        status: authResponse.status,
+        contentType: authResponse.headers.get('content-type'),
+        errorText: errorText.substring(0, 500)
+      });
       
+      let error;
+      try {
+        error = JSON.parse(errorText);
+      } catch (e) {
+        error = { error: 'Authentication failed', message: errorText };
+      }
       
       return NextResponse.json(error, { status: authResponse.status });
     }

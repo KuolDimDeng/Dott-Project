@@ -79,9 +79,18 @@ export async function POST(request) {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
       const cookieStore = await cookies();
       
+      addDebugEntry('Backend proxy configuration', {
+        apiUrl: API_URL,
+        endpoint: `${API_URL}/api/auth/password-login/`,
+        hasCookies: !!cookieStore
+      });
+      
       try {
         // Call the new backend password login endpoint
-        const backendResponse = await fetch(`${API_URL}/api/auth/password-login/`, {
+        const backendUrl = `${API_URL}/api/auth/password-login/`;
+        addDebugEntry('Making backend request', { url: backendUrl });
+        
+        const backendResponse = await fetch(backendUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -91,12 +100,30 @@ export async function POST(request) {
           body: JSON.stringify({ email, password })
         });
         
-        const backendResult = await backendResponse.json();
+        const responseText = await backendResponse.text();
+        addDebugEntry('Backend raw response', {
+          status: backendResponse.status,
+          contentType: backendResponse.headers.get('content-type'),
+          responseLength: responseText.length,
+          responsePreview: responseText.substring(0, 200)
+        });
+        
+        let backendResult;
+        try {
+          backendResult = JSON.parse(responseText);
+        } catch (parseError) {
+          addDebugEntry('Failed to parse backend response', {
+            error: parseError.message,
+            responseText: responseText.substring(0, 500)
+          });
+          throw new Error('Invalid response from authentication service');
+        }
         
         if (!backendResponse.ok) {
           addDebugEntry('Backend password login failed', { 
             status: backendResponse.status,
-            error: backendResult 
+            error: backendResult,
+            fullUrl: backendUrl
           });
           
           // Map backend error to frontend format
