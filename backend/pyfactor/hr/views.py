@@ -166,7 +166,7 @@ def employee_list(request):
             
             if not business_id:
                 logger.warning(f'⚠️ [HR Employee List] No business_id found for user: {request.user.email}')
-                return Response({'employees': []})
+                return Response([])
             
             # Filter employees by business_id
             employees = Employee.objects.filter(business_id=business_id)
