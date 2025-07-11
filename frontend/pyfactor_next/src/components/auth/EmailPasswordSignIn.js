@@ -351,17 +351,6 @@ export default function EmailPasswordSignIn() {
       console.log('[EmailPasswordSignIn] Login result:', loginResult);
 
       if (!loginResponse.ok) {
-        // Handle OAuth redirect needed (503 with useOAuth flag)
-        if (loginResponse.status === 503 && loginResult.useOAuth) {
-          showError('Password login is temporarily unavailable. Please use "Continue with Google" to sign in.');
-          // Optionally, auto-redirect to Google login after a delay
-          setTimeout(() => {
-            console.log('[EmailPasswordSignIn] Auto-redirecting to Google login...');
-            handleGoogleLogin();
-          }, 3000);
-          return;
-        }
-        
         // Handle rate limiting (429 status)
         if (loginResponse.status === 429) {
           const retryAfter = loginResult.retryAfter || 900; // Default to 15 minutes

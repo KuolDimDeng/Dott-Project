@@ -73,20 +73,87 @@ export async function POST(request) {
         isUsingBackendAuth: isUsingBackendAuth()
       });
       
-      // When secrets are missing, we need to use OAuth flow instead of password grant
-      addDebugEntry('Auth0 secrets not available, using OAuth flow');
+      // When secrets are missing, proxy through backend password login endpoint
+      addDebugEntry('Auth0 secrets not available, proxying through backend');
       
-      // For now, return an error instructing to use OAuth flow
-      // The frontend should redirect to /api/auth/login for OAuth-based authentication
-      return NextResponse.json(
-        { 
-          error: 'Direct password authentication not available. Please use OAuth login.',
-          useOAuth: true,
-          loginUrl: '/api/auth/login',
-          debugLog 
-        },
-        { status: 503 }
-      );
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+      const cookieStore = await cookies();
+      
+      try {
+        // Call the new backend password login endpoint
+        const backendResponse = await fetch(`${API_URL}/api/auth/password-login/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cookie': cookieStore.toString(),
+            'X-Forwarded-For': request.headers.get('x-forwarded-for') || request.headers.get('cf-connecting-ip'),
+          },
+          body: JSON.stringify({ email, password })
+        });
+        
+        const backendResult = await backendResponse.json();
+        
+        if (!backendResponse.ok) {
+          addDebugEntry('Backend password login failed', { 
+            status: backendResponse.status,
+            error: backendResult 
+          });
+          
+          // Map backend error to frontend format
+          let errorMessage = backendResult.error || 'Authentication failed';
+          if (backendResponse.status === 401) {
+            errorMessage = 'Invalid email or password';
+          } else if (backendResponse.status === 403) {
+            errorMessage = backendResult.error || 'Account access denied';
+          }
+          
+          return NextResponse.json(
+            { 
+              error: errorMessage,
+              debugLog 
+            },
+            { status: backendResponse.status }
+          );
+        }
+        
+        addDebugEntry('Backend password login successful', { 
+          hasUser: !!backendResult.user,
+          hasSession: !!backendResult.session_id,
+          hasTenant: !!backendResult.tenant_id 
+        });
+        
+        // Transform backend response to match Auth0 format expected by frontend
+        const auth0FormattedResponse = {
+          user: {
+            sub: backendResult.auth0_sub || backendResult.user?.auth0_sub || `auth0|${backendResult.user?.id}`,
+            email: backendResult.user?.email || email,
+            name: backendResult.user?.name || backendResult.user?.email,
+            given_name: backendResult.user?.given_name || backendResult.user?.first_name || '',
+            family_name: backendResult.user?.family_name || backendResult.user?.last_name || '',
+            picture: backendResult.user?.picture || '',
+            email_verified: backendResult.user?.email_verified !== false
+          },
+          access_token: backendResult.session_id || 'backend_session',
+          id_token: backendResult.session_id || 'backend_session',
+          token_type: 'Bearer',
+          expires_in: 86400
+        };
+        
+        return NextResponse.json(auth0FormattedResponse);
+        
+      } catch (error) {
+        addDebugEntry('Backend proxy error', { 
+          message: error.message,
+          type: error.constructor.name 
+        });
+        return NextResponse.json(
+          { 
+            error: 'Authentication service unavailable',
+            debugLog 
+          },
+          { status: 503 }
+        );
+      }
     }
     
     // Prepare token request

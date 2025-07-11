@@ -17,6 +17,7 @@ from .views.update_session_view import UpdateSessionView
 from .views.session_profile_view import SessionUserProfileView
 from .views.register_view import EmailPasswordRegisterView
 from .views.unified_profile_view import UnifiedProfileView
+from .views.password_login_view import PasswordLoginView
 
 # Import new Auth0 views
 try:
@@ -33,6 +34,7 @@ urlpatterns = [
     # Authentication endpoints
     path('auth/signup/', auth_views.SignUpView.as_view(), name='signup'),
     path('auth/register/', EmailPasswordRegisterView.as_view(), name='email-password-register'),
+    path('auth/password-login/', PasswordLoginView.as_view(), name='password-login'),
     path('auth/check-user-attributes/', auth_views.CheckUserAttributesView.as_view(), name='check-user-attributes'),
     
     # Unified profile endpoint (consolidates all profile endpoints)
