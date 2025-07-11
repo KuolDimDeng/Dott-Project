@@ -630,3 +630,16 @@ class PasswordLoginView(APIView):
             return Response({
                 'error': 'Internal server error'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class DeploymentCheckView(APIView):
+    """Simple endpoint to verify deployment"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        return Response({
+            'status': 'ok',
+            'message': 'Deployment successful',
+            'timestamp': timezone.now().isoformat(),
+            'version': '2025-07-11-v1'
+        }, status=status.HTTP_200_OK)

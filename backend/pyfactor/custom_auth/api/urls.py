@@ -37,6 +37,7 @@ urlpatterns = [
     path('auth/signup/', auth_views.SignUpView.as_view(), name='signup'),
     path('auth/register/', EmailPasswordRegisterView.as_view(), name='email-password-register'),
     path('auth/password-login/', auth_views.PasswordLoginView.as_view(), name='password-login'),
+    path('auth/deployment-check/', auth_views.DeploymentCheckView.as_view(), name='deployment-check'),
     # path('auth/test-endpoint/', TestEndpointView.as_view(), name='test-endpoint'),
     path('auth/check-user-attributes/', auth_views.CheckUserAttributesView.as_view(), name='check-user-attributes'),
     
