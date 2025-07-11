@@ -245,10 +245,10 @@ def employee_list(request):
                 
                 # Return the created employee data
                 response_serializer = EmployeeSerializer(employee)
-                response = Response(response_serializer.data, status=status.HTTP_201_CREATED)
+                return Response(response_serializer.data, status=status.HTTP_201_CREATED)
             else:
                 logger.error(f'❌ [HR Employee Create] Validation errors: {serializer.errors}')
-                response = Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
                 
         except Exception as e:
             logger.error(f'❌ [HR Employee Create] Unexpected error: {str(e)}')
@@ -276,20 +276,6 @@ def employee_list(request):
             )
             
             return response
-        
-        response = Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        # Add CORS headers to error responses as well
-        response["Access-Control-Allow-Origin"] = request.headers.get('Origin', '*')
-        response["Access-Control-Allow-Headers"] = (
-            "Content-Type, Authorization, x-tenant-id, X-Tenant-ID, X-TENANT-ID, "
-            "x-business-id, X-Business-ID, X-BUSINESS-ID, "
-            "access-control-allow-headers, Access-Control-Allow-Headers, "
-            "access-control-allow-origin, Access-Control-Allow-Origin, "
-            "access-control-allow-methods, Access-Control-Allow-Methods, "
-            "x-request-id, cache-control, x-user-id, x-id-token, "
-            "X-Requires-Auth, x-schema-name, X-Schema-Name"
-        )
-        return response
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
