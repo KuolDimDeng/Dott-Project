@@ -543,12 +543,17 @@ class PasswordLoginView(APIView):
                         remember_me = request.data.get('remember_me', False)
                         session_duration = 7 * 24 * 60 * 60 if remember_me else 24 * 60 * 60  # 7 days or 24 hours
                         
-                        session_data = session_service.create_session(
-                            user_id=user.id,
-                            tenant_id=str(tenant.id) if tenant else None,
-                            auth0_sub=auth0_sub,
-                            duration_seconds=session_duration
+                        # Create session using the correct method signature
+                        session = session_service.create_session(
+                            user=user,
+                            access_token=access_token
                         )
+                        
+                        # Get session data for response
+                        session_data = {
+                            'session_token': str(session.session_id),
+                            'expires_at': session.expires_at
+                        }
                         
                         logger.info(f"🔐 [PASSWORD_LOGIN] Session created: {session_data['session_token']}")
                         
