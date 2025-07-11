@@ -6,7 +6,9 @@ from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
 from django.db.models import Count
 from users.models import Business, UserProfile, Subscription
-from accounts.models import Customer, Product, Service, Order, Invoice
+from crm.models import Customer
+from inventory.models import Product, Service
+from sales.models import Order, Invoice
 
 User = get_user_model()
 

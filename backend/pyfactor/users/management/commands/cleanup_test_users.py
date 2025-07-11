@@ -7,10 +7,11 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.contrib.auth import get_user_model
 from users.models import Business, UserProfile, Subscription
-from accounts.models import (
-    Customer, Product, Service, Order, Invoice, Bill, 
-    Vendor, Location, TaxRate, Estimate
-)
+from crm.models import Customer
+from inventory.models import Product, Service, Vendor, Location
+from sales.models import Order, Invoice, Estimate
+from expenses.models import Bill
+from taxes.models import TaxRate
 from hr.models import Employee, Department, Payroll, PayrollItem, PayStub
 from taxes.models import TaxFiling, TaxSettings, TaxForm
 from smart_insights.models import InsightQuery, UserCredit
