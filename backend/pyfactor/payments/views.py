@@ -240,3 +240,205 @@ def record_payment(request):
         return Response({
             'error': f'Failed to record payment: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def verify_paystack_payment(request):
+    """
+    Verify a Paystack payment and update user subscription
+    
+    Expected data:
+    {
+        "reference": "payment_reference"
+    }
+    """
+    from payroll.paystack_integration import paystack_service, PaystackError
+    from users.models import UserProfile, Subscription
+    from django.utils import timezone
+    from datetime import timedelta
+    import os
+    
+    reference = request.data.get('reference')
+    
+    if not reference:
+        return Response(
+            {"error": "Payment reference is required"}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    # Check if PAYSTACK_SECRET_KEY is configured
+    if not os.getenv('PAYSTACK_SECRET_KEY'):
+        logger.error("PAYSTACK_SECRET_KEY not configured")
+        return Response(
+            {"error": "Paystack is not properly configured"}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+    
+    try:
+        # Verify transaction with Paystack
+        logger.info(f"Verifying Paystack payment with reference: {reference}")
+        transaction = paystack_service.verify_transaction(reference)
+        
+        # Check transaction status
+        if transaction.get('status') != 'success':
+            logger.warning(f"Payment verification failed for reference {reference}: {transaction.get('gateway_response')}")
+            return Response({
+                'status': transaction.get('status', 'failed'),
+                'message': transaction.get('gateway_response', 'Payment verification failed')
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Get transaction metadata
+        metadata = transaction.get('metadata', {})
+        user_id = metadata.get('user_id')
+        business_id = metadata.get('business_id')
+        plan_type = metadata.get('plan_type', 'professional')
+        billing_cycle = metadata.get('billing_cycle', 'monthly')
+        is_subscription = metadata.get('subscription', False)
+        
+        # Validate user matches authenticated user
+        if user_id and str(request.user.id) != user_id:
+            logger.error(f"User mismatch: authenticated {request.user.id} vs metadata {user_id}")
+            return Response(
+                {"error": "Payment reference does not belong to authenticated user"}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Get user's business
+        try:
+            user_profile = UserProfile.objects.get(user=request.user)
+            business = user_profile.business
+            
+            if not business:
+                logger.error(f"No business found for user {request.user.id}")
+                return Response(
+                    {"error": "No business associated with user"}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
+            # Verify business matches if provided in metadata
+            if business_id and str(business.id) != business_id:
+                logger.error(f"Business mismatch: user business {business.id} vs metadata {business_id}")
+                return Response(
+                    {"error": "Payment reference does not belong to user's business"}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+                
+        except UserProfile.DoesNotExist:
+            logger.error(f"UserProfile not found for user {request.user.id}")
+            return Response(
+                {"error": "User profile not found"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Update subscription if this is a subscription payment
+        if is_subscription:
+            try:
+                # Get or create subscription
+                subscription, created = Subscription.objects.get_or_create(
+                    business=business,
+                    defaults={
+                        'selected_plan': plan_type,
+                        'billing_cycle': billing_cycle,
+                        'start_date': timezone.now().date(),
+                        'is_active': True,
+                        'status': 'active'
+                    }
+                )
+                
+                if not created:
+                    # Update existing subscription
+                    subscription.selected_plan = plan_type
+                    subscription.billing_cycle = billing_cycle
+                    subscription.is_active = True
+                    subscription.status = 'active'
+                    subscription.grace_period_ends = None
+                    subscription.failed_payment_count = 0
+                    
+                    # Calculate end date based on billing cycle
+                    # Handle variations in billing cycle naming
+                    if billing_cycle == 'monthly':
+                        subscription.end_date = timezone.now().date() + timedelta(days=30)
+                    elif billing_cycle in ['six_month', '6month']:
+                        subscription.end_date = timezone.now().date() + timedelta(days=180)
+                    elif billing_cycle in ['yearly', 'annual']:
+                        subscription.end_date = timezone.now().date() + timedelta(days=365)
+                    
+                    subscription.save()
+                    
+                    logger.info(f"Updated subscription for business {business.id}: plan={plan_type}, cycle={billing_cycle}")
+                else:
+                    logger.info(f"Created new subscription for business {business.id}: plan={plan_type}, cycle={billing_cycle}")
+                
+                # Record the payment transaction
+                from payments.models import PaymentTransaction, PaymentProvider
+                try:
+                    # Get Paystack provider
+                    paystack_provider = PaymentProvider.objects.get(code='paystack')
+                    
+                    # Create transaction record
+                    payment_transaction = PaymentTransaction.objects.create(
+                        business=business,
+                        transaction_type='other',
+                        amount=transaction.get('amount', 0) / 100,  # Convert from smallest unit
+                        currency=transaction.get('currency', 'KES'),
+                        description=f"Subscription payment - {plan_type} ({billing_cycle})",
+                        provider=paystack_provider,
+                        status='completed',
+                        provider_transaction_id=transaction.get('id'),
+                        provider_reference=reference,
+                        processed_at=timezone.now(),
+                        metadata={
+                            'plan_type': plan_type,
+                            'billing_cycle': billing_cycle,
+                            'paystack_data': transaction
+                        }
+                    )
+                    logger.info(f"Recorded payment transaction {payment_transaction.id} for reference {reference}")
+                except PaymentProvider.DoesNotExist:
+                    logger.warning("Paystack provider not found in database, skipping transaction record")
+                except Exception as e:
+                    logger.error(f"Error recording payment transaction: {str(e)}")
+                    # Continue even if transaction recording fails
+                
+            except Exception as e:
+                logger.error(f"Error updating subscription: {str(e)}")
+                return Response(
+                    {"error": "Failed to update subscription"}, 
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+        
+        # Return success response
+        return Response({
+            'status': 'success',
+            'message': 'Payment verified successfully',
+            'transaction': {
+                'reference': transaction.get('reference'),
+                'amount': transaction.get('amount'),
+                'currency': transaction.get('currency'),
+                'paid_at': transaction.get('paid_at'),
+                'channel': transaction.get('channel'),
+                'customer': {
+                    'email': transaction.get('customer', {}).get('email'),
+                    'phone': transaction.get('customer', {}).get('phone')
+                }
+            },
+            'subscription': {
+                'plan_type': plan_type,
+                'billing_cycle': billing_cycle,
+                'is_active': True,
+                'status': 'active'
+            } if is_subscription else None
+        })
+        
+    except PaystackError as e:
+        logger.error(f"Paystack error verifying payment {reference}: {str(e)}")
+        return Response(
+            {"error": f"Payment verification failed: {str(e)}"}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error verifying Paystack payment: {str(e)}", exc_info=True)
+        return Response(
+            {"error": "An unexpected error occurred"}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

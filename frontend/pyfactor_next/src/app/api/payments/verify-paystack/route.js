@@ -46,66 +46,70 @@ export async function POST(request) {
       hasSecretKey: !!PAYSTACK_SECRET_KEY
     });
 
-    // Verify payment with Paystack
-    if (!PAYSTACK_SECRET_KEY) {
-      logger.error('[PaystackVerify] Missing Paystack secret key');
-      return NextResponse.json({ 
-        error: 'Payment configuration error' 
-      }, { status: 500 });
-    }
-
-    // Call Paystack verification API
-    const paystackResponse = await fetch(`${PAYSTACK_API_URL}/transaction/verify/${reference}`, {
-      method: 'GET',
+    // Proxy to backend for secure verification
+    logger.info('[PaystackVerify] Proxying to backend for verification');
+    
+    // Get session data first
+    const sessionResponse = await fetch(`${API_URL}/api/auth/session-v2`, {
       headers: {
-        'Authorization': `Bearer ${PAYSTACK_SECRET_KEY}`,
-        'Content-Type': 'application/json'
+        'Cookie': cookieStore.toString()
       }
     });
+    
+    let sessionData = {};
+    if (sessionResponse.ok) {
+      sessionData = await safeJsonParse(sessionResponse, 'PaystackVerify-Session');
+    }
+    
+    // Call backend verification endpoint
+    const backendResponse = await fetch(`${API_URL}/api/payments/verify-paystack/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': sessionData.auth_token ? `Bearer ${sessionData.auth_token}` : '',
+        'X-Session-ID': sessionId.value,
+        'Cookie': cookieStore.toString()
+      },
+      body: JSON.stringify({ reference })
+    });
 
-    if (!paystackResponse.ok) {
-      const errorData = await safeJsonParse(paystackResponse, 'PaystackVerify-PaystackError');
-      logger.error('[PaystackVerify] Paystack API error:', {
-        status: paystackResponse.status,
+    if (!backendResponse.ok) {
+      const errorData = await safeJsonParse(backendResponse, 'PaystackVerify-BackendError');
+      logger.error('[PaystackVerify] Backend verification error:', {
+        status: backendResponse.status,
         error: errorData
       });
       
       return NextResponse.json({ 
-        error: errorData.message || 'Payment verification failed' 
-      }, { status: paystackResponse.status });
+        error: errorData.message || errorData.error || 'Payment verification failed',
+        details: errorData
+      }, { status: backendResponse.status });
     }
 
-    const paystackData = await safeJsonParse(paystackResponse, 'PaystackVerify-PaystackSuccess');
-    logger.info('[PaystackVerify] Paystack response:', {
-      status: paystackData.status,
-      data: {
-        status: paystackData.data?.status,
-        amount: paystackData.data?.amount,
-        currency: paystackData.data?.currency,
-        reference: paystackData.data?.reference
-      }
+    const verificationResult = await safeJsonParse(backendResponse, 'PaystackVerify-BackendSuccess');
+    logger.info('[PaystackVerify] Backend verification response:', {
+      status: verificationResult.status,
+      hasTransaction: !!verificationResult.transaction,
+      hasSubscription: !!verificationResult.subscription
     });
 
     // Check if payment was successful
-    if (!paystackData.status || paystackData.data?.status !== 'success') {
-      logger.warn('[PaystackVerify] Payment not successful:', {
-        status: paystackData.data?.status,
-        reference
-      });
+    if (verificationResult.status !== 'success') {
+      logger.warn('[PaystackVerify] Payment verification failed:', verificationResult);
       
       return NextResponse.json({ 
-        error: 'Payment was not successful',
-        payment_status: paystackData.data?.status
+        error: verificationResult.message || 'Payment verification failed',
+        payment_status: verificationResult.status
       }, { status: 400 });
     }
 
-    // Extract payment details
-    const paymentData = paystackData.data;
-    const metadata = paymentData.metadata || {};
+    // Extract payment details from backend response
+    const paymentData = verificationResult.transaction || {};
+    const subscriptionData = verificationResult.subscription || {};
     
-    // Get plan and billing cycle from metadata
-    let plan = metadata.plan || metadata.subscription_plan || metadata.subscription_type;
-    let billingCycle = metadata.billing_cycle || metadata.billingCycle || metadata.billing_period;
+    // Get plan and billing cycle from subscription data
+    let plan = subscriptionData.plan_type || subscriptionData.plan || 'professional';
+    let billingCycle = subscriptionData.billing_cycle || 'monthly';
     
     // Check if we have the required subscription information
     if (!plan || !billingCycle) {
@@ -134,84 +138,26 @@ export async function POST(request) {
       billingCycle = possibleBillingCycle;
     }
 
-    logger.info('[PaystackVerify] Processing subscription update:', {
+    logger.info('[PaystackVerify] Subscription details from backend:', {
       plan,
       billingCycle,
       amount: paymentData.amount,
-      currency: paymentData.currency,
-      email: paymentData.customer?.email
+      currency: paymentData.currency
     });
 
-    // Update subscription in backend
-    // First, try to create/update the subscription
-    const backendResponse = await fetch(`${API_URL}/api/payments/create-subscription/`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Session ${sessionId.value}`,
-        'X-Request-ID': crypto.randomUUID()
-      },
-      body: JSON.stringify({
-        payment_method_id: `paystack_${reference}`, // Use Paystack reference as payment method ID
-        plan: plan.toLowerCase(),
-        billing_cycle: billingCycle.toLowerCase(),
-        // Include payment verification data
-        payment_verified: true,
-        payment_data: {
-          provider: 'paystack',
-          reference: paymentData.reference,
-          transaction_id: paymentData.id,
-          amount: paymentData.amount / 100, // Convert from kobo/cents to main unit
-          currency: paymentData.currency,
-          customer_email: paymentData.customer?.email,
-          paid_at: paymentData.paid_at,
-          channel: paymentData.channel,
-          fees: paymentData.fees,
-          status: 'success'
-        }
-      })
-    });
-
-    if (!backendResponse.ok) {
-      const errorData = await safeJsonParse(backendResponse, 'PaystackVerify-BackendError');
-      logger.error('[PaystackVerify] Backend update error:', {
-        status: backendResponse.status,
-        error: errorData
-      });
-      
-      // Payment was successful but subscription update failed
-      // This is critical - we should log this for manual intervention
-      logger.error('[PaystackVerify] CRITICAL: Payment successful but subscription update failed', {
-        reference,
-        paystack_transaction_id: paymentData.id,
-        amount: paymentData.amount,
-        plan,
-        billingCycle
-      });
-      
-      return NextResponse.json({ 
-        error: 'Payment successful but subscription update failed. Please contact support.',
-        payment_reference: reference,
-        requires_support: true
-      }, { status: 500 });
-    }
-
-    const result = await safeJsonParse(backendResponse, 'PaystackVerify-BackendSuccess');
-    logger.info('[PaystackVerify] Subscription updated successfully:', {
-      subscription_id: result.subscription?.id,
-      status: result.subscription?.status
-    });
-
-    // Return success response
+    // Return success response with backend data
     return NextResponse.json({
       success: true,
-      message: 'Payment verified and subscription activated successfully',
-      subscription: result.subscription,
+      message: verificationResult.message || 'Payment verified successfully',
+      plan: plan,
+      billing_cycle: billingCycle,
+      subscription: subscriptionData,
       payment: {
         reference: paymentData.reference,
-        amount: paymentData.amount / 100,
+        amount: paymentData.amount,
         currency: paymentData.currency,
-        paid_at: paymentData.paid_at
+        paid_at: paymentData.paid_at,
+        channel: paymentData.channel
       }
     });
 

@@ -5,6 +5,7 @@ from . import webhook_handlers
 from . import stripe_connect
 from . import invoice_checkout
 from . import tax_filing_checkout
+from . import paystack_webhook
 
 # Import payment views from accounts app for Stripe integration
 from accounts import views_payment
@@ -43,4 +44,10 @@ urlpatterns = [
     
     # Tax filing payment endpoints
     path('create-filing-session/', tax_filing_checkout.create_filing_session, name='create_filing_session'),
+    
+    # Paystack payment verification
+    path('verify-paystack/', views.verify_paystack_payment, name='verify_paystack_payment'),
+    
+    # Paystack webhook handler
+    path('webhooks/paystack/', paystack_webhook.paystack_webhook_handler, name='paystack_webhook'),
 ]
