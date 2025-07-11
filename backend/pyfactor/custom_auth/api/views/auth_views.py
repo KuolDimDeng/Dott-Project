@@ -531,7 +531,7 @@ class PasswordLoginView(APIView):
                         # Check onboarding status
                         try:
                             onboarding = OnboardingProgress.objects.get(user=user)
-                            needs_onboarding = not onboarding.is_complete
+                            needs_onboarding = onboarding.current_step != 'complete'
                             current_step = onboarding.current_step
                             subscription_plan = onboarding.selected_plan
                         except OnboardingProgress.DoesNotExist:
