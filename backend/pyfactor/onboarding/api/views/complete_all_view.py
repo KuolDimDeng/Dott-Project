@@ -91,7 +91,10 @@ def complete_all_onboarding(request):
             if subscription_plan == 'basic':
                 subscription_plan = 'free'  # Normalize 'basic' to 'free'
             
-            logger.info(f"[Complete-All] Extracted subscription plan: {subscription_plan}")
+            # Extract billing cycle from request data
+            billing_cycle = request.data.get('billingCycle') or request.data.get('billing_cycle') or 'monthly'
+            
+            logger.info(f"[Complete-All] Extracted subscription plan: {subscription_plan}, billing cycle: {billing_cycle}")
             
             # Update subscription plan on User model
             if subscription_plan in ['free', 'professional', 'enterprise']:
@@ -172,6 +175,32 @@ def complete_all_onboarding(request):
             
             # Log user data after save
             logger.info(f"[Complete-All] After save - subscription_plan: {user.subscription_plan}, first_name: '{user.first_name}', last_name: '{user.last_name}'")
+            
+            # 3.5. Create or update Subscription record for the business
+            try:
+                from users.models import UserProfile, Subscription
+                profile = UserProfile.objects.select_related('business').get(user=user)
+                if profile.business:
+                    subscription, created = Subscription.objects.get_or_create(
+                        business=profile.business,
+                        defaults={
+                            'selected_plan': subscription_plan,
+                            'billing_cycle': billing_cycle,
+                            'is_active': True,
+                            'status': 'active'
+                        }
+                    )
+                    if not created:
+                        # Update existing subscription
+                        subscription.selected_plan = subscription_plan
+                        subscription.billing_cycle = billing_cycle
+                        subscription.save()
+                    logger.info(f"[Complete-All] {'Created' if created else 'Updated'} subscription for business {profile.business.name}: {subscription_plan} ({billing_cycle})")
+                else:
+                    logger.warning(f"[Complete-All] No business found for user {user.email}, skipping subscription creation")
+            except Exception as e:
+                logger.error(f"[Complete-All] Error creating/updating subscription: {str(e)}")
+                # Don't fail the whole operation if subscription creation fails
             
             # 4. Update user session
             try:
