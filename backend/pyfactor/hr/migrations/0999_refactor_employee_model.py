@@ -117,7 +117,7 @@ class Migration(migrations.Migration):
                 employment_type,
                 department,
                 job_title,
-                COALESCE(hire_date, date_joined, NOW()::date) as hire_date,
+                COALESCE(date_joined, NOW()::date) as hire_date,
                 termination_date,
                 COALESCE(active, true) as active,
                 COALESCE(onboarded, false) as onboarded,
