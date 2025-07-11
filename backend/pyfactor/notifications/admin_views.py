@@ -237,28 +237,14 @@ class EnhancedAdminLoginView(APIView):
     
     def _create_session(self, admin_user, ip_address, user_agent, mfa_verified=False):
         """Create new admin session"""
-        session_id = str(secrets.token_urlsafe(32))
-        
-        # Generate tokens
-        access_payload = {
-            'admin_id': str(admin_user.id),
-            'session_id': session_id,
-            'exp': datetime.utcnow() + timedelta(hours=AdminSecurityConfig.ADMIN_JWT_EXPIRY_HOURS)
-        }
-        access_token = jwt.encode(
-            access_payload,
-            AdminSecurityConfig.ADMIN_JWT_SECRET,
-            algorithm=AdminSecurityConfig.ADMIN_JWT_ALGORITHM
-        )
-        
+        # Don't specify id - let Django auto-generate the UUID
         refresh_token = secrets.token_urlsafe(64)
         csrf_token = CSRFProtection.generate_token(str(admin_user.id))
         
         # Create session
         session = AdminSession.objects.create(
-            id=session_id,
             admin_user=admin_user,
-            access_token=access_token,
+            access_token='',  # We'll update this after we have the session ID
             refresh_token=refresh_token,
             csrf_token=csrf_token,
             ip_address=ip_address,
@@ -267,6 +253,22 @@ class EnhancedAdminLoginView(APIView):
             mfa_verified_at=timezone.now() if mfa_verified else None,
             expires_at=timezone.now() + timedelta(days=AdminSecurityConfig.ADMIN_REFRESH_TOKEN_EXPIRY_DAYS)
         )
+        
+        # Now generate access token with the actual session ID
+        access_payload = {
+            'admin_id': str(admin_user.id),
+            'session_id': str(session.id),  # Use the auto-generated UUID
+            'exp': datetime.utcnow() + timedelta(hours=AdminSecurityConfig.ADMIN_JWT_EXPIRY_HOURS)
+        }
+        access_token = jwt.encode(
+            access_payload,
+            AdminSecurityConfig.ADMIN_JWT_SECRET,
+            algorithm=AdminSecurityConfig.ADMIN_JWT_ALGORITHM
+        )
+        
+        # Update session with access token
+        session.access_token = access_token
+        session.save()
         
         return session
 
