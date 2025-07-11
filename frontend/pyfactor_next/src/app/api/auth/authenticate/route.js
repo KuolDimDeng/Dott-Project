@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
+import { cookies } from 'next/headers';
+import { isUsingBackendAuth } from '@/lib/auth0-server-config';
 
 /**
  * Direct Email/Password Authentication Endpoint
@@ -64,17 +66,26 @@ export async function POST(request) {
       usingCustomDomain: !auth0Domain.includes('.auth0.com')
     });
     
-    if (!clientId || !clientSecret) {
-      addDebugEntry('Missing Auth0 credentials', { 
+    if (!clientId || !clientSecret || isUsingBackendAuth()) {
+      addDebugEntry('Proxying authentication through backend', { 
         missingClientId: !clientId, 
-        missingClientSecret: !clientSecret 
+        missingClientSecret: !clientSecret,
+        isUsingBackendAuth: isUsingBackendAuth()
       });
+      
+      // When secrets are missing, we need to use OAuth flow instead of password grant
+      addDebugEntry('Auth0 secrets not available, using OAuth flow');
+      
+      // For now, return an error instructing to use OAuth flow
+      // The frontend should redirect to /api/auth/login for OAuth-based authentication
       return NextResponse.json(
         { 
-          error: 'Auth0 configuration missing',
+          error: 'Direct password authentication not available. Please use OAuth login.',
+          useOAuth: true,
+          loginUrl: '/api/auth/login',
           debugLog 
         },
-        { status: 500 }
+        { status: 503 }
       );
     }
     

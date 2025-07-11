@@ -31,6 +31,17 @@ export async function POST(request) {
     if (!authResponse.ok) {
       const error = await authResponse.json();
       console.error('[ConsolidatedLogin] Auth failed:', error);
+      
+      // Check if we should use OAuth flow
+      if (error.useOAuth) {
+        console.log('[ConsolidatedLogin] Auth0 secrets missing, need OAuth flow');
+        return NextResponse.json({
+          error: 'Password authentication unavailable. Please use social login (Google) or contact support.',
+          useOAuth: true,
+          message: 'Due to security configuration, password login is temporarily unavailable. Please use "Continue with Google" instead.'
+        }, { status: 503 });
+      }
+      
       return NextResponse.json(error, { status: authResponse.status });
     }
     
