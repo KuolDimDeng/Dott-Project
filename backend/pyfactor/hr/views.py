@@ -228,8 +228,24 @@ def employee_list(request):
                         status=status.HTTP_400_BAD_REQUEST
                     )
                 
-                # Save the employee with business_id
-                employee = serializer.save(business_id=business_id)
+                # Generate a unique username and employee number
+                import uuid
+                unique_suffix = str(uuid.uuid4())[:8]
+                email = serializer.validated_data.get('email', '')
+                username = f"{email.split('@')[0]}_{unique_suffix}" if email else f"emp_{unique_suffix}"
+                employee_number = f"EMP{unique_suffix.upper()}"
+                
+                # Save the employee with business_id and required AbstractUser fields
+                employee = serializer.save(
+                    business_id=business_id,
+                    username=username,
+                    employee_number=employee_number,
+                    password='!',  # Employees don't need passwords
+                    is_staff=False,
+                    is_superuser=False,
+                    role='EMPLOYEE',  # Default employee role
+                    site_access_privileges={}  # Empty JSON object
+                )
                 logger.info(f'✅ [HR Employee Create] Employee created with ID: {employee.id} for business: {business_id}')
                 
                 # Handle security number storage if provided
@@ -242,7 +258,9 @@ def employee_list(request):
                         logger.error(f'❌ [HR Employee Create] Failed to store security number: {str(e)}')
                         # Don't fail the creation, just log the error
                 
-                response = Response(serializer.data, status=status.HTTP_201_CREATED)
+                # Return the created employee data
+                response_serializer = EmployeeSerializer(employee)
+                response = Response(response_serializer.data, status=status.HTTP_201_CREATED)
             else:
                 logger.error(f'❌ [HR Employee Create] Validation errors: {serializer.errors}')
                 response = Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
