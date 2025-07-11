@@ -4,6 +4,7 @@ URL configuration for the notifications app
 from django.urls import path
 from . import views
 from . import admin_views
+from . import admin_user_management
 
 app_name = 'notifications'
 
@@ -30,4 +31,9 @@ urlpatterns = [
     path('admin/notifications/create/', views.CreateNotificationView.as_view(), name='create-notification'),
     path('admin/notifications/<uuid:notification_id>/send/', views.SendNotificationView.as_view(), name='send-notification'),
     path('admin/templates/', views.NotificationTemplateListView.as_view(), name='notification-templates'),
+    
+    # Admin user management endpoints
+    path('admin/users/', admin_user_management.AdminUserListView.as_view(), name='admin-user-list'),
+    path('admin/users/stats/', admin_user_management.AdminUserStatsView.as_view(), name='admin-user-stats'),
+    path('admin/users/<uuid:user_id>/', admin_user_management.AdminUserDetailView.as_view(), name='admin-user-detail'),
 ]
