@@ -207,8 +207,8 @@ export async function GET(request) {
         onboardingCompleted: sessionData.onboarding_completed || false,
         tenantId: sessionData.tenant_id || tenantData.id,
         tenant_id: sessionData.tenant_id || tenantData.id,
-        // User role for RBAC - fixed to properly read from backend
-        role: userData.role || sessionData.role || sessionData.user_role || 'USER',
+        // User role for RBAC - default to OWNER since all users who sign up are owners
+        role: userData.role || sessionData.role || sessionData.user_role || 'OWNER',
         // Additional metadata
         sessionSource: 'backend-direct',
         permissions: sessionData.permissions || []

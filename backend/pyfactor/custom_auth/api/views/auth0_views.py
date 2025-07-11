@@ -154,6 +154,11 @@ class Auth0UserCreateView(APIView):
                     user.auth0_sub = auth0_sub
                 user.name = data.get('name', user.name)
                 
+                # Set role to OWNER if not already set (all users who sign up are owners)
+                if not hasattr(user, 'role') or not user.role or user.role == 'USER':
+                    user.role = 'OWNER'
+                    logger.info(f"🔥 [AUTH0_CREATE_USER] Setting user role to OWNER")
+                
                 # Enhanced name extraction logic for Google OAuth
                 given_name = data.get('given_name', '').strip()
                 family_name = data.get('family_name', '').strip()
@@ -190,10 +195,11 @@ class Auth0UserCreateView(APIView):
                 user.save()
                 logger.info(f"🔥 [AUTH0_CREATE_USER] User {user.id} updated - first_name: '{user.first_name}', last_name: '{user.last_name}'")
             else:
-                # New user - ensure onboarding_completed is False
-                logger.info(f"🔥 [AUTH0_CREATE_USER] New user created - setting onboarding_completed=False")
+                # New user - ensure onboarding_completed is False and role is OWNER
+                logger.info(f"🔥 [AUTH0_CREATE_USER] New user created - setting onboarding_completed=False and role=OWNER")
                 user.onboarding_completed = False
-                user.save(update_fields=['onboarding_completed'])
+                user.role = 'OWNER'  # All users who sign up are owners
+                user.save(update_fields=['onboarding_completed', 'role'])
             
             # Check for existing tenant
             # Convert user.id to string for proper CharField comparison
