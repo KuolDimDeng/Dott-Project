@@ -141,14 +141,23 @@ if not PLAID_CLIENT_ID or not PLAID_SECRET:
 # Try multiple environment variable names for compatibility
 STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY') or os.getenv('STRIPE_PUB_KEY') or os.getenv('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY', 'placeholder_pub_key')
 STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY', 'placeholder_secret_key')
-# Use specific price IDs from Render environment
-STRIPE_PRICE_ID_MONTHLY = os.getenv('STRIPE_PRICE_ID_MONTHLY') or os.getenv('STRIPE_PRICE_PROFESSIONAL_MONTHLY', 'placeholder_price_id_monthly')
-STRIPE_PRICE_ID_ANNUAL = os.getenv('STRIPE_PRICE_ID_ANNUAL') or os.getenv('STRIPE_PRICE_PROFESSIONAL_YEARLY', 'placeholder_price_id_annual')
-# Additional Stripe price configurations
-STRIPE_PRICE_PROFESSIONAL_MONTHLY = os.getenv('STRIPE_PRICE_PROFESSIONAL_MONTHLY', STRIPE_PRICE_ID_MONTHLY)
-STRIPE_PRICE_PROFESSIONAL_YEARLY = os.getenv('STRIPE_PRICE_PROFESSIONAL_YEARLY', STRIPE_PRICE_ID_ANNUAL)
-STRIPE_PRICE_ENTERPRISE_MONTHLY = os.getenv('STRIPE_PRICE_ENTERPRISE_MONTHLY', 'placeholder_enterprise_monthly')
-STRIPE_PRICE_ENTERPRISE_YEARLY = os.getenv('STRIPE_PRICE_ENTERPRISE_YEARLY', 'placeholder_enterprise_yearly')
+
+# Stripe Price IDs - These are the actual price IDs from your Stripe dashboard
+# Professional Plan
+STRIPE_PRICE_PROFESSIONAL_MONTHLY = os.getenv('STRIPE_PRICE_PRO_MONTHLY', 'price_1RZMDhFls6i75mQBM7o13PWb')
+STRIPE_PRICE_PROFESSIONAL_6MONTH = os.getenv('STRIPE_PRICE_PRO_6MONTH', 'price_1Rhu9dFls6i75mQBZs0ts1uj')
+STRIPE_PRICE_PROFESSIONAL_YEARLY = os.getenv('STRIPE_PRICE_PRO_YEARLY', 'price_1RZMDhFls6i75mQB2M0DOulV')
+
+# Enterprise Plan
+STRIPE_PRICE_ENTERPRISE_MONTHLY = os.getenv('STRIPE_PRICE_ENT_MONTHLY', 'price_1RZMDhFls6i75mQB9kMjeKtx')
+STRIPE_PRICE_ENTERPRISE_6MONTH = os.getenv('STRIPE_PRICE_ENT_6MONTH', 'price_1RhuBCFls6i75mQBGdWAxT9H')
+STRIPE_PRICE_ENTERPRISE_YEARLY = os.getenv('STRIPE_PRICE_ENT_YEARLY', 'price_1RZMDiFls6i75mQBqQwHnERW')
+
+# Legacy environment variables for backward compatibility
+STRIPE_PRICE_ID_MONTHLY = STRIPE_PRICE_PROFESSIONAL_MONTHLY
+STRIPE_PRICE_ID_ANNUAL = STRIPE_PRICE_PROFESSIONAL_YEARLY
+
+# Webhook secrets
 STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', 'placeholder_webhook_secret')
 STRIPE_PAYROLL_WEBHOOK_SECRET = os.getenv('STRIPE_PAYROLL_WEBHOOK_SECRET', 'placeholder_payroll_webhook_secret')
 STRIPE_MODE = os.getenv('STRIPE_MODE', 'test')  # 'test' or 'live'

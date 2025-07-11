@@ -241,16 +241,16 @@ def create_subscription(request):
         logger.debug("Setting up price map for Stripe plans")
         price_map = {
             'professional': {
-                'monthly': getattr(settings, 'STRIPE_PRICE_PROFESSIONAL_MONTHLY', 'price_1RZMDhFls6i75mQBM7o13PWb'),
-                '6month': getattr(settings, 'STRIPE_PRICE_PROFESSIONAL_6MONTH', 'price_1Rhu9dFls6i75mQBZs0ts1uj'),
-                'yearly': getattr(settings, 'STRIPE_PRICE_PROFESSIONAL_YEARLY', 'price_1RZMDhFls6i75mQB2M0DOulV'),
-                'annual': getattr(settings, 'STRIPE_PRICE_PROFESSIONAL_YEARLY', 'price_1RZMDhFls6i75mQB2M0DOulV')  # Handle both 'yearly' and 'annual'
+                'monthly': getattr(settings, 'STRIPE_PRICE_PROFESSIONAL_MONTHLY', None),
+                '6month': getattr(settings, 'STRIPE_PRICE_PROFESSIONAL_6MONTH', None),
+                'yearly': getattr(settings, 'STRIPE_PRICE_PROFESSIONAL_YEARLY', None),
+                'annual': getattr(settings, 'STRIPE_PRICE_PROFESSIONAL_YEARLY', None)  # Handle both 'yearly' and 'annual'
             },
             'enterprise': {
-                'monthly': getattr(settings, 'STRIPE_PRICE_ENTERPRISE_MONTHLY', 'price_1RZMDhFls6i75mQB9kMjeKtx'),
-                '6month': getattr(settings, 'STRIPE_PRICE_ENTERPRISE_6MONTH', 'price_1RhuBCFls6i75mQBGdWAxT9H'),
-                'yearly': getattr(settings, 'STRIPE_PRICE_ENTERPRISE_YEARLY', 'price_1RZMDiFls6i75mQBqQwHnERW'),
-                'annual': getattr(settings, 'STRIPE_PRICE_ENTERPRISE_YEARLY', 'price_1RZMDiFls6i75mQBqQwHnERW')  # Handle both 'yearly' and 'annual'
+                'monthly': getattr(settings, 'STRIPE_PRICE_ENTERPRISE_MONTHLY', None),
+                '6month': getattr(settings, 'STRIPE_PRICE_ENTERPRISE_6MONTH', None),
+                'yearly': getattr(settings, 'STRIPE_PRICE_ENTERPRISE_YEARLY', None),
+                'annual': getattr(settings, 'STRIPE_PRICE_ENTERPRISE_YEARLY', None)  # Handle both 'yearly' and 'annual'
             }
         }
         logger.debug(f"Price map: {price_map}")
