@@ -53,7 +53,7 @@ class SessionSerializer(serializers.ModelSerializer):
     def get_user(self, obj):
         """Return user information including business details"""
         # Log user role for tracking
-        user_role = getattr(obj.user, 'role', 'USER')
+        user_role = getattr(obj.user, 'role', 'OWNER')  # Default to OWNER for new users
         logger.info(f"🚨 [ROLE_TRACKING] SessionSerializer - user {obj.user.email} role: {user_role}")
         
         user_data = {

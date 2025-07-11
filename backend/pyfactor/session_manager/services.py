@@ -207,7 +207,7 @@ class SessionService:
             print(f"[SessionService] User subscription plan: {subscription_plan}")
             
             # Get user role and add to session data
-            user_role = user.role if hasattr(user, 'role') else 'USER'
+            user_role = user.role if hasattr(user, 'role') else 'OWNER'  # Default to OWNER for new users
             print(f"[SessionService] User role: {user_role}")
             print(f"🚨 [ROLE_TRACKING] Session creation - user {user.email} role: {user_role}")
             

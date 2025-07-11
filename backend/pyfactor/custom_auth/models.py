@@ -109,7 +109,7 @@ class User(AbstractUser):
         ('ADMIN', 'Admin'),
         ('USER', 'User'),
     ]
-    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='USER')
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='OWNER')
     
     # Onboarding status - single source of truth
     onboarding_completed = models.BooleanField(default=False, help_text='Whether user has completed onboarding')
