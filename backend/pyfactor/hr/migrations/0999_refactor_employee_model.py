@@ -70,11 +70,6 @@ class Migration(migrations.Migration):
             options={
                 'db_table': 'hr_employee_new',
                 'ordering': ['last_name', 'first_name'],
-                'indexes': [
-                    models.Index(fields=['business_id', 'active'], name='hr_employee_busines_5f3a12_idx'),
-                    models.Index(fields=['email'], name='hr_employee_email_123456_idx'),
-                    models.Index(fields=['employee_number'], name='hr_employee_employe_789012_idx'),
-                ],
             },
         ),
         
@@ -154,5 +149,19 @@ class Migration(migrations.Migration):
         migrations.RunSQL(
             "ALTER TABLE hr_employee_new RENAME TO hr_employee;",
             reverse_sql="ALTER TABLE hr_employee RENAME TO hr_employee_new;"
+        ),
+        
+        # 6. Add indexes after table is renamed
+        migrations.AddIndex(
+            model_name='employee',
+            index=models.Index(fields=['business_id', 'active'], name='hr_employee_busines_5f3a12_idx'),
+        ),
+        migrations.AddIndex(
+            model_name='employee',
+            index=models.Index(fields=['email'], name='hr_employee_email_123456_idx'),
+        ),
+        migrations.AddIndex(
+            model_name='employee',
+            index=models.Index(fields=['employee_number'], name='hr_employee_employe_789012_idx'),
         ),
     ]
