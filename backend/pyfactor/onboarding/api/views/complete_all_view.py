@@ -67,6 +67,11 @@ def complete_all_onboarding(request):
             user.onboarding_completed = True
             user.onboarding_completed_at = timezone.now()
             
+            # Set business_id to match tenant_id (required for HR module)
+            if user.tenant and user.tenant.id:
+                user.business_id = user.tenant.id
+                logger.info(f"[Complete-All] Setting user.business_id to tenant.id: {user.business_id}")
+            
             # Log all incoming request data for debugging
             logger.info(f"[Complete-All] Incoming request data: {request.data}")
             logger.info(f"[Complete-All] User email: {user.email}")
@@ -147,7 +152,7 @@ def complete_all_onboarding(request):
                 logger.info(f"[Complete-All] Setting default timezone: UTC")
             
             # Save all user updates
-            update_fields = ['onboarding_completed', 'onboarding_completed_at', 'subscription_plan', 'timezone']
+            update_fields = ['onboarding_completed', 'onboarding_completed_at', 'subscription_plan', 'timezone', 'business_id']
             if first_name:
                 update_fields.append('first_name')
             if last_name:
