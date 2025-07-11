@@ -61,218 +61,75 @@ export async function GET(request) {
       }
     }
     
-    if (!process.env.AUTH0_CLIENT_SECRET) {
-      console.error('❌ [Auth0Exchange] ========== MISSING CLIENT SECRET ==========');
-      console.error('❌ [Auth0Exchange] AUTH0_CLIENT_SECRET environment variable not found');
-      console.error('❌ [Auth0Exchange] This is required for token exchange with Auth0');
-      console.error('❌ [Auth0Exchange] Available env vars:', Object.keys(process.env).filter(key => key.includes('AUTH')));
-      console.error('❌ [Auth0Exchange] ========== END CLIENT SECRET ERROR ==========');
-      return NextResponse.json({ 
-        error: 'Server configuration error',
-        details: 'AUTH0_CLIENT_SECRET environment variable not configured'
-      }, { status: 500 });
-    }
-    
     try {
-      console.log('[Auth0 Exchange] Exchanging code for tokens...');
+      console.log('[Auth0 Exchange] Starting OAuth exchange process...');
       
-      // Check which redirect URI was used - if the callback came to /auth/oauth-callback,
-      // we need to use that as the redirect_uri for token exchange
+      // Check which redirect URI was used
       const referer = request.headers.get('referer');
-      const isOAuthCallbackPage = referer && referer.includes('/auth/oauth-callback');
-      
-      // Auth0 might be configured to use /auth/oauth-callback as the callback URL
-      // Try the OAuth callback URL first, fallback to API callback if that fails
       let redirectUri = `${process.env.NEXT_PUBLIC_BASE_URL}/auth/oauth-callback`;
       
-      console.log('[Auth0 Exchange] Initial redirect_uri attempt:', redirectUri);
+      console.log('[Auth0 Exchange] Initial redirect_uri:', redirectUri);
       console.log('[Auth0 Exchange] Referer:', referer);
       console.log('[Auth0 Exchange] Base URL:', process.env.NEXT_PUBLIC_BASE_URL);
       
-      // Get PKCE verifier from cookie (set during login)
-      console.log('🔄 [Auth0Exchange] ========== STEP 5A: RETRIEVING PKCE VERIFIER ==========');
+      // Get PKCE verifier from cookie
+      console.log('🔄 [Auth0Exchange] ========== RETRIEVING PKCE VERIFIER ==========');
       const verifier = request.cookies.get('auth0_verifier');
-      console.log('🔄 [Auth0Exchange] Looking for auth0_verifier cookie...');
       console.log('🔄 [Auth0Exchange] PKCE verifier found:', !!verifier);
       console.log('🔄 [Auth0Exchange] Verifier value:', verifier?.value ? `${verifier.value.substring(0, 10)}...` : 'NOT FOUND');
-      console.log('🔄 [Auth0Exchange] All cookies:', request.cookies.getAll().map(c => ({
-        name: c.name,
-        value: c.value ? `${c.value.substring(0, 10)}...` : 'empty'
-      })));
-      console.log('🔄 [Auth0Exchange] ========== END STEP 5A ==========');
+      console.log('🔄 [Auth0Exchange] ========== END PKCE VERIFIER ==========');
       
-      const tokenRequestBody = {
-        grant_type: 'authorization_code',
-        client_id: process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID,
-        client_secret: process.env.AUTH0_CLIENT_SECRET,
-        code: code,
-        redirect_uri: redirectUri,
-      };
+      let tokens;
+      let user;
       
-      // Add PKCE verifier if available
-      if (verifier?.value) {
-        tokenRequestBody.code_verifier = verifier.value;
-        console.log('🔄 [Auth0Exchange] ========== STEP 5B: ADDING PKCE VERIFIER ==========');
-        console.log('🔄 [Auth0Exchange] Added code_verifier to token request');
-        console.log('🔄 [Auth0Exchange] Verifier length:', verifier.value.length);
-        console.log('🔄 [Auth0Exchange] ========== END STEP 5B ==========');
-      } else {
-        console.log('🔄 [Auth0Exchange] ⚠️ WARNING: No PKCE verifier found in cookies!');
-        console.log('🔄 [Auth0Exchange] This will likely cause "Parameter code_verifier is required" error');
-      }
-      
-      console.log('[Auth0 Exchange] Token request body:', {
-        grant_type: tokenRequestBody.grant_type,
-        client_id: tokenRequestBody.client_id,
-        redirect_uri: tokenRequestBody.redirect_uri,
-        has_code: !!tokenRequestBody.code,
-        has_client_secret: !!tokenRequestBody.client_secret,
-        has_code_verifier: !!tokenRequestBody.code_verifier,
-        referer: referer,
-        baseUrl: process.env.NEXT_PUBLIC_BASE_URL
-      });
-      
-      // Try to exchange code for tokens
-      let tokenResponse = await fetch(`https://${process.env.NEXT_PUBLIC_AUTH0_DOMAIN}/oauth/token`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(tokenRequestBody),
-      });
-      
-      console.log('🔄 [Auth0Exchange] ========== STEP 5C: AUTH0 TOKEN RESPONSE ==========');
-      console.log('🔄 [Auth0Exchange] Response status:', tokenResponse.status);
-      console.log('🔄 [Auth0Exchange] Response status text:', tokenResponse.statusText);
-      console.log('🔄 [Auth0Exchange] Response OK:', tokenResponse.ok);
-      console.log('🔄 [Auth0Exchange] Redirect URI used:', redirectUri);
-      console.log('🔄 [Auth0Exchange] Had PKCE verifier:', !!tokenRequestBody.code_verifier);
-      console.log('🔄 [Auth0Exchange] Response headers:', Object.fromEntries(tokenResponse.headers.entries()));
-      console.log('🔄 [Auth0Exchange] ========== END STEP 5C ==========');
-      
-      // Declare error variables in outer scope
-      let errorText;
-      let errorData;
-      
-      // Handle token exchange failure
-      if (!tokenResponse.ok) {
-        // Read the response body only once
-        try {
-          errorText = await tokenResponse.text();
-          errorData = JSON.parse(errorText);
-        } catch (e) {
-          errorData = { error: 'unknown', error_description: errorText || 'Failed to parse error response' };
-        }
+      // Proxy the OAuth exchange through backend for security
+      try {
+        console.log('[Auth0 Exchange] Proxying OAuth exchange through backend...');
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
         
-        console.log('🔄 [Auth0Exchange] ========== STEP 5D: TOKEN EXCHANGE FAILED ==========');
-        console.log('🔄 [Auth0Exchange] Error details:', {
-          status: tokenResponse.status,
-          error: errorData.error,
-          error_description: errorData.error_description,
-          hadPKCEVerifier: !!tokenRequestBody.code_verifier,
-          redirectUriUsed: redirectUri
+        // Send the authorization code to backend for secure token exchange
+        const backendResponse = await fetch(`${apiUrl}/api/auth/oauth-exchange/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${tokens.access_token}`,
+          },
+          body: JSON.stringify({
+            code: code,
+            redirect_uri: redirectUri,
+            code_verifier: verifier?.value || null
+          })
         });
         
-        // Log specific issue if PKCE verifier was missing
-        if (!tokenRequestBody.code_verifier && errorData.error_description?.includes('code_verifier')) {
-          console.log('🔄 [Auth0Exchange] ❌ ISSUE IDENTIFIED: PKCE verifier cookie was not found');
-          console.log('🔄 [Auth0Exchange] Possible causes:');
-          console.log('🔄 [Auth0Exchange]   - Cookie was not set in /api/auth/login');
-          console.log('🔄 [Auth0Exchange]   - Cookie expired (10 minute timeout)');
-          console.log('🔄 [Auth0Exchange]   - Cookie domain/path mismatch');
-          console.log('🔄 [Auth0Exchange]   - SameSite policy blocking cookie');
+        if (!backendResponse.ok) {
+          const errorData = await backendResponse.json();
+          console.error('[Auth0 Exchange] Backend OAuth exchange failed:', errorData);
+          return NextResponse.json({ 
+            error: errorData.error || 'OAuth exchange failed',
+            message: errorData.message || 'Authentication failed',
+            details: errorData.details,
+            status: backendResponse.status
+          }, { status: backendResponse.status });
         }
-        console.log('🔄 [Auth0Exchange] ========== END STEP 5D ==========');
         
-        // If the first attempt fails with invalid_grant due to redirect_uri mismatch, try alternative
-        if (tokenResponse.status === 400 && 
-            errorData.error === 'invalid_grant' && 
-            errorData.error_description?.includes('redirect_uri')) {
-          
-          console.log('[Auth0 Exchange] Redirect URI mismatch detected, trying alternative...');
-          
-          // Try the alternative redirect URI
-          const alternativeRedirectUri = redirectUri.includes('/auth/oauth-callback')
-            ? `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/callback`
-            : `${process.env.NEXT_PUBLIC_BASE_URL}/auth/oauth-callback`;
-          
-          console.log('[Auth0 Exchange] Trying alternative redirect_uri:', alternativeRedirectUri);
-          
-          tokenRequestBody.redirect_uri = alternativeRedirectUri;
-          
-          // Retry with alternative redirect URI
-          tokenResponse = await fetch(`https://${process.env.NEXT_PUBLIC_AUTH0_DOMAIN}/oauth/token`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(tokenRequestBody),
-          });
-          
-          console.log('[Auth0 Exchange] Alternative token response status:', {
-            status: tokenResponse.status,
-            statusText: tokenResponse.statusText,
-            ok: tokenResponse.ok,
-            redirect_uri_used: alternativeRedirectUri
-          });
-          
-          // Update redirectUri for logging
-          redirectUri = alternativeRedirectUri;
-          
-          // If still not ok, read the new error
-          if (!tokenResponse.ok) {
-            try {
-              errorText = await tokenResponse.text();
-              errorData = JSON.parse(errorText);
-            } catch (e) {
-              errorData = { error_description: errorText || 'Failed to parse error response' };
-            }
-          }
-        }
-      }
-      
-      // Final check after potential retry
-      if (!tokenResponse.ok) {
-        // errorData is already populated from above
-        
-        console.error('[Auth0 Exchange] Token exchange failed:', {
-          status: tokenResponse.status,
-          statusText: tokenResponse.statusText,
-          error: errorData,
-          error_description: errorData.error_description,
-          error_code: errorData.error,
-          redirect_uri_used: redirectUri,
-          auth0_domain: process.env.NEXT_PUBLIC_AUTH0_DOMAIN
+        // Get tokens from backend response
+        const backendTokens = await backendResponse.json();
+        console.log('[Auth0 Exchange] Backend OAuth exchange successful:', {
+          hasAccessToken: !!backendTokens.access_token,
+          hasIdToken: !!backendTokens.id_token,
+          hasRefreshToken: !!backendTokens.refresh_token
         });
         
-        // Common Auth0 errors
-        let userMessage = 'Authentication failed. Please try again.';
-        if (errorData.error === 'invalid_grant') {
-          if (errorData.error_description?.includes('redirect_uri')) {
-            userMessage = 'Configuration error: Redirect URI mismatch. Please contact support.';
-          } else if (errorData.error_description?.includes('code')) {
-            userMessage = 'The authorization code has expired or is invalid. Please try signing in again.';
-          }
-        } else if (errorData.error === 'unauthorized_client') {
-          userMessage = 'Configuration error: Client not authorized. Please contact support.';
-        }
+        // Use tokens from backend
+        tokens = backendTokens;
         
+      } catch (error) {
+        console.error('[Auth0 Exchange] Error calling backend OAuth exchange:', error);
         return NextResponse.json({ 
-          error: 'Token exchange failed',
-          message: userMessage,
-          details: errorData.error_description || errorText,
-          error_code: errorData.error,
-          status: tokenResponse.status
-        }, { status: 400 });
+          error: 'OAuth exchange failed',
+          details: error.message
+        }, { status: 500 });
       }
-      
-      const tokens = await tokenResponse.json();
-      console.log('[Auth0 Exchange] Token exchange successful:', {
-        hasAccessToken: !!tokens.access_token,
-        hasIdToken: !!tokens.id_token,
-        hasRefreshToken: !!tokens.refresh_token,
-        expiresIn: tokens.expires_in
-      });
       
       // Get user info from Auth0
       console.log('[Auth0 Exchange] Fetching user info...');
@@ -300,7 +157,7 @@ export async function GET(request) {
         }, { status: 400 });
       }
       
-      const user = await userResponse.json();
+      user = await userResponse.json();
       console.log('[Auth0 Exchange] User info retrieved:', { 
         sub: user.sub, 
         email: user.email,
@@ -308,7 +165,7 @@ export async function GET(request) {
         picture: user.picture
       });
       
-      // Try to create backend session first
+      // Try to create backend session
       let backendSession = null;
       try {
         console.log('[Auth0 Exchange] Creating backend session...');
