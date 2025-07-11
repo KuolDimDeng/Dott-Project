@@ -29,7 +29,6 @@ export default function NotificationManager({ adminUser }) {
     page_size: 20
   });
   
-  const { getAuthHeaders } = useAdminAuth();
 
   useEffect(() => {
     loadNotifications();
@@ -40,11 +39,11 @@ export default function NotificationManager({ adminUser }) {
     try {
       setIsLoading(true);
       
-      const response = await fetch(`/api/admin/notifications?page=${pagination.current_page}`, {
+      const response = await fetch(`/api/admin/proxy/admin/notifications?page=${pagination.current_page}`, {
         headers: {
-          ...getAuthHeaders(),
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
       });
 
       if (response.ok) {
@@ -64,11 +63,11 @@ export default function NotificationManager({ adminUser }) {
 
   const loadTemplates = async () => {
     try {
-      const response = await fetch('/api/admin/templates', {
+      const response = await fetch('/api/admin/proxy/admin/templates', {
         headers: {
-          ...getAuthHeaders(),
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
       });
 
       if (response.ok) {
@@ -310,7 +309,6 @@ export default function NotificationManager({ adminUser }) {
 
 function SendNotificationButton({ notificationId, onSent }) {
   const [isSending, setIsSending] = useState(false);
-  const { getAuthHeaders } = useAdminAuth();
 
   const handleSend = async () => {
     if (!confirm('Are you sure you want to send this notification? This action cannot be undone.')) {
@@ -320,12 +318,12 @@ function SendNotificationButton({ notificationId, onSent }) {
     try {
       setIsSending(true);
       
-      const response = await fetch(`/api/admin/notifications/${notificationId}/send`, {
+      const response = await fetch(`/api/admin/proxy/admin/notifications/${notificationId}/send`, {
         method: 'POST',
         headers: {
-          ...getAuthHeaders(),
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
       });
 
       if (response.ok) {
@@ -379,7 +377,6 @@ function CreateNotificationModal({ onClose, onCreate, templates }) {
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [errors, setErrors] = useState({});
-  const { getAuthHeaders } = useAdminAuth();
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -445,16 +442,16 @@ function CreateNotificationModal({ onClose, onCreate, templates }) {
     setIsCreating(true);
     
     try {
-      const response = await fetch('/api/admin/notifications', {
+      const response = await fetch('/api/admin/proxy/admin/notifications/create/', {
         method: 'POST',
         headers: {
-          ...getAuthHeaders(),
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           ...formData,
           auto_dismiss_after: formData.auto_dismiss_after ? parseInt(formData.auto_dismiss_after) : null,
         }),
+        credentials: 'include',
       });
 
       if (response.ok) {

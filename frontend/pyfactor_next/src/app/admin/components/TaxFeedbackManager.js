@@ -42,7 +42,6 @@ export default function TaxFeedbackManager({ adminUser }) {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [updateLoading, setUpdateLoading] = useState(false);
   
-  const { getAuthHeaders } = useAdminAuth();
 
   useEffect(() => {
     loadFeedback();
@@ -58,11 +57,11 @@ export default function TaxFeedbackManager({ adminUser }) {
         ...filters
       });
 
-      const response = await fetch(`/api/admin/feedback?${params}`, {
+      const response = await fetch(`/api/admin/proxy/admin/feedback?${params}`, {
         headers: {
-          ...getAuthHeaders(),
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
       });
 
       if (response.ok) {
@@ -96,16 +95,16 @@ export default function TaxFeedbackManager({ adminUser }) {
     try {
       setUpdateLoading(true);
       
-      const response = await fetch(`/api/admin/feedback/${feedbackId}`, {
+      const response = await fetch(`/api/admin/proxy/admin/feedback/${feedbackId}`, {
         method: 'PATCH',
         headers: {
-          ...getAuthHeaders(),
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           status: newStatus,
           resolution_notes: resolutionNotes
-        })
+        }),
+        credentials: 'include',
       });
 
       if (response.ok) {

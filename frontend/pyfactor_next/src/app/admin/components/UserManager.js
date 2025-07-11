@@ -7,7 +7,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 export default function UserManager({ adminUser }) {
-  if (!adminUser.permissions.can_view_all_users) {
+  if (!adminUser.can_view_all_users) {
     return (
       <div className="p-6">
         <div className="text-center py-12">

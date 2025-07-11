@@ -34,7 +34,6 @@ export default function AdminDashboard({ adminUser, onLogout }) {
   const [activeTab, setActiveTab] = useState('overview');
   const [dashboardData, setDashboardData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { getAuthHeaders } = useAdminAuth();
 
   useEffect(() => {
     loadDashboardData();
@@ -42,11 +41,11 @@ export default function AdminDashboard({ adminUser, onLogout }) {
 
   const loadDashboardData = async () => {
     try {
-      const response = await fetch('/api/admin/dashboard', {
+      const response = await fetch('/api/admin/proxy/admin/dashboard', {
         headers: {
-          ...getAuthHeaders(),
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
       });
 
       if (response.ok) {

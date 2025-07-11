@@ -17,11 +17,11 @@ export function useAdminAuth() {
       }
 
       // Verify token is still valid by making a request to protected endpoint
-      const response = await fetch('/api/admin/dashboard', {
+      const response = await fetch('/api/admin/proxy/admin/dashboard', {
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
       });
 
       if (response.ok) {
