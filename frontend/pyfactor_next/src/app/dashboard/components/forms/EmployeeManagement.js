@@ -225,8 +225,14 @@ function EmployeeManagement({ onNavigate }) {
   useEffect(() => {
     fetchEmployees();
     fetchBasicEmployees();
-    fetchAvailableUsers();
   }, []);
+  
+  // Fetch available users only when user linking is shown
+  useEffect(() => {
+    if (showUserLinking) {
+      fetchAvailableUsers();
+    }
+  }, [showUserLinking]);
   
   // Handle click outside supervisor dropdown
   useEffect(() => {
@@ -274,6 +280,12 @@ function EmployeeManagement({ onNavigate }) {
       });
       
       if (!response.ok) {
+        // Don't log error for 401 as this is optional functionality
+        if (response.status === 401) {
+          logger.debug('[EmployeeManagement] User linking not available - auth required');
+          setAvailableUsers([]);
+          return;
+        }
         throw new Error('Failed to fetch users');
       }
       
@@ -286,8 +298,9 @@ function EmployeeManagement({ onNavigate }) {
         setAvailableUsers(data.users);
       }
     } catch (error) {
-      logger.error('❌ [EmployeeManagement] Error fetching available users:', error);
+      logger.debug('[EmployeeManagement] User linking not available:', error.message);
       // Don't show error to user as this is optional functionality
+      setAvailableUsers([]);
     }
   };
 
