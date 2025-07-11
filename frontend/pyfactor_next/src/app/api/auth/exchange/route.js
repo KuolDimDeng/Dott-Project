@@ -201,7 +201,46 @@ export async function GET(request) {
         picture: user.picture
       });
       
-      // Try to create backend session
+      // First create or update the user in the backend
+      let backendUser = null;
+      try {
+        console.log('[Auth0 Exchange] Creating/updating user in backend...');
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+        
+        // Call the Auth0 user creation endpoint first
+        const userCreateResponse = await fetch(`${apiUrl}/api/auth0/create-user/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${tokens.access_token}`,
+          },
+          body: JSON.stringify({
+            email: user.email,
+            sub: user.sub,
+            auth0_sub: user.sub,
+            name: user.name,
+            picture: user.picture,
+            email_verified: user.email_verified
+          })
+        });
+        
+        if (userCreateResponse.ok) {
+          backendUser = await userCreateResponse.json();
+          console.log('[Auth0 Exchange] User created/updated in backend:', {
+            userId: backendUser.user?.id,
+            email: backendUser.user?.email,
+            tenantId: backendUser.tenant_id,
+            needsOnboarding: backendUser.needs_onboarding
+          });
+        } else {
+          const errorData = await userCreateResponse.json();
+          console.error('[Auth0 Exchange] User creation/update failed:', errorData);
+        }
+      } catch (error) {
+        console.error('[Auth0 Exchange] Error creating/updating user:', error);
+      }
+
+      // Now create backend session
       let backendSession = null;
       try {
         console.log('[Auth0 Exchange] Creating backend session...');
@@ -248,7 +287,8 @@ export async function GET(request) {
         // Include backend session info if available
         backendAuthenticated: backendSession?.authenticated || false,
         backendSessionToken: backendSession?.session_token,
-        needsOnboarding: backendSession?.needs_onboarding || false
+        needsOnboarding: backendSession?.needs_onboarding || backendUser?.needs_onboarding || false,
+        tenantId: backendSession?.user?.tenant_id || backendUser?.tenant_id
       };
       
       // Set session cookies and return success
@@ -256,7 +296,8 @@ export async function GET(request) {
         success: true, 
         user: user,
         authenticated: backendSession?.authenticated || false,
-        needsOnboarding: backendSession?.needs_onboarding || false
+        needsOnboarding: backendSession?.needs_onboarding || backendUser?.needs_onboarding || false,
+        tenantId: backendSession?.user?.tenant_id || backendUser?.tenant_id
       });
       
       // Set the Auth0 session cookie
