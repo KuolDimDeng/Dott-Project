@@ -30,6 +30,12 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    },
+    {
+      "src": "/static/images/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
     }
   ],
   "shortcuts": [
@@ -92,5 +98,6 @@
   },
   "related_applications": [],
   "lang": "en-US",
-  "dir": "ltr"
+  "dir": "ltr",
+  "splash_pages": "/splash.html"
 }

@@ -26,6 +26,12 @@ export default function MobilePage() {
   const [pendingSync, setPendingSync] = useState(0);
 
   useEffect(() => {
+    if (!loading && !session) {
+      router.push('/auth/mobile-login');
+    }
+  }, [session, loading, router]);
+
+  useEffect(() => {
     // Check online status
     setIsOnline(navigator.onLine);
     
