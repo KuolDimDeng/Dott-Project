@@ -169,17 +169,17 @@ export default function AdminDashboard({ adminUser, onLogout }) {
               <div className="text-xs text-blue-800">
                 <p className="font-medium">Access Level: {adminUser.admin_role}</p>
                 <div className="mt-1 space-y-1">
-                  {adminUser.permissions.can_send_notifications && (
+                  {adminUser.can_send_notifications && (
                     <span className="inline-block bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs mr-1">
                       Send Notifications
                     </span>
                   )}
-                  {adminUser.permissions.can_view_all_users && (
+                  {adminUser.can_view_all_users && (
                     <span className="inline-block bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-xs mr-1">
                       View Users
                     </span>
                   )}
-                  {adminUser.permissions.can_view_feedback && (
+                  {adminUser.can_view_feedback && (
                     <span className="inline-block bg-purple-100 text-purple-800 px-2 py-0.5 rounded text-xs mr-1">
                       View Feedback
                     </span>
@@ -200,19 +200,17 @@ export default function AdminDashboard({ adminUser, onLogout }) {
 }
 
 function checkPermission(tabId, adminUser) {
-  const permissions = adminUser.permissions;
-  
   switch (tabId) {
     case 'overview':
       return true; // Everyone can see overview
     case 'notifications':
-      return permissions.can_send_notifications;
+      return adminUser.can_send_notifications;
     case 'feedback':
-      return permissions.can_view_feedback;
+      return adminUser.can_view_feedback;
     case 'users':
-      return permissions.can_view_all_users;
+      return adminUser.can_view_all_users;
     case 'analytics':
-      return permissions.can_view_all_users || adminUser.admin_role === 'super_admin';
+      return adminUser.can_view_all_users || adminUser.admin_role === 'super_admin';
     case 'settings':
       return adminUser.admin_role === 'super_admin';
     default:

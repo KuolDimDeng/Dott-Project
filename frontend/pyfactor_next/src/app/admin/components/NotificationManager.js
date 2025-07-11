@@ -113,7 +113,7 @@ export default function NotificationManager({ adminUser }) {
     }
   };
 
-  if (!adminUser.permissions.can_send_notifications) {
+  if (!adminUser.can_send_notifications) {
     return (
       <div className="p-6">
         <div className="text-center py-12">
