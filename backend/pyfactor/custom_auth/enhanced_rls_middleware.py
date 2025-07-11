@@ -79,6 +79,7 @@ class EnhancedRowLevelSecurityMiddleware:
             '/api/test-sentry/',  # Sentry test endpoint - public for testing
             '/api/onboarding/api/pricing/',  # Public pricing endpoints for country-based pricing
             '/api/onboarding/api/debug/',  # Debug endpoints for testing
+            '/api/payments/webhooks/paystack/',  # Paystack webhook doesn't have auth
         ]
         
         # Auth0 tenant management endpoints - require Auth0 authentication but can lookup/create tenant IDs

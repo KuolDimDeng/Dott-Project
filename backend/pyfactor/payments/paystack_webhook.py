@@ -28,6 +28,11 @@ def paystack_webhook_handler(request):
     - subscription.create: Subscription was created
     - subscription.disable: Subscription was cancelled
     """
+    logger.info("🎯 [PaystackWebhook] === START ===")
+    logger.info(f"🎯 [PaystackWebhook] Request path: {request.path}")
+    logger.info(f"🎯 [PaystackWebhook] Request method: {request.method}")
+    logger.info(f"🎯 [PaystackWebhook] Headers: {dict(request.headers)}")
+    
     try:
         # Get the webhook signature from headers
         signature = request.headers.get('X-Paystack-Signature', '')
@@ -97,10 +102,16 @@ def paystack_webhook_handler(request):
 
 def handle_charge_success(event_data, webhook_event=None):
     """Handle successful charge events"""
+    logger.info("🎯 [ChargeSuccess] === START ===")
+    logger.info(f"🎯 [ChargeSuccess] Event data: {json.dumps(event_data, indent=2)}")
+    
     try:
         # Get transaction details
         reference = event_data.get('reference')
         metadata = event_data.get('metadata', {})
+        
+        logger.info(f"🎯 [ChargeSuccess] Reference: {reference}")
+        logger.info(f"🎯 [ChargeSuccess] Metadata: {json.dumps(metadata, indent=2)}")
         
         # Check if this is a subscription payment
         if not metadata.get('subscription'):

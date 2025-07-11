@@ -252,22 +252,42 @@ function PaymentForm({ plan, billingCycle, urlCountry }) {
     };
     const basePrice = prices[plan.toLowerCase()]?.[billingCycle] || 0;
     
+    console.log('🎯 [getPrice] Calculating price:', {
+      plan: plan.toLowerCase(),
+      billingCycle,
+      basePrice,
+      hasRegionalPricing: !!regionalPricing,
+      discountPercentage: regionalPricing?.discount_percentage,
+      pricingData: regionalPricing?.pricing
+    });
+    
     // Use regional pricing if available
     if (regionalPricing && regionalPricing.pricing) {
       const planPricing = regionalPricing.pricing[plan.toLowerCase()];
       if (planPricing) {
-        if (billingCycle === 'monthly') return planPricing.monthly;
-        if (billingCycle === '6month') return planPricing.six_month;
-        if (billingCycle === 'yearly') return planPricing.yearly;
+        let discountedPrice;
+        if (billingCycle === 'monthly') discountedPrice = planPricing.monthly;
+        if (billingCycle === '6month') discountedPrice = planPricing.six_month;
+        if (billingCycle === 'yearly') discountedPrice = planPricing.yearly;
+        
+        console.log('🎯 [getPrice] Using regional pricing:', discountedPrice);
+        return discountedPrice;
       }
     }
     
     // If we have a discount percentage but no pricing data, apply discount manually
     if (regionalPricing && regionalPricing.discount_percentage > 0) {
       const discountMultiplier = 1 - (regionalPricing.discount_percentage / 100);
-      return Math.round(basePrice * discountMultiplier * 100) / 100; // Round to 2 decimal places
+      const discountedPrice = Math.round(basePrice * discountMultiplier * 100) / 100; // Round to 2 decimal places
+      console.log('🎯 [getPrice] Applying manual discount:', {
+        discount: regionalPricing.discount_percentage,
+        multiplier: discountMultiplier,
+        result: discountedPrice
+      });
+      return discountedPrice;
     }
     
+    console.log('🎯 [getPrice] Using base price:', basePrice);
     return basePrice;
   };
   
@@ -693,7 +713,7 @@ function PaymentForm({ plan, billingCycle, urlCountry }) {
           <span className="text-gray-600">{plan.charAt(0).toUpperCase() + plan.slice(1)} Plan</span>
           <span className="text-gray-400">•</span>
           <span className="font-semibold text-gray-900">
-            {regionalPricing && regionalPricing.currency !== 'USD' ? (
+            {regionalPricing && regionalPricing.currency !== 'USD' && selectedPaymentMethod === 'mpesa' ? (
               <>
                 {regionalPricing.currency === 'KES' ? 'KSh' : regionalPricing.currency} {Math.round(getPrice() * (regionalPricing.exchange_info?.rate || 110))}/{billingCycle === 'monthly' ? 'month' : billingCycle === '6month' ? '6 months' : 'year'}
               </>
@@ -713,7 +733,7 @@ function PaymentForm({ plan, billingCycle, urlCountry }) {
         {regionalPricing && regionalPricing.discount_percentage > 0 && (
           <div className="mt-2">
             <span className="text-gray-500 line-through">
-              Original: {regionalPricing.currency !== 'USD' ? (
+              Original: {regionalPricing.currency !== 'USD' && selectedPaymentMethod === 'mpesa' ? (
                 <>
                   {regionalPricing.currency === 'KES' ? 'KSh' : regionalPricing.currency} {Math.round(getOriginalPrice() * (regionalPricing.exchange_info?.rate || 110))}/{billingCycle === 'monthly' ? 'month' : billingCycle === '6month' ? '6 months' : 'year'}
                 </>
