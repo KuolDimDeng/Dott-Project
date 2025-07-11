@@ -47,17 +47,28 @@ export function useAdminAuth() {
     }
   }, []);
 
-  const login = useCallback(async (username, password) => {
+  const login = useCallback(async (loginData) => {
     try {
       setIsLoading(true);
       
-      const response = await fetch('/api/admin/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password }),
-      });
+      // If loginData is already the response from a successful login
+      // (called from EnhancedAdminLogin component after successful login)
+      if (loginData && loginData.user && loginData.access_token) {
+        setAdminUser(loginData.user);
+        setIsAuthenticated(true);
+        return { success: true };
+      }
+      
+      // Otherwise, if it's a username/password object, perform login
+      // (this case shouldn't happen with current implementation)
+      if (loginData && loginData.username && loginData.password) {
+        const response = await fetch('/api/admin/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(loginData),
+        });
 
       const data = await response.json();
 
@@ -86,6 +97,10 @@ export function useAdminAuth() {
         toast.error(errorMessage);
         return { success: false, error: errorMessage };
       }
+      }
+      
+      // If neither case matches, return error
+      throw new Error('Invalid login data');
     } catch (error) {
       console.error('Login error:', error);
       toast.error('Network error. Please try again.');
