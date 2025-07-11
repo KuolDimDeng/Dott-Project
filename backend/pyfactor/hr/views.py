@@ -228,23 +228,33 @@ def employee_list(request):
                         status=status.HTTP_400_BAD_REQUEST
                     )
                 
-                # Generate a unique username and employee number
+                # Generate a unique employee number
                 import uuid
-                unique_suffix = str(uuid.uuid4())[:8]
-                email = serializer.validated_data.get('email', '')
-                username = f"{email.split('@')[0]}_{unique_suffix}" if email else f"emp_{unique_suffix}"
-                employee_number = f"EMP{unique_suffix.upper()}"
+                from django.utils import timezone
                 
-                # Save the employee with business_id and required AbstractUser fields
+                # Create employee number in format: EMP-YYYYMMDD-XXXX
+                today = timezone.now().strftime('%Y%m%d')
+                unique_suffix = str(uuid.uuid4())[:4].upper()
+                employee_number = f"EMP-{today}-{unique_suffix}"
+                
+                # For AbstractUser fields that we don't use, we need to provide values
+                # since Employee inherits from AbstractUser (poor design choice)
+                email = serializer.validated_data.get('email', '')
+                username = f"{email}_{uuid.uuid4().hex[:8]}"  # Must be unique
+                
+                # Handle the duplicate date fields issue
+                date_of_birth = serializer.validated_data.get('date_of_birth')
+                
+                # Save the employee with required fields
                 employee = serializer.save(
                     business_id=business_id,
-                    username=username,
                     employee_number=employee_number,
-                    password='!',  # Employees don't need passwords
+                    username=username,  # Required by AbstractUser
+                    password='',  # Empty password - auth handled by Auth0
                     is_staff=False,
                     is_superuser=False,
-                    role='EMPLOYEE',  # Default employee role
-                    site_access_privileges={}  # Empty JSON object
+                    dob=date_of_birth if date_of_birth else timezone.now().date(),  # Use date_of_birth or today
+                    site_access_privileges=[]  # Empty list as per model default
                 )
                 logger.info(f'✅ [HR Employee Create] Employee created with ID: {employee.id} for business: {business_id}')
                 
