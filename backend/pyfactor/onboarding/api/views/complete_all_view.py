@@ -67,10 +67,19 @@ def complete_all_onboarding(request):
             user.onboarding_completed = True
             user.onboarding_completed_at = timezone.now()
             
-            # Set business_id to match tenant_id (required for HR module)
-            if user.tenant and user.tenant.id:
-                user.business_id = user.tenant.id
-                logger.info(f"[Complete-All] Setting user.business_id to tenant.id: {user.business_id}")
+            # Set business_id from UserProfile (required for HR module)
+            try:
+                from users.models import UserProfile
+                profile = UserProfile.objects.select_related('business').get(user=user)
+                if profile.business:
+                    user.business_id = profile.business.id
+                    logger.info(f"[Complete-All] Setting user.business_id from UserProfile: {user.business_id}")
+                else:
+                    logger.warning(f"[Complete-All] UserProfile has no business for user {user.email}")
+            except UserProfile.DoesNotExist:
+                logger.error(f"[Complete-All] UserProfile not found for user {user.email}")
+            except Exception as e:
+                logger.error(f"[Complete-All] Error getting business_id from UserProfile: {str(e)}")
             
             # Log all incoming request data for debugging
             logger.info(f"[Complete-All] Incoming request data: {request.data}")

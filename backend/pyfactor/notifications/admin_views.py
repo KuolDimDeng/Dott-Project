@@ -105,14 +105,8 @@ class EnhancedAdminLoginView(APIView):
     
     @rate_limit('login')
     def post(self, request):
-        # Debug logging
-        print(f"🔍 [Admin Login] Request data: {request.data}")
-        print(f"🔍 [Admin Login] Request headers: {dict(request.headers)}")
-        
         username = request.data.get('username')
         password = request.data.get('password')
-        
-        print(f"🔍 [Admin Login] Username: {username}, Password: {'***' if password else 'None'}")
         
         if not username or not password:
             return Response({

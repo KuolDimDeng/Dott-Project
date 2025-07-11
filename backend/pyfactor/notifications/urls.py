@@ -5,6 +5,8 @@ from django.urls import path
 from . import views
 from . import admin_views
 from . import admin_user_management
+from . import admin_analytics
+from . import admin_settings
 
 app_name = 'notifications'
 
@@ -36,4 +38,8 @@ urlpatterns = [
     path('admin/users/', admin_user_management.AdminUserListView.as_view(), name='admin-user-list'),
     path('admin/users/stats/', admin_user_management.AdminUserStatsView.as_view(), name='admin-user-stats'),
     path('admin/users/<uuid:user_id>/', admin_user_management.AdminUserDetailView.as_view(), name='admin-user-detail'),
+    
+    # Admin analytics and settings endpoints
+    path('admin/analytics/', admin_analytics.AdminAnalyticsView.as_view(), name='admin-analytics'),
+    path('admin/settings/', admin_settings.AdminSettingsView.as_view(), name='admin-settings'),
 ]

@@ -18,6 +18,8 @@ import DashboardOverview from './DashboardOverview';
 import TaxFeedbackManager from './TaxFeedbackManager';
 import NotificationManager from './NotificationManager';
 import UserManager from './UserManager';
+import AdminAnalytics from './AdminAnalytics';
+import AdminSettings from './AdminSettings';
 import { useAdminAuth } from '../hooks/useAdminAuth';
 import StandardSpinner, { CenteredSpinner } from '@/components/ui/StandardSpinner';
 
@@ -87,9 +89,9 @@ export default function AdminDashboard({ adminUser, onLogout }) {
       case 'users':
         return <UserManager adminUser={adminUser} />;
       case 'analytics':
-        return <div className="p-6 text-center text-gray-500">Analytics coming soon...</div>;
+        return <AdminAnalytics adminUser={adminUser} />;
       case 'settings':
-        return <div className="p-6 text-center text-gray-500">Settings coming soon...</div>;
+        return <AdminSettings adminUser={adminUser} />;
       default:
         return <DashboardOverview data={dashboardData} onRefresh={loadDashboardData} />;
     }
