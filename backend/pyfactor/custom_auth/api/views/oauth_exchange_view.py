@@ -23,6 +23,10 @@ class OAuthExchangeView(APIView):
     
     def post(self, request):
         logger.info("🔐 [OAUTH_EXCHANGE] === STARTING OAUTH TOKEN EXCHANGE ===")
+        logger.info(f"🔐 [OAUTH_EXCHANGE] Request path: {request.path}")
+        logger.info(f"🔐 [OAUTH_EXCHANGE] Request method: {request.method}")
+        logger.info(f"🔐 [OAUTH_EXCHANGE] Request headers: {dict(request.headers)}")
+        logger.info(f"🔐 [OAUTH_EXCHANGE] Request data: {request.data}")
         
         try:
             # Extract code and redirect_uri from request
@@ -31,8 +35,10 @@ class OAuthExchangeView(APIView):
             code_verifier = request.data.get('code_verifier')  # For PKCE
             
             logger.info(f"🔐 [OAUTH_EXCHANGE] Code received: {code[:10] if code else 'None'}...")
+            logger.info(f"🔐 [OAUTH_EXCHANGE] Code length: {len(code) if code else 0}")
             logger.info(f"🔐 [OAUTH_EXCHANGE] Redirect URI: {redirect_uri}")
             logger.info(f"🔐 [OAUTH_EXCHANGE] PKCE verifier present: {bool(code_verifier)}")
+            logger.info(f"🔐 [OAUTH_EXCHANGE] PKCE verifier length: {len(code_verifier) if code_verifier else 0}")
             
             if not code:
                 logger.error("🔐 [OAUTH_EXCHANGE] Missing authorization code")
@@ -41,15 +47,30 @@ class OAuthExchangeView(APIView):
                 }, status=status.HTTP_400_BAD_REQUEST)
             
             # Get Auth0 configuration
-            auth0_domain = settings.AUTH0_DOMAIN
-            client_id = settings.AUTH0_CLIENT_ID
-            client_secret = settings.AUTH0_CLIENT_SECRET
+            auth0_domain = getattr(settings, 'AUTH0_DOMAIN', None)
+            client_id = getattr(settings, 'AUTH0_CLIENT_ID', None)
+            client_secret = getattr(settings, 'AUTH0_CLIENT_SECRET', None)
             
-            if not client_secret:
-                logger.error("🔐 [OAUTH_EXCHANGE] Missing AUTH0_CLIENT_SECRET")
+            logger.info(f"🔐 [OAUTH_EXCHANGE] Auth0 config check:")
+            logger.info(f"🔐 [OAUTH_EXCHANGE]   - AUTH0_DOMAIN: {'✓' if auth0_domain else '✗'} ({auth0_domain})")
+            logger.info(f"🔐 [OAUTH_EXCHANGE]   - AUTH0_CLIENT_ID: {'✓' if client_id else '✗'} ({client_id[:10]}... if client_id else None)")
+            logger.info(f"🔐 [OAUTH_EXCHANGE]   - AUTH0_CLIENT_SECRET: {'✓' if client_secret else '✗'} (hidden)")
+            
+            if not auth0_domain or not client_id or not client_secret:
+                missing = []
+                if not auth0_domain:
+                    missing.append('AUTH0_DOMAIN')
+                if not client_id:
+                    missing.append('AUTH0_CLIENT_ID')
+                if not client_secret:
+                    missing.append('AUTH0_CLIENT_SECRET')
+                    
+                logger.error(f"🔐 [OAUTH_EXCHANGE] Missing Auth0 configuration: {', '.join(missing)}")
+                logger.error(f"🔐 [OAUTH_EXCHANGE] Available settings attributes: {[attr for attr in dir(settings) if attr.startswith('AUTH0')]}")
+                
                 return Response({
                     'error': 'Server configuration error',
-                    'details': 'OAuth configuration incomplete'
+                    'details': f'Missing Auth0 configuration: {', '.join(missing)}'
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
             # Exchange code for tokens

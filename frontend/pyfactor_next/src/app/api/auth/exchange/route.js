@@ -82,52 +82,88 @@ export async function GET(request) {
       let tokens;
       let user;
       
-      // Proxy the OAuth exchange through backend for security
-      try {
-        console.log('[Auth0 Exchange] Proxying OAuth exchange through backend...');
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+      // Check if we should proxy through backend (when AUTH0_CLIENT_SECRET is not available)
+      if (!process.env.AUTH0_CLIENT_SECRET) {
+        console.log('🔄 [Auth0Exchange] ========== PROXYING THROUGH BACKEND ==========');
+        console.log('🔄 [Auth0Exchange] AUTH0_CLIENT_SECRET not available in frontend');
+        console.log('🔄 [Auth0Exchange] Proxying OAuth exchange through backend for security');
         
-        // Send the authorization code to backend for secure token exchange
-        const backendResponse = await fetch(`${apiUrl}/api/auth/oauth-exchange/`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${tokens.access_token}`,
-          },
-          body: JSON.stringify({
-            code: code,
+        try {
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+          const backendUrl = `${apiUrl}/api/auth/oauth-exchange/`;
+          
+          console.log('🔄 [Auth0Exchange] Backend URL:', backendUrl);
+          console.log('🔄 [Auth0Exchange] Request payload:', {
+            code: code ? `${code.substring(0, 10)}...` : 'null',
             redirect_uri: redirectUri,
-            code_verifier: verifier?.value || null
-          })
-        });
+            has_code_verifier: !!verifier?.value
+          });
+          
+          // Send the authorization code to backend for secure token exchange
+          const backendResponse = await fetch(backendUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              code: code,
+              redirect_uri: redirectUri,
+              code_verifier: verifier?.value || null
+            })
+          });
         
-        if (!backendResponse.ok) {
-          const errorData = await backendResponse.json();
-          console.error('[Auth0 Exchange] Backend OAuth exchange failed:', errorData);
+          console.log('🔄 [Auth0Exchange] Backend response status:', backendResponse.status);
+          console.log('🔄 [Auth0Exchange] Backend response OK:', backendResponse.ok);
+          
+          if (!backendResponse.ok) {
+            const errorData = await backendResponse.json();
+            console.error('❌ [Auth0Exchange] Backend OAuth exchange failed:', errorData);
+            console.error('❌ [Auth0Exchange] Error details:', {
+              status: backendResponse.status,
+              error: errorData.error,
+              message: errorData.message,
+              details: errorData.details
+            });
+            return NextResponse.json({ 
+              error: errorData.error || 'OAuth exchange failed',
+              message: errorData.message || 'Authentication failed',
+              details: errorData.details,
+              status: backendResponse.status
+            }, { status: backendResponse.status });
+          }
+          
+          // Get tokens from backend response
+          const backendTokens = await backendResponse.json();
+          console.log('✅ [Auth0Exchange] Backend OAuth exchange successful:', {
+            hasAccessToken: !!backendTokens.access_token,
+            hasIdToken: !!backendTokens.id_token,
+            hasRefreshToken: !!backendTokens.refresh_token
+          });
+          
+          // Use tokens from backend
+          tokens = backendTokens;
+          console.log('🔄 [Auth0Exchange] ========== END BACKEND PROXY ==========');
+          
+        } catch (error) {
+          console.error('❌ [Auth0Exchange] Error calling backend OAuth exchange:', error);
+          console.error('❌ [Auth0Exchange] Error details:', {
+            message: error.message,
+            stack: error.stack
+          });
           return NextResponse.json({ 
-            error: errorData.error || 'OAuth exchange failed',
-            message: errorData.message || 'Authentication failed',
-            details: errorData.details,
-            status: backendResponse.status
-          }, { status: backendResponse.status });
+            error: 'OAuth exchange failed',
+            details: error.message
+          }, { status: 500 });
         }
+      } else {
+        // Direct OAuth exchange (when AUTH0_CLIENT_SECRET is available)
+        console.log('🔑 [Auth0Exchange] Using direct OAuth exchange (AUTH0_CLIENT_SECRET available)');
         
-        // Get tokens from backend response
-        const backendTokens = await backendResponse.json();
-        console.log('[Auth0 Exchange] Backend OAuth exchange successful:', {
-          hasAccessToken: !!backendTokens.access_token,
-          hasIdToken: !!backendTokens.id_token,
-          hasRefreshToken: !!backendTokens.refresh_token
-        });
-        
-        // Use tokens from backend
-        tokens = backendTokens;
-        
-      } catch (error) {
-        console.error('[Auth0 Exchange] Error calling backend OAuth exchange:', error);
+        // [Original direct OAuth exchange code would go here]
+        // For now, return error since we want to always use backend proxy
         return NextResponse.json({ 
-          error: 'OAuth exchange failed',
-          details: error.message
+          error: 'Server configuration error',
+          details: 'Direct OAuth exchange not implemented - use backend proxy'
         }, { status: 500 });
       }
       
