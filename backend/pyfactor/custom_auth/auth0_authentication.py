@@ -1149,6 +1149,7 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
                     'first_name': user_info.get('given_name', ''),
                     'last_name': user_info.get('family_name', ''),
                     'is_active': True,
+                    'role': 'OWNER',  # All new users who sign up are owners
                 }
                 
                 # Add name field if the model has it

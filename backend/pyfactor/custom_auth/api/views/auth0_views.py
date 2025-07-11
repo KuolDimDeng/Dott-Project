@@ -133,7 +133,8 @@ class Auth0UserCreateView(APIView):
                         'first_name': given_name,
                         'last_name': family_name,
                         'picture': data.get('picture', ''),
-                        'email_verified': data.get('email_verified', False)
+                        'email_verified': data.get('email_verified', False),
+                        'role': 'OWNER'  # All new users who sign up are owners
                     }
                 )
             
@@ -154,10 +155,11 @@ class Auth0UserCreateView(APIView):
                     user.auth0_sub = auth0_sub
                 user.name = data.get('name', user.name)
                 
-                # Set role to OWNER if not already set (all users who sign up are owners)
-                if not hasattr(user, 'role') or not user.role or user.role == 'USER':
+                # Don't change role for existing users - they might be legitimate USER role
+                # Only set role for users who don't have one yet
+                if not hasattr(user, 'role') or not user.role:
                     user.role = 'OWNER'
-                    logger.info(f"🔥 [AUTH0_CREATE_USER] Setting user role to OWNER")
+                    logger.info(f"🔥 [AUTH0_CREATE_USER] Setting user role to OWNER for user without role")
                 
                 # Enhanced name extraction logic for Google OAuth
                 given_name = data.get('given_name', '').strip()

@@ -146,7 +146,7 @@ class CloudflareSessionCreateView(View):
                     'name': getattr(user, 'name', '') or f"{getattr(user, 'first_name', '')} {getattr(user, 'last_name', '')}".strip(),
                     'auth0_sub': user.auth0_sub,
                     'subscription_plan': getattr(user, 'subscription_plan', 'free'),
-                    'role': getattr(user, 'role', 'OWNER'),
+                    'role': getattr(user, 'role', 'USER'),  # Default to USER, let signup process set OWNER
                     'onboarding_completed': getattr(user, 'onboarding_completed', False),
                     'needsOnboarding': not getattr(user, 'onboarding_completed', False)
                 }
