@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@auth0/nextjs-auth0';
 import { logger } from '@/utils/logger';
+import { cookies } from 'next/headers';
+import { isUsingBackendAuth } from '@/lib/auth0-server-config';
 
 const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN || process.env.NEXT_PUBLIC_AUTH0_DOMAIN;
 const AUTH0_MANAGEMENT_CLIENT_ID = process.env.AUTH0_MANAGEMENT_CLIENT_ID || process.env.AUTH0_CLIENT_ID;
 const AUTH0_MANAGEMENT_CLIENT_SECRET = process.env.AUTH0_MANAGEMENT_CLIENT_SECRET || process.env.AUTH0_CLIENT_SECRET;
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
 
 /**
  * Get Auth0 Management API access token
@@ -101,13 +104,41 @@ export async function POST(request) {
 
     try {
       // Check if we have the necessary credentials
-      if (!AUTH0_MANAGEMENT_CLIENT_ID || !AUTH0_MANAGEMENT_CLIENT_SECRET) {
-        logger.warn('[Update Metadata] Management API credentials not configured');
-        return NextResponse.json({ 
-          success: false,
-          message: 'Management API not configured',
-          warning: 'User metadata update requires Auth0 Management API configuration'
+      if (!AUTH0_MANAGEMENT_CLIENT_ID || !AUTH0_MANAGEMENT_CLIENT_SECRET || isUsingBackendAuth()) {
+        logger.warn('[Update Metadata] Management API credentials not configured, proxying through backend');
+        
+        // Get cookies for session
+        const cookieStore = await cookies();
+        
+        // Proxy the request to backend
+        const backendResponse = await fetch(`${API_URL}/api/auth/update-metadata/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Cookie': cookieStore.toString()
+          },
+          body: JSON.stringify({ 
+            metadata,
+            user_id: userId,
+            email: session.user.email
+          })
         });
+
+        const backendResult = await backendResponse.json();
+
+        if (!backendResponse.ok) {
+          logger.error('[Update Metadata] Backend update failed:', {
+            status: backendResponse.status,
+            error: backendResult
+          });
+
+          return NextResponse.json(
+            { error: backendResult.error || 'Failed to update metadata' },
+            { status: backendResponse.status }
+          );
+        }
+
+        return NextResponse.json(backendResult);
       }
       
       const updatedUser = await updateAuth0UserMetadata(userId, metadata);

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { logger } from '@/utils/logger';
 import { useSession } from '@/hooks/useSession-v2';
-import StandardSpinner from '@/components/StandardSpinner';
+import StandardSpinner from '@/components/ui/StandardSpinner';
 
 export default function OnboardingCompletePage() {
   const router = useRouter();

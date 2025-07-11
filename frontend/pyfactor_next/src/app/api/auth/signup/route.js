@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
+import { cookies } from 'next/headers';
+import { isUsingBackendAuth } from '@/lib/auth0-server-config';
 
 const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN || process.env.NEXT_PUBLIC_AUTH0_DOMAIN;
-const AUTH0_CLIENT_ID = process.env.AUTH0_CLIENT_ID;
+const AUTH0_CLIENT_ID = process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || process.env.AUTH0_CLIENT_ID;
 const AUTH0_CLIENT_SECRET = process.env.AUTH0_CLIENT_SECRET;
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
 
 export async function POST(request) {
   try {
@@ -32,6 +35,46 @@ export async function POST(request) {
         { error: 'Password must be at least 8 characters long' },
         { status: 400 }
       );
+    }
+
+    // Check if we need to proxy through backend
+    if (isUsingBackendAuth() || !AUTH0_CLIENT_SECRET) {
+      logger.info('[Signup] Proxying signup through backend API');
+      
+      // Get cookies for session
+      const cookieStore = await cookies();
+      
+      // Proxy the signup request to backend
+      const backendResponse = await fetch(`${API_URL}/api/auth/signup/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': cookieStore.toString()
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          given_name,
+          family_name,
+          name: name || `${given_name} ${family_name}`.trim()
+        })
+      });
+
+      const backendResult = await backendResponse.json();
+
+      if (!backendResponse.ok) {
+        logger.error('[Signup] Backend signup failed:', {
+          status: backendResponse.status,
+          error: backendResult
+        });
+
+        return NextResponse.json(
+          { error: backendResult.error || backendResult.message || 'Failed to create account' },
+          { status: backendResponse.status }
+        );
+      }
+
+      return NextResponse.json(backendResult);
     }
 
     // Create user in Auth0
