@@ -2141,13 +2141,14 @@ const MainListItems = ({
 
   // Function to check if user can see menu item
   const canSeeMenuItem = (item) => {
-    // Debug logging for Sales menu
-    if (item.label === 'Sales') {
-      console.log('[canSeeMenuItem] Sales menu debug:', {
-        user: user,
+    // Debug logging for important menus
+    if (item.label === 'Sales' || item.label === 'HR') {
+      console.log(`🚨 [ROLE_TRACKING] canSeeMenuItem ${item.label}:`, {
+        userEmail: user?.email,
         userRole: user?.role,
         isLoading: isLoading,
         isOwnerOrAdmin: isOwnerOrAdmin(),
+        requiresAdmin: item.requiresAdmin,
         subItemsCount: item.subItems?.length
       });
     }
@@ -2219,6 +2220,18 @@ const MainListItems = ({
   
   // Filter menuItems before rendering
   const renderFilteredMenuItem = (item, index) => {
+    // Log role tracking for HR menu
+    if (item.label === 'HR') {
+      console.log('🚨 [ROLE_TRACKING] HR Menu Check:', {
+        userEmail: user?.email,
+        userRole: user?.role,
+        isOwnerOrAdmin: isOwnerOrAdmin(),
+        isLoading: isLoading,
+        hasSubItems: !!item.subItems,
+        subItemsCount: item.subItems?.length
+      });
+    }
+    
     // Handle spacer items
     if (item.isSpacer) {
       return (

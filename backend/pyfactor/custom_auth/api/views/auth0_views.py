@@ -125,6 +125,9 @@ class Auth0UserCreateView(APIView):
                     given_name = "User"
                     logger.info(f"🔥 [AUTH0_CREATE_USER] New user - using default first_name: '{given_name}'")
                 
+                # Log before user creation/lookup
+                logger.info(f"🚨 [ROLE_TRACKING] Looking up user with email: {email}")
+                
                 user, created = User.objects.get_or_create(
                     email=email,
                     defaults={
@@ -137,6 +140,9 @@ class Auth0UserCreateView(APIView):
                         'role': 'OWNER'  # All new users who sign up are owners
                     }
                 )
+                
+                # Log immediately after user creation/lookup
+                logger.info(f"🚨 [ROLE_TRACKING] User lookup result - created: {created}, user_id: {user.id}, role: {user.role}")
             
             # Check if account has been deleted/closed
             if hasattr(user, 'is_deleted') and user.is_deleted:
@@ -155,11 +161,16 @@ class Auth0UserCreateView(APIView):
                     user.auth0_sub = auth0_sub
                 user.name = data.get('name', user.name)
                 
+                # Log existing user role before any changes
+                logger.info(f"🚨 [ROLE_TRACKING] Existing user {user.id} current role: {user.role}")
+                
                 # Don't change role for existing users - they might be legitimate USER role
                 # Only set role for users who don't have one yet
                 if not hasattr(user, 'role') or not user.role:
                     user.role = 'OWNER'
-                    logger.info(f"🔥 [AUTH0_CREATE_USER] Setting user role to OWNER for user without role")
+                    logger.info(f"🚨 [ROLE_TRACKING] Setting user role to OWNER for user without role")
+                else:
+                    logger.info(f"🚨 [ROLE_TRACKING] Keeping existing user role: {user.role}")
                 
                 # Enhanced name extraction logic for Google OAuth
                 given_name = data.get('given_name', '').strip()
@@ -196,12 +207,15 @@ class Auth0UserCreateView(APIView):
                 user.email_verified = data.get('email_verified', user.email_verified)
                 user.save()
                 logger.info(f"🔥 [AUTH0_CREATE_USER] User {user.id} updated - first_name: '{user.first_name}', last_name: '{user.last_name}'")
+                logger.info(f"🚨 [ROLE_TRACKING] After save - user {user.id} role: {user.role}")
             else:
                 # New user - ensure onboarding_completed is False and role is OWNER
                 logger.info(f"🔥 [AUTH0_CREATE_USER] New user created - setting onboarding_completed=False and role=OWNER")
+                logger.info(f"🚨 [ROLE_TRACKING] New user - setting role from {user.role} to OWNER")
                 user.onboarding_completed = False
                 user.role = 'OWNER'  # All users who sign up are owners
                 user.save(update_fields=['onboarding_completed', 'role'])
+                logger.info(f"🚨 [ROLE_TRACKING] After save - new user {user.id} role: {user.role}")
             
             # Check for existing tenant
             # Convert user.id to string for proper CharField comparison

@@ -209,6 +209,7 @@ class SessionService:
             # Get user role and add to session data
             user_role = user.role if hasattr(user, 'role') else 'USER'
             print(f"[SessionService] User role: {user_role}")
+            logger.info(f"🚨 [ROLE_TRACKING] Session creation - user {user.email} role: {user_role}")
             
             # Ensure session_data is included in kwargs
             if 'session_data' not in kwargs:
