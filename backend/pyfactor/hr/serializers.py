@@ -24,28 +24,19 @@ class EmployeeSerializer(serializers.ModelSerializer):
     """
     Serializer for Employee model with sensitive information excluded
     """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Dynamically set fields based on what's available in the database
-        from .utils import get_available_employee_fields
-        available_fields = get_available_employee_fields()
-        
-        # Remove fields that don't exist in the database
-        for field_name in list(self.fields.keys()):
-            if field_name not in available_fields:
-                self.fields.pop(field_name)
     
     class Meta:
         model = Employee
         fields = [
             'id', 'employee_number', 'first_name', 'middle_name', 'last_name', 
             'email', 'phone_number', 'date_of_birth', 'job_title', 'department', 'employment_type',
-            'date_joined', 'salary', 'active', 'onboarded', 'role',
-            'street', 'city', 'postcode', 'country', 'compensation_type',
-            'probation', 'probation_end_date', 'health_insurance_enrollment', 'pension_enrollment',
-            'direct_deposit', 'vacation_time', 'vacation_days_per_year', 'supervisor', 'user'
+            'hire_date', 'salary', 'wage_per_hour', 'active', 'onboarded',
+            'street', 'city', 'state', 'zip_code', 'country', 'compensation_type',
+            'emergency_contact_name', 'emergency_contact_phone',
+            'direct_deposit', 'vacation_time', 'vacation_days_per_year', 'supervisor', 'user',
+            'security_number_type', 'ssn_last_four', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'employee_number']
+        read_only_fields = ['id', 'employee_number', 'created_at', 'updated_at', 'ssn_last_four']
 
 
 class RoleSerializer(serializers.ModelSerializer):

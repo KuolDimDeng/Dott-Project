@@ -687,8 +687,8 @@ function EmployeeManagement({ onNavigate }) {
         wage_per_hour: formData.wagePerHour,
         hire_date: formData.hireDate,
         zip_code: formData.zipCode,
-        emergency_contact: formData.emergencyContact,
-        emergency_phone: formData.emergencyPhone,
+        emergency_contact_name: formData.emergencyContact,
+        emergency_contact_phone: formData.emergencyPhone,
         security_number_type: formData.securityNumberType,
         security_number: formData.securityNumber,
         // New fields - convert to snake_case
