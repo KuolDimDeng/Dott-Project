@@ -49,8 +49,8 @@ class VerifyCredentialsView(APIView):
 
 class SignUpView(APIView):
     """
-    Handle OAuth user creation when they sign up via Google/external providers.
-    This endpoint is called by the Lambda post-confirmation trigger.
+    Handle user creation for Auth0 signups.
+    This endpoint is called when users sign up via email/password or OAuth providers.
     """
     permission_classes = [AllowAny]
     
@@ -61,30 +61,40 @@ class SignUpView(APIView):
             
             # Extract user data from request
             email = request.data.get('email')
-            cognito_id = request.data.get('cognitoId')
-            first_name = request.data.get('firstName', '')
-            last_name = request.data.get('lastName', '')
+            password = request.data.get('password')
+            given_name = request.data.get('given_name', request.data.get('firstName', ''))
+            family_name = request.data.get('family_name', request.data.get('lastName', ''))
+            name = request.data.get('name', '')
+            auth0_sub = request.data.get('auth0_sub')  # Optional, for OAuth signups
             user_role = request.data.get('userRole', 'owner')
-            is_verified = request.data.get('is_already_verified', True)
+            is_verified = request.data.get('is_already_verified', False)
             
-            logger.info(f"[SignUp:{request_id}] Processing signup for email: {email}, cognitoId: {cognito_id}")
+            logger.info(f"[SignUp:{request_id}] Processing signup for email: {email}")
             
-            if not email or not cognito_id:
-                logger.error(f"[SignUp:{request_id}] Missing required fields")
+            if not email:
+                logger.error(f"[SignUp:{request_id}] Missing email")
                 return Response({
                     'success': False,
-                    'error': 'Email and Cognito ID are required'
+                    'error': 'Email is required'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # For email/password signup, password is required
+            if not auth0_sub and not password:
+                logger.error(f"[SignUp:{request_id}] Missing password for email/password signup")
+                return Response({
+                    'success': False,
+                    'error': 'Password is required for email/password signup'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
             with transaction.atomic():
                 # Check if user already exists
                 existing_user = User.objects.filter(email=email).first()
                 if existing_user:
-                    logger.info(f"[SignUp:{request_id}] User already exists, updating cognito_id")
-                    # Update cognito_id if needed
-                    if hasattr(existing_user, 'cognito_id') and existing_user.cognito_id != cognito_id:
-                        existing_user.cognito_id = cognito_id
-                        existing_user.save(update_fields=['cognito_id'])
+                    logger.info(f"[SignUp:{request_id}] User already exists, checking auth0_sub")
+                    # Update auth0_sub if provided and different
+                    if hasattr(existing_user, 'auth0_sub') and auth0_sub and existing_user.auth0_sub != auth0_sub:
+                        existing_user.auth0_sub = auth0_sub
+                        existing_user.save(update_fields=['auth0_sub'])
                     
                     return Response({
                         'success': True,
@@ -97,24 +107,40 @@ class SignUpView(APIView):
                 user_data = {
                     'email': email,
                     'username': email,  # Use email as username
-                    'first_name': first_name,
-                    'last_name': last_name,
+                    'first_name': given_name or first_name,
+                    'last_name': family_name or last_name,
                     'is_active': True,
                     'date_joined': timezone.now()
                 }
                 
                 # Add fields that might exist on the User model
-                if hasattr(User, 'cognito_id'):
-                    user_data['cognito_id'] = cognito_id
+                if hasattr(User, 'auth0_sub') and auth0_sub:
+                    user_data['auth0_sub'] = auth0_sub
+                if hasattr(User, 'name') and name:
+                    user_data['name'] = name
+                elif name:
+                    # If name field doesn't exist, use it to populate first/last name
+                    name_parts = name.split(' ', 1)
+                    if not user_data['first_name']:
+                        user_data['first_name'] = name_parts[0]
+                    if len(name_parts) > 1 and not user_data['last_name']:
+                        user_data['last_name'] = name_parts[1]
+                
                 if hasattr(User, 'is_verified'):
                     user_data['is_verified'] = is_verified
                 if hasattr(User, 'user_role'):
                     user_data['user_role'] = user_role
                 if hasattr(User, 'onboarding_status'):
                     user_data['onboarding_status'] = 'not_started'
+                if hasattr(User, 'onboarding_completed'):
+                    user_data['onboarding_completed'] = False
                 
-                # Generate a random password for OAuth users (they won't use it)
-                user_data['password'] = make_password(str(uuid.uuid4()))
+                # Set password
+                if password:
+                    user_data['password'] = make_password(password)
+                else:
+                    # Generate a random password for OAuth users (they won't use it)
+                    user_data['password'] = make_password(str(uuid.uuid4()))
                 
                 user = User.objects.create(**user_data)
                 logger.info(f"[SignUp:{request_id}] Created user {user.id} for email {email}")
@@ -190,8 +216,8 @@ class UserProfileView(APIView):
             
             # Add optional fields if they exist on the user model
             optional_fields = [
-                'cognito_id', 'user_role', 'onboarding_status', 'is_verified',
-                'current_step', 'next_step', 'selected_plan'
+                'auth0_sub', 'user_role', 'onboarding_status', 'is_verified',
+                'current_step', 'next_step', 'selected_plan', 'onboarding_completed'
             ]
             
             for field in optional_fields:
@@ -300,7 +326,7 @@ class VerifySessionView(APIView):
 
 class CheckUserAttributesView(APIView):
     """
-    Check and return the user's cognito attributes
+    Check and return the user's attributes
     Required by the frontend to determine user state
     """
     permission_classes = [AllowAny]
