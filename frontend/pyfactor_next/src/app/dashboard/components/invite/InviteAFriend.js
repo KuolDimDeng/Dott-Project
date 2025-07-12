@@ -143,7 +143,9 @@ ${user?.name || user?.email || 'A Dott User'}`;
           Invite a Business Owner
         </h1>
         <p className="text-gray-600 text-lg">
-          Do you know a business owner who would benefit from using Dott? Share Dott with your network and help them transform their business operations.
+          Know a business owner looking to streamline their operations? Share Dott with them!
+          <br className="hidden sm:block" />
+          Dott helps small businesses automate scheduling, manage customer relationships, and handle payments—all in one simple app. Your connection can save hours of administrative work each week.
         </p>
       </div>
 
