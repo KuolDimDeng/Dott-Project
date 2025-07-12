@@ -4,7 +4,8 @@ from .views import (
     PerformanceReviewViewSet, PerformanceMetricViewSet, PerformanceRatingViewSet,
     PerformanceGoalViewSet, FeedbackRecordViewSet, PerformanceSettingViewSet,
     TimesheetViewSet, TimesheetEntryViewSet, TimesheetSettingViewSet, TimeOffRequestViewSet,
-    TimeOffBalanceViewSet, BenefitsViewSet
+    TimeOffBalanceViewSet, BenefitsViewSet, LocationLogViewSet, EmployeeLocationConsentViewSet,
+    LocationCheckInViewSet, clock_in_with_location, clock_out_with_location
 )
 from rest_framework.routers import DefaultRouter
 
@@ -22,6 +23,9 @@ router.register(r'timesheet-settings', TimesheetSettingViewSet)
 router.register(r'time-off-requests', TimeOffRequestViewSet)
 router.register(r'time-off-balances', TimeOffBalanceViewSet)
 router.register(r'benefits', BenefitsViewSet)
+router.register(r'location-logs', LocationLogViewSet)
+router.register(r'location-consents', EmployeeLocationConsentViewSet)
+router.register(r'location-checkins', LocationCheckInViewSet)
 
 urlpatterns = [
     # API endpoints
@@ -57,6 +61,10 @@ urlpatterns = [
     
     # Health check endpoint (public)
     path('health/', views.health_check, name='hr-health-check'),
+    
+    # Location tracking endpoints
+    path('clock-in-location/', clock_in_with_location, name='clock-in-location'),
+    path('clock-out-location/', clock_out_with_location, name='clock-out-location'),
     
     # Include router URLs
     path('', include(router.urls)),

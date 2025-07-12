@@ -393,6 +393,22 @@ class TimesheetEntry(TenantAwareModel):
     task = models.CharField(max_length=100, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     
+    # Location tracking references
+    clock_in_location = models.ForeignKey(
+        'LocationLog', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='clock_in_entries'
+    )
+    clock_out_location = models.ForeignKey(
+        'LocationLog', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='clock_out_entries'
+    )
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -947,3 +963,178 @@ class PerformanceSetting(TenantAwareModel):
     class Meta:
         verbose_name = "Performance Setting"
         verbose_name_plural = "Performance Settings"
+
+
+# Location Tracking Models
+
+class LocationLog(TenantAwareModel):
+    """
+    Logs location data for clock in/out and random checks
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    employee = models.ForeignKey('Employee', on_delete=models.CASCADE, related_name='location_logs')
+    business_id = models.UUIDField(null=True, blank=True)  # For RLS tenant isolation
+    
+    # Location type
+    LOCATION_TYPE_CHOICES = [
+        ('CLOCK_IN', 'Clock In'),
+        ('CLOCK_OUT', 'Clock Out'),
+        ('RANDOM_CHECK', 'Random Check'),
+        ('BREAK_START', 'Break Start'),
+        ('BREAK_END', 'Break End'),
+    ]
+    location_type = models.CharField(max_length=15, choices=LOCATION_TYPE_CHOICES)
+    
+    # Coordinates
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    accuracy = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        null=True, 
+        blank=True,
+        help_text="Location accuracy in meters"
+    )
+    
+    # Address information
+    street_address = models.CharField(max_length=255, blank=True, null=True)
+    city = models.CharField(max_length=100, blank=True, null=True)
+    state = models.CharField(max_length=50, blank=True, null=True)
+    postal_code = models.CharField(max_length=20, blank=True, null=True)
+    country = models.CharField(max_length=100, blank=True, null=True)
+    formatted_address = models.TextField(blank=True, null=True)
+    
+    # Device information
+    device_type = models.CharField(max_length=50, blank=True, null=True)
+    device_id = models.CharField(max_length=255, blank=True, null=True)
+    ip_address = models.GenericIPAddressField(blank=True, null=True)
+    user_agent = models.TextField(blank=True, null=True)
+    
+    # Verification status
+    is_verified = models.BooleanField(default=True)
+    verification_method = models.CharField(max_length=50, blank=True, null=True)
+    
+    # Associated timesheet entry (if applicable)
+    timesheet_entry = models.ForeignKey(
+        'TimesheetEntry', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='location_logs'
+    )
+    
+    # Timestamps
+    logged_at = models.DateTimeField(default=timezone.now)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.employee.get_full_name()} - {self.location_type} at {self.logged_at}"
+    
+    class Meta:
+        verbose_name = "Location Log"
+        verbose_name_plural = "Location Logs"
+        indexes = [
+            models.Index(fields=['employee', 'logged_at']),
+            models.Index(fields=['business_id', 'location_type', 'logged_at']),
+        ]
+        ordering = ['-logged_at']
+
+
+class EmployeeLocationConsent(TenantAwareModel):
+    """
+    Tracks employee consent for location tracking
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    employee = models.OneToOneField(
+        'Employee', 
+        on_delete=models.CASCADE, 
+        related_name='location_consent'
+    )
+    business_id = models.UUIDField(null=True, blank=True)  # For RLS tenant isolation
+    
+    # Consent status
+    has_consented = models.BooleanField(default=False)
+    consent_date = models.DateTimeField(null=True, blank=True)
+    revoked_date = models.DateTimeField(null=True, blank=True)
+    
+    # Consent preferences
+    allow_clock_in_out_tracking = models.BooleanField(default=True)
+    allow_random_checks = models.BooleanField(default=False)
+    allow_continuous_tracking = models.BooleanField(default=False)
+    
+    # Privacy preferences
+    share_with_manager = models.BooleanField(default=True)
+    share_with_hr = models.BooleanField(default=True)
+    
+    # Legal/compliance
+    consent_version = models.CharField(
+        max_length=20, 
+        default='1.0',
+        help_text="Version of privacy policy/terms accepted"
+    )
+    ip_address_at_consent = models.GenericIPAddressField(blank=True, null=True)
+    
+    # Notes
+    notes = models.TextField(blank=True, null=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def save(self, *args, **kwargs):
+        # Update consent/revoked dates based on status changes
+        if self.has_consented and not self.consent_date:
+            self.consent_date = timezone.now()
+        elif not self.has_consented and self.consent_date and not self.revoked_date:
+            self.revoked_date = timezone.now()
+        super().save(*args, **kwargs)
+    
+    def __str__(self):
+        status = "Consented" if self.has_consented else "Not Consented"
+        return f"{self.employee.get_full_name()} - Location Tracking {status}"
+    
+    class Meta:
+        verbose_name = "Employee Location Consent"
+        verbose_name_plural = "Employee Location Consents"
+
+
+class LocationCheckIn(TenantAwareModel):
+    """
+    Simplified model for active check-ins (can be used for real-time tracking)
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    employee = models.OneToOneField(
+        'Employee', 
+        on_delete=models.CASCADE, 
+        related_name='active_location'
+    )
+    business_id = models.UUIDField(null=True, blank=True)  # For RLS tenant isolation
+    
+    # Current location
+    latitude = models.DecimalField(max_digits=9, decimal_places=6)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6)
+    accuracy = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    
+    # Check-in details
+    check_in_time = models.DateTimeField(default=timezone.now)
+    last_updated = models.DateTimeField(auto_now=True)
+    
+    # Associated location log
+    check_in_location_log = models.ForeignKey(
+        LocationLog,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='active_checkins'
+    )
+    
+    # Status
+    is_active = models.BooleanField(default=True)
+    
+    def __str__(self):
+        return f"{self.employee.get_full_name()} - Active since {self.check_in_time}"
+    
+    class Meta:
+        verbose_name = "Location Check In"
+        verbose_name_plural = "Location Check Ins"

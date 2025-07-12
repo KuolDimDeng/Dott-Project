@@ -5,7 +5,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
-from .models import Employee, Role, EmployeeRole, AccessPermission, PreboardingForm, PerformanceReview, PerformanceMetric, PerformanceRating, PerformanceGoal, FeedbackRecord, PerformanceSetting, Timesheet, TimesheetEntry, TimeOffRequest, TimeOffBalance, Benefits, TimesheetSetting
+from .models import Employee, Role, EmployeeRole, AccessPermission, PreboardingForm, PerformanceReview, PerformanceMetric, PerformanceRating, PerformanceGoal, FeedbackRecord, PerformanceSetting, Timesheet, TimesheetEntry, TimeOffRequest, TimeOffBalance, Benefits, TimesheetSetting, LocationLog, EmployeeLocationConsent, LocationCheckIn
 from .serializers import (
     EmployeeSerializer, 
     EmployeeBasicSerializer,
@@ -25,7 +25,11 @@ from .serializers import (
     TimesheetSettingSerializer,
     TimeOffRequestSerializer,
     TimeOffBalanceSerializer,
-    BenefitsSerializer
+    BenefitsSerializer,
+    LocationLogSerializer,
+    EmployeeLocationConsentSerializer,
+    LocationCheckInSerializer,
+    TimesheetEntryWithLocationSerializer
 )
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
@@ -35,6 +39,7 @@ import uuid
 from datetime import datetime
 from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
 from rest_framework import viewsets
+from rest_framework.decorators import action
 
 from pyfactor.logging_config import get_logger
 
@@ -1166,3 +1171,304 @@ class BenefitsViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(is_enrolled=is_enrolled_bool)
         
         return queryset
+
+
+# Location Tracking ViewSets
+
+class LocationLogViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing location logs"""
+    queryset = LocationLog.objects.all()
+    serializer_class = LocationLogSerializer
+    
+    def get_queryset(self):
+        queryset = LocationLog.objects.all()
+        
+        # Filter by employee
+        employee_id = self.request.query_params.get('employee_id', None)
+        if employee_id:
+            queryset = queryset.filter(employee_id=employee_id)
+        
+        # Filter by business_id
+        business_id = self.request.query_params.get('business_id', None)
+        if business_id:
+            queryset = queryset.filter(business_id=business_id)
+        
+        # Filter by location type
+        location_type = self.request.query_params.get('location_type', None)
+        if location_type:
+            queryset = queryset.filter(location_type=location_type)
+        
+        # Filter by date range
+        start_date = self.request.query_params.get('start_date', None)
+        end_date = self.request.query_params.get('end_date', None)
+        if start_date and end_date:
+            queryset = queryset.filter(logged_at__date__range=[start_date, end_date])
+        elif start_date:
+            queryset = queryset.filter(logged_at__date__gte=start_date)
+        elif end_date:
+            queryset = queryset.filter(logged_at__date__lte=end_date)
+        
+        return queryset.order_by('-logged_at')
+    
+    def perform_create(self, serializer):
+        # Log location creation
+        logger.info(f"Creating location log for employee: {serializer.validated_data.get('employee')}")
+        instance = serializer.save()
+        
+        # If this is a clock in/out, update the active check-in
+        if instance.location_type in ['CLOCK_IN', 'CLOCK_OUT']:
+            self._update_active_checkin(instance)
+    
+    def _update_active_checkin(self, location_log):
+        """Update or create active check-in based on location log"""
+        if location_log.location_type == 'CLOCK_IN':
+            # Create or update active check-in
+            LocationCheckIn.objects.update_or_create(
+                employee=location_log.employee,
+                defaults={
+                    'latitude': location_log.latitude,
+                    'longitude': location_log.longitude,
+                    'accuracy': location_log.accuracy,
+                    'check_in_time': location_log.logged_at,
+                    'business_id': location_log.business_id,
+                    'check_in_location_log': location_log,
+                    'is_active': True
+                }
+            )
+        elif location_log.location_type == 'CLOCK_OUT':
+            # Deactivate check-in
+            LocationCheckIn.objects.filter(
+                employee=location_log.employee,
+                is_active=True
+            ).update(is_active=False)
+
+
+class EmployeeLocationConsentViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing employee location consent"""
+    queryset = EmployeeLocationConsent.objects.all()
+    serializer_class = EmployeeLocationConsentSerializer
+    
+    def get_queryset(self):
+        queryset = EmployeeLocationConsent.objects.all()
+        
+        # Filter by employee
+        employee_id = self.request.query_params.get('employee_id', None)
+        if employee_id:
+            queryset = queryset.filter(employee_id=employee_id)
+        
+        # Filter by business_id
+        business_id = self.request.query_params.get('business_id', None)
+        if business_id:
+            queryset = queryset.filter(business_id=business_id)
+        
+        # Filter by consent status
+        has_consented = self.request.query_params.get('has_consented', None)
+        if has_consented is not None:
+            has_consented_bool = has_consented.lower() == 'true'
+            queryset = queryset.filter(has_consented=has_consented_bool)
+        
+        return queryset
+    
+    @action(detail=False, methods=['get'], url_path='check/(?P<employee_id>[^/.]+)')
+    def check_consent(self, request, employee_id=None):
+        """Check if an employee has given location consent"""
+        try:
+            consent = EmployeeLocationConsent.objects.get(employee_id=employee_id)
+            serializer = EmployeeLocationConsentSerializer(consent)
+            return Response(serializer.data)
+        except EmployeeLocationConsent.DoesNotExist:
+            return Response({
+                'employee_id': employee_id,
+                'has_consented': False,
+                'message': 'No consent record found'
+            }, status=status.HTTP_404_NOT_FOUND)
+
+
+class LocationCheckInViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing active location check-ins"""
+    queryset = LocationCheckIn.objects.all()
+    serializer_class = LocationCheckInSerializer
+    
+    def get_queryset(self):
+        queryset = LocationCheckIn.objects.all()
+        
+        # Filter by employee
+        employee_id = self.request.query_params.get('employee_id', None)
+        if employee_id:
+            queryset = queryset.filter(employee_id=employee_id)
+        
+        # Filter by business_id
+        business_id = self.request.query_params.get('business_id', None)
+        if business_id:
+            queryset = queryset.filter(business_id=business_id)
+        
+        # Filter by active status
+        is_active = self.request.query_params.get('is_active', None)
+        if is_active is not None:
+            is_active_bool = is_active.lower() == 'true'
+            queryset = queryset.filter(is_active=is_active_bool)
+        
+        return queryset.order_by('-check_in_time')
+    
+    @action(detail=False, methods=['get'])
+    def active_checkins(self, request):
+        """Get all active check-ins for a business"""
+        business_id = request.query_params.get('business_id', None)
+        if not business_id:
+            return Response({
+                'error': 'business_id parameter is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        active_checkins = LocationCheckIn.objects.filter(
+            business_id=business_id,
+            is_active=True
+        ).select_related('employee')
+        
+        serializer = LocationCheckInSerializer(active_checkins, many=True)
+        return Response(serializer.data)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def clock_in_with_location(request):
+    """
+    Clock in with location data
+    Expects: employee_id, latitude, longitude, accuracy (optional), address data (optional)
+    """
+    employee_id = request.data.get('employee_id')
+    if not employee_id:
+        return Response({
+            'error': 'employee_id is required'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        employee = Employee.objects.get(id=employee_id)
+    except Employee.DoesNotExist:
+        return Response({
+            'error': 'Employee not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    # Check consent
+    try:
+        consent = EmployeeLocationConsent.objects.get(employee=employee)
+        if not consent.has_consented or not consent.allow_clock_in_out_tracking:
+            return Response({
+                'error': 'Employee has not consented to location tracking for clock in/out'
+            }, status=status.HTTP_403_FORBIDDEN)
+    except EmployeeLocationConsent.DoesNotExist:
+        return Response({
+            'error': 'No consent record found for employee'
+        }, status=status.HTTP_403_FORBIDDEN)
+    
+    # Create location log
+    location_data = {
+        'employee': employee.id,
+        'location_type': 'CLOCK_IN',
+        'latitude': request.data.get('latitude'),
+        'longitude': request.data.get('longitude'),
+        'accuracy': request.data.get('accuracy'),
+        'street_address': request.data.get('street_address'),
+        'city': request.data.get('city'),
+        'state': request.data.get('state'),
+        'postal_code': request.data.get('postal_code'),
+        'country': request.data.get('country'),
+        'formatted_address': request.data.get('formatted_address'),
+        'device_type': request.data.get('device_type'),
+        'device_id': request.data.get('device_id'),
+        'ip_address': request.META.get('REMOTE_ADDR'),
+        'user_agent': request.META.get('HTTP_USER_AGENT'),
+    }
+    
+    serializer = LocationLogSerializer(data=location_data)
+    if serializer.is_valid():
+        location_log = serializer.save()
+        
+        # Create or update active check-in
+        LocationCheckIn.objects.update_or_create(
+            employee=employee,
+            defaults={
+                'latitude': location_log.latitude,
+                'longitude': location_log.longitude,
+                'accuracy': location_log.accuracy,
+                'check_in_time': location_log.logged_at,
+                'business_id': location_log.business_id,
+                'check_in_location_log': location_log,
+                'is_active': True
+            }
+        )
+        
+        return Response({
+            'message': 'Successfully clocked in with location',
+            'location_log': serializer.data
+        }, status=status.HTTP_201_CREATED)
+    
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def clock_out_with_location(request):
+    """
+    Clock out with location data
+    Expects: employee_id, latitude, longitude, accuracy (optional), address data (optional)
+    """
+    employee_id = request.data.get('employee_id')
+    if not employee_id:
+        return Response({
+            'error': 'employee_id is required'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        employee = Employee.objects.get(id=employee_id)
+    except Employee.DoesNotExist:
+        return Response({
+            'error': 'Employee not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    # Check consent
+    try:
+        consent = EmployeeLocationConsent.objects.get(employee=employee)
+        if not consent.has_consented or not consent.allow_clock_in_out_tracking:
+            return Response({
+                'error': 'Employee has not consented to location tracking for clock in/out'
+            }, status=status.HTTP_403_FORBIDDEN)
+    except EmployeeLocationConsent.DoesNotExist:
+        return Response({
+            'error': 'No consent record found for employee'
+        }, status=status.HTTP_403_FORBIDDEN)
+    
+    # Create location log
+    location_data = {
+        'employee': employee.id,
+        'location_type': 'CLOCK_OUT',
+        'latitude': request.data.get('latitude'),
+        'longitude': request.data.get('longitude'),
+        'accuracy': request.data.get('accuracy'),
+        'street_address': request.data.get('street_address'),
+        'city': request.data.get('city'),
+        'state': request.data.get('state'),
+        'postal_code': request.data.get('postal_code'),
+        'country': request.data.get('country'),
+        'formatted_address': request.data.get('formatted_address'),
+        'device_type': request.data.get('device_type'),
+        'device_id': request.data.get('device_id'),
+        'ip_address': request.META.get('REMOTE_ADDR'),
+        'user_agent': request.META.get('HTTP_USER_AGENT'),
+    }
+    
+    serializer = LocationLogSerializer(data=location_data)
+    if serializer.is_valid():
+        location_log = serializer.save()
+        
+        # Deactivate check-in
+        LocationCheckIn.objects.filter(
+            employee=employee,
+            is_active=True
+        ).update(is_active=False)
+        
+        return Response({
+            'message': 'Successfully clocked out with location',
+            'location_log': serializer.data
+        }, status=status.HTTP_201_CREATED)
+    
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSession } from '@/hooks/useSession-v2';
 import { useRouter } from 'next/navigation';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
@@ -11,8 +11,21 @@ import {
   CalendarIcon,
   CheckCircleIcon,
   XCircleIcon,
-  ArrowLeftIcon
+  ArrowLeftIcon,
+  MapPinIcon,
+  ShieldCheckIcon
 } from '@heroicons/react/24/outline';
+import LocationConsent from '@/components/LocationConsent';
+import { 
+  captureLocation, 
+  reverseGeocode, 
+  getDeviceInfo,
+  checkLocationAvailability,
+  scheduleRandomLocationCheck,
+  formatLocation,
+  getLocationIndicatorProps
+} from '@/utils/locationServices';
+import toast from 'react-hot-toast';
 
 export default function MobileTimesheetPage() {
   const { session, loading } = useSession();
@@ -23,6 +36,14 @@ export default function MobileTimesheetPage() {
   const [isClockingIn, setIsClockingIn] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [weekDays, setWeekDays] = useState([]);
+  
+  // Location tracking states
+  const [showLocationConsent, setShowLocationConsent] = useState(false);
+  const [locationEnabled, setLocationEnabled] = useState(false);
+  const [currentLocation, setCurrentLocation] = useState(null);
+  const [isCapturingLocation, setIsCapturingLocation] = useState(false);
+  const [lastClockInLocation, setLastClockInLocation] = useState(null);
+  const randomCheckTimeoutRef = useRef(null);
 
   // Update current time every second
   useEffect(() => {
@@ -52,8 +73,42 @@ export default function MobileTimesheetPage() {
   useEffect(() => {
     if (session?.employee?.id && session?.tenantId) {
       loadTimesheetData();
+      checkLocationPermissions();
     }
   }, [session]);
+  
+  // Check location permissions and consent
+  const checkLocationPermissions = async () => {
+    const availability = await checkLocationAvailability();
+    if (availability.supported && availability.permission === 'granted') {
+      // Check if user has given consent in our system
+      try {
+        const response = await fetch(`/api/hr/location-consents/check/${session.employee.id}/`, {
+          headers: {
+            'X-Tenant-ID': session.tenantId,
+          },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.has_consented && data.tracking_enabled) {
+            setLocationEnabled(true);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking location consent:', error);
+      }
+    }
+  };
+  
+  // Cleanup random check timeout
+  useEffect(() => {
+    return () => {
+      if (randomCheckTimeoutRef.current) {
+        clearTimeout(randomCheckTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const loadTimesheetData = async () => {
     setLoadingTimesheet(true);
@@ -107,11 +162,45 @@ export default function MobileTimesheetPage() {
   const handleClockInOut = async () => {
     if (!session?.employee?.id || !session?.tenantId) return;
     
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const todayEntry = timesheetEntries[today];
+    const currentHours = todayEntry?.regular_hours || 0;
+    const isClockingOut = currentHours > 0;
+    
+    // Check if location consent is needed
+    if (!locationEnabled && !isClockingOut) {
+      setShowLocationConsent(true);
+      return;
+    }
+    
     setIsClockingIn(true);
+    
+    // Capture location if enabled
+    let locationData = null;
+    if (locationEnabled) {
+      setIsCapturingLocation(true);
+      try {
+        const location = await captureLocation();
+        const address = await reverseGeocode(location.latitude, location.longitude);
+        const deviceInfo = getDeviceInfo();
+        
+        locationData = {
+          ...location,
+          address,
+          ...deviceInfo,
+        };
+        
+        if (!isClockingOut) {
+          setLastClockInLocation(locationData);
+        }
+      } catch (error) {
+        console.error('Error capturing location:', error);
+        toast.error('Could not get location. Continuing without it.');
+      }
+      setIsCapturingLocation(false);
+    }
+    
     try {
-      const today = format(new Date(), 'yyyy-MM-dd');
-      const todayEntry = timesheetEntries[today];
-      
       if (!currentTimesheet) {
         // Create new timesheet for this week
         const weekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
@@ -133,25 +222,133 @@ export default function MobileTimesheetPage() {
           setCurrentTimesheet(newTimesheet);
         }
       }
-
-      // Clock in/out logic
-      const currentHours = todayEntry?.regular_hours || 0;
-      const isClockingOut = currentHours > 0;
       
       if (isClockingOut) {
-        // Clock out - add more hours (simulate 8-hour work day for demo)
+        // Clock out
         const newHours = Math.min(currentHours + 0.5, 8); // Add 30 minutes, max 8 hours
         await updateTimesheetEntry(today, newHours);
+        
+        // Save clock out location
+        if (locationData) {
+          await saveLocationLog({
+            ...locationData,
+            location_type: 'CLOCK_OUT',
+            timesheet_entry: todayEntry?.id,
+          });
+        }
+        
+        // Cancel any pending random checks
+        if (randomCheckTimeoutRef.current) {
+          clearTimeout(randomCheckTimeoutRef.current);
+          randomCheckTimeoutRef.current = null;
+        }
       } else {
-        // Clock in - start with 0.5 hours
+        // Clock in
         await updateTimesheetEntry(today, 0.5);
+        
+        // Save clock in location
+        if (locationData) {
+          await saveLocationLog({
+            ...locationData,
+            location_type: 'CLOCK_IN',
+          });
+          
+          // Schedule a random location check
+          scheduleRandomCheck();
+        }
       }
       
       await loadTimesheetData();
+      toast.success(isClockingOut ? 'Clocked out successfully' : 'Clocked in successfully');
     } catch (error) {
       console.error('Error clocking in/out:', error);
+      toast.error('Failed to clock ' + (isClockingOut ? 'out' : 'in'));
     } finally {
       setIsClockingIn(false);
+    }
+  };
+  
+  // Save location log to backend
+  const saveLocationLog = async (locationData) => {
+    try {
+      const response = await fetch('/api/hr/location-logs/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Tenant-ID': session.tenantId,
+        },
+        body: JSON.stringify({
+          employee: session.employee.id,
+          ...locationData,
+          captured_at: new Date().toISOString(),
+        }),
+      });
+      
+      if (!response.ok) {
+        console.error('Failed to save location log');
+      }
+    } catch (error) {
+      console.error('Error saving location:', error);
+    }
+  };
+  
+  // Schedule random location check
+  const scheduleRandomCheck = () => {
+    // Clear any existing timeout
+    if (randomCheckTimeoutRef.current) {
+      clearTimeout(randomCheckTimeoutRef.current);
+    }
+    
+    // Schedule random check between 30 minutes and 4 hours
+    const minDelay = 30 * 60 * 1000; // 30 minutes
+    const maxDelay = 4 * 60 * 60 * 1000; // 4 hours
+    const randomDelay = Math.random() * (maxDelay - minDelay) + minDelay;
+    
+    randomCheckTimeoutRef.current = setTimeout(async () => {
+      // Check if still clocked in
+      const today = format(new Date(), 'yyyy-MM-dd');
+      const todayEntry = timesheetEntries[today];
+      
+      if (todayEntry && todayEntry.regular_hours > 0) {
+        try {
+          const location = await captureLocation();
+          const address = await reverseGeocode(location.latitude, location.longitude);
+          const deviceInfo = getDeviceInfo();
+          
+          await saveLocationLog({
+            ...location,
+            address,
+            ...deviceInfo,
+            location_type: 'RANDOM_CHECK',
+            timesheet_entry: todayEntry.id,
+          });
+          
+          toast('Location verified for timesheet', {
+            icon: '📍',
+            duration: 3000,
+          });
+          
+          // Schedule next random check
+          scheduleRandomCheck();
+        } catch (error) {
+          console.error('Random location check failed:', error);
+        }
+      }
+    }, randomDelay);
+  };
+  
+  // Handle location consent
+  const handleLocationConsent = (accepted) => {
+    setShowLocationConsent(false);
+    if (accepted) {
+      setLocationEnabled(true);
+      // Retry clock in
+      handleClockInOut();
+    } else {
+      setLocationEnabled(false);
+      // Continue clock in without location
+      setIsClockingIn(true);
+      handleClockInOut();
     }
   };
 
@@ -238,6 +435,21 @@ export default function MobileTimesheetPage() {
           <div className={`text-sm font-medium mt-2 ${todayStatus.color}`}>
             {todayStatus.text}
           </div>
+          
+          {/* Location indicator */}
+          {locationEnabled && todayStatus.status === 'clocked_in' && (
+            <div className="mt-3 flex items-center justify-center space-x-2">
+              <MapPinIcon className="w-4 h-4 text-green-600" />
+              <span className="text-sm text-green-600">Location tracking active</span>
+            </div>
+          )}
+          
+          {/* Last clock in location */}
+          {lastClockInLocation && todayStatus.status === 'clocked_in' && (
+            <div className="mt-2 text-xs text-gray-500">
+              Clocked in at: {formatLocation(lastClockInLocation)}
+            </div>
+          )}
         </div>
       </div>
 
@@ -245,7 +457,7 @@ export default function MobileTimesheetPage() {
       <div className="px-4 py-6">
         <button
           onClick={handleClockInOut}
-          disabled={isClockingIn}
+          disabled={isClockingIn || isCapturingLocation}
           className={`w-full py-4 rounded-xl font-semibold text-lg flex items-center justify-center space-x-2 transition-colors ${
             todayStatus.status === 'not_started' || todayStatus.status === 'clocked_in'
               ? todayStatus.status === 'not_started'
@@ -254,8 +466,13 @@ export default function MobileTimesheetPage() {
               : 'bg-gray-300 text-gray-500 cursor-not-allowed'
           }`}
         >
-          {isClockingIn ? (
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+          {isClockingIn || isCapturingLocation ? (
+            <div className="flex items-center space-x-2">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+              {isCapturingLocation && (
+                <span className="text-sm">Getting location...</span>
+              )}
+            </div>
           ) : (
             <>
               {todayStatus.status === 'not_started' ? (
@@ -266,9 +483,25 @@ export default function MobileTimesheetPage() {
               <span>
                 {todayStatus.status === 'not_started' ? 'Clock In' : 'Clock Out'}
               </span>
+              {locationEnabled && (
+                <MapPinIcon className="w-4 h-4" />
+              )}
             </>
           )}
         </button>
+        
+        {/* Location consent info */}
+        {!locationEnabled && (
+          <div className="mt-2 text-center">
+            <button
+              onClick={() => setShowLocationConsent(true)}
+              className="text-sm text-blue-600 hover:text-blue-700 flex items-center justify-center space-x-1 mx-auto"
+            >
+              <ShieldCheckIcon className="w-4 h-4" />
+              <span>Enable location for better tracking</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Weekly Summary */}
@@ -340,6 +573,17 @@ export default function MobileTimesheetPage() {
           </button>
         </div>
       </div>
+      
+      {/* Location Consent Dialog */}
+      {showLocationConsent && (
+        <LocationConsent
+          onAccept={() => handleLocationConsent(true)}
+          onDecline={() => handleLocationConsent(false)}
+          showAlways={false}
+          employeeId={session.employee?.id}
+          tenantId={session.tenantId}
+        />
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 # hr/serializers.py
 
 from rest_framework import serializers
-from .models import Employee, PreboardingForm, Role, EmployeeRole, AccessPermission, Timesheet, TimesheetEntry, TimeOffRequest, TimeOffBalance, PerformanceReview, PerformanceMetric, PerformanceRating, PerformanceGoal, FeedbackRecord, PerformanceSetting, Benefits, TimesheetSetting
+from .models import Employee, PreboardingForm, Role, EmployeeRole, AccessPermission, Timesheet, TimesheetEntry, TimeOffRequest, TimeOffBalance, PerformanceReview, PerformanceMetric, PerformanceRating, PerformanceGoal, FeedbackRecord, PerformanceSetting, Benefits, TimesheetSetting, LocationLog, EmployeeLocationConsent, LocationCheckIn
 from decimal import Decimal, InvalidOperation
 from datetime import datetime
 
@@ -181,3 +181,71 @@ class BenefitsSerializer(serializers.ModelSerializer):
         model = Benefits
         fields = '__all__'
         read_only_fields = ['id', 'employee', 'business_id', 'created_at', 'updated_at']
+
+
+# Location Tracking Serializers
+
+class LocationLogSerializer(serializers.ModelSerializer):
+    """Serializer for LocationLog model"""
+    employee_name = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = LocationLog
+        fields = '__all__'
+        read_only_fields = ('id', 'created_at', 'updated_at', 'business_id', 'tenant_id')
+    
+    def get_employee_name(self, obj):
+        return obj.employee.get_full_name() if obj.employee else None
+    
+    def create(self, validated_data):
+        # Ensure business_id is set from the employee
+        if 'employee' in validated_data:
+            validated_data['business_id'] = validated_data['employee'].business_id
+        return super().create(validated_data)
+
+
+class EmployeeLocationConsentSerializer(serializers.ModelSerializer):
+    """Serializer for EmployeeLocationConsent model"""
+    employee_name = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = EmployeeLocationConsent
+        fields = '__all__'
+        read_only_fields = ('id', 'created_at', 'updated_at', 'business_id', 'tenant_id', 'consent_date', 'revoked_date')
+    
+    def get_employee_name(self, obj):
+        return obj.employee.get_full_name() if obj.employee else None
+    
+    def create(self, validated_data):
+        # Ensure business_id is set from the employee
+        if 'employee' in validated_data:
+            validated_data['business_id'] = validated_data['employee'].business_id
+        return super().create(validated_data)
+
+
+class LocationCheckInSerializer(serializers.ModelSerializer):
+    """Serializer for LocationCheckIn model"""
+    employee_name = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = LocationCheckIn
+        fields = '__all__'
+        read_only_fields = ('id', 'last_updated', 'business_id', 'tenant_id')
+    
+    def get_employee_name(self, obj):
+        return obj.employee.get_full_name() if obj.employee else None
+    
+    def create(self, validated_data):
+        # Ensure business_id is set from the employee
+        if 'employee' in validated_data:
+            validated_data['business_id'] = validated_data['employee'].business_id
+        return super().create(validated_data)
+
+
+class TimesheetEntryWithLocationSerializer(TimesheetEntrySerializer):
+    """Extended TimesheetEntry serializer that includes location data"""
+    clock_in_location = LocationLogSerializer(read_only=True)
+    clock_out_location = LocationLogSerializer(read_only=True)
+    
+    class Meta(TimesheetEntrySerializer.Meta):
+        fields = TimesheetEntrySerializer.Meta.fields + ['clock_in_location', 'clock_out_location']
