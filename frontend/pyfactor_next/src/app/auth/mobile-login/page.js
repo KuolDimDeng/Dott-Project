@@ -37,7 +37,25 @@ export default function MobileLoginPage() {
       if (response.ok && data.success) {
         toast.success('Welcome back!');
         
-        // Check if onboarding is complete
+        // Handle session bridge if needed
+        if (data.useSessionBridge && data.sessionToken) {
+          console.log('[MobileLogin] Using session bridge for authentication');
+          
+          // Store bridge data in sessionStorage
+          const bridgeData = {
+            token: data.sessionToken,
+            redirectUrl: data.onboardingCompleted ? '/mobile' : '/onboarding',
+            timestamp: Date.now()
+          };
+          
+          sessionStorage.setItem('session_bridge', JSON.stringify(bridgeData));
+          
+          // Redirect to session bridge
+          router.push('/auth/session-bridge');
+          return;
+        }
+        
+        // Fallback - direct redirect (for backward compatibility)
         if (data.onboardingCompleted) {
           router.push('/mobile');
         } else {
