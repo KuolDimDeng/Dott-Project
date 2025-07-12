@@ -725,7 +725,10 @@ function EmployeeManagement({ onNavigate }) {
         // Create new employee
         logger.info('[EmployeeManagement] Creating new employee');
         const result = await hrApi.employees.create(backendData);
-        logger.info('✅ [EmployeeManagement] Employee created:', result?.id);
+        logger.info('✅ [EmployeeManagement] Employee created:', {
+          id: result?.id,
+          fullResult: JSON.stringify(result, null, 2)
+        });
         toast.success('Employee created successfully');
       }
       

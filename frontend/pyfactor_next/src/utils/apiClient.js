@@ -1376,7 +1376,7 @@ export const hrApi = {
       }
       
       const result = await response.json();
-      logger.info('[HRApi] Employee created successfully:', result);
+      logger.info('[HRApi] Employee created successfully:', JSON.stringify(result, null, 2));
       return result;
     },
     

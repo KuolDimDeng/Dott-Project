@@ -37,7 +37,9 @@ urlpatterns = [
     # Admin user management endpoints
     path('admin/users/', admin_user_management.AdminUserListView.as_view(), name='admin-user-list'),
     path('admin/users/stats/', admin_user_management.AdminUserStatsView.as_view(), name='admin-user-stats'),
+    path('admin/users/create/', admin_user_management.AdminUserCreateView.as_view(), name='admin-user-create'),
     path('admin/users/<uuid:user_id>/', admin_user_management.AdminUserDetailView.as_view(), name='admin-user-detail'),
+    path('admin/users/<uuid:user_id>/block/', admin_user_management.AdminUserBlockView.as_view(), name='admin-user-block'),
     
     # Admin analytics and settings endpoints
     path('admin/analytics/', admin_analytics.AdminAnalyticsView.as_view(), name='admin-analytics'),

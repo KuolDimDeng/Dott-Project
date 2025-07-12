@@ -7,11 +7,15 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
+import logging
+import secrets
+import string
 
 from .admin_views import EnhancedAdminPermission
 from .admin_security import rate_limit, log_security_event
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 
 class UserPagination(PageNumberPagination):
@@ -247,7 +251,7 @@ class AdminUserDetailView(APIView):
     
     @rate_limit('api')
     def delete(self, request, user_id):
-        """Deactivate a user (soft delete)"""
+        """Delete a user (cascade delete all related data)"""
         try:
             # Only super_admin can delete users
             if request.admin_user.admin_role != 'super_admin':
@@ -263,19 +267,46 @@ class AdminUserDetailView(APIView):
                     'error': 'Cannot delete OWNER users'
                 }, status=status.HTTP_403_FORBIDDEN)
             
-            # Soft delete - just deactivate
-            user.is_active = False
-            user.save()
-            
-            log_security_event(
-                request.admin_user, 'user_deactivate',
-                {'user_id': str(user_id), 'email': user.email},
-                request, True
-            )
-            
-            return Response({
-                'message': 'User deactivated successfully'
-            })
+            # Check if soft delete is requested
+            if request.query_params.get('soft_delete') == 'true':
+                # Soft delete - just deactivate
+                user.is_active = False
+                user.save()
+                
+                # Also disable in Auth0 if user has Auth0 ID
+                if hasattr(user, 'auth0_sub') and user.auth0_sub:
+                    self._update_auth0_user_status(user.auth0_sub, False)
+                
+                log_security_event(
+                    request.admin_user, 'user_deactivate',
+                    {'user_id': str(user_id), 'email': user.email},
+                    request, True
+                )
+                
+                return Response({
+                    'message': 'User deactivated successfully'
+                })
+            else:
+                # Hard delete - remove user and all related data
+                email = user.email
+                auth0_sub = getattr(user, 'auth0_sub', None)
+                
+                # Delete from Auth0 first if user has Auth0 ID
+                if auth0_sub:
+                    self._delete_auth0_user(auth0_sub)
+                
+                # Delete user (will cascade to all related models)
+                user.delete()
+                
+                log_security_event(
+                    request.admin_user, 'user_delete',
+                    {'user_id': str(user_id), 'email': email},
+                    request, True
+                )
+                
+                return Response({
+                    'message': 'User and all related data deleted successfully'
+                })
             
         except User.DoesNotExist:
             return Response({
@@ -283,8 +314,71 @@ class AdminUserDetailView(APIView):
             }, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({
-                'error': 'Failed to deactivate user'
+                'error': f'Failed to delete user: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def _update_auth0_user_status(self, auth0_sub, is_active):
+        """Update user status in Auth0"""
+        try:
+            import requests
+            from django.conf import settings
+            
+            # Get Auth0 management API token
+            token_response = requests.post(
+                f"https://{settings.AUTH0_DOMAIN}/oauth/token",
+                json={
+                    "grant_type": "client_credentials",
+                    "client_id": settings.AUTH0_M2M_CLIENT_ID,
+                    "client_secret": settings.AUTH0_M2M_CLIENT_SECRET,
+                    "audience": f"https://{settings.AUTH0_DOMAIN}/api/v2/"
+                }
+            )
+            
+            if token_response.status_code == 200:
+                access_token = token_response.json()['access_token']
+                
+                # Update user in Auth0
+                response = requests.patch(
+                    f"https://{settings.AUTH0_DOMAIN}/api/v2/users/{auth0_sub}",
+                    headers={'Authorization': f'Bearer {access_token}'},
+                    json={'blocked': not is_active}
+                )
+                
+                if response.status_code != 200:
+                    logger.error(f"Failed to update Auth0 user status: {response.text}")
+        except Exception as e:
+            logger.error(f"Error updating Auth0 user status: {e}")
+    
+    def _delete_auth0_user(self, auth0_sub):
+        """Delete user from Auth0"""
+        try:
+            import requests
+            from django.conf import settings
+            
+            # Get Auth0 management API token
+            token_response = requests.post(
+                f"https://{settings.AUTH0_DOMAIN}/oauth/token",
+                json={
+                    "grant_type": "client_credentials",
+                    "client_id": settings.AUTH0_M2M_CLIENT_ID,
+                    "client_secret": settings.AUTH0_M2M_CLIENT_SECRET,
+                    "audience": f"https://{settings.AUTH0_DOMAIN}/api/v2/"
+                }
+            )
+            
+            if token_response.status_code == 200:
+                access_token = token_response.json()['access_token']
+                
+                # Delete user from Auth0
+                response = requests.delete(
+                    f"https://{settings.AUTH0_DOMAIN}/api/v2/users/{auth0_sub}",
+                    headers={'Authorization': f'Bearer {access_token}'}
+                )
+                
+                if response.status_code not in [200, 204]:
+                    logger.error(f"Failed to delete Auth0 user: {response.text}")
+        except Exception as e:
+            logger.error(f"Error deleting Auth0 user: {e}")
 
 
 class AdminUserStatsView(APIView):
@@ -337,3 +431,279 @@ class AdminUserStatsView(APIView):
             return Response({
                 'error': 'Failed to fetch statistics'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class AdminUserCreateView(APIView):
+    """
+    Create a new user with Auth0 integration
+    """
+    permission_classes = [EnhancedAdminPermission]
+    
+    @rate_limit('api')
+    def post(self, request):
+        """Create a new user"""
+        try:
+            # Only super_admin can create users
+            if request.admin_user.admin_role != 'super_admin':
+                return Response({
+                    'error': 'Insufficient permissions'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Validate required fields
+            email = request.data.get('email', '').strip().lower()
+            first_name = request.data.get('first_name', '').strip()
+            last_name = request.data.get('last_name', '').strip()
+            role = request.data.get('role', 'USER')
+            send_invitation = request.data.get('send_invitation', True)
+            
+            if not email:
+                return Response({
+                    'error': 'Email is required'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Check if user already exists
+            if User.objects.filter(email=email).exists():
+                return Response({
+                    'error': 'User with this email already exists'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Validate role
+            if role not in ['OWNER', 'ADMIN', 'USER']:
+                return Response({
+                    'error': 'Invalid role. Must be OWNER, ADMIN, or USER'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Generate temporary password
+            temp_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(16))
+            
+            # Create user in Auth0 first
+            auth0_user_id = self._create_auth0_user(email, temp_password, first_name, last_name)
+            
+            if not auth0_user_id:
+                return Response({
+                    'error': 'Failed to create user in Auth0'
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+            # Create user in database
+            with transaction.atomic():
+                user = User.objects.create(
+                    email=email,
+                    first_name=first_name,
+                    last_name=last_name,
+                    name=f"{first_name} {last_name}".strip() or email,
+                    role=role,
+                    auth0_sub=auth0_user_id,
+                    is_active=True,
+                    email_verified=False  # Will be verified through Auth0
+                )
+                
+                # Create tenant for the user
+                from users.models import Tenant
+                tenant = Tenant.objects.create(
+                    name=f"Tenant for {user.email}",
+                    owner=user
+                )
+                user.tenant = tenant
+                user.save()
+                
+                # Send invitation email if requested
+                if send_invitation:
+                    self._send_invitation_email(user, temp_password)
+                
+                log_security_event(
+                    request.admin_user, 'user_create',
+                    {
+                        'user_id': str(user.id),
+                        'email': email,
+                        'role': role,
+                        'invitation_sent': send_invitation
+                    },
+                    request, True
+                )
+                
+                return Response({
+                    'message': 'User created successfully',
+                    'user': {
+                        'id': str(user.id),
+                        'email': user.email,
+                        'name': user.name,
+                        'role': user.role,
+                        'invitation_sent': send_invitation
+                    }
+                }, status=status.HTTP_201_CREATED)
+                
+        except Exception as e:
+            logger.error(f"Error creating user: {e}")
+            return Response({
+                'error': f'Failed to create user: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def _create_auth0_user(self, email, password, first_name, last_name):
+        """Create user in Auth0"""
+        try:
+            import requests
+            from django.conf import settings
+            
+            # Get Auth0 management API token
+            token_response = requests.post(
+                f"https://{settings.AUTH0_DOMAIN}/oauth/token",
+                json={
+                    "grant_type": "client_credentials",
+                    "client_id": settings.AUTH0_M2M_CLIENT_ID,
+                    "client_secret": settings.AUTH0_M2M_CLIENT_SECRET,
+                    "audience": f"https://{settings.AUTH0_DOMAIN}/api/v2/"
+                }
+            )
+            
+            if token_response.status_code == 200:
+                access_token = token_response.json()['access_token']
+                
+                # Create user in Auth0
+                response = requests.post(
+                    f"https://{settings.AUTH0_DOMAIN}/api/v2/users",
+                    headers={'Authorization': f'Bearer {access_token}'},
+                    json={
+                        'email': email,
+                        'password': password,
+                        'email_verified': False,
+                        'given_name': first_name,
+                        'family_name': last_name,
+                        'name': f"{first_name} {last_name}".strip() or email,
+                        'connection': 'Username-Password-Authentication'
+                    }
+                )
+                
+                if response.status_code == 201:
+                    return response.json()['user_id']
+                else:
+                    logger.error(f"Failed to create Auth0 user: {response.text}")
+                    return None
+        except Exception as e:
+            logger.error(f"Error creating Auth0 user: {e}")
+            return None
+    
+    def _send_invitation_email(self, user, temp_password):
+        """Send invitation email to new user"""
+        try:
+            # Send password reset email through Auth0
+            import requests
+            from django.conf import settings
+            
+            response = requests.post(
+                f"https://{settings.AUTH0_DOMAIN}/dbconnections/change_password",
+                json={
+                    'client_id': settings.AUTH0_CLIENT_ID,
+                    'email': user.email,
+                    'connection': 'Username-Password-Authentication'
+                }
+            )
+            
+            if response.status_code == 200:
+                logger.info(f"Password reset email sent to {user.email}")
+            else:
+                logger.error(f"Failed to send password reset email: {response.text}")
+        except Exception as e:
+            logger.error(f"Error sending invitation email: {e}")
+
+
+class AdminUserBlockView(APIView):
+    """
+    Block or unblock a user
+    """
+    permission_classes = [EnhancedAdminPermission]
+    
+    @rate_limit('api')
+    def post(self, request, user_id):
+        """Block/unblock a user"""
+        try:
+            # Only super_admin can block/unblock users
+            if request.admin_user.admin_role != 'super_admin':
+                return Response({
+                    'error': 'Insufficient permissions'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            user = User.objects.get(id=user_id)
+            
+            # Don't allow blocking OWNER users
+            if user.role == 'OWNER':
+                return Response({
+                    'error': 'Cannot block OWNER users'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Get action (block or unblock)
+            action = request.data.get('action', 'block')
+            
+            if action == 'block':
+                user.is_active = False
+                message = 'User blocked successfully'
+                event_type = 'user_block'
+            elif action == 'unblock':
+                user.is_active = True
+                message = 'User unblocked successfully'
+                event_type = 'user_unblock'
+            else:
+                return Response({
+                    'error': 'Invalid action. Must be "block" or "unblock"'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            user.save()
+            
+            # Update Auth0 status if user has Auth0 ID
+            if hasattr(user, 'auth0_sub') and user.auth0_sub:
+                self._update_auth0_user_status(user.auth0_sub, user.is_active)
+            
+            log_security_event(
+                request.admin_user, event_type,
+                {'user_id': str(user_id), 'email': user.email},
+                request, True
+            )
+            
+            return Response({
+                'message': message,
+                'user': {
+                    'id': str(user.id),
+                    'email': user.email,
+                    'is_active': user.is_active
+                }
+            })
+            
+        except User.DoesNotExist:
+            return Response({
+                'error': 'User not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({
+                'error': f'Failed to update user status: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def _update_auth0_user_status(self, auth0_sub, is_active):
+        """Update user status in Auth0"""
+        try:
+            import requests
+            from django.conf import settings
+            
+            # Get Auth0 management API token
+            token_response = requests.post(
+                f"https://{settings.AUTH0_DOMAIN}/oauth/token",
+                json={
+                    "grant_type": "client_credentials",
+                    "client_id": settings.AUTH0_M2M_CLIENT_ID,
+                    "client_secret": settings.AUTH0_M2M_CLIENT_SECRET,
+                    "audience": f"https://{settings.AUTH0_DOMAIN}/api/v2/"
+                }
+            )
+            
+            if token_response.status_code == 200:
+                access_token = token_response.json()['access_token']
+                
+                # Update user in Auth0
+                response = requests.patch(
+                    f"https://{settings.AUTH0_DOMAIN}/api/v2/users/{auth0_sub}",
+                    headers={'Authorization': f'Bearer {access_token}'},
+                    json={'blocked': not is_active}
+                )
+                
+                if response.status_code != 200:
+                    logger.error(f"Failed to update Auth0 user status: {response.text}")
+        except Exception as e:
+            logger.error(f"Error updating Auth0 user status: {e}")

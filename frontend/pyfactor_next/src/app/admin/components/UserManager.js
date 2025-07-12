@@ -15,6 +15,11 @@ import {
   CheckBadgeIcon,
   XCircleIcon,
   EyeIcon,
+  TrashIcon,
+  LockClosedIcon,
+  LockOpenIcon,
+  PlusIcon,
+  PencilIcon,
 } from '@heroicons/react/24/outline';
 import StandardSpinner, { CenteredSpinner } from '@/components/ui/StandardSpinner';
 
@@ -37,6 +42,17 @@ export default function UserManager({ adminUser }) {
   });
   const [selectedUser, setSelectedUser] = useState(null);
   const [showUserModal, setShowUserModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [newUser, setNewUser] = useState({
+    email: '',
+    first_name: '',
+    last_name: '',
+    role: 'USER',
+    send_invitation: true
+  });
 
   if (!adminUser.can_view_all_users) {
     return (
@@ -144,6 +160,139 @@ export default function UserManager({ adminUser }) {
     });
   };
 
+  const handleCreateUser = async () => {
+    try {
+      setIsProcessing(true);
+      
+      const response = await fetch('/api/admin/proxy/admin/users/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(newUser),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(data.message || 'User created successfully');
+        setShowCreateModal(false);
+        setNewUser({
+          email: '',
+          first_name: '',
+          last_name: '',
+          role: 'USER',
+          send_invitation: true
+        });
+        loadUsers();
+        loadUserStats();
+      } else {
+        const error = await response.json();
+        toast.error(error.error || 'Failed to create user');
+      }
+    } catch (error) {
+      console.error('Error creating user:', error);
+      toast.error('Network error. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleDeleteUser = async (hardDelete = false) => {
+    if (!userToDelete) return;
+    
+    try {
+      setIsProcessing(true);
+      
+      const params = hardDelete ? '' : '?soft_delete=true';
+      const response = await fetch(`/api/admin/proxy/admin/users/${userToDelete.id}${params}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(data.message || 'User deleted successfully');
+        setShowDeleteConfirm(false);
+        setUserToDelete(null);
+        loadUsers();
+        loadUserStats();
+      } else {
+        const error = await response.json();
+        toast.error(error.error || 'Failed to delete user');
+      }
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast.error('Network error. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleBlockUnblock = async (userId, action) => {
+    try {
+      setIsProcessing(true);
+      
+      const response = await fetch(`/api/admin/proxy/admin/users/${userId}/block`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ action }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(data.message);
+        loadUsers();
+      } else {
+        const error = await response.json();
+        toast.error(error.error || `Failed to ${action} user`);
+      }
+    } catch (error) {
+      console.error(`Error ${action}ing user:`, error);
+      toast.error('Network error. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleUpdateUser = async (userId, updates) => {
+    try {
+      setIsProcessing(true);
+      
+      const response = await fetch(`/api/admin/proxy/admin/users/${userId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(updates),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(data.message || 'User updated successfully');
+        loadUsers();
+        if (selectedUser && selectedUser.id === userId) {
+          loadUserDetails(userId);
+        }
+      } else {
+        const error = await response.json();
+        toast.error(error.error || 'Failed to update user');
+      }
+    } catch (error) {
+      console.error('Error updating user:', error);
+      toast.error('Network error. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const getRoleBadgeColor = (role) => {
     switch (role) {
       case 'OWNER':
@@ -174,7 +323,18 @@ export default function UserManager({ adminUser }) {
     <div className="p-6">
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">User Management</h2>
+        <div className="flex justify-between items-center mb-2">
+          <h2 className="text-2xl font-bold text-gray-900">User Management</h2>
+          {adminUser.admin_role === 'super_admin' && (
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <PlusIcon className="h-5 w-5" />
+              Create User
+            </button>
+          )}
+        </div>
         
         {/* Stats Cards */}
         {userStats && (
@@ -379,12 +539,38 @@ export default function UserManager({ adminUser }) {
                         {formatDate(user.created_at)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                        <button
-                          onClick={() => loadUserDetails(user.id)}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          <EyeIcon className="h-5 w-5" />
-                        </button>
+                        <div className="flex items-center justify-end space-x-2">
+                          <button
+                            onClick={() => loadUserDetails(user.id)}
+                            className="text-blue-600 hover:text-blue-900"
+                            title="View Details"
+                          >
+                            <EyeIcon className="h-5 w-5" />
+                          </button>
+                          {adminUser.admin_role === 'super_admin' && user.role !== 'OWNER' && (
+                            <>
+                              <button
+                                onClick={() => handleBlockUnblock(user.id, user.is_active ? 'block' : 'unblock')}
+                                className={user.is_active ? "text-yellow-600 hover:text-yellow-900" : "text-green-600 hover:text-green-900"}
+                                title={user.is_active ? "Block User" : "Unblock User"}
+                                disabled={isProcessing}
+                              >
+                                {user.is_active ? <LockClosedIcon className="h-5 w-5" /> : <LockOpenIcon className="h-5 w-5" />}
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setUserToDelete(user);
+                                  setShowDeleteConfirm(true);
+                                }}
+                                className="text-red-600 hover:text-red-900"
+                                title="Delete User"
+                                disabled={isProcessing}
+                              >
+                                <TrashIcon className="h-5 w-5" />
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -534,6 +720,168 @@ export default function UserManager({ adminUser }) {
                   Close
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create User Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold mb-4">Create New User</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Email *</label>
+                <input
+                  type="email"
+                  value={newUser.email}
+                  onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="user@example.com"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">First Name</label>
+                <input
+                  type="text"
+                  value={newUser.first_name}
+                  onChange={(e) => setNewUser(prev => ({ ...prev, first_name: e.target.value }))}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="John"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Last Name</label>
+                <input
+                  type="text"
+                  value={newUser.last_name}
+                  onChange={(e) => setNewUser(prev => ({ ...prev, last_name: e.target.value }))}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Doe"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Role</label>
+                <select
+                  value={newUser.role}
+                  onChange={(e) => setNewUser(prev => ({ ...prev, role: e.target.value }))}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="USER">User</option>
+                  <option value="ADMIN">Admin</option>
+                  <option value="OWNER">Owner</option>
+                </select>
+              </div>
+              
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="send_invitation"
+                  checked={newUser.send_invitation}
+                  onChange={(e) => setNewUser(prev => ({ ...prev, send_invitation: e.target.checked }))}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="send_invitation" className="ml-2 text-sm text-gray-700">
+                  Send invitation email
+                </label>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end space-x-3">
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                disabled={isProcessing}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateUser}
+                disabled={!newUser.email || isProcessing}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              >
+                {isProcessing ? (
+                  <>
+                    <StandardSpinner size="small" />
+                    <span>Creating...</span>
+                  </>
+                ) : (
+                  <span>Create User</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && userToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <ExclamationCircleIcon className="h-6 w-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold">Delete User</h3>
+                <p className="text-sm text-gray-600">
+                  Are you sure you want to delete {userToDelete.email}?
+                </p>
+              </div>
+            </div>
+            
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+              <p className="text-sm text-red-800">
+                <strong>Warning:</strong> This action cannot be undone. Choose an option:
+              </p>
+              <ul className="list-disc ml-5 mt-2 text-sm text-red-700">
+                <li><strong>Soft Delete:</strong> Deactivates the user account (can be reactivated)</li>
+                <li><strong>Hard Delete:</strong> Permanently removes the user and ALL their data</li>
+              </ul>
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                disabled={isProcessing}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteUser(false)}
+                className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                disabled={isProcessing}
+              >
+                {isProcessing ? (
+                  <>
+                    <StandardSpinner size="small" />
+                    <span>Processing...</span>
+                  </>
+                ) : (
+                  <span>Soft Delete</span>
+                )}
+              </button>
+              <button
+                onClick={() => handleDeleteUser(true)}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                disabled={isProcessing}
+              >
+                {isProcessing ? (
+                  <>
+                    <StandardSpinner size="small" />
+                    <span>Processing...</span>
+                  </>
+                ) : (
+                  <span>Hard Delete</span>
+                )}
+              </button>
             </div>
           </div>
         </div>

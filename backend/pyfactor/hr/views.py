@@ -164,6 +164,8 @@ def employee_list(request):
             if hasattr(request.user, 'business_id'):
                 business_id = request.user.business_id
             
+            logger.info(f'🔍 [HR Employee List] User {request.user.email} business_id: {business_id}')
+            
             if not business_id:
                 logger.warning(f'⚠️ [HR Employee List] No business_id found for user: {request.user.email}')
                 return Response([])
@@ -171,7 +173,11 @@ def employee_list(request):
             # Filter employees by business_id
             employees = Employee.objects.filter(business_id=business_id)
             
-            logger.info(f'✅ [HR Employee List] Found {employees.count()} employees')
+            logger.info(f'✅ [HR Employee List] Found {employees.count()} employees for business_id: {business_id}')
+            
+            # Log first few employees for debugging
+            for emp in employees[:3]:
+                logger.debug(f'  - Employee: {emp.email}, business_id: {emp.business_id}')
             
             serializer = EmployeeSerializer(employees, many=True)
             response = Response(serializer.data)
@@ -245,7 +251,9 @@ def employee_list(request):
                 
                 # Return the created employee data
                 response_serializer = EmployeeSerializer(employee)
-                return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+                response_data = response_serializer.data
+                logger.info(f'✅ [HR Employee Create] Returning employee data: {response_data}')
+                return Response(response_data, status=status.HTTP_201_CREATED)
             else:
                 logger.error(f'❌ [HR Employee Create] Validation errors: {serializer.errors}')
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
