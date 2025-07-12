@@ -45,14 +45,27 @@ export const employeeApiV2 = {
         lastName: employeeData.lastName,
       });
 
+      // Transform camelCase to snake_case for Django
+      const transformedData = {
+        first_name: employeeData.firstName,
+        last_name: employeeData.lastName,
+        email: employeeData.email,
+        phone_number: employeeData.phone,
+        job_title: employeeData.position,
+        department: employeeData.department,
+        employment_type: employeeData.employmentType,
+        compensation_type: employeeData.compensationType,
+        salary: employeeData.salary ? parseFloat(employeeData.salary) : 0,
+        wage_per_hour: employeeData.wagePerHour ? parseFloat(employeeData.wagePerHour) : 0,
+        active: employeeData.active !== undefined ? employeeData.active : true,
+        tenantId, // Include in body as well
+      };
+
       const response = await fetch(`${API_BASE}/employees`, {
         method: 'POST',
         credentials: 'include',
         headers: getHeaders(tenantId),
-        body: JSON.stringify({
-          ...employeeData,
-          tenantId, // Include in body as well
-        }),
+        body: JSON.stringify(transformedData),
       });
 
       if (!response.ok) {
