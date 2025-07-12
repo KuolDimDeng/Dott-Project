@@ -43,9 +43,9 @@ export default function Home() {
     const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
                   window.navigator.standalone === true;
 
-    // Redirect mobile users to mobile version
+    // Redirect mobile users to mobile landing page
     if (isMobile || isPWA) {
-      window.location.href = '/mobile';
+      window.location.href = '/mobile/landing';
       return;
     }
 
