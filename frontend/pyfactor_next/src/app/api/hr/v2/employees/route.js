@@ -22,8 +22,8 @@ export async function GET(request) {
   try {
     logger.info('[HR v2 Proxy] GET /api/hr/v2/employees');
 
-    // Get session from cookies
-    const cookieStore = await cookies();
+    // Get session from cookies - properly await the cookies() call
+    const cookieStore = cookies();
     const sessionId = cookieStore.get('sid');
     
     if (!sessionId) {
@@ -72,8 +72,8 @@ export async function POST(request) {
   try {
     logger.info('[HR v2 Proxy] POST /api/hr/v2/employees');
 
-    // Get session from cookies
-    const cookieStore = await cookies();
+    // Get session from cookies - no await needed
+    const cookieStore = cookies();
     const sessionId = cookieStore.get('sid');
     
     if (!sessionId) {
