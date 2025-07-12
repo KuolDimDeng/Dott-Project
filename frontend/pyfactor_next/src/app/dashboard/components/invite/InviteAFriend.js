@@ -145,7 +145,7 @@ ${user?.name || user?.email || 'A Dott User'}`;
         <p className="text-gray-600 text-lg">
           Know a business owner looking to streamline their operations? Share Dott with them!
           <br className="hidden sm:block" />
-          Dott helps small businesses automate scheduling, manage customer relationships, and handle payments—all in one simple app. Your connection can save hours of administrative work each week.
+          Dott helps businesses automate scheduling, manage customer relationships, and handle payments—all in one simple app. Your connection can save hours of administrative work each week.
         </p>
       </div>
 
