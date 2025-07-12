@@ -12,5 +12,8 @@ echo "Database is up - executing command"
 # Run migrations
 python manage.py migrate
 
+# Ensure critical tables exist (production safety)
+python scripts/startup_ensure_locationlog.py || true
+
 # Start the development server
 exec "$@"
