@@ -51,6 +51,10 @@ const PUBLIC_ROUTES = [
   '/auth/verify',
   '/auth/verify-email',
   '/auth/email-signin',  // Add email-signin to prevent redirect loops
+  '/auth/mobile-login',  // Mobile login page
+  '/auth/mobile-signup', // Mobile signup page
+  '/mobile/landing',     // Mobile landing page - public route
+  '/mobile',             // Mobile dashboard redirect route
   '/about',
   '/privacy',
   '/terms',
