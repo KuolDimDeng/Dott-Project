@@ -50,16 +50,24 @@ export const employeeApiV2 = {
         first_name: employeeData.firstName,
         last_name: employeeData.lastName,
         email: employeeData.email,
-        phone_number: employeeData.phone,
-        job_title: employeeData.position,
-        department: employeeData.department,
-        employment_type: employeeData.employmentType,
-        compensation_type: employeeData.compensationType,
+        employment_type: employeeData.employmentType || 'FT',
+        compensation_type: employeeData.compensationType || 'SALARY',
         salary: employeeData.salary ? parseFloat(employeeData.salary) : 0,
         wage_per_hour: employeeData.wagePerHour ? parseFloat(employeeData.wagePerHour) : 0,
         active: employeeData.active !== undefined ? employeeData.active : true,
         tenantId, // Include in body as well
       };
+
+      // Only include optional fields if they have values
+      if (employeeData.phone && employeeData.phone.trim()) {
+        transformedData.phone_number = employeeData.phone;
+      }
+      if (employeeData.position && employeeData.position.trim()) {
+        transformedData.job_title = employeeData.position;
+      }
+      if (employeeData.department && employeeData.department.trim()) {
+        transformedData.department = employeeData.department;
+      }
 
       console.log('[Employee API v2] Sending data to backend:', transformedData);
 
