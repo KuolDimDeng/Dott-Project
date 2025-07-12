@@ -35,7 +35,7 @@ def get_db_connection():
 def get_user_count(conn):
     """Get count of users in database"""
     cursor = conn.cursor()
-    cursor.execute("SELECT COUNT(*) FROM auth_user")
+    cursor.execute("SELECT COUNT(*) FROM custom_auth_user")
     count = cursor.fetchone()[0]
     cursor.close()
     return count
@@ -43,7 +43,7 @@ def get_user_count(conn):
 def list_users(conn):
     """List all users in database"""
     cursor = conn.cursor()
-    cursor.execute("SELECT id, email, username FROM auth_user ORDER BY id")
+    cursor.execute("SELECT id, email, first_name, last_name FROM custom_auth_user ORDER BY id")
     users = cursor.fetchall()
     cursor.close()
     return users
@@ -53,7 +53,7 @@ def delete_specific_user(conn, email):
     cursor = conn.cursor()
     
     # First check if user exists
-    cursor.execute("SELECT id, email FROM auth_user WHERE email = %s", (email,))
+    cursor.execute("SELECT id, email FROM custom_auth_user WHERE email = %s", (email,))
     user = cursor.fetchone()
     
     if not user:
@@ -145,7 +145,7 @@ def delete_specific_user(conn, email):
             # Core records
             ("DELETE FROM employees WHERE user_id = %s", user_id),
             ("DELETE FROM businesses WHERE owner_id = %s", user_id),
-            ("DELETE FROM auth_user WHERE id = %s", user_id)
+            ("DELETE FROM custom_auth_user WHERE id = %s", user_id)
         ]
         
         # Execute deletions
@@ -262,7 +262,7 @@ def delete_all_users(conn):
         DELETE FROM businesses;
         
         -- Delete all users
-        DELETE FROM auth_user;
+        DELETE FROM custom_auth_user;
         """
         
         cursor.execute(cleanup_sql)
@@ -318,11 +318,12 @@ def main():
             users = list_users(conn)
             if users:
                 print("\n📋 Current users:")
-                print("-" * 60)
-                print(f"{'ID':<10} {'Email':<40} {'Username':<20}")
-                print("-" * 60)
-                for user_id, email, username in users:
-                    print(f"{user_id:<10} {email:<40} {username or 'N/A':<20}")
+                print("-" * 70)
+                print(f"{'ID':<10} {'Email':<40} {'Name':<20}")
+                print("-" * 70)
+                for user_id, email, first_name, last_name in users:
+                    name = f"{first_name or ''} {last_name or ''}".strip() or 'N/A'
+                    print(f"{user_id:<10} {email:<40} {name:<20}")
             else:
                 print("ℹ️  No users in database")
                 
