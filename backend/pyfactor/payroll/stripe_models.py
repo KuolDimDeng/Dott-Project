@@ -2,7 +2,9 @@
 Stripe-specific models for payroll payment processing
 """
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 from decimal import Decimal
 import uuid
 from custom_auth.tenant_base_model import TenantAwareModel
