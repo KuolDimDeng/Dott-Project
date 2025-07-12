@@ -311,7 +311,7 @@ def employee_list(request):
             logger.info(f'🚀 [HR-DJANGO-TRACE] Serializer created, validating...')
             
             if serializer.is_valid():
-                logger.info(f'🚀 [HR-DJANGO-TRACE] Serializer validation PASSED'):
+                logger.info(f'🚀 [HR-DJANGO-TRACE] Serializer validation PASSED')
                 # Get the user's business_id
                 business_id = None
                 if hasattr(request.user, 'business_id'):
