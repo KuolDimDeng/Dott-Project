@@ -33,8 +33,9 @@ export const useNotifications = () => {
       if (options.limit) params.append('limit', options.limit.toString());
 
       const response = await fetch(`/api/notifications/user?${params}`, {
+        credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${session.token || 'session-token'}`,
+          'Content-Type': 'application/json',
         },
       });
 
@@ -89,8 +90,9 @@ export const useNotifications = () => {
     try {
       const response = await fetch(`/api/notifications/user/${notificationId}/mark-read`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${session.token || 'session-token'}`,
+          'Content-Type': 'application/json',
         },
       });
 
@@ -129,8 +131,9 @@ export const useNotifications = () => {
         unreadNotifications.map(notification => 
           fetch(`/api/notifications/user/${notification.id}/mark-read`, {
             method: 'POST',
+            credentials: 'include',
             headers: {
-              'Authorization': `Bearer ${session.token || 'session-token'}`,
+              'Content-Type': 'application/json',
             },
           })
         )
