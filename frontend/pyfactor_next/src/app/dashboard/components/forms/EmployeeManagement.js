@@ -684,7 +684,7 @@ function EmployeeManagement({ onNavigate }) {
         supervisor: formData.supervisor || null,
         employment_type: formData.employmentType,
         compensation_type: formData.compensationType,
-        wage_per_hour: formData.wagePerHour,
+        wage_per_hour: formData.compensationType === 'HOURLY' ? (parseFloat(formData.wagePerHour) || 0) : 0,
         hire_date: formData.hireDate,
         zip_code: formData.zipCode,
         emergency_contact_name: formData.emergencyContact,
@@ -696,8 +696,18 @@ function EmployeeManagement({ onNavigate }) {
         vacation_time: formData.vacationTime === 'yes',
         vacation_days_per_year: formData.vacationTime === 'yes' ? parseInt(formData.vacationDaysPerYear) || 0 : 0,
         // User linking
-        user_id: selectedUserId || null
+        user_id: selectedUserId || null,
+        // Ensure state is max 2 characters
+        state: formData.state ? formData.state.substring(0, 2).toUpperCase() : ''
       };
+      
+      // Format phone number if provided and not already formatted
+      if (backendData.phone_number && !backendData.phone_number.startsWith('+')) {
+        // Remove all non-numeric characters
+        const cleanPhone = backendData.phone_number.replace(/\D/g, '');
+        // Add +1 for US numbers (assuming US if no country code)
+        backendData.phone_number = `+1${cleanPhone}`;
+      }
       
       // Remove camelCase fields to avoid duplication
       delete backendData.firstName;
