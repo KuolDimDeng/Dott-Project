@@ -6,8 +6,8 @@ import SessionHeartbeat from '@/components/SessionHeartbeat';
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "Dott: Business Platform",
-  description: "Business platform for accounting, inventory, HR, and transport management",
+  title: "Dott: Global Business Platform",
+  description: "Global business platform for accounting, inventory, HR, and transport management",
   keywords: "accounting, inventory management, HR software, transport management, business software",
   authors: [{ name: "Dott Apps" }],
   viewport: "width=device-width, initial-scale=1",

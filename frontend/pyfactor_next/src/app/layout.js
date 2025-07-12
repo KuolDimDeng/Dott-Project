@@ -8,15 +8,15 @@ import { headers } from 'next/headers';
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "Dott: Business Platform",
-  description: "Business platform for accounting, inventory, HR, and transport management",
+  title: "Dott: Global Business Platform",
+  description: "Global business platform for accounting, inventory, HR, and transport management",
   keywords: "accounting, inventory management, HR software, transport management, business software",
   authors: [{ name: "Dott Apps" }],
   manifest: "/static/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Dott: Business Platform",
+    title: "Dott: Global Business Platform",
   },
   formatDetection: {
     telephone: false,

@@ -4,7 +4,7 @@
 
 ## 1. Introduction
 
-Dott Business Platform ("we," "our," or "us") provides location tracking features as part of our timesheet and workforce management services. This policy explains how we collect, use, and protect location data when you use our mobile applications and services.
+Dott Global Business Platform ("we," "our," or "us") provides location tracking features as part of our timesheet and workforce management services. This policy explains how we collect, use, and protect location data when you use our mobile applications and services.
 
 ## 2. Legal Basis for Location Tracking
 
