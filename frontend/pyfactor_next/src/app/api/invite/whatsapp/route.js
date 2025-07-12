@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
 
+// WhatsApp Business API integration for business owner invitations
+
 /**
  * Send WhatsApp invitation to a business owner
  * POST /api/invite/whatsapp
