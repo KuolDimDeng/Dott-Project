@@ -1325,7 +1325,7 @@ export const hrApi = {
       const data = await response.json();
       // Transform v2 response format to match existing frontend expectations
       return data.data || [];
-    }
+    },
     
     async getById(id, params = {}) {
       // Get tenant ID from the current path or session
