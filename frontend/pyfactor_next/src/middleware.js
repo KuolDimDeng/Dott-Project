@@ -6,6 +6,37 @@ import { checkPagePermissions } from './middleware/permissionChecker';
 export async function middleware(request) {
   const url = new URL(request.url);
   const pathname = url.pathname;
+  const userAgent = request.headers.get('user-agent') || '';
+  
+  // Mobile detection
+  const isMobile = /iPhone|iPad|iPod|Android|webOS|BlackBerry|Windows Phone/i.test(userAgent);
+  const isTablet = /iPad|Android.*Tablet|Tablet.*Android/i.test(userAgent);
+  
+  // Handle mobile redirects before other logic
+  if (isMobile && !isTablet) {
+    // Skip redirect for already mobile routes, API routes, static files
+    if (!pathname.startsWith('/mobile') && 
+        !pathname.startsWith('/api') && 
+        !pathname.startsWith('/_next') &&
+        !pathname.startsWith('/auth/mobile-login') &&
+        !pathname.includes('.')) {
+      
+      // Redirect home to mobile
+      if (pathname === '/') {
+        return NextResponse.redirect(new URL('/mobile', request.url));
+      }
+      
+      // Redirect login to mobile login
+      if (pathname === '/auth/login' || pathname === '/auth/signin') {
+        return NextResponse.redirect(new URL('/auth/mobile-login', request.url));
+      }
+      
+      // Redirect dashboard to mobile
+      if (pathname.includes('/dashboard')) {
+        return NextResponse.redirect(new URL('/mobile', request.url));
+      }
+    }
+  }
   
   // Get real IP from Cloudflare headers
   const cfConnectingIp = request.headers.get('cf-connecting-ip');

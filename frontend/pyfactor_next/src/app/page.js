@@ -35,6 +35,20 @@ const clearTenantData = () => {
 export default function Home() {
   // Run the cleanup on page load
   useEffect(() => {
+    // Check if mobile device and redirect
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || 
+                     window.innerWidth < 768;
+    
+    // Check if PWA (standalone mode)
+    const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
+                  window.navigator.standalone === true;
+
+    // Redirect mobile users to mobile version
+    if (isMobile || isPWA) {
+      window.location.href = '/mobile';
+      return;
+    }
+
     // Initialize country detection for dynamic pricing and language
     async function initCountryDetection() {
       try {
