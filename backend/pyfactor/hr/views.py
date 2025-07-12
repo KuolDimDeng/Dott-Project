@@ -234,10 +234,11 @@ def employee_list(request):
                         status=status.HTTP_400_BAD_REQUEST
                     )
                 
-                # Save the employee with business_id
+                # Save the employee with business_id AND tenant_id for RLS
                 # The model will auto-generate employee_number in the save() method
-                employee = serializer.save(business_id=business_id)
-                logger.info(f'✅ [HR Employee Create] Employee created with ID: {employee.id} for business: {business_id}')
+                # For RLS, we need to save tenant_id as well (same as business_id for now)
+                employee = serializer.save(business_id=business_id, tenant_id=business_id)
+                logger.info(f'✅ [HR Employee Create] Employee created with ID: {employee.id} for business: {business_id} (tenant: {business_id})')
                 
                 # Handle security number storage if provided
                 if security_number:

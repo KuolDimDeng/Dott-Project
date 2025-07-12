@@ -38,6 +38,11 @@ class Employee(models.Model):
     # Business association
     business_id = models.UUIDField(db_index=True)
     
+    # Tenant ID for Row Level Security (RLS)
+    # This should match business_id for proper tenant isolation
+    tenant_id = models.UUIDField(db_index=True, null=True, blank=True,
+                                 help_text="The tenant ID this record belongs to. Used by Row Level Security.")
+    
     # Personal Information
     first_name = models.CharField(max_length=100)
     middle_name = models.CharField(max_length=100, blank=True, null=True)
@@ -156,6 +161,10 @@ class Employee(models.Model):
             today = timezone.now().strftime('%Y%m%d')
             unique_suffix = str(uuid.uuid4())[:4].upper()
             self.employee_number = f"EMP-{today}-{unique_suffix}"
+        
+        # Ensure tenant_id matches business_id for RLS
+        if self.business_id and not self.tenant_id:
+            self.tenant_id = self.business_id
         
         super().save(*args, **kwargs)
     

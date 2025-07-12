@@ -34,9 +34,9 @@ class EmployeeSerializer(serializers.ModelSerializer):
             'street', 'city', 'state', 'zip_code', 'country', 'compensation_type',
             'emergency_contact_name', 'emergency_contact_phone',
             'direct_deposit', 'vacation_time', 'vacation_days_per_year', 'supervisor', 'user',
-            'security_number_type', 'ssn_last_four', 'created_at', 'updated_at'
+            'security_number_type', 'ssn_last_four', 'created_at', 'updated_at', 'tenant_id'
         ]
-        read_only_fields = ['id', 'employee_number', 'created_at', 'updated_at', 'ssn_last_four']
+        read_only_fields = ['id', 'employee_number', 'created_at', 'updated_at', 'ssn_last_four', 'tenant_id']
 
 
 class RoleSerializer(serializers.ModelSerializer):
