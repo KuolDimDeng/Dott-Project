@@ -421,9 +421,18 @@ class CompleteOnboardingAPI(APIView):
                         'request_id': request_id
                     }, status=status.HTTP_400_BAD_REQUEST)
                 
-                # Create tenant (uuid is already imported at module level)
+                # CRITICAL FIX: Use business ID as tenant ID if business exists
+                # This ensures tenant_id = business_id always
+                if progress.business and progress.business.id:
+                    tenant_uuid = progress.business.id
+                    logger.info(f"[CompleteOnboarding] Using business ID as tenant ID: {tenant_uuid}")
+                else:
+                    tenant_uuid = uuid.uuid4()
+                    logger.warning(f"[CompleteOnboarding] No business found, generating new UUID for tenant: {tenant_uuid}")
+                
+                # Create tenant with the same ID as business
                 new_tenant = Tenant.objects.create(
-                    id=uuid.uuid4(),
+                    id=tenant_uuid,
                     name=business_name,
                     owner_id=str(request.user.id),
                     is_active=True,

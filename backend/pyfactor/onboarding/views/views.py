@@ -1767,8 +1767,10 @@ class SaveStep1View(APIView):
             # Generate schema name for this tenant
             schema_name = f"tenant_{tenant_id.replace('-', '_')}"
             
-            # Create a business ID to use in the response and for storing in session
-            business_id = uuid.uuid4()
+            # CRITICAL FIX: Use the same ID for both business and tenant
+            # This ensures business_id = tenant_id always
+            business_id = uuid.UUID(tenant_id)  # Use the same UUID as tenant_id
+            logger.info(f"🔧 [SaveStep1View] Using unified ID for tenant and business: {business_id}")
             
             # Get user's name
             first_name = request.user.first_name or ''
