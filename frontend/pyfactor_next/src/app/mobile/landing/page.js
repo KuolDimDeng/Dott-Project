@@ -25,6 +25,8 @@ export default function MobileLandingPage() {
   const { t } = useTranslation();
   const [selectedCountry, setSelectedCountry] = useState('US');
   const [isDeveloping, setIsDeveloping] = useState(false);
+  const [exchangeRate, setExchangeRate] = useState(null);
+  const [currencyInfo, setCurrencyInfo] = useState({ symbol: 'USD', decimals: 2 });
 
   useEffect(() => {
     // Initialize country detection and language
@@ -36,6 +38,18 @@ export default function MobileLandingPage() {
         
         // Set language based on country
         await i18nInstance.changeLanguage(language);
+        
+        // Fetch exchange rate
+        if (country !== 'US') {
+          const response = await fetch(`/api/exchange-rates?country=${country}&base=USD`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+              setExchangeRate(data.rate);
+              setCurrencyInfo(data.format || { symbol: data.currency, decimals: 2 });
+            }
+          }
+        }
       } catch (error) {
         console.error('Error initializing country/language:', error);
       }
@@ -87,7 +101,7 @@ export default function MobileLandingPage() {
     },
     {
       icon: GlobeAltIcon,
-      title: 'Made for Africa',
+      title: 'Mobile Money',
       description: 'M-Pesa, offline mode, local support',
       color: 'text-orange-600 bg-orange-100'
     }
@@ -107,20 +121,20 @@ export default function MobileLandingPage() {
     enterprise: isDeveloping ? 22.50 : 45
   };
 
-  // Currency conversion rates (approximate)
-  const currencyRates = {
-    KE: { symbol: 'KES', rate: 150 },
-    NG: { symbol: 'NGN', rate: 750 },
-    GH: { symbol: 'GHS', rate: 12 },
-    ZA: { symbol: 'ZAR', rate: 18 },
-    US: { symbol: 'USD', rate: 1 }
-  };
-
-  const currentCurrency = currencyRates[selectedCountry] || currencyRates.US;
-  
   const formatPrice = (usdPrice) => {
-    const localPrice = Math.round(usdPrice * currentCurrency.rate);
-    return `${currentCurrency.symbol} ${localPrice.toLocaleString()}`;
+    if (selectedCountry === 'US' || !exchangeRate) {
+      return `$${usdPrice}`;
+    }
+    
+    // Calculate local price using real exchange rate
+    const localPrice = usdPrice * exchangeRate;
+    
+    // Format based on currency decimals
+    const formattedLocalPrice = currencyInfo.decimals === 0 
+      ? Math.round(localPrice).toLocaleString()
+      : localPrice.toFixed(currencyInfo.decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    
+    return `$${usdPrice} (${currencyInfo.symbol} ${formattedLocalPrice})`;
   };
 
   return (
@@ -205,24 +219,15 @@ export default function MobileLandingPage() {
         <h2 className="text-2xl font-bold text-center text-gray-900 mb-2">
           Simple, Transparent Pricing
         </h2>
-        <p className="text-center text-gray-600 mb-6">
-          50% off for developing countries
+        <p className="text-center text-gray-600 mb-2">
+          {isDeveloping && '50% discount applied for your region'}
         </p>
+        {selectedCountry !== 'US' && exchangeRate && (
+          <p className="text-center text-xs text-gray-500 mb-6 px-4">
+            * Local currency amounts are estimates based on real-time exchange rates. Actual rates may vary with payment provider.
+          </p>
+        )}
 
-        {/* Country Selector */}
-        <div className="flex justify-center mb-8">
-          <select
-            value={selectedCountry}
-            onChange={(e) => setSelectedCountry(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="US">United States (USD)</option>
-            <option value="KE">Kenya (KES)</option>
-            <option value="NG">Nigeria (NGN)</option>
-            <option value="GH">Ghana (GHS)</option>
-            <option value="ZA">South Africa (ZAR)</option>
-          </select>
-        </div>
 
         {/* Pricing Cards */}
         <div className="space-y-4 max-w-lg mx-auto">
@@ -288,6 +293,39 @@ export default function MobileLandingPage() {
               Get Started For Free
             </Link>
           </div>
+
+          {/* Enterprise Plan */}
+          <div className="bg-white rounded-xl p-6 border border-gray-200">
+            <h3 className="font-bold text-lg text-gray-900">Enterprise</h3>
+            <div className="mt-2 mb-4">
+              <span className="text-3xl font-bold text-gray-900">
+                {formatPrice(pricing.enterprise)}
+              </span>
+              <span className="text-gray-600">/{t('pricing.month', 'month')}</span>
+            </div>
+            <ul className="space-y-2 mb-6">
+              <li className="flex items-center text-sm text-gray-600">
+                <CheckCircleIcon className="h-5 w-5 text-green-500 mr-2" />
+                Unlimited users
+              </li>
+              <li className="flex items-center text-sm text-gray-600">
+                <CheckCircleIcon className="h-5 w-5 text-green-500 mr-2" />
+                All features + API access
+              </li>
+              <li className="flex items-center text-sm text-gray-600">
+                <CheckCircleIcon className="h-5 w-5 text-green-500 mr-2" />
+                AI-powered insights
+              </li>
+              <li className="flex items-center text-sm text-gray-600">
+                <CheckCircleIcon className="h-5 w-5 text-green-500 mr-2" />
+                Custom onboarding
+              </li>
+              <li className="flex items-center text-sm text-gray-600">
+                <CheckCircleIcon className="h-5 w-5 text-green-500 mr-2" />
+                Dedicated support
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
 
@@ -336,7 +374,7 @@ export default function MobileLandingPage() {
 
       {/* Footer */}
       <div className="px-4 py-8 bg-gray-900 text-gray-400 text-center text-sm">
-        <p>© 2024 Dott Business. All rights reserved.</p>
+        <p>© 2024 Dott, LLC. All rights reserved.</p>
         <div className="mt-2 space-x-4">
           <Link href="/terms" className="hover:text-white">Terms</Link>
           <Link href="/privacy" className="hover:text-white">Privacy</Link>
