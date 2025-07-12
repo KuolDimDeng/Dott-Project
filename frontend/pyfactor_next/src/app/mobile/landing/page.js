@@ -1,8 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslation, I18nextProvider } from 'react-i18next';
+import { initializeCountryDetection } from '@/services/countryDetectionService';
+import i18nInstance from '@/i18n';
 import SmartAppBanner from '@/components/SmartAppBanner';
 import {
   ChartBarIcon,
@@ -19,7 +22,26 @@ import {
 
 export default function MobileLandingPage() {
   const router = useRouter();
-  const [selectedCountry, setSelectedCountry] = useState('KE');
+  const { t } = useTranslation();
+  const [selectedCountry, setSelectedCountry] = useState('US');
+  const [isDeveloping, setIsDeveloping] = useState(false);
+
+  useEffect(() => {
+    // Initialize country detection and language
+    async function init() {
+      try {
+        const { country, language, isDeveloping: isDevCountry } = await initializeCountryDetection();
+        setSelectedCountry(country);
+        setIsDeveloping(isDevCountry);
+        
+        // Set language based on country
+        await i18nInstance.changeLanguage(language);
+      } catch (error) {
+        console.error('Error initializing country/language:', error);
+      }
+    }
+    init();
+  }, []);
 
   const features = [
     {
@@ -71,15 +93,38 @@ export default function MobileLandingPage() {
     }
   ];
 
-  const pricing = {
-    KE: { currency: 'KES', basic: 0, pro: 750, enterprise: 2250 },
-    US: { currency: 'USD', basic: 0, pro: 15, enterprise: 45 },
-    NG: { currency: 'NGN', basic: 0, pro: 5625, enterprise: 16875 }
+  // Pricing based on CLAUDE.md configuration
+  const basePricing = {
+    basic: 0,
+    pro: 15,
+    enterprise: 45
   };
 
-  const currentPricing = pricing[selectedCountry] || pricing.US;
+  // Apply 50% discount for developing countries
+  const pricing = {
+    basic: 0, // Always free
+    pro: isDeveloping ? 7.50 : 15,
+    enterprise: isDeveloping ? 22.50 : 45
+  };
+
+  // Currency conversion rates (approximate)
+  const currencyRates = {
+    KE: { symbol: 'KES', rate: 150 },
+    NG: { symbol: 'NGN', rate: 750 },
+    GH: { symbol: 'GHS', rate: 12 },
+    ZA: { symbol: 'ZAR', rate: 18 },
+    US: { symbol: 'USD', rate: 1 }
+  };
+
+  const currentCurrency = currencyRates[selectedCountry] || currencyRates.US;
+  
+  const formatPrice = (usdPrice) => {
+    const localPrice = Math.round(usdPrice * currentCurrency.rate);
+    return `${currentCurrency.symbol} ${localPrice.toLocaleString()}`;
+  };
 
   return (
+    <I18nextProvider i18n={i18nInstance}>
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
       {/* Smart App Banner */}
       <SmartAppBanner />
@@ -93,10 +138,10 @@ export default function MobileLandingPage() {
             className="h-24 w-24 mx-auto rounded-2xl shadow-lg mb-6"
           />
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Your Business,<br />In Your Pocket
+            {t('hero.title', 'Your Business,')}<br />{t('hero.subtitle', 'In Your Pocket')}
           </h1>
           <p className="text-lg text-gray-600 max-w-sm mx-auto">
-            All-in-one business management that works offline. Perfect for African businesses.
+            {t('hero.description', 'All-in-one business management platform that works offline.')}
           </p>
         </div>
 
@@ -105,7 +150,7 @@ export default function MobileLandingPage() {
             href="/auth/mobile-signup"
             className="block w-full bg-blue-600 text-white rounded-xl py-4 font-semibold text-lg hover:bg-blue-700 transition-colors"
           >
-            Start Free Trial
+            Get Started For Free
           </Link>
           <Link
             href="/auth/mobile-login"
@@ -171,9 +216,11 @@ export default function MobileLandingPage() {
             onChange={(e) => setSelectedCountry(e.target.value)}
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
           >
+            <option value="US">United States (USD)</option>
             <option value="KE">Kenya (KES)</option>
-            <option value="US">USA (USD)</option>
             <option value="NG">Nigeria (NGN)</option>
+            <option value="GH">Ghana (GHS)</option>
+            <option value="ZA">South Africa (ZAR)</option>
           </select>
         </div>
 
@@ -184,9 +231,9 @@ export default function MobileLandingPage() {
             <h3 className="font-bold text-lg text-gray-900">Basic</h3>
             <div className="mt-2 mb-4">
               <span className="text-3xl font-bold text-gray-900">
-                {currentPricing.currency} {currentPricing.basic}
+                {t('pricing.free', 'Free')}
               </span>
-              <span className="text-gray-600">/month</span>
+              <span className="text-gray-600">{t('pricing.forever', 'forever')}</span>
             </div>
             <ul className="space-y-2 mb-6">
               <li className="flex items-center text-sm text-gray-600">
@@ -212,14 +259,14 @@ export default function MobileLandingPage() {
             <h3 className="font-bold text-lg">Professional</h3>
             <div className="mt-2 mb-4">
               <span className="text-3xl font-bold">
-                {currentPricing.currency} {currentPricing.pro}
+                {formatPrice(pricing.pro)}
               </span>
-              <span className="text-blue-100">/month</span>
+              <span className="text-blue-100">/{t('pricing.month', 'month')}</span>
             </div>
             <ul className="space-y-2 mb-6">
               <li className="flex items-center text-sm">
                 <CheckCircleIcon className="h-5 w-5 text-white mr-2" />
-                5 users
+                Up to 3 users
               </li>
               <li className="flex items-center text-sm">
                 <CheckCircleIcon className="h-5 w-5 text-white mr-2" />
@@ -238,7 +285,7 @@ export default function MobileLandingPage() {
               href="/auth/mobile-signup"
               className="block w-full bg-white text-blue-600 rounded-lg py-3 font-semibold text-center hover:bg-blue-50 transition-colors"
             >
-              Start Free Trial
+              Get Started For Free
             </Link>
           </div>
         </div>
@@ -297,5 +344,6 @@ export default function MobileLandingPage() {
         </div>
       </div>
     </div>
+    </I18nextProvider>
   );
 }
