@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
 import { cookies } from 'next/headers';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+const BACKEND_URL = process.env.BACKEND_API_URL || 'https://api.dottapps.com';
 
 async function makeBackendRequest(url, options = {}) {
   const response = await fetch(url, {
@@ -19,7 +19,21 @@ async function makeBackendRequest(url, options = {}) {
     return { response, data: null };
   }
 
-  const data = await response.json();
+  // Handle non-JSON responses
+  let data = null;
+  const contentType = response.headers.get('content-type');
+  if (contentType && contentType.includes('application/json')) {
+    try {
+      data = await response.json();
+    } catch (error) {
+      console.error('Failed to parse JSON response:', error);
+      data = { error: 'Invalid JSON response' };
+    }
+  } else {
+    // For non-JSON responses, get text
+    data = { error: await response.text() };
+  }
+  
   return { response, data };
 }
 

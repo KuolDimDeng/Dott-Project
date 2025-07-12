@@ -35,7 +35,7 @@ export default function EmployeeManagementV2Test() {
   const fetchEmployees = async () => {
     try {
       setLoading(true);
-      const tenantId = getTenantId();
+      const tenantId = await getTenantId();
       logger.info('[V2 Test] Fetching employees...');
       
       const response = await employeeApiV2.list(tenantId);
@@ -57,7 +57,7 @@ export default function EmployeeManagementV2Test() {
 
   const fetchStats = async () => {
     try {
-      const tenantId = getTenantId();
+      const tenantId = await getTenantId();
       const response = await employeeApiV2.getStats(tenantId);
       if (response.success) {
         setStats(response.data);
@@ -71,7 +71,7 @@ export default function EmployeeManagementV2Test() {
     e.preventDefault();
     try {
       setLoading(true);
-      const tenantId = getTenantId();
+      const tenantId = await getTenantId();
       
       logger.info('[V2 Test] Creating employee:', formData);
       const response = await employeeApiV2.create(formData, tenantId);
@@ -108,7 +108,7 @@ export default function EmployeeManagementV2Test() {
     
     try {
       setLoading(true);
-      const tenantId = getTenantId();
+      const tenantId = await getTenantId();
       
       await employeeApiV2.delete(employeeId, tenantId);
       toast.success('Employee deleted successfully');
