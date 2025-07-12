@@ -2658,6 +2658,91 @@ python manage.py check_kenya_discount  # Verify Kenya is configured
 
 # HR Employee Management
 
+## Employee Creation Returns Empty Array Instead of Employee Object
+
+**Issue**: Employee creation API returns an empty array `[]` instead of the created employee object, and employees are not listed after creation.
+
+**Symptoms**:
+- Employee creation appears successful but returns `[]`
+- Employee list remains empty after creating employees
+- Console shows successful API calls but empty responses
+- Backend logs show employees being saved but frontend receives empty arrays
+
+**Root Causes**:
+1. **Serialization Issues**: Django REST Framework returning QuerySet instead of serialized data
+2. **Async/Await Issues**: Promise objects being sent as tenant IDs (`[object Promise]`)
+3. **Field Validation Errors**: Phone numbers and date fields failing validation
+4. **Response Format Mismatch**: Frontend expecting different response structure than backend provides
+
+**Solution - Complete V2 API Rewrite**:
+
+1. **Created new clean V2 API** (`/backend/pyfactor/hr/api_v2.py`):
+   ```python
+   @api_view(['GET', 'POST'])
+   @permission_classes([IsAuthenticated])
+   def employee_list_v2(request):
+       # Consistent response format
+       return Response({
+           'success': True,
+           'data': employees,
+           'message': 'Employees fetched successfully'
+       })
+   ```
+
+2. **Fixed async/await in Next.js proxy** (`/src/app/api/hr/v2/employees/route.js`):
+   ```javascript
+   // WRONG - causes [object Promise]
+   const cookieStore = await cookies();
+   
+   // CORRECT
+   const cookieStore = cookies();
+   const tenantId = await getTenantId();
+   ```
+
+3. **Fixed phone number validation**:
+   ```javascript
+   // Auto-format phone numbers for Django
+   if (data.phone_number && !data.phone_number.startsWith('+')) {
+     data.phone_number = `+1${data.phone_number.replace(/\D/g, '')}`;
+   }
+   ```
+
+4. **Fixed date field serialization**:
+   ```python
+   def get_current_date():
+       return timezone.now().date()  # Return date, not datetime
+   
+   hire_date = models.DateField(default=get_current_date)
+   ```
+
+5. **Updated frontend to use V2 API**:
+   ```javascript
+   // Updated all hrApi methods to use v2 endpoints
+   const response = await fetch('/api/hr/v2/employees', {
+     method: 'GET',
+     credentials: 'include',
+     headers: {
+       'Content-Type': 'application/json',
+       'X-Tenant-ID': tenantId || '',
+     }
+   });
+   ```
+
+**Files Created/Modified**:
+- `/backend/pyfactor/hr/api_v2.py` - New clean V2 API implementation
+- `/backend/pyfactor/hr/urls_v2.py` - V2 URL routing
+- `/src/app/api/hr/v2/employees/route.js` - Next.js V2 proxy routes
+- `/src/utils/apiClient.js` - Updated hrApi to use V2 endpoints
+- Removed all old employee API files after V2 was working
+
+**Key Learnings**:
+- Always await async functions before using their values
+- Django PhoneNumberField requires international format
+- Use DateField.default with function returning date(), not datetime()
+- Clean slate approach sometimes better than debugging complex issues
+
+---
+
 ## 403 Forbidden Error When Accessing Employees
 
 **Issue**: Employee management API returns 403 Forbidden error when trying to fetch or create employees.

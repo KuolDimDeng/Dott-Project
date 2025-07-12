@@ -198,6 +198,19 @@
   - Clear error messages and progress feedback
 - **Documentation**: `/backend/pyfactor/docs/INTERACTIVE_USER_CLEANUP.md`
 
+### [31.0.0] - 2025-07-12 - CURRENT - Employee API V2 Implementation
+- **Purpose**: Complete rewrite of employee API to fix serialization and async issues
+- **Problem**: Employee creation returned empty arrays, [object Promise] tenant IDs
+- **Solution**: Clean V2 API with consistent response format
+- **Key Changes**:
+  - New `/api/hr/v2/employees` endpoints with proper serialization
+  - Fixed async/await in Next.js proxy routes (cookies() not awaited)
+  - Auto-format phone numbers to international format
+  - Fixed DateField default to return date() not datetime()
+  - Consistent response format: `{success: true, data: {...}, message: "..."}`
+- **Migration**: Updated all frontend hrApi calls to use v2 endpoints
+- **Cleanup**: Removed all old employee API files after v2 working
+
 ---
 
 ## DEPRECATED CONFIGURATIONS (Do Not Use)
