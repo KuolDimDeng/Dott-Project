@@ -61,6 +61,8 @@ export const employeeApiV2 = {
         tenantId, // Include in body as well
       };
 
+      console.log('[Employee API v2] Sending data to backend:', transformedData);
+
       const response = await fetch(`${API_BASE}/employees`, {
         method: 'POST',
         credentials: 'include',
@@ -69,8 +71,24 @@ export const employeeApiV2 = {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || `HTTP ${response.status}`);
+        let errorMessage = `HTTP ${response.status}`;
+        try {
+          const error = await response.json();
+          console.error('[Employee API v2] Server error details:', error);
+          
+          // Handle validation errors specifically
+          if (error.errors) {
+            const validationErrors = Object.entries(error.errors)
+              .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
+              .join('; ');
+            errorMessage = `Validation failed: ${validationErrors}`;
+          } else {
+            errorMessage = error.error || error.message || errorMessage;
+          }
+        } catch (parseError) {
+          console.error('[Employee API v2] Failed to parse error response:', parseError);
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
