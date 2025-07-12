@@ -10,13 +10,15 @@ export function useAdminAuth() {
 
   const checkAuth = useCallback(async () => {
     try {
-      const token = localStorage.getItem('admin_access_token');
-      if (!token) {
+      // Check if we have admin user data in localStorage
+      const userData = localStorage.getItem('admin_user');
+      if (!userData) {
         setIsLoading(false);
         return;
       }
 
       // Verify token is still valid by making a request to protected endpoint
+      // The token is stored in httpOnly cookies, so we just need to include credentials
       const response = await fetch('/api/admin/proxy/admin/dashboard', {
         headers: {
           'Content-Type': 'application/json',
@@ -25,23 +27,20 @@ export function useAdminAuth() {
       });
 
       if (response.ok) {
-        const userData = localStorage.getItem('admin_user');
-        if (userData) {
-          setAdminUser(JSON.parse(userData));
-          setIsAuthenticated(true);
-        }
+        setAdminUser(JSON.parse(userData));
+        setIsAuthenticated(true);
       } else {
-        // Token is invalid, clear storage
-        localStorage.removeItem('admin_access_token');
-        localStorage.removeItem('admin_refresh_token');
+        // Token is invalid or expired, clear storage
         localStorage.removeItem('admin_user');
+        setIsAuthenticated(false);
+        setAdminUser(null);
       }
     } catch (error) {
       console.error('Auth check failed:', error);
       // Clear invalid auth data
-      localStorage.removeItem('admin_access_token');
-      localStorage.removeItem('admin_refresh_token');
       localStorage.removeItem('admin_user');
+      setIsAuthenticated(false);
+      setAdminUser(null);
     } finally {
       setIsLoading(false);
     }
@@ -73,9 +72,7 @@ export function useAdminAuth() {
       const data = await response.json();
 
       if (response.ok) {
-        // Store auth data
-        localStorage.setItem('admin_access_token', data.access_token);
-        localStorage.setItem('admin_refresh_token', data.refresh_token);
+        // Store only user data in localStorage (tokens are in httpOnly cookies)
         localStorage.setItem('admin_user', JSON.stringify(data.user));
         
         setAdminUser(data.user);
@@ -110,9 +107,18 @@ export function useAdminAuth() {
     }
   }, []);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem('admin_access_token');
-    localStorage.removeItem('admin_refresh_token');
+  const logout = useCallback(async () => {
+    try {
+      // Call logout endpoint to clear cookies
+      await fetch('/api/admin/auth/clear-tokens', {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+    
+    // Clear local storage
     localStorage.removeItem('admin_user');
     
     setIsAuthenticated(false);
@@ -122,8 +128,9 @@ export function useAdminAuth() {
   }, []);
 
   const getAuthHeaders = useCallback(() => {
-    const token = localStorage.getItem('admin_access_token');
-    return token ? { 'Authorization': `Bearer ${token}` } : {};
+    // No need to return auth headers as they're in httpOnly cookies
+    // Just return empty object - cookies will be sent automatically with credentials: 'include'
+    return {};
   }, []);
 
   return {

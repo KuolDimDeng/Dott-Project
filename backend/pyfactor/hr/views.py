@@ -170,8 +170,37 @@ def employee_list(request):
                 logger.warning(f'⚠️ [HR Employee List] No business_id found for user: {request.user.email}')
                 return Response([])
             
-            # Filter employees by business_id
-            employees = Employee.objects.filter(business_id=business_id)
+            # Filter employees by business_id, avoiding tenant_id column if it doesn't exist
+            try:
+                employees = Employee.objects.filter(business_id=business_id)
+            except Exception as db_error:
+                logger.warning(f'⚠️ [HR Employee List] Database error, trying alternative query: {str(db_error)}')
+                # If there's a database error (possibly missing column), use raw SQL
+                from django.db import connection
+                with connection.cursor() as cursor:
+                    cursor.execute("""
+                        SELECT id, employee_number, first_name, middle_name, last_name, 
+                               email, phone_number, date_of_birth, job_title, department, 
+                               employment_type, hire_date, salary, wage_per_hour, active, 
+                               onboarded, street, city, state, zip_code, country, 
+                               compensation_type, emergency_contact_name, emergency_contact_phone,
+                               direct_deposit, vacation_time, vacation_days_per_year, 
+                               supervisor_id, user_id, security_number_type, ssn_last_four, 
+                               created_at, updated_at, business_id
+                        FROM hr_employee
+                        WHERE business_id = %s
+                    """, [str(business_id)])
+                    
+                    columns = [col[0] for col in cursor.description]
+                    employee_data = []
+                    for row in cursor.fetchall():
+                        employee_dict = dict(zip(columns, row))
+                        # Add tenant_id as business_id for compatibility
+                        employee_dict['tenant_id'] = employee_dict.get('business_id')
+                        employee_data.append(employee_dict)
+                    
+                    logger.info(f'✅ [HR Employee List] Found {len(employee_data)} employees using raw SQL')
+                    return Response(employee_data)
             
             logger.info(f'✅ [HR Employee List] Found {employees.count()} employees for business_id: {business_id}')
             
@@ -220,12 +249,17 @@ def employee_list(request):
             employee_data = request.data.copy()
             security_number = employee_data.pop('securityNumber', None)
             
+            # Log the employee data being processed
+            logger.info(f'🔍 [HR Employee Create] Processing employee data for: {employee_data.get("email", "unknown")}')
+            
             serializer = EmployeeSerializer(data=employee_data)
             if serializer.is_valid():
                 # Get the user's business_id
                 business_id = None
                 if hasattr(request.user, 'business_id'):
                     business_id = request.user.business_id
+                
+                logger.info(f'🏢 [HR Employee Create] User business_id: {business_id}')
                 
                 if not business_id:
                     logger.error(f'❌ [HR Employee Create] No business_id found for user: {request.user.email}')
@@ -237,7 +271,15 @@ def employee_list(request):
                 # Save the employee with business_id AND tenant_id for RLS
                 # The model will auto-generate employee_number in the save() method
                 # For RLS, we need to save tenant_id as well (same as business_id for now)
-                employee = serializer.save(business_id=business_id, tenant_id=business_id)
+                try:
+                    employee = serializer.save(business_id=business_id, tenant_id=business_id)
+                    logger.info(f'✅ [HR Employee Create] Employee created with id: {employee.id}, business_id: {employee.business_id}')
+                except Exception as save_error:
+                    logger.error(f'❌ [HR Employee Create] Failed to save employee: {str(save_error)}')
+                    # If tenant_id column doesn't exist, try without it
+                    if 'tenant_id' in str(save_error):
+                        logger.info(f'🔄 [HR Employee Create] Retrying without tenant_id')
+                        employee = serializer.save(business_id=business_id)
                 logger.info(f'✅ [HR Employee Create] Employee created with ID: {employee.id} for business: {business_id} (tenant: {business_id})')
                 
                 # Handle security number storage if provided
