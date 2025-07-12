@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/useToast';
 import { Search, Calendar, CheckCircle, XCircle, Clock, Filter, FileText, Download, Settings } from 'lucide-react';
-import StandardSpinner from '@/components/StandardSpinner';
+import StandardSpinner from '@/components/ui/StandardSpinner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 const TimesheetsPage = () => {

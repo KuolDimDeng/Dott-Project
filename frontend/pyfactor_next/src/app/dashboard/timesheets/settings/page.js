@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/useToast';
 import { Settings, Save } from 'lucide-react';
-import StandardSpinner from '@/components/StandardSpinner';
+import StandardSpinner from '@/components/ui/StandardSpinner';
 
 const TimesheetSettingsPage = () => {
   const { tenantId } = useSessionContext();

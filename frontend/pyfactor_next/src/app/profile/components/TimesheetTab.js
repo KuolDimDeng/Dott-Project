@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/useToast';
 import { Clock, Calendar, DollarSign, User, CheckCircle, XCircle, Clock3 } from 'lucide-react';
-import StandardSpinner from '@/components/StandardSpinner';
+import StandardSpinner from '@/components/ui/StandardSpinner';
 
 const TimesheetTab = () => {
   const { employee, tenantId } = useSessionContext();
