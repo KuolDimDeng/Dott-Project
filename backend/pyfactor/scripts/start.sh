@@ -10,6 +10,9 @@ python scripts/check_subscription_column.py
 echo "=== Pre-start: Ensuring tenant_id column exists ==="
 python scripts/ensure_tenant_id_column.py
 
+echo "=== Pre-start: Marking tenant_id migration as applied ==="
+python scripts/mark_employee_tenant_migration_applied.py
+
 echo "=== Pre-start: Populating developing countries table ==="
 python manage.py populate_developing_countries
 

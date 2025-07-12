@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 """
 Ensure tenant_id column exists for Employee table
 This runs on startup to fix any missing columns
