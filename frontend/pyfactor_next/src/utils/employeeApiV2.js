@@ -60,7 +60,23 @@ export const employeeApiV2 = {
 
       // Only include optional fields if they have values
       if (employeeData.phone && employeeData.phone.trim()) {
-        transformedData.phone_number = employeeData.phone;
+        // Format phone number for Django PhoneNumberField
+        let phone = employeeData.phone.trim();
+        // If it doesn't start with +, assume US number and add +1
+        if (!phone.startsWith('+')) {
+          // Remove any non-digits
+          phone = phone.replace(/\D/g, '');
+          // If it's 10 digits, assume US number
+          if (phone.length === 10) {
+            phone = '+1' + phone;
+          } else if (phone.length === 11 && phone.startsWith('1')) {
+            phone = '+' + phone;
+          } else {
+            // For other formats, try adding +1
+            phone = '+1' + phone;
+          }
+        }
+        transformedData.phone_number = phone;
       }
       if (employeeData.position && employeeData.position.trim()) {
         transformedData.job_title = employeeData.position;

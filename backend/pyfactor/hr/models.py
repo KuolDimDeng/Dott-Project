@@ -14,6 +14,9 @@ User = get_user_model()
 def get_current_datetime():
     return timezone.now()
 
+def get_current_date():
+    return timezone.now().date()
+
 def get_current_year():
     return timezone.now().year
 
@@ -87,7 +90,7 @@ class Employee(models.Model):
     supervisor = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='subordinates')
     
     # Employment Dates
-    hire_date = models.DateField(default=timezone.now)
+    hire_date = models.DateField(default=get_current_date)
     termination_date = models.DateField(null=True, blank=True)
     
     # Employment Status
