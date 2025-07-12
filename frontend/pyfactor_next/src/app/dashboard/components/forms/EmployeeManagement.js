@@ -690,7 +690,10 @@ function EmployeeManagement({ onNavigate }) {
         supervisor: formData.supervisor || null,
         employment_type: formData.employmentType,
         compensation_type: formData.compensationType,
-        wage_per_hour: formData.compensationType === 'HOURLY' ? (parseFloat(formData.wagePerHour) || 0) : 0,
+        wage_per_hour: formData.compensationType === 'HOURLY' ? 
+          (parseFloat(formData.wagePerHour) || 0) : 
+          // Calculate hourly rate for salaried employees (industry standard)
+          (parseFloat(formData.salary) / 2080 || 0), // 52 weeks × 40 hours
         hire_date: formData.hireDate,
         zip_code: formData.zipCode,
         emergency_contact_name: formData.emergencyContact,
@@ -1318,7 +1321,7 @@ function EmployeeManagement({ onNavigate }) {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Annual Salary
-                <FieldTooltip text="Annual salary amount in your local currency" />
+                <FieldTooltip text="Annual salary - hourly rate will be auto-calculated for timesheets and overtime (salary ÷ 2,080 hours)" />
               </label>
               <input
                 type="number"
@@ -1327,6 +1330,11 @@ function EmployeeManagement({ onNavigate }) {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
                 placeholder="e.g., 75000"
               />
+              {formData.salary && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Hourly equivalent: ${(parseFloat(formData.salary) / 2080).toFixed(2)}/hour
+                </p>
+              )}
             </div>
           ) : (
             <div>
