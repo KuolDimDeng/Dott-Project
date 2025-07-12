@@ -233,21 +233,41 @@ export async function GET(request) {
  */
 export async function POST(request) {
   try {
-    logger.info('🚀 [HR API] === START POST /api/hr/employees ===');
+    logger.info('🚀 [HR-PROXY-TRACE] === START POST /api/hr/employees ===');
     
     // Get the request body
     const body = await request.json();
     
-    logger.info('[HR API] Creating employee with data:', {
-      ...body,
-      email: body.email ? `${body.email.substring(0, 3)}***@***` : 'not provided' // Mask email for privacy
+    logger.info('🚀 [HR-PROXY-TRACE] Request received:', {
+      bodyKeys: Object.keys(body),
+      bodySize: JSON.stringify(body).length,
+      email: body.email ? `${body.email.substring(0, 3)}***@***` : 'not provided',
+      hasFirstName: !!body.firstName,
+      hasLastName: !!body.lastName,
+      requestUrl: request.url,
+      requestMethod: request.method
     });
     
     // Forward headers from the original request with enhanced auth
     const headers = getForwardedHeaders(request);
+    logger.info('🚀 [HR-PROXY-TRACE] Forwarded headers:', {
+      headersCount: Object.keys(headers).length,
+      hasAuth: !!headers.Authorization,
+      authType: headers.Authorization ? headers.Authorization.split(' ')[0] : 'none',
+      hasTenantId: !!headers['X-Tenant-ID'],
+      tenantId: headers['X-Tenant-ID'] || 'none'
+    });
     
     // Get query parameters with tenant context
     const params = getQueryParams(request);
+    logger.info('🚀 [HR-PROXY-TRACE] Query params:', params);
+    
+    logger.info('🚀 [HR-PROXY-TRACE] Sending to Django backend:', {
+      url: `${BACKEND_API_URL}/api/hr/employees`,
+      method: 'POST',
+      hasBody: !!body,
+      hasHeaders: Object.keys(headers).length > 0
+    });
     
     // Forward the request to the backend
     const response = await backendAxios.post('/employees', body, {
@@ -255,7 +275,22 @@ export async function POST(request) {
       params
     });
     
-    logger.info('✅ [HR API] Employee created successfully:', response.data?.id);
+    logger.info('🚀 [HR-PROXY-TRACE] Django response received:', {
+      status: response.status,
+      statusText: response.statusText,
+      dataType: typeof response.data,
+      isArray: Array.isArray(response.data),
+      dataLength: Array.isArray(response.data) ? response.data.length : 'N/A',
+      hasId: response.data && response.data.id ? true : false,
+      responseKeys: response.data && typeof response.data === 'object' ? Object.keys(response.data) : 'N/A',
+      fullData: JSON.stringify(response.data, null, 2)
+    });
+    
+    logger.info('✅ [HR-PROXY-TRACE] Returning to frontend:', {
+      responseStatus: response.status,
+      responseData: response.data
+    });
+    logger.info('🚀 [HR-PROXY-TRACE] === END POST /api/hr/employees ===');
     
     // Return the response from the backend
     return NextResponse.json(response.data, { status: response.status });

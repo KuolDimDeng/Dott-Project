@@ -145,7 +145,8 @@
       "Bash(/dev/null)",
       "Bash(then)",
       "Bash(echo:*)",
-      "Bash(fi)"
+      "Bash(fi)",
+      "Bash(DATABASE_URL=\"postgresql://postgres:postgres@localhost:5432/pyfactor_dev\" python3 interactive_user_cleanup.py)"
     ],
     "deny": []
   }

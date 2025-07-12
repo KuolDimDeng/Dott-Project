@@ -73,6 +73,7 @@ const PUBLIC_ROUTES = [
   '/signup',
   '/reset-password',
   // Add onboarding routes as semi-public (they'll use cookie-based auth)
+  '/onboarding',
   '/onboarding/business-info',
   '/onboarding/subscription',
   '/onboarding/payment',

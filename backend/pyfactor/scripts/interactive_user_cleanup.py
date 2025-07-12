@@ -25,7 +25,7 @@ def get_db_connection():
             password=result.password,
             host=result.hostname,
             port=result.port,
-            sslmode='require'
+            sslmode='prefer'  # Use 'prefer' for local testing, 'require' for production
         )
         return conn
     except Exception as e:

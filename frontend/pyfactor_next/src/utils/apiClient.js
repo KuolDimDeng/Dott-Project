@@ -1354,10 +1354,24 @@ export const hrApi = {
       const pathParts = window.location.pathname.split('/');
       const tenantId = pathParts[1]; // Assuming /<tenantId>/dashboard pattern
       
-      logger.info('🚀 [HRApi] Creating employee with data:', {
+      logger.info('🚀 [HRApi-TRACE] === EMPLOYEE CREATE START ===');
+      logger.info('🚀 [HRApi-TRACE] Creating employee with data:', {
         ...data,
         email: data.email ? `${data.email.substring(0, 3)}***@***` : 'not provided',
-        tenantId
+        tenantId,
+        dataKeys: Object.keys(data),
+        dataSize: JSON.stringify(data).length
+      });
+      
+      logger.info('🚀 [HRApi-TRACE] Request details:', {
+        url: '/api/hr/employees',
+        method: 'POST',
+        tenantId: tenantId,
+        hasCredentials: true,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Tenant-ID': tenantId || '',
+        }
       });
       
       const response = await fetch('/api/hr/employees', {
@@ -1370,13 +1384,33 @@ export const hrApi = {
         body: JSON.stringify(data)
       });
       
+      logger.info('🚀 [HRApi-TRACE] Response received:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+      
       if (!response.ok) {
         const error = await response.text();
+        logger.error('❌ [HRApi-TRACE] Request failed:', {
+          status: response.status,
+          error: error,
+          url: '/api/hr/employees'
+        });
         throw new Error(error || `HTTP ${response.status}`);
       }
       
       const result = await response.json();
-      logger.info('[HRApi] Employee created successfully:', JSON.stringify(result, null, 2));
+      logger.info('🚀 [HRApi-TRACE] Employee creation result:', {
+        result: JSON.stringify(result, null, 2),
+        resultType: typeof result,
+        isArray: Array.isArray(result),
+        length: Array.isArray(result) ? result.length : 'N/A',
+        hasId: result && result.id ? true : false,
+        resultKeys: result && typeof result === 'object' ? Object.keys(result) : 'N/A'
+      });
+      logger.info('🚀 [HRApi-TRACE] === EMPLOYEE CREATE END ===');
       return result;
     },
     

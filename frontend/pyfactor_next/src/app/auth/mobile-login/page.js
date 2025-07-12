@@ -41,7 +41,7 @@ export default function MobileLoginPage() {
         if (data.onboardingCompleted) {
           router.push('/mobile');
         } else {
-          router.push('/onboarding/business');
+          router.push('/onboarding');
         }
       } else {
         toast.error(data.error || 'Invalid credentials');

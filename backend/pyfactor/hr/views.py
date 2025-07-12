@@ -270,8 +270,29 @@ def employee_list(request):
         return response
     
     elif request.method == 'POST':
-        logger.info(f'🚀 [HR Employee Create] POST request from user: {request.user.email}')
-        logger.info(f'📄 [HR Employee Create] Request data keys: {list(request.data.keys())}')
+        logger.info('🚀 [HR-DJANGO-TRACE] === START EMPLOYEE CREATE ===')
+        logger.info(f'🚀 [HR-DJANGO-TRACE] POST request from user: {request.user.email}')
+        logger.info(f'🚀 [HR-DJANGO-TRACE] Request data received:', {
+            'dataKeys': list(request.data.keys()),
+            'dataSize': len(str(request.data)),
+            'hasEmail': 'email' in request.data,
+            'hasFirstName': 'firstName' in request.data,
+            'hasLastName': 'lastName' in request.data,
+            'requestMethod': request.method,
+            'contentType': request.content_type
+        })
+        logger.info(f'🚀 [HR-DJANGO-TRACE] User details:', {
+            'userEmail': request.user.email,
+            'userAuthenticated': request.user.is_authenticated,
+            'hasBusinessId': hasattr(request.user, 'business_id'),
+            'hasTenantId': hasattr(request.user, 'tenant_id')
+        })
+        logger.info(f'🚀 [HR-DJANGO-TRACE] Request headers:', {
+            'authorization': 'Session [REDACTED]' if request.headers.get('Authorization') else 'None',
+            'xTenantId': request.headers.get('X-Tenant-ID'),
+            'contentType': request.headers.get('Content-Type'),
+            'userAgent': request.headers.get('User-Agent', '')[:50] + '...' if request.headers.get('User-Agent') else 'None'
+        })
         
         try:
             # Handle the security number specially for Stripe storage
@@ -279,31 +300,49 @@ def employee_list(request):
             security_number = employee_data.pop('securityNumber', None)
             
             # Log the employee data being processed
-            logger.info(f'🔍 [HR Employee Create] Processing employee data for: {employee_data.get("email", "unknown")}')
+            logger.info(f'🚀 [HR-DJANGO-TRACE] Processing employee data:', {
+                'email': employee_data.get('email', 'unknown'),
+                'processedDataKeys': list(employee_data.keys()),
+                'hasSecurityNumber': security_number is not None
+            })
             
+            logger.info(f'🚀 [HR-DJANGO-TRACE] Starting serialization...')
             serializer = EmployeeSerializer(data=employee_data)
+            logger.info(f'🚀 [HR-DJANGO-TRACE] Serializer created, validating...')
+            
             if serializer.is_valid():
+                logger.info(f'🚀 [HR-DJANGO-TRACE] Serializer validation PASSED'):
                 # Get the user's business_id
                 business_id = None
                 if hasattr(request.user, 'business_id'):
                     business_id = request.user.business_id
                 
+                logger.info(f'🚀 [HR-DJANGO-TRACE] Business ID resolution:', {
+                    'userBusinessId': business_id,
+                    'hasUserBusinessId': business_id is not None
+                })
+                
                 # Also check for tenant_id in request
                 request_tenant_id = request.data.get('tenantId') or request.headers.get('X-Tenant-ID')
-                if request_tenant_id:
-                    logger.info(f'📱 [HR Employee Create] Tenant ID from request: {request_tenant_id}')
-                
-                logger.info(f'🏢 [HR Employee Create] User business_id: {business_id}')
+                logger.info(f'🚀 [HR-DJANGO-TRACE] Tenant ID resolution:', {
+                    'requestTenantId': request_tenant_id,
+                    'fromData': request.data.get('tenantId'),
+                    'fromHeaders': request.headers.get('X-Tenant-ID')
+                })
                 
                 # Use tenant_id if business_id doesn't match
                 if request_tenant_id and str(business_id) != str(request_tenant_id):
-                    logger.warning(f'⚠️ [HR Employee Create] Business ID mismatch! Using tenant_id as business_id')
-                    logger.warning(f'   User business_id: {business_id}')
-                    logger.warning(f'   Request tenant_id: {request_tenant_id}')
+                    logger.warning(f'🚀 [HR-DJANGO-TRACE] Business ID mismatch detected:', {
+                        'userBusinessId': business_id,
+                        'requestTenantId': request_tenant_id,
+                        'action': 'using tenant_id as business_id'
+                    })
                     business_id = request_tenant_id
                 
+                logger.info(f'🚀 [HR-DJANGO-TRACE] Final business_id resolved:', business_id)
+                
                 if not business_id:
-                    logger.error(f'❌ [HR Employee Create] No business_id found for user: {request.user.email}')
+                    logger.error(f'🚀 [HR-DJANGO-TRACE] CRITICAL: No business_id found for user: {request.user.email}')
                     return Response(
                         {'error': 'User must be associated with a business to create employees'}, 
                         status=status.HTTP_400_BAD_REQUEST
@@ -312,18 +351,43 @@ def employee_list(request):
                 # Save the employee with business_id AND tenant_id for RLS
                 # The model will auto-generate employee_number in the save() method
                 # For RLS, we need to save tenant_id as well (same as business_id for now)
+                logger.info(f'🚀 [HR-DJANGO-TRACE] Attempting to save employee...')
                 try:
+                    logger.info(f'🚀 [HR-DJANGO-TRACE] Calling serializer.save() with:', {
+                        'business_id': business_id,
+                        'tenant_id': business_id
+                    })
                     employee = serializer.save(business_id=business_id, tenant_id=business_id)
-                    logger.info(f'✅ [HR Employee Create] Employee created with id: {employee.id}, business_id: {employee.business_id}')
-                    logger.info(f'📊 [HR Employee Create] Full employee object: id={employee.id}, email={employee.email}, business_id={employee.business_id}, tenant_id={getattr(employee, "tenant_id", "N/A")}')
+                    logger.info(f'🚀 [HR-DJANGO-TRACE] Employee save() successful:', {
+                        'employeeId': employee.id,
+                        'employeeEmail': employee.email,
+                        'employeeBusinessId': employee.business_id,
+                        'employeeTenantId': getattr(employee, 'tenant_id', 'N/A'),
+                        'hasId': employee.id is not None
+                    })
                 except Exception as save_error:
-                    logger.error(f'❌ [HR Employee Create] Failed to save employee: {str(save_error)}')
+                    logger.error(f'🚀 [HR-DJANGO-TRACE] Employee save() FAILED:', {
+                        'error': str(save_error),
+                        'errorType': type(save_error).__name__,
+                        'hasTenantIdInError': 'tenant_id' in str(save_error)
+                    })
                     # If tenant_id column doesn't exist, try without it
                     if 'tenant_id' in str(save_error):
-                        logger.info(f'🔄 [HR Employee Create] Retrying without tenant_id')
+                        logger.info(f'🚀 [HR-DJANGO-TRACE] Retrying save without tenant_id...')
                         employee = serializer.save(business_id=business_id)
-                        logger.info(f'📊 [HR Employee Create] Employee saved without tenant_id: id={employee.id}')
-                logger.info(f'✅ [HR Employee Create] Employee created with ID: {employee.id} for business: {business_id} (tenant: {business_id})')
+                        logger.info(f'🚀 [HR-DJANGO-TRACE] Employee saved without tenant_id:', {
+                            'employeeId': employee.id,
+                            'employeeBusinessId': employee.business_id
+                        })
+                    else:
+                        raise save_error
+                        
+                logger.info(f'🚀 [HR-DJANGO-TRACE] Employee creation completed:', {
+                    'employeeId': employee.id,
+                    'businessId': business_id,
+                    'tenantId': business_id,
+                    'saved': True
+                })
                 
                 # Handle security number storage if provided
                 if security_number:
@@ -336,25 +400,53 @@ def employee_list(request):
                         # Don't fail the creation, just log the error
                 
                 # Return the created employee data
+                logger.info(f'🚀 [HR-DJANGO-TRACE] Serializing response data...')
                 response_serializer = EmployeeSerializer(employee)
                 response_data = response_serializer.data
-                logger.info(f'✅ [HR Employee Create] Serialized data keys: {list(response_data.keys()) if response_data else "No data"}')
-                logger.info(f'✅ [HR Employee Create] Returning employee data: {response_data}')
+                logger.info(f'🚀 [HR-DJANGO-TRACE] Response serialization complete:', {
+                    'dataKeys': list(response_data.keys()) if response_data else [],
+                    'dataType': type(response_data).__name__,
+                    'isArray': isinstance(response_data, list),
+                    'isEmpty': not bool(response_data),
+                    'hasId': 'id' in response_data if response_data else False,
+                    'responseId': response_data.get('id') if response_data else None
+                })
                 
                 # Double-check the employee was saved
+                logger.info(f'🚀 [HR-DJANGO-TRACE] Verifying employee exists in database...')
                 saved_employee = Employee.objects.filter(id=employee.id).first()
                 if saved_employee:
-                    logger.info(f'✅ [HR Employee Create] Verified employee exists in DB: {saved_employee.email}')
+                    logger.info(f'🚀 [HR-DJANGO-TRACE] Database verification PASSED:', {
+                        'employeeExists': True,
+                        'savedEmployeeId': saved_employee.id,
+                        'savedEmployeeEmail': saved_employee.email
+                    })
                 else:
-                    logger.error(f'❌ [HR Employee Create] Employee NOT found in DB after save!')
+                    logger.error(f'🚀 [HR-DJANGO-TRACE] Database verification FAILED: Employee NOT found in DB after save!')
+                
+                logger.info(f'🚀 [HR-DJANGO-TRACE] Returning response:', {
+                    'status': 201,
+                    'responseData': response_data
+                })
+                logger.info('🚀 [HR-DJANGO-TRACE] === END EMPLOYEE CREATE ===')
                 
                 return Response(response_data, status=status.HTTP_201_CREATED)
             else:
-                logger.error(f'❌ [HR Employee Create] Validation errors: {serializer.errors}')
+                logger.error(f'🚀 [HR-DJANGO-TRACE] Serializer validation FAILED:', {
+                    'validationErrors': serializer.errors,
+                    'errorCount': len(serializer.errors),
+                    'errorFields': list(serializer.errors.keys()) if serializer.errors else []
+                })
+                logger.info('🚀 [HR-DJANGO-TRACE] === END EMPLOYEE CREATE (VALIDATION ERROR) ===')
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
                 
         except Exception as e:
-            logger.error(f'❌ [HR Employee Create] Unexpected error: {str(e)}')
+            logger.error(f'🚀 [HR-DJANGO-TRACE] UNEXPECTED ERROR during employee creation:', {
+                'error': str(e),
+                'errorType': type(e).__name__,
+                'userEmail': request.user.email if hasattr(request, 'user') else 'unknown'
+            })
+            logger.info('🚀 [HR-DJANGO-TRACE] === END EMPLOYEE CREATE (EXCEPTION) ===')
             response = Response(
                 {'error': 'Failed to create employee', 'details': str(e)}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
