@@ -1,14 +1,11 @@
 'use client';
 
-
 import React from 'react';
-import { useSessionContext } from '@/providers/SessionProvider';
 import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 
-const EmployeeInfo = () => {
-  const { employee } = useSessionContext();
+const EmployeeInfo = ({ employee }) => {
 
   if (!employee) {
     return (
@@ -57,10 +54,10 @@ const EmployeeInfo = () => {
         </div>
         
         <div>
-          <Label className="font-medium">Date Joined</Label>
+          <Label className="font-medium">Date Hired</Label>
           <p className="text-sm">
-            {employee.date_joined ? 
-              format(new Date(employee.date_joined), 'PPP') : 
+            {employee.hire_date ? 
+              format(new Date(employee.hire_date), 'PPP') : 
               'Not specified'}
           </p>
         </div>

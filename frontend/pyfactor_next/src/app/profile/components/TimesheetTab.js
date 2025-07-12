@@ -1,20 +1,17 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useSessionContext } from '@/providers/SessionProvider';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, parseISO } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useToast } from '@/hooks/useToast';
 import { Clock, Calendar, DollarSign, User, CheckCircle, XCircle, Clock3 } from 'lucide-react';
 import StandardSpinner from '@/components/ui/StandardSpinner';
+import toast from 'react-hot-toast';
 
-const TimesheetTab = () => {
-  const { employee, tenantId } = useSessionContext();
-  const { toast } = useToast();
+const TimesheetTab = ({ employee, session }) => {
   const [loading, setLoading] = useState(false);
   const [currentTimesheet, setCurrentTimesheet] = useState(null);
   const [timesheetEntries, setTimesheetEntries] = useState({});
@@ -26,11 +23,11 @@ const TimesheetTab = () => {
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
   useEffect(() => {
-    if (employee) {
+    if (employee && session?.tenantId) {
       fetchCurrentTimesheet();
       fetchSupervisor();
     }
-  }, [employee]);
+  }, [employee, session]);
 
   const fetchCurrentTimesheet = async () => {
     setLoading(true);
@@ -39,7 +36,7 @@ const TimesheetTab = () => {
         `/api/hr/timesheets?employee_id=${employee.id}&period_start=${format(weekStart, 'yyyy-MM-dd')}`,
         {
           headers: {
-            'X-Tenant-ID': tenantId,
+            'X-Tenant-ID': session.tenantId,
           },
         }
       );
@@ -53,11 +50,7 @@ const TimesheetTab = () => {
       }
     } catch (error) {
       console.error('Error fetching timesheet:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load timesheet data',
-        variant: 'destructive',
-      });
+      toast.error('Failed to load timesheet data');
     } finally {
       setLoading(false);
     }
@@ -67,7 +60,7 @@ const TimesheetTab = () => {
     try {
       const response = await fetch(`/api/hr/timesheet-entries?timesheet_id=${timesheetId}`, {
         headers: {
-          'X-Tenant-ID': tenantId,
+          'X-Tenant-ID': session.tenantId,
         },
       });
 
@@ -90,7 +83,7 @@ const TimesheetTab = () => {
     try {
       const response = await fetch(`/api/hr/employees/${employee.supervisor}/`, {
         headers: {
-          'X-Tenant-ID': tenantId,
+          'X-Tenant-ID': session.tenantId,
         },
       });
 
@@ -124,7 +117,7 @@ const TimesheetTab = () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'X-Tenant-ID': tenantId,
+            'X-Tenant-ID': session.tenantId,
           },
           body: JSON.stringify({
             employee: employee.id,
@@ -163,17 +156,10 @@ const TimesheetTab = () => {
         }
       }
 
-      toast({
-        title: 'Success',
-        description: 'Timesheet saved successfully',
-      });
+      toast.success('Timesheet saved successfully');
     } catch (error) {
       console.error('Error saving timesheet:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to save timesheet',
-        variant: 'destructive',
-      });
+      toast.error('Failed to save timesheet');
     } finally {
       setSubmitting(false);
     }
@@ -199,19 +185,12 @@ const TimesheetTab = () => {
       });
 
       if (response.ok) {
-        toast({
-          title: 'Success',
-          description: 'Timesheet submitted for approval',
-        });
+        toast.success('Timesheet submitted for approval');
         fetchCurrentTimesheet();
       }
     } catch (error) {
       console.error('Error submitting timesheet:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to submit timesheet',
-        variant: 'destructive',
-      });
+      toast.error('Failed to submit timesheet');
     } finally {
       setSubmitting(false);
     }

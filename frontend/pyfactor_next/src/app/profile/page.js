@@ -1,23 +1,84 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useSessionContext } from '@/providers/SessionProvider';
+import React, { useState, useEffect } from 'react';
+import { useSession } from '@/hooks/useSession-v2';
+import { useRouter } from 'next/navigation';
 import EmployeeInfo from './components/EmployeeInfo';
 import TimesheetTab from './components/TimesheetTab';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import toast from 'react-hot-toast';
 
 export default function ProfilePage() {
-  const { user, employee } = useSessionContext();
+  const { session, loading } = useSession();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState('profile');
+  const [employee, setEmployee] = useState(null);
+  const [loadingEmployee, setLoadingEmployee] = useState(false);
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!loading && !session) {
+      router.push('/auth/signin');
+    }
+  }, [session, loading, router]);
+
+  // Load employee data
+  useEffect(() => {
+    if (session?.employee?.id && session?.tenantId) {
+      loadEmployeeData();
+    }
+  }, [session]);
+
+  const loadEmployeeData = async () => {
+    setLoadingEmployee(true);
+    try {
+      const response = await fetch(`/api/hr/employees/${session.employee.id}/`, {
+        headers: {
+          'X-Tenant-ID': session.tenantId,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setEmployee(data);
+      } else {
+        toast.error('Failed to load employee information');
+      }
+    } catch (error) {
+      console.error('Error loading employee data:', error);
+      toast.error('Error loading employee information');
+    } finally {
+      setLoadingEmployee(false);
+    }
+  };
 
   // Get user initials for avatar
   const getUserInitials = () => {
-    if (!user?.attributes?.email) return 'U';
-    return user.attributes.email.charAt(0).toUpperCase();
+    const email = session?.user?.email || session?.employee?.email;
+    if (!email) return 'U';
+    return email.charAt(0).toUpperCase();
   };
+
+  if (loading || loadingEmployee) {
+    return (
+      <div className="container mx-auto p-4 max-w-5xl">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-gray-200 rounded w-48"></div>
+          <div className="space-y-4">
+            <div className="h-32 bg-gray-200 rounded"></div>
+            <div className="h-64 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return null; // Will redirect
+  }
 
   return (
     <div className="container mx-auto p-4 max-w-5xl">
@@ -51,29 +112,39 @@ export default function ProfilePage() {
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label className="font-medium">Email</Label>
-                <p className="text-sm">{user?.attributes?.email || 'Not available'}</p>
+                <p className="text-sm">{session?.user?.email || session?.employee?.email || 'Not available'}</p>
+              </div>
+              
+              <div>
+                <Label className="font-medium">Name</Label>
+                <p className="text-sm">
+                  {session?.user?.name || 
+                   (session?.employee?.first_name && session?.employee?.last_name 
+                     ? `${session.employee.first_name} ${session.employee.last_name}` 
+                     : 'Not available')}
+                </p>
               </div>
               
               <div>
                 <Label className="font-medium">User Role</Label>
-                <p className="text-sm capitalize">{user?.attributes?.['custom:userrole'] || 'Standard'}</p>
+                <p className="text-sm capitalize">{session?.user?.role || 'Employee'}</p>
               </div>
               
               <div>
                 <Label className="font-medium">Account Status</Label>
-                <p className="text-sm capitalize">{user?.attributes?.['custom:acctstatus']?.toLowerCase() || 'Active'}</p>
+                <p className="text-sm capitalize">Active</p>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
         
         <TabsContent value="employment">
-          <EmployeeInfo />
+          <EmployeeInfo employee={employee} />
         </TabsContent>
         
         {employee?.compensation_type === 'WAGE' && (
           <TabsContent value="timesheet">
-            <TimesheetTab />
+            <TimesheetTab employee={employee} session={session} />
           </TabsContent>
         )}
       </Tabs>

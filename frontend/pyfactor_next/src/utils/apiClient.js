@@ -1308,7 +1308,7 @@ export const hrApi = {
       
       logger.info('🚀 [HRApi] Getting all employees', { tenantId });
       
-      const response = await fetch('/api/hr/employees', {
+      const response = await fetch('/api/hr/v2/employees', {
         method: 'GET',
         credentials: 'include',
         headers: {
@@ -1322,8 +1322,9 @@ export const hrApi = {
         throw new Error(error || `HTTP ${response.status}`);
       }
       
-      return response.json();
-    },
+      const data = await response.json();
+      // Transform v2 response format to match existing frontend expectations
+      return data.data || [];
     
     async getById(id, params = {}) {
       // Get tenant ID from the current path or session
@@ -1332,7 +1333,7 @@ export const hrApi = {
       
       logger.info('🚀 [HRApi] Getting employee by ID:', { id, tenantId });
       
-      const response = await fetch(`/api/hr/employees/${id}`, {
+      const response = await fetch(`/api/hr/v2/employees/${id}`, {
         method: 'GET',
         credentials: 'include',
         headers: {
@@ -1346,7 +1347,9 @@ export const hrApi = {
         throw new Error(error || `HTTP ${response.status}`);
       }
       
-      return response.json();
+      const data = await response.json();
+      // Transform v2 response format to match existing frontend expectations
+      return data.data || {};
     },
     
     async create(data, params = {}) {
@@ -1364,7 +1367,7 @@ export const hrApi = {
       });
       
       logger.info('🚀 [HRApi-TRACE] Request details:', {
-        url: '/api/hr/employees',
+        url: '/api/hr/v2/employees',
         method: 'POST',
         tenantId: tenantId,
         hasCredentials: true,
@@ -1374,7 +1377,7 @@ export const hrApi = {
         }
       });
       
-      const response = await fetch('/api/hr/employees', {
+      const response = await fetch('/api/hr/v2/employees', {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -1396,7 +1399,7 @@ export const hrApi = {
         logger.error('❌ [HRApi-TRACE] Request failed:', {
           status: response.status,
           error: error,
-          url: '/api/hr/employees'
+          url: '/api/hr/v2/employees'
         });
         throw new Error(error || `HTTP ${response.status}`);
       }
@@ -1407,11 +1410,12 @@ export const hrApi = {
         resultType: typeof result,
         isArray: Array.isArray(result),
         length: Array.isArray(result) ? result.length : 'N/A',
-        hasId: result && result.id ? true : false,
+        hasId: result && result.data && result.data.id ? true : false,
         resultKeys: result && typeof result === 'object' ? Object.keys(result) : 'N/A'
       });
       logger.info('🚀 [HRApi-TRACE] === EMPLOYEE CREATE END ===');
-      return result;
+      // Transform v2 response format to match existing frontend expectations
+      return result.data || result;
     },
     
     async update(id, data, params = {}) {
@@ -1421,7 +1425,7 @@ export const hrApi = {
       
       logger.info('🚀 [HRApi] Updating employee:', { id, tenantId });
       
-      const response = await fetch(`/api/hr/employees/${id}`, {
+      const response = await fetch(`/api/hr/v2/employees/${id}`, {
         method: 'PUT',
         credentials: 'include',
         headers: {
@@ -1436,7 +1440,9 @@ export const hrApi = {
         throw new Error(error || `HTTP ${response.status}`);
       }
       
-      return response.json();
+      const result = await response.json();
+      // Transform v2 response format to match existing frontend expectations
+      return result.data || result;
     },
     
     async delete(id, params = {}) {
@@ -1446,7 +1452,7 @@ export const hrApi = {
       
       logger.info('🚀 [HRApi] Deleting employee:', { id, tenantId });
       
-      const response = await fetch(`/api/hr/employees/${id}`, {
+      const response = await fetch(`/api/hr/v2/employees/${id}`, {
         method: 'DELETE',
         credentials: 'include',
         headers: {
@@ -1460,7 +1466,9 @@ export const hrApi = {
         throw new Error(error || `HTTP ${response.status}`);
       }
       
-      return response.json();
+      const result = await response.json();
+      // Transform v2 response format to match existing frontend expectations
+      return result.data || result;
     },
 
     async getStats(params = {}) {
@@ -1468,7 +1476,7 @@ export const hrApi = {
       const pathParts = window.location.pathname.split('/');
       const tenantId = pathParts[1]; // Assuming /<tenantId>/dashboard pattern
       
-      const response = await fetch('/api/hr/employees/stats', {
+      const response = await fetch('/api/hr/v2/employees/stats', {
         method: 'GET',
         credentials: 'include',
         headers: {
@@ -1482,7 +1490,9 @@ export const hrApi = {
         throw new Error(error || `HTTP ${response.status}`);
       }
       
-      return response.json();
+      const result = await response.json();
+      // Transform v2 response format to match existing frontend expectations
+      return result.data || result;
     },
     
     async getBasic(params = {}) {
@@ -1492,7 +1502,7 @@ export const hrApi = {
       
       logger.info('🚀 [HRApi] Getting basic employee list for dropdowns', { tenantId });
       
-      const response = await fetch('/api/hr/employees/basic', {
+      const response = await fetch('/api/hr/v2/employees', {
         method: 'GET',
         credentials: 'include',
         headers: {
@@ -1506,7 +1516,18 @@ export const hrApi = {
         throw new Error(error || `HTTP ${response.status}`);
       }
       
-      return response.json();
+      const result = await response.json();
+      // Transform v2 response format to match existing frontend expectations
+      // For basic employee info, just return essential fields
+      const employees = result.data || [];
+      return employees.map(emp => ({
+        id: emp.id,
+        firstName: emp.first_name,
+        lastName: emp.last_name,
+        email: emp.email,
+        department: emp.department,
+        jobTitle: emp.job_title
+      }));
     }
   },
 

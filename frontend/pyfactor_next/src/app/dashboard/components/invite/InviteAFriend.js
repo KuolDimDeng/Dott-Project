@@ -7,18 +7,42 @@ import {
   UserPlusIcon,
   EnvelopeIcon,
   CheckCircleIcon,
-  ExclamationCircleIcon 
+  ExclamationCircleIcon,
+  ChatBubbleLeftRightIcon,
+  PhoneIcon
 } from '@heroicons/react/24/outline';
 import StandardSpinner from '@/components/ui/StandardSpinner';
 
 const InviteAFriend = () => {
   const { user } = useSessionContext();
+  const [inviteMethod, setInviteMethod] = useState('email'); // 'email' or 'whatsapp'
   const [email, setEmail] = useState('');
-  // Fixed message - not editable by users
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState(null); // 'success', 'error', or null
 
-  const defaultMessage = `${user?.name || 'A colleague'} has invited you to join Dott!
+  const getDefaultMessage = (isWhatsApp = false) => {
+    if (isWhatsApp) {
+      return `🚀 *${user?.name || 'A colleague'} has invited you to join Dott!*
+
+Hello! I wanted to personally recommend Dott, a business management platform that has transformed how I run my operations.
+
+Dott brings together everything you need:
+• Sales and customer management  
+• Inventory tracking and control
+• Professional invoicing and payments
+• Financial reporting and analytics
+• Team collaboration tools
+
+Since implementing Dott, I've reduced administrative work by hours each week while gaining real-time insights into my business performance.
+
+Start your free trial today: https://dottapps.com
+
+Best regards,
+${user?.name || user?.email || 'A Dott User'}`;
+    }
+    
+    return `${user?.name || 'A colleague'} has invited you to join Dott!
 
 Hello,
 
@@ -39,14 +63,18 @@ Start your free trial today: https://dottapps.com
 
 Best regards,
 ${user?.name || user?.email || 'A Dott User'}`;
-
-  // Message is now fixed and doesn't change
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!email.trim()) {
+    if (inviteMethod === 'email' && !email.trim()) {
       setStatus({ type: 'error', message: 'Please enter a valid email address.' });
+      return;
+    }
+    
+    if (inviteMethod === 'whatsapp' && !phoneNumber.trim()) {
+      setStatus({ type: 'error', message: 'Please enter a valid phone number.' });
       return;
     }
 
@@ -54,29 +82,41 @@ ${user?.name || user?.email || 'A Dott User'}`;
     setStatus(null);
 
     try {
-      const response = await fetch('/api/invite/send', {
+      const endpoint = inviteMethod === 'whatsapp' ? '/api/invite/whatsapp' : '/api/invite/send';
+      const message = getDefaultMessage(inviteMethod === 'whatsapp');
+      
+      const requestBody = {
+        message,
+        senderName: user?.name || user?.email || 'A Dott User',
+        senderEmail: user?.email
+      };
+
+      if (inviteMethod === 'email') {
+        requestBody.email = email.trim();
+      } else {
+        requestBody.phoneNumber = phoneNumber.trim();
+      }
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({
-          email: email.trim(),
-          message: defaultMessage,
-          senderName: user?.name || user?.email || 'A Dott User',
-          senderEmail: user?.email
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const result = await response.json();
 
       if (response.ok) {
+        const recipient = inviteMethod === 'email' ? email : phoneNumber;
+        const method = inviteMethod === 'email' ? 'email' : 'WhatsApp';
         setStatus({ 
           type: 'success', 
-          message: `Invitation sent successfully to ${email}!` 
+          message: `Invitation sent successfully via ${method} to ${recipient}!` 
         });
         setEmail('');
-        // Message is fixed now, no need to reset
+        setPhoneNumber('');
       } else {
         setStatus({ 
           type: 'error', 
@@ -111,26 +151,86 @@ ${user?.name || user?.email || 'A Dott User'}`;
       <div className="max-w-md mx-auto">
         <div className="bg-white rounded-lg shadow-lg p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
-            <EnvelopeIcon className="h-5 w-5 text-blue-600 mr-2" />
+            {inviteMethod === 'whatsapp' ? (
+              <ChatBubbleLeftRightIcon className="h-5 w-5 text-green-600 mr-2" />
+            ) : (
+              <EnvelopeIcon className="h-5 w-5 text-blue-600 mr-2" />
+            )}
             Send Invitation
           </h2>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email Input */}
+            {/* Method Selection */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Business Owner's Email Address
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Choose invitation method
               </label>
-              <input
-                type="email"
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="business@example.com"
-                required
-              />
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setInviteMethod('email')}
+                  className={`flex items-center justify-center p-3 border rounded-md transition-colors ${
+                    inviteMethod === 'email'
+                      ? 'border-blue-500 bg-blue-50 text-blue-700'
+                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <EnvelopeIcon className="h-4 w-4 mr-2" />
+                  Email
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setInviteMethod('whatsapp')}
+                  className={`flex items-center justify-center p-3 border rounded-md transition-colors ${
+                    inviteMethod === 'whatsapp'
+                      ? 'border-green-500 bg-green-50 text-green-700'
+                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <ChatBubbleLeftRightIcon className="h-4 w-4 mr-2" />
+                  WhatsApp
+                </button>
+              </div>
             </div>
+
+            {/* Email Input */}
+            {inviteMethod === 'email' && (
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                  Business Owner's Email Address
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="business@example.com"
+                  required={inviteMethod === 'email'}
+                />
+              </div>
+            )}
+
+            {/* WhatsApp Phone Input */}
+            {inviteMethod === 'whatsapp' && (
+              <div>
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+                  Business Owner's WhatsApp Number
+                </label>
+                <input
+                  type="tel"
+                  id="phone"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  placeholder="+1234567890"
+                  required={inviteMethod === 'whatsapp'}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Include country code (e.g., +1 for US, +44 for UK)
+                </p>
+              </div>
+            )}
 
             {/* Status Message */}
             {status && (
@@ -152,7 +252,11 @@ ${user?.name || user?.email || 'A Dott User'}`;
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex items-center justify-center px-6 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+              className={`w-full flex items-center justify-center px-6 py-3 text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 ${
+                inviteMethod === 'whatsapp'
+                  ? 'bg-green-600 hover:bg-green-700 focus:ring-green-500'
+                  : 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500'
+              }`}
             >
               {isLoading ? (
                 <>
@@ -161,8 +265,12 @@ ${user?.name || user?.email || 'A Dott User'}`;
                 </>
               ) : (
                 <>
-                  <PaperAirplaneIcon className="h-4 w-4 mr-2" />
-                  Send Invitation
+                  {inviteMethod === 'whatsapp' ? (
+                    <ChatBubbleLeftRightIcon className="h-4 w-4 mr-2" />
+                  ) : (
+                    <PaperAirplaneIcon className="h-4 w-4 mr-2" />
+                  )}
+                  Send via {inviteMethod === 'whatsapp' ? 'WhatsApp' : 'Email'}
                 </>
               )}
             </button>

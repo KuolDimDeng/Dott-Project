@@ -131,7 +131,7 @@ export default function MobilePage() {
         <img src="/static/images/favicon.png" alt="Dott" className="h-20 w-20 rounded-2xl shadow-lg mb-6" />
         <h2 className="text-2xl font-bold text-gray-900 mb-4">Welcome to Dott Mobile</h2>
         <p className="text-gray-600 text-center mb-8 max-w-sm">
-          Please sign in to access your business dashboard and tools.
+          Please sign in to access your business platform and tools.
         </p>
         <div className="space-y-3 w-full max-w-sm">
           <Link
@@ -169,7 +169,7 @@ export default function MobilePage() {
             <div className="flex items-center space-x-3">
               <img src="/static/images/favicon.png" alt="Dott" className="h-10 w-10 rounded-lg" />
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">Dott Mobile</h1>
+                <h1 className="text-xl font-semibold text-gray-900">Dott: Business Platform</h1>
                 <div className="flex items-center space-x-2 text-sm">
                   <span className={`flex items-center ${isOnline ? 'text-green-600' : 'text-gray-500'}`}>
                     <div className={`w-2 h-2 rounded-full mr-1 ${isOnline ? 'bg-green-600' : 'bg-gray-400'}`}></div>

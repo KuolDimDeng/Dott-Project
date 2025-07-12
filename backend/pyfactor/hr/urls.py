@@ -38,11 +38,7 @@ urlpatterns = [
     # V2 API endpoints (new clean implementation)
     path('v2/', include('hr.urls_v2')),
     
-    # Employee URLs (old - to be deprecated)
-    path('employees/', views.employee_list, name='employee-list'),
-    path('employees/stats/', views.employee_stats, name='employee-stats'),
-    path('employees/basic/', views.employee_basic_list, name='employee-basic-list'),
-    path('employees/<uuid:pk>/', views.employee_detail, name='employee-detail'),
+    # Employee-related URLs (permissions and setup only)
     path('employees/<uuid:pk>/permissions/', views.set_employee_permissions, name='set-employee-permissions'),
     path('permissions/available/', views.get_available_permissions, name='get-available-permissions'),
     path('setup-password/', views.setup_employee_password, name='setup-employee-password'),

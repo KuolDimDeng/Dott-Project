@@ -16,7 +16,7 @@ export const metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Dott Business",
+    title: "Dott: Business Platform",
   },
   formatDetection: {
     telephone: false,

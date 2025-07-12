@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
 import { cookies } from 'next/headers';
 
-export async function GET(request, { params }) {
+export async function PATCH(request, { params }) {
   try {
     // Get session ID from sid cookie
     const cookieStore = cookies();
@@ -18,28 +18,31 @@ export async function GET(request, { params }) {
     }
 
     const { id } = params;
+    const body = await request.json();
 
     // Forward to Django backend
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://dott-api-y26w.onrender.com';
-    const response = await fetch(`${API_URL}/api/hr/employees/${id}/`, {
+    const response = await fetch(`${API_URL}/api/hr/timesheets/${id}/`, {
+      method: 'PATCH',
       headers: {
         'Authorization': `Session ${sidCookie.value}`,
         'X-Tenant-ID': tenantId,
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {
       const error = await response.text();
-      logger.error('[Employee] Get failed:', { status: response.status, error });
-      return NextResponse.json({ error: 'Failed to get employee' }, { status: response.status });
+      logger.error('[Timesheet] Update failed:', { status: response.status, error });
+      return NextResponse.json({ error: 'Failed to update timesheet' }, { status: response.status });
     }
 
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    logger.error('[Employee] Get error:', error);
+    logger.error('[Timesheet] Update error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
