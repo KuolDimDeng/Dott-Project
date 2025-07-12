@@ -1,13 +1,17 @@
 import { NextResponse } from 'next/server';
 import { standardSecurityHeaders } from '@/utils/responseHeaders';
+import { cookies } from 'next/headers';
 
 export async function POST(request, { params }) {
   try {
-    const authHeader = request.headers.get('authorization');
+    // Get session from cookies
+    const cookieStore = await cookies();
+    const sessionId = cookieStore.get('sid');
     
-    if (!authHeader) {
+    if (!sessionId) {
+      console.log('[Mark Notification Read API] No session ID found');
       return NextResponse.json(
-        { error: 'Authorization header required' },
+        { error: 'Unauthorized' },
         { status: 401, headers: standardSecurityHeaders }
       );
     }
@@ -20,7 +24,8 @@ export async function POST(request, { params }) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': authHeader,
+        'Authorization': `Session ${sessionId.value}`,
+        'Cookie': `session_token=${sessionId.value}`,
         'X-Forwarded-For': request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
         'User-Agent': request.headers.get('user-agent') || 'unknown',
       },
