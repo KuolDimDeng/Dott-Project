@@ -22,9 +22,9 @@ export async function middleware(request) {
         !pathname.startsWith('/auth/mobile-signup') &&
         !pathname.includes('.')) {
       
-      // Redirect home to mobile
+      // Redirect home to mobile landing
       if (pathname === '/') {
-        return NextResponse.redirect(new URL('/mobile', request.url));
+        return NextResponse.redirect(new URL('/mobile/landing', request.url));
       }
       
       // Redirect login to mobile login

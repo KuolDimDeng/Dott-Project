@@ -26,11 +26,12 @@ export default function MobilePage() {
   const [isOnline, setIsOnline] = useState(true);
   const [pendingSync, setPendingSync] = useState(0);
 
-  useEffect(() => {
-    if (!loading && !session) {
-      router.push('/auth/mobile-login');
-    }
-  }, [session, loading, router]);
+  // Remove automatic redirect to login - let users explore first
+  // useEffect(() => {
+  //   if (!loading && !session) {
+  //     router.push('/auth/mobile-login');
+  //   }
+  // }, [session, loading, router]);
 
   useEffect(() => {
     // Check online status
@@ -111,6 +112,39 @@ export default function MobilePage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  // If not logged in, show a message or redirect
+  if (!session) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+        <img src="/static/images/favicon.png" alt="Dott" className="h-20 w-20 rounded-2xl shadow-lg mb-6" />
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Welcome to Dott Mobile</h2>
+        <p className="text-gray-600 text-center mb-8 max-w-sm">
+          Please sign in to access your business dashboard and tools.
+        </p>
+        <div className="space-y-3 w-full max-w-sm">
+          <Link
+            href="/auth/mobile-login"
+            className="block w-full bg-blue-600 text-white rounded-xl py-3 font-semibold text-center hover:bg-blue-700 transition-colors"
+          >
+            Sign In
+          </Link>
+          <Link
+            href="/auth/mobile-signup"
+            className="block w-full bg-white text-blue-600 rounded-xl py-3 font-semibold text-center border-2 border-blue-600 hover:bg-blue-50 transition-colors"
+          >
+            Create Account
+          </Link>
+          <Link
+            href="/mobile/landing"
+            className="block w-full text-center text-gray-600 hover:text-gray-800 mt-4"
+          >
+            Learn More →
+          </Link>
+        </div>
       </div>
     );
   }
