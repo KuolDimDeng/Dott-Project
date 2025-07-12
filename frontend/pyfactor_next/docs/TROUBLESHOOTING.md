@@ -4,9 +4,11 @@
 
 **Quick Navigation:**
 - [Authentication Issues](#authentication-issues)
+  - [Google OAuth Sign-in Stuck in Redirect Loop](#google-oauth-sign-in-stuck-in-redirect-loop)
+  - [Mobile Login Session Bridge Issues](#mobile-login-session-bridge-issues) ⬅️ **NEW**
 - [Frontend Component Issues](#frontend-component-issues)
 - [Calendar/Event Management](#calendarevent-management)
-- [HR Employee Management](#hr-employee-management) ⬅️ **NEW**
+- [HR Employee Management](#hr-employee-management)
 - [API Integration Issues](#api-integration-issues)
 - [Performance Issues](#performance-issues)
 
@@ -99,6 +101,115 @@
 - `/src/app/api/auth/exchange/route.js`
 - `/src/app/api/auth/session-v2/route.js`
 - `/src/utils/authFlowHandler.v3.js`
+
+## Mobile Login Session Bridge Issues
+
+**Issue**: Mobile users get 401 unauthorized errors when accessing session endpoints after successful login, preventing access to authenticated pages.
+
+**Symptoms**:
+- Mobile login appears successful with "Welcome back!" toast
+- User gets redirected to onboarding or mobile dashboard
+- Session endpoints return 401 errors (`/api/auth/session`, `/api/auth/session-v2`)
+- Console shows multiple failed session validation requests
+- User remains unauthenticated despite successful login response
+
+**Root Cause**:
+Mobile login was not properly establishing browser sessions after authentication. The consolidated login API returns a session token that needs to be processed through the session bridge mechanism to set proper cookies.
+
+**Solution**:
+
+1. **Update mobile login to use session bridge** (`/src/app/auth/mobile-login/page.js`):
+   ```javascript
+   if (response.ok && data.success) {
+     toast.success('Welcome back!');
+     
+     // Handle session bridge if needed
+     if (data.useSessionBridge && data.sessionToken) {
+       console.log('[MobileLogin] Using session bridge for authentication');
+       
+       // Store bridge data in sessionStorage
+       const bridgeData = {
+         token: data.sessionToken,
+         redirectUrl: data.onboardingCompleted ? '/mobile' : '/onboarding',
+         timestamp: Date.now()
+       };
+       
+       sessionStorage.setItem('session_bridge', JSON.stringify(bridgeData));
+       
+       // Redirect to session bridge
+       router.push('/auth/session-bridge');
+       return;
+     }
+     
+     // Fallback - direct redirect (for backward compatibility)
+     if (data.onboardingCompleted) {
+       router.push('/mobile');
+     } else {
+       router.push('/onboarding');
+     }
+   }
+   ```
+
+2. **Ensure session bridge route is public** (`/src/lib/authUtils.js`):
+   ```javascript
+   const PUBLIC_ROUTES = [
+     // ... other routes
+     '/auth/session-bridge',  // Session bridge for mobile login
+     '/mobile/landing',       // Mobile landing page
+     '/auth/mobile-login',    // Mobile login page
+     '/auth/mobile-signup',   // Mobile signup page
+     '/onboarding',           // Onboarding flow
+   ];
+   ```
+
+**How the Session Bridge Works**:
+
+1. **Mobile Login Flow**:
+   - User submits credentials to `/api/auth/consolidated-login`
+   - API authenticates with Auth0 and creates backend session
+   - Returns `useSessionBridge: true` and `sessionToken`
+
+2. **Bridge Data Storage**:
+   - Mobile login stores bridge data in `sessionStorage`:
+     ```javascript
+     {
+       token: "session_token_here",
+       redirectUrl: "/mobile" | "/onboarding",
+       timestamp: Date.now()
+     }
+     ```
+
+3. **Session Bridge Processing**:
+   - User redirected to `/auth/session-bridge`
+   - Bridge retrieves data from sessionStorage
+   - Validates token age (must be < 30 seconds)
+   - Exchanges bridge token for actual session cookies via `/api/auth/bridge-session`
+   - Sets browser cookies and redirects to intended destination
+
+4. **Session Establishment**:
+   - Bridge calls `/api/auth/establish-session` via hidden form POST
+   - Server sets session cookies properly
+   - User redirected to mobile dashboard or onboarding
+
+**Key Points**:
+- Session bridge is required for mobile login to set proper browser cookies
+- Bridge data expires after 30 seconds for security
+- Maintains backward compatibility with direct redirects
+- Works for both onboarding and authenticated users
+
+**Debugging Tips**:
+- Check browser Developer Tools → Application → Session Storage for `session_bridge` key
+- Monitor Network tab for `/api/auth/bridge-session` and `/api/auth/establish-session` calls
+- Verify session cookies are set after bridge completes
+- Check console logs for `[MobileLogin]` and `[SessionBridge]` messages
+
+**Related Files**:
+- `/src/app/auth/mobile-login/page.js` - Mobile login with session bridge
+- `/src/app/auth/session-bridge/page.js` - Session bridge processing
+- `/src/app/api/auth/consolidated-login/route.js` - Login API that returns session token
+- `/src/app/api/auth/bridge-session/route.js` - Bridge token exchange
+- `/src/app/api/auth/establish-session/route.js` - Final session establishment
+- `/src/lib/authUtils.js` - Public routes configuration
 
 ---
 

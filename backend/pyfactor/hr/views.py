@@ -270,6 +270,9 @@ def employee_list(request):
         return response
     
     elif request.method == 'POST':
+        # CRITICAL: Add immediate log to verify request reaches Django
+        print("🔥 EMPLOYEE POST REQUEST REACHED DJANGO BACKEND 🔥")
+        logger.info('🔥 CRITICAL: EMPLOYEE POST REQUEST REACHED DJANGO!')
         logger.info('🚀 [HR-DJANGO-TRACE] === START EMPLOYEE CREATE ===')
         logger.info(f'🚀 [HR-DJANGO-TRACE] POST request from user: {request.user.email}')
         logger.info(f'🚀 [HR-DJANGO-TRACE] Request data received:', {
