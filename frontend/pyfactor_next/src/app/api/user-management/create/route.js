@@ -4,7 +4,7 @@
  */
 import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
-import { getServerSession } from '@/lib/session';
+import { validateSession } from '@/utils/sessionUtils-v2';
 
 /**
  * POST /api/user-management/create
@@ -15,7 +15,7 @@ export async function POST(request) {
     logger.info('[UserManagement] Processing user creation');
     
     // Get session and validate permissions
-    const session = await getServerSession(request);
+    const session = await getServerSessionFromRequest(request);
     if (!session || !session.user) {
       return NextResponse.json(
         { error: 'Authentication required' },
@@ -337,11 +337,44 @@ function generateTempPassword() {
 }
 
 /**
+ * Get session from request
+ */
+async function getServerSessionFromRequest(request) {
+  try {
+    // Extract session ID from cookies
+    const cookies = request.headers.get('cookie') || '';
+    const sessionId = extractSessionId(cookies);
+    
+    if (!sessionId) {
+      return null;
+    }
+    
+    // Validate session
+    const session = await validateSession(sessionId);
+    return session;
+    
+  } catch (error) {
+    logger.error('[UserManagement] Session validation failed:', error);
+    return null;
+  }
+}
+
+function extractSessionId(cookieString) {
+  const cookies = cookieString.split(';').reduce((acc, cookie) => {
+    const [key, value] = cookie.trim().split('=');
+    acc[key] = value;
+    return acc;
+  }, {});
+  
+  return cookies.sid || cookies.session_token;
+}
+
+/**
  * Get backend API token from session
  */
 async function getBackendToken(request) {
   try {
-    const session = await getServerSession(request);
+    const session = await getServerSessionFromRequest(request);
     if (session && session.authToken) {
       return session.authToken;
     }
