@@ -44,7 +44,7 @@ export default function SmartAppBanner() {
       <div className="flex items-center justify-between max-w-7xl mx-auto">
         <div className="flex items-center space-x-3 flex-1">
           <img 
-            src="/static/images/icon-192.png" 
+            src="/static/images/favicon.png" 
             alt="Dott" 
             className="h-12 w-12 rounded-xl"
           />

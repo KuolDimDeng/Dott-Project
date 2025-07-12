@@ -89,7 +89,7 @@ export default function PWAInstallPrompt() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <img 
-                    src="/static/images/icon-192.png" 
+                    src="/static/images/favicon.png" 
                     alt="Dott" 
                     className="h-12 w-12 rounded-xl shadow-lg"
                   />
@@ -195,7 +195,7 @@ export default function PWAInstallPrompt() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <img 
-                src="/static/images/icon-192.png" 
+                src="/static/images/favicon.png" 
                 alt="Dott" 
                 className="h-12 w-12 rounded-xl shadow-lg"
               />

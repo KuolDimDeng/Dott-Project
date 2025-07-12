@@ -19,6 +19,7 @@ export async function middleware(request) {
         !pathname.startsWith('/api') && 
         !pathname.startsWith('/_next') &&
         !pathname.startsWith('/auth/mobile-login') &&
+        !pathname.startsWith('/auth/mobile-signup') &&
         !pathname.includes('.')) {
       
       // Redirect home to mobile
@@ -29,6 +30,11 @@ export async function middleware(request) {
       // Redirect login to mobile login
       if (pathname === '/auth/login' || pathname === '/auth/signin') {
         return NextResponse.redirect(new URL('/auth/mobile-login', request.url));
+      }
+      
+      // Redirect signup to mobile signup
+      if (pathname === '/auth/signup') {
+        return NextResponse.redirect(new URL('/auth/mobile-signup', request.url));
       }
       
       // Redirect dashboard to mobile

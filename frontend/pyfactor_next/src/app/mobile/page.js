@@ -125,7 +125,7 @@ export default function MobilePage() {
         <div className="px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <img src="/static/images/icon-192.png" alt="Dott" className="h-10 w-10 rounded-lg" />
+              <img src="/static/images/favicon.png" alt="Dott" className="h-10 w-10 rounded-lg" />
               <div>
                 <h1 className="text-xl font-semibold text-gray-900">Dott Mobile</h1>
                 <div className="flex items-center space-x-2 text-sm">
