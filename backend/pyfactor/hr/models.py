@@ -156,17 +156,24 @@ class Employee(models.Model):
         return ' '.join(parts)
     
     def save(self, *args, **kwargs):
+        import logging
+        logger = logging.getLogger(__name__)
+        
         # Auto-generate employee number if not set
         if not self.employee_number:
             today = timezone.now().strftime('%Y%m%d')
             unique_suffix = str(uuid.uuid4())[:4].upper()
             self.employee_number = f"EMP-{today}-{unique_suffix}"
+            logger.info(f'🏷️ [Employee Model] Generated employee_number: {self.employee_number}')
         
         # Ensure tenant_id matches business_id for RLS
         if self.business_id and not self.tenant_id:
             self.tenant_id = self.business_id
+            logger.info(f'🔄 [Employee Model] Set tenant_id = business_id: {self.tenant_id}')
         
+        logger.info(f'💾 [Employee Model] Saving employee: email={self.email}, business_id={self.business_id}, tenant_id={self.tenant_id}')
         super().save(*args, **kwargs)
+        logger.info(f'✅ [Employee Model] Employee saved with id: {self.id}')
     
     def save_ssn_to_stripe(self, ssn):
         """Save SSN to Stripe Connect for secure storage"""

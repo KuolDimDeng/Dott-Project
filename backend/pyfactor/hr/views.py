@@ -172,7 +172,12 @@ def employee_list(request):
             
             # Filter employees by business_id, avoiding tenant_id column if it doesn't exist
             try:
+                logger.info(f'🔍 [HR Employee List] Querying employees for business_id: {business_id}')
                 employees = Employee.objects.filter(business_id=business_id)
+                logger.info(f'📊 [HR Employee List] Query returned {employees.count()} employees')
+                
+                # Log raw SQL query for debugging
+                logger.info(f'🔍 [HR Employee List] SQL Query: {employees.query}')
             except Exception as db_error:
                 logger.warning(f'⚠️ [HR Employee List] Database error, trying alternative query: {str(db_error)}')
                 # If there's a database error (possibly missing column), use raw SQL
@@ -206,10 +211,20 @@ def employee_list(request):
             
             # Log first few employees for debugging
             for emp in employees[:3]:
-                logger.debug(f'  - Employee: {emp.email}, business_id: {emp.business_id}')
+                logger.info(f'  - Employee: {emp.email}, business_id: {emp.business_id}, id: {emp.id}')
+            
+            # Check all employees in database for this business
+            all_count = Employee.objects.filter(business_id=business_id).count()
+            logger.info(f'📊 [HR Employee List] Total employees in DB for business {business_id}: {all_count}')
+            
+            # Also check without any filters to see total employees
+            total_employees = Employee.objects.all().count()
+            logger.info(f'🌍 [HR Employee List] Total employees in entire DB: {total_employees}')
             
             serializer = EmployeeSerializer(employees, many=True)
-            response = Response(serializer.data)
+            response_data = serializer.data
+            logger.info(f'📝 [HR Employee List] Serialized {len(response_data)} employees')
+            response = Response(response_data)
             
         except Exception as e:
             logger.error(f'❌ [HR Employee List] Error fetching employees: {str(e)}')
@@ -274,12 +289,14 @@ def employee_list(request):
                 try:
                     employee = serializer.save(business_id=business_id, tenant_id=business_id)
                     logger.info(f'✅ [HR Employee Create] Employee created with id: {employee.id}, business_id: {employee.business_id}')
+                    logger.info(f'📊 [HR Employee Create] Full employee object: id={employee.id}, email={employee.email}, business_id={employee.business_id}, tenant_id={getattr(employee, "tenant_id", "N/A")}')
                 except Exception as save_error:
                     logger.error(f'❌ [HR Employee Create] Failed to save employee: {str(save_error)}')
                     # If tenant_id column doesn't exist, try without it
                     if 'tenant_id' in str(save_error):
                         logger.info(f'🔄 [HR Employee Create] Retrying without tenant_id')
                         employee = serializer.save(business_id=business_id)
+                        logger.info(f'📊 [HR Employee Create] Employee saved without tenant_id: id={employee.id}')
                 logger.info(f'✅ [HR Employee Create] Employee created with ID: {employee.id} for business: {business_id} (tenant: {business_id})')
                 
                 # Handle security number storage if provided
@@ -295,7 +312,16 @@ def employee_list(request):
                 # Return the created employee data
                 response_serializer = EmployeeSerializer(employee)
                 response_data = response_serializer.data
+                logger.info(f'✅ [HR Employee Create] Serialized data keys: {list(response_data.keys()) if response_data else "No data"}')
                 logger.info(f'✅ [HR Employee Create] Returning employee data: {response_data}')
+                
+                # Double-check the employee was saved
+                saved_employee = Employee.objects.filter(id=employee.id).first()
+                if saved_employee:
+                    logger.info(f'✅ [HR Employee Create] Verified employee exists in DB: {saved_employee.email}')
+                else:
+                    logger.error(f'❌ [HR Employee Create] Employee NOT found in DB after save!')
+                
                 return Response(response_data, status=status.HTTP_201_CREATED)
             else:
                 logger.error(f'❌ [HR Employee Create] Validation errors: {serializer.errors}')
