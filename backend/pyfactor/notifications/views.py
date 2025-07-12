@@ -207,9 +207,9 @@ class UserNotificationListView(APIView):
     permission_classes = [TenantAccessPermission]
     
     def get(self, request):
-        # Get user's tenant ID from session
-        tenant_id = request.session.get('tenant_id')
-        user_email = request.session.get('user', {}).get('email') or (request.user.email if hasattr(request.user, 'email') else None)
+        # Get user's tenant ID from authenticated user
+        tenant_id = getattr(request.user, 'tenant_id', None) or getattr(request.user, 'business_id', None)
+        user_email = getattr(request.user, 'email', None)
         
         if not user_email:
             return Response({
@@ -258,8 +258,8 @@ class MarkNotificationReadView(APIView):
     permission_classes = [TenantAccessPermission]
     
     def post(self, request, notification_id):
-        tenant_id = request.session.get('tenant_id')
-        user_email = request.session.get('user', {}).get('email') or (request.user.email if hasattr(request.user, 'email') else None)
+        tenant_id = getattr(request.user, 'tenant_id', None) or getattr(request.user, 'business_id', None)
+        user_email = getattr(request.user, 'email', None)
         
         recipient = get_object_or_404(
             NotificationRecipient,
@@ -288,8 +288,8 @@ class MarkAllNotificationsReadView(APIView):
     permission_classes = [TenantAccessPermission]
     
     def post(self, request):
-        tenant_id = request.session.get('tenant_id')
-        user_email = request.session.get('user', {}).get('email') or (request.user.email if hasattr(request.user, 'email') else None)
+        tenant_id = getattr(request.user, 'tenant_id', None) or getattr(request.user, 'business_id', None)
+        user_email = getattr(request.user, 'email', None)
         
         # Update all unread notifications
         updated = NotificationRecipient.objects.filter(
