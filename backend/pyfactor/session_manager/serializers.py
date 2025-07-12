@@ -65,8 +65,9 @@ class SessionSerializer(serializers.ModelSerializer):
             'family_name': getattr(obj.user, 'family_name', getattr(obj.user, 'last_name', '')),
             'picture': getattr(obj.user, 'picture', ''),
             'subscription_plan': getattr(obj.user, 'subscription_plan', 'free'),
-            'tenantId': str(obj.tenant.id) if obj.tenant else None,
-            'tenant_id': str(obj.tenant.id) if obj.tenant else None
+            'business_id': str(obj.user.business_id) if obj.user.business_id else None,
+            'tenantId': str(obj.user.business_id) if obj.user.business_id else str(obj.tenant.id) if obj.tenant else None,
+            'tenant_id': str(obj.user.business_id) if obj.user.business_id else str(obj.tenant.id) if obj.tenant else None
         }
         
         # Include business information from OnboardingProgress if available
