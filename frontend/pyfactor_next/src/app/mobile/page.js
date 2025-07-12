@@ -17,7 +17,8 @@ import {
   DevicePhoneMobileIcon,
   WifiIcon,
   CloudArrowUpIcon,
-  BoltIcon
+  BoltIcon,
+  ClockIcon
 } from '@heroicons/react/24/outline';
 
 export default function MobilePage() {
@@ -68,6 +69,13 @@ export default function MobilePage() {
       icon: CameraIcon,
       href: '/inventory/scan',
       color: 'bg-green-500'
+    },
+    {
+      title: 'Timesheet',
+      description: 'Clock in/out & hours',
+      icon: ClockIcon,
+      href: '/mobile/timesheet',
+      color: 'bg-indigo-500'
     },
     {
       title: 'New Invoice',
