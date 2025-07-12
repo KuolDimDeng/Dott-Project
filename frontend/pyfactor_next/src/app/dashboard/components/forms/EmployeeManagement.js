@@ -26,6 +26,8 @@ import { logger } from '@/utils/logger';
 import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 import { DEPARTMENTS, POSITIONS, EMPLOYMENT_TYPES } from '@/utils/employeeConstants';
 import { getAllCountries, getSSNInfoByCountry } from '@/utils/countrySSNMapping';
+import PhoneInput from '@/components/ui/PhoneInput';
+import { getInternationalPhoneNumber } from '@/utils/countryPhoneCodes';
 
 // Tooltip component for field help
 const FieldTooltip = ({ text, position = 'top' }) => {
@@ -131,6 +133,7 @@ function EmployeeManagement({ onNavigate }) {
     lastName: '',
     email: '',
     phone: '',
+    phoneCountryCode: 'US', // Default to US
     dateOfBirth: '',
     position: '',
     department: '',
@@ -530,6 +533,7 @@ function EmployeeManagement({ onNavigate }) {
       lastName: employee.lastName || '',
       email: employee.email || '',
       phone: employee.phone || '',
+      phoneCountryCode: employee.phoneCountryCode || employee.phone_country_code || 'US',
       dateOfBirth: employee.dateOfBirth || '',
       position: employee.position || '',
       department: employee.department || '',
@@ -578,6 +582,7 @@ function EmployeeManagement({ onNavigate }) {
       lastName: '',
       email: '',
       phone: '',
+      phoneCountryCode: 'US',
       dateOfBirth: '',
       position: '',
       department: '',
@@ -678,6 +683,7 @@ function EmployeeManagement({ onNavigate }) {
         first_name: formData.firstName,
         last_name: formData.lastName,
         phone_number: formData.phone,
+        phone_country_code: formData.phoneCountryCode,
         date_of_birth: formData.dateOfBirth,
         job_title: formData.position,
         department: formData.department,
@@ -701,17 +707,16 @@ function EmployeeManagement({ onNavigate }) {
         state: formData.state ? formData.state.substring(0, 2).toUpperCase() : ''
       };
       
-      // Format phone number if provided and not already formatted
-      if (backendData.phone_number && !backendData.phone_number.startsWith('+')) {
-        // Remove all non-numeric characters
-        const cleanPhone = backendData.phone_number.replace(/\D/g, '');
-        // Add +1 for US numbers (assuming US if no country code)
-        backendData.phone_number = `+1${cleanPhone}`;
+      // Format phone number to international format if provided
+      if (backendData.phone_number && backendData.phone_country_code) {
+        backendData.phone_number = getInternationalPhoneNumber(backendData.phone_number, backendData.phone_country_code);
       }
       
       // Remove camelCase fields to avoid duplication
       delete backendData.firstName;
       delete backendData.lastName;
+      delete backendData.phone; // Keep formatted phone_number
+      delete backendData.phoneCountryCode; // Keep phone_country_code
       delete backendData.dateOfBirth;
       delete backendData.compensationType;
       delete backendData.wagePerHour;
@@ -1058,14 +1063,17 @@ function EmployeeManagement({ onNavigate }) {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Phone Number
-              <FieldTooltip text="Primary contact phone number including area code" />
+              <FieldTooltip text="Phone number for payroll notifications via WhatsApp and SMS" />
             </label>
-            <input
-              type="tel"
+            <PhoneInput
               value={formData.phone}
-              onChange={(e) => setFormData({...formData, phone: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+              countryCode={formData.phoneCountryCode}
+              onChange={(phone) => setFormData({...formData, phone})}
+              onCountryChange={(countryCode) => setFormData({...formData, phoneCountryCode: countryCode})}
+              placeholder="Enter phone number"
+              error={formErrors.phone}
             />
+            {formErrors.phone && <p className="text-red-500 text-xs mt-1">{formErrors.phone}</p>}
           </div>
           
           <div>

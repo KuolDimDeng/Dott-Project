@@ -52,6 +52,8 @@ class Employee(models.Model):
     last_name = models.CharField(max_length=100)
     email = models.EmailField(unique=True)
     phone_number = PhoneNumberField(null=True, blank=True)
+    phone_country_code = models.CharField(max_length=2, default='US', blank=True, null=True, 
+                                        help_text="ISO country code for phone number (e.g., 'US', 'CA', 'KE')")
     date_of_birth = models.DateField(null=True, blank=True)
     
     # Demographics (optional)

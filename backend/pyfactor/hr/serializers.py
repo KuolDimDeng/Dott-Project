@@ -31,7 +31,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
         model = Employee
         fields = [
             'id', 'employee_number', 'first_name', 'middle_name', 'last_name', 
-            'email', 'phone_number', 'date_of_birth', 'job_title', 'department', 'employment_type',
+            'email', 'phone_number', 'phone_country_code', 'date_of_birth', 'job_title', 'department', 'employment_type',
             'hire_date', 'salary', 'wage_per_hour', 'active', 'onboarded',
             'street', 'city', 'state', 'zip_code', 'country', 'compensation_type',
             'emergency_contact_name', 'emergency_contact_phone',
