@@ -182,6 +182,22 @@
   - `/src/app/api/payment-methods/available/route.js` - Payment method detection
   - `/docs/SUBSCRIPTION_PRICING.md` - Complete pricing documentation
 
+### [31.0.0] - 2025-07-12 - CURRENT - Interactive User Cleanup Tool
+- **Purpose**: Safe, menu-driven interface for deleting users from production database
+- **Features**:
+  - Delete specific user by email with confirmation
+  - Delete ALL users with double confirmation (requires typing "DELETE ALL USERS")
+  - List all users with ID, email, and username
+  - Handles all 64 dependent tables in correct deletion order
+- **Location**: `/backend/pyfactor/scripts/interactive_user_cleanup.py`
+- **Usage**: `python interactive_user_cleanup.py` (requires DATABASE_URL)
+- **Safety**:
+  - Email validation and user existence check
+  - Confirmation prompts for all deletions
+  - Transaction-based with rollback on error
+  - Clear error messages and progress feedback
+- **Documentation**: `/backend/pyfactor/docs/INTERACTIVE_USER_CLEANUP.md`
+
 ---
 
 ## DEPRECATED CONFIGURATIONS (Do Not Use)
@@ -228,6 +244,12 @@
 ### Fix Onboarding Issues
 ```bash
 python manage.py shell < scripts/fix_all_incomplete_onboarding.py
+```
+
+### Delete Users (Interactive)
+```bash
+cd /backend/pyfactor/scripts
+python interactive_user_cleanup.py
 ```
 
 ### Local Testing Commands

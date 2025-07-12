@@ -1,7 +1,7 @@
 # hr/serializers.py
 
 from rest_framework import serializers
-from .models import Employee, PreboardingForm, Role, EmployeeRole, AccessPermission, Timesheet, TimesheetEntry, TimeOffRequest, TimeOffBalance, PerformanceReview, PerformanceMetric, PerformanceRating, PerformanceGoal, FeedbackRecord, PerformanceSetting, Benefits
+from .models import Employee, PreboardingForm, Role, EmployeeRole, AccessPermission, Timesheet, TimesheetEntry, TimeOffRequest, TimeOffBalance, PerformanceReview, PerformanceMetric, PerformanceRating, PerformanceGoal, FeedbackRecord, PerformanceSetting, Benefits, TimesheetSetting
 from decimal import Decimal, InvalidOperation
 from datetime import datetime
 
@@ -145,6 +145,15 @@ class TimesheetSerializer(serializers.ModelSerializer):
         model = Timesheet
         fields = '__all__'
         read_only_fields = ('id', 'timesheet_number', 'created_at', 'updated_at', 'business_id')
+
+
+class TimesheetSettingSerializer(serializers.ModelSerializer):
+    """Serializer for Timesheet Settings"""
+    
+    class Meta:
+        model = TimesheetSetting
+        fields = '__all__'
+        read_only_fields = ('id', 'created_at', 'updated_at')
 
 
 class TimeOffRequestSerializer(serializers.ModelSerializer):

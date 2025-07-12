@@ -3,7 +3,7 @@ from . import views
 from .views import (
     PerformanceReviewViewSet, PerformanceMetricViewSet, PerformanceRatingViewSet,
     PerformanceGoalViewSet, FeedbackRecordViewSet, PerformanceSettingViewSet,
-    TimesheetViewSet, TimesheetEntryViewSet, TimeOffRequestViewSet,
+    TimesheetViewSet, TimesheetEntryViewSet, TimesheetSettingViewSet, TimeOffRequestViewSet,
     TimeOffBalanceViewSet, BenefitsViewSet
 )
 from rest_framework.routers import DefaultRouter
@@ -18,6 +18,7 @@ router.register(r'performance/feedback', FeedbackRecordViewSet)
 router.register(r'performance/settings', PerformanceSettingViewSet)
 router.register(r'timesheets', TimesheetViewSet)
 router.register(r'timesheet-entries', TimesheetEntryViewSet)
+router.register(r'timesheet-settings', TimesheetSettingViewSet)
 router.register(r'time-off-requests', TimeOffRequestViewSet)
 router.register(r'time-off-balances', TimeOffBalanceViewSet)
 router.register(r'benefits', BenefitsViewSet)

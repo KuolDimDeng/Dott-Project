@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/useToast';
-import { Search, Calendar, CheckCircle, XCircle, Clock, Filter, FileText, Download } from 'lucide-react';
+import { Search, Calendar, CheckCircle, XCircle, Clock, Filter, FileText, Download, Settings } from 'lucide-react';
 import StandardSpinner from '@/components/StandardSpinner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
@@ -228,7 +228,7 @@ const TimesheetsPage = () => {
         const totalHours = ts.total_hours || 0;
         const totalPay = calculateTotalPay(ts, employee);
         return [
-          employee?.get_full_name || 'Unknown',
+          employee ? `${employee.first_name} ${employee.last_name}` : 'Unknown',
           `${format(parseISO(ts.period_start), 'MMM d')} - ${format(parseISO(ts.period_end), 'MMM d, yyyy')}`,
           ts.status,
           totalHours.toFixed(2),
@@ -268,10 +268,20 @@ const TimesheetsPage = () => {
           <h1 className="text-2xl font-bold">Timesheet Management</h1>
           <p className="text-gray-500">Review and approve employee timesheets</p>
         </div>
-        <Button onClick={exportToCSV} variant="outline" className="flex items-center gap-2">
-          <Download className="h-4 w-4" />
-          Export CSV
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={() => window.location.href = '/dashboard/timesheets/settings'} 
+            variant="outline" 
+            className="flex items-center gap-2"
+          >
+            <Settings className="h-4 w-4" />
+            Settings
+          </Button>
+          <Button onClick={exportToCSV} variant="outline" className="flex items-center gap-2">
+            <Download className="h-4 w-4" />
+            Export CSV
+          </Button>
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -373,7 +383,7 @@ const TimesheetsPage = () => {
                     .filter(e => e.compensation_type === 'WAGE')
                     .map(employee => (
                       <SelectItem key={employee.id} value={employee.id}>
-                        {employee.get_full_name}
+                        {`${employee.first_name} ${employee.last_name}`}
                       </SelectItem>
                     ))}
                 </SelectContent>
@@ -410,7 +420,7 @@ const TimesheetsPage = () => {
                 return (
                   <TableRow key={timesheet.id}>
                     <TableCell className="font-medium">
-                      {employee?.get_full_name || 'Unknown Employee'}
+                      {employee ? `${employee.first_name} ${employee.last_name}` : 'Unknown Employee'}
                     </TableCell>
                     <TableCell>
                       {format(parseISO(timesheet.period_start), 'MMM d')} - 
@@ -460,7 +470,7 @@ const TimesheetsPage = () => {
                 <div>
                   <Label>Employee</Label>
                   <p className="font-medium">
-                    {employees.find(e => e.id === selectedTimesheet.employee)?.get_full_name || 'Unknown'}
+                    {employees.find(e => e.id === selectedTimesheet.employee) ? `${employees.find(e => e.id === selectedTimesheet.employee).first_name} ${employees.find(e => e.id === selectedTimesheet.employee).last_name}` : 'Unknown'}
                   </p>
                 </div>
                 <div>

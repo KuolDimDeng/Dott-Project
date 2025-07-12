@@ -308,7 +308,7 @@ const TimesheetTab = () => {
               <div>
                 <p className="text-sm text-gray-500">Supervisor</p>
                 <p className="font-medium">
-                  {supervisor ? supervisor.get_full_name : 'Not assigned'}
+                  {supervisor ? `${supervisor.first_name} ${supervisor.last_name}` : 'Not assigned'}
                 </p>
               </div>
             </div>

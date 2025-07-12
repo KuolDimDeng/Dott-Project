@@ -5,7 +5,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
-from .models import Employee, Role, EmployeeRole, AccessPermission, PreboardingForm, PerformanceReview, PerformanceMetric, PerformanceRating, PerformanceGoal, FeedbackRecord, PerformanceSetting, Timesheet, TimesheetEntry, TimeOffRequest, TimeOffBalance, Benefits
+from .models import Employee, Role, EmployeeRole, AccessPermission, PreboardingForm, PerformanceReview, PerformanceMetric, PerformanceRating, PerformanceGoal, FeedbackRecord, PerformanceSetting, Timesheet, TimesheetEntry, TimeOffRequest, TimeOffBalance, Benefits, TimesheetSetting
 from .serializers import (
     EmployeeSerializer, 
     EmployeeBasicSerializer,
@@ -22,6 +22,7 @@ from .serializers import (
     PerformanceSettingSerializer,
     TimesheetSerializer,
     TimesheetEntrySerializer,
+    TimesheetSettingSerializer,
     TimeOffRequestSerializer,
     TimeOffBalanceSerializer,
     BenefitsSerializer
@@ -985,6 +986,22 @@ class TimesheetEntryViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(timesheet_id=timesheet_id)
         
         return queryset.order_by('date')
+
+
+class TimesheetSettingViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing timesheet settings"""
+    queryset = TimesheetSetting.objects.all()
+    serializer_class = TimesheetSettingSerializer
+    
+    def get_queryset(self):
+        queryset = TimesheetSetting.objects.all()
+        
+        # Filter by business_id if provided
+        business_id = self.request.query_params.get('business_id', None)
+        if business_id:
+            queryset = queryset.filter(business_id=business_id)
+        
+        return queryset
 
 
 class TimeOffRequestViewSet(viewsets.ModelViewSet):
