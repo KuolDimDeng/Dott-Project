@@ -27,7 +27,10 @@ urlpatterns = [
     # API endpoints
     path('api/', include('hr.api.urls')),
     
-    # Employee URLs
+    # V2 API endpoints (new clean implementation)
+    path('v2/', include('hr.urls_v2')),
+    
+    # Employee URLs (old - to be deprecated)
     path('employees/', views.employee_list, name='employee-list'),
     path('employees/stats/', views.employee_stats, name='employee-stats'),
     path('employees/basic/', views.employee_basic_list, name='employee-basic-list'),
