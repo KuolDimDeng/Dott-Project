@@ -5,7 +5,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
-from .models import Employee, Role, EmployeeRole, AccessPermission, PreboardingForm, PerformanceReview, PerformanceMetric, PerformanceRating, PerformanceGoal, FeedbackRecord, PerformanceSetting, Timesheet, TimesheetEntry, TimeOffRequest, TimeOffBalance, Benefits, TimesheetSetting, LocationLog, EmployeeLocationConsent, LocationCheckIn
+from .models import Employee, Role, EmployeeRole, AccessPermission, PreboardingForm, PerformanceReview, PerformanceMetric, PerformanceRating, PerformanceGoal, FeedbackRecord, PerformanceSetting, Timesheet, TimesheetEntry, TimeOffRequest, TimeOffBalance, Benefits, TimesheetSetting, LocationLog, EmployeeLocationConsent, LocationCheckIn, Geofence, EmployeeGeofence, GeofenceEvent
 from .serializers import (
     EmployeeSerializer, 
     EmployeeBasicSerializer,
@@ -29,10 +29,13 @@ from .serializers import (
     LocationLogSerializer,
     EmployeeLocationConsentSerializer,
     LocationCheckInSerializer,
-    TimesheetEntryWithLocationSerializer
+    TimesheetEntryWithLocationSerializer,
+    GeofenceSerializer,
+    EmployeeGeofenceSerializer,
+    GeofenceEventSerializer
 )
 from django.shortcuts import get_object_or_404
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.core.mail import send_mail
 from django.conf import settings
 import uuid
@@ -1472,3 +1475,325 @@ def clock_out_with_location(request):
         }, status=status.HTTP_201_CREATED)
     
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# Geofencing ViewSets
+
+class GeofenceViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing geofences
+    """
+    queryset = Geofence.objects.all()
+    serializer_class = GeofenceSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        # Filter by business_id for multi-tenant isolation
+        return self.queryset.filter(
+            business_id=self.request.user.business_id,
+            is_active=True
+        ).annotate(
+            assigned_employees_count=Count('assigned_employees')
+        ).select_related('created_by')
+    
+    def perform_create(self, serializer):
+        serializer.save(
+            business_id=self.request.user.business_id,
+            created_by=self.request.user
+        )
+    
+    @action(detail=True, methods=['post'])
+    def assign_employees(self, request, pk=None):
+        """Assign multiple employees to a geofence"""
+        geofence = self.get_object()
+        employee_ids = request.data.get('employee_ids', [])
+        
+        if not employee_ids:
+            return Response(
+                {'error': 'No employee IDs provided'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        created = []
+        errors = []
+        
+        for employee_id in employee_ids:
+            try:
+                employee = Employee.objects.get(
+                    id=employee_id,
+                    business_id=request.user.business_id
+                )
+                
+                employee_geofence, was_created = EmployeeGeofence.objects.get_or_create(
+                    employee=employee,
+                    geofence=geofence,
+                    defaults={
+                        'business_id': request.user.business_id,
+                        'assigned_by': request.user
+                    }
+                )
+                
+                if was_created:
+                    created.append(EmployeeGeofenceSerializer(employee_geofence).data)
+                
+            except Employee.DoesNotExist:
+                errors.append(f"Employee {employee_id} not found")
+            except Exception as e:
+                errors.append(f"Error assigning employee {employee_id}: {str(e)}")
+        
+        return Response({
+            'created': created,
+            'errors': errors,
+            'total_assigned': len(created)
+        })
+    
+    @action(detail=True, methods=['get'])
+    def events(self, request, pk=None):
+        """Get all events for a geofence"""
+        geofence = self.get_object()
+        events = GeofenceEvent.objects.filter(
+            geofence=geofence,
+            business_id=request.user.business_id
+        ).select_related('employee').order_by('-event_time')[:100]
+        
+        serializer = GeofenceEventSerializer(events, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def check_location(self, request):
+        """Check if current location is within any active geofences"""
+        latitude = request.query_params.get('latitude')
+        longitude = request.query_params.get('longitude')
+        employee_id = request.query_params.get('employee_id')
+        
+        if not all([latitude, longitude, employee_id]):
+            return Response(
+                {'error': 'latitude, longitude, and employee_id are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            from math import radians, cos, sin, asin, sqrt
+            
+            def calculate_distance(lat1, lon1, lat2, lon2):
+                # Convert to radians
+                lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
+                
+                # Haversine formula
+                dlat = lat2 - lat1
+                dlon = lon2 - lon1
+                a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+                c = 2 * asin(sqrt(a))
+                r = 6371000  # Radius of earth in meters
+                return c * r
+            
+            employee = Employee.objects.get(
+                id=employee_id,
+                business_id=request.user.business_id
+            )
+            
+            # Get employee's assigned geofences
+            employee_geofences = EmployeeGeofence.objects.filter(
+                employee=employee,
+                is_active=True
+            ).select_related('geofence')
+            
+            results = []
+            
+            for eg in employee_geofences:
+                geofence = eg.geofence
+                if not geofence.is_active:
+                    continue
+                
+                distance = calculate_distance(
+                    float(latitude),
+                    float(longitude),
+                    float(geofence.center_latitude),
+                    float(geofence.center_longitude)
+                )
+                
+                is_inside = distance <= geofence.radius_meters
+                
+                results.append({
+                    'geofence': GeofenceSerializer(geofence).data,
+                    'is_inside': is_inside,
+                    'distance': round(distance, 2),
+                    'distance_from_edge': round(geofence.radius_meters - distance, 2),
+                    'can_clock_in': is_inside or eg.can_clock_in_outside,
+                })
+            
+            return Response({
+                'employee_id': employee_id,
+                'location': {
+                    'latitude': float(latitude),
+                    'longitude': float(longitude)
+                },
+                'geofences': results,
+                'can_clock_in': any(g['can_clock_in'] for g in results) if results else True,
+            })
+            
+        except Employee.DoesNotExist:
+            return Response(
+                {'error': 'Employee not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class EmployeeGeofenceViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing employee-geofence assignments
+    """
+    queryset = EmployeeGeofence.objects.all()
+    serializer_class = EmployeeGeofenceSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        # Filter by business_id for multi-tenant isolation
+        queryset = self.queryset.filter(
+            business_id=self.request.user.business_id
+        ).select_related('employee', 'geofence', 'assigned_by')
+        
+        # Optional filters
+        employee_id = self.request.query_params.get('employee_id')
+        if employee_id:
+            queryset = queryset.filter(employee_id=employee_id)
+        
+        geofence_id = self.request.query_params.get('geofence_id')
+        if geofence_id:
+            queryset = queryset.filter(geofence_id=geofence_id)
+        
+        return queryset
+    
+    def perform_create(self, serializer):
+        serializer.save(
+            business_id=self.request.user.business_id,
+            assigned_by=self.request.user
+        )
+
+
+class GeofenceEventViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    ViewSet for viewing geofence events (read-only)
+    """
+    queryset = GeofenceEvent.objects.all()
+    serializer_class = GeofenceEventSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        # Filter by business_id for multi-tenant isolation
+        queryset = self.queryset.filter(
+            business_id=self.request.user.business_id
+        ).select_related('employee', 'geofence', 'location_log')
+        
+        # Optional filters
+        employee_id = self.request.query_params.get('employee_id')
+        if employee_id:
+            queryset = queryset.filter(employee_id=employee_id)
+        
+        geofence_id = self.request.query_params.get('geofence_id')
+        if geofence_id:
+            queryset = queryset.filter(geofence_id=geofence_id)
+        
+        event_type = self.request.query_params.get('event_type')
+        if event_type:
+            queryset = queryset.filter(event_type=event_type)
+        
+        # Date range filter
+        start_date = self.request.query_params.get('start_date')
+        end_date = self.request.query_params.get('end_date')
+        if start_date:
+            queryset = queryset.filter(event_time__gte=start_date)
+        if end_date:
+            queryset = queryset.filter(event_time__lte=end_date)
+        
+        return queryset.order_by('-event_time')
+    
+    @action(detail=False, methods=['post'])
+    def log_event(self, request):
+        """Log a geofence event"""
+        required_fields = ['employee_id', 'geofence_id', 'event_type', 'latitude', 'longitude']
+        
+        for field in required_fields:
+            if field not in request.data:
+                return Response(
+                    {'error': f'{field} is required'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
+        try:
+            employee = Employee.objects.get(
+                id=request.data['employee_id'],
+                business_id=request.user.business_id
+            )
+            
+            geofence = Geofence.objects.get(
+                id=request.data['geofence_id'],
+                business_id=request.user.business_id
+            )
+            
+            # Calculate distance from center
+            from math import radians, cos, sin, asin, sqrt
+            
+            def calculate_distance(lat1, lon1, lat2, lon2):
+                lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
+                dlat = lat2 - lat1
+                dlon = lon2 - lon1
+                a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+                c = 2 * asin(sqrt(a))
+                r = 6371000  # Radius of earth in meters
+                return c * r
+            
+            distance = calculate_distance(
+                float(request.data['latitude']),
+                float(request.data['longitude']),
+                float(geofence.center_latitude),
+                float(geofence.center_longitude)
+            )
+            
+            event_data = {
+                'business_id': request.user.business_id,
+                'employee': employee,
+                'geofence': geofence,
+                'event_type': request.data['event_type'],
+                'latitude': request.data['latitude'],
+                'longitude': request.data['longitude'],
+                'distance_from_center': distance,
+                'notes': request.data.get('notes', ''),
+            }
+            
+            # Link to location log if provided
+            if 'location_log_id' in request.data:
+                try:
+                    location_log = LocationLog.objects.get(
+                        id=request.data['location_log_id'],
+                        business_id=request.user.business_id
+                    )
+                    event_data['location_log'] = location_log
+                except LocationLog.DoesNotExist:
+                    pass
+            
+            event = GeofenceEvent.objects.create(**event_data)
+            
+            serializer = GeofenceEventSerializer(event)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            
+        except Employee.DoesNotExist:
+            return Response(
+                {'error': 'Employee not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Geofence.DoesNotExist:
+            return Response(
+                {'error': 'Geofence not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

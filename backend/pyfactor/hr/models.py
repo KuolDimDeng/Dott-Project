@@ -1138,3 +1138,177 @@ class LocationCheckIn(TenantAwareModel):
     class Meta:
         verbose_name = "Location Check In"
         verbose_name_plural = "Location Check Ins"
+
+
+class Geofence(TenantAwareModel):
+    """
+    Geofence for work sites and locations
+    """
+    GEOFENCE_TYPES = [
+        ('OFFICE', 'Office Building'),
+        ('CONSTRUCTION', 'Construction Site'),
+        ('CLIENT', 'Client Location'),
+        ('DELIVERY', 'Delivery Zone'),
+        ('FIELD', 'Field Location'),
+        ('CUSTOM', 'Custom Location'),
+    ]
+    
+    SHAPE_TYPES = [
+        ('CIRCLE', 'Circle'),
+        ('POLYGON', 'Polygon'),  # For future use
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    business_id = models.UUIDField(null=True, blank=True)  # For RLS tenant isolation
+    
+    # Basic info
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True, null=True)
+    location_type = models.CharField(max_length=20, choices=GEOFENCE_TYPES, default='OFFICE')
+    shape_type = models.CharField(max_length=20, choices=SHAPE_TYPES, default='CIRCLE')
+    
+    # Location data
+    center_latitude = models.DecimalField(max_digits=10, decimal_places=7)
+    center_longitude = models.DecimalField(max_digits=11, decimal_places=7)
+    radius_meters = models.IntegerField(default=200, help_text='Radius in meters for circle type')
+    address = models.TextField(blank=True, null=True)
+    
+    # Polygon data (for future use)
+    polygon_points = models.JSONField(blank=True, null=True, help_text='Array of lat/lng points for polygon')
+    
+    # Rules and actions
+    require_for_clock_in = models.BooleanField(default=True)
+    require_for_clock_out = models.BooleanField(default=False)
+    auto_clock_out_on_exit = models.BooleanField(default=False)
+    alert_on_unexpected_exit = models.BooleanField(default=False)
+    track_time_inside = models.BooleanField(default=True)
+    
+    # Notifications
+    notify_manager_on_entry = models.BooleanField(default=False)
+    notify_manager_on_exit = models.BooleanField(default=False)
+    
+    # Status
+    is_active = models.BooleanField(default=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(
+        'Employee',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_geofences'
+    )
+    
+    def __str__(self):
+        return f"{self.name} ({self.radius_meters}m radius)"
+    
+    class Meta:
+        verbose_name = "Geofence"
+        verbose_name_plural = "Geofences"
+        unique_together = ('business_id', 'name')
+
+
+class EmployeeGeofence(TenantAwareModel):
+    """
+    Assignment of employees to geofences
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    business_id = models.UUIDField(null=True, blank=True)  # For RLS tenant isolation
+    
+    employee = models.ForeignKey(
+        'Employee',
+        on_delete=models.CASCADE,
+        related_name='assigned_geofences'
+    )
+    geofence = models.ForeignKey(
+        Geofence,
+        on_delete=models.CASCADE,
+        related_name='assigned_employees'
+    )
+    
+    # Assignment details
+    assigned_at = models.DateTimeField(auto_now_add=True)
+    assigned_by = models.ForeignKey(
+        'Employee',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='geofence_assignments_made'
+    )
+    
+    # Permissions
+    can_clock_in_outside = models.BooleanField(default=False, help_text='Override geofence requirement')
+    
+    # Status
+    is_active = models.BooleanField(default=True)
+    
+    def __str__(self):
+        return f"{self.employee.get_full_name()} - {self.geofence.name}"
+    
+    class Meta:
+        verbose_name = "Employee Geofence"
+        verbose_name_plural = "Employee Geofences"
+        unique_together = ('employee', 'geofence')
+
+
+class GeofenceEvent(TenantAwareModel):
+    """
+    Log of geofence entry/exit events
+    """
+    EVENT_TYPES = [
+        ('ENTER', 'Entered Geofence'),
+        ('EXIT', 'Exited Geofence'),
+        ('CLOCK_IN', 'Clocked In'),
+        ('CLOCK_OUT', 'Clocked Out'),
+        ('VIOLATION', 'Geofence Violation'),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    business_id = models.UUIDField(null=True, blank=True)  # For RLS tenant isolation
+    
+    employee = models.ForeignKey(
+        'Employee',
+        on_delete=models.CASCADE,
+        related_name='geofence_events'
+    )
+    geofence = models.ForeignKey(
+        Geofence,
+        on_delete=models.CASCADE,
+        related_name='events'
+    )
+    
+    event_type = models.CharField(max_length=20, choices=EVENT_TYPES)
+    event_time = models.DateTimeField(default=timezone.now)
+    
+    # Location at time of event
+    latitude = models.DecimalField(max_digits=10, decimal_places=7)
+    longitude = models.DecimalField(max_digits=11, decimal_places=7)
+    distance_from_center = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        null=True, 
+        blank=True,
+        help_text='Distance in meters from geofence center'
+    )
+    
+    # Associated records
+    location_log = models.ForeignKey(
+        LocationLog,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='geofence_events'
+    )
+    
+    # Additional data
+    notes = models.TextField(blank=True, null=True)
+    
+    def __str__(self):
+        return f"{self.employee.get_full_name()} - {self.event_type} - {self.geofence.name}"
+    
+    class Meta:
+        verbose_name = "Geofence Event"
+        verbose_name_plural = "Geofence Events"
+        ordering = ['-event_time']

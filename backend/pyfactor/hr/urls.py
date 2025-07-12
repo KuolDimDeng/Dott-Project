@@ -5,7 +5,8 @@ from .views import (
     PerformanceGoalViewSet, FeedbackRecordViewSet, PerformanceSettingViewSet,
     TimesheetViewSet, TimesheetEntryViewSet, TimesheetSettingViewSet, TimeOffRequestViewSet,
     TimeOffBalanceViewSet, BenefitsViewSet, LocationLogViewSet, EmployeeLocationConsentViewSet,
-    LocationCheckInViewSet, clock_in_with_location, clock_out_with_location
+    LocationCheckInViewSet, clock_in_with_location, clock_out_with_location,
+    GeofenceViewSet, EmployeeGeofenceViewSet, GeofenceEventViewSet
 )
 from rest_framework.routers import DefaultRouter
 
@@ -26,6 +27,9 @@ router.register(r'benefits', BenefitsViewSet)
 router.register(r'location-logs', LocationLogViewSet)
 router.register(r'location-consents', EmployeeLocationConsentViewSet)
 router.register(r'location-checkins', LocationCheckInViewSet)
+router.register(r'geofences', GeofenceViewSet)
+router.register(r'employee-geofences', EmployeeGeofenceViewSet)
+router.register(r'geofence-events', GeofenceEventViewSet)
 
 urlpatterns = [
     # API endpoints

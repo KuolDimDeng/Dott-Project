@@ -23,7 +23,10 @@ import {
   checkLocationAvailability,
   scheduleRandomLocationCheck,
   formatLocation,
-  getLocationIndicatorProps
+  getLocationIndicatorProps,
+  checkGeofence,
+  formatDistance,
+  getGeofenceStatus
 } from '@/utils/locationServices';
 import toast from 'react-hot-toast';
 
@@ -42,6 +45,11 @@ export default function MobileTimesheetPage() {
   const [locationEnabled, setLocationEnabled] = useState(false);
   const [currentLocation, setCurrentLocation] = useState(null);
   const [isCapturingLocation, setIsCapturingLocation] = useState(false);
+  
+  // Geofencing states
+  const [employeeGeofences, setEmployeeGeofences] = useState([]);
+  const [geofenceCheckResult, setGeofenceCheckResult] = useState(null);
+  const [showGeofenceWarning, setShowGeofenceWarning] = useState(false);
   const [lastClockInLocation, setLastClockInLocation] = useState(null);
   const randomCheckTimeoutRef = useRef(null);
 
@@ -74,9 +82,31 @@ export default function MobileTimesheetPage() {
     if (session?.employee?.id && session?.tenantId) {
       loadTimesheetData();
       checkLocationPermissions();
+      loadEmployeeGeofences();
     }
   }, [session]);
   
+  // Load employee geofences
+  const loadEmployeeGeofences = async () => {
+    try {
+      const response = await fetch(`/api/hr/employee-geofences/?employee_id=${session.employee.id}`, {
+        headers: {
+          'X-Tenant-ID': session.tenantId,
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const activeGeofences = data
+          .filter(eg => eg.is_active && eg.geofence?.is_active)
+          .map(eg => eg.geofence);
+        setEmployeeGeofences(activeGeofences);
+      }
+    } catch (error) {
+      console.error('Error loading geofences:', error);
+    }
+  };
+
   // Check location permissions and consent
   const checkLocationPermissions = async () => {
     const availability = await checkLocationAvailability();
@@ -177,6 +207,8 @@ export default function MobileTimesheetPage() {
     
     // Capture location if enabled
     let locationData = null;
+    let canProceed = true;
+    
     if (locationEnabled) {
       setIsCapturingLocation(true);
       try {
@@ -193,11 +225,66 @@ export default function MobileTimesheetPage() {
         if (!isClockingOut) {
           setLastClockInLocation(locationData);
         }
+        
+        // Check geofences if we have them
+        if (employeeGeofences.length > 0) {
+          const checkResults = [];
+          let insideAnyGeofence = false;
+          
+          for (const geofence of employeeGeofences) {
+            const result = checkGeofence(location, geofence);
+            checkResults.push({
+              geofence,
+              ...result,
+            });
+            
+            if (result.isInside) {
+              insideAnyGeofence = true;
+            }
+          }
+          
+          setGeofenceCheckResult(checkResults);
+          
+          // Check if we can clock in based on geofence rules
+          if (!isClockingOut) {
+            const requiredGeofences = employeeGeofences.filter(gf => gf.require_for_clock_in);
+            if (requiredGeofences.length > 0 && !insideAnyGeofence) {
+              canProceed = false;
+              const nearestGeofence = checkResults
+                .filter(r => requiredGeofences.some(gf => gf.id === r.geofence.id))
+                .sort((a, b) => a.distance - b.distance)[0];
+              
+              if (nearestGeofence) {
+                toast.error(
+                  `You must be within ${formatDistance(nearestGeofence.geofence.radius_meters)} of ${nearestGeofence.geofence.name} to clock in. ` +
+                  `You are ${formatDistance(nearestGeofence.distance)} away.`
+                );
+              }
+            }
+          }
+          
+          // Log geofence event
+          if (insideAnyGeofence) {
+            const insideGeofence = checkResults.find(r => r.isInside);
+            await logGeofenceEvent({
+              employee_id: session.employee.id,
+              geofence_id: insideGeofence.geofence.id,
+              event_type: isClockingOut ? 'CLOCK_OUT' : 'CLOCK_IN',
+              latitude: location.latitude,
+              longitude: location.longitude,
+            });
+          }
+        }
       } catch (error) {
         console.error('Error capturing location:', error);
         toast.error('Could not get location. Continuing without it.');
       }
       setIsCapturingLocation(false);
+    }
+    
+    if (!canProceed) {
+      setIsClockingIn(false);
+      return;
     }
     
     try {
@@ -289,6 +376,26 @@ export default function MobileTimesheetPage() {
       }
     } catch (error) {
       console.error('Error saving location:', error);
+    }
+  };
+  
+  // Log geofence event
+  const logGeofenceEvent = async (eventData) => {
+    try {
+      const response = await fetch('/api/hr/geofence-events/log_event/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Tenant-ID': session.tenantId,
+        },
+        body: JSON.stringify(eventData),
+      });
+      
+      if (!response.ok) {
+        console.error('Failed to log geofence event');
+      }
+    } catch (error) {
+      console.error('Error logging geofence event:', error);
     }
   };
   
@@ -452,6 +559,35 @@ export default function MobileTimesheetPage() {
           )}
         </div>
       </div>
+
+      {/* Geofence Status */}
+      {employeeGeofences.length > 0 && geofenceCheckResult && (
+        <div className="px-4 mb-4">
+          <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+            <h3 className="text-sm font-medium text-gray-700 flex items-center gap-2">
+              <MapPinIcon className="w-4 h-4" />
+              Work Site Status
+            </h3>
+            {geofenceCheckResult.map((result, index) => (
+              <div
+                key={index}
+                className={`text-sm flex items-center justify-between p-2 rounded ${
+                  result.isInside
+                    ? 'bg-green-50 text-green-700'
+                    : 'bg-red-50 text-red-700'
+                }`}
+              >
+                <span className="font-medium">{result.geofence.name}</span>
+                <span className="text-xs">
+                  {result.isInside
+                    ? `✓ Inside (${formatDistance(result.distance)} from center)`
+                    : `✗ ${formatDistance(result.distance)} away`}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Clock In/Out Button */}
       <div className="px-4 py-6">

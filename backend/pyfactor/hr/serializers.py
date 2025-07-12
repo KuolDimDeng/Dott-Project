@@ -1,7 +1,7 @@
 # hr/serializers.py
 
 from rest_framework import serializers
-from .models import Employee, PreboardingForm, Role, EmployeeRole, AccessPermission, Timesheet, TimesheetEntry, TimeOffRequest, TimeOffBalance, PerformanceReview, PerformanceMetric, PerformanceRating, PerformanceGoal, FeedbackRecord, PerformanceSetting, Benefits, TimesheetSetting, LocationLog, EmployeeLocationConsent, LocationCheckIn
+from .models import Employee, PreboardingForm, Role, EmployeeRole, AccessPermission, Timesheet, TimesheetEntry, TimeOffRequest, TimeOffBalance, PerformanceReview, PerformanceMetric, PerformanceRating, PerformanceGoal, FeedbackRecord, PerformanceSetting, Benefits, TimesheetSetting, LocationLog, EmployeeLocationConsent, LocationCheckIn, Geofence, EmployeeGeofence, GeofenceEvent
 from decimal import Decimal, InvalidOperation
 from datetime import datetime
 
@@ -249,3 +249,51 @@ class TimesheetEntryWithLocationSerializer(TimesheetEntrySerializer):
     
     class Meta(TimesheetEntrySerializer.Meta):
         fields = '__all__'
+
+
+class GeofenceSerializer(serializers.ModelSerializer):
+    """Serializer for Geofence model"""
+    created_by_name = serializers.CharField(source='created_by.get_full_name', read_only=True)
+    assigned_employees_count = serializers.IntegerField(read_only=True)
+    
+    class Meta:
+        model = Geofence
+        fields = '__all__'
+        read_only_fields = ['id', 'created_at', 'updated_at', 'business_id']
+    
+    def create(self, validated_data):
+        # Set business_id from request context
+        validated_data['business_id'] = self.context['request'].user.business_id
+        return super().create(validated_data)
+
+
+class EmployeeGeofenceSerializer(serializers.ModelSerializer):
+    """Serializer for EmployeeGeofence model"""
+    employee_name = serializers.CharField(source='employee.get_full_name', read_only=True)
+    geofence_name = serializers.CharField(source='geofence.name', read_only=True)
+    geofence = GeofenceSerializer(read_only=True)
+    geofence_id = serializers.UUIDField(write_only=True)
+    employee_id = serializers.UUIDField(write_only=True)
+    
+    class Meta:
+        model = EmployeeGeofence
+        fields = '__all__'
+        read_only_fields = ['id', 'assigned_at', 'business_id']
+    
+    def create(self, validated_data):
+        # Set business_id from request context
+        validated_data['business_id'] = self.context['request'].user.business_id
+        # Set assigned_by
+        validated_data['assigned_by'] = self.context['request'].user
+        return super().create(validated_data)
+
+
+class GeofenceEventSerializer(serializers.ModelSerializer):
+    """Serializer for GeofenceEvent model"""
+    employee_name = serializers.CharField(source='employee.get_full_name', read_only=True)
+    geofence_name = serializers.CharField(source='geofence.name', read_only=True)
+    
+    class Meta:
+        model = GeofenceEvent
+        fields = '__all__'
+        read_only_fields = ['id', 'event_time', 'business_id']

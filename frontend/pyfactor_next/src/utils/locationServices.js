@@ -314,3 +314,165 @@ export const getLocationIndicatorProps = (isTracking, lastLocation) => {
     };
   }
 };
+
+/**
+ * Check if a location is inside a circular geofence
+ * @param {object} location - Location object with latitude and longitude
+ * @param {object} geofence - Geofence object with center and radius
+ * @returns {object} Result with isInside boolean and distance
+ */
+export const checkGeofence = (location, geofence) => {
+  const distance = calculateDistance(
+    location.latitude,
+    location.longitude,
+    geofence.center_latitude,
+    geofence.center_longitude
+  );
+
+  return {
+    isInside: distance <= geofence.radius_meters,
+    distance: distance,
+    distanceFromEdge: geofence.radius_meters - distance,
+  };
+};
+
+/**
+ * Get human-readable distance string
+ * @param {number} meters - Distance in meters
+ * @returns {string} Formatted distance string
+ */
+export const formatDistance = (meters) => {
+  if (meters < 1000) {
+    return `${Math.round(meters)}m`;
+  } else {
+    return `${(meters / 1000).toFixed(1)}km`;
+  }
+};
+
+/**
+ * Get geofence status message
+ * @param {object} checkResult - Result from checkGeofence
+ * @param {object} geofence - Geofence object
+ * @returns {string} Status message
+ */
+export const getGeofenceStatus = (checkResult, geofence) => {
+  if (checkResult.isInside) {
+    return `✅ Inside ${geofence.name} (${formatDistance(checkResult.distance)} from center)`;
+  } else {
+    return `❌ Outside ${geofence.name} (${formatDistance(Math.abs(checkResult.distanceFromEdge))} away)`;
+  }
+};
+
+/**
+ * Check if location is required for clock in/out
+ * @param {array} geofences - Array of assigned geofences
+ * @param {string} action - 'CLOCK_IN' or 'CLOCK_OUT'
+ * @returns {object} Requirement info
+ */
+export const isLocationRequired = (geofences, action) => {
+  if (!geofences || geofences.length === 0) {
+    return { required: false, geofences: [] };
+  }
+
+  const relevantGeofences = geofences.filter(gf => {
+    if (action === 'CLOCK_IN') {
+      return gf.require_for_clock_in && gf.is_active;
+    } else if (action === 'CLOCK_OUT') {
+      return gf.require_for_clock_out && gf.is_active;
+    }
+    return false;
+  });
+
+  return {
+    required: relevantGeofences.length > 0,
+    geofences: relevantGeofences,
+  };
+};
+
+/**
+ * Find the nearest geofence from current location
+ * @param {object} location - Current location
+ * @param {array} geofences - Array of geofences
+ * @returns {object} Nearest geofence with distance
+ */
+export const findNearestGeofence = (location, geofences) => {
+  if (!geofences || geofences.length === 0) return null;
+
+  let nearest = null;
+  let minDistance = Infinity;
+
+  geofences.forEach(gf => {
+    const distance = calculateDistance(
+      location.latitude,
+      location.longitude,
+      gf.center_latitude,
+      gf.center_longitude
+    );
+
+    if (distance < minDistance) {
+      minDistance = distance;
+      nearest = {
+        ...gf,
+        distance: distance,
+        isInside: distance <= gf.radius_meters,
+      };
+    }
+  });
+
+  return nearest;
+};
+
+/**
+ * Get geofence template by type
+ * @param {string} type - Geofence type
+ * @returns {object} Template configuration
+ */
+export const getGeofenceTemplate = (type) => {
+  const templates = {
+    OFFICE: {
+      name: 'Office Building',
+      radius_meters: 100,
+      require_for_clock_in: true,
+      require_for_clock_out: false,
+      icon: '🏢',
+      description: 'Standard office location with strict clock-in',
+    },
+    CONSTRUCTION: {
+      name: 'Construction Site',
+      radius_meters: 200,
+      require_for_clock_in: true,
+      require_for_clock_out: true,
+      track_time_inside: true,
+      alert_on_unexpected_exit: true,
+      icon: '🏗️',
+      description: 'Track time on site with exit alerts',
+    },
+    CLIENT: {
+      name: 'Client Location',
+      radius_meters: 100,
+      require_for_clock_in: true,
+      track_time_inside: true,
+      icon: '🏠',
+      description: 'Verify visits and track duration',
+    },
+    DELIVERY: {
+      name: 'Delivery Zone',
+      radius_meters: 50,
+      require_for_clock_in: false,
+      auto_clock_out_on_exit: true,
+      icon: '🚚',
+      description: 'Auto-verify deliveries at each stop',
+    },
+  };
+
+  return templates[type] || templates.OFFICE;
+};
+
+/**
+ * Location check intervals for random checks
+ */
+export const LOCATION_CHECK_INTERVALS = {
+  CLOCK_IN: 5 * 60 * 1000,      // 5 minutes after clock in
+  REGULAR: 2 * 60 * 60 * 1000,  // Every 2 hours
+  MINIMUM_GAP: 1 * 60 * 60 * 1000, // Minimum 1 hour between checks
+};
