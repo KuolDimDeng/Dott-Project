@@ -343,7 +343,7 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
   // Fetch employees without user accounts
   const fetchEmployeesWithoutUsers = async () => {
     try {
-      const response = await fetch('/api/hr/employees', {
+      const response = await fetch('/api/hr/v2/employees', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -356,7 +356,7 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
       }
 
       const data = await response.json();
-      const employees = Array.isArray(data) ? data : (data.employees || data.results || []);
+      const employees = Array.isArray(data) ? data : (data.data || data.employees || data.results || []);
       
       // Filter employees that don't have a user_id
       const employeesWithoutUsers = employees.filter(emp => !emp.user_id && !emp.user);
@@ -702,6 +702,318 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
         </div>
       </div>
 
+      {/* Inline Add User Form */}
+      {showInviteModal && (
+        <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">Add New User</h3>
+            <button
+              onClick={() => {
+                setShowInviteModal(false);
+                setInviteData({
+                  email: '',
+                  role: 'USER',
+                  permissions: [],
+                  createEmployee: false,
+                  linkEmployee: false,
+                  selectedEmployeeId: '',
+                  employeeData: {
+                    department: '',
+                    jobTitle: '',
+                    employmentType: 'FT'
+                  }
+                });
+              }}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <XCircleIcon className="h-6 w-6" />
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Left Column - Basic Info */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email Address
+                  <FieldTooltip content="User will receive a password reset email to set their password" />
+                </label>
+                <input
+                  type="email"
+                  value={inviteData.email}
+                  onChange={(e) => setInviteData({ ...inviteData, email: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="user@example.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Role
+                  <FieldTooltip content="Determines base access level" />
+                </label>
+                <select
+                  value={inviteData.role}
+                  onChange={(e) => setInviteData({ ...inviteData, role: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="ADMIN">Admin</option>
+                  <option value="USER">User</option>
+                </select>
+              </div>
+              
+              <div className="border-t border-gray-200 pt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Employee Record
+                  <FieldTooltip content="Link user account to employee record for HR and payroll features" />
+                </label>
+                
+                <div className="space-y-2">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="employeeOption"
+                      value="none"
+                      checked={!inviteData.createEmployee && !inviteData.linkEmployee}
+                      onChange={() => setInviteData({ 
+                        ...inviteData, 
+                        createEmployee: false, 
+                        linkEmployee: false,
+                        selectedEmployeeId: ''
+                      })}
+                      className="h-4 w-4 text-blue-600 border-gray-300"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">No employee record needed</span>
+                  </label>
+                  
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="employeeOption"
+                      value="create"
+                      checked={inviteData.createEmployee}
+                      onChange={() => setInviteData({ 
+                        ...inviteData, 
+                        createEmployee: true, 
+                        linkEmployee: false,
+                        selectedEmployeeId: ''
+                      })}
+                      className="h-4 w-4 text-blue-600 border-gray-300"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">Create new employee record</span>
+                  </label>
+                  
+                  {existingEmployees.length > 0 && (
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="employeeOption"
+                        value="link"
+                        checked={inviteData.linkEmployee}
+                        onChange={() => setInviteData({ 
+                          ...inviteData, 
+                          createEmployee: false, 
+                          linkEmployee: true
+                        })}
+                        className="h-4 w-4 text-blue-600 border-gray-300"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">Link to existing employee</span>
+                    </label>
+                  )}
+                </div>
+                
+                {inviteData.linkEmployee && (
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Select Employee
+                    </label>
+                    <select
+                      value={inviteData.selectedEmployeeId}
+                      onChange={(e) => setInviteData({ ...inviteData, selectedEmployeeId: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="">Select an employee</option>
+                      {existingEmployees.map(emp => (
+                        <option key={emp.id} value={emp.id}>
+                          {emp.first_name} {emp.last_name} - {emp.job_title || 'No title'} ({emp.department || 'No dept'})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                
+                {inviteData.createEmployee && (
+                  <div className="mt-4 space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Department
+                      </label>
+                      <select
+                        value={inviteData.employeeData.department}
+                        onChange={(e) => setInviteData({
+                          ...inviteData,
+                          employeeData: { ...inviteData.employeeData, department: e.target.value }
+                        })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="">Select Department</option>
+                        <option value="Human Resources">Human Resources</option>
+                        <option value="Accounting">Accounting</option>
+                        <option value="Sales">Sales</option>
+                        <option value="Marketing">Marketing</option>
+                        <option value="Operations">Operations</option>
+                        <option value="IT">IT</option>
+                        <option value="Customer Service">Customer Service</option>
+                        <option value="Engineering">Engineering</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Job Title
+                      </label>
+                      <input
+                        type="text"
+                        value={inviteData.employeeData.jobTitle}
+                        onChange={(e) => setInviteData({
+                          ...inviteData,
+                          employeeData: { ...inviteData.employeeData, jobTitle: e.target.value }
+                        })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="e.g., Sales Manager, Accountant"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Employment Type
+                      </label>
+                      <select
+                        value={inviteData.employeeData.employmentType}
+                        onChange={(e) => setInviteData({
+                          ...inviteData,
+                          employeeData: { ...inviteData.employeeData, employmentType: e.target.value }
+                        })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="FT">Full Time</option>
+                        <option value="PT">Part Time</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Right Column - Permissions */}
+            {inviteData.role === 'USER' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Page Permissions
+                  <FieldTooltip content="Select which pages this user can access" />
+                </label>
+                <div className="border border-gray-200 rounded-lg p-4 max-h-[400px] overflow-y-auto">
+                  {MENU_STRUCTURE.map((menu) => (
+                    <div key={menu.id} className="mb-4">
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          id={`inline-${menu.id}`}
+                          checked={inviteData.permissions.includes(menu.id)}
+                          onChange={() => handlePermissionToggle(menu.id)}
+                          className="h-4 w-4 text-blue-600 rounded border-gray-300"
+                        />
+                        <label htmlFor={`inline-${menu.id}`} className="ml-2 font-medium text-gray-900 flex items-center">
+                          <menu.icon className="h-4 w-4 text-gray-600 mr-2" />
+                          {menu.label}
+                        </label>
+                        {menu.subItems && (
+                          <button
+                            type="button"
+                            onClick={() => toggleMenuExpansion(menu.id)}
+                            className="ml-2"
+                          >
+                            {expandedMenus[menu.id] ? (
+                              <ChevronDownIcon className="h-4 w-4 text-gray-500" />
+                            ) : (
+                              <ChevronRightIcon className="h-4 w-4 text-gray-500" />
+                            )}
+                          </button>
+                        )}
+                      </div>
+                      
+                      {menu.subItems && expandedMenus[menu.id] && (
+                        <div className="ml-8 mt-2 space-y-2">
+                          {menu.subItems.map((subItem) => (
+                            <div key={subItem.id} className="flex items-center">
+                              <input
+                                type="checkbox"
+                                id={`inline-${subItem.id}`}
+                                checked={inviteData.permissions.includes(subItem.id)}
+                                onChange={() => handlePermissionToggle(subItem.id)}
+                                className="h-4 w-4 text-blue-600 rounded border-gray-300"
+                              />
+                              <label htmlFor={`inline-${subItem.id}`} className="ml-2 text-sm text-gray-700">
+                                {subItem.label}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Admin message for admin role */}
+            {inviteData.role === 'ADMIN' && (
+              <div className="flex items-center justify-center">
+                <div className="text-center p-8 bg-gray-50 rounded-lg">
+                  <ShieldCheckIcon className="h-12 w-12 text-blue-600 mx-auto mb-3" />
+                  <p className="text-gray-700 font-medium">Admin Access</p>
+                  <p className="text-sm text-gray-500 mt-2">
+                    Admins have full access to all features except owner-specific settings
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-6 flex justify-end space-x-3 border-t border-gray-200 pt-4">
+            <button
+              onClick={() => {
+                setShowInviteModal(false);
+                setInviteData({
+                  email: '',
+                  role: 'USER',
+                  permissions: [],
+                  createEmployee: false,
+                  linkEmployee: false,
+                  selectedEmployeeId: '',
+                  employeeData: {
+                    department: '',
+                    jobTitle: '',
+                    employmentType: 'FT'
+                  }
+                });
+              }}
+              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+              disabled={loading}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleAddUser}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              disabled={loading || !inviteData.email}
+            >
+              {loading ? 'Adding User...' : 'Add User'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Users Table */}
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
@@ -807,284 +1119,6 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
           </tbody>
         </table>
       </div>
-
-      {/* Invite User Modal */}
-      {showInviteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New User</h3>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email Address
-                  <FieldTooltip content="User will receive a password reset email to set their password" />
-                </label>
-                <input
-                  type="email"
-                  value={inviteData.email}
-                  onChange={(e) => setInviteData({ ...inviteData, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="user@example.com"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Role
-                  <FieldTooltip content="Determines base access level" />
-                </label>
-                <select
-                  value={inviteData.role}
-                  onChange={(e) => setInviteData({ ...inviteData, role: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="ADMIN">Admin</option>
-                  <option value="USER">User</option>
-                </select>
-              </div>
-              
-              <div className="border-t border-gray-200 pt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Employee Record
-                  <FieldTooltip content="Link user account to employee record for HR and payroll features" />
-                </label>
-                
-                <div className="space-y-2">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="employeeOption"
-                      value="none"
-                      checked={!inviteData.createEmployee && !inviteData.linkEmployee}
-                      onChange={() => setInviteData({ 
-                        ...inviteData, 
-                        createEmployee: false, 
-                        linkEmployee: false,
-                        selectedEmployeeId: ''
-                      })}
-                      className="h-4 w-4 text-blue-600 border-gray-300"
-                    />
-                    <span className="ml-2 text-sm text-gray-700">No employee record needed</span>
-                  </label>
-                  
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      name="employeeOption"
-                      value="create"
-                      checked={inviteData.createEmployee}
-                      onChange={() => setInviteData({ 
-                        ...inviteData, 
-                        createEmployee: true, 
-                        linkEmployee: false,
-                        selectedEmployeeId: ''
-                      })}
-                      className="h-4 w-4 text-blue-600 border-gray-300"
-                    />
-                    <span className="ml-2 text-sm text-gray-700">Create new employee record</span>
-                  </label>
-                  
-                  {existingEmployees.length > 0 && (
-                    <label className="flex items-center">
-                      <input
-                        type="radio"
-                        name="employeeOption"
-                        value="link"
-                        checked={inviteData.linkEmployee}
-                        onChange={() => setInviteData({ 
-                          ...inviteData, 
-                          createEmployee: false, 
-                          linkEmployee: true
-                        })}
-                        className="h-4 w-4 text-blue-600 border-gray-300"
-                      />
-                      <span className="ml-2 text-sm text-gray-700">Link to existing employee</span>
-                    </label>
-                  )}
-                </div>
-                
-                {inviteData.linkEmployee && (
-                  <div className="mt-4 pl-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Select Employee
-                    </label>
-                    <select
-                      value={inviteData.selectedEmployeeId}
-                      onChange={(e) => setInviteData({ ...inviteData, selectedEmployeeId: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="">Select an employee</option>
-                      {existingEmployees.map(emp => (
-                        <option key={emp.id} value={emp.id}>
-                          {emp.first_name} {emp.last_name} - {emp.job_title || 'No title'} ({emp.department || 'No dept'})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-                
-                {inviteData.createEmployee && (
-                  <div className="mt-4 space-y-3 pl-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Department
-                      </label>
-                      <select
-                        value={inviteData.employeeData.department}
-                        onChange={(e) => setInviteData({
-                          ...inviteData,
-                          employeeData: { ...inviteData.employeeData, department: e.target.value }
-                        })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                      >
-                        <option value="">Select Department</option>
-                        <option value="Human Resources">Human Resources</option>
-                        <option value="Accounting">Accounting</option>
-                        <option value="Sales">Sales</option>
-                        <option value="Marketing">Marketing</option>
-                        <option value="Operations">Operations</option>
-                        <option value="IT">IT</option>
-                        <option value="Customer Service">Customer Service</option>
-                        <option value="Engineering">Engineering</option>
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Job Title
-                      </label>
-                      <input
-                        type="text"
-                        value={inviteData.employeeData.jobTitle}
-                        onChange={(e) => setInviteData({
-                          ...inviteData,
-                          employeeData: { ...inviteData.employeeData, jobTitle: e.target.value }
-                        })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="e.g., Sales Manager, Accountant"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Employment Type
-                      </label>
-                      <select
-                        value={inviteData.employeeData.employmentType}
-                        onChange={(e) => setInviteData({
-                          ...inviteData,
-                          employeeData: { ...inviteData.employeeData, employmentType: e.target.value }
-                        })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                      >
-                        <option value="FT">Full Time</option>
-                        <option value="PT">Part Time</option>
-                      </select>
-                    </div>
-                    
-                    <div className="text-xs text-gray-500 mt-2">
-                      Note: Permissions will be automatically assigned based on department and job title.
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {inviteData.role === 'USER' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Page Permissions
-                    <FieldTooltip content="Select which pages this user can access" />
-                  </label>
-                  <div className="border border-gray-200 rounded-lg p-4 max-h-96 overflow-y-auto">
-                    {MENU_STRUCTURE.map((menu) => (
-                      <div key={menu.id} className="mb-4">
-                        <div className="flex items-center">
-                          <input
-                            type="checkbox"
-                            id={menu.id}
-                            checked={inviteData.permissions.includes(menu.id)}
-                            onChange={() => handlePermissionToggle(menu.id)}
-                            className="h-4 w-4 text-blue-600 rounded border-gray-300"
-                          />
-                          <label htmlFor={menu.id} className="ml-2 font-medium text-gray-900 flex items-center">
-                            <menu.icon className="h-4 w-4 text-gray-600 mr-2" />
-                            {menu.label}
-                          </label>
-                          {menu.subItems && (
-                            <button
-                              type="button"
-                              onClick={() => toggleMenuExpansion(menu.id)}
-                              className="ml-2"
-                            >
-                              {expandedMenus[menu.id] ? (
-                                <ChevronDownIcon className="h-4 w-4 text-gray-500" />
-                              ) : (
-                                <ChevronRightIcon className="h-4 w-4 text-gray-500" />
-                              )}
-                            </button>
-                          )}
-                        </div>
-                        
-                        {menu.subItems && expandedMenus[menu.id] && (
-                          <div className="ml-8 mt-2 space-y-2">
-                            {menu.subItems.map((subItem) => (
-                              <div key={subItem.id} className="flex items-center">
-                                <input
-                                  type="checkbox"
-                                  id={subItem.id}
-                                  checked={inviteData.permissions.includes(subItem.id)}
-                                  onChange={() => handlePermissionToggle(subItem.id)}
-                                  className="h-4 w-4 text-blue-600 rounded border-gray-300"
-                                />
-                                <label htmlFor={subItem.id} className="ml-2 text-sm text-gray-700">
-                                  {subItem.label}
-                                </label>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="mt-6 flex justify-end space-x-3">
-              <button
-                onClick={() => {
-                  setShowInviteModal(false);
-                  setInviteData({
-                    email: '',
-                    role: 'USER',
-                    permissions: [],
-                    createEmployee: false,
-                    linkEmployee: false,
-                    selectedEmployeeId: '',
-                    employeeData: {
-                      department: '',
-                      jobTitle: '',
-                      employmentType: 'FT'
-                    }
-                  });
-                }}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-                disabled={loading}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddUser}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                disabled={loading}
-              >
-                {loading ? 'Adding User...' : 'Add User'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
