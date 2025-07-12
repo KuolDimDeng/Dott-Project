@@ -248,4 +248,4 @@ class TimesheetEntryWithLocationSerializer(TimesheetEntrySerializer):
     clock_out_location = LocationLogSerializer(read_only=True)
     
     class Meta(TimesheetEntrySerializer.Meta):
-        fields = TimesheetEntrySerializer.Meta.fields + ['clock_in_location', 'clock_out_location']
+        fields = '__all__'
