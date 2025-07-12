@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from '@/hooks/useSession-v2';
 import Link from 'next/link';
+import SmartAppBanner from '@/components/SmartAppBanner';
 import {
   ChartBarIcon,
   CurrencyDollarIcon,
@@ -116,6 +117,9 @@ export default function MobilePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Smart App Banner */}
+      <SmartAppBanner />
+      
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="px-4 py-3">
