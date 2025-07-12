@@ -150,12 +150,17 @@ def employee_list(request):
         logger.info(f'🚀 [HR Employee List] GET request from user: {request.user.email if request.user.is_authenticated else "anonymous"}')
         
         try:
-            # Get tenant information from user
+            # Get tenant information from user and request
             tenant_id = None
             if hasattr(request.user, 'tenant_id'):
                 tenant_id = request.user.tenant_id
             elif hasattr(request.user, 'tenant'):
                 tenant_id = request.user.tenant.id if request.user.tenant else None
+            
+            # Also check if tenant_id is passed in the request
+            request_tenant_id = request.GET.get('tenantId') or request.headers.get('X-Tenant-ID')
+            if request_tenant_id:
+                logger.info(f'📱 [HR Employee List] Tenant ID from request: {request_tenant_id}')
             
             logger.info(f'🏢 [HR Employee List] User tenant_id: {tenant_id}')
             
@@ -165,6 +170,14 @@ def employee_list(request):
                 business_id = request.user.business_id
             
             logger.info(f'🔍 [HR Employee List] User {request.user.email} business_id: {business_id}')
+            
+            # IMPORTANT: Use tenant_id from request if business_id doesn't match
+            # This handles the mismatch between tenant_id and business_id
+            if request_tenant_id and str(business_id) != str(request_tenant_id):
+                logger.warning(f'⚠️ [HR Employee List] Business ID mismatch! Using tenant_id as business_id')
+                logger.warning(f'   User business_id: {business_id}')
+                logger.warning(f'   Request tenant_id: {request_tenant_id}')
+                business_id = request_tenant_id
             
             if not business_id:
                 logger.warning(f'⚠️ [HR Employee List] No business_id found for user: {request.user.email}')
@@ -274,7 +287,19 @@ def employee_list(request):
                 if hasattr(request.user, 'business_id'):
                     business_id = request.user.business_id
                 
+                # Also check for tenant_id in request
+                request_tenant_id = request.data.get('tenantId') or request.headers.get('X-Tenant-ID')
+                if request_tenant_id:
+                    logger.info(f'📱 [HR Employee Create] Tenant ID from request: {request_tenant_id}')
+                
                 logger.info(f'🏢 [HR Employee Create] User business_id: {business_id}')
+                
+                # Use tenant_id if business_id doesn't match
+                if request_tenant_id and str(business_id) != str(request_tenant_id):
+                    logger.warning(f'⚠️ [HR Employee Create] Business ID mismatch! Using tenant_id as business_id')
+                    logger.warning(f'   User business_id: {business_id}')
+                    logger.warning(f'   Request tenant_id: {request_tenant_id}')
+                    business_id = request_tenant_id
                 
                 if not business_id:
                     logger.error(f'❌ [HR Employee Create] No business_id found for user: {request.user.email}')
