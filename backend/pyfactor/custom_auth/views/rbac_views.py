@@ -539,3 +539,156 @@ class RoleTemplateViewSet(viewsets.ReadOnlyModelViewSet):
             })
         
         return Response(permissions)
+
+
+class DirectUserCreationViewSet(viewsets.ViewSet):
+    """ViewSet for direct user creation (no invitation)"""
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdmin]
+    
+    @action(detail=False, methods=['post'], url_path='check-exists')
+    def check_user_exists(self, request):
+        """Check if user exists with given email"""
+        email = request.data.get('email')
+        tenant_id = request.data.get('tenant_id') or request.user.tenant.id
+        
+        if not email:
+            return Response(
+                {"error": "Email is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        exists = User.objects.filter(
+            email__iexact=email,
+            tenant_id=tenant_id
+        ).exists()
+        
+        return Response({"exists": exists})
+    
+    @action(detail=False, methods=['post'], url_path='create')
+    def create_user(self, request):
+        """Create user directly in Auth0 and backend"""
+        try:
+            # Validate request data
+            email = request.data.get('email')
+            role = request.data.get('role', 'USER')
+            permissions = request.data.get('permissions', [])
+            create_employee = request.data.get('create_employee', False)
+            link_employee = request.data.get('link_employee', False)
+            employee_id = request.data.get('employee_id')
+            employee_data = request.data.get('employee_data', {})
+            
+            # Validation
+            if not email:
+                return Response(
+                    {"error": "Email is required"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            if role not in ['ADMIN', 'USER']:
+                return Response(
+                    {"error": "Invalid role. Must be ADMIN or USER"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            if link_employee and not employee_id:
+                return Response(
+                    {"error": "Employee ID is required when linking to existing employee"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Check if user already exists
+            if User.objects.filter(email__iexact=email).exists():
+                return Response(
+                    {"error": "User already exists with this email"},
+                    status=status.HTTP_409_CONFLICT
+                )
+            
+            # Check if employee exists (if linking)
+            employee = None
+            if link_employee:
+                try:
+                    from hr.models import Employee
+                    employee = Employee.objects.get(
+                        id=employee_id,
+                        business_id=request.user.business_id
+                    )
+                    if employee.user_id:
+                        return Response(
+                            {"error": "Employee already has a user account"},
+                            status=status.HTTP_409_CONFLICT
+                        )
+                except Employee.DoesNotExist:
+                    return Response(
+                        {"error": "Employee not found"},
+                        status=status.HTTP_404_NOT_FOUND
+                    )
+            
+            # Create user in database
+            user = User.objects.create(
+                email=email,
+                role=role,
+                tenant=request.user.tenant,
+                business_id=request.user.business_id,
+                is_active=True,
+                auth0_id=f"pending_{email}_{timezone.now().timestamp()}"  # Temporary ID
+            )
+            
+            # Create page permissions
+            from custom_auth.models import UserPageAccess, PagePermission
+            for perm in permissions:
+                page_id = perm.get('pageId')
+                if page_id:
+                    try:
+                        page = PagePermission.objects.get(id=page_id)
+                        UserPageAccess.objects.create(
+                            user=user,
+                            page=page,
+                            can_read=perm.get('canRead', True),
+                            can_write=perm.get('canWrite', False),
+                            can_edit=perm.get('canEdit', False),
+                            can_delete=perm.get('canDelete', False)
+                        )
+                    except PagePermission.DoesNotExist:
+                        logger.warning(f"Page permission {page_id} not found")
+            
+            # Link to existing employee or create new one
+            if link_employee and employee:
+                employee.user = user
+                employee.save()
+                
+                # Sync permissions based on employee role
+                from custom_auth.employee_sync import sync_employee_role_to_user_permissions
+                sync_employee_role_to_user_permissions(employee, user)
+                
+            elif create_employee:
+                from hr.models import Employee
+                Employee.objects.create(
+                    user=user,
+                    business_id=request.user.business_id,
+                    tenant_id=request.user.tenant.id,
+                    first_name=email.split('@')[0],
+                    last_name='',
+                    email=email,
+                    department=employee_data.get('department', ''),
+                    job_title=employee_data.get('jobTitle', ''),
+                    employment_type=employee_data.get('employmentType', 'FT'),
+                    hire_date=timezone.now().date(),
+                    is_active=True
+                )
+            
+            # Note: Auth0 user creation will be handled by the frontend API
+            # The frontend will create the Auth0 user and send the password reset email
+            
+            # Return user data
+            serializer = UserSerializer(user)
+            return Response({
+                "user": serializer.data,
+                "message": f"User created successfully. Password reset email will be sent to {email}"
+            }, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            logger.error(f"[DirectUserCreation] Error creating user: {str(e)}")
+            return Response(
+                {"error": f"Failed to create user: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

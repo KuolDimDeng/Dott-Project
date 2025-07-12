@@ -225,6 +225,8 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
     role: 'USER',
     permissions: [],
     createEmployee: false,
+    linkEmployee: false,
+    selectedEmployeeId: '',
     employeeData: {
       department: '',
       jobTitle: '',
@@ -232,6 +234,7 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
     }
   });
   const [expandedMenus, setExpandedMenus] = useState({});
+  const [existingEmployees, setExistingEmployees] = useState([]);
 
   // Fetch real user data
   useEffect(() => {
@@ -337,6 +340,42 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
     }
   };
 
+  // Fetch employees without user accounts
+  const fetchEmployeesWithoutUsers = async () => {
+    try {
+      const response = await fetch('/api/hr/employees', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch employees');
+      }
+
+      const data = await response.json();
+      const employees = Array.isArray(data) ? data : (data.employees || data.results || []);
+      
+      // Filter employees that don't have a user_id
+      const employeesWithoutUsers = employees.filter(emp => !emp.user_id && !emp.user);
+      setExistingEmployees(employeesWithoutUsers);
+      
+    } catch (error) {
+      logger.error('[UserManagement] Error fetching employees:', error);
+      // Don't show error to user, just set empty array
+      setExistingEmployees([]);
+    }
+  };
+
+  // Fetch employees when modal opens
+  useEffect(() => {
+    if (showInviteModal) {
+      fetchEmployeesWithoutUsers();
+    }
+  }, [showInviteModal]);
+
   // Filter users based on search and filters
   useEffect(() => {
     let filtered = users;
@@ -359,17 +398,22 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
     setFilteredUsers(filtered);
   }, [searchTerm, filterRole, filterStatus, users]);
 
-  const handleInviteUser = async () => {
+  const handleAddUser = async () => {
     if (!inviteData.email) {
       notifyError('Please enter an email address');
+      return;
+    }
+
+    if (inviteData.linkEmployee && !inviteData.selectedEmployeeId) {
+      notifyError('Please select an employee to link');
       return;
     }
 
     try {
       setLoading(true);
       
-      // Call the proper User Management API to invite user
-      const response = await fetch('/api/user-management/invite', {
+      // Call the updated API to create user directly
+      const response = await fetch('/api/user-management/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -378,26 +422,29 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
           email: inviteData.email,
           role: inviteData.role,
           permissions: inviteData.permissions,
-          send_invite: true,
           create_employee: inviteData.createEmployee,
+          link_employee: inviteData.linkEmployee,
+          employee_id: inviteData.selectedEmployeeId,
           employee_data: inviteData.createEmployee ? inviteData.employeeData : null
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to send invitation');
+        throw new Error(errorData.message || 'Failed to create user');
       }
 
       const result = await response.json();
       
-      notifySuccess(`Invitation sent to ${inviteData.email}`);
+      notifySuccess(`User created successfully. Password reset email sent to ${inviteData.email}`);
       setShowInviteModal(false);
       setInviteData({ 
         email: '', 
         role: 'USER', 
         permissions: [], 
         createEmployee: false,
+        linkEmployee: false,
+        selectedEmployeeId: '',
         employeeData: {
           department: '',
           jobTitle: '',
@@ -405,12 +452,12 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
         }
       });
       
-      // Refresh the users list to show the new pending user
+      // Refresh the users list to show the new user
       await fetchUsers();
       
     } catch (error) {
-      logger.error('[UserManagement] Error inviting user:', error);
-      notifyError(error.message || 'Failed to send invitation');
+      logger.error('[UserManagement] Error creating user:', error);
+      notifyError(error.message || 'Failed to create user');
     } finally {
       setLoading(false);
     }
@@ -649,7 +696,7 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
             >
               <UserPlusIcon className="h-5 w-5 mr-2" />
-              Invite User
+              Add User
             </button>
           )}
         </div>
@@ -765,13 +812,13 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
       {showInviteModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Invite New User</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New User</h3>
             
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Email Address
-                  <FieldTooltip content="User will receive an invitation email" />
+                  <FieldTooltip content="User will receive a password reset email to set their password" />
                 </label>
                 <input
                   type="email"
@@ -798,19 +845,84 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
               </div>
               
               <div className="border-t border-gray-200 pt-4">
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="createEmployee"
-                    checked={inviteData.createEmployee}
-                    onChange={(e) => setInviteData({ ...inviteData, createEmployee: e.target.checked })}
-                    className="h-4 w-4 text-blue-600 rounded border-gray-300"
-                  />
-                  <label htmlFor="createEmployee" className="ml-2 text-sm font-medium text-gray-700">
-                    Create Employee Record
-                    <FieldTooltip content="Also create an HR employee record for this user. Useful for staff who need payroll processing." />
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Employee Record
+                  <FieldTooltip content="Link user account to employee record for HR and payroll features" />
+                </label>
+                
+                <div className="space-y-2">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="employeeOption"
+                      value="none"
+                      checked={!inviteData.createEmployee && !inviteData.linkEmployee}
+                      onChange={() => setInviteData({ 
+                        ...inviteData, 
+                        createEmployee: false, 
+                        linkEmployee: false,
+                        selectedEmployeeId: ''
+                      })}
+                      className="h-4 w-4 text-blue-600 border-gray-300"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">No employee record needed</span>
                   </label>
+                  
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="employeeOption"
+                      value="create"
+                      checked={inviteData.createEmployee}
+                      onChange={() => setInviteData({ 
+                        ...inviteData, 
+                        createEmployee: true, 
+                        linkEmployee: false,
+                        selectedEmployeeId: ''
+                      })}
+                      className="h-4 w-4 text-blue-600 border-gray-300"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">Create new employee record</span>
+                  </label>
+                  
+                  {existingEmployees.length > 0 && (
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="employeeOption"
+                        value="link"
+                        checked={inviteData.linkEmployee}
+                        onChange={() => setInviteData({ 
+                          ...inviteData, 
+                          createEmployee: false, 
+                          linkEmployee: true
+                        })}
+                        className="h-4 w-4 text-blue-600 border-gray-300"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">Link to existing employee</span>
+                    </label>
+                  )}
                 </div>
+                
+                {inviteData.linkEmployee && (
+                  <div className="mt-4 pl-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Select Employee
+                    </label>
+                    <select
+                      value={inviteData.selectedEmployeeId}
+                      onChange={(e) => setInviteData({ ...inviteData, selectedEmployeeId: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="">Select an employee</option>
+                      {existingEmployees.map(emp => (
+                        <option key={emp.id} value={emp.id}>
+                          {emp.first_name} {emp.last_name} - {emp.job_title || 'No title'} ({emp.department || 'No dept'})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 
                 {inviteData.createEmployee && (
                   <div className="mt-4 space-y-3 pl-6">
@@ -948,11 +1060,11 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
                 Cancel
               </button>
               <button
-                onClick={handleInviteUser}
+                onClick={handleAddUser}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                 disabled={loading}
               >
-                {loading ? 'Sending...' : 'Send Invitation'}
+                {loading ? 'Adding User...' : 'Add User'}
               </button>
             </div>
           </div>
