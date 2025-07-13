@@ -255,6 +255,75 @@ def authenticate(self, request):
 
 ---
 
+## 🔧 **Issue: User Creation Fails with "User Already Exists" Despite No Auth0 Account**
+
+**Symptoms:**
+- User creation returns 409 Conflict: "User already exists"
+- User not visible in Auth0 dashboard
+- Database contains orphaned user records with `auth0_sub` like "pending_email@example.com_timestamp"
+- Foreign key constraint errors when trying to delete users manually
+
+**Root Cause Analysis:**
+- User creation process creates database record before Auth0 sync
+- If Auth0 creation fails, database record remains orphaned
+- Multiple foreign key dependencies prevent simple deletion
+- Tables like `smart_insights_usercredit`, `smart_insights_credittransaction`, `hr_employee` reference user
+
+**Solution - Use Comprehensive Cleanup Script:**
+
+1. **Run the comprehensive cleanup script** that auto-discovers all foreign key dependencies:
+```bash
+cd /app/scripts
+python comprehensive_user_cleanup.py user@example.com
+```
+
+2. **Script Features:**
+- Automatically discovers ALL tables with foreign keys to `custom_auth_user`
+- Shows all dependencies before deletion (typically 60+ tables)
+- Cleans all related records in correct order
+- Handles any future tables automatically
+
+3. **Example Output:**
+```
+INFO: Discovering all tables with foreign keys to custom_auth_user...
+INFO: Found 64 foreign key dependencies:
+  - smart_insights_credittransaction.user_id
+  - smart_insights_usercredit.user_id
+  - hr_employee.user_id
+  ... (shows all dependencies)
+
+Found 3 orphaned users:
+  - user1@example.com (ID: 259, auth0_sub: pending_user1@example.com_1752384514.82401)
+  
+Do you want to delete these orphaned users? (yes/no): yes
+```
+
+**Prevention (Already Implemented):**
+- User creation now uses `@transaction.atomic` decorator
+- All database changes roll back if any step fails
+- No more orphaned users in future
+
+**Manual Cleanup (If Script Not Available):**
+```sql
+-- Find orphaned users
+SELECT id, email, auth0_sub FROM custom_auth_user 
+WHERE auth0_sub LIKE 'pending_%';
+
+-- Delete with all dependencies (example for user_id = 123)
+DELETE FROM smart_insights_credittransaction WHERE user_id = 123;
+DELETE FROM smart_insights_usercredit WHERE user_id = 123;
+DELETE FROM hr_employee WHERE user_id = 123;
+-- ... delete from all dependent tables ...
+DELETE FROM custom_auth_user WHERE id = 123;
+```
+
+**Script Location:**
+- Primary: `/backend/pyfactor/scripts/comprehensive_user_cleanup.py`
+- Fallback: `/backend/pyfactor/scripts/force_cleanup_orphaned_users.py`
+- Interactive (all users): `/backend/pyfactor/scripts/interactive_user_cleanup.py`
+
+---
+
 ## 🔧 **Issue: ViewSet Tenant Filtering Inconsistencies**
 
 **Symptoms:**

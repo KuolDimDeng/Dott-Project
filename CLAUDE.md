@@ -211,6 +211,19 @@
 - **Migration**: Updated all frontend hrApi calls to use v2 endpoints
 - **Cleanup**: Removed all old employee API files after v2 working
 
+### [32.0.0] - 2025-07-13 - CURRENT - User Cleanup Scripts & Transaction Atomic
+- **Purpose**: Handle orphaned users and prevent future occurrences
+- **Problem**: User creation failures left orphaned records with 64+ foreign key dependencies
+- **Solution**: Comprehensive cleanup script with transaction atomic
+- **Key Features**:
+  - `/backend/pyfactor/scripts/comprehensive_user_cleanup.py` - Auto-discovers ALL foreign keys
+  - `@transaction.atomic` on user creation prevents orphaned records
+  - Handles tables: smart_insights_credittransaction, smart_insights_usercredit, hr_employee, etc.
+  - Shows all 64+ dependencies before deletion
+- **Usage**: `python comprehensive_user_cleanup.py user@example.com`
+- **Prevention**: All user creation now wrapped in atomic transactions
+- **Documentation**: `/backend/pyfactor/docs/TROUBLESHOOTING.md` - User cleanup section
+
 ---
 
 ## DEPRECATED CONFIGURATIONS (Do Not Use)
@@ -263,6 +276,12 @@ python manage.py shell < scripts/fix_all_incomplete_onboarding.py
 ```bash
 cd /backend/pyfactor/scripts
 python interactive_user_cleanup.py
+```
+
+### Delete Orphaned Users (Comprehensive)
+```bash
+cd /backend/pyfactor/scripts
+python comprehensive_user_cleanup.py user@example.com
 ```
 
 ### Local Testing Commands
