@@ -42,7 +42,6 @@ import {
   MinusIcon,
   ArrowsPointingOutIcon,
   MagnifyingGlassIcon,
-  ClockIcon,
   DocumentIcon
 } from '@heroicons/react/24/outline';
 import PayStubViewer from '@/components/PayStubViewer';
