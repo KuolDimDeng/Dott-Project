@@ -144,6 +144,7 @@ class AdminUserDetailView(APIView):
     def get(self, request, user_id):
         """Get user details"""
         try:
+            logger.info(f"[AdminUserDetailView] GET request for user_id: {user_id}, type: {type(user_id)}")
             user = User.objects.get(id=user_id)
             
             # Get related data
@@ -285,6 +286,8 @@ class AdminUserDetailView(APIView):
     def delete(self, request, user_id):
         """Delete a user (cascade delete all related data)"""
         try:
+            logger.info(f"[AdminUserDetailView] DELETE request for user_id: {user_id}, type: {type(user_id)}")
+            
             # Only super_admin can delete users
             if request.admin_user.admin_role != 'super_admin':
                 return Response({

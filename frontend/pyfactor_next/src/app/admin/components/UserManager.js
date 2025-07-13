@@ -565,7 +565,10 @@ export default function UserManager({ adminUser }) {
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                         <div className="flex items-center justify-end space-x-2">
                           <button
-                            onClick={() => loadUserDetails(user.id)}
+                            onClick={() => {
+                              console.log('[UserManager] View clicked for user:', user.email, 'ID:', user.id, 'Type:', typeof user.id);
+                              loadUserDetails(user.id);
+                            }}
                             className="text-blue-600 hover:text-blue-900"
                             title="View Details"
                           >
