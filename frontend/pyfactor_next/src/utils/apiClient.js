@@ -1523,11 +1523,15 @@ export const hrApi = {
       const employees = result.data || [];
       return employees.map(emp => ({
         id: emp.id,
-        firstName: emp.first_name,
-        lastName: emp.last_name,
+        first_name: emp.first_name,  // Keep raw field names for consistency
+        last_name: emp.last_name,
+        full_name: `${emp.first_name} ${emp.last_name}`,
         email: emp.email,
         department: emp.department,
-        jobTitle: emp.job_title
+        job_title: emp.job_title,
+        employee_number: emp.employee_number,
+        active: emp.active,
+        is_supervisor: emp.is_supervisor  // CRITICAL: Include is_supervisor field!
       }));
     }
   },
