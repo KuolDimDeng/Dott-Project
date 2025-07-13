@@ -14,7 +14,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
 django.setup()
 
 from hr.models import Employee
-from custom_auth.models import Business
+from custom_auth.models import Tenant
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -25,13 +25,13 @@ def test_stripe_ssn():
     
     logger.info("🧪 Testing Stripe SSN storage...\n")
     
-    # Get a business to associate with the test employee
-    business = Business.objects.first()
-    if not business:
-        logger.error("❌ No business found in database. Create a business first.")
+    # Get a tenant to associate with the test employee
+    tenant = Tenant.objects.filter(is_active=True).first()
+    if not tenant:
+        logger.error("❌ No active tenant found in database. Create a tenant first.")
         return False
     
-    logger.info(f"Using business: {business.name} (ID: {business.id})")
+    logger.info(f"Using tenant: {tenant.name} (ID: {tenant.id})")
     
     # Test data
     test_email = "stripe-ssn-test@example.com"
@@ -61,8 +61,8 @@ def test_stripe_ssn():
             email=test_email,
             first_name="Stripe",
             last_name="Test",
-            business_id=business.id,
-            tenant_id=business.id,
+            business_id=tenant.id,
+            tenant_id=tenant.id,
             country="US",
             active=True
         )
