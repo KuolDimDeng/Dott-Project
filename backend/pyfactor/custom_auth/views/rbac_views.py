@@ -9,6 +9,7 @@ import secrets
 import logging
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
+import requests
 
 from ..models import User, PagePermission, UserPageAccess, UserInvitation, RoleTemplate
 from ..serializers import (
@@ -732,16 +733,27 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
             # Note: Auth0 user creation will be handled by the frontend API
             # The frontend will create the Auth0 user and send the password reset email
             
-            # TODO: Send Auth0 password reset email
-            # For now, user creation is complete but Auth0 integration needed for emails
-            logger.info(f"[DirectUserCreation] User created in database successfully")
-            logger.warning(f"[DirectUserCreation] Auth0 password reset email not yet implemented")
+            # Create Auth0 user and send password reset email
+            logger.info(f"[DirectUserCreation] User created in database successfully, now creating Auth0 user")
+            
+            try:
+                auth0_user_id = self._create_auth0_user_and_send_reset(email, user, request.user.tenant)
+                if auth0_user_id:
+                    # Update user with real Auth0 ID
+                    user.auth0_sub = auth0_user_id
+                    user.save()
+                    logger.info(f"[DirectUserCreation] Auth0 user created successfully: {auth0_user_id}")
+                else:
+                    logger.warning(f"[DirectUserCreation] Auth0 user creation failed, but database user exists")
+            except Exception as auth0_error:
+                logger.error(f"[DirectUserCreation] Auth0 integration error: {str(auth0_error)}")
+                # Don't fail the entire operation if Auth0 fails
             
             # Return user data
             serializer = UserListSerializer(user)
             return Response({
                 "user": serializer.data,
-                "message": f"User created successfully. Password reset email will be sent to {email}"
+                "message": f"User created successfully. Password reset email sent to {email}"
             }, status=status.HTTP_201_CREATED)
             
         except Exception as e:
@@ -752,3 +764,112 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
                 {"error": f"Failed to create user: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+    
+    def _create_auth0_user_and_send_reset(self, email, user, tenant):
+        """Create Auth0 user and send password reset email"""
+        try:
+            logger.info(f"[DirectUserCreation] Starting Auth0 user creation for {email}")
+            
+            # Get Auth0 Management API token
+            auth0_config = {
+                'domain': settings.AUTH0_DOMAIN or 'auth.dottapps.com',
+                'client_id': settings.AUTH0_M2M_CLIENT_ID,
+                'client_secret': settings.AUTH0_M2M_CLIENT_SECRET,
+                'audience': f"https://{settings.AUTH0_DOMAIN or 'auth.dottapps.com'}/api/v2/"
+            }
+            
+            logger.info(f"[DirectUserCreation] Auth0 config: domain={auth0_config['domain']}")
+            logger.info(f"[DirectUserCreation] Has M2M client ID: {bool(auth0_config['client_id'])}")
+            logger.info(f"[DirectUserCreation] Has M2M client secret: {bool(auth0_config['client_secret'])}")
+            
+            if not all([auth0_config['domain'], auth0_config['client_id'], auth0_config['client_secret']]):
+                logger.error("[DirectUserCreation] Auth0 M2M credentials not configured")
+                return None
+            
+            # Get Management API access token
+            token_url = f"https://{auth0_config['domain']}/oauth/token"
+            token_payload = {
+                'client_id': auth0_config['client_id'],
+                'client_secret': auth0_config['client_secret'],
+                'audience': auth0_config['audience'],
+                'grant_type': 'client_credentials'
+            }
+            
+            logger.info(f"[DirectUserCreation] Requesting Auth0 M2M token from {token_url}")
+            
+            token_response = requests.post(token_url, json=token_payload)
+            logger.info(f"[DirectUserCreation] Token response status: {token_response.status_code}")
+            
+            if token_response.status_code != 200:
+                logger.error(f"[DirectUserCreation] Failed to get Auth0 token: {token_response.text}")
+                return None
+            
+            access_token = token_response.json().get('access_token')
+            logger.info(f"[DirectUserCreation] Got Auth0 access token: {access_token[:20]}...")
+            
+            # Create Auth0 user
+            users_url = f"https://{auth0_config['domain']}/api/v2/users"
+            user_payload = {
+                'email': email,
+                'connection': 'Username-Password-Authentication',
+                'email_verified': False,
+                'app_metadata': {
+                    'tenant_id': str(tenant.id),
+                    'tenant_name': tenant.name,
+                    'role': user.role,
+                    'created_by': 'admin_user_management'
+                },
+                'user_metadata': {
+                    'tenant_id': str(tenant.id),
+                    'created_via': 'admin_panel'
+                }
+            }
+            
+            headers = {
+                'Authorization': f'Bearer {access_token}',
+                'Content-Type': 'application/json'
+            }
+            
+            logger.info(f"[DirectUserCreation] Creating Auth0 user at {users_url}")
+            logger.info(f"[DirectUserCreation] User payload: {user_payload}")
+            
+            user_response = requests.post(users_url, json=user_payload, headers=headers)
+            logger.info(f"[DirectUserCreation] Auth0 user creation response status: {user_response.status_code}")
+            
+            if user_response.status_code == 201:
+                auth0_user = user_response.json()
+                auth0_user_id = auth0_user.get('user_id')
+                logger.info(f"[DirectUserCreation] Auth0 user created: {auth0_user_id}")
+                
+                # Send password reset email
+                reset_url = f"https://{auth0_config['domain']}/api/v2/tickets/password-change"
+                reset_payload = {
+                    'user_id': auth0_user_id,
+                    'connection_id': 'Username-Password-Authentication',
+                    'ttl_sec': 432000,  # 5 days
+                    'mark_email_as_verified': True,
+                    'includeEmailInRedirect': True
+                }
+                
+                logger.info(f"[DirectUserCreation] Sending password reset ticket request")
+                reset_response = requests.post(reset_url, json=reset_payload, headers=headers)
+                logger.info(f"[DirectUserCreation] Password reset response status: {reset_response.status_code}")
+                
+                if reset_response.status_code == 201:
+                    reset_data = reset_response.json()
+                    ticket_url = reset_data.get('ticket')
+                    logger.info(f"[DirectUserCreation] Password reset email sent via Auth0")
+                    logger.info(f"[DirectUserCreation] Reset ticket URL: {ticket_url}")
+                else:
+                    logger.error(f"[DirectUserCreation] Failed to send password reset: {reset_response.text}")
+                
+                return auth0_user_id
+            else:
+                logger.error(f"[DirectUserCreation] Failed to create Auth0 user: {user_response.text}")
+                return None
+                
+        except Exception as e:
+            logger.error(f"[DirectUserCreation] Auth0 integration error: {str(e)}")
+            import traceback
+            logger.error(f"[DirectUserCreation] Auth0 error traceback: {traceback.format_exc()}")
+            return None
