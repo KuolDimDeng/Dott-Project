@@ -32,6 +32,7 @@ class AdminUserListView(APIView):
     """
     List and search regular users (not admin users)
     """
+    authentication_classes = []  # Bypass default auth, use only permission class
     permission_classes = [EnhancedAdminPermission]
     pagination_class = UserPagination
     
@@ -110,6 +111,7 @@ class AdminUserDetailView(APIView):
     """
     Get, update, or delete a specific user
     """
+    authentication_classes = []  # Bypass default auth, use only permission class
     permission_classes = [EnhancedAdminPermission]
     
     @rate_limit('api')
@@ -390,6 +392,7 @@ class AdminUserStatsView(APIView):
     """
     Get user statistics for dashboard
     """
+    authentication_classes = []  # Bypass default auth, use only permission class
     permission_classes = [EnhancedAdminPermission]
     
     @rate_limit('api')
@@ -442,6 +445,7 @@ class AdminUserCreateView(APIView):
     """
     Create a new user with Auth0 integration
     """
+    authentication_classes = []  # Bypass default auth, use only permission class
     permission_classes = [EnhancedAdminPermission]
     
     @rate_limit('api')
@@ -615,6 +619,7 @@ class AdminUserBlockView(APIView):
     """
     Block or unblock a user
     """
+    authentication_classes = []  # Bypass default auth, use only permission class
     permission_classes = [EnhancedAdminPermission]
     
     @rate_limit('api')

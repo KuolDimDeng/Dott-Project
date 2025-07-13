@@ -169,6 +169,7 @@ class AdminDashboardView(APIView):
     """
     Admin dashboard statistics
     """
+    authentication_classes = []  # Bypass default auth, use only permission class
     permission_classes = [EnhancedAdminPermission]
     
     def _get_pending_feedback_count(self):
@@ -311,6 +312,7 @@ class TaxFeedbackListView(APIView):
     """
     List tax suggestion feedback for admin review
     """
+    authentication_classes = []  # Bypass default auth, use only permission class
     permission_classes = [EnhancedAdminPermission]
     
     @rate_limit('api')
@@ -379,6 +381,7 @@ class TaxFeedbackDetailView(APIView):
     """
     Update tax feedback status
     """
+    authentication_classes = []  # Bypass default auth, use only permission class
     permission_classes = [EnhancedAdminPermission]
     
     @rate_limit('api')
@@ -438,6 +441,7 @@ class AdminNotificationListView(APIView):
     """
     List all notifications for admin
     """
+    authentication_classes = []  # Bypass default auth, use only permission class
     permission_classes = [EnhancedAdminPermission]
     
     @rate_limit('api')
@@ -456,6 +460,7 @@ class CreateNotificationView(APIView):
     """
     Create a new notification
     """
+    authentication_classes = []  # Bypass default auth, use only permission class
     permission_classes = [EnhancedAdminPermission]
     
     @rate_limit('api')
@@ -502,6 +507,7 @@ class SendNotificationView(APIView):
     """
     Send a notification to recipients
     """
+    authentication_classes = []  # Bypass default auth, use only permission class
     permission_classes = [EnhancedAdminPermission]
     
     @rate_limit('api')
@@ -551,6 +557,7 @@ class NotificationTemplateListView(APIView):
     """
     List notification templates
     """
+    authentication_classes = []  # Bypass default auth, use only permission class
     permission_classes = [EnhancedAdminPermission]
     
     def get(self, request):

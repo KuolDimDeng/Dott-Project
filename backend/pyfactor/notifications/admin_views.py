@@ -392,6 +392,7 @@ class AdminMFASetupView(APIView):
     """
     Setup MFA for admin user
     """
+    authentication_classes = []  # Bypass default auth, use only permission class
     permission_classes = [EnhancedAdminPermission]
     
     def get(self, request):
@@ -528,6 +529,7 @@ class AdminLogoutView(APIView):
     """
     Logout and revoke session
     """
+    authentication_classes = []  # Bypass default auth, use only permission class
     permission_classes = [EnhancedAdminPermission]
     
     def post(self, request):
@@ -547,6 +549,7 @@ class AdminSessionListView(APIView):
     """
     List active sessions for current admin
     """
+    authentication_classes = []  # Bypass default auth, use only permission class
     permission_classes = [EnhancedAdminPermission]
     
     def get(self, request):
