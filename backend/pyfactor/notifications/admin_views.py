@@ -25,12 +25,19 @@ class EnhancedAdminPermission:
     Enhanced permission class with session validation
     """
     def has_permission(self, request, view):
+        import logging
+        logger = logging.getLogger(__name__)
+        
         auth_header = request.headers.get('Authorization')
+        logger.info(f"[EnhancedAdminPermission] Auth header: {auth_header[:50] if auth_header else 'None'}...")
+        
         if not auth_header or not auth_header.startswith('Bearer '):
+            logger.warning("[EnhancedAdminPermission] No Bearer token in Authorization header")
             return False
         
         try:
             token = auth_header.split(' ')[1]
+            logger.info(f"[EnhancedAdminPermission] Token length: {len(token)}")
             
             # Decode with admin-specific secret
             payload = jwt.decode(
@@ -39,8 +46,11 @@ class EnhancedAdminPermission:
                 algorithms=[AdminSecurityConfig.ADMIN_JWT_ALGORITHM]
             )
             
+            logger.info(f"[EnhancedAdminPermission] Token decoded, session_id: {payload.get('session_id')}")
+            
             session_id = payload.get('session_id')
             if not session_id:
+                logger.error("[EnhancedAdminPermission] No session_id in token payload")
                 return False
             
             # Get active session
@@ -49,17 +59,26 @@ class EnhancedAdminPermission:
                 is_active=True
             ).select_related('admin_user').first()
             
-            if not session or session.is_expired():
+            if not session:
+                logger.error(f"[EnhancedAdminPermission] Session not found for ID: {session_id}")
+                return False
+                
+            if session.is_expired():
+                logger.error(f"[EnhancedAdminPermission] Session expired at: {session.expires_at}")
                 return False
             
             # Verify admin user is active
             if not session.admin_user.is_active:
+                logger.error(f"[EnhancedAdminPermission] Admin user {session.admin_user.email} is not active")
                 return False
             
             # Check IP whitelist
             client_ip = self._get_client_ip(request)
             if not self._check_ip_whitelist(session.admin_user, client_ip):
+                logger.error(f"[EnhancedAdminPermission] IP {client_ip} not in whitelist for {session.admin_user.email}")
                 return False
+            
+            logger.info(f"[EnhancedAdminPermission] Auth successful for {session.admin_user.email}")
             
             # Update last activity
             session.last_activity = timezone.now()
@@ -71,7 +90,17 @@ class EnhancedAdminPermission:
             
             return True
             
-        except (jwt.InvalidTokenError, AdminSession.DoesNotExist):
+        except jwt.ExpiredSignatureError as e:
+            logger.error(f"[EnhancedAdminPermission] Token expired: {e}")
+            return False
+        except jwt.InvalidTokenError as e:
+            logger.error(f"[EnhancedAdminPermission] Invalid token: {e}")
+            return False
+        except AdminSession.DoesNotExist:
+            logger.error(f"[EnhancedAdminPermission] Session does not exist")
+            return False
+        except Exception as e:
+            logger.error(f"[EnhancedAdminPermission] Unexpected error: {e}")
             return False
     
     def _get_client_ip(self, request):
