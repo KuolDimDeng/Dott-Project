@@ -182,6 +182,9 @@ AUTH0_DOMAIN = os.getenv('AUTH0_DOMAIN', 'auth.dottapps.com')
 AUTH0_ISSUER_DOMAIN = os.getenv('AUTH0_ISSUER_DOMAIN', AUTH0_DOMAIN)  # Default to AUTH0_DOMAIN if not specified
 AUTH0_CLIENT_ID = os.getenv('AUTH0_CLIENT_ID', '9i7GSU4bgh6hFtMXnQACwiRxTudpuOSF')
 AUTH0_CLIENT_SECRET = os.getenv('AUTH0_CLIENT_SECRET', '')
+# Auth0 Management API credentials for user creation and management
+AUTH0_MANAGEMENT_CLIENT_ID = os.getenv('AUTH0_MANAGEMENT_CLIENT_ID', '')
+AUTH0_MANAGEMENT_CLIENT_SECRET = os.getenv('AUTH0_MANAGEMENT_CLIENT_SECRET', '')
 # Use environment variable for audience with sensible default (UPDATED for new Dott API)
 AUTH0_AUDIENCE = os.getenv('AUTH0_AUDIENCE', 'https://api.dottapps.com')
 
