@@ -41,7 +41,9 @@ import {
   PlusIcon,
   MinusIcon,
   ArrowsPointingOutIcon,
-  MagnifyingGlassIcon
+  MagnifyingGlassIcon,
+  ClockIcon,
+  DocumentIcon
 } from '@heroicons/react/24/outline';
 import PayStubViewer from '@/components/PayStubViewer';
 
@@ -979,7 +981,8 @@ const MyAccount = ({ userData }) => {
     }));
   };
 
-  const renderEmploymentTab = () => {
+  // New Pay Tab (renamed from Employment, without documents)
+  const renderPayTab = () => {
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-6">
         {/* Banking Information */}
@@ -1256,75 +1259,181 @@ const MyAccount = ({ userData }) => {
           )}
         </div>
 
-        {/* Documents */}
-        <div>
-          <button
-            onClick={() => toggleSection('documents')}
-            className="w-full flex items-center justify-between mb-4 group hover:bg-gray-50 p-2 rounded-lg transition-colors"
-          >
-            <div className="text-left">
-              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                <AcademicCapIcon className="w-5 h-5 mr-2 text-orange-600" />
-                Employment Documents
-              </h3>
-              <p className="text-sm text-gray-600 mt-1">
-                Important employment and tax documents
-              </p>
-            </div>
-            <div className="flex items-center text-gray-500">
-              {expandedSections.documents ? (
-                <>
-                  <span className="text-xs mr-2">Hide</span>
-                  <ChevronUpIcon className="w-5 h-5" />
-                </>
-              ) : (
-                <>
-                  <span className="text-xs mr-2">Show</span>
-                  <ChevronDownIcon className="w-5 h-5" />
-                </>
-              )}
-            </div>
-          </button>
-          
-          {expandedSections.documents && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4 pl-7">
-            <button className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-left">
-              <div>
-                <p className="font-medium text-gray-900">W-2 Forms</p>
-                <p className="text-sm text-gray-600">Year-end tax statements</p>
-              </div>
-              <span className="text-gray-400">→</span>
-            </button>
-            <button className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-left">
-              <div>
-                <p className="font-medium text-gray-900">W-4 Form</p>
-                <p className="text-sm text-gray-600">Tax withholding certificate</p>
-              </div>
-              <span className="text-gray-400">→</span>
-            </button>
-            <button className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-left">
-              <div>
-                <p className="font-medium text-gray-900">I-9 Form</p>
-                <p className="text-sm text-gray-600">Employment eligibility</p>
-              </div>
-              <span className="text-gray-400">→</span>
-            </button>
-            <button className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-left">
-              <div>
-                <p className="font-medium text-gray-900">Direct Deposit Form</p>
-                <p className="text-sm text-gray-600">Payment authorization</p>
-              </div>
-              <span className="text-gray-400">→</span>
-            </button>
-            </div>
-          )}
-        </div>
-
         {/* Save Button */}
         <div className="flex justify-end pt-4">
           <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-            Save Employment Information
+            Save Pay Information
           </button>
+        </div>
+      </div>
+    );
+  };
+
+  // New Documents Tab (moved from Pay tab)
+  const renderDocumentsTab = () => {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+            <DocumentIcon className="w-6 h-6 mr-2 text-blue-600" />
+            Employment Documents
+          </h2>
+          <p className="text-gray-600 mt-1">
+            Access and download your important employment and tax documents
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <button className="flex items-center justify-between p-6 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-left border border-gray-200 hover:border-blue-300">
+            <div>
+              <p className="font-semibold text-gray-900">W-2 Forms</p>
+              <p className="text-sm text-gray-600 mt-1">Year-end tax statements</p>
+              <p className="text-xs text-gray-500 mt-1">Download annual tax documents</p>
+            </div>
+            <span className="text-blue-600 text-xl">→</span>
+          </button>
+          
+          <button className="flex items-center justify-between p-6 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-left border border-gray-200 hover:border-blue-300">
+            <div>
+              <p className="font-semibold text-gray-900">W-4 Form</p>
+              <p className="text-sm text-gray-600 mt-1">Tax withholding certificate</p>
+              <p className="text-xs text-gray-500 mt-1">Update tax withholding preferences</p>
+            </div>
+            <span className="text-blue-600 text-xl">→</span>
+          </button>
+          
+          <button className="flex items-center justify-between p-6 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-left border border-gray-200 hover:border-blue-300">
+            <div>
+              <p className="font-semibold text-gray-900">I-9 Form</p>
+              <p className="text-sm text-gray-600 mt-1">Employment eligibility verification</p>
+              <p className="text-xs text-gray-500 mt-1">Verify work authorization status</p>
+            </div>
+            <span className="text-blue-600 text-xl">→</span>
+          </button>
+          
+          <button className="flex items-center justify-between p-6 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-left border border-gray-200 hover:border-blue-300">
+            <div>
+              <p className="font-semibold text-gray-900">Direct Deposit Form</p>
+              <p className="text-sm text-gray-600 mt-1">Payment authorization</p>
+              <p className="text-xs text-gray-500 mt-1">Update banking information</p>
+            </div>
+            <span className="text-blue-600 text-xl">→</span>
+          </button>
+          
+          <button className="flex items-center justify-between p-6 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-left border border-gray-200 hover:border-blue-300">
+            <div>
+              <p className="font-semibold text-gray-900">Pay Stubs</p>
+              <p className="text-sm text-gray-600 mt-1">Current and historical pay stubs</p>
+              <p className="text-xs text-gray-500 mt-1">View detailed payment history</p>
+            </div>
+            <span className="text-blue-600 text-xl">→</span>
+          </button>
+          
+          <button 
+            onClick={() => setShowPayStubViewer(true)}
+            className="flex items-center justify-between p-6 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors text-left border border-blue-200 hover:border-blue-300"
+          >
+            <div>
+              <p className="font-semibold text-blue-900">Latest Pay Stub</p>
+              <p className="text-sm text-blue-700 mt-1">View most recent payment</p>
+              <p className="text-xs text-blue-600 mt-1">Interactive pay stub viewer</p>
+            </div>
+            <span className="text-blue-600 text-xl">→</span>
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // New Timesheet Tab (available for ALL employees, not just hourly)
+  const renderTimesheetTab = () => {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+            <ClockIcon className="w-6 h-6 mr-2 text-green-600" />
+            Timesheet
+          </h2>
+          <p className="text-gray-600 mt-1">
+            Track your time and manage attendance records
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Current Week */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-gray-900">Current Week</h3>
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-sm font-medium text-gray-700">Total Hours This Week</span>
+                <span className="text-2xl font-bold text-green-600">40.0</span>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Monday</span>
+                  <span className="text-gray-900">8.0 hrs</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Tuesday</span>
+                  <span className="text-gray-900">8.0 hrs</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Wednesday</span>
+                  <span className="text-gray-900">8.0 hrs</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Thursday</span>
+                  <span className="text-gray-900">8.0 hrs</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Friday</span>
+                  <span className="text-gray-900">8.0 hrs</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-gray-900">Quick Actions</h3>
+            <div className="space-y-3">
+              <button className="w-full p-4 text-left bg-green-50 rounded-lg hover:bg-green-100 transition-colors border border-green-200">
+                <div className="font-medium text-green-900">Clock In/Out</div>
+                <div className="text-sm text-green-700 mt-1">Record your work time</div>
+              </button>
+              
+              <button className="w-full p-4 text-left bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors border border-blue-200">
+                <div className="font-medium text-blue-900">View Timesheet</div>
+                <div className="text-sm text-blue-700 mt-1">See detailed time records</div>
+              </button>
+              
+              <button className="w-full p-4 text-left bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200">
+                <div className="font-medium text-gray-900">Time Off Request</div>
+                <div className="text-sm text-gray-700 mt-1">Submit vacation or sick leave</div>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Recent Activity */}
+        <div className="mt-8">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Activity</h3>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div>
+                <span className="text-sm font-medium text-gray-900">Clock In</span>
+                <span className="text-sm text-gray-600 ml-2">Today at 9:00 AM</span>
+              </div>
+              <span className="text-green-600 text-sm">Active</span>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div>
+                <span className="text-sm font-medium text-gray-900">Clock Out</span>
+                <span className="text-sm text-gray-600 ml-2">Yesterday at 5:00 PM</span>
+              </div>
+              <span className="text-gray-600 text-sm">8.0 hrs</span>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -1356,7 +1465,7 @@ const MyAccount = ({ userData }) => {
 
   // Load organization data when tab is selected
   useEffect(() => {
-    if (selectedTab === 2) { // Organization tab
+    if (selectedTab === 4) { // Organization tab (moved to position 4)
       fetchOrganizationData();
     }
   }, [selectedTab]);
@@ -1681,11 +1790,13 @@ const MyAccount = ({ userData }) => {
 
   const tabs = [
     { id: 0, label: 'Profile', icon: UserIcon },
-    { id: 1, label: 'Employment', icon: BriefcaseIcon },
-    { id: 2, label: 'Organization', icon: BuildingOfficeIcon },
-    { id: 3, label: 'Security', icon: ShieldCheckIcon },
-    { id: 4, label: 'Preferences', icon: CogIcon },
-    { id: 5, label: 'Legal', icon: ScaleIcon },
+    { id: 1, label: 'Pay', icon: BanknotesIcon },
+    { id: 2, label: 'Documents', icon: DocumentIcon },
+    { id: 3, label: 'Timesheet', icon: ClockIcon },
+    { id: 4, label: 'Organization', icon: BuildingOfficeIcon },
+    { id: 5, label: 'Security', icon: ShieldCheckIcon },
+    { id: 6, label: 'Preferences', icon: CogIcon },
+    { id: 7, label: 'Legal', icon: ScaleIcon },
   ];
 
   return (
@@ -1742,11 +1853,13 @@ const MyAccount = ({ userData }) => {
         {/* Tab Content */}
         <div>
           {selectedTab === 0 && renderProfileTab()}
-          {selectedTab === 1 && renderEmploymentTab()}
-          {selectedTab === 2 && renderOrganizationTab()}
-          {selectedTab === 3 && renderSecurityTab()}
-          {selectedTab === 4 && renderPreferencesTab()}
-          {selectedTab === 5 && renderLegalTab()}
+          {selectedTab === 1 && renderPayTab()}
+          {selectedTab === 2 && renderDocumentsTab()}
+          {selectedTab === 3 && renderTimesheetTab()}
+          {selectedTab === 4 && renderOrganizationTab()}
+          {selectedTab === 5 && renderSecurityTab()}
+          {selectedTab === 6 && renderPreferencesTab()}
+          {selectedTab === 7 && renderLegalTab()}
         </div>
       </div>
 
