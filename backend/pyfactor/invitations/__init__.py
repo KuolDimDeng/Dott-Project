@@ -1,0 +1,1 @@
+# Invitations app for sending business owner invitations via email and WhatsApp

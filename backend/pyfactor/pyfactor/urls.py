@@ -115,6 +115,9 @@ urlpatterns = [
     # Calendar/Events API routes
     path('api/calendar/', include('events.urls')),
     
+    # Invitations API routes
+    path('api/invitations/', include('invitations.urls')),
+    
     # Main app routes
     path('', include('users.urls')),
     

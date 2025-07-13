@@ -571,7 +571,17 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
             # Validate request data
             email = request.data.get('email')
             role = request.data.get('role', 'USER')
-            permissions = request.data.get('permissions', [])
+            permissions_raw = request.data.get('permissions', [])
+            
+            # Handle permissions - could be string or list
+            import json
+            if isinstance(permissions_raw, str):
+                try:
+                    permissions = json.loads(permissions_raw)
+                except json.JSONDecodeError:
+                    permissions = []
+            else:
+                permissions = permissions_raw or []
             create_employee = request.data.get('create_employee', False)
             link_employee = request.data.get('link_employee', False)
             employee_id = request.data.get('employee_id')
