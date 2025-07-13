@@ -78,6 +78,9 @@ class AdminUserListView(APIView):
             # Serialize users
             users_data = []
             for user in page:
+                # Log user ID type and value for debugging
+                logger.info(f"[AdminUserListView] User ID: {user.id}, Type: {type(user.id)}, User: {user.email}")
+                
                 user_data = {
                     'id': str(user.id),
                     'email': user.email,
@@ -91,6 +94,20 @@ class AdminUserListView(APIView):
                     'onboarding_completed': getattr(user, 'onboarding_completed', False),
                     'subscription_plan': getattr(user, 'subscription_plan', 'free'),
                     'tenant_id': str(user.tenant_id) if hasattr(user, 'tenant_id') and user.tenant_id else None,
+                    # Try to get company name and country from various sources
+                    'company_name': (
+                        getattr(user, 'company_name', None) or
+                        (user.tenant.name if hasattr(user, 'tenant') and user.tenant else None) or
+                        (user.businesses.first().name if hasattr(user, 'businesses') and user.businesses.exists() else None)
+                    ),
+                    'country': (
+                        getattr(user, 'country', None) or
+                        (user.tenant.country if hasattr(user, 'tenant') and user.tenant and hasattr(user.tenant, 'country') else None)
+                    ),
+                    'picture': None,
+                    'plan_name': getattr(user, 'subscription_plan', 'Basic').capitalize(),
+                    'created_at': user.date_joined.isoformat() if user.date_joined else None,
+                    'subscription_status': 'active' if user.is_active else 'inactive',
                 }
                 users_data.append(user_data)
             
