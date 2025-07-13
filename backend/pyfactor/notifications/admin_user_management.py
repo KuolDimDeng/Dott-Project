@@ -94,7 +94,16 @@ class AdminUserListView(APIView):
                 }
                 users_data.append(user_data)
             
-            return paginator.get_paginated_response(users_data)
+            # Return custom format expected by frontend
+            return Response({
+                'users': users_data,
+                'pagination': {
+                    'current_page': int(request.query_params.get('page', 1)),
+                    'page_size': paginator.page_size,
+                    'total_count': paginator.page.paginator.count,
+                    'total_pages': paginator.page.paginator.num_pages,
+                }
+            })
             
         except Exception as e:
             log_security_event(
