@@ -202,6 +202,16 @@ function EmployeeManagement({ onNavigate }) {
   const filteredSupervisors = useMemo(() => {
     console.log('🔍 [DEBUG] Basic Employees Raw Data:', basicEmployees);
     console.log('🔍 [DEBUG] Processing basic employees count:', basicEmployees.length);
+    if (basicEmployees.length > 0) {
+      console.log('🔍 [DEBUG] First employee data structure:', basicEmployees[0]);
+      console.log('🔍 [DEBUG] All employees is_supervisor values:', 
+        basicEmployees.map(emp => ({
+          name: `${emp.first_name} ${emp.last_name}`,
+          is_supervisor: emp.is_supervisor,
+          active: emp.active
+        }))
+      );
+    }
     
     logger.info('🔍 [EmployeeManagement] Filtering supervisors:', {
       totalBasicEmployees: basicEmployees.length,
