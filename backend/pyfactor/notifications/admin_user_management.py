@@ -331,8 +331,21 @@ class AdminUserDetailView(APIView):
                 if auth0_sub:
                     self._delete_auth0_user(auth0_sub)
                 
-                # Delete user (will cascade to all related models)
-                user.delete()
+                # Delete user using the safe deletion script that handles all dependencies
+                from scripts.user_deletion_utils import delete_user_safely
+                
+                try:
+                    success, message = delete_user_safely(user.email)
+                    if not success:
+                        logger.error(f"Failed to delete user {email}: {message}")
+                        return Response({
+                            'error': f'Failed to delete user: {message}'
+                        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                except Exception as e:
+                    logger.error(f"Error deleting user {email}: {str(e)}")
+                    return Response({
+                        'error': f'Failed to delete user: {str(e)}'
+                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
                 
                 log_security_event(
                     request.admin_user, 'user_delete',
