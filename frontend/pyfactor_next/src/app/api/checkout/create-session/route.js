@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { fetchAuthSession, getCurrentUser  } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
+import { isDevelopingCountry } from '@/services/countryDetectionService';
 
 // Initialize Stripe with your secret key (use environment variable in production)
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY || 'sk_test_51ODoxjC4RUQfzaQvfxg5vW6ROiYQx8AFhGI4Qng0VqUOYqmfHCxM9kZ7u75GF0fwgixpR7vSbT5AXpMz1OYGcWiR00lGTQRQWF';
@@ -10,12 +11,22 @@ const stripe = new Stripe(stripeSecretKey);
 // Map of Stripe price IDs for different plans and billing cycles
 const PRICE_IDS = {
   professional: {
-    monthly: 'price_1ODp08C4RUQfzaQv1KdILW1U',
-    yearly: 'price_1ODp08C4RUQfzaQv1AcXLAC7',
+    monthly: process.env.STRIPE_PRICE_PROFESSIONAL_MONTHLY || 'price_1ODp08C4RUQfzaQv1KdILW1U',
+    sixMonth: process.env.STRIPE_PRICE_PROFESSIONAL_6MONTH || 'price_1ODp08C4RUQfzaQv1SixMnth',
+    yearly: process.env.STRIPE_PRICE_PROFESSIONAL_YEARLY || 'price_1ODp08C4RUQfzaQv1AcXLAC7',
+    // Discounted prices for developing countries (50% off)
+    monthly_discounted: process.env.STRIPE_PRICE_PROFESSIONAL_MONTHLY_DISCOUNTED || 'price_1ODp08C4RUQfzaQv1KdILW1U_dev',
+    sixMonth_discounted: process.env.STRIPE_PRICE_PROFESSIONAL_6MONTH_DISCOUNTED || 'price_1ODp08C4RUQfzaQv1SixMnth_dev',
+    yearly_discounted: process.env.STRIPE_PRICE_PROFESSIONAL_YEARLY_DISCOUNTED || 'price_1ODp08C4RUQfzaQv1AcXLAC7_dev',
   },
   enterprise: {
-    monthly: 'price_1ODp2LC4RUQfzaQv5oMDFy7S',
-    yearly: 'price_1ODp2LC4RUQfzaQv2O9UaBwD',
+    monthly: process.env.STRIPE_PRICE_ENTERPRISE_MONTHLY || 'price_1ODp2LC4RUQfzaQv5oMDFy7S',
+    sixMonth: process.env.STRIPE_PRICE_ENTERPRISE_6MONTH || 'price_1ODp2LC4RUQfzaQv5SixMnth',
+    yearly: process.env.STRIPE_PRICE_ENTERPRISE_YEARLY || 'price_1ODp2LC4RUQfzaQv2O9UaBwD',
+    // Discounted prices for developing countries (50% off)
+    monthly_discounted: process.env.STRIPE_PRICE_ENTERPRISE_MONTHLY_DISCOUNTED || 'price_1ODp2LC4RUQfzaQv5oMDFy7S_dev',
+    sixMonth_discounted: process.env.STRIPE_PRICE_ENTERPRISE_6MONTH_DISCOUNTED || 'price_1ODp2LC4RUQfzaQv5SixMnth_dev',
+    yearly_discounted: process.env.STRIPE_PRICE_ENTERPRISE_YEARLY_DISCOUNTED || 'price_1ODp2LC4RUQfzaQv2O9UaBwD_dev',
   }
 };
 
@@ -51,10 +62,30 @@ export async function POST(request) {
     const { 
       planId = 'professional', 
       billingCycle = 'monthly',
-      priceId = null // Allow direct price ID to be passed
+      priceId = null, // Allow direct price ID to be passed
+      country = null // Allow country to be passed from frontend
     } = requestData;
     
-    logger.debug('Checkout request data:', { planId, billingCycle, priceId });
+    logger.debug('Checkout request data:', { planId, billingCycle, priceId, country });
+    
+    // Determine user's country for regional pricing
+    let userCountry = country; // Use passed country first
+    
+    // Try to get country from user attributes if not provided
+    if (!userCountry && user.attributes) {
+      userCountry = user.attributes['custom:businesscountry'] || 
+                   user.attributes['custom:country'] ||
+                   user.attributes.country;
+    }
+    
+    // Check if user is eligible for developing country discount
+    const isEligibleForDiscount = userCountry && isDevelopingCountry(userCountry);
+    
+    logger.debug('Regional pricing check:', { 
+      userCountry, 
+      isEligibleForDiscount,
+      discountPercentage: isEligibleForDiscount ? 50 : 0
+    });
     
     // Determine which price ID to use
     let finalPriceId;
@@ -66,7 +97,14 @@ export async function POST(request) {
     } else {
       // Otherwise, lookup the price ID from our mapping
       const normalizedPlan = planId.toLowerCase();
-      const normalizedCycle = billingCycle === 'yearly' ? 'yearly' : 'monthly';
+      
+      // Normalize billing cycle to match our price map keys
+      let normalizedCycle = 'monthly';
+      if (billingCycle === 'yearly' || billingCycle === 'annual') {
+        normalizedCycle = 'yearly';
+      } else if (billingCycle === 'sixMonth' || billingCycle === '6month') {
+        normalizedCycle = 'sixMonth';
+      }
       
       if (!PRICE_IDS[normalizedPlan]) {
         return NextResponse.json(
@@ -75,11 +113,17 @@ export async function POST(request) {
         );
       }
       
-      finalPriceId = PRICE_IDS[normalizedPlan][normalizedCycle];
+      // Determine if we should use discounted price
+      const priceKey = isEligibleForDiscount ? `${normalizedCycle}_discounted` : normalizedCycle;
+      
+      finalPriceId = PRICE_IDS[normalizedPlan][priceKey] || PRICE_IDS[normalizedPlan][normalizedCycle];
+      
       logger.debug('Using mapped price ID:', { 
         plan: normalizedPlan, 
         cycle: normalizedCycle, 
-        priceId: finalPriceId 
+        priceKey,
+        priceId: finalPriceId,
+        isDiscounted: isEligibleForDiscount
       });
     }
     
@@ -110,6 +154,9 @@ export async function POST(request) {
         userId: user.username,
         planId: requestData.planId || 'professional',
         billingCycle: requestData.billingCycle || 'monthly',
+        country: userCountry || 'unknown',
+        discountApplied: isEligibleForDiscount ? 'true' : 'false',
+        discountPercentage: isEligibleForDiscount ? '50' : '0',
         timestamp: new Date().toISOString()
       },
       client_reference_id: user.username,

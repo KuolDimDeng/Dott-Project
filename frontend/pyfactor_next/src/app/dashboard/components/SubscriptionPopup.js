@@ -107,6 +107,9 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
       
       logger.debug('Creating checkout session with:', { planId, billingCycle: billingCycleOption, priceId });
       
+      // Get user's country for regional pricing
+      const userCountry = userData?.business_country || userData?.country || null;
+      
       // Call API to create a Stripe checkout session
       const response = await fetch('/api/checkout/create-session', {
         method: 'POST',
@@ -114,7 +117,8 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
         body: JSON.stringify({ 
           priceId,
           planId,
-          billingCycle: billingCycleOption 
+          billingCycle: billingCycleOption,
+          country: userCountry
         })
       });
       
@@ -152,15 +156,17 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
 
   // Helper function to get the appropriate Stripe price ID
   const getPriceIdForPlan = (planId, cycle) => {
-    // Using Stripe test price IDs - these should be changed to your actual IDs in production
+    // Use environment variables for Stripe price IDs, fallback to test IDs
     const priceMap = {
       professional: {
-        monthly: 'price_1ODp08C4RUQfzaQv1KdILW1U', // Monthly Professional Plan (Test ID)
-        yearly: 'price_1ODp08C4RUQfzaQv1AcXLAC7'   // Annual Professional Plan (Test ID)
+        monthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_PROFESSIONAL_MONTHLY || 'price_1ODp08C4RUQfzaQv1KdILW1U',
+        sixMonth: process.env.NEXT_PUBLIC_STRIPE_PRICE_PROFESSIONAL_6MONTH || 'price_1ODp08C4RUQfzaQv1SixMnth',
+        yearly: process.env.NEXT_PUBLIC_STRIPE_PRICE_PROFESSIONAL_YEARLY || 'price_1ODp08C4RUQfzaQv1AcXLAC7'
       },
       enterprise: {
-        monthly: 'price_1ODp2LC4RUQfzaQv5oMDFy7S', // Monthly Enterprise Plan (Test ID)
-        yearly: 'price_1ODp2LC4RUQfzaQv2O9UaBwD'   // Annual Enterprise Plan (Test ID)
+        monthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_ENTERPRISE_MONTHLY || 'price_1ODp2LC4RUQfzaQv5oMDFy7S',
+        sixMonth: process.env.NEXT_PUBLIC_STRIPE_PRICE_ENTERPRISE_6MONTH || 'price_1ODp2LC4RUQfzaQv5SixMnth',
+        yearly: process.env.NEXT_PUBLIC_STRIPE_PRICE_ENTERPRISE_YEARLY || 'price_1ODp2LC4RUQfzaQv2O9UaBwD'
       }
     };
     
