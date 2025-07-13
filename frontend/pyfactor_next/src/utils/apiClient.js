@@ -1501,7 +1501,7 @@ export const hrApi = {
       const pathParts = window.location.pathname.split('/');
       const tenantId = pathParts[1]; // Assuming /<tenantId>/dashboard pattern
       
-      logger.info('🚀 [HRApi] Getting basic employee list for dropdowns v2', { tenantId });
+      logger.info('🚀 [HRApi] Getting basic employee list for dropdowns - deployed 2025-07-13 12:16', { tenantId });
       
       const response = await fetch('/api/hr/v2/employees', {
         method: 'GET',
