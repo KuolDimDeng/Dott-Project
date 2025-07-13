@@ -28,10 +28,29 @@ Ensure these environment variables are set in production:
 - `STRIPE_SECRET_KEY` - Your Stripe secret key
 - `STRIPE_PUBLISHABLE_KEY` - Your Stripe publishable key (if needed)
 
-### 3. Test the Implementation
+### 3. Migrate Existing Employee SSNs
+**IMPORTANT**: If you have existing employees with SSNs stored locally, migrate them to Stripe:
+
+```bash
+# Option 1: Using Django (if in Docker container)
+python manage.py shell < scripts/migrate_existing_ssns_to_stripe.py
+
+# Option 2: Standalone script (requires DATABASE_URL and STRIPE_SECRET_KEY env vars)
+python scripts/migrate_existing_ssns_to_stripe_prod.py
+```
+
+The migration script will:
+- Find all employees with locally stored SSNs
+- Create Stripe Connect accounts for each employee
+- Transfer SSNs to Stripe securely
+- Clear local SSN fields after successful migration
+- Provide a detailed summary of the migration
+
+### 4. Test the Implementation
 1. Create a new employee with SSN
 2. Verify in Stripe Dashboard that a Connect account was created
 3. Check that only last 4 digits are stored in database
+4. For migrated employees, verify their SSNs are now in Stripe
 
 ## Key Features
 - Full SSN stored securely in Stripe Connect
