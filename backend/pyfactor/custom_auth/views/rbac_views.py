@@ -568,6 +568,9 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
     def create_user(self, request):
         """Create user directly in Auth0 and backend"""
         try:
+            logger.info(f"[DirectUserCreation] Raw request data: {request.data}")
+            logger.info(f"[DirectUserCreation] Request data type: {type(request.data)}")
+            
             # Validate request data
             email = request.data.get('email')
             role = request.data.get('role', 'USER')
@@ -585,7 +588,16 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
             create_employee = request.data.get('create_employee', False)
             link_employee = request.data.get('link_employee', False)
             employee_id = request.data.get('employee_id')
-            employee_data = request.data.get('employee_data', {})
+            employee_data_raw = request.data.get('employee_data', {})
+            
+            # Handle employee_data - could be string or dict
+            if isinstance(employee_data_raw, str):
+                try:
+                    employee_data = json.loads(employee_data_raw) if employee_data_raw else {}
+                except json.JSONDecodeError:
+                    employee_data = {}
+            else:
+                employee_data = employee_data_raw or {}
             
             # Validation
             if not email:
@@ -645,21 +657,37 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
             
             # Create page permissions
             from custom_auth.models import UserPageAccess, PagePermission
-            for perm in permissions:
-                page_id = perm.get('pageId')
-                if page_id:
-                    try:
-                        page = PagePermission.objects.get(id=page_id)
-                        UserPageAccess.objects.create(
-                            user=user,
-                            page=page,
-                            can_read=perm.get('canRead', True),
-                            can_write=perm.get('canWrite', False),
-                            can_edit=perm.get('canEdit', False),
-                            can_delete=perm.get('canDelete', False)
-                        )
-                    except PagePermission.DoesNotExist:
-                        logger.warning(f"Page permission {page_id} not found")
+            logger.info(f"[DirectUserCreation] Processing permissions: {permissions}, type: {type(permissions)}")
+            
+            try:
+                # Ensure permissions is a list
+                if not isinstance(permissions, list):
+                    logger.warning(f"[DirectUserCreation] Permissions is not a list: {type(permissions)}")
+                    permissions = []
+                
+                for perm in permissions:
+                    # Skip if perm is not a dict
+                    if not isinstance(perm, dict):
+                        logger.warning(f"[DirectUserCreation] Skipping non-dict permission: {perm}")
+                        continue
+                        
+                    page_id = perm.get('pageId')
+                    if page_id:
+                        try:
+                            page = PagePermission.objects.get(id=page_id)
+                            UserPageAccess.objects.create(
+                                user=user,
+                                page=page,
+                                can_read=perm.get('canRead', True),
+                                can_write=perm.get('canWrite', False),
+                                can_edit=perm.get('canEdit', False),
+                                can_delete=perm.get('canDelete', False)
+                            )
+                        except PagePermission.DoesNotExist:
+                            logger.warning(f"Page permission {page_id} not found")
+            except Exception as perm_error:
+                logger.error(f"[DirectUserCreation] Error processing permissions: {str(perm_error)}")
+                # Don't fail user creation just because of permissions
             
             # Link to existing employee or create new one
             if link_employee and employee:
