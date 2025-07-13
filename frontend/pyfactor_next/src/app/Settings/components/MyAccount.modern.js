@@ -1397,33 +1397,36 @@ const MyAccount = ({ userData }) => {
   };
 
   // Render a single employee card
-  const renderEmployeeCard = (employee, level = 0) => {
+  const renderEmployeeCard = (employee, isOwner = false) => {
     const initials = generateInitials(employee.first_name, employee.last_name, employee.full_name);
     const isHovered = hoveredEmployee === employee.id;
     
     return (
-      <div key={employee.id} className={`relative ${level > 0 ? 'ml-8' : ''}`}>
-        {/* Connecting line from parent */}
-        {level > 0 && (
-          <div className="absolute -left-8 top-6 w-8 h-px bg-gray-300"></div>
-        )}
-        
-        {/* Vertical line for children */}
-        {employee.children && employee.children.length > 0 && (
-          <div className="absolute left-6 top-12 w-px bg-gray-300" 
-               style={{ height: `${employee.children.length * 120 - 20}px` }}></div>
-        )}
-        
+      <div key={employee.id} className="flex flex-col items-center">
         {/* Employee Card */}
         <div 
-          className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4 hover:shadow-md transition-all duration-200 hover:border-blue-300 cursor-pointer relative"
+          className={`bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-all duration-200 hover:border-blue-300 cursor-pointer relative ${
+            isOwner ? 'border-blue-500 shadow-lg' : ''
+          }`}
           onMouseEnter={() => setHoveredEmployee(employee.id)}
           onMouseLeave={() => setHoveredEmployee(null)}
+          style={{ minWidth: '280px', maxWidth: '320px' }}
         >
+          {/* Owner Badge */}
+          {isOwner && (
+            <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
+              <span className="bg-blue-600 text-white text-xs px-3 py-1 rounded-full font-semibold">
+                Owner
+              </span>
+            </div>
+          )}
+          
           <div className="flex items-start space-x-4">
             {/* Avatar */}
             <div className="flex-shrink-0">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+              <div className={`w-12 h-12 bg-gradient-to-br ${
+                isOwner ? 'from-yellow-500 to-orange-600' : 'from-blue-500 to-indigo-600'
+              } rounded-full flex items-center justify-center text-white font-semibold text-sm`}>
                 {initials}
               </div>
             </div>
@@ -1452,7 +1455,7 @@ const MyAccount = ({ userData }) => {
                 {employee.email && (
                   <div className="flex items-center">
                     <EnvelopeIcon className="w-4 h-4 mr-1" />
-                    <span>{employee.email}</span>
+                    <span className="truncate">{employee.email}</span>
                   </div>
                 )}
                 {employee.phone_number && (
@@ -1471,6 +1474,7 @@ const MyAccount = ({ userData }) => {
               <div className="space-y-2">
                 <div className="font-semibold border-b border-gray-700 pb-2">
                   {employee.first_name} {employee.last_name}
+                  {isOwner && <span className="ml-2 text-yellow-400">(Owner)</span>}
                 </div>
                 <div><span className="text-gray-300">Position:</span> {employee.job_title || employee.position || 'Employee'}</div>
                 <div><span className="text-gray-300">Department:</span> {employee.department || 'General'}</div>
@@ -1484,9 +1488,6 @@ const MyAccount = ({ userData }) => {
                 {employee.hire_date && (
                   <div><span className="text-gray-300">Hire Date:</span> {new Date(employee.hire_date).toLocaleDateString()}</div>
                 )}
-                {employee.salary && (
-                  <div><span className="text-gray-300">Salary:</span> ${parseFloat(employee.salary).toLocaleString()}</div>
-                )}
                 {employee.children && employee.children.length > 0 && (
                   <div><span className="text-gray-300">Direct Reports:</span> {employee.children.length}</div>
                 )}
@@ -1499,10 +1500,29 @@ const MyAccount = ({ userData }) => {
           )}
         </div>
         
-        {/* Render children */}
+        {/* Vertical line down to children */}
         {employee.children && employee.children.length > 0 && (
-          <div className="ml-4">
-            {employee.children.map(child => renderEmployeeCard(child, level + 1))}
+          <div className="w-px bg-gray-300 h-8"></div>
+        )}
+        
+        {/* Render children horizontally */}
+        {employee.children && employee.children.length > 0 && (
+          <div className="flex flex-col items-center">
+            {/* Horizontal line connecting all children */}
+            <div className="relative">
+              <div className="h-px bg-gray-300" style={{ width: `${Math.max(employee.children.length * 320, 320)}px` }}></div>
+              {/* Vertical lines down to each child */}
+              <div className="flex justify-evenly" style={{ width: `${Math.max(employee.children.length * 320, 320)}px` }}>
+                {employee.children.map((_, index) => (
+                  <div key={index} className="w-px bg-gray-300 h-8"></div>
+                ))}
+              </div>
+            </div>
+            
+            {/* Children arranged horizontally */}
+            <div className="flex flex-wrap justify-center gap-8 mt-0">
+              {employee.children.map(child => renderEmployeeCard(child, false))}
+            </div>
           </div>
         )}
       </div>
@@ -1544,8 +1564,8 @@ const MyAccount = ({ userData }) => {
             </p>
           </div>
         ) : (
-          <div className="space-y-6">
-            {hierarchy.map(employee => renderEmployeeCard(employee, 0))}
+          <div className="flex flex-col items-center overflow-x-auto min-h-96">
+            {hierarchy.map(employee => renderEmployeeCard(employee, true))}
           </div>
         )}
 
