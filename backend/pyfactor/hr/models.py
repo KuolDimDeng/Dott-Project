@@ -183,12 +183,29 @@ class Employee(models.Model):
     
     def save_ssn_to_stripe(self, ssn):
         """Save SSN to Stripe Connect for secure storage"""
-        # This method would integrate with Stripe
-        # For now, just mark that it's stored
-        if ssn:
-            self.ssn_last_four = ssn[-4:] if len(ssn) >= 4 else ssn
-            self.ssn_stored_in_stripe = True
-            self.save(update_fields=['ssn_last_four', 'ssn_stored_in_stripe'])
+        from .stripe_ssn_service import StripeSSNService
+        
+        if not ssn:
+            return False, "No SSN provided"
+        
+        # Use the Stripe service to securely store the SSN
+        success, message = StripeSSNService.store_ssn(self, ssn)
+        
+        if not success:
+            logger.error(f"[Employee Model] Failed to store SSN: {message}")
+            raise Exception(f"Failed to store SSN: {message}")
+        
+        return success, message
+    
+    def delete(self, *args, **kwargs):
+        """Override delete to also remove Stripe data"""
+        from .stripe_ssn_service import StripeSSNService
+        
+        # Delete Stripe account if exists
+        if self.stripe_account_id:
+            StripeSSNService.delete_stripe_account(self)
+        
+        super().delete(*args, **kwargs)
 
 
 # Import TenantAwareModel for other models

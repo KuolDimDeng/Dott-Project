@@ -113,10 +113,15 @@ def employee_list_v2(request):
                 # Store SSN securely if provided
                 if ssn:
                     try:
-                        employee.save_ssn_to_stripe(ssn)
-                        logger.info(f"[Employee API v2] SSN stored securely for employee {employee.id}")
+                        success, message = employee.save_ssn_to_stripe(ssn)
+                        if success:
+                            logger.info(f"[Employee API v2] SSN stored securely for employee {employee.id}")
+                        else:
+                            logger.warning(f"[Employee API v2] SSN storage warning: {message}")
                     except Exception as ssn_error:
                         logger.error(f"[Employee API v2] SSN storage failed: {str(ssn_error)}")
+                        # Don't fail the entire employee creation - just log the error
+                        # The SSN can be updated later
                 
                 # Return the created employee
                 response_serializer = EmployeeSerializer(employee)
@@ -217,9 +222,14 @@ def employee_detail_v2(request, employee_id):
                 # Update SSN if provided
                 if ssn:
                     try:
-                        employee.save_ssn_to_stripe(ssn)
+                        success, message = employee.save_ssn_to_stripe(ssn)
+                        if success:
+                            logger.info(f"[Employee API v2] SSN updated securely for employee {employee.id}")
+                        else:
+                            logger.warning(f"[Employee API v2] SSN update warning: {message}")
                     except Exception as ssn_error:
                         logger.error(f"[Employee API v2] SSN update failed: {str(ssn_error)}")
+                        # Don't fail the entire update - just log the error
                 
                 response_serializer = EmployeeSerializer(employee)
                 
