@@ -2,6 +2,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Script from 'next/script';
 import SessionHeartbeat from '@/components/SessionHeartbeat';
+import ChunkErrorHandler from '@/components/ChunkErrorHandler';
 import Providers from '@/providers';
 import { headers } from 'next/headers';
 
@@ -60,6 +61,9 @@ export default function RootLayout({ children }) {
           <>
             {/* Session Heartbeat Component */}
             <SessionHeartbeat interval={60000} />
+            
+            {/* Chunk Error Handler */}
+            <ChunkErrorHandler />
             
             <Providers>
               {children}
