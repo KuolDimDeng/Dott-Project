@@ -200,7 +200,10 @@ function EmployeeManagement({ onNavigate }) {
   
   // Filter employees for supervisor dropdown - only show employees marked as supervisors
   const filteredSupervisors = useMemo(() => {
-    logger.debug('🔍 [EmployeeManagement] Filtering supervisors:', {
+    console.log('🔍 [DEBUG] Basic Employees Raw Data:', basicEmployees);
+    console.log('🔍 [DEBUG] Processing basic employees count:', basicEmployees.length);
+    
+    logger.info('🔍 [EmployeeManagement] Filtering supervisors:', {
       totalBasicEmployees: basicEmployees.length,
       basicEmployeesData: basicEmployees.map(emp => ({
         id: emp.id,
@@ -216,7 +219,7 @@ function EmployeeManagement({ onNavigate }) {
       emp.id !== selectedEmployee?.id
     );
     
-    logger.debug('🔍 [EmployeeManagement] Filtered supervisors result:', {
+    logger.info('🔍 [EmployeeManagement] Filtered supervisors result:', {
       supervisorCount: supervisorEmployees.length,
       supervisors: supervisorEmployees.map(emp => ({
         id: emp.id,
