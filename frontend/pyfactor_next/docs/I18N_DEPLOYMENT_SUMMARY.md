@@ -30,7 +30,7 @@
 ```json
 {
   "hero": {
-    "title": "All-in-one Business Software",
+    "title": "All-in-one Global Business Platform",
     "benefit": {
       "free": "Free forever plan",
       "invoicing": "Professional invoicing",
@@ -144,7 +144,7 @@ User experience: Raw translation keys visible
 
 ### After (Fixed)
 ```
-Page content: "All-in-one Business Software", "Free forever plan", "Choose the Right Plan"
+Page content: "All-in-one Global Business Platform", "Free forever plan", "Choose the Right Plan"
 Language detection: Working
 Translation loading: All keys available
 User experience: Proper translated content

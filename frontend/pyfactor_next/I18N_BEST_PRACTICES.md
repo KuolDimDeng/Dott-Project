@@ -13,7 +13,7 @@ Replace ALL hardcoded text with translation keys:
 
 ```javascript
 // Before
-<h1>All-in-one Business Software</h1>
+<h1>All-in-one Global Business Platform</h1>
 
 // After
 <h1>{t('hero.title')}</h1>
@@ -64,7 +64,7 @@ export function TranslatedText({ i18nKey, fallback, ...props }) {
 }
 
 // Usage
-<TranslatedText i18nKey="hero.title" fallback="All-in-one Business Software" />
+<TranslatedText i18nKey="hero.title" fallback="All-in-one Global Business Platform" />
 ```
 
 ### 5. Currency/Date Formatting
@@ -91,7 +91,7 @@ For frequently changing content (blog posts, FAQs):
 - Keep UI strings in translation files
 
 ### 7. Testing Strategy
-- Pseudo-localization for testing (`[[ All-in-one Business Software ]]`)
+- Pseudo-localization for testing (`[[ All-in-one Global Business Platform ]]`)
 - Visual regression testing for RTL languages
 - Translation coverage reports
 

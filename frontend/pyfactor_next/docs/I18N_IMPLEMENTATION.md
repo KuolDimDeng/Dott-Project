@@ -249,10 +249,10 @@ const { t } = useTranslation();
 ### 1. Hero Component
 ```jsx
 // Before: Hardcoded English
-<h1>All-in-one Business Software</h1>
+<h1>All-in-one Global Business Platform</h1>
 
 // After: Translated
-<h1>{t('heroTitle', 'All-in-one Business Software')}</h1>
+<h1>{t('heroTitle', 'All-in-one Global Business Platform')}</h1>
 ```
 
 ### 2. Pricing Component
