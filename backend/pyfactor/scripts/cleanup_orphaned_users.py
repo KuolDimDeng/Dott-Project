@@ -41,8 +41,27 @@ def cleanup_orphaned_users():
     
     if response.lower() == 'yes':
         count = orphaned_users.count()
-        orphaned_users.delete()
-        logger.info(f"Deleted {count} orphaned users.")
+        
+        # Delete users one by one to handle missing related tables gracefully
+        deleted_count = 0
+        for user in orphaned_users:
+            try:
+                logger.info(f"Deleting user: {user.email} (ID: {user.id})")
+                user.delete()
+                deleted_count += 1
+                logger.info(f"Successfully deleted user: {user.email}")
+            except Exception as e:
+                logger.error(f"Error deleting user {user.email}: {str(e)}")
+                # Try to delete just the user record without cascading
+                try:
+                    with connection.cursor() as cursor:
+                        cursor.execute("DELETE FROM custom_auth_user WHERE id = %s", [user.id])
+                    deleted_count += 1
+                    logger.info(f"Force deleted user: {user.email}")
+                except Exception as force_error:
+                    logger.error(f"Force delete failed for {user.email}: {str(force_error)}")
+        
+        logger.info(f"Deleted {deleted_count} orphaned users.")
     else:
         logger.info("No users deleted.")
     
@@ -57,8 +76,18 @@ def cleanup_orphaned_users():
             if user.auth0_sub.startswith('pending_'):
                 response = input(f"\nThis user has not been synced with Auth0. Delete? (yes/no): ")
                 if response.lower() == 'yes':
-                    user.delete()
-                    logger.info(f"Deleted user {email}")
+                    try:
+                        user.delete()
+                        logger.info(f"Deleted user {email}")
+                    except Exception as e:
+                        logger.error(f"Error deleting user {email}: {str(e)}")
+                        # Try force delete
+                        try:
+                            with connection.cursor() as cursor:
+                                cursor.execute("DELETE FROM custom_auth_user WHERE id = %s", [user.id])
+                            logger.info(f"Force deleted user {email}")
+                        except Exception as force_error:
+                            logger.error(f"Force delete failed for {email}: {str(force_error)}")
         except User.DoesNotExist:
             logger.info(f"User {email} not found in database")
 
