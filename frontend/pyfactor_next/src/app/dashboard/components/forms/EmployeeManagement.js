@@ -159,6 +159,7 @@ function EmployeeManagement({ onNavigate }) {
     
     // Payroll and Benefits
     directDeposit: 'no', // 'yes' or 'no'
+    isSupervisor: false, // Default to false
     vacationTime: 'no', // 'yes' or 'no'
     vacationDaysPerYear: '' // Number of vacation days if vacationTime is 'yes'
   });
@@ -197,19 +198,23 @@ function EmployeeManagement({ onNavigate }) {
     return COUNTRY_TO_SECURITY_NUMBER['OTHER'];
   };
   
-  // Filter employees for supervisor dropdown
+  // Filter employees for supervisor dropdown - only show employees marked as supervisors
   const filteredSupervisors = useMemo(() => {
-    if (!supervisorSearch) return basicEmployees.filter(emp => emp.active && emp.id !== selectedEmployee?.id);
+    const supervisorEmployees = basicEmployees.filter(emp => 
+      emp.active && 
+      emp.is_supervisor && // Only show employees marked as supervisors
+      emp.id !== selectedEmployee?.id
+    );
+    
+    if (!supervisorSearch) return supervisorEmployees;
     
     const search = supervisorSearch.toLowerCase();
-    return basicEmployees.filter(emp => 
-      emp.active && 
-      emp.id !== selectedEmployee?.id &&
-      (emp.first_name?.toLowerCase().includes(search) ||
-       emp.last_name?.toLowerCase().includes(search) ||
-       emp.full_name?.toLowerCase().includes(search) ||
-       emp.employee_number?.toLowerCase().includes(search) ||
-       emp.department?.toLowerCase().includes(search))
+    return supervisorEmployees.filter(emp => 
+      emp.first_name?.toLowerCase().includes(search) ||
+      emp.last_name?.toLowerCase().includes(search) ||
+      emp.full_name?.toLowerCase().includes(search) ||
+      emp.employee_number?.toLowerCase().includes(search) ||
+      emp.department?.toLowerCase().includes(search)
     );
   }, [basicEmployees, supervisorSearch, selectedEmployee]);
 
@@ -348,6 +353,7 @@ function EmployeeManagement({ onNavigate }) {
         probationEndDate: emp.probation_end_date,
         supervisor: emp.supervisor,
         supervisorName: emp.supervisor_name,
+        isSupervisor: emp.is_supervisor || false,
         healthInsuranceEnrollment: emp.health_insurance_enrollment,
         pensionEnrollment: emp.pension_enrollment,
         directDeposit: emp.direct_deposit,
@@ -699,6 +705,7 @@ function EmployeeManagement({ onNavigate }) {
         job_title: formData.position,
         department: formData.department,
         supervisor: formData.supervisor || null,
+        is_supervisor: formData.isSupervisor || false,
         employment_type: formData.employmentType,
         compensation_type: formData.compensationType,
         wage_per_hour: formData.compensationType === 'HOURLY' ? 
@@ -1250,7 +1257,7 @@ function EmployeeManagement({ onNavigate }) {
                     }}
                     className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 border-b"
                   >
-                    No Supervisor (Use Owner)
+                    No Supervisor (Will use business owner)
                   </button>
                   {filteredSupervisors.map((emp) => (
                     <button
@@ -1296,6 +1303,27 @@ function EmployeeManagement({ onNavigate }) {
                   <span className="text-sm">{type.label}</span>
                 </label>
               ))}
+            </div>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Is Supervisor
+              <FieldTooltip text="Can this employee supervise others? Only supervisors will appear in the supervisor dropdown for other employees." />
+            </label>
+            <div className="flex items-center">
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.isSupervisor}
+                  onChange={(e) => setFormData({...formData, isSupervisor: e.target.checked})}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <span className="ml-3 text-sm font-medium text-gray-700">
+                  {formData.isSupervisor ? 'Yes, can supervise others' : 'No, cannot supervise others'}
+                </span>
+              </label>
             </div>
           </div>
           

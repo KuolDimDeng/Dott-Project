@@ -79,6 +79,19 @@ def employee_list_v2(request):
             # Extract SSN for secure storage if provided
             ssn = employee_data.pop('securityNumber', None)
             
+            # Handle supervisor assignment - if none, use the owner
+            if not employee_data.get('supervisor'):
+                # Find the owner employee for this business
+                owner_employee = Employee.objects.filter(
+                    business_id=business_id,
+                    is_supervisor=True,
+                    user__role='OWNER'
+                ).first()
+                
+                if owner_employee:
+                    employee_data['supervisor'] = str(owner_employee.id)
+                    logger.info(f"[Employee API v2] No supervisor specified, using owner: {owner_employee.id}")
+            
             logger.info(f"[Employee API v2] Creating employee: {employee_data.get('email', 'unknown')}")
             
             with transaction.atomic():
