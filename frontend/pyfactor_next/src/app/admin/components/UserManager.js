@@ -1,5 +1,9 @@
 'use client';
 
+// TODO: TEMPORARY TESTING FEATURE - REMOVE WHEN LIVE
+// Currently allowing OWNER users to be deleted and deactivated for testing purposes.
+// Search for "TEMPORARY TESTING FEATURE" to find all locations that need to be reverted.
+
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { 
@@ -547,7 +551,7 @@ export default function UserManager({ adminUser }) {
                           >
                             <EyeIcon className="h-5 w-5" />
                           </button>
-                          {adminUser.admin_role === 'super_admin' && user.role !== 'OWNER' && (
+                          {adminUser.admin_role === 'super_admin' && (
                             <>
                               <button
                                 onClick={() => handleBlockUnblock(user.id, user.is_active ? 'block' : 'unblock')}
@@ -833,6 +837,11 @@ export default function UserManager({ adminUser }) {
                 <p className="text-sm text-gray-600">
                   Are you sure you want to delete {userToDelete.email}?
                 </p>
+                {userToDelete.role === 'OWNER' && (
+                  <p className="text-sm text-orange-600 mt-1">
+                    <strong>⚠️ TEMPORARY TESTING FEATURE:</strong> OWNER deletion is enabled for testing only
+                  </p>
+                )}
               </div>
             </div>
             

@@ -1,5 +1,9 @@
 """
 Admin user management views
+
+TODO: TEMPORARY TESTING FEATURE - REMOVE WHEN LIVE
+Currently allowing OWNER users to be deleted and deactivated for testing purposes.
+Search for "TODO: TEMPORARY" to find all locations that need to be reverted.
 """
 from django.db import transaction
 from django.contrib.auth import get_user_model
@@ -261,11 +265,12 @@ class AdminUserDetailView(APIView):
             
             user = User.objects.get(id=user_id)
             
-            # Don't allow deleting OWNER users
-            if user.role == 'OWNER':
-                return Response({
-                    'error': 'Cannot delete OWNER users'
-                }, status=status.HTTP_403_FORBIDDEN)
+            # TODO: TEMPORARY - Remove this when live with paying users
+            # Currently allowing OWNER deletion for testing purposes
+            # if user.role == 'OWNER':
+            #     return Response({
+            #         'error': 'Cannot delete OWNER users'
+            #     }, status=status.HTTP_403_FORBIDDEN)
             
             # Check if soft delete is requested
             if request.query_params.get('soft_delete') == 'true':
@@ -624,11 +629,12 @@ class AdminUserBlockView(APIView):
             
             user = User.objects.get(id=user_id)
             
-            # Don't allow blocking OWNER users
-            if user.role == 'OWNER':
-                return Response({
-                    'error': 'Cannot block OWNER users'
-                }, status=status.HTTP_403_FORBIDDEN)
+            # TODO: TEMPORARY - Remove this when live with paying users
+            # Currently allowing OWNER blocking for testing purposes
+            # if user.role == 'OWNER':
+            #     return Response({
+            #         'error': 'Cannot block OWNER users'
+            #     }, status=status.HTTP_403_FORBIDDEN)
             
             # Get action (block or unblock)
             action = request.data.get('action', 'block')
