@@ -630,7 +630,7 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
                 tenant=request.user.tenant,
                 business_id=request.user.business_id,
                 is_active=True,
-                auth0_id=f"pending_{email}_{timezone.now().timestamp()}"  # Temporary ID
+                auth0_sub=f"pending_{email}_{timezone.now().timestamp()}"  # Temporary ID
             )
             
             # Create page permissions
@@ -680,7 +680,7 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
             # The frontend will create the Auth0 user and send the password reset email
             
             # Return user data
-            serializer = UserSerializer(user)
+            serializer = UserListSerializer(user)
             return Response({
                 "user": serializer.data,
                 "message": f"User created successfully. Password reset email will be sent to {email}"

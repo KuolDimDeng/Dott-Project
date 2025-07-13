@@ -34,7 +34,10 @@ import {
   CreditCardIcon,
   UserCircleIcon,
   ChevronDownIcon,
-  ChevronUpIcon
+  ChevronUpIcon,
+  BuildingOfficeIcon,
+  PhoneIcon,
+  EnvelopeIcon
 } from '@heroicons/react/24/outline';
 import PayStubViewer from '@/components/PayStubViewer';
 
@@ -60,6 +63,8 @@ const MyAccount = ({ userData }) => {
   const [updatingMFA, setUpdatingMFA] = useState(false);
   const [showLegalDocument, setShowLegalDocument] = useState(null);
   const [showPayStubViewer, setShowPayStubViewer] = useState(false);
+  const [organizationData, setOrganizationData] = useState([]);
+  const [loadingOrganization, setLoadingOrganization] = useState(false);
   const fileInputRef = useRef(null);
   
   // Employment tab section visibility states
@@ -1318,12 +1323,252 @@ const MyAccount = ({ userData }) => {
     );
   };
 
+  // Fetch organization data
+  const fetchOrganizationData = async () => {
+    setLoadingOrganization(true);
+    try {
+      const response = await fetch('/api/hr/v2/employees', {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setOrganizationData(data.data || []);
+      } else {
+        notifyError('Failed to load organization data');
+      }
+    } catch (error) {
+      console.error('Error fetching organization data:', error);
+      notifyError('Error loading organization data');
+    } finally {
+      setLoadingOrganization(false);
+    }
+  };
+
+  // Load organization data when tab is selected
+  useEffect(() => {
+    if (selectedTab === 2) { // Organization tab
+      fetchOrganizationData();
+    }
+  }, [selectedTab]);
+
+  // Helper function to generate user initials
+  const generateInitials = (firstName, lastName, fullName) => {
+    if (firstName && lastName) {
+      return `${firstName.charAt(0).toUpperCase()}${lastName.charAt(0).toUpperCase()}`;
+    }
+    if (fullName) {
+      const parts = fullName.split(' ').filter(p => p.length > 0);
+      if (parts.length >= 2) {
+        return `${parts[0].charAt(0).toUpperCase()}${parts[parts.length - 1].charAt(0).toUpperCase()}`;
+      }
+      return parts[0]?.charAt(0).toUpperCase() || '?';
+    }
+    return firstName?.charAt(0).toUpperCase() || '?';
+  };
+
+  // Build organization hierarchy
+  const buildOrganizationHierarchy = (employees) => {
+    if (!employees || employees.length === 0) return [];
+
+    // Create a map of all employees
+    const employeeMap = {};
+    employees.forEach(emp => {
+      employeeMap[emp.id] = { ...emp, children: [] };
+    });
+
+    // Find the owner (no supervisor) and build hierarchy
+    const hierarchy = [];
+    employees.forEach(emp => {
+      const employee = employeeMap[emp.id];
+      if (emp.supervisor_id && employeeMap[emp.supervisor_id]) {
+        // Add to supervisor's children
+        employeeMap[emp.supervisor_id].children.push(employee);
+      } else {
+        // No supervisor - this is a top-level person (owner/CEO)
+        hierarchy.push(employee);
+      }
+    });
+
+    return hierarchy;
+  };
+
+  // Render a single employee card
+  const renderEmployeeCard = (employee, level = 0) => {
+    const initials = generateInitials(employee.first_name, employee.last_name, employee.full_name);
+    const [showTooltip, setShowTooltip] = useState(false);
+    
+    return (
+      <div key={employee.id} className={`relative ${level > 0 ? 'ml-8' : ''}`}>
+        {/* Connecting line from parent */}
+        {level > 0 && (
+          <div className="absolute -left-8 top-6 w-8 h-px bg-gray-300"></div>
+        )}
+        
+        {/* Vertical line for children */}
+        {employee.children && employee.children.length > 0 && (
+          <div className="absolute left-6 top-12 w-px bg-gray-300" 
+               style={{ height: `${employee.children.length * 120 - 20}px` }}></div>
+        )}
+        
+        {/* Employee Card */}
+        <div 
+          className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4 hover:shadow-md transition-all duration-200 hover:border-blue-300 cursor-pointer relative"
+          onMouseEnter={() => setShowTooltip(true)}
+          onMouseLeave={() => setShowTooltip(false)}
+        >
+          <div className="flex items-start space-x-4">
+            {/* Avatar */}
+            <div className="flex-shrink-0">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                {initials}
+              </div>
+            </div>
+            
+            {/* Employee Info */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {employee.first_name} {employee.last_name}
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    {employee.job_title || employee.position || 'Employee'}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    {employee.department || 'General'}
+                  </p>
+                </div>
+                <div className="text-right text-sm text-gray-500">
+                  <div>ID: {employee.employee_number || employee.id}</div>
+                </div>
+              </div>
+              
+              {/* Contact Information */}
+              <div className="mt-3 flex flex-wrap gap-4 text-sm text-gray-600">
+                {employee.email && (
+                  <div className="flex items-center">
+                    <EnvelopeIcon className="w-4 h-4 mr-1" />
+                    <span>{employee.email}</span>
+                  </div>
+                )}
+                {employee.phone_number && (
+                  <div className="flex items-center">
+                    <PhoneIcon className="w-4 h-4 mr-1" />
+                    <span>{employee.phone_number}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Hover Tooltip */}
+          {showTooltip && (
+            <div className="absolute z-50 top-0 left-full ml-4 w-80 bg-gray-900 text-white text-sm rounded-lg p-4 shadow-xl">
+              <div className="space-y-2">
+                <div className="font-semibold border-b border-gray-700 pb-2">
+                  {employee.first_name} {employee.last_name}
+                </div>
+                <div><span className="text-gray-300">Position:</span> {employee.job_title || employee.position || 'Employee'}</div>
+                <div><span className="text-gray-300">Department:</span> {employee.department || 'General'}</div>
+                <div><span className="text-gray-300">Employee ID:</span> {employee.employee_number || employee.id}</div>
+                {employee.email && (
+                  <div><span className="text-gray-300">Email:</span> {employee.email}</div>
+                )}
+                {employee.phone_number && (
+                  <div><span className="text-gray-300">Phone:</span> {employee.phone_number}</div>
+                )}
+                {employee.hire_date && (
+                  <div><span className="text-gray-300">Hire Date:</span> {new Date(employee.hire_date).toLocaleDateString()}</div>
+                )}
+                {employee.salary && (
+                  <div><span className="text-gray-300">Salary:</span> ${parseFloat(employee.salary).toLocaleString()}</div>
+                )}
+                {employee.children && employee.children.length > 0 && (
+                  <div><span className="text-gray-300">Direct Reports:</span> {employee.children.length}</div>
+                )}
+              </div>
+              {/* Tooltip Arrow */}
+              <div className="absolute top-4 -left-2">
+                <div className="w-2 h-2 bg-gray-900 transform rotate-45"></div>
+              </div>
+            </div>
+          )}
+        </div>
+        
+        {/* Render children */}
+        {employee.children && employee.children.length > 0 && (
+          <div className="ml-4">
+            {employee.children.map(child => renderEmployeeCard(child, level + 1))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderOrganizationTab = () => {
+    if (loadingOrganization) {
+      return (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
+          <div className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-3 text-gray-600">Loading organization chart...</span>
+          </div>
+        </div>
+      );
+    }
+
+    const hierarchy = buildOrganizationHierarchy(organizationData);
+
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+            <BuildingOfficeIcon className="w-6 h-6 mr-2 text-blue-600" />
+            Organization Chart
+          </h2>
+          <p className="text-gray-600 mt-1">
+            View your company's organizational structure and employee directory
+          </p>
+        </div>
+
+        {hierarchy.length === 0 ? (
+          <div className="text-center py-12">
+            <BuildingOfficeIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No Organization Data</h3>
+            <p className="text-gray-600">
+              No employees found. Contact your administrator to set up your organization.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {hierarchy.map(employee => renderEmployeeCard(employee, 0))}
+          </div>
+        )}
+
+        {/* Refresh Button */}
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <button 
+            onClick={fetchOrganizationData}
+            disabled={loadingOrganization}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+          >
+            {loadingOrganization ? 'Refreshing...' : 'Refresh Organization Chart'}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   const tabs = [
     { id: 0, label: 'Profile', icon: UserIcon },
     { id: 1, label: 'Employment', icon: BriefcaseIcon },
-    { id: 2, label: 'Security', icon: ShieldCheckIcon },
-    { id: 3, label: 'Preferences', icon: CogIcon },
-    { id: 4, label: 'Legal', icon: ScaleIcon },
+    { id: 2, label: 'Organization', icon: BuildingOfficeIcon },
+    { id: 3, label: 'Security', icon: ShieldCheckIcon },
+    { id: 4, label: 'Preferences', icon: CogIcon },
+    { id: 5, label: 'Legal', icon: ScaleIcon },
   ];
 
   return (
@@ -1381,9 +1626,10 @@ const MyAccount = ({ userData }) => {
         <div>
           {selectedTab === 0 && renderProfileTab()}
           {selectedTab === 1 && renderEmploymentTab()}
-          {selectedTab === 2 && renderSecurityTab()}
-          {selectedTab === 3 && renderPreferencesTab()}
-          {selectedTab === 4 && renderLegalTab()}
+          {selectedTab === 2 && renderOrganizationTab()}
+          {selectedTab === 3 && renderSecurityTab()}
+          {selectedTab === 4 && renderPreferencesTab()}
+          {selectedTab === 5 && renderLegalTab()}
         </div>
       </div>
 

@@ -441,7 +441,11 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to create user');
+        // Use user-friendly message if available, otherwise fall back to technical message
+        const errorMessage = errorData.userFriendly && errorData.message 
+          ? errorData.message 
+          : (errorData.error || errorData.message || 'Failed to create user');
+        throw new Error(errorMessage);
       }
 
       const result = await response.json();

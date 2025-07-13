@@ -121,7 +121,11 @@ export async function POST(request) {
       // Handle specific error cases
       if (response.status === 409 || errorData.message?.includes('already exists')) {
         return NextResponse.json(
-          { error: 'A user with this email already exists' },
+          { 
+            error: 'A user with this email already exists', 
+            message: 'This email address is already associated with a user account. Please use a different email address or contact the existing user.',
+            userFriendly: true
+          },
           { status: 409 }
         );
       }
