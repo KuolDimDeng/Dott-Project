@@ -37,16 +37,42 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
     
     // Use the enhanced retry script loader
     const stripeUrl = 'https://js.stripe.com/v3/';
+    let currentAttempt = 0;
     
     const loadStripe = async () => {
       try {
-        // Set loading state
-        setLoadAttempts(prev => prev + 1);
+        currentAttempt++;
         
         // Log the attempt
-        logger.info(`[SubscriptionPopup] Loading Stripe script (attempt ${loadAttempts + 1})`);
+        logger.info(`[SubscriptionPopup] Loading Stripe script (attempt ${currentAttempt})`);
         
-        // Use our enhanced utility with retry logic
+        // Check if Stripe is already loaded before attempting
+        if (window.Stripe) {
+          logger.debug('[SubscriptionPopup] Stripe already loaded via window.Stripe');
+          setStripeLoaded(true);
+          return;
+        }
+        
+        // Check if script tag already exists
+        const existingScript = document.getElementById('stripe-js') || 
+                             document.querySelector('script[src*="stripe.com/v3"]');
+        if (existingScript) {
+          logger.debug('[SubscriptionPopup] Stripe script tag already exists, waiting for load');
+          // Wait a bit for Stripe to initialize
+          const checkStripeLoaded = () => {
+            if (window.Stripe) {
+              logger.debug('[SubscriptionPopup] Stripe loaded after waiting');
+              setStripeLoaded(true);
+            } else {
+              setTimeout(checkStripeLoaded, 100);
+            }
+          };
+          checkStripeLoaded();
+          return;
+        }
+        
+        // Only load script if it doesn't exist
+        logger.debug('[SubscriptionPopup] Loading Stripe script for the first time');
         await retryLoadScript(stripeUrl, {
           maxRetries: 5,
           baseDelay: 1000,
@@ -55,26 +81,28 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
         
         logger.debug('[SubscriptionPopup] Stripe script loaded successfully');
         setStripeLoaded(true);
+        setLoadAttempts(currentAttempt);
       } catch (error) {
         logger.error('[SubscriptionPopup] Failed to load Stripe script after multiple attempts:', error);
         
         // Only retry manually if we're under a reasonable threshold
-        if (loadAttempts < 3) {
+        if (currentAttempt < 3) {
           logger.info(`[SubscriptionPopup] Will attempt to load Stripe again in 2 seconds`);
           setTimeout(loadStripe, 2000);
         } else {
           // Give up and show error to user
           notifyError('Failed to load payment system. Please refresh the page and try again.');
         }
+        setLoadAttempts(currentAttempt);
       }
     };
     
     // Only start loading Stripe when the popup is actually visible
-    if (showPopup) {
+    if (showPopup && !stripeLoaded) {
       loadStripe();
     }
     
-  }, [showPopup, loadAttempts, notifyError, stripeLoaded]);
+  }, [showPopup, stripeLoaded, notifyError]); // Removed loadAttempts from dependencies
   
   // Reset selected plan when popup opens
   useEffect(() => {

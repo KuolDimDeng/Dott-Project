@@ -892,6 +892,11 @@ export const retryLoadScript = (src, options = {}) => {
       script.src = src;
       script.async = true;
       
+      // Add ID for Stripe script for easier detection
+      if (src.includes('stripe.com')) {
+        script.id = 'stripe-js';
+      }
+      
       // Add cache-busting parameter for retries
       if (attempts > 0) {
         const cacheBuster = `_cb=${Date.now()}`;
@@ -901,7 +906,10 @@ export const retryLoadScript = (src, options = {}) => {
       }
       
       script.onload = () => {
-        logger.info(`[NetworkMonitor] External script loaded successfully: ${src}`);
+        // Only log in development or for first attempt
+        if (attempts === 0 || process.env.NODE_ENV === 'development') {
+          logger.debug(`[NetworkMonitor] External script loaded successfully: ${src}`);
+        }
         resolve(script);
       };
       
