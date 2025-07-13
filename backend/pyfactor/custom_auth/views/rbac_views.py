@@ -732,6 +732,11 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
             # Note: Auth0 user creation will be handled by the frontend API
             # The frontend will create the Auth0 user and send the password reset email
             
+            # TODO: Send Auth0 password reset email
+            # For now, user creation is complete but Auth0 integration needed for emails
+            logger.info(f"[DirectUserCreation] User created in database successfully")
+            logger.warning(f"[DirectUserCreation] Auth0 password reset email not yet implemented")
+            
             # Return user data
             serializer = UserListSerializer(user)
             return Response({

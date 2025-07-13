@@ -139,12 +139,16 @@ export async function POST(request) {
 async function getSession(request) {
   try {
     logger.info('[UserManagement] ========== GET SESSION START ==========');
+    logger.info('[UserManagement] Request URL:', request.url);
+    logger.info('[UserManagement] Request method:', request.method);
+    logger.info('[UserManagement] Origin:', request.nextUrl.origin);
     
     // Get cookies from request headers
     const cookieHeader = request.headers.get('cookie') || '';
     logger.info('[UserManagement] Cookie header:', cookieHeader);
     logger.info('[UserManagement] Cookie header length:', cookieHeader.length);
     logger.info('[UserManagement] Has sid cookie:', cookieHeader.includes('sid='));
+    logger.info('[UserManagement] Has sessionToken cookie:', cookieHeader.includes('sessionToken='));
     
     if (!cookieHeader || !cookieHeader.includes('sid=')) {
       logger.warn('[UserManagement] No session cookie found in request');
@@ -261,27 +265,55 @@ async function getSession(request) {
  */
 async function fetchLocalUsers(tenantId, currentUser, request, unlinkedOnly = false) {
   try {
+    logger.info('[UserManagement] ========== FETCH LOCAL USERS START ==========');
+    
     // Fetch users from backend RBAC API
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+    logger.info('[UserManagement] Backend URL:', backendUrl);
+    logger.info('[UserManagement] Tenant ID:', tenantId);
+    logger.info('[UserManagement] Unlinked only:', unlinkedOnly);
     
     // Forward cookies for session-based authentication
     const cookieHeader = request?.headers?.get('cookie') || '';
+    logger.info('[UserManagement] Cookie header for backend:', cookieHeader);
+    logger.info('[UserManagement] Current user:', currentUser);
     
     // Add unlinked parameter if requested
     const queryParams = unlinkedOnly ? '?unlinked=true' : '';
+    const fullUrl = `${backendUrl}/auth/rbac/users/${queryParams}`;
+    logger.info('[UserManagement] Full backend URL:', fullUrl);
     
-    const response = await fetch(`${backendUrl}/auth/rbac/users/${queryParams}`, {
+    // Extract session ID for additional header
+    const sidMatch = cookieHeader.match(/sid=([^;]+)/);
+    const sessionId = sidMatch ? sidMatch[1] : null;
+    logger.info('[UserManagement] Extracted session ID:', sessionId ? sessionId.substring(0, 8) + '...' : 'none');
+    
+    const headers = {
+      'Content-Type': 'application/json',
+      'Cookie': cookieHeader,
+      'X-Tenant-ID': tenantId
+    };
+    
+    if (sessionId) {
+      headers['X-Session-ID'] = sessionId;
+    }
+    
+    logger.info('[UserManagement] Request headers to backend:', headers);
+    
+    const response = await fetch(fullUrl, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Cookie': cookieHeader,
-        'X-Tenant-ID': tenantId
-      },
+      headers,
       cache: 'no-store'
     });
     
+    logger.info('[UserManagement] Backend response status:', response.status);
+    logger.info('[UserManagement] Backend response ok:', response.ok);
+    logger.info('[UserManagement] Backend response headers:', Object.fromEntries(response.headers.entries()));
+    
     if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Could not read error');
       logger.warn(`[UserManagement] Backend API returned ${response.status}: ${response.statusText}`);
+      logger.warn('[UserManagement] Backend error response:', errorText);
       
       // If backend is not available, return at least the current user
       if (currentUser && currentUser.tenantId === tenantId) {
