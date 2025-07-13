@@ -37,7 +37,11 @@ import {
   ChevronUpIcon,
   BuildingOfficeIcon,
   PhoneIcon,
-  EnvelopeIcon
+  EnvelopeIcon,
+  PlusIcon,
+  MinusIcon,
+  ArrowsPointingOutIcon,
+  MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
 import PayStubViewer from '@/components/PayStubViewer';
 
@@ -66,6 +70,8 @@ const MyAccount = ({ userData }) => {
   const [organizationData, setOrganizationData] = useState([]);
   const [loadingOrganization, setLoadingOrganization] = useState(false);
   const [hoveredEmployee, setHoveredEmployee] = useState(null);
+  const [zoomLevel, setZoomLevel] = useState(100);
+  const orgChartRef = useRef(null);
   const fileInputRef = useRef(null);
   
   // Employment tab section visibility states
@@ -1355,6 +1361,31 @@ const MyAccount = ({ userData }) => {
     }
   }, [selectedTab]);
 
+  // Zoom control functions
+  const zoomIn = () => {
+    setZoomLevel(prev => Math.min(prev + 25, 200)); // Max 200%
+  };
+
+  const zoomOut = () => {
+    setZoomLevel(prev => Math.max(prev - 25, 25)); // Min 25%
+  };
+
+  const resetZoom = () => {
+    setZoomLevel(100);
+  };
+
+  const fitToScreen = () => {
+    // For large organizations, start with a smaller zoom to fit more content
+    const employeeCount = organizationData.length;
+    if (employeeCount > 20) {
+      setZoomLevel(50);
+    } else if (employeeCount > 10) {
+      setZoomLevel(75);
+    } else {
+      setZoomLevel(100);
+    }
+  };
+
   // Helper function to generate user initials
   const generateInitials = (firstName, lastName, fullName) => {
     if (firstName && lastName) {
@@ -1546,13 +1577,62 @@ const MyAccount = ({ userData }) => {
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <div className="mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-            <BuildingOfficeIcon className="w-6 h-6 mr-2 text-blue-600" />
-            Organization Chart
-          </h2>
-          <p className="text-gray-600 mt-1">
-            View your company's organizational structure and employee directory
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+                <BuildingOfficeIcon className="w-6 h-6 mr-2 text-blue-600" />
+                Organization Chart
+              </h2>
+              <p className="text-gray-600 mt-1">
+                View your company's organizational structure and employee directory
+              </p>
+            </div>
+            
+            {/* Zoom Controls */}
+            {hierarchy.length > 0 && (
+              <div className="flex items-center space-x-2 bg-gray-50 rounded-lg p-2">
+                <button
+                  onClick={zoomOut}
+                  disabled={zoomLevel <= 25}
+                  className="p-2 text-gray-600 hover:text-blue-600 hover:bg-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Zoom Out"
+                >
+                  <MinusIcon className="w-4 h-4" />
+                </button>
+                
+                <span className="text-sm font-medium text-gray-700 min-w-12 text-center">
+                  {zoomLevel}%
+                </span>
+                
+                <button
+                  onClick={zoomIn}
+                  disabled={zoomLevel >= 200}
+                  className="p-2 text-gray-600 hover:text-blue-600 hover:bg-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Zoom In"
+                >
+                  <PlusIcon className="w-4 h-4" />
+                </button>
+                
+                <div className="w-px h-6 bg-gray-300"></div>
+                
+                <button
+                  onClick={fitToScreen}
+                  className="p-2 text-gray-600 hover:text-blue-600 hover:bg-white rounded-md transition-colors"
+                  title="Fit to Screen"
+                >
+                  <ArrowsPointingOutIcon className="w-4 h-4" />
+                </button>
+                
+                <button
+                  onClick={resetZoom}
+                  className="p-2 text-gray-600 hover:text-blue-600 hover:bg-white rounded-md transition-colors"
+                  title="Reset Zoom (100%)"
+                >
+                  <MagnifyingGlassIcon className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         {hierarchy.length === 0 ? (
@@ -1564,13 +1644,23 @@ const MyAccount = ({ userData }) => {
             </p>
           </div>
         ) : (
-          <div className="flex flex-col items-center overflow-x-auto min-h-96">
-            {hierarchy.map(employee => renderEmployeeCard(employee, true))}
+          <div className="relative border border-gray-200 rounded-lg overflow-auto" style={{ minHeight: '400px', maxHeight: '600px' }}>
+            <div 
+              ref={orgChartRef}
+              className="flex flex-col items-center p-8 transition-transform duration-300 ease-in-out"
+              style={{ 
+                transform: `scale(${zoomLevel / 100})`,
+                transformOrigin: 'top center',
+                minWidth: 'fit-content'
+              }}
+            >
+              {hierarchy.map(employee => renderEmployeeCard(employee, true))}
+            </div>
           </div>
         )}
 
-        {/* Refresh Button */}
-        <div className="mt-6 pt-6 border-t border-gray-200">
+        {/* Action Buttons */}
+        <div className="mt-6 pt-6 border-t border-gray-200 flex justify-between items-center">
           <button 
             onClick={fetchOrganizationData}
             disabled={loadingOrganization}
@@ -1578,6 +1668,12 @@ const MyAccount = ({ userData }) => {
           >
             {loadingOrganization ? 'Refreshing...' : 'Refresh Organization Chart'}
           </button>
+          
+          {hierarchy.length > 0 && (
+            <div className="text-sm text-gray-500">
+              Showing {organizationData.length} employees • Use zoom controls to navigate large organizations
+            </div>
+          )}
         </div>
       </div>
     );
