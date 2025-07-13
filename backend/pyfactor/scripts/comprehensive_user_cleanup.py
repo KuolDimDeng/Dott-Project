@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Force cleanup orphaned users using direct SQL to avoid cascade issues
+Comprehensive user cleanup that automatically finds all foreign key dependencies
 """
 import os
 import sys
@@ -20,8 +20,37 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def force_cleanup_orphaned_users():
-    """Force delete orphaned users using SQL"""
+def find_all_foreign_keys_to_user():
+    """Find all tables that have foreign keys pointing to custom_auth_user"""
+    with connection.cursor() as cursor:
+        # Query to find all foreign key constraints pointing to custom_auth_user
+        cursor.execute("""
+            SELECT 
+                conrelid::regclass AS table_name,
+                a.attname AS column_name,
+                conname AS constraint_name
+            FROM 
+                pg_constraint c
+                JOIN pg_attribute a ON a.attnum = ANY(c.conkey) AND a.attrelid = c.conrelid
+            WHERE 
+                c.confrelid = 'custom_auth_user'::regclass
+                AND c.contype = 'f'
+            ORDER BY 
+                conrelid::regclass::text, a.attname;
+        """)
+        
+        return cursor.fetchall()
+
+def comprehensive_cleanup_orphaned_users():
+    """Comprehensively clean up orphaned users by finding all dependencies"""
+    
+    # First, find all foreign key dependencies
+    logger.info("Discovering all tables with foreign keys to custom_auth_user...")
+    dependencies = find_all_foreign_keys_to_user()
+    
+    logger.info(f"Found {len(dependencies)} foreign key dependencies:")
+    for table, column, constraint in dependencies:
+        logger.info(f"  - {table}.{column} (constraint: {constraint})")
     
     with connection.cursor() as cursor:
         # Find orphaned users
@@ -34,10 +63,10 @@ def force_cleanup_orphaned_users():
         orphaned_users = cursor.fetchall()
         
         if not orphaned_users:
-            logger.info("No orphaned users found.")
+            logger.info("\nNo orphaned users found.")
             return
         
-        logger.info(f"Found {len(orphaned_users)} orphaned users:")
+        logger.info(f"\nFound {len(orphaned_users)} orphaned users:")
         for user_id, email, auth0_sub in orphaned_users:
             logger.info(f"  - {email} (ID: {user_id}, auth0_sub: {auth0_sub})")
         
@@ -49,39 +78,26 @@ def force_cleanup_orphaned_users():
             
             for user_id, email, auth0_sub in orphaned_users:
                 try:
-                    logger.info(f"Deleting user: {email} (ID: {user_id})")
+                    logger.info(f"\nDeleting user: {email} (ID: {user_id})")
                     
-                    # Delete related records first (if they exist)
-                    tables_to_clean = [
-                        ('smart_insights_credittransaction', 'user_id'),
-                        ('smart_insights_creditusage', 'user_id'),
-                        ('smart_insights_usercredit', 'user_id'),
-                        ('hr_employee', 'user_id'),
-                        ('payroll_payrun', 'created_by_id'),
-                        ('payroll_payrun', 'approved_by_id'),
-                        ('invoices_invoice', 'created_by_id'),
-                        ('api_notifications_notification', 'user_id'),
-                        ('business_business', 'owner_id')
-                    ]
-                    
-                    for table, column in tables_to_clean:
+                    # Delete from all dependent tables
+                    for table, column, constraint in dependencies:
                         try:
                             cursor.execute(f"DELETE FROM {table} WHERE {column} = %s", [user_id])
                             if cursor.rowcount > 0:
-                                logger.info(f"  Cleaned {cursor.rowcount} records from {table}")
+                                logger.info(f"  ✓ Cleaned {cursor.rowcount} records from {table}.{column}")
                         except Exception as e:
-                            # Silently skip tables that don't exist
-                            pass
+                            logger.warning(f"  ⚠ Could not clean {table}.{column}: {str(e)}")
                     
-                    # Delete the user record
+                    # Now delete the user
                     cursor.execute("DELETE FROM custom_auth_user WHERE id = %s", [user_id])
                     deleted_count += 1
-                    logger.info(f"Successfully deleted user: {email}")
+                    logger.info(f"  ✓ Successfully deleted user: {email}")
                     
                 except Exception as e:
-                    logger.error(f"Error deleting user {email}: {str(e)}")
+                    logger.error(f"  ✗ Error deleting user {email}: {str(e)}")
             
-            logger.info(f"Deleted {deleted_count} orphaned users.")
+            logger.info(f"\nDeleted {deleted_count} orphaned users.")
         else:
             logger.info("No users deleted.")
     
@@ -106,35 +122,26 @@ def force_cleanup_orphaned_users():
                     response = input(f"\nThis user has not been synced with Auth0. Delete? (yes/no): ")
                     if response.lower() == 'yes':
                         try:
-                            # Clean related records using the same list
-                            tables_to_clean = [
-                                ('smart_insights_usercredit', 'user_id'),
-                                ('smart_insights_creditusage', 'user_id'),
-                                ('hr_employee', 'user_id'),
-                                ('payroll_payrun', 'created_by_id'),
-                                ('payroll_payrun', 'approved_by_id'),
-                                ('invoices_invoice', 'created_by_id'),
-                                ('api_notifications_notification', 'user_id'),
-                                ('business_business', 'owner_id')
-                            ]
+                            logger.info(f"\nDeleting user with all dependencies...")
                             
-                            for table, column in tables_to_clean:
+                            # Delete from all dependent tables
+                            for table, column, constraint in dependencies:
                                 try:
                                     cursor.execute(f"DELETE FROM {table} WHERE {column} = %s", [user_id])
                                     if cursor.rowcount > 0:
-                                        logger.info(f"  Cleaned {cursor.rowcount} records from {table}")
-                                except:
-                                    pass
+                                        logger.info(f"  ✓ Cleaned {cursor.rowcount} records from {table}.{column}")
+                                except Exception as e:
+                                    logger.warning(f"  ⚠ Could not clean {table}.{column}: {str(e)}")
                             
                             # Delete the user
                             cursor.execute("DELETE FROM custom_auth_user WHERE id = %s", [user_id])
-                            logger.info(f"Deleted user {email}")
+                            logger.info(f"  ✓ Deleted user {email}")
                         except Exception as e:
-                            logger.error(f"Error deleting user {email}: {str(e)}")
+                            logger.error(f"  ✗ Error deleting user {email}: {str(e)}")
                 else:
                     logger.info(f"User {email} has been synced with Auth0 (auth0_sub: {auth0_sub})")
             else:
                 logger.info(f"User {email} not found in database")
 
 if __name__ == "__main__":
-    force_cleanup_orphaned_users()
+    comprehensive_cleanup_orphaned_users()
