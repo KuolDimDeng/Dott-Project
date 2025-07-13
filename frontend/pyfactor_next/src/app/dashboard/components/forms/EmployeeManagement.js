@@ -27,7 +27,7 @@ import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 import { DEPARTMENTS, POSITIONS, EMPLOYMENT_TYPES } from '@/utils/employeeConstants';
 import { getAllCountries, getSSNInfoByCountry } from '@/utils/countrySSNMapping';
 import PhoneInput from '@/components/ui/PhoneInput';
-import { getInternationalPhoneNumber } from '@/utils/countryPhoneCodes';
+import { getInternationalPhoneNumber, validatePhoneNumber } from '@/utils/countryPhoneCodes';
 
 // Tooltip component for field help
 const FieldTooltip = ({ text, position = 'top' }) => {
@@ -663,6 +663,14 @@ function EmployeeManagement({ onNavigate }) {
       }
       if (actualAge > 100) {
         errors.dateOfBirth = 'Please enter a valid date of birth';
+      }
+    }
+    
+    // Phone number validation
+    if (formData.phone) {
+      const phoneValidation = validatePhoneNumber(formData.phone, formData.phoneCountryCode);
+      if (!phoneValidation.isValid) {
+        errors.phone = phoneValidation.error;
       }
     }
     

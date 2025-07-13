@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDownIcon } from '@heroicons/react/24/outline';
-import { COUNTRY_PHONE_CODES, getCountryByCode, formatPhoneNumber, getInternationalPhoneNumber } from '@/utils/countryPhoneCodes';
+import { COUNTRY_PHONE_CODES, getCountryByCode, formatPhoneNumber, getInternationalPhoneNumber, validatePhoneNumber } from '@/utils/countryPhoneCodes';
 
 const PhoneInput = ({ 
   value = '', 
@@ -52,15 +52,20 @@ const PhoneInput = ({
     const inputValue = e.target.value;
     // Remove all non-numeric characters for storage
     const cleanNumber = inputValue.replace(/\D/g, '');
+    
+    // Always allow the change, validation will be shown in UI
     onChange?.(cleanNumber);
   };
 
   // Format the display value
   const formattedValue = formatPhoneNumber(value, countryCode);
+  
+  // Validate current phone number
+  const validation = value ? validatePhoneNumber(value, countryCode) : { isValid: true, error: null };
 
   return (
     <div className="relative">
-      <div className={`flex border rounded-md ${error ? 'border-red-500' : 'border-gray-300'} ${disabled ? 'bg-gray-100' : 'bg-white'}`}>
+      <div className={`flex border rounded-md ${error || !validation.isValid ? 'border-red-500' : 'border-gray-300'} ${disabled ? 'bg-gray-100' : 'bg-white'}`}>
         {/* Country Code Selector */}
         <div className="relative" ref={dropdownRef}>
           <button
@@ -130,8 +135,15 @@ const PhoneInput = ({
         />
       </div>
 
+      {/* Validation error message */}
+      {!validation.isValid && (
+        <div className="mt-1 text-xs text-red-600">
+          {validation.error}
+        </div>
+      )}
+      
       {/* Helper text showing international format */}
-      {value && !error && (
+      {value && !error && validation.isValid && (
         <div className="mt-1 text-xs text-gray-500">
           International format: {getInternationalPhoneNumber(value, countryCode)}
         </div>

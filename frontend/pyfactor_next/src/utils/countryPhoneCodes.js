@@ -125,3 +125,46 @@ export const getInternationalPhoneNumber = (phoneNumber, countryCode) => {
   
   return `${country.phoneCode}${cleanNumber}`;
 };
+
+/**
+ * Validate phone number based on country-specific rules
+ */
+export const validatePhoneNumber = (phoneNumber, countryCode) => {
+  if (!phoneNumber) return { isValid: false, error: 'Phone number is required' };
+  
+  const country = getCountryByCode(countryCode);
+  const cleanNumber = phoneNumber.replace(/\D/g, '');
+  
+  // Country-specific validation rules
+  const validationRules = {
+    'US': { minLength: 10, maxLength: 10 },
+    'CA': { minLength: 10, maxLength: 10 },
+    'GB': { minLength: 10, maxLength: 11 },
+    'IN': { minLength: 10, maxLength: 10 },
+    'AU': { minLength: 9, maxLength: 9 },
+    'DE': { minLength: 11, maxLength: 12 },
+    'FR': { minLength: 10, maxLength: 10 },
+    'CN': { minLength: 11, maxLength: 11 },
+    'JP': { minLength: 10, maxLength: 11 },
+    'BR': { minLength: 10, maxLength: 11 },
+    'KE': { minLength: 9, maxLength: 9 }
+  };
+  
+  const rules = validationRules[countryCode] || { minLength: 7, maxLength: 15 }; // Default fallback
+  
+  if (cleanNumber.length < rules.minLength) {
+    return { 
+      isValid: false, 
+      error: `Phone number for ${country.country} must be at least ${rules.minLength} digits` 
+    };
+  }
+  
+  if (cleanNumber.length > rules.maxLength) {
+    return { 
+      isValid: false, 
+      error: `Phone number for ${country.country} must not exceed ${rules.maxLength} digits` 
+    };
+  }
+  
+  return { isValid: true, error: null };
+};
