@@ -565,6 +565,7 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
         return Response({"exists": exists})
     
     @action(detail=False, methods=['post'], url_path='create')
+    @transaction.atomic
     def create_user(self, request):
         """Create user directly in Auth0 and backend"""
         try:
@@ -606,6 +607,18 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
+            # Check if user already exists in this tenant
+            if User.objects.filter(email__iexact=email, tenant=request.user.tenant).exists():
+                logger.warning(f"[DirectUserCreation] User with email {email} already exists in tenant")
+                return Response(
+                    {
+                        "error": "A user with this email already exists", 
+                        "message": "This email address is already associated with a user account. Please use a different email address or contact the existing user.",
+                        "userFriendly": True
+                    },
+                    status=status.HTTP_409_CONFLICT
+                )
+            
             if role not in ['ADMIN', 'USER']:
                 return Response(
                     {"error": "Invalid role. Must be ADMIN or USER"},
@@ -645,7 +658,8 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
                         status=status.HTTP_404_NOT_FOUND
                     )
             
-            # Create user in database
+            # Create user in database (within transaction)
+            logger.info(f"[DirectUserCreation] Creating user in database for {email}")
             user = User.objects.create(
                 email=email,
                 role=role,
@@ -654,6 +668,7 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
                 is_active=True,
                 auth0_sub=f"pending_{email}_{timezone.now().timestamp()}"  # Temporary ID
             )
+            logger.info(f"[DirectUserCreation] User created in database with ID: {user.id}")
             
             # Create page permissions
             from custom_auth.models import UserPageAccess, PagePermission
@@ -726,6 +741,8 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
             
         except Exception as e:
             logger.error(f"[DirectUserCreation] Error creating user: {str(e)}")
+            logger.info(f"[DirectUserCreation] Transaction will be rolled back due to error")
+            # @transaction.atomic ensures all database changes are rolled back automatically
             return Response(
                 {"error": f"Failed to create user: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
