@@ -245,6 +245,12 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
     try {
       setLoading(true);
       
+      // Log the request details
+      logger.info('[UserManagement Frontend] ========== FETCH USERS START ==========');
+      logger.info('[UserManagement Frontend] Document cookies:', document.cookie);
+      logger.info('[UserManagement Frontend] Session storage:', JSON.stringify(sessionStorage.getItem('session') || 'null'));
+      logger.info('[UserManagement Frontend] Local storage keys:', Object.keys(localStorage));
+      
       // Fetch users from the proper User Management API (not HR employees)
       const response = await fetch('/api/user-management/users', {
         method: 'GET',
@@ -253,6 +259,10 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
         },
         credentials: 'include' // Ensure cookies are sent
       });
+      
+      logger.info('[UserManagement Frontend] Response status:', response.status);
+      logger.info('[UserManagement Frontend] Response ok:', response.ok);
+      logger.info('[UserManagement Frontend] Response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
         // Log the actual error for debugging

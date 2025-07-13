@@ -12,11 +12,22 @@ import { logger } from '@/utils/logger';
  */
 export async function GET(request) {
   try {
-    logger.info('[UserManagement] Fetching users for tenant');
+    logger.info('[UserManagement] ========== GET USERS REQUEST START ==========');
+    logger.info('[UserManagement] Request URL:', request.url);
+    logger.info('[UserManagement] Request headers:', Object.fromEntries(request.headers.entries()));
     
     // Get session and user info from request headers/cookies
     const session = await getSession(request);
+    logger.info('[UserManagement] Session result:', session);
+    
     if (!session || !session.user) {
+      logger.error('[UserManagement] Authentication failed - no session or user');
+      logger.error('[UserManagement] Session details:', { 
+        hasSession: !!session, 
+        hasUser: session?.user ? true : false,
+        sessionKeys: session ? Object.keys(session) : [],
+        userKeys: session?.user ? Object.keys(session.user) : []
+      });
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -127,15 +138,26 @@ export async function POST(request) {
  */
 async function getSession(request) {
   try {
+    logger.info('[UserManagement] ========== GET SESSION START ==========');
+    
     // Get cookies from request headers
     const cookieHeader = request.headers.get('cookie') || '';
+    logger.info('[UserManagement] Cookie header:', cookieHeader);
+    logger.info('[UserManagement] Cookie header length:', cookieHeader.length);
+    logger.info('[UserManagement] Has sid cookie:', cookieHeader.includes('sid='));
     
     if (!cookieHeader || !cookieHeader.includes('sid=')) {
       logger.warn('[UserManagement] No session cookie found in request');
       return null;
     }
     
+    // Extract sid value for logging
+    const sidMatch = cookieHeader.match(/sid=([^;]+)/);
+    const sidValue = sidMatch ? sidMatch[1] : 'not found';
+    logger.info('[UserManagement] SID value:', sidValue.substring(0, 8) + '...');
+    
     // First try to get user info from session-v2 endpoint (internal call)
+    logger.info('[UserManagement] Calling session-v2 endpoint...');
     const sessionResponse = await fetch(`${request.nextUrl.origin}/api/auth/session-v2`, {
       headers: {
         'cookie': cookieHeader,
@@ -144,27 +166,45 @@ async function getSession(request) {
       cache: 'no-store'
     });
     
+    logger.info('[UserManagement] Session-v2 response status:', sessionResponse.status);
+    logger.info('[UserManagement] Session-v2 response ok:', sessionResponse.ok);
+    
     if (sessionResponse.ok) {
       const sessionData = await sessionResponse.json();
+      logger.info('[UserManagement] Session-v2 response data:', sessionData);
+      logger.info('[UserManagement] Session data keys:', Object.keys(sessionData));
+      logger.info('[UserManagement] Has user in session data:', !!sessionData.user);
+      
       if (sessionData && sessionData.user) {
-        logger.info('[UserManagement] Got real session data from session-v2');
-        return {
-          user: {
-            id: sessionData.user.sub || sessionData.user.id,
-            email: sessionData.user.email,
-            name: sessionData.user.name || sessionData.user.email,
-            tenantId: sessionData.user.tenantId || sessionData.user.tenant_id,
-            role: sessionData.user.role || 'OWNER',
-            mfa_enabled: sessionData.user.mfa_enabled || false,
-            permissions: sessionData.user.permissions || [],
-            sessionToken: sessionData.accessToken || sessionData.access_token,
-            sessionId: sessionData.sessionId || sessionData.sid
-          }
+        logger.info('[UserManagement] User data from session-v2:', sessionData.user);
+        logger.info('[UserManagement] User data keys:', Object.keys(sessionData.user));
+        
+        const user = {
+          id: sessionData.user.sub || sessionData.user.id,
+          email: sessionData.user.email,
+          name: sessionData.user.name || sessionData.user.email,
+          tenantId: sessionData.user.tenantId || sessionData.user.tenant_id,
+          role: sessionData.user.role || 'OWNER',
+          mfa_enabled: sessionData.user.mfa_enabled || false,
+          permissions: sessionData.user.permissions || [],
+          sessionToken: sessionData.accessToken || sessionData.access_token,
+          sessionId: sessionData.sessionId || sessionData.sid
         };
+        
+        logger.info('[UserManagement] Constructed user object:', user);
+        logger.info('[UserManagement] Got real session data from session-v2');
+        return { user };
+      } else {
+        logger.warn('[UserManagement] Session data exists but no user found');
       }
+    } else {
+      logger.warn('[UserManagement] Session-v2 request failed:', sessionResponse.status);
+      const errorText = await sessionResponse.text().catch(() => 'Could not read error');
+      logger.warn('[UserManagement] Session-v2 error response:', errorText);
     }
     
     // Fallback: try unified profile endpoint (internal call)
+    logger.info('[UserManagement] Trying profile endpoint fallback...');
     const profileResponse = await fetch(`${request.nextUrl.origin}/api/user/profile`, {
       headers: {
         'cookie': cookieHeader,
@@ -173,31 +213,44 @@ async function getSession(request) {
       cache: 'no-store'
     });
     
+    logger.info('[UserManagement] Profile response status:', profileResponse.status);
+    logger.info('[UserManagement] Profile response ok:', profileResponse.ok);
+    
     if (profileResponse.ok) {
       const profileData = await profileResponse.json();
+      logger.info('[UserManagement] Profile response data:', profileData);
+      logger.info('[UserManagement] Profile data keys:', Object.keys(profileData));
+      
       if (profileData) {
-        logger.info('[UserManagement] Got real user data from profile endpoint');
-        return {
-          user: {
-            id: profileData.id || profileData.userId,
-            email: profileData.email,
-            name: profileData.name || profileData.email,
-            tenantId: profileData.tenantId || profileData.tenant_id,
-            role: profileData.role || 'OWNER',
-            mfa_enabled: profileData.mfa_enabled || false,
-            permissions: profileData.permissions || [],
-            sessionToken: profileData.accessToken || profileData.access_token,
-            sessionId: profileData.sessionId || profileData.sid
-          }
+        const user = {
+          id: profileData.id || profileData.userId,
+          email: profileData.email,
+          name: profileData.name || profileData.email,
+          tenantId: profileData.tenantId || profileData.tenant_id,
+          role: profileData.role || 'OWNER',
+          mfa_enabled: profileData.mfa_enabled || false,
+          permissions: profileData.permissions || [],
+          sessionToken: profileData.accessToken || profileData.access_token,
+          sessionId: profileData.sessionId || profileData.sid
         };
+        
+        logger.info('[UserManagement] Constructed user from profile:', user);
+        logger.info('[UserManagement] Got real user data from profile endpoint');
+        return { user };
       }
+    } else {
+      logger.warn('[UserManagement] Profile request failed:', profileResponse.status);
+      const errorText = await profileResponse.text().catch(() => 'Could not read error');
+      logger.warn('[UserManagement] Profile error response:', errorText);
     }
     
-    logger.warn('[UserManagement] No valid session found');
+    logger.warn('[UserManagement] ========== NO VALID SESSION FOUND ==========');
     return null;
     
   } catch (error) {
+    logger.error('[UserManagement] ========== SESSION RETRIEVAL ERROR ==========');
     logger.error('[UserManagement] Session retrieval failed:', error);
+    logger.error('[UserManagement] Error stack:', error.stack);
     return null;
   }
 }
