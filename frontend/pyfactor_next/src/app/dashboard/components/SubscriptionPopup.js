@@ -485,32 +485,35 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
       id: 'professional',
       name: 'Professional',
       price: {
-        monthly: 29,
-        yearly: 299,
+        monthly: 15,
+        sixMonth: 75,
+        yearly: 144,
       },
       features: [
-        'Advanced Code Analysis',
-        'Unlimited API Requests',
-        'Priority Support',
-        'Up to 5 Users',
-        'Custom Integrations',
+        'Up to 3 users',
+        'Unlimited storage',
+        'All features included',
+        'Priority support',
+        'Advanced analytics',
+        'Multi-location support',
       ],
     },
     {
       id: 'enterprise',
       name: 'Enterprise',
       price: {
-        monthly: 99,
-        yearly: 999,
+        monthly: 45,
+        sixMonth: 225,
+        yearly: 432,
       },
       features: [
-        'Premium Code Analysis',
-        'Unlimited Everything',
-        'Dedicated Support',
-        'Unlimited Users',
-        'Custom Integrations',
-        'Enterprise Security',
-        'Custom Reporting',
+        'Unlimited users',
+        'Unlimited everything',
+        'All features included',
+        'Dedicated support',
+        'Custom onboarding',
+        'AI-powered insights',
+        'API access',
       ],
     },
   ];
@@ -578,7 +581,7 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
                   
                   <div className="px-6 pb-4">
                     <p className="text-gray-600 mb-6">Select a premium plan to unlock advanced features and capabilities.</p>
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-4 flex-wrap">
                       <label className="inline-flex items-center">
                         <input
                           type="radio"
@@ -595,6 +598,22 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
                           type="radio"
                           className="form-radio h-5 w-5 text-blue-600"
                           name="billingCycle"
+                          value="sixMonth"
+                          checked={billingCycle === 'sixMonth'}
+                          onChange={handleBillingCycleChange}
+                        />
+                        <span className="ml-2 flex items-center text-gray-700">
+                          6 Months
+                          <span className="ml-2 bg-blue-600 text-white px-2 py-0.5 rounded text-xs font-bold">
+                            SAVE 17%
+                          </span>
+                        </span>
+                      </label>
+                      <label className="inline-flex items-center">
+                        <input
+                          type="radio"
+                          className="form-radio h-5 w-5 text-blue-600"
+                          name="billingCycle"
                           value="yearly"
                           checked={billingCycle === 'yearly'}
                           onChange={handleBillingCycleChange}
@@ -602,7 +621,7 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
                         <span className="ml-2 flex items-center text-gray-700">
                           Annual Billing
                           <span className="ml-2 bg-green-600 text-white px-2 py-0.5 rounded text-xs font-bold">
-                            SAVE 15%
+                            SAVE 20%
                           </span>
                         </span>
                       </label>
@@ -644,9 +663,17 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
                               <p className={`text-3xl font-bold mb-4 ${colorClasses.text}`}>
                                 ${plan.price[billingCycle]}
                                 <span className="text-sm text-gray-500 font-normal ml-1">
-                                  {billingCycle === 'monthly' ? '/month' : '/year'}
+                                  {billingCycle === 'monthly' ? '/month' : 
+                                   billingCycle === 'sixMonth' ? '/6 months' : '/year'}
                                 </span>
                               </p>
+                              {billingCycle !== 'monthly' && (
+                                <p className="text-sm text-gray-600 mb-2">
+                                  ${billingCycle === 'sixMonth' ? 
+                                    Math.round((plan.price[billingCycle] / 6) * 100) / 100 : 
+                                    Math.round((plan.price[billingCycle] / 12) * 100) / 100}/month
+                                </p>
+                              )}
                               
                               {/* Plan features */}
                               <ul className="mt-4 space-y-3">
