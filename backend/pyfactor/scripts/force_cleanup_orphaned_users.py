@@ -53,17 +53,24 @@ def force_cleanup_orphaned_users():
                     
                     # Delete related records first (if they exist)
                     tables_to_clean = [
-                        'custom_auth_userpageaccess',
-                        'custom_auth_userinvitation', 
-                        'hr_employee'  # employee records linked to user
+                        ('smart_insights_usercredit', 'user_id'),
+                        ('smart_insights_creditusage', 'user_id'),
+                        ('hr_employee', 'user_id'),
+                        ('payroll_payrun', 'created_by_id'),
+                        ('payroll_payrun', 'approved_by_id'),
+                        ('invoices_invoice', 'created_by_id'),
+                        ('api_notifications_notification', 'user_id'),
+                        ('business_business', 'owner_id')
                     ]
                     
-                    for table in tables_to_clean:
+                    for table, column in tables_to_clean:
                         try:
-                            cursor.execute(f"DELETE FROM {table} WHERE user_id = %s", [user_id])
-                            logger.info(f"  Cleaned {table} for user {user_id}")
+                            cursor.execute(f"DELETE FROM {table} WHERE {column} = %s", [user_id])
+                            if cursor.rowcount > 0:
+                                logger.info(f"  Cleaned {cursor.rowcount} records from {table}")
                         except Exception as e:
-                            logger.info(f"  Skipped {table} (doesn't exist or no records): {str(e)}")
+                            # Silently skip tables that don't exist
+                            pass
                     
                     # Delete the user record
                     cursor.execute("DELETE FROM custom_auth_user WHERE id = %s", [user_id])
@@ -98,9 +105,27 @@ def force_cleanup_orphaned_users():
                     response = input(f"\nThis user has not been synced with Auth0. Delete? (yes/no): ")
                     if response.lower() == 'yes':
                         try:
-                            # Clean related records
-                            cursor.execute("DELETE FROM custom_auth_userpageaccess WHERE user_id = %s", [user_id])
-                            cursor.execute("DELETE FROM hr_employee WHERE user_id = %s", [user_id])
+                            # Clean related records using the same list
+                            tables_to_clean = [
+                                ('smart_insights_usercredit', 'user_id'),
+                                ('smart_insights_creditusage', 'user_id'),
+                                ('hr_employee', 'user_id'),
+                                ('payroll_payrun', 'created_by_id'),
+                                ('payroll_payrun', 'approved_by_id'),
+                                ('invoices_invoice', 'created_by_id'),
+                                ('api_notifications_notification', 'user_id'),
+                                ('business_business', 'owner_id')
+                            ]
+                            
+                            for table, column in tables_to_clean:
+                                try:
+                                    cursor.execute(f"DELETE FROM {table} WHERE {column} = %s", [user_id])
+                                    if cursor.rowcount > 0:
+                                        logger.info(f"  Cleaned {cursor.rowcount} records from {table}")
+                                except:
+                                    pass
+                            
+                            # Delete the user
                             cursor.execute("DELETE FROM custom_auth_user WHERE id = %s", [user_id])
                             logger.info(f"Deleted user {email}")
                         except Exception as e:
