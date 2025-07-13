@@ -88,9 +88,7 @@ export default function ProfilePage() {
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="employment">Employment</TabsTrigger>
-          {employee?.compensation_type === 'WAGE' && (
-            <TabsTrigger value="timesheet">Timesheet</TabsTrigger>
-          )}
+          <TabsTrigger value="timesheet">Timesheet</TabsTrigger>
         </TabsList>
         
         <TabsContent value="profile" className="space-y-4">
@@ -142,11 +140,9 @@ export default function ProfilePage() {
           <EmployeeInfo employee={employee} />
         </TabsContent>
         
-        {employee?.compensation_type === 'WAGE' && (
-          <TabsContent value="timesheet">
-            <TimesheetTab employee={employee} session={session} />
-          </TabsContent>
-        )}
+        <TabsContent value="timesheet">
+          <TimesheetTab employee={employee} session={session} />
+        </TabsContent>
       </Tabs>
     </div>
   );

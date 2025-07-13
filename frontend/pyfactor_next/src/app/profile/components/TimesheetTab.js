@@ -6,8 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Clock, Calendar, DollarSign, User, CheckCircle, XCircle, Clock3 } from 'lucide-react';
+import { Clock, Calendar, DollarSign, User, CheckCircle, XCircle, Clock3, FolderOpen, Briefcase } from 'lucide-react';
 import StandardSpinner from '@/components/ui/StandardSpinner';
 import toast from 'react-hot-toast';
 
@@ -17,6 +18,8 @@ const TimesheetTab = ({ employee, session }) => {
   const [timesheetEntries, setTimesheetEntries] = useState({});
   const [supervisor, setSupervisor] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [projects, setProjects] = useState([]);
+  const [tasks, setTasks] = useState([]);
 
   const weekStart = startOfWeek(new Date());
   const weekEnd = endOfWeek(new Date());
@@ -107,6 +110,65 @@ const TimesheetTab = ({ employee, session }) => {
     }));
   };
 
+  const handleProjectChange = (date, projectId) => {
+    setTimesheetEntries(prev => ({
+      ...prev,
+      [date]: {
+        ...prev[date],
+        date,
+        project: projectId,
+        task: '', // Reset task when project changes
+      },
+    }));
+  };
+
+  const handleTaskChange = (date, taskId) => {
+    setTimesheetEntries(prev => ({
+      ...prev,
+      [date]: {
+        ...prev[date],
+        date,
+        task: taskId,
+      },
+    }));
+  };
+
+  const handleDescriptionChange = (date, description) => {
+    setTimesheetEntries(prev => ({
+      ...prev,
+      [date]: {
+        ...prev[date],
+        date,
+        description: description,
+      },
+    }));
+  };
+
+  // Auto-fill standard workdays for salaried employees
+  const autoFillStandardHours = () => {
+    if (!isSalariedEmployee) return;
+    
+    const newEntries = {};
+    weekDays.forEach(day => {
+      const dateStr = format(day, 'yyyy-MM-dd');
+      const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+      
+      if (!isWeekend && !timesheetEntries[dateStr]?.regular_hours) {
+        newEntries[dateStr] = {
+          date: dateStr,
+          regular_hours: '8.00',
+          project: 'general',
+          task: 'admin',
+          description: 'Standard workday',
+        };
+      }
+    });
+    
+    if (Object.keys(newEntries).length > 0) {
+      setTimesheetEntries(prev => ({ ...prev, ...newEntries }));
+    }
+  };
+
   const createOrUpdateTimesheet = async () => {
     setSubmitting(true);
     try {
@@ -151,6 +213,9 @@ const TimesheetTab = ({ employee, session }) => {
               timesheet: timesheetId,
               date,
               regular_hours: parseFloat(entry.regular_hours),
+              project: entry.project || 'general',
+              task: entry.task || 'admin',
+              description: entry.description || ''
             }),
           });
         }
@@ -248,15 +313,9 @@ const TimesheetTab = ({ employee, session }) => {
     );
   }
 
-  if (employee.compensation_type !== 'WAGE') {
-    return (
-      <Alert>
-        <AlertDescription>
-          Timesheet is only available for hourly wage employees.
-        </AlertDescription>
-      </Alert>
-    );
-  }
+  // Industry standard: All employees track hours for compliance, project billing, and overtime
+  const isSalariedEmployee = employee.compensation_type === 'SALARY';
+  const defaultHours = isSalariedEmployee ? 8 : 0; // Default 8 hours for salaried employees
 
   return (
     <div className="space-y-6">
@@ -312,10 +371,27 @@ const TimesheetTab = ({ employee, session }) => {
       {/* Time Entry Card */}
       <Card>
         <CardHeader>
-          <CardTitle>Time Entry</CardTitle>
-          <CardDescription>
-            Enter your hours worked for each day
-          </CardDescription>
+          <div className="flex justify-between items-start">
+            <div>
+              <CardTitle>Time Entry</CardTitle>
+              <CardDescription>
+                {isSalariedEmployee 
+                  ? 'Track your hours by project for billing, compliance, and overtime calculations'
+                  : 'Enter your hours worked for each day with project details for accurate billing'
+                }
+              </CardDescription>
+            </div>
+            {isSalariedEmployee && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={autoFillStandardHours}
+                disabled={currentTimesheet?.status === 'APPROVED'}
+              >
+                Auto-fill 8hrs/day
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -328,31 +404,93 @@ const TimesheetTab = ({ employee, session }) => {
               return (
                 <div
                   key={dateStr}
-                  className={`grid grid-cols-1 md:grid-cols-3 gap-4 items-center p-4 rounded-lg ${
-                    isWeekend ? 'bg-gray-50' : 'bg-white'
+                  className={`p-4 rounded-lg border ${
+                    isWeekend ? 'bg-gray-50 border-gray-200' : 'bg-white border-gray-100'
                   } ${isDisabled ? 'opacity-60' : ''}`}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 mb-3">
                     <Calendar className="h-4 w-4 text-gray-400" />
                     <div>
                       <p className="font-medium">{format(day, 'EEEE')}</p>
                       <p className="text-sm text-gray-500">{format(day, 'MMM d, yyyy')}</p>
                     </div>
+                    {isWeekend && (
+                      <span className="ml-auto text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">
+                        Weekend
+                      </span>
+                    )}
                   </div>
-                  <div>
-                    <Label>Regular Hours</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="24"
-                      step="0.25"
-                      value={entry.regular_hours || ''}
-                      onChange={(e) => handleHoursChange(dateStr, e.target.value)}
-                      disabled={isDisabled}
-                      placeholder="0.00"
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                      <Label>Regular Hours</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        max="24"
+                        step="0.25"
+                        value={entry.regular_hours || ''}
+                        onChange={(e) => handleHoursChange(dateStr, e.target.value)}
+                        disabled={isDisabled}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div>
+                      <Label>Project</Label>
+                      <Select
+                        value={entry.project || 'general'}
+                        onValueChange={(value) => handleProjectChange(dateStr, value)}
+                        disabled={isDisabled}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select project" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="general">General/Admin</SelectItem>
+                          <SelectItem value="client-a">Client A</SelectItem>
+                          <SelectItem value="client-b">Client B</SelectItem>
+                          <SelectItem value="development">Development</SelectItem>
+                          <SelectItem value="marketing">Marketing</SelectItem>
+                          <SelectItem value="operations">Operations</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Task</Label>
+                      <Select
+                        value={entry.task || 'admin'}
+                        onValueChange={(value) => handleTaskChange(dateStr, value)}
+                        disabled={isDisabled}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select task" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="admin">Administrative</SelectItem>
+                          <SelectItem value="meetings">Meetings</SelectItem>
+                          <SelectItem value="development">Development</SelectItem>
+                          <SelectItem value="testing">Testing</SelectItem>
+                          <SelectItem value="documentation">Documentation</SelectItem>
+                          <SelectItem value="support">Support</SelectItem>
+                          <SelectItem value="training">Training</SelectItem>
+                          <SelectItem value="research">Research</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                  <div className="text-right">
+                  {entry.regular_hours && parseFloat(entry.regular_hours) > 0 && (
+                    <div className="mt-3">
+                      <Label>Notes/Description (Optional)</Label>
+                      <Input
+                        type="text"
+                        value={entry.description || ''}
+                        onChange={(e) => handleDescriptionChange(dateStr, e.target.value)}
+                        disabled={isDisabled}
+                        placeholder="Brief description of work performed..."
+                        className="mt-1"
+                      />
+                    </div>
+                  )}
+                  <div className="text-right mt-2">
                     <p className="text-sm text-gray-500">Pay</p>
                     <p className="font-medium">
                       ${((parseFloat(entry.regular_hours) || 0) * (parseFloat(employee.wage_per_hour) || 0)).toFixed(2)}

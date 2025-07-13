@@ -127,10 +127,22 @@ export async function POST(request) {
  */
 async function getSession(request) {
   try {
+    // Import cookies function
+    const { cookies } = await import('next/headers');
+    const cookieStore = await cookies();
+    
+    // Get session cookie
+    const sessionCookie = cookieStore.get('sid');
+    if (!sessionCookie) {
+      logger.warn('[UserManagement] No session cookie found');
+      return null;
+    }
+    
     // First try to get user info from session-v2 endpoint (internal call)
     const sessionResponse = await fetch(`${request.nextUrl.origin}/api/auth/session-v2`, {
       headers: {
-        cookie: request.headers.get('cookie') || ''
+        'cookie': `sid=${sessionCookie.value}`,
+        'Content-Type': 'application/json'
       },
       cache: 'no-store'
     });
@@ -158,7 +170,8 @@ async function getSession(request) {
     // Fallback: try unified profile endpoint (internal call)
     const profileResponse = await fetch(`${request.nextUrl.origin}/api/user/profile`, {
       headers: {
-        cookie: request.headers.get('cookie') || ''
+        'cookie': `sid=${sessionCookie.value}`,
+        'Content-Type': 'application/json'
       },
       cache: 'no-store'
     });
