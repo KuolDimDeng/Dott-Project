@@ -200,11 +200,29 @@ function EmployeeManagement({ onNavigate }) {
   
   // Filter employees for supervisor dropdown - only show employees marked as supervisors
   const filteredSupervisors = useMemo(() => {
+    logger.debug('🔍 [EmployeeManagement] Filtering supervisors:', {
+      totalBasicEmployees: basicEmployees.length,
+      basicEmployeesData: basicEmployees.map(emp => ({
+        id: emp.id,
+        name: `${emp.first_name} ${emp.last_name}`,
+        active: emp.active,
+        is_supervisor: emp.is_supervisor
+      }))
+    });
+    
     const supervisorEmployees = basicEmployees.filter(emp => 
       emp.active && 
       emp.is_supervisor && // Only show employees marked as supervisors
       emp.id !== selectedEmployee?.id
     );
+    
+    logger.debug('🔍 [EmployeeManagement] Filtered supervisors result:', {
+      supervisorCount: supervisorEmployees.length,
+      supervisors: supervisorEmployees.map(emp => ({
+        id: emp.id,
+        name: `${emp.first_name} ${emp.last_name}`
+      }))
+    });
     
     if (!supervisorSearch) return supervisorEmployees;
     
@@ -263,7 +281,13 @@ function EmployeeManagement({ onNavigate }) {
       
       const response = await hrApi.employees.getBasic();
       logger.info('✅ [EmployeeManagement] Fetched basic employee data:', {
-        count: response?.length || 0
+        count: response?.length || 0,
+        employees: response?.map(emp => ({
+          id: emp.id,
+          name: `${emp.first_name} ${emp.last_name}`,
+          is_supervisor: emp.is_supervisor,
+          active: emp.active
+        })) || []
       });
       
       setBasicEmployees(response || []);
@@ -778,6 +802,7 @@ function EmployeeManagement({ onNavigate }) {
       
       // Refresh data and return to list
       await fetchEmployees();
+      await fetchBasicEmployees(); // Refresh supervisor dropdown data
       resetForm();
       setSelectedEmployee(null);
       setActiveTab('list');
@@ -818,6 +843,7 @@ function EmployeeManagement({ onNavigate }) {
       setIsDeleteModalOpen(false);
       setSelectedEmployee(null);
       fetchEmployees();
+      fetchBasicEmployees(); // Refresh supervisor dropdown data
     } catch (error) {
       logger.error('❌ [EmployeeManagement] Error deleting employee:', error);
       
