@@ -10,11 +10,16 @@ const adminSecurityHeaders = {
 
 async function handleRequest(request, method) {
   try {
+    console.log('[Admin Proxy] Request:', method, request.url);
+    
     const cookieStore = cookies();
     const accessToken = cookieStore.get('admin_access_token')?.value;
     const csrfToken = request.headers.get('X-CSRF-Token');
 
+    console.log('[Admin Proxy] Access token:', accessToken ? 'exists' : 'missing');
+
     if (!accessToken) {
+      console.log('[Admin Proxy] No access token, returning 401');
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401, headers: adminSecurityHeaders }
@@ -25,6 +30,9 @@ async function handleRequest(request, method) {
     const url = new URL(request.url);
     const pathSegments = url.pathname.split('/').slice(4); // Remove /api/admin/proxy/
     const apiPath = '/' + pathSegments.join('/');
+
+    console.log('[Admin Proxy] API path:', apiPath);
+    console.log('[Admin Proxy] Query params:', url.search);
 
     // Prepare request body for non-GET requests
     let body;
@@ -38,7 +46,11 @@ async function handleRequest(request, method) {
 
     // Forward the request to Django backend
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.dottapps.com';
-    const response = await fetch(`${backendUrl}/api/notifications${apiPath}${url.search}`, {
+    const fullUrl = `${backendUrl}/api/notifications${apiPath}${url.search}`;
+    
+    console.log('[Admin Proxy] Backend URL:', fullUrl);
+    
+    const response = await fetch(fullUrl, {
       method,
       headers: {
         'Content-Type': 'application/json',
@@ -50,7 +62,11 @@ async function handleRequest(request, method) {
       ...(body && { body: JSON.stringify(body) }),
     });
 
+    console.log('[Admin Proxy] Backend response status:', response.status);
+
     const data = await response.json().catch(() => null);
+
+    console.log('[Admin Proxy] Backend response data:', data);
 
     return NextResponse.json(data || { error: 'Request failed' }, { 
       status: response.status,

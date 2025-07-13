@@ -58,7 +58,10 @@ export default function UserManager({ adminUser }) {
     send_invitation: true
   });
 
-  if (!adminUser.can_view_all_users) {
+  console.log('[UserManager] Admin user:', adminUser);
+  console.log('[UserManager] Can view all users:', adminUser?.can_view_all_users);
+
+  if (!adminUser?.can_view_all_users) {
     return (
       <div className="p-6">
         <div className="text-center py-12">
@@ -77,6 +80,7 @@ export default function UserManager({ adminUser }) {
   const loadUsers = async () => {
     try {
       setIsLoading(true);
+      console.log('[UserManager] Starting loadUsers...');
       
       const params = new URLSearchParams({
         page: pagination.current_page.toString(),
@@ -85,6 +89,9 @@ export default function UserManager({ adminUser }) {
         ...filters
       });
 
+      console.log('[UserManager] Request params:', params.toString());
+      console.log('[UserManager] Fetching from:', `/api/admin/proxy/admin/users?${params}`);
+
       const response = await fetch(`/api/admin/proxy/admin/users?${params}`, {
         headers: {
           'Content-Type': 'application/json',
@@ -92,15 +99,21 @@ export default function UserManager({ adminUser }) {
         credentials: 'include',
       });
 
+      console.log('[UserManager] Response status:', response.status);
+      console.log('[UserManager] Response ok:', response.ok);
+
       if (response.ok) {
         const data = await response.json();
+        console.log('[UserManager] Response data:', data);
         setUsers(data.users || []);
         setPagination(data.pagination || pagination);
       } else {
+        const errorText = await response.text();
+        console.error('[UserManager] Error response:', errorText);
         toast.error('Failed to load users');
       }
     } catch (error) {
-      console.error('Error loading users:', error);
+      console.error('[UserManager] Error loading users:', error);
       toast.error('Network error. Please try again.');
     } finally {
       setIsLoading(false);
@@ -109,6 +122,7 @@ export default function UserManager({ adminUser }) {
 
   const loadUserStats = async () => {
     try {
+      console.log('[UserManager] Loading user stats...');
       const response = await fetch('/api/admin/proxy/admin/users/stats', {
         headers: {
           'Content-Type': 'application/json',
@@ -116,12 +130,18 @@ export default function UserManager({ adminUser }) {
         credentials: 'include',
       });
 
+      console.log('[UserManager] Stats response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('[UserManager] Stats data:', data);
         setUserStats(data);
+      } else {
+        const errorText = await response.text();
+        console.error('[UserManager] Stats error response:', errorText);
       }
     } catch (error) {
-      console.error('Error loading user stats:', error);
+      console.error('[UserManager] Error loading user stats:', error);
     }
   };
 

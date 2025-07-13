@@ -10,8 +10,12 @@ export function useAdminAuth() {
 
   const checkAuth = useCallback(async () => {
     try {
+      console.log('[useAdminAuth] Checking authentication...');
+      
       // Check if we have admin user data in localStorage
       const userData = localStorage.getItem('admin_user');
+      console.log('[useAdminAuth] Local storage user data:', userData ? 'exists' : 'missing');
+      
       if (!userData) {
         setIsLoading(false);
         return;
@@ -19,6 +23,7 @@ export function useAdminAuth() {
 
       // Verify token is still valid by making a request to protected endpoint
       // The token is stored in httpOnly cookies, so we just need to include credentials
+      console.log('[useAdminAuth] Verifying token with dashboard endpoint...');
       const response = await fetch('/api/admin/proxy/admin/dashboard', {
         headers: {
           'Content-Type': 'application/json',
@@ -26,17 +31,22 @@ export function useAdminAuth() {
         credentials: 'include',
       });
 
+      console.log('[useAdminAuth] Dashboard response status:', response.status);
+
       if (response.ok) {
-        setAdminUser(JSON.parse(userData));
+        const parsedUser = JSON.parse(userData);
+        console.log('[useAdminAuth] User authenticated:', parsedUser.email);
+        setAdminUser(parsedUser);
         setIsAuthenticated(true);
       } else {
+        console.log('[useAdminAuth] Token invalid or expired, clearing auth');
         // Token is invalid or expired, clear storage
         localStorage.removeItem('admin_user');
         setIsAuthenticated(false);
         setAdminUser(null);
       }
     } catch (error) {
-      console.error('Auth check failed:', error);
+      console.error('[useAdminAuth] Auth check failed:', error);
       // Clear invalid auth data
       localStorage.removeItem('admin_user');
       setIsAuthenticated(false);
