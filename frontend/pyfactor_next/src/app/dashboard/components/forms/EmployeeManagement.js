@@ -693,7 +693,7 @@ function EmployeeManagement({ onNavigate }) {
         wage_per_hour: formData.compensationType === 'HOURLY' ? 
           (parseFloat(formData.wagePerHour) || 0) : 
           // Calculate hourly rate for salaried employees (industry standard)
-          Math.min(9999.99, Math.round((parseFloat(formData.salary) / 2080) * 100) / 100), // 52 weeks × 40 hours, capped at DB limit
+          Math.min(9999.99, Math.round((parseFloat(formData.salary) / 2080) * 100) / 100), // 52 weeks × 40 hours, rounded and capped at DB limit
         hire_date: formData.hireDate,
         zip_code: formData.zipCode,
         emergency_contact_name: formData.emergencyContact,
