@@ -16,7 +16,7 @@ import {
 import StandardSpinner from '@/components/ui/StandardSpinner';
 
 export default function DashboardOverview({ data, onRefresh }) {
-  if (!data) {
+  if (!data || !data.stats) {
     return (
       <div className="p-6">
         <div className="flex items-center justify-center h-64">
@@ -29,32 +29,32 @@ export default function DashboardOverview({ data, onRefresh }) {
   const stats = [
     {
       name: 'Total Notifications',
-      value: data.stats.notifications.total,
-      change: data.stats.notifications.sent_today,
+      value: data.stats.notifications?.total || 0,
+      change: data.stats.notifications?.sent_today || 0,
       changeLabel: 'sent today',
       icon: BellIcon,
       color: 'blue',
     },
     {
       name: 'Active Users',
-      value: data.stats.users.total,
-      change: data.stats.users.active_today,
+      value: data.stats.users?.total || 0,
+      change: data.stats.users?.active_today || 0,
       changeLabel: 'active today',
       icon: UserGroupIcon,
       color: 'green',
     },
     {
       name: 'Tax Feedback',
-      value: data.stats.feedback.total,
-      change: data.stats.feedback.pending,
+      value: data.stats.feedback?.total || 0,
+      change: data.stats.feedback?.pending || 0,
       changeLabel: 'pending review',
       icon: ChatBubbleLeftRightIcon,
       color: 'yellow',
     },
     {
       name: 'Avg Read Rate',
-      value: `${data.stats.engagement.avg_read_rate}%`,
-      change: data.stats.engagement.notifications_this_month,
+      value: `${data.stats.engagement?.avg_read_rate || 0}%`,
+      change: data.stats.engagement?.notifications_this_month || 0,
       changeLabel: 'notifications this month',
       icon: ChartBarIcon,
       color: 'purple',
