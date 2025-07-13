@@ -65,6 +65,7 @@ const MyAccount = ({ userData }) => {
   const [showPayStubViewer, setShowPayStubViewer] = useState(false);
   const [organizationData, setOrganizationData] = useState([]);
   const [loadingOrganization, setLoadingOrganization] = useState(false);
+  const [hoveredEmployee, setHoveredEmployee] = useState(null);
   const fileInputRef = useRef(null);
   
   // Employment tab section visibility states
@@ -1398,7 +1399,7 @@ const MyAccount = ({ userData }) => {
   // Render a single employee card
   const renderEmployeeCard = (employee, level = 0) => {
     const initials = generateInitials(employee.first_name, employee.last_name, employee.full_name);
-    const [showTooltip, setShowTooltip] = useState(false);
+    const isHovered = hoveredEmployee === employee.id;
     
     return (
       <div key={employee.id} className={`relative ${level > 0 ? 'ml-8' : ''}`}>
@@ -1416,8 +1417,8 @@ const MyAccount = ({ userData }) => {
         {/* Employee Card */}
         <div 
           className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4 hover:shadow-md transition-all duration-200 hover:border-blue-300 cursor-pointer relative"
-          onMouseEnter={() => setShowTooltip(true)}
-          onMouseLeave={() => setShowTooltip(false)}
+          onMouseEnter={() => setHoveredEmployee(employee.id)}
+          onMouseLeave={() => setHoveredEmployee(null)}
         >
           <div className="flex items-start space-x-4">
             {/* Avatar */}
@@ -1465,7 +1466,7 @@ const MyAccount = ({ userData }) => {
           </div>
 
           {/* Hover Tooltip */}
-          {showTooltip && (
+          {isHovered && (
             <div className="absolute z-50 top-0 left-full ml-4 w-80 bg-gray-900 text-white text-sm rounded-lg p-4 shadow-xl">
               <div className="space-y-2">
                 <div className="font-semibold border-b border-gray-700 pb-2">
