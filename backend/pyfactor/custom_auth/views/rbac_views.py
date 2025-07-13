@@ -773,8 +773,8 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
             # Get Auth0 Management API token
             auth0_config = {
                 'domain': settings.AUTH0_DOMAIN or 'auth.dottapps.com',
-                'client_id': settings.AUTH0_M2M_CLIENT_ID,
-                'client_secret': settings.AUTH0_M2M_CLIENT_SECRET,
+                'client_id': settings.AUTH0_MANAGEMENT_CLIENT_ID,
+                'client_secret': settings.AUTH0_MANAGEMENT_CLIENT_SECRET,
                 'audience': f"https://{settings.AUTH0_DOMAIN or 'auth.dottapps.com'}/api/v2/"
             }
             
