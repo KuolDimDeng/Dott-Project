@@ -26,6 +26,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
     """
     # Make tenant_id optional to handle missing column gracefully
     tenant_id = serializers.UUIDField(read_only=True, required=False)
+    supervisor_name = serializers.SerializerMethodField()
     
     class Meta:
         model = Employee
@@ -35,7 +36,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
             'hire_date', 'salary', 'wage_per_hour', 'active', 'onboarded',
             'street', 'city', 'state', 'zip_code', 'country', 'compensation_type',
             'emergency_contact_name', 'emergency_contact_phone',
-            'direct_deposit', 'vacation_time', 'vacation_days_per_year', 'supervisor', 'user',
+            'direct_deposit', 'vacation_time', 'vacation_days_per_year', 'supervisor', 'supervisor_name', 'user',
             'security_number_type', 'ssn_last_four', 'created_at', 'updated_at', 'tenant_id'
         ]
         read_only_fields = ['id', 'employee_number', 'created_at', 'updated_at', 'ssn_last_four', 'tenant_id']
@@ -49,6 +50,12 @@ class EmployeeSerializer(serializers.ModelSerializer):
             data['tenant_id'] = getattr(instance, 'business_id', None)
             
         return data
+    
+    def get_supervisor_name(self, obj):
+        """Get supervisor's full name"""
+        if obj.supervisor:
+            return f"{obj.supervisor.first_name} {obj.supervisor.last_name}"
+        return None
 
 
 class RoleSerializer(serializers.ModelSerializer):

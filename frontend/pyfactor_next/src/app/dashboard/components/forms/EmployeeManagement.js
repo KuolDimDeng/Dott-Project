@@ -432,6 +432,15 @@ function EmployeeManagement({ onNavigate }) {
         ),
       },
       {
+        Header: 'Supervisor',
+        accessor: 'supervisorName',
+        Cell: ({ value, row }) => (
+          <div className="text-sm text-gray-900">
+            {value || row.original.supervisor_name || '-'}
+          </div>
+        ),
+      },
+      {
         Header: 'Status',
         accessor: 'status',
         Cell: ({ value }) => (
