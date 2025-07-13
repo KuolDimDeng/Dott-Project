@@ -76,12 +76,12 @@ export async function POST(request) {
       link_employee: backendData.link_employee
     });
     
-    // Call backend API to create user
+    // Call backend API to create user - using direct-users endpoint
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
-    logger.info('[UserManagement] Making backend request to:', `${backendUrl}/auth/rbac/users/`);
+    logger.info('[UserManagement] Making backend request to:', `${backendUrl}/auth/rbac/direct-users/create/`);
     logger.info('[UserManagement] Request data:', backendData);
     
-    const response = await fetch(`${backendUrl}/auth/rbac/users/`, {
+    const response = await fetch(`${backendUrl}/auth/rbac/direct-users/create/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

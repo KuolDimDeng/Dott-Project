@@ -744,10 +744,15 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
             {/* Left Column - Basic Info */}
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email Address
-                  <FieldTooltip content="User will receive a password reset email to set their password" />
-                </label>
+                <div className="mb-1">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Email Address
+                    <FieldTooltip content="User will receive a password reset email to set their password" />
+                  </label>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Enter the email address for the new user
+                  </p>
+                </div>
                 <input
                   type="email"
                   value={inviteData.email}
@@ -758,10 +763,15 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Role
-                  <FieldTooltip content="Determines base access level" />
-                </label>
+                <div className="mb-1">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Role
+                    <FieldTooltip content="Determines base access level" />
+                  </label>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Choose the user's access level in the system
+                  </p>
+                </div>
                 <select
                   value={inviteData.role}
                   onChange={(e) => setInviteData({ ...inviteData, role: e.target.value })}
@@ -918,10 +928,15 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
             {/* Right Column - Permissions */}
             {inviteData.role === 'USER' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Page Permissions
-                  <FieldTooltip content="Select which pages this user can access" />
-                </label>
+                <div className="mb-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Page Permissions
+                    <FieldTooltip content="Select which pages this user can access" />
+                  </label>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Select which pages and features this user will have access to in the system
+                  </p>
+                </div>
                 <div className="border border-gray-200 rounded-lg p-4 max-h-[400px] overflow-y-auto">
                   {MENU_STRUCTURE.map((menu) => (
                     <div key={menu.id} className="mb-4">
