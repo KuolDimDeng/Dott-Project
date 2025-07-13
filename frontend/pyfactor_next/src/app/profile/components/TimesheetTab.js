@@ -183,7 +183,7 @@ const TimesheetTab = ({ employee, session }) => {
           },
           body: JSON.stringify({
             employee: employee.id,
-            business_id: tenantId,
+            business_id: session.tenantId,
             period_start: format(weekStart, 'yyyy-MM-dd'),
             period_end: format(weekEnd, 'yyyy-MM-dd'),
             status: 'DRAFT',
@@ -207,7 +207,7 @@ const TimesheetTab = ({ employee, session }) => {
             method,
             headers: {
               'Content-Type': 'application/json',
-              'X-Tenant-ID': tenantId,
+              'X-Tenant-ID': session.tenantId,
             },
             body: JSON.stringify({
               timesheet: timesheetId,
@@ -241,7 +241,7 @@ const TimesheetTab = ({ employee, session }) => {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'X-Tenant-ID': tenantId,
+          'X-Tenant-ID': session.tenantId,
         },
         body: JSON.stringify({
           status: 'SUBMITTED',
