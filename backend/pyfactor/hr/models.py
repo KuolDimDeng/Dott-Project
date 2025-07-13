@@ -8,8 +8,10 @@ from phonenumber_field.modelfields import PhoneNumberField
 from decimal import Decimal
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from pyfactor.logging_config import get_logger
 
 User = get_user_model()
+logger = get_logger()
 
 def get_current_datetime():
     return timezone.now()
@@ -183,7 +185,8 @@ class Employee(models.Model):
     
     def save_ssn_to_stripe(self, ssn):
         """Save SSN to Stripe Connect for secure storage"""
-        from .stripe_ssn_service import StripeSSNService
+        # Use simple service until Stripe Connect platform is set up
+        from .stripe_ssn_service_simple import StripeSSNService
         
         if not ssn:
             return False, "No SSN provided"
@@ -199,7 +202,7 @@ class Employee(models.Model):
     
     def delete(self, *args, **kwargs):
         """Override delete to also remove Stripe data"""
-        from .stripe_ssn_service import StripeSSNService
+        from .stripe_ssn_service_simple import StripeSSNService
         
         # Delete Stripe account if exists
         if self.stripe_account_id:
