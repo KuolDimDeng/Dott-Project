@@ -169,7 +169,7 @@ export default function MobilePage() {
             <div className="flex items-center space-x-3">
               <img src="/static/images/favicon.png" alt="Dott" className="h-10 w-10 rounded-lg" />
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">Dott: Global Business Platform</h1>
+                <h1 className="text-xl font-semibold text-gray-900">Dott: AI Global Business Platform</h1>
                 <div className="flex items-center space-x-2 text-sm">
                   <span className={`flex items-center ${isOnline ? 'text-green-600' : 'text-gray-500'}`}>
                     <div className={`w-2 h-2 rounded-full mr-1 ${isOnline ? 'bg-green-600' : 'bg-gray-400'}`}></div>

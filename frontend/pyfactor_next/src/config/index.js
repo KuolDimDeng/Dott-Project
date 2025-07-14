@@ -59,9 +59,9 @@ export const APP_CONFIG = {
  
   app: {
     name: 'Dott',
-    title: 'Dott: Global Business Platform', 
-    description: 'Streamline your business operations with Dott',
-    keywords: 'business management, finance, operations',
+    title: 'Dott: AI Global Business Platform', 
+    description: 'AI-powered business operations platform for global companies',
+    keywords: 'AI business software, artificial intelligence, business management, finance, operations',
     favicon: '/static/images/favicon.png',
     logo: '/static/images/Pyfactor.png',
     version: '1.0.0',

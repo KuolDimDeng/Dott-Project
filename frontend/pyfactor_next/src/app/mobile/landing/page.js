@@ -155,7 +155,7 @@ export default function MobileLandingPage() {
             {t('hero.title', 'Your Business,')}<br />{t('hero.subtitle', 'In Your Pocket')}
           </h1>
           <p className="text-lg text-gray-600 max-w-sm mx-auto">
-            {t('hero.description', 'All-in-one business management platform that works offline.')}
+            {t('hero.description', 'AI-powered business management platform that works offline.')}
           </p>
         </div>
 

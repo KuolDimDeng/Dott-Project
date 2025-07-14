@@ -9,7 +9,7 @@ import Link from 'next/link';
 export default function DashboardPage() {
   useEffect(() => {
     // Set page title
-    document.title = 'Dott: Global Business Platform';
+    document.title = 'Dott: AI Global Business Platform';
   }, []);
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">

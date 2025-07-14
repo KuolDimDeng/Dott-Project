@@ -9,15 +9,15 @@ import { headers } from 'next/headers';
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "Dott: Global Business Platform",
-  description: "Global business platform for accounting, inventory, HR, and transport management",
-  keywords: "accounting, inventory management, HR software, transport management, business software",
+  title: "Dott: AI Global Business Platform",
+  description: "AI-powered global business platform for accounting, inventory, HR, and transport management",
+  keywords: "AI business software, artificial intelligence, accounting, inventory management, HR software, transport management, business software",
   authors: [{ name: "Dott Apps" }],
   manifest: "/static/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Dott: Global Business Platform",
+    title: "Dott: AI Global Business Platform",
   },
   formatDetection: {
     telephone: false,
