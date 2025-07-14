@@ -73,7 +73,7 @@ def delete_specific_user(conn, email):
     
     try:
         # Get tenant_id if exists
-        cursor.execute("SELECT tenant_id FROM employees WHERE user_id = %s", (user_id,))
+        cursor.execute("SELECT tenant_id FROM hr_employee WHERE user_id = %s", (user_id,))
         result = cursor.fetchone()
         tenant_id = result[0] if result else None
         
@@ -143,7 +143,7 @@ def delete_specific_user(conn, email):
             ("DELETE FROM django_admin_log WHERE user_id = %s", user_id),
             
             # Core records
-            ("DELETE FROM employees WHERE user_id = %s", user_id),
+            ("DELETE FROM hr_employee WHERE user_id = %s", user_id),
             ("DELETE FROM businesses WHERE owner_id = %s", user_id),
             ("DELETE FROM custom_auth_user WHERE id = %s", user_id)
         ]
