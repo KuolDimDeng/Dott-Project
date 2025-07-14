@@ -321,7 +321,23 @@ export default function DashboardClient({ newAccount, plan, createTenant, busine
   const [isClient, setIsClient] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userData, setUserData] = useState(null);
+  
+  // Use the session hook instead of managing userData separately
+  const { session, loading: sessionLoading, error: sessionError, refreshSession } = useSession();
+  const userData = session?.user || null;
+  
+  // Update authentication state based on session
+  useEffect(() => {
+    setIsAuthenticated(session?.authenticated || false);
+  }, [session?.authenticated]);
+  
+  // Update loading state to include session loading
+  useEffect(() => {
+    if (!sessionLoading && session) {
+      setIsLoading(false);
+    }
+  }, [sessionLoading, session]);
+  
   const [tenantCreated, setTenantCreated] = useState(false);
   const [tenantId, setTenantId] = useState(null);
   const router = useRouter();
@@ -991,20 +1007,19 @@ export default function DashboardClient({ newAccount, plan, createTenant, busine
     return () => clearTimeout(timeout);
   }, [router]);
   
-  // Function to refresh user data
+  // Function to refresh user data - now uses session hook
   const refreshUserData = useCallback(async () => {
     if (!isAuthenticated) return;
     
     try {
-      console.log('[DashboardClient] Refreshing user data');
-      const userAttributes = await fetchUserAttributes();
-      setUserData(userAttributes);
-      return userAttributes;
+      console.log('[DashboardClient] Refreshing user data via session');
+      await refreshSession();
+      return session?.user || null;
     } catch (error) {
       console.error('[DashboardClient] Error refreshing user data:', error);
       return null;
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, refreshSession, session?.user]);
   
   // Helper function to handle subscription success
   useEffect(() => {

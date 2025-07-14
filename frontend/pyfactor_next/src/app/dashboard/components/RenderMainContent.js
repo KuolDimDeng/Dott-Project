@@ -2318,7 +2318,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
       } else if (showMyAccount) {
         ActiveComponent = MyAccount;
         componentProps = {
-          userData: {
+          userData: userData ? {
             ...userData,
             firstName: userData?.firstName,
             lastName: userData?.lastName,
@@ -2326,7 +2326,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
             last_name: userData?.last_name,
             email: userData?.email,
             tenantId: userData?.tenantId || tenantId,
-          }
+          } : null
         };
       } else if (showIntegrationSettings) {
         ActiveComponent = IntegrationSettings;
