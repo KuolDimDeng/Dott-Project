@@ -28,7 +28,7 @@ from .serializers import (
 )
 from communications.whatsapp_service import whatsapp_service
 from custom_auth.views.rbac_views import IsOwnerOrAdmin
-from users.models import Tenant
+from custom_auth.models import Tenant
 from inventory.models import Product
 
 
