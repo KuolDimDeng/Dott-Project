@@ -3,9 +3,12 @@ Resend email backend for Django
 """
 import os
 import requests
+import logging
 from django.core.mail.backends.base import BaseEmailBackend
 from django.core.mail.message import EmailMessage
 from typing import List
+
+logger = logging.getLogger(__name__)
 
 
 class ResendEmailBackend(BaseEmailBackend):
@@ -32,8 +35,10 @@ class ResendEmailBackend(BaseEmailBackend):
         for message in email_messages:
             try:
                 # Prepare the payload
+                from_email = message.from_email or os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@dottapps.com')
+                
                 payload = {
-                    'from': message.from_email or os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@dottapps.com'),
+                    'from': from_email,
                     'to': message.to,
                     'subject': message.subject,
                 }
@@ -55,6 +60,10 @@ class ResendEmailBackend(BaseEmailBackend):
                 if message.bcc:
                     payload['bcc'] = message.bcc
                 
+                # Log the attempt
+                logger.info(f'[Resend] Attempting to send email from {from_email} to {payload["to"]}')
+                logger.info(f'[Resend] API Key present: {bool(self.api_key)}, starts with: {self.api_key[:10] if self.api_key else "N/A"}...')
+                
                 # Send the email
                 response = requests.post(
                     self.api_url,
@@ -65,10 +74,15 @@ class ResendEmailBackend(BaseEmailBackend):
                     json=payload
                 )
                 
+                logger.info(f'[Resend] Response status: {response.status_code}')
+                
                 if response.status_code == 200:
+                    logger.info(f'[Resend] ✅ Email sent successfully to {payload["to"]}')
                     num_sent += 1
-                elif not self.fail_silently:
-                    response.raise_for_status()
+                else:
+                    logger.error(f'[Resend] ❌ Failed with status {response.status_code}: {response.text}')
+                    if not self.fail_silently:
+                        response.raise_for_status()
                     
             except Exception as e:
                 if not self.fail_silently:

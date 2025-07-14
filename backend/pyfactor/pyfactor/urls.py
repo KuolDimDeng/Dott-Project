@@ -97,6 +97,9 @@ urlpatterns = [
     # Purchases API routes (if exists)
     path('api/purchases/', include('purchases.urls')),
     
+    # Timesheets API routes
+    path('api/timesheets/', include('timesheets.urls')),
+    
     # Users API routes
     path('api/users/', include('users.api.urls')),
     

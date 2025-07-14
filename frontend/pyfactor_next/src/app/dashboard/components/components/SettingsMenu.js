@@ -64,11 +64,15 @@ const SettingsMenu = ({
 
   return (
     <div 
-      className="fixed top-[60px] right-4 z-50"
+      className="fixed top-16 right-4 w-64 bg-white rounded-lg shadow-lg border border-gray-200 mt-1 z-50"
       ref={menuRef}
-      style={{ right: '20px' }}
+      style={{
+        maxWidth: 'calc(100vw - 2rem)',
+        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
+        zIndex: 10000000,
+      }}
     >
-      <div className="min-w-[200px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden">
+      <div className="dark:bg-gray-800 dark:border-gray-700">
         <div className="py-1">
           {options.map((option) => (
             <button

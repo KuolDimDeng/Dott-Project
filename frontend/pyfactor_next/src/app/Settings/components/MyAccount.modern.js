@@ -1396,19 +1396,36 @@ const MyAccount = ({ userData }) => {
           <div className="space-y-4">
             <h3 className="text-lg font-medium text-gray-900">Quick Actions</h3>
             <div className="space-y-3">
-              <button className="w-full p-4 text-left bg-green-50 rounded-lg hover:bg-green-100 transition-colors border border-green-200">
-                <div className="font-medium text-green-900">Clock In/Out</div>
-                <div className="text-sm text-green-700 mt-1">Record your work time</div>
+              <button 
+                onClick={() => router.push('/profile?tab=timesheet')}
+                className="w-full p-4 text-left bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors border border-blue-200"
+              >
+                <div className="font-medium text-blue-900">Enter hours</div>
+                <div className="text-sm text-blue-700 mt-1">Log your daily work hours</div>
               </button>
               
-              <button className="w-full p-4 text-left bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors border border-blue-200">
-                <div className="font-medium text-blue-900">View Timesheet</div>
-                <div className="text-sm text-blue-700 mt-1">See detailed time records</div>
+              <button 
+                onClick={() => router.push('/profile?tab=timesheet')}
+                className="w-full p-4 text-left bg-green-50 rounded-lg hover:bg-green-100 transition-colors border border-green-200"
+              >
+                <div className="font-medium text-green-900">Submit weekly timesheet</div>
+                <div className="text-sm text-green-700 mt-1">Submit timesheet for approval</div>
               </button>
               
-              <button className="w-full p-4 text-left bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200">
-                <div className="font-medium text-gray-900">Time Off Request</div>
-                <div className="text-sm text-gray-700 mt-1">Submit vacation or sick leave</div>
+              <button 
+                onClick={() => router.push('/dashboard/timesheets')}
+                className="w-full p-4 text-left bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors border border-purple-200"
+              >
+                <div className="font-medium text-purple-900">View all timesheets</div>
+                <div className="text-sm text-purple-700 mt-1">Access your timesheet history</div>
+              </button>
+              
+              <button 
+                onClick={() => setShowPayStubViewer(true)}
+                className="w-full p-4 text-left bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
+              >
+                <div className="font-medium text-gray-900">View pay stubs</div>
+                <div className="text-sm text-gray-700 mt-1">Access your payment history</div>
               </button>
             </div>
           </div>

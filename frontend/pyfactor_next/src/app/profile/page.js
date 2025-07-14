@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSession } from '@/hooks/useSession-v2';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import EmployeeInfo from './components/EmployeeInfo';
 import TimesheetTab from './components/TimesheetTab';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -14,9 +14,18 @@ import toast from 'react-hot-toast';
 export default function ProfilePage() {
   const { session, loading } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState('profile');
   const [employee, setEmployee] = useState(null);
   const [loadingEmployee, setLoadingEmployee] = useState(false);
+
+  // Handle tab parameter from URL
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   // Redirect if not authenticated
   useEffect(() => {

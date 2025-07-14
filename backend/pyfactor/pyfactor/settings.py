@@ -233,7 +233,7 @@ elif os.getenv('RESEND_API_KEY'):
     # Use Resend if API key is configured
     EMAIL_BACKEND = 'utils.resend_email.ResendEmailBackend'
     RESEND_API_KEY = os.getenv('RESEND_API_KEY')
-    DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@dottapps.com')
+    DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'no-reply@dottapps.com')
 else:
     # Fallback to console for local development
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
@@ -877,6 +877,7 @@ TENANT_APPS = (
     'payroll',
     'inventory',
     'analysis',
+    'timesheets',
     'chart',
     'integrations',
     'taxes',
