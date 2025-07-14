@@ -11,16 +11,31 @@ import { logger } from '@/utils/logger';
 export async function POST(request) {
   try {
     const body = await request.json();
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     
-    logger.info('[WhatsApp Invite] Forwarding request to backend', {
+    logger.info('[WhatsApp Invite] 📱 === START WHATSAPP INVITATION ===', {
       phoneNumber: body.phoneNumber,
-      senderName: body.senderName
+      senderName: body.senderName,
+      senderEmail: body.senderEmail,
+      messageLength: body.message?.length,
+      timestamp: new Date().toISOString()
+    });
+
+    // Log environment configuration
+    logger.info('[WhatsApp Invite] 🔧 Environment check', {
+      API_URL: process.env.NEXT_PUBLIC_API_URL,
+      hasApiUrl: !!process.env.NEXT_PUBLIC_API_URL
     });
 
     // Forward to Django backend
     const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/invitations/whatsapp/`;
     
+    logger.info('[WhatsApp Invite] 🚀 Sending request to backend', {
+      url: backendUrl,
+      method: 'POST',
+      hasCookies: !!cookieStore.toString()
+    });
+
     const response = await fetch(backendUrl, {
       method: 'POST',
       headers: {
@@ -30,12 +45,34 @@ export async function POST(request) {
       body: JSON.stringify(body),
     });
 
-    const data = await response.json();
+    const responseText = await response.text();
+    logger.info('[WhatsApp Invite] 📥 Backend response received', {
+      status: response.status,
+      statusText: response.statusText,
+      responseLength: responseText.length,
+      headers: Object.fromEntries(response.headers.entries())
+    });
+
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      logger.error('[WhatsApp Invite] ❌ Failed to parse response', {
+        error: parseError.message,
+        responseText: responseText.substring(0, 500)
+      });
+      return NextResponse.json(
+        { error: 'Invalid response from server' },
+        { status: 500 }
+      );
+    }
     
     if (!response.ok) {
-      logger.error('[WhatsApp Invite] Backend error', {
+      logger.error('[WhatsApp Invite] ❌ Backend error', {
         status: response.status,
-        error: data
+        error: data,
+        errorMessage: data.error,
+        fullResponse: JSON.stringify(data)
       });
       
       return NextResponse.json(
@@ -44,8 +81,10 @@ export async function POST(request) {
       );
     }
     
-    logger.info('[WhatsApp Invite] Successfully sent WhatsApp invitation', {
-      messageId: data.messageId
+    logger.info('[WhatsApp Invite] ✅ Successfully sent WhatsApp invitation', {
+      success: data.success,
+      messageId: data.messageId,
+      fullResponse: JSON.stringify(data)
     });
 
     return NextResponse.json(data);

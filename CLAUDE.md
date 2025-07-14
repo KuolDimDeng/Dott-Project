@@ -262,6 +262,36 @@
   - 1,000 transactions/month = $300
   - 10,000 transactions/month = $3,000
 
+### [35.0.0] - 2025-07-14 - CURRENT - WhatsApp Business API Integration
+- **Purpose**: Enable business owners to invite others via WhatsApp messages
+- **Meta App Details**:
+  - App ID: 1068741974830721
+  - Phone Number ID: 676188225586230
+  - WhatsApp Business Account ID: 1513500473389693
+  - Test Number: +1 555 190 5954 (90 days free messages)
+- **Features**:
+  - Send invitation messages via WhatsApp
+  - Support for both text and template messages
+  - Integration with "Invite a Business Owner" feature
+  - Future support for invoice notifications and payment confirmations
+- **Implementation**:
+  - Frontend proxy: `/src/app/api/invite/whatsapp/route.js`
+  - Backend service: `/backend/pyfactor/communications/whatsapp_service.py`
+  - API endpoints: `/backend/pyfactor/invitations/views.py`
+  - UI component: `/src/app/dashboard/components/invite/InviteAFriend.js`
+- **Environment Variables** (Add to Render Backend):
+  - `WHATSAPP_ACCESS_TOKEN`: Generated from Meta Business Platform (24hr expiry in dev)
+  - `WHATSAPP_PHONE_NUMBER_ID`: 676188225586230 (optional, defaults to this)
+- **Setup Steps**:
+  1. Generate access token in Meta Business Platform
+  2. Add environment variables to Render Backend
+  3. Test from "Invite a Business Owner" page
+- **Future Enhancements**:
+  - Invoice notification templates
+  - Payment confirmation messages
+  - Appointment reminders
+  - Marketing campaigns
+
 ---
 
 ## DEPRECATED CONFIGURATIONS (Do Not Use)
@@ -345,4 +375,6 @@ REDIS_URL=redis://...
 AUTH0_M2M_CLIENT_ID=...
 STRIPE_SECRET_KEY=sk_...
 STRIPE_EXPRESS_ACCOUNT_ID=acct_1RkYGFC77wwa4lUB
+WHATSAPP_ACCESS_TOKEN=<generate-from-meta-business-platform>
+WHATSAPP_PHONE_NUMBER_ID=676188225586230
 ```

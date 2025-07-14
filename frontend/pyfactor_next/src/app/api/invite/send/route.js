@@ -1,84 +1,83 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { logger } from '@/utils/logger';
 
 export async function POST(request) {
   try {
-    // Check authentication by looking for session cookies
+    const body = await request.json();
     const cookieStore = await cookies();
-    const sidCookie = cookieStore.get('sid');
     
-    if (!sidCookie) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    logger.info('[Email Invite] 📧 === START EMAIL INVITATION ===', {
+      email: body.email,
+      senderName: body.senderName,
+      senderEmail: body.senderEmail,
+      messageLength: body.message?.length,
+      timestamp: new Date().toISOString()
+    });
 
-    const { email, message, senderName, senderEmail } = await request.json();
+    // Forward to Django backend using the new invitations endpoint
+    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/invitations/email/`;
+    
+    logger.info('[Email Invite] 🚀 Sending request to backend', {
+      url: backendUrl,
+      method: 'POST',
+      hasCookies: !!cookieStore.toString()
+    });
 
-    // Validate input
-    if (!email || !email.includes('@')) {
-      return NextResponse.json(
-        { error: 'Valid email address is required' },
-        { status: 400 }
-      );
-    }
-
-    if (!message || message.trim().length === 0) {
-      return NextResponse.json(
-        { error: 'Message content is required' },
-        { status: 400 }
-      );
-    }
-
-    // Prepare email data for backend
-    const emailData = {
-      to_email: email.trim(),
-      subject: `${senderName || 'A business colleague'} invited you to Dott: All-in-One Business Management Platform`,
-      message: message.trim(),
-      sender_name: senderName || senderEmail || 'Dott User',
-      sender_email: senderEmail || 'noreply@dottapps.com',
-      invite_url: 'https://dottapps.com/auth/signup'
-    };
-
-    // Send invitation via backend API
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
-    const backendResponse = await fetch(`${API_URL}/api/auth/invites/send-friend/`, {
+    const response = await fetch(backendUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Session ${sidCookie.value}`,
-        'Cookie': `sid=${sidCookie.value}; session_token=${sidCookie.value}`,
+        'Cookie': cookieStore.toString(),
       },
-      body: JSON.stringify(emailData)
+      body: JSON.stringify(body),
     });
 
-    if (!backendResponse.ok) {
-      const errorData = await backendResponse.json().catch(() => ({}));
-      console.error('Backend invitation error:', errorData);
-      
+    const responseText = await response.text();
+    logger.info('[Email Invite] 📥 Backend response received', {
+      status: response.status,
+      statusText: response.statusText,
+      responseLength: responseText.length
+    });
+
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      logger.error('[Email Invite] ❌ Failed to parse response', {
+        error: parseError.message,
+        responseText: responseText.substring(0, 500)
+      });
       return NextResponse.json(
-        { error: errorData.detail || 'Failed to send invitation' },
-        { status: backendResponse.status }
+        { error: 'Invalid response from server' },
+        { status: 500 }
       );
     }
-
-    const result = await backendResponse.json();
-
-    // Log the invitation for analytics
-    console.log(`[Invitation] ${senderEmail} invited ${email}`);
-
-    return NextResponse.json({
-      success: true,
-      message: 'Invitation sent successfully',
-      invitationId: result.invitation_id || Date.now().toString()
+    
+    if (!response.ok) {
+      logger.error('[Email Invite] ❌ Backend error', {
+        status: response.status,
+        error: data,
+        errorMessage: data.error
+      });
+      
+      return NextResponse.json(
+        { error: data.error || 'Failed to send email invitation.' },
+        { status: response.status }
+      );
+    }
+    
+    logger.info('[Email Invite] ✅ Successfully sent email invitation', {
+      success: data.success,
+      message: data.message
     });
 
+    return NextResponse.json(data);
+
   } catch (error) {
-    console.error('Invitation API error:', error);
-    
+    logger.error('[Email Invite] ❌ Unexpected error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'An unexpected error occurred. Please try again.' },
       { status: 500 }
     );
   }

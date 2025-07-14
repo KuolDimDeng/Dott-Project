@@ -16,13 +16,25 @@ logger = logging.getLogger(__name__)
 def send_whatsapp_invitation(request):
     """Send WhatsApp invitation to a business owner"""
     try:
+        logger.info('🎯 [WhatsApp Invite] === START WHATSAPP INVITATION REQUEST ===')
+        logger.info(f'[WhatsApp Invite] Request user: {request.user.email}')
+        logger.info(f'[WhatsApp Invite] Request data: {request.data}')
+        
         phone_number = request.data.get('phoneNumber')
         message = request.data.get('message')
         sender_name = request.data.get('senderName')
         sender_email = request.data.get('senderEmail')
         
+        logger.info('[WhatsApp Invite] Extracted data:', {
+            'phone_number': phone_number,
+            'message_length': len(message) if message else 0,
+            'sender_name': sender_name,
+            'sender_email': sender_email
+        })
+        
         # Validate required fields
         if not phone_number or not message:
+            logger.warning('[WhatsApp Invite] Missing required fields')
             return Response(
                 {'error': 'Phone number and message are required'},
                 status=status.HTTP_400_BAD_REQUEST
@@ -30,7 +42,10 @@ def send_whatsapp_invitation(request):
         
         # Clean and validate phone number
         cleaned_phone = ''.join(c for c in phone_number if c.isdigit() or c == '+')
+        logger.info(f'[WhatsApp Invite] Phone number cleaned: {phone_number} -> {cleaned_phone}')
+        
         if not cleaned_phone.startswith('+') or len(cleaned_phone) < 10:
+            logger.warning(f'[WhatsApp Invite] Invalid phone number format: {cleaned_phone}')
             return Response(
                 {'error': 'Please provide a valid phone number with country code (e.g., +1234567890)'},
                 status=status.HTTP_400_BAD_REQUEST
@@ -39,27 +54,27 @@ def send_whatsapp_invitation(request):
         logger.info(f'[WhatsApp Invite] Attempting to send invitation from {sender_email} to {cleaned_phone}')
         
         # Check if WhatsApp service is configured
-        if not whatsapp_service.is_configured():
-            logger.warning('[WhatsApp Invite] WhatsApp service not configured')
+        is_configured = whatsapp_service.is_configured()
+        logger.info(f'[WhatsApp Invite] WhatsApp service configured: {is_configured}')
+        logger.info(f'[WhatsApp Invite] Access token present: {bool(whatsapp_service.access_token)}')
+        logger.info(f'[WhatsApp Invite] Phone number ID: {whatsapp_service.phone_number_id}')
+        
+        if not is_configured:
+            logger.warning('[WhatsApp Invite] WhatsApp service not configured - missing access token')
             return Response(
                 {'error': 'WhatsApp service is temporarily unavailable. Please try email invitation instead.'},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE
             )
         
         # Send WhatsApp message
+        logger.info('[WhatsApp Invite] Calling WhatsApp service to send message...')
         result = whatsapp_service.send_text_message(cleaned_phone, message)
+        
+        logger.info(f'[WhatsApp Invite] WhatsApp service result: {result}')
         
         if result:
             message_id = result.get('messages', [{}])[0].get('id')
-            logger.info(f'[WhatsApp Invite] Successfully sent WhatsApp invitation to {cleaned_phone}, message_id: {message_id}')
-            
-            # Log the invitation (you can add database logging here if needed)
-            # InvitationLog.objects.create(
-            #     type='whatsapp',
-            #     recipient=cleaned_phone,
-            #     sender=request.user,
-            #     message_id=message_id
-            # )
+            logger.info(f'[WhatsApp Invite] ✅ Successfully sent WhatsApp invitation to {cleaned_phone}, message_id: {message_id}')
             
             return Response({
                 'success': True,
@@ -67,15 +82,16 @@ def send_whatsapp_invitation(request):
                 'messageId': message_id
             })
         else:
+            logger.error('[WhatsApp Invite] ❌ WhatsApp service returned None/False')
             return Response(
                 {'error': 'Failed to send WhatsApp invitation. Please check the phone number and try again.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
             
     except Exception as e:
-        logger.error(f'[WhatsApp Invite] Unexpected error: {str(e)}', exc_info=True)
+        logger.error(f'[WhatsApp Invite] ❌ Unexpected error: {str(e)}', exc_info=True)
         return Response(
-            {'error': 'An unexpected error occurred. Please try again.'},
+            {'error': f'An unexpected error occurred: {str(e)}'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
@@ -85,13 +101,24 @@ def send_whatsapp_invitation(request):
 def send_email_invitation(request):
     """Send email invitation to a business owner"""
     try:
+        logger.info('📧 [Email Invite] === START EMAIL INVITATION REQUEST ===')
+        logger.info(f'[Email Invite] Request user: {request.user.email}')
+        
         email = request.data.get('email')
         message = request.data.get('message')
         sender_name = request.data.get('senderName')
         sender_email = request.data.get('senderEmail')
         
+        logger.info('[Email Invite] Extracted data:', {
+            'recipient_email': email,
+            'message_length': len(message) if message else 0,
+            'sender_name': sender_name,
+            'sender_email': sender_email
+        })
+        
         # Validate required fields
         if not email or not message:
+            logger.warning('[Email Invite] Missing required fields')
             return Response(
                 {'error': 'Email and message are required'},
                 status=status.HTTP_400_BAD_REQUEST
@@ -99,18 +126,38 @@ def send_email_invitation(request):
         
         logger.info(f'[Email Invite] Attempting to send invitation from {sender_email} to {email}')
         
+        # Use no-reply@dottapps.com as sender
+        from_email = 'no-reply@dottapps.com'
+        logger.info(f'[Email Invite] Using sender email: {from_email}')
+        
         # Send email
         try:
+            # Format the HTML message properly
+            html_message = f"""
+            <html>
+            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
+                        <pre style="white-space: pre-wrap; word-wrap: break-word; font-family: Arial, sans-serif;">{message}</pre>
+                    </div>
+                    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e0e0; font-size: 12px; color: #666;">
+                        <p>This invitation was sent by {sender_name} ({sender_email}) via Dott.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """
+            
             send_mail(
                 subject=f'{sender_name} invites you to join Dott',
                 message=message,  # Plain text fallback
-                from_email=settings.DEFAULT_FROM_EMAIL,
+                from_email=from_email,
                 recipient_list=[email],
                 fail_silently=False,
-                html_message=f'<pre>{message}</pre>'  # Simple HTML version
+                html_message=html_message
             )
             
-            logger.info(f'[Email Invite] Successfully sent email invitation to {email}')
+            logger.info(f'[Email Invite] ✅ Successfully sent email invitation to {email}')
             
             return Response({
                 'success': True,
@@ -118,15 +165,15 @@ def send_email_invitation(request):
             })
             
         except Exception as email_error:
-            logger.error(f'[Email Invite] Failed to send email: {str(email_error)}')
+            logger.error(f'[Email Invite] ❌ Failed to send email: {str(email_error)}', exc_info=True)
             return Response(
-                {'error': 'Failed to send email invitation. Please try again.'},
+                {'error': f'Failed to send email invitation: {str(email_error)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
             
     except Exception as e:
-        logger.error(f'[Email Invite] Unexpected error: {str(e)}', exc_info=True)
+        logger.error(f'[Email Invite] ❌ Unexpected error: {str(e)}', exc_info=True)
         return Response(
-            {'error': 'An unexpected error occurred. Please try again.'},
+            {'error': f'An unexpected error occurred: {str(e)}'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
