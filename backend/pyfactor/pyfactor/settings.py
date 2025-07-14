@@ -219,22 +219,25 @@ SITE_ID = 1
 TIME_ZONE = 'UTC'
 
 
-# Email settings - Using Resend
-EMAIL_BACKEND = 'utils.resend_email.ResendEmailBackend'
-# Fallback to console for local development if Resend not configured
-if not os.getenv('RESEND_API_KEY'):
+# Email settings - Check for SMTP configuration first, then Resend
+if os.getenv('EMAIL_HOST') and os.getenv('EMAIL_HOST_USER'):
+    # Use SMTP if configured (Microsoft 365, Gmail, etc.)
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = os.getenv('EMAIL_HOST')
+    EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+    EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
+    EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+    EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+    DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'no-reply@dottapps.com')
+elif os.getenv('RESEND_API_KEY'):
+    # Use Resend if API key is configured
+    EMAIL_BACKEND = 'utils.resend_email.ResendEmailBackend'
+    RESEND_API_KEY = os.getenv('RESEND_API_KEY')
+    DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@dottapps.com')
+else:
+    # Fallback to console for local development
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-    
-# Resend configuration
-RESEND_API_KEY = os.getenv('RESEND_API_KEY')
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@dottapps.com')
-
-# Legacy Gmail settings (kept for reference)
-# EMAIL_HOST = 'smtp.gmail.com'
-# EMAIL_PORT = 587
-# EMAIL_USE_TLS = True
-# EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
-# EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+    DEFAULT_FROM_EMAIL = 'noreply@dottapps.com'
 
 FRONTEND_URL = 'https://localhost:3000'  # Adjust this to your actual frontend URL
 
