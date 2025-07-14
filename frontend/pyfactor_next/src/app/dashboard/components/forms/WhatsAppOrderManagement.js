@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useSession } from '@/hooks/useSession';
+import { useSession } from '@/hooks/useSession-v2';
 import WhatsAppPaymentProcessor from './WhatsAppPaymentProcessor';
 
 const WhatsAppOrderManagement = () => {
