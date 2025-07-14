@@ -12,10 +12,7 @@ const WhatsAppCatalogManagement = () => {
   const [loading, setLoading] = useState(true);
   const [showNewCatalogForm, setShowNewCatalogForm] = useState(false);
   const [showNewProductForm, setShowNewProductForm] = useState(false);
-  const [showSyncModal, setShowSyncModal] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState(null);
-  const [availableProducts, setAvailableProducts] = useState([]);
-  const [selectedProductsForSync, setSelectedProductsForSync] = useState([]);
 
   const [newCatalog, setNewCatalog] = useState({
     name: '',
@@ -26,17 +23,13 @@ const WhatsAppCatalogManagement = () => {
   const [newProduct, setNewProduct] = useState({
     name: '',
     description: '',
-    item_type: 'product',
     price: '',
-    price_type: 'fixed',
     currency: 'USD',
     image_url: '',
     sku: '',
     stock_quantity: 0,
     is_available: true,
-    category: '',
-    duration_minutes: '',
-    service_location: 'onsite'
+    category: ''
   });
 
   useEffect(() => {
@@ -112,8 +105,7 @@ const WhatsAppCatalogManagement = () => {
         ...newProduct,
         catalog: selectedCatalog.id,
         price: parseFloat(newProduct.price),
-        stock_quantity: parseInt(newProduct.stock_quantity),
-        duration_minutes: newProduct.duration_minutes ? parseInt(newProduct.duration_minutes) : null
+        stock_quantity: parseInt(newProduct.stock_quantity)
       };
 
       const response = await fetch('/api/proxy/whatsapp-business/products/', {
@@ -130,17 +122,13 @@ const WhatsAppCatalogManagement = () => {
         setNewProduct({
           name: '',
           description: '',
-          item_type: 'product',
           price: '',
-          price_type: 'fixed',
           currency: paymentMethod?.currency || 'USD',
           image_url: '',
           sku: '',
           stock_quantity: 0,
           is_available: true,
-          category: '',
-          duration_minutes: '',
-          service_location: 'onsite'
+          category: ''
         });
         setShowNewProductForm(false);
       }
@@ -193,81 +181,6 @@ const WhatsAppCatalogManagement = () => {
     }
   };
 
-  const loadAvailableProducts = async () => {
-    if (!selectedCatalog) return;
-    
-    try {
-      const response = await fetch(`/api/proxy/whatsapp-business/products/available_for_sync/?catalog_id=${selectedCatalog.id}`);
-      if (response.ok) {
-        const data = await response.json();
-        setAvailableProducts(data.products || []);
-        setShowSyncModal(true);
-      }
-    } catch (error) {
-      console.error('Error loading available products:', error);
-    }
-  };
-
-  const handleSyncProducts = async (syncAll = false) => {
-    if (!selectedCatalog) return;
-
-    try {
-      const response = await fetch('/api/proxy/whatsapp-business/products/sync_from_inventory/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          catalog_id: selectedCatalog.id,
-          sync_all: syncAll,
-          product_ids: syncAll ? [] : selectedProductsForSync,
-          item_type: 'product'
-        }),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        alert(result.message);
-        setShowSyncModal(false);
-        setSelectedProductsForSync([]);
-        
-        // Refresh products
-        const productsResponse = await fetch(`/api/proxy/whatsapp-business/products/?catalog_id=${selectedCatalog.id}`);
-        if (productsResponse.ok) {
-          const productsData = await productsResponse.json();
-          setProducts(productsData.results || []);
-        }
-      }
-    } catch (error) {
-      console.error('Error syncing products:', error);
-      alert('Error syncing products. Please try again.');
-    }
-  };
-
-  const getPriceDisplay = (product) => {
-    if (product.price_type === 'quote') {
-      return 'Quote on Request';
-    }
-    
-    let priceText = `${product.currency} ${product.price}`;
-    if (product.price_type !== 'fixed') {
-      priceText += ` / ${product.price_type}`;
-    }
-    
-    return priceText;
-  };
-
-  const getItemTypeIcon = (type) => {
-    switch (type) {
-      case 'service':
-        return '🛠️';
-      case 'digital':
-        return '💻';
-      default:
-        return '📦';
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -282,7 +195,7 @@ const WhatsAppCatalogManagement = () => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Catalog Management</h1>
-          <p className="text-gray-600">Manage your WhatsApp Business catalogs, products, and services</p>
+          <p className="text-gray-600">Manage your WhatsApp Business catalogs and products</p>
         </div>
 
         {/* Catalog Selection */}
@@ -337,7 +250,7 @@ const WhatsAppCatalogManagement = () => {
                     <p className="text-sm text-gray-600 mb-3">{catalog.description}</p>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-500">
-                        {products.filter(p => p.catalog === catalog.id).length} items
+                        {products.filter(p => p.catalog === catalog.id).length} products
                       </span>
                       <button
                         onClick={(e) => {
@@ -361,21 +274,13 @@ const WhatsAppCatalogManagement = () => {
           <div className="bg-white rounded-lg shadow-sm">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold">Items in {selectedCatalog.name}</h2>
-                <div className="flex space-x-3">
-                  <button
-                    onClick={loadAvailableProducts}
-                    className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
-                  >
-                    Sync from Inventory
-                  </button>
-                  <button
-                    onClick={() => setShowNewProductForm(true)}
-                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
-                  >
-                    Add New Item
-                  </button>
-                </div>
+                <h2 className="text-xl font-semibold">Products in {selectedCatalog.name}</h2>
+                <button
+                  onClick={() => setShowNewProductForm(true)}
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  Add Product
+                </button>
               </div>
             </div>
 
@@ -385,22 +290,14 @@ const WhatsAppCatalogManagement = () => {
                   <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                   </svg>
-                  <h3 className="mt-2 text-sm font-medium text-gray-900">No items</h3>
-                  <p className="mt-1 text-sm text-gray-500">Add products or services to your catalog.</p>
-                  <div className="mt-3 flex justify-center space-x-3">
-                    <button
-                      onClick={loadAvailableProducts}
-                      className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
-                    >
-                      Sync from Inventory
-                    </button>
-                    <button
-                      onClick={() => setShowNewProductForm(true)}
-                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
-                    >
-                      Create New
-                    </button>
-                  </div>
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">No products</h3>
+                  <p className="mt-1 text-sm text-gray-500">Start adding products to your catalog.</p>
+                  <button
+                    onClick={() => setShowNewProductForm(true)}
+                    className="mt-3 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    Add Product
+                  </button>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -415,10 +312,7 @@ const WhatsAppCatalogManagement = () => {
                       )}
                       <div className="p-4">
                         <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center">
-                            <span className="text-lg mr-2">{getItemTypeIcon(product.item_type)}</span>
-                            <h3 className="font-semibold text-gray-900">{product.name}</h3>
-                          </div>
+                          <h3 className="font-semibold text-gray-900">{product.name}</h3>
                           <button
                             onClick={() => toggleProductAvailability(product)}
                             className={`px-2 py-1 text-xs rounded-full ${
@@ -431,44 +325,14 @@ const WhatsAppCatalogManagement = () => {
                           </button>
                         </div>
                         <p className="text-sm text-gray-600 mb-2">{product.description}</p>
-                        
-                        {/* Item type badge */}
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="inline-block px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
-                            {product.item_type === 'service' ? 'Service' : product.item_type === 'digital' ? 'Digital' : 'Product'}
-                          </span>
-                          {product.linked_product && (
-                            <span className="text-xs text-blue-600">
-                              Synced from inventory
-                            </span>
-                          )}
-                        </div>
-                        
                         <div className="flex items-center justify-between">
                           <span className="text-lg font-bold text-gray-900">
-                            {getPriceDisplay(product)}
+                            {product.currency} {product.price}
                           </span>
-                          {product.item_type === 'product' && (
-                            <span className="text-sm text-gray-500">
-                              Stock: {product.stock_quantity}
-                            </span>
-                          )}
+                          <span className="text-sm text-gray-500">
+                            Stock: {product.stock_quantity}
+                          </span>
                         </div>
-                        
-                        {/* Service-specific info */}
-                        {product.item_type === 'service' && (
-                          <div className="mt-2 text-sm text-gray-600">
-                            {product.duration_minutes && (
-                              <p>Duration: {product.duration_minutes} mins</p>
-                            )}
-                            {product.service_location && (
-                              <p>Location: {product.service_location === 'onsite' ? 'On-site' : 
-                                         product.service_location === 'remote' ? 'Remote' :
-                                         product.service_location === 'shop' ? 'At shop' : 'Flexible'}</p>
-                            )}
-                          </div>
-                        )}
-                        
                         {product.category && (
                           <span className="inline-block mt-2 px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
                             {product.category}
@@ -532,110 +396,39 @@ const WhatsAppCatalogManagement = () => {
         {showNewProductForm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-lg max-h-screen overflow-y-auto">
-              <h3 className="text-lg font-semibold mb-4">Add New Item</h3>
+              <h3 className="text-lg font-semibold mb-4">Add New Product</h3>
               <form onSubmit={handleCreateProduct}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Item Type Selection */}
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Item Type</label>
-                    <div className="grid grid-cols-3 gap-3">
-                      <button
-                        type="button"
-                        className={`p-3 border rounded-lg text-center ${
-                          newProduct.item_type === 'product'
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-300 hover:border-gray-400'
-                        }`}
-                        onClick={() => setNewProduct(prev => ({ ...prev, item_type: 'product' }))}
-                      >
-                        <span className="text-2xl">📦</span>
-                        <p className="text-sm mt-1">Physical Product</p>
-                      </button>
-                      <button
-                        type="button"
-                        className={`p-3 border rounded-lg text-center ${
-                          newProduct.item_type === 'service'
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-300 hover:border-gray-400'
-                        }`}
-                        onClick={() => setNewProduct(prev => ({ ...prev, item_type: 'service' }))}
-                      >
-                        <span className="text-2xl">🛠️</span>
-                        <p className="text-sm mt-1">Service</p>
-                      </button>
-                      <button
-                        type="button"
-                        className={`p-3 border rounded-lg text-center ${
-                          newProduct.item_type === 'digital'
-                            ? 'border-blue-500 bg-blue-50'
-                            : 'border-gray-300 hover:border-gray-400'
-                        }`}
-                        onClick={() => setNewProduct(prev => ({ ...prev, item_type: 'digital' }))}
-                      >
-                        <span className="text-2xl">💻</span>
-                        <p className="text-sm mt-1">Digital Product</p>
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Product Name</label>
                     <input
                       type="text"
                       required
-                      placeholder={newProduct.item_type === 'service' ? 'e.g., Electrical Repair Service' : 'e.g., Blue T-Shirt'}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       value={newProduct.name}
                       onChange={(e) => setNewProduct(prev => ({ ...prev, name: e.target.value }))}
                     />
                   </div>
-                  
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
                     <textarea
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       rows="3"
-                      placeholder={newProduct.item_type === 'service' ? 
-                        'Describe your service, what\'s included, etc.' : 
-                        'Product details, features, specifications...'}
                       value={newProduct.description}
                       onChange={(e) => setNewProduct(prev => ({ ...prev, description: e.target.value }))}
                     />
                   </div>
-                  
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Price Type</label>
-                    <select
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      value={newProduct.price_type}
-                      onChange={(e) => setNewProduct(prev => ({ ...prev, price_type: e.target.value }))}
-                    >
-                      <option value="fixed">Fixed Price</option>
-                      {newProduct.item_type === 'service' && (
-                        <>
-                          <option value="hourly">Per Hour</option>
-                          <option value="daily">Per Day</option>
-                          <option value="project">Per Project</option>
-                          <option value="quote">Quote on Request</option>
-                        </>
-                      )}
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {newProduct.price_type === 'quote' ? 'Base Price (Optional)' : 'Price'}
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Price</label>
                     <input
                       type="number"
                       step="0.01"
-                      required={newProduct.price_type !== 'quote'}
+                      required
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       value={newProduct.price}
                       onChange={(e) => setNewProduct(prev => ({ ...prev, price: e.target.value }))}
                     />
                   </div>
-                  
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Currency</label>
                     <select
@@ -653,60 +446,25 @@ const WhatsAppCatalogManagement = () => {
                       <option value="GBP">GBP</option>
                     </select>
                   </div>
-                  
-                  {newProduct.item_type === 'product' && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Stock Quantity</label>
-                      <input
-                        type="number"
-                        min="0"
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        value={newProduct.stock_quantity}
-                        onChange={(e) => setNewProduct(prev => ({ ...prev, stock_quantity: e.target.value }))}
-                      />
-                    </div>
-                  )}
-                  
-                  {newProduct.item_type === 'service' && (
-                    <>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Duration (minutes)</label>
-                        <input
-                          type="number"
-                          min="0"
-                          placeholder="Optional"
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          value={newProduct.duration_minutes}
-                          onChange={(e) => setNewProduct(prev => ({ ...prev, duration_minutes: e.target.value }))}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Service Location</label>
-                        <select
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          value={newProduct.service_location}
-                          onChange={(e) => setNewProduct(prev => ({ ...prev, service_location: e.target.value }))}
-                        >
-                          <option value="onsite">On-site at Customer Location</option>
-                          <option value="remote">Remote/Online</option>
-                          <option value="shop">At Business Location</option>
-                          <option value="flexible">Flexible</option>
-                        </select>
-                      </div>
-                    </>
-                  )}
-                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Stock Quantity</label>
+                    <input
+                      type="number"
+                      min="0"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={newProduct.stock_quantity}
+                      onChange={(e) => setNewProduct(prev => ({ ...prev, stock_quantity: e.target.value }))}
+                    />
+                  </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
                     <input
                       type="text"
-                      placeholder={newProduct.item_type === 'service' ? 'e.g., Electrical, Plumbing' : 'e.g., Clothing, Electronics'}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       value={newProduct.category}
                       onChange={(e) => setNewProduct(prev => ({ ...prev, category: e.target.value }))}
                     />
                   </div>
-                  
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Image URL</label>
                     <input
@@ -716,20 +474,16 @@ const WhatsAppCatalogManagement = () => {
                       onChange={(e) => setNewProduct(prev => ({ ...prev, image_url: e.target.value }))}
                     />
                   </div>
-                  
-                  {newProduct.item_type !== 'service' && (
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">SKU (Optional)</label>
-                      <input
-                        type="text"
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        value={newProduct.sku}
-                        onChange={(e) => setNewProduct(prev => ({ ...prev, sku: e.target.value }))}
-                      />
-                    </div>
-                  )}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">SKU (Optional)</label>
+                    <input
+                      type="text"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={newProduct.sku}
+                      onChange={(e) => setNewProduct(prev => ({ ...prev, sku: e.target.value }))}
+                    />
+                  </div>
                 </div>
-                
                 <div className="flex items-center justify-end space-x-3 mt-6">
                   <button
                     type="button"
@@ -742,92 +496,10 @@ const WhatsAppCatalogManagement = () => {
                     type="submit"
                     className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
                   >
-                    Add {newProduct.item_type === 'service' ? 'Service' : 'Product'}
+                    Add Product
                   </button>
                 </div>
               </form>
-            </div>
-          </div>
-        )}
-
-        {/* Sync Modal */}
-        {showSyncModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-screen overflow-y-auto">
-              <h3 className="text-lg font-semibold mb-4">Sync Products from Inventory</h3>
-              
-              <div className="mb-4">
-                <div className="flex space-x-3 mb-4">
-                  <button
-                    onClick={() => handleSyncProducts(true)}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    Sync All Products
-                  </button>
-                  <button
-                    onClick={() => handleSyncProducts(false)}
-                    disabled={selectedProductsForSync.length === 0}
-                    className={`px-4 py-2 rounded-lg transition-colors ${
-                      selectedProductsForSync.length > 0
-                        ? 'bg-green-600 text-white hover:bg-green-700'
-                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    }`}
-                  >
-                    Sync Selected ({selectedProductsForSync.length})
-                  </button>
-                </div>
-                
-                <div className="border rounded-lg max-h-96 overflow-y-auto">
-                  {availableProducts.length === 0 ? (
-                    <div className="text-center py-8">
-                      <p className="text-gray-500">No products available to sync</p>
-                    </div>
-                  ) : (
-                    <div className="divide-y">
-                      {availableProducts.map((product) => (
-                        <div key={product.id} className="p-4 hover:bg-gray-50">
-                          <label className="flex items-center cursor-pointer">
-                            <input
-                              type="checkbox"
-                              className="mr-3"
-                              checked={selectedProductsForSync.includes(product.id)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setSelectedProductsForSync(prev => [...prev, product.id]);
-                                } else {
-                                  setSelectedProductsForSync(prev => prev.filter(id => id !== product.id));
-                                }
-                              }}
-                            />
-                            <div className="flex-1">
-                              <h4 className="font-medium">{product.name}</h4>
-                              <p className="text-sm text-gray-500">
-                                SKU: {product.sku} | Price: ${product.price} | Stock: {product.quantity}
-                              </p>
-                              {product.description && (
-                                <p className="text-sm text-gray-600 mt-1">{product.description}</p>
-                              )}
-                            </div>
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-end space-x-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowSyncModal(false);
-                    setSelectedProductsForSync([]);
-                  }}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800"
-                >
-                  Cancel
-                </button>
-              </div>
             </div>
           </div>
         )}

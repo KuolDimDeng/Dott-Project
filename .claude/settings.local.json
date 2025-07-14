@@ -146,7 +146,9 @@
       "Bash(then)",
       "Bash(echo:*)",
       "Bash(fi)",
-      "Bash(DATABASE_URL=\"postgresql://postgres:postgres@localhost:5432/pyfactor_dev\" python3 interactive_user_cleanup.py)"
+      "Bash(DATABASE_URL=\"postgresql://postgres:postgres@localhost:5432/pyfactor_dev\" python3 interactive_user_cleanup.py)",
+      "Bash(./scripts/test_whatsapp_business_locally.sh:*)",
+      "Bash(./scripts/quick_test_whatsapp.sh:*)"
     ],
     "deny": []
   }
