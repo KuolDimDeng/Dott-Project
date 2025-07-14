@@ -771,11 +771,13 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
             logger.info(f"[DirectUserCreation] Starting Auth0 user creation for {email}")
             
             # Get Auth0 Management API token
+            # Use the actual Auth0 tenant domain for Management API, not the custom domain
+            auth0_tenant_domain = 'dev-cbyy63jovi6zrcos.us.auth0.com'
             auth0_config = {
-                'domain': settings.AUTH0_DOMAIN or 'auth.dottapps.com',
+                'domain': auth0_tenant_domain,
                 'client_id': settings.AUTH0_MANAGEMENT_CLIENT_ID,
                 'client_secret': settings.AUTH0_MANAGEMENT_CLIENT_SECRET,
-                'audience': f"https://{settings.AUTH0_DOMAIN or 'auth.dottapps.com'}/api/v2/"
+                'audience': f"https://{auth0_tenant_domain}/api/v2/"
             }
             
             logger.info(f"[DirectUserCreation] Auth0 config: domain={auth0_config['domain']}")
