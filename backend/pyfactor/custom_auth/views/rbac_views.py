@@ -820,7 +820,8 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
                 'email': email,
                 'password': temp_password,  # Required for Username-Password-Authentication
                 'connection': 'Username-Password-Authentication',
-                'email_verified': False,
+                'email_verified': True,  # Mark as verified to skip verification email
+                'verify_email': False,  # Don't send verification email
                 'app_metadata': {
                     'tenant_id': str(tenant.id),
                     'tenant_name': tenant.name,
@@ -856,7 +857,7 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
                 reset_url = f"https://{auth0_config['domain']}/api/v2/tickets/password-change"
                 reset_payload = {
                     'user_id': auth0_user_id,
-                    'connection_id': 'con_lQbNs02VKS8oT1w8',  # Use actual connection ID instead of name
+                    'connection': 'Username-Password-Authentication',  # Use connection name, not ID
                     'ttl_sec': 432000,  # 5 days
                     'mark_email_as_verified': True,
                     'includeEmailInRedirect': True
