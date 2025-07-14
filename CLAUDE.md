@@ -292,6 +292,50 @@
   - Appointment reminders
   - Marketing campaigns
 
+### [36.0.0] - 2025-07-14 - CURRENT - Comprehensive Timesheet System
+- **Purpose**: Industry-standard time tracking for wage employees with supervisor approvals
+- **Core Features**:
+  - Excel-style timesheet grid with light/dark green column shading
+  - Clock in/out with optional location tracking and geofencing
+  - Time off request system with approval workflow
+  - Supervisor dashboard for real-time approvals
+  - Auto-populated hours for salary employees
+- **Backend Models**:
+  - `Timesheet`: Weekly timesheet with status tracking (draft/submitted/approved/rejected/paid)
+  - `TimeEntry`: Daily entries (regular/overtime/sick/vacation/holiday/unpaid/other hours)
+  - `ClockEntry`: Clock in/out/break tracking with location data
+  - `TimeOffRequest`: Time off requests with approval workflow
+  - `GeofenceZone`: Location-based zones for clock validation
+- **API Endpoints**:
+  - `/api/timesheets/timesheets/` - Timesheet CRUD operations
+  - `/api/timesheets/timesheets/current_week/` - Get/create current week
+  - `/api/timesheets/timesheets/{id}/submit/` - Submit for approval
+  - `/api/timesheets/timesheets/{id}/approve/` - Approve/reject timesheet
+  - `/api/timesheets/time-entries/bulk_update/` - Bulk update entries
+  - `/api/timesheets/clock-entries/clock/` - Clock in/out operations
+  - `/api/timesheets/time-off-requests/` - Time off management
+  - `/api/timesheets/geofence-zones/` - Geofence configuration
+- **Frontend Components**:
+  - `/dashboard/timesheets/page.js` - Main timesheet grid view
+  - `/dashboard/components/timesheets/ClockInOut.js` - Clock in/out interface
+  - `/dashboard/components/timesheets/TimeOffRequest.js` - Time off requests
+  - `/dashboard/components/timesheets/SupervisorApprovals.js` - Approval dashboard
+  - `/dashboard/settings/components/EmployeeSettings.js` - Geofence configuration
+- **Key Features**:
+  - Real-time clock with session duration tracking
+  - Google Maps integration for geofence zone drawing
+  - Automatic hours calculation and pay computation
+  - Mobile-responsive design with location awareness
+  - Row-Level Security (RLS) for data isolation
+- **Profile Menu Integration**:
+  - Quick actions: Enter hours, Submit timesheet, View timesheets, View pay stubs
+  - Auto-navigation to timesheet tab when accessed via quick actions
+- **Setup Requirements**:
+  - Run migrations: `python manage.py makemigrations timesheets && python manage.py migrate`
+  - Add Google Maps API key: `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`
+  - Configure geofence zones per business location
+  - Assign supervisors to employees for approval workflow
+
 ---
 
 ## DEPRECATED CONFIGURATIONS (Do Not Use)
@@ -377,4 +421,5 @@ STRIPE_SECRET_KEY=sk_...
 STRIPE_EXPRESS_ACCOUNT_ID=acct_1RkYGFC77wwa4lUB
 WHATSAPP_ACCESS_TOKEN=<generate-from-meta-business-platform>
 WHATSAPP_PHONE_NUMBER_ID=676188225586230
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=<your-google-maps-api-key>
 ```
