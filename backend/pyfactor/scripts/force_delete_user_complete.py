@@ -40,10 +40,10 @@ def force_delete_all_user_data(email):
             cursor.execute("""
                 SELECT COALESCE(
                     (SELECT tenant_id FROM hr_employee WHERE user_id = %s LIMIT 1),
-                    (SELECT id FROM custom_auth_tenant WHERE owner_id = %s LIMIT 1),
+                    (SELECT id FROM custom_auth_tenant WHERE owner_id = %s::text LIMIT 1),
                     (SELECT tenant_id FROM custom_auth_user WHERE id = %s LIMIT 1)
                 )
-            """, (user_id, user_id, user_id))
+            """, (user_id, str(user_id), user_id))
             result = cursor.fetchone()
             tenant_id = result[0] if result and result[0] else None
             
@@ -98,13 +98,15 @@ def force_delete_all_user_data(email):
                 ("DELETE FROM businesses WHERE owner_id = %s", user_id, "businesses"),
             ])
             
-            # 9. Delete tenant ownership
+            # 9. Delete tenant ownership (owner_id is varchar)
             deletions.extend([
-                ("DELETE FROM custom_auth_tenant WHERE owner_id = %s", user_id, "custom_auth_tenant"),
+                ("DELETE FROM custom_auth_tenant WHERE owner_id = %s", str(user_id), "custom_auth_tenant"),
             ])
             
             # 10. Delete smart insights data
             deletions.extend([
+                ("DELETE FROM smart_insights_credittransaction WHERE user_id = %s", user_id, "smart_insights_credittransaction"),
+                ("DELETE FROM smart_insights_usercredit WHERE user_id = %s", user_id, "smart_insights_usercredit"),
                 ("DELETE FROM smart_insights_usagetracking WHERE user_id = %s", user_id, "smart_insights_usagetracking"),
             ])
         
