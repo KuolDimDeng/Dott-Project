@@ -6,7 +6,7 @@ import { CheckCircleIcon, XCircleIcon, ClockIcon, CalendarIcon } from '@heroicon
 import timesheetApi from '@/utils/api/timesheetApi';
 import StandardSpinner from '@/components/StandardSpinner';
 import { toast } from '@/hooks/useToast';
-import { useSession } from '@/hooks/useSession';
+import { useSession } from '@/hooks/useSession-v2';
 
 export default function SupervisorApprovals() {
   const { user } = useSession();

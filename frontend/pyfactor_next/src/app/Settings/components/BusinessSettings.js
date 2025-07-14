@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button, TextField, Switch } from '@/components/ui/TailwindComponents';
-import { useSession } from '@/hooks/useSession';
+import { useSession } from '@/hooks/useSession-v2';
 import { getWhatsAppBusinessVisibility } from '@/utils/whatsappCountryDetection';
 
 const BusinessSettings = ({ selectedTab }) => {
