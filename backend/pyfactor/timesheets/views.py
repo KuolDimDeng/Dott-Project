@@ -12,10 +12,10 @@ from .serializers import (
     TimeOffRequestSerializer, GeofenceZoneSerializer,
     TimesheetApprovalSerializer, TimeOffApprovalSerializer
 )
-from pyfactor.permissions import IsOwnerOrAdmin
-from pyfactor.logging_config import get_logger
+from custom_auth.views.rbac_views import IsOwnerOrAdmin
+import logging
 
-logger = get_logger()
+logger = logging.getLogger(__name__)
 
 
 class TimesheetViewSet(viewsets.ModelViewSet):
