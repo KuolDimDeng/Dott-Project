@@ -2,7 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from django.db import transaction
+from django.db import transaction, models
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from decimal import Decimal
@@ -27,7 +27,7 @@ from .serializers import (
     ProductSyncSerializer
 )
 from communications.whatsapp_service import whatsapp_service
-from session_manager.permissions import IsOwnerOrAdmin
+from custom_auth.views.rbac_views import IsOwnerOrAdmin
 from users.models import Tenant
 from inventory.models import Product
 
