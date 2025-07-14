@@ -80,6 +80,7 @@ def delete_specific_user(conn, email):
         print("🔍 Starting deletion process...")
         
         # Delete in correct order (same as full cleanup)
+        # Each tuple is (query, parameter_name, parameter_value)
         deletion_queries = [
             # Financial records
             ("DELETE FROM accounting_transactions WHERE tenant_id = %s", tenant_id),
@@ -131,13 +132,26 @@ def delete_specific_user(conn, email):
             ("DELETE FROM hr_departments WHERE tenant_id = %s", tenant_id),
             ("DELETE FROM hr_positions WHERE tenant_id = %s", tenant_id),
             
-            # System records
-            ("DELETE FROM notifications WHERE user_id = %s", user_id),
+            # System records - notifications use email, not user_id
+            ("DELETE FROM notification_recipients WHERE user_email = %s", email),
+            ("DELETE FROM user_notification_settings WHERE user_email = %s", email),
             ("DELETE FROM audit_logs WHERE user_id = %s", user_id),
             ("DELETE FROM user_activities WHERE user_id = %s", user_id),
             ("DELETE FROM api_tokens WHERE user_id = %s", user_id),
             ("DELETE FROM integrations WHERE tenant_id = %s", tenant_id),
             ("DELETE FROM subscription_credits WHERE user_id = %s", user_id),
+            
+            # Session management tables
+            ("DELETE FROM session_manager_session WHERE user_id = %s", user_id),
+            ("DELETE FROM session_manager_devicefingerprint WHERE user_id = %s", user_id),
+            ("DELETE FROM session_manager_securityevent WHERE user_id = %s", user_id),
+            
+            # User permissions and invitations
+            ("DELETE FROM custom_auth_userpageaccess WHERE user_id = %s", user_id),
+            ("DELETE FROM custom_auth_userinvitation WHERE email = %s", email),
+            
+            # Tenant ownership
+            ("DELETE FROM custom_auth_tenant WHERE owner_id = %s", user_id),
             
             # Django admin
             ("DELETE FROM django_admin_log WHERE user_id = %s", user_id),
@@ -149,9 +163,19 @@ def delete_specific_user(conn, email):
         ]
         
         # Execute deletions
+        successful_deletions = 0
+        failed_deletions = []
+        
         for query, param in deletion_queries:
-            if param is not None:  # Skip if no tenant_id
-                cursor.execute(query, (param,))
+            if param is not None:  # Skip if no value
+                try:
+                    cursor.execute(query, (param,))
+                    rows_affected = cursor.rowcount
+                    if rows_affected > 0:
+                        successful_deletions += 1
+                except Exception as e:
+                    # Some tables might not exist, that's ok
+                    failed_deletions.append(f"{query.split()[2]}: {str(e)}")
         
         conn.commit()
         print(f"✅ Successfully deleted user: {user_email}")
@@ -247,9 +271,16 @@ def delete_all_users(conn):
         DELETE FROM hr_positions;
         
         -- Delete all system records
-        DELETE FROM notifications;
+        DELETE FROM notification_recipients;
+        DELETE FROM user_notification_settings;
         DELETE FROM audit_logs;
         DELETE FROM user_activities;
+        DELETE FROM session_manager_session;
+        DELETE FROM session_manager_devicefingerprint;
+        DELETE FROM session_manager_securityevent;
+        DELETE FROM custom_auth_userpageaccess;
+        DELETE FROM custom_auth_userinvitation;
+        DELETE FROM custom_auth_tenant;
         DELETE FROM api_tokens;
         DELETE FROM integrations;
         DELETE FROM subscription_credits;
