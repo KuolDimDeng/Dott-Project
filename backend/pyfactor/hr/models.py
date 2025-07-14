@@ -185,8 +185,8 @@ class Employee(models.Model):
     
     def save_ssn_to_stripe(self, ssn):
         """Save SSN to Stripe Connect for secure storage"""
-        # Use simple service until Stripe Connect platform is set up
-        from .stripe_ssn_service_simple import StripeSSNService
+        # Use Express Connect account service
+        from .stripe_ssn_service_express import StripeSSNService
         
         if not ssn:
             return False, "No SSN provided"
@@ -202,7 +202,7 @@ class Employee(models.Model):
     
     def delete(self, *args, **kwargs):
         """Override delete to also remove Stripe data"""
-        from .stripe_ssn_service_simple import StripeSSNService
+        from .stripe_ssn_service_express import StripeSSNService
         
         # Delete Stripe account if exists
         if self.stripe_account_id:
