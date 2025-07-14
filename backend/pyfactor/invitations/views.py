@@ -132,13 +132,18 @@ def send_email_invitation(request):
         
         # Send email
         try:
-            # Format the HTML message properly
+            # Format the HTML message properly with clickable links
+            # Convert plain text URLs to clickable links
+            html_content = message.replace('https://dottapps.com', '<a href="https://dottapps.com" style="color: #2563eb; text-decoration: none; font-weight: bold;">https://dottapps.com</a>')
+            
             html_message = f"""
             <html>
             <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
                 <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
-                        <pre style="white-space: pre-wrap; word-wrap: break-word; font-family: Arial, sans-serif;">{message}</pre>
+                    <div style="background-color: #f8f9fa; padding: 25px; border-radius: 8px; border-left: 4px solid #2563eb;">
+                        <div style="white-space: pre-wrap; word-wrap: break-word; font-family: Arial, sans-serif; font-size: 16px;">
+                            {html_content}
+                        </div>
                     </div>
                     <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e0e0; font-size: 12px; color: #666;">
                         <p>This invitation was sent by {sender_name} ({sender_email}) via Dott.</p>
@@ -159,12 +164,12 @@ def send_email_invitation(request):
             logger.info(f'  - DEFAULT_FROM_EMAIL: {getattr(settings, "DEFAULT_FROM_EMAIL", "not set")}')
             logger.info(f'  - From Email: {from_email}')
             logger.info(f'  - To Email: {email}')
-            logger.info(f'  - Subject: {sender_name} invites you to join Dott')
+            logger.info(f'  - Subject: {sender_name} invites you to join Dott: Global Business Platform')
             
             logger.info('[Email Invite] 📤 Attempting to send email...')
             
             send_mail(
-                subject=f'{sender_name} invites you to join Dott',
+                subject=f'{sender_name} invites you to join Dott: Global Business Platform',
                 message=message,  # Plain text fallback
                 from_email=from_email,
                 recipient_list=[email],

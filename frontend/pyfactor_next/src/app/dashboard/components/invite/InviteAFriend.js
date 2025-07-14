@@ -23,7 +23,7 @@ const InviteAFriend = () => {
 
   const getDefaultMessage = (isWhatsApp = false) => {
     if (isWhatsApp) {
-      return `🚀 *${user?.name || 'A colleague'} has invited you to join Dott!*
+      return `🚀 *${user?.name || 'A colleague'} has invited you to join Dott: Global Business Platform!*
 
 Hello! I wanted to personally recommend Dott, a business management platform that has transformed how I run my operations.
 
@@ -33,16 +33,24 @@ Dott brings together everything you need:
 • Professional invoicing and payments
 • Financial reporting and analytics
 • Team collaboration tools
+• AI Business insights and analytics
+• Geofencing and location tracking
+• Real-time business intelligence
 
 Since implementing Dott, I've reduced administrative work by hours each week while gaining real-time insights into my business performance.
 
-Start your free trial today: https://dottapps.com
+🎯 **Pricing Plans:**
+• Basic: FREE forever (1 user, 3GB storage)
+• Professional: $15/month (50% off for developing countries)
+• Enterprise: $45/month (50% off for developing countries)
+
+Get started for free forever today: https://dottapps.com
 
 Best regards,
 ${user?.name || user?.email || 'A Dott User'}`;
     }
     
-    return `${user?.name || 'A colleague'} has invited you to join Dott!
+    return `${user?.name || 'A colleague'} has invited you to join Dott: Global Business Platform!
 
 Hello,
 
@@ -54,12 +62,20 @@ Dott brings together everything you need in one place:
 • Professional invoicing and payments
 • Financial reporting and analytics
 • Team collaboration tools
+• AI Business insights and analytics
+• Geofencing and location tracking
+• Real-time business intelligence
 
 Since implementing Dott, I've reduced administrative work by hours each week while gaining real-time insights into my business performance. The platform delivers enterprise-grade capabilities at a fraction of traditional software costs.
 
 I believe Dott would be particularly valuable for your business operations and growth goals.
 
-Start your free trial today: https://dottapps.com
+**Pricing Plans:**
+• Basic: FREE forever (1 user, 3GB storage)
+• Professional: $15/month (50% off for developing countries)
+• Enterprise: $45/month (50% off for developing countries)
+
+Get started for free forever today: https://dottapps.com
 
 Best regards,
 ${user?.name || user?.email || 'A Dott User'}`;

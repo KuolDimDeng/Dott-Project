@@ -121,6 +121,9 @@ urlpatterns = [
     # Invitations API routes
     path('api/invitations/', include('invitations.urls')),
     
+    # WhatsApp Business API routes
+    path('api/whatsapp-business/', include('whatsapp_business.urls')),
+    
     # Main app routes
     path('', include('users.urls')),
     
