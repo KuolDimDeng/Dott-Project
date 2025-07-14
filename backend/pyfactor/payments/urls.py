@@ -6,6 +6,7 @@ from . import stripe_connect
 from . import invoice_checkout
 from . import tax_filing_checkout
 from . import paystack_webhook
+from . import api
 
 # Import payment views from accounts app for Stripe integration
 from accounts import views_payment
@@ -50,4 +51,10 @@ urlpatterns = [
     
     # Paystack webhook handler
     path('webhooks/paystack/', paystack_webhook.paystack_webhook_handler, name='paystack_webhook'),
+    
+    # New platform fee endpoints for invoice and vendor payments
+    path('api/create-invoice-payment-intent/', api.create_invoice_payment_intent, name='api_create_invoice_payment_intent'),
+    path('api/confirm-invoice-payment/', api.confirm_invoice_payment, name='api_confirm_invoice_payment'),
+    path('api/create-vendor-payment/', api.create_vendor_payment, name='api_create_vendor_payment'),
+    path('api/calculate-fees/', api.calculate_payment_fees, name='api_calculate_fees'),
 ]

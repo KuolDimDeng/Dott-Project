@@ -1,0 +1,1 @@
+# Payments module for Stripe Connect integration

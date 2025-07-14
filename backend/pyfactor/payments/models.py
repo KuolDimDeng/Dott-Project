@@ -311,3 +311,83 @@ class ExchangeRate(models.Model):
     
     def __str__(self):
         return f"{self.from_currency} to {self.to_currency}: {self.rate}"
+
+
+class InvoicePayment(models.Model):
+    """Track invoice payments and platform fees"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    invoice = models.ForeignKey('invoices.Invoice', on_delete=models.CASCADE, related_name='stripe_payments')
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    currency = models.CharField(max_length=3, default='USD')
+    payment_method = models.CharField(max_length=50)
+    stripe_payment_intent_id = models.CharField(max_length=255, unique=True, null=True, blank=True)
+    platform_fee = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    stripe_fee = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    platform_profit = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    status = models.CharField(max_length=50, default='pending')
+    metadata = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'payments_invoice_payment'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"Payment {self.id} for Invoice {self.invoice.invoice_number}"
+
+
+class VendorPayment(models.Model):
+    """Track payments to vendors/suppliers"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    vendor = models.ForeignKey('vendors.Vendor', on_delete=models.CASCADE, related_name='stripe_payments')
+    business_id = models.UUIDField(db_index=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    currency = models.CharField(max_length=3, default='USD')
+    invoice_number = models.CharField(max_length=100, blank=True)
+    description = models.TextField(blank=True)
+    stripe_charge_id = models.CharField(max_length=255, unique=True, null=True, blank=True)
+    stripe_transfer_id = models.CharField(max_length=255, unique=True, null=True, blank=True)
+    platform_fee = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    total_charged = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    status = models.CharField(max_length=50, default='pending')
+    metadata = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'payments_vendor_payment'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"Payment {self.id} to vendor"
+
+
+class PlatformFeeCollection(models.Model):
+    """Track all platform fees collected"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    business_id = models.UUIDField(db_index=True)
+    transaction_type = models.CharField(max_length=50)  # invoice_payment, vendor_payment, etc.
+    transaction_id = models.CharField(max_length=255)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)  # Base transaction amount
+    platform_fee = models.DecimalField(max_digits=10, decimal_places=2)  # Total fee collected
+    stripe_fee = models.DecimalField(max_digits=10, decimal_places=2)  # What Stripe charges us
+    platform_profit = models.DecimalField(max_digits=10, decimal_places=2)  # Our profit
+    fee_percentage = models.DecimalField(max_digits=5, decimal_places=4)  # e.g., 0.029 for 2.9%
+    fixed_fee = models.DecimalField(max_digits=10, decimal_places=2)  # e.g., 0.60
+    currency = models.CharField(max_length=3, default='USD')
+    status = models.CharField(max_length=50, default='collected')
+    stripe_account_id = models.CharField(max_length=255, null=True, blank=True)
+    metadata = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    
+    class Meta:
+        db_table = 'payments_platform_fee_collection'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['business_id', 'created_at']),
+            models.Index(fields=['transaction_type', 'created_at']),
+        ]
+    
+    def __str__(self):
+        return f"Fee {self.id} - {self.transaction_type} - ${self.platform_fee}"
