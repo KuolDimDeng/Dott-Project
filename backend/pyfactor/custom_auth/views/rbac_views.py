@@ -811,8 +811,14 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
             
             # Create Auth0 user
             users_url = f"https://{auth0_config['domain']}/api/v2/users"
+            # Generate a random password for initial user creation
+            import string
+            import random
+            temp_password = ''.join(random.choices(string.ascii_letters + string.digits + '!@#$%', k=16)) + 'Aa1!'
+            
             user_payload = {
                 'email': email,
+                'password': temp_password,  # Required for Username-Password-Authentication
                 'connection': 'Username-Password-Authentication',
                 'email_verified': False,
                 'app_metadata': {
@@ -837,6 +843,9 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
             
             user_response = requests.post(users_url, json=user_payload, headers=headers)
             logger.info(f"[DirectUserCreation] Auth0 user creation response status: {user_response.status_code}")
+            
+            if user_response.status_code != 201:
+                logger.error(f"[DirectUserCreation] Auth0 user creation failed. Response: {user_response.text}")
             
             if user_response.status_code == 201:
                 auth0_user = user_response.json()
