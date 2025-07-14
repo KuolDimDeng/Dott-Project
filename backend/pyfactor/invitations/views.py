@@ -148,6 +148,21 @@ def send_email_invitation(request):
             </html>
             """
             
+            # Log email configuration
+            from django.conf import settings
+            logger.info('[Email Invite] 📧 Email Configuration:')
+            logger.info(f'  - EMAIL_BACKEND: {settings.EMAIL_BACKEND}')
+            logger.info(f'  - EMAIL_HOST: {settings.EMAIL_HOST}')
+            logger.info(f'  - EMAIL_PORT: {settings.EMAIL_PORT}')
+            logger.info(f'  - EMAIL_USE_TLS: {settings.EMAIL_USE_TLS}')
+            logger.info(f'  - EMAIL_HOST_USER: {settings.EMAIL_HOST_USER}')
+            logger.info(f'  - DEFAULT_FROM_EMAIL: {getattr(settings, "DEFAULT_FROM_EMAIL", "not set")}')
+            logger.info(f'  - From Email: {from_email}')
+            logger.info(f'  - To Email: {email}')
+            logger.info(f'  - Subject: {sender_name} invites you to join Dott')
+            
+            logger.info('[Email Invite] 📤 Attempting to send email...')
+            
             send_mail(
                 subject=f'{sender_name} invites you to join Dott',
                 message=message,  # Plain text fallback
@@ -157,7 +172,8 @@ def send_email_invitation(request):
                 html_message=html_message
             )
             
-            logger.info(f'[Email Invite] ✅ Successfully sent email invitation to {email}')
+            logger.info(f'[Email Invite] ✅ Django send_mail completed successfully for {email}')
+            logger.info('[Email Invite] 📮 Email should be delivered by SMTP server')
             
             return Response({
                 'success': True,
