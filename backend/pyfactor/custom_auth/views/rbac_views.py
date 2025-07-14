@@ -856,15 +856,17 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
                 reset_url = f"https://{auth0_config['domain']}/api/v2/tickets/password-change"
                 reset_payload = {
                     'user_id': auth0_user_id,
-                    'connection_id': 'Username-Password-Authentication',
+                    'connection_id': 'con_lQbNs02VKS8oT1w8',  # Use actual connection ID instead of name
                     'ttl_sec': 432000,  # 5 days
                     'mark_email_as_verified': True,
                     'includeEmailInRedirect': True
                 }
                 
                 logger.info(f"[DirectUserCreation] Sending password reset ticket request")
+                logger.info(f"[DirectUserCreation] Reset payload: {reset_payload}")
                 reset_response = requests.post(reset_url, json=reset_payload, headers=headers)
                 logger.info(f"[DirectUserCreation] Password reset response status: {reset_response.status_code}")
+                logger.info(f"[DirectUserCreation] Password reset response body: {reset_response.text}")
                 
                 if reset_response.status_code == 201:
                     reset_data = reset_response.json()
