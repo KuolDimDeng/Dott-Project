@@ -1,5 +1,5 @@
 # CLAUDE.md - Dott Project Configuration
-*Last Updated: 2025-07-09*
+*Last Updated: 2025-07-14*
 
 ## Numbering System Guide
 - **Format**: `[MAJOR.MINOR.PATCH] - DATE - STATUS`
@@ -67,9 +67,10 @@
 
 ### [7.0.0] - 2025-06-26 - CURRENT - Integration Services
 - **Crisp Chat**: Customer support
-- **Stripe**: Payment processing with Connect for invoice payments (2.5% + $0.30 fee)
+- **Stripe**: Payment processing with Connect for invoice payments
 - **Google OAuth**: Additional authentication
 - **Cloudflare**: Security, caching, global performance
+- **Note**: See [34.0.0] for updated Stripe platform fee structure
 
 ### [10.0.0] - 2025-06-26 - CURRENT - Troubleshooting Resources
 - **Frontend**: `/frontend/pyfactor_next/docs/TROUBLESHOOTING.md`
@@ -224,6 +225,43 @@
 - **Prevention**: All user creation now wrapped in atomic transactions
 - **Documentation**: `/backend/pyfactor/docs/TROUBLESHOOTING.md` - User cleanup section
 
+### [33.0.0] - 2025-07-14 - CURRENT - Stripe Connect SSN Storage
+- **Purpose**: PCI-compliant SSN storage for employees using Stripe Connect
+- **Express Account**: acct_1RkYGFC77wwa4lUB (Dott LLC)
+- **Implementation**:
+  - SSNs stored as Customer records in Express account
+  - Only last 4 digits kept locally
+  - Secure hashing for references
+  - Automatic Stripe account cleanup on deletion
+- **Key Files**:
+  - `/backend/pyfactor/hr/stripe_ssn_service_express.py` - Express account integration
+  - `/backend/pyfactor/hr/stripe_config.py` - Stripe configuration
+  - `/backend/pyfactor/scripts/migrate_existing_ssns_to_stripe.py` - Migration script
+  - `/STRIPE_SSN_MIGRATION_GUIDE.md` - Step-by-step migration guide
+
+### [34.0.0] - 2025-07-14 - CURRENT - Platform Fee Structure
+- **Purpose**: Revenue generation through transaction fees
+- **Fee Structure**:
+  - Invoice Payments: 2.9% + $0.60 (profit: $0.30/transaction)
+  - Vendor Payments: 2.9% + $0.60 (profit: $0.30/transaction)
+  - Payroll: 2.4% (configurable)
+  - Subscriptions: 2.5% (configurable)
+- **Implementation**:
+  - Automatic fee calculation on all payments
+  - Transparent fee display to users
+  - Uses Stripe application_fee_amount
+  - Complete fee tracking and analytics
+- **Key Files**:
+  - `/backend/pyfactor/payments/stripe_fees.py` - Fee calculation logic
+  - `/backend/pyfactor/payments/stripe_payment_service.py` - Payment processing
+  - `/backend/pyfactor/payments/api.py` - Payment API endpoints
+  - `/frontend/pyfactor_next/src/components/payments/InvoicePaymentModal.js` - Payment UI
+  - `/backend/pyfactor/PLATFORM_FEE_DOCUMENTATION.md` - Complete documentation
+- **Revenue Projections**:
+  - 100 transactions/month = $30
+  - 1,000 transactions/month = $300
+  - 10,000 transactions/month = $3,000
+
 ---
 
 ## DEPRECATED CONFIGURATIONS (Do Not Use)
@@ -245,6 +283,7 @@
 - **Sessions**: 15+ cookies → Redis caching → Server-side only
 - **Onboarding**: Multiple fixes → Backend single source of truth
 - **Security**: Basic → Fingerprinting → Bank-grade implementation
+- **Payment Processing**: Basic Stripe → Express Connect → Platform fees
 
 ### Current Pricing
 - **Basic** (Free): 1 user, 3GB storage
@@ -292,6 +331,12 @@ docker-compose build backend
 docker-compose exec backend python manage.py check
 ```
 
+### Test Platform Fees
+```bash
+cd /Users/kuoldeng/projectx/backend/pyfactor
+python3 payments/test_platform_fees.py
+```
+
 ### Environment Variables (Key)
 ```
 CLAUDE_API_KEY=sk-ant-api03-...
@@ -299,4 +344,5 @@ CLAUDE_SMART_INSIGHTS_API_KEY=sk-ant-api03-...
 REDIS_URL=redis://...
 AUTH0_M2M_CLIENT_ID=...
 STRIPE_SECRET_KEY=sk_...
+STRIPE_EXPRESS_ACCOUNT_ID=acct_1RkYGFC77wwa4lUB
 ```
