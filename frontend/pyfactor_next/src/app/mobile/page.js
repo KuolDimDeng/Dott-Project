@@ -18,8 +18,10 @@ import {
   WifiIcon,
   CloudArrowUpIcon,
   BoltIcon,
-  ClockIcon
+  ClockIcon,
+  ChatBubbleLeftRightIcon
 } from '@heroicons/react/24/outline';
+import { getWhatsAppBusinessVisibility } from '@/utils/whatsappCountryDetection';
 
 export default function MobilePage() {
   const router = useRouter();
@@ -55,7 +57,31 @@ export default function MobilePage() {
     };
   }, []);
 
-  const quickActions = [
+  // Get WhatsApp Business visibility
+  const getUserCountry = () => {
+    return session?.user?.country || 'US';
+  };
+  
+  const shouldShowWhatsAppBusiness = () => {
+    try {
+      const userCountry = getUserCountry();
+      const whatsappVisibility = getWhatsAppBusinessVisibility(userCountry);
+      
+      // If country shows WhatsApp Business in menu by default
+      if (whatsappVisibility.showInMenu) {
+        return true;
+      }
+      
+      // If country doesn't show by default, check user's settings
+      const whatsappSettings = localStorage.getItem('whatsapp_business_enabled');
+      return whatsappSettings === 'true';
+    } catch (error) {
+      console.error('Error checking WhatsApp Business visibility:', error);
+      return false;
+    }
+  };
+
+  const baseQuickActions = [
     {
       title: 'Quick Sale',
       description: 'Process sales instantly',
@@ -92,6 +118,19 @@ export default function MobilePage() {
       color: 'bg-orange-500'
     }
   ];
+
+  // Add WhatsApp Business if it should be shown
+  const quickActions = shouldShowWhatsAppBusiness() ? [
+    ...baseQuickActions.slice(0, 2), // Keep first 2 actions
+    {
+      title: 'WhatsApp Business',
+      description: 'Sell via WhatsApp',
+      icon: ChatBubbleLeftRightIcon,
+      href: session?.tenantId ? `/${session.tenantId}/dashboard` : '/dashboard',
+      color: 'bg-green-600'
+    },
+    ...baseQuickActions.slice(2) // Keep the rest
+  ] : baseQuickActions;
 
   const features = [
     {

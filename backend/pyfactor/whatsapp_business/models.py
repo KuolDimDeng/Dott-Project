@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
-from users.models import UserProfile, TenantProfile
+from users.models import UserProfile
+from custom_auth.models import Tenant
 from decimal import Decimal
 import uuid
 from django.utils import timezone
@@ -9,7 +10,7 @@ User = get_user_model()
 
 class WhatsAppBusinessSettings(models.Model):
     """Settings for WhatsApp Business integration per tenant"""
-    tenant = models.OneToOneField(TenantProfile, on_delete=models.CASCADE, related_name='whatsapp_business_settings')
+    tenant = models.OneToOneField(Tenant, on_delete=models.CASCADE, related_name='whatsapp_business_settings')
     is_enabled = models.BooleanField(default=True)
     business_name = models.CharField(max_length=255, blank=True, null=True)
     business_description = models.TextField(blank=True, null=True)
@@ -29,7 +30,7 @@ class WhatsAppBusinessSettings(models.Model):
 
 class WhatsAppCatalog(models.Model):
     """Product catalog for WhatsApp Business"""
-    tenant = models.ForeignKey(TenantProfile, on_delete=models.CASCADE, related_name='whatsapp_catalogs')
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='whatsapp_catalogs')
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
     is_active = models.BooleanField(default=True)
@@ -102,7 +103,7 @@ class WhatsAppOrder(models.Model):
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    tenant = models.ForeignKey(TenantProfile, on_delete=models.CASCADE, related_name='whatsapp_orders')
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='whatsapp_orders')
     customer_phone = models.CharField(max_length=20)
     customer_name = models.CharField(max_length=255, blank=True, null=True)
     customer_address = models.TextField(blank=True, null=True)
@@ -186,7 +187,7 @@ class WhatsAppMessage(models.Model):
         ('failed', 'Failed'),
     ]
 
-    tenant = models.ForeignKey(TenantProfile, on_delete=models.CASCADE, related_name='whatsapp_messages')
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='whatsapp_messages')
     recipient_phone = models.CharField(max_length=20)
     message_type = models.CharField(max_length=20, choices=MESSAGE_TYPE_CHOICES)
     message_content = models.TextField()
@@ -207,7 +208,7 @@ class WhatsAppMessage(models.Model):
 
 class WhatsAppAnalytics(models.Model):
     """Analytics for WhatsApp Business performance"""
-    tenant = models.ForeignKey(TenantProfile, on_delete=models.CASCADE, related_name='whatsapp_analytics')
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='whatsapp_analytics')
     date = models.DateField()
     
     # Message metrics

@@ -27,7 +27,7 @@ from .serializers import (
 )
 from communications.whatsapp_service import whatsapp_service
 from session_manager.permissions import IsOwnerOrAdmin
-from users.models import TenantProfile
+from users.models import Tenant
 
 
 class WhatsAppBusinessSettingsViewSet(viewsets.ModelViewSet):

@@ -1,7 +1,49 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button, TextField, Switch } from '@/components/ui/TailwindComponents';
+import { useSession } from '@/hooks/useSession';
+import { getWhatsAppBusinessVisibility } from '@/utils/whatsappCountryDetection';
 
 const BusinessSettings = ({ selectedTab }) => {
+  const { user } = useSession();
+  const [whatsappEnabled, setWhatsappEnabled] = useState(false);
+  const [whatsappFeatures, setWhatsappFeatures] = useState(null);
+
+  useEffect(() => {
+    // Get user's country and WhatsApp features
+    const userCountry = user?.country || 'US';
+    const features = getWhatsAppBusinessVisibility(userCountry);
+    setWhatsappFeatures(features);
+
+    // Check if WhatsApp Business is enabled
+    try {
+      const enabled = localStorage.getItem('whatsapp_business_enabled') === 'true';
+      setWhatsappEnabled(enabled);
+    } catch (error) {
+      console.error('Error checking WhatsApp Business settings:', error);
+    }
+  }, [user]);
+
+  const handleWhatsAppToggle = async (enabled) => {
+    try {
+      setWhatsappEnabled(enabled);
+      localStorage.setItem('whatsapp_business_enabled', enabled.toString());
+      
+      // Call API to update backend settings
+      await fetch('/api/proxy/whatsapp-business/settings/toggle-whatsapp-business/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ enabled }),
+      });
+      
+      // Force reload to update menu
+      window.location.reload();
+    } catch (error) {
+      console.error('Error updating WhatsApp Business settings:', error);
+    }
+  };
+
   const renderContent = () => {
     switch (selectedTab) {
       case 0:
@@ -187,6 +229,88 @@ const BusinessSettings = ({ selectedTab }) => {
                   <Button variant="primary">
                     Save Settings
                   </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      case 5:
+        return (
+          <div>
+            <h2 className="text-xl font-semibold mb-4">WhatsApp Business</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <h3 className="text-lg font-medium mb-4">WhatsApp Business Settings</h3>
+              
+              {whatsappFeatures && (
+                <div className="mb-6">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-4">
+                    <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">
+                      Available in Your Country ({user?.country || 'Unknown'})
+                    </h4>
+                    <div className="text-sm text-blue-800 dark:text-blue-200">
+                      <p><strong>Default Visibility:</strong> {whatsappFeatures.showInMenu ? 'Shown in menu' : 'Hidden by default'}</p>
+                      <p><strong>Payment Method:</strong> {whatsappFeatures.payment.localPayment || 'Credit Cards'}</p>
+                      <p><strong>Currency:</strong> {whatsappFeatures.payment.currency}</p>
+                      <p><strong>Reason:</strong> {whatsappFeatures.reason}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-6">
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h4 className="text-base font-medium">Enable WhatsApp Business</h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Show WhatsApp Business in your main menu and enable WhatsApp commerce features
+                      </p>
+                    </div>
+                    <Switch
+                      checked={whatsappEnabled}
+                      onChange={handleWhatsAppToggle}
+                      label=""
+                    />
+                  </div>
+                </div>
+
+                {whatsappEnabled && (
+                  <div className="border-t pt-6">
+                    <h4 className="text-base font-medium mb-4">WhatsApp Business Features</h4>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Catalog Management</span>
+                        <span className="text-sm text-green-600">✓ Available</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Order Processing</span>
+                        <span className="text-sm text-green-600">✓ Available</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Payment Processing</span>
+                        <span className="text-sm text-green-600">✓ Available</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Customer Support</span>
+                        <span className="text-sm text-green-600">✓ Available</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Analytics & Reporting</span>
+                        <span className="text-sm text-green-600">✓ Available</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="border-t pt-6">
+                  <h4 className="text-base font-medium mb-4">Getting Started</h4>
+                  <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                    <p>1. Enable WhatsApp Business using the toggle above</p>
+                    <p>2. Navigate to WhatsApp Business from the main menu</p>
+                    <p>3. Set up your business profile and catalog</p>
+                    <p>4. Start sharing your catalog with customers</p>
+                    <p>5. Process orders and payments through WhatsApp</p>
+                  </div>
                 </div>
               </div>
             </div>

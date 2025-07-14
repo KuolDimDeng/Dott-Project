@@ -722,7 +722,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
         content = <ProfileSettings selectedTab={selectedTab} />;
         break;
       case 'Business Settings':
-        tabs = ['User Management', 'Invoices and Estimates', 'Payments', 'Email Templates', 'Custom Charge Settings'];
+        tabs = ['User Management', 'Invoices and Estimates', 'Payments', 'Email Templates', 'Custom Charge Settings', 'WhatsApp Business'];
         content = <BusinessSettings selectedTab={selectedTab} />;
         break;
       case 'Accounting Settings':
@@ -1902,7 +1902,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
       }
 
       // Handle Analytics views
-      if (view && (view.startsWith('analytics-') || view === 'kpi-data' || view === 'smart-insight' || view === 'smart-business' || view === 'ai-query' || view === 'import-export' || view === 'invite-friend' || view === 'dott-status') || showAnalysisPage || showKPIDashboard) {
+      if (view && (view.startsWith('analytics-') || view === 'kpi-data' || view === 'smart-insight' || view === 'smart-business' || view === 'ai-query' || view === 'whatsapp-business' || view === 'import-export' || view === 'invite-friend' || view === 'dott-status') || showAnalysisPage || showKPIDashboard) {
         console.log('[RenderMainContent] Rendering analytics view:', view);
         
         let AnalyticsComponent = null;
@@ -1930,6 +1930,13 @@ const RenderMainContent = React.memo(function RenderMainContent({
               AnalyticsComponent = lazy(() => import('./forms/SmartInsight.js').catch(err => {
                 console.error('[RenderMainContent] Error loading SmartInsight:', err);
                 return { default: () => <div className="p-4">Error loading Smart Insight AI</div> };
+              }));
+              break;
+            case 'whatsapp-business':
+              componentName = 'WhatsAppBusiness';
+              AnalyticsComponent = lazy(() => import('./forms/WhatsAppBusinessDashboard.js').catch(err => {
+                console.error('[RenderMainContent] Error loading WhatsAppBusiness:', err);
+                return { default: () => <div className="p-4">Error loading WhatsApp Business</div> };
               }));
               break;
             case 'import-export':
