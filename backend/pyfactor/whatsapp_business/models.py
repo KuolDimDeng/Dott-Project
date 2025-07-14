@@ -45,7 +45,7 @@ class WhatsAppCatalog(models.Model):
         return f"{self.name} - {self.tenant.name}"
 
 class WhatsAppProduct(models.Model):
-    """Products in WhatsApp catalog"""
+    """Products and Services in WhatsApp catalog"""
     CURRENCY_CHOICES = [
         ('USD', 'US Dollar'),
         ('KES', 'Kenyan Shilling'),
@@ -57,17 +57,46 @@ class WhatsAppProduct(models.Model):
         ('EUR', 'Euro'),
         ('GBP', 'British Pound'),
     ]
+    
+    ITEM_TYPE_CHOICES = [
+        ('product', 'Physical Product'),
+        ('service', 'Service'),
+        ('digital', 'Digital Product'),
+    ]
+    
+    PRICE_TYPE_CHOICES = [
+        ('fixed', 'Fixed Price'),
+        ('hourly', 'Per Hour'),
+        ('daily', 'Per Day'),
+        ('project', 'Per Project'),
+        ('quote', 'Quote on Request'),
+    ]
 
     catalog = models.ForeignKey(WhatsAppCatalog, on_delete=models.CASCADE, related_name='products')
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
+    item_type = models.CharField(max_length=20, choices=ITEM_TYPE_CHOICES, default='product')
     price = models.DecimalField(max_digits=10, decimal_places=2)
+    price_type = models.CharField(max_length=20, choices=PRICE_TYPE_CHOICES, default='fixed')
     currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default='USD')
     image_url = models.URLField(blank=True, null=True)
     sku = models.CharField(max_length=100, blank=True, null=True)
-    stock_quantity = models.IntegerField(default=0)
+    stock_quantity = models.IntegerField(default=0)  # 0 for services means unlimited
     is_available = models.BooleanField(default=True)
     category = models.CharField(max_length=100, blank=True, null=True)
+    
+    # Service-specific fields
+    duration_minutes = models.IntegerField(null=True, blank=True)  # For services with fixed duration
+    service_location = models.CharField(max_length=50, choices=[
+        ('onsite', 'On-site at Customer Location'),
+        ('remote', 'Remote/Online'),
+        ('shop', 'At Business Location'),
+        ('flexible', 'Flexible'),
+    ], blank=True, null=True)
+    
+    # Link to main inventory Product if synced
+    linked_product = models.ForeignKey('inventory.Product', on_delete=models.SET_NULL, null=True, blank=True, related_name='whatsapp_products')
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

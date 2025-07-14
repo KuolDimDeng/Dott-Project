@@ -107,19 +107,3 @@ class WhatsAppAnalyticsSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
-
-
-class ProductSyncSerializer(serializers.Serializer):
-    """Serializer for syncing main inventory products to WhatsApp"""
-    product_ids = serializers.ListField(
-        child=serializers.UUIDField(),
-        required=False,
-        help_text="List of product IDs to sync. If empty, syncs all products."
-    )
-    catalog_id = serializers.UUIDField(required=True, help_text="Target WhatsApp catalog ID")
-    sync_all = serializers.BooleanField(default=False, help_text="Sync all products from main inventory")
-    item_type = serializers.ChoiceField(
-        choices=WhatsAppProduct.ITEM_TYPE_CHOICES,
-        default='product',
-        help_text="Type of items being synced"
-    )

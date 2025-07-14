@@ -133,19 +133,27 @@ def send_email_invitation(request):
         # Send email
         try:
             # Format the HTML message properly with clickable links
+            # Extract the first line (title) and the rest of the message
+            lines = message.split('\n', 1)
+            title = lines[0] if lines else ''
+            rest_of_message = lines[1] if len(lines) > 1 else ''
+            
             # Convert plain text URLs to clickable links
-            html_content = message.replace('https://dottapps.com', '<a href="https://dottapps.com" style="color: #2563eb; text-decoration: none; font-weight: bold;">https://dottapps.com</a>')
+            rest_of_message = rest_of_message.replace('https://dottapps.com', '<a href="https://dottapps.com" style="color: #2563eb; text-decoration: none; font-weight: bold;">https://dottapps.com</a>')
             
             html_message = f"""
             <html>
             <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
                 <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
                     <div style="background-color: #f8f9fa; padding: 25px; border-radius: 8px; border-left: 4px solid #2563eb;">
+                        <h2 style="text-align: center; color: #1a1a1a; font-size: 24px; margin-bottom: 20px; font-weight: 600;">
+                            {title}
+                        </h2>
                         <div style="white-space: pre-wrap; word-wrap: break-word; font-family: Arial, sans-serif; font-size: 16px;">
-                            {html_content}
+                            {rest_of_message}
                         </div>
                     </div>
-                    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e0e0; font-size: 12px; color: #666;">
+                    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e0e0; font-size: 12px; color: #666; text-align: center;">
                         <p>This invitation was sent by {sender_name} ({sender_email}) via Dott.</p>
                     </div>
                 </div>

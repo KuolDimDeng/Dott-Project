@@ -23,11 +23,13 @@ from .serializers import (
     WhatsAppProductSerializer,
     WhatsAppOrderSerializer,
     WhatsAppMessageSerializer,
-    WhatsAppAnalyticsSerializer
+    WhatsAppAnalyticsSerializer,
+    ProductSyncSerializer
 )
 from communications.whatsapp_service import whatsapp_service
 from session_manager.permissions import IsOwnerOrAdmin
 from users.models import Tenant
+from inventory.models import Product
 
 
 class WhatsAppBusinessSettingsViewSet(viewsets.ModelViewSet):
@@ -147,6 +149,89 @@ class WhatsAppProductViewSet(viewsets.ModelViewSet):
         # Ensure catalog belongs to the user's tenant
         catalog = get_object_or_404(WhatsAppCatalog, pk=serializer.validated_data['catalog'].id, tenant=self.request.user.tenant)
         serializer.save()
+    
+    @action(detail=False, methods=['post'])
+    def sync_from_inventory(self, request):
+        """Sync products from main inventory to WhatsApp catalog"""
+        serializer = ProductSyncSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        data = serializer.validated_data
+        catalog_id = data['catalog_id']
+        sync_all = data['sync_all']
+        product_ids = data.get('product_ids', [])
+        item_type = data['item_type']
+        
+        # Verify catalog belongs to user's tenant
+        catalog = get_object_or_404(WhatsAppCatalog, pk=catalog_id, tenant=request.user.tenant)
+        
+        # Get products to sync
+        if sync_all:
+            products = Product.objects.filter(tenant=request.user.tenant, is_active=True)
+        else:
+            products = Product.objects.filter(id__in=product_ids, tenant=request.user.tenant, is_active=True)
+        
+        # Sync products
+        synced_count = 0
+        for product in products:
+            # Check if already synced
+            if WhatsAppProduct.objects.filter(catalog=catalog, linked_product=product).exists():
+                continue
+            
+            # Create WhatsApp product
+            whatsapp_product = WhatsAppProduct.objects.create(
+                catalog=catalog,
+                name=product.name,
+                description=product.description or "",
+                item_type=item_type,
+                price=product.price or Decimal('0.00'),
+                price_type='fixed',
+                currency='USD',  # You might want to get this from user settings
+                sku=product.sku,
+                stock_quantity=product.quantity,
+                is_available=product.is_active,
+                linked_product=product
+            )
+            synced_count += 1
+        
+        return Response({
+            'success': True,
+            'synced_count': synced_count,
+            'message': f'Successfully synced {synced_count} products to WhatsApp catalog'
+        })
+    
+    @action(detail=False, methods=['get'])
+    def available_for_sync(self, request):
+        """Get products available for syncing to WhatsApp"""
+        catalog_id = request.query_params.get('catalog_id')
+        
+        # Get all active products
+        products = Product.objects.filter(tenant=request.user.tenant, is_active=True)
+        
+        # If catalog specified, exclude already synced products
+        if catalog_id:
+            catalog = get_object_or_404(WhatsAppCatalog, pk=catalog_id, tenant=request.user.tenant)
+            synced_product_ids = WhatsAppProduct.objects.filter(
+                catalog=catalog,
+                linked_product__isnull=False
+            ).values_list('linked_product_id', flat=True)
+            products = products.exclude(id__in=synced_product_ids)
+        
+        # Simple serialization
+        product_data = [{
+            'id': str(product.id),
+            'name': product.name,
+            'sku': product.sku,
+            'price': str(product.price) if product.price else '0.00',
+            'quantity': product.quantity,
+            'description': product.description
+        } for product in products]
+        
+        return Response({
+            'products': product_data,
+            'count': len(product_data)
+        })
 
 
 class WhatsAppOrderViewSet(viewsets.ModelViewSet):
