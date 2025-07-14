@@ -490,8 +490,8 @@ const InvoiceForm = ({ mode = 'create' }) => {
                   Billing Address
                 </p>
                 <p className="font-medium">
-                  {userData.address
-                    ? `${userData.address}, ${userData.city}, ${userData.state} ${userData.zip_code}`
+                  {userData?.address
+                    ? `${userData.address}, ${userData?.city || ''}, ${userData?.state || ''} ${userData?.zip_code || ''}`
                     : 'Not provided'}
                 </p>
               </div>

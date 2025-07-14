@@ -431,7 +431,7 @@ function Home({ userData, onNavigate }) {
               <ExclamationCircleIcon className="h-6 w-6 text-red-400 mr-3 flex-shrink-0" />
               <div className="flex-1">
                 <h2 className="text-lg font-semibold mb-1 text-red-800">
-                  Your {userData.previous_plan} subscription has expired
+                  Your {userData?.previous_plan || 'previous'} subscription has expired
                 </h2>
                 <p className="mb-3 text-red-700">
                   Your account has been downgraded to the Free plan. You now have limited access to features.
