@@ -35,6 +35,7 @@ import DashboardLoader from '@/components/DashboardLoader';
 import { ensureAuthProvider } from '@/utils/refreshUserSession';
 import POSSystem from '../../app/dashboard/components/pos/POSSystem';
 import DashboardErrorBoundary from './DashboardErrorBoundary';
+import { useSession } from '@/hooks/useSession-v2';
 
 // Lazy load components to reduce initial memory usage
 const RenderMainContent = lazy(() =>
@@ -110,6 +111,23 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     }
     return null;
   });
+
+  // CRITICAL FIX: Add session management to update userData when session loads
+  const { session, loading: sessionLoading } = useSession();
+  
+  // Update userData state when session data is available
+  useEffect(() => {
+    console.log('🚨 [DashboardContent] === SESSION SYNC DEBUG START ===');
+    console.log('🚨 [DashboardContent] Session loading:', sessionLoading);
+    console.log('🚨 [DashboardContent] Session object:', session);
+    console.log('🚨 [DashboardContent] Session user:', session?.user);
+    
+    if (session?.user && !sessionLoading) {
+      console.log('🚨 [DashboardContent] Updating userData state with session data');
+      updateState({ userData: session.user });
+    }
+    console.log('🚨 [DashboardContent] === SESSION SYNC DEBUG END ===');
+  }, [session, sessionLoading, updateState]);
 
   // Fetch Auth0 profile data on mount
   useEffect(() => {

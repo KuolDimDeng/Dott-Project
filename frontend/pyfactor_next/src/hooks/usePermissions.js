@@ -6,7 +6,20 @@ export function usePermissions() {
   
   const user = session?.user;
   
-  // Debug logging
+  // ENHANCED DEBUG: Log detailed session information
+  console.log('🔍 [usePermissions] === PERMISSIONS DEBUG START ===');
+  console.log('🔍 [usePermissions] Raw session object:', session);
+  console.log('🔍 [usePermissions] Session type:', typeof session);
+  console.log('🔍 [usePermissions] Session keys:', session ? Object.keys(session) : 'null session');
+  console.log('🔍 [usePermissions] Session authenticated:', session?.authenticated);
+  console.log('🔍 [usePermissions] Session loading:', loading);
+  console.log('🔍 [usePermissions] Extracted user:', user);
+  console.log('🔍 [usePermissions] User type:', typeof user);
+  console.log('🔍 [usePermissions] User keys:', user ? Object.keys(user) : 'null user');
+  console.log('🔍 [usePermissions] User role:', user?.role);
+  console.log('🔍 [usePermissions] === PERMISSIONS DEBUG END ===');
+  
+  // Original debug logging
   console.log('[usePermissions] Hook data:', {
     session: session,
     user: user,

@@ -326,6 +326,21 @@ export default function DashboardClient({ newAccount, plan, createTenant, busine
   const { session, loading: sessionLoading, error: sessionError, refreshSession } = useSession();
   const userData = session?.user || null;
   
+  // COMPREHENSIVE DEBUG: Log session and userData state
+  useEffect(() => {
+    console.log('🎯 [DashboardClient] === SESSION DEBUG START ===');
+    console.log('🎯 [DashboardClient] Session loading:', sessionLoading);
+    console.log('🎯 [DashboardClient] Session error:', sessionError);
+    console.log('🎯 [DashboardClient] Session object:', session);
+    console.log('🎯 [DashboardClient] Session authenticated:', session?.authenticated);
+    console.log('🎯 [DashboardClient] Session user exists:', !!session?.user);
+    console.log('🎯 [DashboardClient] Session user keys:', session?.user ? Object.keys(session.user) : 'no user');
+    console.log('🎯 [DashboardClient] Extracted userData:', userData);
+    console.log('🎯 [DashboardClient] UserData type:', typeof userData);
+    console.log('🎯 [DashboardClient] UserData keys:', userData ? Object.keys(userData) : 'no userData');
+    console.log('🎯 [DashboardClient] === SESSION DEBUG END ===');
+  }, [session, sessionLoading, sessionError, userData]);
+  
   // Update authentication state based on session
   useEffect(() => {
     setIsAuthenticated(session?.authenticated || false);
