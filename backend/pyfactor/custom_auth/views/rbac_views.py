@@ -609,17 +609,33 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            # Check if user already exists in this tenant
-            if User.objects.filter(email__iexact=email, tenant=request.user.tenant).exists():
-                logger.warning(f"[DirectUserCreation] User with email {email} already exists in tenant")
-                return Response(
-                    {
-                        "error": "A user with this email already exists", 
-                        "message": "This email address is already associated with a user account. Please use a different email address or contact the existing user.",
-                        "userFriendly": True
-                    },
-                    status=status.HTTP_409_CONFLICT
-                )
+            # Check if user already exists
+            try:
+                existing_user = User.objects.filter(email__iexact=email).first()
+                if existing_user:
+                    if existing_user.tenant == request.user.tenant:
+                        logger.warning(f"[DirectUserCreation] User with email {email} already exists in tenant")
+                        return Response(
+                            {
+                                "error": "A user with this email already exists", 
+                                "message": "This email address is already associated with a user account. Please use a different email address or contact the existing user.",
+                                "userFriendly": True
+                            },
+                            status=status.HTTP_409_CONFLICT
+                        )
+                    else:
+                        logger.warning(f"[DirectUserCreation] User with email {email} exists in different tenant")
+                        return Response(
+                            {
+                                "error": "Email already in use",
+                                "message": "This email address is already registered. Please use a different email address.",
+                                "userFriendly": True
+                            },
+                            status=status.HTTP_409_CONFLICT
+                        )
+            except Exception as e:
+                logger.error(f"[DirectUserCreation] Error checking existing user: {str(e)}")
+                # Continue anyway - better to try creating than fail here
             
             if role not in ['ADMIN', 'USER']:
                 return Response(
@@ -633,12 +649,6 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            # Check if user already exists
-            if User.objects.filter(email__iexact=email).exists():
-                return Response(
-                    {"error": "User already exists with this email"},
-                    status=status.HTTP_409_CONFLICT
-                )
             
             # Check if employee exists (if linking)
             employee = None
@@ -662,15 +672,19 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
             
             # Create user in database (within transaction)
             logger.info(f"[DirectUserCreation] Creating user in database for {email}")
-            user = User.objects.create(
-                email=email,
-                role=role,
-                tenant=request.user.tenant,
-                business_id=request.user.business_id,
-                is_active=True,
-                auth0_sub=f"pending_{email}_{timezone.now().timestamp()}"  # Temporary ID
-            )
-            logger.info(f"[DirectUserCreation] User created in database with ID: {user.id}")
+            try:
+                user = User.objects.create(
+                    email=email,
+                    role=role,
+                    tenant=request.user.tenant,
+                    business_id=request.user.business_id,
+                    is_active=True,
+                    auth0_sub=f"pending_{email}_{timezone.now().timestamp()}"  # Temporary ID
+                )
+                logger.info(f"[DirectUserCreation] User created in database with ID: {user.id}")
+            except Exception as db_error:
+                logger.error(f"[DirectUserCreation] Database error creating user: {str(db_error)}")
+                raise
             
             # Create page permissions
             from custom_auth.models import UserPageAccess, PagePermission

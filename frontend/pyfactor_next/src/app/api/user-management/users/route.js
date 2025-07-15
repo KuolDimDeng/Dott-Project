@@ -280,7 +280,7 @@ async function fetchLocalUsers(tenantId, currentUser, request, unlinkedOnly = fa
     
     // Add unlinked parameter if requested
     const queryParams = unlinkedOnly ? '?unlinked=true' : '';
-    const fullUrl = `${backendUrl}/auth/rbac/users/${queryParams}`;
+    const fullUrl = `${backendUrl}/auth/rbac/users${queryParams}`;
     logger.info('[UserManagement] Full backend URL:', fullUrl);
     
     // Extract session ID for additional header
