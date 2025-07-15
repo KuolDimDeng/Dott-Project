@@ -141,7 +141,7 @@ def nuclear_delete_user(email):
             for table in tenant_tables:
                 deletions.append((f"DELETE FROM {table} WHERE tenant_id = '{tenant_id}'", table))
         
-        # Execute all deletions
+        # Execute all deletions with individual transactions
         total_deleted = 0
         for query, table_name in deletions:
             try:
@@ -150,18 +150,22 @@ def nuclear_delete_user(email):
                 if rows > 0:
                     print(f"  ✓ Deleted {rows} rows from {table_name}")
                     total_deleted += rows
+                conn.commit()  # Commit each deletion immediately
             except Exception as e:
-                # Table might not exist, continue
-                pass
+                conn.rollback()  # Rollback on error and continue
+                print(f"  ⚠ Skipped {table_name}: {str(e)}")
         
         # Finally, delete the user
-        cursor.execute(f"DELETE FROM custom_auth_user WHERE id = {user_id}")
-        if cursor.rowcount > 0:
-            print(f"  ✓ Deleted user record from custom_auth_user")
-            total_deleted += 1
+        try:
+            cursor.execute(f"DELETE FROM custom_auth_user WHERE id = {user_id}")
+            if cursor.rowcount > 0:
+                print(f"  ✓ Deleted user record from custom_auth_user")
+                total_deleted += 1
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            print(f"  ❌ Failed to delete user: {e}")
         
-        # Commit the transaction
-        conn.commit()
         print(f"\n✅ Nuclear deletion complete! Deleted {total_deleted} total rows")
         
         # Verify deletion
