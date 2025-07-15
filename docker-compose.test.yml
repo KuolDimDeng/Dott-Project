@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:14
+    environment:
+      POSTGRES_DB: pyfactor_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - test_postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6380:6379"
+
+  backend:
+    build:
+      context: ./backend/pyfactor
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/pyfactor_test
+      REDIS_URL: redis://redis:6379
+      DJANGO_SETTINGS_MODULE: pyfactor.settings
+      SECRET_KEY: test-secret-key-for-local-testing
+      DEBUG: "True"
+      AUTH0_DOMAIN: dev-cbyy63jovi6zrcos.us.auth0.com
+      AUTH0_CLIENT_ID: 9i7GSU4bgh6hFtMXnQACwiRxTudpuOSF
+      AUTH0_CLIENT_SECRET: test-secret
+      AUTH0_AUDIENCE: https://api.dottapps.com
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "8001:8000"
+    command: >
+      sh -c "
+        echo 'Waiting for database...' &&
+        sleep 5 &&
+        echo 'Running migrations (excluding problematic apps)...' &&
+        python manage.py migrate --run-syncdb &&
+        echo 'Creating WhatsApp Business migrations...' &&
+        python manage.py makemigrations whatsapp_business --noinput &&
+        echo 'Running WhatsApp Business migrations...' &&
+        python manage.py migrate whatsapp_business --noinput &&
+        echo 'Testing WhatsApp import...' &&
+        python -c 'from whatsapp_business.models import WhatsAppBusinessSettings; print(\"✅ WhatsApp models imported successfully\")' &&
+        echo 'Starting server...' &&
+        python manage.py runserver 0.0.0.0:8000 --insecure
+      "
+    volumes:
+      - ./backend/pyfactor:/app
+
+  frontend:
+    build:
+      context: ./frontend/pyfactor_next
+      dockerfile: Dockerfile
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8001
+      NODE_ENV: development
+    depends_on:
+      - backend
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./frontend/pyfactor_next:/app
+      - /app/node_modules
+      - /app/.next
+
+volumes:
+  test_postgres_data:

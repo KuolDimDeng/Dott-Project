@@ -18,8 +18,8 @@ class Timesheet(models.Model):
     ]
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    employee = models.ForeignKey('hr.Employee', on_delete=models.CASCADE, related_name='timesheets')
-    supervisor = models.ForeignKey('hr.Employee', on_delete=models.SET_NULL, null=True, blank=True, related_name='supervised_timesheets')
+    employee = models.ForeignKey('hr.Employee', on_delete=models.CASCADE, related_name='timesheet_records')
+    supervisor = models.ForeignKey('hr.Employee', on_delete=models.SET_NULL, null=True, blank=True, related_name='supervised_timesheet_records')
     business_id = models.UUIDField(db_index=True)
     
     # Week information
@@ -30,7 +30,7 @@ class Timesheet(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
     submitted_at = models.DateTimeField(null=True, blank=True)
     approved_at = models.DateTimeField(null=True, blank=True)
-    approved_by = models.ForeignKey('hr.Employee', on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_timesheets')
+    approved_by = models.ForeignKey('hr.Employee', on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_timesheet_records')
     
     # Totals (cached for performance)
     total_regular_hours = models.DecimalField(max_digits=5, decimal_places=2, default=0)
@@ -195,7 +195,7 @@ class TimeOffRequest(models.Model):
     ]
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    employee = models.ForeignKey('hr.Employee', on_delete=models.CASCADE, related_name='time_off_requests')
+    employee = models.ForeignKey('hr.Employee', on_delete=models.CASCADE, related_name='timeoff_requests')
     business_id = models.UUIDField(db_index=True)
     
     request_type = models.CharField(max_length=20, choices=REQUEST_TYPE_CHOICES)
@@ -216,7 +216,7 @@ class TimeOffRequest(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     
     # Approval
-    reviewed_by = models.ForeignKey('hr.Employee', on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_time_off_requests')
+    reviewed_by = models.ForeignKey('hr.Employee', on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_timeoff_requests')
     reviewed_at = models.DateTimeField(null=True, blank=True)
     review_notes = models.TextField(blank=True)
     

@@ -316,7 +316,7 @@ class ExchangeRate(models.Model):
 class InvoicePayment(models.Model):
     """Track invoice payments and platform fees"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    invoice = models.ForeignKey('invoices.Invoice', on_delete=models.CASCADE, related_name='stripe_payments')
+    invoice = models.ForeignKey('sales.Invoice', on_delete=models.CASCADE, related_name='stripe_payments')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     currency = models.CharField(max_length=3, default='USD')
     payment_method = models.CharField(max_length=50)
@@ -340,7 +340,7 @@ class InvoicePayment(models.Model):
 class VendorPayment(models.Model):
     """Track payments to vendors/suppliers"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    vendor = models.ForeignKey('vendors.Vendor', on_delete=models.CASCADE, related_name='stripe_payments')
+    vendor = models.ForeignKey('purchases.Vendor', on_delete=models.CASCADE, related_name='stripe_payments')
     business_id = models.UUIDField(db_index=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     currency = models.CharField(max_length=3, default='USD')

@@ -33,7 +33,7 @@ export function useSessionContext() {
 // Export convenience hooks
 export const useAuth = () => {
   const { isAuthenticated, user, loading } = useSessionContext();
-  return { isAuthenticated: isAuthenticated(), user, loading };
+  return { isAuthenticated, user, loading };
 };
 
 export const useTenant = () => {
