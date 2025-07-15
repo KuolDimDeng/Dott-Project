@@ -574,10 +574,6 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
             logger.info(f"[DirectUserCreation] Raw request data: {request.data}")
             logger.info(f"[DirectUserCreation] Request data type: {type(request.data)}")
             
-            # Clear any stale database connections
-            from django.db import connection
-            connection.close()
-            
             # Validate request data
             email = request.data.get('email')
             role = request.data.get('role', 'USER')
