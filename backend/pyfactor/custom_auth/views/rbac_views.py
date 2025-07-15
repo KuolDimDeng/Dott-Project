@@ -769,10 +769,12 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
                     user.save()
                     logger.info(f"[DirectUserCreation] Auth0 user created successfully: {auth0_user_id}")
                 else:
-                    logger.warning(f"[DirectUserCreation] Auth0 user creation failed, but database user exists")
+                    # If Auth0 user creation failed, we need to rollback the entire transaction
+                    raise Exception("Failed to create Auth0 user account")
             except Exception as auth0_error:
                 logger.error(f"[DirectUserCreation] Auth0 integration error: {str(auth0_error)}")
-                # Don't fail the entire operation if Auth0 fails
+                # Re-raise the exception to trigger transaction rollback
+                raise Exception(f"Auth0 integration failed: {str(auth0_error)}")
             
             # Return user data
             serializer = UserListSerializer(user)
@@ -868,12 +870,15 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
                     import secrets
                     reset_token = secrets.token_urlsafe(32)
                     
-                    # Store token with 24 hour expiry
-                    PasswordResetToken.objects.create(
-                        user=user,
-                        token=reset_token,
-                        expires_at=timezone.now() + timedelta(hours=24)
-                    )
+                    # Use a savepoint to handle token creation separately
+                    from django.db import transaction
+                    with transaction.atomic():
+                        # Store token with 24 hour expiry
+                        PasswordResetToken.objects.create(
+                            user=user,
+                            token=reset_token,
+                            expires_at=timezone.now() + timedelta(hours=24)
+                        )
                     
                     # Send custom email with our password reset link
                     self._send_custom_password_reset_email(email, reset_token, tenant.name, user.role)
@@ -910,7 +915,8 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
             logger.error(f"[DirectUserCreation] Auth0 integration error: {str(e)}")
             import traceback
             logger.error(f"[DirectUserCreation] Auth0 error traceback: {traceback.format_exc()}")
-            return None
+            # Re-raise the exception to ensure transaction rollback
+            raise
     
     def _send_custom_password_reset_email(self, email, token, tenant_name, role):
         """Send custom password reset email"""

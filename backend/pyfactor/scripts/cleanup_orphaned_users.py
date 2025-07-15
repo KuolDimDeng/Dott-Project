@@ -30,7 +30,10 @@ def cleanup_orphaned_users():
     logger.info(f"Found {orphaned_users.count()} orphaned users:")
     
     for user in orphaned_users:
-        logger.info(f"  - {user.email} (ID: {user.id}, auth0_sub: {user.auth0_sub})")
+        # Calculate age of the user
+        from django.utils import timezone
+        age = timezone.now() - user.created_at
+        logger.info(f"  - {user.email} (ID: {user.id}, auth0_sub: {user.auth0_sub}, Age: {age})")
     
     if orphaned_users.count() == 0:
         logger.info("No orphaned users found.")

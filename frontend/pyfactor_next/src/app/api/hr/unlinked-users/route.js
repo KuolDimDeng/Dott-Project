@@ -25,10 +25,15 @@ export async function GET(request) {
     }
     
     // Call backend API to get unlinked users
-    const backendUrl = process.env.BACKEND_URL || 'https://dott-api-v1.onrender.com';
+    const backendUrl = process.env.BACKEND_URL || 'https://api.dottapps.com';
     const apiUrl = `${backendUrl}/auth/rbac/users?unlinked=true`;
     
     logger.info('[UnlinkedUsers API] Calling backend:', apiUrl);
+    logger.info('[UnlinkedUsers API] Headers being sent:', {
+      'Content-Type': 'application/json',
+      'Cookie': `sid=${sessionId}`,
+      'X-Session-ID': sessionId
+    });
     
     const response = await fetch(apiUrl, {
       method: 'GET',
@@ -41,16 +46,19 @@ export async function GET(request) {
     });
     
     logger.info('[UnlinkedUsers API] Backend response status:', response.status);
+    logger.info('[UnlinkedUsers API] Backend response ok:', response.ok);
     
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'Unknown error');
       logger.error('[UnlinkedUsers API] Backend error:', errorText);
+      logger.error('[UnlinkedUsers API] Response status:', response.status);
+      logger.error('[UnlinkedUsers API] Response status text:', response.statusText);
       
       // Return empty list instead of error to avoid breaking the UI
       return NextResponse.json({
         users: [],
         total: 0,
-        message: 'Unable to fetch unlinked users'
+        message: `Backend error: ${response.status} - ${errorText.substring(0, 100)}`
       });
     }
     
