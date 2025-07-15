@@ -1397,7 +1397,7 @@ const MyAccount = ({ userData }) => {
             <h3 className="text-lg font-medium text-gray-900">Quick Actions</h3>
             <div className="space-y-3">
               <button 
-                onClick={() => router.push('/profile?tab=timesheet')}
+                onClick={() => router.push('/dashboard/timesheets')}
                 className="w-full p-4 text-left bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors border border-blue-200"
               >
                 <div className="font-medium text-blue-900">Enter hours</div>
@@ -1405,7 +1405,7 @@ const MyAccount = ({ userData }) => {
               </button>
               
               <button 
-                onClick={() => router.push('/profile?tab=timesheet')}
+                onClick={() => router.push('/dashboard/timesheets')}
                 className="w-full p-4 text-left bg-green-50 rounded-lg hover:bg-green-100 transition-colors border border-green-200"
               >
                 <div className="font-medium text-green-900">Submit weekly timesheet</div>
