@@ -33,11 +33,18 @@ const TimesheetsPage = () => {
   const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
-    fetchTimesheets();
-    fetchEmployees();
-  }, [filters]);
+    if (tenantId && user) {
+      fetchTimesheets();
+      fetchEmployees();
+    }
+  }, [filters, tenantId, user]);
 
   const fetchTimesheets = async () => {
+    if (!tenantId) {
+      console.warn('Timesheet fetch attempted without tenantId');
+      return;
+    }
+    
     setLoading(true);
     try {
       let url = '/api/hr/timesheets?';
@@ -72,6 +79,11 @@ const TimesheetsPage = () => {
   };
 
   const fetchEmployees = async () => {
+    if (!tenantId) {
+      console.warn('Employee fetch attempted without tenantId');
+      return;
+    }
+    
     try {
       const response = await fetch('/api/hr/employees/', {
         headers: {
@@ -89,6 +101,11 @@ const TimesheetsPage = () => {
   };
 
   const fetchTimesheetDetails = async (timesheetId) => {
+    if (!tenantId) {
+      console.warn('Timesheet details fetch attempted without tenantId');
+      return;
+    }
+    
     try {
       const response = await fetch(`/api/hr/timesheet-entries?timesheet_id=${timesheetId}`, {
         headers: {
@@ -112,6 +129,11 @@ const TimesheetsPage = () => {
   };
 
   const handleApprove = async (timesheetId) => {
+    if (!tenantId || !user?.id) {
+      console.warn('Approve attempted without tenantId or user');
+      return;
+    }
+    
     setProcessing(true);
     try {
       const response = await fetch(`/api/hr/timesheets/${timesheetId}/`, {
@@ -148,6 +170,11 @@ const TimesheetsPage = () => {
   };
 
   const handleReject = async (timesheetId, reason) => {
+    if (!tenantId || !user?.id) {
+      console.warn('Reject attempted without tenantId or user');
+      return;
+    }
+    
     setProcessing(true);
     try {
       const response = await fetch(`/api/hr/timesheets/${timesheetId}/`, {
