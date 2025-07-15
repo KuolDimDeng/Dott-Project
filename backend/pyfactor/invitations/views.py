@@ -142,21 +142,60 @@ def send_email_invitation(request):
             rest_of_message = rest_of_message.replace('https://dottapps.com', '<a href="https://dottapps.com" style="color: #2563eb; text-decoration: none; font-weight: bold;">https://dottapps.com</a>')
             
             html_message = f"""
+            <!DOCTYPE html>
             <html>
-            <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <div style="background-color: #f8f9fa; padding: 25px; border-radius: 8px; border-left: 4px solid #2563eb;">
-                        <h2 style="text-align: center; color: #1a1a1a; font-size: 24px; margin-bottom: 20px; font-weight: 600;">
-                            {title}
-                        </h2>
-                        <div style="white-space: pre-wrap; word-wrap: break-word; font-family: Arial, sans-serif; font-size: 16px;">
-                            {rest_of_message}
-                        </div>
-                    </div>
-                    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e0e0; font-size: 12px; color: #666; text-align: center;">
-                        <p>This invitation was sent by {sender_name} ({sender_email}) via Dott.</p>
-                    </div>
-                </div>
+            <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>You're invited to join Dott</title>
+            </head>
+            <body style="margin: 0; padding: 0; background-color: #f4f4f4; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+                <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f4f4f4; min-height: 100vh;">
+                    <tr>
+                        <td align="center" valign="top" style="padding: 40px 20px;">
+                            <table cellpadding="0" cellspacing="0" border="0" width="600" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);">
+                                <!-- Header with Logo -->
+                                <tr>
+                                    <td align="center" style="padding: 40px 40px 30px 40px;">
+                                        <img src="https://dottapps.com/static/images/PyfactorLandingpage.png" alt="Dott" style="height: 60px; width: auto; display: block;" />
+                                    </td>
+                                </tr>
+                                
+                                <!-- Main Content -->
+                                <tr>
+                                    <td style="padding: 0 40px 30px 40px;">
+                                        <h1 style="margin: 0 0 24px 0; font-size: 28px; font-weight: 600; color: #1f2937; text-align: center; line-height: 1.2;">
+                                            {title}
+                                        </h1>
+                                        
+                                        <div style="font-size: 16px; line-height: 1.6; color: #374151; margin-bottom: 32px; white-space: pre-wrap; word-wrap: break-word;">
+                                            {rest_of_message}
+                                        </div>
+                                        
+                                        <!-- CTA Button -->
+                                        <div style="text-align: center; margin: 32px 0;">
+                                            <a href="https://dottapps.com" style="display: inline-block; padding: 16px 32px; background-color: #2563eb; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; letter-spacing: 0.5px; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);">
+                                                Create your Dott account
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                
+                                <!-- Footer -->
+                                <tr>
+                                    <td style="padding: 30px 40px 40px 40px; border-top: 1px solid #e5e7eb;">
+                                        <p style="margin: 0; font-size: 14px; color: #6b7280; text-align: center; line-height: 1.4;">
+                                            This invitation was sent by <strong>{sender_name}</strong> ({sender_email}) via Dott.
+                                        </p>
+                                        <p style="margin: 16px 0 0 0; font-size: 12px; color: #9ca3af; text-align: center;">
+                                            Dott: Global Business Platform | <a href="https://dottapps.com" style="color: #2563eb; text-decoration: none;">dottapps.com</a>
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
             </body>
             </html>
             """
