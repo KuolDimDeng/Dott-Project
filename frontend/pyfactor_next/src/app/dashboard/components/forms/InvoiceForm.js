@@ -468,8 +468,8 @@ const InvoiceForm = ({ mode = 'create' }) => {
                   Contact Name
                 </p>
                 <p className="font-medium">
-                  {userData.first_name && userData.last_name
-                    ? `${userData.first_name} ${userData.last_name}`
+                  {userData?.first_name && userData?.last_name
+                    ? `${userData?.first_name} ${userData?.last_name}`
                     : 'Not provided'}
                 </p>
               </div>

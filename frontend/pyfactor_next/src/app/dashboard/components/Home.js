@@ -321,14 +321,14 @@ function Home({ userData, onNavigate }) {
     let greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
     
     if (userData?.given_name) {
-      return `${greeting}, ${userData.given_name}!`;
+      return `${greeting}, ${userData?.given_name}!`;
     } else if (userData?.first_name) {
-      return `${greeting}, ${userData.first_name}!`;
+      return `${greeting}, ${userData?.first_name}!`;
     } else if (userData?.email) {
-      const username = userData.email.split('@')[0];
+      const username = userData?.email?.split('@')[0] || '';
       return `${greeting}, ${username.charAt(0).toUpperCase() + username.slice(1)}!`;
     } else if (userData?.name) {
-      return `${greeting}, ${userData.name}!`;
+      return `${greeting}, ${userData?.name}!`;
     }
     return `${greeting}!`;
   };

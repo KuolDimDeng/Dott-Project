@@ -1504,7 +1504,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
 
     // Consolidated check for correct initials
     if (userData?.first_name && userData?.last_name) {
-      const expectedInitials = `${userData.first_name.charAt(0).toUpperCase()}${userData.last_name.charAt(0).toUpperCase()}`;
+      const expectedInitials = `${userData?.first_name?.charAt(0)?.toUpperCase() || ''}${userData?.last_name?.charAt(0)?.toUpperCase() || ''}`;
       if (userInitials !== expectedInitials) {
         setUserInitials(expectedInitials);
       }
@@ -1512,7 +1512,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
       profileData?.userData?.first_name &&
       profileData?.userData?.last_name
     ) {
-      const expectedInitials = `${profileData.userData.first_name.charAt(0).toUpperCase()}${profileData.userData.last_name.charAt(0).toUpperCase()}`;
+      const expectedInitials = `${profileData?.userData?.first_name?.charAt(0)?.toUpperCase() || ''}${profileData?.userData?.last_name?.charAt(0)?.toUpperCase() || ''}`;
       if (userInitials !== expectedInitials) {
         setUserInitials(expectedInitials);
       }

@@ -11,13 +11,13 @@ function MainDashboard({ userData }) {
   // Generate a proper greeting with the user's name
   const displayName = () => {
     if (userData?.first_name) {
-      return userData.first_name;
+      return userData?.first_name;
     } else if (userData?.email) {
-      const username = userData.email.split('@')[0];
+      const username = userData?.email?.split('@')[0] || '';
       // Capitalize first letter of username
       return username.charAt(0).toUpperCase() + username.slice(1);
     } else if (userData?.name) {
-      return userData.name;
+      return userData?.name;
     }
     return 'there'; // More friendly than 'User'
   };
