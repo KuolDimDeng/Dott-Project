@@ -11,7 +11,7 @@ export async function GET(request) {
   console.log('[Profile API] PERMANENT FIX - Using unified profile endpoint');
   
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     
     // Check for session cookies (new v2 system)
     const sidCookie = cookieStore.get('sid');

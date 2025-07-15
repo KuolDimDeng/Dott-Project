@@ -23,7 +23,7 @@ export async function GET(request) {
     
     // The token IS the session token (UUID from backend)
     // We just need to set it as a cookie
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     
     // In production, set domain to allow cookie sharing across subdomains
     const isProduction = process.env.NODE_ENV === 'production';

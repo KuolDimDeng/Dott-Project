@@ -23,7 +23,7 @@ export async function POST(request) {
     }
     
     // Set session cookies
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     
     // In production, set domain to allow cookie sharing across subdomains
     const isProduction = process.env.NODE_ENV === 'production';
@@ -45,7 +45,7 @@ export async function POST(request) {
     cookieStore.set('session_token', token, cookieOptions);
     
     // Debug: Verify cookies were set
-    const verifySet = await cookies();
+    const verifySet = cookies();
     const sidCookie = verifySet.get('sid');
     const sessionCookie = verifySet.get('session_token');
     console.log('[EstablishSession] Cookies after setting:', {

@@ -5,7 +5,7 @@ export async function GET(request) {
   try {
     console.log('[Auth Token] Getting access token');
     
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     // Check new session system first
     const sidCookie = cookieStore.get('sid');
     const sessionTokenCookie = cookieStore.get('session_token');
