@@ -423,3 +423,31 @@ WHATSAPP_ACCESS_TOKEN=<generate-from-meta-business-platform>
 WHATSAPP_PHONE_NUMBER_ID=676188225586230
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=<your-google-maps-api-key>
 ```
+
+### [36.0.0] - 2025-07-15 - CURRENT - WhatsApp Commerce Menu Settings
+- **Purpose**: Database-backed user preference for WhatsApp Commerce menu visibility
+- **Problem Solved**: Previous localStorage approach didn't sync across devices/browsers
+- **Database Changes**:
+  - Added `show_whatsapp_commerce` BooleanField to UserProfile model
+  - NULL = use country default, TRUE/FALSE = explicit user preference
+  - Method `get_whatsapp_commerce_preference()` returns effective setting
+- **API Implementation**:
+  - Extended `/api/users/me/` GET to include WhatsApp preferences
+  - Added PATCH method to `/api/users/me/` for updating preferences
+  - Returns both `show_whatsapp_commerce` (effective) and `whatsapp_commerce_explicit` (user setting)
+- **Frontend Implementation**:
+  - Settings → WhatsApp tab for all users
+  - Shows country status (Popular/New/Available) with explanation
+  - Toggle for menu visibility with real-time API updates
+  - Custom event `whatsappPreferenceChanged` for instant menu updates
+- **Logic Flow**:
+  - WhatsApp Business countries: Show by default, user can disable
+  - Non-WhatsApp Business countries: Hidden by default, user can enable
+  - listItems.js uses profile data instead of localStorage
+  - Real-time updates without page refresh
+- **Key Files**:
+  - `/backend/pyfactor/users/models.py` - Database field and logic
+  - `/backend/pyfactor/users/api/user_profile_views.py` - API endpoints
+  - `/src/app/Settings/components/sections/WhatsAppSettings.js` - Settings UI
+  - `/src/app/Settings/components/SettingsManagement.js` - Added WhatsApp tab
+  - `/src/app/dashboard/components/lists/listItems.js` - Menu conditional logic

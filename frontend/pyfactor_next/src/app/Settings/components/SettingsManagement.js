@@ -14,13 +14,15 @@ import UserManagement from './sections/UserManagement';
 import CompanyProfile from './sections/CompanyProfile';
 import BillingSubscriptions from './sections/BillingSubscriptions';
 import SecuritySettings from './sections/SecuritySettings';
+import WhatsAppSettings from './sections/WhatsAppSettings';
 
 // Import icons
 import { 
   UserGroupIcon, 
   BuildingOfficeIcon, 
   CreditCardIcon,
-  ShieldCheckIcon
+  ShieldCheckIcon,
+  ChatBubbleLeftRightIcon
 } from '@heroicons/react/24/outline';
 
 const SettingsManagement = () => {
@@ -50,6 +52,14 @@ const SettingsManagement = () => {
       description: 'View and update company information',
       component: CompanyProfile,
       requiredRole: 'user' // All users can view, but editing is restricted
+    },
+    {
+      id: 'whatsapp',
+      title: 'WhatsApp',
+      icon: ChatBubbleLeftRightIcon,
+      description: 'Configure WhatsApp Business integration and menu visibility',
+      component: WhatsAppSettings,
+      requiredRole: 'user' // All users can access
     },
     {
       id: 'billing-subscriptions',

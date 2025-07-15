@@ -337,6 +337,7 @@ const MainListItems = ({
   const [activeItem, setActiveItem] = useState(null);
   const [openTooltip, setOpenTooltip] = useState(null);
   const [tooltipVisible, setTooltipVisible] = useState(null);
+  const [whatsappPreferenceChanged, setWhatsappPreferenceChanged] = useState(0);
   
   // Debug logging for permissions hook
   useEffect(() => {
@@ -363,6 +364,21 @@ const MainListItems = ({
     
     return () => {
       window.removeEventListener('resize', checkMobile);
+    };
+  }, []);
+
+  // Listen for WhatsApp preference changes
+  useEffect(() => {
+    const handleWhatsAppPreferenceChange = (event) => {
+      console.log('[MainListItems] WhatsApp preference changed:', event.detail);
+      // Trigger a re-render by updating state
+      setWhatsappPreferenceChanged(prev => prev + 1);
+    };
+
+    window.addEventListener('whatsappPreferenceChanged', handleWhatsAppPreferenceChange);
+    
+    return () => {
+      window.removeEventListener('whatsappPreferenceChanged', handleWhatsAppPreferenceChange);
     };
   }, []);
 
@@ -2185,30 +2201,28 @@ const MainListItems = ({
     
     // Special handling for WhatsApp Business
     if (item.label === 'WhatsApp Business' && item.showConditionally) {
-      // Get user's country from their profile
+      // Get user's country and WhatsApp preference from their profile
       const userCountry = user?.country || userData?.country;
+      const userWhatsAppPreference = user?.show_whatsapp_commerce || userData?.show_whatsapp_commerce;
       
+      // If user has an explicit preference in their profile, use it
+      if (userWhatsAppPreference !== undefined && userWhatsAppPreference !== null) {
+        return userWhatsAppPreference;
+      }
+      
+      // Otherwise, use country default
       if (userCountry) {
-        const whatsappVisibility = getWhatsAppBusinessVisibility(userCountry);
-        
-        // If country shows WhatsApp Business in menu by default
-        if (whatsappVisibility.showInMenu) {
-          return true;
-        }
-        
-        // If country doesn't show by default, check user's settings
-        // For now, we'll check localStorage but this should be moved to backend settings
         try {
-          const whatsappSettings = localStorage.getItem('whatsapp_business_enabled');
-          return whatsappSettings === 'true';
+          const whatsappVisibility = getWhatsAppBusinessVisibility(userCountry);
+          return whatsappVisibility.showInMenu;
         } catch (error) {
-          console.error('Error checking WhatsApp Business settings:', error);
-          return false;
+          console.error('Error checking WhatsApp Business country settings:', error);
+          return true; // Default to showing if error
         }
       }
       
-      // If no country info, default to not showing
-      return false;
+      // If no country info, default to showing
+      return true;
     }
     
     // Check if item requires admin role

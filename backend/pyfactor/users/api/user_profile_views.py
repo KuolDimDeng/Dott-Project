@@ -92,6 +92,8 @@ class UserProfileMeView(APIView):
                 'country': str(profile.country) if profile.country else 'US',
                 'phone_number': profile.phone_number,
                 'occupation': profile.occupation,
+                'show_whatsapp_commerce': profile.get_whatsapp_commerce_preference(),
+                'whatsapp_commerce_explicit': profile.show_whatsapp_commerce,  # Explicit user setting (null if using default)
                 'request_id': request_id
             }
             
@@ -111,6 +113,61 @@ class UserProfileMeView(APIView):
             logger.error(f"[UserProfileMeView] Error retrieving user profile: {str(e)}")
             return Response({
                 'error': 'Failed to retrieve user profile',
+                'detail': str(e),
+                'request_id': request_id
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def patch(self, request):
+        """
+        Update current user's profile information
+        
+        Accepts:
+            show_whatsapp_commerce: boolean or null to reset to country default
+        
+        Returns:
+            Response: Updated user profile data
+        """
+        request_id = request.headers.get('X-Request-ID', str(uuid.uuid4()))
+        
+        try:
+            logger.info(f"[UserProfileMeView] Updating profile for user: {request.user.email}")
+            logger.info(f"[UserProfileMeView] Patch data: {request.data}")
+            
+            # Get user profile
+            try:
+                profile = UserProfile.objects.get(user=request.user)
+            except UserProfile.DoesNotExist:
+                logger.error(f"[UserProfileMeView] No user profile found for user {request.user.id}")
+                return Response({
+                    'error': 'User profile not found',
+                    'request_id': request_id
+                }, status=status.HTTP_404_NOT_FOUND)
+            
+            # Update WhatsApp commerce preference if provided
+            if 'show_whatsapp_commerce' in request.data:
+                whatsapp_preference = request.data['show_whatsapp_commerce']
+                
+                # Allow null to reset to country default
+                if whatsapp_preference is None:
+                    profile.show_whatsapp_commerce = None
+                elif isinstance(whatsapp_preference, bool):
+                    profile.show_whatsapp_commerce = whatsapp_preference
+                else:
+                    return Response({
+                        'error': 'show_whatsapp_commerce must be a boolean or null',
+                        'request_id': request_id
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                
+                profile.save()
+                logger.info(f"[UserProfileMeView] Updated WhatsApp preference to: {profile.show_whatsapp_commerce}")
+            
+            # Return updated profile data (reuse the GET logic)
+            return self.get(request)
+            
+        except Exception as e:
+            logger.error(f"[UserProfileMeView] Error updating user profile: {str(e)}")
+            return Response({
+                'error': 'Failed to update user profile',
                 'detail': str(e),
                 'request_id': request_id
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

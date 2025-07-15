@@ -353,6 +353,10 @@ class UserProfile(models.Model):
     postcode = models.CharField(max_length=200, null=True, blank=True)
     country = CountryField(default='US')
     phone_number = models.CharField(max_length=200, null=True, blank=True)
+    
+    # WhatsApp Business preference - defaults based on country
+    show_whatsapp_commerce = models.BooleanField(null=True, blank=True, help_text='Whether to show WhatsApp Commerce in menu (null = use country default)')
+    
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
     # Add updated_at field to match database schema
@@ -400,6 +404,57 @@ class UserProfile(models.Model):
             models.Index(fields=['tenant_id']),  # Index for tenant ID queries
             models.Index(fields=['business_id']),  # Index for business ID queries
         ]
+
+    def get_whatsapp_commerce_preference(self):
+        """
+        Get the effective WhatsApp Commerce preference for this user.
+        Returns True/False based on user preference or country default.
+        """
+        # If user has explicitly set a preference, use it
+        if self.show_whatsapp_commerce is not None:
+            return self.show_whatsapp_commerce
+        
+        # Otherwise, use country default
+        if self.country:
+            try:
+                from django.conf import settings
+                import importlib.util
+                
+                # Import the WhatsApp country detection utility
+                whatsapp_util_path = settings.BASE_DIR.parent / 'frontend' / 'pyfactor_next' / 'src' / 'utils' / 'whatsappCountryDetection.js'
+                
+                # For now, we'll implement a simple check based on known WhatsApp business countries
+                # This should match the logic in whatsappCountryDetection.js
+                whatsapp_business_countries = [
+                    # Africa
+                    'NG', 'ZA', 'KE', 'GH', 'EG', 'MA', 'TN', 'DZ', 'ET', 'UG', 'TZ', 'ZW',
+                    'ZM', 'BW', 'MW', 'MZ', 'AO', 'CM', 'CI', 'SN', 'ML', 'BF', 'NE', 'TD',
+                    'GN', 'RW', 'BI', 'TG', 'BJ', 'LR', 'SL', 'GW', 'GM', 'CV', 'ST', 'GQ',
+                    'DJ', 'ER', 'SO', 'SS', 'SD', 'LY', 'MR', 'MG', 'KM', 'SC', 'MU', 'LS',
+                    'SZ', 'NA', 'CF', 'CG', 'CD', 'GA',
+                    # Latin America
+                    'BR', 'MX', 'AR', 'CO', 'PE', 'VE', 'CL', 'EC', 'GT', 'CU', 'BO', 'DO',
+                    'HN', 'PY', 'NI', 'CR', 'PA', 'UY', 'JM', 'TT', 'GY', 'SR', 'BZ', 'BB',
+                    'BS', 'BM', 'AG', 'DM', 'GD', 'KN', 'LC', 'VC', 'HT', 'SV',
+                    # Middle East
+                    'AE', 'SA', 'QA', 'KW', 'BH', 'OM', 'JO', 'LB', 'SY', 'IQ', 'YE', 'PS',
+                    'IL', 'TR', 'IR', 'AF', 'PK',
+                    # South Asia
+                    'IN', 'BD', 'LK', 'NP', 'BT', 'MV',
+                    # Southeast Asia
+                    'ID', 'MY', 'TH', 'PH', 'VN', 'SG', 'MM', 'KH', 'LA', 'BN', 'TL',
+                    # Other regions
+                    'RU', 'UA', 'KZ', 'UZ', 'KG', 'TJ', 'TM', 'AM', 'AZ', 'GE'
+                ]
+                
+                return str(self.country) in whatsapp_business_countries
+                
+            except Exception:
+                # If anything fails, default to True (show WhatsApp)
+                return True
+        
+        # Default to True if no country is set
+        return True
 
     def save(self, *args, **kwargs):
         # If this is a business owner profile, ensure tenant is created
