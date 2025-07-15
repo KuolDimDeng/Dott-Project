@@ -539,6 +539,14 @@ const RenderMainContent = React.memo(function RenderMainContent({
   // Navigation key for component cleanup and remounting
   navigationKey = 'default'
 }) {
+  // Safety check - ensure userData is defined
+  const safeUserData = userData || {};
+  console.log('[RenderMainContent] userData safety check:', { 
+    received: userData, 
+    using: safeUserData,
+    type: typeof userData 
+  });
+  
   // Debug log to see what view is being passed
   console.error('[RenderMainContent] Component rendered with view:', view, 'navigationKey:', navigationKey);
   console.error('[RenderMainContent] All props:', {
@@ -683,12 +691,12 @@ const RenderMainContent = React.memo(function RenderMainContent({
           console.log(`RenderMainContent rerender #${renderCountRef.current}:`, {
             view, 
             tenantId,
-            hasUserData: !!userData,
+            hasUserData: !!safeUserData,
           });
         }
       }
     }
-  }, [view, tenantId, userData]);
+  }, [view, tenantId, safeUserData]);
   
   // Memoize the handlers to prevent re-renders
   const handleTabChange = useCallback((event, newValue) => {
@@ -785,7 +793,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
         capturePageView(`Dashboard - ${view}`, {
           previous_view: previousViewRef.current,
           tenant_id: tenantId,
-          has_user_data: !!userData
+          has_user_data: !!safeUserData
         });
         
         captureEvent('dashboard_feature_accessed', {
@@ -805,7 +813,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
       // Update ref after state update
       previousViewRef.current = view;
     }
-  }, [view, tenantId, userData]);
+  }, [view, tenantId, safeUserData]);
   
   // Define the content wrapper with key instead of redefining WrapperComponent
   const ContentWrapperWithKey = useCallback(({ children, className = '' }) => (
@@ -1824,7 +1832,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
             )}
             {showMyAccount && (
               <SuspenseWithCleanup componentKey={`my-account-${settingsComponentKey}`}>
-                <MyAccount userData={userData} />
+                <MyAccount userData={safeUserData} />
               </SuspenseWithCleanup>
             )}
             {showHelpCenter && (
@@ -2139,7 +2147,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
         return (
           <ContentWrapperWithKey>
             <SuspenseWithCleanup componentKey={mainDashboardComponentKey}>
-              <BusinessOverview userData={userData} />
+              <BusinessOverview userData={safeUserData} />
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>
         );
@@ -2189,7 +2197,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
           <ContentWrapperWithKey>
             <SuspenseWithCleanup componentKey={homeComponentKey}>
               <Home 
-                userData={userData}
+                userData={safeUserData}
                 onNavigate={handleHomeNavigate}
               />
             </SuspenseWithCleanup>
@@ -2314,18 +2322,18 @@ const RenderMainContent = React.memo(function RenderMainContent({
         componentProps = { section: hrSection };
       } else if (showUserProfileSettings) {
         ActiveComponent = UserProfileSettings;
-        componentProps = { userData, onUpdate: handleUserProfileUpdate };
+        componentProps = { userData: safeUserData, onUpdate: handleUserProfileUpdate };
       } else if (showMyAccount) {
         ActiveComponent = MyAccount;
         componentProps = {
-          userData: userData ? {
-            ...userData,
-            firstName: userData?.firstName,
-            lastName: userData?.lastName,
-            first_name: userData?.first_name,
-            last_name: userData?.last_name,
-            email: userData?.email,
-            tenantId: userData?.tenantId || tenantId,
+          userData: safeUserData ? {
+            ...safeUserData,
+            firstName: safeUserData?.firstName,
+            lastName: safeUserData?.lastName,
+            first_name: safeUserData?.first_name,
+            last_name: safeUserData?.last_name,
+            email: safeUserData?.email,
+            tenantId: safeUserData?.tenantId || tenantId,
           } : null
         };
       } else if (showIntegrationSettings) {

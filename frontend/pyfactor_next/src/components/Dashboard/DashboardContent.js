@@ -1315,6 +1315,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   
   const mainContentProps = useMemo(() => {
     console.log('[DashboardContent] Creating mainContentProps with showMainDashboard:', showMainDashboard, 'view:', view);
+    console.log('[DashboardContent] memoizedUserData being passed:', memoizedUserData);
     return {
     view,
     userData: memoizedUserData,
