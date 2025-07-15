@@ -315,10 +315,10 @@ function EmployeeManagement({ onNavigate }) {
     try {
       logger.info('🚀 [EmployeeManagement] === FETCHING UNLINKED USERS START ===');
       logger.info('🚀 [EmployeeManagement] Fetching available users for linking');
-      logger.info('🚀 [EmployeeManagement] Request URL: /api/user-management/users?unlinked=true');
+      logger.info('🚀 [EmployeeManagement] Request URL: /api/hr/unlinked-users');
       
       // Fetch users who don't have an employee record yet
-      const response = await fetch('/api/user-management/users?unlinked=true', {
+      const response = await fetch('/api/hr/unlinked-users', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
