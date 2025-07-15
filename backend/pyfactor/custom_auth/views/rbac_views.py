@@ -809,19 +809,14 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
             access_token = token_response.json().get('access_token')
             logger.info(f"[DirectUserCreation] Got Auth0 access token: {access_token[:20]}...")
             
-            # Create Auth0 user
+            # Create Auth0 user WITHOUT password (forces password reset flow)
             users_url = f"https://{auth0_config['domain']}/api/v2/users"
-            # Generate a random password for initial user creation
-            import string
-            import random
-            temp_password = ''.join(random.choices(string.ascii_letters + string.digits + '!@#$%', k=16)) + 'Aa1!'
             
             user_payload = {
                 'email': email,
-                'password': temp_password,  # Required for Username-Password-Authentication
                 'connection': 'Username-Password-Authentication',
-                'email_verified': True,  # Mark as verified to skip verification email
-                'verify_email': False,  # Don't send verification email
+                'email_verified': True,  # Skip email verification
+                'verify_email': False,  # Prevent automatic emails
                 'app_metadata': {
                     'tenant_id': str(tenant.id),
                     'tenant_name': tenant.name,
@@ -832,6 +827,7 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
                     'tenant_id': str(tenant.id),
                     'created_via': 'admin_panel'
                 }
+                # NOTE: No password field - this forces Auth0 to require password reset
             }
             
             headers = {
@@ -840,7 +836,7 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
             }
             
             logger.info(f"[DirectUserCreation] Creating Auth0 user at {users_url}")
-            logger.info(f"[DirectUserCreation] User payload: {user_payload}")
+            logger.info(f"[DirectUserCreation] User payload (no password): {user_payload}")
             
             user_response = requests.post(users_url, json=user_payload, headers=headers)
             logger.info(f"[DirectUserCreation] Auth0 user creation response status: {user_response.status_code}")
@@ -853,29 +849,45 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
                 auth0_user_id = auth0_user.get('user_id')
                 logger.info(f"[DirectUserCreation] Auth0 user created: {auth0_user_id}")
                 
-                # Send password reset email
-                reset_url = f"https://{auth0_config['domain']}/api/v2/tickets/password-change"
-                reset_payload = {
+                # Wait a moment for Auth0 to process the user creation
+                import time
+                time.sleep(2)
+                
+                # Create password reset ticket using Management API
+                tickets_url = f"https://{auth0_config['domain']}/api/v2/tickets/password-change"
+                ticket_payload = {
                     'user_id': auth0_user_id,
-                    'connection': 'Username-Password-Authentication',  # Use connection name, not ID
                     'ttl_sec': 432000,  # 5 days
                     'mark_email_as_verified': True,
-                    'includeEmailInRedirect': True
+                    'includeEmailInRedirect': False
                 }
                 
-                logger.info(f"[DirectUserCreation] Sending password reset ticket request")
-                logger.info(f"[DirectUserCreation] Reset payload: {reset_payload}")
-                reset_response = requests.post(reset_url, json=reset_payload, headers=headers)
-                logger.info(f"[DirectUserCreation] Password reset response status: {reset_response.status_code}")
-                logger.info(f"[DirectUserCreation] Password reset response body: {reset_response.text}")
+                logger.info(f"[DirectUserCreation] Creating password reset ticket via Management API")
+                logger.info(f"[DirectUserCreation] Ticket payload: {ticket_payload}")
                 
-                if reset_response.status_code == 201:
-                    reset_data = reset_response.json()
-                    ticket_url = reset_data.get('ticket')
-                    logger.info(f"[DirectUserCreation] Password reset email sent via Auth0")
-                    logger.info(f"[DirectUserCreation] Reset ticket URL: {ticket_url}")
+                ticket_response = requests.post(tickets_url, json=ticket_payload, headers=headers)
+                logger.info(f"[DirectUserCreation] Password reset ticket response status: {ticket_response.status_code}")
+                logger.info(f"[DirectUserCreation] Password reset ticket response body: {ticket_response.text}")
+                
+                if ticket_response.status_code == 201:
+                    ticket_data = ticket_response.json()
+                    ticket_url = ticket_data.get('ticket')
+                    logger.info(f"[DirectUserCreation] Password reset ticket created: {ticket_url}")
+                    
+                    # Also try the simpler dbconnections API as backup
+                    reset_url = f"https://{auth0_config['domain']}/dbconnections/change_password"
+                    reset_payload = {
+                        'client_id': settings.AUTH0_CLIENT_ID,
+                        'email': email,
+                        'connection': 'Username-Password-Authentication'
+                    }
+                    
+                    logger.info(f"[DirectUserCreation] Also sending via dbconnections API as backup")
+                    reset_response = requests.post(reset_url, json=reset_payload)
+                    logger.info(f"[DirectUserCreation] dbconnections response: {reset_response.status_code}")
+                    
                 else:
-                    logger.error(f"[DirectUserCreation] Failed to send password reset: {reset_response.text}")
+                    logger.error(f"[DirectUserCreation] Failed to create password reset ticket: {ticket_response.text}")
                 
                 return auth0_user_id
             else:
