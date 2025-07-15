@@ -292,7 +292,29 @@
   - Appointment reminders
   - Marketing campaigns
 
-### [36.0.0] - 2025-07-14 - CURRENT - Comprehensive Timesheet System
+### [36.0.0] - 2025-07-15 - CURRENT - Custom Password Reset Flow for Admin-Created Users
+- **Purpose**: Replace Auth0's confusing verification emails with branded password reset flow
+- **Problem**: Users received Auth0 welcome/verification emails instead of password reset
+- **Solution**: Custom password reset system with full Auth0 integration
+- **Implementation**:
+  - `PasswordResetToken` model with 24-hour expiry
+  - Custom email via Resend with branded template
+  - Frontend page at `/auth/set-password` for password setting
+  - Backend API updates password in Auth0 via Management API
+  - Marks users as `onboarding_completed` after password set
+- **Email Service**: Switched from SMTP to Resend (better deliverability)
+- **Security**: Cryptographically secure tokens, single-use, time-limited
+- **Key Files**:
+  - `/backend/pyfactor/custom_auth/models.py` - PasswordResetToken model
+  - `/backend/pyfactor/custom_auth/views/password_reset_views.py` - API endpoint
+  - `/frontend/pyfactor_next/src/app/auth/set-password/page.js` - Frontend page
+  - `/backend/pyfactor/custom_auth/views/rbac_views.py` - Email sending logic
+- **Documentation**: 
+  - `/backend/pyfactor/docs/CUSTOM_PASSWORD_RESET_FLOW.md`
+  - `/backend/pyfactor/docs/RESEND_SETUP.md`
+- **Environment**: `RESEND_API_KEY=re_gjPas9S7_3fVGrgpUKaazigEEa6o3MVkQ` configured in Render
+
+### [37.0.0] - 2025-07-14 - CURRENT - Comprehensive Timesheet System
 - **Purpose**: Industry-standard time tracking for wage employees with supervisor approvals
 - **Core Features**:
   - Excel-style timesheet grid with light/dark green column shading
