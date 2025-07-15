@@ -1334,28 +1334,6 @@ const MainListItems = ({
           value: 'dashboard' 
         },
         { 
-          label: 'Connect to Bank', 
-          onClick: (value) => {
-            // Create navigation event for bank connection
-            const navigationKey = `nav-${Date.now()}`;
-            const payload = { 
-              item: 'bank-connect', 
-              navigationKey,
-              originalItem: 'Connect to Bank'
-            };
-            
-            // Dispatch navigation events
-            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
-            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
-            
-            // Load the BankConnect component
-            if (typeof handleBankingClick === 'function') {
-              handleBankingClick('connect');
-            }
-          }, 
-          value: 'connect' 
-        },
-        { 
           label: 'Bank Transactions', 
           onClick: (value) => {
             // Create navigation event for bank transactions

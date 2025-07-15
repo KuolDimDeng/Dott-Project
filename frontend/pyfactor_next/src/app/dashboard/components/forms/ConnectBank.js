@@ -4,7 +4,7 @@ import { plaidApi, bankAccountsApi } from '@/services/api/banking';
 import { logger } from '@/utils/logger';
 import { CenteredSpinner, ButtonSpinner } from '@/components/ui/StandardSpinner';
 
-const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoConnect = false }) => {
+const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoConnect = false, onSuccess = null, onClose = null }) => {
   const [region, setRegion] = useState('');
   const [africanOption, setAfricanOption] = useState('');
   const [africanBankProvider, setAfricanBankProvider] = useState('');
@@ -198,6 +198,11 @@ const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoCon
           message: 'Bank connected successfully',
           severity: 'success',
         });
+        
+        // Call onSuccess callback if provided
+        if (onSuccess && typeof onSuccess === 'function') {
+          onSuccess(response.data.bank_info);
+        }
       } else {
         throw new Error('Failed to exchange token');
       }

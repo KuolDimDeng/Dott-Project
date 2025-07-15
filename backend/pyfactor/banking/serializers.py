@@ -5,7 +5,7 @@ from .models import BankAccount, BankTransaction, BankingRule, BankingAuditLog
 class BankAccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = BankAccount
-        fields = ['id', 'bank_name', 'account_number', 'balance', 'account_type', 'last_synced']
+        fields = ['id', 'bank_name', 'account_number', 'balance', 'account_type', 'purpose', 'last_synced', 'integration_type']
         read_only_fields = ['id', 'last_synced']
 
 class BankTransactionSerializer(serializers.ModelSerializer):

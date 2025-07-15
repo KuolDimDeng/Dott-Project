@@ -99,6 +99,16 @@ export const plaidApi = {
  * Bank Accounts API - Use frontend proxy for key operations
  */
 export const bankAccountsApi = {
+  list: () => {
+    return fetch('/api/banking/accounts', {
+      credentials: 'include'
+    }).then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return response.json();
+    }).then(data => ({ data }));
+  },
   getAll: () => {
     return fetch('/api/banking/accounts', {
       credentials: 'include'
@@ -111,6 +121,32 @@ export const bankAccountsApi = {
   },
   getById: (id) => bankingApiInstance.get(`/accounts/${id}/`),
   connect: (data) => bankingApiInstance.post('/connect-bank-account/', data),
+  update: (id, data) => {
+    return fetch(`/api/banking/accounts/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify(data)
+    }).then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return response.json();
+    }).then(data => ({ data }));
+  },
+  delete: (accountId) => {
+    return fetch(`/api/banking/accounts/${accountId}`, {
+      method: 'DELETE',
+      credentials: 'include'
+    }).then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return response.json();
+    }).then(data => ({ data }));
+  },
   getConnectedAccounts: () => {
     return fetch('/api/banking/accounts', {
       credentials: 'include'

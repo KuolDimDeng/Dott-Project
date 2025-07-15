@@ -96,6 +96,14 @@ class CountryPaymentGateway(TenantAwareModel):
         return f"{self.country.name} - {self.gateway.get_name_display()} (Priority: {self.get_priority_display()})"
 
 class BankAccount(TenantAwareModel):
+    PURPOSE_CHOICES = [
+        ('payroll', 'Payroll'),
+        ('payments', 'Customer Payments'),
+        ('transfers', 'Vendor Transfers'),
+        ('sales', 'Sales Revenue'),
+        ('general', 'General Purpose'),
+    ]
+    
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='bank_accounts', null=True, blank=True)
     # Replace ForeignKey with UUID field to break circular dependency
     # employee = models.ForeignKey('hr.Employee', on_delete=models.CASCADE, related_name='bank_accounts', null=True, blank=True)
@@ -104,6 +112,7 @@ class BankAccount(TenantAwareModel):
     account_number = models.CharField(max_length=255)
     balance = models.DecimalField(max_digits=10, decimal_places=2)
     account_type = models.CharField(max_length=50, null=True, blank=True)
+    purpose = models.CharField(max_length=20, choices=PURPOSE_CHOICES, null=True, blank=True, help_text="The business purpose of this bank account")
     last_synced = models.DateTimeField(auto_now=True)
     
     integration_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)

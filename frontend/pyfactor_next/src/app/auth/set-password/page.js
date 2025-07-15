@@ -318,5 +318,6 @@ export default function SetPasswordPage() {
         </form>
       </div>
     </div>
+  </div>
   );
 }

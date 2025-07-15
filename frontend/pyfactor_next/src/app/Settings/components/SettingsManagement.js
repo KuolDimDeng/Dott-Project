@@ -15,6 +15,7 @@ import CompanyProfile from './sections/CompanyProfile';
 import BillingSubscriptions from './sections/BillingSubscriptions';
 import SecuritySettings from './sections/SecuritySettings';
 import WhatsAppSettings from './sections/WhatsAppSettings';
+import BankConnections from './sections/BankConnections';
 
 // Import icons
 import { 
@@ -22,7 +23,8 @@ import {
   BuildingOfficeIcon, 
   CreditCardIcon,
   ShieldCheckIcon,
-  ChatBubbleLeftRightIcon
+  ChatBubbleLeftRightIcon,
+  BanknotesIcon
 } from '@heroicons/react/24/outline';
 
 const SettingsManagement = () => {
@@ -60,6 +62,14 @@ const SettingsManagement = () => {
       description: 'Configure WhatsApp Business integration and menu visibility',
       component: WhatsAppSettings,
       requiredRole: 'user' // All users can access
+    },
+    {
+      id: 'bank-connections',
+      title: 'Bank Connections',
+      icon: BanknotesIcon,
+      description: 'Connect bank accounts for payroll, payments, and transfers',
+      component: BankConnections,
+      requiredRole: 'admin' // Only admin and owner can access
     },
     {
       id: 'billing-subscriptions',
