@@ -38,20 +38,20 @@ const SettingsManagement = () => {
   // Settings sections configuration - updated based on requirements
   const settingsSections = [
     {
-      id: 'user-management',
-      title: 'User Management',
-      icon: UserGroupIcon,
-      description: 'Manage user access, roles, and permissions',
-      component: UserManagement,
-      requiredRole: 'admin' // Admin and Owner can access
-    },
-    {
       id: 'company-profile',
       title: 'Company Profile',
       icon: BuildingOfficeIcon,
       description: 'View and update company information',
       component: CompanyProfile,
       requiredRole: 'user' // All users can view, but editing is restricted
+    },
+    {
+      id: 'user-management',
+      title: 'User Management',
+      icon: UserGroupIcon,
+      description: 'Manage user access, roles, and permissions',
+      component: UserManagement,
+      requiredRole: 'admin' // Admin and Owner can access
     },
     {
       id: 'whatsapp',
@@ -95,9 +95,9 @@ const SettingsManagement = () => {
   useEffect(() => {
     // If activeSection is null (initial load) and we have available sections
     if (activeSection === null && availableSections.length > 0) {
-      // Prefer user-management if available, otherwise use first available
-      const userManagementSection = availableSections.find(s => s.id === 'user-management');
-      setActiveSection(userManagementSection ? 'user-management' : availableSections[0].id);
+      // Prefer company-profile if available, otherwise use first available
+      const companyProfileSection = availableSections.find(s => s.id === 'company-profile');
+      setActiveSection(companyProfileSection ? 'company-profile' : availableSections[0].id);
     }
     // If current section is not available anymore (permissions changed)
     else if (activeSection && !availableSections.find(section => section.id === activeSection)) {

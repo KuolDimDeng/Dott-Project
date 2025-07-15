@@ -766,12 +766,11 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
             )
     
     def _create_auth0_user_and_send_reset(self, email, user, tenant):
-        """Create Auth0 user and send password reset email"""
+        """Create Auth0 user and send custom password reset email"""
         try:
             logger.info(f"[DirectUserCreation] Starting Auth0 user creation for {email}")
             
             # Get Auth0 Management API token
-            # Use the actual Auth0 tenant domain for Management API, not the custom domain
             auth0_tenant_domain = 'dev-cbyy63jovi6zrcos.us.auth0.com'
             auth0_config = {
                 'domain': auth0_tenant_domain,
@@ -779,10 +778,6 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
                 'client_secret': settings.AUTH0_MANAGEMENT_CLIENT_SECRET,
                 'audience': f"https://{auth0_tenant_domain}/api/v2/"
             }
-            
-            logger.info(f"[DirectUserCreation] Auth0 config: domain={auth0_config['domain']}")
-            logger.info(f"[DirectUserCreation] Has M2M client ID: {bool(auth0_config['client_id'])}")
-            logger.info(f"[DirectUserCreation] Has M2M client secret: {bool(auth0_config['client_secret'])}")
             
             if not all([auth0_config['domain'], auth0_config['client_id'], auth0_config['client_secret']]):
                 logger.error("[DirectUserCreation] Auth0 M2M credentials not configured")
@@ -797,38 +792,32 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
                 'grant_type': 'client_credentials'
             }
             
-            logger.info(f"[DirectUserCreation] Requesting Auth0 M2M token from {token_url}")
-            
             token_response = requests.post(token_url, json=token_payload)
-            logger.info(f"[DirectUserCreation] Token response status: {token_response.status_code}")
-            
             if token_response.status_code != 200:
                 logger.error(f"[DirectUserCreation] Failed to get Auth0 token: {token_response.text}")
                 return None
             
             access_token = token_response.json().get('access_token')
-            logger.info(f"[DirectUserCreation] Got Auth0 access token: {access_token[:20]}...")
-            
-            # Create Auth0 user with temporary password
-            users_url = f"https://{auth0_config['domain']}/api/v2/users"
+            self.management_api_token = access_token  # Store for later use
             
             # Generate a secure temporary password
             import string
             import random
             temp_password = ''.join(random.choices(string.ascii_letters + string.digits + '!@#$%^&*', k=20)) + 'Aa1!'
             
+            # Create Auth0 user
+            users_url = f"https://{auth0_config['domain']}/api/v2/users"
             user_payload = {
                 'email': email,
-                'password': temp_password,  # Temporary password user will reset
+                'password': temp_password,
                 'connection': 'Username-Password-Authentication',
-                'email_verified': False,  # Force email verification which triggers password reset
-                'verify_email': False,  # Don't send verification email during creation
+                'email_verified': True,  # Mark as verified to prevent verification emails
+                'verify_email': False,  # Don't send any Auth0 emails
                 'app_metadata': {
                     'tenant_id': str(tenant.id),
                     'tenant_name': tenant.name,
                     'role': user.role,
-                    'created_by': 'admin_user_management',
-                    'requires_password_reset': True
+                    'created_by': 'admin_user_management'
                 },
                 'user_metadata': {
                     'tenant_id': str(tenant.id),
@@ -841,67 +830,27 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
                 'Content-Type': 'application/json'
             }
             
-            logger.info(f"[DirectUserCreation] Creating Auth0 user at {users_url}")
-            logger.info(f"[DirectUserCreation] User payload (no password): {user_payload}")
-            
             user_response = requests.post(users_url, json=user_payload, headers=headers)
-            logger.info(f"[DirectUserCreation] Auth0 user creation response status: {user_response.status_code}")
-            
-            if user_response.status_code != 201:
-                logger.error(f"[DirectUserCreation] Auth0 user creation failed. Response: {user_response.text}")
             
             if user_response.status_code == 201:
                 auth0_user = user_response.json()
                 auth0_user_id = auth0_user.get('user_id')
                 logger.info(f"[DirectUserCreation] Auth0 user created: {auth0_user_id}")
                 
-                # Wait a moment for Auth0 to process the user creation
-                import time
-                time.sleep(2)
+                # Create password reset token in our database
+                from ..models import PasswordResetToken
+                import secrets
+                reset_token = secrets.token_urlsafe(32)
                 
-                # Send password reset email immediately via dbconnections API
-                reset_url = f"https://{auth0_config['domain']}/dbconnections/change_password"
-                reset_payload = {
-                    'client_id': settings.AUTH0_CLIENT_ID,
-                    'email': email,
-                    'connection': 'Username-Password-Authentication'
-                }
+                # Store token with 24 hour expiry
+                PasswordResetToken.objects.create(
+                    user=user,
+                    token=reset_token,
+                    expires_at=timezone.now() + timedelta(hours=24)
+                )
                 
-                logger.info(f"[DirectUserCreation] Sending password reset email via dbconnections API")
-                logger.info(f"[DirectUserCreation] Reset URL: {reset_url}")
-                logger.info(f"[DirectUserCreation] Reset payload: {reset_payload}")
-                
-                reset_response = requests.post(reset_url, json=reset_payload)
-                logger.info(f"[DirectUserCreation] Password reset response status: {reset_response.status_code}")
-                logger.info(f"[DirectUserCreation] Password reset response body: {reset_response.text}")
-                
-                if reset_response.status_code == 200:
-                    logger.info(f"[DirectUserCreation] Password reset email sent successfully")
-                    
-                    # Also mark email as verified to prevent verification emails
-                    verify_url = f"https://{auth0_config['domain']}/api/v2/users/{auth0_user_id}"
-                    verify_payload = {
-                        'email_verified': True
-                    }
-                    
-                    verify_response = requests.patch(verify_url, json=verify_payload, headers=headers)
-                    logger.info(f"[DirectUserCreation] Email verification update: {verify_response.status_code}")
-                    
-                else:
-                    logger.error(f"[DirectUserCreation] Failed to send password reset email: {reset_response.text}")
-                    
-                    # Try Management API as backup
-                    logger.info(f"[DirectUserCreation] Trying Management API ticket as backup")
-                    tickets_url = f"https://{auth0_config['domain']}/api/v2/tickets/password-change"
-                    ticket_payload = {
-                        'user_id': auth0_user_id,
-                        'ttl_sec': 432000,  # 5 days
-                        'mark_email_as_verified': True,
-                        'includeEmailInRedirect': False
-                    }
-                    
-                    ticket_response = requests.post(tickets_url, json=ticket_payload, headers=headers)
-                    logger.info(f"[DirectUserCreation] Ticket response: {ticket_response.status_code} - {ticket_response.text}")
+                # Send custom email with our password reset link
+                self._send_custom_password_reset_email(email, reset_token, tenant.name, user.role)
                 
                 return auth0_user_id
             else:
@@ -913,3 +862,69 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
             import traceback
             logger.error(f"[DirectUserCreation] Auth0 error traceback: {traceback.format_exc()}")
             return None
+    
+    def _send_custom_password_reset_email(self, email, token, tenant_name, role):
+        """Send custom password reset email"""
+        try:
+            from django.core.mail import send_mail
+            from django.template.loader import render_to_string
+            
+            # Generate reset URL
+            frontend_url = getattr(settings, 'FRONTEND_URL', 'https://dottapps.com')
+            reset_url = f"{frontend_url}/auth/set-password?token={token}&email={email}"
+            
+            subject = f"Set your password for {tenant_name}"
+            
+            # HTML message
+            html_message = f"""
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2>Welcome to {tenant_name}!</h2>
+                <p>Your account has been created with the role of <strong>{role}</strong>.</p>
+                <p>Please click the button below to set your password:</p>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{reset_url}" 
+                       style="background-color: #0066cc; color: white; padding: 12px 30px; 
+                              text-decoration: none; border-radius: 5px; display: inline-block;">
+                        Set Your Password
+                    </a>
+                </div>
+                <p>This link will expire in 24 hours.</p>
+                <p>If you have any questions, please contact your administrator.</p>
+                <hr style="margin: 30px 0;">
+                <p style="color: #666; font-size: 12px;">
+                    If you didn't expect this email, you can safely ignore it.
+                </p>
+            </div>
+            """
+            
+            # Plain text message
+            plain_message = f"""
+Welcome to {tenant_name}!
+
+Your account has been created with the role of {role}.
+
+Please visit the following link to set your password:
+{reset_url}
+
+This link will expire in 24 hours.
+
+If you have any questions, please contact your administrator.
+
+If you didn't expect this email, you can safely ignore it.
+            """
+            
+            # Send email
+            send_mail(
+                subject=subject,
+                message=plain_message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[email],
+                html_message=html_message,
+                fail_silently=False
+            )
+            
+            logger.info(f"[DirectUserCreation] Custom password reset email sent to {email}")
+            
+        except Exception as e:
+            logger.error(f"[DirectUserCreation] Failed to send custom email: {str(e)}")
+            raise

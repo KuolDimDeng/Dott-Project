@@ -41,6 +41,7 @@ from .main_views import (
 from custom_auth.rls_debug import rls_debug_view, fix_rls_view
 from custom_auth.views.friend_invite_views import send_friend_invitation
 from custom_auth.views.employee_creation_views import create_employee_for_user
+from custom_auth.views.password_reset_views import PasswordResetView
 
 class UUIDConverter:
     regex = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
@@ -145,4 +146,7 @@ urlpatterns = [
     
     # Employee creation endpoint (internal use)
     path('create-employee-for-user/', create_employee_for_user, name='create-employee-for-user'),
+    
+    # Custom password reset endpoint for admin-created users
+    path('set-password/', PasswordResetView.as_view(), name='set-password'),
 ]
