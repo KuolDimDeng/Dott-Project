@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useSession } from '@/hooks/useSession';
+import { useSession } from '@/hooks/useSession-v2';
 import { useRouter, useSearchParams } from 'next/navigation';
 import EmployeeInfo from './components/EmployeeInfo';
 import TimesheetTab from './components/TimesheetTab';
