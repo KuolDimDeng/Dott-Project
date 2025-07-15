@@ -127,7 +127,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
       updateState({ userData: session.user });
     }
     console.log('🚨 [DashboardContent] === SESSION SYNC DEBUG END ===');
-  }, [session, sessionLoading, updateState]);
+  }, [session, sessionLoading]);
 
   // Fetch Auth0 profile data on mount
   useEffect(() => {
