@@ -142,6 +142,9 @@ def send_email_invitation(request):
             if sender_name and sender_name in title:
                 title = title.replace(sender_name, f'<span style="color: #2563eb; font-weight: 600;">{sender_name}</span>')
             
+            # Add line break after "Hello," for better formatting
+            rest_of_message = rest_of_message.replace('Hello,', 'Hello,\n\n')
+            
             # Split content to place button after features list
             content_parts = rest_of_message.split('• Real-time business intelligence')
             features_section = content_parts[0] + '• Real-time business intelligence' if len(content_parts) > 1 else rest_of_message

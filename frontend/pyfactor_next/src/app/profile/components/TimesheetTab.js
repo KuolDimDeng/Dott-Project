@@ -304,12 +304,61 @@ const TimesheetTab = ({ employee, session }) => {
   }
 
   if (!employee) {
+    const userRole = session?.user?.role;
+    const isOwnerOrAdmin = userRole === 'OWNER' || userRole === 'ADMIN';
+    
     return (
-      <Alert>
-        <AlertDescription>
-          No employee information found. Please contact your administrator.
-        </AlertDescription>
-      </Alert>
+      <Card>
+        <CardHeader>
+          <CardTitle>Timesheet Access</CardTitle>
+          <CardDescription>
+            {isOwnerOrAdmin 
+              ? "Owner and Admin accounts typically don't track timesheets directly"
+              : "No employee record found for your account"
+            }
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {isOwnerOrAdmin ? (
+            <div className="space-y-3">
+              <p className="text-sm text-gray-600">
+                As an {userRole.toLowerCase()}, you can:
+              </p>
+              <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                <li>View all employee timesheets from the HR → Timesheets page</li>
+                <li>Approve or reject pending timesheet submissions</li>
+                <li>Create an employee record for yourself if you also work as an employee</li>
+                <li>Manage timesheet settings and workflows</li>
+              </ul>
+              <div className="pt-3">
+                <Button 
+                  onClick={() => window.location.href = '/dashboard/hr/employees'}
+                  className="mr-3"
+                >
+                  Manage Employees
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => window.location.href = '/dashboard/timesheets'}
+                >
+                  View All Timesheets
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm text-gray-600">
+                Your user account is not linked to an employee record. Contact your administrator to:
+              </p>
+              <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                <li>Create an employee record for you</li>
+                <li>Link your user account to an existing employee record</li>
+                <li>Verify your account permissions</li>
+              </ul>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     );
   }
 
