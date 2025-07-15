@@ -142,8 +142,8 @@ def send_email_invitation(request):
             if sender_name and sender_name in title:
                 title = title.replace(sender_name, f'<span style="color: #2563eb; font-weight: 600;">{sender_name}</span>')
             
-            # Add line break after "Hello," for better formatting
-            rest_of_message = rest_of_message.replace('Hello,', 'Hello,\n\n')
+            # Add single line break after "Hello," for better formatting
+            rest_of_message = rest_of_message.replace('Hello,', 'Hello,\n')
             
             # Split content to place button after features list
             content_parts = rest_of_message.split('• Real-time business intelligence')
@@ -194,7 +194,7 @@ def send_email_invitation(request):
                                             </a>
                                         </div>
                                         
-                                        <div style="font-size: 16px; line-height: 1.6; color: #374151; white-space: pre-wrap; word-wrap: break-word;">
+                                        <div style="font-size: 16px; line-height: 1.6; color: #374151; white-space: pre-wrap; word-wrap: break-word; margin: 0; padding: 0;">
                                             {remaining_content}
                                         </div>
                                     </td>
