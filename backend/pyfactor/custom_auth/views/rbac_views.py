@@ -809,25 +809,31 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
             access_token = token_response.json().get('access_token')
             logger.info(f"[DirectUserCreation] Got Auth0 access token: {access_token[:20]}...")
             
-            # Create Auth0 user WITHOUT password (forces password reset flow)
+            # Create Auth0 user with temporary password
             users_url = f"https://{auth0_config['domain']}/api/v2/users"
+            
+            # Generate a secure temporary password
+            import string
+            import random
+            temp_password = ''.join(random.choices(string.ascii_letters + string.digits + '!@#$%^&*', k=20)) + 'Aa1!'
             
             user_payload = {
                 'email': email,
+                'password': temp_password,  # Temporary password user will reset
                 'connection': 'Username-Password-Authentication',
-                'email_verified': True,  # Skip email verification
-                'verify_email': False,  # Prevent automatic emails
+                'email_verified': False,  # Force email verification which triggers password reset
+                'verify_email': False,  # Don't send verification email during creation
                 'app_metadata': {
                     'tenant_id': str(tenant.id),
                     'tenant_name': tenant.name,
                     'role': user.role,
-                    'created_by': 'admin_user_management'
+                    'created_by': 'admin_user_management',
+                    'requires_password_reset': True
                 },
                 'user_metadata': {
                     'tenant_id': str(tenant.id),
                     'created_via': 'admin_panel'
                 }
-                # NOTE: No password field - this forces Auth0 to require password reset
             }
             
             headers = {
@@ -853,41 +859,49 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
                 import time
                 time.sleep(2)
                 
-                # Create password reset ticket using Management API
-                tickets_url = f"https://{auth0_config['domain']}/api/v2/tickets/password-change"
-                ticket_payload = {
-                    'user_id': auth0_user_id,
-                    'ttl_sec': 432000,  # 5 days
-                    'mark_email_as_verified': True,
-                    'includeEmailInRedirect': False
+                # Send password reset email immediately via dbconnections API
+                reset_url = f"https://{auth0_config['domain']}/dbconnections/change_password"
+                reset_payload = {
+                    'client_id': settings.AUTH0_CLIENT_ID,
+                    'email': email,
+                    'connection': 'Username-Password-Authentication'
                 }
                 
-                logger.info(f"[DirectUserCreation] Creating password reset ticket via Management API")
-                logger.info(f"[DirectUserCreation] Ticket payload: {ticket_payload}")
+                logger.info(f"[DirectUserCreation] Sending password reset email via dbconnections API")
+                logger.info(f"[DirectUserCreation] Reset URL: {reset_url}")
+                logger.info(f"[DirectUserCreation] Reset payload: {reset_payload}")
                 
-                ticket_response = requests.post(tickets_url, json=ticket_payload, headers=headers)
-                logger.info(f"[DirectUserCreation] Password reset ticket response status: {ticket_response.status_code}")
-                logger.info(f"[DirectUserCreation] Password reset ticket response body: {ticket_response.text}")
+                reset_response = requests.post(reset_url, json=reset_payload)
+                logger.info(f"[DirectUserCreation] Password reset response status: {reset_response.status_code}")
+                logger.info(f"[DirectUserCreation] Password reset response body: {reset_response.text}")
                 
-                if ticket_response.status_code == 201:
-                    ticket_data = ticket_response.json()
-                    ticket_url = ticket_data.get('ticket')
-                    logger.info(f"[DirectUserCreation] Password reset ticket created: {ticket_url}")
+                if reset_response.status_code == 200:
+                    logger.info(f"[DirectUserCreation] Password reset email sent successfully")
                     
-                    # Also try the simpler dbconnections API as backup
-                    reset_url = f"https://{auth0_config['domain']}/dbconnections/change_password"
-                    reset_payload = {
-                        'client_id': settings.AUTH0_CLIENT_ID,
-                        'email': email,
-                        'connection': 'Username-Password-Authentication'
+                    # Also mark email as verified to prevent verification emails
+                    verify_url = f"https://{auth0_config['domain']}/api/v2/users/{auth0_user_id}"
+                    verify_payload = {
+                        'email_verified': True
                     }
                     
-                    logger.info(f"[DirectUserCreation] Also sending via dbconnections API as backup")
-                    reset_response = requests.post(reset_url, json=reset_payload)
-                    logger.info(f"[DirectUserCreation] dbconnections response: {reset_response.status_code}")
+                    verify_response = requests.patch(verify_url, json=verify_payload, headers=headers)
+                    logger.info(f"[DirectUserCreation] Email verification update: {verify_response.status_code}")
                     
                 else:
-                    logger.error(f"[DirectUserCreation] Failed to create password reset ticket: {ticket_response.text}")
+                    logger.error(f"[DirectUserCreation] Failed to send password reset email: {reset_response.text}")
+                    
+                    # Try Management API as backup
+                    logger.info(f"[DirectUserCreation] Trying Management API ticket as backup")
+                    tickets_url = f"https://{auth0_config['domain']}/api/v2/tickets/password-change"
+                    ticket_payload = {
+                        'user_id': auth0_user_id,
+                        'ttl_sec': 432000,  # 5 days
+                        'mark_email_as_verified': True,
+                        'includeEmailInRedirect': False
+                    }
+                    
+                    ticket_response = requests.post(tickets_url, json=ticket_payload, headers=headers)
+                    logger.info(f"[DirectUserCreation] Ticket response: {ticket_response.status_code} - {ticket_response.text}")
                 
                 return auth0_user_id
             else:
