@@ -268,7 +268,7 @@ async function fetchLocalUsers(tenantId, currentUser, request, unlinkedOnly = fa
     logger.info('[UserManagement] ========== FETCH LOCAL USERS START ==========');
     
     // Fetch users from backend RBAC API
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+    const backendUrl = process.env.BACKEND_URL || 'https://dott-api-v1.onrender.com';
     logger.info('[UserManagement] Backend URL:', backendUrl);
     logger.info('[UserManagement] Tenant ID:', tenantId);
     logger.info('[UserManagement] Unlinked only:', unlinkedOnly);
