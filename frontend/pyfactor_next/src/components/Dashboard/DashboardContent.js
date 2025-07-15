@@ -48,6 +48,17 @@ const RenderMainContent = lazy(() =>
 const LoadingComponent = () => <DashboardLoader message="Loading dashboard components..." />;
 
 function DashboardContent({ setupStatus = 'pending', customContent, mockData, userAttributes, tenantId: propTenantId }) {
+  // CRITICAL DEBUG: Log all props received
+  console.log('🔴 [DashboardContent] === COMPONENT MOUNT DEBUG ===');
+  console.log('🔴 [DashboardContent] Props received:', {
+    setupStatus,
+    hasCustomContent: !!customContent,
+    hasMockData: !!mockData,
+    hasUserAttributes: !!userAttributes,
+    userAttributesKeys: userAttributes ? Object.keys(userAttributes) : 'none',
+    propTenantId
+  });
+  console.log('🔴 [DashboardContent] Full userAttributes:', userAttributes);
   const { user, isAuthenticated, logout } = useAuth();
   const router = useRouter();
   const { showNotification } = useNotification();
@@ -259,6 +270,16 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     showHRDashboard, showEmployeeManagement, showTimesheetManagement, hrSection, showMyAccount, showHelpCenter,
     showCreateMenu, showCreateOptions, showBenefitsManagement, showPOSSystem, showPayrollWizard
   } = uiState;
+  
+  // CRITICAL DEBUG: Log userData state after destructuring
+  console.log('🔴 [DashboardContent] === USERDATA STATE DEBUG ===');
+  console.log('🔴 [DashboardContent] userData from uiState:', userData);
+  console.log('🔴 [DashboardContent] userData type:', typeof userData);
+  console.log('🔴 [DashboardContent] userData is null:', userData === null);
+  console.log('🔴 [DashboardContent] userData is undefined:', userData === undefined);
+  console.log('🔴 [DashboardContent] userData keys:', userData ? Object.keys(userData) : 'userData is falsy');
+  console.log('🔴 [DashboardContent] initialUserData:', initialUserData);
+  console.log('🔴 [DashboardContent] Full uiState:', uiState);
   
   // Computed values - memoize these values
   const openMenu = Boolean(anchorEl);
@@ -1175,7 +1196,15 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
 
   // Memoize userData to prevent unnecessary re-renders
   const memoizedUserData = useMemo(() => {
-    return userData || initialUserData;
+    console.log('🔴 [DashboardContent] === MEMOIZED USERDATA DEBUG ===');
+    console.log('🔴 [DashboardContent] Creating memoizedUserData with:');
+    console.log('🔴 [DashboardContent] - userData:', userData);
+    console.log('🔴 [DashboardContent] - initialUserData:', initialUserData);
+    const result = userData || initialUserData;
+    console.log('🔴 [DashboardContent] - result:', result);
+    console.log('🔴 [DashboardContent] - result type:', typeof result);
+    console.log('🔴 [DashboardContent] - result keys:', result ? Object.keys(result) : 'result is falsy');
+    return result;
   }, [userData, initialUserData]);
   
   // Memoize the main content class to prevent recalculating on every render
