@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import RunPayrollView, PayrollRunsView, PayrollTransactionsView, PayrollCalculationView, payroll_report
+from .views import RunPayrollView, PayrollRunsView, PayrollTransactionsView, PayrollCalculationView, payroll_report, PayStubView
 from .stripe_views import (
     setup_payroll_funding, confirm_funding_setup, get_payroll_funding_status,
     employee_bank_setup, employee_bank_status,
@@ -36,4 +36,7 @@ urlpatterns = [
     
     # Webhook endpoint
     path('webhooks/stripe/', stripe_payroll_webhook, name='stripe-payroll-webhook'),
+    
+    # PayStub endpoint
+    path('paystubs/', PayStubView.as_view(), name='employee-paystubs'),
 ]

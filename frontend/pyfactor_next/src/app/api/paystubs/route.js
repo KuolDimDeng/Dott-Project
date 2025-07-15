@@ -5,7 +5,7 @@ import { cookies } from 'next/headers';
  */
 export async function GET(request) {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const sidCookie = cookieStore.get('sid');
     
     if (!sidCookie) {
@@ -16,10 +16,12 @@ export async function GET(request) {
     const year = searchParams.get('year') || new Date().getFullYear();
     
     // Forward request to Django backend
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
-    const response = await fetch(`${backendUrl}/api/paystubs/?year=${year}`, {
+    const backendUrl = process.env.BACKEND_URL || 'https://dott-api-v1.onrender.com';
+    const response = await fetch(`${backendUrl}/api/payroll/paystubs/?year=${year}`, {
       headers: {
-        'Authorization': `Session ${sidCookie.value}`,
+        'Content-Type': 'application/json',
+        'Cookie': `sid=${sidCookie.value}`,
+        'User-Agent': 'Dott-Frontend/1.0'
       }
     });
 

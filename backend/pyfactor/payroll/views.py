@@ -5,7 +5,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
 from hr.models import Timesheet, TimesheetEntry  # Import from HR instead of payroll
-from .models import PayrollRun, PayrollTransaction
+from .models import PayrollRun, PayrollTransaction, PayStatement
 from banking.models import BankAccount
 from .serializers import PayrollRunSerializer, PayrollTransactionSerializer, PayrollTimesheetSerializer
 from datetime import date, datetime
@@ -444,3 +444,77 @@ class PayrollCalculationView(APIView):
             'account_balance': account.current_balance,
             'period': accounting_period or f"{start_date} to {end_date}"
         })
+
+
+class PayStubView(APIView):
+    """Employee pay stubs/statements view"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """Get pay stubs for the current user's employee"""
+        try:
+            # Find the employee record for this user
+            from hr.models import Employee
+            employee = Employee.objects.filter(user=request.user).first()
+            
+            if not employee:
+                return Response({
+                    'success': False,
+                    'message': 'No employee record found for this user'
+                }, status=status.HTTP_404_NOT_FOUND)
+            
+            # Get all pay statements for this employee
+            pay_statements = PayStatement.objects.filter(
+                employee=employee
+            ).order_by('-pay_date')
+            
+            # Serialize the pay statements
+            pay_stubs_data = []
+            for statement in pay_statements:
+                pay_stub = {
+                    'id': str(statement.id),
+                    'statement_type': statement.get_statement_type_display(),
+                    'pay_period_start': statement.pay_period_start,
+                    'pay_period_end': statement.pay_period_end,
+                    'pay_date': statement.pay_date,
+                    'gross_pay': float(statement.gross_pay),
+                    'net_pay': float(statement.net_pay),
+                    'regular_hours': float(statement.regular_hours),
+                    'overtime_hours': float(statement.overtime_hours),
+                    'pto_hours': float(statement.pto_hours),
+                    'sick_hours': float(statement.sick_hours),
+                    'holiday_hours': float(statement.holiday_hours),
+                    'federal_tax': float(statement.federal_tax),
+                    'state_tax': float(statement.state_tax),
+                    'medicare': float(statement.medicare),
+                    'social_security': float(statement.social_security),
+                    'health_insurance': float(statement.health_insurance),
+                    'dental_insurance': float(statement.dental_insurance),
+                    'vision_insurance': float(statement.vision_insurance),
+                    'retirement_401k': float(statement.retirement_401k),
+                    'other_deductions': float(statement.other_deductions),
+                    'ytd_gross': float(statement.ytd_gross),
+                    'ytd_net': float(statement.ytd_net),
+                    'ytd_federal_tax': float(statement.ytd_federal_tax),
+                    'ytd_state_tax': float(statement.ytd_state_tax),
+                    'ytd_medicare': float(statement.ytd_medicare),
+                    'ytd_social_security': float(statement.ytd_social_security),
+                    'notes': statement.notes,
+                    'pdf_url': statement.pdf_file.url if statement.pdf_file else None,
+                    'created_at': statement.created_at
+                }
+                pay_stubs_data.append(pay_stub)
+            
+            return Response({
+                'success': True,
+                'data': pay_stubs_data,
+                'employee_name': employee.full_name,
+                'count': len(pay_stubs_data)
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error fetching pay stubs: {str(e)}")
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -39,11 +39,6 @@ Dott brings together everything you need:
 
 Since implementing Dott, I've reduced administrative work by hours each week while gaining real-time insights into my business performance.
 
-🎯 **Pricing Plans:**
-• Basic: FREE forever (1 user, 3GB storage)
-• Professional: $15/month (50% off for developing countries)
-• Enterprise: $45/month (50% off for developing countries)
-
 Get started for free forever today: https://dottapps.com
 
 Best regards,
@@ -69,11 +64,6 @@ Dott brings together everything you need in one place:
 Since implementing Dott, I've reduced administrative work by hours each week while gaining real-time insights into my business performance. The platform delivers enterprise-grade capabilities at a fraction of traditional software costs.
 
 I believe Dott would be particularly valuable for your business operations and growth goals.
-
-**Pricing Plans:**
-• Basic: FREE forever (1 user, 3GB storage)
-• Professional: $15/month (50% off for developing countries)
-• Enterprise: $45/month (50% off for developing countries)
 
 Get started for free forever today: https://dottapps.com
 

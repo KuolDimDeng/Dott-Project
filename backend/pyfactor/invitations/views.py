@@ -138,8 +138,20 @@ def send_email_invitation(request):
             title = lines[0] if lines else ''
             rest_of_message = lines[1] if len(lines) > 1 else ''
             
-            # Convert plain text URLs to clickable links
-            rest_of_message = rest_of_message.replace('https://dottapps.com', '<a href="https://dottapps.com" style="color: #2563eb; text-decoration: none; font-weight: bold;">https://dottapps.com</a>')
+            # Make sender name blue in the title
+            if sender_name and sender_name in title:
+                title = title.replace(sender_name, f'<span style="color: #2563eb; font-weight: 600;">{sender_name}</span>')
+            
+            # Split content to place button after features list
+            content_parts = rest_of_message.split('• Real-time business intelligence')
+            features_section = content_parts[0] + '• Real-time business intelligence' if len(content_parts) > 1 else rest_of_message
+            remaining_content = content_parts[1] if len(content_parts) > 1 else ''
+            
+            # Remove the "Get started for free forever today:" line since we have the button
+            remaining_content = remaining_content.replace('Get started for free forever today: https://dottapps.com', '').strip()
+            
+            # Convert plain text URLs to clickable links in remaining content
+            remaining_content = remaining_content.replace('https://dottapps.com', '<a href="https://dottapps.com" style="color: #2563eb; text-decoration: none; font-weight: bold;">https://dottapps.com</a>')
             
             html_message = f"""
             <!DOCTYPE html>
