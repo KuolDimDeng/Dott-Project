@@ -256,11 +256,12 @@ class UserPageAccessSerializer(serializers.ModelSerializer):
 class UserListSerializer(serializers.ModelSerializer):
     page_access = UserPageAccessSerializer(many=True, read_only=True)
     full_name = serializers.SerializerMethodField()
+    name = serializers.SerializerMethodField()
     
     class Meta:
         model = User
         fields = [
-            'id', 'email', 'first_name', 'last_name', 'full_name',
+            'id', 'email', 'first_name', 'last_name', 'full_name', 'name',
             'role', 'is_active', 'date_joined', 'page_access',
             'onboarding_completed', 'subscription_plan'
         ]
@@ -268,6 +269,10 @@ class UserListSerializer(serializers.ModelSerializer):
     
     def get_full_name(self, obj):
         return f"{obj.first_name or ''} {obj.last_name or ''}".strip() or obj.email
+    
+    def get_name(self, obj):
+        # Add 'name' field for frontend compatibility
+        return self.get_full_name(obj)
 
 
 class CreateUserInvitationSerializer(serializers.ModelSerializer):

@@ -313,7 +313,9 @@ function EmployeeManagement({ onNavigate }) {
   
   const fetchAvailableUsers = async () => {
     try {
+      logger.info('🚀 [EmployeeManagement] === FETCHING UNLINKED USERS START ===');
       logger.info('🚀 [EmployeeManagement] Fetching available users for linking');
+      logger.info('🚀 [EmployeeManagement] Request URL: /api/user-management/users?unlinked=true');
       
       // Fetch users who don't have an employee record yet
       const response = await fetch('/api/user-management/users?unlinked=true', {
@@ -324,6 +326,10 @@ function EmployeeManagement({ onNavigate }) {
         credentials: 'include'
       });
       
+      logger.info('📡 [EmployeeManagement] Response status:', response.status);
+      logger.info('📡 [EmployeeManagement] Response OK:', response.ok);
+      logger.info('📡 [EmployeeManagement] Response headers:', response.headers);
+      
       if (!response.ok) {
         // Don't log error for 401 as this is optional functionality
         if (response.status === 401) {
@@ -331,18 +337,51 @@ function EmployeeManagement({ onNavigate }) {
           setAvailableUsers([]);
           return;
         }
+        const errorText = await response.text();
+        logger.error('❌ [EmployeeManagement] Error response:', errorText);
         throw new Error('Failed to fetch users');
       }
       
       const data = await response.json();
+      logger.info('✅ [EmployeeManagement] Response data received');
+      logger.info('✅ [EmployeeManagement] Full response data:', JSON.stringify(data, null, 2));
       logger.info('✅ [EmployeeManagement] Fetched unlinked users:', {
-        count: data?.users?.length || 0
+        count: data?.users?.length || 0,
+        hasUsersKey: 'users' in data,
+        dataKeys: Object.keys(data),
+        firstUser: data?.users?.[0],
+        dataType: typeof data,
+        isArray: Array.isArray(data),
+        hasTotal: 'total' in data
       });
       
+      // Log each user for debugging
       if (data.users && Array.isArray(data.users)) {
+        logger.info('✅ [EmployeeManagement] Users found:', data.users.length);
+        data.users.forEach((user, index) => {
+          logger.info(`✅ [EmployeeManagement] User ${index + 1}:`, {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            hasName: 'name' in user,
+            hasEmail: 'email' in user
+          });
+        });
         setAvailableUsers(data.users);
+      } else {
+        logger.warn('⚠️ [EmployeeManagement] No users array in response');
+        logger.warn('⚠️ [EmployeeManagement] Response structure:', {
+          dataType: typeof data,
+          isArray: Array.isArray(data),
+          keys: Object.keys(data || {})
+        });
+        setAvailableUsers([]);
       }
+      
+      logger.info('🚀 [EmployeeManagement] === FETCHING UNLINKED USERS END ===');
     } catch (error) {
+      logger.error('❌ [EmployeeManagement] Error fetching users:', error);
       logger.debug('[EmployeeManagement] User linking not available:', error.message);
       // Don't show error to user as this is optional functionality
       setAvailableUsers([]);
@@ -1090,13 +1129,32 @@ function EmployeeManagement({ onNavigate }) {
                 
                 {showUserDropdown && !selectedUserId && (
                   <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-                    {availableUsers
-                      .filter(user => 
-                        userSearch === '' || 
-                        user.name?.toLowerCase().includes(userSearch.toLowerCase()) ||
-                        user.email?.toLowerCase().includes(userSearch.toLowerCase())
-                      )
-                      .map(user => (
+                    {(() => {
+                      logger.info('🔍 [EmployeeManagement] === RENDERING USER DROPDOWN ===');
+                      logger.info('🔍 [EmployeeManagement] Available users count:', availableUsers.length);
+                      logger.info('🔍 [EmployeeManagement] User search term:', userSearch);
+                      logger.info('🔍 [EmployeeManagement] Show dropdown:', showUserDropdown);
+                      logger.info('🔍 [EmployeeManagement] Selected user ID:', selectedUserId);
+                      
+                      if (availableUsers.length === 0) {
+                        logger.warn('⚠️ [EmployeeManagement] No available users to display');
+                        return (
+                          <div className="px-4 py-2 text-sm text-gray-500">
+                            No unlinked users found. All users may already have employee records.
+                          </div>
+                        );
+                      }
+                      
+                      const filtered = availableUsers
+                        .filter(user => 
+                          userSearch === '' || 
+                          user.name?.toLowerCase().includes(userSearch.toLowerCase()) ||
+                          user.email?.toLowerCase().includes(userSearch.toLowerCase())
+                        );
+                      
+                      logger.info('🔍 [EmployeeManagement] Filtered users count:', filtered.length);
+                      
+                      return filtered.map(user => (
                         <div
                           key={user.id}
                           onClick={() => {
@@ -1112,16 +1170,8 @@ function EmployeeManagement({ onNavigate }) {
                           <div className="text-xs text-gray-500">{user.email}</div>
                           <div className="text-xs text-gray-400">Role: {user.role}</div>
                         </div>
-                      ))}
-                    {availableUsers.filter(user => 
-                        userSearch === '' || 
-                        user.name?.toLowerCase().includes(userSearch.toLowerCase()) ||
-                        user.email?.toLowerCase().includes(userSearch.toLowerCase())
-                      ).length === 0 && (
-                      <div className="px-4 py-2 text-sm text-gray-500">
-                        No unlinked users found
-                      </div>
-                    )}
+                      ));
+                    })()}
                   </div>
                 )}
               </div>

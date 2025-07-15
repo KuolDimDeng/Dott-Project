@@ -48,6 +48,16 @@ class UserManagementViewSet(viewsets.ModelViewSet):
             
         return queryset
     
+    def list(self, request, *args, **kwargs):
+        """Override list to return users in expected format"""
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
+        
+        return Response({
+            'users': serializer.data,
+            'total': len(serializer.data)
+        })
+    
     @action(detail=True, methods=['post'])
     def update_permissions(self, request, pk=None):
         """Update user role and permissions"""
