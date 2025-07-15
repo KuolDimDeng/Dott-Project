@@ -36,7 +36,7 @@ const Drawer = ({
   handleCRMClick,
   handleBillingClick = () => console.log('Billing option selected'),
   handleEmployeeManagementClick,
-  userData,
+  userData = {},
   resetAllStates,
   handleAddTransaction,
   handleOpenFaqDialog,
@@ -225,6 +225,7 @@ const Drawer = ({
             isIconOnly={!isOpen}
             handleItemClick={handleItemClickWrapper}
             handleDrawerOpen={handleDrawerOpen || handleDrawerToggle}
+            userData={userData}
           />
         </div>
       </aside>

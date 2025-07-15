@@ -325,6 +325,7 @@ const MainListItems = ({
   borderRightColor = 'transparent',
   borderRightWidth = '0px',
   handleDrawerOpen,
+  userData = {},
 }) => {
   const { canAccessRoute, isOwnerOrAdmin, user, isLoading } = usePermissions();
   const [openMenu, setOpenMenu] = useState('');

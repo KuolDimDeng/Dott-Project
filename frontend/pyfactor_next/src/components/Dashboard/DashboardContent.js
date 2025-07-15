@@ -1200,7 +1200,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     console.log('🔴 [DashboardContent] Creating memoizedUserData with:');
     console.log('🔴 [DashboardContent] - userData:', userData);
     console.log('🔴 [DashboardContent] - initialUserData:', initialUserData);
-    const result = userData || initialUserData;
+    const result = userData || initialUserData || {};
     console.log('🔴 [DashboardContent] - result:', result);
     console.log('🔴 [DashboardContent] - result type:', typeof result);
     console.log('🔴 [DashboardContent] - result keys:', result ? Object.keys(result) : 'result is falsy');
