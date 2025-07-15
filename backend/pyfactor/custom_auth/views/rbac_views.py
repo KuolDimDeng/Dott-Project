@@ -570,8 +570,13 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
     def create_user(self, request):
         """Create user directly in Auth0 and backend"""
         try:
+            logger.info(f"[DirectUserCreation] === Starting user creation ===")
             logger.info(f"[DirectUserCreation] Raw request data: {request.data}")
             logger.info(f"[DirectUserCreation] Request data type: {type(request.data)}")
+            
+            # Clear any stale database connections
+            from django.db import connection
+            connection.close()
             
             # Validate request data
             email = request.data.get('email')
@@ -837,20 +842,44 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
                 auth0_user_id = auth0_user.get('user_id')
                 logger.info(f"[DirectUserCreation] Auth0 user created: {auth0_user_id}")
                 
-                # Create password reset token in our database
-                from ..models import PasswordResetToken
-                import secrets
-                reset_token = secrets.token_urlsafe(32)
-                
-                # Store token with 24 hour expiry
-                PasswordResetToken.objects.create(
-                    user=user,
-                    token=reset_token,
-                    expires_at=timezone.now() + timedelta(hours=24)
-                )
-                
-                # Send custom email with our password reset link
-                self._send_custom_password_reset_email(email, reset_token, tenant.name, user.role)
+                # Try to use custom password reset flow, fall back to dbconnections if model doesn't exist
+                try:
+                    from ..models import PasswordResetToken
+                    import secrets
+                    reset_token = secrets.token_urlsafe(32)
+                    
+                    # Store token with 24 hour expiry
+                    PasswordResetToken.objects.create(
+                        user=user,
+                        token=reset_token,
+                        expires_at=timezone.now() + timedelta(hours=24)
+                    )
+                    
+                    # Send custom email with our password reset link
+                    self._send_custom_password_reset_email(email, reset_token, tenant.name, user.role)
+                    logger.info(f"[DirectUserCreation] Custom password reset email sent")
+                    
+                except Exception as e:
+                    logger.warning(f"[DirectUserCreation] PasswordResetToken not available, using Auth0 dbconnections: {str(e)}")
+                    
+                    # Fallback: Send password reset via Auth0 dbconnections API
+                    import time
+                    time.sleep(2)
+                    
+                    reset_url = f"https://{auth0_tenant_domain}/dbconnections/change_password"
+                    reset_payload = {
+                        'client_id': settings.AUTH0_CLIENT_ID,
+                        'email': email,
+                        'connection': 'Username-Password-Authentication'
+                    }
+                    
+                    logger.info(f"[DirectUserCreation] Sending password reset via dbconnections API")
+                    reset_response = requests.post(reset_url, json=reset_payload)
+                    
+                    if reset_response.status_code == 200:
+                        logger.info(f"[DirectUserCreation] Password reset email sent via Auth0")
+                    else:
+                        logger.error(f"[DirectUserCreation] Failed to send password reset: {reset_response.text}")
                 
                 return auth0_user_id
             else:
