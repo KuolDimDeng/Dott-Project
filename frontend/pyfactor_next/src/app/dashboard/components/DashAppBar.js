@@ -1450,7 +1450,7 @@ const DashAppBar = ({
       {openMenu && (
         <div
           ref={userMenuRef}
-          className="fixed top-16 right-4 w-64 bg-white rounded-lg shadow-lg border border-gray-200 mt-1 z-50"
+          className="fixed top-16 right-4 w-80 bg-white rounded-lg shadow-lg border border-gray-200 mt-1 z-50"
           style={{
             maxWidth: 'calc(100vw - 2rem)',
             boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
