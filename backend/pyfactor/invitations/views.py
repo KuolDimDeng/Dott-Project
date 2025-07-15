@@ -169,7 +169,7 @@ def send_email_invitation(request):
                                 <!-- Header with Logo -->
                                 <tr>
                                     <td align="center" style="padding: 40px 40px 30px 40px;">
-                                        <img src="https://dottapps.com/static/images/PyfactorLandingpage.png" alt="Dott" style="height: 60px; width: auto; display: block;" />
+                                        <img src="https://dottapps.com/static/images/PyfactorLandingpage.png" alt="Dott" style="height: 120px; width: auto; display: block;" />
                                     </td>
                                 </tr>
                                 
@@ -181,7 +181,7 @@ def send_email_invitation(request):
                                         </h1>
                                         
                                         <div style="font-size: 16px; line-height: 1.6; color: #374151; margin-bottom: 32px; white-space: pre-wrap; word-wrap: break-word;">
-                                            {rest_of_message}
+                                            {features_section}
                                         </div>
                                         
                                         <!-- CTA Button -->
@@ -189,6 +189,10 @@ def send_email_invitation(request):
                                             <a href="https://dottapps.com" style="display: inline-block; padding: 16px 32px; background-color: #2563eb; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; letter-spacing: 0.5px; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);">
                                                 Create your Dott account
                                             </a>
+                                        </div>
+                                        
+                                        <div style="font-size: 16px; line-height: 1.6; color: #374151; white-space: pre-wrap; word-wrap: break-word;">
+                                            {remaining_content}
                                         </div>
                                     </td>
                                 </tr>
