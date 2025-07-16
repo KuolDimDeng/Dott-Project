@@ -1,6 +1,7 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from django.db import transaction
 from django.utils import timezone
 from django.conf import settings
@@ -986,3 +987,93 @@ If you didn't expect this email, you can safely ignore it.
         except Exception as e:
             logger.error(f"[DirectUserCreation] Failed to send custom email: {str(e)}")
             raise
+
+
+class UserPagePermissionsView(APIView):
+    """
+    API endpoint to fetch current user's page permissions
+    Endpoint: GET /api/auth/rbac/user-permissions/
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request):
+        """Get current user's page permissions"""
+        try:
+            user = request.user
+            
+            # For OWNER role, return all pages
+            if user.role == 'OWNER':
+                all_pages = PagePermission.objects.filter(is_active=True)
+                permissions_data = []
+                for page in all_pages:
+                    permissions_data.append({
+                        'page_id': str(page.id),
+                        'name': page.name,
+                        'path': page.path,
+                        'category': page.category,
+                        'can_read': True,
+                        'can_write': True,
+                        'can_edit': True,
+                        'can_delete': True
+                    })
+                
+                return Response({
+                    'role': user.role,
+                    'has_full_access': True,
+                    'permissions': permissions_data
+                })
+            
+            # For ADMIN role, return all pages with appropriate permissions
+            elif user.role == 'ADMIN':
+                all_pages = PagePermission.objects.filter(is_active=True)
+                permissions_data = []
+                for page in all_pages:
+                    permissions_data.append({
+                        'page_id': str(page.id),
+                        'name': page.name,
+                        'path': page.path,
+                        'category': page.category,
+                        'can_read': True,
+                        'can_write': True,
+                        'can_edit': True,
+                        'can_delete': False  # Admins can't delete by default
+                    })
+                
+                return Response({
+                    'role': user.role,
+                    'has_full_access': False,
+                    'permissions': permissions_data
+                })
+            
+            # For USER role, fetch specific permissions
+            else:
+                user_permissions = UserPageAccess.objects.filter(
+                    user=user,
+                    tenant=user.tenant
+                ).select_related('page')
+                
+                permissions_data = []
+                for access in user_permissions:
+                    permissions_data.append({
+                        'page_id': str(access.page.id),
+                        'name': access.page.name,
+                        'path': access.page.path,
+                        'category': access.page.category,
+                        'can_read': access.can_read,
+                        'can_write': access.can_write,
+                        'can_edit': access.can_edit,
+                        'can_delete': access.can_delete
+                    })
+                
+                return Response({
+                    'role': user.role,
+                    'has_full_access': False,
+                    'permissions': permissions_data
+                })
+                
+        except Exception as e:
+            logger.error(f"[UserPagePermissions] Error fetching permissions: {str(e)}")
+            return Response(
+                {"error": "Failed to fetch user permissions"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

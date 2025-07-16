@@ -11,8 +11,10 @@ import {
   CheckCircleIcon,
   PlusIcon,
   MinusIcon,
-  DocumentTextIcon
+  DocumentTextIcon,
+  UserGroupIcon
 } from '@heroicons/react/24/outline';
+import SupervisorApprovalInterface from './SupervisorApprovalInterface';
 
 export default function InlineTimesheetManager() {
   const { session } = useSession();
@@ -24,17 +26,59 @@ export default function InlineTimesheetManager() {
   const [timesheetData, setTimesheetData] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [timesheetHistory, setTimesheetHistory] = useState([]);
-  const [activeSection, setActiveSection] = useState('entry'); // 'entry', 'submit', 'history'
+  const [activeSection, setActiveSection] = useState('entry'); // 'entry', 'submit', 'history', 'supervisor'
+  const [employeeData, setEmployeeData] = useState(null);
+  const [hourlyRate, setHourlyRate] = useState(0);
   
   const weekStart = startOfWeek(currentWeek, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(currentWeek, { weekStartsOn: 1 });
   
   useEffect(() => {
     if (session?.user) {
+      fetchEmployeeData();
       fetchCurrentWeekData();
       fetchTimesheetHistory();
     }
   }, [currentWeek, session]);
+  
+  const fetchEmployeeData = async () => {
+    try {
+      const response = await fetch('/api/hr/v2/employees/me', {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setEmployeeData(data.data);
+        
+        // Calculate hourly rate
+        if (data.data.compensation_type === 'SALARY') {
+          const annualSalary = parseFloat(data.data.salary) || 0;
+          const hourlyRate = annualSalary / 2080; // 52 weeks * 40 hours
+          setHourlyRate(hourlyRate);
+          
+          // Auto-populate regular hours for salary employees (8 hours per day)
+          const autoEntries = {};
+          for (let i = 0; i < 5; i++) { // Monday to Friday
+            const date = format(addDays(weekStart, i), 'yyyy-MM-dd');
+            autoEntries[date] = {
+              regular: 8,
+              overtime: 0,
+              sick: 0,
+              vacation: 0,
+              holiday: 0,
+              unpaid: 0
+            };
+          }
+          setTimeEntries(prev => ({ ...autoEntries, ...prev }));
+        } else {
+          setHourlyRate(parseFloat(data.data.wage_per_hour) || 0);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching employee data:', error);
+    }
+  };
   
   const fetchCurrentWeekData = async () => {
     try {
@@ -61,6 +105,10 @@ export default function InlineTimesheetManager() {
             entriesMap[date] = {
               regular: entry.regular_hours || 0,
               overtime: entry.overtime_hours || 0,
+              sick: entry.sick_hours || 0,
+              vacation: entry.vacation_hours || 0,
+              holiday: entry.holiday_hours || 0,
+              unpaid: entry.unpaid_hours || 0,
               id: entry.id
             };
           });
@@ -92,6 +140,12 @@ export default function InlineTimesheetManager() {
     setTimeEntries(prev => ({
       ...prev,
       [date]: {
+        regular: 0,
+        overtime: 0,
+        sick: 0,
+        vacation: 0,
+        holiday: 0,
+        unpaid: 0,
         ...prev[date],
         [type]: numValue
       }
@@ -104,6 +158,10 @@ export default function InlineTimesheetManager() {
         date,
         regular_hours: hours.regular || 0,
         overtime_hours: hours.overtime || 0,
+        sick_hours: hours.sick || 0,
+        vacation_hours: hours.vacation || 0,
+        holiday_hours: hours.holiday || 0,
+        unpaid_hours: hours.unpaid || 0,
         timesheet_id: timesheetData?.id
       }));
       
@@ -171,11 +229,36 @@ export default function InlineTimesheetManager() {
   const calculateTotalHours = () => {
     let regular = 0;
     let overtime = 0;
+    let sick = 0;
+    let vacation = 0;
+    let holiday = 0;
+    let unpaid = 0;
+    
     Object.values(timeEntries).forEach(entry => {
       regular += entry.regular || 0;
       overtime += entry.overtime || 0;
+      sick += entry.sick || 0;
+      vacation += entry.vacation || 0;
+      holiday += entry.holiday || 0;
+      unpaid += entry.unpaid || 0;
     });
-    return { regular, overtime, total: regular + overtime };
+    
+    const totalPaidHours = regular + overtime + sick + vacation + holiday;
+    const totalHours = totalPaidHours + unpaid;
+    const totalPay = (regular * hourlyRate) + (overtime * hourlyRate * 1.5) + 
+                     (sick * hourlyRate) + (vacation * hourlyRate) + (holiday * hourlyRate);
+    
+    return { 
+      regular, 
+      overtime, 
+      sick, 
+      vacation, 
+      holiday, 
+      unpaid, 
+      totalPaidHours,
+      totalHours,
+      totalPay
+    };
   };
   
   const getStatusBadge = (status) => {
@@ -191,6 +274,11 @@ export default function InlineTimesheetManager() {
         {config.label}
       </span>
     );
+  };
+  
+  const isSupervisor = () => {
+    return session?.user?.role === 'ADMIN' || session?.user?.role === 'OWNER' || 
+           employeeData?.is_supervisor === true;
   };
   
   if (loading) {
@@ -236,6 +324,19 @@ export default function InlineTimesheetManager() {
           >
             History
           </button>
+          {isSupervisor() && (
+            <button
+              onClick={() => setActiveSection('supervisor')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeSection === 'supervisor'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <UserGroupIcon className="h-4 w-4 inline mr-1" />
+              Approvals
+            </button>
+          )}
         </nav>
       </div>
       
@@ -271,36 +372,52 @@ export default function InlineTimesheetManager() {
           {/* Time Entry Grid */}
           <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-green-800">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
                     Day
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Regular Hours
+                  <th className="px-3 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
+                    Regular
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Overtime Hours
+                  <th className="px-3 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
+                    Overtime
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-3 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
+                    Sick
+                  </th>
+                  <th className="px-3 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
+                    Vacation
+                  </th>
+                  <th className="px-3 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
+                    Holiday
+                  </th>
+                  <th className="px-3 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
+                    Unpaid
+                  </th>
+                  <th className="px-3 py-3 text-center text-xs font-medium text-white uppercase tracking-wider">
                     Total
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-green-50 divide-y divide-green-200">
                 {getDaysOfWeek().map((day) => {
-                  const entry = timeEntries[day.date] || { regular: 0, overtime: 0 };
-                  const dayTotal = (entry.regular || 0) + (entry.overtime || 0);
+                  const entry = timeEntries[day.date] || { 
+                    regular: 0, overtime: 0, sick: 0, vacation: 0, holiday: 0, unpaid: 0 
+                  };
+                  const dayTotal = (entry.regular || 0) + (entry.overtime || 0) + 
+                                   (entry.sick || 0) + (entry.vacation || 0) + 
+                                   (entry.holiday || 0) + (entry.unpaid || 0);
                   
                   return (
-                    <tr key={day.date} className={day.isToday ? 'bg-blue-50' : ''}>
-                      <td className="px-4 py-3 whitespace-nowrap">
+                    <tr key={day.date} className={day.isToday ? 'bg-green-100' : 'bg-green-50'}>
+                      <td className="px-3 py-3 whitespace-nowrap bg-green-100">
                         <div>
                           <div className="text-sm font-medium text-gray-900">{day.dayName}</div>
-                          <div className="text-sm text-gray-500">{day.dayNumber}</div>
+                          <div className="text-sm text-gray-600">{day.dayNumber}</div>
                         </div>
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
+                      <td className="px-3 py-3 whitespace-nowrap text-center">
                         <input
                           type="number"
                           min="0"
@@ -308,11 +425,11 @@ export default function InlineTimesheetManager() {
                           step="0.5"
                           value={entry.regular || ''}
                           onChange={(e) => handleHoursChange(day.date, 'regular', e.target.value)}
-                          className="w-20 px-2 py-1 text-center border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                          disabled={timesheetData?.status !== 'DRAFT'}
+                          className="w-16 px-2 py-1 text-center border border-green-300 rounded focus:ring-green-500 focus:border-green-500 bg-white"
+                          disabled={timesheetData?.status !== 'DRAFT' || employeeData?.compensation_type === 'SALARY'}
                         />
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
+                      <td className="px-3 py-3 whitespace-nowrap text-center">
                         <input
                           type="number"
                           min="0"
@@ -320,11 +437,59 @@ export default function InlineTimesheetManager() {
                           step="0.5"
                           value={entry.overtime || ''}
                           onChange={(e) => handleHoursChange(day.date, 'overtime', e.target.value)}
-                          className="w-20 px-2 py-1 text-center border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                          className="w-16 px-2 py-1 text-center border border-green-300 rounded focus:ring-green-500 focus:border-green-500 bg-white"
                           disabled={timesheetData?.status !== 'DRAFT'}
                         />
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-center">
+                      <td className="px-3 py-3 whitespace-nowrap text-center">
+                        <input
+                          type="number"
+                          min="0"
+                          max="24"
+                          step="0.5"
+                          value={entry.sick || ''}
+                          onChange={(e) => handleHoursChange(day.date, 'sick', e.target.value)}
+                          className="w-16 px-2 py-1 text-center border border-green-300 rounded focus:ring-green-500 focus:border-green-500 bg-white"
+                          disabled={timesheetData?.status !== 'DRAFT'}
+                        />
+                      </td>
+                      <td className="px-3 py-3 whitespace-nowrap text-center">
+                        <input
+                          type="number"
+                          min="0"
+                          max="24"
+                          step="0.5"
+                          value={entry.vacation || ''}
+                          onChange={(e) => handleHoursChange(day.date, 'vacation', e.target.value)}
+                          className="w-16 px-2 py-1 text-center border border-green-300 rounded focus:ring-green-500 focus:border-green-500 bg-white"
+                          disabled={timesheetData?.status !== 'DRAFT'}
+                        />
+                      </td>
+                      <td className="px-3 py-3 whitespace-nowrap text-center">
+                        <input
+                          type="number"
+                          min="0"
+                          max="24"
+                          step="0.5"
+                          value={entry.holiday || ''}
+                          onChange={(e) => handleHoursChange(day.date, 'holiday', e.target.value)}
+                          className="w-16 px-2 py-1 text-center border border-green-300 rounded focus:ring-green-500 focus:border-green-500 bg-white"
+                          disabled={timesheetData?.status !== 'DRAFT'}
+                        />
+                      </td>
+                      <td className="px-3 py-3 whitespace-nowrap text-center">
+                        <input
+                          type="number"
+                          min="0"
+                          max="24"
+                          step="0.5"
+                          value={entry.unpaid || ''}
+                          onChange={(e) => handleHoursChange(day.date, 'unpaid', e.target.value)}
+                          className="w-16 px-2 py-1 text-center border border-green-300 rounded focus:ring-green-500 focus:border-green-500 bg-white"
+                          disabled={timesheetData?.status !== 'DRAFT'}
+                        />
+                      </td>
+                      <td className="px-3 py-3 whitespace-nowrap text-center bg-green-100">
                         <span className="text-sm font-medium text-gray-900">
                           {dayTotal.toFixed(1)}
                         </span>
@@ -333,17 +498,38 @@ export default function InlineTimesheetManager() {
                   );
                 })}
               </tbody>
-              <tfoot className="bg-gray-50">
+              <tfoot className="bg-green-800 text-white">
                 <tr>
-                  <td className="px-4 py-3 text-sm font-medium text-gray-900">Total</td>
-                  <td className="px-4 py-3 text-center text-sm font-medium text-gray-900">
+                  <td className="px-3 py-3 text-sm font-medium">Totals</td>
+                  <td className="px-3 py-3 text-center text-sm font-medium">
                     {calculateTotalHours().regular.toFixed(1)}
                   </td>
-                  <td className="px-4 py-3 text-center text-sm font-medium text-gray-900">
+                  <td className="px-3 py-3 text-center text-sm font-medium">
                     {calculateTotalHours().overtime.toFixed(1)}
                   </td>
-                  <td className="px-4 py-3 text-center text-sm font-bold text-gray-900">
-                    {calculateTotalHours().total.toFixed(1)}
+                  <td className="px-3 py-3 text-center text-sm font-medium">
+                    {calculateTotalHours().sick.toFixed(1)}
+                  </td>
+                  <td className="px-3 py-3 text-center text-sm font-medium">
+                    {calculateTotalHours().vacation.toFixed(1)}
+                  </td>
+                  <td className="px-3 py-3 text-center text-sm font-medium">
+                    {calculateTotalHours().holiday.toFixed(1)}
+                  </td>
+                  <td className="px-3 py-3 text-center text-sm font-medium">
+                    {calculateTotalHours().unpaid.toFixed(1)}
+                  </td>
+                  <td className="px-3 py-3 text-center text-sm font-bold">
+                    {calculateTotalHours().totalHours.toFixed(1)}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="px-3 py-3 text-sm font-medium">Rate/Hour</td>
+                  <td className="px-3 py-3 text-center text-sm font-medium" colSpan="6">
+                    ${hourlyRate.toFixed(2)}
+                  </td>
+                  <td className="px-3 py-3 text-center text-sm font-bold">
+                    Total Pay: ${calculateTotalHours().totalPay.toFixed(2)}
                   </td>
                 </tr>
               </tfoot>
@@ -485,6 +671,11 @@ export default function InlineTimesheetManager() {
             </div>
           )}
         </div>
+      )}
+      
+      {/* Supervisor Approval Section */}
+      {activeSection === 'supervisor' && isSupervisor() && (
+        <SupervisorApprovalInterface />
       )}
     </div>
   );

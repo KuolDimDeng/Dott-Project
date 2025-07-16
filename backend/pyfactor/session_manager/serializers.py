@@ -56,11 +56,60 @@ class SessionSerializer(serializers.ModelSerializer):
         user_role = getattr(obj.user, 'role', 'OWNER')  # Default to OWNER for new users
         logger.info(f"🚨 [ROLE_TRACKING] SessionSerializer - user {obj.user.email} role: {user_role}")
         
+        # Get page permissions for the user
+        page_permissions = []
+        if user_role == 'OWNER':
+            # Owners have access to all pages
+            from custom_auth.models import PagePermission
+            all_pages = PagePermission.objects.filter(is_active=True)
+            for page in all_pages:
+                page_permissions.append({
+                    'path': page.path,
+                    'name': page.name,
+                    'category': page.category,
+                    'can_read': True,
+                    'can_write': True,
+                    'can_edit': True,
+                    'can_delete': True
+                })
+        elif user_role == 'ADMIN':
+            # Admins have access to all pages with limited delete
+            from custom_auth.models import PagePermission
+            all_pages = PagePermission.objects.filter(is_active=True)
+            for page in all_pages:
+                page_permissions.append({
+                    'path': page.path,
+                    'name': page.name,
+                    'category': page.category,
+                    'can_read': True,
+                    'can_write': True,
+                    'can_edit': True,
+                    'can_delete': False
+                })
+        else:
+            # Regular users have specific permissions
+            from custom_auth.models import UserPageAccess
+            user_access = UserPageAccess.objects.filter(
+                user=obj.user,
+                tenant=obj.user.tenant
+            ).select_related('page')
+            for access in user_access:
+                page_permissions.append({
+                    'path': access.page.path,
+                    'name': access.page.name,
+                    'category': access.page.category,
+                    'can_read': access.can_read,
+                    'can_write': access.can_write,
+                    'can_edit': access.can_edit,
+                    'can_delete': access.can_delete
+                })
+        
         user_data = {
             'id': obj.user.id,
             'email': obj.user.email,
             'name': getattr(obj.user, 'name', ''),
             'role': user_role,  # Include user role
+            'page_permissions': page_permissions,  # Include page permissions
             'given_name': getattr(obj.user, 'given_name', getattr(obj.user, 'first_name', '')),
             'family_name': getattr(obj.user, 'family_name', getattr(obj.user, 'last_name', '')),
             'picture': getattr(obj.user, 'picture', ''),

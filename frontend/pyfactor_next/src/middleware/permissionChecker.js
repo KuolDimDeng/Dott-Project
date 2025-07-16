@@ -137,9 +137,10 @@ export async function checkPagePermissions(request, sessionData) {
   }
   
   // For regular users, check page-specific permissions
-  if (user.role === 'USER' && user.permissions) {
+  const permissions = user.page_permissions || user.permissions;
+  if (user.role === 'USER' && permissions) {
     // Find permission for this specific path
-    const pagePermission = user.permissions.find(p => p.path === basePath);
+    const pagePermission = permissions.find(p => p.path === basePath);
     
     if (!pagePermission) {
       console.log('[PermissionChecker] No permission found for path');
@@ -195,8 +196,9 @@ export function getAccessibleRoutes(user) {
   }
   
   // For regular users, check permissions
-  if (user.permissions) {
-    user.permissions.forEach(permission => {
+  const permissions = user.page_permissions || user.permissions;
+  if (permissions) {
+    permissions.forEach(permission => {
       if (permission.can_read && PROTECTED_ROUTES[permission.path]) {
         accessibleRoutes.push(permission.path);
       }
@@ -215,8 +217,9 @@ export function canPerformAction(user, path, action) {
     return true;
   }
   
-  // Check user permissions
-  const permission = user.permissions?.find(p => p.path === path);
+  // Check user permissions (prefer page_permissions from session)
+  const permissions = user.page_permissions || user.permissions;
+  const permission = permissions?.find(p => p.path === path);
   if (!permission) return false;
   
   switch (action) {

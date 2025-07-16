@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views.rbac_views import (
     UserManagementViewSet, PagePermissionViewSet,
     UserInvitationViewSet, RoleTemplateViewSet,
-    DirectUserCreationViewSet
+    DirectUserCreationViewSet, UserPagePermissionsView
 )
 
 router = DefaultRouter()
@@ -15,4 +15,5 @@ router.register(r'direct-users', DirectUserCreationViewSet, basename='direct-use
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('user-permissions/', UserPagePermissionsView.as_view(), name='user-page-permissions'),
 ]

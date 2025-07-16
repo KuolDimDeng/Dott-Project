@@ -38,7 +38,13 @@ export function usePermissions() {
       return true;
     }
     
-    // Check user permissions
+    // Check user page permissions (from session)
+    if (user.page_permissions && Array.isArray(user.page_permissions)) {
+      const permission = user.page_permissions.find(p => p.path === path);
+      return permission?.can_read || false;
+    }
+    
+    // Fallback to old permissions format
     const permission = user.permissions?.find(p => p.path === path);
     return permission?.can_read || false;
   };

@@ -128,6 +128,56 @@ class SessionCreateView(APIView):
                 **session_data
             )
             
+            # Get user's page permissions
+            page_permissions = []
+            user_role = getattr(user, 'role', 'USER')
+            
+            if user_role == 'OWNER':
+                # Owners have access to all pages
+                from custom_auth.models import PagePermission
+                all_pages = PagePermission.objects.filter(is_active=True)
+                for page in all_pages:
+                    page_permissions.append({
+                        'path': page.path,
+                        'name': page.name,
+                        'category': page.category,
+                        'can_read': True,
+                        'can_write': True,
+                        'can_edit': True,
+                        'can_delete': True
+                    })
+            elif user_role == 'ADMIN':
+                # Admins have access to all pages with limited delete
+                from custom_auth.models import PagePermission
+                all_pages = PagePermission.objects.filter(is_active=True)
+                for page in all_pages:
+                    page_permissions.append({
+                        'path': page.path,
+                        'name': page.name,
+                        'category': page.category,
+                        'can_read': True,
+                        'can_write': True,
+                        'can_edit': True,
+                        'can_delete': False
+                    })
+            else:
+                # Regular users have specific permissions
+                from custom_auth.models import UserPageAccess
+                user_access = UserPageAccess.objects.filter(
+                    user=user,
+                    tenant=user.tenant
+                ).select_related('page')
+                for access in user_access:
+                    page_permissions.append({
+                        'path': access.page.path,
+                        'name': access.page.name,
+                        'category': access.page.category,
+                        'can_read': access.can_read,
+                        'can_write': access.can_write,
+                        'can_edit': access.can_edit,
+                        'can_delete': access.can_delete
+                    })
+            
             # Prepare response
             response_data = {
                 'session_token': str(session.session_id),
@@ -136,7 +186,8 @@ class SessionCreateView(APIView):
                     'id': user.id,
                     'email': user.email,
                     'name': getattr(user, 'name', ''),
-                    'role': getattr(user, 'role', 'USER'),  # Include user role
+                    'role': user_role,  # Include user role
+                    'page_permissions': page_permissions,  # Include page permissions
                 },
                 'tenant': {
                     'id': str(session.tenant.id) if session.tenant else None,

@@ -77,12 +77,64 @@ class UserProfileMeView(APIView):
             except Exception as e:
                 logger.warning(f"[UserProfileMeView] Could not get onboarding subscription info: {str(e)}")
             
+            # Get user's role and page permissions
+            user_role = getattr(request.user, 'role', 'USER')
+            page_permissions = []
+            
+            if user_role == 'OWNER':
+                # Owners have access to all pages
+                from custom_auth.models import PagePermission
+                all_pages = PagePermission.objects.filter(is_active=True)
+                for page in all_pages:
+                    page_permissions.append({
+                        'path': page.path,
+                        'name': page.name,
+                        'category': page.category,
+                        'can_read': True,
+                        'can_write': True,
+                        'can_edit': True,
+                        'can_delete': True
+                    })
+            elif user_role == 'ADMIN':
+                # Admins have access to all pages with limited delete
+                from custom_auth.models import PagePermission
+                all_pages = PagePermission.objects.filter(is_active=True)
+                for page in all_pages:
+                    page_permissions.append({
+                        'path': page.path,
+                        'name': page.name,
+                        'category': page.category,
+                        'can_read': True,
+                        'can_write': True,
+                        'can_edit': True,
+                        'can_delete': False
+                    })
+            else:
+                # Regular users have specific permissions
+                from custom_auth.models import UserPageAccess
+                user_access = UserPageAccess.objects.filter(
+                    user=request.user,
+                    tenant=request.user.tenant
+                ).select_related('page')
+                for access in user_access:
+                    page_permissions.append({
+                        'path': access.page.path,
+                        'name': access.page.name,
+                        'category': access.page.category,
+                        'can_read': access.can_read,
+                        'can_write': access.can_write,
+                        'can_edit': access.can_edit,
+                        'can_delete': access.can_delete
+                    })
+            
             # Build response data
             response_data = {
                 'id': request.user.id,
                 'email': request.user.email,
                 'first_name': request.user.first_name,
                 'last_name': request.user.last_name,
+                'role': user_role,
+                'page_permissions': page_permissions,
                 'subscription_plan': subscription_plan,
                 'selected_plan': selected_plan,
                 'subscription_type': subscription_plan,  # Alias for compatibility
