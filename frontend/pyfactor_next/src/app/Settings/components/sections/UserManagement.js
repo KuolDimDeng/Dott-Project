@@ -239,6 +239,10 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
   const [existingEmployees, setExistingEmployees] = useState([]);
   const [showEditPermissionsModal, setShowEditPermissionsModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+  const [editingUserId, setEditingUserId] = useState(null); // For inline editing
+  const [deleteConfirmUser, setDeleteConfirmUser] = useState(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [editingPermissions, setEditingPermissions] = useState({});
 
   const fetchUsers = async () => {
     console.log('🔴 [UserManagement] === FETCH USERS CALLED ===');
@@ -324,7 +328,7 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
         email: apiUser.email,
         name: apiUser.name || apiUser.full_name || apiUser.email,
         role: apiUser.role || 'USER',
-        status: apiUser.status || (apiUser.active ? 'active' : 'inactive'),
+        status: apiUser.status || (apiUser.is_active ? 'active' : 'inactive'),
         lastLogin: apiUser.last_login || apiUser.last_active || apiUser.updated_at,
         twoFactorEnabled: apiUser.mfa_enabled || apiUser.two_factor_enabled || false,
         permissions: apiUser.permissions || apiUser.page_permissions || [],
@@ -446,13 +450,153 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
     }
   }, [showInviteModal]);
 
-  // Function to handle editing user permissions
+  // Function to handle editing user permissions inline
   const handleEditUserPermissions = (userToEdit) => {
-    setEditingUser({
-      ...userToEdit,
-      permissions: userToEdit.permissions || []
+    setEditingUserId(userToEdit.id);
+    setEditingPermissions({
+      [userToEdit.id]: userToEdit.permissions || []
     });
-    setShowEditPermissionsModal(true);
+  };
+  
+  const handleCancelEdit = () => {
+    setEditingUserId(null);
+    setEditingPermissions({});
+  };
+  
+  const handleDeleteUser = (user) => {
+    setDeleteConfirmUser(user);
+    setDeleteConfirmText('');
+  };
+  
+  const confirmDeleteUser = async () => {
+    if (deleteConfirmText !== 'DELETE') {
+      notifyError('Please type DELETE to confirm');
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      
+      const response = await fetch(`/api/user-management/users/${deleteConfirmUser.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to remove user');
+      }
+      
+      notifySuccess(`User ${deleteConfirmUser.email} removed successfully`);
+      setDeleteConfirmUser(null);
+      setDeleteConfirmText('');
+      fetchUsers(); // Refresh the list
+    } catch (error) {
+      logger.error('[UserManagement] Error deleting user:', error);
+      notifyError(error.message || 'Failed to delete user');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Handle inline permission toggle
+  const handleInlinePermissionToggle = (userId, permissionId) => {
+    setEditingPermissions(prev => {
+      const userPermissions = prev[userId] || [];
+      const isChecked = userPermissions.includes(permissionId);
+      
+      let newPermissions;
+      if (isChecked) {
+        // Unchecking
+        newPermissions = userPermissions.filter(p => p !== permissionId);
+        
+        // Handle parent/child logic
+        const parentMenu = MENU_STRUCTURE.find(menu => menu.id === permissionId);
+        if (parentMenu && parentMenu.subItems) {
+          const childIds = parentMenu.subItems.map(sub => sub.id);
+          newPermissions = newPermissions.filter(p => !childIds.includes(p));
+        }
+        
+        const parentOfChild = MENU_STRUCTURE.find(menu => 
+          menu.subItems && menu.subItems.some(sub => sub.id === permissionId)
+        );
+        if (parentOfChild) {
+          const siblingsChecked = parentOfChild.subItems.some(sub => 
+            sub.id !== permissionId && newPermissions.includes(sub.id)
+          );
+          if (!siblingsChecked) {
+            newPermissions = newPermissions.filter(p => p !== parentOfChild.id);
+          }
+        }
+      } else {
+        // Checking
+        newPermissions = [...userPermissions, permissionId];
+        
+        const parentMenu = MENU_STRUCTURE.find(menu => menu.id === permissionId);
+        if (parentMenu && parentMenu.subItems) {
+          const childIds = parentMenu.subItems.map(sub => sub.id);
+          childIds.forEach(childId => {
+            if (!newPermissions.includes(childId)) {
+              newPermissions.push(childId);
+            }
+          });
+        }
+        
+        const parentOfChild = MENU_STRUCTURE.find(menu => 
+          menu.subItems && menu.subItems.some(sub => sub.id === permissionId)
+        );
+        if (parentOfChild && !newPermissions.includes(parentOfChild.id)) {
+          newPermissions.push(parentOfChild.id);
+        }
+      }
+      
+      return {
+        ...prev,
+        [userId]: newPermissions
+      };
+    });
+  };
+  
+  // Save inline edited permissions
+  const saveInlinePermissions = async (userId) => {
+    try {
+      setLoading(true);
+      
+      const response = await fetch(`/api/user-management/users/${userId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          permissions: editingPermissions[userId] || []
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update user permissions');
+      }
+
+      // Update local state
+      setUsers(users.map(u => 
+        u.id === userId 
+          ? { ...u, permissions: editingPermissions[userId] || [] }
+          : u
+      ));
+      
+      setEditingUserId(null);
+      setEditingPermissions({});
+      notifySuccess('User permissions updated successfully');
+      
+    } catch (error) {
+      logger.error('[UserManagement] Error updating user permissions:', error);
+      notifyError('Failed to update user permissions');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Function to update user permissions
@@ -1301,31 +1445,184 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
                           <EnvelopeIcon className="h-5 w-5" />
                         </button>
                       )}
-                      <button
-                        onClick={() => handleEditUserPermissions(userItem)}
-                        className="text-gray-600 hover:text-gray-900"
-                        title="Edit Permissions"
-                      >
-                        <PencilIcon className="h-5 w-5" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteUser(userItem.id)}
-                        className="text-red-600 hover:text-red-900"
-                        title="Remove User"
-                      >
-                        <TrashIcon className="h-5 w-5" />
-                      </button>
+                      {editingUserId === userItem.id ? (
+                        <>
+                          <button
+                            onClick={() => saveInlinePermissions(userItem.id)}
+                            className="text-green-600 hover:text-green-900"
+                            title="Save Changes"
+                            disabled={loading}
+                          >
+                            <CheckCircleIcon className="h-5 w-5" />
+                          </button>
+                          <button
+                            onClick={handleCancelEdit}
+                            className="text-gray-600 hover:text-gray-900"
+                            title="Cancel"
+                          >
+                            <XCircleIcon className="h-5 w-5" />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => handleEditUserPermissions(userItem)}
+                            className="text-gray-600 hover:text-gray-900"
+                            title="Edit Permissions"
+                          >
+                            <PencilIcon className="h-5 w-5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteUser(userItem)}
+                            className="text-red-600 hover:text-red-900"
+                            title="Remove User"
+                          >
+                            <TrashIcon className="h-5 w-5" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   )}
                 </td>
               </tr>
+              {/* Inline Permissions Edit Row */}
+              {editingUserId === userItem.id && userItem.role === 'USER' && (
+                <tr key={`${userItem.id}-edit`}>
+                  <td colSpan="6" className="px-6 py-4 bg-gray-50">
+                    <div className="space-y-4">
+                      <h4 className="text-sm font-medium text-gray-900 mb-3">
+                        Edit Page Permissions for {userItem.name}
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {MENU_STRUCTURE.map((menu) => {
+                          const isParentChecked = (editingPermissions[userItem.id] || userItem.permissions || []).includes(menu.id);
+                          const Icon = menu.icon;
+                          
+                          return (
+                            <div key={menu.id} className="bg-white border border-gray-200 rounded-lg p-3">
+                              <div className="flex items-center mb-2">
+                                <input
+                                  type="checkbox"
+                                  id={`edit-${userItem.id}-${menu.id}`}
+                                  checked={isParentChecked}
+                                  onChange={() => handleInlinePermissionToggle(userItem.id, menu.id)}
+                                  className="h-4 w-4 text-blue-600 rounded border-gray-300"
+                                />
+                                <label 
+                                  htmlFor={`edit-${userItem.id}-${menu.id}`} 
+                                  className="ml-2 flex items-center cursor-pointer"
+                                >
+                                  <Icon className="h-4 w-4 text-gray-600 mr-1" />
+                                  <span className="text-sm font-medium text-gray-900">{menu.label}</span>
+                                </label>
+                              </div>
+                              
+                              {menu.subItems && (
+                                <div className="ml-6 space-y-1">
+                                  {menu.subItems.map((subItem) => {
+                                    const isSubChecked = (editingPermissions[userItem.id] || userItem.permissions || []).includes(subItem.id);
+                                    return (
+                                      <div key={subItem.id} className="flex items-center">
+                                        <input
+                                          type="checkbox"
+                                          id={`edit-${userItem.id}-${subItem.id}`}
+                                          checked={isSubChecked}
+                                          onChange={() => handleInlinePermissionToggle(userItem.id, subItem.id)}
+                                          className="h-3 w-3 text-blue-600 rounded border-gray-300"
+                                        />
+                                        <label 
+                                          htmlFor={`edit-${userItem.id}-${subItem.id}`} 
+                                          className="ml-2 text-xs text-gray-700 cursor-pointer"
+                                        >
+                                          {subItem.label}
+                                        </label>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="flex justify-end space-x-3 pt-3 border-t border-gray-200">
+                        <button
+                          onClick={handleCancelEdit}
+                          className="px-3 py-1.5 text-sm border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => saveInlinePermissions(userItem.id)}
+                          disabled={loading}
+                          className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                        >
+                          {loading ? 'Saving...' : 'Save Changes'}
+                        </button>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              )}
             ))}
           </tbody>
         </table>
       </div>
 
-      {/* Edit User Permissions Modal */}
-      {showEditPermissionsModal && editingUser && (
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmUser && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3 text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                <ExclamationTriangleIcon className="h-6 w-6 text-red-600" />
+              </div>
+              <h3 className="text-lg leading-6 font-medium text-gray-900 mt-4">
+                Delete User Account
+              </h3>
+              <div className="mt-2 px-7 py-3">
+                <p className="text-sm text-gray-500">
+                  Are you sure you want to delete the user account for:
+                </p>
+                <p className="text-sm font-semibold text-gray-900 mt-2">
+                  {deleteConfirmUser.email}
+                </p>
+                <p className="text-sm text-red-600 mt-4">
+                  This action cannot be undone. To confirm, please type <span className="font-bold">DELETE</span> below:
+                </p>
+                <input
+                  type="text"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  className="mt-3 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500"
+                  placeholder="Type DELETE to confirm"
+                />
+              </div>
+              <div className="items-center px-4 py-3">
+                <button
+                  onClick={() => {
+                    setDeleteConfirmUser(null);
+                    setDeleteConfirmText('');
+                  }}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 text-base font-medium rounded-md w-24 mr-2 hover:bg-gray-400"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDeleteUser}
+                  disabled={deleteConfirmText !== 'DELETE' || loading}
+                  className="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md w-24 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit User Permissions Modal - REMOVED as we now use inline editing */}
+      {false && showEditPermissionsModal && editingUser && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-[90%] max-w-4xl shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-6">
