@@ -78,6 +78,7 @@ def nuclear_delete_user(email):
         
         # 3. Session management
         deletions.extend([
+            (f"DELETE FROM user_sessions WHERE user_id = {user_id}", "user_sessions"),
             (f"DELETE FROM session_manager_securityevent WHERE user_id = {user_id}", "session_manager_securityevent"),
             (f"DELETE FROM session_manager_devicefingerprint WHERE user_id = {user_id}", "session_manager_devicefingerprint"),
             (f"DELETE FROM session_manager_session WHERE user_id = {user_id}", "session_manager_session"),
