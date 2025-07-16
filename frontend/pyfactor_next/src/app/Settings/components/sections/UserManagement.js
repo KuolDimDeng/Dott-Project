@@ -235,6 +235,8 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
   });
   const [expandedMenus, setExpandedMenus] = useState({});
   const [existingEmployees, setExistingEmployees] = useState([]);
+  const [showEditPermissionsModal, setShowEditPermissionsModal] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
 
   // Fetch real user data
   useEffect(() => {
@@ -385,6 +387,121 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
       fetchEmployeesWithoutUsers();
     }
   }, [showInviteModal]);
+
+  // Function to handle editing user permissions
+  const handleEditUserPermissions = (userToEdit) => {
+    setEditingUser({
+      ...userToEdit,
+      permissions: userToEdit.permissions || []
+    });
+    setShowEditPermissionsModal(true);
+  };
+
+  // Function to update user permissions
+  const updateUserPermissions = async () => {
+    try {
+      setLoading(true);
+      
+      // Call backend API to update user permissions
+      const response = await fetch(`/api/user-management/users/${editingUser.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          permissions: editingUser.permissions
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update user permissions');
+      }
+
+      // Update local state
+      setUsers(users.map(u => 
+        u.id === editingUser.id 
+          ? { ...u, permissions: editingUser.permissions }
+          : u
+      ));
+      
+      setShowEditPermissionsModal(false);
+      setEditingUser(null);
+      notifySuccess('User permissions updated successfully');
+      
+    } catch (error) {
+      logger.error('[UserManagement] Error updating user permissions:', error);
+      notifyError('Failed to update user permissions');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle permission change for editing user
+  const handleEditPermissionChange = (permissionId) => {
+    setEditingUser(prev => {
+      const currentPermissions = prev.permissions || [];
+      
+      if (currentPermissions.includes(permissionId)) {
+        // Unchecking: remove this permission and handle parent/child logic
+        let newPermissions = currentPermissions.filter(p => p !== permissionId);
+        
+        // Find if this is a parent menu
+        const parentMenu = MENU_STRUCTURE.find(menu => menu.id === permissionId);
+        if (parentMenu && parentMenu.subItems) {
+          // If unchecking a parent, remove all its children
+          const childIds = parentMenu.subItems.map(sub => sub.id);
+          newPermissions = newPermissions.filter(p => !childIds.includes(p));
+        }
+        
+        // Find if this is a child menu and uncheck parent if no other children
+        const parentOfChild = MENU_STRUCTURE.find(menu => 
+          menu.subItems && menu.subItems.some(sub => sub.id === permissionId)
+        );
+        if (parentOfChild) {
+          const siblingsChecked = parentOfChild.subItems.some(sub => 
+            sub.id !== permissionId && newPermissions.includes(sub.id)
+          );
+          if (!siblingsChecked) {
+            newPermissions = newPermissions.filter(p => p !== parentOfChild.id);
+          }
+        }
+        
+        return {
+          ...prev,
+          permissions: newPermissions
+        };
+      } else {
+        // Checking: add this permission and handle parent/child logic
+        let newPermissions = [...currentPermissions, permissionId];
+        
+        // Find if this is a parent menu
+        const parentMenu = MENU_STRUCTURE.find(menu => menu.id === permissionId);
+        if (parentMenu && parentMenu.subItems) {
+          // If checking a parent, add all its children
+          const childIds = parentMenu.subItems.map(sub => sub.id);
+          childIds.forEach(childId => {
+            if (!newPermissions.includes(childId)) {
+              newPermissions.push(childId);
+            }
+          });
+        }
+        
+        // Find if this is a child menu and auto-check parent
+        const parentOfChild = MENU_STRUCTURE.find(menu => 
+          menu.subItems && menu.subItems.some(sub => sub.id === permissionId)
+        );
+        if (parentOfChild && !newPermissions.includes(parentOfChild.id)) {
+          newPermissions.push(parentOfChild.id);
+        }
+        
+        return {
+          ...prev,
+          permissions: newPermissions
+        };
+      }
+    });
+  };
 
   // Filter users based on search and filters
   useEffect(() => {
@@ -1127,7 +1244,7 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
                         </button>
                       )}
                       <button
-                        onClick={() => {}}
+                        onClick={() => handleEditUserPermissions(userItem)}
                         className="text-gray-600 hover:text-gray-900"
                         title="Edit Permissions"
                       >
@@ -1148,6 +1265,96 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
           </tbody>
         </table>
       </div>
+
+      {/* Edit User Permissions Modal */}
+      {showEditPermissionsModal && editingUser && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-[90%] max-w-4xl shadow-lg rounded-md bg-white">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-gray-900">
+                Edit Permissions for {editingUser.name}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowEditPermissionsModal(false);
+                  setEditingUser(null);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <XCircleIcon className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <p className="text-sm text-gray-600 mb-4">
+                Select which pages and features {editingUser.name} can access. Checking a parent menu will automatically grant access to all its sub-items.
+              </p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {MENU_STRUCTURE.map((menuItem) => {
+                  const isParentChecked = editingUser.permissions?.includes(menuItem.id);
+                  const Icon = menuItem.icon;
+                  
+                  return (
+                    <div key={menuItem.id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center mb-3">
+                        <label className="flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={isParentChecked}
+                            onChange={() => handleEditPermissionChange(menuItem.id)}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          />
+                          <Icon className="h-5 w-5 ml-2 mr-2 text-gray-600" />
+                          <span className="text-sm font-medium text-gray-900">{menuItem.label}</span>
+                        </label>
+                      </div>
+                      
+                      {menuItem.subItems && (
+                        <div className="ml-6 space-y-2">
+                          {menuItem.subItems.map((subItem) => {
+                            const isSubChecked = editingUser.permissions?.includes(subItem.id);
+                            return (
+                              <label key={subItem.id} className="flex items-center cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={isSubChecked}
+                                  onChange={() => handleEditPermissionChange(subItem.id)}
+                                  className="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                />
+                                <span className="ml-2 text-xs text-gray-700">{subItem.label}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setShowEditPermissionsModal(false);
+                  setEditingUser(null);
+                }}
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={updateUserPermissions}
+                disabled={loading}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+              >
+                {loading ? 'Saving...' : 'Save Permissions'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
