@@ -322,8 +322,8 @@ export default function PayStubViewer({ isModal = false, onClose }) {
 
   if (isModal) {
     return (
-      <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-        <div className="relative mx-auto p-5 border w-full max-w-6xl max-h-[90vh] overflow-y-auto shadow-lg rounded-md bg-white">
+      <div className="fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full z-[9999] flex items-center justify-center p-4">
+        <div className="relative mx-auto p-5 border w-full max-w-6xl max-h-[90vh] overflow-y-auto shadow-2xl rounded-md bg-white">
           {content}
         </div>
       </div>

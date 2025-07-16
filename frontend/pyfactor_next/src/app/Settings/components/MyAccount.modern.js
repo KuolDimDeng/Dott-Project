@@ -1397,7 +1397,21 @@ const MyAccount = ({ userData }) => {
             <h3 className="text-lg font-medium text-gray-900">Quick Actions</h3>
             <div className="space-y-3">
               <button 
-                onClick={() => router.push('/dashboard/timesheets')}
+                onClick={() => {
+                  console.log('🎯 [TimesheetAction] === ENTER HOURS CLICKED ===');
+                  console.log('🎯 [TimesheetAction] Router state:', router);
+                  console.log('🎯 [TimesheetAction] Current pathname:', window.location.pathname);
+                  console.log('🎯 [TimesheetAction] Session data:', session);
+                  console.log('🎯 [TimesheetAction] Profile data:', profileData);
+                  try {
+                    console.log('🎯 [TimesheetAction] Attempting navigation to /dashboard/timesheets');
+                    router.push('/dashboard/timesheets');
+                    console.log('🎯 [TimesheetAction] Navigation initiated successfully');
+                  } catch (error) {
+                    console.error('🚨 [TimesheetAction] Navigation failed:', error);
+                    notifyError('Failed to navigate to timesheets');
+                  }
+                }}
                 className="w-full p-4 text-left bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors border border-blue-200"
               >
                 <div className="font-medium text-blue-900">Enter hours</div>
@@ -1405,7 +1419,21 @@ const MyAccount = ({ userData }) => {
               </button>
               
               <button 
-                onClick={() => router.push('/dashboard/timesheets')}
+                onClick={() => {
+                  console.log('🎯 [TimesheetAction] === SUBMIT TIMESHEET CLICKED ===');
+                  console.log('🎯 [TimesheetAction] Router state:', router);
+                  console.log('🎯 [TimesheetAction] Current pathname:', window.location.pathname);
+                  console.log('🎯 [TimesheetAction] Session data:', session);
+                  console.log('🎯 [TimesheetAction] Profile data:', profileData);
+                  try {
+                    console.log('🎯 [TimesheetAction] Attempting navigation to /dashboard/timesheets');
+                    router.push('/dashboard/timesheets');
+                    console.log('🎯 [TimesheetAction] Navigation initiated successfully');
+                  } catch (error) {
+                    console.error('🚨 [TimesheetAction] Navigation failed:', error);
+                    notifyError('Failed to navigate to timesheets');
+                  }
+                }}
                 className="w-full p-4 text-left bg-green-50 rounded-lg hover:bg-green-100 transition-colors border border-green-200"
               >
                 <div className="font-medium text-green-900">Submit weekly timesheet</div>
@@ -1413,7 +1441,21 @@ const MyAccount = ({ userData }) => {
               </button>
               
               <button 
-                onClick={() => router.push('/dashboard/timesheets')}
+                onClick={() => {
+                  console.log('🎯 [TimesheetAction] === VIEW ALL TIMESHEETS CLICKED ===');
+                  console.log('🎯 [TimesheetAction] Router state:', router);
+                  console.log('🎯 [TimesheetAction] Current pathname:', window.location.pathname);
+                  console.log('🎯 [TimesheetAction] Session data:', session);
+                  console.log('🎯 [TimesheetAction] Profile data:', profileData);
+                  try {
+                    console.log('🎯 [TimesheetAction] Attempting navigation to /dashboard/timesheets');
+                    router.push('/dashboard/timesheets');
+                    console.log('🎯 [TimesheetAction] Navigation initiated successfully');
+                  } catch (error) {
+                    console.error('🚨 [TimesheetAction] Navigation failed:', error);
+                    notifyError('Failed to navigate to timesheets');
+                  }
+                }}
                 className="w-full p-4 text-left bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors border border-purple-200"
               >
                 <div className="font-medium text-purple-900">View all timesheets</div>
@@ -1817,7 +1859,7 @@ const MyAccount = ({ userData }) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 flex items-center">
