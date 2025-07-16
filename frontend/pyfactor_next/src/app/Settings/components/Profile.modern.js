@@ -38,7 +38,8 @@ import {
   ArrowsPointingOutIcon,
   MagnifyingGlassIcon,
   DocumentIcon,
-  BuildingOffice2Icon
+  BuildingOffice2Icon,
+  UserGroupIcon
 } from '@heroicons/react/24/outline';
 import PayStubViewer from '@/components/PayStubViewer';
 import InlineTimesheetManager from './timesheet/InlineTimesheetManager';

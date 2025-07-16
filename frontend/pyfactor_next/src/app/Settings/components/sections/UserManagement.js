@@ -213,6 +213,7 @@ const MENU_STRUCTURE = [
 
 const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, notifyError }) => {
   console.log('🔴 [UserManagement] Component rendering with props:', { user, isOwner, isAdmin });
+  console.log('🔴 [UserManagement] notifyError function:', typeof notifyError, notifyError);
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
