@@ -151,16 +151,18 @@ async function getSession(request) {
     logger.info('[UserManagement] Cookie header length:', cookieHeader.length);
     logger.info('[UserManagement] Has sid cookie:', cookieHeader.includes('sid='));
     logger.info('[UserManagement] Has sessionToken cookie:', cookieHeader.includes('sessionToken='));
+    logger.info('[UserManagement] Has session_token cookie:', cookieHeader.includes('session_token='));
     
-    if (!cookieHeader || !cookieHeader.includes('sid=')) {
+    if (!cookieHeader || (!cookieHeader.includes('sid=') && !cookieHeader.includes('session_token='))) {
       logger.warn('[UserManagement] No session cookie found in request');
       return null;
     }
     
-    // Extract sid value for logging
+    // Extract sid or session_token value for logging
     const sidMatch = cookieHeader.match(/sid=([^;]+)/);
-    const sidValue = sidMatch ? sidMatch[1] : 'not found';
-    logger.info('[UserManagement] SID value:', sidValue.substring(0, 8) + '...');
+    const sessionTokenMatch = cookieHeader.match(/session_token=([^;]+)/);
+    const sessionId = sidMatch ? sidMatch[1] : (sessionTokenMatch ? sessionTokenMatch[1] : 'not found');
+    logger.info('[UserManagement] Session ID value:', sessionId.substring(0, 8) + '...');
     
     // First try to get user info from session-v2 endpoint (internal call)
     logger.info('[UserManagement] Calling session-v2 endpoint...');
@@ -286,9 +288,10 @@ async function fetchLocalUsers(tenantId, currentUser, request, unlinkedOnly = fa
     logger.info('[UserManagement] Full backend URL:', fullUrl);
     
     // Extract session ID for additional header
-    const sidMatch = cookieHeader.match(/sid=([^;]+)/);
-    const sessionId = sidMatch ? sidMatch[1] : null;
-    logger.info('[UserManagement] Extracted session ID:', sessionId ? sessionId.substring(0, 8) + '...' : 'none');
+    const sidMatch2 = cookieHeader.match(/sid=([^;]+)/);
+    const sessionTokenMatch2 = cookieHeader.match(/session_token=([^;]+)/);
+    const extractedSessionId = sidMatch2 ? sidMatch2[1] : (sessionTokenMatch2 ? sessionTokenMatch2[1] : null);
+    logger.info('[UserManagement] Extracted session ID for backend:', extractedSessionId ? extractedSessionId.substring(0, 8) + '...' : 'none');
     
     const headers = {
       'Content-Type': 'application/json',
@@ -296,8 +299,8 @@ async function fetchLocalUsers(tenantId, currentUser, request, unlinkedOnly = fa
       'X-Tenant-ID': tenantId
     };
     
-    if (sessionId) {
-      headers['X-Session-ID'] = sessionId;
+    if (extractedSessionId) {
+      headers['X-Session-ID'] = extractedSessionId;
     }
     
     logger.info('[UserManagement] Request headers to backend:', headers);
