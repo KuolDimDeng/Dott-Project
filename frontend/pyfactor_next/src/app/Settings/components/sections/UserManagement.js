@@ -1389,7 +1389,8 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredUsers.map((userItem) => (
-              <tr key={userItem.id} className="hover:bg-gray-50">
+              <React.Fragment key={userItem.id}>
+                <tr className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div>
                     <div className="text-sm font-medium text-gray-900">{userItem.name}</div>
@@ -1564,6 +1565,7 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
                   </td>
                 </tr>
               )}
+              </React.Fragment>
             ))}
           </tbody>
         </table>
