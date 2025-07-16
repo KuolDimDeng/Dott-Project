@@ -119,13 +119,14 @@ function EmployeeManagement({ onNavigate }) {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false); // Keep delete modal for confirmation
+  // Removed delete modal state - employees should be deactivated, not deleted
   const [stats, setStats] = useState({
     total: 0,
     active: 0,
     onLeave: 0,
     inactive: 0
   });
+  const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'active', 'inactive', 'onLeave'
 
   // Form state for create/edit
   const [formData, setFormData] = useState({
@@ -461,19 +462,39 @@ function EmployeeManagement({ onNavigate }) {
     }
   };
 
-  // Filter employees based on search term
+  // Filter employees based on search term and status
   const filteredEmployees = useMemo(() => {
-    if (!searchTerm) return employees;
+    logger.info('🔍 [EmployeeManagement] Filtering employees:', {
+      totalEmployees: employees.length,
+      searchTerm,
+      statusFilter
+    });
+
+    let filtered = employees;
     
-    const term = searchTerm.toLowerCase();
-    return employees.filter(employee => 
-      employee.firstName?.toLowerCase().includes(term) ||
-      employee.lastName?.toLowerCase().includes(term) ||
-      employee.email?.toLowerCase().includes(term) ||
-      employee.position?.toLowerCase().includes(term) ||
-      employee.department?.toLowerCase().includes(term)
-    );
-  }, [employees, searchTerm]);
+    // Apply status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(employee => employee.status === statusFilter);
+    }
+    
+    // Apply search filter
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(employee => 
+        employee.firstName?.toLowerCase().includes(term) ||
+        employee.lastName?.toLowerCase().includes(term) ||
+        employee.email?.toLowerCase().includes(term) ||
+        employee.position?.toLowerCase().includes(term) ||
+        employee.department?.toLowerCase().includes(term)
+      );
+    }
+    
+    logger.info('🔍 [EmployeeManagement] Filtered results:', {
+      filteredCount: filtered.length
+    });
+    
+    return filtered;
+  }, [employees, searchTerm, statusFilter]);
 
   // Table configuration
   const columns = useMemo(
@@ -567,13 +588,7 @@ function EmployeeManagement({ onNavigate }) {
             >
               <PencilIcon className="h-4 w-4" />
             </button>
-            <button
-              onClick={() => handleDelete(row.original)}
-              className="text-red-600 hover:text-red-900 p-1"
-              title="Delete Employee"
-            >
-              <TrashIcon className="h-4 w-4" />
-            </button>
+            {/* Removed delete button for legal compliance - employee data must be retained */}
           </div>
         ),
       },
@@ -615,11 +630,21 @@ function EmployeeManagement({ onNavigate }) {
   };
 
   const handleView = (employee) => {
+    logger.info('👁️ [EmployeeManagement] Viewing employee details:', {
+      id: employee.id,
+      name: `${employee.firstName} ${employee.lastName}`,
+      status: employee.status
+    });
     setSelectedEmployee(employee);
     setActiveTab('details');
   };
 
   const handleEdit = (employee) => {
+    logger.info('📝 [EmployeeManagement] Editing employee:', {
+      id: employee.id,
+      name: `${employee.firstName} ${employee.lastName}`
+    });
+    
     setSelectedEmployee(employee);
     setFormData({
       firstName: employee.firstName || '',
@@ -634,9 +659,10 @@ function EmployeeManagement({ onNavigate }) {
       employmentType: employee.employmentType || 'FT',
       compensationType: employee.compensationType || 'SALARY',
       salary: employee.salary || '',
-      wagePerHour: employee.wagePerHour || '',
+      wagePerHour: employee.wagePerHour || employee.wage_per_hour || '',
       hireDate: employee.hireDate || '',
       status: employee.status || 'active',
+      isSupervisor: employee.isSupervisor || false,
       
       // Address fields
       street: employee.street || '',
@@ -658,10 +684,7 @@ function EmployeeManagement({ onNavigate }) {
     setActiveTab('create');
   };
 
-  const handleDelete = (employee) => {
-    setSelectedEmployee(employee);
-    setIsDeleteModalOpen(true);
-  };
+  // Removed handleDelete - use status field to deactivate employees instead
 
   const handleCreate = () => {
     resetForm();
@@ -837,13 +860,31 @@ function EmployeeManagement({ onNavigate }) {
       
       if (selectedEmployee) {
         // Update existing employee
-        logger.info('[EmployeeManagement] Updating employee:', selectedEmployee.id);
+        logger.info('[EmployeeManagement] Updating employee:', {
+          id: selectedEmployee.id,
+          name: `${backendData.first_name} ${backendData.last_name}`,
+          status: backendData.status,
+          active: backendData.active
+        });
+        
+        // Add active field based on status for backend compatibility
+        backendData.active = backendData.status === 'active';
+        
         const result = await hrApi.employees.update(selectedEmployee.id, backendData);
-        logger.info('✅ [EmployeeManagement] Employee updated:', result?.id);
+        logger.info('✅ [EmployeeManagement] Employee updated successfully:', {
+          id: result?.id,
+          active: result?.active,
+          status: result?.status
+        });
         toast.success('Employee updated successfully');
       } else {
         // Create new employee
         logger.info('[EmployeeManagement] Creating new employee');
+        
+        // Set active status for new employees
+        backendData.active = true;
+        backendData.status = 'active';
+        
         const result = await hrApi.employees.create(backendData);
         logger.info('✅ [EmployeeManagement] Employee created:', {
           id: result?.id,
@@ -888,28 +929,7 @@ function EmployeeManagement({ onNavigate }) {
     }
   };
 
-  const confirmDelete = async () => {
-    try {
-      await hrApi.employees.delete(selectedEmployee.id);
-      toast.success('Employee deleted successfully');
-      setIsDeleteModalOpen(false);
-      setSelectedEmployee(null);
-      fetchEmployees();
-      fetchBasicEmployees(); // Refresh supervisor dropdown data
-    } catch (error) {
-      logger.error('❌ [EmployeeManagement] Error deleting employee:', error);
-      
-      // User-friendly error message
-      let userMessage = 'Failed to delete employee. Please try again.';
-      if (error.message && error.message.includes('permission')) {
-        userMessage = 'You do not have permission to delete this employee.';
-      } else if (error.message && error.message.includes('network')) {
-        userMessage = 'Network error. Please check your connection.';
-      }
-      
-      toast.error(userMessage);
-    }
-  };
+  // Removed confirmDelete - employees should be deactivated, not deleted
 
   // Render methods
   const renderSummaryCards = () => (
@@ -969,29 +989,91 @@ function EmployeeManagement({ onNavigate }) {
   );
 
   const renderSearchAndActions = () => (
-    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-      {/* Search Bar */}
-      <div className="relative flex-1 max-w-md">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+    <div className="space-y-4 mb-6">
+      {/* First Row: Search and Create Button */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        {/* Search Bar */}
+        <div className="relative flex-1 max-w-md">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+          </div>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search by name, email, position, or department..."
+            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+          />
         </div>
-        <input
-          type="text"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Search employees..."
-          className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-        />
-      </div>
 
-      {/* Action Button */}
-      <button
-        onClick={handleCreate}
-        className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-      >
-        <UserPlusIcon className="h-4 w-4 mr-2" />
-        Create New Employee
-      </button>
+        {/* Action Button */}
+        <button
+          onClick={handleCreate}
+          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          <UserPlusIcon className="h-4 w-4 mr-2" />
+          Create New Employee
+        </button>
+      </div>
+      
+      {/* Second Row: Status Filter */}
+      <div className="flex items-center space-x-2">
+        <span className="text-sm font-medium text-gray-700">Filter by Status:</span>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => {
+              logger.info('🎯 [EmployeeManagement] Status filter changed to: all');
+              setStatusFilter('all');
+            }}
+            className={`px-3 py-1 text-sm rounded-md transition-colors ${
+              statusFilter === 'all' 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            All ({stats.total})
+          </button>
+          <button
+            onClick={() => {
+              logger.info('🎯 [EmployeeManagement] Status filter changed to: active');
+              setStatusFilter('active');
+            }}
+            className={`px-3 py-1 text-sm rounded-md transition-colors ${
+              statusFilter === 'active' 
+                ? 'bg-green-600 text-white' 
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Active ({stats.active})
+          </button>
+          <button
+            onClick={() => {
+              logger.info('🎯 [EmployeeManagement] Status filter changed to: inactive');
+              setStatusFilter('inactive');
+            }}
+            className={`px-3 py-1 text-sm rounded-md transition-colors ${
+              statusFilter === 'inactive' 
+                ? 'bg-gray-600 text-white' 
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Inactive ({stats.inactive})
+          </button>
+          <button
+            onClick={() => {
+              logger.info('🎯 [EmployeeManagement] Status filter changed to: onLeave');
+              setStatusFilter('onLeave');
+            }}
+            className={`px-3 py-1 text-sm rounded-md transition-colors ${
+              statusFilter === 'onLeave' 
+                ? 'bg-yellow-600 text-white' 
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            On Leave ({stats.onLeave})
+          </button>
+        </div>
+      </div>
     </div>
   );
 
@@ -1546,17 +1628,28 @@ function EmployeeManagement({ onNavigate }) {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Status
-              <FieldTooltip text="Current employment status of the employee" />
+              <FieldTooltip text="Active: Currently working | Inactive: No longer working (for legal compliance, records are retained) | On Leave: Temporarily away" />
             </label>
             <select
               value={formData.status}
-              onChange={(e) => setFormData({...formData, status: e.target.value})}
+              onChange={(e) => {
+                logger.info('🔄 [EmployeeManagement] Status changed:', {
+                  from: formData.status,
+                  to: e.target.value
+                });
+                setFormData({...formData, status: e.target.value});
+              }}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
             >
-              <option value="active">Active</option>
-              <option value="onLeave">On Leave</option>
-              <option value="inactive">Inactive</option>
+              <option value="active">Active - Currently Working</option>
+              <option value="onLeave">On Leave - Temporarily Away</option>
+              <option value="inactive">Inactive - No Longer Working</option>
             </select>
+            {formData.status === 'inactive' && (
+              <p className="text-xs text-gray-500 mt-1">
+                🔒 Employee records are retained for legal and compliance purposes
+              </p>
+            )}
           </div>
         </div>
 
@@ -1679,7 +1772,35 @@ function EmployeeManagement({ onNavigate }) {
   const renderEmployeeDetails = () => (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       {selectedEmployee ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <>
+          {/* Status Banner for Inactive Employees */}
+          {selectedEmployee.status === 'inactive' && (
+            <div className="mb-6 p-4 bg-gray-100 border border-gray-300 rounded-lg flex items-center">
+              <XCircleIcon className="h-5 w-5 text-gray-600 mr-3 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-gray-900">This employee is inactive</p>
+                <p className="text-sm text-gray-600">
+                  Employee records are retained for legal and compliance purposes. 
+                  To reactivate, edit the employee and change their status to "Active".
+                </p>
+              </div>
+            </div>
+          )}
+          
+          {/* Status Banner for On Leave Employees */}
+          {selectedEmployee.status === 'onLeave' && (
+            <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center">
+              <CalendarIcon className="h-5 w-5 text-yellow-600 mr-3 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-gray-900">This employee is on leave</p>
+                <p className="text-sm text-gray-600">
+                  The employee is temporarily away from work. Update their status when they return.
+                </p>
+              </div>
+            </div>
+          )}
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Personal Information */}
           <div className="space-y-4">
             <h4 className="text-md font-medium text-gray-900 border-b pb-2">Personal Information</h4>
@@ -1800,7 +1921,7 @@ function EmployeeManagement({ onNavigate }) {
               <div>
                 <p className="text-sm font-medium text-gray-900">Direct Deposit</p>
                 <p className="text-sm text-gray-600">
-                  {selectedEmployee.direct_deposit ? 'Enabled' : 'Not enabled'}
+                  {selectedEmployee.directDeposit || selectedEmployee.direct_deposit ? 'Enabled' : 'Not enabled'}
                 </p>
               </div>
             </div>
@@ -1814,15 +1935,92 @@ function EmployeeManagement({ onNavigate }) {
               <div>
                 <p className="text-sm font-medium text-gray-900">Vacation Time</p>
                 <p className="text-sm text-gray-600">
-                  {selectedEmployee.vacation_time 
-                    ? `${selectedEmployee.vacation_days_per_year || 'Not specified'} days per year`
+                  {selectedEmployee.vacationTime || selectedEmployee.vacation_time 
+                    ? `${selectedEmployee.vacationDaysPerYear || selectedEmployee.vacation_days_per_year || 'Not specified'} days per year`
                     : 'No vacation time offered'
                   }
                 </p>
               </div>
             </div>
+            
+            <div className="flex items-center space-x-3">
+              <div className="h-5 w-5 text-gray-400 flex items-center justify-center">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-900">Supervisor Status</p>
+                <p className="text-sm text-gray-600">
+                  {selectedEmployee.isSupervisor || selectedEmployee.is_supervisor
+                    ? 'Can supervise other employees'
+                    : 'Regular employee (no supervisory role)'
+                  }
+                </p>
+              </div>
+            </div>
+            
+            {/* Employee Timeline */}
+            <div className="flex items-center space-x-3">
+              <div className="h-5 w-5 text-gray-400 flex items-center justify-center">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-900">Employment Duration</p>
+                <p className="text-sm text-gray-600">
+                  {selectedEmployee.hireDate ? (() => {
+                    const hireDate = new Date(selectedEmployee.hireDate);
+                    const now = new Date();
+                    const years = now.getFullYear() - hireDate.getFullYear();
+                    const months = now.getMonth() - hireDate.getMonth();
+                    const totalMonths = years * 12 + months;
+                    
+                    if (totalMonths < 12) {
+                      return `${totalMonths} month${totalMonths !== 1 ? 's' : ''}`;
+                    } else {
+                      const displayYears = Math.floor(totalMonths / 12);
+                      const remainingMonths = totalMonths % 12;
+                      return `${displayYears} year${displayYears !== 1 ? 's' : ''}${remainingMonths > 0 ? ` ${remainingMonths} month${remainingMonths !== 1 ? 's' : ''}` : ''}`;
+                    }
+                  })() : 'Not specified'}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
+        
+        {/* Action Buttons */}
+        <div className="mt-6 flex space-x-3">
+          <button
+            onClick={() => handleEdit(selectedEmployee)}
+            className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            Edit Employee Information
+          </button>
+          {selectedEmployee.status === 'active' && (
+            <button
+              onClick={() => {
+                // Quick deactivate action
+                const confirmDeactivate = window.confirm(
+                  `Are you sure you want to deactivate ${selectedEmployee.firstName} ${selectedEmployee.lastName}? They can be reactivated later.`
+                );
+                if (confirmDeactivate) {
+                  handleEdit(selectedEmployee);
+                  // Auto-set status to inactive
+                  setTimeout(() => {
+                    setFormData(prev => ({ ...prev, status: 'inactive' }));
+                  }, 100);
+                }
+              }}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+            >
+              Deactivate Employee
+            </button>
+          )}
+        </div>
+        </>
       ) : (
         <div className="text-center py-12">
           <UserGroupIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
@@ -1930,7 +2128,9 @@ function EmployeeManagement({ onNavigate }) {
                   <span className="font-medium">
                     {Math.min((pageIndex + 1) * pageSize, filteredEmployees.length)}
                   </span>{' '}
-                  of <span className="font-medium">{filteredEmployees.length}</span> results
+                  of <span className="font-medium">{filteredEmployees.length}</span> 
+                  {statusFilter !== 'all' ? `${statusFilter} ` : ''}employees
+                  {searchTerm && ` matching "${searchTerm}"`}
                 </p>
               </div>
               <div>
@@ -2048,64 +2248,8 @@ function EmployeeManagement({ onNavigate }) {
       {/* Content */}
       {renderContent()}
 
-      {/* Delete Confirmation Modal - Keep this one for safety */}
-      <Transition appear show={isDeleteModalOpen} as={Fragment}>
-        <Dialog as="div" className="relative z-50" onClose={() => setIsDeleteModalOpen(false)}>
-          <Transition.Child
-            as={Fragment}
-            enter="ease-out duration-300"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="ease-in duration-200"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <div className="fixed inset-0 bg-black bg-opacity-25" />
-          </Transition.Child>
-
-          <div className="fixed inset-0 overflow-y-auto">
-            <div className="flex min-h-full items-center justify-center p-4 text-center">
-              <Transition.Child
-                as={Fragment}
-                enter="ease-out duration-300"
-                enterFrom="opacity-0 scale-95"
-                enterTo="opacity-100 scale-100"
-                leave="ease-in duration-200"
-                leaveFrom="opacity-100 scale-100"
-                leaveTo="opacity-0 scale-95"
-              >
-                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                  <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900">
-                    Delete Employee
-                  </Dialog.Title>
-                  
-                  <div className="mt-2">
-                    <p className="text-sm text-gray-500">
-                      Are you sure you want to delete {selectedEmployee?.firstName} {selectedEmployee?.lastName}? 
-                      This action cannot be undone.
-                    </p>
-                  </div>
-
-                  <div className="mt-4 flex space-x-3 justify-end">
-                    <button
-                      onClick={() => setIsDeleteModalOpen(false)}
-                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={confirmDelete}
-                      className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </Dialog.Panel>
-              </Transition.Child>
-            </div>
-          </div>
-        </Dialog>
-      </Transition>
+      {/* Removed Delete Modal - Employee records must be retained for legal compliance.
+          Use the status field to mark employees as 'inactive' instead of deleting them. */}
     </div>
   );
 }
