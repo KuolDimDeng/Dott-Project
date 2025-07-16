@@ -42,6 +42,7 @@ import {
 } from '@heroicons/react/24/outline';
 import PayStubViewer from '@/components/PayStubViewer';
 import InlineTimesheetManager from './timesheet/InlineTimesheetManager';
+import SupervisorApprovalInterface from './timesheet/SupervisorApprovalInterface';
 
 const Profile = ({ userData }) => {
   const [selectedTab, setSelectedTab] = useState(0);
@@ -1232,8 +1233,45 @@ const Profile = ({ userData }) => {
           </p>
         </div>
 
-        {/* Inline Timesheet Manager */}
+        {/* Inline Timesheet Manager - without approvals section */}
         <InlineTimesheetManager />
+      </div>
+    );
+  };
+
+  // New Approvals Tab (for supervisors, admins, and owners only)
+  const renderApprovalsTab = () => {
+    const isSupervisor = session?.user?.role === 'ADMIN' || session?.user?.role === 'OWNER' || 
+                         session?.employee?.is_supervisor === true;
+
+    if (!isSupervisor) {
+      return (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="text-center py-12">
+            <UserGroupIcon className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No Approval Access</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              You don't have permission to approve timesheets or time-off requests.
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+            <UserGroupIcon className="w-6 h-6 mr-2 text-blue-600" />
+            Approvals
+          </h2>
+          <p className="text-gray-600 mt-1">
+            Manage timesheet and time-off approvals for your team
+          </p>
+        </div>
+
+        {/* Supervisor Approval Interface */}
+        <SupervisorApprovalInterface />
       </div>
     );
   };
@@ -1629,8 +1667,9 @@ const Profile = ({ userData }) => {
     { id: 1, label: 'Pay', icon: BanknotesIcon },
     { id: 2, label: 'Documents', icon: DocumentIcon },
     { id: 3, label: 'Timesheet', icon: ClockIcon },
-    { id: 4, label: 'Organization', icon: BuildingOfficeIcon },
-    { id: 5, label: 'Security', icon: ShieldCheckIcon },
+    { id: 4, label: 'Approvals', icon: UserGroupIcon },
+    { id: 5, label: 'Organization', icon: BuildingOfficeIcon },
+    { id: 6, label: 'Security', icon: ShieldCheckIcon },
   ];
 
   return (
@@ -1687,8 +1726,9 @@ const Profile = ({ userData }) => {
           {selectedTab === 1 && renderPayTab()}
           {selectedTab === 2 && renderDocumentsTab()}
           {selectedTab === 3 && renderTimesheetTab()}
-          {selectedTab === 4 && renderOrganizationTab()}
-          {selectedTab === 5 && renderSecurityTab()}
+          {selectedTab === 4 && renderApprovalsTab()}
+          {selectedTab === 5 && renderOrganizationTab()}
+          {selectedTab === 6 && renderSecurityTab()}
         </div>
       </div>
 
