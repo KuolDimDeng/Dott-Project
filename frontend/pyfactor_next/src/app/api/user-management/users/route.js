@@ -22,12 +22,37 @@ export async function GET(request) {
     const cookieHeader = request.headers.get('cookie') || '';
     logger.info('[UserManagement] Raw cookie header:', cookieHeader);
     logger.info('[UserManagement] Cookie header length:', cookieHeader.length);
-    const cookies = cookieHeader.split(';').map(c => c.trim());
-    logger.info('[UserManagement] Parsed cookies:', cookies);
+    
+    if (cookieHeader) {
+      const cookies = cookieHeader.split(';').map(c => c.trim());
+      logger.info('[UserManagement] Parsed cookies:', cookies);
+      
+      // Look for session-related cookies
+      const sessionCookies = cookies.filter(c => 
+        c.includes('sid=') || 
+        c.includes('session_token=') || 
+        c.includes('sessionToken=') ||
+        c.includes('session=') ||
+        c.includes('auth=')
+      );
+      logger.info('[UserManagement] Session-related cookies found:', sessionCookies);
+      
+      if (sessionCookies.length === 0) {
+        logger.warn('[UserManagement] No session cookies found! Available cookies:', cookies);
+      }
+    } else {
+      logger.warn('[UserManagement] No cookie header found in request!');
+    }
     
     // Get session and user info from request headers/cookies
     const session = await getSession(request);
     logger.info('[UserManagement] Session result:', session);
+    logger.info('[UserManagement] Session has user?', !!session?.user);
+    logger.info('[UserManagement] Session user details:', session?.user ? {
+      email: session.user.email,
+      tenantId: session.user.tenantId || session.user.tenant_id,
+      role: session.user.role
+    } : 'No user in session');
     
     if (!session || !session.user) {
       logger.error('[UserManagement] Authentication failed - no session or user');
@@ -37,6 +62,9 @@ export async function GET(request) {
         sessionKeys: session ? Object.keys(session) : [],
         userKeys: session?.user ? Object.keys(session.user) : []
       });
+      logger.error('[UserManagement] Raw cookies received:', cookieHeader);
+      logger.error('[UserManagement] Request origin:', request.headers.get('origin'));
+      logger.error('[UserManagement] Request referer:', request.headers.get('referer'));
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }

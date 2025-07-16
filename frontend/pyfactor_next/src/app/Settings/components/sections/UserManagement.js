@@ -253,8 +253,23 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
       logger.info('[UserManagement Frontend] Local storage keys:', Object.keys(localStorage));
       logger.info('[UserManagement Frontend] About to fetch from: /api/user-management/users');
       
+      // Test session endpoint first
+      console.log('🔴 [UserManagement] Testing session endpoint first...');
+      const sessionTest = await fetch('/api/auth/session-v2', {
+        method: 'GET',
+        credentials: 'include'
+      });
+      console.log('🔴 [UserManagement] Session test status:', sessionTest.status);
+      const sessionData = await sessionTest.json().catch(() => ({}));
+      console.log('🔴 [UserManagement] Session test data:', sessionData);
+      
       // Fetch users from the proper User Management API (not HR employees)
       console.log('🔴 [UserManagement] About to fetch /api/user-management/users');
+      console.log('🔴 [UserManagement] Request headers will include:', {
+        'Content-Type': 'application/json'
+      });
+      console.log('🔴 [UserManagement] Cookies will be sent:', document.cookie);
+      
       const response = await fetch('/api/user-management/users', {
         method: 'GET',
         headers: {
@@ -271,7 +286,25 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
         const errorText = await response.text();
         console.error('🔴 [UserManagement] API Error, status:', response.status);
         console.error('🔴 [UserManagement] Error text:', errorText);
+        console.error('🔴 [UserManagement] Response headers:', Object.fromEntries(response.headers.entries()));
         logger.error('[UserManagement Frontend] API Error:', errorText);
+        
+        // If 401, let's try to manually get session info
+        if (response.status === 401) {
+          console.log('🔴 [UserManagement] 401 error - checking session manually...');
+          try {
+            const sessionCheck = await fetch('/api/auth/session-v2', {
+              method: 'GET',
+              credentials: 'include'
+            });
+            const sessionInfo = await sessionCheck.json().catch(() => ({}));
+            console.log('🔴 [UserManagement] Session check result:', sessionInfo);
+            console.log('🔴 [UserManagement] Session check status:', sessionCheck.status);
+          } catch (sessionError) {
+            console.error('🔴 [UserManagement] Session check failed:', sessionError);
+          }
+        }
+        
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
