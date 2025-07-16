@@ -338,6 +338,7 @@ const MainListItems = ({
   const [openTooltip, setOpenTooltip] = useState(null);
   const [tooltipVisible, setTooltipVisible] = useState(null);
   const [whatsappPreferenceChanged, setWhatsappPreferenceChanged] = useState(0);
+  const [whatsappEnabled, setWhatsappEnabled] = useState(null);
   
   // Debug logging for permissions hook
   useEffect(() => {
@@ -349,6 +350,17 @@ const MainListItems = ({
       canAccessRoute: typeof canAccessRoute
     });
   }, [user, isLoading]);
+
+  // Initialize WhatsApp preference from user data
+  useEffect(() => {
+    if (user?.show_whatsapp_commerce !== undefined) {
+      console.log('[MainListItems] Initializing WhatsApp preference from user:', user.show_whatsapp_commerce);
+      setWhatsappEnabled(user.show_whatsapp_commerce);
+    } else if (userData?.show_whatsapp_commerce !== undefined) {
+      console.log('[MainListItems] Initializing WhatsApp preference from userData:', userData.show_whatsapp_commerce);
+      setWhatsappEnabled(userData.show_whatsapp_commerce);
+    }
+  }, [user?.show_whatsapp_commerce, userData?.show_whatsapp_commerce]);
   
 
   // Check if we're on mobile/small screens
@@ -371,7 +383,9 @@ const MainListItems = ({
   useEffect(() => {
     const handleWhatsAppPreferenceChange = (event) => {
       console.log('[MainListItems] WhatsApp preference changed:', event.detail);
-      // Trigger a re-render by updating state
+      // Update the local WhatsApp state to trigger re-render
+      setWhatsappEnabled(event.detail.enabled);
+      // Also trigger a re-render by updating state counter
       setWhatsappPreferenceChanged(prev => prev + 1);
     };
 
@@ -2179,6 +2193,12 @@ const MainListItems = ({
     
     // Special handling for WhatsApp Business
     if (item.label === 'WhatsApp Business' && item.showConditionally) {
+      // First, check if we have a real-time preference from the event
+      if (whatsappEnabled !== null) {
+        console.log('[MainListItems] Using real-time WhatsApp preference:', whatsappEnabled);
+        return whatsappEnabled;
+      }
+      
       // Get user's country and WhatsApp preference from their profile
       const userCountry = user?.country || userData?.country;
       const userWhatsAppPreference = user?.show_whatsapp_commerce || userData?.show_whatsapp_commerce;
@@ -2377,6 +2397,8 @@ const MainListItems = ({
           <nav className="w-full" aria-label="Main Navigation">
             <ul className="w-full space-y-0.5 px-3">
               {finalMenuItems.map((item, index) => renderFilteredMenuItem(item, index))}
+              {/* Force re-render when whatsappPreferenceChanged updates */}
+              <span style={{ display: 'none' }}>{whatsappPreferenceChanged}</span>
             </ul>
           </nav>
         </div>
