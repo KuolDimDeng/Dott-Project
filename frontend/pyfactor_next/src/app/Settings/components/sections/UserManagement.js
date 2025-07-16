@@ -240,17 +240,13 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
   const [showEditPermissionsModal, setShowEditPermissionsModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
 
-  // Fetch real user data
-  useEffect(() => {
-    console.log('🔴 [UserManagement] Component mounted, calling fetchUsers...');
-    fetchUsers();
-  }, []);
-
   const fetchUsers = async () => {
+    console.log('🔴 [UserManagement] === FETCH USERS CALLED ===');
     try {
       setLoading(true);
       
       // Log the request details
+      console.log('🔴 [UserManagement] ========== FETCH USERS START ==========');
       logger.info('[UserManagement Frontend] ========== FETCH USERS START ==========');
       logger.info('[UserManagement Frontend] Document cookies:', document.cookie);
       logger.info('[UserManagement Frontend] Session storage:', JSON.stringify(sessionStorage.getItem('session') || 'null'));
@@ -258,6 +254,7 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
       logger.info('[UserManagement Frontend] About to fetch from: /api/user-management/users');
       
       // Fetch users from the proper User Management API (not HR employees)
+      console.log('🔴 [UserManagement] About to fetch /api/user-management/users');
       const response = await fetch('/api/user-management/users', {
         method: 'GET',
         headers: {
@@ -265,34 +262,30 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
         },
         credentials: 'include' // Ensure cookies are sent
       });
+      console.log('🔴 [UserManagement] Fetch completed, status:', response.status);
       
+      console.log('🔴 [UserManagement] Response object:', response);
       logger.info('[UserManagement Frontend] Response status:', response.status);
-      logger.info('[UserManagement Frontend] Response ok:', response.ok);
-      logger.info('[UserManagement Frontend] Response headers:', Object.fromEntries(response.headers.entries()));
-
+      
       if (!response.ok) {
-        // Log the actual error for debugging
-        const errorText = await response.text().catch(() => 'No error details');
-        logger.error('[UserManagement] API error:', { 
-          status: response.status, 
-          statusText: response.statusText,
-          error: errorText 
-        });
-        
-        // If the API doesn't exist yet, fall back to current user only
-        if (response.status === 404) {
-          throw new Error('User management API not implemented yet');
-        } else if (response.status === 401) {
-          throw new Error('Authentication required');
-        }
-        throw new Error(`Failed to fetch users: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        console.error('🔴 [UserManagement] API Error, status:', response.status);
+        console.error('🔴 [UserManagement] Error text:', errorText);
+        logger.error('[UserManagement Frontend] API Error:', errorText);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-
+      
       const data = await response.json();
+      console.log('🔴 [UserManagement] Response data received:', data);
+      logger.info('[UserManagement Frontend] Response data:', data);
       
-      // Transform the API data to match our component structure
-      const apiUsers = Array.isArray(data) ? data : (data.users || data.results || []);
+      // Transform the response data
+      const apiUsers = data.users || [];
+      console.log('🔴 [UserManagement] API Users:', apiUsers);
+      logger.info('[UserManagement Frontend] API Users array:', apiUsers);
+      logger.info('[UserManagement Frontend] Number of users from API:', apiUsers.length);
       
+      // Transform users to match our expected format
       const transformedUsers = apiUsers.map(apiUser => ({
         id: apiUser.id || apiUser.user_id || apiUser.auth0_id,
         email: apiUser.email,
@@ -331,6 +324,10 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
       setFilteredUsers(transformedUsers);
       
     } catch (error) {
+      console.error('🔴 [UserManagement] ========== ERROR FETCHING USERS ==========');
+      console.error('🔴 [UserManagement] Error:', error);
+      console.error('🔴 [UserManagement] Error message:', error.message);
+      console.error('🔴 [UserManagement] Error stack:', error.stack);
       logger.error('[UserManagement Frontend] ========== ERROR FETCHING USERS ==========');
       logger.error('[UserManagement Frontend] Error details:', error);
       logger.error('[UserManagement Frontend] Error message:', error.message);
@@ -362,8 +359,23 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
       notifyError('Failed to load users. Showing current user only.');
     } finally {
       setLoading(false);
+      console.log('🔴 [UserManagement] === FETCH USERS END ===');
     }
   };
+
+  // Fetch real user data
+  useEffect(() => {
+    console.log('🔴 [UserManagement] === useEffect RUNNING ===');
+    console.log('🔴 [UserManagement] Component mounted, calling fetchUsers...');
+    console.log('🔴 [UserManagement] fetchUsers function available?', typeof fetchUsers);
+    try {
+      fetchUsers();
+      console.log('🔴 [UserManagement] fetchUsers called successfully');
+    } catch (error) {
+      console.error('🔴 [UserManagement] Error calling fetchUsers:', error);
+    }
+  }, []);
+
 
   // Fetch employees without user accounts
   const fetchEmployeesWithoutUsers = async () => {
