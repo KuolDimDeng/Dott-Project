@@ -14,6 +14,7 @@ import toast from 'react-hot-toast';
 
 const TimesheetTab = ({ employee, session }) => {
   const [loading, setLoading] = useState(false);
+  const [currentEmployee, setCurrentEmployee] = useState(employee);
   const [currentTimesheet, setCurrentTimesheet] = useState(null);
   const [timesheetEntries, setTimesheetEntries] = useState({});
   const [supervisor, setSupervisor] = useState(null);
@@ -26,17 +27,63 @@ const TimesheetTab = ({ employee, session }) => {
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
   useEffect(() => {
-    if (employee && session?.tenantId) {
+    if (!employee && session?.tenantId && session?.user?.email) {
+      // If no employee prop, fetch current user's employee record
+      fetchCurrentUserEmployee();
+    } else if (employee && session?.tenantId) {
       fetchCurrentTimesheet();
       fetchSupervisor();
     }
   }, [employee, session]);
 
-  const fetchCurrentTimesheet = async () => {
+  const fetchCurrentUserEmployee = async () => {
+    console.log('🎯 [TimesheetTab] Fetching current user employee record');
+    setLoading(true);
+    try {
+      // First, get all employees and find the one matching current user's email
+      const response = await fetch('/api/hr/v2/employees', {
+        headers: {
+          'X-Tenant-ID': session.tenantId,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const userEmployee = data.data?.find(emp => 
+          emp.email === session.user.email || 
+          emp.linked_user_account === session.user.id
+        );
+        
+        if (userEmployee) {
+          console.log('🎯 [TimesheetTab] Found employee record:', userEmployee);
+          setCurrentEmployee(userEmployee);
+          // Now fetch timesheet data for this employee
+          fetchCurrentTimesheet(userEmployee.id);
+          if (userEmployee.supervisor) {
+            fetchSupervisor(userEmployee.supervisor);
+          }
+        } else {
+          console.log('🎯 [TimesheetTab] No employee record found for user:', session.user.email);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching current user employee:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCurrentTimesheet = async (employeeId = null) => {
+    const empId = employeeId || currentEmployee?.id;
+    if (!empId) {
+      console.log('🎯 [TimesheetTab] No employee ID available');
+      return;
+    }
+    
     setLoading(true);
     try {
       const response = await fetch(
-        `/api/hr/timesheets?employee_id=${employee.id}&period_start=${format(weekStart, 'yyyy-MM-dd')}`,
+        `/api/hr/timesheets?employee_id=${empId}&period_start=${format(weekStart, 'yyyy-MM-dd')}`,
         {
           headers: {
             'X-Tenant-ID': session.tenantId,
@@ -80,11 +127,12 @@ const TimesheetTab = ({ employee, session }) => {
     }
   };
 
-  const fetchSupervisor = async () => {
-    if (!employee?.supervisor) return;
+  const fetchSupervisor = async (supervisorId = null) => {
+    const supId = supervisorId || currentEmployee?.supervisor;
+    if (!supId) return;
 
     try {
-      const response = await fetch(`/api/hr/employees/${employee.supervisor}/`, {
+      const response = await fetch(`/api/hr/employees/${supId}/`, {
         headers: {
           'X-Tenant-ID': session.tenantId,
         },
@@ -153,19 +201,26 @@ const TimesheetTab = ({ employee, session }) => {
       const dateStr = format(day, 'yyyy-MM-dd');
       const isWeekend = day.getDay() === 0 || day.getDay() === 6;
       
-      if (!isWeekend && !timesheetEntries[dateStr]?.regular_hours) {
+      if (!isWeekend) {
         newEntries[dateStr] = {
+          ...timesheetEntries[dateStr],
           date: dateStr,
           regular_hours: '8.00',
-          project: 'general',
-          task: 'admin',
-          description: 'Standard workday',
+          overtime_hours: '0.00',
+          sick_hours: '0.00',
+          vacation_hours: '0.00',
+          holiday_hours: '0.00',
+          unpaid_hours: '0.00',
+          project: timesheetEntries[dateStr]?.project || 'general',
+          task: timesheetEntries[dateStr]?.task || 'admin',
+          description: timesheetEntries[dateStr]?.description || 'Standard workday',
         };
       }
     });
     
     if (Object.keys(newEntries).length > 0) {
       setTimesheetEntries(prev => ({ ...prev, ...newEntries }));
+      toast.success('Timesheet auto-populated with standard hours');
     }
   };
 
@@ -182,7 +237,7 @@ const TimesheetTab = ({ employee, session }) => {
             'X-Tenant-ID': session.tenantId,
           },
           body: JSON.stringify({
-            employee: employee.id,
+            employee: currentEmployee.id,
             business_id: session.tenantId,
             period_start: format(weekStart, 'yyyy-MM-dd'),
             period_end: format(weekEnd, 'yyyy-MM-dd'),
@@ -212,7 +267,12 @@ const TimesheetTab = ({ employee, session }) => {
             body: JSON.stringify({
               timesheet: timesheetId,
               date,
-              regular_hours: parseFloat(entry.regular_hours),
+              regular_hours: parseFloat(entry.regular_hours) || 0,
+              overtime_hours: parseFloat(entry.overtime_hours) || 0,
+              sick_hours: parseFloat(entry.sick_hours) || 0,
+              vacation_hours: parseFloat(entry.vacation_hours) || 0,
+              holiday_hours: parseFloat(entry.holiday_hours) || 0,
+              unpaid_hours: parseFloat(entry.unpaid_hours) || 0,
               project: entry.project || 'general',
               task: entry.task || 'admin',
               description: entry.description || ''
@@ -269,7 +329,6 @@ const TimesheetTab = ({ employee, session }) => {
 
   const calculateTotalPay = () => {
     const totalHours = calculateTotalHours();
-    const hourlyRate = parseFloat(employee?.wage_per_hour) || 0;
     return totalHours * hourlyRate;
   };
 
@@ -303,7 +362,7 @@ const TimesheetTab = ({ employee, session }) => {
     return <StandardSpinner size="medium" />;
   }
 
-  if (!employee) {
+  if (!currentEmployee) {
     const userRole = session?.user?.role;
     const isOwnerOrAdmin = userRole === 'OWNER' || userRole === 'ADMIN';
     
@@ -363,8 +422,13 @@ const TimesheetTab = ({ employee, session }) => {
   }
 
   // Industry standard: All employees track hours for compliance, project billing, and overtime
-  const isSalariedEmployee = employee.compensation_type === 'SALARY';
+  const isSalariedEmployee = currentEmployee.compensation_type === 'SALARY';
   const defaultHours = isSalariedEmployee ? 8 : 0; // Default 8 hours for salaried employees
+  
+  // Calculate hourly rate for salaried employees
+  const hourlyRate = isSalariedEmployee 
+    ? (parseFloat(currentEmployee.salary) / 2080).toFixed(2) 
+    : parseFloat(currentEmployee.wage_per_hour) || 0;
 
   return (
     <div className="space-y-6">
@@ -542,7 +606,7 @@ const TimesheetTab = ({ employee, session }) => {
                   <div className="text-right mt-2">
                     <p className="text-sm text-gray-500">Pay</p>
                     <p className="font-medium">
-                      ${((parseFloat(entry.regular_hours) || 0) * (parseFloat(employee.wage_per_hour) || 0)).toFixed(2)}
+                      ${((parseFloat(entry.regular_hours) || 0) * hourlyRate).toFixed(2)}
                     </p>
                   </div>
                 </div>
