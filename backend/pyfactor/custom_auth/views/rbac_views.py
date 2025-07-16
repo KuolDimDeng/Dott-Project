@@ -798,7 +798,8 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
             logger.info(f"[DirectUserCreation] Starting Auth0 user creation for {email}")
             
             # Get Auth0 Management API token
-            auth0_tenant_domain = 'dev-cbyy63jovi6zrcos.us.auth0.com'
+            # Use the tenant domain for Management API calls
+            auth0_tenant_domain = getattr(settings, 'AUTH0_TENANT_DOMAIN', 'dev-cbyy63jovi6zrcos.us.auth0.com')
             auth0_config = {
                 'domain': auth0_tenant_domain,
                 'client_id': settings.AUTH0_MANAGEMENT_CLIENT_ID,
