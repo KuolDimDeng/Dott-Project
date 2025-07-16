@@ -212,6 +212,7 @@ const MENU_STRUCTURE = [
 ];
 
 const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, notifyError }) => {
+  console.log('🔴 [UserManagement] Component rendering with props:', { user, isOwner, isAdmin });
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
@@ -240,6 +241,7 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
 
   // Fetch real user data
   useEffect(() => {
+    console.log('🔴 [UserManagement] Component mounted, calling fetchUsers...');
     fetchUsers();
   }, []);
 
