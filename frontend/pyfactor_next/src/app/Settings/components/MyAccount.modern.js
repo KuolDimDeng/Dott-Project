@@ -46,6 +46,7 @@ import {
   BuildingOffice2Icon
 } from '@heroicons/react/24/outline';
 import PayStubViewer from '@/components/PayStubViewer';
+import InlineTimesheetManager from './timesheet/InlineTimesheetManager';
 
 const MyAccount = ({ userData }) => {
   const [selectedTab, setSelectedTab] = useState(0);
@@ -1346,133 +1347,8 @@ const MyAccount = ({ userData }) => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Current Week */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900">Current Week</h3>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="flex justify-between items-center mb-3">
-                <span className="text-sm font-medium text-gray-700">Total Hours This Week</span>
-                <span className="text-2xl font-bold text-green-600">40.0</span>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Monday</span>
-                  <span className="text-gray-900">8.0 hrs</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Tuesday</span>
-                  <span className="text-gray-900">8.0 hrs</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Wednesday</span>
-                  <span className="text-gray-900">8.0 hrs</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Thursday</span>
-                  <span className="text-gray-900">8.0 hrs</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Friday</span>
-                  <span className="text-gray-900">8.0 hrs</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900">Quick Actions</h3>
-            <div className="space-y-3">
-              <button 
-                onClick={() => {
-                  console.log('🎯 [TimesheetAction] === ENTER HOURS CLICKED ===');
-                  console.log('🎯 [TimesheetAction] Router state:', router);
-                  console.log('🎯 [TimesheetAction] Current pathname:', window.location.pathname);
-                  console.log('🎯 [TimesheetAction] Session data:', session);
-                  console.log('🎯 [TimesheetAction] Profile data:', profileData);
-                  try {
-                    console.log('🎯 [TimesheetAction] Attempting navigation to /dashboard/timesheets');
-                    router.push('/dashboard/timesheets');
-                    console.log('🎯 [TimesheetAction] Navigation initiated successfully');
-                  } catch (error) {
-                    console.error('🚨 [TimesheetAction] Navigation failed:', error);
-                    notifyError('Failed to navigate to timesheets');
-                  }
-                }}
-                className="w-full p-4 text-left bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors border border-blue-200"
-              >
-                <div className="font-medium text-blue-900">Enter hours</div>
-                <div className="text-sm text-blue-700 mt-1">Log your daily work hours</div>
-              </button>
-              
-              <button 
-                onClick={() => {
-                  console.log('🎯 [TimesheetAction] === SUBMIT TIMESHEET CLICKED ===');
-                  console.log('🎯 [TimesheetAction] Router state:', router);
-                  console.log('🎯 [TimesheetAction] Current pathname:', window.location.pathname);
-                  console.log('🎯 [TimesheetAction] Session data:', session);
-                  console.log('🎯 [TimesheetAction] Profile data:', profileData);
-                  try {
-                    console.log('🎯 [TimesheetAction] Attempting navigation to /dashboard/timesheets');
-                    router.push('/dashboard/timesheets');
-                    console.log('🎯 [TimesheetAction] Navigation initiated successfully');
-                  } catch (error) {
-                    console.error('🚨 [TimesheetAction] Navigation failed:', error);
-                    notifyError('Failed to navigate to timesheets');
-                  }
-                }}
-                className="w-full p-4 text-left bg-green-50 rounded-lg hover:bg-green-100 transition-colors border border-green-200"
-              >
-                <div className="font-medium text-green-900">Submit weekly timesheet</div>
-                <div className="text-sm text-green-700 mt-1">Submit timesheet for approval</div>
-              </button>
-              
-              <button 
-                onClick={() => {
-                  console.log('🎯 [TimesheetAction] === VIEW ALL TIMESHEETS CLICKED ===');
-                  console.log('🎯 [TimesheetAction] Router state:', router);
-                  console.log('🎯 [TimesheetAction] Current pathname:', window.location.pathname);
-                  console.log('🎯 [TimesheetAction] Session data:', session);
-                  console.log('🎯 [TimesheetAction] Profile data:', profileData);
-                  try {
-                    console.log('🎯 [TimesheetAction] Attempting navigation to /dashboard/timesheets');
-                    router.push('/dashboard/timesheets');
-                    console.log('🎯 [TimesheetAction] Navigation initiated successfully');
-                  } catch (error) {
-                    console.error('🚨 [TimesheetAction] Navigation failed:', error);
-                    notifyError('Failed to navigate to timesheets');
-                  }
-                }}
-                className="w-full p-4 text-left bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors border border-purple-200"
-              >
-                <div className="font-medium text-purple-900">View all timesheets</div>
-                <div className="text-sm text-purple-700 mt-1">Access your timesheet history</div>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Recent Activity */}
-        <div className="mt-8">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Activity</h3>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div>
-                <span className="text-sm font-medium text-gray-900">Clock In</span>
-                <span className="text-sm text-gray-600 ml-2">Today at 9:00 AM</span>
-              </div>
-              <span className="text-green-600 text-sm">Active</span>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div>
-                <span className="text-sm font-medium text-gray-900">Clock Out</span>
-                <span className="text-sm text-gray-600 ml-2">Yesterday at 5:00 PM</span>
-              </div>
-              <span className="text-gray-600 text-sm">8.0 hrs</span>
-            </div>
-          </div>
-        </div>
+        {/* Inline Timesheet Manager */}
+        <InlineTimesheetManager />
       </div>
     );
   };
