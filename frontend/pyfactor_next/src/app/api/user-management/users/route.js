@@ -18,6 +18,13 @@ export async function GET(request) {
     logger.info('[UserManagement] Request method:', request.method);
     logger.info('[UserManagement] Request headers:', Object.fromEntries(request.headers.entries()));
     
+    // Debug cookie parsing
+    const cookieHeader = request.headers.get('cookie') || '';
+    logger.info('[UserManagement] Raw cookie header:', cookieHeader);
+    logger.info('[UserManagement] Cookie header length:', cookieHeader.length);
+    const cookies = cookieHeader.split(';').map(c => c.trim());
+    logger.info('[UserManagement] Parsed cookies:', cookies);
+    
     // Get session and user info from request headers/cookies
     const session = await getSession(request);
     logger.info('[UserManagement] Session result:', session);
@@ -56,10 +63,17 @@ export async function GET(request) {
     // Fetch Auth0 users for this tenant
     const auth0Users = await fetchAuth0UsersForTenant(tenantId);
     
+    // Log before merging
+    logger.info('[UserManagement] Local users count:', localUsers.length);
+    logger.info('[UserManagement] Auth0 users count:', auth0Users.length);
+    logger.info('[UserManagement] Local users:', JSON.stringify(localUsers, null, 2));
+    logger.info('[UserManagement] Auth0 users:', JSON.stringify(auth0Users, null, 2));
+    
     // Merge and normalize user data
     const mergedUsers = mergeUserData(localUsers, auth0Users);
     
     logger.info(`[UserManagement] Found ${mergedUsers.length} users for tenant ${tenantId}`);
+    logger.info('[UserManagement] Merged users:', JSON.stringify(mergedUsers, null, 2));
     
     return NextResponse.json({
       users: mergedUsers,
@@ -282,9 +296,10 @@ async function fetchLocalUsers(tenantId, currentUser, request, unlinkedOnly = fa
     logger.info('[UserManagement] Cookie header for backend:', cookieHeader);
     logger.info('[UserManagement] Current user:', currentUser);
     
-    // Add unlinked parameter if requested
+    // Add unlinked parameter if requested  
     const queryParams = unlinkedOnly ? '?unlinked=true' : '';
-    const fullUrl = `${backendUrl}/auth/rbac/users/${queryParams}`;
+    // Ensure we have the trailing slash for Django
+    const fullUrl = `${backendUrl}/auth/rbac/users/${queryParams}`.replace(/\/+$/, '') + '/';
     logger.info('[UserManagement] Full backend URL:', fullUrl);
     
     // Extract session ID for additional header
@@ -342,10 +357,24 @@ async function fetchLocalUsers(tenantId, currentUser, request, unlinkedOnly = fa
     }
     
     const data = await response.json();
-    const users = Array.isArray(data) ? data : (data.results || data.users || []);
+    logger.info('[UserManagement] Backend response data:', JSON.stringify(data, null, 2));
+    logger.info('[UserManagement] Data type:', typeof data);
+    logger.info('[UserManagement] Is array:', Array.isArray(data));
+    logger.info('[UserManagement] Data keys:', Object.keys(data || {}));
+    
+    // Backend returns { users: [...], total: n }
+    let users = [];
+    if (Array.isArray(data)) {
+      users = data;
+    } else if (data && typeof data === 'object') {
+      users = data.users || data.results || [];
+    }
+    
+    logger.info('[UserManagement] Extracted users array:', users);
+    logger.info('[UserManagement] Number of users from backend:', users.length);
     
     // Transform backend user data to frontend format
-    return users.map(user => ({
+    const transformedUsers = users.map(user => ({
       id: user.id || user.user_id,
       email: user.email,
       name: user.name || user.full_name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email,
@@ -358,6 +387,9 @@ async function fetchLocalUsers(tenantId, currentUser, request, unlinkedOnly = fa
       mfa_enabled: user.mfa_enabled || false,
       invite_status: user.invite_status || 'accepted'
     }));
+    
+    logger.info('[UserManagement] Transformed users:', transformedUsers);
+    return transformedUsers;
     
   } catch (error) {
     logger.error('[UserManagement] Error fetching local users:', error);
@@ -459,10 +491,15 @@ async function fetchAuth0UsersForTenant(tenantId) {
  * Helper function to merge local and Auth0 user data
  */
 function mergeUserData(localUsers, auth0Users) {
+  logger.info('[UserManagement] ========== MERGE USER DATA START ==========');
+  logger.info('[UserManagement] Local users to merge:', localUsers.length);
+  logger.info('[UserManagement] Auth0 users to merge:', auth0Users.length);
+  
   const userMap = new Map();
   
   // Add local users
   localUsers.forEach(user => {
+    logger.info('[UserManagement] Adding local user:', user.email);
     userMap.set(user.email, {
       ...user,
       source: 'local'

@@ -39,25 +39,48 @@ class UserManagementViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """Get users for the current tenant only"""
+        logger.info(f"[UserManagement] Getting users for tenant: {self.request.user.tenant}")
+        logger.info(f"[UserManagement] Current user: {self.request.user.email}")
+        logger.info(f"[UserManagement] Current user role: {self.request.user.role}")
+        
         queryset = User.objects.filter(
             tenant=self.request.user.tenant
         ).select_related('tenant').prefetch_related('page_access__page')
         
+        logger.info(f"[UserManagement] Initial queryset count: {queryset.count()}")
+        
         # Filter for unlinked users (users without an employee record)
         if self.request.query_params.get('unlinked') == 'true':
             queryset = queryset.filter(employee_profile__isnull=True)
+            logger.info(f"[UserManagement] Filtered for unlinked users, count: {queryset.count()}")
             
         return queryset
     
     def list(self, request, *args, **kwargs):
         """Override list to return users in expected format"""
-        queryset = self.filter_queryset(self.get_queryset())
-        serializer = self.get_serializer(queryset, many=True)
+        logger.info("[UserManagement] List method called")
+        logger.info(f"[UserManagement] Request headers: {request.headers}")
+        logger.info(f"[UserManagement] Request user: {request.user}")
+        logger.info(f"[UserManagement] Request user authenticated: {request.user.is_authenticated}")
         
-        return Response({
+        queryset = self.filter_queryset(self.get_queryset())
+        logger.info(f"[UserManagement] Final queryset count: {queryset.count()}")
+        
+        # Log first few users
+        for user in queryset[:3]:
+            logger.info(f"[UserManagement] User: {user.email}, Role: {user.role}, Active: {user.is_active}")
+        
+        serializer = self.get_serializer(queryset, many=True)
+        logger.info(f"[UserManagement] Serialized {len(serializer.data)} users")
+        
+        response_data = {
             'users': serializer.data,
             'total': len(serializer.data)
-        })
+        }
+        
+        logger.info(f"[UserManagement] Returning response with {response_data['total']} users")
+        
+        return Response(response_data)
     
     @action(detail=True, methods=['post'])
     def update_permissions(self, request, pk=None):
