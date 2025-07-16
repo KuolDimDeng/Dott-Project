@@ -207,7 +207,7 @@ const SettingsManagement = enhancedLazy(() => {
       };
     });
 }, 'Settings Management');
-const MyAccount = enhancedLazy(() => import('@/app/Settings/components/MyAccount.modern'), 'My Account');
+const Profile = enhancedLazy(() => import('@/app/Settings/components/Profile.modern'), 'Profile');
 const HelpCenter = enhancedLazy(() => import('@/app/Settings/components/HelpCenter'), 'Help Center');
 const TermsAndConditions = enhancedLazy(() => import('@/app/Terms&Privacy/components/TermsOfUse'), 'Terms and Conditions');
 const PrivacyPolicy = enhancedLazy(() => import('@/app/Terms&Privacy/components/PrivacyPolicy'), 'Privacy Policy');
@@ -1832,7 +1832,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
             )}
             {showMyAccount && (
               <SuspenseWithCleanup componentKey={`my-account-${settingsComponentKey}`}>
-                <MyAccount userData={safeUserData} />
+                <Profile userData={safeUserData} />
               </SuspenseWithCleanup>
             )}
             {showHelpCenter && (
@@ -2324,7 +2324,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
         ActiveComponent = UserProfileSettings;
         componentProps = { userData: safeUserData, onUpdate: handleUserProfileUpdate };
       } else if (showMyAccount) {
-        ActiveComponent = MyAccount;
+        ActiveComponent = Profile;
         componentProps = {
           userData: safeUserData ? {
             ...safeUserData,

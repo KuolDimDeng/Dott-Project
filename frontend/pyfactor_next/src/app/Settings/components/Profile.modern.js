@@ -48,7 +48,7 @@ import {
 import PayStubViewer from '@/components/PayStubViewer';
 import InlineTimesheetManager from './timesheet/InlineTimesheetManager';
 
-const MyAccount = ({ userData }) => {
+const Profile = ({ userData }) => {
   const [selectedTab, setSelectedTab] = useState(0);
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -120,9 +120,9 @@ const MyAccount = ({ userData }) => {
   
   // Fetch login sessions when security tab is selected
   useEffect(() => {
-    console.log('[MyAccount] Selected tab changed to:', selectedTab);
+    console.log('[Profile] Selected tab changed to:', selectedTab);
     if (selectedTab === 1) {
-      console.log('[MyAccount] Security tab selected, fetching data...');
+      console.log('[Profile] Security tab selected, fetching data...');
       fetchLoginSessions();
       fetchMFASettings();
     }
@@ -1434,16 +1434,30 @@ const MyAccount = ({ userData }) => {
       employeeMap[emp.id] = { ...emp, children: [] };
     });
 
-    // Find the owner (no supervisor) and build hierarchy
-    const hierarchy = [];
+    // First, find the actual owner (user with role = 'OWNER')
+    const owner = employees.find(emp => emp.user_role === 'OWNER' || emp.role === 'OWNER');
+    
+    // Build the hierarchy starting from supervisor relationships
     employees.forEach(emp => {
       const employee = employeeMap[emp.id];
       if (emp.supervisor_id && employeeMap[emp.supervisor_id]) {
         // Add to supervisor's children
         employeeMap[emp.supervisor_id].children.push(employee);
-      } else {
-        // No supervisor - this is a top-level person (owner/CEO)
-        hierarchy.push(employee);
+      }
+    });
+
+    // Build the final hierarchy: Owner at top, then employees without supervisors, then their subordinates
+    const hierarchy = [];
+    
+    if (owner) {
+      // Owner at the top
+      hierarchy.push(employeeMap[owner.id]);
+    }
+    
+    // Then add employees who don't have supervisors (but aren't the owner)
+    employees.forEach(emp => {
+      if (!emp.supervisor_id && emp.id !== owner?.id) {
+        hierarchy.push(employeeMap[emp.id]);
       }
     });
 
@@ -1782,4 +1796,4 @@ const MyAccount = ({ userData }) => {
   );
 };
 
-export default MyAccount;
+export default Profile;

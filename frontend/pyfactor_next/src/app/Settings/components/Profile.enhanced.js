@@ -7,7 +7,7 @@ import SubscriptionPopup from '../../dashboard/components/SubscriptionPopup';
 import { useNotification } from '@/context/NotificationContext';
 import AuditTrail from '@/app/dashboard/components/AuditTrail';
 
-const MyAccount = ({ userData }) => {
+const Profile = ({ userData }) => {
   const [selectedTab, setSelectedTab] = useState(0);
   const [showSubscriptionPopup, setShowSubscriptionPopup] = useState(false);
   const [showCloseAccountModal, setShowCloseAccountModal] = useState(false);
@@ -542,4 +542,4 @@ const MyAccount = ({ userData }) => {
   );
 };
 
-export default MyAccount;
+export default Profile;

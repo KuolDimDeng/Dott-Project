@@ -24,7 +24,7 @@ import {
   ArrowPathIcon
 } from '@heroicons/react/24/outline';
 
-const MyAccount = ({ userData }) => {
+const Profile = ({ userData }) => {
   const [selectedTab, setSelectedTab] = useState(0);
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -39,7 +39,7 @@ const MyAccount = ({ userData }) => {
   
   // Log the userData to see what we're working with
   useEffect(() => {
-    console.log('[MyAccount] Component mounted with userData:', userData);
+    console.log('[Profile] Component mounted with userData:', userData);
   }, [userData]);
 
   // Fetch profile data on mount
@@ -56,23 +56,23 @@ const MyAccount = ({ userData }) => {
       const response = await fetch('/api/user/profile');
       if (response.ok) {
         const data = await response.json();
-        console.log('[MyAccount] Profile data fetched:', data);
+        console.log('[Profile] Profile data fetched:', data);
         setProfileData(data);
         setProfilePhoto(data.profilePhoto || data.profile_photo || data.picture);
       } else {
-        console.error('[MyAccount] Profile fetch failed:', response.status, response.statusText);
+        console.error('[Profile] Profile fetch failed:', response.status, response.statusText);
         // If the new endpoint fails, try to use userData
         if (userData) {
-          console.log('[MyAccount] Using userData fallback:', userData);
+          console.log('[Profile] Using userData fallback:', userData);
           setProfileData(userData);
           setProfilePhoto(userData.picture || userData.profilePhoto);
         }
       }
     } catch (error) {
-      console.error('[MyAccount] Error fetching profile:', error);
+      console.error('[Profile] Error fetching profile:', error);
       // Use userData as fallback
       if (userData) {
-        console.log('[MyAccount] Using userData fallback due to error:', userData);
+        console.log('[Profile] Using userData fallback due to error:', userData);
         setProfileData(userData);
         setProfilePhoto(userData.picture || userData.profilePhoto);
       }
@@ -562,7 +562,7 @@ const MyAccount = ({ userData }) => {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">My Account</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Profile</h1>
           <p className="mt-2 text-gray-600">Manage your account settings and preferences</p>
         </div>
         
@@ -614,4 +614,4 @@ const MyAccount = ({ userData }) => {
   );
 };
 
-export default MyAccount;
+export default Profile;
