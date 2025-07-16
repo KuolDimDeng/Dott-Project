@@ -4,6 +4,7 @@
  * Integrates with Auth0 and local user records
  */
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { logger } from '@/utils/logger';
 
 /**
@@ -187,27 +188,40 @@ async function getSession(request) {
     logger.info('[UserManagement] Request method:', request.method);
     logger.info('[UserManagement] Origin:', request.nextUrl.origin);
     
-    // Get cookies from request headers
-    const cookieHeader = request.headers.get('cookie') || '';
-    logger.info('[UserManagement] Cookie header:', cookieHeader);
-    logger.info('[UserManagement] Cookie header length:', cookieHeader.length);
-    logger.info('[UserManagement] Has sid cookie:', cookieHeader.includes('sid='));
-    logger.info('[UserManagement] Has sessionToken cookie:', cookieHeader.includes('sessionToken='));
-    logger.info('[UserManagement] Has session_token cookie:', cookieHeader.includes('session_token='));
+    // Use Next.js cookies API to properly access httpOnly cookies
+    const cookieStore = await cookies();
+    const sidCookie = cookieStore.get('sid');
+    const sessionTokenCookie = cookieStore.get('session_token');
     
-    if (!cookieHeader || (!cookieHeader.includes('sid=') && !cookieHeader.includes('session_token='))) {
-      logger.warn('[UserManagement] No session cookie found in request');
+    logger.info('[UserManagement] Cookie store sid:', !!sidCookie);
+    logger.info('[UserManagement] Cookie store session_token:', !!sessionTokenCookie);
+    
+    const sessionCookie = sidCookie || sessionTokenCookie;
+    
+    if (!sessionCookie) {
+      logger.warn('[UserManagement] No session cookie found in cookie store');
+      
+      // Fallback to header check for debugging
+      const cookieHeader = request.headers.get('cookie') || '';
+      logger.info('[UserManagement] Fallback cookie header:', cookieHeader);
+      logger.info('[UserManagement] Header has sid:', cookieHeader.includes('sid='));
+      logger.info('[UserManagement] Header has session_token:', cookieHeader.includes('session_token='));
+      
       return null;
     }
     
-    // Extract sid or session_token value for logging
-    const sidMatch = cookieHeader.match(/sid=([^;]+)/);
-    const sessionTokenMatch = cookieHeader.match(/session_token=([^;]+)/);
-    const sessionId = sidMatch ? sidMatch[1] : (sessionTokenMatch ? sessionTokenMatch[1] : 'not found');
+    const sessionId = sessionCookie.value;
+    logger.info('[UserManagement] Session cookie found:', sessionCookie.name);
     logger.info('[UserManagement] Session ID value:', sessionId.substring(0, 8) + '...');
     
     // First try to get user info from session-v2 endpoint (internal call)
     logger.info('[UserManagement] Calling session-v2 endpoint...');
+    
+    // Build cookie header from cookie store
+    const allCookies = cookieStore.getAll();
+    const cookieHeader = allCookies.map(c => `${c.name}=${c.value}`).join('; ');
+    logger.info('[UserManagement] Rebuilt cookie header for session-v2 call');
+    
     const sessionResponse = await fetch(`${request.nextUrl.origin}/api/auth/session-v2`, {
       headers: {
         'cookie': cookieHeader,
@@ -319,8 +333,11 @@ async function fetchLocalUsers(tenantId, currentUser, request, unlinkedOnly = fa
     logger.info('[UserManagement] Tenant ID:', tenantId);
     logger.info('[UserManagement] Unlinked only:', unlinkedOnly);
     
-    // Forward cookies for session-based authentication
-    const cookieHeader = request?.headers?.get('cookie') || '';
+    // Get cookies properly using Next.js cookies API
+    const cookieStore = await cookies();
+    const allCookies = cookieStore.getAll();
+    const cookieHeader = allCookies.map(c => `${c.name}=${c.value}`).join('; ');
+    
     logger.info('[UserManagement] Cookie header for backend:', cookieHeader);
     logger.info('[UserManagement] Current user:', currentUser);
     
@@ -330,10 +347,9 @@ async function fetchLocalUsers(tenantId, currentUser, request, unlinkedOnly = fa
     const fullUrl = `${backendUrl}/auth/rbac/users/${queryParams}`.replace(/\/+$/, '') + '/';
     logger.info('[UserManagement] Full backend URL:', fullUrl);
     
-    // Extract session ID for additional header
-    const sidMatch2 = cookieHeader.match(/sid=([^;]+)/);
-    const sessionTokenMatch2 = cookieHeader.match(/session_token=([^;]+)/);
-    const extractedSessionId = sidMatch2 ? sidMatch2[1] : (sessionTokenMatch2 ? sessionTokenMatch2[1] : null);
+    // Get session ID from cookie store
+    const sessionCookie = cookieStore.get('sid') || cookieStore.get('session_token');
+    const extractedSessionId = sessionCookie?.value;
     logger.info('[UserManagement] Extracted session ID for backend:', extractedSessionId ? extractedSessionId.substring(0, 8) + '...' : 'none');
     
     const headers = {
