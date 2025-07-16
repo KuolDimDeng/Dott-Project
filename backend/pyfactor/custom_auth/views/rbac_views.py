@@ -689,7 +689,9 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
                     tenant=request.user.tenant,
                     business_id=request.user.business_id,
                     is_active=True,
-                    auth0_sub=f"pending_{email}_{timezone.now().timestamp()}"  # Temporary ID
+                    auth0_sub=f"pending_{email}_{timezone.now().timestamp()}",  # Temporary ID
+                    onboarding_completed=True,  # Admin-created users skip onboarding
+                    onboarding_completed_at=timezone.now()
                 )
                 logger.info(f"[DirectUserCreation] User created in database with ID: {user.id}")
             except Exception as db_error:
