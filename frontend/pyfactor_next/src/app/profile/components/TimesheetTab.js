@@ -38,21 +38,33 @@ const TimesheetTab = ({ employee, session }) => {
 
   const fetchCurrentUserEmployee = async () => {
     console.log('🎯 [TimesheetTab] Fetching current user employee record');
+    console.log('🎯 [TimesheetTab] User email:', session.user.email);
+    console.log('🎯 [TimesheetTab] Tenant ID:', session.tenantId);
     setLoading(true);
     try {
       // First, get all employees and find the one matching current user's email
-      const response = await fetch('/api/hr/v2/employees', {
+      const response = await fetch('/api/hr/v2/employees/', {
         headers: {
           'X-Tenant-ID': session.tenantId,
         },
       });
 
+      console.log('🎯 [TimesheetTab] Employee API response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
-        const userEmployee = data.data?.find(emp => 
-          emp.email === session.user.email || 
-          emp.linked_user_account === session.user.id
-        );
+        console.log('🎯 [TimesheetTab] Employee API response data:', data);
+        
+        // Handle both data.data and data.results response formats
+        const employees = data.data || data.results || data;
+        console.log('🎯 [TimesheetTab] Employee list:', employees);
+        
+        const userEmployee = employees.find(emp => {
+          console.log('🎯 [TimesheetTab] Checking employee:', emp.email, 'vs user:', session.user.email);
+          return emp.email === session.user.email || 
+                 emp.linked_user_account === session.user.id ||
+                 emp.linked_user_account === session.user.email;
+        });
         
         if (userEmployee) {
           console.log('🎯 [TimesheetTab] Found employee record:', userEmployee);
@@ -64,10 +76,13 @@ const TimesheetTab = ({ employee, session }) => {
           }
         } else {
           console.log('🎯 [TimesheetTab] No employee record found for user:', session.user.email);
+          console.log('🎯 [TimesheetTab] Available employees:', employees.map(e => ({ email: e.email, linked: e.linked_user_account })));
         }
+      } else {
+        console.error('🎯 [TimesheetTab] Employee API failed:', response.status, response.statusText);
       }
     } catch (error) {
-      console.error('Error fetching current user employee:', error);
+      console.error('🎯 [TimesheetTab] Error fetching current user employee:', error);
     } finally {
       setLoading(false);
     }
@@ -80,6 +95,7 @@ const TimesheetTab = ({ employee, session }) => {
       return;
     }
     
+    console.log('🎯 [TimesheetTab] Fetching timesheet for employee ID:', empId);
     setLoading(true);
     try {
       const response = await fetch(
@@ -90,6 +106,8 @@ const TimesheetTab = ({ employee, session }) => {
           },
         }
       );
+      
+      console.log('🎯 [TimesheetTab] Timesheet API response status:', response.status);
 
       if (response.ok) {
         const data = await response.json();
