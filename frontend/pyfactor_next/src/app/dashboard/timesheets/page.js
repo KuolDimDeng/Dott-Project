@@ -16,7 +16,17 @@ import StandardSpinner from '@/components/ui/StandardSpinner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 const TimesheetsPage = () => {
-  const { tenantId, user } = useSessionContext();
+  console.log('🎯 [TimesheetsPage] === COMPONENT RENDERING ===');
+  console.log('🎯 [TimesheetsPage] Render timestamp:', new Date().toISOString());
+  
+  const sessionData = useSessionContext();
+  console.log('🎯 [TimesheetsPage] Session data:', sessionData);
+  console.log('🎯 [TimesheetsPage] Session loading:', sessionData?.loading);
+  
+  const { tenantId, user } = sessionData || {};
+  console.log('🎯 [TimesheetsPage] Extracted tenantId:', tenantId);
+  console.log('🎯 [TimesheetsPage] Extracted user:', user);
+  
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [timesheets, setTimesheets] = useState([]);
@@ -33,9 +43,18 @@ const TimesheetsPage = () => {
   const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
+    console.log('🎯 [TimesheetsPage] useEffect triggered');
+    console.log('🎯 [TimesheetsPage] tenantId:', tenantId);
+    console.log('🎯 [TimesheetsPage] user:', user);
+    console.log('🎯 [TimesheetsPage] filters:', filters);
+    
     if (tenantId && user) {
+      console.log('🎯 [TimesheetsPage] Fetching data...');
       fetchTimesheets();
       fetchEmployees();
+    } else {
+      console.log('🎯 [TimesheetsPage] Skipping fetch - missing tenantId or user');
+      setLoading(false);
     }
   }, [filters, tenantId, user]);
 
@@ -280,6 +299,16 @@ const TimesheetsPage = () => {
     return employeeName.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
+  // Add loading state check to prevent crashes
+  if (sessionData?.loading || !tenantId) {
+    console.log('🎯 [TimesheetsPage] Showing loading state - session loading:', sessionData?.loading, 'tenantId:', tenantId);
+    return (
+      <div className="flex justify-center items-center h-64">
+        <StandardSpinner size="large" />
+      </div>
+    );
+  }
+  
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">

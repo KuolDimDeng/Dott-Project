@@ -42,7 +42,8 @@ import {
   MinusIcon,
   ArrowsPointingOutIcon,
   MagnifyingGlassIcon,
-  DocumentIcon
+  DocumentIcon,
+  BuildingOffice2Icon
 } from '@heroicons/react/24/outline';
 import PayStubViewer from '@/components/PayStubViewer';
 
@@ -1156,14 +1157,6 @@ const MyAccount = ({ userData }) => {
           
           {expandedSections.pay && (
             <div className="space-y-3 mt-4 pl-7">
-              <div className="flex justify-end mb-4">
-                <button 
-                  onClick={() => setShowPayStubViewer(true)}
-                  className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  View All Paystubs
-                </button>
-              </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <p className="text-sm text-gray-600">Current Salary</p>
@@ -1179,10 +1172,9 @@ const MyAccount = ({ userData }) => {
                 </div>
               </div>
               
-              {/* Recent Paystubs */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="text-sm font-medium text-gray-700 mb-3">Recent Paystubs</h4>
-                <p className="text-sm text-gray-500 text-center py-8">No paystubs available</p>
+              {/* PayStub Viewer Inline */}
+              <div className="mt-6">
+                <PayStubViewer isModal={false} />
               </div>
             </div>
           )}
@@ -1328,17 +1320,13 @@ const MyAccount = ({ userData }) => {
             <span className="text-blue-600 text-xl">→</span>
           </button>
           
-          <button 
-            onClick={() => setShowPayStubViewer(true)}
-            className="flex items-center justify-between p-6 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors text-left border border-blue-200 hover:border-blue-300"
-          >
+          <div className="bg-blue-50 rounded-lg p-6 border border-blue-200">
             <div>
-              <p className="font-semibold text-blue-900">Latest Pay Stub</p>
-              <p className="text-sm text-blue-700 mt-1">View most recent payment</p>
-              <p className="text-xs text-blue-600 mt-1">Interactive pay stub viewer</p>
+              <p className="font-semibold text-blue-900 mb-4">Pay Stubs</p>
+              <p className="text-sm text-blue-700 mb-4">View your payment history</p>
+              <PayStubViewer isModal={false} />
             </div>
-            <span className="text-blue-600 text-xl">→</span>
-          </button>
+          </div>
         </div>
       </div>
     );
@@ -1460,14 +1448,6 @@ const MyAccount = ({ userData }) => {
               >
                 <div className="font-medium text-purple-900">View all timesheets</div>
                 <div className="text-sm text-purple-700 mt-1">Access your timesheet history</div>
-              </button>
-              
-              <button 
-                onClick={() => setShowPayStubViewer(true)}
-                className="w-full p-4 text-left bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
-              >
-                <div className="font-medium text-gray-900">View pay stubs</div>
-                <div className="text-sm text-gray-700 mt-1">Access your payment history</div>
               </button>
             </div>
           </div>
@@ -1921,13 +1901,7 @@ const MyAccount = ({ userData }) => {
         </div>
       </div>
 
-      {/* PayStub Viewer Modal */}
-      {showPayStubViewer && (
-        <PayStubViewer 
-          isModal={true} 
-          onClose={() => setShowPayStubViewer(false)} 
-        />
-      )}
+      {/* PayStub Viewer Modal - Removed as it's now inline */}
     </div>
   );
 };
