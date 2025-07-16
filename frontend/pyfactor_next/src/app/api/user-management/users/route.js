@@ -17,33 +17,88 @@ export async function GET(request) {
     logger.info('[UserManagement] API Route called successfully');
     logger.info('[UserManagement] Request URL:', request.url);
     logger.info('[UserManagement] Request method:', request.method);
-    logger.info('[UserManagement] Request headers:', Object.fromEntries(request.headers.entries()));
     
-    // Debug cookie parsing
-    const cookieHeader = request.headers.get('cookie') || '';
-    logger.info('[UserManagement] Raw cookie header:', cookieHeader);
-    logger.info('[UserManagement] Cookie header length:', cookieHeader.length);
+    // Use Next.js cookies API to access cookies properly
+    const cookieStore = await cookies();
+    const allCookies = cookieStore.getAll();
+    logger.info('[UserManagement] All cookies from cookieStore:', allCookies.map(c => ({ name: c.name, valueLength: c.value.length })));
     
-    if (cookieHeader) {
-      const cookies = cookieHeader.split(';').map(c => c.trim());
-      logger.info('[UserManagement] Parsed cookies:', cookies);
-      
-      // Look for session-related cookies
-      const sessionCookies = cookies.filter(c => 
-        c.includes('sid=') || 
-        c.includes('session_token=') || 
-        c.includes('sessionToken=') ||
-        c.includes('session=') ||
-        c.includes('auth=')
-      );
-      logger.info('[UserManagement] Session-related cookies found:', sessionCookies);
-      
-      if (sessionCookies.length === 0) {
-        logger.warn('[UserManagement] No session cookies found! Available cookies:', cookies);
-      }
-    } else {
-      logger.warn('[UserManagement] No cookie header found in request!');
+    const sidCookie = cookieStore.get('sid');
+    const sessionTokenCookie = cookieStore.get('session_token');
+    
+    logger.info('[UserManagement] sid cookie found:', !!sidCookie);
+    logger.info('[UserManagement] session_token cookie found:', !!sessionTokenCookie);
+    
+    if (sidCookie) {
+      logger.info('[UserManagement] sid cookie value (first 8 chars):', sidCookie.value.substring(0, 8));
     }
+    if (sessionTokenCookie) {
+      logger.info('[UserManagement] session_token cookie value (first 8 chars):', sessionTokenCookie.value.substring(0, 8));
+    }
+    
+    // First, let's try to make a direct call to the backend with the session cookie
+    const sessionCookie = sidCookie || sessionTokenCookie;
+    if (!sessionCookie) {
+      logger.error('[UserManagement] No session cookie found');
+      return NextResponse.json(
+        { error: 'No session cookie found' },
+        { status: 401 }
+      );
+    }
+    
+    logger.info('[UserManagement] Using session cookie:', sessionCookie.name, 'with value:', sessionCookie.value.substring(0, 8) + '...');
+    
+    // Try direct backend call first
+    const backendUrl = process.env.BACKEND_URL || 'https://dott-api-y26w.onrender.com';
+    const testUrl = `${backendUrl}/auth/rbac/users/`;
+    
+    logger.info('[UserManagement] Making direct backend call to:', testUrl);
+    
+    // Build cookie header
+    const cookieHeader = allCookies.map(c => `${c.name}=${c.value}`).join('; ');
+    
+    const testHeaders = {
+      'Content-Type': 'application/json',
+      'Cookie': cookieHeader,
+      'Authorization': `Session ${sessionCookie.value}`,
+      'Accept': 'application/json'
+    };
+    
+    logger.info('[UserManagement] Test request headers:', {
+      ...testHeaders,
+      'Cookie': 'HIDDEN',
+      'Authorization': testHeaders.Authorization.substring(0, 20) + '...'
+    });
+    
+    try {
+      const testResponse = await fetch(testUrl, {
+        method: 'GET',
+        headers: testHeaders,
+        cache: 'no-store'
+      });
+      
+      logger.info('[UserManagement] Direct backend response status:', testResponse.status);
+      logger.info('[UserManagement] Direct backend response headers:', Object.fromEntries(testResponse.headers.entries()));
+      
+      if (!testResponse.ok) {
+        const errorText = await testResponse.text();
+        logger.error('[UserManagement] Direct backend error:', errorText);
+      } else {
+        const data = await testResponse.json();
+        logger.info('[UserManagement] Direct backend success! Data:', data);
+        
+        // If direct call works, return the data
+        return NextResponse.json({
+          users: data.users || [],
+          total: data.total || 0
+        });
+      }
+    } catch (directError) {
+      logger.error('[UserManagement] Direct backend call failed:', directError);
+    }
+    
+    // If direct call fails, continue with the original flow
+    logger.info('[UserManagement] Falling back to original session flow...');
     
     // Get session and user info from request headers/cookies
     const session = await getSession(request);
@@ -63,9 +118,6 @@ export async function GET(request) {
         sessionKeys: session ? Object.keys(session) : [],
         userKeys: session?.user ? Object.keys(session.user) : []
       });
-      logger.error('[UserManagement] Raw cookies received:', cookieHeader);
-      logger.error('[UserManagement] Request origin:', request.headers.get('origin'));
-      logger.error('[UserManagement] Request referer:', request.headers.get('referer'));
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
