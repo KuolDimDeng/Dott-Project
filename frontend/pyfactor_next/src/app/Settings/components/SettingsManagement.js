@@ -14,7 +14,7 @@ import UserManagement from './sections/UserManagement';
 import CompanyProfile from './sections/CompanyProfile';
 import BillingSubscriptions from './sections/BillingSubscriptions';
 import SecuritySettings from './sections/SecuritySettings';
-import WhatsAppSettings from './sections/WhatsAppSettings';
+import Integrations from './sections/Integrations';
 import BankConnections from './sections/BankConnections';
 
 // Import icons
@@ -23,7 +23,7 @@ import {
   BuildingOfficeIcon, 
   CreditCardIcon,
   ShieldCheckIcon,
-  ChatBubbleLeftRightIcon,
+  PuzzlePieceIcon,
   BanknotesIcon
 } from '@heroicons/react/24/outline';
 
@@ -56,14 +56,6 @@ const SettingsManagement = () => {
       requiredRole: 'admin' // Admin and Owner can access
     },
     {
-      id: 'whatsapp',
-      title: 'WhatsApp',
-      icon: ChatBubbleLeftRightIcon,
-      description: 'Configure WhatsApp Business integration and menu visibility',
-      component: WhatsAppSettings,
-      requiredRole: 'user' // All users can access
-    },
-    {
       id: 'bank-connections',
       title: 'Bank Connections',
       icon: BanknotesIcon,
@@ -78,6 +70,14 @@ const SettingsManagement = () => {
       description: 'Manage your subscription and view billing history',
       component: BillingSubscriptions,
       requiredRole: 'owner' // Only owner can access
+    },
+    {
+      id: 'integrations',
+      title: 'Integrations',
+      icon: PuzzlePieceIcon,
+      description: 'Connect and manage third-party app integrations',
+      component: Integrations,
+      requiredRole: 'user' // All users can access
     },
     {
       id: 'security',
