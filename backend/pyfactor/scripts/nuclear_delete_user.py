@@ -76,9 +76,13 @@ def nuclear_delete_user(email):
             (f"DELETE FROM user_notification_settings WHERE user_email = '{email}'", "user_notification_settings"),
         ])
         
-        # 3. Session management
+        # 3. Session management (order matters due to foreign keys)
         deletions.extend([
+            # First delete session events that reference user_sessions
+            (f"DELETE FROM session_events WHERE session_id IN (SELECT session_id FROM user_sessions WHERE user_id = {user_id})", "session_events"),
+            # Then delete user_sessions
             (f"DELETE FROM user_sessions WHERE user_id = {user_id}", "user_sessions"),
+            # Then other session related tables
             (f"DELETE FROM session_manager_securityevent WHERE user_id = {user_id}", "session_manager_securityevent"),
             (f"DELETE FROM session_manager_devicefingerprint WHERE user_id = {user_id}", "session_manager_devicefingerprint"),
             (f"DELETE FROM session_manager_session WHERE user_id = {user_id}", "session_manager_session"),
