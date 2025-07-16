@@ -360,9 +360,12 @@ async function fetchLocalUsers(tenantId, currentUser, request, unlinkedOnly = fa
     
     if (extractedSessionId) {
       headers['X-Session-ID'] = extractedSessionId;
+      // Add Authorization header with Session token for backend authentication
+      headers['Authorization'] = `Session ${extractedSessionId}`;
     }
     
     logger.info('[UserManagement] Request headers to backend:', headers);
+    logger.info('[UserManagement] Authorization header:', headers.Authorization || 'Not set');
     
     const response = await fetch(fullUrl, {
       method: 'GET',
