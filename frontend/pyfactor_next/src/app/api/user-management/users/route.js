@@ -13,7 +13,9 @@ import { logger } from '@/utils/logger';
 export async function GET(request) {
   try {
     logger.info('[UserManagement] ========== GET USERS REQUEST START ==========');
+    logger.info('[UserManagement] API Route called successfully');
     logger.info('[UserManagement] Request URL:', request.url);
+    logger.info('[UserManagement] Request method:', request.method);
     logger.info('[UserManagement] Request headers:', Object.fromEntries(request.headers.entries()));
     
     // Get session and user info from request headers/cookies

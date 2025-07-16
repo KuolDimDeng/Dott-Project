@@ -252,6 +252,7 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
       logger.info('[UserManagement Frontend] Document cookies:', document.cookie);
       logger.info('[UserManagement Frontend] Session storage:', JSON.stringify(sessionStorage.getItem('session') || 'null'));
       logger.info('[UserManagement Frontend] Local storage keys:', Object.keys(localStorage));
+      logger.info('[UserManagement Frontend] About to fetch from: /api/user-management/users');
       
       // Fetch users from the proper User Management API (not HR employees)
       const response = await fetch('/api/user-management/users', {
@@ -327,7 +328,16 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
       setFilteredUsers(transformedUsers);
       
     } catch (error) {
-      logger.error('[UserManagement] Error fetching users:', error);
+      logger.error('[UserManagement Frontend] ========== ERROR FETCHING USERS ==========');
+      logger.error('[UserManagement Frontend] Error details:', error);
+      logger.error('[UserManagement Frontend] Error message:', error.message);
+      logger.error('[UserManagement Frontend] Error stack:', error.stack);
+      logger.error('[UserManagement Frontend] Error type:', error.name);
+      
+      // Show error message to user
+      if (notifyError) {
+        notifyError('Failed to load users. Showing current user only.');
+      }
       
       // Fallback to showing at least the current user
       if (user) {
