@@ -1691,7 +1691,10 @@ const Profile = ({ userData }) => {
                 minWidth: 'fit-content'
               }}
             >
-              {hierarchy.map(employee => renderEmployeeCard(employee, true))}
+              {hierarchy.map(employee => {
+                const isActualOwner = employee.user_role === 'OWNER' || employee.role === 'OWNER';
+                return renderEmployeeCard(employee, isActualOwner);
+              })}
             </div>
           </div>
         )}
