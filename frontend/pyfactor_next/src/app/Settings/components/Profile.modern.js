@@ -1434,32 +1434,36 @@ const Profile = ({ userData }) => {
       employeeMap[emp.id] = { ...emp, children: [] };
     });
 
-    // First, find the actual owner (user with role = 'OWNER')
-    const owner = employees.find(emp => emp.user_role === 'OWNER' || emp.role === 'OWNER');
-    
     // Build the hierarchy starting from supervisor relationships
     employees.forEach(emp => {
-      const employee = employeeMap[emp.id];
       if (emp.supervisor_id && employeeMap[emp.supervisor_id]) {
         // Add to supervisor's children
-        employeeMap[emp.supervisor_id].children.push(employee);
+        employeeMap[emp.supervisor_id].children.push(employeeMap[emp.id]);
       }
     });
 
-    // Build the final hierarchy: Owner at top, then employees without supervisors, then their subordinates
+    // Find root employees (those without supervisors)
+    const rootEmployees = employees.filter(emp => !emp.supervisor_id);
+    
+    // First, find the actual owner (user with role = 'OWNER')
+    const owner = rootEmployees.find(emp => emp.user_role === 'OWNER' || emp.role === 'OWNER');
+    
+    // If we have an owner, put them first, then other root employees
     const hierarchy = [];
-    
     if (owner) {
-      // Owner at the top
       hierarchy.push(employeeMap[owner.id]);
-    }
-    
-    // Then add employees who don't have supervisors (but aren't the owner)
-    employees.forEach(emp => {
-      if (!emp.supervisor_id && emp.id !== owner?.id) {
+      // Add other root employees (but not the owner)
+      rootEmployees.forEach(emp => {
+        if (emp.id !== owner.id) {
+          hierarchy.push(employeeMap[emp.id]);
+        }
+      });
+    } else {
+      // No owner found, just show all root employees
+      rootEmployees.forEach(emp => {
         hierarchy.push(employeeMap[emp.id]);
-      }
-    });
+      });
+    }
 
     return hierarchy;
   };
@@ -1568,19 +1572,28 @@ const Profile = ({ userData }) => {
           )}
         </div>
         
-        {/* Vertical line down to children */}
-        {employee.children && employee.children.length > 0 && (
-          <div className="w-px bg-gray-300 h-8"></div>
-        )}
-        
         {/* Render children horizontally */}
         {employee.children && employee.children.length > 0 && (
-          <div className="flex flex-col items-center">
-            {/* Horizontal line connecting all children */}
-            <div className="relative">
-              <div className="h-px bg-gray-300" style={{ width: `${Math.max(employee.children.length * 320, 320)}px` }}></div>
+          <div className="mt-8 flex flex-col items-center w-full">
+            {/* Vertical line down from parent */}
+            <div className="w-px bg-gray-300 h-8"></div>
+            
+            {/* Horizontal line across children */}
+            <div className="relative flex justify-center">
+              <div 
+                className="h-px bg-gray-300 absolute top-0" 
+                style={{ 
+                  width: `${Math.max(employee.children.length * 350, 350)}px`,
+                  left: '50%',
+                  transform: 'translateX(-50%)'
+                }}
+              ></div>
+              
               {/* Vertical lines down to each child */}
-              <div className="flex justify-evenly" style={{ width: `${Math.max(employee.children.length * 320, 320)}px` }}>
+              <div 
+                className="flex justify-between relative"
+                style={{ width: `${Math.max(employee.children.length * 350, 350)}px` }}
+              >
                 {employee.children.map((_, index) => (
                   <div key={index} className="w-px bg-gray-300 h-8"></div>
                 ))}
@@ -1588,8 +1601,15 @@ const Profile = ({ userData }) => {
             </div>
             
             {/* Children arranged horizontally */}
-            <div className="flex flex-wrap justify-center gap-8 mt-0">
-              {employee.children.map(child => renderEmployeeCard(child, false))}
+            <div 
+              className="flex justify-between items-start mt-0 w-full"
+              style={{ maxWidth: `${Math.max(employee.children.length * 350, 350)}px` }}
+            >
+              {employee.children.map(child => (
+                <div key={child.id} className="flex-1 flex justify-center">
+                  {renderEmployeeCard(child, child.user_role === 'OWNER' || child.role === 'OWNER')}
+                </div>
+              ))}
             </div>
           </div>
         )}
