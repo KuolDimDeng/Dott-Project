@@ -1545,10 +1545,13 @@ function EmployeeManagement({ onNavigate }) {
                 type="number"
                 value={formData.salary}
                 onChange={(e) => setFormData({...formData, salary: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 ${
+                  formErrors.salary ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                }`}
                 placeholder="e.g., 75000"
               />
-              {formData.salary && (
+              {formErrors.salary && <p className="text-red-500 text-xs mt-1">{formErrors.salary}</p>}
+              {formData.salary && !formErrors.salary && (
                 <p className="text-xs text-gray-500 mt-1">
                   Hourly equivalent: ${(parseFloat(formData.salary) / 2080).toFixed(2)}/hour
                 </p>
@@ -1564,10 +1567,13 @@ function EmployeeManagement({ onNavigate }) {
                 type="number"
                 value={formData.wagePerHour}
                 onChange={(e) => setFormData({...formData, wagePerHour: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 ${
+                  formErrors.wagePerHour ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                }`}
                 placeholder="e.g., 25.50"
                 step="0.01"
               />
+              {formErrors.wagePerHour && <p className="text-red-500 text-xs mt-1">{formErrors.wagePerHour}</p>}
             </div>
           )}
           
