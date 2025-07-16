@@ -312,8 +312,10 @@ async function fetchLocalUsers(tenantId, currentUser, request, unlinkedOnly = fa
     
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'Could not read error');
-      logger.warn(`[UserManagement] Backend API returned ${response.status}: ${response.statusText}`);
-      logger.warn('[UserManagement] Backend error response:', errorText);
+      logger.error(`[UserManagement] Backend API returned ${response.status}: ${response.statusText}`);
+      logger.error('[UserManagement] Backend error response:', errorText);
+      logger.error('[UserManagement] Request headers sent:', headers);
+      logger.error('[UserManagement] Full URL called:', fullUrl);
       
       // If backend is not available, return at least the current user
       if (currentUser && currentUser.tenantId === tenantId) {
