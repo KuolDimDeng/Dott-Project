@@ -923,12 +923,27 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   }, [resetAllStates, updateState, setNavigationKey, handleClose]);
 
   const handlePrivacyClick = useCallback(() => {
-    window.open('/privacy', '_blank');
+    resetAllStates();
+    updateState({
+      showPrivacyPolicy: true,
+      navigationKey: Date.now()
+    });
     handleClose();
-  }, [handleClose]);
+  }, [resetAllStates, updateState, handleClose]);
 
   const handleTermsClick = useCallback(() => {
-    window.open('/terms', '_blank');
+    resetAllStates();
+    updateState({
+      showTermsAndConditions: true,
+      navigationKey: Date.now()
+    });
+    handleClose();
+  }, [resetAllStates, updateState, handleClose]);
+
+  const handleCookieClick = useCallback(() => {
+    // For now, we'll open in a new window since cookie policy might not have a dedicated state
+    // You can add a setShowCookiePolicy state if needed
+    window.open('/cookies', '_blank');
     handleClose();
   }, [handleClose]);
 
@@ -1260,6 +1275,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     handleHelpClick,
     handlePrivacyClick,
     handleTermsClick,
+    handleCookieClick,
     handleLogout: handleSignOut,
     handleCloseCreateMenu,
     handleMenuItemClick,
@@ -1271,7 +1287,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     anchorEl, settingsAnchorEl, openMenu, settingsMenuOpen, setAnchorEl, setSettingsAnchorEl,
     setShowMyAccount, setShowHelpCenter, memoizedUserData, userAttributes, setUserData, drawerOpen, handleDrawerToggle,
     resetAllStates, setShowHome, setShowCreateMenu, showCreateMenu, handleClick, handleClose,
-    handleUserProfileClick, handleSettingsClick, handleHelpClick, handlePrivacyClick, handleTermsClick,
+    handleUserProfileClick, handleSettingsClick, handleHelpClick, handlePrivacyClick, handleTermsClick, handleCookieClick,
     handleSignOut, handleCloseCreateMenu, handleMenuItemClick, setShowForm, setFormOption, effectiveTenantId, handleHomeClick
   ]);
   
