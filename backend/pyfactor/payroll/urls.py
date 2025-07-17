@@ -1,5 +1,14 @@
 from django.urls import path
-from .views import RunPayrollView, PayrollRunsView, PayrollTransactionsView, PayrollCalculationView, payroll_report, PayStubView
+from .views import (
+    RunPayrollView, PayrollRunsView, PayrollTransactionsView, PayrollCalculationView, 
+    payroll_report, PayStubView, PayStubDownloadView, PayrollSettingsView,
+    DepositMethodListCreateView, DepositMethodDetailView,
+    WithholdingListCreateView, WithholdingDetailView,
+    BonusListCreateView, BonusDetailView,
+    DeductionListCreateView, DeductionDetailView,
+    PayStatementListView, PayStatementDetailView,
+    PayrollStatsView
+)
 from .stripe_views import (
     setup_payroll_funding, confirm_funding_setup, get_payroll_funding_status,
     employee_bank_setup, employee_bank_status,
@@ -37,6 +46,23 @@ urlpatterns = [
     # Webhook endpoint
     path('webhooks/stripe/', stripe_payroll_webhook, name='stripe-payroll-webhook'),
     
-    # PayStub endpoint
+    # PayStub endpoints
     path('paystubs/', PayStubView.as_view(), name='employee-paystubs'),
+    path('paystubs/<uuid:pk>/download/', PayStubDownloadView.as_view(), name='paystub-download'),
+    
+    # Payroll Settings
+    path('settings/', PayrollSettingsView.as_view(), name='payroll-settings'),
+    
+    # Pay Management endpoints
+    path('deposit-methods/', DepositMethodListCreateView.as_view(), name='deposit-methods-list'),
+    path('deposit-methods/<uuid:pk>/', DepositMethodDetailView.as_view(), name='deposit-method-detail'),
+    path('withholdings/', WithholdingListCreateView.as_view(), name='withholdings-list'),
+    path('withholdings/<uuid:pk>/', WithholdingDetailView.as_view(), name='withholding-detail'),
+    path('bonuses/', BonusListCreateView.as_view(), name='bonuses-list'),
+    path('bonuses/<uuid:pk>/', BonusDetailView.as_view(), name='bonus-detail'),
+    path('deductions/', DeductionListCreateView.as_view(), name='deductions-list'),
+    path('deductions/<uuid:pk>/', DeductionDetailView.as_view(), name='deduction-detail'),
+    path('statements/', PayStatementListView.as_view(), name='statements-list'),
+    path('statements/<uuid:pk>/', PayStatementDetailView.as_view(), name='statement-detail'),
+    path('stats/', PayrollStatsView.as_view(), name='payroll-stats'),
 ]

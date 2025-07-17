@@ -16,6 +16,8 @@ import BillingSubscriptions from './sections/BillingSubscriptions';
 import SecuritySettings from './sections/SecuritySettings';
 import Integrations from './sections/Integrations';
 import BankConnections from './sections/BankConnections';
+import PayrollSettings from './sections/PayrollSettings';
+import WhatsAppSettings from './sections/WhatsAppSettings';
 
 // Import icons
 import { 
@@ -24,7 +26,9 @@ import {
   CreditCardIcon,
   ShieldCheckIcon,
   PuzzlePieceIcon,
-  BanknotesIcon
+  BanknotesIcon,
+  CurrencyDollarIcon,
+  ChatBubbleLeftRightIcon
 } from '@heroicons/react/24/outline';
 
 const SettingsManagement = () => {
@@ -64,6 +68,14 @@ const SettingsManagement = () => {
       requiredRole: 'admin' // Only admin and owner can access
     },
     {
+      id: 'payroll',
+      title: 'Payroll',
+      icon: CurrencyDollarIcon,
+      description: 'Configure pay periods, pay dates, and payroll settings',
+      component: PayrollSettings,
+      requiredRole: 'admin' // Only admin and owner can access
+    },
+    {
       id: 'billing-subscriptions',
       title: 'Billing & Subscriptions',
       icon: CreditCardIcon,
@@ -86,6 +98,14 @@ const SettingsManagement = () => {
       description: 'MFA, audit trail, and compliance settings',
       component: SecuritySettings,
       requiredRole: 'admin' // Admin and Owner can access
+    },
+    {
+      id: 'whatsapp',
+      title: 'WhatsApp',
+      icon: ChatBubbleLeftRightIcon,
+      description: 'WhatsApp Business integration settings',
+      component: WhatsAppSettings,
+      requiredRole: 'user' // All users can access
     }
   ];
 

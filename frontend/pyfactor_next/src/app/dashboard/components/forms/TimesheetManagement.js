@@ -27,6 +27,7 @@ import { useSessionContext } from '@/providers/SessionProvider';
 import { logger } from '@/utils/logger';
 import StandardSpinner from '@/components/ui/StandardSpinner';
 import timesheetApi from '@/utils/api/timesheetApi';
+import EnhancedTimesheet from '@/app/dashboard/components/forms/timesheet/EnhancedTimesheet';
 
 // Tooltip component for field help
 const FieldTooltip = ({ text, position = 'top' }) => {
@@ -86,6 +87,7 @@ function TimesheetManagement({ onNavigate }) {
   const [showBulkApprovalModal, setShowBulkApprovalModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [showTimesheetModal, setShowTimesheetModal] = useState(false);
+  const [showEnhancedTimesheet, setShowEnhancedTimesheet] = useState(false);
 
   // Load data on component mount
   useEffect(() => {
@@ -458,23 +460,37 @@ function TimesheetManagement({ onNavigate }) {
                   {employee.supervisor || 'None'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button
-                    onClick={() => {
-                      setSelectedEmployee(employee);
-                      setShowTimesheetModal(true);
-                    }}
-                    className="text-blue-600 hover:text-blue-900 mr-3"
-                  >
-                    <EyeIcon className="h-4 w-4" />
-                  </button>
-                  {employee.timesheet_status.status === 'submitted' && !employee.needs_manager_approval && (
+                  <div className="flex items-center justify-end space-x-2">
                     <button
-                      onClick={() => handleBulkApprove([employee.employee_id])}
-                      className="text-green-600 hover:text-green-900"
+                      onClick={() => {
+                        setSelectedEmployee(employee);
+                        setShowTimesheetModal(true);
+                      }}
+                      className="text-blue-600 hover:text-blue-900"
+                      title="View Details"
                     >
-                      <CheckCircleIcon className="h-4 w-4" />
+                      <EyeIcon className="h-4 w-4" />
                     </button>
-                  )}
+                    <button
+                      onClick={() => {
+                        setSelectedEmployee(employee);
+                        setShowEnhancedTimesheet(true);
+                      }}
+                      className="text-indigo-600 hover:text-indigo-900"
+                      title="Edit Timesheet"
+                    >
+                      <ClipboardDocumentListIcon className="h-4 w-4" />
+                    </button>
+                    {employee.timesheet_status.status === 'submitted' && !employee.needs_manager_approval && (
+                      <button
+                        onClick={() => handleBulkApprove([employee.employee_id])}
+                        className="text-green-600 hover:text-green-900"
+                        title="Approve"
+                      >
+                        <CheckCircleIcon className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -578,6 +594,49 @@ function TimesheetManagement({ onNavigate }) {
                       {processingBulk ? 'Approving...' : 'Approve'}
                     </button>
                   </div>
+                </Dialog.Panel>
+              </Transition.Child>
+            </div>
+          </div>
+        </Dialog>
+      </Transition>
+
+      {/* Enhanced Timesheet Modal */}
+      <Transition appear show={showEnhancedTimesheet} as={Fragment}>
+        <Dialog as="div" className="relative z-10" onClose={() => setShowEnhancedTimesheet(false)}>
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-200"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black bg-opacity-25" />
+          </Transition.Child>
+
+          <div className="fixed inset-0 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4 text-center">
+              <Transition.Child
+                as={Fragment}
+                enter="ease-out duration-300"
+                enterFrom="opacity-0 scale-95"
+                enterTo="opacity-100 scale-100"
+                leave="ease-in duration-200"
+                leaveFrom="opacity-100 scale-100"
+                leaveTo="opacity-0 scale-95"
+              >
+                <Dialog.Panel className="w-full max-w-6xl transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+                  {selectedEmployee && (
+                    <EnhancedTimesheet 
+                      employee={selectedEmployee}
+                      onClose={() => {
+                        setShowEnhancedTimesheet(false);
+                        refreshData(); // Refresh the dashboard after editing
+                      }}
+                    />
+                  )}
                 </Dialog.Panel>
               </Transition.Child>
             </div>

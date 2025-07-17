@@ -21,6 +21,8 @@ import {
 } from '@heroicons/react/24/outline';
 import { hrApi } from '@/utils/apiClient';
 import { logger } from '@/utils/logger';
+import api from '@/utils/api';
+import StandardSpinner from '@/components/ui/StandardSpinner';
 
 // Tooltip component for field help
 const FieldTooltip = ({ text, position = 'top' }) => {
@@ -61,26 +63,27 @@ const FieldTooltip = ({ text, position = 'top' }) => {
 
 /**
  * Pay Management Component
- * Industry-standard payroll and compensation management with CRUD operations and standard UI
+ * Comprehensive employee payment management including bank info, withholdings, benefits, and deductions
  */
 function PayManagement({ onNavigate }) {
   const router = useRouter();
   
   // State management
-  const [activeTab, setActiveTab] = useState('list');
-  const [payRecords, setPayRecords] = useState([]);
+  const [activeTab, setActiveTab] = useState('deposit-methods');
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedPayRecord, setSelectedPayRecord] = useState(null);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [employees, setEmployees] = useState([]);
+  const [depositMethods, setDepositMethods] = useState([]);
+  const [withholdings, setWithholdings] = useState([]);
+  const [bonuses, setBonuses] = useState([]);
+  const [payStatements, setPayStatements] = useState([]);
+  const [paySettings, setPaySettings] = useState(null);
   const [stats, setStats] = useState({
-    totalPayroll: 0,
-    avgSalary: 0,
-    pendingPayments: 0,
-    processedThisMonth: 0
+    totalActiveEmployees: 0,
+    directDepositSetup: 0,
+    withHoldingCompleted: 0,
+    upcomingPayDate: null
   });
 
   // Form state for create/edit
@@ -102,18 +105,61 @@ function PayManagement({ onNavigate }) {
 
   // Load data on component mount
   useEffect(() => {
-    loadPayRecords();
+    loadEmployees();
+    loadPayrollSettings();
     loadStats();
   }, []);
+  
+  // Load data when employee selection changes
+  useEffect(() => {
+    if (selectedEmployee) {
+      loadEmployeePaymentData();
+    }
+  }, [selectedEmployee]);
 
-  const loadPayRecords = async () => {
+  const loadEmployees = async () => {
     try {
       setLoading(true);
-      const data = await hrApi.payroll.getAll();
-      setPayRecords(data || []);
+      const response = await api.get('/api/hr/v2/employees/');
+      setEmployees(response.data?.data || []);
     } catch (error) {
-      logger.error('[PayManagement] Error loading pay records:', error);
-      toast.error('Failed to load pay records');
+      logger.error('[PayManagement] Error loading employees:', error);
+      toast.error('Failed to load employees');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const loadPayrollSettings = async () => {
+    try {
+      const response = await api.get('/api/payroll/settings/');
+      setPaySettings(response.data);
+    } catch (error) {
+      logger.error('[PayManagement] Error loading payroll settings:', error);
+    }
+  };
+  
+  const loadEmployeePaymentData = async () => {
+    if (!selectedEmployee) return;
+    
+    try {
+      setLoading(true);
+      
+      // Load all payment-related data in parallel
+      const [depositResponse, withholdingResponse, bonusResponse, statementsResponse] = await Promise.all([
+        api.get(`/api/payroll/deposit-methods/?employee=${selectedEmployee.id}`),
+        api.get(`/api/payroll/withholdings/?employee=${selectedEmployee.id}`),
+        api.get(`/api/payroll/bonuses/?employee=${selectedEmployee.id}`),
+        api.get(`/api/payroll/statements/?employee=${selectedEmployee.id}`)
+      ]);
+      
+      setDepositMethods(depositResponse.data || []);
+      setWithholdings(withholdingResponse.data || []);
+      setBonuses(bonusResponse.data || []);
+      setPayStatements(statementsResponse.data || []);
+    } catch (error) {
+      logger.error('[PayManagement] Error loading employee payment data:', error);
+      toast.error('Failed to load payment information');
     } finally {
       setLoading(false);
     }
@@ -121,8 +167,8 @@ function PayManagement({ onNavigate }) {
 
   const loadStats = async () => {
     try {
-      const data = await hrApi.payroll.getStats();
-      setStats(data || stats);
+      const response = await api.get('/api/payroll/stats/');
+      setStats(response.data || stats);
     } catch (error) {
       logger.error('[PayManagement] Error loading stats:', error);
     }

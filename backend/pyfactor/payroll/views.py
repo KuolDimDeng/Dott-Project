@@ -5,9 +5,16 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
 from hr.models import Timesheet, TimesheetEntry, Employee  # Import from HR instead of payroll
-from .models import PayrollRun, PayrollTransaction, PayStatement
+from .models import (
+    PayrollRun, PayrollTransaction, PayStatement, PaySetting,
+    PaymentDepositMethod, IncomeWithholding, BonusPayment
+)
 from banking.models import BankAccount
-from .serializers import PayrollRunSerializer, PayrollTransactionSerializer, PayrollTimesheetSerializer
+from .serializers import (
+    PayrollRunSerializer, PayrollTransactionSerializer, PayrollTimesheetSerializer, 
+    PaySettingSerializer, PaymentDepositMethodSerializer, IncomeWithholdingSerializer,
+    BonusPaymentSerializer
+)
 from datetime import date, datetime
 from django.db.models import Sum, F
 from django.shortcuts import get_object_or_404
@@ -23,6 +30,7 @@ from reportlab.lib import colors
 from io import BytesIO
 import logging
 import iso3166
+from custom_auth.rls import get_business_id_from_request
 
 logger = logging.getLogger(__name__)
 countries = iso3166
@@ -625,5 +633,531 @@ class PayStubView(APIView):
             logger.error(f"Error fetching pay stubs: {str(e)}")
             return Response({
                 'success': False,
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class PayStubDownloadView(APIView):
+    """Download individual pay stub PDF"""
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, pk):
+        """Download a specific pay stub PDF"""
+        try:
+            # Find the employee record for this user
+            from hr.models import Employee
+            employee = Employee.objects.filter(user=request.user).first()
+            
+            if not employee:
+                return Response({
+                    'success': False,
+                    'message': 'No employee record found for this user'
+                }, status=status.HTTP_404_NOT_FOUND)
+            
+            # Get the pay statement
+            pay_statement = PayStatement.objects.get(
+                id=pk,
+                employee=employee
+            )
+            
+            # If no PDF exists, generate one
+            if not pay_statement.pdf_file:
+                from .services import generate_pay_stub_pdf
+                pdf_file = generate_pay_stub_pdf(pay_statement)
+                pay_statement.pdf_file = pdf_file
+                pay_statement.save()
+            
+            # Return the PDF file
+            from django.http import HttpResponse
+            response = HttpResponse(
+                pay_statement.pdf_file,
+                content_type='application/pdf'
+            )
+            response['Content-Disposition'] = f'attachment; filename="paystub_{pay_statement.pay_date}.pdf"'
+            return response
+            
+        except PayStatement.DoesNotExist:
+            return Response({
+                'success': False,
+                'message': 'Pay stub not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Error downloading pay stub: {str(e)}")
+            return Response({
+                'success': False,
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class PayrollSettingsView(APIView):
+    """Manage company-wide payroll settings"""
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """Get payroll settings for the current business"""
+        try:
+            business_id = get_business_id_from_request(request)
+            
+            # Get or create payroll settings
+            settings, created = PaySetting.objects.get_or_create(
+                business_id=business_id,
+                defaults={
+                    'pay_frequency': 'BIWEEKLY',
+                    'pay_weekday': 5,  # Friday
+                    'enable_direct_deposit': True,
+                    'enable_bonuses': True,
+                    'enable_overtime': True,
+                    'overtime_rate': 1.5
+                }
+            )
+            
+            serializer = PaySettingSerializer(settings)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error fetching payroll settings: {str(e)}")
+            return Response({
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def post(self, request):
+        """Update payroll settings for the current business"""
+        try:
+            business_id = get_business_id_from_request(request)
+            
+            # Get or create payroll settings
+            settings, created = PaySetting.objects.get_or_create(
+                business_id=business_id
+            )
+            
+            # Update settings with request data
+            serializer = PaySettingSerializer(settings, data=request.data, partial=True)
+            
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            logger.error(f"Error updating payroll settings: {str(e)}")
+            return Response({
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class DepositMethodListCreateView(APIView):
+    """List and create payment deposit methods for employees"""
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """Get deposit methods for an employee"""
+        try:
+            employee_id = request.query_params.get('employee')
+            
+            if employee_id:
+                deposit_methods = PaymentDepositMethod.objects.filter(
+                    employee_id=employee_id,
+                    business_id=get_business_id_from_request(request)
+                )
+            else:
+                # Get all deposit methods for the business
+                deposit_methods = PaymentDepositMethod.objects.filter(
+                    business_id=get_business_id_from_request(request)
+                )
+            
+            serializer = PaymentDepositMethodSerializer(deposit_methods, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error fetching deposit methods: {str(e)}")
+            return Response({
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def post(self, request):
+        """Create a new deposit method"""
+        try:
+            business_id = get_business_id_from_request(request)
+            data = request.data.copy()
+            data['business_id'] = business_id
+            
+            serializer = PaymentDepositMethodSerializer(data=data)
+            
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            logger.error(f"Error creating deposit method: {str(e)}")
+            return Response({
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class DepositMethodDetailView(APIView):
+    """Retrieve, update, or delete a deposit method"""
+    permission_classes = [IsAuthenticated]
+    
+    def get_object(self, pk, business_id):
+        try:
+            return PaymentDepositMethod.objects.get(pk=pk, business_id=business_id)
+        except PaymentDepositMethod.DoesNotExist:
+            return None
+    
+    def get(self, request, pk):
+        """Get a specific deposit method"""
+        deposit_method = self.get_object(pk, get_business_id_from_request(request))
+        if not deposit_method:
+            return Response({'error': 'Deposit method not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = PaymentDepositMethodSerializer(deposit_method)
+        return Response(serializer.data)
+    
+    def patch(self, request, pk):
+        """Update a deposit method"""
+        deposit_method = self.get_object(pk, get_business_id_from_request(request))
+        if not deposit_method:
+            return Response({'error': 'Deposit method not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = PaymentDepositMethodSerializer(deposit_method, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def delete(self, request, pk):
+        """Delete a deposit method"""
+        deposit_method = self.get_object(pk, get_business_id_from_request(request))
+        if not deposit_method:
+            return Response({'error': 'Deposit method not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        deposit_method.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class WithholdingListCreateView(APIView):
+    """List and create tax withholding preferences"""
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """Get withholding info for an employee"""
+        try:
+            employee_id = request.query_params.get('employee')
+            
+            if employee_id:
+                withholding = IncomeWithholding.objects.filter(
+                    employee_id=employee_id,
+                    business_id=get_business_id_from_request(request)
+                ).first()
+                
+                if withholding:
+                    serializer = IncomeWithholdingSerializer(withholding)
+                    return Response(serializer.data, status=status.HTTP_200_OK)
+                else:
+                    return Response(None, status=status.HTTP_200_OK)
+            else:
+                # Get all withholdings for the business
+                withholdings = IncomeWithholding.objects.filter(
+                    business_id=get_business_id_from_request(request)
+                )
+                serializer = IncomeWithholdingSerializer(withholdings, many=True)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+                
+        except Exception as e:
+            logger.error(f"Error fetching withholdings: {str(e)}")
+            return Response({
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def post(self, request):
+        """Create new withholding info"""
+        try:
+            business_id = get_business_id_from_request(request)
+            data = request.data.copy()
+            data['business_id'] = business_id
+            
+            serializer = IncomeWithholdingSerializer(data=data)
+            
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            logger.error(f"Error creating withholding: {str(e)}")
+            return Response({
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class WithholdingDetailView(APIView):
+    """Retrieve, update, or delete withholding info"""
+    permission_classes = [IsAuthenticated]
+    
+    def get_object(self, pk, business_id):
+        try:
+            return IncomeWithholding.objects.get(pk=pk, business_id=business_id)
+        except IncomeWithholding.DoesNotExist:
+            return None
+    
+    def get(self, request, pk):
+        """Get specific withholding info"""
+        withholding = self.get_object(pk, get_business_id_from_request(request))
+        if not withholding:
+            return Response({'error': 'Withholding not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = IncomeWithholdingSerializer(withholding)
+        return Response(serializer.data)
+    
+    def patch(self, request, pk):
+        """Update withholding info"""
+        withholding = self.get_object(pk, get_business_id_from_request(request))
+        if not withholding:
+            return Response({'error': 'Withholding not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = IncomeWithholdingSerializer(withholding, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def delete(self, request, pk):
+        """Delete withholding info"""
+        withholding = self.get_object(pk, get_business_id_from_request(request))
+        if not withholding:
+            return Response({'error': 'Withholding not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        withholding.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class BonusListCreateView(APIView):
+    """List and create bonus payments"""
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """Get bonuses for an employee"""
+        try:
+            employee_id = request.query_params.get('employee')
+            
+            if employee_id:
+                bonuses = BonusPayment.objects.filter(
+                    employee_id=employee_id,
+                    business_id=get_business_id_from_request(request)
+                ).order_by('-created_at')
+            else:
+                # Get all bonuses for the business
+                bonuses = BonusPayment.objects.filter(
+                    business_id=get_business_id_from_request(request)
+                ).order_by('-created_at')
+            
+            serializer = BonusPaymentSerializer(bonuses, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error fetching bonuses: {str(e)}")
+            return Response({
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def post(self, request):
+        """Create a new bonus"""
+        try:
+            business_id = get_business_id_from_request(request)
+            data = request.data.copy()
+            data['business_id'] = business_id
+            
+            serializer = BonusPaymentSerializer(data=data)
+            
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            logger.error(f"Error creating bonus: {str(e)}")
+            return Response({
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class BonusDetailView(APIView):
+    """Retrieve, update, or delete a bonus"""
+    permission_classes = [IsAuthenticated]
+    
+    def get_object(self, pk, business_id):
+        try:
+            return BonusPayment.objects.get(pk=pk, business_id=business_id)
+        except BonusPayment.DoesNotExist:
+            return None
+    
+    def get(self, request, pk):
+        """Get a specific bonus"""
+        bonus = self.get_object(pk, get_business_id_from_request(request))
+        if not bonus:
+            return Response({'error': 'Bonus not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = BonusPaymentSerializer(bonus)
+        return Response(serializer.data)
+    
+    def patch(self, request, pk):
+        """Update a bonus"""
+        bonus = self.get_object(pk, get_business_id_from_request(request))
+        if not bonus:
+            return Response({'error': 'Bonus not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = BonusPaymentSerializer(bonus, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def delete(self, request, pk):
+        """Delete a bonus"""
+        bonus = self.get_object(pk, get_business_id_from_request(request))
+        if not bonus:
+            return Response({'error': 'Bonus not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        bonus.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class DeductionListCreateView(APIView):
+    """Placeholder for deductions - implement based on your deduction model"""
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        return Response([], status=status.HTTP_200_OK)
+    
+    def post(self, request):
+        return Response({'message': 'Deductions not yet implemented'}, status=status.HTTP_501_NOT_IMPLEMENTED)
+
+
+class DeductionDetailView(APIView):
+    """Placeholder for deduction details"""
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, pk):
+        return Response({'message': 'Deductions not yet implemented'}, status=status.HTTP_501_NOT_IMPLEMENTED)
+
+
+class PayStatementListView(APIView):
+    """List pay statements for employees"""
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """Get pay statements"""
+        try:
+            employee_id = request.query_params.get('employee')
+            
+            if employee_id:
+                statements = PayStatement.objects.filter(
+                    employee_id=employee_id,
+                    business_id=get_business_id_from_request(request)
+                ).order_by('-pay_date')
+            else:
+                # Get all statements for the business
+                statements = PayStatement.objects.filter(
+                    business_id=get_business_id_from_request(request)
+                ).order_by('-pay_date')
+            
+            serializer = PayStatementSerializer(statements, many=True)
+            return Response({
+                'success': True,
+                'data': serializer.data,
+                'count': len(serializer.data)
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error fetching pay statements: {str(e)}")
+            return Response({
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class PayStatementDetailView(APIView):
+    """Get a specific pay statement"""
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, pk):
+        """Get pay statement details"""
+        try:
+            statement = PayStatement.objects.get(
+                pk=pk,
+                business_id=get_business_id_from_request(request)
+            )
+            
+            serializer = PayStatementSerializer(statement)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+            
+        except PayStatement.DoesNotExist:
+            return Response({
+                'error': 'Pay statement not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f"Error fetching pay statement: {str(e)}")
+            return Response({
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class PayrollStatsView(APIView):
+    """Get payroll statistics for the business"""
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """Get payroll stats"""
+        try:
+            business_id = get_business_id_from_request(request)
+            
+            # Get employee counts
+            total_employees = Employee.objects.filter(business_id=business_id).count()
+            
+            # Get deposit method setup count
+            employees_with_deposit = PaymentDepositMethod.objects.filter(
+                business_id=business_id,
+                is_active=True
+            ).values('employee').distinct().count()
+            
+            # Get withholding setup count
+            employees_with_withholding = IncomeWithholding.objects.filter(
+                business_id=business_id
+            ).count()
+            
+            # Get next pay date based on settings
+            settings = PaySetting.objects.filter(business_id=business_id).first()
+            next_pay_date = None
+            
+            if settings:
+                from datetime import date, timedelta
+                today = date.today()
+                
+                if settings.pay_frequency == 'WEEKLY':
+                    days_until_payday = (settings.pay_weekday - today.weekday()) % 7
+                    if days_until_payday == 0:
+                        days_until_payday = 7
+                    next_pay_date = today + timedelta(days=days_until_payday)
+                elif settings.pay_frequency == 'BIWEEKLY':
+                    # This is simplified - you'd need a reference date
+                    days_until_payday = (settings.pay_weekday - today.weekday()) % 7
+                    if days_until_payday == 0:
+                        days_until_payday = 14
+                    next_pay_date = today + timedelta(days=days_until_payday)
+            
+            return Response({
+                'totalActiveEmployees': total_employees,
+                'directDepositSetup': employees_with_deposit,
+                'withHoldingCompleted': employees_with_withholding,
+                'upcomingPayDate': next_pay_date.isoformat() if next_pay_date else None
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error getting payroll stats: {str(e)}")
+            return Response({
                 'error': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

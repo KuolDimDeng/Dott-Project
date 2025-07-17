@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/useToast';
 import { Search, Calendar, CheckCircle, XCircle, Clock, Filter, FileText, Download, Settings } from 'lucide-react';
 import StandardSpinner from '@/components/ui/StandardSpinner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import EnhancedTimesheet from '@/app/dashboard/components/forms/timesheet/EnhancedTimesheet';
 
 const TimesheetsPage = () => {
   console.log('🎯 [TimesheetsPage] === COMPONENT RENDERING ===');
@@ -44,6 +45,8 @@ const TimesheetsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [processing, setProcessing] = useState(false);
   const [currentWeekTimesheets, setCurrentWeekTimesheets] = useState({});
+  const [showEnhancedTimesheet, setShowEnhancedTimesheet] = useState(false);
+  const [selectedEmployeeForTimesheet, setSelectedEmployeeForTimesheet] = useState(null);
 
   useEffect(() => {
     console.log('🎯 [TimesheetsPage] useEffect triggered');
@@ -497,13 +500,27 @@ const TimesheetsPage = () => {
                       }
                     </TableCell>
                     <TableCell>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleViewDetails(timesheet)}
-                      >
-                        View Details
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleViewDetails(timesheet)}
+                        >
+                          View Details
+                        </Button>
+                        {employee && (
+                          <Button
+                            size="sm"
+                            variant="default"
+                            onClick={() => {
+                              setSelectedEmployeeForTimesheet(employee);
+                              setShowEnhancedTimesheet(true);
+                            }}
+                          >
+                            Edit Timesheet
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -595,6 +612,22 @@ const TimesheetsPage = () => {
                 </div>
               )}
             </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Enhanced Timesheet Dialog */}
+      <Dialog open={showEnhancedTimesheet} onOpenChange={setShowEnhancedTimesheet}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          {selectedEmployeeForTimesheet && (
+            <EnhancedTimesheet 
+              employee={selectedEmployeeForTimesheet}
+              onClose={() => {
+                setShowEnhancedTimesheet(false);
+                setSelectedEmployeeForTimesheet(null);
+                fetchTimesheets(); // Refresh the list after editing
+              }}
+            />
           )}
         </DialogContent>
       </Dialog>
