@@ -1414,6 +1414,8 @@ const Profile = ({ userData }) => {
       if (response.ok) {
         const data = await response.json();
         console.log('🔍 [OrgChart] Fetched employee data:', data);
+        console.log('🔍 [OrgChart] First employee full structure:', data.data?.[0]);
+        console.log('🔍 [OrgChart] Available fields:', data.data?.[0] ? Object.keys(data.data[0]) : 'No data');
         setOrganizationData(data.data || []);
       } else {
         notifyError('Failed to load organization data');
@@ -1481,7 +1483,7 @@ const Profile = ({ userData }) => {
     console.log('🔍 [OrgChart] Supervisor relationships:', employees.map(e => ({
       id: e.id,
       name: `${e.first_name} ${e.last_name}`,
-      supervisor_id: e.supervisor_id,
+      supervisor: e.supervisor,
       supervisor_name: e.supervisor_name
     })));
 
@@ -1493,15 +1495,15 @@ const Profile = ({ userData }) => {
 
     // Build the hierarchy starting from supervisor relationships
     employees.forEach(emp => {
-      if (emp.supervisor_id && employeeMap[emp.supervisor_id]) {
+      if (emp.supervisor && employeeMap[emp.supervisor]) {
         // Add to supervisor's children
-        employeeMap[emp.supervisor_id].children.push(employeeMap[emp.id]);
-        console.log(`🔍 [OrgChart] Added ${emp.first_name} ${emp.last_name} as child of supervisor ID ${emp.supervisor_id}`);
+        employeeMap[emp.supervisor].children.push(employeeMap[emp.id]);
+        console.log(`🔍 [OrgChart] Added ${emp.first_name} ${emp.last_name} as child of supervisor ID ${emp.supervisor}`);
       }
     });
 
     // Find root employees (those without supervisors)
-    const rootEmployees = employees.filter(emp => !emp.supervisor_id);
+    const rootEmployees = employees.filter(emp => !emp.supervisor);
     console.log('🔍 [OrgChart] Root employees (no supervisor):', rootEmployees.map(e => ({
       name: `${e.first_name} ${e.last_name}`,
       id: e.id,
