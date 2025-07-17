@@ -1289,6 +1289,7 @@ const Profile = ({ userData }) => {
       
       if (response.ok) {
         const data = await response.json();
+        console.log('🔍 [OrgChart] Fetched employee data:', data);
         setOrganizationData(data.data || []);
       } else {
         notifyError('Failed to load organization data');
@@ -1303,7 +1304,7 @@ const Profile = ({ userData }) => {
 
   // Load organization data when tab is selected
   useEffect(() => {
-    if (selectedTab === 4) { // Organization tab (moved to position 4)
+    if (selectedTab === 5) { // Organization tab is at index 5
       fetchOrganizationData();
     }
   }, [selectedTab]);
@@ -1351,6 +1352,14 @@ const Profile = ({ userData }) => {
   // Build organization hierarchy
   const buildOrganizationHierarchy = (employees) => {
     if (!employees || employees.length === 0) return [];
+
+    console.log('🔍 [OrgChart] Building hierarchy with employees:', employees);
+    console.log('🔍 [OrgChart] Supervisor relationships:', employees.map(e => ({
+      id: e.id,
+      name: `${e.first_name} ${e.last_name}`,
+      supervisor_id: e.supervisor_id,
+      supervisor_name: e.supervisor_name
+    })));
 
     // Create a map of all employees
     const employeeMap = {};
