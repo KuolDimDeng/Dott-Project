@@ -30,7 +30,7 @@ from reportlab.lib import colors
 from io import BytesIO
 import logging
 import iso3166
-from custom_auth.rls import get_business_id_from_request
+from hr.utils import get_business_id_from_request
 
 logger = logging.getLogger(__name__)
 countries = iso3166
