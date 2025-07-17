@@ -1537,156 +1537,114 @@ const Profile = ({ userData }) => {
     return hierarchy;
   };
 
-  // Render a single employee card
-  const renderEmployeeCard = (employee, isOwner = false) => {
-    const initials = generateInitials(employee.first_name, employee.last_name, employee.full_name);
-    const isHovered = hoveredEmployee === employee.id;
-    
-    return (
-      <div key={employee.id} className="flex flex-col items-center">
-        {/* Employee Card */}
-        <div 
-          className={`bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-all duration-200 hover:border-blue-300 cursor-pointer relative ${
-            isOwner ? 'border-blue-500 shadow-lg' : ''
-          }`}
-          onMouseEnter={() => setHoveredEmployee(employee.id)}
-          onMouseLeave={() => setHoveredEmployee(null)}
-          style={{ minWidth: '280px', maxWidth: '320px' }}
-        >
-          {/* Owner Badge */}
-          {isOwner && (
-            <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
-              <span className="bg-blue-600 text-white text-xs px-3 py-1 rounded-full font-semibold">
-                Owner
-              </span>
-            </div>
-          )}
-          
-          <div className="flex items-start space-x-4">
-            {/* Avatar */}
-            <div className="flex-shrink-0">
-              <div className={`w-12 h-12 bg-gradient-to-br ${
-                isOwner ? 'from-yellow-500 to-orange-600' : 'from-blue-500 to-indigo-600'
-              } rounded-full flex items-center justify-center text-white font-semibold text-sm`}>
-                {initials}
-              </div>
-            </div>
-            
-            {/* Employee Info */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    {employee.first_name} {employee.last_name}
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    {employee.job_title || employee.position || 'Employee'}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    {employee.department || 'General'}
-                  </p>
-                </div>
-                <div className="text-right text-sm text-gray-500">
-                  <div>ID: {employee.employee_number || employee.id}</div>
-                </div>
-              </div>
-              
-              {/* Contact Information */}
-              <div className="mt-3 flex flex-wrap gap-4 text-sm text-gray-600">
-                {employee.email && (
-                  <div className="flex items-center">
-                    <EnvelopeIcon className="w-4 h-4 mr-1" />
-                    <span className="truncate">{employee.email}</span>
-                  </div>
-                )}
-                {employee.phone_number && (
-                  <div className="flex items-center">
-                    <PhoneIcon className="w-4 h-4 mr-1" />
-                    <span>{employee.phone_number}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
 
-          {/* Hover Tooltip */}
-          {isHovered && (
-            <div className="absolute z-50 top-0 left-full ml-4 w-80 bg-gray-900 text-white text-sm rounded-lg p-4 shadow-xl">
-              <div className="space-y-2">
-                <div className="font-semibold border-b border-gray-700 pb-2">
-                  {employee.first_name} {employee.last_name}
-                  {isOwner && <span className="ml-2 text-yellow-400">(Owner)</span>}
-                </div>
-                <div><span className="text-gray-300">Position:</span> {employee.job_title || employee.position || 'Employee'}</div>
-                <div><span className="text-gray-300">Department:</span> {employee.department || 'General'}</div>
-                <div><span className="text-gray-300">Employee ID:</span> {employee.employee_number || employee.id}</div>
-                {employee.email && (
-                  <div><span className="text-gray-300">Email:</span> {employee.email}</div>
-                )}
-                {employee.phone_number && (
-                  <div><span className="text-gray-300">Phone:</span> {employee.phone_number}</div>
-                )}
-                {employee.hire_date && (
-                  <div><span className="text-gray-300">Hire Date:</span> {new Date(employee.hire_date).toLocaleDateString()}</div>
-                )}
-                {employee.children && employee.children.length > 0 && (
-                  <div><span className="text-gray-300">Direct Reports:</span> {employee.children.length}</div>
-                )}
-              </div>
-              {/* Tooltip Arrow */}
-              <div className="absolute top-4 -left-2">
-                <div className="w-2 h-2 bg-gray-900 transform rotate-45"></div>
-              </div>
-            </div>
-          )}
-        </div>
-        
-        {/* Render children horizontally */}
-        {employee.children && employee.children.length > 0 && (
-          <div className="mt-8 w-full">
-            {/* Vertical line down from parent */}
-            <div className="flex justify-center">
-              <div className="w-px bg-gray-300 h-8"></div>
-            </div>
-            
-            {/* Horizontal connector line for multiple children */}
-            {employee.children.length > 1 && (
-              <div className="relative flex justify-center">
+  // Render the organization tree structure
+  const renderOrganizationTree = (employees) => {
+    if (!employees || employees.length === 0) return null;
+
+    return (
+      <div className="flex flex-col items-center">
+        <div className="flex gap-8 justify-center">
+          {employees.map((employee) => {
+            const isActualOwner = employee.user_role === 'OWNER' || employee.role === 'OWNER';
+            const hasChildren = employee.children && employee.children.length > 0;
+
+            return (
+              <div key={employee.id} className="flex flex-col items-center">
+                {/* Employee Card */}
                 <div 
-                  className="h-px bg-gray-300 absolute top-0" 
-                  style={{ 
-                    width: `${(employee.children.length - 1) * 320}px`,
-                    left: '50%',
-                    transform: 'translateX(-50%)'
-                  }}
-                ></div>
-              </div>
-            )}
-            
-            {/* Vertical lines down to each child (only for multiple children) */}
-            {employee.children.length > 1 && (
-              <div className="flex justify-center">
-                <div 
-                  className="flex justify-between relative"
-                  style={{ width: `${(employee.children.length - 1) * 320 + 40}px` }}
+                  className={`bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-all duration-200 hover:border-blue-300 cursor-pointer relative ${
+                    isActualOwner ? 'border-blue-500 shadow-lg' : ''
+                  }`}
+                  onMouseEnter={() => setHoveredEmployee(employee.id)}
+                  onMouseLeave={() => setHoveredEmployee(null)}
+                  style={{ minWidth: '280px', maxWidth: '320px' }}
                 >
-                  {employee.children.map((_, index) => (
-                    <div key={index} className="w-px bg-gray-300 h-8"></div>
-                  ))}
+                  {/* Owner Badge */}
+                  {isActualOwner && (
+                    <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
+                      <span className="bg-blue-600 text-white text-xs px-3 py-1 rounded-full font-semibold">
+                        Owner
+                      </span>
+                    </div>
+                  )}
+                  
+                  <div className="flex items-start space-x-4">
+                    {/* Avatar */}
+                    <div className="flex-shrink-0">
+                      <div className={`w-12 h-12 bg-gradient-to-br ${
+                        isActualOwner ? 'from-yellow-500 to-orange-600' : 'from-blue-500 to-indigo-600'
+                      } rounded-full flex items-center justify-center text-white font-semibold text-sm`}>
+                        {generateInitials(employee.first_name, employee.last_name, employee.full_name)}
+                      </div>
+                    </div>
+                    
+                    {/* Employee Info */}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {employee.first_name} {employee.last_name}
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        {employee.job_title || employee.position || 'Employee'}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {employee.department || 'General'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Hover Details */}
+                  {hoveredEmployee === employee.id && (
+                    <div className="absolute z-50 top-0 left-full ml-4 w-80 bg-gray-900 text-white text-sm rounded-lg p-4 shadow-xl">
+                      <div className="space-y-2">
+                        <div className="font-semibold border-b border-gray-700 pb-2">
+                          {employee.first_name} {employee.last_name}
+                        </div>
+                        <div><span className="text-gray-300">Employee ID:</span> {employee.employee_number || employee.id}</div>
+                        {employee.email && (
+                          <div><span className="text-gray-300">Email:</span> {employee.email}</div>
+                        )}
+                        {employee.phone_number && (
+                          <div><span className="text-gray-300">Phone:</span> {employee.phone_number}</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
+
+                {/* Render children if any */}
+                {hasChildren && (
+                  <>
+                    {/* Vertical line to children */}
+                    <div className="w-px bg-gray-300 h-8"></div>
+                    
+                    {/* Horizontal connector for multiple children */}
+                    {employee.children.length > 1 && (
+                      <div className="relative h-px bg-gray-300" style={{ width: `${(employee.children.length - 1) * 320}px` }}>
+                        {/* Vertical lines to each child */}
+                        {employee.children.map((_, index) => (
+                          <div
+                            key={index}
+                            className="absolute top-0 w-px bg-gray-300 h-8"
+                            style={{
+                              left: `${(index / (employee.children.length - 1)) * 100}%`,
+                              transform: 'translateX(-50%)'
+                            }}
+                          ></div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Recursive rendering of children */}
+                    <div className="mt-8">
+                      {renderOrganizationTree(employee.children)}
+                    </div>
+                  </>
+                )}
               </div>
-            )}
-            
-            {/* Children arranged horizontally */}
-            <div className="flex justify-center gap-8">
-              {employee.children.map(child => (
-                <div key={child.id}>
-                  {renderEmployeeCard(child, child.user_role === 'OWNER' || child.role === 'OWNER')}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+            );
+          })}
+        </div>
       </div>
     );
   };
@@ -1776,24 +1734,18 @@ const Profile = ({ userData }) => {
             </p>
           </div>
         ) : (
-          <div className="relative border border-gray-200 rounded-lg overflow-auto" style={{ minHeight: '400px', maxHeight: '600px' }}>
+          <div className="relative border border-gray-200 rounded-lg overflow-auto bg-gray-50" style={{ minHeight: '400px', maxHeight: '600px' }}>
             <div 
               ref={orgChartRef}
               className="p-8 transition-transform duration-300 ease-in-out"
               style={{ 
                 transform: `scale(${zoomLevel / 100})`,
                 transformOrigin: 'top center',
-                minWidth: 'max-content',
-                width: 'max-content'
+                minWidth: 'max-content'
               }}
             >
-              {/* Render root level employees horizontally */}
-              <div className="flex justify-center gap-8">
-                {hierarchy.map(employee => {
-                  const isActualOwner = employee.user_role === 'OWNER' || employee.role === 'OWNER';
-                  return renderEmployeeCard(employee, isActualOwner);
-                })}
-              </div>
+              {/* Render the organization tree */}
+              {renderOrganizationTree(hierarchy)}
             </div>
           </div>
         )}
