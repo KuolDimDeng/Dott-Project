@@ -18,9 +18,14 @@ async function handleRequest(request, { params }) {
 
   const headers = {
     'Content-Type': 'application/json',
-    'X-Session-ID': sid?.value || '',
     'Accept': 'application/json',
   };
+  
+  // Add session token to Authorization header if available
+  if (sid?.value) {
+    headers['Authorization'] = `Session ${sid.value}`;
+    headers['X-Session-ID'] = sid.value; // Keep for backward compatibility
+  }
 
   try {
     // Handle request body for POST/PUT/PATCH
@@ -43,10 +48,17 @@ async function handleRequest(request, { params }) {
     console.log('[Timesheets API Proxy] Backend URL:', fullUrl);
     console.log('[Timesheets API Proxy] Headers:', headers);
 
+    // Forward cookies from the incoming request
+    const cookieHeader = request.headers.get('cookie');
+    if (cookieHeader) {
+      headers['Cookie'] = cookieHeader;
+    }
+    
     const backendResponse = await fetch(fullUrl, {
       method: request.method,
       headers,
       body: body ? JSON.stringify(body) : null,
+      credentials: 'include',
     });
 
     console.log('[Timesheets API Proxy] Backend response status:', backendResponse.status);
