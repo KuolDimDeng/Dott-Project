@@ -19,7 +19,6 @@ import {
   MoonIcon,
   QuestionMarkCircleIcon,
   DocumentTextIcon,
-  ShieldExclamationIcon,
   ArrowPathIcon,
   BriefcaseIcon,
   BanknotesIcon,
