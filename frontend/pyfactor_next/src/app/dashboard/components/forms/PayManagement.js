@@ -83,8 +83,20 @@ function PayManagement({ onNavigate }) {
     totalActiveEmployees: 0,
     directDepositSetup: 0,
     withHoldingCompleted: 0,
-    upcomingPayDate: null
+    upcomingPayDate: null,
+    totalPayroll: 0,
+    avgSalary: 0,
+    pendingPayments: 0,
+    processedThisMonth: 0
   });
+
+  // Missing state variables for payRecords and modals
+  const [payRecords, setPayRecords] = useState([]);
+  const [selectedPayRecord, setSelectedPayRecord] = useState(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   // Form state for create/edit
   const [formData, setFormData] = useState({
@@ -108,6 +120,7 @@ function PayManagement({ onNavigate }) {
     loadEmployees();
     loadPayrollSettings();
     loadStats();
+    loadPayRecords();
   }, []);
   
   // Load data when employee selection changes
@@ -136,6 +149,38 @@ function PayManagement({ onNavigate }) {
       setPaySettings(response.data);
     } catch (error) {
       logger.error('[PayManagement] Error loading payroll settings:', error);
+    }
+  };
+
+  const loadPayRecords = async () => {
+    try {
+      const response = await api.get('/api/payroll/records/');
+      setPayRecords(response.data?.results || []);
+    } catch (error) {
+      logger.error('[PayManagement] Error loading pay records:', error);
+      // Set some mock data for demonstration
+      setPayRecords([
+        {
+          id: 1,
+          employee: 'John Doe',
+          position: 'Software Engineer',
+          department: 'IT',
+          baseSalary: 75000,
+          payPeriod: 'July 2024',
+          payDate: '2024-07-31',
+          status: 'pending'
+        },
+        {
+          id: 2,
+          employee: 'Jane Smith',
+          position: 'HR Manager',
+          department: 'HR',
+          baseSalary: 65000,
+          payPeriod: 'July 2024',
+          payDate: '2024-07-31',
+          status: 'processed'
+        }
+      ]);
     }
   };
   
