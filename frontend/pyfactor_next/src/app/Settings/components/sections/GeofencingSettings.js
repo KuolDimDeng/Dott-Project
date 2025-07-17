@@ -22,6 +22,7 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel }) => {
   const [loading, setLoading] = useState(true);
   const [map, setMap] = useState(null);
   const [geofence, setGeofence] = useState(null);
+  const [mapError, setMapError] = useState(null);
   const [geofenceData, setGeofenceData] = useState({
     name: '',
     description: '',
@@ -35,6 +36,13 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel }) => {
   });
 
   const mapContainerRef = React.useRef(null);
+
+  // Debug environment variable on component mount
+  useEffect(() => {
+    console.log('[GeofencingSettings] Component mounted');
+    console.log('[GeofencingSettings] NEXT_PUBLIC_GOOGLE_MAPS_API_KEY:', process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || 'NOT DEFINED');
+    console.log('[GeofencingSettings] All NEXT_PUBLIC env vars:', Object.keys(process.env).filter(key => key.startsWith('NEXT_PUBLIC_')));
+  }, []);
 
   useEffect(() => {
     // Initialize Google Maps
@@ -52,6 +60,7 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel }) => {
         }
       } catch (error) {
         console.error('[GeofencingSettings] Failed to load Google Maps:', error);
+        setMapError('Failed to load Google Maps. Please check your internet connection.');
         toast.error('Failed to load Google Maps. Please check your internet connection and try again.');
         setLoading(false);
         return;
@@ -94,6 +103,7 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel }) => {
         setLoading(false);
       } catch (error) {
         console.error('[GeofencingSettings] Failed to initialize map:', error);
+        setMapError('Failed to initialize map. Please refresh the page.');
         toast.error('Failed to initialize map. Please refresh the page and try again.');
         setLoading(false);
       }
@@ -341,10 +351,38 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel }) => {
         <label className="text-sm font-medium text-gray-700">
           Click on the map to set geofence location
         </label>
-        <div 
-          ref={mapContainerRef}
-          className="w-full h-96 border border-gray-300 rounded-lg"
-        />
+        <div className="relative w-full h-96 border border-gray-300 rounded-lg overflow-hidden bg-gray-50">
+          {loading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-10">
+              <div className="text-center">
+                <StandardSpinner size="lg" />
+                <p className="mt-2 text-sm text-gray-600">Loading Google Maps...</p>
+                <p className="text-xs text-gray-500 mt-1">API Key: {process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? 'Configured' : 'Not configured'}</p>
+              </div>
+            </div>
+          )}
+          {mapError && (
+            <div className="absolute inset-0 flex items-center justify-center bg-red-50 z-10">
+              <div className="text-center p-4">
+                <ExclamationTriangleIcon className="h-8 w-8 text-red-500 mx-auto mb-2" />
+                <p className="text-sm text-red-700">{mapError}</p>
+                <p className="text-xs text-red-600 mt-2">
+                  API Key Status: {process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? 'Present' : 'Missing'}
+                </p>
+                <button 
+                  onClick={() => window.location.reload()}
+                  className="mt-3 px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
+                >
+                  Reload Page
+                </button>
+              </div>
+            </div>
+          )}
+          <div 
+            ref={mapContainerRef}
+            className="w-full h-full"
+          />
+        </div>
       </div>
 
       {/* Actions */}
