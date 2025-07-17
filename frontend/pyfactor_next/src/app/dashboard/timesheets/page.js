@@ -34,13 +34,16 @@ const TimesheetsPage = () => {
   const [selectedTimesheet, setSelectedTimesheet] = useState(null);
   const [timesheetEntries, setTimesheetEntries] = useState([]);
   const [showDetails, setShowDetails] = useState(false);
+  const [viewMode, setViewMode] = useState('employees'); // 'employees' or 'timesheets'
   const [filters, setFilters] = useState({
     status: 'all',
     employee: 'all',
     period: 'current',
+    employeeType: 'all',
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [currentWeekTimesheets, setCurrentWeekTimesheets] = useState({});
 
   useEffect(() => {
     console.log('🎯 [TimesheetsPage] useEffect triggered');
