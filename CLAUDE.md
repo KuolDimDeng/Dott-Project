@@ -358,6 +358,60 @@
   - Configure Stripe for payment processing
   - Set up geofence zones per business location
 
+### [38.0.0] - 2025-07-17 - CURRENT - Comprehensive Geofencing System
+- **Purpose**: Location-based employee time tracking with full legal compliance and privacy protection
+- **Documentation**: `/backend/pyfactor/docs/GEOFENCING_SYSTEM_DOCUMENTATION.md`
+- **Admin Interface**: Settings → Geofencing (Admin/Owner only)
+- **Legal Compliance**:
+  - GDPR, CCPA, and local privacy law compliance
+  - Mandatory employee notification and explicit consent
+  - Comprehensive employer responsibility documentation
+  - Employee rights protection (opt-out, data access, deletion)
+  - 90-day automatic data retention with encrypted storage
+- **Geofence Setup**:
+  - Interactive Google Maps interface with click-to-place
+  - Adjustable radius (10-1000 meters) with visual feedback
+  - Location types: Office, Construction Site, Client Location, Delivery Zone, Field Location, Custom
+  - Configurable rules: Clock in/out requirements, auto clock-out, exit alerts
+- **Employee Experience**:
+  - Location consent modal with GDPR-compliant information
+  - Real-time geofence validation during clock in/out
+  - Status indicators (inside/outside work areas)
+  - Distance calculations from geofence centers
+  - PWA-compatible mobile interface
+- **Technical Implementation**:
+  - `GeofencingSettings.js` - Admin geofence management with Google Maps
+  - `EnhancedClockInOut.js` - Location-aware time tracking
+  - `LocationConsentModal` - GDPR-compliant consent collection
+  - `GeofenceStatus` - Real-time location validation indicators
+- **Backend Models**:
+  - `Geofence` - Location boundaries with enforcement rules
+  - `EmployeeLocationConsent` - Privacy consent tracking
+  - `GeofenceEvent` - Comprehensive audit logging
+  - `LocationLog` - Employee location history
+- **API Endpoints**:
+  - `/api/hr/geofences/` - Geofence CRUD operations
+  - `/api/hr/location-consents/check/me/` - Employee consent status
+  - `/api/hr/geofence-events/check/` - Real-time geofence validation
+  - `/api/hr/geofence-events/log_event/` - Event logging for compliance
+- **Privacy & Security**:
+  - AES-256 encryption for all location data
+  - Role-based access control with audit trails
+  - Work-hours only tracking with automatic deletion
+  - Granular consent controls and withdrawal options
+  - Complete GDPR compliance with data portability
+- **Mobile & PWA Support**:
+  - Native GPS integration with high-accuracy positioning
+  - Touch-friendly interface optimized for mobile
+  - Offline capability with background sync
+  - Battery-optimized location tracking
+  - Push notifications for location-based alerts
+- **Setup Requirements**:
+  - Google Maps API key: `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`
+  - Legal compliance review and employer training
+  - Employee notification and consent collection
+  - Geofence zone configuration per business location
+
 ---
 
 ## DEPRECATED CONFIGURATIONS (Do Not Use)
@@ -431,6 +485,24 @@ docker-compose exec backend python manage.py check
 ```bash
 cd /Users/kuoldeng/projectx/backend/pyfactor
 python3 payments/test_platform_fees.py
+```
+
+### Geofencing Setup (Admin)
+```bash
+# 1. Access Settings → Geofencing (Admin/Owner only)
+# 2. Accept legal compliance requirements
+# 3. Create geofence using Google Maps interface
+# 4. Configure location rules and requirements
+# 5. Assign employees to geofences
+```
+
+### Employee Location Consent
+```bash
+# Employee workflow:
+# 1. First clock in attempt triggers consent modal
+# 2. Review location data collection details
+# 3. Accept or decline location tracking
+# 4. Clock in/out with geofence validation
 ```
 
 ### Environment Variables (Key)
