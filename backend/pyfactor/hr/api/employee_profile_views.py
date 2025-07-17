@@ -94,24 +94,51 @@ class EmployeeProfileView(APIView):
     def get(self, request):
         """Get employee profile information including SSN, bank, and tax data from Stripe"""
         try:
+            logger.info(f"[EmployeeProfile] === GET REQUEST START ===")
+            logger.info(f"[EmployeeProfile] Request user: {request.user}")
+            logger.info(f"[EmployeeProfile] Request user ID: {request.user.id}")
+            logger.info(f"[EmployeeProfile] Request user email: {request.user.email}")
+            
             employee = self.get_employee_for_user(request.user)
             
             if not employee:
+                logger.error(f"[EmployeeProfile] No employee found for user {request.user.email}")
                 return Response(
                     {"error": "No employee record found for current user"},
                     status=status.HTTP_404_NOT_FOUND
                 )
             
+            logger.info(f"[EmployeeProfile] Found employee: {employee.id} - {employee.first_name} {employee.last_name}")
+            
             # Get SSN information from Stripe
-            ssn_last_4 = StripeBankTaxService.retrieve_ssn_information(employee)
+            try:
+                logger.info(f"[EmployeeProfile] Retrieving SSN information...")
+                ssn_last_4 = StripeBankTaxService.retrieve_ssn_information(employee)
+                logger.info(f"[EmployeeProfile] SSN last 4: {ssn_last_4}")
+            except Exception as e:
+                logger.error(f"[EmployeeProfile] Error retrieving SSN: {str(e)}")
+                ssn_last_4 = None
             
             # Get bank information from Stripe
-            bank_info = StripeBankTaxService.retrieve_bank_information(employee)
+            try:
+                logger.info(f"[EmployeeProfile] Retrieving bank information...")
+                bank_info = StripeBankTaxService.retrieve_bank_information(employee)
+                logger.info(f"[EmployeeProfile] Bank info retrieved: {bool(bank_info)}")
+            except Exception as e:
+                logger.error(f"[EmployeeProfile] Error retrieving bank info: {str(e)}")
+                bank_info = None
             
             # Get tax information from Stripe
-            tax_info = StripeBankTaxService.retrieve_tax_information(employee)
+            try:
+                logger.info(f"[EmployeeProfile] Retrieving tax information...")
+                tax_info = StripeBankTaxService.retrieve_tax_information(employee)
+                logger.info(f"[EmployeeProfile] Tax info retrieved: {bool(tax_info)}")
+            except Exception as e:
+                logger.error(f"[EmployeeProfile] Error retrieving tax info: {str(e)}")
+                tax_info = None
             
             # Build response
+            logger.info(f"[EmployeeProfile] Building response...")
             profile_data = {
                 "employee_id": str(employee.id),
                 "email": employee.email,
@@ -125,10 +152,14 @@ class EmployeeProfileView(APIView):
                 "has_stripe_account": bool(employee.stripe_account_id)
             }
             
+            logger.info(f"[EmployeeProfile] === GET REQUEST END - SUCCESS ===")
             return Response(profile_data, status=status.HTTP_200_OK)
             
         except Exception as e:
             logger.error(f"[EmployeeProfile] Error getting profile: {str(e)}")
+            logger.error(f"[EmployeeProfile] Error type: {type(e)}")
+            import traceback
+            logger.error(f"[EmployeeProfile] Traceback: {traceback.format_exc()}")
             return Response(
                 {"error": "Failed to retrieve profile information"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR

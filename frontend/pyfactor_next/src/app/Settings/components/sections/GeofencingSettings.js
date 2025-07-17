@@ -39,15 +39,32 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel }) => {
   useEffect(() => {
     // Initialize Google Maps
     const initMap = async () => {
+      // Check if map container exists
+      if (!mapContainerRef.current) {
+        console.error('Map container not found');
+        setLoading(false);
+        return;
+      }
+
       if (!window.google) {
         await loadGoogleMapsScript();
       }
       
+      // Double-check container still exists after loading script
+      if (!mapContainerRef.current) {
+        console.error('Map container not found after loading script');
+        setLoading(false);
+        return;
+      }
+
       const map = new window.google.maps.Map(mapContainerRef.current, {
         center: { lat: 37.7749, lng: -122.4194 }, // Default to San Francisco
         zoom: 15,
         mapTypeId: 'roadmap'
       });
+
+      // Add click listener to map
+      map.addListener('click', handleMapClick);
 
       // Try to get user's current location
       if (navigator.geolocation) {
@@ -69,7 +86,14 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel }) => {
       setLoading(false);
     };
 
-    initMap();
+    // Add a small delay to ensure the component is fully rendered
+    const timeoutId = setTimeout(() => {
+      initMap();
+    }, 100);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   const loadGoogleMapsScript = () => {
@@ -291,7 +315,6 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel }) => {
         <div 
           ref={mapContainerRef}
           className="w-full h-96 border border-gray-300 rounded-lg"
-          onClick={handleMapClick}
         />
       </div>
 
