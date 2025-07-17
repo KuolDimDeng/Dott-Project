@@ -1,87 +1,90 @@
 import { NextResponse } from 'next/server';
-import { logger } from '@/utils/logger';
 import { cookies } from 'next/headers';
 
-export async function POST(request) {
+const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'https://dott-api-y26w.onrender.com';
+
+async function handleRequest(request, method) {
   try {
-    // Get session ID from sid cookie
-    const cookieStore = cookies();
-    const sidCookie = cookieStore.get('sid');
+    console.log(`[Geofences API] === ${method} REQUEST START ===`);
     
-    if (!sidCookie) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const cookieStore = await cookies();
+    const sid = cookieStore.get('sid');
+    
+    if (!sid) {
+      console.log('[Geofences API] No session cookie found');
+      return NextResponse.json({ error: 'No session found' }, { status: 401 });
     }
 
-    const tenantId = request.headers.get('X-Tenant-ID');
-    if (!tenantId) {
-      return NextResponse.json({ error: 'Tenant ID required' }, { status: 400 });
+    const headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': `Session ${sid.value}`,
+      'X-Session-ID': sid.value,
+    };
+
+    let body = null;
+    if (['POST', 'PUT', 'PATCH'].includes(method)) {
+      try {
+        body = await request.json();
+        console.log(`[Geofences API] Request body:`, body);
+      } catch (e) {
+        console.log('[Geofences API] No JSON body or parse error:', e.message);
+      }
     }
 
-    const body = await request.json();
-
-    // Forward to Django backend
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://dott-api-y26w.onrender.com';
-    const response = await fetch(`${API_URL}/api/hr/geofences/`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Session ${sidCookie.value}`,
-        'X-Tenant-ID': tenantId,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify(body),
+    const url = new URL(request.url);
+    const searchParams = url.searchParams.toString();
+    const backendUrl = `${BACKEND_URL}/api/hr/geofences/${searchParams ? `?${searchParams}` : ''}`;
+    
+    console.log(`[Geofences API] Backend URL:`, backendUrl);
+    
+    const response = await fetch(backendUrl, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : null,
+      credentials: 'include',
     });
 
+    console.log(`[Geofences API] Backend response status:`, response.status);
+    
     if (!response.ok) {
-      const error = await response.text();
-      logger.error('[Geofence] Create failed:', { status: response.status, error });
-      return NextResponse.json({ error: 'Failed to create geofence' }, { status: response.status });
+      const errorText = await response.text();
+      console.error(`[Geofences API] Backend error:`, errorText);
+      return NextResponse.json(
+        { error: 'Failed to process geofence request' },
+        { status: response.status }
+      );
     }
 
     const data = await response.json();
+    console.log(`[Geofences API] Success, returning data`);
+    
     return NextResponse.json(data);
   } catch (error) {
-    logger.error('[Geofence] Create error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error(`[Geofences API] Error:`, error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
 export async function GET(request) {
-  try {
-    // Get session ID from sid cookie
-    const cookieStore = cookies();
-    const sidCookie = cookieStore.get('sid');
-    
-    if (!sidCookie) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  return handleRequest(request, 'GET');
+}
 
-    const tenantId = request.headers.get('X-Tenant-ID');
-    if (!tenantId) {
-      return NextResponse.json({ error: 'Tenant ID required' }, { status: 400 });
-    }
+export async function POST(request) {
+  return handleRequest(request, 'POST');
+}
 
-    // Forward to Django backend
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://dott-api-y26w.onrender.com';
-    const response = await fetch(`${API_URL}/api/hr/geofences/`, {
-      headers: {
-        'Authorization': `Session ${sidCookie.value}`,
-        'X-Tenant-ID': tenantId,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-    });
+export async function PUT(request) {
+  return handleRequest(request, 'PUT');
+}
 
-    if (!response.ok) {
-      const error = await response.text();
-      logger.error('[Geofence] List failed:', { status: response.status, error });
-      return NextResponse.json({ error: 'Failed to get geofences' }, { status: response.status });
-    }
+export async function PATCH(request) {
+  return handleRequest(request, 'PATCH');
+}
 
-    const data = await response.json();
-    return NextResponse.json(data);
-  } catch (error) {
-    logger.error('[Geofence] List error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
+export async function DELETE(request) {
+  return handleRequest(request, 'DELETE');
 }

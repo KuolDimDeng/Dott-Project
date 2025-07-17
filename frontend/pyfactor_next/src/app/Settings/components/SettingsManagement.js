@@ -17,6 +17,7 @@ import SecuritySettings from './sections/SecuritySettings';
 import Integrations from './sections/Integrations';
 import BankConnections from './sections/BankConnections';
 import PayrollSettings from './sections/PayrollSettings';
+import GeofencingSettings from './sections/GeofencingSettings';
 
 // Import icons
 import { 
@@ -26,7 +27,8 @@ import {
   ShieldCheckIcon,
   PuzzlePieceIcon,
   BanknotesIcon,
-  CurrencyDollarIcon
+  CurrencyDollarIcon,
+  MapPinIcon
 } from '@heroicons/react/24/outline';
 
 const SettingsManagement = () => {
@@ -71,6 +73,14 @@ const SettingsManagement = () => {
       icon: CurrencyDollarIcon,
       description: 'Configure pay periods, pay dates, and payroll settings',
       component: PayrollSettings,
+      requiredRole: 'admin' // Only admin and owner can access
+    },
+    {
+      id: 'geofencing',
+      title: 'Geofencing',
+      icon: MapPinIcon,
+      description: 'Set up location-based restrictions for employee clock in/out',
+      component: GeofencingSettings,
       requiredRole: 'admin' // Only admin and owner can access
     },
     {

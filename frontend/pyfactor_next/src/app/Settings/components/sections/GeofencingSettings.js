@@ -1,0 +1,606 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { 
+  MapPinIcon, 
+  PlusCircleIcon, 
+  TrashIcon, 
+  PencilIcon,
+  EyeIcon,
+  ShieldCheckIcon,
+  ExclamationTriangleIcon,
+  InformationCircleIcon
+} from '@heroicons/react/24/outline';
+import { toast } from 'react-hot-toast';
+import { logger } from '@/utils/logger';
+import api from '@/utils/api';
+import StandardSpinner from '@/components/ui/StandardSpinner';
+import FieldTooltip from '@/components/ui/FieldTooltip';
+
+// Google Maps Integration
+const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel }) => {
+  const [loading, setLoading] = useState(true);
+  const [map, setMap] = useState(null);
+  const [geofence, setGeofence] = useState(null);
+  const [geofenceData, setGeofenceData] = useState({
+    name: '',
+    description: '',
+    location_type: 'office',
+    radius: 100,
+    require_for_clock_in: true,
+    require_for_clock_out: true,
+    auto_clock_out_on_exit: false,
+    alert_on_unexpected_exit: false,
+    is_active: true
+  });
+
+  const mapContainerRef = React.useRef(null);
+
+  useEffect(() => {
+    // Initialize Google Maps
+    const initMap = async () => {
+      if (!window.google) {
+        await loadGoogleMapsScript();
+      }
+      
+      const map = new window.google.maps.Map(mapContainerRef.current, {
+        center: { lat: 37.7749, lng: -122.4194 }, // Default to San Francisco
+        zoom: 15,
+        mapTypeId: 'roadmap'
+      });
+
+      // Try to get user's current location
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const userLocation = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            };
+            map.setCenter(userLocation);
+          },
+          (error) => {
+            console.warn('Could not get user location:', error);
+          }
+        );
+      }
+
+      setMap(map);
+      setLoading(false);
+    };
+
+    initMap();
+  }, []);
+
+  const loadGoogleMapsScript = () => {
+    return new Promise((resolve) => {
+      if (window.google) {
+        resolve();
+        return;
+      }
+      
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=geometry,drawing`;
+      script.async = true;
+      script.defer = true;
+      script.onload = resolve;
+      document.head.appendChild(script);
+    });
+  };
+
+  const handleMapClick = (event) => {
+    if (geofence) {
+      geofence.setMap(null);
+    }
+
+    const center = {
+      lat: event.latLng.lat(),
+      lng: event.latLng.lng()
+    };
+
+    const newGeofence = new window.google.maps.Circle({
+      center: center,
+      radius: geofenceData.radius,
+      fillColor: '#2563eb',
+      fillOpacity: 0.35,
+      strokeColor: '#1d4ed8',
+      strokeOpacity: 0.8,
+      strokeWeight: 2,
+      editable: true,
+      draggable: true
+    });
+
+    newGeofence.setMap(map);
+    setGeofence(newGeofence);
+    
+    setGeofenceData(prev => ({
+      ...prev,
+      center_latitude: center.lat,
+      center_longitude: center.lng
+    }));
+  };
+
+  const handleRadiusChange = (newRadius) => {
+    setGeofenceData(prev => ({ ...prev, radius: newRadius }));
+    if (geofence) {
+      geofence.setRadius(newRadius);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!geofence) {
+      toast.error('Please click on the map to set a geofence location');
+      return;
+    }
+
+    if (!geofenceData.name.trim()) {
+      toast.error('Please enter a name for the geofence');
+      return;
+    }
+
+    try {
+      const center = geofence.getCenter();
+      const radius = geofence.getRadius();
+      
+      const data = {
+        ...geofenceData,
+        center_latitude: center.lat(),
+        center_longitude: center.lng(),
+        radius: radius
+      };
+
+      const response = await api.post('/api/hr/geofences/', data);
+      
+      if (response.data) {
+        toast.success('Geofence created successfully');
+        onGeofenceCreated(response.data);
+      }
+    } catch (error) {
+      logger.error('Error creating geofence:', error);
+      toast.error('Failed to create geofence');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <StandardSpinner size="lg" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Form */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+            Geofence Name
+            <FieldTooltip content="A descriptive name for this location (e.g., 'Main Office', 'Construction Site A')" />
+          </label>
+          <input
+            type="text"
+            value={geofenceData.name}
+            onChange={(e) => setGeofenceData(prev => ({ ...prev, name: e.target.value }))}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Enter geofence name"
+          />
+        </div>
+
+        <div>
+          <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+            Location Type
+            <FieldTooltip content="The type of location this geofence represents" />
+          </label>
+          <select
+            value={geofenceData.location_type}
+            onChange={(e) => setGeofenceData(prev => ({ ...prev, location_type: e.target.value }))}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="office">Office</option>
+            <option value="construction_site">Construction Site</option>
+            <option value="client_location">Client Location</option>
+            <option value="delivery_zone">Delivery Zone</option>
+            <option value="field_location">Field Location</option>
+            <option value="custom">Custom</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+            Radius (meters)
+            <FieldTooltip content="The radius of the geofence in meters. Smaller values require more precise location." />
+          </label>
+          <input
+            type="number"
+            min="10"
+            max="1000"
+            value={geofenceData.radius}
+            onChange={(e) => handleRadiusChange(parseInt(e.target.value) || 100)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
+
+        <div>
+          <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+            Description (Optional)
+            <FieldTooltip content="Additional details about this location" />
+          </label>
+          <input
+            type="text"
+            value={geofenceData.description}
+            onChange={(e) => setGeofenceData(prev => ({ ...prev, description: e.target.value }))}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Enter description"
+          />
+        </div>
+      </div>
+
+      {/* Options */}
+      <div className="space-y-3">
+        <label className="flex items-center">
+          <input
+            type="checkbox"
+            checked={geofenceData.require_for_clock_in}
+            onChange={(e) => setGeofenceData(prev => ({ ...prev, require_for_clock_in: e.target.checked }))}
+            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+          />
+          <span className="ml-2 text-sm text-gray-700">Require for clock in</span>
+          <FieldTooltip content="Employees must be within this geofence to clock in" />
+        </label>
+
+        <label className="flex items-center">
+          <input
+            type="checkbox"
+            checked={geofenceData.require_for_clock_out}
+            onChange={(e) => setGeofenceData(prev => ({ ...prev, require_for_clock_out: e.target.checked }))}
+            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+          />
+          <span className="ml-2 text-sm text-gray-700">Require for clock out</span>
+          <FieldTooltip content="Employees must be within this geofence to clock out" />
+        </label>
+
+        <label className="flex items-center">
+          <input
+            type="checkbox"
+            checked={geofenceData.auto_clock_out_on_exit}
+            onChange={(e) => setGeofenceData(prev => ({ ...prev, auto_clock_out_on_exit: e.target.checked }))}
+            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+          />
+          <span className="ml-2 text-sm text-gray-700">Auto clock out on exit</span>
+          <FieldTooltip content="Automatically clock out employees when they leave the geofence" />
+        </label>
+
+        <label className="flex items-center">
+          <input
+            type="checkbox"
+            checked={geofenceData.alert_on_unexpected_exit}
+            onChange={(e) => setGeofenceData(prev => ({ ...prev, alert_on_unexpected_exit: e.target.checked }))}
+            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+          />
+          <span className="ml-2 text-sm text-gray-700">Alert on unexpected exit</span>
+          <FieldTooltip content="Send alerts when employees leave the geofence during work hours" />
+        </label>
+      </div>
+
+      {/* Map */}
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-gray-700">
+          Click on the map to set geofence location
+        </label>
+        <div 
+          ref={mapContainerRef}
+          className="w-full h-96 border border-gray-300 rounded-lg"
+          onClick={handleMapClick}
+        />
+      </div>
+
+      {/* Actions */}
+      <div className="flex justify-end space-x-3">
+        <button
+          onClick={onCancel}
+          className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleSave}
+          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700"
+        >
+          Create Geofence
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Legal Compliance Component
+const LegalComplianceInfo = ({ onAccept }) => {
+  const [accepted, setAccepted] = useState(false);
+
+  return (
+    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6">
+      <div className="flex items-start">
+        <ExclamationTriangleIcon className="h-6 w-6 text-yellow-600 mr-3 mt-0.5" />
+        <div className="flex-1">
+          <h3 className="text-lg font-medium text-yellow-800 mb-3">
+            Legal Compliance Requirements
+          </h3>
+          
+          <div className="space-y-4 text-sm text-yellow-700">
+            <div>
+              <h4 className="font-medium mb-2">Employer Responsibilities:</h4>
+              <ul className="list-disc list-inside space-y-1 ml-4">
+                <li>You must inform all employees about location tracking before implementation</li>
+                <li>Employees must provide explicit consent for location tracking</li>
+                <li>Location data can only be used for legitimate business purposes</li>
+                <li>You must comply with local privacy laws (GDPR, CCPA, etc.)</li>
+                <li>Employees have the right to access, modify, or delete their location data</li>
+                <li>Location tracking should be limited to work hours and work locations</li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-medium mb-2">Employee Rights:</h4>
+              <ul className="list-disc list-inside space-y-1 ml-4">
+                <li>Right to opt-out of location tracking (may affect clock in/out capabilities)</li>
+                <li>Right to know what data is collected and how it's used</li>
+                <li>Right to access their location data</li>
+                <li>Right to request deletion of their location data</li>
+                <li>Protection from discrimination based on location preferences</li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-medium mb-2">Data Protection:</h4>
+              <ul className="list-disc list-inside space-y-1 ml-4">
+                <li>Location data is encrypted and stored securely</li>
+                <li>Access is restricted to authorized personnel only</li>
+                <li>Data is automatically deleted after 90 days</li>
+                <li>Location tracking is limited to work-related activities</li>
+                <li>No personal tracking outside of work hours</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="mt-6 p-4 bg-white rounded-md border border-yellow-200">
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={accepted}
+                onChange={(e) => setAccepted(e.target.checked)}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <span className="ml-2 text-sm text-gray-700">
+                I understand and accept the legal responsibilities of implementing employee location tracking.
+                I will ensure all employees are properly informed and have given explicit consent.
+              </span>
+            </label>
+          </div>
+
+          <div className="mt-4 flex justify-end">
+            <button
+              onClick={onAccept}
+              disabled={!accepted}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Accept and Continue
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Main Geofencing Settings Component
+const GeofencingSettings = ({ user, isOwner, isAdmin, notifySuccess, notifyError }) => {
+  const [loading, setLoading] = useState(true);
+  const [geofences, setGeofences] = useState([]);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showLegalCompliance, setShowLegalCompliance] = useState(false);
+  const [legalAccepted, setLegalAccepted] = useState(false);
+
+  useEffect(() => {
+    if (isOwner || isAdmin) {
+      loadGeofences();
+    }
+  }, [isOwner, isAdmin]);
+
+  const loadGeofences = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get('/api/hr/geofences/');
+      setGeofences(response.data?.results || []);
+    } catch (error) {
+      logger.error('Error loading geofences:', error);
+      notifyError('Failed to load geofences');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateGeofence = () => {
+    if (!legalAccepted) {
+      setShowLegalCompliance(true);
+    } else {
+      setShowCreateForm(true);
+    }
+  };
+
+  const handleLegalAccept = () => {
+    setLegalAccepted(true);
+    setShowLegalCompliance(false);
+    setShowCreateForm(true);
+  };
+
+  const handleGeofenceCreated = (geofence) => {
+    setGeofences(prev => [...prev, geofence]);
+    setShowCreateForm(false);
+    notifySuccess('Geofence created successfully');
+  };
+
+  const handleDeleteGeofence = async (geofenceId) => {
+    if (!confirm('Are you sure you want to delete this geofence?')) return;
+
+    try {
+      await api.delete(`/api/hr/geofences/${geofenceId}/`);
+      setGeofences(prev => prev.filter(g => g.id !== geofenceId));
+      notifySuccess('Geofence deleted successfully');
+    } catch (error) {
+      logger.error('Error deleting geofence:', error);
+      notifyError('Failed to delete geofence');
+    }
+  };
+
+  if (!isOwner && !isAdmin) {
+    return (
+      <div className="p-6 text-center">
+        <ShieldCheckIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Access Restricted</h3>
+        <p className="text-gray-600">Only owners and administrators can manage geofencing settings.</p>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <StandardSpinner size="lg" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900">Geofencing Settings</h2>
+          <p className="text-sm text-gray-600 mt-1">
+            Set up location-based restrictions for employee clock in/out
+          </p>
+        </div>
+        <button
+          onClick={handleCreateGeofence}
+          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
+        >
+          <PlusCircleIcon className="h-4 w-4 mr-2" />
+          Add Geofence
+        </button>
+      </div>
+
+      {/* Legal Compliance Modal */}
+      {showLegalCompliance && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg max-w-4xl max-h-screen overflow-y-auto m-4">
+            <div className="p-6">
+              <LegalComplianceInfo onAccept={handleLegalAccept} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Form */}
+      {showCreateForm && (
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Create New Geofence</h3>
+          <GoogleMapsGeofenceSetup
+            onGeofenceCreated={handleGeofenceCreated}
+            onCancel={() => setShowCreateForm(false)}
+          />
+        </div>
+      )}
+
+      {/* Info Box */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="flex items-start">
+          <InformationCircleIcon className="h-5 w-5 text-blue-600 mr-2 mt-0.5" />
+          <div className="text-sm text-blue-700">
+            <p><strong>Geofencing</strong> allows you to define geographic boundaries where employees can clock in and out. This ensures employees are at the correct work location and helps maintain accurate time records.</p>
+            <p className="mt-2"><strong>Important:</strong> All employees must consent to location tracking before geofencing can be enforced.</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Geofences List */}
+      <div className="bg-white border border-gray-200 rounded-lg">
+        <div className="p-4 border-b border-gray-200">
+          <h3 className="text-lg font-medium text-gray-900">Active Geofences</h3>
+        </div>
+        
+        {geofences.length === 0 ? (
+          <div className="p-8 text-center text-gray-500">
+            <MapPinIcon className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+            <p>No geofences configured yet.</p>
+            <p className="text-sm mt-1">Click "Add Geofence" to create your first location boundary.</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-200">
+            {geofences.map((geofence) => (
+              <div key={geofence.id} className="p-4 hover:bg-gray-50">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center">
+                      <MapPinIcon className="h-5 w-5 text-gray-400 mr-2" />
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-900">{geofence.name}</h4>
+                        <p className="text-sm text-gray-500">
+                          {geofence.location_type?.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} • {geofence.radius}m radius
+                        </p>
+                        {geofence.description && (
+                          <p className="text-xs text-gray-500 mt-1">{geofence.description}</p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center space-x-4 mt-2">
+                      {geofence.require_for_clock_in && (
+                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Clock In Required</span>
+                      )}
+                      {geofence.require_for_clock_out && (
+                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Clock Out Required</span>
+                      )}
+                      {geofence.auto_clock_out_on_exit && (
+                        <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Auto Clock Out</span>
+                      )}
+                      {geofence.alert_on_unexpected_exit && (
+                        <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">Exit Alerts</span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => {/* TODO: Implement view */}}
+                      className="text-gray-400 hover:text-gray-600"
+                      title="View"
+                    >
+                      <EyeIcon className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => {/* TODO: Implement edit */}}
+                      className="text-blue-600 hover:text-blue-900"
+                      title="Edit"
+                    >
+                      <PencilIcon className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteGeofence(geofence.id)}
+                      className="text-red-600 hover:text-red-900"
+                      title="Delete"
+                    >
+                      <TrashIcon className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default GeofencingSettings;

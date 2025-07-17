@@ -5,18 +5,18 @@ const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL |
 
 export async function POST(request) {
   try {
-    console.log('[Geofence Event Log] === POST REQUEST START ===');
+    console.log('[Geofence Check] === POST REQUEST START ===');
     
     const cookieStore = await cookies();
     const sid = cookieStore.get('sid');
     
     if (!sid) {
-      console.log('[Geofence Event Log] No session cookie found');
+      console.log('[Geofence Check] No session cookie found');
       return NextResponse.json({ error: 'No session found' }, { status: 401 });
     }
 
     const body = await request.json();
-    console.log('[Geofence Event Log] Request body:', body);
+    console.log('[Geofence Check] Request body:', body);
 
     const headers = {
       'Content-Type': 'application/json',
@@ -25,8 +25,8 @@ export async function POST(request) {
       'X-Session-ID': sid.value,
     };
 
-    const backendUrl = `${BACKEND_URL}/api/hr/geofence-events/log_event/`;
-    console.log('[Geofence Event Log] Backend URL:', backendUrl);
+    const backendUrl = `${BACKEND_URL}/api/hr/geofence-events/check/`;
+    console.log('[Geofence Check] Backend URL:', backendUrl);
     
     const response = await fetch(backendUrl, {
       method: 'POST',
@@ -35,23 +35,23 @@ export async function POST(request) {
       credentials: 'include',
     });
 
-    console.log('[Geofence Event Log] Backend response status:', response.status);
+    console.log('[Geofence Check] Backend response status:', response.status);
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[Geofence Event Log] Backend error:', errorText);
+      console.error('[Geofence Check] Backend error:', errorText);
       return NextResponse.json(
-        { error: 'Failed to log geofence event' },
+        { error: 'Failed to check geofence status' },
         { status: response.status }
       );
     }
 
     const data = await response.json();
-    console.log('[Geofence Event Log] Success, returning data');
+    console.log('[Geofence Check] Success, returning data');
     
     return NextResponse.json(data);
   } catch (error) {
-    console.error('[Geofence Event Log] Error:', error);
+    console.error('[Geofence Check] Error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
