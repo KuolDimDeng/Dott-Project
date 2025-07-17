@@ -44,20 +44,57 @@ const timesheetApi = {
 
   // HR Management Endpoints
   getHRDashboard: async () => {
-    const response = await apiClient.get('/api/timesheets/timesheets/hr_dashboard/');
-    return response.data;
+    console.log('[timesheetApi] Making HR dashboard request...');
+    try {
+      const response = await apiClient.get('/api/timesheets/timesheets/hr_dashboard/');
+      console.log('[timesheetApi] HR dashboard response status:', response.status);
+      console.log('[timesheetApi] HR dashboard response data:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('[timesheetApi] HR dashboard error details:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        headers: error.response?.headers,
+        config: error.config
+      });
+      throw error;
+    }
   },
 
   bulkApproveTimesheets: async (timesheetIds) => {
-    const response = await apiClient.post('/api/timesheets/timesheets/bulk_approve/', {
-      timesheet_ids: timesheetIds
-    });
-    return response.data;
+    console.log('[timesheetApi] Bulk approving timesheets:', timesheetIds);
+    try {
+      const response = await apiClient.post('/api/timesheets/timesheets/bulk_approve/', {
+        timesheet_ids: timesheetIds
+      });
+      console.log('[timesheetApi] Bulk approve response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('[timesheetApi] Bulk approve error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data
+      });
+      throw error;
+    }
   },
 
   generateSalaryTimesheets: async () => {
-    const response = await apiClient.post('/api/timesheets/timesheets/generate_salary_timesheets/');
-    return response.data;
+    console.log('[timesheetApi] Generating salary timesheets...');
+    try {
+      const response = await apiClient.post('/api/timesheets/timesheets/generate_salary_timesheets/');
+      console.log('[timesheetApi] Generate salary timesheets response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('[timesheetApi] Generate salary timesheets error:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data
+      });
+      throw error;
+    }
   },
 
   // Time Entries

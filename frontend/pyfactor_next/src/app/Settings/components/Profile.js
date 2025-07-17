@@ -21,7 +21,10 @@ import {
   QuestionMarkCircleIcon,
   DocumentTextIcon,
   ShieldExclamationIcon,
-  ArrowPathIcon
+  ArrowPathIcon,
+  BanknotesIcon,
+  CreditCardIcon,
+  BuildingLibraryIcon
 } from '@heroicons/react/24/outline';
 
 const Profile = ({ userData }) => {
@@ -33,6 +36,14 @@ const Profile = ({ userData }) => {
   const [sessions, setSessions] = useState([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
   const fileInputRef = useRef(null);
+  
+  // Employee profile data states
+  const [employeeData, setEmployeeData] = useState(null);
+  const [bankInfo, setBankInfo] = useState(null);
+  const [taxInfo, setTaxInfo] = useState(null);
+  const [loadingEmployeeData, setLoadingEmployeeData] = useState(false);
+  const [savingBankInfo, setSavingBankInfo] = useState(false);
+  const [savingTaxInfo, setSavingTaxInfo] = useState(false);
   
   const router = useRouter();
   const { notifySuccess, notifyError } = useNotification();
@@ -47,6 +58,10 @@ const Profile = ({ userData }) => {
     fetchProfileData();
     if (selectedTab === 1) {
       fetchLoginSessions();
+    }
+    // Fetch employee data when Pay or Tax tabs are selected
+    if (selectedTab === 2 || selectedTab === 3) {
+      fetchEmployeeProfileData();
     }
   }, [selectedTab]);
 
@@ -93,6 +108,26 @@ const Profile = ({ userData }) => {
       console.error('Error fetching sessions:', error);
     } finally {
       setLoadingSessions(false);
+    }
+  };
+
+  const fetchEmployeeProfileData = async () => {
+    try {
+      setLoadingEmployeeData(true);
+      const response = await fetch('/api/hr/employee/profile');
+      if (response.ok) {
+        const data = await response.json();
+        console.log('[Profile] Employee profile data fetched:', data);
+        setEmployeeData(data);
+        setBankInfo(data.bank_info || {});
+        setTaxInfo(data.tax_info || {});
+      } else {
+        console.error('[Profile] Failed to fetch employee profile:', response.status);
+      }
+    } catch (error) {
+      console.error('[Profile] Error fetching employee profile:', error);
+    } finally {
+      setLoadingEmployeeData(false);
     }
   };
 
@@ -460,6 +495,338 @@ const Profile = ({ userData }) => {
     );
   };
 
+  const renderPayTab = () => {
+    if (loadingEmployeeData) {
+      return (
+        <div className="flex justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-6">
+        {/* SSN Information */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Social Security Number</h3>
+              <p className="mt-1 text-sm text-gray-600">
+                Your SSN is securely stored and encrypted
+              </p>
+            </div>
+            <DocumentTextIcon className="w-6 h-6 text-gray-400" />
+          </div>
+          
+          <div className="mt-4">
+            {employeeData?.ssn_last_4 ? (
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600">SSN:</span>
+                <span className="font-mono text-sm">***-**-{employeeData.ssn_last_4}</span>
+                <CheckBadgeIcon className="w-5 h-5 text-green-500" />
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">No SSN on file</p>
+            )}
+          </div>
+        </div>
+
+        {/* Bank Information */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Bank Information</h3>
+              <p className="mt-1 text-sm text-gray-600">
+                Add your bank details to receive direct deposit payments
+              </p>
+            </div>
+            <BuildingLibraryIcon className="w-6 h-6 text-gray-400" />
+          </div>
+          
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            setSavingBankInfo(true);
+            
+            const formData = new FormData(e.target);
+            const bankData = {
+              routing_number: formData.get('routing_number'),
+              account_number: formData.get('account_number'),
+              account_type: formData.get('account_type'),
+              bank_name: formData.get('bank_name')
+            };
+            
+            try {
+              const response = await fetch('/api/hr/employee/bank-info', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(bankData)
+              });
+              
+              if (response.ok) {
+                notifySuccess('Bank information saved successfully');
+                fetchEmployeeProfileData();
+              } else {
+                const error = await response.json();
+                notifyError(error.error || 'Failed to save bank information');
+              }
+            } catch (error) {
+              notifyError('Failed to save bank information');
+            } finally {
+              setSavingBankInfo(false);
+            }
+          }} className="mt-6 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Bank Name
+                </label>
+                <input
+                  type="text"
+                  name="bank_name"
+                  defaultValue={bankInfo?.bank_name || ''}
+                  placeholder="e.g., Chase Bank"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Account Type
+                </label>
+                <select
+                  name="account_type"
+                  defaultValue={bankInfo?.account_type || 'checking'}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="checking">Checking</option>
+                  <option value="savings">Savings</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Routing Number
+                </label>
+                <input
+                  type="text"
+                  name="routing_number"
+                  placeholder={bankInfo?.routing_last_4 ? `*****${bankInfo.routing_last_4}` : '123456789'}
+                  maxLength="9"
+                  pattern="[0-9]{9}"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Account Number
+                </label>
+                <input
+                  type="text"
+                  name="account_number"
+                  placeholder={bankInfo?.account_last_4 ? `******${bankInfo.account_last_4}` : 'Enter account number'}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                  required
+                />
+              </div>
+            </div>
+            
+            {bankInfo?.account_last_4 && (
+              <div className="mt-2 p-3 bg-blue-50 rounded-lg">
+                <p className="text-sm text-blue-700">
+                  <CheckBadgeIcon className="inline w-4 h-4 mr-1" />
+                  Current account on file: ****{bankInfo.account_last_4} ({bankInfo.account_type})
+                </p>
+              </div>
+            )}
+            
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={savingBankInfo}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              >
+                {savingBankInfo ? 'Saving...' : 'Save Bank Information'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  };
+
+  const renderTaxTab = () => {
+    if (loadingEmployeeData) {
+      return (
+        <div className="flex justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-6">
+        {/* Tax Information */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Tax Information</h3>
+              <p className="mt-1 text-sm text-gray-600">
+                Manage your tax withholding preferences
+              </p>
+            </div>
+            <DocumentTextIcon className="w-6 h-6 text-gray-400" />
+          </div>
+          
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            setSavingTaxInfo(true);
+            
+            const formData = new FormData(e.target);
+            const taxData = {
+              filing_status: formData.get('filing_status'),
+              allowances: parseInt(formData.get('allowances')) || 0,
+              additional_withholding: parseFloat(formData.get('additional_withholding')) || 0,
+              state_filing_status: formData.get('state_filing_status'),
+              state_allowances: parseInt(formData.get('state_allowances')) || 0,
+              tax_id_number: formData.get('tax_id_number')
+            };
+            
+            try {
+              const response = await fetch('/api/hr/employee/tax-info', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(taxData)
+              });
+              
+              if (response.ok) {
+                notifySuccess('Tax information saved successfully');
+                fetchEmployeeProfileData();
+              } else {
+                const error = await response.json();
+                notifyError(error.error || 'Failed to save tax information');
+              }
+            } catch (error) {
+              notifyError('Failed to save tax information');
+            } finally {
+              setSavingTaxInfo(false);
+            }
+          }} className="mt-6 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Federal Filing Status
+                </label>
+                <select
+                  name="filing_status"
+                  defaultValue={taxInfo?.filing_status || 'single'}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="single">Single</option>
+                  <option value="married_filing_jointly">Married Filing Jointly</option>
+                  <option value="married_filing_separately">Married Filing Separately</option>
+                  <option value="head_of_household">Head of Household</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Federal Allowances
+                </label>
+                <input
+                  type="number"
+                  name="allowances"
+                  defaultValue={taxInfo?.allowances || 0}
+                  min="0"
+                  max="99"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Additional Withholding
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-gray-500">$</span>
+                  <input
+                    type="number"
+                    name="additional_withholding"
+                    defaultValue={taxInfo?.additional_withholding || 0}
+                    min="0"
+                    step="0.01"
+                    className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tax ID Number <span className="text-gray-400">(if different from SSN)</span>
+                </label>
+                <input
+                  type="text"
+                  name="tax_id_number"
+                  placeholder={taxInfo?.tax_id_last_4 ? `*****${taxInfo.tax_id_last_4}` : 'Optional'}
+                  maxLength="9"
+                  pattern="[0-9]{9}"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+            
+            <div className="border-t pt-4 mt-6">
+              <h4 className="font-medium text-gray-900 mb-4">State Tax Information</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    State Filing Status
+                  </label>
+                  <select
+                    name="state_filing_status"
+                    defaultValue={taxInfo?.state_filing_status || ''}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">Same as Federal</option>
+                    <option value="single">Single</option>
+                    <option value="married_filing_jointly">Married Filing Jointly</option>
+                    <option value="married_filing_separately">Married Filing Separately</option>
+                    <option value="head_of_household">Head of Household</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    State Allowances
+                  </label>
+                  <input
+                    type="number"
+                    name="state_allowances"
+                    defaultValue={taxInfo?.state_allowances || 0}
+                    min="0"
+                    max="99"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={savingTaxInfo}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              >
+                {savingTaxInfo ? 'Saving...' : 'Save Tax Information'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  };
+
   const renderLegalTab = () => {
     return (
       <div className="space-y-6">
@@ -553,8 +920,10 @@ const Profile = ({ userData }) => {
   const tabs = [
     { id: 0, label: 'Profile', icon: UserIcon },
     { id: 1, label: 'Security', icon: ShieldCheckIcon },
-    { id: 2, label: 'Preferences', icon: CogIcon },
-    { id: 3, label: 'Legal', icon: ScaleIcon },
+    { id: 2, label: 'Pay', icon: BanknotesIcon },
+    { id: 3, label: 'Tax', icon: DocumentTextIcon },
+    { id: 4, label: 'Preferences', icon: CogIcon },
+    { id: 5, label: 'Legal', icon: ScaleIcon },
   ];
 
   return (
@@ -606,8 +975,10 @@ const Profile = ({ userData }) => {
         <div>
           {selectedTab === 0 && renderProfileTab()}
           {selectedTab === 1 && renderSecurityTab()}
-          {selectedTab === 2 && renderPreferencesTab()}
-          {selectedTab === 3 && renderLegalTab()}
+          {selectedTab === 2 && renderPayTab()}
+          {selectedTab === 3 && renderTaxTab()}
+          {selectedTab === 4 && renderPreferencesTab()}
+          {selectedTab === 5 && renderLegalTab()}
         </div>
       </div>
     </div>

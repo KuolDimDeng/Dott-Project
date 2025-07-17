@@ -27,6 +27,13 @@ class TimesheetViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         user = self.request.user
+        logger.info(f"[TimesheetViewSet] get_queryset called for user: {user.email if hasattr(user, 'email') else 'unknown'}")
+        
+        # Handle AnonymousUser
+        if not hasattr(user, 'business_id'):
+            logger.warning(f"[TimesheetViewSet] User has no business_id: {user}")
+            return Timesheet.objects.none()
+            
         queryset = Timesheet.objects.filter(business_id=user.business_id)
         
         # Filter by employee if specified
@@ -168,14 +175,27 @@ class TimesheetViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def hr_dashboard(self, request):
         """Get all employees with their current timesheet status for HR management"""
+        logger.info(f"[TimesheetViewSet] hr_dashboard called by user: {request.user.email if hasattr(request.user, 'email') else 'unknown'}")
+        
         user = request.user
         
         # Check if user has HR permissions
-        if user.role not in ['OWNER', 'ADMIN']:
+        if not hasattr(user, 'role') or user.role not in ['OWNER', 'ADMIN']:
+            logger.warning(f"[TimesheetViewSet] Access denied for user {user.email if hasattr(user, 'email') else 'unknown'} with role {getattr(user, 'role', 'none')}")
             return Response(
                 {'error': 'You do not have permission to access HR timesheet management'},
                 status=status.HTTP_403_FORBIDDEN
             )
+        
+        # Check if user has business_id
+        if not hasattr(user, 'business_id') or not user.business_id:
+            logger.error(f"[TimesheetViewSet] User {user.email if hasattr(user, 'email') else 'unknown'} has no business_id")
+            return Response(
+                {'error': 'No business association found'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        logger.info(f"[TimesheetViewSet] Fetching employees for business_id: {user.business_id}")
         
         # Get all active employees
         employees = Employee.objects.filter(
@@ -183,13 +203,19 @@ class TimesheetViewSet(viewsets.ModelViewSet):
             active=True
         ).order_by('last_name', 'first_name')
         
+        logger.info(f"[TimesheetViewSet] Found {employees.count()} active employees")
+        
         # Get current week dates
         today = date.today()
         week_start = today - timedelta(days=today.weekday())
         week_end = week_start + timedelta(days=6)
         
+        logger.info(f"[TimesheetViewSet] Processing week: {week_start} to {week_end}")
+        
         employee_data = []
         for employee in employees:
+            logger.debug(f"[TimesheetViewSet] Processing employee: {employee.first_name} {employee.last_name}")
+            
             # Get current week timesheet
             timesheet = Timesheet.objects.filter(
                 employee=employee,
@@ -200,25 +226,25 @@ class TimesheetViewSet(viewsets.ModelViewSet):
             if employee.compensation_type == 'SALARY':
                 # Salary employees: Auto-calculate standard 40 hours/week
                 expected_hours = 40
-                hourly_rate = employee.salary / (52 * 40) if employee.salary else 0
+                hourly_rate = float(employee.salary / (52 * 40)) if employee.salary else 0
                 entry_method = 'auto'
             else:  # WAGE
                 # Wage employees: Use mobile clock in/out
                 expected_hours = getattr(employee, 'hours_per_week', 40)
-                hourly_rate = employee.wage_per_hour or 0
+                hourly_rate = float(employee.wage_per_hour) if employee.wage_per_hour else 0
                 entry_method = 'mobile'
             
             # Get timesheet status
             if timesheet:
-                total_hours = timesheet.total_hours
+                total_hours = float(timesheet.total_hours)
                 status_info = {
                     'status': timesheet.status,
                     'submitted_at': timesheet.submitted_at,
                     'approved_at': timesheet.approved_at,
-                    'total_hours': float(total_hours),
+                    'total_hours': total_hours,
                     'regular_hours': float(timesheet.total_regular_hours),
                     'overtime_hours': float(timesheet.total_overtime_hours),
-                    'timesheet_id': timesheet.id
+                    'timesheet_id': str(timesheet.id)
                 }
             else:
                 status_info = {
@@ -238,22 +264,24 @@ class TimesheetViewSet(viewsets.ModelViewSet):
                 status_info['status'] == 'submitted'
             )
             
-            employee_data.append({
-                'employee_id': employee.id,
+            employee_record = {
+                'employee_id': str(employee.id),
                 'employee_number': employee.employee_number,
                 'name': f"{employee.first_name} {employee.last_name}",
                 'email': employee.email,
                 'department': employee.department,
                 'job_title': employee.job_title,
                 'compensation_type': employee.compensation_type,
-                'hourly_rate': float(hourly_rate),
+                'hourly_rate': hourly_rate,
                 'expected_hours': expected_hours,
                 'entry_method': entry_method,
-                'supervisor': employee.supervisor.get_full_name() if employee.supervisor else None,
+                'supervisor': f"{employee.supervisor.first_name} {employee.supervisor.last_name}" if employee.supervisor else None,
                 'timesheet_status': status_info,
                 'needs_manager_approval': needs_manager_approval,
                 'ready_for_payroll': status_info['status'] == 'approved'
-            })
+            }
+            
+            employee_data.append(employee_record)
         
         # Get summary statistics
         total_employees = len(employee_data)
@@ -262,7 +290,7 @@ class TimesheetViewSet(viewsets.ModelViewSet):
         pending_hr = len([e for e in employee_data if e['timesheet_status']['status'] == 'submitted' and not e['needs_manager_approval']])
         not_started = len([e for e in employee_data if e['timesheet_status']['status'] == 'not_started'])
         
-        return Response({
+        response_data = {
             'employees': employee_data,
             'week_period': {
                 'start': week_start.isoformat(),
@@ -276,21 +304,29 @@ class TimesheetViewSet(viewsets.ModelViewSet):
                 'not_started': not_started,
                 'payroll_ready': approved_count == total_employees
             }
-        })
+        }
+        
+        logger.info(f"[TimesheetViewSet] HR dashboard response: {total_employees} employees, {approved_count} approved")
+        return Response(response_data)
     
     @action(detail=False, methods=['post'])
     def bulk_approve(self, request):
         """Bulk approve timesheets for HR"""
+        logger.info(f"[TimesheetViewSet] bulk_approve called by user: {request.user.email if hasattr(request.user, 'email') else 'unknown'}")
+        
         user = request.user
         
         # Check if user has HR permissions
-        if user.role not in ['OWNER', 'ADMIN']:
+        if not hasattr(user, 'role') or user.role not in ['OWNER', 'ADMIN']:
+            logger.warning(f"[TimesheetViewSet] Bulk approve access denied for user {user.email if hasattr(user, 'email') else 'unknown'}")
             return Response(
                 {'error': 'You do not have permission to approve timesheets'},
                 status=status.HTTP_403_FORBIDDEN
             )
         
         timesheet_ids = request.data.get('timesheet_ids', [])
+        logger.info(f"[TimesheetViewSet] Bulk approving {len(timesheet_ids)} timesheets")
+        
         if not timesheet_ids:
             return Response(
                 {'error': 'No timesheets selected for approval'},
@@ -312,7 +348,7 @@ class TimesheetViewSet(viewsets.ModelViewSet):
                 # For wage workers, check if manager has approved
                 if timesheet.employee.compensation_type == 'WAGE':
                     if timesheet.employee.supervisor and not timesheet.approved_by:
-                        errors.append(f"Timesheet for {timesheet.employee.get_full_name()} needs manager approval first")
+                        errors.append(f"Timesheet for {timesheet.employee.first_name} {timesheet.employee.last_name} needs manager approval first")
                         continue
                 
                 # Approve the timesheet
@@ -322,23 +358,32 @@ class TimesheetViewSet(viewsets.ModelViewSet):
                 timesheet.save()
                 
                 approved_count += 1
+                logger.info(f"[TimesheetViewSet] Approved timesheet {timesheet.id} for {timesheet.employee.first_name} {timesheet.employee.last_name}")
                 
             except Exception as e:
-                errors.append(f"Error approving timesheet for {timesheet.employee.get_full_name()}: {str(e)}")
+                error_msg = f"Error approving timesheet for {timesheet.employee.first_name} {timesheet.employee.last_name}: {str(e)}"
+                errors.append(error_msg)
+                logger.error(f"[TimesheetViewSet] {error_msg}")
         
-        return Response({
+        response_data = {
             'approved_count': approved_count,
             'errors': errors,
             'total_requested': len(timesheet_ids)
-        })
+        }
+        
+        logger.info(f"[TimesheetViewSet] Bulk approve completed: {approved_count} approved, {len(errors)} errors")
+        return Response(response_data)
     
     @action(detail=False, methods=['post'])
     def generate_salary_timesheets(self, request):
         """Generate auto-timesheets for salary employees"""
+        logger.info(f"[TimesheetViewSet] generate_salary_timesheets called by user: {request.user.email if hasattr(request.user, 'email') else 'unknown'}")
+        
         user = request.user
         
         # Check if user has HR permissions
-        if user.role not in ['OWNER', 'ADMIN']:
+        if not hasattr(user, 'role') or user.role not in ['OWNER', 'ADMIN']:
+            logger.warning(f"[TimesheetViewSet] Generate timesheets access denied for user {user.email if hasattr(user, 'email') else 'unknown'}")
             return Response(
                 {'error': 'You do not have permission to generate timesheets'},
                 status=status.HTTP_403_FORBIDDEN
@@ -349,6 +394,8 @@ class TimesheetViewSet(viewsets.ModelViewSet):
         week_start = today - timedelta(days=today.weekday())
         week_end = week_start + timedelta(days=6)
         
+        logger.info(f"[TimesheetViewSet] Generating salary timesheets for week: {week_start} to {week_end}")
+        
         # Get all salary employees without timesheets for this week
         salary_employees = Employee.objects.filter(
             business_id=user.business_id,
@@ -358,13 +405,17 @@ class TimesheetViewSet(viewsets.ModelViewSet):
             timesheet_records__week_starting=week_start
         )
         
+        logger.info(f"[TimesheetViewSet] Found {salary_employees.count()} salary employees without timesheets")
+        
         created_count = 0
         errors = []
         
         for employee in salary_employees:
             try:
                 # Calculate hourly rate from salary
-                hourly_rate = employee.salary / (52 * 40) if employee.salary else 0
+                hourly_rate = Decimal(str(float(employee.salary) / (52 * 40))) if employee.salary else Decimal('0')
+                
+                logger.debug(f"[TimesheetViewSet] Creating timesheet for {employee.first_name} {employee.last_name} with hourly rate ${hourly_rate}")
                 
                 # Create timesheet
                 timesheet = Timesheet.objects.create(
@@ -384,25 +435,32 @@ class TimesheetViewSet(viewsets.ModelViewSet):
                     TimeEntry.objects.create(
                         timesheet=timesheet,
                         date=entry_date,
-                        regular_hours=8,
-                        overtime_hours=0
+                        regular_hours=Decimal('8'),
+                        overtime_hours=Decimal('0')
                     )
                 
                 # Calculate totals
                 timesheet.calculate_totals()
                 created_count += 1
                 
+                logger.info(f"[TimesheetViewSet] Created timesheet {timesheet.id} for {employee.first_name} {employee.last_name}")
+                
             except Exception as e:
-                errors.append(f"Error creating timesheet for {employee.get_full_name()}: {str(e)}")
+                error_msg = f"Error creating timesheet for {employee.first_name} {employee.last_name}: {str(e)}"
+                errors.append(error_msg)
+                logger.error(f"[TimesheetViewSet] {error_msg}")
         
-        return Response({
+        response_data = {
             'created_count': created_count,
             'errors': errors,
             'week_period': {
                 'start': week_start.isoformat(),
                 'end': week_end.isoformat()
             }
-        })
+        }
+        
+        logger.info(f"[TimesheetViewSet] Generate salary timesheets completed: {created_count} created, {len(errors)} errors")
+        return Response(response_data)
 
 
 class TimeEntryViewSet(viewsets.ModelViewSet):
