@@ -17,7 +17,6 @@ import SecuritySettings from './sections/SecuritySettings';
 import Integrations from './sections/Integrations';
 import BankConnections from './sections/BankConnections';
 import PayrollSettings from './sections/PayrollSettings';
-import WhatsAppSettings from './sections/WhatsAppSettings';
 
 // Import icons
 import { 
@@ -27,8 +26,7 @@ import {
   ShieldCheckIcon,
   PuzzlePieceIcon,
   BanknotesIcon,
-  CurrencyDollarIcon,
-  ChatBubbleLeftRightIcon
+  CurrencyDollarIcon
 } from '@heroicons/react/24/outline';
 
 const SettingsManagement = () => {
@@ -98,14 +96,6 @@ const SettingsManagement = () => {
       description: 'MFA, audit trail, and compliance settings',
       component: SecuritySettings,
       requiredRole: 'admin' // Admin and Owner can access
-    },
-    {
-      id: 'whatsapp',
-      title: 'WhatsApp',
-      icon: ChatBubbleLeftRightIcon,
-      description: 'WhatsApp Business integration settings',
-      component: WhatsAppSettings,
-      requiredRole: 'user' // All users can access
     }
   ];
 
