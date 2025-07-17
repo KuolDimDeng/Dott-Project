@@ -11,6 +11,7 @@ from ..stripe_bank_tax_service import StripeBankTaxService
 from ..stripe_ssn_service_express import StripeSSNService
 from pyfactor.logging_config import get_logger
 from django.contrib.auth import get_user_model
+from rest_framework.decorators import api_view, permission_classes
 
 logger = get_logger()
 User = get_user_model()
@@ -494,3 +495,59 @@ class EmployeeTaxInfoView(APIView):
                 {"error": "Failed to update tax information"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def employee_profile_debug(request):
+    """Debug endpoint to test employee lookup"""
+    try:
+        logger.info(f"[DEBUG] === EMPLOYEE PROFILE DEBUG START ===")
+        logger.info(f"[DEBUG] Request user: {request.user}")
+        logger.info(f"[DEBUG] User ID: {request.user.id}")
+        logger.info(f"[DEBUG] User email: {request.user.email}")
+        logger.info(f"[DEBUG] User attributes: {dir(request.user)}")
+        
+        # Check if user has tenant_id
+        if hasattr(request.user, 'tenant_id'):
+            logger.info(f"[DEBUG] User tenant_id: {request.user.tenant_id}")
+        else:
+            logger.info(f"[DEBUG] User has NO tenant_id attribute")
+            
+        # Try to find employee by different methods
+        employees_by_user_id = Employee.objects.filter(user_id=request.user.id)
+        logger.info(f"[DEBUG] Employees by user_id: {employees_by_user_id.count()}")
+        
+        employees_by_email = Employee.objects.filter(email=request.user.email)
+        logger.info(f"[DEBUG] Employees by email: {employees_by_email.count()}")
+        
+        # List first 5 employees in the database
+        all_employees = Employee.objects.all()[:5]
+        logger.info(f"[DEBUG] First 5 employees in database:")
+        for emp in all_employees:
+            logger.info(f"[DEBUG]   - {emp.id}: {emp.email} (user_id: {emp.user_id}, business_id: {emp.business_id})")
+            
+        # List all users with matching email
+        matching_users = User.objects.filter(email=request.user.email)
+        logger.info(f"[DEBUG] Users with email {request.user.email}: {matching_users.count()}")
+        for u in matching_users:
+            logger.info(f"[DEBUG]   - User {u.id}: {u.email}")
+            
+        logger.info(f"[DEBUG] === EMPLOYEE PROFILE DEBUG END ===")
+        
+        return Response({
+            "debug": True,
+            "user_id": str(request.user.id),
+            "user_email": request.user.email,
+            "has_tenant_id": hasattr(request.user, 'tenant_id'),
+            "tenant_id": getattr(request.user, 'tenant_id', None),
+            "employees_by_user_id": employees_by_user_id.count(),
+            "employees_by_email": employees_by_email.count(),
+            "total_employees": Employee.objects.count()
+        })
+        
+    except Exception as e:
+        logger.error(f"[DEBUG] Error in debug endpoint: {str(e)}")
+        import traceback
+        logger.error(f"[DEBUG] Traceback: {traceback.format_exc()}")
+        return Response({"error": str(e)}, status=500)

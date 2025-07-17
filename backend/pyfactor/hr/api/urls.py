@@ -3,7 +3,8 @@ from .views import (
     CurrentEmployeeView, BenefitsListCreateView, EmployeeBenefitsDetailView
 )
 from .employee_profile_views import (
-    EmployeeProfileView, EmployeeBankInfoView, EmployeeTaxInfoView
+    EmployeeProfileView, EmployeeBankInfoView, EmployeeTaxInfoView,
+    employee_profile_debug
 )
 
 urlpatterns = [
@@ -14,6 +15,7 @@ urlpatterns = [
     path('employee/profile/', EmployeeProfileView.as_view(), name='employee-profile'),
     path('employee/bank-info/', EmployeeBankInfoView.as_view(), name='employee-bank-info'),
     path('employee/tax-info/', EmployeeTaxInfoView.as_view(), name='employee-tax-info'),
+    path('employee/profile/debug/', employee_profile_debug, name='employee-profile-debug'),
     
     # Benefits views
     path('benefits/', BenefitsListCreateView.as_view(), name='benefits-list'),
