@@ -153,7 +153,8 @@
       "Bash(./test_whatsapp_docker.sh:*)",
       "Bash(npx tsc:*)",
       "WebFetch(domain:dottapps.com)",
-      "Bash(git pull:*)"
+      "Bash(git pull:*)",
+      "Bash(pnpm logs:*)"
     ],
     "deny": []
   }
