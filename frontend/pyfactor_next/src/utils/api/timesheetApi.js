@@ -1,4 +1,22 @@
-import { apiClient } from '../apiClient';
+// Use direct fetch instead of apiClient to avoid old authentication issues
+const makeRequest = async (endpoint, options = {}) => {
+  const response = await fetch(endpoint, {
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      ...options.headers
+    },
+    ...options
+  });
+  
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(error || `HTTP ${response.status}`);
+  }
+  
+  return response.json();
+};
 
 const timesheetApi = {
   // Timesheets
@@ -46,19 +64,13 @@ const timesheetApi = {
   getHRDashboard: async () => {
     console.log('[timesheetApi] Making HR dashboard request...');
     try {
-      const response = await apiClient.get('/api/timesheets/timesheets/hr_dashboard/');
-      console.log('[timesheetApi] HR dashboard response status:', response.status);
-      console.log('[timesheetApi] HR dashboard response data:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('[timesheetApi] HR dashboard error details:', {
-        message: error.message,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        headers: error.response?.headers,
-        config: error.config
+      const data = await makeRequest('/api/timesheets/timesheets/hr_dashboard/', {
+        method: 'GET'
       });
+      console.log('[timesheetApi] HR dashboard response data:', data);
+      return data;
+    } catch (error) {
+      console.error('[timesheetApi] HR dashboard error:', error.message);
       throw error;
     }
   },
@@ -66,17 +78,16 @@ const timesheetApi = {
   bulkApproveTimesheets: async (timesheetIds) => {
     console.log('[timesheetApi] Bulk approving timesheets:', timesheetIds);
     try {
-      const response = await apiClient.post('/api/timesheets/timesheets/bulk_approve/', {
-        timesheet_ids: timesheetIds
+      const data = await makeRequest('/api/timesheets/timesheets/bulk_approve/', {
+        method: 'POST',
+        body: JSON.stringify({
+          timesheet_ids: timesheetIds
+        })
       });
-      console.log('[timesheetApi] Bulk approve response:', response.data);
-      return response.data;
+      console.log('[timesheetApi] Bulk approve response:', data);
+      return data;
     } catch (error) {
-      console.error('[timesheetApi] Bulk approve error:', {
-        message: error.message,
-        status: error.response?.status,
-        data: error.response?.data
-      });
+      console.error('[timesheetApi] Bulk approve error:', error.message);
       throw error;
     }
   },
@@ -84,15 +95,14 @@ const timesheetApi = {
   generateSalaryTimesheets: async () => {
     console.log('[timesheetApi] Generating salary timesheets...');
     try {
-      const response = await apiClient.post('/api/timesheets/timesheets/generate_salary_timesheets/');
-      console.log('[timesheetApi] Generate salary timesheets response:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('[timesheetApi] Generate salary timesheets error:', {
-        message: error.message,
-        status: error.response?.status,
-        data: error.response?.data
+      const data = await makeRequest('/api/timesheets/timesheets/generate_salary_timesheets/', {
+        method: 'POST',
+        body: JSON.stringify({})
       });
+      console.log('[timesheetApi] Generate salary timesheets response:', data);
+      return data;
+    } catch (error) {
+      console.error('[timesheetApi] Generate salary timesheets error:', error.message);
       throw error;
     }
   },
