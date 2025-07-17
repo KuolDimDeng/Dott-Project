@@ -7,7 +7,12 @@ import {
   ShoppingBagIcon,
   BuildingStorefrontIcon,
   CodeBracketIcon,
-  PlusCircleIcon
+  PlusCircleIcon,
+  GlobeAltIcon,
+  ShoppingCartIcon,
+  CurrencyDollarIcon,
+  CalculatorIcon,
+  BanknotesIcon
 } from '@heroicons/react/24/outline';
 import WhatsAppSettings from './WhatsAppSettings';
 import { getWhatsAppBusinessVisibility } from '@/utils/whatsappCountryDetection';
@@ -120,6 +125,15 @@ const Integrations = ({ user, profileData, notifySuccess, notifyError }) => {
       category: 'Payments'
     },
     {
+      id: 'paypal',
+      title: 'PayPal',
+      icon: CurrencyDollarIcon,
+      description: 'Online payment system and digital wallet',
+      component: null, // Future implementation
+      status: 'coming-soon',
+      category: 'Payments'
+    },
+    {
       id: 'shopify',
       title: 'Shopify',
       icon: ShoppingBagIcon,
@@ -129,10 +143,46 @@ const Integrations = ({ user, profileData, notifySuccess, notifyError }) => {
       category: 'E-commerce'
     },
     {
+      id: 'woocommerce',
+      title: 'WooCommerce',
+      icon: ShoppingCartIcon,
+      description: 'WordPress e-commerce plugin integration',
+      component: null, // Future implementation
+      status: 'coming-soon',
+      category: 'E-commerce'
+    },
+    {
+      id: 'amazon',
+      title: 'Amazon Seller Central',
+      icon: GlobeAltIcon,
+      description: 'Amazon marketplace seller tools',
+      component: null, // Future implementation
+      status: 'coming-soon',
+      category: 'E-commerce'
+    },
+    {
+      id: 'ebay',
+      title: 'eBay',
+      icon: BanknotesIcon,
+      description: 'eBay marketplace integration',
+      component: null, // Future implementation
+      status: 'coming-soon',
+      category: 'E-commerce'
+    },
+    {
       id: 'quickbooks',
       title: 'QuickBooks',
       icon: BuildingStorefrontIcon,
       description: 'Accounting and bookkeeping synchronization',
+      component: null, // Future implementation
+      status: 'coming-soon',
+      category: 'Accounting'
+    },
+    {
+      id: 'xero',
+      title: 'Xero',
+      icon: CalculatorIcon,
+      description: 'Cloud-based accounting software integration',
       component: null, // Future implementation
       status: 'coming-soon',
       category: 'Accounting'
