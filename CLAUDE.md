@@ -1,5 +1,5 @@
 # CLAUDE.md - Dott Project Configuration
-*Last Updated: 2025-07-14*
+*Last Updated: 2025-07-17*
 
 ## Numbering System Guide
 - **Format**: `[MAJOR.MINOR.PATCH] - DATE - STATUS`
@@ -314,49 +314,49 @@
   - `/backend/pyfactor/docs/RESEND_SETUP.md`
 - **Environment**: `RESEND_API_KEY=re_gjPas9S7_3fVGrgpUKaazigEEa6o3MVkQ` configured in Render
 
-### [37.0.0] - 2025-07-14 - CURRENT - Comprehensive Timesheet System
-- **Purpose**: Industry-standard time tracking for wage employees with supervisor approvals
-- **Core Features**:
-  - Excel-style timesheet grid with light/dark green column shading
-  - Clock in/out with optional location tracking and geofencing
-  - Time off request system with approval workflow
-  - Supervisor dashboard for real-time approvals
-  - Auto-populated hours for salary employees
+### [37.0.0] - 2025-07-17 - CURRENT - Complete Payroll Workflow System
+- **Purpose**: End-to-end payroll system from settings to final payment with industry-standard compliance
+- **Documentation**: `/backend/pyfactor/docs/PAYROLL_WORKFLOW_DOCUMENTATION.md`
+- **Complete Workflow**:
+  1. **Payroll Settings** (Settings → Payroll tab): Configure pay frequency, dates, overtime, notifications
+  2. **Timesheet Entry** (2-week period): Excel-style grid with multiple hour types and geofencing
+  3. **Supervisor Approval**: Manager reviews and approves employee timesheets
+  4. **HR Final Approval**: HR compliance review and final approval
+  5. **7-Step Payroll Processing**: Employee selection → calculation → payment → pay stubs
+  6. **Employee Access**: PWA-compatible pay stub viewing via Profile → Documents
+  7. **Compliance**: Automated reporting, audit trails, tax calculations
+- **Key Components**:
+  - `PayrollSettings.js` - Comprehensive payroll configuration
+  - `EnhancedTimesheet.js` - Pay period-aligned timesheet with navigation
+  - `SupervisorApprovals.js` - Approval workflow management
+  - `PayrollProcessingWizard.js` - 7-step payroll processing
+  - `PayStubViewer.js` - Employee pay stub access (PWA mobile compatible)
+  - `PayManagement.js` - HR pay management interface
 - **Backend Models**:
+  - `PayrollSettings`: Pay frequency, overtime, notifications configuration
   - `Timesheet`: Weekly timesheet with status tracking (draft/submitted/approved/rejected/paid)
   - `TimeEntry`: Daily entries (regular/overtime/sick/vacation/holiday/unpaid/other hours)
   - `ClockEntry`: Clock in/out/break tracking with location data
-  - `TimeOffRequest`: Time off requests with approval workflow
+  - `PayStatement`: Generated pay stubs with PDF download
   - `GeofenceZone`: Location-based zones for clock validation
 - **API Endpoints**:
-  - `/api/timesheets/timesheets/` - Timesheet CRUD operations
-  - `/api/timesheets/timesheets/current_week/` - Get/create current week
-  - `/api/timesheets/timesheets/{id}/submit/` - Submit for approval
-  - `/api/timesheets/timesheets/{id}/approve/` - Approve/reject timesheet
-  - `/api/timesheets/time-entries/bulk_update/` - Bulk update entries
-  - `/api/timesheets/clock-entries/clock/` - Clock in/out operations
-  - `/api/timesheets/time-off-requests/` - Time off management
-  - `/api/timesheets/geofence-zones/` - Geofence configuration
-- **Frontend Components**:
-  - `/dashboard/timesheets/page.js` - Main timesheet grid view
-  - `/dashboard/components/timesheets/ClockInOut.js` - Clock in/out interface
-  - `/dashboard/components/timesheets/TimeOffRequest.js` - Time off requests
-  - `/dashboard/components/timesheets/SupervisorApprovals.js` - Approval dashboard
-  - `/dashboard/settings/components/EmployeeSettings.js` - Geofence configuration
-- **Key Features**:
-  - Real-time clock with session duration tracking
-  - Google Maps integration for geofence zone drawing
-  - Automatic hours calculation and pay computation
-  - Mobile-responsive design with location awareness
-  - Row-Level Security (RLS) for data isolation
-- **Profile Menu Integration**:
-  - Quick actions: Enter hours, Submit timesheet, View timesheets, View pay stubs
-  - Auto-navigation to timesheet tab when accessed via quick actions
+  - `/api/payroll/settings/` - Payroll configuration
+  - `/api/timesheets/` - Timesheet management
+  - `/api/timesheets/current_week/` - Current timesheet
+  - `/api/timesheets/{id}/submit/` - Submit for approval
+  - `/api/timesheets/{id}/approve/` - Approve/reject timesheet
+  - `/api/payroll/process/` - 7-step payroll processing
+  - `/api/paystubs/` - Pay stub access
+  - `/api/paystubs/{id}/download/` - PDF download
+- **Revenue Model**: 2.4% platform fee on all payroll transactions
+- **Security**: Row-Level Security (RLS), session-based auth, audit logging
+- **Mobile Support**: PWA-compatible timesheet entry and pay stub viewing
+- **Compliance**: Tax calculations, W-2 generation, record retention
 - **Setup Requirements**:
-  - Run migrations: `python manage.py makemigrations timesheets && python manage.py migrate`
+  - Run migrations: `python manage.py makemigrations payroll timesheets && python manage.py migrate`
   - Add Google Maps API key: `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`
-  - Configure geofence zones per business location
-  - Assign supervisors to employees for approval workflow
+  - Configure Stripe for payment processing
+  - Set up geofence zones per business location
 
 ---
 
