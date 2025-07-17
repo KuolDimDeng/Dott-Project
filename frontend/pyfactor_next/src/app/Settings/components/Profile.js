@@ -24,7 +24,9 @@ import {
   ArrowPathIcon,
   BanknotesIcon,
   CreditCardIcon,
-  BuildingLibraryIcon
+  BuildingLibraryIcon,
+  EyeIcon,
+  EyeSlashIcon
 } from '@heroicons/react/24/outline';
 
 const Profile = ({ userData }) => {
@@ -44,6 +46,7 @@ const Profile = ({ userData }) => {
   const [loadingEmployeeData, setLoadingEmployeeData] = useState(false);
   const [savingBankInfo, setSavingBankInfo] = useState(false);
   const [savingTaxInfo, setSavingTaxInfo] = useState(false);
+  const [showFullSSN, setShowFullSSN] = useState(false);
   
   const router = useRouter();
   const { notifySuccess, notifyError } = useNotification();
@@ -114,7 +117,10 @@ const Profile = ({ userData }) => {
   const fetchEmployeeProfileData = async () => {
     try {
       setLoadingEmployeeData(true);
+      console.log('[Profile] Fetching employee profile data...');
       const response = await fetch('/api/hr/employee/profile');
+      console.log('[Profile] Response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
         console.log('[Profile] Employee profile data fetched:', data);
@@ -122,10 +128,17 @@ const Profile = ({ userData }) => {
         setBankInfo(data.bank_info || {});
         setTaxInfo(data.tax_info || {});
       } else {
-        console.error('[Profile] Failed to fetch employee profile:', response.status);
+        const errorText = await response.text();
+        console.error('[Profile] Failed to fetch employee profile:', response.status, errorText);
+        
+        // If 404, it means no employee record exists for this user
+        if (response.status === 404) {
+          notifyError('No employee record found. Please contact your administrator.');
+        }
       }
     } catch (error) {
       console.error('[Profile] Error fetching employee profile:', error);
+      notifyError('Failed to load employee information');
     } finally {
       setLoadingEmployeeData(false);
     }
@@ -520,10 +533,44 @@ const Profile = ({ userData }) => {
           
           <div className="mt-4">
             {employeeData?.ssn_last_4 ? (
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-600">SSN:</span>
-                <span className="font-mono text-sm">***-**-{employeeData.ssn_last_4}</span>
-                <CheckBadgeIcon className="w-5 h-5 text-green-500" />
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-600">SSN:</span>
+                    <span className="font-mono text-sm">
+                      {showFullSSN 
+                        ? `XXX-XX-${employeeData.ssn_last_4}`
+                        : `•••-••-${employeeData.ssn_last_4}`}
+                    </span>
+                    <CheckBadgeIcon className="w-5 h-5 text-green-500" />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowFullSSN(!showFullSSN)}
+                    className="flex items-center space-x-1 text-sm text-blue-600 hover:text-blue-700"
+                  >
+                    {showFullSSN ? (
+                      <>
+                        <EyeSlashIcon className="w-4 h-4" />
+                        <span>Hide</span>
+                      </>
+                    ) : (
+                      <>
+                        <EyeIcon className="w-4 h-4" />
+                        <span>Show Format</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+                {showFullSSN && (
+                  <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p className="text-xs text-amber-800">
+                      <ShieldExclamationIcon className="inline w-4 h-4 mr-1" />
+                      For security reasons, only the last 4 digits of your SSN are stored and displayed. 
+                      The full SSN is encrypted and stored securely in our payment processor.
+                    </p>
+                  </div>
+                )}
               </div>
             ) : (
               <p className="text-sm text-gray-500">No SSN on file</p>
