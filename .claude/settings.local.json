@@ -152,7 +152,8 @@
       "Bash(/Users/kuoldeng/projectx/test_frontend_build.sh:*)",
       "Bash(./test_whatsapp_docker.sh:*)",
       "Bash(npx tsc:*)",
-      "WebFetch(domain:dottapps.com)"
+      "WebFetch(domain:dottapps.com)",
+      "Bash(git pull:*)"
     ],
     "deny": []
   }

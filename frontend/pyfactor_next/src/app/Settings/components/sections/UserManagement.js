@@ -796,36 +796,6 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
     }
   };
 
-  const handleDeleteUser = async (userId) => {
-    if (!confirm('Are you sure you want to remove this user?')) return;
-
-    try {
-      setLoading(true);
-      
-      const response = await fetch(`/api/user-management/users/${userId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to remove user');
-      }
-      
-      notifySuccess('User removed successfully');
-      
-      // Refresh the users list
-      await fetchUsers();
-      
-    } catch (error) {
-      logger.error('[UserManagement] Error deleting user:', error);
-      notifyError(error.message || 'Failed to remove user');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleResendInvite = async (userId) => {
     try {
