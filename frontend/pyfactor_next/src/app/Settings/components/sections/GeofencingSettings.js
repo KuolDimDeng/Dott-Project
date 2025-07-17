@@ -127,7 +127,8 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel }) => {
         return;
       }
       
-      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+      // Temporary fallback until environment variable is properly built
+      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || 'AIzaSyDq2UEzOWBrWHgvbXVQfmLHXlpIqWwXGxs';
       console.log('[GeofencingSettings] Loading Google Maps with API key:', apiKey ? 'Key present' : 'No API key found');
       
       if (!apiKey) {
