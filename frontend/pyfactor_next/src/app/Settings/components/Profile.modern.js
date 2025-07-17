@@ -1497,14 +1497,21 @@ const Profile = ({ userData }) => {
       if (emp.supervisor_id && employeeMap[emp.supervisor_id]) {
         // Add to supervisor's children
         employeeMap[emp.supervisor_id].children.push(employeeMap[emp.id]);
+        console.log(`🔍 [OrgChart] Added ${emp.first_name} ${emp.last_name} as child of supervisor ID ${emp.supervisor_id}`);
       }
     });
 
     // Find root employees (those without supervisors)
     const rootEmployees = employees.filter(emp => !emp.supervisor_id);
+    console.log('🔍 [OrgChart] Root employees (no supervisor):', rootEmployees.map(e => ({
+      name: `${e.first_name} ${e.last_name}`,
+      id: e.id,
+      role: e.user_role || e.role
+    })));
     
     // First, find the actual owner (user with role = 'OWNER')
     const owner = rootEmployees.find(emp => emp.user_role === 'OWNER' || emp.role === 'OWNER');
+    console.log('🔍 [OrgChart] Owner found:', owner ? `${owner.first_name} ${owner.last_name}` : 'None');
     
     // If we have an owner, put them first, then other root employees
     const hierarchy = [];
@@ -1522,6 +1529,11 @@ const Profile = ({ userData }) => {
         hierarchy.push(employeeMap[emp.id]);
       });
     }
+
+    console.log('🔍 [OrgChart] Final hierarchy root nodes:', hierarchy.length);
+    hierarchy.forEach(node => {
+      console.log(`🔍 [OrgChart] Root: ${node.first_name} ${node.last_name}, Children: ${node.children.length}`);
+    });
 
     return hierarchy;
   };
@@ -1632,39 +1644,44 @@ const Profile = ({ userData }) => {
         
         {/* Render children horizontally */}
         {employee.children && employee.children.length > 0 && (
-          <div className="mt-8 flex flex-col items-center w-full">
+          <div className="mt-8 w-full">
             {/* Vertical line down from parent */}
-            <div className="w-px bg-gray-300 h-8"></div>
-            
-            {/* Horizontal line across children */}
-            <div className="relative flex justify-center">
-              <div 
-                className="h-px bg-gray-300 absolute top-0" 
-                style={{ 
-                  width: `${Math.max(employee.children.length * 350, 350)}px`,
-                  left: '50%',
-                  transform: 'translateX(-50%)'
-                }}
-              ></div>
-              
-              {/* Vertical lines down to each child */}
-              <div 
-                className="flex justify-between relative"
-                style={{ width: `${Math.max(employee.children.length * 350, 350)}px` }}
-              >
-                {employee.children.map((_, index) => (
-                  <div key={index} className="w-px bg-gray-300 h-8"></div>
-                ))}
-              </div>
+            <div className="flex justify-center">
+              <div className="w-px bg-gray-300 h-8"></div>
             </div>
             
+            {/* Horizontal connector line for multiple children */}
+            {employee.children.length > 1 && (
+              <div className="relative flex justify-center">
+                <div 
+                  className="h-px bg-gray-300 absolute top-0" 
+                  style={{ 
+                    width: `${(employee.children.length - 1) * 320}px`,
+                    left: '50%',
+                    transform: 'translateX(-50%)'
+                  }}
+                ></div>
+              </div>
+            )}
+            
+            {/* Vertical lines down to each child (only for multiple children) */}
+            {employee.children.length > 1 && (
+              <div className="flex justify-center">
+                <div 
+                  className="flex justify-between relative"
+                  style={{ width: `${(employee.children.length - 1) * 320 + 40}px` }}
+                >
+                  {employee.children.map((_, index) => (
+                    <div key={index} className="w-px bg-gray-300 h-8"></div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
             {/* Children arranged horizontally */}
-            <div 
-              className="flex justify-between items-start mt-0 w-full"
-              style={{ maxWidth: `${Math.max(employee.children.length * 350, 350)}px` }}
-            >
+            <div className="flex justify-center gap-8">
               {employee.children.map(child => (
-                <div key={child.id} className="flex-1 flex justify-center">
+                <div key={child.id}>
                   {renderEmployeeCard(child, child.user_role === 'OWNER' || child.role === 'OWNER')}
                 </div>
               ))}
@@ -1688,6 +1705,7 @@ const Profile = ({ userData }) => {
     }
 
     const hierarchy = buildOrganizationHierarchy(organizationData);
+    console.log('🎯 [OrgChart] Final hierarchy structure:', hierarchy);
 
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
@@ -1762,17 +1780,21 @@ const Profile = ({ userData }) => {
           <div className="relative border border-gray-200 rounded-lg overflow-auto" style={{ minHeight: '400px', maxHeight: '600px' }}>
             <div 
               ref={orgChartRef}
-              className="flex flex-col items-center p-8 transition-transform duration-300 ease-in-out"
+              className="p-8 transition-transform duration-300 ease-in-out"
               style={{ 
                 transform: `scale(${zoomLevel / 100})`,
                 transformOrigin: 'top center',
-                minWidth: 'fit-content'
+                minWidth: 'max-content',
+                width: 'max-content'
               }}
             >
-              {hierarchy.map(employee => {
-                const isActualOwner = employee.user_role === 'OWNER' || employee.role === 'OWNER';
-                return renderEmployeeCard(employee, isActualOwner);
-              })}
+              {/* Render root level employees horizontally */}
+              <div className="flex justify-center gap-8">
+                {hierarchy.map(employee => {
+                  const isActualOwner = employee.user_role === 'OWNER' || employee.role === 'OWNER';
+                  return renderEmployeeCard(employee, isActualOwner);
+                })}
+              </div>
             </div>
           </div>
         )}

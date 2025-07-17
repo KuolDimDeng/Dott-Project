@@ -181,6 +181,26 @@ class TimesheetViewSet(viewsets.ModelViewSet):
         
         user = request.user
         
+        # Debug logging to understand user attributes
+        logger.info(f"[TimesheetViewSet] User type: {type(user)}")
+        logger.info(f"[TimesheetViewSet] User attributes: {dir(user)}")
+        logger.info(f"[TimesheetViewSet] User.__dict__: {getattr(user, '__dict__', 'No __dict__')}")
+        logger.info(f"[TimesheetViewSet] hasattr(user, 'role'): {hasattr(user, 'role')}")
+        logger.info(f"[TimesheetViewSet] getattr(user, 'role', 'NOT_FOUND'): {getattr(user, 'role', 'NOT_FOUND')}")
+        
+        # Try to get role from the database
+        if hasattr(user, 'pk') and user.pk:
+            from custom_auth.models import User as CustomUser
+            try:
+                db_user = CustomUser.objects.get(pk=user.pk)
+                logger.info(f"[TimesheetViewSet] DB user role: {db_user.role}")
+                # Manually set the role on the request user object
+                if not hasattr(user, 'role'):
+                    user.role = db_user.role
+                    logger.info(f"[TimesheetViewSet] Manually set user.role to: {user.role}")
+            except CustomUser.DoesNotExist:
+                logger.error(f"[TimesheetViewSet] User {user.pk} not found in database")
+        
         # Check if user has HR permissions
         if not hasattr(user, 'role') or user.role not in ['OWNER', 'ADMIN']:
             logger.warning(f"[TimesheetViewSet] Access denied for user {user.email if hasattr(user, 'email') else 'unknown'} with role {getattr(user, 'role', 'none')}")
@@ -192,10 +212,29 @@ class TimesheetViewSet(viewsets.ModelViewSet):
         # Check if user has business_id
         if not hasattr(user, 'business_id') or not user.business_id:
             logger.error(f"[TimesheetViewSet] User {user.email if hasattr(user, 'email') else 'unknown'} has no business_id")
-            return Response(
-                {'error': 'No business association found'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            # Try to get business_id from the database
+            if hasattr(user, 'pk') and user.pk:
+                from custom_auth.models import User as CustomUser
+                try:
+                    db_user = CustomUser.objects.get(pk=user.pk)
+                    if db_user.business_id:
+                        user.business_id = db_user.business_id
+                        logger.info(f"[TimesheetViewSet] Manually set user.business_id to: {user.business_id}")
+                    else:
+                        return Response(
+                            {'error': 'No business association found'},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+                except CustomUser.DoesNotExist:
+                    return Response(
+                        {'error': 'No business association found'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            else:
+                return Response(
+                    {'error': 'No business association found'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
         
         logger.info(f"[TimesheetViewSet] Fetching employees for business_id: {user.business_id}")
         
