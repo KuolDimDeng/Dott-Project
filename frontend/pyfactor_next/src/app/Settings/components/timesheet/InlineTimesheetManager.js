@@ -34,26 +34,54 @@ export default function InlineTimesheetManager() {
   useEffect(() => {
     if (session?.user) {
       fetchEmployeeData();
+    }
+  }, [session]);
+  
+  useEffect(() => {
+    if (employeeData?.id) {
       fetchCurrentWeekData();
       fetchTimesheetHistory();
     }
-  }, [currentWeek, session]);
+  }, [currentWeek, employeeData]);
   
   const fetchEmployeeData = async () => {
+    console.log('🔧 [InlineTimesheetManager] Fetching employee data for:', session?.user?.email);
     try {
-      const response = await fetch('/api/hr/v2/employees/me', {
-        credentials: 'include'
+      // Get all employees and find the one matching current user's email
+      const response = await fetch('/api/hr/v2/employees/', {
+        headers: {
+          'X-Tenant-ID': session?.user?.tenantId || session?.user?.tenant_id,
+        },
       });
+      
+      console.log('🔧 [InlineTimesheetManager] Employee API response status:', response.status);
       
       if (response.ok) {
         const data = await response.json();
-        setEmployeeData(data.data);
+        console.log('🔧 [InlineTimesheetManager] Employee API response data:', data);
+        
+        // Handle both data.data and data.results response formats
+        const employees = data.data || data.results || data;
+        const userEmployee = employees.find(emp => {
+          return emp.email === session?.user?.email || 
+                 emp.linked_user_account === session?.user?.id ||
+                 emp.linked_user_account === session?.user?.email;
+        });
+        
+        if (!userEmployee) {
+          console.log('🔧 [InlineTimesheetManager] No employee record found for user:', session?.user?.email);
+          return;
+        }
+        
+        console.log('🔧 [InlineTimesheetManager] Found employee record:', userEmployee);
+        setEmployeeData(userEmployee);
         
         // Calculate hourly rate
-        if (data.data.compensation_type === 'SALARY') {
-          const annualSalary = parseFloat(data.data.salary) || 0;
+        if (userEmployee.compensation_type === 'SALARY') {
+          const annualSalary = parseFloat(userEmployee.salary) || 0;
           const hourlyRate = annualSalary / 2080; // 52 weeks * 40 hours
           setHourlyRate(hourlyRate);
+          console.log('🔧 [InlineTimesheetManager] Salaried employee - calculated hourly rate:', hourlyRate);
           
           // Auto-populate regular hours for salary employees (8 hours per day)
           const autoEntries = {};
@@ -69,8 +97,10 @@ export default function InlineTimesheetManager() {
             };
           }
           setTimeEntries(prev => ({ ...autoEntries, ...prev }));
+          console.log('🔧 [InlineTimesheetManager] Auto-populated hours for salaried employee');
         } else {
-          setHourlyRate(parseFloat(data.data.wage_per_hour) || 0);
+          setHourlyRate(parseFloat(userEmployee.wage_per_hour) || 0);
+          console.log('🔧 [InlineTimesheetManager] Wage employee - hourly rate:', userEmployee.wage_per_hour);
         }
       }
     } catch (error) {
@@ -79,26 +109,67 @@ export default function InlineTimesheetManager() {
   };
   
   const fetchCurrentWeekData = async () => {
+    if (!employeeData?.id) {
+      console.log('🔧 [InlineTimesheetManager] No employee data available yet');
+      return;
+    }
+    
+    console.log('🔧 [InlineTimesheetManager] Fetching timesheet for employee ID:', employeeData.id);
     try {
       setLoading(true);
-      const response = await fetch('/api/hr/timesheets/current-week', {
-        method: 'POST',
+      const response = await fetch(
+        `/api/hr/timesheets?employee_id=${employeeData.id}&period_start=${format(weekStart, 'yyyy-MM-dd')}`,
+        {
+          headers: {
+            'X-Tenant-ID': session?.user?.tenantId || session?.user?.tenant_id,
+          },
+        }
+      );
+      
+      console.log('🔧 [InlineTimesheetManager] Timesheet API response status:', response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('🔧 [InlineTimesheetManager] Timesheet data received:', data);
+        
+        if (data.results && data.results.length > 0) {
+          const timesheet = data.results[0];
+          setTimesheetData(timesheet);
+          
+          // Fetch timesheet entries if we have a timesheet
+          if (timesheet.id) {
+            await fetchTimesheetEntries(timesheet.id);
+          }
+        } else {
+          console.log('🔧 [InlineTimesheetManager] No existing timesheet found');
+          setTimesheetData(null);
+        }
+      } else {
+        console.error('🔧 [InlineTimesheetManager] Failed to fetch timesheet:', response.status);
+      }
+    } catch (error) {
+      console.error('Error fetching timesheet data:', error);
+      notifyError('Failed to load timesheet data');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const fetchTimesheetEntries = async (timesheetId) => {
+    try {
+      const response = await fetch(`/api/hr/timesheet-entries?timesheet_id=${timesheetId}`, {
         headers: {
-          'Content-Type': 'application/json',
+          'X-Tenant-ID': session?.user?.tenantId || session?.user?.tenant_id,
         },
-        body: JSON.stringify({
-          week_start: format(weekStart, 'yyyy-MM-dd')
-        })
       });
       
       if (response.ok) {
         const data = await response.json();
-        setTimesheetData(data);
+        console.log('🔧 [InlineTimesheetManager] Timesheet entries:', data);
         
-        // Convert entries to our state format
         const entriesMap = {};
-        if (data.entries) {
-          data.entries.forEach(entry => {
+        if (data.results) {
+          data.results.forEach(entry => {
             const date = format(parseISO(entry.date), 'yyyy-MM-dd');
             entriesMap[date] = {
               regular: entry.regular_hours || 0,
@@ -114,16 +185,22 @@ export default function InlineTimesheetManager() {
         setTimeEntries(entriesMap);
       }
     } catch (error) {
-      console.error('Error fetching timesheet data:', error);
-      notifyError('Failed to load timesheet data');
-    } finally {
-      setLoading(false);
+      console.error('Error fetching timesheet entries:', error);
     }
   };
   
   const fetchTimesheetHistory = async () => {
+    if (!employeeData?.id) return;
+    
     try {
-      const response = await fetch('/api/hr/timesheets?limit=5');
+      const response = await fetch(
+        `/api/hr/timesheets?employee_id=${employeeData.id}&limit=5`,
+        {
+          headers: {
+            'X-Tenant-ID': session?.user?.tenantId || session?.user?.tenant_id,
+          },
+        }
+      );
       if (response.ok) {
         const data = await response.json();
         setTimesheetHistory(data.results || []);
@@ -411,7 +488,7 @@ export default function InlineTimesheetManager() {
                           value={entry.regular || ''}
                           onChange={(e) => handleHoursChange(day.date, 'regular', e.target.value)}
                           className="w-16 px-2 py-1 text-center border border-green-300 rounded focus:ring-green-500 focus:border-green-500 bg-white"
-                          disabled={timesheetData?.status !== 'DRAFT' || employeeData?.compensation_type === 'SALARY'}
+                          disabled={timesheetData?.status !== 'DRAFT'}
                         />
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-center">
