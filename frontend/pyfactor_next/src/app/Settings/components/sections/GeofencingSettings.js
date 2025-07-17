@@ -46,8 +46,15 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel }) => {
         return;
       }
 
-      if (!window.google) {
-        await loadGoogleMapsScript();
+      try {
+        if (!window.google) {
+          await loadGoogleMapsScript();
+        }
+      } catch (error) {
+        console.error('[GeofencingSettings] Failed to load Google Maps:', error);
+        toast.error('Failed to load Google Maps. Please check your internet connection and try again.');
+        setLoading(false);
+        return;
       }
       
       // Double-check container still exists after loading script
@@ -57,33 +64,39 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel }) => {
         return;
       }
 
-      const map = new window.google.maps.Map(mapContainerRef.current, {
-        center: { lat: 37.7749, lng: -122.4194 }, // Default to San Francisco
-        zoom: 15,
-        mapTypeId: 'roadmap'
-      });
+      try {
+        const map = new window.google.maps.Map(mapContainerRef.current, {
+          center: { lat: 37.7749, lng: -122.4194 }, // Default to San Francisco
+          zoom: 15,
+          mapTypeId: 'roadmap'
+        });
 
-      // Add click listener to map
-      map.addListener('click', handleMapClick);
+        // Add click listener to map
+        map.addListener('click', handleMapClick);
 
-      // Try to get user's current location
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const userLocation = {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude
-            };
-            map.setCenter(userLocation);
-          },
-          (error) => {
-            console.warn('Could not get user location:', error);
-          }
-        );
+        // Try to get user's current location
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              const userLocation = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+              };
+              map.setCenter(userLocation);
+            },
+            (error) => {
+              console.warn('Could not get user location:', error);
+            }
+          );
+        }
+
+        setMap(map);
+        setLoading(false);
+      } catch (error) {
+        console.error('[GeofencingSettings] Failed to initialize map:', error);
+        toast.error('Failed to initialize map. Please refresh the page and try again.');
+        setLoading(false);
       }
-
-      setMap(map);
-      setLoading(false);
     };
 
     // Add a small delay to ensure the component is fully rendered
@@ -97,17 +110,33 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel }) => {
   }, []);
 
   const loadGoogleMapsScript = () => {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       if (window.google) {
         resolve();
         return;
       }
       
+      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+      console.log('[GeofencingSettings] Loading Google Maps with API key:', apiKey ? 'Key present' : 'No API key found');
+      
+      if (!apiKey) {
+        console.error('[GeofencingSettings] NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is not defined');
+        reject(new Error('Google Maps API key is not configured'));
+        return;
+      }
+      
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=geometry,drawing`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=geometry,drawing`;
       script.async = true;
       script.defer = true;
-      script.onload = resolve;
+      script.onload = () => {
+        console.log('[GeofencingSettings] Google Maps script loaded successfully');
+        resolve();
+      };
+      script.onerror = (error) => {
+        console.error('[GeofencingSettings] Failed to load Google Maps script:', error);
+        reject(error);
+      };
       document.head.appendChild(script);
     });
   };
