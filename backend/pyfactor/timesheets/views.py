@@ -13,6 +13,8 @@ from .serializers import (
     TimesheetApprovalSerializer, TimeOffApprovalSerializer
 )
 from custom_auth.views.rbac_views import IsOwnerOrAdmin
+from hr.models import Employee
+from hr.serializers import EmployeeSerializer
 import logging
 
 logger = logging.getLogger(__name__)
@@ -162,6 +164,245 @@ class TimesheetViewSet(viewsets.ModelViewSet):
         
         serializer = self.get_serializer(timesheets, many=True)
         return Response({'timesheets': serializer.data})
+    
+    @action(detail=False, methods=['get'])
+    def hr_dashboard(self, request):
+        """Get all employees with their current timesheet status for HR management"""
+        user = request.user
+        
+        # Check if user has HR permissions
+        if user.role not in ['OWNER', 'ADMIN']:
+            return Response(
+                {'error': 'You do not have permission to access HR timesheet management'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Get all active employees
+        employees = Employee.objects.filter(
+            business_id=user.business_id,
+            active=True
+        ).order_by('last_name', 'first_name')
+        
+        # Get current week dates
+        today = date.today()
+        week_start = today - timedelta(days=today.weekday())
+        week_end = week_start + timedelta(days=6)
+        
+        employee_data = []
+        for employee in employees:
+            # Get current week timesheet
+            timesheet = Timesheet.objects.filter(
+                employee=employee,
+                week_starting=week_start
+            ).first()
+            
+            # Calculate expected hours based on employee type
+            if employee.compensation_type == 'SALARY':
+                # Salary employees: Auto-calculate standard 40 hours/week
+                expected_hours = 40
+                hourly_rate = employee.salary / (52 * 40) if employee.salary else 0
+                entry_method = 'auto'
+            else:  # WAGE
+                # Wage employees: Use mobile clock in/out
+                expected_hours = getattr(employee, 'hours_per_week', 40)
+                hourly_rate = employee.wage_per_hour or 0
+                entry_method = 'mobile'
+            
+            # Get timesheet status
+            if timesheet:
+                total_hours = timesheet.total_hours
+                status_info = {
+                    'status': timesheet.status,
+                    'submitted_at': timesheet.submitted_at,
+                    'approved_at': timesheet.approved_at,
+                    'total_hours': float(total_hours),
+                    'regular_hours': float(timesheet.total_regular_hours),
+                    'overtime_hours': float(timesheet.total_overtime_hours),
+                    'timesheet_id': timesheet.id
+                }
+            else:
+                status_info = {
+                    'status': 'not_started',
+                    'submitted_at': None,
+                    'approved_at': None,
+                    'total_hours': 0,
+                    'regular_hours': 0,
+                    'overtime_hours': 0,
+                    'timesheet_id': None
+                }
+            
+            # Check if employee needs manager approval (for wage workers)
+            needs_manager_approval = (
+                employee.compensation_type == 'WAGE' and 
+                employee.supervisor and 
+                status_info['status'] == 'submitted'
+            )
+            
+            employee_data.append({
+                'employee_id': employee.id,
+                'employee_number': employee.employee_number,
+                'name': f"{employee.first_name} {employee.last_name}",
+                'email': employee.email,
+                'department': employee.department,
+                'job_title': employee.job_title,
+                'compensation_type': employee.compensation_type,
+                'hourly_rate': float(hourly_rate),
+                'expected_hours': expected_hours,
+                'entry_method': entry_method,
+                'supervisor': employee.supervisor.get_full_name() if employee.supervisor else None,
+                'timesheet_status': status_info,
+                'needs_manager_approval': needs_manager_approval,
+                'ready_for_payroll': status_info['status'] == 'approved'
+            })
+        
+        # Get summary statistics
+        total_employees = len(employee_data)
+        approved_count = len([e for e in employee_data if e['timesheet_status']['status'] == 'approved'])
+        pending_manager = len([e for e in employee_data if e['needs_manager_approval']])
+        pending_hr = len([e for e in employee_data if e['timesheet_status']['status'] == 'submitted' and not e['needs_manager_approval']])
+        not_started = len([e for e in employee_data if e['timesheet_status']['status'] == 'not_started'])
+        
+        return Response({
+            'employees': employee_data,
+            'week_period': {
+                'start': week_start.isoformat(),
+                'end': week_end.isoformat()
+            },
+            'summary': {
+                'total_employees': total_employees,
+                'approved_count': approved_count,
+                'pending_manager_approval': pending_manager,
+                'pending_hr_approval': pending_hr,
+                'not_started': not_started,
+                'payroll_ready': approved_count == total_employees
+            }
+        })
+    
+    @action(detail=False, methods=['post'])
+    def bulk_approve(self, request):
+        """Bulk approve timesheets for HR"""
+        user = request.user
+        
+        # Check if user has HR permissions
+        if user.role not in ['OWNER', 'ADMIN']:
+            return Response(
+                {'error': 'You do not have permission to approve timesheets'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        timesheet_ids = request.data.get('timesheet_ids', [])
+        if not timesheet_ids:
+            return Response(
+                {'error': 'No timesheets selected for approval'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Get timesheets that are submitted and ready for HR approval
+        timesheets = Timesheet.objects.filter(
+            id__in=timesheet_ids,
+            business_id=user.business_id,
+            status='submitted'
+        )
+        
+        approved_count = 0
+        errors = []
+        
+        for timesheet in timesheets:
+            try:
+                # For wage workers, check if manager has approved
+                if timesheet.employee.compensation_type == 'WAGE':
+                    if timesheet.employee.supervisor and not timesheet.approved_by:
+                        errors.append(f"Timesheet for {timesheet.employee.get_full_name()} needs manager approval first")
+                        continue
+                
+                # Approve the timesheet
+                timesheet.status = 'approved'
+                timesheet.approved_at = timezone.now()
+                timesheet.approved_by = getattr(user, 'employee', None)
+                timesheet.save()
+                
+                approved_count += 1
+                
+            except Exception as e:
+                errors.append(f"Error approving timesheet for {timesheet.employee.get_full_name()}: {str(e)}")
+        
+        return Response({
+            'approved_count': approved_count,
+            'errors': errors,
+            'total_requested': len(timesheet_ids)
+        })
+    
+    @action(detail=False, methods=['post'])
+    def generate_salary_timesheets(self, request):
+        """Generate auto-timesheets for salary employees"""
+        user = request.user
+        
+        # Check if user has HR permissions
+        if user.role not in ['OWNER', 'ADMIN']:
+            return Response(
+                {'error': 'You do not have permission to generate timesheets'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Get current week dates
+        today = date.today()
+        week_start = today - timedelta(days=today.weekday())
+        week_end = week_start + timedelta(days=6)
+        
+        # Get all salary employees without timesheets for this week
+        salary_employees = Employee.objects.filter(
+            business_id=user.business_id,
+            active=True,
+            compensation_type='SALARY'
+        ).exclude(
+            timesheet_records__week_starting=week_start
+        )
+        
+        created_count = 0
+        errors = []
+        
+        for employee in salary_employees:
+            try:
+                # Calculate hourly rate from salary
+                hourly_rate = employee.salary / (52 * 40) if employee.salary else 0
+                
+                # Create timesheet
+                timesheet = Timesheet.objects.create(
+                    employee=employee,
+                    supervisor=employee.supervisor,
+                    business_id=user.business_id,
+                    week_starting=week_start,
+                    week_ending=week_end,
+                    status='draft',
+                    hourly_rate=hourly_rate,
+                    overtime_rate=hourly_rate * Decimal('1.5')
+                )
+                
+                # Create time entries for Monday-Friday (8 hours each)
+                for i in range(5):  # Monday to Friday
+                    entry_date = week_start + timedelta(days=i)
+                    TimeEntry.objects.create(
+                        timesheet=timesheet,
+                        date=entry_date,
+                        regular_hours=8,
+                        overtime_hours=0
+                    )
+                
+                # Calculate totals
+                timesheet.calculate_totals()
+                created_count += 1
+                
+            except Exception as e:
+                errors.append(f"Error creating timesheet for {employee.get_full_name()}: {str(e)}")
+        
+        return Response({
+            'created_count': created_count,
+            'errors': errors,
+            'week_period': {
+                'start': week_start.isoformat(),
+                'end': week_end.isoformat()
+            }
+        })
 
 
 class TimeEntryViewSet(viewsets.ModelViewSet):

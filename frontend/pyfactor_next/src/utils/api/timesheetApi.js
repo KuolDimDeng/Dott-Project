@@ -42,6 +42,24 @@ const timesheetApi = {
     return response.data;
   },
 
+  // HR Management Endpoints
+  getHRDashboard: async () => {
+    const response = await apiClient.get('/api/timesheets/timesheets/hr_dashboard/');
+    return response.data;
+  },
+
+  bulkApproveTimesheets: async (timesheetIds) => {
+    const response = await apiClient.post('/api/timesheets/timesheets/bulk_approve/', {
+      timesheet_ids: timesheetIds
+    });
+    return response.data;
+  },
+
+  generateSalaryTimesheets: async () => {
+    const response = await apiClient.post('/api/timesheets/timesheets/generate_salary_timesheets/');
+    return response.data;
+  },
+
   // Time Entries
   getTimeEntries: async (params) => {
     const response = await apiClient.get('/api/timesheets/time-entries/', { params });
@@ -69,35 +87,8 @@ const timesheetApi = {
     return response.data;
   },
 
-  clockIn: async (data) => {
-    const response = await apiClient.post('/api/timesheets/clock-entries/clock/', {
-      ...data,
-      entry_type: 'clock_in'
-    });
-    return response.data;
-  },
-
-  clockOut: async (data) => {
-    const response = await apiClient.post('/api/timesheets/clock-entries/clock/', {
-      ...data,
-      entry_type: 'clock_out'
-    });
-    return response.data;
-  },
-
-  startBreak: async (data) => {
-    const response = await apiClient.post('/api/timesheets/clock-entries/clock/', {
-      ...data,
-      entry_type: 'break_start'
-    });
-    return response.data;
-  },
-
-  endBreak: async (data) => {
-    const response = await apiClient.post('/api/timesheets/clock-entries/clock/', {
-      ...data,
-      entry_type: 'break_end'
-    });
+  clockInOut: async (data) => {
+    const response = await apiClient.post('/api/timesheets/clock-entries/clock/', data);
     return response.data;
   },
 
@@ -117,39 +108,8 @@ const timesheetApi = {
     return response.data;
   },
 
-  reviewTimeOffRequest: async (id, data) => {
-    const response = await apiClient.post(`/api/timesheets/time-off-requests/${id}/review/`, data);
-    return response.data;
-  },
-
-  getPendingTimeOffRequests: async () => {
-    const response = await apiClient.get('/api/timesheets/time-off-requests/pending_approvals/');
-    return response.data;
-  },
-
-  getTimeOffCalendar: async (params) => {
-    const response = await apiClient.get('/api/timesheets/time-off-requests/calendar_view/', { params });
-    return response.data;
-  },
-
-  // Geofence Zones
-  getGeofenceZones: async () => {
-    const response = await apiClient.get('/api/timesheets/geofence-zones/');
-    return response.data;
-  },
-
-  createGeofenceZone: async (data) => {
-    const response = await apiClient.post('/api/timesheets/geofence-zones/', data);
-    return response.data;
-  },
-
-  updateGeofenceZone: async (id, data) => {
-    const response = await apiClient.patch(`/api/timesheets/geofence-zones/${id}/`, data);
-    return response.data;
-  },
-
-  deleteGeofenceZone: async (id) => {
-    const response = await apiClient.delete(`/api/timesheets/geofence-zones/${id}/`);
+  approveTimeOffRequest: async (id, data) => {
+    const response = await apiClient.post(`/api/timesheets/time-off-requests/${id}/approve/`, data);
     return response.data;
   }
 };
