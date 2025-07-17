@@ -178,6 +178,7 @@ class TimesheetViewSet(viewsets.ModelViewSet):
     def hr_dashboard(self, request):
         """Get all employees with their current timesheet status for HR management"""
         logger.info(f"[TimesheetViewSet] hr_dashboard called by user: {request.user.email if hasattr(request.user, 'email') else 'unknown'}")
+        logger.info(f"[TimesheetViewSet] Deployment timestamp: 2025-01-17 12:58 UTC")
         
         user = request.user
         
