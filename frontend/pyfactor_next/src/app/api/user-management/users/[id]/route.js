@@ -62,6 +62,95 @@ export async function GET(request, { params }) {
 }
 
 /**
+ * PATCH /api/user-management/users/[id]
+ * Update user details (supports partial updates)
+ */
+export async function PATCH(request, { params }) {
+  try {
+    const { id } = params;
+    logger.info(`[UserManagement] PATCH updating user: ${id}`);
+    
+    const updateData = await request.json();
+    
+    // If this is a permissions-only update, redirect to permissions endpoint
+    if (updateData.permissions && Object.keys(updateData).length === 1) {
+      logger.info(`[UserManagement] Redirecting permissions update to dedicated endpoint`);
+      
+      const permissionsResponse = await fetch(`${request.nextUrl.origin}/api/user-management/users/${id}/permissions`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': request.headers.get('cookie') || ''
+        },
+        body: JSON.stringify({ permissions: updateData.permissions })
+      });
+      
+      if (!permissionsResponse.ok) {
+        const errorData = await permissionsResponse.json();
+        return NextResponse.json(errorData, { status: permissionsResponse.status });
+      }
+      
+      return NextResponse.json(await permissionsResponse.json());
+    }
+    
+    // For other updates, proceed with regular user update logic
+    const session = await getSession(request);
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    const currentUser = session.user;
+    const tenantId = currentUser.tenantId || currentUser.tenant_id;
+    
+    // Find user to update
+    const existingUser = await findUserById(id, tenantId);
+    if (!existingUser) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    // Check permissions
+    if (!canManageUser(currentUser, existingUser)) {
+      return NextResponse.json(
+        { error: 'Insufficient permissions to update this user' },
+        { status: 403 }
+      );
+    }
+
+    // Validate update data
+    const validation = validateUpdateData(updateData, currentUser, existingUser);
+    if (!validation.valid) {
+      return NextResponse.json(
+        { error: 'Invalid update data', details: validation.errors },
+        { status: 400 }
+      );
+    }
+
+    // Update user
+    const updatedUser = await updateUser(id, updateData, tenantId);
+    
+    logger.info(`[UserManagement] PATCH updated user: ${updatedUser.email}`);
+    
+    return NextResponse.json({
+      user: updatedUser,
+      message: 'User updated successfully'
+    });
+    
+  } catch (error) {
+    logger.error('[UserManagement] Error updating user via PATCH:', error);
+    return NextResponse.json(
+      { error: 'Failed to update user', message: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+/**
  * PUT /api/user-management/users/[id]
  * Update user details
  */

@@ -451,11 +451,37 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
   }, [showInviteModal]);
 
   // Function to handle editing user permissions inline
-  const handleEditUserPermissions = (userToEdit) => {
-    setEditingUserId(userToEdit.id);
-    setEditingPermissions({
-      [userToEdit.id]: userToEdit.permissions || []
-    });
+  const handleEditUserPermissions = async (userToEdit) => {
+    try {
+      setEditingUserId(userToEdit.id);
+      
+      // Fetch current permissions from backend to ensure accuracy
+      const response = await fetch(`/api/user-management/users/${userToEdit.id}/permissions`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const permissionsData = await response.json();
+        setEditingPermissions({
+          [userToEdit.id]: permissionsData.permissions || []
+        });
+      } else {
+        // Fallback to local permissions if fetch fails
+        setEditingPermissions({
+          [userToEdit.id]: userToEdit.permissions || []
+        });
+      }
+    } catch (error) {
+      logger.error('[UserManagement] Error fetching user permissions:', error);
+      // Fallback to local permissions
+      setEditingPermissions({
+        [userToEdit.id]: userToEdit.permissions || []
+      });
+    }
   };
   
   const handleCancelEdit = () => {
@@ -565,8 +591,8 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
     try {
       setLoading(true);
       
-      const response = await fetch(`/api/user-management/users/${userId}`, {
-        method: 'PATCH',
+      const response = await fetch(`/api/user-management/users/${userId}/permissions`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -577,13 +603,16 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update user permissions');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update user permissions');
       }
 
-      // Update local state
+      const result = await response.json();
+      
+      // Update local state with the updated permissions
       setUsers(users.map(u => 
         u.id === userId 
-          ? { ...u, permissions: editingPermissions[userId] || [] }
+          ? { ...u, permissions: result.user?.permissions || editingPermissions[userId] || [] }
           : u
       ));
       
@@ -591,9 +620,12 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
       setEditingPermissions({});
       notifySuccess('User permissions updated successfully');
       
+      // Refresh users list to get latest permissions
+      await fetchUsers();
+      
     } catch (error) {
       logger.error('[UserManagement] Error updating user permissions:', error);
-      notifyError('Failed to update user permissions');
+      notifyError(error.message || 'Failed to update user permissions');
     } finally {
       setLoading(false);
     }
