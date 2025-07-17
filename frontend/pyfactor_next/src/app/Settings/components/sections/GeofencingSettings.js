@@ -18,7 +18,7 @@ import StandardSpinner from '@/components/ui/StandardSpinner';
 import FieldTooltip from '@/components/ui/FieldTooltip';
 
 // Google Maps Integration
-const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel }) => {
+const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => {
   const [loading, setLoading] = useState(true);
   const [map, setMap] = useState(null);
   const [geofence, setGeofence] = useState(null);
@@ -39,19 +39,35 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel }) => {
 
   // Debug environment variable on component mount
   useEffect(() => {
-    console.log('[GeofencingSettings] Component mounted - v2');
+    console.log('[GeofencingSettings] Component mounted - v3');
     console.log('[GeofencingSettings] NEXT_PUBLIC_GOOGLE_MAPS_API_KEY:', process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || 'NOT DEFINED');
     console.log('[GeofencingSettings] Build time check - API key should be baked into build');
     console.log('[GeofencingSettings] All NEXT_PUBLIC env vars:', Object.keys(process.env).filter(key => key.startsWith('NEXT_PUBLIC_')));
   }, []);
 
   useEffect(() => {
+    // Only initialize map when component is visible
+    if (!isVisible) {
+      console.log('[GeofencingSettings] Component not visible, skipping map init');
+      return;
+    }
+
     // Initialize Google Maps
     const initMap = async () => {
+      console.log('[GeofencingSettings] Starting map initialization...');
+      
+      // Wait a bit for the DOM to be ready
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
       // Check if map container exists
       if (!mapContainerRef.current) {
-        console.error('Map container not found');
-        setLoading(false);
+        console.error('Map container not found - waiting and retrying...');
+        // Try again after a short delay
+        setTimeout(() => {
+          if (mapContainerRef.current && isVisible) {
+            initMap();
+          }
+        }, 500);
         return;
       }
 
@@ -75,6 +91,7 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel }) => {
       }
 
       try {
+        console.log('[GeofencingSettings] Creating map instance...');
         const map = new window.google.maps.Map(mapContainerRef.current, {
           center: { lat: 37.7749, lng: -122.4194 }, // Default to San Francisco
           zoom: 15,
@@ -102,6 +119,7 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel }) => {
 
         setMap(map);
         setLoading(false);
+        console.log('[GeofencingSettings] Map initialized successfully');
       } catch (error) {
         console.error('[GeofencingSettings] Failed to initialize map:', error);
         setMapError('Failed to initialize map. Please refresh the page.');
@@ -110,15 +128,13 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel }) => {
       }
     };
 
-    // Add a small delay to ensure the component is fully rendered
-    const timeoutId = setTimeout(() => {
-      initMap();
-    }, 100);
+    // Start initialization
+    initMap();
 
     return () => {
-      clearTimeout(timeoutId);
+      // Cleanup if needed
     };
-  }, []);
+  }, [isVisible]);
 
   const loadGoogleMapsScript = () => {
     return new Promise((resolve, reject) => {
@@ -600,6 +616,7 @@ const GeofencingSettings = ({ user, isOwner, isAdmin, notifySuccess, notifyError
           <GoogleMapsGeofenceSetup
             onGeofenceCreated={handleGeofenceCreated}
             onCancel={() => setShowCreateForm(false)}
+            isVisible={showCreateForm}
           />
         </div>
       )}
