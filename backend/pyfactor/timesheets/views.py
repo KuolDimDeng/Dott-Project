@@ -28,6 +28,8 @@ class TimesheetViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         logger.info(f"[TimesheetViewSet] get_queryset called for user: {user.email if hasattr(user, 'email') else 'unknown'}")
+        logger.info(f"[TimesheetViewSet] User business_id: {getattr(user, 'business_id', 'NOT_FOUND')}")
+        logger.info(f"[TimesheetViewSet] User tenant_id: {getattr(user, 'tenant_id', 'NOT_FOUND')}")
         
         # Handle AnonymousUser
         if not hasattr(user, 'business_id'):

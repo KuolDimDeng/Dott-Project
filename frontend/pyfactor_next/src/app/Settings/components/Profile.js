@@ -58,12 +58,15 @@ const Profile = ({ userData }) => {
 
   // Fetch profile data on mount
   useEffect(() => {
+    console.log('[Profile] useEffect triggered, selectedTab:', selectedTab);
     fetchProfileData();
     if (selectedTab === 1) {
+      console.log('[Profile] Fetching login sessions for Security tab');
       fetchLoginSessions();
     }
     // Fetch employee data when Pay or Tax tabs are selected
     if (selectedTab === 2 || selectedTab === 3) {
+      console.log('[Profile] Fetching employee data for Pay/Tax tab');
       fetchEmployeeProfileData();
     }
   }, [selectedTab]);
@@ -530,6 +533,18 @@ const Profile = ({ userData }) => {
             </div>
             <DocumentTextIcon className="w-6 h-6 text-gray-400" />
           </div>
+          
+          {/* Debug Info */}
+          {!employeeData && !loadingEmployeeData && (
+            <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-sm text-yellow-800">
+                No employee record found for your account ({userData?.email}).
+              </p>
+              <p className="text-xs text-yellow-700 mt-1">
+                An employee record must be created by an administrator to access Pay and Tax information.
+              </p>
+            </div>
+          )}
           
           <div className="mt-4">
             {employeeData?.ssn_last_4 ? (
@@ -998,7 +1013,10 @@ const Profile = ({ userData }) => {
                         : 'text-gray-500 hover:text-gray-700'
                       }
                     `}
-                    onClick={() => setSelectedTab(tab.id)}
+                    onClick={() => {
+                      console.log('[Profile] Tab clicked:', tab.label, 'id:', tab.id);
+                      setSelectedTab(tab.id);
+                    }}
                   >
                     <span className="flex items-center justify-center space-x-2">
                       <Icon className={`w-5 h-5 ${selectedTab === tab.id ? 'text-blue-600' : 'text-gray-400'}`} />
