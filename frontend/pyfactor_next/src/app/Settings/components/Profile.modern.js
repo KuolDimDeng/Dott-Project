@@ -39,11 +39,22 @@ import {
   MagnifyingGlassIcon,
   DocumentIcon,
   BuildingOffice2Icon,
-  UserGroupIcon
+  UserGroupIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  IdentificationIcon,
+  BuildingLibraryIcon
 } from '@heroicons/react/24/outline';
 import PayStubViewer from '@/components/PayStubViewer';
 import InlineTimesheetManager from './timesheet/InlineTimesheetManager';
 import SupervisorApprovalInterface from './timesheet/SupervisorApprovalInterface';
+
+// Custom ShieldExclamationIcon component
+const ShieldExclamationIcon = ({ className }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016zM12 9v2m0 4h.01" />
+  </svg>
+);
 
 const Profile = ({ userData }) => {
   const [selectedTab, setSelectedTab] = useState(0);
@@ -72,6 +83,15 @@ const Profile = ({ userData }) => {
   const [zoomLevel, setZoomLevel] = useState(100);
   const orgChartRef = useRef(null);
   const fileInputRef = useRef(null);
+  
+  // Employee data states
+  const [employeeData, setEmployeeData] = useState(null);
+  const [loadingEmployeeData, setLoadingEmployeeData] = useState(false);
+  const [bankInfo, setBankInfo] = useState({});
+  const [taxInfo, setTaxInfo] = useState({});
+  const [savingBankInfo, setSavingBankInfo] = useState(false);
+  const [savingTaxInfo, setSavingTaxInfo] = useState(false);
+  const [showFullSSN, setShowFullSSN] = useState(false);
   
   // Employment tab section visibility states
   const [expandedSections, setExpandedSections] = useState({
@@ -114,10 +134,16 @@ const Profile = ({ userData }) => {
     }
   }, [session, sessionLoading]);
   
-  // Fetch login sessions when security tab is selected
+  // Fetch data when tabs change
   useEffect(() => {
     console.log('[Profile] Selected tab changed to:', selectedTab);
+    console.log('[Profile] useEffect triggered, selectedTab:', selectedTab);
+    
     if (selectedTab === 1) {
+      console.log('[Profile] Pay tab selected, fetching employee data...');
+      console.log('[Profile] Fetching employee data for Pay/Tax tab');
+      fetchEmployeeProfileData();
+    } else if (selectedTab === 6) {
       console.log('[Profile] Security tab selected, fetching data...');
       fetchLoginSessions();
       fetchMFASettings();
@@ -221,6 +247,36 @@ const Profile = ({ userData }) => {
     });
     
     setEditMode(false);
+  };
+
+  const fetchEmployeeProfileData = async () => {
+    try {
+      setLoadingEmployeeData(true);
+      console.log('[Profile] Fetching employee profile data...');
+      const response = await fetch('/api/hr/employee/profile');
+      console.log('[Profile] Response status:', response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('[Profile] Employee profile data fetched:', data);
+        setEmployeeData(data);
+        setBankInfo(data.bank_info || {});
+        setTaxInfo(data.tax_info || {});
+      } else {
+        const errorText = await response.text();
+        console.error('[Profile] Failed to fetch employee profile:', response.status, errorText);
+        
+        // If 404, it means no employee record exists for this user
+        if (response.status === 404) {
+          notifyError('No employee record found. Please contact your administrator.');
+        }
+      }
+    } catch (error) {
+      console.error('[Profile] Error fetching employee profile:', error);
+      notifyError('Failed to load employee information');
+    } finally {
+      setLoadingEmployeeData(false);
+    }
   };
 
   const fetchLoginSessions = async () => {
@@ -873,6 +929,75 @@ const Profile = ({ userData }) => {
   const renderPayTab = () => {
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-6">
+        {/* SSN Section */}
+        <div className="bg-gray-50 rounded-lg p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium text-gray-900 flex items-center">
+              <IdentificationIcon className="w-5 h-5 mr-2" />
+              Social Security Information
+            </h3>
+            <DocumentTextIcon className="w-6 h-6 text-gray-400" />
+          </div>
+          
+          {/* Debug Info */}
+          {!employeeData && !loadingEmployeeData && (
+            <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-sm text-yellow-800">
+                No employee record found for your account ({session?.user?.email}).
+              </p>
+              <p className="text-xs text-yellow-700 mt-1">
+                An employee record must be created by an administrator to access Pay and Tax information.
+              </p>
+            </div>
+          )}
+          
+          <div className="mt-4">
+            {employeeData?.ssn_last_4 ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-600">SSN:</span>
+                    <span className="font-mono text-sm">
+                      {showFullSSN 
+                        ? `XXX-XX-${employeeData.ssn_last_4}`
+                        : `•••-••-${employeeData.ssn_last_4}`}
+                    </span>
+                    <CheckBadgeIcon className="w-5 h-5 text-green-500" />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowFullSSN(!showFullSSN)}
+                    className="flex items-center space-x-1 text-sm text-blue-600 hover:text-blue-700"
+                  >
+                    {showFullSSN ? (
+                      <>
+                        <EyeSlashIcon className="w-4 h-4" />
+                        <span>Hide</span>
+                      </>
+                    ) : (
+                      <>
+                        <EyeIcon className="w-4 h-4" />
+                        <span>Show Format</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+                {showFullSSN && (
+                  <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p className="text-xs text-amber-800">
+                      <ShieldExclamationIcon className="inline w-4 h-4 mr-1" />
+                      For security reasons, only the last 4 digits of your SSN are stored and displayed. 
+                      The full SSN is encrypted and stored securely in our payment processor.
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">No SSN on file</p>
+            )}
+          </div>
+        </div>
+
         {/* Banking Information */}
         <div className="border-b pb-6">
           <button
@@ -1710,7 +1835,10 @@ const Profile = ({ userData }) => {
                         : 'text-gray-500 hover:text-gray-700'
                       }
                     `}
-                    onClick={() => setSelectedTab(tab.id)}
+                    onClick={() => {
+                      console.log('[Profile] Tab clicked:', tab.label, 'id:', tab.id);
+                      setSelectedTab(tab.id);
+                    }}
                   >
                     <span className="flex items-center justify-center space-x-2">
                       <Icon className={`w-5 h-5 ${selectedTab === tab.id ? 'text-blue-600' : 'text-gray-400'}`} />
