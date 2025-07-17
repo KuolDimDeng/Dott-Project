@@ -39,8 +39,9 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel }) => {
 
   // Debug environment variable on component mount
   useEffect(() => {
-    console.log('[GeofencingSettings] Component mounted');
+    console.log('[GeofencingSettings] Component mounted - v2');
     console.log('[GeofencingSettings] NEXT_PUBLIC_GOOGLE_MAPS_API_KEY:', process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || 'NOT DEFINED');
+    console.log('[GeofencingSettings] Build time check - API key should be baked into build');
     console.log('[GeofencingSettings] All NEXT_PUBLIC env vars:', Object.keys(process.env).filter(key => key.startsWith('NEXT_PUBLIC_')));
   }, []);
 
