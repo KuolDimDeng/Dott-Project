@@ -23,6 +23,7 @@ python-json-logger==2.0.7
 # Authentication
 PyJWT==2.9.0
 cryptography==45.0.3
+django-cryptography==1.1
 
 # Basic packages
 requests==2.32.3
