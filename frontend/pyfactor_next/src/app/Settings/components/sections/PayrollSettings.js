@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSessionContext } from '@/providers/SessionProvider';
 import { logger } from '@/utils/logger';
-import FieldTooltip from '@/components/common/FieldTooltip';
+import FieldTooltip from '@/components/ui/FieldTooltip';
 import StandardSpinner from '@/components/ui/StandardSpinner';
 import api from '@/utils/api';
 

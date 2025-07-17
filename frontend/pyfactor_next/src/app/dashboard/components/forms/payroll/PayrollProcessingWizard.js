@@ -19,7 +19,7 @@ import {
 import { toast } from 'react-hot-toast';
 import { format, parseISO } from 'date-fns';
 import StandardSpinner from '@/components/ui/StandardSpinner';
-import FieldTooltip from '@/components/common/FieldTooltip';
+import FieldTooltip from '@/components/ui/FieldTooltip';
 import api from '@/utils/api';
 import timesheetApi from '@/utils/api/timesheetApi';
 import { logger } from '@/utils/logger';
