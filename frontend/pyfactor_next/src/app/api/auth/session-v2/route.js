@@ -29,9 +29,17 @@ export async function GET(request) {
         authenticated: false
       }, { status: 401 });
       
-      // Clear any stale cookies
-      response.cookies.delete('sid');
-      response.cookies.delete('session_token');
+      // Clear any stale cookies with explicit options
+      const clearOptions = {
+        path: '/',
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 0
+      };
+      
+      response.cookies.set('sid', '', clearOptions);
+      response.cookies.set('session_token', '', clearOptions);
       
       return response;
     }
@@ -99,12 +107,23 @@ export async function GET(request) {
             logger.error('[Session-V2] Session endpoint not found, check backend URLs');
           }
           
-      // Clear invalid session
+      // Clear invalid session with explicit options
       const res = NextResponse.json({ 
         authenticated: false,
         error: errorDetails
       }, { status: 401 });
-      res.cookies.delete('sid');
+      
+      const clearOptions = {
+        path: '/',
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 0
+      };
+      
+      res.cookies.set('sid', '', clearOptions);
+      res.cookies.set('session_token', '', clearOptions);
+      
       return res;
     }
     
