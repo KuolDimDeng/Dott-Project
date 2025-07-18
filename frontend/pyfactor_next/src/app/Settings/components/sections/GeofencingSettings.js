@@ -39,10 +39,11 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
 
   // Debug environment variable on component mount
   useEffect(() => {
-    console.log('[GeofencingSettings] Component mounted - v3');
+    console.log('[GeofencingSettings] Component mounted - v4');
     console.log('[GeofencingSettings] NEXT_PUBLIC_GOOGLE_MAPS_API_KEY:', process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || 'NOT DEFINED');
     console.log('[GeofencingSettings] Build time check - API key should be baked into build');
     console.log('[GeofencingSettings] All NEXT_PUBLIC env vars:', Object.keys(process.env).filter(key => key.startsWith('NEXT_PUBLIC_')));
+    console.log('[GeofencingSettings] isVisible prop:', isVisible);
   }, []);
 
   useEffect(() => {
@@ -143,9 +144,9 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
         return;
       }
       
-      // Temporary fallback until environment variable is properly built
-      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || 'AIzaSyDq2UEzOWBrWHgvbXVQfmLHXlpIqWwXGxs';
-      console.log('[GeofencingSettings] Loading Google Maps with API key:', apiKey ? 'Key present' : 'No API key found');
+      // Use hardcoded API key as a temporary solution
+      const apiKey = 'AIzaSyDq2UEzOWBrWHgvbXVQfmLHXlpIqWwXGxs';
+      console.log('[GeofencingSettings] Loading Google Maps with hardcoded API key');
       
       if (!apiKey) {
         console.error('[GeofencingSettings] NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is not defined');

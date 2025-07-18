@@ -157,6 +157,7 @@ const nextConfig = {
     NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
     NEXT_PUBLIC_SENTRY_DSN: 'https://74deffcfad997262710d99acb797fef8@o4509614361804800.ingest.us.sentry.io/4509614433304576',
     NEXT_PUBLIC_SENTRY_RELEASE: process.env.NEXT_PUBLIC_SENTRY_RELEASE,
+    NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
     APP_BASE_URL: process.env.APP_BASE_URL || process.env.NEXT_PUBLIC_BASE_URL,
     AUTH0_BASE_URL: process.env.AUTH0_BASE_URL,
     AUTH0_ISSUER_BASE_URL: process.env.AUTH0_ISSUER_BASE_URL,
@@ -386,7 +387,7 @@ const nextConfig = {
             value: [
               "default-src 'self'",
               // Scripts - still need unsafe-inline for Next.js
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://auth.dottapps.com https://dev-cbyy63jovi6zrcos.us.auth0.com https://js.stripe.com https://client.crisp.chat https://widget.crisp.chat https://cdn.plaid.com https://cdn.posthog.com https://app.posthog.com https://*.posthog.com",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://auth.dottapps.com https://dev-cbyy63jovi6zrcos.us.auth0.com https://js.stripe.com https://client.crisp.chat https://widget.crisp.chat https://cdn.plaid.com https://cdn.posthog.com https://app.posthog.com https://*.posthog.com https://maps.googleapis.com https://maps.gstatic.com",
               // Workers - needed for PostHog session recording
               "worker-src 'self' blob: https://app.posthog.com https://*.posthog.com",
               // Styles
@@ -394,7 +395,7 @@ const nextConfig = {
               // Fonts
               "font-src 'self' data: https://fonts.gstatic.com https://client.crisp.chat",
               // Images
-              "img-src 'self' data: https: blob: https://*.dottapps.com",
+              "img-src 'self' data: https: blob: https://*.dottapps.com https://maps.googleapis.com https://maps.gstatic.com",
               // Connections - add Cloudflare domains and Sentry
               "connect-src 'self' https://*.auth0.com https://*.stripe.com https://*.googleapis.com wss://*.crisp.chat https://*.crisp.chat https://api.stripe.com https://api.dottapps.com https://auth.dottapps.com https://dottapps.com https://www.dottapps.com https://ipapi.co https://api.country.is https://ipinfo.io https://ipgeolocation.io https://*.plaid.com https://app.posthog.com https://*.posthog.com https://*.cloudflare.com https://*.ingest.sentry.io https://*.ingest.us.sentry.io",
               // Frames
