@@ -52,3 +52,10 @@ qrcode==8.0
 
 # Error tracking and monitoring
 sentry-sdk[django]==2.19.2
+
+# Redis for caching and sessions
+redis==6.2.0
+
+# Development tools
+django-extensions==4.1
+django-debug-toolbar==5.2.0
