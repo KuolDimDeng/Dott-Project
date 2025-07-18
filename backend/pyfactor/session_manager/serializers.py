@@ -119,6 +119,23 @@ class SessionSerializer(serializers.ModelSerializer):
             'tenant_id': str(obj.user.business_id) if obj.user.business_id else str(obj.tenant.id) if obj.tenant else None
         }
         
+        # Include WhatsApp commerce preference from UserProfile
+        try:
+            from users.models import UserProfile
+            profile = UserProfile.objects.get(user=obj.user)
+            user_data['show_whatsapp_commerce'] = profile.get_whatsapp_commerce_preference()
+            user_data['whatsapp_commerce_explicit'] = profile.show_whatsapp_commerce  # Explicit user setting (null if using default)
+            user_data['country'] = str(profile.country) if profile.country else 'US'
+        except UserProfile.DoesNotExist:
+            logger.debug(f"[SessionSerializer] No UserProfile found for user {obj.user.email}")
+            # Default values if profile doesn't exist
+            user_data['show_whatsapp_commerce'] = False
+            user_data['country'] = 'US'
+        except Exception as e:
+            logger.debug(f"[SessionSerializer] Error fetching UserProfile data: {e}")
+            user_data['show_whatsapp_commerce'] = False
+            user_data['country'] = 'US'
+        
         # Include business information from OnboardingProgress if available
         try:
             from onboarding.models import OnboardingProgress

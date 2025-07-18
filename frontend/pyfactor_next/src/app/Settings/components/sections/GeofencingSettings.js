@@ -25,6 +25,7 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
   const [geofence, setGeofence] = useState(null);
   const [mapError, setMapError] = useState(null);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [portalContainer, setPortalContainer] = useState(null);
   const [geofenceData, setGeofenceData] = useState({
     name: '',
     description: '',
@@ -41,18 +42,47 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
   const [mapContainerKey, setMapContainerKey] = useState(0);
   const mapInitializedRef = React.useRef(false);
   const preventReactUpdatesRef = React.useRef(false);
+  const portalRootRef = React.useRef(null);
+  
+  // Create portal container on mount
+  useEffect(() => {
+    if (typeof document !== 'undefined' && isVisible) {
+      const container = document.createElement('div');
+      container.id = 'google-maps-portal-container';
+      container.style.width = '100%';
+      container.style.height = '100%';
+      container.style.position = 'absolute';
+      container.style.top = '0';
+      container.style.left = '0';
+      container.style.zIndex = '1';
+      setPortalContainer(container);
+      
+      return () => {
+        // Cleanup portal container
+        if (container.parentNode) {
+          container.parentNode.removeChild(container);
+        }
+      };
+    }
+  }, [isVisible]);
   
   // Ref callback that prevents React from managing the element once map is initialized
   const mapContainerRefCallback = React.useCallback((node) => {
     if (node && !preventReactUpdatesRef.current) {
       mapContainerRef.current = node;
       console.log('[GeofencingSettings] Map container ref set via callback:', node);
+      
+      // If we have a portal container and the placeholder div, append the portal
+      if (portalContainer && !portalContainer.parentNode) {
+        node.appendChild(portalContainer);
+        console.log('[GeofencingSettings] Portal container appended to placeholder');
+      }
     } else if (preventReactUpdatesRef.current) {
       console.log('[GeofencingSettings] Preventing React from updating map container');
       // Don't update the ref if we're preventing React updates
       return;
     }
-  }, []);
+  }, [portalContainer]);
 
   // Debug environment variable on component mount
   useEffect(() => {
@@ -78,9 +108,10 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
   */
 
   useEffect(() => {
-    // Only initialize map when component is visible
-    if (!isVisible) {
-      console.log('[GeofencingSettings] Component not visible, skipping map init');
+    // Only initialize map when component is visible and portal container is ready
+    if (!isVisible || !portalContainer) {
+      console.log('[GeofencingSettings] Component not visible or portal not ready, skipping map init');
+      console.log('[GeofencingSettings] isVisible:', isVisible, 'portalContainer:', portalContainer);
       return;
     }
 
@@ -129,8 +160,10 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
       }
       
       // Check if map container exists
-      if (!mapContainerRef.current) {
-        console.error('[GeofencingSettings] Map container not found after all delays');
+      if (!mapContainerRef.current || !portalContainer) {
+        console.error('[GeofencingSettings] Map container or portal not found after all delays');
+        console.log('[GeofencingSettings] mapContainerRef.current:', mapContainerRef.current);
+        console.log('[GeofencingSettings] portalContainer:', portalContainer);
         console.log('[GeofencingSettings] Current DOM elements with map-related classes:', 
           document.querySelectorAll('[class*="map"], [ref*="map"], [id*="map"]'));
         setMapError('Failed to initialize map container. Please refresh the page.');
@@ -151,15 +184,16 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
       }
       
       // Double-check container still exists after loading script
-      if (!mapContainerRef.current) {
-        console.error('Map container not found after loading script');
+      if (!mapContainerRef.current || !portalContainer) {
+        console.error('Map container or portal not found after loading script');
         setLoading(false);
         return;
       }
 
       try {
-        console.log('[GeofencingSettings] Creating map instance...');
-        const map = new window.google.maps.Map(mapContainerRef.current, {
+        console.log('[GeofencingSettings] Creating map instance in portal container...');
+        // Initialize map in the portal container instead of the React-managed container
+        const map = new window.google.maps.Map(portalContainer, {
           center: { lat: 37.7749, lng: -122.4194 }, // Default to San Francisco
           zoom: 15,
           mapTypeId: 'roadmap'
@@ -218,7 +252,7 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
     return () => {
       // Cleanup if needed
     };
-  }, [isVisible]);
+  }, [isVisible, portalContainer]);
 
   const loadGoogleMapsScript = () => {
     return new Promise((resolve, reject) => {
@@ -336,8 +370,9 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
     // Call initMap function again
     const initMap = async () => {
       console.log('[GeofencingSettings] Retry - checking container:', mapContainerRef.current);
+      console.log('[GeofencingSettings] Retry - checking portal:', portalContainer);
       
-      if (!mapContainerRef.current) {
+      if (!mapContainerRef.current || !portalContainer) {
         setMapError('Map container still not available. Please refresh the page.');
         setIsRetrying(false);
         return;
@@ -352,8 +387,8 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
           await loadGoogleMapsScript();
         }
         
-        console.log('[GeofencingSettings] Retry - Creating map instance...');
-        const map = new window.google.maps.Map(mapContainerRef.current, {
+        console.log('[GeofencingSettings] Retry - Creating map instance in portal...');
+        const map = new window.google.maps.Map(portalContainer, {
           center: { lat: 37.7749, lng: -122.4194 }, // Default to San Francisco
           zoom: 15,
           mapTypeId: 'roadmap'
