@@ -1,7 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { PhosphorIcon } from '@/components/PhosphorIcon';
+// Use Heroicons instead of PhosphorIcon for consistency
+import { 
+  XMarkIcon, 
+  MagnifyingGlassIcon,
+  PaperAirplaneIcon 
+} from '@heroicons/react/24/outline';
 
 const WhatsAppOrderManager = ({ onClose }) => {
   const [loading, setLoading] = useState(true);
@@ -113,7 +118,7 @@ const WhatsAppOrderManager = ({ onClose }) => {
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700"
           >
-            <PhosphorIcon name="X" size={24} />
+            <XMarkIcon className="w-6 h-6" />
           </button>
         </div>
 
@@ -122,11 +127,7 @@ const WhatsAppOrderManager = ({ onClose }) => {
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
-                <PhosphorIcon
-                  name="MagnifyingGlass"
-                  size={20}
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                />
+                <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
                   placeholder="Search by customer name, phone, or order ID..."
@@ -316,7 +317,7 @@ const WhatsAppOrderManager = ({ onClose }) => {
                       onClick={() => handleSendPaymentLink(selectedOrder.id)}
                       className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700"
                     >
-                      <PhosphorIcon name="PaperPlaneTilt" size={16} className="inline mr-2" />
+                      <PaperAirplaneIcon className="w-4 h-4 inline mr-2" />
                       Send Payment Link
                     </button>
                   )}

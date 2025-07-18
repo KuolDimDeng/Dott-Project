@@ -193,6 +193,31 @@ const WhatsAppBusinessDashboard = () => {
     );
   }
 
+  // Render the appropriate view based on activeView state
+  if (activeView === 'catalogs') {
+    return (
+      <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>}>
+        <WhatsAppCatalogManager onClose={() => setActiveView('dashboard')} />
+      </Suspense>
+    );
+  }
+
+  if (activeView === 'orders') {
+    return (
+      <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>}>
+        <WhatsAppOrderManager onClose={() => setActiveView('dashboard')} />
+      </Suspense>
+    );
+  }
+
+  if (activeView === 'analytics') {
+    return (
+      <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>}>
+        <WhatsAppAnalytics onClose={() => setActiveView('dashboard')} />
+      </Suspense>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
@@ -266,7 +291,10 @@ const WhatsAppBusinessDashboard = () => {
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h3 className="text-lg font-semibold mb-4">Catalog Management</h3>
             <p className="text-gray-600 mb-4">Create and manage your product catalogs</p>
-            <button className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors">
+            <button 
+              onClick={() => setActiveView('catalogs')}
+              className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
               Manage Catalogs
             </button>
           </div>
@@ -274,7 +302,10 @@ const WhatsAppBusinessDashboard = () => {
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h3 className="text-lg font-semibold mb-4">Order Management</h3>
             <p className="text-gray-600 mb-4">Track and manage customer orders</p>
-            <button className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-colors">
+            <button 
+              onClick={() => setActiveView('orders')}
+              className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-colors"
+            >
               View Orders
             </button>
           </div>
@@ -282,7 +313,10 @@ const WhatsAppBusinessDashboard = () => {
           <div className="bg-white rounded-lg shadow-sm p-6">
             <h3 className="text-lg font-semibold mb-4">Analytics</h3>
             <p className="text-gray-600 mb-4">View performance metrics and insights</p>
-            <button className="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition-colors">
+            <button 
+              onClick={() => setActiveView('analytics')}
+              className="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition-colors"
+            >
               View Analytics
             </button>
           </div>

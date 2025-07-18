@@ -126,7 +126,7 @@ export default function MobilePage() {
       title: 'WhatsApp Business',
       description: 'Sell via WhatsApp',
       icon: ChatBubbleLeftRightIcon,
-      href: session?.tenantId ? `/${session.tenantId}/dashboard` : '/dashboard',
+      href: '/mobile/whatsapp-business',
       color: 'bg-green-600'
     },
     ...baseQuickActions.slice(2) // Keep the rest

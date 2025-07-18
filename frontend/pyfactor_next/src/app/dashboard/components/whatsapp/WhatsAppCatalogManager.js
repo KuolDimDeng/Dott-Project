@@ -2,7 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSession } from '@/hooks/useSession-v2';
-import { PhosphorIcon } from '@/components/PhosphorIcon';
+import { 
+  XMarkIcon, 
+  PlusIcon,
+  ShareIcon,
+  ArrowPathIcon,
+  TrashIcon
+} from '@heroicons/react/24/outline';
 
 const WhatsAppCatalogManager = ({ onClose }) => {
   const { user } = useSession();
@@ -209,7 +215,7 @@ const WhatsAppCatalogManager = ({ onClose }) => {
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700"
           >
-            <PhosphorIcon name="X" size={24} />
+            <XMarkIcon className="w-6 h-6" />
           </button>
         </div>
 
@@ -224,7 +230,7 @@ const WhatsAppCatalogManager = ({ onClose }) => {
                   onClick={() => setShowCreateModal(true)}
                   className="text-blue-600 hover:text-blue-700"
                 >
-                  <PhosphorIcon name="Plus" size={20} />
+                  <PlusIcon className="w-5 h-5" />
                 </button>
               </div>
               
@@ -271,7 +277,7 @@ const WhatsAppCatalogManager = ({ onClose }) => {
                         }}
                         className="p-2 text-green-600 hover:bg-green-50 rounded-lg"
                       >
-                        <PhosphorIcon name="ShareNetwork" size={20} />
+                        <ShareIcon className="w-5 h-5" />
                       </button>
                     </div>
                   </div>
@@ -282,7 +288,7 @@ const WhatsAppCatalogManager = ({ onClose }) => {
                       onClick={() => setShowProductModal(true)}
                       className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
                     >
-                      <PhosphorIcon name="Plus" size={16} className="inline mr-2" />
+                      <PlusIcon className="w-4 h-4 inline mr-2" />
                       Add Product
                     </button>
                     <button
@@ -292,7 +298,7 @@ const WhatsAppCatalogManager = ({ onClose }) => {
                       }}
                       className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
                     >
-                      <PhosphorIcon name="ArrowsClockwise" size={16} className="inline mr-2" />
+                      <ArrowPathIcon className="w-4 h-4 inline mr-2" />
                       Sync from Inventory
                     </button>
                   </div>
@@ -307,7 +313,7 @@ const WhatsAppCatalogManager = ({ onClose }) => {
                             onClick={() => handleDeleteProduct(product.id)}
                             className="text-red-600 hover:text-red-700"
                           >
-                            <PhosphorIcon name="Trash" size={16} />
+                            <TrashIcon className="w-4 h-4" />
                           </button>
                         </div>
                         <p className="text-sm text-gray-600 mb-2">{product.description}</p>
