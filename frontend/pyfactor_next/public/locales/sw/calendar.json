@@ -1,0 +1,138 @@
+{
+  "title": "Kalenda",
+  "subtitle": "Dhibiti miadi, tarehe za mwisho na vikumbusho",
+  "timezoneNote": "Muda wote katika",
+  "addEvent": "Ongeza Tukio",
+  "newEvent": "Tukio Jipya",
+  "editEvent": "Hariri Tukio",
+  "loadingCalendar": "Inapakia kalenda...",
+  "saving": "Inahifadhi...",
+  
+  "buttons": {
+    "today": "Leo",
+    "month": "Mwezi",
+    "week": "Wiki",
+    "day": "Siku",
+    "list": "Orodha",
+    "save": "Hifadhi",
+    "cancel": "Ghairi",
+    "delete": "Futa"
+  },
+  
+  "eventTypes": {
+    "appointment": "Miadi",
+    "tax": "Tarehe ya Mwisho ya Kodi",
+    "payroll": "Mshahara",
+    "birthday": "Siku ya Kuzaliwa",
+    "productExpiry": "Mwisho wa Bidhaa",
+    "delivery": "Uwasilishaji",
+    "meeting": "Mkutano",
+    "reminder": "Kikumbusho"
+  },
+  
+  "form": {
+    "title": "Kichwa *",
+    "type": "Aina",
+    "startDate": "Tarehe ya Kuanza",
+    "endDate": "Tarehe ya Mwisho",
+    "startTime": "Muda wa Kuanza",
+    "endTime": "Muda wa Mwisho",
+    "location": "Mahali",
+    "description": "Maelezo",
+    "sendReminder": "Tuma kikumbusho",
+    "minutesBefore": "Dakika kabla",
+    "allDayEvent": "Tukio la siku nzima"
+  },
+  
+  "placeholders": {
+    "eventTitle": "Kichwa cha tukio",
+    "eventLocation": "Mahali pa tukio",
+    "eventDescription": "Maelezo ya tukio"
+  },
+  
+  "reminderOptions": {
+    "15minutes": "Dakika 15",
+    "30minutes": "Dakika 30",
+    "1hour": "Saa 1",
+    "2hours": "Masaa 2",
+    "1day": "Siku 1"
+  },
+  
+  "timezoneGroups": {
+    "usCanada": "Marekani na Kanada",
+    "europe": "Ulaya",
+    "asia": "Asia",
+    "africa": "Afrika",
+    "australiaPacific": "Australia na Pasifiki"
+  },
+  
+  "timezoneLabels": {
+    "americaNewYork": "Muda wa Mashariki (ET)",
+    "americaChicago": "Muda wa Kati (CT)",
+    "americaDenver": "Muda wa Milima (MT)",
+    "americaPhoenix": "Muda wa Arizona",
+    "americaLosAngeles": "Muda wa Pasifiki (PT)",
+    "americaAnchorage": "Muda wa Alaska",
+    "pacificHonolulu": "Muda wa Hawaii",
+    "europeLondon": "London (GMT/BST)",
+    "europeParis": "Paris (CET/CEST)",
+    "europeBerlin": "Berlin (CET/CEST)",
+    "europeMoscow": "Moscow (MSK)",
+    "asiaTokyo": "Tokyo (JST)",
+    "asiaShanghai": "China (CST)",
+    "asiaKolkata": "India (IST)",
+    "asiaDubai": "Dubai (GST)",
+    "africaNairobi": "Nairobi (EAT)",
+    "africaLagos": "Lagos (WAT)",
+    "africaJohannesburg": "Johannesburg (SAST)",
+    "australiaSydney": "Sydney (AEST/AEDT)",
+    "australiaPerth": "Perth (AWST)",
+    "pacificAuckland": "Auckland (NZST/NZDT)"
+  },
+  
+  "timezoneFriendlyNames": {
+    "americaNewYork": "Muda wa Mashariki",
+    "americaChicago": "Muda wa Kati",
+    "americaDenver": "Muda wa Milima",
+    "americaPhoenix": "Muda wa Arizona",
+    "americaLosAngeles": "Muda wa Pasifiki",
+    "americaAnchorage": "Muda wa Alaska",
+    "pacificHonolulu": "Muda wa Hawaii",
+    "europeLondon": "Muda wa Greenwich",
+    "europeParis": "Muda wa Kati mwa Ulaya",
+    "asiaTokyo": "Muda wa Kawaida wa Japan",
+    "asiaShanghai": "Muda wa Kawaida wa China",
+    "asiaKolkata": "Muda wa Kawaida wa India",
+    "australiaSydney": "Muda wa Mashariki wa Australia",
+    "utc": "Muda wa Ulimwengu wa Pamoja"
+  },
+  
+  "messages": {
+    "eventCreated": "Tukio limeundwa!",
+    "eventUpdated": "Tukio limesasishwa!",
+    "eventDeleted": "Tukio limefutwa!",
+    "failedToInitialize": "Kushindwa kuanzisha kalenda",
+    "failedToLoadEvents": "Kushindwa kupakia matukio ya kalenda",
+    "pleaseEnterTitle": "Tafadhali ingiza kichwa cha tukio",
+    "pleaseSelectDates": "Tafadhali chagua tarehe za kuanza na mwisho",
+    "noTenantId": "Hawezi kuhifadhi tukio - hakuna ID ya mpangaji",
+    "failedToSave": "Kushindwa kuhifadhi tukio",
+    "failedToUpdate": "Kushindwa kusasisha tukio",
+    "failedToDelete": "Kushindwa kufuta tukio",
+    "systemGeneratedEvent": "Hili ni tukio lililotengenezwa na mfumo",
+    "noTimezoneDetected": "Hakuna eneo la muda lililohifadhiwa, linagundua kiotomatiki",
+    "timezoneAutoSaved": "Eneo la muda lililotambuliwa kiotomatiki limehifadhiwa",
+    "userTimezoneLoaded": "Eneo la muda la mtumiaji limepakiwa",
+    "notificationPermissionGranted": "Ruhusa ya taarifa imepewa"
+  },
+  
+  "confirmations": {
+    "deleteEvent": "Una uhakika unataka kufuta tukio hili?"
+  },
+  
+  "systemEventTitles": {
+    "birthdaySuffix": " - Siku ya Kuzaliwa",
+    "payrollProcessing": "Usindikaji wa Mshahara",
+    "productExpires": " inaisha"
+  }
+}

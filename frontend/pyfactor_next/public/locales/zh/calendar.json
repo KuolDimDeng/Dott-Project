@@ -1,0 +1,138 @@
+{
+  "title": "日历",
+  "subtitle": "管理约会、截止日期和提醒",
+  "timezoneNote": "所有时间均为",
+  "addEvent": "添加事件",
+  "newEvent": "新事件",
+  "editEvent": "编辑事件",
+  "loadingCalendar": "正在加载日历...",
+  "saving": "正在保存...",
+  
+  "buttons": {
+    "today": "今天",
+    "month": "月",
+    "week": "周",
+    "day": "日",
+    "list": "列表",
+    "save": "保存",
+    "cancel": "取消",
+    "delete": "删除"
+  },
+  
+  "eventTypes": {
+    "appointment": "约会",
+    "tax": "税务截止日期",
+    "payroll": "工资单",
+    "birthday": "生日",
+    "productExpiry": "产品到期",
+    "delivery": "配送",
+    "meeting": "会议",
+    "reminder": "提醒"
+  },
+  
+  "form": {
+    "title": "标题 *",
+    "type": "类型",
+    "startDate": "开始日期",
+    "endDate": "结束日期",
+    "startTime": "开始时间",
+    "endTime": "结束时间",
+    "location": "地点",
+    "description": "描述",
+    "sendReminder": "发送提醒",
+    "minutesBefore": "分钟前",
+    "allDayEvent": "全天事件"
+  },
+  
+  "placeholders": {
+    "eventTitle": "事件标题",
+    "eventLocation": "事件地点",
+    "eventDescription": "事件描述"
+  },
+  
+  "reminderOptions": {
+    "15minutes": "15分钟",
+    "30minutes": "30分钟",
+    "1hour": "1小时",
+    "2hours": "2小时",
+    "1day": "1天"
+  },
+  
+  "timezoneGroups": {
+    "usCanada": "美国和加拿大",
+    "europe": "欧洲",
+    "asia": "亚洲",
+    "africa": "非洲",
+    "australiaPacific": "澳大利亚和太平洋"
+  },
+  
+  "timezoneLabels": {
+    "americaNewYork": "东部时间 (ET)",
+    "americaChicago": "中部时间 (CT)",
+    "americaDenver": "山地时间 (MT)",
+    "americaPhoenix": "亚利桑那时间",
+    "americaLosAngeles": "太平洋时间 (PT)",
+    "americaAnchorage": "阿拉斯加时间",
+    "pacificHonolulu": "夏威夷时间",
+    "europeLondon": "伦敦 (GMT/BST)",
+    "europeParis": "巴黎 (CET/CEST)",
+    "europeBerlin": "柏林 (CET/CEST)",
+    "europeMoscow": "莫斯科 (MSK)",
+    "asiaTokyo": "东京 (JST)",
+    "asiaShanghai": "中国 (CST)",
+    "asiaKolkata": "印度 (IST)",
+    "asiaDubai": "迪拜 (GST)",
+    "africaNairobi": "内罗毕 (EAT)",
+    "africaLagos": "拉各斯 (WAT)",
+    "africaJohannesburg": "约翰内斯堡 (SAST)",
+    "australiaSydney": "悉尼 (AEST/AEDT)",
+    "australiaPerth": "珀斯 (AWST)",
+    "pacificAuckland": "奥克兰 (NZST/NZDT)"
+  },
+  
+  "timezoneFriendlyNames": {
+    "americaNewYork": "东部时间",
+    "americaChicago": "中部时间",
+    "americaDenver": "山地时间",
+    "americaPhoenix": "亚利桑那时间",
+    "americaLosAngeles": "太平洋时间",
+    "americaAnchorage": "阿拉斯加时间",
+    "pacificHonolulu": "夏威夷时间",
+    "europeLondon": "格林威治时间",
+    "europeParis": "中欧时间",
+    "asiaTokyo": "日本标准时间",
+    "asiaShanghai": "中国标准时间",
+    "asiaKolkata": "印度标准时间",
+    "australiaSydney": "澳大利亚东部时间",
+    "utc": "协调世界时"
+  },
+  
+  "messages": {
+    "eventCreated": "事件已创建！",
+    "eventUpdated": "事件已更新！",
+    "eventDeleted": "事件已删除！",
+    "failedToInitialize": "日历初始化失败",
+    "failedToLoadEvents": "日历事件加载失败",
+    "pleaseEnterTitle": "请输入事件标题",
+    "pleaseSelectDates": "请选择开始和结束日期",
+    "noTenantId": "无法保存事件 - 没有租户ID",
+    "failedToSave": "事件保存失败",
+    "failedToUpdate": "事件更新失败",
+    "failedToDelete": "事件删除失败",
+    "systemGeneratedEvent": "这是系统生成的事件",
+    "noTimezoneDetected": "未保存时区，正在自动检测",
+    "timezoneAutoSaved": "自动检测的时区已保存",
+    "userTimezoneLoaded": "用户时区已加载",
+    "notificationPermissionGranted": "通知权限已授予"
+  },
+  
+  "confirmations": {
+    "deleteEvent": "您确定要删除此事件吗？"
+  },
+  
+  "systemEventTitles": {
+    "birthdaySuffix": "的生日",
+    "payrollProcessing": "工资单处理",
+    "productExpires": "到期"
+  }
+}

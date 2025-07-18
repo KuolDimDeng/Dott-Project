@@ -1,0 +1,138 @@
+{
+  "title": "التقويم",
+  "subtitle": "إدارة المواعيد والمواعيد النهائية والتذكيرات",
+  "timezoneNote": "جميع الأوقات بتوقيت",
+  "addEvent": "إضافة حدث",
+  "newEvent": "حدث جديد",
+  "editEvent": "تحرير الحدث",
+  "loadingCalendar": "جاري تحميل التقويم...",
+  "saving": "جاري الحفظ...",
+  
+  "buttons": {
+    "today": "اليوم",
+    "month": "شهر",
+    "week": "أسبوع",
+    "day": "يوم",
+    "list": "قائمة",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "delete": "حذف"
+  },
+  
+  "eventTypes": {
+    "appointment": "موعد",
+    "tax": "موعد نهائي ضريبي",
+    "payroll": "كشف راتب",
+    "birthday": "عيد ميلاد",
+    "productExpiry": "انتهاء صلاحية المنتج",
+    "delivery": "تسليم",
+    "meeting": "اجتماع",
+    "reminder": "تذكير"
+  },
+  
+  "form": {
+    "title": "العنوان *",
+    "type": "النوع",
+    "startDate": "تاريخ البداية",
+    "endDate": "تاريخ النهاية",
+    "startTime": "وقت البداية",
+    "endTime": "وقت النهاية",
+    "location": "الموقع",
+    "description": "الوصف",
+    "sendReminder": "إرسال تذكير",
+    "minutesBefore": "دقائق قبل",
+    "allDayEvent": "حدث طوال اليوم"
+  },
+  
+  "placeholders": {
+    "eventTitle": "عنوان الحدث",
+    "eventLocation": "موقع الحدث",
+    "eventDescription": "وصف الحدث"
+  },
+  
+  "reminderOptions": {
+    "15minutes": "15 دقيقة",
+    "30minutes": "30 دقيقة",
+    "1hour": "ساعة واحدة",
+    "2hours": "ساعتان",
+    "1day": "يوم واحد"
+  },
+  
+  "timezoneGroups": {
+    "usCanada": "الولايات المتحدة وكندا",
+    "europe": "أوروبا",
+    "asia": "آسيا",
+    "africa": "أفريقيا",
+    "australiaPacific": "أستراليا والمحيط الهادئ"
+  },
+  
+  "timezoneLabels": {
+    "americaNewYork": "التوقيت الشرقي (ET)",
+    "americaChicago": "التوقيت المركزي (CT)",
+    "americaDenver": "توقيت الجبال (MT)",
+    "americaPhoenix": "توقيت أريزونا",
+    "americaLosAngeles": "توقيت المحيط الهادئ (PT)",
+    "americaAnchorage": "توقيت ألاسكا",
+    "pacificHonolulu": "توقيت هاواي",
+    "europeLondon": "لندن (GMT/BST)",
+    "europeParis": "باريس (CET/CEST)",
+    "europeBerlin": "برلين (CET/CEST)",
+    "europeMoscow": "موسكو (MSK)",
+    "asiaTokyo": "طوكيو (JST)",
+    "asiaShanghai": "الصين (CST)",
+    "asiaKolkata": "الهند (IST)",
+    "asiaDubai": "دبي (GST)",
+    "africaNairobi": "نيروبي (EAT)",
+    "africaLagos": "لاغوس (WAT)",
+    "africaJohannesburg": "جوهانسبرغ (SAST)",
+    "australiaSydney": "سيدني (AEST/AEDT)",
+    "australiaPerth": "بيرث (AWST)",
+    "pacificAuckland": "أوكلاند (NZST/NZDT)"
+  },
+  
+  "timezoneFriendlyNames": {
+    "americaNewYork": "التوقيت الشرقي",
+    "americaChicago": "التوقيت المركزي",
+    "americaDenver": "توقيت الجبال",
+    "americaPhoenix": "توقيت أريزونا",
+    "americaLosAngeles": "توقيت المحيط الهادئ",
+    "americaAnchorage": "توقيت ألاسكا",
+    "pacificHonolulu": "توقيت هاواي",
+    "europeLondon": "توقيت غرينتش",
+    "europeParis": "توقيت وسط أوروبا",
+    "asiaTokyo": "التوقيت الياباني الرسمي",
+    "asiaShanghai": "التوقيت الصيني الرسمي",
+    "asiaKolkata": "التوقيت الهندي الرسمي",
+    "australiaSydney": "التوقيت الأسترالي الشرقي",
+    "utc": "التوقيت العالمي المنسق"
+  },
+  
+  "messages": {
+    "eventCreated": "تم إنشاء الحدث!",
+    "eventUpdated": "تم تحديث الحدث!",
+    "eventDeleted": "تم حذف الحدث!",
+    "failedToInitialize": "فشل في تهيئة التقويم",
+    "failedToLoadEvents": "فشل في تحميل أحداث التقويم",
+    "pleaseEnterTitle": "يرجى إدخال عنوان للحدث",
+    "pleaseSelectDates": "يرجى تحديد تواريخ البداية والنهاية",
+    "noTenantId": "لا يمكن حفظ الحدث - لا يوجد معرف مستأجر",
+    "failedToSave": "فشل في حفظ الحدث",
+    "failedToUpdate": "فشل في تحديث الحدث",
+    "failedToDelete": "فشل في حذف الحدث",
+    "systemGeneratedEvent": "هذا حدث تم إنشاؤه بواسطة النظام",
+    "noTimezoneDetected": "لم يتم حفظ المنطقة الزمنية، جاري الكشف التلقائي",
+    "timezoneAutoSaved": "تم حفظ المنطقة الزمنية المكتشفة تلقائياً",
+    "userTimezoneLoaded": "تم تحميل المنطقة الزمنية للمستخدم",
+    "notificationPermissionGranted": "تم منح إذن الإشعارات"
+  },
+  
+  "confirmations": {
+    "deleteEvent": "هل أنت متأكد من رغبتك في حذف هذا الحدث؟"
+  },
+  
+  "systemEventTitles": {
+    "birthdaySuffix": " - عيد الميلاد",
+    "payrollProcessing": "معالجة كشف الراتب",
+    "productExpires": " ينتهي"
+  }
+}

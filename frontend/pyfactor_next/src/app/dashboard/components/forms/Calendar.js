@@ -25,51 +25,52 @@ import { useSession } from '@/hooks/useSession-v2';
 import StandardSpinner, { CenteredSpinner } from '@/components/ui/StandardSpinner';
 import reminderService from '@/utils/reminderService';
 import { useToast } from '@/components/Toast/ToastProvider';
+import { useTranslation } from 'react-i18next';
 
 // Event type configurations
-const EVENT_TYPES = {
-  appointment: { color: '#3B82F6', icon: ClockIcon, label: 'Appointment' },
-  tax: { color: '#DC2626', icon: DocumentTextIcon, label: 'Tax Deadline' },
-  payroll: { color: '#10B981', icon: CurrencyDollarIcon, label: 'Payroll' },
-  birthday: { color: '#F59E0B', icon: CakeIcon, label: 'Birthday' },
-  productExpiry: { color: '#EF4444', icon: ExclamationCircleIcon, label: 'Product Expiry' },
-  delivery: { color: '#8B5CF6', icon: TruckIcon, label: 'Delivery' },
-  meeting: { color: '#6366F1', icon: BuildingOfficeIcon, label: 'Meeting' },
-  reminder: { color: '#14B8A6', icon: BellIcon, label: 'Reminder' }
-};
+const getEventTypes = (t) => ({
+  appointment: { color: '#3B82F6', icon: ClockIcon, label: t('eventTypes.appointment') },
+  tax: { color: '#DC2626', icon: DocumentTextIcon, label: t('eventTypes.tax') },
+  payroll: { color: '#10B981', icon: CurrencyDollarIcon, label: t('eventTypes.payroll') },
+  birthday: { color: '#F59E0B', icon: CakeIcon, label: t('eventTypes.birthday') },
+  productExpiry: { color: '#EF4444', icon: ExclamationCircleIcon, label: t('eventTypes.productExpiry') },
+  delivery: { color: '#8B5CF6', icon: TruckIcon, label: t('eventTypes.delivery') },
+  meeting: { color: '#6366F1', icon: BuildingOfficeIcon, label: t('eventTypes.meeting') },
+  reminder: { color: '#14B8A6', icon: BellIcon, label: t('eventTypes.reminder') }
+});
 
 // Common timezones grouped by region
-const TIMEZONE_OPTIONS = [
-  { group: 'US & Canada', zones: [
-    { value: 'America/New_York', label: 'Eastern Time (ET)' },
-    { value: 'America/Chicago', label: 'Central Time (CT)' },
-    { value: 'America/Denver', label: 'Mountain Time (MT)' },
-    { value: 'America/Phoenix', label: 'Arizona Time' },
-    { value: 'America/Los_Angeles', label: 'Pacific Time (PT)' },
-    { value: 'America/Anchorage', label: 'Alaska Time' },
-    { value: 'Pacific/Honolulu', label: 'Hawaii Time' }
+const getTimezoneOptions = (t) => [
+  { group: t('timezoneGroups.usCanada'), zones: [
+    { value: 'America/New_York', label: t('timezoneLabels.americaNewYork') },
+    { value: 'America/Chicago', label: t('timezoneLabels.americaChicago') },
+    { value: 'America/Denver', label: t('timezoneLabels.americaDenver') },
+    { value: 'America/Phoenix', label: t('timezoneLabels.americaPhoenix') },
+    { value: 'America/Los_Angeles', label: t('timezoneLabels.americaLosAngeles') },
+    { value: 'America/Anchorage', label: t('timezoneLabels.americaAnchorage') },
+    { value: 'Pacific/Honolulu', label: t('timezoneLabels.pacificHonolulu') }
   ]},
-  { group: 'Europe', zones: [
-    { value: 'Europe/London', label: 'London (GMT/BST)' },
-    { value: 'Europe/Paris', label: 'Paris (CET/CEST)' },
-    { value: 'Europe/Berlin', label: 'Berlin (CET/CEST)' },
-    { value: 'Europe/Moscow', label: 'Moscow (MSK)' }
+  { group: t('timezoneGroups.europe'), zones: [
+    { value: 'Europe/London', label: t('timezoneLabels.europeLondon') },
+    { value: 'Europe/Paris', label: t('timezoneLabels.europeParis') },
+    { value: 'Europe/Berlin', label: t('timezoneLabels.europeBerlin') },
+    { value: 'Europe/Moscow', label: t('timezoneLabels.europeMoscow') }
   ]},
-  { group: 'Asia', zones: [
-    { value: 'Asia/Tokyo', label: 'Tokyo (JST)' },
-    { value: 'Asia/Shanghai', label: 'China (CST)' },
-    { value: 'Asia/Kolkata', label: 'India (IST)' },
-    { value: 'Asia/Dubai', label: 'Dubai (GST)' }
+  { group: t('timezoneGroups.asia'), zones: [
+    { value: 'Asia/Tokyo', label: t('timezoneLabels.asiaTokyo') },
+    { value: 'Asia/Shanghai', label: t('timezoneLabels.asiaShanghai') },
+    { value: 'Asia/Kolkata', label: t('timezoneLabels.asiaKolkata') },
+    { value: 'Asia/Dubai', label: t('timezoneLabels.asiaDubai') }
   ]},
-  { group: 'Africa', zones: [
-    { value: 'Africa/Nairobi', label: 'Nairobi (EAT)' },
-    { value: 'Africa/Lagos', label: 'Lagos (WAT)' },
-    { value: 'Africa/Johannesburg', label: 'Johannesburg (SAST)' }
+  { group: t('timezoneGroups.africa'), zones: [
+    { value: 'Africa/Nairobi', label: t('timezoneLabels.africaNairobi') },
+    { value: 'Africa/Lagos', label: t('timezoneLabels.africaLagos') },
+    { value: 'Africa/Johannesburg', label: t('timezoneLabels.africaJohannesburg') }
   ]},
-  { group: 'Australia & Pacific', zones: [
-    { value: 'Australia/Sydney', label: 'Sydney (AEST/AEDT)' },
-    { value: 'Australia/Perth', label: 'Perth (AWST)' },
-    { value: 'Pacific/Auckland', label: 'Auckland (NZST/NZDT)' }
+  { group: t('timezoneGroups.australiaPacific'), zones: [
+    { value: 'Australia/Sydney', label: t('timezoneLabels.australiaSydney') },
+    { value: 'Australia/Perth', label: t('timezoneLabels.australiaPerth') },
+    { value: 'Pacific/Auckland', label: t('timezoneLabels.pacificAuckland') }
   ]}
 ];
 
@@ -123,6 +124,12 @@ export default function Calendar({ onNavigate }) {
   console.log('[Calendar] COMPONENT LOADED - DEBUG VERSION 2025-07-09-v2');
   const { user, loading: sessionLoading } = useSession();
   const toast = useToast();
+  const { t } = useTranslation('calendar');
+  
+  // Get translated configurations
+  const EVENT_TYPES = getEventTypes(t);
+  const TIMEZONE_OPTIONS = getTimezoneOptions(t);
+  
   const [events, setEvents] = useState([]);
   const [showEventModal, setShowEventModal] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
@@ -914,7 +921,7 @@ export default function Calendar({ onNavigate }) {
 
 
   if (sessionLoading || isLoading) {
-    return <CenteredSpinner size="large" text="Loading calendar..." showText={true} />;
+    return <CenteredSpinner size="large" text={t('loadingCalendar')} showText={true} />;
   }
 
   return (
@@ -925,11 +932,11 @@ export default function Calendar({ onNavigate }) {
           <div className="flex items-center">
             <CalendarDaysIcon className="h-8 w-8 text-blue-600 mr-3" />
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Calendar</h1>
+              <h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
               <p className="text-gray-600">
-                Manage appointments, deadlines, and reminders
+                {t('subtitle')}
                 <span className="ml-2 text-sm text-gray-500">
-                  • All times in {getTimezoneDisplayName(userTimezone)}
+                  • {t('timezoneNote')} {getTimezoneDisplayName(userTimezone)}
                 </span>
               </p>
             </div>
@@ -958,7 +965,7 @@ export default function Calendar({ onNavigate }) {
             className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             <PlusIcon className="h-5 w-5 mr-2" />
-            Add Event
+            {t('addEvent')}
           </button>
         </div>
       </div>
@@ -989,11 +996,11 @@ export default function Calendar({ onNavigate }) {
             right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
           }}
           buttonText={{
-            today: 'Today',
-            month: 'Month',
-            week: 'Week',
-            day: 'Day',
-            list: 'List'
+            today: t('buttons.today'),
+            month: t('buttons.month'),
+            week: t('buttons.week'),
+            day: t('buttons.day'),
+            list: t('buttons.list')
           }}
           events={events}
           editable={true}
@@ -1048,7 +1055,7 @@ export default function Calendar({ onNavigate }) {
           <div className="bg-white rounded-lg max-w-md w-full mx-4 p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">
-                {selectedEvent ? 'Edit Event' : 'New Event'}
+                {selectedEvent ? t('editEvent') : t('newEvent')}
               </h3>
               <button
                 onClick={() => setShowEventModal(false)}
@@ -1234,7 +1241,7 @@ export default function Calendar({ onNavigate }) {
                     onClick={handleDeleteEvent}
                     className="px-4 py-2 text-red-600 hover:text-red-700"
                   >
-                    Delete
+                    {t('buttons.delete')}
                   </button>
                 )}
               </div>
@@ -1243,7 +1250,7 @@ export default function Calendar({ onNavigate }) {
                   onClick={() => setShowEventModal(false)}
                   className="px-4 py-2 text-gray-700 hover:text-gray-900"
                 >
-                  Cancel
+                  {t('buttons.cancel')}
                 </button>
                 <button
                   onClick={() => {
@@ -1265,7 +1272,7 @@ export default function Calendar({ onNavigate }) {
                   ) : (
                     <>
                       <CheckIcon className="h-4 w-4 mr-1" />
-                      Save
+                      {t('buttons.save')}
                     </>
                   )}
                 </button>

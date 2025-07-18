@@ -35,19 +35,52 @@ export default function MobilePage() {
   // Update WhatsApp visibility when session changes
   useEffect(() => {
     if (session?.user) {
-      const shouldShow = shouldShowWhatsAppBusiness();
-      console.log('📱 [Mobile PWA] WhatsApp visibility check:', {
-        show_whatsapp_commerce: session.user.show_whatsapp_commerce,
-        country: session.user.country,
-        shouldShow,
-        sessionTimestamp: session.timestamp || 'no timestamp',
-        fullUser: session.user
-      });
-      setWhatsappVisible(shouldShow);
+      // If show_whatsapp_commerce is missing from session, fetch it directly
+      if (session.user.show_whatsapp_commerce === undefined) {
+        console.log('📱 [Mobile PWA] WhatsApp preference missing from session, fetching directly...');
+        fetchWhatsAppPreference();
+      } else {
+        const shouldShow = shouldShowWhatsAppBusiness();
+        console.log('📱 [Mobile PWA] WhatsApp visibility check:', {
+          show_whatsapp_commerce: session.user.show_whatsapp_commerce,
+          country: session.user.country,
+          shouldShow,
+          sessionTimestamp: session.timestamp || 'no timestamp',
+          userKeys: Object.keys(session.user)
+        });
+        setWhatsappVisible(shouldShow);
+      }
     } else {
       console.log('📱 [Mobile PWA] No session or user data');
     }
   }, [session]);
+
+  // Fetch WhatsApp preference directly from API if missing from session
+  const fetchWhatsAppPreference = async () => {
+    try {
+      console.log('📱 [Mobile PWA] Fetching WhatsApp preference from API...');
+      const response = await fetch('/api/users/me/');
+      if (response.ok) {
+        const userData = await response.json();
+        console.log('📱 [Mobile PWA] Got user data from API:', {
+          show_whatsapp_commerce: userData.show_whatsapp_commerce,
+          country: userData.country
+        });
+        
+        // Temporarily update session user data
+        if (session?.user) {
+          session.user.show_whatsapp_commerce = userData.show_whatsapp_commerce;
+          session.user.country = userData.country || session.user.country;
+        }
+        
+        const shouldShow = shouldShowWhatsAppBusiness();
+        console.log('📱 [Mobile PWA] WhatsApp visibility from API:', shouldShow);
+        setWhatsappVisible(shouldShow);
+      }
+    } catch (error) {
+      console.error('📱 [Mobile PWA] Error fetching WhatsApp preference:', error);
+    }
+  };
 
   // Listen for WhatsApp preference changes
   useEffect(() => {

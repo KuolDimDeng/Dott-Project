@@ -79,6 +79,25 @@ import koAuth from '../public/locales/ko/auth.json';
 
 // Import calendar namespaces
 import enCalendar from '../public/locales/en/calendar.json';
+import esCalendar from '../public/locales/es/calendar.json';
+import frCalendar from '../public/locales/fr/calendar.json';
+import ptCalendar from '../public/locales/pt/calendar.json';
+import deCalendar from '../public/locales/de/calendar.json';
+import zhCalendar from '../public/locales/zh/calendar.json';
+import arCalendar from '../public/locales/ar/calendar.json';
+import hiCalendar from '../public/locales/hi/calendar.json';
+import ruCalendar from '../public/locales/ru/calendar.json';
+import jaCalendar from '../public/locales/ja/calendar.json';
+import swCalendar from '../public/locales/sw/calendar.json';
+import trCalendar from '../public/locales/tr/calendar.json';
+import idCalendar from '../public/locales/id/calendar.json';
+import viCalendar from '../public/locales/vi/calendar.json';
+import nlCalendar from '../public/locales/nl/calendar.json';
+import haCalendar from '../public/locales/ha/calendar.json';
+import yoCalendar from '../public/locales/yo/calendar.json';
+import amCalendar from '../public/locales/am/calendar.json';
+import zuCalendar from '../public/locales/zu/calendar.json';
+import koCalendar from '../public/locales/ko/calendar.json';
 
 const resources = {
   en: {
@@ -90,97 +109,116 @@ const resources = {
   es: {
     common: esCommon,
     onboarding: esOnboarding,
-    auth: esAuth
+    auth: esAuth,
+    calendar: esCalendar
   },
   fr: {
     common: frCommon,
     onboarding: frOnboarding,
-    auth: frAuth
+    auth: frAuth,
+    calendar: frCalendar
   },
   pt: {
     common: ptCommon,
     onboarding: ptOnboarding,
-    auth: ptAuth
+    auth: ptAuth,
+    calendar: ptCalendar
   },
   de: {
     common: deCommon,
     onboarding: deOnboarding,
-    auth: deAuth
+    auth: deAuth,
+    calendar: deCalendar
   },
   zh: {
     common: zhCommon,
     onboarding: zhOnboarding,
-    auth: zhAuth
+    auth: zhAuth,
+    calendar: zhCalendar
   },
   ar: {
     common: arCommon,
     onboarding: arOnboarding,
-    auth: arAuth
+    auth: arAuth,
+    calendar: arCalendar
   },
   hi: {
     common: hiCommon,
     onboarding: hiOnboarding,
-    auth: hiAuth
+    auth: hiAuth,
+    calendar: hiCalendar
   },
   ru: {
     common: ruCommon,
     onboarding: ruOnboarding,
-    auth: ruAuth
+    auth: ruAuth,
+    calendar: ruCalendar
   },
   ja: {
     common: jaCommon,
     onboarding: jaOnboarding,
-    auth: jaAuth
+    auth: jaAuth,
+    calendar: jaCalendar
   },
   sw: {
     common: swCommon,
     onboarding: swOnboarding,
-    auth: swAuth
+    auth: swAuth,
+    calendar: swCalendar
   },
   tr: {
     common: trCommon,
     onboarding: trOnboarding,
-    auth: trAuth
+    auth: trAuth,
+    calendar: trCalendar
   },
   id: {
     common: idCommon,
     onboarding: idOnboarding,
-    auth: idAuth
+    auth: idAuth,
+    calendar: idCalendar
   },
   vi: {
     common: viCommon,
     onboarding: viOnboarding,
-    auth: viAuth
+    auth: viAuth,
+    calendar: viCalendar
   },
   nl: {
     common: nlCommon,
     onboarding: nlOnboarding,
-    auth: nlAuth
+    auth: nlAuth,
+    calendar: nlCalendar
   },
   ha: {
     common: haCommon,
     onboarding: haOnboarding,
-    auth: haAuth
+    auth: haAuth,
+    calendar: haCalendar
   },
   yo: {
     common: yoCommon,
     onboarding: yoOnboarding,
-    auth: yoAuth
+    auth: yoAuth,
+    calendar: yoCalendar
   },
   am: {
     common: amCommon,
     onboarding: amOnboarding,
-    auth: amAuth
+    auth: amAuth,
+    calendar: amCalendar
   },
   zu: {
     common: zuCommon,
     onboarding: zuOnboarding,
-    auth: zuAuth
+    auth: zuAuth,
+    calendar: zuCalendar
   },
   ko: {
     common: koCommon,
     onboarding: koOnboarding,
-    auth: koAuth
+    auth: koAuth,
+    calendar: koCalendar
   }
 };
 

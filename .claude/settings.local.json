@@ -154,7 +154,11 @@
       "Bash(npx tsc:*)",
       "WebFetch(domain:dottapps.com)",
       "Bash(git pull:*)",
-      "Bash(pnpm logs:*)"
+      "Bash(pnpm logs:*)",
+      "Bash(__NEW_LINE__ LANGUAGES=\"pt de ja tr id vi nl ha yo am zu ko\")",
+      "Bash(if [ ! -f \"$lang/calendar.json\" ])",
+      "Bash(else)",
+      "Bash(__NEW_LINE__ for lang in pt de ja tr id vi nl ha yo am zu ko)"
     ],
     "deny": []
   }

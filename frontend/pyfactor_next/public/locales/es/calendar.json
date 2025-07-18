@@ -1,13 +1,13 @@
 {
   "title": "Calendario",
-  "subtitle": "Gestionar citas, plazos y recordatorios",
+  "subtitle": "Gestiona citas, fechas límite y recordatorios",
   "timezoneNote": "Todas las horas en",
   "addEvent": "Agregar Evento",
   "newEvent": "Nuevo Evento",
   "editEvent": "Editar Evento",
   "loadingCalendar": "Cargando calendario...",
   "saving": "Guardando...",
-
+  
   "buttons": {
     "today": "Hoy",
     "month": "Mes",
@@ -18,10 +18,10 @@
     "cancel": "Cancelar",
     "delete": "Eliminar"
   },
-
+  
   "eventTypes": {
     "appointment": "Cita",
-    "tax": "Plazo Fiscal",
+    "tax": "Fecha Límite Fiscal",
     "payroll": "Nómina",
     "birthday": "Cumpleaños",
     "productExpiry": "Vencimiento de Producto",
@@ -29,7 +29,7 @@
     "meeting": "Reunión",
     "reminder": "Recordatorio"
   },
-
+  
   "form": {
     "title": "Título *",
     "type": "Tipo",
@@ -43,13 +43,13 @@
     "minutesBefore": "Minutos antes",
     "allDayEvent": "Evento de todo el día"
   },
-
+  
   "placeholders": {
     "eventTitle": "Título del evento",
     "eventLocation": "Ubicación del evento",
     "eventDescription": "Descripción del evento"
   },
-
+  
   "reminderOptions": {
     "15minutes": "15 minutos",
     "30minutes": "30 minutos",
@@ -57,7 +57,7 @@
     "2hours": "2 horas",
     "1day": "1 día"
   },
-
+  
   "timezoneGroups": {
     "usCanada": "EE.UU. y Canadá",
     "europe": "Europa",
@@ -65,7 +65,7 @@
     "africa": "África",
     "australiaPacific": "Australia y Pacífico"
   },
-
+  
   "timezoneLabels": {
     "americaNewYork": "Hora del Este (ET)",
     "americaChicago": "Hora Central (CT)",
@@ -89,7 +89,7 @@
     "australiaPerth": "Perth (AWST)",
     "pacificAuckland": "Auckland (NZST/NZDT)"
   },
-
+  
   "timezoneFriendlyNames": {
     "americaNewYork": "Hora del Este",
     "americaChicago": "Hora Central",
@@ -98,40 +98,40 @@
     "americaLosAngeles": "Hora del Pacífico",
     "americaAnchorage": "Hora de Alaska",
     "pacificHonolulu": "Hora de Hawái",
-    "europeLondon": "Hora del Meridiano de Greenwich",
-    "europeParis": "Hora Central Europea",
+    "europeLondon": "Hora de Greenwich",
+    "europeParis": "Hora de Europa Central",
     "asiaTokyo": "Hora Estándar de Japón",
     "asiaShanghai": "Hora Estándar de China",
     "asiaKolkata": "Hora Estándar de India",
     "australiaSydney": "Hora del Este de Australia",
     "utc": "Tiempo Universal Coordinado"
   },
-
+  
   "messages": {
     "eventCreated": "¡Evento creado!",
     "eventUpdated": "¡Evento actualizado!",
     "eventDeleted": "¡Evento eliminado!",
     "failedToInitialize": "Error al inicializar el calendario",
     "failedToLoadEvents": "Error al cargar eventos del calendario",
-    "pleaseEnterTitle": "Por favor, ingresa un título para el evento",
-    "pleaseSelectDates": "Por favor, selecciona fechas de inicio y fin",
+    "pleaseEnterTitle": "Por favor ingresa un título para el evento",
+    "pleaseSelectDates": "Por favor selecciona fechas de inicio y fin",
     "noTenantId": "No se puede guardar el evento - sin ID de inquilino",
     "failedToSave": "Error al guardar el evento",
     "failedToUpdate": "Error al actualizar el evento",
     "failedToDelete": "Error al eliminar el evento",
     "systemGeneratedEvent": "Este es un evento generado por el sistema",
-    "noTimezoneDetected": "No se guardó zona horaria, detectando automáticamente y guardando",
-    "timezoneAutoSaved": "Zona horaria detectada automáticamente guardada",
+    "noTimezoneDetected": "No se guardó zona horaria, detectando automáticamente",
+    "timezoneAutoSaved": "Zona horaria auto-detectada guardada",
     "userTimezoneLoaded": "Zona horaria del usuario cargada",
-    "notificationPermissionGranted": "Permiso de notificación concedido"
+    "notificationPermissionGranted": "Permiso de notificación otorgado"
   },
-
+  
   "confirmations": {
     "deleteEvent": "¿Estás seguro de que quieres eliminar este evento?"
   },
-
+  
   "systemEventTitles": {
-    "birthdaySuffix": " Cumpleaños",
+    "birthdaySuffix": " - Cumpleaños",
     "payrollProcessing": "Procesamiento de Nómina",
     "productExpires": " vence"
   }

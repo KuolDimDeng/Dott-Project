@@ -1,0 +1,138 @@
+{
+  "title": "कैलेंडर",
+  "subtitle": "अपॉइंटमेंट, समय सीमा और रिमाइंडर प्रबंधित करें",
+  "timezoneNote": "सभी समय",
+  "addEvent": "इवेंट जोड़ें",
+  "newEvent": "नया इवेंट",
+  "editEvent": "इवेंट संपादित करें",
+  "loadingCalendar": "कैलेंडर लोड हो रहा है...",
+  "saving": "सेव हो रहा है...",
+  
+  "buttons": {
+    "today": "आज",
+    "month": "महीना",
+    "week": "सप्ताह",
+    "day": "दिन",
+    "list": "सूची",
+    "save": "सेव",
+    "cancel": "रद्द करें",
+    "delete": "हटाएं"
+  },
+  
+  "eventTypes": {
+    "appointment": "अपॉइंटमेंट",
+    "tax": "टैक्स डेडलाइन",
+    "payroll": "पेरोल",
+    "birthday": "जन्मदिन",
+    "productExpiry": "उत्पाद समाप्ति",
+    "delivery": "डिलीवरी",
+    "meeting": "मीटिंग",
+    "reminder": "रिमाइंडर"
+  },
+  
+  "form": {
+    "title": "शीर्षक *",
+    "type": "प्रकार",
+    "startDate": "शुरुआत की तारीख",
+    "endDate": "समाप्ति की तारीख",
+    "startTime": "शुरुआत का समय",
+    "endTime": "समाप्ति का समय",
+    "location": "स्थान",
+    "description": "विवरण",
+    "sendReminder": "रिमाइंडर भेजें",
+    "minutesBefore": "मिनट पहले",
+    "allDayEvent": "पूरे दिन का इवेंट"
+  },
+  
+  "placeholders": {
+    "eventTitle": "इवेंट का शीर्षक",
+    "eventLocation": "इवेंट का स्थान",
+    "eventDescription": "इवेंट का विवरण"
+  },
+  
+  "reminderOptions": {
+    "15minutes": "15 मिनट",
+    "30minutes": "30 मिनट",
+    "1hour": "1 घंटा",
+    "2hours": "2 घंटे",
+    "1day": "1 दिन"
+  },
+  
+  "timezoneGroups": {
+    "usCanada": "अमेरिका और कनाडा",
+    "europe": "यूरोप",
+    "asia": "एशिया",
+    "africa": "अफ्रीका",
+    "australiaPacific": "ऑस्ट्रेलिया और प्रशांत"
+  },
+  
+  "timezoneLabels": {
+    "americaNewYork": "पूर्वी समय (ET)",
+    "americaChicago": "केंद्रीय समय (CT)",
+    "americaDenver": "पर्वतीय समय (MT)",
+    "americaPhoenix": "एरिज़ोना समय",
+    "americaLosAngeles": "प्रशांत समय (PT)",
+    "americaAnchorage": "अलास्का समय",
+    "pacificHonolulu": "हवाई समय",
+    "europeLondon": "लंदन (GMT/BST)",
+    "europeParis": "पेरिस (CET/CEST)",
+    "europeBerlin": "बर्लिन (CET/CEST)",
+    "europeMoscow": "मास्को (MSK)",
+    "asiaTokyo": "टोक्यो (JST)",
+    "asiaShanghai": "चीन (CST)",
+    "asiaKolkata": "भारत (IST)",
+    "asiaDubai": "दुबई (GST)",
+    "africaNairobi": "नैरोबी (EAT)",
+    "africaLagos": "लागोस (WAT)",
+    "africaJohannesburg": "जोहान्सबर्ग (SAST)",
+    "australiaSydney": "सिडनी (AEST/AEDT)",
+    "australiaPerth": "पर्थ (AWST)",
+    "pacificAuckland": "ऑकलैंड (NZST/NZDT)"
+  },
+  
+  "timezoneFriendlyNames": {
+    "americaNewYork": "पूर्वी समय",
+    "americaChicago": "केंद्रीय समय",
+    "americaDenver": "पर्वतीय समय",
+    "americaPhoenix": "एरिज़ोना समय",
+    "americaLosAngeles": "प्रशांत समय",
+    "americaAnchorage": "अलास्का समय",
+    "pacificHonolulu": "हवाई समय",
+    "europeLondon": "ग्रीनविच मीन टाइम",
+    "europeParis": "केंद्रीय यूरोपीय समय",
+    "asiaTokyo": "जापान मानक समय",
+    "asiaShanghai": "चीन मानक समय",
+    "asiaKolkata": "भारतीय मानक समय",
+    "australiaSydney": "ऑस्ट्रेलियाई पूर्वी समय",
+    "utc": "समन्वित सार्वभौमिक समय"
+  },
+  
+  "messages": {
+    "eventCreated": "इवेंट बनाया गया!",
+    "eventUpdated": "इवेंट अपडेट किया गया!",
+    "eventDeleted": "इवेंट हटाया गया!",
+    "failedToInitialize": "कैलेंडर प्रारंभ करने में विफल",
+    "failedToLoadEvents": "कैलेंडर इवेंट लोड करने में विफल",
+    "pleaseEnterTitle": "कृपया इवेंट के लिए शीर्षक दर्ज करें",
+    "pleaseSelectDates": "कृपया शुरुआत और समाप्ति की तारीखें चुनें",
+    "noTenantId": "इवेंट सेव नहीं कर सकते - कोई टेनेंट आईडी नहीं",
+    "failedToSave": "इवेंट सेव करने में विफल",
+    "failedToUpdate": "इवेंट अपडेट करने में विफल",
+    "failedToDelete": "इवेंट हटाने में विफल",
+    "systemGeneratedEvent": "यह सिस्टम द्वारा जेनरेट किया गया इवेंट है",
+    "noTimezoneDetected": "कोई टाइमज़ोन सेव नहीं है, ऑटो-डिटेक्ट हो रहा है",
+    "timezoneAutoSaved": "ऑटो-डिटेक्ट टाइमज़ोन सेव किया गया",
+    "userTimezoneLoaded": "उपयोगकर्ता टाइमज़ोन लोड किया गया",
+    "notificationPermissionGranted": "नोटिफिकेशन अनुमति प्रदान की गई"
+  },
+  
+  "confirmations": {
+    "deleteEvent": "क्या आप वाकई इस इवेंट को हटाना चाहते हैं?"
+  },
+  
+  "systemEventTitles": {
+    "birthdaySuffix": " का जन्मदिन",
+    "payrollProcessing": "पेरोल प्रसंस्करण",
+    "productExpires": " समाप्त हो रहा है"
+  }
+}

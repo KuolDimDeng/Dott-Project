@@ -1,0 +1,138 @@
+{
+  "title": "Календарь",
+  "subtitle": "Управление встречами, сроками и напоминаниями",
+  "timezoneNote": "Все время в",
+  "addEvent": "Добавить событие",
+  "newEvent": "Новое событие",
+  "editEvent": "Редактировать событие",
+  "loadingCalendar": "Загрузка календаря...",
+  "saving": "Сохранение...",
+  
+  "buttons": {
+    "today": "Сегодня",
+    "month": "Месяц",
+    "week": "Неделя",
+    "day": "День",
+    "list": "Список",
+    "save": "Сохранить",
+    "cancel": "Отменить",
+    "delete": "Удалить"
+  },
+  
+  "eventTypes": {
+    "appointment": "Встреча",
+    "tax": "Налоговый срок",
+    "payroll": "Зарплата",
+    "birthday": "День рождения",
+    "productExpiry": "Срок годности товара",
+    "delivery": "Доставка",
+    "meeting": "Совещание",
+    "reminder": "Напоминание"
+  },
+  
+  "form": {
+    "title": "Название *",
+    "type": "Тип",
+    "startDate": "Дата начала",
+    "endDate": "Дата окончания",
+    "startTime": "Время начала",
+    "endTime": "Время окончания",
+    "location": "Место",
+    "description": "Описание",
+    "sendReminder": "Отправить напоминание",
+    "minutesBefore": "Минут до",
+    "allDayEvent": "Событие на весь день"
+  },
+  
+  "placeholders": {
+    "eventTitle": "Название события",
+    "eventLocation": "Место события",
+    "eventDescription": "Описание события"
+  },
+  
+  "reminderOptions": {
+    "15minutes": "15 минут",
+    "30minutes": "30 минут",
+    "1hour": "1 час",
+    "2hours": "2 часа",
+    "1day": "1 день"
+  },
+  
+  "timezoneGroups": {
+    "usCanada": "США и Канада",
+    "europe": "Европа",
+    "asia": "Азия",
+    "africa": "Африка",
+    "australiaPacific": "Австралия и Тихий океан"
+  },
+  
+  "timezoneLabels": {
+    "americaNewYork": "Восточное время (ET)",
+    "americaChicago": "Центральное время (CT)",
+    "americaDenver": "Горное время (MT)",
+    "americaPhoenix": "Время Аризоны",
+    "americaLosAngeles": "Тихоокеанское время (PT)",
+    "americaAnchorage": "Время Аляски",
+    "pacificHonolulu": "Время Гавайев",
+    "europeLondon": "Лондон (GMT/BST)",
+    "europeParis": "Париж (CET/CEST)",
+    "europeBerlin": "Берлин (CET/CEST)",
+    "europeMoscow": "Москва (MSK)",
+    "asiaTokyo": "Токио (JST)",
+    "asiaShanghai": "Китай (CST)",
+    "asiaKolkata": "Индия (IST)",
+    "asiaDubai": "Дубай (GST)",
+    "africaNairobi": "Найроби (EAT)",
+    "africaLagos": "Лагос (WAT)",
+    "africaJohannesburg": "Йоханнесбург (SAST)",
+    "australiaSydney": "Сидней (AEST/AEDT)",
+    "australiaPerth": "Перт (AWST)",
+    "pacificAuckland": "Окленд (NZST/NZDT)"
+  },
+  
+  "timezoneFriendlyNames": {
+    "americaNewYork": "Восточное время",
+    "americaChicago": "Центральное время",
+    "americaDenver": "Горное время",
+    "americaPhoenix": "Время Аризоны",
+    "americaLosAngeles": "Тихоокеанское время",
+    "americaAnchorage": "Время Аляски",
+    "pacificHonolulu": "Время Гавайев",
+    "europeLondon": "Время по Гринвичу",
+    "europeParis": "Центральноевропейское время",
+    "asiaTokyo": "Японское стандартное время",
+    "asiaShanghai": "Китайское стандартное время",
+    "asiaKolkata": "Индийское стандартное время",
+    "australiaSydney": "Восточно-австралийское время",
+    "utc": "Всемирное координированное время"
+  },
+  
+  "messages": {
+    "eventCreated": "Событие создано!",
+    "eventUpdated": "Событие обновлено!",
+    "eventDeleted": "Событие удалено!",
+    "failedToInitialize": "Не удалось инициализировать календарь",
+    "failedToLoadEvents": "Не удалось загрузить события календаря",
+    "pleaseEnterTitle": "Пожалуйста, введите название события",
+    "pleaseSelectDates": "Пожалуйста, выберите даты начала и окончания",
+    "noTenantId": "Не удается сохранить событие - нет ID арендатора",
+    "failedToSave": "Не удалось сохранить событие",
+    "failedToUpdate": "Не удалось обновить событие",
+    "failedToDelete": "Не удалось удалить событие",
+    "systemGeneratedEvent": "Это событие, созданное системой",
+    "noTimezoneDetected": "Часовой пояс не сохранен, автоматическое определение",
+    "timezoneAutoSaved": "Автоматически определенный часовой пояс сохранен",
+    "userTimezoneLoaded": "Часовой пояс пользователя загружен",
+    "notificationPermissionGranted": "Разрешение на уведомления предоставлено"
+  },
+  
+  "confirmations": {
+    "deleteEvent": "Вы уверены, что хотите удалить это событие?"
+  },
+  
+  "systemEventTitles": {
+    "birthdaySuffix": " - День рождения",
+    "payrollProcessing": "Обработка зарплаты",
+    "productExpires": " истекает"
+  }
+}
