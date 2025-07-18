@@ -15,9 +15,15 @@ def test_routing(request):
     return Response({"test": "HR API routing works", "path": request.path})
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def test_profile_simple(request):
-    """Super simple profile test"""
-    return Response({"test": "Profile endpoint works", "user_id": str(request.user.id) if request.user.is_authenticated else "anonymous"})
+    """Super simple profile test with auth"""
+    return Response({
+        "test": "Profile endpoint works", 
+        "user_id": str(request.user.id),
+        "user_email": request.user.email,
+        "authenticated": request.user.is_authenticated
+    })
 
 urlpatterns = [
     # Test endpoint (no auth required)
