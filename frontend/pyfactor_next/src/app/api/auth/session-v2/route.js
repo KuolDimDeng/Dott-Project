@@ -38,15 +38,23 @@ export async function GET(request) {
     
         logger.info('[Session-V2] Found session ID, validating with backend...', {
           sessionId: sessionId.value.substring(0, 8) + '...',
-          cookieName: sessionId.name
+          cookieName: sessionId.name,
+          fullSessionId: sessionId.value,
+          sessionIdLength: sessionId.value.length
         });
+        
+        // Log the full session ID for debugging (temporarily)
+        console.log('[Session-V2] FULL SESSION ID:', sessionId.value);
         
         // Fetch session from backend - single source of truth
         // Use the validate endpoint which is designed for session validation
         const startTime = Date.now();
         let response;
         try {
-          response = await fetch(`${API_URL}/api/sessions/validate/${sessionId.value}/`, {
+          const validateUrl = `${API_URL}/api/sessions/validate/${sessionId.value}/`;
+          console.log('[Session-V2] Validating against URL:', validateUrl);
+          
+          response = await fetch(validateUrl, {
             headers: {
               'Accept': 'application/json',
               'Content-Type': 'application/json',
