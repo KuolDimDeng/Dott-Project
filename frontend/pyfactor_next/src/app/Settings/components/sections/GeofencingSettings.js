@@ -97,6 +97,8 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
           console.log('  - Ref is attached:', !!mapContainerRef.current);
           console.log('  - DOM has form container:', !!document.querySelector('.bg-white.border.border-gray-200.rounded-lg'));
           console.log('  - All refs in DOM:', Array.from(document.querySelectorAll('*')).filter(el => el.ref));
+          setMapError('Failed to find map container. Please refresh the page.');
+          setLoading(false);
           return;
         }
       }
@@ -106,6 +108,8 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
         console.error('[GeofencingSettings] Map container not found after all delays');
         console.log('[GeofencingSettings] Current DOM elements with map-related classes:', 
           document.querySelectorAll('[class*="map"], [ref*="map"], [id*="map"]'));
+        setMapError('Failed to initialize map container. Please refresh the page.');
+        setLoading(false);
         return;
       }
 
