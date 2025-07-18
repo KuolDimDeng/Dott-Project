@@ -2,7 +2,34 @@
 // Proxy API requests to the backend server with proper HTTPS handling
 
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import https from 'https';
+
+// Get the backend URL based on environment
+const getBackendUrl = () => {
+  if (process.env.NODE_ENV === 'production') {
+    return process.env.BACKEND_API_URL || 'https://api.dottapps.com';
+  }
+  return process.env.BACKEND_API_URL || 'https://127.0.0.1:8000';
+};
+
+// Helper function to get auth headers
+async function getAuthHeaders() {
+  const cookieStore = await cookies();
+  const sessionToken = cookieStore.get('session_token')?.value || cookieStore.get('sid')?.value;
+  
+  if (sessionToken) {
+    return {
+      'Content-Type': 'application/json',
+      'X-Session-Token': sessionToken,
+      'Cookie': `sid=${sessionToken}; session_token=${sessionToken}`
+    };
+  }
+  
+  return {
+    'Content-Type': 'application/json'
+  };
+}
 
 // Configure global agent for self-signed certificates
 const httpsAgent = new https.Agent({
@@ -36,19 +63,20 @@ export async function GET(request, { params }) {
   const queryString = searchParams.toString();
   
   // Construct the backend URL
-  const backendUrl = `https://127.0.0.1:8000/api/${normalizedPath}${queryString ? `?${queryString}` : ''}`;
+  const backendUrl = `${getBackendUrl()}/api/${normalizedPath}${queryString ? `?${queryString}` : ''}`;
   
   console.log(`[Proxy] Forwarding GET to: ${backendUrl}`);
   
   try {
-    // Extract authorization header if present
+    // Get session-based auth headers
+    const authHeaders = await getAuthHeaders();
     const authHeader = request.headers.get('authorization');
     
     // Forward the request to the backend
     const response = await fetch(backendUrl, {
       method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
+        ...authHeaders,
         ...(authHeader && { 'Authorization': authHeader }),
       },
       // Use custom agent for HTTPS
@@ -63,7 +91,7 @@ export async function GET(request, { params }) {
       const redirectResponse = await fetch(redirectUrl, {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
+          ...authHeaders,
           ...(authHeader && { 'Authorization': authHeader }),
         },
         agent: httpsAgent
@@ -127,12 +155,13 @@ export async function POST(request, { params }) {
   const queryString = searchParams.toString();
   
   // Construct the backend URL
-  const backendUrl = `https://127.0.0.1:8000/api/${normalizedPath}${queryString ? `?${queryString}` : ''}`;
+  const backendUrl = `${getBackendUrl()}/api/${normalizedPath}${queryString ? `?${queryString}` : ''}`;
   
   console.log(`[Proxy] Forwarding POST to: ${backendUrl}`);
   
   try {
-    // Extract authorization header if present
+    // Get session-based auth headers
+    const authHeaders = await getAuthHeaders();
     const authHeader = request.headers.get('authorization');
     
     // Get the request body
@@ -142,7 +171,7 @@ export async function POST(request, { params }) {
     const response = await fetch(backendUrl, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        ...authHeaders,
         ...(authHeader && { 'Authorization': authHeader }),
       },
       body: JSON.stringify(body),
@@ -158,7 +187,7 @@ export async function POST(request, { params }) {
       const redirectResponse = await fetch(redirectUrl, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          ...authHeaders,
           ...(authHeader && { 'Authorization': authHeader }),
         },
         body: JSON.stringify(body),
@@ -209,17 +238,18 @@ export async function PUT(request, { params }) {
   
   const { searchParams } = new URL(request.url);
   const queryString = searchParams.toString();
-  const backendUrl = `https://127.0.0.1:8000/api/${normalizedPath}${queryString ? `?${queryString}` : ''}`;
+  const backendUrl = `${getBackendUrl()}/api/${normalizedPath}${queryString ? `?${queryString}` : ''}`;
   
   try {
-    // Extract authorization header if present
+    // Get session-based auth headers
+    const authHeaders = await getAuthHeaders();
     const authHeader = request.headers.get('authorization');
     
     const body = await request.json();
     const response = await fetch(backendUrl, {
       method: 'PUT',
       headers: { 
-        'Content-Type': 'application/json',
+        ...authHeaders,
         ...(authHeader && { 'Authorization': authHeader }),
       },
       body: JSON.stringify(body),
@@ -232,7 +262,7 @@ export async function PUT(request, { params }) {
       const redirectResponse = await fetch(redirectUrl, {
         method: 'PUT',
         headers: { 
-          'Content-Type': 'application/json',
+          ...authHeaders,
           ...(authHeader && { 'Authorization': authHeader }),
         },
         body: JSON.stringify(body),
@@ -259,16 +289,17 @@ export async function DELETE(request, { params }) {
   
   const { searchParams } = new URL(request.url);
   const queryString = searchParams.toString();
-  const backendUrl = `https://127.0.0.1:8000/api/${normalizedPath}${queryString ? `?${queryString}` : ''}`;
+  const backendUrl = `${getBackendUrl()}/api/${normalizedPath}${queryString ? `?${queryString}` : ''}`;
   
   try {
-    // Extract authorization header if present
+    // Get session-based auth headers
+    const authHeaders = await getAuthHeaders();
     const authHeader = request.headers.get('authorization');
     
     const response = await fetch(backendUrl, {
       method: 'DELETE',
       headers: { 
-        'Content-Type': 'application/json',
+        ...authHeaders,
         ...(authHeader && { 'Authorization': authHeader }),
       },
       agent: httpsAgent
@@ -280,7 +311,7 @@ export async function DELETE(request, { params }) {
       const redirectResponse = await fetch(redirectUrl, {
         method: 'DELETE',
         headers: { 
-          'Content-Type': 'application/json',
+          ...authHeaders,
           ...(authHeader && { 'Authorization': authHeader }),
         },
         agent: httpsAgent
