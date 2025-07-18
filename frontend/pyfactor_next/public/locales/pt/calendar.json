@@ -1,0 +1,138 @@
+{
+  "title": "Calendário",
+  "subtitle": "Gerir compromissos, prazos e lembretes",
+  "timezoneNote": "Todas as horas em",
+  "addEvent": "Adicionar Evento",
+  "newEvent": "Novo Evento",
+  "editEvent": "Editar Evento",
+  "loadingCalendar": "Carregando calendário...",
+  "saving": "Salvando...",
+
+  "buttons": {
+    "today": "Hoje",
+    "month": "Mês",
+    "week": "Semana",
+    "day": "Dia",
+    "list": "Lista",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "delete": "Excluir"
+  },
+
+  "eventTypes": {
+    "appointment": "Compromisso",
+    "tax": "Prazo Fiscal",
+    "payroll": "Folha de Pagamento",
+    "birthday": "Aniversário",
+    "productExpiry": "Vencimento de Produto",
+    "delivery": "Entrega",
+    "meeting": "Reunião",
+    "reminder": "Lembrete"
+  },
+
+  "form": {
+    "title": "Título *",
+    "type": "Tipo",
+    "startDate": "Data de Início",
+    "endDate": "Data de Fim",
+    "startTime": "Hora de Início",
+    "endTime": "Hora de Fim",
+    "location": "Local",
+    "description": "Descrição",
+    "sendReminder": "Enviar lembrete",
+    "minutesBefore": "Minutos antes",
+    "allDayEvent": "Evento de dia inteiro"
+  },
+
+  "placeholders": {
+    "eventTitle": "Título do evento",
+    "eventLocation": "Local do evento",
+    "eventDescription": "Descrição do evento"
+  },
+
+  "reminderOptions": {
+    "15minutes": "15 minutos",
+    "30minutes": "30 minutos",
+    "1hour": "1 hora",
+    "2hours": "2 horas",
+    "1day": "1 dia"
+  },
+
+  "timezoneGroups": {
+    "usCanada": "EUA e Canadá",
+    "europe": "Europa",
+    "asia": "Ásia",
+    "africa": "África",
+    "australiaPacific": "Austrália e Pacífico"
+  },
+
+  "timezoneLabels": {
+    "americaNewYork": "Hora do Leste (ET)",
+    "americaChicago": "Hora Central (CT)",
+    "americaDenver": "Hora da Montanha (MT)",
+    "americaPhoenix": "Hora do Arizona",
+    "americaLosAngeles": "Hora do Pacífico (PT)",
+    "americaAnchorage": "Hora do Alaska",
+    "pacificHonolulu": "Hora do Havaí",
+    "europeLondon": "Londres (GMT/BST)",
+    "europeParis": "Paris (CET/CEST)",
+    "europeBerlin": "Berlim (CET/CEST)",
+    "europeMoscow": "Moscou (MSK)",
+    "asiaTokyo": "Tóquio (JST)",
+    "asiaShanghai": "China (CST)",
+    "asiaKolkata": "Índia (IST)",
+    "asiaDubai": "Dubai (GST)",
+    "africaNairobi": "Nairobi (EAT)",
+    "africaLagos": "Lagos (WAT)",
+    "africaJohannesburg": "Joanesburgo (SAST)",
+    "australiaSydney": "Sydney (AEST/AEDT)",
+    "australiaPerth": "Perth (AWST)",
+    "pacificAuckland": "Auckland (NZST/NZDT)"
+  },
+
+  "timezoneFriendlyNames": {
+    "americaNewYork": "Hora do Leste",
+    "americaChicago": "Hora Central",
+    "americaDenver": "Hora da Montanha",
+    "americaPhoenix": "Hora do Arizona",
+    "americaLosAngeles": "Hora do Pacífico",
+    "americaAnchorage": "Hora do Alaska",
+    "pacificHonolulu": "Hora do Havaí",
+    "europeLondon": "Hora de Greenwich",
+    "europeParis": "Hora da Europa Central",
+    "asiaTokyo": "Hora Padrão do Japão",
+    "asiaShanghai": "Hora Padrão da China",
+    "asiaKolkata": "Hora Padrão da Índia",
+    "australiaSydney": "Hora do Leste Australiano",
+    "utc": "Tempo Universal Coordenado"
+  },
+
+  "messages": {
+    "eventCreated": "Evento criado!",
+    "eventUpdated": "Evento atualizado!",
+    "eventDeleted": "Evento excluído!",
+    "failedToInitialize": "Falha ao inicializar o calendário",
+    "failedToLoadEvents": "Falha ao carregar eventos do calendário",
+    "pleaseEnterTitle": "Por favor, digite um título para o evento",
+    "pleaseSelectDates": "Por favor, selecione datas de início e fim",
+    "noTenantId": "Não é possível salvar o evento - sem ID do inquilino",
+    "failedToSave": "Falha ao salvar o evento",
+    "failedToUpdate": "Falha ao atualizar o evento",
+    "failedToDelete": "Falha ao excluir o evento",
+    "systemGeneratedEvent": "Este é um evento gerado pelo sistema",
+    "noTimezoneDetected": "Nenhum fuso horário salvo, detectando automaticamente e salvando",
+    "timezoneAutoSaved": "Fuso horário detectado automaticamente salvo",
+    "userTimezoneLoaded": "Fuso horário do usuário carregado",
+    "notificationPermissionGranted": "Permissão de notificação concedida"
+  },
+
+  "confirmations": {
+    "deleteEvent": "Tem certeza de que deseja excluir este evento?"
+  },
+
+  "systemEventTitles": {
+    "birthdaySuffix": " Aniversário",
+    "payrollProcessing": "Processamento da Folha de Pagamento",
+    "productExpires": " expira"
+  }
+}

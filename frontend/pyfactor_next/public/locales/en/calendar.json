@@ -1,0 +1,138 @@
+{
+  "title": "Calendar",
+  "subtitle": "Manage appointments, deadlines, and reminders",
+  "timezoneNote": "All times in",
+  "addEvent": "Add Event",
+  "newEvent": "New Event",
+  "editEvent": "Edit Event",
+  "loadingCalendar": "Loading calendar...",
+  "saving": "Saving...",
+  
+  "buttons": {
+    "today": "Today",
+    "month": "Month",
+    "week": "Week",
+    "day": "Day",
+    "list": "List",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete"
+  },
+  
+  "eventTypes": {
+    "appointment": "Appointment",
+    "tax": "Tax Deadline",
+    "payroll": "Payroll",
+    "birthday": "Birthday",
+    "productExpiry": "Product Expiry",
+    "delivery": "Delivery",
+    "meeting": "Meeting",
+    "reminder": "Reminder"
+  },
+  
+  "form": {
+    "title": "Title *",
+    "type": "Type",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "startTime": "Start Time",
+    "endTime": "End Time",
+    "location": "Location",
+    "description": "Description",
+    "sendReminder": "Send reminder",
+    "minutesBefore": "Minutes before",
+    "allDayEvent": "All day event"
+  },
+  
+  "placeholders": {
+    "eventTitle": "Event title",
+    "eventLocation": "Event location",
+    "eventDescription": "Event description"
+  },
+  
+  "reminderOptions": {
+    "15minutes": "15 minutes",
+    "30minutes": "30 minutes",
+    "1hour": "1 hour",
+    "2hours": "2 hours",
+    "1day": "1 day"
+  },
+  
+  "timezoneGroups": {
+    "usCanada": "US & Canada",
+    "europe": "Europe",
+    "asia": "Asia",
+    "africa": "Africa",
+    "australiaPacific": "Australia & Pacific"
+  },
+  
+  "timezoneLabels": {
+    "americaNewYork": "Eastern Time (ET)",
+    "americaChicago": "Central Time (CT)",
+    "americaDenver": "Mountain Time (MT)",
+    "americaPhoenix": "Arizona Time",
+    "americaLosAngeles": "Pacific Time (PT)",
+    "americaAnchorage": "Alaska Time",
+    "pacificHonolulu": "Hawaii Time",
+    "europeLondon": "London (GMT/BST)",
+    "europeParis": "Paris (CET/CEST)",
+    "europeBerlin": "Berlin (CET/CEST)",
+    "europeMoscow": "Moscow (MSK)",
+    "asiaTokyo": "Tokyo (JST)",
+    "asiaShanghai": "China (CST)",
+    "asiaKolkata": "India (IST)",
+    "asiaDubai": "Dubai (GST)",
+    "africaNairobi": "Nairobi (EAT)",
+    "africaLagos": "Lagos (WAT)",
+    "africaJohannesburg": "Johannesburg (SAST)",
+    "australiaSydney": "Sydney (AEST/AEDT)",
+    "australiaPerth": "Perth (AWST)",
+    "pacificAuckland": "Auckland (NZST/NZDT)"
+  },
+  
+  "timezoneFriendlyNames": {
+    "americaNewYork": "Eastern Time",
+    "americaChicago": "Central Time",
+    "americaDenver": "Mountain Time",
+    "americaPhoenix": "Arizona Time",
+    "americaLosAngeles": "Pacific Time",
+    "americaAnchorage": "Alaska Time",
+    "pacificHonolulu": "Hawaii Time",
+    "europeLondon": "Greenwich Mean Time",
+    "europeParis": "Central European Time",
+    "asiaTokyo": "Japan Standard Time",
+    "asiaShanghai": "China Standard Time",
+    "asiaKolkata": "India Standard Time",
+    "australiaSydney": "Australian Eastern Time",
+    "utc": "Coordinated Universal Time"
+  },
+  
+  "messages": {
+    "eventCreated": "Event created!",
+    "eventUpdated": "Event updated!",
+    "eventDeleted": "Event deleted!",
+    "failedToInitialize": "Failed to initialize calendar",
+    "failedToLoadEvents": "Failed to load calendar events",
+    "pleaseEnterTitle": "Please enter a title for the event",
+    "pleaseSelectDates": "Please select start and end dates",
+    "noTenantId": "Unable to save event - no tenant ID",
+    "failedToSave": "Failed to save event",
+    "failedToUpdate": "Failed to update event",
+    "failedToDelete": "Failed to delete event",
+    "systemGeneratedEvent": "This is a system-generated event",
+    "noTimezoneDetected": "No timezone saved, auto-detecting and saving",
+    "timezoneAutoSaved": "Auto-detected timezone saved",
+    "userTimezoneLoaded": "User timezone loaded",
+    "notificationPermissionGranted": "Notification permission granted"
+  },
+  
+  "confirmations": {
+    "deleteEvent": "Are you sure you want to delete this event?"
+  },
+  
+  "systemEventTitles": {
+    "birthdaySuffix": "'s Birthday",
+    "payrollProcessing": "Payroll Processing",
+    "productExpires": " expires"
+  }
+}

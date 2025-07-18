@@ -1,0 +1,138 @@
+{
+  "title": "Calendrier",
+  "subtitle": "Gérer les rendez-vous, échéances et rappels",
+  "timezoneNote": "Toutes les heures en",
+  "addEvent": "Ajouter un Événement",
+  "newEvent": "Nouvel Événement",
+  "editEvent": "Modifier l'Événement",
+  "loadingCalendar": "Chargement du calendrier...",
+  "saving": "Enregistrement...",
+
+  "buttons": {
+    "today": "Aujourd'hui",
+    "month": "Mois",
+    "week": "Semaine",
+    "day": "Jour",
+    "list": "Liste",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer"
+  },
+
+  "eventTypes": {
+    "appointment": "Rendez-vous",
+    "tax": "Échéance Fiscale",
+    "payroll": "Paie",
+    "birthday": "Anniversaire",
+    "productExpiry": "Expiration de Produit",
+    "delivery": "Livraison",
+    "meeting": "Réunion",
+    "reminder": "Rappel"
+  },
+
+  "form": {
+    "title": "Titre *",
+    "type": "Type",
+    "startDate": "Date de Début",
+    "endDate": "Date de Fin",
+    "startTime": "Heure de Début",
+    "endTime": "Heure de Fin",
+    "location": "Lieu",
+    "description": "Description",
+    "sendReminder": "Envoyer un rappel",
+    "minutesBefore": "Minutes avant",
+    "allDayEvent": "Événement toute la journée"
+  },
+
+  "placeholders": {
+    "eventTitle": "Titre de l'événement",
+    "eventLocation": "Lieu de l'événement",
+    "eventDescription": "Description de l'événement"
+  },
+
+  "reminderOptions": {
+    "15minutes": "15 minutes",
+    "30minutes": "30 minutes",
+    "1hour": "1 heure",
+    "2hours": "2 heures",
+    "1day": "1 jour"
+  },
+
+  "timezoneGroups": {
+    "usCanada": "États-Unis et Canada",
+    "europe": "Europe",
+    "asia": "Asie",
+    "africa": "Afrique",
+    "australiaPacific": "Australie et Pacifique"
+  },
+
+  "timezoneLabels": {
+    "americaNewYork": "Heure de l'Est (ET)",
+    "americaChicago": "Heure Centrale (CT)",
+    "americaDenver": "Heure des Montagnes (MT)",
+    "americaPhoenix": "Heure d'Arizona",
+    "americaLosAngeles": "Heure du Pacifique (PT)",
+    "americaAnchorage": "Heure d'Alaska",
+    "pacificHonolulu": "Heure d'Hawaï",
+    "europeLondon": "Londres (GMT/BST)",
+    "europeParis": "Paris (CET/CEST)",
+    "europeBerlin": "Berlin (CET/CEST)",
+    "europeMoscow": "Moscou (MSK)",
+    "asiaTokyo": "Tokyo (JST)",
+    "asiaShanghai": "Chine (CST)",
+    "asiaKolkata": "Inde (IST)",
+    "asiaDubai": "Dubaï (GST)",
+    "africaNairobi": "Nairobi (EAT)",
+    "africaLagos": "Lagos (WAT)",
+    "africaJohannesburg": "Johannesburg (SAST)",
+    "australiaSydney": "Sydney (AEST/AEDT)",
+    "australiaPerth": "Perth (AWST)",
+    "pacificAuckland": "Auckland (NZST/NZDT)"
+  },
+
+  "timezoneFriendlyNames": {
+    "americaNewYork": "Heure de l'Est",
+    "americaChicago": "Heure Centrale",
+    "americaDenver": "Heure des Montagnes",
+    "americaPhoenix": "Heure d'Arizona",
+    "americaLosAngeles": "Heure du Pacifique",
+    "americaAnchorage": "Heure d'Alaska",
+    "pacificHonolulu": "Heure d'Hawaï",
+    "europeLondon": "Heure de Greenwich",
+    "europeParis": "Heure d'Europe Centrale",
+    "asiaTokyo": "Heure Standard du Japon",
+    "asiaShanghai": "Heure Standard de Chine",
+    "asiaKolkata": "Heure Standard de l'Inde",
+    "australiaSydney": "Heure de l'Est Australien",
+    "utc": "Temps Universel Coordonné"
+  },
+
+  "messages": {
+    "eventCreated": "Événement créé !",
+    "eventUpdated": "Événement mis à jour !",
+    "eventDeleted": "Événement supprimé !",
+    "failedToInitialize": "Échec de l'initialisation du calendrier",
+    "failedToLoadEvents": "Échec du chargement des événements du calendrier",
+    "pleaseEnterTitle": "Veuillez saisir un titre pour l'événement",
+    "pleaseSelectDates": "Veuillez sélectionner les dates de début et de fin",
+    "noTenantId": "Impossible d'enregistrer l'événement - aucun ID de locataire",
+    "failedToSave": "Échec de l'enregistrement de l'événement",
+    "failedToUpdate": "Échec de la mise à jour de l'événement",
+    "failedToDelete": "Échec de la suppression de l'événement",
+    "systemGeneratedEvent": "Ceci est un événement généré par le système",
+    "noTimezoneDetected": "Aucun fuseau horaire enregistré, détection automatique et enregistrement",
+    "timezoneAutoSaved": "Fuseau horaire détecté automatiquement enregistré",
+    "userTimezoneLoaded": "Fuseau horaire utilisateur chargé",
+    "notificationPermissionGranted": "Autorisation de notification accordée"
+  },
+
+  "confirmations": {
+    "deleteEvent": "Êtes-vous sûr de vouloir supprimer cet événement ?"
+  },
+
+  "systemEventTitles": {
+    "birthdaySuffix": " Anniversaire",
+    "payrollProcessing": "Traitement de la Paie",
+    "productExpires": " expire"
+  }
+}

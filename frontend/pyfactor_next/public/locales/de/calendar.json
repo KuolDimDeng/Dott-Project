@@ -1,0 +1,138 @@
+{
+  "title": "Kalender",
+  "subtitle": "Termine, Fristen und Erinnerungen verwalten",
+  "timezoneNote": "Alle Zeiten in",
+  "addEvent": "Termin hinzufügen",
+  "newEvent": "Neuer Termin",
+  "editEvent": "Termin bearbeiten",
+  "loadingCalendar": "Kalender wird geladen...",
+  "saving": "Speichern...",
+
+  "buttons": {
+    "today": "Heute",
+    "month": "Monat",
+    "week": "Woche",
+    "day": "Tag",
+    "list": "Liste",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen"
+  },
+
+  "eventTypes": {
+    "appointment": "Termin",
+    "tax": "Steuerliche Frist",
+    "payroll": "Lohnabrechnung",
+    "birthday": "Geburtstag",
+    "productExpiry": "Produktablauf",
+    "delivery": "Lieferung",
+    "meeting": "Besprechung",
+    "reminder": "Erinnerung"
+  },
+
+  "form": {
+    "title": "Titel *",
+    "type": "Typ",
+    "startDate": "Startdatum",
+    "endDate": "Enddatum",
+    "startTime": "Startzeit",
+    "endTime": "Endzeit",
+    "location": "Ort",
+    "description": "Beschreibung",
+    "sendReminder": "Erinnerung senden",
+    "minutesBefore": "Minuten vorher",
+    "allDayEvent": "Ganztägiger Termin"
+  },
+
+  "placeholders": {
+    "eventTitle": "Termintitel",
+    "eventLocation": "Terminort",
+    "eventDescription": "Terminbeschreibung"
+  },
+
+  "reminderOptions": {
+    "15minutes": "15 Minuten",
+    "30minutes": "30 Minuten",
+    "1hour": "1 Stunde",
+    "2hours": "2 Stunden",
+    "1day": "1 Tag"
+  },
+
+  "timezoneGroups": {
+    "usCanada": "USA und Kanada",
+    "europe": "Europa",
+    "asia": "Asien",
+    "africa": "Afrika",
+    "australiaPacific": "Australien und Pazifik"
+  },
+
+  "timezoneLabels": {
+    "americaNewYork": "Ostküstenzeit (ET)",
+    "americaChicago": "Zentrale Zeit (CT)",
+    "americaDenver": "Bergzeit (MT)",
+    "americaPhoenix": "Arizona-Zeit",
+    "americaLosAngeles": "Pazifikzeit (PT)",
+    "americaAnchorage": "Alaska-Zeit",
+    "pacificHonolulu": "Hawaii-Zeit",
+    "europeLondon": "London (GMT/BST)",
+    "europeParis": "Paris (CET/CEST)",
+    "europeBerlin": "Berlin (CET/CEST)",
+    "europeMoscow": "Moskau (MSK)",
+    "asiaTokyo": "Tokio (JST)",
+    "asiaShanghai": "China (CST)",
+    "asiaKolkata": "Indien (IST)",
+    "asiaDubai": "Dubai (GST)",
+    "africaNairobi": "Nairobi (EAT)",
+    "africaLagos": "Lagos (WAT)",
+    "africaJohannesburg": "Johannesburg (SAST)",
+    "australiaSydney": "Sydney (AEST/AEDT)",
+    "australiaPerth": "Perth (AWST)",
+    "pacificAuckland": "Auckland (NZST/NZDT)"
+  },
+
+  "timezoneFriendlyNames": {
+    "americaNewYork": "Ostküstenzeit",
+    "americaChicago": "Zentrale Zeit",
+    "americaDenver": "Bergzeit",
+    "americaPhoenix": "Arizona-Zeit",
+    "americaLosAngeles": "Pazifikzeit",
+    "americaAnchorage": "Alaska-Zeit",
+    "pacificHonolulu": "Hawaii-Zeit",
+    "europeLondon": "Greenwich-Zeit",
+    "europeParis": "Mitteleuropäische Zeit",
+    "asiaTokyo": "Japanische Standardzeit",
+    "asiaShanghai": "Chinesische Standardzeit",
+    "asiaKolkata": "Indische Standardzeit",
+    "australiaSydney": "Australische Ostküstenzeit",
+    "utc": "Koordinierte Weltzeit"
+  },
+
+  "messages": {
+    "eventCreated": "Termin erstellt!",
+    "eventUpdated": "Termin aktualisiert!",
+    "eventDeleted": "Termin gelöscht!",
+    "failedToInitialize": "Kalender konnte nicht initialisiert werden",
+    "failedToLoadEvents": "Kalendertermine konnten nicht geladen werden",
+    "pleaseEnterTitle": "Bitte geben Sie einen Titel für den Termin ein",
+    "pleaseSelectDates": "Bitte wählen Sie Start- und Enddatum",
+    "noTenantId": "Termin kann nicht gespeichert werden - keine Mandanten-ID",
+    "failedToSave": "Termin konnte nicht gespeichert werden",
+    "failedToUpdate": "Termin konnte nicht aktualisiert werden",
+    "failedToDelete": "Termin konnte nicht gelöscht werden",
+    "systemGeneratedEvent": "Dies ist ein systemgenerierter Termin",
+    "noTimezoneDetected": "Keine Zeitzone gespeichert, automatische Erkennung und Speicherung",
+    "timezoneAutoSaved": "Automatisch erkannte Zeitzone gespeichert",
+    "userTimezoneLoaded": "Benutzer-Zeitzone geladen",
+    "notificationPermissionGranted": "Benachrichtigungsberechtigung erteilt"
+  },
+
+  "confirmations": {
+    "deleteEvent": "Sind Sie sicher, dass Sie diesen Termin löschen möchten?"
+  },
+
+  "systemEventTitles": {
+    "birthdaySuffix": "s Geburtstag",
+    "payrollProcessing": "Lohnabrechnung",
+    "productExpires": " läuft ab"
+  }
+}

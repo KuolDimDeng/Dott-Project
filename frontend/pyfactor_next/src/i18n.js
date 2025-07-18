@@ -77,11 +77,15 @@ import amAuth from '../public/locales/am/auth.json';
 import zuAuth from '../public/locales/zu/auth.json';
 import koAuth from '../public/locales/ko/auth.json';
 
+// Import calendar namespaces
+import enCalendar from '../public/locales/en/calendar.json';
+
 const resources = {
   en: {
     common: enCommon,
     onboarding: enOnboarding,
-    auth: enAuth
+    auth: enAuth,
+    calendar: enCalendar
   },
   es: {
     common: esCommon,
