@@ -6,6 +6,7 @@ from .employee_profile_views import (
     EmployeeProfileView, EmployeeBankInfoView, EmployeeTaxInfoView,
     employee_profile_debug
 )
+from .test_minimal_view import MinimalTestView
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
@@ -29,6 +30,7 @@ urlpatterns = [
     # Test endpoint (no auth required)
     path('test/', test_routing, name='test-routing'),
     path('test-profile-simple/', test_profile_simple, name='test-profile-simple'),
+    path('test-minimal/', MinimalTestView.as_view(), name='test-minimal'),
     
     # Employee views
     path('current-employee/', CurrentEmployeeView.as_view(), name='current-employee'),
