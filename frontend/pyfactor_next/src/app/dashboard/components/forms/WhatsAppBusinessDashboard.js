@@ -1,8 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useSession } from '@/hooks/useSession-v2';
 import { getWhatsAppBusinessFeatures } from '@/utils/whatsappCountryDetection';
+
+// Lazy load the management components
+const WhatsAppCatalogManager = lazy(() => import('../whatsapp/WhatsAppCatalogManager'));
+const WhatsAppOrderManager = lazy(() => import('../whatsapp/WhatsAppOrderManager'));
+const WhatsAppAnalytics = lazy(() => import('../whatsapp/WhatsAppAnalytics'));
 
 const WhatsAppBusinessDashboard = () => {
   const { user } = useSession();
@@ -13,6 +18,7 @@ const WhatsAppBusinessDashboard = () => {
   const [stats, setStats] = useState(null);
   const [error, setError] = useState(null);
   const [showSetup, setShowSetup] = useState(false);
+  const [activeView, setActiveView] = useState('dashboard');
 
   useEffect(() => {
     const initializeWhatsAppBusiness = async () => {

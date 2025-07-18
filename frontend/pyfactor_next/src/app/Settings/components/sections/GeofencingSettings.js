@@ -39,17 +39,29 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
 
   // Debug environment variable on component mount
   useEffect(() => {
-    console.log('[GeofencingSettings] Component mounted - v5');
+    console.log('[GeofencingSettings] Component mounted - v6');
     console.log('[GeofencingSettings] NEXT_PUBLIC_GOOGLE_MAPS_API_KEY:', process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || 'NOT DEFINED');
     console.log('[GeofencingSettings] Build time check - API key should be baked into build');
+    console.log('[GeofencingSettings] All env vars available:', Object.keys(process.env));
     console.log('[GeofencingSettings] All NEXT_PUBLIC env vars:', Object.keys(process.env).filter(key => key.startsWith('NEXT_PUBLIC_')));
     console.log('[GeofencingSettings] isVisible prop:', isVisible);
+    
+    // Try window approach as fallback
+    if (typeof window !== 'undefined' && window.__NEXT_DATA__) {
+      console.log('[GeofencingSettings] Next.js runtime config:', window.__NEXT_DATA__.runtimeConfig);
+    }
   }, []);
 
   // Check ref immediately after DOM updates
   useLayoutEffect(() => {
     console.log('[GeofencingSettings] 🏗️ useLayoutEffect - mapContainerRef.current:', mapContainerRef.current);
     console.log('[GeofencingSettings] 🏗️ useLayoutEffect - isVisible:', isVisible);
+    console.log('[GeofencingSettings] 🏗️ useLayoutEffect - loading state:', loading);
+    
+    // If we have a ref and we're not loading but no map, try to reinitialize
+    if (mapContainerRef.current && !loading && !map && isVisible) {
+      console.log('[GeofencingSettings] 🏗️ Detected ref after loading finished, attempting to reinitialize map...');
+    }
   });
 
   useEffect(() => {
@@ -250,6 +262,70 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
     }
   };
 
+  const retryMapInitialization = async () => {
+    console.log('[GeofencingSettings] Manual retry of map initialization...');
+    setLoading(true);
+    setMapError(null);
+    
+    // Call initMap function again
+    const initMap = async () => {
+      console.log('[GeofencingSettings] Retry - checking container:', mapContainerRef.current);
+      
+      if (!mapContainerRef.current) {
+        setMapError('Map container still not available. Please refresh the page.');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // Use hardcoded API key as a temporary solution
+        const apiKey = 'AIzaSyDq2UEzOWBrWHgvbXVQfmLHXlpIqWwXGxs';
+        console.log('[GeofencingSettings] Retry - Loading Google Maps with hardcoded API key');
+        
+        if (!window.google) {
+          await loadGoogleMapsScript();
+        }
+        
+        console.log('[GeofencingSettings] Retry - Creating map instance...');
+        const map = new window.google.maps.Map(mapContainerRef.current, {
+          center: { lat: 37.7749, lng: -122.4194 }, // Default to San Francisco
+          zoom: 15,
+          mapTypeId: 'roadmap'
+        });
+
+        // Add click listener to map
+        map.addListener('click', handleMapClick);
+
+        // Try to get user's current location
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              const userLocation = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+              };
+              map.setCenter(userLocation);
+            },
+            (error) => {
+              console.warn('Could not get user location:', error);
+            }
+          );
+        }
+
+        setMap(map);
+        setLoading(false);
+        setMapError(null);
+        console.log('[GeofencingSettings] Retry - Map initialized successfully');
+      } catch (error) {
+        console.error('[GeofencingSettings] Retry - Failed to initialize map:', error);
+        setMapError('Failed to initialize map. ' + error.message);
+        setLoading(false);
+      }
+    };
+    
+    await initMap();
+  };
+
   const handleSave = async () => {
     if (!geofence) {
       toast.error('Please click on the map to set a geofence location');
@@ -435,12 +511,20 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
                 <p className="text-xs text-red-600 mt-2">
                   API Key Status: {process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ? 'Present' : 'Missing'}
                 </p>
-                <button 
-                  onClick={() => window.location.reload()}
-                  className="mt-3 px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
-                >
-                  Reload Page
-                </button>
+                <div className="mt-3 space-x-2">
+                  <button 
+                    onClick={retryMapInitialization}
+                    className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
+                    Retry Map Load
+                  </button>
+                  <button 
+                    onClick={() => window.location.reload()}
+                    className="px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
+                  >
+                    Reload Page
+                  </button>
+                </div>
               </div>
             </div>
           )}
