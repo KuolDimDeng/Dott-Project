@@ -124,7 +124,10 @@ export default function Calendar({ onNavigate }) {
   console.log('[Calendar] COMPONENT LOADED - DEBUG VERSION 2025-07-09-v2');
   const { user, loading: sessionLoading } = useSession();
   const toast = useToast();
-  const { t } = useTranslation('calendar');
+  const { t, i18n } = useTranslation('calendar');
+  
+  // Log current language for debugging
+  console.log('[Calendar] Current language:', i18n.language);
   
   // Get translated configurations
   const EVENT_TYPES = getEventTypes(t);
