@@ -64,7 +64,6 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
       console.log('[GeofencingSettings] === MAP INITIALIZATION DEBUG START ===');
       console.log('[GeofencingSettings] isVisible:', isVisible);
       console.log('[GeofencingSettings] mapContainerRef.current (initial):', mapContainerRef.current);
-      console.log('[GeofencingSettings] showCreateForm state:', showCreateForm);
       
       // Check DOM state immediately
       console.log('[GeofencingSettings] Immediate DOM check:');
