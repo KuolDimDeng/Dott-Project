@@ -17,7 +17,7 @@ const WhatsAppBusinessDashboard = () => {
   const [catalogs, setCatalogs] = useState([]);
   const [stats, setStats] = useState(null);
   const [error, setError] = useState(null);
-  const [showSetup, setShowSetup] = useState(false);
+  const [showSetup, setShowSetup] = useState(false); // Always false to show operational dashboard
   const [activeView, setActiveView] = useState('dashboard');
 
   useEffect(() => {
@@ -37,20 +37,19 @@ const WhatsAppBusinessDashboard = () => {
           } else if (settingsData.results && settingsData.results.length > 0) {
             setSettings(settingsData.results[0]);
           } else {
-            // No settings found, show setup
-            setShowSetup(true);
+            // No settings found, but still show dashboard
+            // setShowSetup(true); // Disabled to always show operational dashboard
           }
         } else if (settingsResponse.status === 404) {
-          // No settings exist yet
-          setShowSetup(true);
+          // No settings exist yet, but still show dashboard
+          // setShowSetup(true); // Disabled to always show operational dashboard
         } else {
           throw new Error('Failed to fetch WhatsApp Business settings');
         }
 
-        // Only fetch other data if we have settings
-        if (!showSetup) {
-          // Fetch catalogs
-          const catalogsResponse = await fetch('/api/proxy/whatsapp-business/catalogs/');
+        // Always fetch catalogs and stats for operational dashboard
+        // Fetch catalogs
+        const catalogsResponse = await fetch('/api/proxy/whatsapp-business/catalogs/');
           if (catalogsResponse.ok) {
             const catalogsData = await catalogsResponse.json();
             setCatalogs(catalogsData.results || catalogsData || []);
@@ -62,7 +61,6 @@ const WhatsAppBusinessDashboard = () => {
             const statsData = await statsResponse.json();
             setStats(statsData);
           }
-        }
       } catch (error) {
         console.error('Error initializing WhatsApp Business:', error);
         setError(error.message);
@@ -134,64 +132,8 @@ const WhatsAppBusinessDashboard = () => {
     );
   }
 
-  if (!settings) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <div className="mx-auto h-24 w-24 rounded-full bg-green-100 flex items-center justify-center mb-6">
-              <svg className="h-12 w-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-              </svg>
-            </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">Welcome to WhatsApp Business</h1>
-            <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
-              Transform your business communication with WhatsApp. Create catalogs, manage orders, and accept payments directly through WhatsApp.
-            </p>
-            
-            {whatsappFeatures && (
-              <div className="bg-white rounded-lg shadow-sm p-6 mb-8 max-w-2xl mx-auto">
-                <h2 className="text-xl font-semibold mb-4">Available in Your Country</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center">
-                    <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span>Payment Method: {whatsappFeatures.payment.localPayment || 'Credit Cards'}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span>Currency: {whatsappFeatures.payment.currency}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span>Catalog Sharing</span>
-                  </div>
-                  <div className="flex items-center">
-                    <svg className="h-5 w-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span>Order Management</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <button
-              onClick={createInitialSetup}
-              className="bg-green-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors"
-            >
-              Get Started with WhatsApp Business
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Always show the operational dashboard
+  // Remove the welcome screen and go directly to the dashboard
 
   // Render the appropriate view based on activeView state
   if (activeView === 'catalogs') {
