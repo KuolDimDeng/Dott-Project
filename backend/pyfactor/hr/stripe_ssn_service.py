@@ -10,8 +10,10 @@ import re
 
 logger = get_logger()
 
-# Initialize Stripe
-stripe.api_key = settings.STRIPE_SECRET_KEY
+def _initialize_stripe():
+    """Initialize Stripe API key if not already set"""
+    if not stripe.api_key:
+        stripe.api_key = settings.STRIPE_SECRET_KEY
 
 
 class StripeSSNService:
@@ -45,6 +47,8 @@ class StripeSSNService:
     def create_or_update_stripe_account(employee):
         """Create or update a Stripe Connect account for the employee"""
         try:
+            # Initialize Stripe API key
+            _initialize_stripe()
             account_data = {
                 'type': 'custom',
                 'country': employee.country or 'US',
@@ -109,6 +113,8 @@ class StripeSSNService:
         Returns: (success, message)
         """
         try:
+            # Initialize Stripe API key
+            _initialize_stripe()
             # Validate SSN
             is_valid, ssn_or_error = StripeSSNService.validate_ssn(ssn)
             if not is_valid:
@@ -175,6 +181,8 @@ class StripeSSNService:
         Note: Full SSN cannot be retrieved once stored
         """
         try:
+            # Initialize Stripe API key
+            _initialize_stripe()
             if not employee.stripe_account_id:
                 return None
             
@@ -192,6 +200,8 @@ class StripeSSNService:
     def delete_stripe_account(employee):
         """Delete the Stripe account when employee is deleted"""
         try:
+            # Initialize Stripe API key
+            _initialize_stripe()
             if employee.stripe_account_id:
                 logger.info(f"[StripeSSN] Deleting Stripe account {employee.stripe_account_id}")
                 stripe.Account.delete(employee.stripe_account_id)

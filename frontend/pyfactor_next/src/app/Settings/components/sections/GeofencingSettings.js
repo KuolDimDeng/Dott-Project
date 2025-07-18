@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { 
   MapPinIcon, 
   PlusCircleIcon, 
@@ -39,12 +39,18 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
 
   // Debug environment variable on component mount
   useEffect(() => {
-    console.log('[GeofencingSettings] Component mounted - v4');
+    console.log('[GeofencingSettings] Component mounted - v5');
     console.log('[GeofencingSettings] NEXT_PUBLIC_GOOGLE_MAPS_API_KEY:', process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || 'NOT DEFINED');
     console.log('[GeofencingSettings] Build time check - API key should be baked into build');
     console.log('[GeofencingSettings] All NEXT_PUBLIC env vars:', Object.keys(process.env).filter(key => key.startsWith('NEXT_PUBLIC_')));
     console.log('[GeofencingSettings] isVisible prop:', isVisible);
   }, []);
+
+  // Check ref immediately after DOM updates
+  useLayoutEffect(() => {
+    console.log('[GeofencingSettings] 🏗️ useLayoutEffect - mapContainerRef.current:', mapContainerRef.current);
+    console.log('[GeofencingSettings] 🏗️ useLayoutEffect - isVisible:', isVisible);
+  });
 
   useEffect(() => {
     // Only initialize map when component is visible
@@ -55,16 +61,50 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
 
     // Initialize Google Maps
     const initMap = async () => {
-      console.log('[GeofencingSettings] Starting map initialization...');
+      console.log('[GeofencingSettings] === MAP INITIALIZATION DEBUG START ===');
       console.log('[GeofencingSettings] isVisible:', isVisible);
-      console.log('[GeofencingSettings] mapContainerRef.current:', mapContainerRef.current);
+      console.log('[GeofencingSettings] mapContainerRef.current (initial):', mapContainerRef.current);
+      console.log('[GeofencingSettings] showCreateForm state:', showCreateForm);
       
-      // Wait a bit for the DOM to be ready
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Check DOM state immediately
+      console.log('[GeofencingSettings] Immediate DOM check:');
+      console.log('  - Document ready state:', document.readyState);
+      console.log('  - All divs with ref attribute:', document.querySelectorAll('div[ref]'));
+      console.log('  - All elements with map in class:', document.querySelectorAll('[class*="map"]'));
+      console.log('  - Parent container:', document.querySelector('.bg-white.border.border-gray-200.rounded-lg'));
+      
+      // Progressive delay checks
+      const delays = [100, 250, 500, 1000, 2000];
+      
+      for (const delay of delays) {
+        console.log(`[GeofencingSettings] Waiting ${delay}ms for DOM...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        
+        console.log(`[GeofencingSettings] After ${delay}ms delay:`);
+        console.log('  - mapContainerRef.current:', mapContainerRef.current);
+        console.log('  - mapContainerRef object:', mapContainerRef);
+        console.log('  - Form container exists:', !!document.querySelector('.bg-white.border.border-gray-200.rounded-lg'));
+        console.log('  - All divs in form:', document.querySelectorAll('.bg-white.border.border-gray-200.rounded-lg div').length);
+        
+        if (mapContainerRef.current) {
+          console.log(`[GeofencingSettings] ✅ Container found after ${delay}ms!`);
+          break;
+        }
+        
+        if (delay === 2000) {
+          console.error('[GeofencingSettings] ❌ Container still not found after 2000ms');
+          console.log('[GeofencingSettings] Final debug info:');
+          console.log('  - Component is mounted:', !!mapContainerRef);
+          console.log('  - Ref is attached:', !!mapContainerRef.current);
+          console.log('  - DOM has form container:', !!document.querySelector('.bg-white.border.border-gray-200.rounded-lg'));
+          console.log('  - All refs in DOM:', Array.from(document.querySelectorAll('*')).filter(el => el.ref));
+          return;
+        }
+      }
       
       // Check if map container exists
       if (!mapContainerRef.current) {
-        console.error('Map container not found after 500ms delay');
+        console.error('[GeofencingSettings] Map container not found after all delays');
         console.log('[GeofencingSettings] Current DOM elements with map-related classes:', 
           document.querySelectorAll('[class*="map"], [ref*="map"], [id*="map"]'));
         return;
@@ -242,12 +282,18 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
   };
 
   if (loading) {
+    console.log('[GoogleMapsGeofenceSetup] 🔄 Component rendering - LOADING state');
     return (
       <div className="flex items-center justify-center h-96">
         <StandardSpinner size="lg" />
       </div>
     );
   }
+
+  console.log('[GoogleMapsGeofenceSetup] 🎨 Component rendering - MAIN FORM');
+  console.log('[GoogleMapsGeofenceSetup] 🎨 isVisible prop:', isVisible);
+  console.log('[GoogleMapsGeofenceSetup] 🎨 map state:', !!map);
+  console.log('[GoogleMapsGeofenceSetup] 🎨 mapContainerRef:', mapContainerRef);
 
   return (
     <div className="space-y-6">
@@ -398,7 +444,12 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
           <div 
             ref={mapContainerRef}
             className="w-full h-full"
-          />
+            onLoad={() => console.log('[GeofencingSettings] 📍 Map container div onLoad event')}
+            style={{ backgroundColor: 'lightblue', minHeight: '384px' }}
+          >
+            {console.log('[GeofencingSettings] 📍 Map container div is being rendered')}
+            {console.log('[GeofencingSettings] 📍 mapContainerRef object:', mapContainerRef)}
+          </div>
         </div>
       </div>
 
@@ -508,6 +559,13 @@ const GeofencingSettings = ({ user, isOwner, isAdmin, notifySuccess, notifyError
   const [showLegalCompliance, setShowLegalCompliance] = useState(false);
   const [legalAccepted, setLegalAccepted] = useState(false);
 
+  // Debug state changes
+  useEffect(() => {
+    console.log('[GeofencingSettings] 🔄 State change - showCreateForm:', showCreateForm);
+    console.log('[GeofencingSettings] 🔄 State change - showLegalCompliance:', showLegalCompliance);
+    console.log('[GeofencingSettings] 🔄 State change - legalAccepted:', legalAccepted);
+  }, [showCreateForm, showLegalCompliance, legalAccepted]);
+
   useEffect(() => {
     if (isOwner || isAdmin) {
       loadGeofences();
@@ -612,6 +670,7 @@ const GeofencingSettings = ({ user, isOwner, isAdmin, notifySuccess, notifyError
       {showCreateForm && (
         <div className="bg-white border border-gray-200 rounded-lg p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Create New Geofence</h3>
+          {console.log('[GeofencingSettings] 🎨 Rendering GoogleMapsGeofenceSetup with isVisible:', showCreateForm)}
           <GoogleMapsGeofenceSetup
             onGeofenceCreated={handleGeofenceCreated}
             onCancel={() => setShowCreateForm(false)}
