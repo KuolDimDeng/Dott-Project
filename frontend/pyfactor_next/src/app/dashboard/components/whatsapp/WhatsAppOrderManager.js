@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-// Use Heroicons instead of PhosphorIcon for consistency
 import { 
   XMarkIcon, 
   MagnifyingGlassIcon,

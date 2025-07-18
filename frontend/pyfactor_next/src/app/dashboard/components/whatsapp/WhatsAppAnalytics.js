@@ -126,7 +126,7 @@ const WhatsAppAnalytics = ({ onClose }) => {
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700"
           >
-            <PhosphorIcon name="X" size={24} />
+            <XMarkIcon className="w-6 h-6" />
           </button>
         </div>
 
