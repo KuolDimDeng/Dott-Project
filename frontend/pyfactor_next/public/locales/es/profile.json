@@ -1,0 +1,58 @@
+{
+  "_comment": "Profile translations - Spanish",
+  "title": "Mi Perfil",
+  "tabs": {
+    "profile": "Perfil",
+    "pay": "Pago",
+    "documents": "Documentos",
+    "timesheet": "Hoja de Tiempo",
+    "legal": "Legal"
+  },
+  "userProfile": {
+    "title": "Perfil de Usuario",
+    "subtitle": "Información de tu cuenta",
+    "email": "Correo Electrónico",
+    "name": "Nombre",
+    "role": "Rol de Usuario",
+    "accountStatus": "Estado de Cuenta",
+    "notAvailable": "No disponible",
+    "defaultRole": "Empleado",
+    "statusActive": "Activo"
+  },
+  "employeeInfo": {
+    "title": "Información del Empleado",
+    "subtitle": "Tus detalles de empleado",
+    "noEmployee": "No hay información de empleado asociada con tu cuenta.",
+    "employeeId": "ID de Empleado",
+    "jobTitle": "Título del Puesto",
+    "department": "Departamento",
+    "employmentType": "Tipo de Empleo",
+    "dateHired": "Fecha de Contratación",
+    "employmentStatus": "Estado de Empleo",
+    "probationStatus": "Estado de Prueba",
+    "benefits": "Beneficios",
+    "notSpecified": "No especificado",
+    "fullTime": "Tiempo Completo",
+    "partTime": "Tiempo Parcial",
+    "statusActive": "Activo",
+    "statusInactive": "Inactivo",
+    "inProbation": "En período de prueba",
+    "healthInsurance": "Seguro de Salud",
+    "pensionPlan": "Plan de Pensiones",
+    "noneEnrolled": "Ninguno inscrito"
+  },
+  "documents": {
+    "title": "Documentos",
+    "subtitle": "Tus documentos de empleo y registros",
+    "noDocuments": "No hay documentos disponibles en este momento."
+  },
+  "legal": {
+    "title": "Información Legal",
+    "subtitle": "Documentos legales e información de cumplimiento",
+    "noInformation": "No hay información legal disponible en este momento."
+  },
+  "errors": {
+    "loadEmployeeFailed": "Error al cargar la información del empleado",
+    "loadEmployeeError": "Error al cargar la información del empleado"
+  }
+}

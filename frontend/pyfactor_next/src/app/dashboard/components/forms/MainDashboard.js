@@ -1,32 +1,34 @@
 import React from 'react';
 import { ArrowTrendingUpIcon, DocumentTextIcon, UsersIcon, ArchiveBoxIcon } from '@heroicons/react/24/outline';
+import { useTranslation } from 'react-i18next';
 
 const DashboardPage = () => {
+  const { t } = useTranslation('dashboard');
   const isMobile = typeof window !== 'undefined' ? window.innerWidth < 640 : false;
 
   const quickStartGuides = [
     {
-      title: 'Create an Invoice',
+      title: t('quickStart.createInvoice.title'),
       icon: <DocumentTextIcon className="w-8 h-8 text-indigo-600" />,
-      description: 'Learn how to create and manage invoices for your clients.',
+      description: t('quickStart.createInvoice.description'),
       color: 'indigo',
       action: () => {
         /* Navigate to invoice creation page */
       },
     },
     {
-      title: 'Manage Customers',
+      title: t('quickStart.manageCustomers.title'),
       icon: <UsersIcon className="w-8 h-8 text-purple-600" />,
-      description: 'Add and manage your customer information efficiently.',
+      description: t('quickStart.manageCustomers.description'),
       color: 'purple',
       action: () => {
         /* Navigate to customer management page */
       },
     },
     {
-      title: 'Track Inventory',
+      title: t('quickStart.trackInventory.title'),
       icon: <ArchiveBoxIcon className="w-8 h-8 text-red-600" />,
-      description: 'Keep track of your product inventory and stock levels.',
+      description: t('quickStart.trackInventory.description'),
       color: 'red',
       action: () => {
         /* Navigate to inventory management page */
@@ -37,7 +39,7 @@ const DashboardPage = () => {
   return (
     <div className="bg-white p-6 rounded-lg">
       <h1 className="text-2xl font-bold text-gray-900 mb-4">
-        Welcome to Your Dashboard
+        {t('welcome')}
       </h1>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

@@ -1,0 +1,42 @@
+{
+  "_comment": "Settings translations - Spanish",
+  "title": "Configuración",
+  "subtitle": "Gestiona las preferencias y configuración de tu empresa",
+  "tabs": {
+    "general": "General",
+    "security": "Seguridad",
+    "integrations": "Integraciones",
+    "payroll": "Nómina",
+    "geofencing": "Geolocalización",
+    "billing": "Facturación",
+    "whatsapp": "WhatsApp"
+  },
+  "general": {
+    "title": "Configuración General",
+    "businessInfo": "Información y configuración de la empresa"
+  },
+  "security": {
+    "title": "Seguridad y Usuarios",
+    "manageUsers": "Gestionar usuarios y permisos"
+  },
+  "integrations": {
+    "title": "Integraciones",
+    "connectedApps": "Aplicaciones y servicios conectados"
+  },
+  "payroll": {
+    "title": "Configuración de Nómina",
+    "payrollSettings": "Configurar opciones de nómina y pagos"
+  },
+  "geofencing": {
+    "title": "Zonas de Geolocalización",
+    "locationTracking": "Configurar zonas y seguimiento de ubicación"
+  },
+  "billing": {
+    "title": "Facturación y Suscripción",
+    "subscription": "Gestionar tu plan de suscripción"
+  },
+  "whatsapp": {
+    "title": "WhatsApp Business",
+    "preferences": "Preferencias de WhatsApp Commerce"
+  }
+}

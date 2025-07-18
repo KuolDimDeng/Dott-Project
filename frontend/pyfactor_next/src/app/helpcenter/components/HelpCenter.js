@@ -243,7 +243,7 @@ const HelpCenter = () => {
         {/* Left column - FAQs */}
         <div className="md:col-span-8">
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-            <h2 className="text-lg font-medium mb-4">Search for Help</h2>
+            <h2 className="text-lg font-medium mb-4">{t('search.title')}</h2>
             
             {/* Category Filter */}
             <div className="mb-4">
@@ -256,7 +256,7 @@ const HelpCenter = () => {
                 onChange={(e) => setSelectedCategory(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="all">All Categories ({faqs.length} articles)</option>
+                <option value="all">{t('search.allCategories', { count: faqs.length })}</option>
                 {categories.map(category => (
                   <option key={category} value={category}>
                     {category} ({faqs.filter(faq => faq.category === category).length} articles)
@@ -274,7 +274,7 @@ const HelpCenter = () => {
                 <input
                   id="search-input"
                   type="text"
-                  placeholder="Search questions, answers, or categories..."
+                  placeholder={t('search.placeholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -323,7 +323,7 @@ const HelpCenter = () => {
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-semibold text-gray-900">{t('faq.title')}</h2>
             <div className="text-sm text-gray-500">
-              <span className="font-medium">{filteredFaqs.length}</span> {filteredFaqs.length === 1 ? 'article' : 'articles'} found
+              {t('faq.articlesFound', { count: filteredFaqs.length })}
               {selectedCategory !== 'all' && (
                 <span className="ml-2 text-blue-600">in {selectedCategory}</span>
               )}
@@ -337,7 +337,7 @@ const HelpCenter = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No articles found</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">{t('faq.noArticles')}</h3>
               <p className="text-gray-600 mb-4">
                 {searchTerm.trim() ? (
                   <>No results found for "<strong>{searchTerm}</strong>"{selectedCategory !== 'all' ? ` in ${selectedCategory}` : ''}.</>
@@ -403,14 +403,14 @@ const HelpCenter = () => {
         {/* Right column - Quick links and contact form */}
         <div className="md:col-span-4">
           <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-            <h2 className="text-lg font-medium mb-3">Quick Links</h2>
+            <h2 className="text-lg font-medium mb-3">{t('quickLinks.title')}</h2>
             <ul className="space-y-2">
               <li>
                 <a href="/tutorials" className="flex items-center p-2 hover:bg-gray-50 rounded-md group">
                   <svg className="h-5 w-5 text-blue-900 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
-                  <span className="group-hover:text-blue-900">Video Tutorials</span>
+                  <span className="group-hover:text-blue-900">{t('quickLinks.videoTutorials')}</span>
                 </a>
               </li>
               <li>
@@ -418,7 +418,7 @@ const HelpCenter = () => {
                   <svg className="h-5 w-5 text-blue-900 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                   </svg>
-                  <span className="group-hover:text-blue-900">User Guide</span>
+                  <span className="group-hover:text-blue-900">{t('quickLinks.userGuide')}</span>
                 </a>
               </li>
               <li>
@@ -426,7 +426,7 @@ const HelpCenter = () => {
                   <svg className="h-5 w-5 text-blue-900 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
                   </svg>
-                  <span className="group-hover:text-blue-900">Blog & Tips</span>
+                  <span className="group-hover:text-blue-900">{t('quickLinks.blogTips')}</span>
                 </a>
               </li>
             </ul>
@@ -436,7 +436,7 @@ const HelpCenter = () => {
             <h2 className="text-lg font-medium mb-4">{t('contact.title')}</h2>
             <form onSubmit={handleSubmit}>
               <div className="mb-4">
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">{t('contact.name')}</label>
                 <input
                   id="name"
                   type="text"
@@ -447,7 +447,7 @@ const HelpCenter = () => {
                 />
               </div>
               <div className="mb-4">
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">{t('contact.email')}</label>
                 <input
                   id="email"
                   type="email"
@@ -458,7 +458,7 @@ const HelpCenter = () => {
                 />
               </div>
               <div className="mb-4">
-                <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">{t('contact.message')}</label>
                 <textarea
                   id="message"
                   rows="4"
@@ -490,13 +490,13 @@ const HelpCenter = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
                 )}
-                {isLoading ? 'Sending...' : 'Send Message'}
+                {isLoading ? t('contact.sending') : t('contact.sendMessage')}
               </button>
             </form>
             <div className="mt-4 text-sm text-gray-500">
-              <p className="italic">We aim to respond to all inquiries within 24 hours.</p>
+              <p className="italic">{t('contact.responseTime')}</p>
               <p className="mt-2">
-                <strong>Email:</strong> <a href="mailto:support@dottapps.com" className="text-blue-600 hover:text-blue-800">support@dottapps.com</a>
+                <strong>{t('contact.emailLabel')}:</strong> <a href="mailto:support@dottapps.com" className="text-blue-600 hover:text-blue-800">support@dottapps.com</a>
               </p>
               <p className="mt-1">
                 For faster response, use the chat icon in the bottom right corner.

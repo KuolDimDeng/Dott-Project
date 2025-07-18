@@ -2,6 +2,7 @@
 
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 // Mock data for charts
 const generateMockData = (months = 12, min = 5000, max = 50000, trend = 'up') => {
@@ -204,6 +205,7 @@ const LineChart = ({ datasets, height = 200 }) => {
  * A comprehensive dashboard with financial metrics and visualizations
  */
 function KPIDashboard({ userData }) {
+  const { t } = useTranslation('dashboard');
   // Define theme colors
   const theme = {
     colors: {
@@ -289,7 +291,7 @@ function KPIDashboard({ userData }) {
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500 mr-1" viewBox="0 0 20 20" fill="currentColor">
               <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zm6-4a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zm6-3a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
             </svg>
-            <h2 className="text-lg font-medium text-gray-600">Cash Flow</h2>
+            <h2 className="text-lg font-medium text-gray-600">{t('kpi.cashFlow')}</h2>
           </div>
           <p className="text-2xl font-bold">${metrics.cashFlow.current.toLocaleString()}</p>
           <div className="flex items-center mt-1">
@@ -376,7 +378,7 @@ function KPIDashboard({ userData }) {
               }`}
               onClick={() => handleDashboardChange(0)}
             >
-              Cash Flow
+              {t('kpi.cashFlow')}
             </button>
             <button
               className={`py-2 px-4 font-medium ${
@@ -405,7 +407,7 @@ function KPIDashboard({ userData }) {
         {activeDashboard === 0 && (
           <div>
             <div className="flex justify-between items-center mb-2">
-              <h2 className="text-lg font-medium">Cash Flow Analysis</h2>
+              <h2 className="text-lg font-medium">{t('kpi.cashFlowAnalysis')}</h2>
               <div className="inline-flex rounded-md shadow-sm">
                 <button
                   className={`px-3 py-1 text-sm font-medium ${
@@ -453,7 +455,7 @@ function KPIDashboard({ userData }) {
                   color: theme.colors.error.main 
                 },
                 { 
-                  label: 'Net Cash Flow', 
+                  label: t('kpi.netCashFlow'), 
                   data: financialData.cashFlow.net.slice(-parseInt(timeframe) || -12), 
                   color: theme.colors.primary.main 
                 }
@@ -484,7 +486,7 @@ function KPIDashboard({ userData }) {
               </div>
               <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
                 <div className="border-b border-gray-200 px-4 py-3">
-                  <h3 className="text-sm font-medium">Net Cash Flow</h3>
+                  <h3 className="text-sm font-medium">{t('kpi.netCashFlow')}</h3>
                 </div>
                 <div className="px-4 py-3">
                   <p className="text-xl font-semibold">
@@ -538,12 +540,12 @@ function KPIDashboard({ userData }) {
             <LineChart 
               datasets={[
                 { 
-                  label: 'Revenue', 
+                  label: t('kpi.revenue'), 
                   data: financialData.profitLoss.revenue.slice(-parseInt(timeframe) || -12), 
                   color: theme.colors.success.main 
                 },
                 { 
-                  label: 'Expenses', 
+                  label: t('kpi.expenses'), 
                   data: financialData.profitLoss.expenses.slice(-parseInt(timeframe) || -12), 
                   color: theme.colors.error.main 
                 },
@@ -559,7 +561,7 @@ function KPIDashboard({ userData }) {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
               <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
                 <div className="border-b border-gray-200 px-4 py-3">
-                  <h3 className="text-sm font-medium">Total Revenue</h3>
+                  <h3 className="text-sm font-medium">{t('kpi.totalRevenue')}</h3>
                 </div>
                 <div className="px-4 py-3">
                   <p className="text-xl font-semibold">
@@ -569,7 +571,7 @@ function KPIDashboard({ userData }) {
               </div>
               <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
                 <div className="border-b border-gray-200 px-4 py-3">
-                  <h3 className="text-sm font-medium">Total Expenses</h3>
+                  <h3 className="text-sm font-medium">{t('kpi.totalExpenses')}</h3>
                 </div>
                 <div className="px-4 py-3">
                   <p className="text-xl font-semibold">
