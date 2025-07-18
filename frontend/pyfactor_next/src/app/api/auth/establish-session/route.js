@@ -58,7 +58,20 @@ export async function POST(request) {
     // Create redirect response with proper headers
     const redirectResponse = NextResponse.redirect(fullRedirectUrl);
     
-    // Ensure cookies are set in the redirect response
+    // First, clear any existing cookies to ensure clean state
+    const clearOptions = {
+      path: '/',
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'lax',
+      maxAge: 0
+    };
+    
+    // Clear old cookies first
+    redirectResponse.cookies.set('sid', '', clearOptions);
+    redirectResponse.cookies.set('session_token', '', clearOptions);
+    
+    // Now set the new cookies
     redirectResponse.cookies.set('sid', token, cookieOptions);
     redirectResponse.cookies.set('session_token', token, cookieOptions);
     

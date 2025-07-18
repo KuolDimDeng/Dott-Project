@@ -20,6 +20,11 @@ export async function GET(request) {
     async () => {
       try {
     const cookieStore = await cookies();
+    
+    // Log all cookies for debugging
+    const allCookies = cookieStore.getAll();
+    console.log('[Session-V2] All cookies:', allCookies.map(c => ({ name: c.name, value: c.value?.substring(0, 8) + '...' })));
+    
     const sessionId = cookieStore.get('sid') || cookieStore.get('session_token');
     
         if (!sessionId) {
