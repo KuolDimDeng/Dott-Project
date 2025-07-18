@@ -19,7 +19,8 @@ import {
   CloudArrowUpIcon,
   BoltIcon,
   ClockIcon,
-  ChatBubbleLeftRightIcon
+  ChatBubbleLeftRightIcon,
+  BanknotesIcon
 } from '@heroicons/react/24/outline';
 import { getWhatsAppBusinessVisibility } from '@/utils/whatsappCountryDetection';
 
@@ -101,6 +102,13 @@ export default function MobilePage() {
       icon: ClockIcon,
       href: '/mobile/timesheet',
       color: 'bg-indigo-500'
+    },
+    {
+      title: 'Pay Stubs',
+      description: 'View & download',
+      icon: BanknotesIcon,
+      href: '/mobile/paystubs',
+      color: 'bg-emerald-500'
     },
     {
       title: 'New Invoice',
