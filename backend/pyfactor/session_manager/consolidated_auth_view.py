@@ -191,7 +191,7 @@ class ConsolidatedAuthView(View):
             
             # Set secure session cookies
             max_age = getattr(settings, 'SESSION_TTL', 86400)  # 24 hours
-            samesite_policy = 'None'  # Changed from 'Lax' for Cloudflare compatibility
+            samesite_policy = 'Lax'  # Changed back to Lax for better compatibility
             
             response.set_cookie(
                 'sid',
