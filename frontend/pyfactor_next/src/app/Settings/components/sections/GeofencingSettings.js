@@ -37,6 +37,7 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
   });
 
   const mapContainerRef = React.useRef(null);
+  const [mapContainerKey, setMapContainerKey] = useState(0);
 
   // Debug environment variable on component mount
   useEffect(() => {
@@ -175,6 +176,14 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
         setMap(map);
         setLoading(false);
         console.log('[GeofencingSettings] Map initialized successfully');
+        
+        // Prevent React from updating the map container once Google Maps takes control
+        // This prevents React DOM reconciliation conflicts
+        if (mapContainerRef.current) {
+          mapContainerRef.current.setAttribute('data-google-maps-initialized', 'true');
+          // Make the container element stable by preventing React updates
+          mapContainerRef.current.style.pointerEvents = 'auto';
+        }
       } catch (error) {
         console.error('[GeofencingSettings] Failed to initialize map:', error);
         setMapError('Failed to initialize map. Please refresh the page.');
@@ -265,12 +274,15 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
 
   const retryMapInitialization = async () => {
     console.log('[GeofencingSettings] Manual retry of map initialization...');
-    // Don't set loading to true - this removes the map container from DOM!
     setMapError(null);
     setIsRetrying(true);
     
-    // Wait a tick for DOM to settle
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Force React to recreate the DOM element by changing the key
+    // This prevents React DOM reconciliation conflicts with Google Maps
+    setMapContainerKey(prev => prev + 1);
+    
+    // Wait for DOM to settle after key change
+    await new Promise(resolve => setTimeout(resolve, 200));
     
     // Call initMap function again
     const initMap = async () => {
@@ -321,6 +333,14 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
         setMapError(null);
         setIsRetrying(false);
         console.log('[GeofencingSettings] Retry - Map initialized successfully');
+        
+        // Prevent React from updating the map container once Google Maps takes control
+        // This prevents React DOM reconciliation conflicts
+        if (mapContainerRef.current) {
+          mapContainerRef.current.setAttribute('data-google-maps-initialized', 'true');
+          // Make the container element stable by preventing React updates
+          mapContainerRef.current.style.pointerEvents = 'auto';
+        }
       } catch (error) {
         console.error('[GeofencingSettings] Retry - Failed to initialize map:', error);
         setMapError('Failed to initialize map. ' + error.message);
@@ -535,6 +555,7 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
             </div>
           )}
           <div 
+            key={mapContainerKey}
             ref={mapContainerRef}
             className="w-full h-full relative"
             onLoad={() => console.log('[GeofencingSettings] 📍 Map container div onLoad event')}
