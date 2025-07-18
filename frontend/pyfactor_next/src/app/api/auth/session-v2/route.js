@@ -25,7 +25,21 @@ export async function GET(request) {
     const allCookies = cookieStore.getAll();
     console.log('[Session-V2] All cookies:', allCookies.map(c => ({ name: c.name, value: c.value?.substring(0, 8) + '...' })));
     
-    const sessionId = cookieStore.get('sid') || cookieStore.get('session_token');
+    // Check for both cookie names
+    const sidCookie = cookieStore.get('sid');
+    const sessionTokenCookie = cookieStore.get('session_token');
+    
+    console.log('[Session-V2] Cookie details:');
+    console.log('  - sid cookie:', sidCookie ? { value: sidCookie.value.substring(0, 8) + '...', name: sidCookie.name } : 'NOT FOUND');
+    console.log('  - session_token cookie:', sessionTokenCookie ? { value: sessionTokenCookie.value.substring(0, 8) + '...', name: sessionTokenCookie.name } : 'NOT FOUND');
+    
+    // Log request headers to see what's being sent
+    console.log('[Session-V2] Request headers:');
+    console.log('  - Cookie header:', request.headers.get('cookie'));
+    console.log('  - Origin:', request.headers.get('origin'));
+    console.log('  - Referer:', request.headers.get('referer'));
+    
+    const sessionId = sidCookie || sessionTokenCookie;
     
         if (!sessionId) {
           logger.info('[Session-V2] No session ID found');

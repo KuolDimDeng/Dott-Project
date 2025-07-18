@@ -66,91 +66,56 @@ export default function SessionBridge() {
       sessionStorage.removeItem('session_bridge');
       console.log('[SessionBridge] Bridge data cleared from sessionStorage');
 
-      // First, exchange the bridge token for the actual session token
-      setStatus('Exchanging bridge token...');
-      console.log('[SessionBridge] 🔄 Exchanging bridge token for session token...');
-      console.log('[SessionBridge] Bridge token:', token?.substring(0, 20) + '...');
+      // Skip the bridge-session step and go directly to establish-session
+      // The token from sessionStorage is already our session token
+      setStatus('Establishing session...');
+      console.log('[SessionBridge] 🔄 Preparing to establish session directly...');
+      console.log('[SessionBridge] Session token:', token?.substring(0, 20) + '...');
       
-      try {
-        const bridgeUrl = `/api/auth/bridge-session?token=${encodeURIComponent(token)}`;
-        console.log('[SessionBridge] Calling bridge URL:', bridgeUrl);
+      // Set the session token in state to update the form
+      console.log('[SessionBridge] 📝 Setting session token in state...');
+      setSessionToken(token);
+      setRedirectUrl(redirectUrl || '/dashboard');
+      
+      // Wait for next render cycle to ensure form is updated
+      console.log('[SessionBridge] ⏱️  Waiting for form to update...');
+      setTimeout(() => {
+        console.log('[SessionBridge] 🔍 Looking for form element...');
+        const form = document.getElementById('session-form');
+        console.log('[SessionBridge] Form element found:', !!form);
         
-        const bridgeResponse = await fetch(bridgeUrl);
-        console.log('[SessionBridge] Bridge response status:', bridgeResponse.status);
-        
-        if (!bridgeResponse.ok) {
-          console.error('[SessionBridge] ❌ Failed to exchange bridge token:', bridgeResponse.status);
-          const errorText = await bridgeResponse.text();
-          console.error('[SessionBridge] Error response:', errorText);
-          router.push('/auth/signin?error=bridge_exchange_failed');
-          return;
-        }
-        
-        const bridgeResult = await bridgeResponse.json();
-        console.log('[SessionBridge] ✅ Bridge exchange successful');
-        console.log('[SessionBridge] Bridge exchange result:', {
-          success: bridgeResult.success,
-          hasSessionToken: !!bridgeResult.sessionToken,
-          sessionTokenLength: bridgeResult.sessionToken?.length,
-          email: bridgeResult.email,
-          tenantId: bridgeResult.tenantId
-        });
-        
-        if (!bridgeResult.success || !bridgeResult.sessionToken) {
-          console.error('[SessionBridge] No session token in bridge response');
-          router.push('/auth/signin?error=no_session_token');
-          return;
-        }
-        
-        // Set the session token in state to update the form
-        setStatus('Establishing session...');
-        console.log('[SessionBridge] 📝 Setting session token in state...');
-        setSessionToken(bridgeResult.sessionToken);
-        setRedirectUrl(redirectUrl || '/dashboard');
-        
-        // Wait for next render cycle to ensure form is updated
-        console.log('[SessionBridge] ⏱️  Waiting for form to update...');
-        setTimeout(() => {
-          console.log('[SessionBridge] 🔍 Looking for form element...');
-          const form = document.getElementById('session-form');
-          console.log('[SessionBridge] Form element found:', !!form);
+        if (form) {
+          console.log('[SessionBridge] ✅ Form found, preparing submission...');
           
-          if (form) {
-            console.log('[SessionBridge] ✅ Form found, preparing submission...');
-            
-            // Log all form inputs
-            const formData = new FormData(form);
-            const formEntries = {};
-            for (const [key, value] of formData.entries()) {
-              formEntries[key] = key === 'token' ? `${value.substring(0, 20)}...` : value;
-            }
-            
-            console.log('[SessionBridge] 📋 Form submission data:', {
-              action: form.action,
-              method: form.method,
-              tokenLength: bridgeResult.sessionToken?.length,
-              isUUID: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bridgeResult.sessionToken),
-              formData: formEntries
-            });
-            
-            // Submit the form
-            console.log('[SessionBridge] 🚀 Submitting form to establish session...');
-            form.submit();
-          } else {
-            console.error('[SessionBridge] ❌ Form element not found!');
-            console.log('[SessionBridge] DOM debug - body innerHTML length:', document.body.innerHTML.length);
-            console.log('[SessionBridge] DOM debug - forms in document:', document.forms.length);
-            console.log('[SessionBridge] DOM debug - element by ID:', document.getElementById('session-form'));
-            
-            // As a fallback, try direct navigation with session cookie
-            console.log('[SessionBridge] 🔄 Attempting direct navigation as fallback');
-            router.push(redirectUrl || '/dashboard');
+          // Log all form inputs
+          const formData = new FormData(form);
+          const formEntries = {};
+          for (const [key, value] of formData.entries()) {
+            formEntries[key] = key === 'token' ? `${value.substring(0, 20)}...` : value;
           }
-        }, 200); // Increased delay to ensure state update
-      } catch (error) {
-        console.error('[SessionBridge] Error exchanging bridge token:', error);
-        router.push('/auth/signin?error=bridge_error');
-      }
+          
+          console.log('[SessionBridge] 📋 Form submission data:', {
+            action: form.action,
+            method: form.method,
+            tokenLength: token?.length,
+            isUUID: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(token),
+            formData: formEntries
+          });
+          
+          // Submit the form
+          console.log('[SessionBridge] 🚀 Submitting form to establish session...');
+          form.submit();
+        } else {
+          console.error('[SessionBridge] ❌ Form element not found!');
+          console.log('[SessionBridge] DOM debug - body innerHTML length:', document.body.innerHTML.length);
+          console.log('[SessionBridge] DOM debug - forms in document:', document.forms.length);
+          console.log('[SessionBridge] DOM debug - element by ID:', document.getElementById('session-form'));
+          
+          // As a fallback, try direct navigation with session cookie
+          console.log('[SessionBridge] 🔄 Attempting direct navigation as fallback');
+          router.push(redirectUrl || '/dashboard');
+        }
+      }, 200); // Increased delay to ensure state update
     } catch (error) {
       console.error('[SessionBridge] ❌ Error processing bridge data:', error);
       console.error('[SessionBridge] Error stack:', error.stack);

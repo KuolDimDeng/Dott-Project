@@ -12,6 +12,9 @@ export async function POST(request) {
     const token = formData.get('token');
     const redirectUrl = formData.get('redirectUrl') || '/dashboard';
     
+    // Clear ALL cookies before setting new ones to ensure clean state
+    console.log('[EstablishSession] === COOKIE CLEANUP PHASE ===');
+    
     console.log('[EstablishSession] Form data received');
     console.log('[EstablishSession] Token:', token?.substring(0, 20) + '...');
     console.log('[EstablishSession] Redirect URL:', redirectUrl);
@@ -19,8 +22,22 @@ export async function POST(request) {
     console.log('[EstablishSession] Request headers:', {
       origin: request.headers.get('origin'),
       host: request.headers.get('host'),
-      referer: request.headers.get('referer')
+      referer: request.headers.get('referer'),
+      cookie: request.headers.get('cookie')
     });
+    
+    // Check if there are existing cookies
+    const cookieStore = await cookies();
+    const existingCookies = cookieStore.getAll();
+    console.log('[EstablishSession] Existing cookies:', existingCookies.map(c => ({ 
+      name: c.name, 
+      value: c.name.includes('sid') || c.name.includes('session') ? c.value?.substring(0, 8) + '...' : 'non-session' 
+    })));
+    
+    console.log('[EstablishSession] All cookies before cleanup:', existingCookies.map(c => ({ 
+      name: c.name, 
+      value: c.name.includes('sid') || c.name.includes('session') ? c.value?.substring(0, 8) + '...' : 'non-session' 
+    })));
     
     if (!token) {
       // Redirect to signin with error
@@ -67,9 +84,12 @@ export async function POST(request) {
       maxAge: 0
     };
     
-    // Clear old cookies first
-    redirectResponse.cookies.set('sid', '', clearOptions);
-    redirectResponse.cookies.set('session_token', '', clearOptions);
+    // Clear old cookies first - also clear any other session-related cookies
+    const cookiesToClear = ['sid', 'session_token', 'sessionId', 'session_id', 'auth_session'];
+    cookiesToClear.forEach(cookieName => {
+      redirectResponse.cookies.set(cookieName, '', clearOptions);
+    });
+    console.log('[EstablishSession] Cleared old cookies:', cookiesToClear);
     
     // Now set the new cookies
     redirectResponse.cookies.set('sid', token, cookieOptions);
