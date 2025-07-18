@@ -236,7 +236,15 @@ const WhatsAppCatalogManager = ({ onClose }) => {
               
               <div className="space-y-2">
                 {catalogs.length === 0 ? (
-                  <p className="text-gray-500 text-center py-4">No catalogs yet</p>
+                  <div className="text-center py-4">
+                    <p className="text-gray-500 mb-4">No catalogs yet</p>
+                    <button
+                      onClick={() => setShowCreateModal(true)}
+                      className="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                    >
+                      Create First Catalog
+                    </button>
+                  </div>
                 ) : (
                   catalogs.map((catalog) => (
                     <div
@@ -340,8 +348,88 @@ const WhatsAppCatalogManager = ({ onClose }) => {
                 </div>
               </div>
             ) : (
-              <div className="bg-white rounded-lg shadow-sm p-6 text-center">
-                <p className="text-gray-500">Select a catalog to view details</p>
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="text-center mb-8">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    {catalogs.length === 0 ? 'Get Started with WhatsApp Catalogs' : 'Select a catalog to view details'}
+                  </h3>
+                  <p className="text-gray-600">
+                    {catalogs.length === 0 
+                      ? 'Create a catalog to start selling products on WhatsApp' 
+                      : 'Choose a catalog from the left to manage products'}
+                  </p>
+                </div>
+
+                {catalogs.length === 0 && (
+                  <div className="space-y-4">
+                    <div className="bg-blue-50 rounded-lg p-6">
+                      <h4 className="font-medium text-blue-900 mb-3">Quick Start Options</h4>
+                      <div className="space-y-3">
+                        <button
+                          onClick={() => setShowCreateModal(true)}
+                          className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 flex items-center justify-center"
+                        >
+                          <PlusIcon className="w-5 h-5 mr-2" />
+                          Create New Catalog
+                        </button>
+                        <button
+                          onClick={async () => {
+                            // First create a catalog, then sync
+                            try {
+                              const response = await fetch('/api/proxy/whatsapp-business/catalogs/', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  name: 'Main Catalog',
+                                  description: 'Synced from main inventory',
+                                  is_active: true
+                                })
+                              });
+                              if (response.ok) {
+                                const newCatalog = await response.json();
+                                await fetchCatalogs();
+                                setSelectedCatalog(newCatalog);
+                                // Now trigger sync
+                                setTimeout(() => {
+                                  fetchAvailableProducts();
+                                  setShowSyncModal(true);
+                                }, 500);
+                              }
+                            } catch (error) {
+                              console.error('Error creating catalog:', error);
+                            }
+                          }}
+                          className="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 flex items-center justify-center"
+                        >
+                          <ArrowPathIcon className="w-5 h-5 mr-2" />
+                          Create & Sync from Main Products
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <h4 className="text-sm font-medium text-gray-900 mb-2">What are WhatsApp Catalogs?</h4>
+                      <ul className="text-sm text-gray-600 space-y-2">
+                        <li className="flex items-start">
+                          <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></div>
+                          <span>Share product collections with customers via WhatsApp</span>
+                        </li>
+                        <li className="flex items-start">
+                          <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></div>
+                          <span>Customers can browse and order directly in WhatsApp</span>
+                        </li>
+                        <li className="flex items-start">
+                          <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></div>
+                          <span>Sync products from your main inventory</span>
+                        </li>
+                        <li className="flex items-start">
+                          <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></div>
+                          <span>Track orders and manage inventory in one place</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
