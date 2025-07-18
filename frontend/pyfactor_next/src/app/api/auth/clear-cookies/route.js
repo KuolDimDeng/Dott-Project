@@ -14,24 +14,24 @@ import { logger } from '@/utils/logger';
  * - Import { signOut } from 'aws-amplify/auth'
  * - Use await signOut() to properly clear Cognito authentication
  */
-export async function POST() {
-  logger.warn('[API] DEPRECATED: Using clear-cookies route. This API will be removed in future. Use Cognito signOut() instead.');
-
+function clearAllCookies() {
   const isDev = process.env.NODE_ENV === 'development';
   const expiredOptions = {
     path: '/',
     httpOnly: true,
     secure: !isDev,
-    sameSite: isDev ? 'lax' : 'strict',
+    sameSite: 'lax',
     maxAge: 0
   };
 
   const response = NextResponse.json({ 
     success: true,
-    message: '⚠️ DEPRECATED: Auth cookies cleared for backward compatibility only. Use signOut() from aws-amplify/auth instead.'
+    message: 'All auth cookies cleared'
   });
 
-  // Clear all auth-related cookies
+  // Clear all auth-related cookies including current session cookies
+  response.cookies.set('sid', '', expiredOptions);
+  response.cookies.set('session_token', '', expiredOptions);
   response.cookies.set('idToken', '', expiredOptions);
   response.cookies.set('accessToken', '', expiredOptions);
   response.cookies.set('refreshToken', '', expiredOptions);
@@ -42,6 +42,16 @@ export async function POST() {
   response.cookies.set('tenantId', '', expiredOptions);
   response.cookies.set('businessid', '', expiredOptions);
 
-  logger.debug('[API] Auth cookies cleared for backward compatibility only');
+  logger.debug('[API] All auth cookies cleared');
   return response;
+}
+
+export async function POST() {
+  logger.warn('[API] DEPRECATED: Using clear-cookies route POST method');
+  return clearAllCookies();
+}
+
+export async function GET() {
+  logger.info('[API] Clearing all cookies via GET request');
+  return clearAllCookies();
 }

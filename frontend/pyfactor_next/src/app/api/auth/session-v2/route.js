@@ -25,9 +25,15 @@ export async function GET(request) {
         if (!sessionId) {
           logger.info('[Session-V2] No session ID found');
       // Return unauthenticated response
-      return NextResponse.json({ 
+      const response = NextResponse.json({ 
         authenticated: false
       }, { status: 401 });
+      
+      // Clear any stale cookies
+      response.cookies.delete('sid');
+      response.cookies.delete('session_token');
+      
+      return response;
     }
     
         logger.info('[Session-V2] Found session ID, validating with backend...', {
