@@ -29,8 +29,8 @@ export async function GET(request) {
     // This ensures cookies work on the exact domain being accessed
     const cookieOptions = {
       httpOnly: true,
-      secure: true, // Must be true for SameSite=None cookies
-      sameSite: 'none', // Changed from 'lax' to 'none' for Cloudflare compatibility
+      secure: isProduction, // Only secure in production
+      sameSite: 'lax', // Try 'lax' instead of 'none'
       path: '/',
       maxAge: 86400, // 24 hours
       // Remove domain setting to let it default

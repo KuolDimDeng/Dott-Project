@@ -303,8 +303,8 @@ export async function POST(request) {
     const isProduction = process.env.NODE_ENV === 'production';
     const cookieOptions = {
       httpOnly: true,
-      secure: true,  // Must be true for SameSite=None
-      sameSite: 'none',  // Changed to 'none' for Cloudflare compatibility
+      secure: isProduction,  // Only secure in production
+      sameSite: 'lax',  // Try 'lax' instead of 'none'
       expires: new Date(sessionData.expires_at),
       path: '/',
       // Don't set domain to allow it to default to current domain
