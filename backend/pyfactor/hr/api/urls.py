@@ -14,9 +14,15 @@ def test_routing(request):
     """Simple test endpoint to verify routing"""
     return Response({"test": "HR API routing works", "path": request.path})
 
+@api_view(['GET'])
+def test_profile_simple(request):
+    """Super simple profile test"""
+    return Response({"test": "Profile endpoint works", "user_id": str(request.user.id) if request.user.is_authenticated else "anonymous"})
+
 urlpatterns = [
     # Test endpoint (no auth required)
     path('test/', test_routing, name='test-routing'),
+    path('test-profile-simple/', test_profile_simple, name='test-profile-simple'),
     
     # Employee views
     path('current-employee/', CurrentEmployeeView.as_view(), name='current-employee'),

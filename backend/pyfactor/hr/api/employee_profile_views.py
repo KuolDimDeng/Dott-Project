@@ -94,6 +94,7 @@ class EmployeeProfileView(APIView):
     
     def get(self, request):
         """Get employee profile information including SSN, bank, and tax data from Stripe"""
+        logger.info(f"[EmployeeProfile] === GET REQUEST START (OUTSIDE TRY) ===")
         try:
             logger.info(f"[EmployeeProfile] === GET REQUEST START ===")
             logger.info(f"[EmployeeProfile] Request user: {request.user}")
@@ -502,7 +503,7 @@ class EmployeeTaxInfoView(APIView):
 def employee_profile_debug(request):
     """Debug endpoint to test employee lookup"""
     # Immediate response to check if endpoint is reached
-    return Response({"immediate_test": "Endpoint reached", "user_email": str(request.user.email)})
+    return Response({"immediate_test": "Endpoint reached", "auth": "passed"})
     
     try:
         logger.info(f"[DEBUG] === EMPLOYEE PROFILE DEBUG START ===")
