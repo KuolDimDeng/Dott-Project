@@ -7,7 +7,8 @@ from .employee_profile_views import (
     employee_profile_debug
 )
 from .test_minimal_view import MinimalTestView
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 @api_view(['GET'])
