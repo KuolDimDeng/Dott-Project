@@ -16,16 +16,18 @@ export async function POST(request) {
     console.log('[EstablishSession] Token:', token?.substring(0, 20) + '...');
     console.log('[EstablishSession] Redirect URL:', redirectUrl);
     console.log('[EstablishSession] Base URL:', baseUrl);
+    console.log('[EstablishSession] Request headers:', {
+      origin: request.headers.get('origin'),
+      host: request.headers.get('host'),
+      referer: request.headers.get('referer')
+    });
     
     if (!token) {
       // Redirect to signin with error
       return NextResponse.redirect(new URL('/auth/signin?error=no_session_token', baseUrl));
     }
     
-    // Set session cookies - await is required in Next.js 15
-    const cookieStore = await cookies();
-    
-    // In production, set domain to allow cookie sharing across subdomains
+    // Configure cookie options
     const isProduction = process.env.NODE_ENV === 'production';
     
     // Don't set domain - let it default to current domain
@@ -60,9 +62,22 @@ export async function POST(request) {
     redirectResponse.cookies.set('sid', token, cookieOptions);
     redirectResponse.cookies.set('session_token', token, cookieOptions);
     
+    // Log server-side cookie setting for debugging
+    console.log('[SERVER INFO] [EstablishSession] Setting cookies on redirect response:', {
+      sid: token.substring(0, 8) + '...',
+      cookieOptions,
+      redirectTo: fullRedirectUrl.toString()
+    });
+    
     // Add cache control headers to prevent caching
     redirectResponse.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
     redirectResponse.headers.set('Pragma', 'no-cache');
+    
+    // Log response headers for debugging
+    console.log('[SERVER INFO] [EstablishSession] Response headers:', {
+      'set-cookie': redirectResponse.headers.get('set-cookie'),
+      location: redirectResponse.headers.get('location')
+    });
     
     return redirectResponse;
     
