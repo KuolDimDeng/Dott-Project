@@ -857,7 +857,6 @@ SHARED_APPS = (
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
-    'django_cryptography',
     'phonenumber_field',
     'django_extensions',
     'custom_auth',
