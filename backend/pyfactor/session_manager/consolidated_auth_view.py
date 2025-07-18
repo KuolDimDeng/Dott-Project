@@ -39,7 +39,9 @@ class ConsolidatedAuthView(View):
             # Get Cloudflare Ray ID for tracking
             cf_ray = request.META.get('HTTP_CF_RAY', 'no-ray-id')
             
+            logger.info(f"[ConsolidatedAuth] ===== AUTH REQUEST START =====")
             logger.info(f"[ConsolidatedAuth] Auth request from IP: {real_ip}, Ray: {cf_ray}")
+            logger.info(f"[ConsolidatedAuth] Request headers: {dict(request.META)}")
             
             # Parse request body
             try:
@@ -54,7 +56,17 @@ class ConsolidatedAuthView(View):
             email = data.get('email')
             access_token = data.get('access_token')
             
+            logger.info(f"[ConsolidatedAuth] Received auth data:")
+            logger.info(f"  - auth0_sub: {auth0_sub}")
+            logger.info(f"  - email: {email}")
+            logger.info(f"  - has_access_token: {bool(access_token)}")
+            logger.info(f"  - access_token length: {len(access_token) if access_token else 0}")
+            
             if not auth0_sub or not email or not access_token:
+                logger.error(f"[ConsolidatedAuth] Missing required fields")
+                logger.error(f"  - auth0_sub present: {bool(auth0_sub)}")
+                logger.error(f"  - email present: {bool(email)}")
+                logger.error(f"  - access_token present: {bool(access_token)}")
                 return JsonResponse({
                     'error': 'Missing required fields'
                 }, status=400)
@@ -136,7 +148,11 @@ class ConsolidatedAuthView(View):
                 onboarding_step=onboarding_step
             )
             
-            logger.info(f"[ConsolidatedAuth] Session created: {session.session_id}")
+            logger.info(f"[ConsolidatedAuth] Session created successfully!")
+            logger.info(f"  - session_id: {session.session_id}")
+            logger.info(f"  - user_email: {session.user.email}")
+            logger.info(f"  - expires_at: {session.expires_at}")
+            logger.info(f"  - is_active: {session.is_active}")
             
             # Build comprehensive response
             response_data = {
@@ -215,11 +231,21 @@ class ConsolidatedAuthView(View):
                 path='/'
             )
             
+            logger.info(f"[ConsolidatedAuth] Session cookies set:")
+            logger.info(f"  - Cookie name: sid, session_token")
+            logger.info(f"  - Cookie value: {str(session.session_id)}")
+            logger.info(f"  - Max age: {max_age}")
+            logger.info(f"  - HttpOnly: True")
+            logger.info(f"  - Secure: {not settings.DEBUG}")
+            logger.info(f"  - SameSite: {samesite_policy}")
+            
             # Add CORS headers
             origin = request.META.get('HTTP_ORIGIN')
             if origin:
                 response['Access-Control-Allow-Origin'] = origin
                 response['Access-Control-Allow-Credentials'] = 'true'
+            
+            logger.info(f"[ConsolidatedAuth] ===== AUTH REQUEST COMPLETE =====")
             
             return response
             
