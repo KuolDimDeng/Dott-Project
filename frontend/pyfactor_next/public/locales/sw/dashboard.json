@@ -1,0 +1,106 @@
+{
+  "_comment": "Dashboard page translations - Swahili",
+  "title": "Dashibodi",
+  "welcome": "Karibu tena",
+  "overview": "Muhtasari",
+  "widgets": {
+    "revenue": "Mapato",
+    "sales": "Mauzo",
+    "customers": "Wateja",
+    "inventory": "Hisa",
+    "expenses": "Matumizi",
+    "profit": "Faida",
+    "orders": "Maagizo",
+    "invoices": "Ankara"
+  },
+  "charts": {
+    "salesOverview": "Muhtasari wa Mauzo",
+    "revenueChart": "Chati ya Mapato",
+    "topProducts": "Bidhaa Bora",
+    "customerGrowth": "Ukuaji wa Wateja",
+    "expenseBreakdown": "Mgawanyiko wa Matumizi",
+    "inventoryStatus": "Hali ya Hisa",
+    "monthlyComparison": "Ulinganisho wa Kila Mwezi",
+    "yearlyTrends": "Mitindo ya Kila Mwaka"
+  },
+  "stats": {
+    "today": "Leo",
+    "thisWeek": "Wiki Hii",
+    "thisMonth": "Mwezi Huu",
+    "thisYear": "Mwaka Huu",
+    "total": "Jumla",
+    "average": "Wastani",
+    "growth": "Ukuaji",
+    "decline": "Kupungua",
+    "change": "Mabadiliko",
+    "vs": "dhidi ya",
+    "lastPeriod": "kipindi kilichopita"
+  },
+  "quickActions": {
+    "title": "Vitendo vya Haraka",
+    "createInvoice": "Tengeneza Ankara",
+    "addProduct": "Ongeza Bidhaa",
+    "recordSale": "Rekodi Mauzo",
+    "addCustomer": "Ongeza Mteja",
+    "processPayroll": "Chakata Mshahara",
+    "viewReports": "Ona Ripoti",
+    "manageInventory": "Dhibiti Hisa",
+    "sendInvoice": "Tuma Ankara"
+  },
+  "recentActivity": {
+    "title": "Shughuli za Hivi Karibuni",
+    "newSale": "Mauzo mapya",
+    "invoicePaid": "Ankara imelipwa",
+    "productAdded": "Bidhaa imeongezwa",
+    "customerAdded": "Mteja ameongezwa",
+    "paymentReceived": "Malipo yamepokewa",
+    "orderShipped": "Agizo limetumwa",
+    "lowStock": "Tahadhari ya hisa finyu",
+    "viewAll": "Ona shughuli zote"
+  },
+  "notifications": {
+    "title": "Arifa",
+    "unread": "hazijaanza",
+    "markAllRead": "Alama zote kama zimesomwa",
+    "noNotifications": "Hakuna arifa mpya",
+    "settings": "Mipangilio ya arifa"
+  },
+  "performance": {
+    "title": "Vipimo vya Utendaji",
+    "salesTarget": "Lengo la Mauzo",
+    "achieved": "Limefikiriwa",
+    "remaining": "Linabaki",
+    "onTrack": "Kwa mkondo",
+    "behindTarget": "Nyuma ya lengo",
+    "exceededTarget": "Limezidi lengo"
+  },
+  "filters": {
+    "dateRange": "Muda wa Tarehe",
+    "customRange": "Muda wa Kawaida",
+    "apply": "Tumia",
+    "reset": "Rudisha",
+    "from": "Kutoka",
+    "to": "Hadi",
+    "selectDate": "Chagua tarehe"
+  },
+  "empty": {
+    "noData": "Hakuna data inapatikana",
+    "noSales": "Hakuna mauzo yaliyorekodiwa",
+    "noCustomers": "Hakuna wateja bado",
+    "noProducts": "Hakuna bidhaa zilizoongezwa",
+    "getStarted": "Anza",
+    "addFirst": "Ongeza ya kwanza yako"
+  },
+  "loading": {
+    "loadingData": "Inapakia data...",
+    "refreshing": "Inaburudisha...",
+    "calculating": "Inahesabu...",
+    "updating": "Inasasisha..."
+  },
+  "errors": {
+    "loadFailed": "Kushindwa kupakia data",
+    "tryAgain": "Jaribu tena",
+    "refresh": "Burudisha",
+    "connectionError": "Hitilafu ya muunganisho"
+  }
+}

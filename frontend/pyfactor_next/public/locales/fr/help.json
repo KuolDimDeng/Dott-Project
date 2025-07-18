@@ -1,0 +1,120 @@
+{
+  "_comment": "Traductions du centre d'aide - French",
+  "title": "Centre d'aide",
+  "subtitle": "Obtenez de l'aide et trouvez des réponses",
+  "search": {
+    "placeholder": "Rechercher de l'aide...",
+    "button": "Rechercher",
+    "noResults": "Aucun résultat trouvé",
+    "tryDifferent": "Essayez des mots-clés différents"
+  },
+  "categories": {
+    "gettingStarted": "Commencer",
+    "billing": "Facturation et paiements",
+    "sales": "Ventes et facturation",
+    "inventory": "Gestion d'inventaire",
+    "payroll": "Paie et RH",
+    "reports": "Rapports et analyses",
+    "integrations": "Intégrations",
+    "troubleshooting": "Dépannage",
+    "account": "Compte et sécurité"
+  },
+  "popularArticles": {
+    "title": "Articles populaires",
+    "howToCreateInvoice": "Comment créer une facture",
+    "managingInventory": "Gérer votre inventaire",
+    "processingPayroll": "Traitement de la paie",
+    "settingUpTaxes": "Configuration des taxes",
+    "connectingBankAccount": "Connexion du compte bancaire",
+    "exportingReports": "Exportation des rapports",
+    "addingEmployees": "Ajout d'employés",
+    "creatingProducts": "Création de produits"
+  },
+  "contact": {
+    "title": "Contacter le support",
+    "subtitle": "Vous ne trouvez pas ce que vous cherchez ?",
+    "email": "Support par email",
+    "emailAddress": "support@dottapps.com",
+    "chat": "Chat en direct",
+    "chatAvailable": "Disponible lun-ven, 9h-17h",
+    "phone": "Support téléphonique",
+    "phoneNumber": "+1 (555) 123-4567",
+    "responseTime": "Temps de réponse",
+    "emailResponse": "Sous 24 heures",
+    "chatResponse": "Immédiat",
+    "phoneResponse": "Immédiat"
+  },
+  "resources": {
+    "title": "Ressources",
+    "userGuide": "Guide utilisateur",
+    "videoTutorials": "Tutoriels vidéo",
+    "apiDocumentation": "Documentation API",
+    "releaseNotes": "Notes de version",
+    "systemStatus": "État du système",
+    "community": "Forum communautaire"
+  },
+  "faq": {
+    "title": "Questions fréquemment posées",
+    "billing": {
+      "howToUpgrade": "Comment mettre à niveau mon forfait ?",
+      "acceptedPayments": "Quels moyens de paiement sont acceptés ?",
+      "cancelSubscription": "Comment annuler mon abonnement ?",
+      "refundPolicy": "Quelle est votre politique de remboursement ?"
+    },
+    "account": {
+      "resetPassword": "Comment réinitialiser mon mot de passe ?",
+      "changeEmail": "Comment changer mon email ?",
+      "deleteAccount": "Comment supprimer mon compte ?",
+      "dataExport": "Puis-je exporter mes données ?"
+    },
+    "features": {
+      "multipleBusinesses": "Puis-je gérer plusieurs entreprises ?",
+      "userLimit": "Combien d'utilisateurs puis-je ajouter ?",
+      "storageLimit": "Quelle est la limite de stockage ?",
+      "apiAccess": "Fournissez-vous un accès API ?"
+    }
+  },
+  "feedback": {
+    "title": "Envoyer des commentaires",
+    "subtitle": "Aidez-nous à améliorer Dott",
+    "type": "Type de commentaire",
+    "bug": "Rapport de bug",
+    "feature": "Demande de fonctionnalité",
+    "improvement": "Amélioration",
+    "other": "Autre",
+    "description": "Description",
+    "attachments": "Pièces jointes",
+    "submit": "Envoyer les commentaires",
+    "thankYou": "Merci pour vos commentaires !"
+  },
+  "training": {
+    "title": "Formation et tutoriels",
+    "beginner": "Débutant",
+    "intermediate": "Intermédiaire",
+    "advanced": "Avancé",
+    "webinars": "Webinaires en direct",
+    "certification": "Programme de certification",
+    "duration": "Durée",
+    "level": "Niveau",
+    "enroll": "S'inscrire",
+    "viewSchedule": "Voir l'horaire"
+  },
+  "actions": {
+    "viewAll": "Tout voir",
+    "readMore": "Lire plus",
+    "watchVideo": "Regarder la vidéo",
+    "download": "Télécharger",
+    "print": "Imprimer",
+    "share": "Partager",
+    "bookmark": "Marquer",
+    "helpful": "Cela était-il utile ?",
+    "yes": "Oui",
+    "no": "Non"
+  },
+  "messages": {
+    "feedbackSent": "Vos commentaires ont été envoyés",
+    "articleHelpful": "Merci pour vos commentaires",
+    "errorLoading": "Erreur lors du chargement du contenu",
+    "tryAgain": "Veuillez réessayer plus tard"
+  }
+}

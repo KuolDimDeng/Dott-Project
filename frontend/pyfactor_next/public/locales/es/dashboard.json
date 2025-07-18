@@ -1,0 +1,38 @@
+{
+  "_comment": "Dashboard translations - Spanish",
+  "welcome": "Bienvenido a tu Panel de Control",
+  "quickStart": {
+    "createInvoice": {
+      "title": "Crear una Factura",
+      "description": "Aprende cómo crear y gestionar facturas para tus clientes."
+    },
+    "manageCustomers": {
+      "title": "Gestionar Clientes",
+      "description": "Añade y gestiona la información de tus clientes de manera eficiente."
+    },
+    "trackInventory": {
+      "title": "Seguimiento de Inventario",
+      "description": "Mantén un registro de tu inventario de productos y niveles de stock."
+    }
+  },
+  "kpi": {
+    "cashFlow": "Flujo de Efectivo",
+    "cashFlowAnalysis": "Análisis de Flujo de Efectivo",
+    "netCashFlow": "Flujo de Efectivo Neto",
+    "revenue": "Ingresos",
+    "expenses": "Gastos",
+    "totalRevenue": "Ingresos Totales",
+    "totalExpenses": "Gastos Totales",
+    "profit": "Beneficio",
+    "loss": "Pérdida",
+    "assets": "Activos",
+    "liabilities": "Pasivos",
+    "equity": "Capital",
+    "performance": "Rendimiento",
+    "metrics": "Métricas",
+    "analytics": "Análisis",
+    "reports": "Informes",
+    "summary": "Resumen",
+    "overview": "Visión General"
+  }
+}

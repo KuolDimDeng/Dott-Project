@@ -1,0 +1,120 @@
+{
+  "_comment": "Tafsiri za kituo cha msaada - Swahili",
+  "title": "Kituo cha Msaada",
+  "subtitle": "Pata msaada na tafuta majibu",
+  "search": {
+    "placeholder": "Tafuta msaada...",
+    "button": "Tafuta",
+    "noResults": "Hakuna matokeo yaliyopatikana",
+    "tryDifferent": "Jaribu maneno muhimu mengine"
+  },
+  "categories": {
+    "gettingStarted": "Kuanza",
+    "billing": "Bili na Malipo",
+    "sales": "Mauzo na Ankara",
+    "inventory": "Usimamizi wa Hisa",
+    "payroll": "Mishahara na HR",
+    "reports": "Ripoti na Uchambuzi",
+    "integrations": "Ujumuishaji",
+    "troubleshooting": "Kutatua Matatizo",
+    "account": "Akaunti na Usalama"
+  },
+  "popularArticles": {
+    "title": "Makala Maarufu",
+    "howToCreateInvoice": "Jinsi ya kuunda ankara",
+    "managingInventory": "Kusimamia hisa yako",
+    "processingPayroll": "Kuchakata mishahara",
+    "settingUpTaxes": "Kuweka kodi",
+    "connectingBankAccount": "Kuunganisha akaunti ya benki",
+    "exportingReports": "Kuhamisha ripoti",
+    "addingEmployees": "Kuongeza wafanyakazi",
+    "creatingProducts": "Kuunda bidhaa"
+  },
+  "contact": {
+    "title": "Wasiliana na Msaada",
+    "subtitle": "Huwezi kupata unachokitafuta?",
+    "email": "Msaada wa Barua pepe",
+    "emailAddress": "support@dottapps.com",
+    "chat": "Mazungumzo ya Moja kwa Moja",
+    "chatAvailable": "Inapatikana Jumatatu-Ijumaa, 9am-5pm",
+    "phone": "Msaada wa Simu",
+    "phoneNumber": "+1 (555) 123-4567",
+    "responseTime": "Muda wa Kujibu",
+    "emailResponse": "Ndani ya masaa 24",
+    "chatResponse": "Mara moja",
+    "phoneResponse": "Mara moja"
+  },
+  "resources": {
+    "title": "Rasilimali",
+    "userGuide": "Mwongozo wa Mtumiaji",
+    "videoTutorials": "Mafunzo ya Video",
+    "apiDocumentation": "Nyaraka za API",
+    "releaseNotes": "Maelezo ya Kutolewa",
+    "systemStatus": "Hali ya Mfumo",
+    "community": "Jukwaa la Jumuiya"
+  },
+  "faq": {
+    "title": "Maswali Yanayoulizwa Mara kwa Mara",
+    "billing": {
+      "howToUpgrade": "Jinsi ya kuboresha mpango wangu?",
+      "acceptedPayments": "Ni njia gani za malipo zinazokubaliwa?",
+      "cancelSubscription": "Jinsi ya kufuta usajili wangu?",
+      "refundPolicy": "Sera yenu ya kurudisha fedha ni nini?"
+    },
+    "account": {
+      "resetPassword": "Jinsi ya kuweka upya nenosiri langu?",
+      "changeEmail": "Jinsi ya kubadilisha barua pepe yangu?",
+      "deleteAccount": "Jinsi ya kufuta akaunti yangu?",
+      "dataExport": "Je, ninaweza kuhamisha data yangu?"
+    },
+    "features": {
+      "multipleBusinesses": "Je, ninaweza kusimamia biashara nyingi?",
+      "userLimit": "Ni watumiaji wangapi ninaweza kuongeza?",
+      "storageLimit": "Ni kikomo gani cha kuhifadhi?",
+      "apiAccess": "Je, mnatoa ufikiaji wa API?"
+    }
+  },
+  "feedback": {
+    "title": "Tuma Maoni",
+    "subtitle": "Tusaidie kuboresha Dott",
+    "type": "Aina ya Maoni",
+    "bug": "Ripoti ya Hitilafu",
+    "feature": "Ombi la Kipengele",
+    "improvement": "Uboreshaji",
+    "other": "Mengine",
+    "description": "Maelezo",
+    "attachments": "Viambatanishi",
+    "submit": "Tuma Maoni",
+    "thankYou": "Asante kwa maoni yako!"
+  },
+  "training": {
+    "title": "Mafunzo na Mafundisho",
+    "beginner": "Mwanzo",
+    "intermediate": "Kati",
+    "advanced": "Juu",
+    "webinars": "Webinars za Moja kwa Moja",
+    "certification": "Mpango wa Uthibitisho",
+    "duration": "Muda",
+    "level": "Kiwango",
+    "enroll": "Jisajili",
+    "viewSchedule": "Ona Ratiba"
+  },
+  "actions": {
+    "viewAll": "Ona Vyote",
+    "readMore": "Soma Zaidi",
+    "watchVideo": "Tazama Video",
+    "download": "Pakua",
+    "print": "Chapisha",
+    "share": "Shiriki",
+    "bookmark": "Alama ya Ukurasa",
+    "helpful": "Je, hii ilikuwa ya msaada?",
+    "yes": "Ndiyo",
+    "no": "Hapana"
+  },
+  "messages": {
+    "feedbackSent": "Maoni yako yametumwa",
+    "articleHelpful": "Asante kwa maoni yako",
+    "errorLoading": "Hitilafu ya kupakia maudhui",
+    "tryAgain": "Tafadhali jaribu tena baadaye"
+  }
+}

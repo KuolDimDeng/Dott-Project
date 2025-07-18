@@ -1,0 +1,106 @@
+{
+  "_comment": "Dashboard page translations - Zulu",
+  "title": "I-Dashboard",
+  "welcome": "Sawubona kabusha",
+  "overview": "Isibonelo",
+  "widgets": {
+    "revenue": "Imali engenayo",
+    "sales": "Ukuthengisa",
+    "customers": "Amakhasimende",
+    "inventory": "Isitoko",
+    "expenses": "Izindleko",
+    "profit": "Inzuzo",
+    "orders": "Ama-oda",
+    "invoices": "Ama-invoyisi"
+  },
+  "charts": {
+    "salesOverview": "Isibonelo sokuthengisa",
+    "revenueChart": "Ishati yemali engenayo",
+    "topProducts": "Imikhiqizo ephezulu",
+    "customerGrowth": "Ukukhula kwamakhasimende",
+    "expenseBreakdown": "Ukwehlukaniswa kwezindleko",
+    "inventoryStatus": "Isimo sesitoko",
+    "monthlyComparison": "Ukuqhathanisa kwamazinyanga",
+    "yearlyTrends": "Amathrendi eminyaka"
+  },
+  "stats": {
+    "today": "Namuhla",
+    "thisWeek": "Kuleli viki",
+    "thisMonth": "Kuleli nyanga",
+    "thisYear": "Kuleli unyaka",
+    "total": "Konke",
+    "average": "Isilinganiso",
+    "growth": "Ukukhula",
+    "decline": "Ukwehla",
+    "change": "Ushintsho",
+    "vs": "vs",
+    "lastPeriod": "isikhathi esedlule"
+  },
+  "quickActions": {
+    "title": "Izenzo ezisheshayo",
+    "createInvoice": "Dala i-invoyisi",
+    "addProduct": "Engeza umkhiqizo",
+    "recordSale": "Rekhoda ukuthengisa",
+    "addCustomer": "Engeza ikhasimende",
+    "processPayroll": "Sebenzisa uholo",
+    "viewReports": "Bona imibiko",
+    "manageInventory": "Phatha isitoko",
+    "sendInvoice": "Thumela i-invoyisi"
+  },
+  "recentActivity": {
+    "title": "Umsebenzi wamuva nje",
+    "newSale": "Ukuthengisa okusha",
+    "invoicePaid": "I-invoyisi ikhokhelwe",
+    "productAdded": "Umkhiqizo wengezwe",
+    "customerAdded": "Ikhasimende lengezwe",
+    "paymentReceived": "Inkokhelo yamukelwe",
+    "orderShipped": "I-oda lithunyelwe",
+    "lowStock": "Isexwayiso sesitoko esiphansi",
+    "viewAll": "Bona wonke umsebenzi"
+  },
+  "notifications": {
+    "title": "Izaziso",
+    "unread": "azifundwanga",
+    "markAllRead": "Phawula konke njengokufundwe",
+    "noNotifications": "Azikho izaziso ezintsha",
+    "settings": "Izilungiselelo zezaziso"
+  },
+  "performance": {
+    "title": "Izilinganiso zokusebenza",
+    "salesTarget": "Injongo yokuthengisa",
+    "achieved": "Ifinyelelwe",
+    "remaining": "Okusele",
+    "onTrack": "Esendleleni",
+    "behindTarget": "Ngemva kwenjongo",
+    "exceededTarget": "Idlulile injongo"
+  },
+  "filters": {
+    "dateRange": "Ibanga losuku",
+    "customRange": "Ibanga lokuzenzela",
+    "apply": "Sebenzisa",
+    "reset": "Setha kabusha",
+    "from": "Kusukela",
+    "to": "Kuya",
+    "selectDate": "Khetha usuku"
+  },
+  "empty": {
+    "noData": "Ayikho imininingwane etholakalayo",
+    "noSales": "Akukho ukuthengisa okurekhodiwe",
+    "noCustomers": "Akukho amakhasimende okwamanje",
+    "noProducts": "Akukho mikhiqizo engezwe",
+    "getStarted": "Qalisa",
+    "addFirst": "Engeza elakho lokuqala"
+  },
+  "loading": {
+    "loadingData": "Kulayisha imininingwane...",
+    "refreshing": "Kuvuselela...",
+    "calculating": "Kubala...",
+    "updating": "Kuyabuyekeza..."
+  },
+  "errors": {
+    "loadFailed": "Kulayisha imininingwane kuhlulekile",
+    "tryAgain": "Zama futhi",
+    "refresh": "Vuselela",
+    "connectionError": "Iphutha lokuxhuma"
+  }
+}

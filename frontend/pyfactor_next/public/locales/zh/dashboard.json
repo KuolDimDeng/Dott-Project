@@ -1,0 +1,106 @@
+{
+  "_comment": "Dashboard page translations - Chinese",
+  "title": "仪表板",
+  "welcome": "欢迎回来",
+  "overview": "概览",
+  "widgets": {
+    "revenue": "收入",
+    "sales": "销售",
+    "customers": "客户",
+    "inventory": "库存",
+    "expenses": "支出",
+    "profit": "利润",
+    "orders": "订单",
+    "invoices": "发票"
+  },
+  "charts": {
+    "salesOverview": "销售概览",
+    "revenueChart": "收入图表",
+    "topProducts": "热门产品",
+    "customerGrowth": "客户增长",
+    "expenseBreakdown": "支出明细",
+    "inventoryStatus": "库存状态",
+    "monthlyComparison": "月度对比",
+    "yearlyTrends": "年度趋势"
+  },
+  "stats": {
+    "today": "今天",
+    "thisWeek": "本周",
+    "thisMonth": "本月",
+    "thisYear": "今年",
+    "total": "总计",
+    "average": "平均",
+    "growth": "增长",
+    "decline": "下降",
+    "change": "变化",
+    "vs": "与",
+    "lastPeriod": "上一期间"
+  },
+  "quickActions": {
+    "title": "快速操作",
+    "createInvoice": "创建发票",
+    "addProduct": "添加产品",
+    "recordSale": "记录销售",
+    "addCustomer": "添加客户",
+    "processPayroll": "处理工资",
+    "viewReports": "查看报告",
+    "manageInventory": "管理库存",
+    "sendInvoice": "发送发票"
+  },
+  "recentActivity": {
+    "title": "最近活动",
+    "newSale": "新销售",
+    "invoicePaid": "发票已付",
+    "productAdded": "产品已添加",
+    "customerAdded": "客户已添加",
+    "paymentReceived": "已收到付款",
+    "orderShipped": "订单已发货",
+    "lowStock": "库存不足警告",
+    "viewAll": "查看所有活动"
+  },
+  "notifications": {
+    "title": "通知",
+    "unread": "未读",
+    "markAllRead": "全部标记为已读",
+    "noNotifications": "无新通知",
+    "settings": "通知设置"
+  },
+  "performance": {
+    "title": "性能指标",
+    "salesTarget": "销售目标",
+    "achieved": "已达成",
+    "remaining": "剩余",
+    "onTrack": "进度正常",
+    "behindTarget": "落后于目标",
+    "exceededTarget": "超过目标"
+  },
+  "filters": {
+    "dateRange": "日期范围",
+    "customRange": "自定义范围",
+    "apply": "应用",
+    "reset": "重置",
+    "from": "从",
+    "to": "到",
+    "selectDate": "选择日期"
+  },
+  "empty": {
+    "noData": "暂无数据",
+    "noSales": "暂无销售记录",
+    "noCustomers": "暂无客户",
+    "noProducts": "暂无产品",
+    "getStarted": "开始使用",
+    "addFirst": "添加您的第一个"
+  },
+  "loading": {
+    "loadingData": "正在加载数据...",
+    "refreshing": "正在刷新...",
+    "calculating": "正在计算...",
+    "updating": "正在更新..."
+  },
+  "errors": {
+    "loadFailed": "数据加载失败",
+    "tryAgain": "重试",
+    "refresh": "刷新",
+    "connectionError": "连接错误"
+  }
+}

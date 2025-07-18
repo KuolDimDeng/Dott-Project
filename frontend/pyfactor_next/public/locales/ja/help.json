@@ -1,0 +1,120 @@
+{
+  "_comment": "ヘルプセンターの翻訳 - Japanese",
+  "title": "ヘルプセンター",
+  "subtitle": "ヘルプを受けて答えを見つけましょう",
+  "search": {
+    "placeholder": "ヘルプを検索...",
+    "button": "検索",
+    "noResults": "結果が見つかりません",
+    "tryDifferent": "異なるキーワードを試してください"
+  },
+  "categories": {
+    "gettingStarted": "はじめに",
+    "billing": "請求と支払い",
+    "sales": "販売と請求書作成",
+    "inventory": "在庫管理",
+    "payroll": "給与とHR",
+    "reports": "レポートと分析",
+    "integrations": "統合",
+    "troubleshooting": "トラブルシューティング",
+    "account": "アカウントとセキュリティ"
+  },
+  "popularArticles": {
+    "title": "人気の記事",
+    "howToCreateInvoice": "請求書の作成方法",
+    "managingInventory": "在庫の管理",
+    "processingPayroll": "給与の処理",
+    "settingUpTaxes": "税金の設定",
+    "connectingBankAccount": "銀行口座の接続",
+    "exportingReports": "レポートのエクスポート",
+    "addingEmployees": "従業員の追加",
+    "creatingProducts": "商品の作成"
+  },
+  "contact": {
+    "title": "サポートに連絡",
+    "subtitle": "お探しのものが見つかりませんか？",
+    "email": "メールサポート",
+    "emailAddress": "support@dottapps.com",
+    "chat": "ライブチャット",
+    "chatAvailable": "月曜日から金曜日、午前9時～午後5時",
+    "phone": "電話サポート",
+    "phoneNumber": "+1 (555) 123-4567",
+    "responseTime": "応答時間",
+    "emailResponse": "24時間以内",
+    "chatResponse": "即座に",
+    "phoneResponse": "即座に"
+  },
+  "resources": {
+    "title": "リソース",
+    "userGuide": "ユーザーガイド",
+    "videoTutorials": "ビデオチュートリアル",
+    "apiDocumentation": "API文書",
+    "releaseNotes": "リリースノート",
+    "systemStatus": "システムステータス",
+    "community": "コミュニティフォーラム"
+  },
+  "faq": {
+    "title": "よくある質問",
+    "billing": {
+      "howToUpgrade": "プランをアップグレードするにはどうすればよいですか？",
+      "acceptedPayments": "どのような支払い方法が受け入れられますか？",
+      "cancelSubscription": "サブスクリプションをキャンセルするにはどうすればよいですか？",
+      "refundPolicy": "返金ポリシーは何ですか？"
+    },
+    "account": {
+      "resetPassword": "パスワードをリセットするにはどうすればよいですか？",
+      "changeEmail": "メールアドレスを変更するにはどうすればよいですか？",
+      "deleteAccount": "アカウントを削除するにはどうすればよいですか？",
+      "dataExport": "データをエクスポートできますか？"
+    },
+    "features": {
+      "multipleBusinesses": "複数のビジネスを管理できますか？",
+      "userLimit": "何人のユーザーを追加できますか？",
+      "storageLimit": "ストレージの制限は何ですか？",
+      "apiAccess": "APIアクセスを提供していますか？"
+    }
+  },
+  "feedback": {
+    "title": "フィードバックを送信",
+    "subtitle": "Dottの改善にご協力ください",
+    "type": "フィードバックの種類",
+    "bug": "バグレポート",
+    "feature": "機能リクエスト",
+    "improvement": "改善",
+    "other": "その他",
+    "description": "説明",
+    "attachments": "添付ファイル",
+    "submit": "フィードバックを送信",
+    "thankYou": "フィードバックありがとうございます！"
+  },
+  "training": {
+    "title": "トレーニングとチュートリアル",
+    "beginner": "初心者",
+    "intermediate": "中級者",
+    "advanced": "上級者",
+    "webinars": "ライブウェビナー",
+    "certification": "認定プログラム",
+    "duration": "期間",
+    "level": "レベル",
+    "enroll": "登録する",
+    "viewSchedule": "スケジュールを見る"
+  },
+  "actions": {
+    "viewAll": "すべて表示",
+    "readMore": "続きを読む",
+    "watchVideo": "ビデオを見る",
+    "download": "ダウンロード",
+    "print": "印刷",
+    "share": "共有",
+    "bookmark": "ブックマーク",
+    "helpful": "これは役に立ちましたか？",
+    "yes": "はい",
+    "no": "いいえ"
+  },
+  "messages": {
+    "feedbackSent": "フィードバックが送信されました",
+    "articleHelpful": "フィードバックありがとうございます",
+    "errorLoading": "コンテンツの読み込みエラー",
+    "tryAgain": "後でもう一度お試しください"
+  }
+}

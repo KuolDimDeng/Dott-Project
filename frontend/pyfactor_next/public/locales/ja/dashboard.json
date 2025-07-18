@@ -1,0 +1,106 @@
+{
+  "_comment": "Dashboard page translations - Japanese",
+  "title": "ダッシュボード",
+  "welcome": "おかえりなさい",
+  "overview": "概要",
+  "widgets": {
+    "revenue": "売上",
+    "sales": "販売",
+    "customers": "顧客",
+    "inventory": "在庫",
+    "expenses": "支出",
+    "profit": "利益",
+    "orders": "注文",
+    "invoices": "請求書"
+  },
+  "charts": {
+    "salesOverview": "売上概要",
+    "revenueChart": "売上グラフ",
+    "topProducts": "人気商品",
+    "customerGrowth": "顧客成長",
+    "expenseBreakdown": "支出内訳",
+    "inventoryStatus": "在庫状況",
+    "monthlyComparison": "月次比較",
+    "yearlyTrends": "年次トレンド"
+  },
+  "stats": {
+    "today": "今日",
+    "thisWeek": "今週",
+    "thisMonth": "今月",
+    "thisYear": "今年",
+    "total": "合計",
+    "average": "平均",
+    "growth": "成長",
+    "decline": "減少",
+    "change": "変化",
+    "vs": "対",
+    "lastPeriod": "前期間"
+  },
+  "quickActions": {
+    "title": "クイックアクション",
+    "createInvoice": "請求書作成",
+    "addProduct": "商品追加",
+    "recordSale": "売上記録",
+    "addCustomer": "顧客追加",
+    "processPayroll": "給与処理",
+    "viewReports": "レポート表示",
+    "manageInventory": "在庫管理",
+    "sendInvoice": "請求書送信"
+  },
+  "recentActivity": {
+    "title": "最近の活動",
+    "newSale": "新規売上",
+    "invoicePaid": "請求書支払済",
+    "productAdded": "商品追加済",
+    "customerAdded": "顧客追加済",
+    "paymentReceived": "支払受領",
+    "orderShipped": "注文発送済",
+    "lowStock": "在庫不足アラート",
+    "viewAll": "すべての活動を表示"
+  },
+  "notifications": {
+    "title": "通知",
+    "unread": "未読",
+    "markAllRead": "すべて既読にする",
+    "noNotifications": "新しい通知はありません",
+    "settings": "通知設定"
+  },
+  "performance": {
+    "title": "パフォーマンス指標",
+    "salesTarget": "売上目標",
+    "achieved": "達成",
+    "remaining": "残り",
+    "onTrack": "順調",
+    "behindTarget": "目標に遅れ",
+    "exceededTarget": "目標超過"
+  },
+  "filters": {
+    "dateRange": "日付範囲",
+    "customRange": "カスタム範囲",
+    "apply": "適用",
+    "reset": "リセット",
+    "from": "開始",
+    "to": "終了",
+    "selectDate": "日付選択"
+  },
+  "empty": {
+    "noData": "データがありません",
+    "noSales": "売上記録がありません",
+    "noCustomers": "顧客がいません",
+    "noProducts": "商品が追加されていません",
+    "getStarted": "開始する",
+    "addFirst": "最初のものを追加"
+  },
+  "loading": {
+    "loadingData": "データを読み込んでいます...",
+    "refreshing": "更新中...",
+    "calculating": "計算中...",
+    "updating": "更新中..."
+  },
+  "errors": {
+    "loadFailed": "データの読み込みに失敗しました",
+    "tryAgain": "再試行",
+    "refresh": "更新",
+    "connectionError": "接続エラー"
+  }
+}

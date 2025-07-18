@@ -1,0 +1,106 @@
+{
+  "_comment": "Dashboard page translations - Indonesian",
+  "title": "Dasbor",
+  "welcome": "Selamat datang kembali",
+  "overview": "Ikhtisar",
+  "widgets": {
+    "revenue": "Pendapatan",
+    "sales": "Penjualan",
+    "customers": "Pelanggan",
+    "inventory": "Inventori",
+    "expenses": "Pengeluaran",
+    "profit": "Keuntungan",
+    "orders": "Pesanan",
+    "invoices": "Faktur"
+  },
+  "charts": {
+    "salesOverview": "Ikhtisar Penjualan",
+    "revenueChart": "Grafik Pendapatan",
+    "topProducts": "Produk Terlaris",
+    "customerGrowth": "Pertumbuhan Pelanggan",
+    "expenseBreakdown": "Rincian Pengeluaran",
+    "inventoryStatus": "Status Inventori",
+    "monthlyComparison": "Perbandingan Bulanan",
+    "yearlyTrends": "Tren Tahunan"
+  },
+  "stats": {
+    "today": "Hari ini",
+    "thisWeek": "Minggu ini",
+    "thisMonth": "Bulan ini",
+    "thisYear": "Tahun ini",
+    "total": "Total",
+    "average": "Rata-rata",
+    "growth": "Pertumbuhan",
+    "decline": "Penurunan",
+    "change": "Perubahan",
+    "vs": "vs",
+    "lastPeriod": "periode terakhir"
+  },
+  "quickActions": {
+    "title": "Tindakan Cepat",
+    "createInvoice": "Buat Faktur",
+    "addProduct": "Tambah Produk",
+    "recordSale": "Catat Penjualan",
+    "addCustomer": "Tambah Pelanggan",
+    "processPayroll": "Proses Gaji",
+    "viewReports": "Lihat Laporan",
+    "manageInventory": "Kelola Inventori",
+    "sendInvoice": "Kirim Faktur"
+  },
+  "recentActivity": {
+    "title": "Aktivitas Terbaru",
+    "newSale": "Penjualan baru",
+    "invoicePaid": "Faktur dibayar",
+    "productAdded": "Produk ditambahkan",
+    "customerAdded": "Pelanggan ditambahkan",
+    "paymentReceived": "Pembayaran diterima",
+    "orderShipped": "Pesanan dikirim",
+    "lowStock": "Peringatan stok rendah",
+    "viewAll": "Lihat semua aktivitas"
+  },
+  "notifications": {
+    "title": "Notifikasi",
+    "unread": "belum dibaca",
+    "markAllRead": "Tandai semua sebagai dibaca",
+    "noNotifications": "Tidak ada notifikasi baru",
+    "settings": "Pengaturan notifikasi"
+  },
+  "performance": {
+    "title": "Metrik Kinerja",
+    "salesTarget": "Target Penjualan",
+    "achieved": "Tercapai",
+    "remaining": "Sisa",
+    "onTrack": "Sesuai target",
+    "behindTarget": "Di bawah target",
+    "exceededTarget": "Melebihi target"
+  },
+  "filters": {
+    "dateRange": "Rentang Tanggal",
+    "customRange": "Rentang Kustom",
+    "apply": "Terapkan",
+    "reset": "Atur ulang",
+    "from": "Dari",
+    "to": "Hingga",
+    "selectDate": "Pilih tanggal"
+  },
+  "empty": {
+    "noData": "Tidak ada data tersedia",
+    "noSales": "Tidak ada penjualan tercatat",
+    "noCustomers": "Belum ada pelanggan",
+    "noProducts": "Belum ada produk ditambahkan",
+    "getStarted": "Mulai",
+    "addFirst": "Tambahkan yang pertama"
+  },
+  "loading": {
+    "loadingData": "Memuat data...",
+    "refreshing": "Menyegarkan...",
+    "calculating": "Menghitung...",
+    "updating": "Memperbarui..."
+  },
+  "errors": {
+    "loadFailed": "Gagal memuat data",
+    "tryAgain": "Coba lagi",
+    "refresh": "Segarkan",
+    "connectionError": "Kesalahan koneksi"
+  }
+}

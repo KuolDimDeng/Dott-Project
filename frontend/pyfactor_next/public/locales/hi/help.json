@@ -1,0 +1,120 @@
+{
+  "_comment": "सहायता केंद्र अनुवाद - Hindi",
+  "title": "सहायता केंद्र",
+  "subtitle": "सहायता प्राप्त करें और उत्तर खोजें",
+  "search": {
+    "placeholder": "सहायता खोजें...",
+    "button": "खोजें",
+    "noResults": "कोई परिणाम नहीं मिला",
+    "tryDifferent": "अलग कीवर्ड आज़माएं"
+  },
+  "categories": {
+    "gettingStarted": "शुरुआत करना",
+    "billing": "बिलिंग और भुगतान",
+    "sales": "बिक्री और चालान",
+    "inventory": "इन्वेंटरी प्रबंधन",
+    "payroll": "वेतन और एचआर",
+    "reports": "रिपोर्ट और विश्लेषण",
+    "integrations": "एकीकरण",
+    "troubleshooting": "समस्या निवारण",
+    "account": "खाता और सुरक्षा"
+  },
+  "popularArticles": {
+    "title": "लोकप्रिय लेख",
+    "howToCreateInvoice": "चालान कैसे बनाएं",
+    "managingInventory": "अपनी इन्वेंटरी का प्रबंधन करें",
+    "processingPayroll": "वेतन प्रसंस्करण",
+    "settingUpTaxes": "कर सेटअप करना",
+    "connectingBankAccount": "बैंक खाता जोड़ना",
+    "exportingReports": "रिपोर्ट निर्यात करना",
+    "addingEmployees": "कर्मचारियों को जोड़ना",
+    "creatingProducts": "उत्पाद बनाना"
+  },
+  "contact": {
+    "title": "सहायता से संपर्क करें",
+    "subtitle": "जो आप खोज रहे हैं वह नहीं मिल रहा?",
+    "email": "ईमेल सहायता",
+    "emailAddress": "support@dottapps.com",
+    "chat": "लाइव चैट",
+    "chatAvailable": "सोमवार-शुक्रवार, सुबह 9-शाम 5 बजे उपलब्ध",
+    "phone": "फोन सहायता",
+    "phoneNumber": "+1 (555) 123-4567",
+    "responseTime": "प्रतिक्रिया समय",
+    "emailResponse": "24 घंटों के अंदर",
+    "chatResponse": "तुरंत",
+    "phoneResponse": "तुरंत"
+  },
+  "resources": {
+    "title": "संसाधन",
+    "userGuide": "उपयोगकर्ता गाइड",
+    "videoTutorials": "वीडियो ट्यूटोरियल",
+    "apiDocumentation": "API दस्तावेज़",
+    "releaseNotes": "रिलीज़ नोट्स",
+    "systemStatus": "सिस्टम स्थिति",
+    "community": "सामुदायिक मंच"
+  },
+  "faq": {
+    "title": "अक्सर पूछे जाने वाले प्रश्न",
+    "billing": {
+      "howToUpgrade": "मैं अपनी योजना को कैसे अपग्रेड करूं?",
+      "acceptedPayments": "कौन से भुगतान तरीके स्वीकार किए जाते हैं?",
+      "cancelSubscription": "मैं अपनी सदस्यता कैसे रद्द करूं?",
+      "refundPolicy": "आपकी वापसी नीति क्या है?"
+    },
+    "account": {
+      "resetPassword": "मैं अपना पासवर्ड कैसे रीसेट करूं?",
+      "changeEmail": "मैं अपना ईमेल कैसे बदलूं?",
+      "deleteAccount": "मैं अपना खाता कैसे हटाऊं?",
+      "dataExport": "क्या मैं अपना डेटा निर्यात कर सकता हूं?"
+    },
+    "features": {
+      "multipleBusinesses": "क्या मैं कई व्यवसायों का प्रबंधन कर सकता हूं?",
+      "userLimit": "मैं कितने उपयोगकर्ता जोड़ सकता हूं?",
+      "storageLimit": "भंडारण सीमा क्या है?",
+      "apiAccess": "क्या आप API पहुंच प्रदान करते हैं?"
+    }
+  },
+  "feedback": {
+    "title": "फीडबैक भेजें",
+    "subtitle": "Dott को बेहतर बनाने में हमारी मदद करें",
+    "type": "फीडबैक प्रकार",
+    "bug": "बग रिपोर्ट",
+    "feature": "सुविधा अनुरोध",
+    "improvement": "सुधार",
+    "other": "अन्य",
+    "description": "विवरण",
+    "attachments": "अटैचमेंट",
+    "submit": "फीडबैक भेजें",
+    "thankYou": "आपके फीडबैक के लिए धन्यवाद!"
+  },
+  "training": {
+    "title": "प्रशिक्षण और ट्यूटोरियल",
+    "beginner": "शुरुआती",
+    "intermediate": "मध्यम",
+    "advanced": "उन्नत",
+    "webinars": "लाइव वेबिनार",
+    "certification": "प्रमाणन कार्यक्रम",
+    "duration": "अवधि",
+    "level": "स्तर",
+    "enroll": "नामांकन करें",
+    "viewSchedule": "शेड्यूल देखें"
+  },
+  "actions": {
+    "viewAll": "सभी देखें",
+    "readMore": "और पढ़ें",
+    "watchVideo": "वीडियो देखें",
+    "download": "डाउनलोड करें",
+    "print": "प्रिंट करें",
+    "share": "साझा करें",
+    "bookmark": "बुकमार्क करें",
+    "helpful": "क्या यह सहायक था?",
+    "yes": "हाँ",
+    "no": "नहीं"
+  },
+  "messages": {
+    "feedbackSent": "आपका फीडबैक भेज दिया गया है",
+    "articleHelpful": "आपके फीडबैक के लिए धन्यवाद",
+    "errorLoading": "सामग्री लोड करने में त्रुटि",
+    "tryAgain": "कृपया बाद में पुनः प्रयास करें"
+  }
+}

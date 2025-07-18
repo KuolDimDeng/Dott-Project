@@ -1,0 +1,120 @@
+{
+  "_comment": "Itumọ ile-iṣẹ iranlo - Yoruba",
+  "title": "Ile-iṣẹ Iranlo",
+  "subtitle": "Gba iranlo ki o si wa awọn idahun",
+  "search": {
+    "placeholder": "Wa iranlo...",
+    "button": "Wa",
+    "noResults": "Ko si abajade ti a ri",
+    "tryDifferent": "Gbiyanju awọn koko-ọrọ miiran"
+  },
+  "categories": {
+    "gettingStarted": "Bibẹrẹ",
+    "billing": "Iṣiro ati Sisanwo",
+    "sales": "Tita ati Iṣiro",
+    "inventory": "Iṣakoso Ẹru",
+    "payroll": "Oṣu ati HR",
+    "reports": "Awọn Ijabọ ati Itupalẹ",
+    "integrations": "Awọn Iṣọpọ",
+    "troubleshooting": "Yanju Awọn Iṣoro",
+    "account": "Akọọlẹ ati Aabo"
+  },
+  "popularArticles": {
+    "title": "Awọn Akọọlẹ Olokiki",
+    "howToCreateInvoice": "Bi a ṣe le ṣẹda iṣiro",
+    "managingInventory": "Ṣiṣakoso ẹru rẹ",
+    "processingPayroll": "Sisẹ oṣu",
+    "settingUpTaxes": "Ṣiṣeto awọn owo-ori",
+    "connectingBankAccount": "Sisopo akọọlẹ banki",
+    "exportingReports": "Gbigbe awọn ijabọ jade",
+    "addingEmployees": "Fifi awọn oṣiṣẹ kun",
+    "creatingProducts": "Ṣiṣẹda awọn ọja"
+  },
+  "contact": {
+    "title": "Kan si Atilẹyin",
+    "subtitle": "Ko le ri ohun ti o n wa?",
+    "email": "Atilẹyin Imeeli",
+    "emailAddress": "support@dottapps.com",
+    "chat": "Ibaraẹnisọrọ Laaye",
+    "chatAvailable": "Wa ni Ọjọ Ajẹ-Ọjọ Ẹti, 9am-5pm",
+    "phone": "Atilẹyin Foonu",
+    "phoneNumber": "+1 (555) 123-4567",
+    "responseTime": "Akoko Idahun",
+    "emailResponse": "Laarin wakati 24",
+    "chatResponse": "Lẹsẹkẹsẹ",
+    "phoneResponse": "Lẹsẹkẹsẹ"
+  },
+  "resources": {
+    "title": "Awọn Orisun",
+    "userGuide": "Itọsọna Olumulo",
+    "videoTutorials": "Awọn Ẹkọ Fidio",
+    "apiDocumentation": "Awọn Iwe API",
+    "releaseNotes": "Awọn Akọsilẹ Itusilẹ",
+    "systemStatus": "Ipo Eto",
+    "community": "Pẹpẹ Agbegbe"
+  },
+  "faq": {
+    "title": "Awọn Ibeere Ti A Maa N Beere",
+    "billing": {
+      "howToUpgrade": "Bawo ni mo ṣe le mu ero mi dara si?",
+      "acceptedPayments": "Awọn ọna sisanwo wo ni a gba?",
+      "cancelSubscription": "Bawo ni mo ṣe le fagilee alabapin mi?",
+      "refundPolicy": "Kini ilana ipadabọ yín?"
+    },
+    "account": {
+      "resetPassword": "Bawo ni mo ṣe le tun ọrọ igbaniwọle mi ṣeto?",
+      "changeEmail": "Bawo ni mo ṣe le yi imeeli mi pada?",
+      "deleteAccount": "Bawo ni mo ṣe le pa akọọlẹ mi rẹ?",
+      "dataExport": "Ṣe mo le gbe data mi jade?"
+    },
+    "features": {
+      "multipleBusinesses": "Ṣe mo le ṣakoso awọn iṣowo pupọ?",
+      "userLimit": "Awọn olumulo melo ni mo le fi kun?",
+      "storageLimit": "Kini opin ipamọ?",
+      "apiAccess": "Ṣe ẹ n pese iwọle API?"
+    }
+  },
+  "feedback": {
+    "title": "Fi Ero Ranṣẹ",
+    "subtitle": "Ran wa lọwọ lati mu Dott dara si",
+    "type": "Iru Ero",
+    "bug": "Ijabọ Aṣiṣe",
+    "feature": "Ibeere Ẹya",
+    "improvement": "Ilọsiwaju",
+    "other": "Miiran",
+    "description": "Apejuwe",
+    "attachments": "Awọn Asopọ",
+    "submit": "Fi Ero Ranṣẹ",
+    "thankYou": "O ṣeun fun ero rẹ!"
+  },
+  "training": {
+    "title": "Ikẹkọ ati Awọn Itọsọna",
+    "beginner": "Abẹrẹ",
+    "intermediate": "Agbedemeji",
+    "advanced": "Giga",
+    "webinars": "Awọn Webinar Laaye",
+    "certification": "Eto Iwe-ẹri",
+    "duration": "Aṣiko",
+    "level": "Ipele",
+    "enroll": "Forukọsilẹ",
+    "viewSchedule": "Wo Aṣiko"
+  },
+  "actions": {
+    "viewAll": "Wo Gbogbo",
+    "readMore": "Ka Sii",
+    "watchVideo": "Wo Fidio",
+    "download": "Gba",
+    "print": "Tẹ",
+    "share": "Pin",
+    "bookmark": "Samisi",
+    "helpful": "Ṣe eyi wulo?",
+    "yes": "Bẹẹni",
+    "no": "Rara"
+  },
+  "messages": {
+    "feedbackSent": "A ti fi ero rẹ ranṣẹ",
+    "articleHelpful": "O ṣeun fun ero rẹ",
+    "errorLoading": "Aṣiṣe nigbati a n gbe akoonu",
+    "tryAgain": "Jọwọ gbiyanju lẹẹkansi nigbamii"
+  }
+}

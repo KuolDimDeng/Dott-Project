@@ -1,0 +1,120 @@
+{
+  "_comment": "Dịch trung tâm trợ giúp - Vietnamese",
+  "title": "Trung tâm Trợ giúp",
+  "subtitle": "Nhận trợ giúp và tìm câu trả lời",
+  "search": {
+    "placeholder": "Tìm kiếm trợ giúp...",
+    "button": "Tìm kiếm",
+    "noResults": "Không tìm thấy kết quả",
+    "tryDifferent": "Thử các từ khóa khác"
+  },
+  "categories": {
+    "gettingStarted": "Bắt đầu",
+    "billing": "Hóa đơn và Thanh toán",
+    "sales": "Bán hàng và Lập hóa đơn",
+    "inventory": "Quản lý Tồn kho",
+    "payroll": "Bảng lương và Nhân sự",
+    "reports": "Báo cáo và Phân tích",
+    "integrations": "Tích hợp",
+    "troubleshooting": "Khắc phục sự cố",
+    "account": "Tài khoản và Bảo mật"
+  },
+  "popularArticles": {
+    "title": "Bài viết Phổ biến",
+    "howToCreateInvoice": "Cách tạo hóa đơn",
+    "managingInventory": "Quản lý tồn kho của bạn",
+    "processingPayroll": "Xử lý bảng lương",
+    "settingUpTaxes": "Thiết lập thuế",
+    "connectingBankAccount": "Kết nối tài khoản ngân hàng",
+    "exportingReports": "Xuất báo cáo",
+    "addingEmployees": "Thêm nhân viên",
+    "creatingProducts": "Tạo sản phẩm"
+  },
+  "contact": {
+    "title": "Liên hệ Hỗ trợ",
+    "subtitle": "Không thể tìm thấy những gì bạn đang tìm kiếm?",
+    "email": "Hỗ trợ Email",
+    "emailAddress": "support@dottapps.com",
+    "chat": "Chat Trực tiếp",
+    "chatAvailable": "Có sẵn Thứ Hai-Thứ Sáu, 9am-5pm",
+    "phone": "Hỗ trợ Điện thoại",
+    "phoneNumber": "+1 (555) 123-4567",
+    "responseTime": "Thời gian Phản hồi",
+    "emailResponse": "Trong vòng 24 giờ",
+    "chatResponse": "Ngay lập tức",
+    "phoneResponse": "Ngay lập tức"
+  },
+  "resources": {
+    "title": "Tài nguyên",
+    "userGuide": "Hướng dẫn Người dùng",
+    "videoTutorials": "Video Hướng dẫn",
+    "apiDocumentation": "Tài liệu API",
+    "releaseNotes": "Ghi chú Phát hành",
+    "systemStatus": "Trạng thái Hệ thống",
+    "community": "Diễn đàn Cộng đồng"
+  },
+  "faq": {
+    "title": "Câu hỏi Thường gặp",
+    "billing": {
+      "howToUpgrade": "Làm thế nào để nâng cấp gói của tôi?",
+      "acceptedPayments": "Những phương thức thanh toán nào được chấp nhận?",
+      "cancelSubscription": "Làm thế nào để hủy đăng ký của tôi?",
+      "refundPolicy": "Chính sách hoàn tiền của bạn là gì?"
+    },
+    "account": {
+      "resetPassword": "Làm thế nào để đặt lại mật khẩu?",
+      "changeEmail": "Làm thế nào để thay đổi email?",
+      "deleteAccount": "Làm thế nào để xóa tài khoản?",
+      "dataExport": "Tôi có thể xuất dữ liệu của mình không?"
+    },
+    "features": {
+      "multipleBusinesses": "Tôi có thể quản lý nhiều doanh nghiệp không?",
+      "userLimit": "Tôi có thể thêm bao nhiêu người dùng?",
+      "storageLimit": "Giới hạn lưu trữ là bao nhiêu?",
+      "apiAccess": "Bạn có cung cấp quyền truy cập API không?"
+    }
+  },
+  "feedback": {
+    "title": "Gửi Phản hồi",
+    "subtitle": "Giúp chúng tôi cải thiện Dott",
+    "type": "Loại Phản hồi",
+    "bug": "Báo cáo Lỗi",
+    "feature": "Yêu cầu Tính năng",
+    "improvement": "Cải tiến",
+    "other": "Khác",
+    "description": "Mô tả",
+    "attachments": "Tệp đính kèm",
+    "submit": "Gửi Phản hồi",
+    "thankYou": "Cảm ơn phản hồi của bạn!"
+  },
+  "training": {
+    "title": "Đào tạo và Hướng dẫn",
+    "beginner": "Người mới bắt đầu",
+    "intermediate": "Trung cấp",
+    "advanced": "Nâng cao",
+    "webinars": "Webinar Trực tiếp",
+    "certification": "Chương trình Chứng chỉ",
+    "duration": "Thời gian",
+    "level": "Cấp độ",
+    "enroll": "Đăng ký",
+    "viewSchedule": "Xem Lịch trình"
+  },
+  "actions": {
+    "viewAll": "Xem Tất cả",
+    "readMore": "Đọc thêm",
+    "watchVideo": "Xem Video",
+    "download": "Tải xuống",
+    "print": "In",
+    "share": "Chia sẻ",
+    "bookmark": "Đánh dấu",
+    "helpful": "Điều này có hữu ích không?",
+    "yes": "Có",
+    "no": "Không"
+  },
+  "messages": {
+    "feedbackSent": "Phản hồi của bạn đã được gửi",
+    "articleHelpful": "Cảm ơn phản hồi của bạn",
+    "errorLoading": "Lỗi tải nội dung",
+    "tryAgain": "Vui lòng thử lại sau"
+  }
+}

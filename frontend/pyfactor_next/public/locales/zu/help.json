@@ -1,0 +1,120 @@
+{
+  "_comment": "Izinguqulo zesikhungo sosizo - Zulu",
+  "title": "Isikhungo Sosizo",
+  "subtitle": "Thola usizo futhi uthole izimpendulo",
+  "search": {
+    "placeholder": "Sesha usizo...",
+    "button": "Sesha",
+    "noResults": "Azikho iziphumo ezitholakele",
+    "tryDifferent": "Zama amagama angukhiye ahlukene"
+  },
+  "categories": {
+    "gettingStarted": "Ukuqala",
+    "billing": "Ukubhala Ama-akhawunti Nokukhokha",
+    "sales": "Ukuthengisa Nokukhipha Ama-akhawunti",
+    "inventory": "Ukuphatha Impahla",
+    "payroll": "Imiholo Ne-HR",
+    "reports": "Imibiko Nokuhlaziya",
+    "integrations": "Ukuhlanganisa",
+    "troubleshooting": "Ukuxazulula Izinkinga",
+    "account": "I-akhawunti Nokuphepha"
+  },
+  "popularArticles": {
+    "title": "Izindaba Ezidumile",
+    "howToCreateInvoice": "Indlela yokudala i-invoice",
+    "managingInventory": "Ukuphatha impahla yakho",
+    "processingPayroll": "Ukusebenza imiholo",
+    "settingUpTaxes": "Ukusetha izintela",
+    "connectingBankAccount": "Ukuxhuma i-akhawunti yasebhange",
+    "exportingReports": "Ukuthumela imibiko",
+    "addingEmployees": "Ukungeza abasebenzi",
+    "creatingProducts": "Ukudala imikhiqizo"
+  },
+  "contact": {
+    "title": "Xhumana Nokusekela",
+    "subtitle": "Awukwazi ukuthola okufunayo?",
+    "email": "Ukusekela Nge-imeyili",
+    "emailAddress": "support@dottapps.com",
+    "chat": "Ingxoxo Ephilayo",
+    "chatAvailable": "Iyatholakala ngoMsombuluko-ngoLwesihlanu, 9am-5pm",
+    "phone": "Ukusekela Ngefoni",
+    "phoneNumber": "+1 (555) 123-4567",
+    "responseTime": "Isikhathi Sokusabela",
+    "emailResponse": "Ngaphakathi kwamahora angama-24",
+    "chatResponse": "Ngokushesha",
+    "phoneResponse": "Ngokushesha"
+  },
+  "resources": {
+    "title": "Izinsiza",
+    "userGuide": "Isiqondiso Somsebenzisi",
+    "videoTutorials": "Izifundo Zevidiyo",
+    "apiDocumentation": "Imibhalo ye-API",
+    "releaseNotes": "Amanothi Okukhululwa",
+    "systemStatus": "Isimo Sohlelo",
+    "community": "Inkundla Yomphakathi"
+  },
+  "faq": {
+    "title": "Imibuzo Ejwayelekile",
+    "billing": {
+      "howToUpgrade": "Ngingakuthuthukisa kanjani uhlelo lwami?",
+      "acceptedPayments": "Iziphi izindlela zokukhokha ezamukelwayo?",
+      "cancelSubscription": "Ngingayikhansela kanjani imali yami yokuthenga?",
+      "refundPolicy": "Yini inqubomgomo yenu yokubuyisela?"
+    },
+    "account": {
+      "resetPassword": "Ngingayisetha kabusha kanjani iphasiwedi yami?",
+      "changeEmail": "Ngingayishintsha kanjani i-imeyili yami?",
+      "deleteAccount": "Ngingayisusa kanjani i-akhawunti yami?",
+      "dataExport": "Ngingakwazi yini ukuthumela idatha yami?"
+    },
+    "features": {
+      "multipleBusinesses": "Ngingakwazi ukuphatha amabhizinisi amaningi?",
+      "userLimit": "Bangaki abasebenzisi engingangezelela?",
+      "storageLimit": "Yini umkhawulo wokugcina?",
+      "apiAccess": "Uyaninika ukufinyelela kwe-API?"
+    }
+  },
+  "feedback": {
+    "title": "Thumela Impendulo",
+    "subtitle": "Sisize sithuthukise i-Dott",
+    "type": "Uhlobo Lweempendulo",
+    "bug": "Umbiko Wephutha",
+    "feature": "Isicelo Sesici",
+    "improvement": "Ukuthuthukisa",
+    "other": "Okunye",
+    "description": "Incazelo",
+    "attachments": "Okunamathiselwe",
+    "submit": "Thumela Impendulo",
+    "thankYou": "Siyabonga ngempendulo yakho!"
+  },
+  "training": {
+    "title": "Ukuqeqeshwa Nezifundo",
+    "beginner": "Umqali",
+    "intermediate": "Phakathi",
+    "advanced": "Phezulu",
+    "webinars": "Ama-webinar Aphilayo",
+    "certification": "Uhlelo Lokufakazela",
+    "duration": "Ukude",
+    "level": "Izinga",
+    "enroll": "Bhalisa",
+    "viewSchedule": "Buka Ishedyuli"
+  },
+  "actions": {
+    "viewAll": "Buka Konke",
+    "readMore": "Funda Okwengeziwe",
+    "watchVideo": "Buka Ividiyo",
+    "download": "Layisha",
+    "print": "Phrinta",
+    "share": "Yabelana",
+    "bookmark": "Maka",
+    "helpful": "Lokhu bekuwusizo?",
+    "yes": "Yebo",
+    "no": "Cha"
+  },
+  "messages": {
+    "feedbackSent": "Impendulo yakho ithunyelwe",
+    "articleHelpful": "Siyabonga ngempendulo yakho",
+    "errorLoading": "Iphutha ekulayisheni okuqukethwe",
+    "tryAgain": "Sicela uzame futhi kamuva"
+  }
+}

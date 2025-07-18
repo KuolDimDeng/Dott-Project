@@ -1,0 +1,106 @@
+{
+  "_comment": "Dashboard page translations - French",
+  "title": "Tableau de bord",
+  "welcome": "Bon retour",
+  "overview": "Aperçu",
+  "widgets": {
+    "revenue": "Revenus",
+    "sales": "Ventes",
+    "customers": "Clients",
+    "inventory": "Inventaire",
+    "expenses": "Dépenses",
+    "profit": "Bénéfice",
+    "orders": "Commandes",
+    "invoices": "Factures"
+  },
+  "charts": {
+    "salesOverview": "Aperçu des ventes",
+    "revenueChart": "Graphique des revenus",
+    "topProducts": "Produits populaires",
+    "customerGrowth": "Croissance clientèle",
+    "expenseBreakdown": "Répartition des dépenses",
+    "inventoryStatus": "État de l'inventaire",
+    "monthlyComparison": "Comparaison mensuelle",
+    "yearlyTrends": "Tendances annuelles"
+  },
+  "stats": {
+    "today": "Aujourd'hui",
+    "thisWeek": "Cette semaine",
+    "thisMonth": "Ce mois",
+    "thisYear": "Cette année",
+    "total": "Total",
+    "average": "Moyenne",
+    "growth": "Croissance",
+    "decline": "Déclin",
+    "change": "Changement",
+    "vs": "vs",
+    "lastPeriod": "période précédente"
+  },
+  "quickActions": {
+    "title": "Actions rapides",
+    "createInvoice": "Créer une facture",
+    "addProduct": "Ajouter un produit",
+    "recordSale": "Enregistrer une vente",
+    "addCustomer": "Ajouter un client",
+    "processPayroll": "Traiter la paie",
+    "viewReports": "Voir les rapports",
+    "manageInventory": "Gérer l'inventaire",
+    "sendInvoice": "Envoyer la facture"
+  },
+  "recentActivity": {
+    "title": "Activité récente",
+    "newSale": "Nouvelle vente",
+    "invoicePaid": "Facture payée",
+    "productAdded": "Produit ajouté",
+    "customerAdded": "Client ajouté",
+    "paymentReceived": "Paiement reçu",
+    "orderShipped": "Commande expédiée",
+    "lowStock": "Alerte stock bas",
+    "viewAll": "Voir toute l'activité"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "unread": "non lues",
+    "markAllRead": "Marquer tout comme lu",
+    "noNotifications": "Aucune nouvelle notification",
+    "settings": "Paramètres de notification"
+  },
+  "performance": {
+    "title": "Métriques de performance",
+    "salesTarget": "Objectif de ventes",
+    "achieved": "Atteint",
+    "remaining": "Restant",
+    "onTrack": "Sur la bonne voie",
+    "behindTarget": "En retard sur l'objectif",
+    "exceededTarget": "Objectif dépassé"
+  },
+  "filters": {
+    "dateRange": "Plage de dates",
+    "customRange": "Plage personnalisée",
+    "apply": "Appliquer",
+    "reset": "Réinitialiser",
+    "from": "De",
+    "to": "À",
+    "selectDate": "Sélectionner une date"
+  },
+  "empty": {
+    "noData": "Aucune donnée disponible",
+    "noSales": "Aucune vente enregistrée",
+    "noCustomers": "Aucun client encore",
+    "noProducts": "Aucun produit ajouté",
+    "getStarted": "Commencer",
+    "addFirst": "Ajouter votre premier"
+  },
+  "loading": {
+    "loadingData": "Chargement des données...",
+    "refreshing": "Actualisation...",
+    "calculating": "Calcul...",
+    "updating": "Mise à jour..."
+  },
+  "errors": {
+    "loadFailed": "Échec du chargement des données",
+    "tryAgain": "Réessayer",
+    "refresh": "Actualiser",
+    "connectionError": "Erreur de connexion"
+  }
+}

@@ -1,0 +1,120 @@
+{
+  "_comment": "帮助中心翻译 - Chinese",
+  "title": "帮助中心",
+  "subtitle": "获取帮助并找到答案",
+  "search": {
+    "placeholder": "搜索帮助...",
+    "button": "搜索",
+    "noResults": "未找到结果",
+    "tryDifferent": "尝试不同的关键词"
+  },
+  "categories": {
+    "gettingStarted": "入门指南",
+    "billing": "计费和付款",
+    "sales": "销售和发票",
+    "inventory": "库存管理",
+    "payroll": "工资和人力资源",
+    "reports": "报告和分析",
+    "integrations": "集成",
+    "troubleshooting": "故障排除",
+    "account": "账户和安全"
+  },
+  "popularArticles": {
+    "title": "热门文章",
+    "howToCreateInvoice": "如何创建发票",
+    "managingInventory": "管理您的库存",
+    "processingPayroll": "处理工资",
+    "settingUpTaxes": "设置税收",
+    "connectingBankAccount": "连接银行账户",
+    "exportingReports": "导出报告",
+    "addingEmployees": "添加员工",
+    "creatingProducts": "创建产品"
+  },
+  "contact": {
+    "title": "联系支持",
+    "subtitle": "找不到您要找的内容？",
+    "email": "邮件支持",
+    "emailAddress": "support@dottapps.com",
+    "chat": "在线聊天",
+    "chatAvailable": "周一至周五，上午9点至下午5点",
+    "phone": "电话支持",
+    "phoneNumber": "+1 (555) 123-4567",
+    "responseTime": "响应时间",
+    "emailResponse": "24小时内",
+    "chatResponse": "立即",
+    "phoneResponse": "立即"
+  },
+  "resources": {
+    "title": "资源",
+    "userGuide": "用户指南",
+    "videoTutorials": "视频教程",
+    "apiDocumentation": "API文档",
+    "releaseNotes": "发布说明",
+    "systemStatus": "系统状态",
+    "community": "社区论坛"
+  },
+  "faq": {
+    "title": "常见问题",
+    "billing": {
+      "howToUpgrade": "如何升级我的计划？",
+      "acceptedPayments": "接受哪些付款方式？",
+      "cancelSubscription": "如何取消我的订阅？",
+      "refundPolicy": "您的退款政策是什么？"
+    },
+    "account": {
+      "resetPassword": "如何重置我的密码？",
+      "changeEmail": "如何更改我的邮箱？",
+      "deleteAccount": "如何删除我的账户？",
+      "dataExport": "我可以导出我的数据吗？"
+    },
+    "features": {
+      "multipleBusinesses": "我可以管理多个企业吗？",
+      "userLimit": "我可以添加多少用户？",
+      "storageLimit": "存储限制是多少？",
+      "apiAccess": "您提供API访问吗？"
+    }
+  },
+  "feedback": {
+    "title": "发送反馈",
+    "subtitle": "帮助我们改进Dott",
+    "type": "反馈类型",
+    "bug": "错误报告",
+    "feature": "功能请求",
+    "improvement": "改进建议",
+    "other": "其他",
+    "description": "描述",
+    "attachments": "附件",
+    "submit": "提交反馈",
+    "thankYou": "感谢您的反馈！"
+  },
+  "training": {
+    "title": "培训和教程",
+    "beginner": "初级",
+    "intermediate": "中级",
+    "advanced": "高级",
+    "webinars": "直播网络研讨会",
+    "certification": "认证课程",
+    "duration": "持续时间",
+    "level": "级别",
+    "enroll": "注册",
+    "viewSchedule": "查看日程"
+  },
+  "actions": {
+    "viewAll": "查看全部",
+    "readMore": "阅读更多",
+    "watchVideo": "观看视频",
+    "download": "下载",
+    "print": "打印",
+    "share": "分享",
+    "bookmark": "收藏",
+    "helpful": "这对您有帮助吗？",
+    "yes": "是",
+    "no": "否"
+  },
+  "messages": {
+    "feedbackSent": "您的反馈已发送",
+    "articleHelpful": "感谢您的反馈",
+    "errorLoading": "加载内容时出错",
+    "tryAgain": "请稍后再试"
+  }
+}

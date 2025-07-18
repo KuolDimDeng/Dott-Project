@@ -1,0 +1,120 @@
+{
+  "_comment": "Traduções do centro de ajuda - Portuguese",
+  "title": "Centro de Ajuda",
+  "subtitle": "Obtenha ajuda e encontre respostas",
+  "search": {
+    "placeholder": "Pesquisar ajuda...",
+    "button": "Pesquisar",
+    "noResults": "Nenhum resultado encontrado",
+    "tryDifferent": "Tente palavras-chave diferentes"
+  },
+  "categories": {
+    "gettingStarted": "Começando",
+    "billing": "Faturamento e Pagamentos",
+    "sales": "Vendas e Faturamento",
+    "inventory": "Gerenciamento de Estoque",
+    "payroll": "Folha de Pagamento e RH",
+    "reports": "Relatórios e Análises",
+    "integrations": "Integrações",
+    "troubleshooting": "Solução de Problemas",
+    "account": "Conta e Segurança"
+  },
+  "popularArticles": {
+    "title": "Artigos Populares",
+    "howToCreateInvoice": "Como criar uma fatura",
+    "managingInventory": "Gerenciando seu estoque",
+    "processingPayroll": "Processando folha de pagamento",
+    "settingUpTaxes": "Configurando impostos",
+    "connectingBankAccount": "Conectando conta bancária",
+    "exportingReports": "Exportando relatórios",
+    "addingEmployees": "Adicionando funcionários",
+    "creatingProducts": "Criando produtos"
+  },
+  "contact": {
+    "title": "Contatar Suporte",
+    "subtitle": "Não consegue encontrar o que procura?",
+    "email": "Suporte por Email",
+    "emailAddress": "support@dottapps.com",
+    "chat": "Chat ao Vivo",
+    "chatAvailable": "Disponível Seg-Sex, 9h-17h",
+    "phone": "Suporte Telefônico",
+    "phoneNumber": "+1 (555) 123-4567",
+    "responseTime": "Tempo de Resposta",
+    "emailResponse": "Em até 24 horas",
+    "chatResponse": "Imediato",
+    "phoneResponse": "Imediato"
+  },
+  "resources": {
+    "title": "Recursos",
+    "userGuide": "Guia do Usuário",
+    "videoTutorials": "Tutoriais em Vídeo",
+    "apiDocumentation": "Documentação da API",
+    "releaseNotes": "Notas de Lançamento",
+    "systemStatus": "Status do Sistema",
+    "community": "Fórum da Comunidade"
+  },
+  "faq": {
+    "title": "Perguntas Frequentes",
+    "billing": {
+      "howToUpgrade": "Como faço upgrade do meu plano?",
+      "acceptedPayments": "Quais métodos de pagamento são aceitos?",
+      "cancelSubscription": "Como cancelo minha assinatura?",
+      "refundPolicy": "Qual é a política de reembolso?"
+    },
+    "account": {
+      "resetPassword": "Como redefinir minha senha?",
+      "changeEmail": "Como alterar meu email?",
+      "deleteAccount": "Como excluir minha conta?",
+      "dataExport": "Posso exportar meus dados?"
+    },
+    "features": {
+      "multipleBusinesses": "Posso gerenciar múltiplas empresas?",
+      "userLimit": "Quantos usuários posso adicionar?",
+      "storageLimit": "Qual é o limite de armazenamento?",
+      "apiAccess": "Vocês fornecem acesso à API?"
+    }
+  },
+  "feedback": {
+    "title": "Enviar Feedback",
+    "subtitle": "Ajude-nos a melhorar o Dott",
+    "type": "Tipo de Feedback",
+    "bug": "Relatório de Bug",
+    "feature": "Solicitação de Recurso",
+    "improvement": "Melhoria",
+    "other": "Outro",
+    "description": "Descrição",
+    "attachments": "Anexos",
+    "submit": "Enviar Feedback",
+    "thankYou": "Obrigado pelo seu feedback!"
+  },
+  "training": {
+    "title": "Treinamento e Tutoriais",
+    "beginner": "Iniciante",
+    "intermediate": "Intermediário",
+    "advanced": "Avançado",
+    "webinars": "Webinars ao Vivo",
+    "certification": "Programa de Certificação",
+    "duration": "Duração",
+    "level": "Nível",
+    "enroll": "Inscrever-se",
+    "viewSchedule": "Ver Cronograma"
+  },
+  "actions": {
+    "viewAll": "Ver Tudo",
+    "readMore": "Ler Mais",
+    "watchVideo": "Assistir Vídeo",
+    "download": "Baixar",
+    "print": "Imprimir",
+    "share": "Compartilhar",
+    "bookmark": "Favoritar",
+    "helpful": "Isso foi útil?",
+    "yes": "Sim",
+    "no": "Não"
+  },
+  "messages": {
+    "feedbackSent": "Seu feedback foi enviado",
+    "articleHelpful": "Obrigado pelo seu feedback",
+    "errorLoading": "Erro ao carregar conteúdo",
+    "tryAgain": "Por favor, tente novamente mais tarde"
+  }
+}

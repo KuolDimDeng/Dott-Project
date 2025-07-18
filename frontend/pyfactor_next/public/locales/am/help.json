@@ -1,0 +1,120 @@
+{
+  "_comment": "የእገዛ ማዕከል ትርጉሞች - Amharic",
+  "title": "የእገዛ ማዕከል",
+  "subtitle": "እገዛ ያግኙ እና መልሶችን ያግኙ",
+  "search": {
+    "placeholder": "እገዛ ይፈልጉ...",
+    "button": "ፍለጋ",
+    "noResults": "ምንም ውጤት አልተገኘም",
+    "tryDifferent": "የተለያዩ ቁልፍ ቃላትን ይሞክሩ"
+  },
+  "categories": {
+    "gettingStarted": "መጀመሪያ",
+    "billing": "ሂሳብ እና ክፍያዎች",
+    "sales": "ሽያጭ እና ሂሳብ",
+    "inventory": "የእቃ ስቶክ አያያዝ",
+    "payroll": "ደመወዝ እና ሰው ኃይል",
+    "reports": "ሪፖርቶች እና ትንተና",
+    "integrations": "ውህደቶች",
+    "troubleshooting": "ችግር አፈታት",
+    "account": "መለያ እና ደህንነት"
+  },
+  "popularArticles": {
+    "title": "ታዋቂ ጽሁፎች",
+    "howToCreateInvoice": "ሂሳብ እንዴት መፍጠር",
+    "managingInventory": "የእቃ ስቶክዎን መቆጣጠር",
+    "processingPayroll": "ደመወዝ ማስኬድ",
+    "settingUpTaxes": "ታክሶች ማዋቀር",
+    "connectingBankAccount": "የባንክ መለያ ማገናኘት",
+    "exportingReports": "ሪፖርቶች መላክ",
+    "addingEmployees": "ሰራተኞች መጨመር",
+    "creatingProducts": "ምርቶች መፍጠር"
+  },
+  "contact": {
+    "title": "ድጋፍ ያነጋግሩ",
+    "subtitle": "የሚፈልጉትን ማግኘት አልቻሉም?",
+    "email": "የኢሜል ድጋፍ",
+    "emailAddress": "support@dottapps.com",
+    "chat": "ቀጥታ ወይይት",
+    "chatAvailable": "ሰኞ-አርብ፣ 9am-5pm ይገኛል",
+    "phone": "የስልክ ድጋፍ",
+    "phoneNumber": "+1 (555) 123-4567",
+    "responseTime": "የምላሽ ጊዜ",
+    "emailResponse": "በ24 ሰዓት ውስጥ",
+    "chatResponse": "ወዲያውኑ",
+    "phoneResponse": "ወዲያውኑ"
+  },
+  "resources": {
+    "title": "ሀብቶች",
+    "userGuide": "የተጠቃሚ መመሪያ",
+    "videoTutorials": "የቪዲዮ ትምህርቶች",
+    "apiDocumentation": "የኤፒአይ ሰነዶች",
+    "releaseNotes": "የመልቀቅ ማስታወሻዎች",
+    "systemStatus": "የስርዓት ሁኔታ",
+    "community": "የማህበረሰብ መድረክ"
+  },
+  "faq": {
+    "title": "በተደጋጋሚ የሚጠየቁ ጥያቄዎች",
+    "billing": {
+      "howToUpgrade": "ዕቅዴን እንዴት ማሻሻል እችላለሁ?",
+      "acceptedPayments": "ምን ዓይነት የክፍያ ዘዴዎች ይቀበላሉ?",
+      "cancelSubscription": "ምዝገባዬን እንዴት መሰረዝ እችላለሁ?",
+      "refundPolicy": "የመመለስ ፖሊሲያችሁ ምንድን ነው?"
+    },
+    "account": {
+      "resetPassword": "የይለፍ ቃሌን እንዴት ዳግም ማዋቀር እችላለሁ?",
+      "changeEmail": "ኢሜሌን እንዴት መቀየር እችላለሁ?",
+      "deleteAccount": "መለያዬን እንዴት ማጥፋት እችላለሁ?",
+      "dataExport": "መረጃዬን መላክ እችላለሁ?"
+    },
+    "features": {
+      "multipleBusinesses": "ብዙ ንግዶችን ማስተዳደር እችላለሁ?",
+      "userLimit": "ስንት ተጠቃሚዎችን መጨመር እችላለሁ?",
+      "storageLimit": "የማጠራቀሚያ ገደብ ምንድን ነው?",
+      "apiAccess": "የኤፒአይ መዳረሻ ይሰጣሉ?"
+    }
+  },
+  "feedback": {
+    "title": "ግብረ-መልስ ይላኩ",
+    "subtitle": "ዶትን ለማሻሻል ይርዱን",
+    "type": "የግብረ-መልስ ዓይነት",
+    "bug": "የተሳሳተ ነገር ሪፖርት",
+    "feature": "የባህሪ ጥያቄ",
+    "improvement": "ማሻሻያ",
+    "other": "ሌላ",
+    "description": "መግለጫ",
+    "attachments": "ክፍያዎች",
+    "submit": "ግብረ-መልስ ላክ",
+    "thankYou": "ለግብረ-መልስዎ እናመሰግናለን!"
+  },
+  "training": {
+    "title": "ስልጠና እና ትምህርቶች",
+    "beginner": "ጀማሪ",
+    "intermediate": "መካከለኛ",
+    "advanced": "ከፍተኛ",
+    "webinars": "ቀጥታ ወብናሮች",
+    "certification": "የምስክር ወረቀት ፕሮግራም",
+    "duration": "ቆይታ",
+    "level": "ደረጃ",
+    "enroll": "ይመዝገቡ",
+    "viewSchedule": "ጊዜ ሰሌዳ ይመልከቱ"
+  },
+  "actions": {
+    "viewAll": "ሁሉንም ይመልከቱ",
+    "readMore": "ተጨማሪ ያንብቡ",
+    "watchVideo": "ቪዲዮ ይመልከቱ",
+    "download": "ያውርዱ",
+    "print": "ያትሙ",
+    "share": "ያጋሩ",
+    "bookmark": "ምልክት ያድርጉ",
+    "helpful": "ይህ ጠቃሚ ነበር?",
+    "yes": "አዎ",
+    "no": "አይ"
+  },
+  "messages": {
+    "feedbackSent": "ግብረ-መልስዎ ተልኳል",
+    "articleHelpful": "ለግብረ-መልስዎ እናመሰግናለን",
+    "errorLoading": "ይዘቶችን በመጫን ላይ ስህተት",
+    "tryAgain": "እባክዎ በኋላ ይሞክሩ"
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "_comment": "Dashboard page translations - Portuguese",
+  "title": "Painel",
+  "welcome": "Bem-vindo de volta",
+  "overview": "Visão geral",
+  "widgets": {
+    "revenue": "Receita",
+    "sales": "Vendas",
+    "customers": "Clientes",
+    "inventory": "Estoque",
+    "expenses": "Despesas",
+    "profit": "Lucro",
+    "orders": "Pedidos",
+    "invoices": "Faturas"
+  },
+  "charts": {
+    "salesOverview": "Visão geral de vendas",
+    "revenueChart": "Gráfico de receita",
+    "topProducts": "Produtos mais vendidos",
+    "customerGrowth": "Crescimento de clientes",
+    "expenseBreakdown": "Detalhamento de despesas",
+    "inventoryStatus": "Status do estoque",
+    "monthlyComparison": "Comparação mensal",
+    "yearlyTrends": "Tendências anuais"
+  },
+  "stats": {
+    "today": "Hoje",
+    "thisWeek": "Esta semana",
+    "thisMonth": "Este mês",
+    "thisYear": "Este ano",
+    "total": "Total",
+    "average": "Média",
+    "growth": "Crescimento",
+    "decline": "Declínio",
+    "change": "Alteração",
+    "vs": "vs",
+    "lastPeriod": "período anterior"
+  },
+  "quickActions": {
+    "title": "Ações rápidas",
+    "createInvoice": "Criar fatura",
+    "addProduct": "Adicionar produto",
+    "recordSale": "Registrar venda",
+    "addCustomer": "Adicionar cliente",
+    "processPayroll": "Processar folha de pagamento",
+    "viewReports": "Ver relatórios",
+    "manageInventory": "Gerenciar estoque",
+    "sendInvoice": "Enviar fatura"
+  },
+  "recentActivity": {
+    "title": "Atividade recente",
+    "newSale": "Nova venda",
+    "invoicePaid": "Fatura paga",
+    "productAdded": "Produto adicionado",
+    "customerAdded": "Cliente adicionado",
+    "paymentReceived": "Pagamento recebido",
+    "orderShipped": "Pedido enviado",
+    "lowStock": "Alerta de estoque baixo",
+    "viewAll": "Ver toda atividade"
+  },
+  "notifications": {
+    "title": "Notificações",
+    "unread": "não lidas",
+    "markAllRead": "Marcar todas como lidas",
+    "noNotifications": "Nenhuma nova notificação",
+    "settings": "Configurações de notificação"
+  },
+  "performance": {
+    "title": "Métricas de desempenho",
+    "salesTarget": "Meta de vendas",
+    "achieved": "Alcançado",
+    "remaining": "Restante",
+    "onTrack": "No caminho certo",
+    "behindTarget": "Atrás da meta",
+    "exceededTarget": "Meta superada"
+  },
+  "filters": {
+    "dateRange": "Intervalo de datas",
+    "customRange": "Intervalo personalizado",
+    "apply": "Aplicar",
+    "reset": "Redefinir",
+    "from": "De",
+    "to": "Para",
+    "selectDate": "Selecionar data"
+  },
+  "empty": {
+    "noData": "Nenhum dado disponível",
+    "noSales": "Nenhuma venda registrada",
+    "noCustomers": "Nenhum cliente ainda",
+    "noProducts": "Nenhum produto adicionado",
+    "getStarted": "Começar",
+    "addFirst": "Adicionar seu primeiro"
+  },
+  "loading": {
+    "loadingData": "Carregando dados...",
+    "refreshing": "Atualizando...",
+    "calculating": "Calculando...",
+    "updating": "Atualizando..."
+  },
+  "errors": {
+    "loadFailed": "Falha ao carregar dados",
+    "tryAgain": "Tentar novamente",
+    "refresh": "Atualizar",
+    "connectionError": "Erro de conexão"
+  }
+}

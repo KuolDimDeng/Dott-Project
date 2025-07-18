@@ -1,0 +1,106 @@
+{
+  "_comment": "Dashboard page translations - Turkish",
+  "title": "Gösterge Paneli",
+  "welcome": "Tekrar hoş geldiniz",
+  "overview": "Genel Bakış",
+  "widgets": {
+    "revenue": "Gelir",
+    "sales": "Satışlar",
+    "customers": "Müşteriler",
+    "inventory": "Envanter",
+    "expenses": "Giderler",
+    "profit": "Kar",
+    "orders": "Sipariş",
+    "invoices": "Faturalar"
+  },
+  "charts": {
+    "salesOverview": "Satış Genel Bakış",
+    "revenueChart": "Gelir Grafiği",
+    "topProducts": "En İyi Ürünler",
+    "customerGrowth": "Müşteri Artışı",
+    "expenseBreakdown": "Gider Dağılımı",
+    "inventoryStatus": "Envanter Durumu",
+    "monthlyComparison": "Aylık Karşılaştırma",
+    "yearlyTrends": "Yıllık Eğilimler"
+  },
+  "stats": {
+    "today": "Bugün",
+    "thisWeek": "Bu Hafta",
+    "thisMonth": "Bu Ay",
+    "thisYear": "Bu Yıl",
+    "total": "Toplam",
+    "average": "Ortalama",
+    "growth": "Büyüme",
+    "decline": "Düşüş",
+    "change": "Değişim",
+    "vs": "karşı",
+    "lastPeriod": "geçen dönem"
+  },
+  "quickActions": {
+    "title": "Hızlı İşlemler",
+    "createInvoice": "Fatura Oluştur",
+    "addProduct": "Ürün Ekle",
+    "recordSale": "Satış Kaydet",
+    "addCustomer": "Müşteri Ekle",
+    "processPayroll": "Bordro İşle",
+    "viewReports": "Raporları Görüntüle",
+    "manageInventory": "Envanter Yönet",
+    "sendInvoice": "Fatura Gönder"
+  },
+  "recentActivity": {
+    "title": "Son Etkinlik",
+    "newSale": "Yeni satış",
+    "invoicePaid": "Fatura ödendi",
+    "productAdded": "Ürün eklendi",
+    "customerAdded": "Müşteri eklendi",
+    "paymentReceived": "Ödeme alındı",
+    "orderShipped": "Sipariş gönderildi",
+    "lowStock": "Düşük stok uyarısı",
+    "viewAll": "Tüm etkinliği görüntüle"
+  },
+  "notifications": {
+    "title": "Bildirimler",
+    "unread": "okunmamış",
+    "markAllRead": "Tümünü okundu işaretle",
+    "noNotifications": "Yeni bildirim yok",
+    "settings": "Bildirim ayarları"
+  },
+  "performance": {
+    "title": "Performans Metrikleri",
+    "salesTarget": "Satış Hedefi",
+    "achieved": "Başarıldı",
+    "remaining": "Kalan",
+    "onTrack": "Yolunda",
+    "behindTarget": "Hedefin gerisinde",
+    "exceededTarget": "Hedef aşıldı"
+  },
+  "filters": {
+    "dateRange": "Tarih Aralığı",
+    "customRange": "Özel Aralık",
+    "apply": "Uygula",
+    "reset": "Sıfırla",
+    "from": "Başlangıç",
+    "to": "Bitiş",
+    "selectDate": "Tarih seç"
+  },
+  "empty": {
+    "noData": "Veri mevcut değil",
+    "noSales": "Kayıtlı satış yok",
+    "noCustomers": "Henüz müşteri yok",
+    "noProducts": "Ürün eklenmemiş",
+    "getStarted": "Başla",
+    "addFirst": "İlkini ekle"
+  },
+  "loading": {
+    "loadingData": "Veri yükleniyor...",
+    "refreshing": "Yenileniyor...",
+    "calculating": "Hesaplanıyor...",
+    "updating": "Güncelleniyor..."
+  },
+  "errors": {
+    "loadFailed": "Veri yükleme başarısız",
+    "tryAgain": "Tekrar dene",
+    "refresh": "Yenile",
+    "connectionError": "Bağlantı hatası"
+  }
+}

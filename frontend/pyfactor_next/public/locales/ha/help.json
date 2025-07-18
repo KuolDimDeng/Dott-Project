@@ -1,0 +1,120 @@
+{
+  "_comment": "Fassarar cibiyar taimako - Hausa",
+  "title": "Cibiyar Taimako",
+  "subtitle": "Samun taimako da kuma neman amsoshi",
+  "search": {
+    "placeholder": "Nemi taimako...",
+    "button": "Nema",
+    "noResults": "Babu sakamakon da aka samu",
+    "tryDifferent": "Gwada wasu kalmomin bincike"
+  },
+  "categories": {
+    "gettingStarted": "Farawa",
+    "billing": "Lissafi da Biyan Kuɗi",
+    "sales": "Sayarwa da Lissafi",
+    "inventory": "Sarrafa Kayayyaki",
+    "payroll": "Albashin Ma'aikata da HR",
+    "reports": "Rahotanni da Bincike",
+    "integrations": "Haɗa-haɗi",
+    "troubleshooting": "Warware Matsaloli",
+    "account": "Asusun da Tsaro"
+  },
+  "popularArticles": {
+    "title": "Labarai Masu Shahara",
+    "howToCreateInvoice": "Yadda za a ƙirƙiri lissafi",
+    "managingInventory": "Sarrafa kayayyakin ku",
+    "processingPayroll": "Sarrafa albashin ma'aikata",
+    "settingUpTaxes": "Saita haraji",
+    "connectingBankAccount": "Haɗa asusun banki",
+    "exportingReports": "Fitar da rahotanni",
+    "addingEmployees": "Ƙara ma'aikata",
+    "creatingProducts": "Ƙirƙirar kayayyaki"
+  },
+  "contact": {
+    "title": "Tuntuɓi Taimako",
+    "subtitle": "Ba za ku iya samun abin da kuke nema ba?",
+    "email": "Taimako ta Imel",
+    "emailAddress": "support@dottapps.com",
+    "chat": "Tattaunawa kai tsaye",
+    "chatAvailable": "Akwai Litinin-Jumma'a, 9am-5pm",
+    "phone": "Taimako ta Wayar",
+    "phoneNumber": "+1 (555) 123-4567",
+    "responseTime": "Lokacin Amsa",
+    "emailResponse": "A cikin sa'o'i 24",
+    "chatResponse": "Nan take",
+    "phoneResponse": "Nan take"
+  },
+  "resources": {
+    "title": "Albarkatun",
+    "userGuide": "Jagorar Mai-amfani",
+    "videoTutorials": "Koyarwar Bidiyo",
+    "apiDocumentation": "Takaddun API",
+    "releaseNotes": "Bayanan Fitarwa",
+    "systemStatus": "Yanayin Tsarin",
+    "community": "Dandalin Al'umma"
+  },
+  "faq": {
+    "title": "Tambayoyin da Ake Yawan Yi",
+    "billing": {
+      "howToUpgrade": "Ta yaya zan haɓaka shirin nawa?",
+      "acceptedPayments": "Waɗanne hanyoyin biyan kuɗi ake karɓa?",
+      "cancelSubscription": "Ta yaya zan soke biyan kuɗi na?",
+      "refundPolicy": "Menene manufar ku ta mayar da kuɗi?"
+    },
+    "account": {
+      "resetPassword": "Ta yaya zan sake saita kalmar sirri na?",
+      "changeEmail": "Ta yaya zan canza imel na?",
+      "deleteAccount": "Ta yaya zan share asusun na?",
+      "dataExport": "Shin zan iya fitar da bayanan na?"
+    },
+    "features": {
+      "multipleBusinesses": "Shin zan iya sarrafa kasuwanci da yawa?",
+      "userLimit": "Nawa ne masu amfani da zan iya ƙarawa?",
+      "storageLimit": "Menene iyakar adanawa?",
+      "apiAccess": "Shin kuna ba da damar API?"
+    }
+  },
+  "feedback": {
+    "title": "Aika Ra'ayi",
+    "subtitle": "Taimaka mana mu inganta Dott",
+    "type": "Nau'in Ra'ayi",
+    "bug": "Rahoton Kuskure",
+    "feature": "Buƙatar Sababbin Abubuwa",
+    "improvement": "Ingantawa",
+    "other": "Wani",
+    "description": "Bayani",
+    "attachments": "Abubuwan da aka makala",
+    "submit": "Aika Ra'ayi",
+    "thankYou": "Godiya don ra'ayin ku!"
+  },
+  "training": {
+    "title": "Horarwa da Koyarwa",
+    "beginner": "Mafari",
+    "intermediate": "Matsakaici",
+    "advanced": "Babba",
+    "webinars": "Taron Yanar Gizo kai tsaye",
+    "certification": "Shirin Takaddun Shaida",
+    "duration": "Tsawon Lokaci",
+    "level": "Matakin",
+    "enroll": "Yi Rajista",
+    "viewSchedule": "Duba Jadawalin"
+  },
+  "actions": {
+    "viewAll": "Duba Duka",
+    "readMore": "Karanta ƙara",
+    "watchVideo": "Kalli Bidiyo",
+    "download": "Sauke",
+    "print": "Buga",
+    "share": "Raba",
+    "bookmark": "Alamar shafi",
+    "helpful": "Shin wannan ya taimaka?",
+    "yes": "Eh",
+    "no": "A'a"
+  },
+  "messages": {
+    "feedbackSent": "An aika ra'ayin ku",
+    "articleHelpful": "Godiya don ra'ayin ku",
+    "errorLoading": "Kuskure wajen loda abun ciki",
+    "tryAgain": "Don Allah sake gwadawa daga baya"
+  }
+}

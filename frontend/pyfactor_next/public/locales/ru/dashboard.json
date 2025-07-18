@@ -1,0 +1,106 @@
+{
+  "_comment": "Dashboard page translations - Russian",
+  "title": "Панель управления",
+  "welcome": "Добро пожаловать обратно",
+  "overview": "Обзор",
+  "widgets": {
+    "revenue": "Выручка",
+    "sales": "Продажи",
+    "customers": "Клиенты",
+    "inventory": "Запасы",
+    "expenses": "Расходы",
+    "profit": "Прибыль",
+    "orders": "Заказы",
+    "invoices": "Счета"
+  },
+  "charts": {
+    "salesOverview": "Обзор продаж",
+    "revenueChart": "График выручки",
+    "topProducts": "Топ товары",
+    "customerGrowth": "Рост клиентов",
+    "expenseBreakdown": "Разбивка расходов",
+    "inventoryStatus": "Статус запасов",
+    "monthlyComparison": "Месячное сравнение",
+    "yearlyTrends": "Годовые тренды"
+  },
+  "stats": {
+    "today": "Сегодня",
+    "thisWeek": "На этой неделе",
+    "thisMonth": "В этом месяце",
+    "thisYear": "В этом году",
+    "total": "Всего",
+    "average": "Средний",
+    "growth": "Рост",
+    "decline": "Снижение",
+    "change": "Изменение",
+    "vs": "против",
+    "lastPeriod": "прошлый период"
+  },
+  "quickActions": {
+    "title": "Быстрые действия",
+    "createInvoice": "Создать счет",
+    "addProduct": "Добавить товар",
+    "recordSale": "Записать продажу",
+    "addCustomer": "Добавить клиента",
+    "processPayroll": "Обработать зарплату",
+    "viewReports": "Просмотреть отчеты",
+    "manageInventory": "Управлять запасами",
+    "sendInvoice": "Отправить счет"
+  },
+  "recentActivity": {
+    "title": "Недавняя активность",
+    "newSale": "Новая продажа",
+    "invoicePaid": "Счет оплачен",
+    "productAdded": "Товар добавлен",
+    "customerAdded": "Клиент добавлен",
+    "paymentReceived": "Платеж получен",
+    "orderShipped": "Заказ отправлен",
+    "lowStock": "Предупреждение о низком запасе",
+    "viewAll": "Просмотреть всю активность"
+  },
+  "notifications": {
+    "title": "Уведомления",
+    "unread": "непрочитанные",
+    "markAllRead": "Отметить все как прочитанные",
+    "noNotifications": "Нет новых уведомлений",
+    "settings": "Настройки уведомлений"
+  },
+  "performance": {
+    "title": "Показатели производительности",
+    "salesTarget": "Цель продаж",
+    "achieved": "Достигнуто",
+    "remaining": "Осталось",
+    "onTrack": "По плану",
+    "behindTarget": "Отстает от цели",
+    "exceededTarget": "Превышена цель"
+  },
+  "filters": {
+    "dateRange": "Диапазон дат",
+    "customRange": "Пользовательский диапазон",
+    "apply": "Применить",
+    "reset": "Сбросить",
+    "from": "От",
+    "to": "До",
+    "selectDate": "Выбрать дату"
+  },
+  "empty": {
+    "noData": "Нет доступных данных",
+    "noSales": "Нет записанных продаж",
+    "noCustomers": "Пока нет клиентов",
+    "noProducts": "Нет добавленных товаров",
+    "getStarted": "Начать",
+    "addFirst": "Добавить свой первый"
+  },
+  "loading": {
+    "loadingData": "Загрузка данных...",
+    "refreshing": "Обновление...",
+    "calculating": "Вычисление...",
+    "updating": "Обновление..."
+  },
+  "errors": {
+    "loadFailed": "Не удалось загрузить данные",
+    "tryAgain": "Попробовать снова",
+    "refresh": "Обновить",
+    "connectionError": "Ошибка подключения"
+  }
+}

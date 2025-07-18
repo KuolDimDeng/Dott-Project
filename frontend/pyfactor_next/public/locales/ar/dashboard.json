@@ -1,0 +1,106 @@
+{
+  "_comment": "Dashboard page translations - Arabic",
+  "title": "لوحة التحكم",
+  "welcome": "مرحباً بعودتك",
+  "overview": "نظرة عامة",
+  "widgets": {
+    "revenue": "الإيرادات",
+    "sales": "المبيعات",
+    "customers": "العملاء",
+    "inventory": "المخزون",
+    "expenses": "المصروفات",
+    "profit": "الربح",
+    "orders": "الطلبات",
+    "invoices": "الفواتير"
+  },
+  "charts": {
+    "salesOverview": "نظرة عامة على المبيعات",
+    "revenueChart": "مخطط الإيرادات",
+    "topProducts": "المنتجات الأكثر مبيعاً",
+    "customerGrowth": "نمو العملاء",
+    "expenseBreakdown": "تفصيل المصروفات",
+    "inventoryStatus": "حالة المخزون",
+    "monthlyComparison": "المقارنة الشهرية",
+    "yearlyTrends": "الاتجاهات السنوية"
+  },
+  "stats": {
+    "today": "اليوم",
+    "thisWeek": "هذا الأسبوع",
+    "thisMonth": "هذا الشهر",
+    "thisYear": "هذا العام",
+    "total": "الإجمالي",
+    "average": "المتوسط",
+    "growth": "النمو",
+    "decline": "الانخفاض",
+    "change": "التغيير",
+    "vs": "مقابل",
+    "lastPeriod": "الفترة السابقة"
+  },
+  "quickActions": {
+    "title": "الإجراءات السريعة",
+    "createInvoice": "إنشاء فاتورة",
+    "addProduct": "إضافة منتج",
+    "recordSale": "تسجيل بيع",
+    "addCustomer": "إضافة عميل",
+    "processPayroll": "معالجة كشوف المرتبات",
+    "viewReports": "عرض التقارير",
+    "manageInventory": "إدارة المخزون",
+    "sendInvoice": "إرسال الفاتورة"
+  },
+  "recentActivity": {
+    "title": "النشاط الأخير",
+    "newSale": "بيع جديد",
+    "invoicePaid": "تم دفع الفاتورة",
+    "productAdded": "تم إضافة منتج",
+    "customerAdded": "تم إضافة عميل",
+    "paymentReceived": "تم استلام الدفع",
+    "orderShipped": "تم شحن الطلب",
+    "lowStock": "تنبيه مخزون منخفض",
+    "viewAll": "عرض جميع الأنشطة"
+  },
+  "notifications": {
+    "title": "الإشعارات",
+    "unread": "غير مقروءة",
+    "markAllRead": "وضع علامة مقروءة على الكل",
+    "noNotifications": "لا توجد إشعارات جديدة",
+    "settings": "إعدادات الإشعارات"
+  },
+  "performance": {
+    "title": "مقاييس الأداء",
+    "salesTarget": "هدف المبيعات",
+    "achieved": "تم تحقيقه",
+    "remaining": "المتبقي",
+    "onTrack": "على المسار الصحيح",
+    "behindTarget": "متأخر عن الهدف",
+    "exceededTarget": "تم تجاوز الهدف"
+  },
+  "filters": {
+    "dateRange": "نطاق التاريخ",
+    "customRange": "نطاق مخصص",
+    "apply": "تطبيق",
+    "reset": "إعادة تعيين",
+    "from": "من",
+    "to": "إلى",
+    "selectDate": "اختر التاريخ"
+  },
+  "empty": {
+    "noData": "لا توجد بيانات متاحة",
+    "noSales": "لا توجد مبيعات مسجلة",
+    "noCustomers": "لا يوجد عملاء بعد",
+    "noProducts": "لا توجد منتجات مضافة",
+    "getStarted": "البدء",
+    "addFirst": "أضف أول"
+  },
+  "loading": {
+    "loadingData": "جاري تحميل البيانات...",
+    "refreshing": "جاري التحديث...",
+    "calculating": "جاري الحساب...",
+    "updating": "جاري التحديث..."
+  },
+  "errors": {
+    "loadFailed": "فشل في تحميل البيانات",
+    "tryAgain": "حاول مرة أخرى",
+    "refresh": "تحديث",
+    "connectionError": "خطأ في الاتصال"
+  }
+}

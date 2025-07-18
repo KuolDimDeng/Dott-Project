@@ -1,0 +1,120 @@
+{
+  "_comment": "Helpcentrum vertalingen - Dutch",
+  "title": "Helpcentrum",
+  "subtitle": "Krijg hulp en vind antwoorden",
+  "search": {
+    "placeholder": "Zoek hulp...",
+    "button": "Zoeken",
+    "noResults": "Geen resultaten gevonden",
+    "tryDifferent": "Probeer andere trefwoorden"
+  },
+  "categories": {
+    "gettingStarted": "Aan de slag",
+    "billing": "Facturering en Betalingen",
+    "sales": "Verkoop en Facturering",
+    "inventory": "Voorraadbeheer",
+    "payroll": "Loonlijst en HR",
+    "reports": "Rapporten en Analyses",
+    "integrations": "Integraties",
+    "troubleshooting": "Probleemoplossing",
+    "account": "Account en Beveiliging"
+  },
+  "popularArticles": {
+    "title": "Populaire Artikelen",
+    "howToCreateInvoice": "Hoe maak je een factuur",
+    "managingInventory": "Je voorraad beheren",
+    "processingPayroll": "Loonlijst verwerken",
+    "settingUpTaxes": "Belastingen instellen",
+    "connectingBankAccount": "Bankrekening koppelen",
+    "exportingReports": "Rapporten exporteren",
+    "addingEmployees": "Werknemers toevoegen",
+    "creatingProducts": "Producten aanmaken"
+  },
+  "contact": {
+    "title": "Contact opnemen met Support",
+    "subtitle": "Kun je niet vinden wat je zoekt?",
+    "email": "E-mail Support",
+    "emailAddress": "support@dottapps.com",
+    "chat": "Live Chat",
+    "chatAvailable": "Beschikbaar Ma-Vr, 9:00-17:00",
+    "phone": "Telefoon Support",
+    "phoneNumber": "+1 (555) 123-4567",
+    "responseTime": "Reactietijd",
+    "emailResponse": "Binnen 24 uur",
+    "chatResponse": "Onmiddellijk",
+    "phoneResponse": "Onmiddellijk"
+  },
+  "resources": {
+    "title": "Bronnen",
+    "userGuide": "Gebruikershandleiding",
+    "videoTutorials": "Video Tutorials",
+    "apiDocumentation": "API Documentatie",
+    "releaseNotes": "Release Notes",
+    "systemStatus": "Systeemstatus",
+    "community": "Community Forum"
+  },
+  "faq": {
+    "title": "Veelgestelde Vragen",
+    "billing": {
+      "howToUpgrade": "Hoe kan ik mijn abonnement upgraden?",
+      "acceptedPayments": "Welke betaalmethoden worden geaccepteerd?",
+      "cancelSubscription": "Hoe kan ik mijn abonnement opzeggen?",
+      "refundPolicy": "Wat is jullie terugbetalingsbeleid?"
+    },
+    "account": {
+      "resetPassword": "Hoe kan ik mijn wachtwoord resetten?",
+      "changeEmail": "Hoe kan ik mijn e-mail wijzigen?",
+      "deleteAccount": "Hoe kan ik mijn account verwijderen?",
+      "dataExport": "Kan ik mijn gegevens exporteren?"
+    },
+    "features": {
+      "multipleBusinesses": "Kan ik meerdere bedrijven beheren?",
+      "userLimit": "Hoeveel gebruikers kan ik toevoegen?",
+      "storageLimit": "Wat is de opslaglimiet?",
+      "apiAccess": "Bieden jullie API-toegang?"
+    }
+  },
+  "feedback": {
+    "title": "Feedback Versturen",
+    "subtitle": "Help ons Dott te verbeteren",
+    "type": "Feedback Type",
+    "bug": "Bug Rapport",
+    "feature": "Feature Verzoek",
+    "improvement": "Verbetering",
+    "other": "Anders",
+    "description": "Beschrijving",
+    "attachments": "Bijlagen",
+    "submit": "Feedback Versturen",
+    "thankYou": "Bedankt voor je feedback!"
+  },
+  "training": {
+    "title": "Training en Tutorials",
+    "beginner": "Beginner",
+    "intermediate": "Gemiddeld",
+    "advanced": "Gevorderd",
+    "webinars": "Live Webinars",
+    "certification": "Certificeringsprogramma",
+    "duration": "Duur",
+    "level": "Niveau",
+    "enroll": "Inschrijven",
+    "viewSchedule": "Schema Bekijken"
+  },
+  "actions": {
+    "viewAll": "Bekijk Alle",
+    "readMore": "Lees Meer",
+    "watchVideo": "Bekijk Video",
+    "download": "Downloaden",
+    "print": "Afdrukken",
+    "share": "Delen",
+    "bookmark": "Bladwijzer",
+    "helpful": "Was dit nuttig?",
+    "yes": "Ja",
+    "no": "Nee"
+  },
+  "messages": {
+    "feedbackSent": "Je feedback is verzonden",
+    "articleHelpful": "Bedankt voor je feedback",
+    "errorLoading": "Fout bij het laden van content",
+    "tryAgain": "Probeer het later opnieuw"
+  }
+}

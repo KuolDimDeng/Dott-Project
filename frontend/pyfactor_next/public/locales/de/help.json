@@ -1,0 +1,120 @@
+{
+  "_comment": "Hilfezentrum-Übersetzungen - German",
+  "title": "Hilfezentrum",
+  "subtitle": "Hilfe erhalten und Antworten finden",
+  "search": {
+    "placeholder": "Hilfe suchen...",
+    "button": "Suchen",
+    "noResults": "Keine Ergebnisse gefunden",
+    "tryDifferent": "Versuchen Sie andere Suchbegriffe"
+  },
+  "categories": {
+    "gettingStarted": "Erste Schritte",
+    "billing": "Abrechnung und Zahlungen",
+    "sales": "Verkauf und Rechnungsstellung",
+    "inventory": "Lagerverwaltung",
+    "payroll": "Lohnabrechnung und HR",
+    "reports": "Berichte und Analysen",
+    "integrations": "Integrationen",
+    "troubleshooting": "Fehlerbehebung",
+    "account": "Konto und Sicherheit"
+  },
+  "popularArticles": {
+    "title": "Beliebte Artikel",
+    "howToCreateInvoice": "Wie erstelle ich eine Rechnung",
+    "managingInventory": "Ihr Lager verwalten",
+    "processingPayroll": "Lohnabrechnung verarbeiten",
+    "settingUpTaxes": "Steuern einrichten",
+    "connectingBankAccount": "Bankkonto verbinden",
+    "exportingReports": "Berichte exportieren",
+    "addingEmployees": "Mitarbeiter hinzufügen",
+    "creatingProducts": "Produkte erstellen"
+  },
+  "contact": {
+    "title": "Support kontaktieren",
+    "subtitle": "Finden Sie nicht, wonach Sie suchen?",
+    "email": "E-Mail-Support",
+    "emailAddress": "support@dottapps.com",
+    "chat": "Live-Chat",
+    "chatAvailable": "Verfügbar Mo-Fr, 9-17 Uhr",
+    "phone": "Telefon-Support",
+    "phoneNumber": "+1 (555) 123-4567",
+    "responseTime": "Antwortzeit",
+    "emailResponse": "Innerhalb von 24 Stunden",
+    "chatResponse": "Sofort",
+    "phoneResponse": "Sofort"
+  },
+  "resources": {
+    "title": "Ressourcen",
+    "userGuide": "Benutzerhandbuch",
+    "videoTutorials": "Video-Tutorials",
+    "apiDocumentation": "API-Dokumentation",
+    "releaseNotes": "Versionshinweise",
+    "systemStatus": "Systemstatus",
+    "community": "Community-Forum"
+  },
+  "faq": {
+    "title": "Häufig gestellte Fragen",
+    "billing": {
+      "howToUpgrade": "Wie kann ich meinen Plan upgraden?",
+      "acceptedPayments": "Welche Zahlungsmethoden werden akzeptiert?",
+      "cancelSubscription": "Wie kann ich mein Abonnement kündigen?",
+      "refundPolicy": "Wie ist Ihre Rückerstattungsrichtlinie?"
+    },
+    "account": {
+      "resetPassword": "Wie kann ich mein Passwort zurücksetzen?",
+      "changeEmail": "Wie kann ich meine E-Mail ändern?",
+      "deleteAccount": "Wie kann ich mein Konto löschen?",
+      "dataExport": "Kann ich meine Daten exportieren?"
+    },
+    "features": {
+      "multipleBusinesses": "Kann ich mehrere Unternehmen verwalten?",
+      "userLimit": "Wie viele Benutzer kann ich hinzufügen?",
+      "storageLimit": "Wie hoch ist das Speicherlimit?",
+      "apiAccess": "Bieten Sie API-Zugang an?"
+    }
+  },
+  "feedback": {
+    "title": "Feedback senden",
+    "subtitle": "Helfen Sie uns, Dott zu verbessern",
+    "type": "Feedback-Typ",
+    "bug": "Fehlerbericht",
+    "feature": "Feature-Anfrage",
+    "improvement": "Verbesserung",
+    "other": "Andere",
+    "description": "Beschreibung",
+    "attachments": "Anhänge",
+    "submit": "Feedback senden",
+    "thankYou": "Vielen Dank für Ihr Feedback!"
+  },
+  "training": {
+    "title": "Schulung und Tutorials",
+    "beginner": "Anfänger",
+    "intermediate": "Fortgeschritten",
+    "advanced": "Experte",
+    "webinars": "Live-Webinare",
+    "certification": "Zertifizierungsprogramm",
+    "duration": "Dauer",
+    "level": "Niveau",
+    "enroll": "Anmelden",
+    "viewSchedule": "Zeitplan anzeigen"
+  },
+  "actions": {
+    "viewAll": "Alle anzeigen",
+    "readMore": "Mehr lesen",
+    "watchVideo": "Video ansehen",
+    "download": "Herunterladen",
+    "print": "Drucken",
+    "share": "Teilen",
+    "bookmark": "Lesezeichen",
+    "helpful": "War das hilfreich?",
+    "yes": "Ja",
+    "no": "Nein"
+  },
+  "messages": {
+    "feedbackSent": "Ihr Feedback wurde gesendet",
+    "articleHelpful": "Vielen Dank für Ihr Feedback",
+    "errorLoading": "Fehler beim Laden des Inhalts",
+    "tryAgain": "Bitte versuchen Sie es später erneut"
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "_comment": "Dashboard page translations - Dutch",
+  "title": "Dashboard",
+  "welcome": "Welkom terug",
+  "overview": "Overzicht",
+  "widgets": {
+    "revenue": "Inkomsten",
+    "sales": "Verkoop",
+    "customers": "Klanten",
+    "inventory": "Voorraad",
+    "expenses": "Uitgaven",
+    "profit": "Winst",
+    "orders": "Bestellingen",
+    "invoices": "Facturen"
+  },
+  "charts": {
+    "salesOverview": "Verkoop overzicht",
+    "revenueChart": "Inkomsten grafiek",
+    "topProducts": "Top producten",
+    "customerGrowth": "Klantgroei",
+    "expenseBreakdown": "Uitgaven verdeling",
+    "inventoryStatus": "Voorraad status",
+    "monthlyComparison": "Maandelijkse vergelijking",
+    "yearlyTrends": "Jaarlijkse trends"
+  },
+  "stats": {
+    "today": "Vandaag",
+    "thisWeek": "Deze week",
+    "thisMonth": "Deze maand",
+    "thisYear": "Dit jaar",
+    "total": "Totaal",
+    "average": "Gemiddeld",
+    "growth": "Groei",
+    "decline": "Daling",
+    "change": "Verandering",
+    "vs": "vs",
+    "lastPeriod": "vorige periode"
+  },
+  "quickActions": {
+    "title": "Snelle acties",
+    "createInvoice": "Factuur aanmaken",
+    "addProduct": "Product toevoegen",
+    "recordSale": "Verkoop vastleggen",
+    "addCustomer": "Klant toevoegen",
+    "processPayroll": "Salarisverwerking",
+    "viewReports": "Rapporten bekijken",
+    "manageInventory": "Voorraad beheren",
+    "sendInvoice": "Factuur versturen"
+  },
+  "recentActivity": {
+    "title": "Recente activiteit",
+    "newSale": "Nieuwe verkoop",
+    "invoicePaid": "Factuur betaald",
+    "productAdded": "Product toegevoegd",
+    "customerAdded": "Klant toegevoegd",
+    "paymentReceived": "Betaling ontvangen",
+    "orderShipped": "Bestelling verzonden",
+    "lowStock": "Lage voorraad waarschuwing",
+    "viewAll": "Alle activiteit bekijken"
+  },
+  "notifications": {
+    "title": "Meldingen",
+    "unread": "ongelezen",
+    "markAllRead": "Alles als gelezen markeren",
+    "noNotifications": "Geen nieuwe meldingen",
+    "settings": "Meldingsinstellingen"
+  },
+  "performance": {
+    "title": "Prestatie indicatoren",
+    "salesTarget": "Verkoopdoel",
+    "achieved": "Behaald",
+    "remaining": "Resterend",
+    "onTrack": "Op schema",
+    "behindTarget": "Achter op doel",
+    "exceededTarget": "Doel overschreden"
+  },
+  "filters": {
+    "dateRange": "Datumbereik",
+    "customRange": "Aangepast bereik",
+    "apply": "Toepassen",
+    "reset": "Resetten",
+    "from": "Van",
+    "to": "Tot",
+    "selectDate": "Datum selecteren"
+  },
+  "empty": {
+    "noData": "Geen data beschikbaar",
+    "noSales": "Geen verkoop vastgelegd",
+    "noCustomers": "Nog geen klanten",
+    "noProducts": "Geen producten toegevoegd",
+    "getStarted": "Aan de slag",
+    "addFirst": "Voeg je eerste toe"
+  },
+  "loading": {
+    "loadingData": "Data laden...",
+    "refreshing": "Vernieuwen...",
+    "calculating": "Berekenen...",
+    "updating": "Bijwerken..."
+  },
+  "errors": {
+    "loadFailed": "Laden van data mislukt",
+    "tryAgain": "Probeer opnieuw",
+    "refresh": "Vernieuwen",
+    "connectionError": "Verbindingsfout"
+  }
+}

@@ -1,0 +1,120 @@
+{
+  "_comment": "Yardım merkezi çevirileri - Turkish",
+  "title": "Yardım Merkezi",
+  "subtitle": "Yardım alın ve cevapları bulun",
+  "search": {
+    "placeholder": "Yardım ara...",
+    "button": "Ara",
+    "noResults": "Sonuç bulunamadı",
+    "tryDifferent": "Farklı anahtar kelimeler deneyin"
+  },
+  "categories": {
+    "gettingStarted": "Başlangıç",
+    "billing": "Faturalandırma ve Ödemeler",
+    "sales": "Satış ve Faturalandırma",
+    "inventory": "Envanter Yönetimi",
+    "payroll": "Bordro ve İK",
+    "reports": "Raporlar ve Analitik",
+    "integrations": "Entegrasyonlar",
+    "troubleshooting": "Sorun Giderme",
+    "account": "Hesap ve Güvenlik"
+  },
+  "popularArticles": {
+    "title": "Popüler Makaleler",
+    "howToCreateInvoice": "Fatura nasıl oluşturulur",
+    "managingInventory": "Envanterinizi yönetme",
+    "processingPayroll": "Bordro işleme",
+    "settingUpTaxes": "Vergi ayarlama",
+    "connectingBankAccount": "Banka hesabını bağlama",
+    "exportingReports": "Raporları dışa aktarma",
+    "addingEmployees": "Çalışan ekleme",
+    "creatingProducts": "Ürün oluşturma"
+  },
+  "contact": {
+    "title": "Destek ile İletişim",
+    "subtitle": "Aradığınızı bulamıyor musunuz?",
+    "email": "E-posta Desteği",
+    "emailAddress": "support@dottapps.com",
+    "chat": "Canlı Sohbet",
+    "chatAvailable": "Pazartesi-Cuma, 9:00-17:00 arası mevcut",
+    "phone": "Telefon Desteği",
+    "phoneNumber": "+1 (555) 123-4567",
+    "responseTime": "Yanıt Süresi",
+    "emailResponse": "24 saat içinde",
+    "chatResponse": "Anında",
+    "phoneResponse": "Anında"
+  },
+  "resources": {
+    "title": "Kaynaklar",
+    "userGuide": "Kullanıcı Kılavuzu",
+    "videoTutorials": "Video Eğitimleri",
+    "apiDocumentation": "API Dokümantasyonu",
+    "releaseNotes": "Sürüm Notları",
+    "systemStatus": "Sistem Durumu",
+    "community": "Topluluk Forumu"
+  },
+  "faq": {
+    "title": "Sık Sorulan Sorular",
+    "billing": {
+      "howToUpgrade": "Planımı nasıl yükseltebilirim?",
+      "acceptedPayments": "Hangi ödeme yöntemleri kabul ediliyor?",
+      "cancelSubscription": "Aboneliğimi nasıl iptal edebilirim?",
+      "refundPolicy": "İade politikanız nedir?"
+    },
+    "account": {
+      "resetPassword": "Şifremi nasıl sıfırlayabilirim?",
+      "changeEmail": "E-postamı nasıl değiştirebilirim?",
+      "deleteAccount": "Hesabımı nasıl silebilirim?",
+      "dataExport": "Verilerimi dışa aktarabilir miyim?"
+    },
+    "features": {
+      "multipleBusinesses": "Birden fazla işletmeyi yönetebilir miyim?",
+      "userLimit": "Kaç kullanıcı ekleyebilirim?",
+      "storageLimit": "Depolama limiti nedir?",
+      "apiAccess": "API erişimi sağlıyor musunuz?"
+    }
+  },
+  "feedback": {
+    "title": "Geri Bildirim Gönder",
+    "subtitle": "Dott'u geliştirmemize yardımcı olun",
+    "type": "Geri Bildirim Türü",
+    "bug": "Hata Raporu",
+    "feature": "Özellik İsteği",
+    "improvement": "İyileştirme",
+    "other": "Diğer",
+    "description": "Açıklama",
+    "attachments": "Ekler",
+    "submit": "Geri Bildirim Gönder",
+    "thankYou": "Geri bildiriminiz için teşekkürler!"
+  },
+  "training": {
+    "title": "Eğitim ve Öğreticiler",
+    "beginner": "Başlangıç",
+    "intermediate": "Orta",
+    "advanced": "İleri",
+    "webinars": "Canlı Webinarlar",
+    "certification": "Sertifikasyon Programı",
+    "duration": "Süre",
+    "level": "Seviye",
+    "enroll": "Kayıt Ol",
+    "viewSchedule": "Programı Görüntüle"
+  },
+  "actions": {
+    "viewAll": "Tümünü Görüntüle",
+    "readMore": "Daha Fazla Oku",
+    "watchVideo": "Video İzle",
+    "download": "İndir",
+    "print": "Yazdır",
+    "share": "Paylaş",
+    "bookmark": "Yer İmi",
+    "helpful": "Bu yardımcı oldu mu?",
+    "yes": "Evet",
+    "no": "Hayır"
+  },
+  "messages": {
+    "feedbackSent": "Geri bildiriminiz gönderildi",
+    "articleHelpful": "Geri bildiriminiz için teşekkürler",
+    "errorLoading": "İçerik yükleme hatası",
+    "tryAgain": "Lütfen daha sonra tekrar deneyin"
+  }
+}

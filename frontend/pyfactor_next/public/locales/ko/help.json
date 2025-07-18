@@ -1,0 +1,120 @@
+{
+  "_comment": "도움말 센터 번역 - Korean",
+  "title": "도움말 센터",
+  "subtitle": "도움을 받고 답변을 찾으세요",
+  "search": {
+    "placeholder": "도움말 검색...",
+    "button": "검색",
+    "noResults": "검색 결과가 없습니다",
+    "tryDifferent": "다른 키워드를 시도해보세요"
+  },
+  "categories": {
+    "gettingStarted": "시작하기",
+    "billing": "청구 및 결제",
+    "sales": "판매 및 청구서",
+    "inventory": "재고 관리",
+    "payroll": "급여 및 인사",
+    "reports": "보고서 및 분석",
+    "integrations": "통합",
+    "troubleshooting": "문제 해결",
+    "account": "계정 및 보안"
+  },
+  "popularArticles": {
+    "title": "인기 있는 기사",
+    "howToCreateInvoice": "청구서 만드는 방법",
+    "managingInventory": "재고 관리하기",
+    "processingPayroll": "급여 처리하기",
+    "settingUpTaxes": "세금 설정하기",
+    "connectingBankAccount": "은행 계좌 연결하기",
+    "exportingReports": "보고서 내보내기",
+    "addingEmployees": "직원 추가하기",
+    "creatingProducts": "제품 만들기"
+  },
+  "contact": {
+    "title": "지원팀 연락하기",
+    "subtitle": "찾고 있는 것을 찾을 수 없나요?",
+    "email": "이메일 지원",
+    "emailAddress": "support@dottapps.com",
+    "chat": "실시간 채팅",
+    "chatAvailable": "월-금, 오전 9시-오후 5시 운영",
+    "phone": "전화 지원",
+    "phoneNumber": "+1 (555) 123-4567",
+    "responseTime": "응답 시간",
+    "emailResponse": "24시간 이내",
+    "chatResponse": "즉시",
+    "phoneResponse": "즉시"
+  },
+  "resources": {
+    "title": "리소스",
+    "userGuide": "사용자 가이드",
+    "videoTutorials": "동영상 튜토리얼",
+    "apiDocumentation": "API 문서",
+    "releaseNotes": "릴리스 노트",
+    "systemStatus": "시스템 상태",
+    "community": "커뮤니티 포럼"
+  },
+  "faq": {
+    "title": "자주 묻는 질문",
+    "billing": {
+      "howToUpgrade": "요금제를 업그레이드하는 방법은?",
+      "acceptedPayments": "어떤 결제 방법을 받나요?",
+      "cancelSubscription": "구독을 취소하는 방법은?",
+      "refundPolicy": "환불 정책은 무엇인가요?"
+    },
+    "account": {
+      "resetPassword": "비밀번호를 재설정하는 방법은?",
+      "changeEmail": "이메일을 변경하는 방법은?",
+      "deleteAccount": "계정을 삭제하는 방법은?",
+      "dataExport": "데이터를 내보낼 수 있나요?"
+    },
+    "features": {
+      "multipleBusinesses": "여러 비즈니스를 관리할 수 있나요?",
+      "userLimit": "사용자를 몇 명까지 추가할 수 있나요?",
+      "storageLimit": "저장 공간 제한은 얼마인가요?",
+      "apiAccess": "API 액세스를 제공하나요?"
+    }
+  },
+  "feedback": {
+    "title": "피드백 보내기",
+    "subtitle": "Dott 개선에 도움을 주세요",
+    "type": "피드백 유형",
+    "bug": "버그 신고",
+    "feature": "기능 요청",
+    "improvement": "개선 사항",
+    "other": "기타",
+    "description": "설명",
+    "attachments": "첨부파일",
+    "submit": "피드백 보내기",
+    "thankYou": "피드백 주셔서 감사합니다!"
+  },
+  "training": {
+    "title": "교육 및 튜토리얼",
+    "beginner": "초급",
+    "intermediate": "중급",
+    "advanced": "고급",
+    "webinars": "실시간 웨비나",
+    "certification": "인증 프로그램",
+    "duration": "기간",
+    "level": "레벨",
+    "enroll": "등록",
+    "viewSchedule": "일정 보기"
+  },
+  "actions": {
+    "viewAll": "모두 보기",
+    "readMore": "더 읽기",
+    "watchVideo": "동영상 보기",
+    "download": "다운로드",
+    "print": "인쇄",
+    "share": "공유",
+    "bookmark": "북마크",
+    "helpful": "도움이 되었나요?",
+    "yes": "네",
+    "no": "아니요"
+  },
+  "messages": {
+    "feedbackSent": "피드백이 전송되었습니다",
+    "articleHelpful": "피드백 주셔서 감사합니다",
+    "errorLoading": "콘텐츠 로딩 오류",
+    "tryAgain": "나중에 다시 시도해주세요"
+  }
+}

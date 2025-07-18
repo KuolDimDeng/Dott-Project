@@ -1,0 +1,106 @@
+{
+  "_comment": "Dashboard page translations - Korean",
+  "title": "대시보드",
+  "welcome": "다시 오신 것을 환영합니다",
+  "overview": "개요",
+  "widgets": {
+    "revenue": "매출",
+    "sales": "판매",
+    "customers": "고객",
+    "inventory": "재고",
+    "expenses": "지출",
+    "profit": "이익",
+    "orders": "주문",
+    "invoices": "송장"
+  },
+  "charts": {
+    "salesOverview": "판매 개요",
+    "revenueChart": "매출 차트",
+    "topProducts": "인기 상품",
+    "customerGrowth": "고객 증가",
+    "expenseBreakdown": "지출 내역",
+    "inventoryStatus": "재고 상태",
+    "monthlyComparison": "월별 비교",
+    "yearlyTrends": "연간 추세"
+  },
+  "stats": {
+    "today": "오늘",
+    "thisWeek": "이번 주",
+    "thisMonth": "이번 달",
+    "thisYear": "올해",
+    "total": "총계",
+    "average": "평균",
+    "growth": "증가",
+    "decline": "감소",
+    "change": "변화",
+    "vs": "대비",
+    "lastPeriod": "이전 기간"
+  },
+  "quickActions": {
+    "title": "빠른 작업",
+    "createInvoice": "송장 생성",
+    "addProduct": "상품 추가",
+    "recordSale": "판매 기록",
+    "addCustomer": "고객 추가",
+    "processPayroll": "급여 처리",
+    "viewReports": "보고서 보기",
+    "manageInventory": "재고 관리",
+    "sendInvoice": "송장 발송"
+  },
+  "recentActivity": {
+    "title": "최근 활동",
+    "newSale": "새로운 판매",
+    "invoicePaid": "송장 지불됨",
+    "productAdded": "상품 추가됨",
+    "customerAdded": "고객 추가됨",
+    "paymentReceived": "결제 수신됨",
+    "orderShipped": "주문 발송됨",
+    "lowStock": "재고 부족 알림",
+    "viewAll": "모든 활동 보기"
+  },
+  "notifications": {
+    "title": "알림",
+    "unread": "읽지 않음",
+    "markAllRead": "모두 읽음으로 표시",
+    "noNotifications": "새로운 알림 없음",
+    "settings": "알림 설정"
+  },
+  "performance": {
+    "title": "성과 지표",
+    "salesTarget": "판매 목표",
+    "achieved": "달성됨",
+    "remaining": "남은 목표",
+    "onTrack": "순조롭게 진행",
+    "behindTarget": "목표 뒤처짐",
+    "exceededTarget": "목표 초과"
+  },
+  "filters": {
+    "dateRange": "날짜 범위",
+    "customRange": "사용자 정의 범위",
+    "apply": "적용",
+    "reset": "재설정",
+    "from": "시작",
+    "to": "끝",
+    "selectDate": "날짜 선택"
+  },
+  "empty": {
+    "noData": "데이터가 없습니다",
+    "noSales": "기록된 판매 없음",
+    "noCustomers": "아직 고객이 없음",
+    "noProducts": "추가된 상품 없음",
+    "getStarted": "시작하기",
+    "addFirst": "첫 번째 추가"
+  },
+  "loading": {
+    "loadingData": "데이터 로딩 중...",
+    "refreshing": "새로 고침 중...",
+    "calculating": "계산 중...",
+    "updating": "업데이트 중..."
+  },
+  "errors": {
+    "loadFailed": "데이터 로딩 실패",
+    "tryAgain": "다시 시도",
+    "refresh": "새로 고침",
+    "connectionError": "연결 오류"
+  }
+}

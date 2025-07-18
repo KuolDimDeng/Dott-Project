@@ -1,0 +1,120 @@
+{
+  "_comment": "ترجمات مركز المساعدة - Arabic",
+  "title": "مركز المساعدة",
+  "subtitle": "احصل على المساعدة واعثر على الإجابات",
+  "search": {
+    "placeholder": "البحث عن المساعدة...",
+    "button": "بحث",
+    "noResults": "لم يتم العثور على نتائج",
+    "tryDifferent": "جرب كلمات مفتاحية مختلفة"
+  },
+  "categories": {
+    "gettingStarted": "البدء",
+    "billing": "الفواتير والمدفوعات",
+    "sales": "المبيعات والفواتير",
+    "inventory": "إدارة المخزون",
+    "payroll": "الرواتب والموارد البشرية",
+    "reports": "التقارير والتحليلات",
+    "integrations": "التكامل",
+    "troubleshooting": "حل المشاكل",
+    "account": "الحساب والأمان"
+  },
+  "popularArticles": {
+    "title": "المقالات الشائعة",
+    "howToCreateInvoice": "كيفية إنشاء فاتورة",
+    "managingInventory": "إدارة المخزون الخاص بك",
+    "processingPayroll": "معالجة الرواتب",
+    "settingUpTaxes": "إعداد الضرائب",
+    "connectingBankAccount": "ربط الحساب المصرفي",
+    "exportingReports": "تصدير التقارير",
+    "addingEmployees": "إضافة الموظفين",
+    "creatingProducts": "إنشاء المنتجات"
+  },
+  "contact": {
+    "title": "اتصل بالدعم",
+    "subtitle": "لا يمكنك العثور على ما تبحث عنه؟",
+    "email": "دعم البريد الإلكتروني",
+    "emailAddress": "support@dottapps.com",
+    "chat": "الدردشة المباشرة",
+    "chatAvailable": "متاح من الاثنين إلى الجمعة، 9 صباحاً - 5 مساءً",
+    "phone": "دعم الهاتف",
+    "phoneNumber": "+1 (555) 123-4567",
+    "responseTime": "وقت الاستجابة",
+    "emailResponse": "خلال 24 ساعة",
+    "chatResponse": "فوري",
+    "phoneResponse": "فوري"
+  },
+  "resources": {
+    "title": "الموارد",
+    "userGuide": "دليل المستخدم",
+    "videoTutorials": "دروس الفيديو",
+    "apiDocumentation": "وثائق API",
+    "releaseNotes": "ملاحظات الإصدار",
+    "systemStatus": "حالة النظام",
+    "community": "منتدى المجتمع"
+  },
+  "faq": {
+    "title": "الأسئلة الشائعة",
+    "billing": {
+      "howToUpgrade": "كيف يمكنني ترقية خطتي؟",
+      "acceptedPayments": "ما هي طرق الدفع المقبولة؟",
+      "cancelSubscription": "كيف يمكنني إلغاء اشتراكي؟",
+      "refundPolicy": "ما هي سياسة الاسترداد الخاصة بكم؟"
+    },
+    "account": {
+      "resetPassword": "كيف يمكنني إعادة تعيين كلمة المرور؟",
+      "changeEmail": "كيف يمكنني تغيير بريدي الإلكتروني؟",
+      "deleteAccount": "كيف يمكنني حذف حسابي؟",
+      "dataExport": "هل يمكنني تصدير بياناتي؟"
+    },
+    "features": {
+      "multipleBusinesses": "هل يمكنني إدارة عدة شركات؟",
+      "userLimit": "كم عدد المستخدمين الذين يمكنني إضافتهم؟",
+      "storageLimit": "ما هو حد التخزين؟",
+      "apiAccess": "هل تقدمون الوصول إلى API؟"
+    }
+  },
+  "feedback": {
+    "title": "إرسال التعليقات",
+    "subtitle": "ساعدنا في تحسين Dott",
+    "type": "نوع التعليق",
+    "bug": "تقرير خطأ",
+    "feature": "طلب ميزة",
+    "improvement": "تحسين",
+    "other": "أخرى",
+    "description": "الوصف",
+    "attachments": "المرفقات",
+    "submit": "إرسال التعليقات",
+    "thankYou": "شكراً لك على تعليقاتك!"
+  },
+  "training": {
+    "title": "التدريب والدروس",
+    "beginner": "مبتدئ",
+    "intermediate": "متوسط",
+    "advanced": "متقدم",
+    "webinars": "ندوات مباشرة عبر الإنترنت",
+    "certification": "برنامج الشهادات",
+    "duration": "المدة",
+    "level": "المستوى",
+    "enroll": "التسجيل",
+    "viewSchedule": "عرض الجدول"
+  },
+  "actions": {
+    "viewAll": "عرض الكل",
+    "readMore": "قراءة المزيد",
+    "watchVideo": "مشاهدة الفيديو",
+    "download": "تحميل",
+    "print": "طباعة",
+    "share": "مشاركة",
+    "bookmark": "إشارة مرجعية",
+    "helpful": "هل كان هذا مفيداً؟",
+    "yes": "نعم",
+    "no": "لا"
+  },
+  "messages": {
+    "feedbackSent": "تم إرسال تعليقاتك",
+    "articleHelpful": "شكراً لك على تعليقاتك",
+    "errorLoading": "خطأ في تحميل المحتوى",
+    "tryAgain": "يرجى المحاولة مرة أخرى لاحقاً"
+  }
+}

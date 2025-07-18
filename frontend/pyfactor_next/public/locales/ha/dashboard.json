@@ -1,0 +1,106 @@
+{
+  "_comment": "Dashboard page translations - Hausa",
+  "title": "Dashboard",
+  "welcome": "Maraba da zuwa",
+  "overview": "Bayyani",
+  "widgets": {
+    "revenue": "Kudin shiga",
+    "sales": "Sayarwa",
+    "customers": "Abokan ciniki",
+    "inventory": "Kayan ajiya",
+    "expenses": "Kudin fitar",
+    "profit": "Riba",
+    "orders": "Oda",
+    "invoices": "Takarda lissafi"
+  },
+  "charts": {
+    "salesOverview": "Bayyani na sayarwa",
+    "revenueChart": "Ginshikin kudin shiga",
+    "topProducts": "Kayayyaki masu kyau",
+    "customerGrowth": "Karuwar abokan ciniki",
+    "expenseBreakdown": "Rarrabuwar kudin fitar",
+    "inventoryStatus": "Halin kayan ajiya",
+    "monthlyComparison": "Kwatancen wata-wata",
+    "yearlyTrends": "Yanayin shekara-shekara"
+  },
+  "stats": {
+    "today": "Yau",
+    "thisWeek": "Wannan mako",
+    "thisMonth": "Wannan wata",
+    "thisYear": "Wannan shekara",
+    "total": "Jimillar",
+    "average": "Matsakaici",
+    "growth": "Girma",
+    "decline": "Raguwa",
+    "change": "Canje",
+    "vs": "da",
+    "lastPeriod": "lokacin da ya wuce"
+  },
+  "quickActions": {
+    "title": "Ayyuka mai sauri",
+    "createInvoice": "Kirkiro takarda lissafi",
+    "addProduct": "Kara kayayyaki",
+    "recordSale": "Rubuta sayarwa",
+    "addCustomer": "Kara abokin ciniki",
+    "processPayroll": "Aiwatar da albashi",
+    "viewReports": "Duba rahotanni",
+    "manageInventory": "Gudanar da kayan ajiya",
+    "sendInvoice": "Aika takarda lissafi"
+  },
+  "recentActivity": {
+    "title": "Ayyukan baya-bayan nan",
+    "newSale": "Sabuwar sayarwa",
+    "invoicePaid": "Takarda lissafi ta biya",
+    "productAdded": "Kayayyaki da aka kara",
+    "customerAdded": "Abokin ciniki da aka kara",
+    "paymentReceived": "Biyan da aka karba",
+    "orderShipped": "Oda da aka tura",
+    "lowStock": "Gargadin karancin kaya",
+    "viewAll": "Duba duk ayyuka"
+  },
+  "notifications": {
+    "title": "Sanarwa",
+    "unread": "ba a karanta ba",
+    "markAllRead": "Alamta duk da karanta",
+    "noNotifications": "Babu sabuwar sanarwa",
+    "settings": "Saitunan sanarwa"
+  },
+  "performance": {
+    "title": "Ma'aunin aiki",
+    "salesTarget": "Manufar sayarwa",
+    "achieved": "An cimma",
+    "remaining": "Sauran",
+    "onTrack": "Kan hanya",
+    "behindTarget": "Bayan manufa",
+    "exceededTarget": "Ya zarce manufa"
+  },
+  "filters": {
+    "dateRange": "Kewayon kwanan wata",
+    "customRange": "Kewayon na musamman",
+    "apply": "Amfani",
+    "reset": "Sake saitin",
+    "from": "Daga",
+    "to": "Zuwa",
+    "selectDate": "Zabi kwanan wata"
+  },
+  "empty": {
+    "noData": "Babu bayanai",
+    "noSales": "Babu sayarwar da aka rubuta",
+    "noCustomers": "Babu abokan ciniki har yanzu",
+    "noProducts": "Babu kayayyakin da aka kara",
+    "getStarted": "Fara",
+    "addFirst": "Kara na farko"
+  },
+  "loading": {
+    "loadingData": "Ana loda bayanai...",
+    "refreshing": "Ana wartsakewa...",
+    "calculating": "Ana lissafin...",
+    "updating": "Ana sabunta..."
+  },
+  "errors": {
+    "loadFailed": "Loda bayanai ya gaza",
+    "tryAgain": "Sake gwadawa",
+    "refresh": "Wartsakewa",
+    "connectionError": "Kuskuren hada"
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "_comment": "Dashboard page translations - Hindi",
+  "title": "डैशबोर्ड",
+  "welcome": "वापसी पर स्वागत है",
+  "overview": "अवलोकन",
+  "widgets": {
+    "revenue": "राजस्व",
+    "sales": "बिक्री",
+    "customers": "ग्राहक",
+    "inventory": "इन्वेंट्री",
+    "expenses": "खर्च",
+    "profit": "लाभ",
+    "orders": "ऑर्डर",
+    "invoices": "चालान"
+  },
+  "charts": {
+    "salesOverview": "बिक्री अवलोकन",
+    "revenueChart": "राजस्व चार्ट",
+    "topProducts": "शीर्ष उत्पाद",
+    "customerGrowth": "ग्राहक वृद्धि",
+    "expenseBreakdown": "खर्च विवरण",
+    "inventoryStatus": "इन्वेंट्री स्थिति",
+    "monthlyComparison": "मासिक तुलना",
+    "yearlyTrends": "वार्षिक रुझान"
+  },
+  "stats": {
+    "today": "आज",
+    "thisWeek": "इस सप्ताह",
+    "thisMonth": "इस महीने",
+    "thisYear": "इस वर्ष",
+    "total": "कुल",
+    "average": "औसत",
+    "growth": "वृद्धि",
+    "decline": "गिरावट",
+    "change": "बदलाव",
+    "vs": "बनाम",
+    "lastPeriod": "पिछली अवधि"
+  },
+  "quickActions": {
+    "title": "त्वरित कार्य",
+    "createInvoice": "चालान बनाएं",
+    "addProduct": "उत्पाद जोड़ें",
+    "recordSale": "बिक्री रिकॉर्ड करें",
+    "addCustomer": "ग्राहक जोड़ें",
+    "processPayroll": "पेरोल प्रोसेस करें",
+    "viewReports": "रिपोर्ट देखें",
+    "manageInventory": "इन्वेंट्री प्रबंधन",
+    "sendInvoice": "चालान भेजें"
+  },
+  "recentActivity": {
+    "title": "हाल की गतिविधि",
+    "newSale": "नई बिक्री",
+    "invoicePaid": "चालान का भुगतान",
+    "productAdded": "उत्पाद जोड़ा गया",
+    "customerAdded": "ग्राहक जोड़ा गया",
+    "paymentReceived": "भुगतान प्राप्त",
+    "orderShipped": "ऑर्डर भेजा गया",
+    "lowStock": "कम स्टॉक अलर्ट",
+    "viewAll": "सभी गतिविधि देखें"
+  },
+  "notifications": {
+    "title": "सूचनाएं",
+    "unread": "अपठित",
+    "markAllRead": "सभी को पढ़ा हुआ चिह्नित करें",
+    "noNotifications": "कोई नई सूचना नहीं",
+    "settings": "सूचना सेटिंग्स"
+  },
+  "performance": {
+    "title": "प्रदर्शन मेट्रिक्स",
+    "salesTarget": "बिक्री लक्ष्य",
+    "achieved": "हासिल",
+    "remaining": "शेष",
+    "onTrack": "ट्रैक पर",
+    "behindTarget": "लक्ष्य से पीछे",
+    "exceededTarget": "लक्ष्य पार किया"
+  },
+  "filters": {
+    "dateRange": "दिनांक सीमा",
+    "customRange": "कस्टम सीमा",
+    "apply": "लागू करें",
+    "reset": "रीसेट",
+    "from": "से",
+    "to": "तक",
+    "selectDate": "दिनांक चुनें"
+  },
+  "empty": {
+    "noData": "कोई डेटा उपलब्ध नहीं",
+    "noSales": "कोई बिक्री दर्ज नहीं",
+    "noCustomers": "अभी तक कोई ग्राहक नहीं",
+    "noProducts": "कोई उत्पाद नहीं जोड़ा गया",
+    "getStarted": "शुरू करें",
+    "addFirst": "अपना पहला जोड़ें"
+  },
+  "loading": {
+    "loadingData": "डेटा लोड हो रहा है...",
+    "refreshing": "रिफ्रेश हो रहा है...",
+    "calculating": "गणना हो रही है...",
+    "updating": "अपडेट हो रहा है..."
+  },
+  "errors": {
+    "loadFailed": "डेटा लोड नहीं हो सका",
+    "tryAgain": "पुनः प्रयास करें",
+    "refresh": "रिफ्रेश",
+    "connectionError": "कनेक्शन त्रुटि"
+  }
+}

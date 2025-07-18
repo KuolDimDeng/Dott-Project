@@ -1,0 +1,106 @@
+{
+  "_comment": "Dashboard page translations - German",
+  "title": "Dashboard",
+  "welcome": "Willkommen zurück",
+  "overview": "Überblick",
+  "widgets": {
+    "revenue": "Umsatz",
+    "sales": "Verkäufe",
+    "customers": "Kunden",
+    "inventory": "Lagerbestand",
+    "expenses": "Ausgaben",
+    "profit": "Gewinn",
+    "orders": "Bestellungen",
+    "invoices": "Rechnungen"
+  },
+  "charts": {
+    "salesOverview": "Verkaufsübersicht",
+    "revenueChart": "Umsatzdiagramm",
+    "topProducts": "Top-Produkte",
+    "customerGrowth": "Kundenwachstum",
+    "expenseBreakdown": "Ausgabenaufschlüsselung",
+    "inventoryStatus": "Lagerbestandsstatus",
+    "monthlyComparison": "Monatlicher Vergleich",
+    "yearlyTrends": "Jahrestrends"
+  },
+  "stats": {
+    "today": "Heute",
+    "thisWeek": "Diese Woche",
+    "thisMonth": "Dieser Monat",
+    "thisYear": "Dieses Jahr",
+    "total": "Gesamt",
+    "average": "Durchschnitt",
+    "growth": "Wachstum",
+    "decline": "Rückgang",
+    "change": "Änderung",
+    "vs": "vs",
+    "lastPeriod": "vorherige Periode"
+  },
+  "quickActions": {
+    "title": "Schnellaktionen",
+    "createInvoice": "Rechnung erstellen",
+    "addProduct": "Produkt hinzufügen",
+    "recordSale": "Verkauf erfassen",
+    "addCustomer": "Kunde hinzufügen",
+    "processPayroll": "Lohnabrechnung verarbeiten",
+    "viewReports": "Berichte anzeigen",
+    "manageInventory": "Lagerbestand verwalten",
+    "sendInvoice": "Rechnung senden"
+  },
+  "recentActivity": {
+    "title": "Letzte Aktivität",
+    "newSale": "Neuer Verkauf",
+    "invoicePaid": "Rechnung bezahlt",
+    "productAdded": "Produkt hinzugefügt",
+    "customerAdded": "Kunde hinzugefügt",
+    "paymentReceived": "Zahlung erhalten",
+    "orderShipped": "Bestellung versandt",
+    "lowStock": "Niedriger Lagerbestand",
+    "viewAll": "Alle Aktivitäten anzeigen"
+  },
+  "notifications": {
+    "title": "Benachrichtigungen",
+    "unread": "ungelesen",
+    "markAllRead": "Alle als gelesen markieren",
+    "noNotifications": "Keine neuen Benachrichtigungen",
+    "settings": "Benachrichtigungseinstellungen"
+  },
+  "performance": {
+    "title": "Leistungskennzahlen",
+    "salesTarget": "Verkaufsziel",
+    "achieved": "Erreicht",
+    "remaining": "Verbleibend",
+    "onTrack": "Auf Kurs",
+    "behindTarget": "Hinter dem Ziel",
+    "exceededTarget": "Ziel übertroffen"
+  },
+  "filters": {
+    "dateRange": "Datumsbereich",
+    "customRange": "Benutzerdefinierter Bereich",
+    "apply": "Anwenden",
+    "reset": "Zurücksetzen",
+    "from": "Von",
+    "to": "Bis",
+    "selectDate": "Datum auswählen"
+  },
+  "empty": {
+    "noData": "Keine Daten verfügbar",
+    "noSales": "Keine Verkäufe aufgezeichnet",
+    "noCustomers": "Noch keine Kunden",
+    "noProducts": "Keine Produkte hinzugefügt",
+    "getStarted": "Loslegen",
+    "addFirst": "Fügen Sie Ihr erstes hinzu"
+  },
+  "loading": {
+    "loadingData": "Daten werden geladen...",
+    "refreshing": "Aktualisierung...",
+    "calculating": "Berechnung...",
+    "updating": "Aktualisierung..."
+  },
+  "errors": {
+    "loadFailed": "Daten konnten nicht geladen werden",
+    "tryAgain": "Erneut versuchen",
+    "refresh": "Aktualisieren",
+    "connectionError": "Verbindungsfehler"
+  }
+}

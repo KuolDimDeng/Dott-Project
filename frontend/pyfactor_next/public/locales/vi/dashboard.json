@@ -1,0 +1,106 @@
+{
+  "_comment": "Dashboard page translations - Vietnamese",
+  "title": "Bảng điều khiển",
+  "welcome": "Chào mừng trở lại",
+  "overview": "Tổng quan",
+  "widgets": {
+    "revenue": "Doanh thu",
+    "sales": "Bán hàng",
+    "customers": "Khách hàng",
+    "inventory": "Kho hàng",
+    "expenses": "Chi phí",
+    "profit": "Lợi nhuận",
+    "orders": "Đơn hàng",
+    "invoices": "Hóa đơn"
+  },
+  "charts": {
+    "salesOverview": "Tổng quan bán hàng",
+    "revenueChart": "Biểu đồ doanh thu",
+    "topProducts": "Sản phẩm hàng đầu",
+    "customerGrowth": "Tăng trưởng khách hàng",
+    "expenseBreakdown": "Chi tiết chi phí",
+    "inventoryStatus": "Tình trạng kho hàng",
+    "monthlyComparison": "So sánh hàng tháng",
+    "yearlyTrends": "Xu hướng hàng năm"
+  },
+  "stats": {
+    "today": "Hôm nay",
+    "thisWeek": "Tuần này",
+    "thisMonth": "Tháng này",
+    "thisYear": "Năm nay",
+    "total": "Tổng cộng",
+    "average": "Trung bình",
+    "growth": "Tăng trưởng",
+    "decline": "Giảm",
+    "change": "Thay đổi",
+    "vs": "so với",
+    "lastPeriod": "kỳ trước"
+  },
+  "quickActions": {
+    "title": "Hành động nhanh",
+    "createInvoice": "Tạo hóa đơn",
+    "addProduct": "Thêm sản phẩm",
+    "recordSale": "Ghi nhận bán hàng",
+    "addCustomer": "Thêm khách hàng",
+    "processPayroll": "Xử lý lương",
+    "viewReports": "Xem báo cáo",
+    "manageInventory": "Quản lý kho hàng",
+    "sendInvoice": "Gửi hóa đơn"
+  },
+  "recentActivity": {
+    "title": "Hoạt động gần đây",
+    "newSale": "Bán hàng mới",
+    "invoicePaid": "Hóa đơn đã thanh toán",
+    "productAdded": "Sản phẩm đã thêm",
+    "customerAdded": "Khách hàng đã thêm",
+    "paymentReceived": "Đã nhận thanh toán",
+    "orderShipped": "Đơn hàng đã gửi",
+    "lowStock": "Cảnh báo hàng tồn kho thấp",
+    "viewAll": "Xem tất cả hoạt động"
+  },
+  "notifications": {
+    "title": "Thông báo",
+    "unread": "chưa đọc",
+    "markAllRead": "Đánh dấu tất cả là đã đọc",
+    "noNotifications": "Không có thông báo mới",
+    "settings": "Cài đặt thông báo"
+  },
+  "performance": {
+    "title": "Chỉ số hiệu suất",
+    "salesTarget": "Mục tiêu bán hàng",
+    "achieved": "Đã đạt",
+    "remaining": "Còn lại",
+    "onTrack": "Đúng tiến độ",
+    "behindTarget": "Chậm mục tiêu",
+    "exceededTarget": "Vượt mục tiêu"
+  },
+  "filters": {
+    "dateRange": "Khoảng thời gian",
+    "customRange": "Khoảng tùy chỉnh",
+    "apply": "Áp dụng",
+    "reset": "Đặt lại",
+    "from": "Từ",
+    "to": "Đến",
+    "selectDate": "Chọn ngày"
+  },
+  "empty": {
+    "noData": "Không có dữ liệu",
+    "noSales": "Không có bán hàng nào được ghi nhận",
+    "noCustomers": "Chưa có khách hàng",
+    "noProducts": "Chưa có sản phẩm nào được thêm",
+    "getStarted": "Bắt đầu",
+    "addFirst": "Thêm cái đầu tiên"
+  },
+  "loading": {
+    "loadingData": "Đang tải dữ liệu...",
+    "refreshing": "Đang làm mới...",
+    "calculating": "Đang tính toán...",
+    "updating": "Đang cập nhật..."
+  },
+  "errors": {
+    "loadFailed": "Không thể tải dữ liệu",
+    "tryAgain": "Thử lại",
+    "refresh": "Làm mới",
+    "connectionError": "Lỗi kết nối"
+  }
+}

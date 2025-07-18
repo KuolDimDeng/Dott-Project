@@ -1,0 +1,106 @@
+{
+  "_comment": "Dashboard page translations - Yoruba",
+  "title": "Dashboard",
+  "welcome": "Kaabo pada",
+  "overview": "Akopọ",
+  "widgets": {
+    "revenue": "Owo wọle",
+    "sales": "Tita",
+    "customers": "Awọn alabara",
+    "inventory": "Ohun ija",
+    "expenses": "Awọn inawo",
+    "profit": "Ere",
+    "orders": "Awọn ibere",
+    "invoices": "Awọn iwe akọọlẹ"
+  },
+  "charts": {
+    "salesOverview": "Akopọ tita",
+    "revenueChart": "Aworan owo wọle",
+    "topProducts": "Awọn ọja to dara ju",
+    "customerGrowth": "Idagbasoke alabara",
+    "expenseBreakdown": "Pipipin inawo",
+    "inventoryStatus": "Ipo ohun ija",
+    "monthlyComparison": "Afiwe oṣu",
+    "yearlyTrends": "Awọn iṣe ọdun"
+  },
+  "stats": {
+    "today": "Oni",
+    "thisWeek": "Ọsẹ yii",
+    "thisMonth": "Oṣu yii",
+    "thisYear": "Ọdun yii",
+    "total": "Lapapọ",
+    "average": "Aropin",
+    "growth": "Idagbasoke",
+    "decline": "Idinku",
+    "change": "Iyipada",
+    "vs": "si",
+    "lastPeriod": "akoko ti o ti kọja"
+  },
+  "quickActions": {
+    "title": "Awọn iṣe iyara",
+    "createInvoice": "Ṣe iwe akọọlẹ",
+    "addProduct": "Fi ọja kun",
+    "recordSale": "Forukọsilẹ tita",
+    "addCustomer": "Fi alabara kun",
+    "processPayroll": "Ṣe iṣẹ owo oṣu",
+    "viewReports": "Wo awọn ijabọ",
+    "manageInventory": "Ṣakoso ohun ija",
+    "sendInvoice": "Fi iwe akọọlẹ ranṣẹ"
+  },
+  "recentActivity": {
+    "title": "Iṣẹ to ṣẹṣẹ",
+    "newSale": "Tita tuntun",
+    "invoicePaid": "Iwe akọọlẹ ti sanwo",
+    "productAdded": "Ọja ti fi kun",
+    "customerAdded": "Alabara ti fi kun",
+    "paymentReceived": "Sisanwo ti gba",
+    "orderShipped": "Ibere ti ranṣẹ",
+    "lowStock": "Ifagbara ohun ija kekere",
+    "viewAll": "Wo gbogbo iṣẹ"
+  },
+  "notifications": {
+    "title": "Awọn ikede",
+    "unread": "ti a ko ka",
+    "markAllRead": "Samisi gbogbo bi ti a ka",
+    "noNotifications": "Ko si ikede tuntun",
+    "settings": "Awọn eto ikede"
+  },
+  "performance": {
+    "title": "Awọn iwọn iṣẹ",
+    "salesTarget": "Ibi-afẹde tita",
+    "achieved": "Ti ṣaṣeyọri",
+    "remaining": "Ti o ku",
+    "onTrack": "Lori ọna",
+    "behindTarget": "Lehin ibi-afẹde",
+    "exceededTarget": "Ti kọja ibi-afẹde"
+  },
+  "filters": {
+    "dateRange": "Aaye ọjọ",
+    "customRange": "Aaye ti ara ẹni",
+    "apply": "Lo",
+    "reset": "Tun ṣeto",
+    "from": "Lati",
+    "to": "Si",
+    "selectDate": "Yan ọjọ"
+  },
+  "empty": {
+    "noData": "Ko si data to wa",
+    "noSales": "Ko si tita ti a forukọsilẹ",
+    "noCustomers": "Ko si alabara sibẹ",
+    "noProducts": "Ko si ọja ti a fi kun",
+    "getStarted": "Bẹrẹ",
+    "addFirst": "Fi akọkọ rẹ kun"
+  },
+  "loading": {
+    "loadingData": "Ngigba data...",
+    "refreshing": "Ntun ṣe...",
+    "calculating": "Nṣiṣẹ...",
+    "updating": "Ntun ṣe..."
+  },
+  "errors": {
+    "loadFailed": "Gbigba data kuna",
+    "tryAgain": "Gbiyanju lẹẹkansi",
+    "refresh": "Tun ṣe",
+    "connectionError": "Aṣiṣe asopọ"
+  }
+}

@@ -101,18 +101,113 @@ import koCalendar from '../public/locales/ko/calendar.json';
 
 // Import navigation namespaces
 import enNavigation from '../public/locales/en/navigation.json';
+import esNavigation from '../public/locales/es/navigation.json';
+import frNavigation from '../public/locales/fr/navigation.json';
+import ptNavigation from '../public/locales/pt/navigation.json';
+import deNavigation from '../public/locales/de/navigation.json';
+import zhNavigation from '../public/locales/zh/navigation.json';
+import arNavigation from '../public/locales/ar/navigation.json';
+import hiNavigation from '../public/locales/hi/navigation.json';
+import ruNavigation from '../public/locales/ru/navigation.json';
+import jaNavigation from '../public/locales/ja/navigation.json';
+import swNavigation from '../public/locales/sw/navigation.json';
+import trNavigation from '../public/locales/tr/navigation.json';
+import idNavigation from '../public/locales/id/navigation.json';
+import viNavigation from '../public/locales/vi/navigation.json';
+import nlNavigation from '../public/locales/nl/navigation.json';
+import haNavigation from '../public/locales/ha/navigation.json';
+import yoNavigation from '../public/locales/yo/navigation.json';
+import amNavigation from '../public/locales/am/navigation.json';
+import zuNavigation from '../public/locales/zu/navigation.json';
+import koNavigation from '../public/locales/ko/navigation.json';
 
 // Import settings namespaces
 import enSettings from '../public/locales/en/settings.json';
+import esSettings from '../public/locales/es/settings.json';
+import frSettings from '../public/locales/fr/settings.json';
+import ptSettings from '../public/locales/pt/settings.json';
+import deSettings from '../public/locales/de/settings.json';
+import zhSettings from '../public/locales/zh/settings.json';
+import arSettings from '../public/locales/ar/settings.json';
+import hiSettings from '../public/locales/hi/settings.json';
+import ruSettings from '../public/locales/ru/settings.json';
+import jaSettings from '../public/locales/ja/settings.json';
+import swSettings from '../public/locales/sw/settings.json';
+import trSettings from '../public/locales/tr/settings.json';
+import idSettings from '../public/locales/id/settings.json';
+import viSettings from '../public/locales/vi/settings.json';
+import nlSettings from '../public/locales/nl/settings.json';
+import haSettings from '../public/locales/ha/settings.json';
+import yoSettings from '../public/locales/yo/settings.json';
+import amSettings from '../public/locales/am/settings.json';
+import zuSettings from '../public/locales/zu/settings.json';
+import koSettings from '../public/locales/ko/settings.json';
 
 // Import profile namespaces
 import enProfile from '../public/locales/en/profile.json';
+import esProfile from '../public/locales/es/profile.json';
+import frProfile from '../public/locales/fr/profile.json';
+import ptProfile from '../public/locales/pt/profile.json';
+import deProfile from '../public/locales/de/profile.json';
+import zhProfile from '../public/locales/zh/profile.json';
+import arProfile from '../public/locales/ar/profile.json';
+import hiProfile from '../public/locales/hi/profile.json';
+import ruProfile from '../public/locales/ru/profile.json';
+import jaProfile from '../public/locales/ja/profile.json';
+import swProfile from '../public/locales/sw/profile.json';
+import trProfile from '../public/locales/tr/profile.json';
+import idProfile from '../public/locales/id/profile.json';
+import viProfile from '../public/locales/vi/profile.json';
+import nlProfile from '../public/locales/nl/profile.json';
+import haProfile from '../public/locales/ha/profile.json';
+import yoProfile from '../public/locales/yo/profile.json';
+import amProfile from '../public/locales/am/profile.json';
+import zuProfile from '../public/locales/zu/profile.json';
+import koProfile from '../public/locales/ko/profile.json';
 
 // Import help namespaces
 import enHelp from '../public/locales/en/help.json';
+import esHelp from '../public/locales/es/help.json';
+import frHelp from '../public/locales/fr/help.json';
+import ptHelp from '../public/locales/pt/help.json';
+import deHelp from '../public/locales/de/help.json';
+import zhHelp from '../public/locales/zh/help.json';
+import arHelp from '../public/locales/ar/help.json';
+import hiHelp from '../public/locales/hi/help.json';
+import ruHelp from '../public/locales/ru/help.json';
+import jaHelp from '../public/locales/ja/help.json';
+import swHelp from '../public/locales/sw/help.json';
+import trHelp from '../public/locales/tr/help.json';
+import idHelp from '../public/locales/id/help.json';
+import viHelp from '../public/locales/vi/help.json';
+import nlHelp from '../public/locales/nl/help.json';
+import haHelp from '../public/locales/ha/help.json';
+import yoHelp from '../public/locales/yo/help.json';
+import amHelp from '../public/locales/am/help.json';
+import zuHelp from '../public/locales/zu/help.json';
+import koHelp from '../public/locales/ko/help.json';
 
 // Import dashboard namespaces
 import enDashboard from '../public/locales/en/dashboard.json';
+import esDashboard from '../public/locales/es/dashboard.json';
+import frDashboard from '../public/locales/fr/dashboard.json';
+import ptDashboard from '../public/locales/pt/dashboard.json';
+import deDashboard from '../public/locales/de/dashboard.json';
+import zhDashboard from '../public/locales/zh/dashboard.json';
+import arDashboard from '../public/locales/ar/dashboard.json';
+import hiDashboard from '../public/locales/hi/dashboard.json';
+import ruDashboard from '../public/locales/ru/dashboard.json';
+import jaDashboard from '../public/locales/ja/dashboard.json';
+import swDashboard from '../public/locales/sw/dashboard.json';
+import trDashboard from '../public/locales/tr/dashboard.json';
+import idDashboard from '../public/locales/id/dashboard.json';
+import viDashboard from '../public/locales/vi/dashboard.json';
+import nlDashboard from '../public/locales/nl/dashboard.json';
+import haDashboard from '../public/locales/ha/dashboard.json';
+import yoDashboard from '../public/locales/yo/dashboard.json';
+import amDashboard from '../public/locales/am/dashboard.json';
+import zuDashboard from '../public/locales/zu/dashboard.json';
+import koDashboard from '../public/locales/ko/dashboard.json';
 
 const resources = {
   en: {
@@ -130,115 +225,210 @@ const resources = {
     common: esCommon,
     onboarding: esOnboarding,
     auth: esAuth,
-    calendar: esCalendar
+    calendar: esCalendar,
+    navigation: esNavigation,
+    settings: esSettings,
+    profile: esProfile,
+    help: esHelp,
+    dashboard: esDashboard
   },
   fr: {
     common: frCommon,
     onboarding: frOnboarding,
     auth: frAuth,
-    calendar: frCalendar
+    calendar: frCalendar,
+    navigation: frNavigation,
+    settings: frSettings,
+    profile: frProfile,
+    help: frHelp,
+    dashboard: frDashboard
   },
   pt: {
     common: ptCommon,
     onboarding: ptOnboarding,
     auth: ptAuth,
-    calendar: ptCalendar
+    calendar: ptCalendar,
+    navigation: ptNavigation,
+    settings: ptSettings,
+    profile: ptProfile,
+    help: ptHelp,
+    dashboard: ptDashboard
   },
   de: {
     common: deCommon,
     onboarding: deOnboarding,
     auth: deAuth,
-    calendar: deCalendar
+    calendar: deCalendar,
+    navigation: deNavigation,
+    settings: deSettings,
+    profile: deProfile,
+    help: deHelp,
+    dashboard: deDashboard
   },
   zh: {
     common: zhCommon,
     onboarding: zhOnboarding,
     auth: zhAuth,
-    calendar: zhCalendar
+    calendar: zhCalendar,
+    navigation: zhNavigation,
+    settings: zhSettings,
+    profile: zhProfile,
+    help: zhHelp,
+    dashboard: zhDashboard
   },
   ar: {
     common: arCommon,
     onboarding: arOnboarding,
     auth: arAuth,
-    calendar: arCalendar
+    calendar: arCalendar,
+    navigation: arNavigation,
+    settings: arSettings,
+    profile: arProfile,
+    help: arHelp,
+    dashboard: arDashboard
   },
   hi: {
     common: hiCommon,
     onboarding: hiOnboarding,
     auth: hiAuth,
-    calendar: hiCalendar
+    calendar: hiCalendar,
+    navigation: hiNavigation,
+    settings: hiSettings,
+    profile: hiProfile,
+    help: hiHelp,
+    dashboard: hiDashboard
   },
   ru: {
     common: ruCommon,
     onboarding: ruOnboarding,
     auth: ruAuth,
-    calendar: ruCalendar
+    calendar: ruCalendar,
+    navigation: ruNavigation,
+    settings: ruSettings,
+    profile: ruProfile,
+    help: ruHelp,
+    dashboard: ruDashboard
   },
   ja: {
     common: jaCommon,
     onboarding: jaOnboarding,
     auth: jaAuth,
-    calendar: jaCalendar
+    calendar: jaCalendar,
+    navigation: jaNavigation,
+    settings: jaSettings,
+    profile: jaProfile,
+    help: jaHelp,
+    dashboard: jaDashboard
   },
   sw: {
     common: swCommon,
     onboarding: swOnboarding,
     auth: swAuth,
-    calendar: swCalendar
+    calendar: swCalendar,
+    navigation: swNavigation,
+    settings: swSettings,
+    profile: swProfile,
+    help: swHelp,
+    dashboard: swDashboard
   },
   tr: {
     common: trCommon,
     onboarding: trOnboarding,
     auth: trAuth,
-    calendar: trCalendar
+    calendar: trCalendar,
+    navigation: trNavigation,
+    settings: trSettings,
+    profile: trProfile,
+    help: trHelp,
+    dashboard: trDashboard
   },
   id: {
     common: idCommon,
     onboarding: idOnboarding,
     auth: idAuth,
-    calendar: idCalendar
+    calendar: idCalendar,
+    navigation: idNavigation,
+    settings: idSettings,
+    profile: idProfile,
+    help: idHelp,
+    dashboard: idDashboard
   },
   vi: {
     common: viCommon,
     onboarding: viOnboarding,
     auth: viAuth,
-    calendar: viCalendar
+    calendar: viCalendar,
+    navigation: viNavigation,
+    settings: viSettings,
+    profile: viProfile,
+    help: viHelp,
+    dashboard: viDashboard
   },
   nl: {
     common: nlCommon,
     onboarding: nlOnboarding,
     auth: nlAuth,
-    calendar: nlCalendar
+    calendar: nlCalendar,
+    navigation: nlNavigation,
+    settings: nlSettings,
+    profile: nlProfile,
+    help: nlHelp,
+    dashboard: nlDashboard
   },
   ha: {
     common: haCommon,
     onboarding: haOnboarding,
     auth: haAuth,
-    calendar: haCalendar
+    calendar: haCalendar,
+    navigation: haNavigation,
+    settings: haSettings,
+    profile: haProfile,
+    help: haHelp,
+    dashboard: haDashboard
   },
   yo: {
     common: yoCommon,
     onboarding: yoOnboarding,
     auth: yoAuth,
-    calendar: yoCalendar
+    calendar: yoCalendar,
+    navigation: yoNavigation,
+    settings: yoSettings,
+    profile: yoProfile,
+    help: yoHelp,
+    dashboard: yoDashboard
   },
   am: {
     common: amCommon,
     onboarding: amOnboarding,
     auth: amAuth,
-    calendar: amCalendar
+    calendar: amCalendar,
+    navigation: amNavigation,
+    settings: amSettings,
+    profile: amProfile,
+    help: amHelp,
+    dashboard: amDashboard
   },
   zu: {
     common: zuCommon,
     onboarding: zuOnboarding,
     auth: zuAuth,
-    calendar: zuCalendar
+    calendar: zuCalendar,
+    navigation: zuNavigation,
+    settings: zuSettings,
+    profile: zuProfile,
+    help: zuHelp,
+    dashboard: zuDashboard
   },
   ko: {
     common: koCommon,
     onboarding: koOnboarding,
     auth: koAuth,
-    calendar: koCalendar
+    calendar: koCalendar,
+    navigation: koNavigation,
+    settings: koSettings,
+    profile: koProfile,
+    help: koHelp,
+    dashboard: koDashboard
   }
 };
 
@@ -294,7 +484,7 @@ if (typeof window !== 'undefined' && !i18nInstance.isInitialized) {
         resources,
         fallbackLng: i18nConfig.defaultLocale,
         supportedLngs: i18nConfig.locales,
-        ns: ['common', 'onboarding', 'auth'],
+        ns: ['common', 'onboarding', 'auth', 'calendar', 'navigation', 'settings', 'profile', 'help', 'dashboard'],
         defaultNS: 'common',
         detection: {
           order: ['querystring', 'localStorage', 'countryDetector', 'navigator', 'htmlTag'],
@@ -367,7 +557,7 @@ if (typeof window !== 'undefined' && !i18nInstance.isInitialized) {
         resources,
         fallbackLng: i18nConfig.defaultLocale,
         supportedLngs: i18nConfig.locales,
-        ns: ['common', 'onboarding', 'auth'],
+        ns: ['common', 'onboarding', 'auth', 'calendar', 'navigation', 'settings', 'profile', 'help', 'dashboard'],
         defaultNS: 'common',
         interpolation: {
           escapeValue: false,

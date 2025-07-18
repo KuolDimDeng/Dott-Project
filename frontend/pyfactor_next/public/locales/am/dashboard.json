@@ -1,0 +1,106 @@
+{
+  "_comment": "Dashboard page translations - Amharic",
+  "title": "ዳሽቦርድ",
+  "welcome": "እንኳን ደሐና መጣህ",
+  "overview": "ማጠቃለያ",
+  "widgets": {
+    "revenue": "ገቢ",
+    "sales": "ሽያጭ",
+    "customers": "ደንበኞች",
+    "inventory": "ዕቃዎች",
+    "expenses": "ወጪዎች",
+    "profit": "ትርፍ",
+    "orders": "ትዕዛዞች",
+    "invoices": "ደረሰኞች"
+  },
+  "charts": {
+    "salesOverview": "የሽያጭ ማጠቃለያ",
+    "revenueChart": "የገቢ ገበታ",
+    "topProducts": "ከፍተኛ ምርቶች",
+    "customerGrowth": "የደንበኞች ዕድገት",
+    "expenseBreakdown": "የወጪ ፍቺ",
+    "inventoryStatus": "የዕቃዎች ሁኔታ",
+    "monthlyComparison": "ወርሃዊ ንጽጽር",
+    "yearlyTrends": "ዓመታዊ ዝንባሌዎች"
+  },
+  "stats": {
+    "today": "ዛሬ",
+    "thisWeek": "በዚህ ሳምንት",
+    "thisMonth": "በዚህ ወር",
+    "thisYear": "በዚህ ዓመት",
+    "total": "ጠቅላላ",
+    "average": "አማካይ",
+    "growth": "ዕድገት",
+    "decline": "ውድቀት",
+    "change": "ለውጥ",
+    "vs": "ከ",
+    "lastPeriod": "ያለፈው ወቅት"
+  },
+  "quickActions": {
+    "title": "ፈጣን ድርጊቶች",
+    "createInvoice": "ደረሰኝ ፍጠር",
+    "addProduct": "ምርት ጨምር",
+    "recordSale": "ሽያጭ መዝግብ",
+    "addCustomer": "ደንበኛ ጨምር",
+    "processPayroll": "ደመወዝ ሂደት",
+    "viewReports": "ዘገባዎች ዕይ",
+    "manageInventory": "ዕቃዎች አስተዳደር",
+    "sendInvoice": "ደረሰኝ ላክ"
+  },
+  "recentActivity": {
+    "title": "የቅርብ ግዜ እንቅስቃሴ",
+    "newSale": "አዲስ ሽያጭ",
+    "invoicePaid": "ደረሰኝ ተከፍሏል",
+    "productAdded": "ምርት ተጨምሯል",
+    "customerAdded": "ደንበኛ ተጨምሯል",
+    "paymentReceived": "ክፍያ ተቀብሏል",
+    "orderShipped": "ትዕዛዝ ተልኳል",
+    "lowStock": "ዝቅተኛ ዕቃ ማስጠንቀቂያ",
+    "viewAll": "ሁሉንም እንቅስቃሴ ዕይ"
+  },
+  "notifications": {
+    "title": "ማሳወቂያዎች",
+    "unread": "ያልተነበቡ",
+    "markAllRead": "ሁሉንም እንደተነበቡ ምልክት ያድርጉ",
+    "noNotifications": "አዲስ ማሳወቂያ የለም",
+    "settings": "የማሳወቂያ ሰቲንግ"
+  },
+  "performance": {
+    "title": "የአፈጻጸም መለኪያዎች",
+    "salesTarget": "የሽያጭ ግብ",
+    "achieved": "ተሳክቷል",
+    "remaining": "ቀሪ",
+    "onTrack": "በትራክ ላይ",
+    "behindTarget": "ከግብ ቀር",
+    "exceededTarget": "ግብ ከፍተኛ"
+  },
+  "filters": {
+    "dateRange": "የቀን መጠን",
+    "customRange": "ብጁ መጠን",
+    "apply": "ተግብር",
+    "reset": "ዳግም ያስጀምሩ",
+    "from": "ከ",
+    "to": "ወደ",
+    "selectDate": "ቀን ይምረጡ"
+  },
+  "empty": {
+    "noData": "ምንም ዳታ የለም",
+    "noSales": "ምንም የተመዘገበ ሽያጭ የለም",
+    "noCustomers": "ደንበኞች ገና የሉም",
+    "noProducts": "ምንም ምርት አልተጨመረም",
+    "getStarted": "ጀምር",
+    "addFirst": "የመጀመሪያህን ጨምር"
+  },
+  "loading": {
+    "loadingData": "ዳታ በመጫን ላይ...",
+    "refreshing": "በማደስ ላይ...",
+    "calculating": "በማስላት ላይ...",
+    "updating": "በማዘመን ላይ..."
+  },
+  "errors": {
+    "loadFailed": "ዳታ ለመጫን አልተሳካም",
+    "tryAgain": "እንደገና ሞክር",
+    "refresh": "አድስ",
+    "connectionError": "የግንኙነት ስህተት"
+  }
+}

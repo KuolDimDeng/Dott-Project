@@ -1,0 +1,31 @@
+{
+  "_comment": "Help Center translations - Spanish",
+  "title": "Centro de Ayuda",
+  "search": {
+    "title": "Buscar Ayuda",
+    "placeholder": "Buscar preguntas, respuestas o categorías...",
+    "allCategories": "Todas las Categorías ({{count}} artículos)"
+  },
+  "faq": {
+    "title": "Preguntas Frecuentes",
+    "articlesFound": "{{count}} artículo encontrado",
+    "articlesFound_plural": "{{count}} artículos encontrados",
+    "noArticles": "No se encontraron artículos"
+  },
+  "quickLinks": {
+    "title": "Enlaces Rápidos",
+    "videoTutorials": "Tutoriales en Video",
+    "userGuide": "Guía de Usuario",
+    "blogTips": "Blog y Consejos"
+  },
+  "contact": {
+    "title": "Contactar Soporte",
+    "name": "Nombre",
+    "email": "Correo Electrónico",
+    "message": "Mensaje",
+    "sendMessage": "Enviar Mensaje",
+    "sending": "Enviando...",
+    "responseTime": "Nuestro objetivo es responder a todas las consultas en 24 horas.",
+    "emailLabel": "Correo Electrónico"
+  }
+}

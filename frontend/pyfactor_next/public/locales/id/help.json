@@ -1,0 +1,120 @@
+{
+  "_comment": "Terjemahan pusat bantuan - Indonesian",
+  "title": "Pusat Bantuan",
+  "subtitle": "Dapatkan bantuan dan temukan jawaban",
+  "search": {
+    "placeholder": "Cari bantuan...",
+    "button": "Cari",
+    "noResults": "Tidak ada hasil ditemukan",
+    "tryDifferent": "Coba kata kunci yang berbeda"
+  },
+  "categories": {
+    "gettingStarted": "Memulai",
+    "billing": "Tagihan dan Pembayaran",
+    "sales": "Penjualan dan Faktur",
+    "inventory": "Manajemen Inventori",
+    "payroll": "Penggajian dan HR",
+    "reports": "Laporan dan Analitik",
+    "integrations": "Integrasi",
+    "troubleshooting": "Pemecahan Masalah",
+    "account": "Akun dan Keamanan"
+  },
+  "popularArticles": {
+    "title": "Artikel Populer",
+    "howToCreateInvoice": "Cara membuat faktur",
+    "managingInventory": "Mengelola inventori Anda",
+    "processingPayroll": "Memproses penggajian",
+    "settingUpTaxes": "Mengatur pajak",
+    "connectingBankAccount": "Menghubungkan rekening bank",
+    "exportingReports": "Mengekspor laporan",
+    "addingEmployees": "Menambahkan karyawan",
+    "creatingProducts": "Membuat produk"
+  },
+  "contact": {
+    "title": "Hubungi Dukungan",
+    "subtitle": "Tidak dapat menemukan yang Anda cari?",
+    "email": "Dukungan Email",
+    "emailAddress": "support@dottapps.com",
+    "chat": "Live Chat",
+    "chatAvailable": "Tersedia Senin-Jumat, 9am-5pm",
+    "phone": "Dukungan Telepon",
+    "phoneNumber": "+1 (555) 123-4567",
+    "responseTime": "Waktu Respons",
+    "emailResponse": "Dalam 24 jam",
+    "chatResponse": "Segera",
+    "phoneResponse": "Segera"
+  },
+  "resources": {
+    "title": "Sumber Daya",
+    "userGuide": "Panduan Pengguna",
+    "videoTutorials": "Tutorial Video",
+    "apiDocumentation": "Dokumentasi API",
+    "releaseNotes": "Catatan Rilis",
+    "systemStatus": "Status Sistem",
+    "community": "Forum Komunitas"
+  },
+  "faq": {
+    "title": "Pertanyaan yang Sering Diajukan",
+    "billing": {
+      "howToUpgrade": "Bagaimana cara meningkatkan paket saya?",
+      "acceptedPayments": "Metode pembayaran apa yang diterima?",
+      "cancelSubscription": "Bagaimana cara membatalkan langganan saya?",
+      "refundPolicy": "Apa kebijakan pengembalian dana Anda?"
+    },
+    "account": {
+      "resetPassword": "Bagaimana cara mereset kata sandi saya?",
+      "changeEmail": "Bagaimana cara mengubah email saya?",
+      "deleteAccount": "Bagaimana cara menghapus akun saya?",
+      "dataExport": "Bisakah saya mengekspor data saya?"
+    },
+    "features": {
+      "multipleBusinesses": "Bisakah saya mengelola beberapa bisnis?",
+      "userLimit": "Berapa banyak pengguna yang dapat saya tambahkan?",
+      "storageLimit": "Berapa batas penyimpanan?",
+      "apiAccess": "Apakah Anda menyediakan akses API?"
+    }
+  },
+  "feedback": {
+    "title": "Kirim Masukan",
+    "subtitle": "Bantu kami meningkatkan Dott",
+    "type": "Jenis Masukan",
+    "bug": "Laporan Bug",
+    "feature": "Permintaan Fitur",
+    "improvement": "Perbaikan",
+    "other": "Lainnya",
+    "description": "Deskripsi",
+    "attachments": "Lampiran",
+    "submit": "Kirim Masukan",
+    "thankYou": "Terima kasih atas masukan Anda!"
+  },
+  "training": {
+    "title": "Pelatihan dan Tutorial",
+    "beginner": "Pemula",
+    "intermediate": "Menengah",
+    "advanced": "Lanjutan",
+    "webinars": "Webinar Langsung",
+    "certification": "Program Sertifikasi",
+    "duration": "Durasi",
+    "level": "Level",
+    "enroll": "Daftar",
+    "viewSchedule": "Lihat Jadwal"
+  },
+  "actions": {
+    "viewAll": "Lihat Semua",
+    "readMore": "Baca Lebih Lanjut",
+    "watchVideo": "Tonton Video",
+    "download": "Unduh",
+    "print": "Cetak",
+    "share": "Bagikan",
+    "bookmark": "Bookmark",
+    "helpful": "Apakah ini membantu?",
+    "yes": "Ya",
+    "no": "Tidak"
+  },
+  "messages": {
+    "feedbackSent": "Masukan Anda telah terkirim",
+    "articleHelpful": "Terima kasih atas masukan Anda",
+    "errorLoading": "Kesalahan memuat konten",
+    "tryAgain": "Silakan coba lagi nanti"
+  }
+}

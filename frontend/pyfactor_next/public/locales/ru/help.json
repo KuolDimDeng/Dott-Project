@@ -1,0 +1,120 @@
+{
+  "_comment": "Переводы центра помощи - Russian",
+  "title": "Центр помощи",
+  "subtitle": "Получите помощь и найдите ответы",
+  "search": {
+    "placeholder": "Поиск помощи...",
+    "button": "Поиск",
+    "noResults": "Результаты не найдены",
+    "tryDifferent": "Попробуйте другие ключевые слова"
+  },
+  "categories": {
+    "gettingStarted": "Начало работы",
+    "billing": "Счета и платежи",
+    "sales": "Продажи и выставление счетов",
+    "inventory": "Управление складом",
+    "payroll": "Зарплата и HR",
+    "reports": "Отчеты и аналитика",
+    "integrations": "Интеграции",
+    "troubleshooting": "Устранение неполадок",
+    "account": "Аккаунт и безопасность"
+  },
+  "popularArticles": {
+    "title": "Популярные статьи",
+    "howToCreateInvoice": "Как создать счет",
+    "managingInventory": "Управление вашим складом",
+    "processingPayroll": "Обработка зарплаты",
+    "settingUpTaxes": "Настройка налогов",
+    "connectingBankAccount": "Подключение банковского счета",
+    "exportingReports": "Экспорт отчетов",
+    "addingEmployees": "Добавление сотрудников",
+    "creatingProducts": "Создание продуктов"
+  },
+  "contact": {
+    "title": "Связаться с поддержкой",
+    "subtitle": "Не можете найти то, что ищете?",
+    "email": "Поддержка по электронной почте",
+    "emailAddress": "support@dottapps.com",
+    "chat": "Живой чат",
+    "chatAvailable": "Доступно Пн-Пт, 9:00-17:00",
+    "phone": "Поддержка по телефону",
+    "phoneNumber": "+1 (555) 123-4567",
+    "responseTime": "Время ответа",
+    "emailResponse": "В течение 24 часов",
+    "chatResponse": "Немедленно",
+    "phoneResponse": "Немедленно"
+  },
+  "resources": {
+    "title": "Ресурсы",
+    "userGuide": "Руководство пользователя",
+    "videoTutorials": "Видеоуроки",
+    "apiDocumentation": "Документация API",
+    "releaseNotes": "Заметки о выпуске",
+    "systemStatus": "Статус системы",
+    "community": "Форум сообщества"
+  },
+  "faq": {
+    "title": "Часто задаваемые вопросы",
+    "billing": {
+      "howToUpgrade": "Как обновить мой план?",
+      "acceptedPayments": "Какие способы оплаты принимаются?",
+      "cancelSubscription": "Как отменить подписку?",
+      "refundPolicy": "Какая у вас политика возврата?"
+    },
+    "account": {
+      "resetPassword": "Как сбросить пароль?",
+      "changeEmail": "Как изменить электронную почту?",
+      "deleteAccount": "Как удалить аккаунт?",
+      "dataExport": "Могу ли я экспортировать свои данные?"
+    },
+    "features": {
+      "multipleBusinesses": "Могу ли я управлять несколькими бизнесами?",
+      "userLimit": "Сколько пользователей я могу добавить?",
+      "storageLimit": "Какой лимит хранения?",
+      "apiAccess": "Предоставляете ли вы доступ к API?"
+    }
+  },
+  "feedback": {
+    "title": "Отправить отзыв",
+    "subtitle": "Помогите нам улучшить Dott",
+    "type": "Тип отзыва",
+    "bug": "Отчет об ошибке",
+    "feature": "Запрос функции",
+    "improvement": "Улучшение",
+    "other": "Другое",
+    "description": "Описание",
+    "attachments": "Вложения",
+    "submit": "Отправить отзыв",
+    "thankYou": "Спасибо за ваш отзыв!"
+  },
+  "training": {
+    "title": "Обучение и руководства",
+    "beginner": "Начальный",
+    "intermediate": "Средний",
+    "advanced": "Продвинутый",
+    "webinars": "Живые вебинары",
+    "certification": "Программа сертификации",
+    "duration": "Длительность",
+    "level": "Уровень",
+    "enroll": "Записаться",
+    "viewSchedule": "Посмотреть расписание"
+  },
+  "actions": {
+    "viewAll": "Посмотреть все",
+    "readMore": "Читать далее",
+    "watchVideo": "Смотреть видео",
+    "download": "Скачать",
+    "print": "Печать",
+    "share": "Поделиться",
+    "bookmark": "Закладка",
+    "helpful": "Было ли это полезно?",
+    "yes": "Да",
+    "no": "Нет"
+  },
+  "messages": {
+    "feedbackSent": "Ваш отзыв отправлен",
+    "articleHelpful": "Спасибо за ваш отзыв",
+    "errorLoading": "Ошибка загрузки контента",
+    "tryAgain": "Пожалуйста, попробуйте позже"
+  }
+}
