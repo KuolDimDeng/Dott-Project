@@ -23,6 +23,7 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
   const [map, setMap] = useState(null);
   const [geofence, setGeofence] = useState(null);
   const [mapError, setMapError] = useState(null);
+  const [isRetrying, setIsRetrying] = useState(false);
   const [geofenceData, setGeofenceData] = useState({
     name: '',
     description: '',
@@ -264,8 +265,12 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
 
   const retryMapInitialization = async () => {
     console.log('[GeofencingSettings] Manual retry of map initialization...');
-    setLoading(true);
+    // Don't set loading to true - this removes the map container from DOM!
     setMapError(null);
+    setIsRetrying(true);
+    
+    // Wait a tick for DOM to settle
+    await new Promise(resolve => setTimeout(resolve, 100));
     
     // Call initMap function again
     const initMap = async () => {
@@ -273,7 +278,7 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
       
       if (!mapContainerRef.current) {
         setMapError('Map container still not available. Please refresh the page.');
-        setLoading(false);
+        setIsRetrying(false);
         return;
       }
 
@@ -313,13 +318,13 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
         }
 
         setMap(map);
-        setLoading(false);
         setMapError(null);
+        setIsRetrying(false);
         console.log('[GeofencingSettings] Retry - Map initialized successfully');
       } catch (error) {
         console.error('[GeofencingSettings] Retry - Failed to initialize map:', error);
         setMapError('Failed to initialize map. ' + error.message);
-        setLoading(false);
+        setIsRetrying(false);
       }
     };
     
@@ -514,9 +519,10 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
                 <div className="mt-3 space-x-2">
                   <button 
                     onClick={retryMapInitialization}
-                    className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                    disabled={isRetrying}
+                    className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Retry Map Load
+                    {isRetrying ? 'Retrying...' : 'Retry Map Load'}
                   </button>
                   <button 
                     onClick={() => window.location.reload()}
@@ -530,12 +536,20 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
           )}
           <div 
             ref={mapContainerRef}
-            className="w-full h-full"
+            className="w-full h-full relative"
             onLoad={() => console.log('[GeofencingSettings] 📍 Map container div onLoad event')}
             style={{ backgroundColor: 'lightblue', minHeight: '384px' }}
           >
             {console.log('[GeofencingSettings] 📍 Map container div is being rendered')}
             {console.log('[GeofencingSettings] 📍 mapContainerRef object:', mapContainerRef)}
+            {isRetrying && (
+              <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-20">
+                <div className="text-center">
+                  <StandardSpinner size="lg" />
+                  <p className="mt-2 text-sm text-gray-600">Initializing Google Maps...</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
