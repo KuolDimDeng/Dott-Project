@@ -11,6 +11,7 @@ from .test_debug_view import DebugTestView
 from .test_basic_view import test_basic_endpoint
 from .test_isolated_view import IsolatedTestView
 from .employee_profile_simple import employee_profile_simple
+from .emergency_profile_view import emergency_profile_endpoint
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -46,6 +47,7 @@ urlpatterns = [
     # Employee profile views
     path('employee/profile/', EmployeeProfileView.as_view(), name='employee-profile'),
     path('employee/profile-simple/', employee_profile_simple, name='employee-profile-simple'),
+    path('employee/profile/emergency/', emergency_profile_endpoint, name='emergency-profile'),
     path('employee/bank-info/', EmployeeBankInfoView.as_view(), name='employee-bank-info'),
     path('employee/tax-info/', EmployeeTaxInfoView.as_view(), name='employee-tax-info'),
     path('employee/profile/debug/', employee_profile_debug, name='employee-profile-debug'),
