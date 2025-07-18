@@ -94,14 +94,12 @@ class EmployeeProfileView(APIView):
     
     def get(self, request):
         """Get employee profile information including SSN, bank, and tax data from Stripe"""
-        # Immediate test to see if we can reach the method
-        return Response({
-            "test": "EmployeeProfileView.get reached",
-            "user_email": request.user.email,
-            "user_id": str(request.user.id)
-        })
-        
         logger.info(f"[EmployeeProfile] === GET REQUEST START (OUTSIDE TRY) ===")
+        logger.info(f"[EmployeeProfile] Request method: {request.method}")
+        logger.info(f"[EmployeeProfile] Request path: {request.path}")
+        logger.info(f"[EmployeeProfile] Request user: {request.user}")
+        logger.info(f"[EmployeeProfile] Request user authenticated: {request.user.is_authenticated}")
+        
         try:
             logger.info(f"[EmployeeProfile] === GET REQUEST START ===")
             logger.info(f"[EmployeeProfile] Request user: {request.user}")
@@ -165,12 +163,15 @@ class EmployeeProfileView(APIView):
             return Response(profile_data, status=status.HTTP_200_OK)
             
         except Exception as e:
+            logger.error(f"[EmployeeProfile] === ERROR DETAILS START ===")
             logger.error(f"[EmployeeProfile] Error getting profile: {str(e)}")
             logger.error(f"[EmployeeProfile] Error type: {type(e)}")
+            logger.error(f"[EmployeeProfile] Error args: {e.args}")
             import traceback
             logger.error(f"[EmployeeProfile] Traceback: {traceback.format_exc()}")
+            logger.error(f"[EmployeeProfile] === ERROR DETAILS END ===")
             return Response(
-                {"error": "Failed to retrieve profile information"},
+                {"error": "Failed to retrieve profile information", "details": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     

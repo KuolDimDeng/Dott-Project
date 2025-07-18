@@ -7,6 +7,7 @@ from .employee_profile_views import (
     employee_profile_debug
 )
 from .test_minimal_view import MinimalTestView
+from .test_debug_view import DebugTestView
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -32,6 +33,7 @@ urlpatterns = [
     path('test/', test_routing, name='test-routing'),
     path('test-profile-simple/', test_profile_simple, name='test-profile-simple'),
     path('test-minimal/', MinimalTestView.as_view(), name='test-minimal'),
+    path('test-debug/', DebugTestView.as_view(), name='test-debug'),
     
     # Employee views
     path('current-employee/', CurrentEmployeeView.as_view(), name='current-employee'),
