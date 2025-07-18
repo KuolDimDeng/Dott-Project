@@ -20,7 +20,8 @@ import {
   BoltIcon,
   ClockIcon,
   ChatBubbleLeftRightIcon,
-  BanknotesIcon
+  BanknotesIcon,
+  ArrowPathIcon
 } from '@heroicons/react/24/outline';
 import { getWhatsAppBusinessVisibility } from '@/utils/whatsappCountryDetection';
 
@@ -38,9 +39,13 @@ export default function MobilePage() {
       console.log('📱 [Mobile PWA] WhatsApp visibility check:', {
         show_whatsapp_commerce: session.user.show_whatsapp_commerce,
         country: session.user.country,
-        shouldShow
+        shouldShow,
+        sessionTimestamp: session.timestamp || 'no timestamp',
+        fullUser: session.user
       });
       setWhatsappVisible(shouldShow);
+    } else {
+      console.log('📱 [Mobile PWA] No session or user data');
     }
   }, [session]);
 
@@ -174,6 +179,14 @@ export default function MobilePage() {
     ...baseQuickActions.slice(2) // Keep the rest
   ] : baseQuickActions;
 
+  // Debug: Log the quick actions array
+  console.log('📱 [Mobile PWA] Quick actions array:', {
+    whatsappVisible,
+    totalActions: quickActions.length,
+    hasWhatsApp: quickActions.some(action => action.title === 'WhatsApp Business'),
+    actionTitles: quickActions.map(action => action.title)
+  });
+
   const features = [
     {
       icon: WifiIcon,
@@ -261,6 +274,10 @@ export default function MobilePage() {
                       • {pendingSync} pending
                     </span>
                   )}
+                  {/* Debug: Show WhatsApp status */}
+                  <span className={`text-xs px-2 py-1 rounded ${whatsappVisible ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                    WA: {whatsappVisible ? 'ON' : 'OFF'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -268,6 +285,18 @@ export default function MobilePage() {
               <button className="p-2 rounded-lg hover:bg-gray-100 relative">
                 <BellIcon className="w-6 h-6 text-gray-600" />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              </button>
+              <button
+                onClick={async () => {
+                  console.log('📱 [Mobile PWA] Manual session refresh triggered');
+                  if (refreshSession) {
+                    await refreshSession();
+                  }
+                }}
+                className="p-2 rounded-lg hover:bg-gray-100"
+                title="Refresh session"
+              >
+                <ArrowPathIcon className="w-6 h-6 text-gray-600" />
               </button>
               <button
                 onClick={() => router.push('/settings')}
