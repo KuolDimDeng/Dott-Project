@@ -11,6 +11,8 @@ const WhatsAppBusinessDashboard = () => {
   const [settings, setSettings] = useState(null);
   const [catalogs, setCatalogs] = useState([]);
   const [stats, setStats] = useState(null);
+  const [error, setError] = useState(null);
+  const [showSetup, setShowSetup] = useState(false);
 
   useEffect(() => {
     const initializeWhatsAppBusiness = async () => {
@@ -24,24 +26,40 @@ const WhatsAppBusinessDashboard = () => {
         const settingsResponse = await fetch('/api/proxy/whatsapp-business/settings/');
         if (settingsResponse.ok) {
           const settingsData = await settingsResponse.json();
-          setSettings(settingsData.length > 0 ? settingsData[0] : null);
+          if (Array.isArray(settingsData) && settingsData.length > 0) {
+            setSettings(settingsData[0]);
+          } else if (settingsData.results && settingsData.results.length > 0) {
+            setSettings(settingsData.results[0]);
+          } else {
+            // No settings found, show setup
+            setShowSetup(true);
+          }
+        } else if (settingsResponse.status === 404) {
+          // No settings exist yet
+          setShowSetup(true);
+        } else {
+          throw new Error('Failed to fetch WhatsApp Business settings');
         }
 
-        // Fetch catalogs
-        const catalogsResponse = await fetch('/api/proxy/whatsapp-business/catalogs/');
-        if (catalogsResponse.ok) {
-          const catalogsData = await catalogsResponse.json();
-          setCatalogs(catalogsData.results || []);
-        }
+        // Only fetch other data if we have settings
+        if (!showSetup) {
+          // Fetch catalogs
+          const catalogsResponse = await fetch('/api/proxy/whatsapp-business/catalogs/');
+          if (catalogsResponse.ok) {
+            const catalogsData = await catalogsResponse.json();
+            setCatalogs(catalogsData.results || catalogsData || []);
+          }
 
-        // Fetch dashboard stats
-        const statsResponse = await fetch('/api/proxy/whatsapp-business/analytics/dashboard_stats/');
-        if (statsResponse.ok) {
-          const statsData = await statsResponse.json();
-          setStats(statsData);
+          // Fetch dashboard stats
+          const statsResponse = await fetch('/api/proxy/whatsapp-business/analytics/dashboard_stats/');
+          if (statsResponse.ok) {
+            const statsData = await statsResponse.json();
+            setStats(statsData);
+          }
         }
       } catch (error) {
         console.error('Error initializing WhatsApp Business:', error);
+        setError(error.message);
       } finally {
         setLoading(false);
       }
