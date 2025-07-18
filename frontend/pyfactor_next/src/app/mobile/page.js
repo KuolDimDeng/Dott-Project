@@ -26,16 +26,42 @@ import { getWhatsAppBusinessVisibility } from '@/utils/whatsappCountryDetection'
 
 export default function MobilePage() {
   const router = useRouter();
-  const { session, loading } = useSession();
+  const { session, loading, refreshSession } = useSession();
   const [isOnline, setIsOnline] = useState(true);
   const [pendingSync, setPendingSync] = useState(0);
+  const [whatsappVisible, setWhatsappVisible] = useState(false);
 
-  // Remove automatic redirect to login - let users explore first
-  // useEffect(() => {
-  //   if (!loading && !session) {
-  //     router.push('/auth/mobile-login');
-  //   }
-  // }, [session, loading, router]);
+  // Update WhatsApp visibility when session changes
+  useEffect(() => {
+    if (session?.user) {
+      const shouldShow = shouldShowWhatsAppBusiness();
+      console.log('📱 [Mobile PWA] WhatsApp visibility check:', {
+        show_whatsapp_commerce: session.user.show_whatsapp_commerce,
+        country: session.user.country,
+        shouldShow
+      });
+      setWhatsappVisible(shouldShow);
+    }
+  }, [session]);
+
+  // Listen for WhatsApp preference changes
+  useEffect(() => {
+    const handleWhatsAppChange = async (event) => {
+      console.log('📱 [Mobile PWA] WhatsApp preference changed:', event.detail);
+      // Refresh session to get latest data
+      if (refreshSession) {
+        await refreshSession();
+      }
+      // Update visibility
+      const shouldShow = shouldShowWhatsAppBusiness();
+      setWhatsappVisible(shouldShow);
+    };
+
+    window.addEventListener('whatsappPreferenceChanged', handleWhatsAppChange);
+    return () => {
+      window.removeEventListener('whatsappPreferenceChanged', handleWhatsAppChange);
+    };
+  }, [refreshSession, session]);
 
   useEffect(() => {
     // Check online status
@@ -65,18 +91,27 @@ export default function MobilePage() {
   
   const shouldShowWhatsAppBusiness = () => {
     try {
+      console.log('📱 [Mobile PWA] Checking WhatsApp visibility...', {
+        sessionUser: session?.user,
+        show_whatsapp_commerce: session?.user?.show_whatsapp_commerce,
+        hasPreference: session?.user?.show_whatsapp_commerce !== undefined,
+        country: session?.user?.country
+      });
+      
       // Use the profile preference from the session (database-backed)
       // This is the same logic used in the main dashboard menu
-      if (session?.user?.show_whatsapp_commerce !== undefined) {
+      if (session?.user?.show_whatsapp_commerce !== undefined && session?.user?.show_whatsapp_commerce !== null) {
+        console.log('📱 [Mobile PWA] Using explicit preference:', session.user.show_whatsapp_commerce);
         return session.user.show_whatsapp_commerce;
       }
       
       // Fallback to country-based detection if profile preference not available
       const userCountry = getUserCountry();
       const whatsappVisibility = getWhatsAppBusinessVisibility(userCountry);
+      console.log('📱 [Mobile PWA] Using country default for', userCountry, ':', whatsappVisibility.showInMenu);
       return whatsappVisibility.showInMenu;
     } catch (error) {
-      console.error('Error checking WhatsApp Business visibility:', error);
+      console.error('📱 [Mobile PWA] Error checking WhatsApp visibility:', error);
       return false;
     }
   };
@@ -127,7 +162,7 @@ export default function MobilePage() {
   ];
 
   // Add WhatsApp Business if it should be shown
-  const quickActions = shouldShowWhatsAppBusiness() ? [
+  const quickActions = whatsappVisible ? [
     ...baseQuickActions.slice(0, 2), // Keep first 2 actions
     {
       title: 'WhatsApp Business',

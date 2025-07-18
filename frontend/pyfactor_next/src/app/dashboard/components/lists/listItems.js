@@ -2203,8 +2203,17 @@ const MainListItems = ({
       const userCountry = user?.country || userData?.country;
       const userWhatsAppPreference = user?.show_whatsapp_commerce || userData?.show_whatsapp_commerce;
       
+      console.log('🔍 [WhatsApp Menu Debug]', {
+        userCountry,
+        userWhatsAppPreference,
+        hasExplicitPreference: userWhatsAppPreference !== undefined && userWhatsAppPreference !== null,
+        userData: userData?.show_whatsapp_commerce,
+        user: user?.show_whatsapp_commerce
+      });
+      
       // If user has an explicit preference in their profile, use it
       if (userWhatsAppPreference !== undefined && userWhatsAppPreference !== null) {
+        console.log('✅ [WhatsApp Menu] Using explicit preference:', userWhatsAppPreference);
         return userWhatsAppPreference;
       }
       
@@ -2212,15 +2221,17 @@ const MainListItems = ({
       if (userCountry) {
         try {
           const whatsappVisibility = getWhatsAppBusinessVisibility(userCountry);
+          console.log('🌍 [WhatsApp Menu] Using country default for', userCountry, ':', whatsappVisibility.showInMenu);
           return whatsappVisibility.showInMenu;
         } catch (error) {
-          console.error('Error checking WhatsApp Business country settings:', error);
-          return true; // Default to showing if error
+          console.error('❌ [WhatsApp Menu] Error checking country settings:', error);
+          return false; // Default to NOT showing if error (safer default)
         }
       }
       
-      // If no country info, default to showing
-      return true;
+      // If no country info, default to NOT showing (safer default)
+      console.log('⚠️ [WhatsApp Menu] No country info, defaulting to hidden');
+      return false;
     }
     
     // Check if item requires admin role

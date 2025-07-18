@@ -209,6 +209,9 @@ export async function GET(request) {
         tenant_id: sessionData.tenant_id || tenantData.id,
         // User role for RBAC - use backend role, don't override
         role: userData.role || sessionData.role || sessionData.user_role || 'USER',
+        // WhatsApp Commerce preference
+        show_whatsapp_commerce: userData.show_whatsapp_commerce ?? sessionData.show_whatsapp_commerce,
+        country: userData.country || sessionData.country || 'US',
         // Additional metadata
         sessionSource: 'backend-direct',
         permissions: sessionData.permissions || []
