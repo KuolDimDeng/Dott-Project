@@ -273,11 +273,31 @@ class SessionService:
         # Always get from database to ensure we return a UserSession instance
         # Redis cache should only be used for performance, not as the source of truth
         try:
+            print(f"[SessionService] get_session called for: {session_id}")
+            print(f"[SessionService] Current time: {timezone.now()}")
+            
+            # First check if session exists at all
+            exists = UserSession.objects.filter(session_id=session_id).exists()
+            print(f"[SessionService] Session exists in DB: {exists}")
+            
+            if exists:
+                # Get the raw session to see why it might be filtered out
+                raw_session = UserSession.objects.get(session_id=session_id)
+                print(f"[SessionService] Raw session details:")
+                print(f"  - is_active: {raw_session.is_active}")
+                print(f"  - expires_at: {raw_session.expires_at}")
+                print(f"  - expired: {raw_session.expires_at <= timezone.now()}")
+                print(f"  - user: {raw_session.user.email}")
+                print(f"  - created_at: {raw_session.created_at}")
+            
+            # Now try with filters
             session = UserSession.objects.select_related('user', 'tenant').get(
                 session_id=session_id,
                 is_active=True,
                 expires_at__gt=timezone.now()
             )
+            
+            print(f"[SessionService] Session found and is valid")
             
             # Update activity
             session.update_activity()
@@ -288,6 +308,12 @@ class SessionService:
             return session
             
         except UserSession.DoesNotExist:
+            print(f"[SessionService] Session not found with filters (inactive or expired)")
+            return None
+        except Exception as e:
+            print(f"[SessionService] Error getting session: {e}")
+            import traceback
+            print(f"[SessionService] Traceback: {traceback.format_exc()}")
             return None
     
     def update_session(self, session_id: str, **updates) -> Optional[UserSession]:
