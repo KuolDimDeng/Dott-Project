@@ -232,7 +232,7 @@ const HelpCenter = () => {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-black mb-4 flex items-center">
           <QuestionMarkCircleIcon className="h-6 w-6 text-blue-600 mr-2" />
-          Help Center
+          {t('title')}
         </h1>
         <p className="text-gray-600">
           Find answers to frequently asked questions and get support for your Dott account
@@ -321,7 +321,7 @@ const HelpCenter = () => {
           </div>
 
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">Frequently Asked Questions</h2>
+            <h2 className="text-xl font-semibold text-gray-900">{t('faq.title')}</h2>
             <div className="text-sm text-gray-500">
               <span className="font-medium">{filteredFaqs.length}</span> {filteredFaqs.length === 1 ? 'article' : 'articles'} found
               {selectedCategory !== 'all' && (
@@ -433,7 +433,7 @@ const HelpCenter = () => {
           </div>
 
           <div className="bg-white rounded-lg shadow-md p-4">
-            <h2 className="text-lg font-medium mb-4">Contact Support</h2>
+            <h2 className="text-lg font-medium mb-4">{t('contact.title')}</h2>
             <form onSubmit={handleSubmit}>
               <div className="mb-4">
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Name</label>
