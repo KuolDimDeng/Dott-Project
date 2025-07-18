@@ -6,8 +6,18 @@ from .employee_profile_views import (
     EmployeeProfileView, EmployeeBankInfoView, EmployeeTaxInfoView,
     employee_profile_debug
 )
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+
+@api_view(['GET'])
+def test_routing(request):
+    """Simple test endpoint to verify routing"""
+    return Response({"test": "HR API routing works", "path": request.path})
 
 urlpatterns = [
+    # Test endpoint (no auth required)
+    path('test/', test_routing, name='test-routing'),
+    
     # Employee views
     path('current-employee/', CurrentEmployeeView.as_view(), name='current-employee'),
     

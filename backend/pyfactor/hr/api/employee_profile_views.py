@@ -501,6 +501,9 @@ class EmployeeTaxInfoView(APIView):
 @permission_classes([IsAuthenticated])
 def employee_profile_debug(request):
     """Debug endpoint to test employee lookup"""
+    # Immediate response to check if endpoint is reached
+    return Response({"immediate_test": "Endpoint reached", "user_email": str(request.user.email)})
+    
     try:
         logger.info(f"[DEBUG] === EMPLOYEE PROFILE DEBUG START ===")
         logger.info(f"[DEBUG] Request user: {request.user}")
