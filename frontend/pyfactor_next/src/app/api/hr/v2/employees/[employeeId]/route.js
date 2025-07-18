@@ -42,8 +42,8 @@ export async function GET(request, { params }) {
     const { employeeId } = params;
     logger.info(`[HR v2 Proxy] GET /api/hr/v2/employees/${employeeId}`);
 
-    // Get session from cookies - no await needed
-    const cookieStore = cookies();
+    // Get session from cookies - await is required in Next.js 15
+    const cookieStore = await cookies();
     const sessionId = cookieStore.get('sid');
     
     if (!sessionId) {
@@ -91,8 +91,8 @@ export async function PUT(request, { params }) {
     const { employeeId } = params;
     logger.info(`[HR v2 Proxy] PUT /api/hr/v2/employees/${employeeId}`);
 
-    // Get session from cookies - no await needed
-    const cookieStore = cookies();
+    // Get session from cookies - await is required in Next.js 15
+    const cookieStore = await cookies();
     const sessionId = cookieStore.get('sid');
     
     if (!sessionId) {
@@ -144,8 +144,8 @@ export async function DELETE(request, { params }) {
     const { employeeId } = params;
     logger.info(`[HR v2 Proxy] DELETE /api/hr/v2/employees/${employeeId}`);
 
-    // Get session from cookies - no await needed
-    const cookieStore = cookies();
+    // Get session from cookies - await is required in Next.js 15
+    const cookieStore = await cookies();
     const sessionId = cookieStore.get('sid');
     
     if (!sessionId) {

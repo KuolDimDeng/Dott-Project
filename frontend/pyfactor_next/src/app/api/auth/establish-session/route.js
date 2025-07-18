@@ -22,8 +22,8 @@ export async function POST(request) {
       return NextResponse.redirect(new URL('/auth/signin?error=no_session_token', baseUrl));
     }
     
-    // Set session cookies
-    const cookieStore = cookies();
+    // Set session cookies - await is required in Next.js 15
+    const cookieStore = await cookies();
     
     // In production, set domain to allow cookie sharing across subdomains
     const isProduction = process.env.NODE_ENV === 'production';
@@ -43,20 +43,10 @@ export async function POST(request) {
     console.log('[EstablishSession] Is production:', isProduction);
     console.log('[EstablishSession] NODE_ENV:', process.env.NODE_ENV);
     
-    // Set both sid and session_token cookies
-    cookieStore.set('sid', token, cookieOptions);
-    cookieStore.set('session_token', token, cookieOptions);
+    // Note: Cookies can only be set on the response object, not directly on cookieStore
+    console.log('[EstablishSession] Preparing to set cookies on redirect response...');
     
-    // Debug: Verify cookies were set
-    const verifySet = cookies();
-    const sidCookie = verifySet.get('sid');
-    const sessionCookie = verifySet.get('session_token');
-    console.log('[EstablishSession] Cookies after setting:', {
-      sid: sidCookie ? 'Set successfully' : 'Failed to set',
-      session_token: sessionCookie ? 'Set successfully' : 'Failed to set'
-    });
-    
-    console.log('[EstablishSession] Session cookies set, redirecting to:', redirectUrl);
+    console.log('[EstablishSession] Session cookies will be set, redirecting to:', redirectUrl);
     
     // Construct proper redirect URL with correct domain
     const fullRedirectUrl = new URL(redirectUrl, baseUrl);

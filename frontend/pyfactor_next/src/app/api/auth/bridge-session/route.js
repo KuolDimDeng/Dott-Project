@@ -23,7 +23,7 @@ export async function GET(request) {
     
     // The token IS the session token (UUID from backend)
     // We just need to set it as a cookie
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     
     // In production, set domain to allow cookie sharing across subdomains
     const isProduction = process.env.NODE_ENV === 'production';
@@ -41,17 +41,20 @@ export async function GET(request) {
     
     console.log('[BridgeSession] Setting session cookies...');
     
-    // Set both sid and session_token cookies
-    cookieStore.set('sid', token, cookieOptions);
-    cookieStore.set('session_token', token, cookieOptions);
-    
-    console.log('[BridgeSession] Session cookies set successfully');
-    
-    return NextResponse.json({
+    // Create response with cookies set properly
+    const response = NextResponse.json({
       success: true,
       sessionToken: token,
       message: 'Session established'
     });
+    
+    // Set both sid and session_token cookies on the response
+    response.cookies.set('sid', token, cookieOptions);
+    response.cookies.set('session_token', token, cookieOptions);
+    
+    console.log('[BridgeSession] Session cookies set on response');
+    
+    return response;
     
   } catch (error) {
     console.error('[BridgeSession] Error:', error);
