@@ -446,7 +446,7 @@ if not DEBUG:
 CSRF_COOKIE_HTTPONLY = False  # Must be false for JavaScript access
 CSRF_USE_SESSIONS = False
 CSRF_COOKIE_NAME = 'csrftoken'
-CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = 'Lax'  # Keep CSRF as Lax for security
 CSRF_TRUSTED_ORIGINS = [
     # Local development
     "https://localhost:3000",
@@ -597,8 +597,8 @@ SESSION_COOKIE_AGE = 1209600  # 2 weeks
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_NAME = 'sessionid'
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
-SESSION_COOKIE_SAMESITE = 'Lax'  # More secure for same parent domain
-CSRF_COOKIE_SAMESITE = 'Lax'  # More secure for same parent domain
+SESSION_COOKIE_SAMESITE = 'None'  # Changed for Cloudflare compatibility
+CSRF_COOKIE_SAMESITE = 'Lax'  # Keep CSRF as Lax for security
 
 # SESSION_ENGINE removed - using custom session_manager app
 
@@ -799,7 +799,7 @@ REDIS_SESSION_DB = 1  # Separate Redis DB for sessions
 SESSION_COOKIE_NAME = 'session_token'
 SESSION_COOKIE_AGE = SESSION_TTL
 SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_SAMESITE = 'None'  # Changed from 'Lax' for Cloudflare compatibility
 SESSION_COOKIE_DOMAIN = '.dottapps.com' if not DEBUG else None
 
 # Check if we're running in ASGI mode

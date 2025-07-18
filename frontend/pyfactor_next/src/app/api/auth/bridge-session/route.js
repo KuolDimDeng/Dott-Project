@@ -27,13 +27,16 @@ export async function GET(request) {
     
     // In production, set domain to allow cookie sharing across subdomains
     const isProduction = process.env.NODE_ENV === 'production';
+    
+    // Don't set domain - let it default to current domain
+    // This ensures cookies work on the exact domain being accessed
     const cookieOptions = {
       httpOnly: true,
-      secure: true,
+      secure: isProduction, // Only secure in production
       sameSite: 'lax',
       path: '/',
       maxAge: 86400, // 24 hours
-      ...(isProduction && { domain: '.dottapps.com' }) // Allow cookies on all subdomains
+      // Remove domain setting to let it default
     };
     
     console.log('[BridgeSession] Setting session cookies...');

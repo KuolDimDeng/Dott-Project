@@ -8,6 +8,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { logger } from '@/utils/logger';
 import usersApi from '@/utils/api/usersApi';
 import api from '@/utils/api';
+import { useTranslation } from 'react-i18next';
 
 // Import components
 import UserManagement from './sections/UserManagement';
@@ -18,6 +19,7 @@ import Integrations from './sections/Integrations';
 import BankConnections from './sections/BankConnections';
 import PayrollSettings from './sections/PayrollSettings';
 import GeofencingSettings from './sections/GeofencingSettings';
+import WhatsAppSettings from './sections/WhatsAppSettings';
 
 // Import icons
 import { 
@@ -28,10 +30,12 @@ import {
   PuzzlePieceIcon,
   BanknotesIcon,
   CurrencyDollarIcon,
-  MapPinIcon
+  MapPinIcon,
+  ChatBubbleLeftRightIcon
 } from '@heroicons/react/24/outline';
 
 const SettingsManagement = () => {
+  const { t } = useTranslation('settings');
   const { user } = useSessionContext();
   const { profileData, loading: profileLoading } = useProfile();
   const { notifySuccess, notifyError } = useNotification();
@@ -45,65 +49,73 @@ const SettingsManagement = () => {
   const settingsSections = [
     {
       id: 'company-profile',
-      title: 'Company Profile',
+      title: t('general.title'),
       icon: BuildingOfficeIcon,
-      description: 'View and update company information',
+      description: t('general.businessInfo'),
       component: CompanyProfile,
       requiredRole: 'user' // All users can view, but editing is restricted
     },
     {
       id: 'user-management',
-      title: 'User Management',
+      title: t('tabs.security'),
       icon: UserGroupIcon,
-      description: 'Manage user access, roles, and permissions',
+      description: t('security.title'),
       component: UserManagement,
       requiredRole: 'admin' // Admin and Owner can access
     },
     {
       id: 'bank-connections',
-      title: 'Bank Connections',
+      title: t('integrations.title'),
       icon: BanknotesIcon,
-      description: 'Connect bank accounts for payroll, payments, and transfers',
+      description: t('integrations.connectedApps'),
       component: BankConnections,
       requiredRole: 'admin' // Only admin and owner can access
     },
     {
       id: 'payroll',
-      title: 'Payroll',
+      title: t('tabs.payroll'),
       icon: CurrencyDollarIcon,
-      description: 'Configure pay periods, pay dates, and payroll settings',
+      description: t('payroll.title'),
       component: PayrollSettings,
       requiredRole: 'admin' // Only admin and owner can access
     },
     {
       id: 'geofencing',
-      title: 'Geofencing',
+      title: t('tabs.geofencing'),
       icon: MapPinIcon,
-      description: 'Set up location-based restrictions for employee clock in/out',
+      description: t('geofencing.title'),
       component: GeofencingSettings,
       requiredRole: 'admin' // Only admin and owner can access
     },
     {
       id: 'billing-subscriptions',
-      title: 'Billing & Subscriptions',
+      title: t('tabs.billing'),
       icon: CreditCardIcon,
-      description: 'Manage your subscription and view billing history',
+      description: t('billing.title'),
       component: BillingSubscriptions,
       requiredRole: 'owner' // Only owner can access
     },
     {
       id: 'integrations',
-      title: 'Integrations',
+      title: t('tabs.integrations'),
       icon: PuzzlePieceIcon,
-      description: 'Connect and manage third-party app integrations',
+      description: t('integrations.title'),
       component: Integrations,
       requiredRole: 'user' // All users can access
     },
     {
+      id: 'whatsapp',
+      title: t('tabs.whatsapp'),
+      icon: ChatBubbleLeftRightIcon,
+      description: t('whatsapp.title'),
+      component: WhatsAppSettings,
+      requiredRole: 'user' // All users can access
+    },
+    {
       id: 'security',
-      title: 'Security',
+      title: t('tabs.security'),
       icon: ShieldCheckIcon,
-      description: 'MFA, audit trail, and compliance settings',
+      description: t('security.title'),
       component: SecuritySettings,
       requiredRole: 'admin' // Admin and Owner can access
     }
@@ -140,9 +152,9 @@ const SettingsManagement = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="py-6">
-          <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('title')}</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Manage your account settings and preferences
+            {t('subtitle')}
           </p>
         </div>
 

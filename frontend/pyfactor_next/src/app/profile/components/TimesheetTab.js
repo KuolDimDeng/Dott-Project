@@ -11,8 +11,10 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Clock, Calendar, DollarSign, User, CheckCircle, XCircle, Clock3, FolderOpen, Briefcase } from 'lucide-react';
 import StandardSpinner from '@/components/ui/StandardSpinner';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 const TimesheetTab = ({ employee, session }) => {
+  const { t } = useTranslation('profile');
   const [loading, setLoading] = useState(false);
   const [currentEmployee, setCurrentEmployee] = useState(employee);
   const [currentTimesheet, setCurrentTimesheet] = useState(null);

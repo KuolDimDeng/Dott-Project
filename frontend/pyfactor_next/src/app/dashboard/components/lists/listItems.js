@@ -22,6 +22,7 @@ import { getCacheValue, setCacheValue } from '@/utils/appCache';
 import { logger } from '@/utils/logger';
 import { usePermissions } from '@/hooks/usePermissions';
 import { getWhatsAppBusinessVisibility } from '@/utils/whatsappCountryDetection';
+import { useTranslation } from 'react-i18next';
 
 // SVG Icons for menu items
 const NavIcons = {
@@ -177,7 +178,7 @@ const MENU_WIDTH = 258; // Increased to match the drawer width (260px, leaving 2
 // Define createOptions outside the component so it can be exported
 const createOptions = [
   {
-    label: 'Create New',
+    label: t('mainMenu.createNew'),
     description: 'Create a new transaction, invoice, or entity',
     icon: (props) => (
       <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -198,7 +199,7 @@ const createOptions = [
     }
   },
   {
-    label: 'Transaction',
+    label: t('subMenu.transactions'),
     description: 'Create a new transaction',
     icon: (props) => (
       <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -212,7 +213,7 @@ const createOptions = [
     }
   },
   {
-    label: 'Point of Sale',
+    label: t('mainMenu.pos'),
     description: 'Record a sale transaction quickly',
     icon: (props) => (
       <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -227,7 +228,7 @@ const createOptions = [
     value: 'Sales'
   },
   {
-    label: 'Product',
+    label: t('subMenu.catalog'),
     icon: <NavIcons.Inventory className="w-4 h-4" />,
     onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
       if (typeof handleShowCreateOptions === 'function') {
@@ -237,7 +238,7 @@ const createOptions = [
     value: 'Product'
   },
   {
-    label: 'Service',
+    label: t('subMenu.catalog'),
     icon: <NavIcons.Receipt className="w-4 h-4" />,
     onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
       if (typeof handleShowCreateOptions === 'function') {
@@ -247,7 +248,7 @@ const createOptions = [
     value: 'Service'
   },
   {
-    label: 'Invoice',
+    label: t('subMenu.invoices'),
     icon: <NavIcons.Description className="w-4 h-4" />,
     onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
       if (typeof handleShowCreateOptions === 'function') {
@@ -257,7 +258,7 @@ const createOptions = [
     value: 'Invoice'
   },
   {
-    label: 'Bill',
+    label: t('subMenu.billsExpenses'),
     icon: <NavIcons.Cart className="w-4 h-4" />,
     onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
       if (typeof handleShowCreateOptions === 'function') {
@@ -267,7 +268,7 @@ const createOptions = [
     value: 'Bill'
   },
   {
-    label: 'Estimate',
+    label: t('subMenu.quotes'),
     icon: <NavIcons.Reports className="w-4 h-4" />,
     onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
       if (typeof handleShowCreateOptions === 'function') {
@@ -277,7 +278,7 @@ const createOptions = [
     value: 'Estimate'
   },
   {
-    label: 'Customer',
+    label: t('subMenu.customers'),
     icon: <NavIcons.People className="w-4 h-4" />,
     onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
       if (typeof handleShowCreateOptions === 'function') {
@@ -287,7 +288,7 @@ const createOptions = [
     value: 'Customer'
   },
   {
-    label: 'Vendor',
+    label: t('subMenu.vendors'),
     icon: <NavIcons.Contacts className="w-4 h-4" />,
     onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
       if (typeof handleShowCreateOptions === 'function') {
@@ -327,6 +328,7 @@ const MainListItems = ({
   handleDrawerOpen,
   userData = {},
 }) => {
+  const { t } = useTranslation('navigation');
   const { canAccessRoute, isOwnerOrAdmin, user, isLoading } = usePermissions();
   const [openMenu, setOpenMenu] = useState('');
   const [buttonWidth, setButtonWidth] = useState(0);
@@ -499,40 +501,40 @@ const MainListItems = ({
   const menuItems = [
     {
       icon: <NavIcons.AddCircle className="w-5 h-5" />,
-      label: 'Create New',
+      label: t('mainMenu.createNew'),
       onClick: handleShowCreateMenu,
       isSpecial: true,
     },
     {
       icon: <NavIcons.Dashboard className="w-5 h-5" />,
-      label: 'Dashboard',
+      label: t('mainMenu.dashboard'),
       onClick: handleMainDashboardClick,
     },
     {
       icon: <NavIcons.Calendar className="w-5 h-5" />,
-      label: 'Calendar',
+      label: t('mainMenu.calendar'),
       onClick: handleCalendarClick,
     },
     /* Billing menu item - This will be used in future versions of the application
     {
       icon: <NavIcons.Wallet className="w-5 h-5" />,
-      label: 'Billing',
+      label: t('mainMenu.billing'),
       subItems: [
-        { label: 'Invoices', onClick: handleBillingClick, value: 'invoices' },
-        { label: 'Payments', onClick: handleBillingClick, value: 'payments' },
-        { label: 'Subscriptions', onClick: handleBillingClick, value: 'subscriptions' },
-        { label: 'Payment Methods', onClick: handleBillingClick, value: 'payment-methods' },
-        { label: 'Reports', onClick: handleBillingClick, value: 'reports' },
+        { label: t('subMenu.invoices'), onClick: handleBillingClick, value: 'invoices' },
+        { label: t('mainMenu.payments'), onClick: handleBillingClick, value: 'payments' },
+        { label: t('subMenu.recurringPayments'), onClick: handleBillingClick, value: 'subscriptions' },
+        { label: t('subMenu.paymentMethods'), onClick: handleBillingClick, value: 'payment-methods' },
+        { label: t('mainMenu.reports'), onClick: handleBillingClick, value: 'reports' },
       ],
     },
     */
     {
       icon: <NavIcons.Sales className="w-5 h-5" />,
-      label: 'Sales',
+      label: t('mainMenu.sales'),
       subItems: [
-        { label: 'Dashboard', onClick: handleSalesClick, value: 'dashboard', path: '/dashboard/sales' },
+        { label: t('subMenu.dashboard'), onClick: handleSalesClick, value: 'dashboard', path: '/dashboard/sales' },
         { 
-        label: 'Products', 
+        label: t('subMenu.catalog'), 
         path: '/dashboard/products',
         onClick: (value) => {
           // Create navigation event for products
@@ -555,7 +557,7 @@ const MainListItems = ({
         value: 'products' 
       },
       { 
-        label: 'Services', 
+        label: t('subMenu.catalog'), 
         path: '/dashboard/services',
         onClick: (value) => {
           // Create navigation event for services
@@ -578,7 +580,7 @@ const MainListItems = ({
         value: 'services' 
       },
       { 
-        label: 'Customers', 
+        label: t('subMenu.customers'), 
         path: '/dashboard/customers',
         onClick: (value) => {
           // Create navigation event for customers
@@ -601,7 +603,7 @@ const MainListItems = ({
         value: 'customers' 
       },
         { 
-          label: 'Estimates', 
+          label: t('subMenu.quotes'), 
           onClick: (value) => {
             // Create navigation event for estimates
             const navigationKey = `nav-${Date.now()}`;
@@ -623,7 +625,7 @@ const MainListItems = ({
           value: 'estimates' 
         },
         { 
-          label: 'Orders', 
+          label: t('subMenu.orders'), 
           onClick: (value) => {
             // Create navigation event for orders
             const navigationKey = `nav-${Date.now()}`;
@@ -645,7 +647,7 @@ const MainListItems = ({
           value: 'orders' 
         },
         { 
-          label: 'Invoices', 
+          label: t('subMenu.invoices'), 
           onClick: (value) => {
             // Create navigation event for invoices
             const navigationKey = `nav-${Date.now()}`;
@@ -667,7 +669,7 @@ const MainListItems = ({
           value: 'invoices' 
         },
         { 
-          label: 'Reports', 
+          label: t('mainMenu.reports'), 
           onClick: (value) => {
             // Create navigation event for sales reports
             const navigationKey = `nav-${Date.now()}`;
@@ -693,27 +695,27 @@ const MainListItems = ({
     /* CRM menu item - This will be used in future versions of the application
     {
       icon: <NavIcons.Contacts className="w-5 h-5" />,
-      label: 'CRM',
+      label: t('mainMenu.crm'),
       subItems: [
-        { label: 'Dashboard', onClick: handleCRMClick, value: 'dashboard' },
-        { label: 'Customers', onClick: handleCRMClick, value: 'customers' },
-        { label: 'Contacts', onClick: handleCRMClick, value: 'contacts' },
-        { label: 'Leads', onClick: handleCRMClick, value: 'leads' },
-        { label: 'Opportunities', onClick: handleCRMClick, value: 'opportunities' },
-        { label: 'Deals', onClick: handleCRMClick, value: 'deals' },
-        { label: 'Activities', onClick: handleCRMClick, value: 'activities' },
-        { label: 'Campaigns', onClick: handleCRMClick, value: 'campaigns' },
-        { label: 'Reports', onClick: handleCRMClick, value: 'reports' },
+        { label: t('subMenu.dashboard'), onClick: handleCRMClick, value: 'dashboard' },
+        { label: t('subMenu.customers'), onClick: handleCRMClick, value: 'customers' },
+        { label: t('subMenu.customers'), onClick: handleCRMClick, value: 'contacts' },
+        { label: t('subMenu.leads'), onClick: handleCRMClick, value: 'leads' },
+        { label: t('subMenu.leads'), onClick: handleCRMClick, value: 'opportunities' },
+        { label: t('subMenu.deals'), onClick: handleCRMClick, value: 'deals' },
+        { label: t('subMenu.followUps'), onClick: handleCRMClick, value: 'activities' },
+        { label: t('subMenu.campaigns'), onClick: handleCRMClick, value: 'campaigns' },
+        { label: t('mainMenu.reports'), onClick: handleCRMClick, value: 'reports' },
       ],
     },
     */
     {
       icon: <NavIcons.Inventory className="w-5 h-5" />,
-      label: 'Inventory',
+      label: t('mainMenu.inventory'),
       subItems: [
-        { label: 'Dashboard', onClick: handleInventoryClick, value: 'inventorydashboard', path: '/dashboard/inventory' },
+        { label: t('subMenu.dashboard'), onClick: handleInventoryClick, value: 'inventorydashboard', path: '/dashboard/inventory' },
         { 
-          label: 'Stock Adjustments', 
+          label: t('subMenu.warehouseTracker'), 
           path: '/dashboard/inventory',
           onClick: (value) => {
             // Call the inventory click handler with the appropriate value
@@ -724,7 +726,7 @@ const MainListItems = ({
           value: 'stock-adjustments' 
         },
         { 
-          label: 'Locations', 
+          label: t('subMenu.saleByLocation'), 
           onClick: (value) => {
             // Call the inventory click handler with the appropriate value
             if (typeof handleInventoryClick === 'function') {
@@ -734,7 +736,7 @@ const MainListItems = ({
           value: 'locations' 
         },
         { 
-          label: 'Suppliers', 
+          label: t('subMenu.vendors'), 
           onClick: (value) => {
             // Call the inventory click handler with the appropriate value
             if (typeof handleInventoryClick === 'function') {
@@ -744,7 +746,7 @@ const MainListItems = ({
           value: 'suppliers' 
         },
         { 
-          label: 'Reports', 
+          label: t('mainMenu.reports'), 
           onClick: (value) => {
             // Call the inventory click handler with the appropriate value
             if (typeof handleInventoryClick === 'function') {
@@ -758,25 +760,25 @@ const MainListItems = ({
     /* Transport menu item - This will be used in future versions of the application
     {
       icon: <NavIcons.Shipping className="w-5 h-5" />,
-      label: 'Transport',
+      label: t('mainMenu.transport'),
       subItems: [
-        { label: 'Dashboard', onClick: handleTransportClick, value: 'dashboard' },
-        { label: 'Loads/Jobs', onClick: handleTransportClick, value: 'loads' },
-        { label: 'Vehicle', onClick: handleTransportClick, value: 'equipment' },
-        { label: 'Routes', onClick: handleTransportClick, value: 'routes' },
-        { label: 'Expenses', onClick: handleTransportClick, value: 'expenses' },
-        { label: 'Maintenance', onClick: handleTransportClick, value: 'maintenance' },
-        { label: 'Compliance', onClick: handleTransportClick, value: 'compliance' },
-        { label: 'Reports', onClick: handleTransportClick, value: 'reports' },
+        { label: t('subMenu.dashboard'), onClick: handleTransportClick, value: 'dashboard' },
+        { label: t('subMenu.trips'), onClick: handleTransportClick, value: 'loads' },
+        { label: t('subMenu.vehicles'), onClick: handleTransportClick, value: 'equipment' },
+        { label: t('subMenu.trips'), onClick: handleTransportClick, value: 'routes' },
+        { label: t('subMenu.billsExpenses'), onClick: handleTransportClick, value: 'expenses' },
+        { label: t('subMenu.maintenance'), onClick: handleTransportClick, value: 'maintenance' },
+        { label: t('subMenu.filings'), onClick: handleTransportClick, value: 'compliance' },
+        { label: t('mainMenu.reports'), onClick: handleTransportClick, value: 'reports' },
       ],
     },
     */
     {
       icon: <NavIcons.Payments className="w-5 h-5" />,
-      label: 'Payments',
+      label: t('mainMenu.payments'),
       subItems: [
         { 
-          label: 'Dashboard', 
+          label: t('subMenu.dashboard'), 
           onClick: (value) => {
             // Create navigation event for payments dashboard
             const navigationKey = `nav-${Date.now()}`;
@@ -796,7 +798,7 @@ const MainListItems = ({
           value: 'payments-dashboard' 
         },
         { 
-          label: 'Receive Payments', 
+          label: t('subMenu.invoicePayment'), 
           onClick: (value) => {
             // Create navigation event for receive payments
             const navigationKey = `nav-${Date.now()}`;
@@ -816,7 +818,7 @@ const MainListItems = ({
           value: 'receive-payments' 
         },
         { 
-          label: 'Make Payments', 
+          label: t('subMenu.vendorPayment'), 
           onClick: (value) => {
             // Create navigation event for make payments
             const navigationKey = `nav-${Date.now()}`;
@@ -836,7 +838,7 @@ const MainListItems = ({
           value: 'make-payments' 
         },
         { 
-          label: 'Payment Methods', 
+          label: t('subMenu.paymentMethods'), 
           onClick: (value) => {
             // Create navigation event for payment methods
             const navigationKey = `nav-${Date.now()}`;
@@ -856,7 +858,7 @@ const MainListItems = ({
           value: 'payment-methods' 
         },
         { 
-          label: 'Recurring Payments', 
+          label: t('subMenu.recurringPayments'), 
           onClick: (value) => {
             // Create navigation event for recurring payments
             const navigationKey = `nav-${Date.now()}`;
@@ -876,7 +878,7 @@ const MainListItems = ({
           value: 'recurring-payments' 
         },
         { 
-          label: 'Refunds', 
+          label: t('subMenu.paymentHistory'), 
           onClick: (value) => {
             // Create navigation event for refunds
             const navigationKey = `nav-${Date.now()}`;
@@ -896,7 +898,7 @@ const MainListItems = ({
           value: 'refunds' 
         },
         { 
-          label: 'Payment Reconciliation', 
+          label: t('subMenu.reconciliation'), 
           onClick: (value) => {
             // Create navigation event for payment reconciliation
             const navigationKey = `nav-${Date.now()}`;
@@ -916,7 +918,7 @@ const MainListItems = ({
           value: 'payment-reconciliation' 
         },
         { 
-          label: 'Payment Gateways', 
+          label: t('subMenu.paymentMethods'), 
           onClick: (value) => {
             // Create navigation event for payment gateways
             const navigationKey = `nav-${Date.now()}`;
@@ -936,7 +938,7 @@ const MainListItems = ({
           value: 'payment-gateways' 
         },
         { 
-          label: 'Reports', 
+          label: t('mainMenu.reports'), 
           onClick: (value) => {
             // Create navigation event for payment reports
             const navigationKey = `nav-${Date.now()}`;
@@ -959,10 +961,10 @@ const MainListItems = ({
     },
     {
       icon: <NavIcons.Cart className="w-5 h-5" />,
-      label: 'Purchases',
+      label: t('mainMenu.purchases'),
       subItems: [
         { 
-          label: 'Dashboard', 
+          label: t('subMenu.dashboard'), 
           onClick: (value) => {
             // Create navigation event for purchases dashboard
             const navigationKey = `nav-${Date.now()}`;
@@ -984,7 +986,7 @@ const MainListItems = ({
           value: 'dashboard' 
         },
         { 
-          label: 'Vendors', 
+          label: t('subMenu.vendors'), 
           onClick: (value) => {
             // Create navigation event for vendor management
             const navigationKey = `nav-${Date.now()}`;
@@ -1006,7 +1008,7 @@ const MainListItems = ({
           value: 'vendors' 
         },
         { 
-          label: 'Purchase Orders', 
+          label: t('subMenu.purchaseOrders'), 
           onClick: (value) => {
             // Create navigation event for purchase order management
             const navigationKey = `nav-${Date.now()}`;
@@ -1028,7 +1030,7 @@ const MainListItems = ({
           value: 'purchase-orders' 
         },
         { 
-          label: 'Bills', 
+          label: t('subMenu.billsExpenses'), 
           onClick: (value) => {
             // Create navigation event for bills management
             const navigationKey = `nav-${Date.now()}`;
@@ -1050,7 +1052,7 @@ const MainListItems = ({
           value: 'bills' 
         },
         { 
-          label: 'Expenses', 
+          label: t('subMenu.billsExpenses'), 
           onClick: (value) => {
             // Create navigation event for expenses management
             const navigationKey = `nav-${Date.now()}`;
@@ -1072,7 +1074,7 @@ const MainListItems = ({
           value: 'expenses' 
         },
         { 
-          label: 'Purchase Returns', 
+          label: t('subMenu.purchaseOrders'), 
           onClick: (value) => {
             // Create navigation event for purchase returns management
             const navigationKey = `nav-${Date.now()}`;
@@ -1094,7 +1096,7 @@ const MainListItems = ({
           value: 'purchase-returns' 
         },
         { 
-          label: 'Procurement', 
+          label: t('subMenu.purchaseOrders'), 
           onClick: (value) => {
             // Create navigation event for procurement management
             const navigationKey = `nav-${Date.now()}`;
@@ -1116,7 +1118,7 @@ const MainListItems = ({
           value: 'procurement' 
         },
         { 
-          label: 'Reports', 
+          label: t('mainMenu.reports'), 
           onClick: (value) => {
             // Create navigation event for purchases reports
             const navigationKey = `nav-${Date.now()}`;
@@ -1141,10 +1143,10 @@ const MainListItems = ({
     },
     {
       icon: <NavIcons.Bank className="w-5 h-5" />,
-      label: 'Accounting',
+      label: t('mainMenu.accounting'),
       subItems: [
         { 
-          label: 'Dashboard', 
+          label: t('subMenu.dashboard'), 
           onClick: (value) => {
             // Create navigation event for accounting dashboard
             const navigationKey = `nav-${Date.now()}`;
@@ -1166,7 +1168,7 @@ const MainListItems = ({
           value: 'dashboard' 
         },
         { 
-          label: 'Chart of Accounts', 
+          label: t('subMenu.chartOfAccounts'), 
           onClick: (value) => {
             // Create navigation event for chart of accounts
             const navigationKey = `nav-${Date.now()}`;
@@ -1188,7 +1190,7 @@ const MainListItems = ({
           value: 'chart-of-accounts' 
         },
         { 
-          label: 'Journal Entries', 
+          label: t('subMenu.journalEntries'), 
           onClick: (value) => {
             // Create navigation event for journal entries
             const navigationKey = `nav-${Date.now()}`;
@@ -1210,7 +1212,7 @@ const MainListItems = ({
           value: 'journal-entries' 
         },
         { 
-          label: 'General Ledger', 
+          label: t('subMenu.generalLedger'), 
           onClick: (value) => {
             // Create navigation event for general ledger
             const navigationKey = `nav-${Date.now()}`;
@@ -1232,7 +1234,7 @@ const MainListItems = ({
           value: 'general-ledger' 
         },
         { 
-          label: 'Reconciliation', 
+          label: t('subMenu.reconciliation'), 
           onClick: (value) => {
             // Create navigation event for reconciliation
             const navigationKey = `nav-${Date.now()}`;
@@ -1254,7 +1256,7 @@ const MainListItems = ({
           value: 'reconciliation' 
         },
         {
-          label: 'Financial Statements',
+          label: t('reports.financialReports'),
           onClick: (value) => {
             // Create navigation event for financial statements
             const navigationKey = `nav-${Date.now()}`;
@@ -1276,7 +1278,7 @@ const MainListItems = ({
           value: 'financial-statements',
         },
         { 
-          label: 'Fixed Assets', 
+          label: t('subMenu.chartOfAccounts'), 
           onClick: (value) => {
             // Create navigation event for fixed assets
             const navigationKey = `nav-${Date.now()}`;
@@ -1298,7 +1300,7 @@ const MainListItems = ({
           value: 'fixed-assets' 
         },
         { 
-          label: 'Reports', 
+          label: t('mainMenu.reports'), 
           onClick: (value) => {
             // Create navigation event for accounting reports
             const navigationKey = `nav-${Date.now()}`;
@@ -1323,10 +1325,10 @@ const MainListItems = ({
     },
     {
       icon: <NavIcons.Wallet className="w-5 h-5" />,
-      label: 'Banking',
+      label: t('mainMenu.banking'),
       subItems: [
         { 
-          label: 'Dashboard', 
+          label: t('subMenu.dashboard'), 
           onClick: (value) => {
             // Create navigation event for banking dashboard
             const navigationKey = `nav-${Date.now()}`;
@@ -1348,7 +1350,7 @@ const MainListItems = ({
           value: 'dashboard' 
         },
         { 
-          label: 'Bank Transactions', 
+          label: t('subMenu.transactions'), 
           onClick: (value) => {
             // Create navigation event for bank transactions
             const navigationKey = `nav-${Date.now()}`;
@@ -1370,7 +1372,7 @@ const MainListItems = ({
           value: 'transactions' 
         },
         { 
-          label: 'Bank Reconciliation', 
+          label: t('subMenu.reconciliation'), 
           onClick: (value) => {
             // Create navigation event for bank reconciliation
             const navigationKey = `nav-${Date.now()}`;
@@ -1392,7 +1394,7 @@ const MainListItems = ({
           value: 'reconciliation' 
         },
         { 
-          label: 'Reports', 
+          label: t('mainMenu.reports'), 
           onClick: (value) => {
             // Create navigation event for banking reports
             const navigationKey = `nav-${Date.now()}`;
@@ -1414,7 +1416,7 @@ const MainListItems = ({
           value: 'bank-reports' 
         },
         { 
-          label: 'Banking Tools', 
+          label: t('subMenu.bankAccounts'), 
           onClick: (value) => {
             // Create navigation event for banking tools
             const navigationKey = `nav-${Date.now()}`;
@@ -1439,23 +1441,23 @@ const MainListItems = ({
     },
     {
       icon: <NavIcons.People className="w-5 h-5" />,
-      label: 'HR',
+      label: t('mainMenu.hr'),
       subItems: [
-        { label: 'Dashboard', onClick: handleHRClick, value: 'dashboard', path: '/dashboard/hr' },
-        { label: 'Employees', onClick: handleHRClick, value: 'employees', path: '/dashboard/employees' },
-        { label: 'Timesheets', onClick: handleHRClick, value: 'timesheets', path: '/dashboard/timesheets' },
-        { label: 'Pay', onClick: handleHRClick, value: 'pay', path: '/dashboard/pay' },
-        { label: 'Benefits', onClick: handleHRClick, value: 'benefits', path: '/dashboard/benefits' },
-        { label: 'Reports', onClick: handleHRClick, value: 'reports', path: '/dashboard/reports' },
-        { label: 'Performance', onClick: handleHRClick, value: 'performance', path: '/dashboard/performance' },
+        { label: t('subMenu.dashboard'), onClick: handleHRClick, value: 'dashboard', path: '/dashboard/hr' },
+        { label: t('subMenu.teams'), onClick: handleHRClick, value: 'employees', path: '/dashboard/employees' },
+        { label: t('subMenu.timesheets'), onClick: handleHRClick, value: 'timesheets', path: '/dashboard/timesheets' },
+        { label: t('subMenu.managePay'), onClick: handleHRClick, value: 'pay', path: '/dashboard/pay' },
+        { label: t('subMenu.benefits'), onClick: handleHRClick, value: 'benefits', path: '/dashboard/benefits' },
+        { label: t('mainMenu.reports'), onClick: handleHRClick, value: 'reports', path: '/dashboard/reports' },
+        { label: t('subMenu.teams'), onClick: handleHRClick, value: 'performance', path: '/dashboard/performance' },
       ],
     },
     {
       icon: <NavIcons.Payments className="w-5 h-5" />,
-      label: 'Payroll',
+      label: t('mainMenu.payroll'),
       subItems: [
         { 
-          label: 'Dashboard', 
+          label: t('subMenu.dashboard'), 
           onClick: (value) => {
             // Create navigation event for payroll dashboard
             const navigationKey = `nav-${Date.now()}`;
@@ -1477,7 +1479,7 @@ const MainListItems = ({
           value: 'dashboard' 
         },
         { 
-          label: 'Run Payroll Wizard', 
+          label: t('subMenu.processPayroll'), 
           onClick: (value) => {
             // Create navigation event for payroll wizard
             const navigationKey = `nav-${Date.now()}`;
@@ -1499,7 +1501,7 @@ const MainListItems = ({
           value: 'payroll-wizard' 
         },
         { 
-          label: 'Payroll Transactions', 
+          label: t('subMenu.processPayroll'), 
           onClick: (value) => {
             // Create navigation event for payroll transactions
             const navigationKey = `nav-${Date.now()}`;
@@ -1521,7 +1523,7 @@ const MainListItems = ({
           value: 'transactions' 
         },
         { 
-          label: 'Reports', 
+          label: t('mainMenu.reports'), 
           onClick: (value) => {
             // Create navigation event for payroll reports
             const navigationKey = `nav-${Date.now()}`;
@@ -1546,10 +1548,10 @@ const MainListItems = ({
     },
     {
       icon: <NavIcons.Receipt className="w-5 h-5" />,
-      label: 'Taxes',
+      label: t('mainMenu.taxes'),
       subItems: [
         { 
-          label: 'Dashboard', 
+          label: t('subMenu.dashboard'), 
           onClick: (value) => {
             // Create navigation event for taxes dashboard
             const navigationKey = `nav-${Date.now()}`;
@@ -1571,7 +1573,7 @@ const MainListItems = ({
           value: 'taxes-dashboard' 
         },
         { 
-          label: 'Tax Settings', 
+          label: t('subMenu.taxSetup'), 
           onClick: (value) => {
             // Create navigation event for tax settings
             const navigationKey = `nav-${Date.now()}`;
@@ -1593,7 +1595,7 @@ const MainListItems = ({
           value: 'tax-settings' 
         },
         { 
-          label: 'Tax Filing', 
+          label: t('subMenu.filings'), 
           onClick: (value) => {
             // Create navigation event for tax filing
             const navigationKey = `nav-${Date.now()}`;
@@ -1615,7 +1617,7 @@ const MainListItems = ({
           value: 'tax-filing' 
         },
         { 
-          label: 'Reports', 
+          label: t('mainMenu.reports'), 
           onClick: (value) => {
             // Create navigation event for tax reports
             const navigationKey = `nav-${Date.now()}`;
@@ -1640,10 +1642,10 @@ const MainListItems = ({
     },
     {
       icon: <NavIcons.Reports className="w-5 h-5" />,
-      label: 'Reports',
+      label: t('mainMenu.reports'),
       subItems: [
         { 
-          label: 'Dashboard', 
+          label: t('subMenu.dashboard'), 
           onClick: (value) => {
             // Create navigation event for reports dashboard
             const navigationKey = `nav-${Date.now()}`;
@@ -1665,7 +1667,7 @@ const MainListItems = ({
           value: 'reports-dashboard' 
         },
         { 
-          label: 'Profit & Loss Statement', 
+          label: t('reports.financialReports'), 
           onClick: (value) => {
             // Create navigation event for income statement
             const navigationKey = `nav-${Date.now()}`;
@@ -1687,7 +1689,7 @@ const MainListItems = ({
           value: 'income_statement' 
         },
         { 
-          label: 'Balance Sheet', 
+          label: t('reports.financialReports'), 
           onClick: (value) => {
             // Create navigation event for balance sheet
             const navigationKey = `nav-${Date.now()}`;
@@ -1709,7 +1711,7 @@ const MainListItems = ({
           value: 'balance_sheet' 
         },
         { 
-          label: 'Cash Flow', 
+          label: t('reports.financialReports'), 
           onClick: (value) => {
             // Create navigation event for cash flow
             const navigationKey = `nav-${Date.now()}`;
@@ -1731,7 +1733,7 @@ const MainListItems = ({
           value: 'cash_flow' 
         },
         { 
-          label: 'Sales Tax ', 
+          label: t('reports.taxReports'), 
           onClick: (value) => {
             // Create navigation event for sales tax report
             const navigationKey = `nav-${Date.now()}`;
@@ -1753,7 +1755,7 @@ const MainListItems = ({
           value: 'sales_tax_report' 
         },
         { 
-          label: 'Payroll Wage Tax', 
+          label: t('reports.payrollReports'), 
           onClick: (value) => {
             // Create navigation event for payroll wage tax report
             const navigationKey = `nav-${Date.now()}`;
@@ -1775,7 +1777,7 @@ const MainListItems = ({
           value: 'payroll_wage_tax_report' 
         },
         { 
-          label: 'Income by Customer', 
+          label: t('reports.salesReports'), 
           onClick: (value) => {
             // Create navigation event for income by customer report
             const navigationKey = `nav-${Date.now()}`;
@@ -1797,7 +1799,7 @@ const MainListItems = ({
           value: 'income_by_customer' 
         },
         { 
-          label: 'Aged Receivables', 
+          label: t('reports.financialReports'), 
           onClick: (value) => {
             // Create navigation event for aged receivables report
             const navigationKey = `nav-${Date.now()}`;
@@ -1819,7 +1821,7 @@ const MainListItems = ({
           value: 'aged_receivables' 
         },
         { 
-          label: 'Purchases by Vendor', 
+          label: t('reports.financialReports'), 
           onClick: (value) => {
             // Create navigation event for purchases by vendor report
             const navigationKey = `nav-${Date.now()}`;
@@ -1841,7 +1843,7 @@ const MainListItems = ({
           value: 'purchases_by_vendor' 
         },
         { 
-          label: 'Aged Payables', 
+          label: t('reports.financialReports'), 
           onClick: (value) => {
             // Create navigation event for aged payables report
             const navigationKey = `nav-${Date.now()}`;
@@ -1863,7 +1865,7 @@ const MainListItems = ({
           value: 'aged_payables' 
         },
         { 
-          label: 'Account Balances', 
+          label: t('reports.financialReports'), 
           onClick: (value) => {
             // Create navigation event for account balances report
             const navigationKey = `nav-${Date.now()}`;
@@ -1885,7 +1887,7 @@ const MainListItems = ({
           value: 'account_balances' 
         },
         { 
-          label: 'Trial Balances', 
+          label: t('reports.financialReports'), 
           onClick: (value) => {
             // Create navigation event for trial balance report
             const navigationKey = `nav-${Date.now()}`;
@@ -1907,7 +1909,7 @@ const MainListItems = ({
           value: 'trial_balance' 
         },
         { 
-          label: 'General Ledger', 
+          label: t('subMenu.generalLedger'), 
           onClick: (value) => {
             // Create navigation event for general ledger report
             const navigationKey = `nav-${Date.now()}`;
@@ -1932,7 +1934,7 @@ const MainListItems = ({
     },
     {
       icon: <NavIcons.Analytics className="w-5 h-5" />,
-      label: 'Analytics',
+      label: t('mainMenu.aiPoweredInsights'),
       onClick: () => {
         // Create navigation event for analytics dashboard
         const navigationKey = `nav-${Date.now()}`;
@@ -1954,7 +1956,7 @@ const MainListItems = ({
     },
     {
       icon: <NavIcons.SmartBusiness className="w-5 h-5" />,
-      label: 'Smart Insight',
+      label: t('mainMenu.smartBusinessAI'),
       onClick: () => {
         // Create navigation event for Smart Insight AI
         const navigationKey = `nav-${Date.now()}`;
@@ -1976,7 +1978,7 @@ const MainListItems = ({
     },
     {
       icon: <NavIcons.WhatsAppBusiness className="w-5 h-5" />,
-      label: 'WhatsApp Business',
+      label: t('mainMenu.whatsappBusiness'),
       onClick: () => {
         // Create navigation event for WhatsApp Business
         const navigationKey = `nav-${Date.now()}`;
@@ -1999,7 +2001,7 @@ const MainListItems = ({
     },
     {
       icon: <NavIcons.ImportExport className="w-5 h-5" />,
-      label: 'Import/Export',
+      label: t('mainMenu.importExport'),
       onClick: () => {
         // Create navigation event for Import/Export
         const navigationKey = `nav-${Date.now()}`;
@@ -2033,7 +2035,7 @@ const MainListItems = ({
     },
     {
       icon: <NavIcons.InviteFriend className="w-5 h-5" />,
-      label: 'Invite a Business Owner',
+      label: t('mainMenu.inviteBusinessOwner'),
       onClick: () => {
         // Create navigation event for Invite a Business Owner
         const navigationKey = `nav-${Date.now()}`;

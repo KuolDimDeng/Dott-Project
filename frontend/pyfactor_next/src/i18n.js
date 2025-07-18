@@ -99,12 +99,32 @@ import amCalendar from '../public/locales/am/calendar.json';
 import zuCalendar from '../public/locales/zu/calendar.json';
 import koCalendar from '../public/locales/ko/calendar.json';
 
+// Import navigation namespaces
+import enNavigation from '../public/locales/en/navigation.json';
+
+// Import settings namespaces
+import enSettings from '../public/locales/en/settings.json';
+
+// Import profile namespaces
+import enProfile from '../public/locales/en/profile.json';
+
+// Import help namespaces
+import enHelp from '../public/locales/en/help.json';
+
+// Import dashboard namespaces
+import enDashboard from '../public/locales/en/dashboard.json';
+
 const resources = {
   en: {
     common: enCommon,
     onboarding: enOnboarding,
     auth: enAuth,
-    calendar: enCalendar
+    calendar: enCalendar,
+    navigation: enNavigation,
+    settings: enSettings,
+    profile: enProfile,
+    help: enHelp,
+    dashboard: enDashboard
   },
   es: {
     common: esCommon,

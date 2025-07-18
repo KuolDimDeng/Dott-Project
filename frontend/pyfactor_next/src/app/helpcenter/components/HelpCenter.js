@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { axiosInstance } from '@/lib/axiosConfig';
 import Image from 'next/image';
 import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
+import { useTranslation } from 'react-i18next';
 
 const faqs = [
   // Getting Started
@@ -165,6 +166,7 @@ const faqs = [
 ];
 
 const HelpCenter = () => {
+  const { t } = useTranslation('help');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [name, setName] = useState('');

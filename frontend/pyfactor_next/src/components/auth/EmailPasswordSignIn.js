@@ -349,6 +349,15 @@ export default function EmailPasswordSignIn() {
 
       const loginResult = await loginResponse.json();
       console.log('[EmailPasswordSignIn] Login result:', loginResult);
+      console.log('[EmailPasswordSignIn] Login result details:', {
+        success: loginResult.success,
+        hasSessionToken: !!loginResult.sessionToken,
+        hasSession_token: !!loginResult.session_token,
+        useSessionBridge: loginResult.useSessionBridge,
+        user: loginResult.user ? { email: loginResult.user.email, id: loginResult.user.id } : null,
+        tenant: loginResult.tenant ? { id: loginResult.tenant.id, name: loginResult.tenant.name } : null,
+        needs_onboarding: loginResult.needs_onboarding
+      });
 
       if (!loginResponse.ok) {
         // Handle rate limiting (429 status)

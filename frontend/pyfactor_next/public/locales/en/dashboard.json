@@ -1,0 +1,106 @@
+{
+  "_comment": "Dashboard page translations",
+  "title": "Dashboard",
+  "welcome": "Welcome back",
+  "overview": "Overview",
+  "widgets": {
+    "revenue": "Revenue",
+    "sales": "Sales",
+    "customers": "Customers",
+    "inventory": "Inventory",
+    "expenses": "Expenses",
+    "profit": "Profit",
+    "orders": "Orders",
+    "invoices": "Invoices"
+  },
+  "charts": {
+    "salesOverview": "Sales Overview",
+    "revenueChart": "Revenue Chart",
+    "topProducts": "Top Products",
+    "customerGrowth": "Customer Growth",
+    "expenseBreakdown": "Expense Breakdown",
+    "inventoryStatus": "Inventory Status",
+    "monthlyComparison": "Monthly Comparison",
+    "yearlyTrends": "Yearly Trends"
+  },
+  "stats": {
+    "today": "Today",
+    "thisWeek": "This Week",
+    "thisMonth": "This Month",
+    "thisYear": "This Year",
+    "total": "Total",
+    "average": "Average",
+    "growth": "Growth",
+    "decline": "Decline",
+    "change": "Change",
+    "vs": "vs",
+    "lastPeriod": "last period"
+  },
+  "quickActions": {
+    "title": "Quick Actions",
+    "createInvoice": "Create Invoice",
+    "addProduct": "Add Product",
+    "recordSale": "Record Sale",
+    "addCustomer": "Add Customer",
+    "processPayroll": "Process Payroll",
+    "viewReports": "View Reports",
+    "manageInventory": "Manage Inventory",
+    "sendInvoice": "Send Invoice"
+  },
+  "recentActivity": {
+    "title": "Recent Activity",
+    "newSale": "New sale",
+    "invoicePaid": "Invoice paid",
+    "productAdded": "Product added",
+    "customerAdded": "Customer added",
+    "paymentReceived": "Payment received",
+    "orderShipped": "Order shipped",
+    "lowStock": "Low stock alert",
+    "viewAll": "View all activity"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "unread": "unread",
+    "markAllRead": "Mark all as read",
+    "noNotifications": "No new notifications",
+    "settings": "Notification settings"
+  },
+  "performance": {
+    "title": "Performance Metrics",
+    "salesTarget": "Sales Target",
+    "achieved": "Achieved",
+    "remaining": "Remaining",
+    "onTrack": "On Track",
+    "behindTarget": "Behind Target",
+    "exceededTarget": "Exceeded Target"
+  },
+  "filters": {
+    "dateRange": "Date Range",
+    "customRange": "Custom Range",
+    "apply": "Apply",
+    "reset": "Reset",
+    "from": "From",
+    "to": "To",
+    "selectDate": "Select date"
+  },
+  "empty": {
+    "noData": "No data available",
+    "noSales": "No sales recorded",
+    "noCustomers": "No customers yet",
+    "noProducts": "No products added",
+    "getStarted": "Get Started",
+    "addFirst": "Add your first"
+  },
+  "loading": {
+    "loadingData": "Loading data...",
+    "refreshing": "Refreshing...",
+    "calculating": "Calculating...",
+    "updating": "Updating..."
+  },
+  "errors": {
+    "loadFailed": "Failed to load data",
+    "tryAgain": "Try again",
+    "refresh": "Refresh",
+    "connectionError": "Connection error"
+  }
+}

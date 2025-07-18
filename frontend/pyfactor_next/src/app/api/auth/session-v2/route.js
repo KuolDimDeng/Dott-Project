@@ -306,7 +306,7 @@ export async function POST(request) {
       secure: isProduction,
       sameSite: 'lax',  // Use 'lax' for better compatibility with Cloudflare
       expires: new Date(sessionData.expires_at),
-      path: '/'
+      path: '/',
       // Don't set domain to allow it to default to current domain
     };
     
