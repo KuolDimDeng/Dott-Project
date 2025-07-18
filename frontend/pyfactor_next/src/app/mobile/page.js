@@ -64,17 +64,16 @@ export default function MobilePage() {
   
   const shouldShowWhatsAppBusiness = () => {
     try {
-      const userCountry = getUserCountry();
-      const whatsappVisibility = getWhatsAppBusinessVisibility(userCountry);
-      
-      // If country shows WhatsApp Business in menu by default
-      if (whatsappVisibility.showInMenu) {
-        return true;
+      // Use the profile preference from the session (database-backed)
+      // This is the same logic used in the main dashboard menu
+      if (session?.user?.show_whatsapp_commerce !== undefined) {
+        return session.user.show_whatsapp_commerce;
       }
       
-      // If country doesn't show by default, check user's settings
-      const whatsappSettings = localStorage.getItem('whatsapp_business_enabled');
-      return whatsappSettings === 'true';
+      // Fallback to country-based detection if profile preference not available
+      const userCountry = getUserCountry();
+      const whatsappVisibility = getWhatsAppBusinessVisibility(userCountry);
+      return whatsappVisibility.showInMenu;
     } catch (error) {
       console.error('Error checking WhatsApp Business visibility:', error);
       return false;
