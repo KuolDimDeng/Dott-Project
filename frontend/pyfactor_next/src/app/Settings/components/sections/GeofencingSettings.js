@@ -56,19 +56,17 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
     // Initialize Google Maps
     const initMap = async () => {
       console.log('[GeofencingSettings] Starting map initialization...');
+      console.log('[GeofencingSettings] isVisible:', isVisible);
+      console.log('[GeofencingSettings] mapContainerRef.current:', mapContainerRef.current);
       
       // Wait a bit for the DOM to be ready
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       // Check if map container exists
       if (!mapContainerRef.current) {
-        console.error('Map container not found - waiting and retrying...');
-        // Try again after a short delay
-        setTimeout(() => {
-          if (mapContainerRef.current && isVisible) {
-            initMap();
-          }
-        }, 500);
+        console.error('Map container not found after 500ms delay');
+        console.log('[GeofencingSettings] Current DOM elements with map-related classes:', 
+          document.querySelectorAll('[class*="map"], [ref*="map"], [id*="map"]'));
         return;
       }
 

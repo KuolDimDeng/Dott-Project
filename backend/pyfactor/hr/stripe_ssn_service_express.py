@@ -11,11 +11,13 @@ import json
 
 logger = get_logger()
 
-# Initialize Stripe
-stripe.api_key = settings.STRIPE_SECRET_KEY
-
 # Import Express Connect account ID from config
 from .stripe_config import STRIPE_EXPRESS_ACCOUNT_ID as EXPRESS_ACCOUNT_ID
+
+def _initialize_stripe():
+    """Initialize Stripe API key if not already set"""
+    if not stripe.api_key:
+        stripe.api_key = settings.STRIPE_SECRET_KEY
 
 
 class StripeSSNService:
@@ -59,6 +61,8 @@ class StripeSSNService:
         Returns: (success, message)
         """
         try:
+            # Initialize Stripe API key
+            _initialize_stripe()
             # Validate SSN
             is_valid, ssn_or_error = StripeSSNService.validate_ssn(ssn)
             if not is_valid:
@@ -164,6 +168,8 @@ class StripeSSNService:
         Retrieve the last 4 digits of SSN from Stripe
         """
         try:
+            # Initialize Stripe API key
+            _initialize_stripe()
             if not employee.stripe_account_id:
                 return None
             
@@ -185,6 +191,8 @@ class StripeSSNService:
     def delete_stripe_account(employee):
         """Delete the Stripe customer when employee is deleted"""
         try:
+            # Initialize Stripe API key
+            _initialize_stripe()
             if employee.stripe_account_id:
                 logger.info(f"[StripeSSN] Deleting Stripe customer {employee.stripe_account_id}")
                 stripe.Customer.delete(

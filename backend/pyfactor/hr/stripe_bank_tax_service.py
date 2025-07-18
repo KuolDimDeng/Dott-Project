@@ -12,11 +12,13 @@ from django.utils import timezone
 
 logger = get_logger()
 
-# Initialize Stripe
-stripe.api_key = settings.STRIPE_SECRET_KEY
-
 # Import Express Connect account ID from config
 from .stripe_config import STRIPE_EXPRESS_ACCOUNT_ID as EXPRESS_ACCOUNT_ID
+
+def _initialize_stripe():
+    """Initialize Stripe API key if not already set"""
+    if not stripe.api_key:
+        stripe.api_key = settings.STRIPE_SECRET_KEY
 
 
 class StripeBankTaxService:
@@ -82,6 +84,8 @@ class StripeBankTaxService:
         Returns: (success, message)
         """
         try:
+            # Initialize Stripe API key
+            _initialize_stripe()
             # Validate routing number
             is_valid, routing_or_error = StripeBankTaxService.validate_routing_number(
                 bank_data.get('routing_number')
@@ -180,6 +184,8 @@ class StripeBankTaxService:
         Returns: (success, message)
         """
         try:
+            # Initialize Stripe API key
+            _initialize_stripe()
             logger.info(f"[StripeBankTax] Storing tax info for employee {employee.id}")
             
             # Ensure employee has a Stripe customer ID
@@ -253,6 +259,8 @@ class StripeBankTaxService:
         Returns dict with last 4 digits and account type, or None
         """
         try:
+            # Initialize Stripe API key
+            _initialize_stripe()
             if not employee.stripe_account_id:
                 return None
             
@@ -283,6 +291,8 @@ class StripeBankTaxService:
         Returns dict with tax settings, or None
         """
         try:
+            # Initialize Stripe API key
+            _initialize_stripe()
             if not employee.stripe_account_id:
                 return None
             
@@ -315,6 +325,8 @@ class StripeBankTaxService:
         Returns last 4 digits or None
         """
         try:
+            # Initialize Stripe API key
+            _initialize_stripe()
             if not employee.stripe_account_id:
                 return None
             
