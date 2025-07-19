@@ -10,7 +10,7 @@ const integrations = {
       name: 'WhatsApp Business',
       logo: '/images/integrations/whatsapp.jpg',
       description: 'Send invoices and receipts directly to customers',
-      hasLogo: false // Logo file not found, will use placeholder
+      hasLogo: true
     },
     {
       name: 'M-Pesa',
@@ -22,7 +22,7 @@ const integrations = {
       name: 'Stripe',
       logo: '/images/integrations/stripe.jpg',
       description: 'Process card payments globally',
-      hasLogo: false // Logo file not found, will use placeholder
+      hasLogo: true
     }
   ],
   comingSoon: [

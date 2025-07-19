@@ -27,7 +27,34 @@ export default function Hero() {
           
           <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl">
             <span className="block text-transparent bg-clip-text bg-gradient-to-r from-primary-main to-primary-light">
-              <span className="italic">Your</span> Global Business Platform
+              <span className="relative inline-block">
+                <span className="italic relative z-10">Your</span>
+                <svg 
+                  className="absolute -inset-x-6 -inset-y-2 w-[calc(100%+3rem)] h-[calc(100%+1rem)]" 
+                  viewBox="0 0 120 60" 
+                  fill="none"
+                  preserveAspectRatio="none"
+                >
+                  <path
+                    d="M 10,30 Q 20,15 60,12 T 110,30 Q 100,45 60,48 T 10,30"
+                    stroke="#FF6B6B"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    fill="none"
+                    opacity="0.7"
+                    strokeDasharray="0"
+                  >
+                    <animate
+                      attributeName="strokeDasharray"
+                      from="0 400"
+                      to="400 0"
+                      dur="1.5s"
+                      begin="0.5s"
+                      fill="freeze"
+                    />
+                  </path>
+                </svg>
+              </span>{' '}Global Business Platform
             </span>
           </h1>
           

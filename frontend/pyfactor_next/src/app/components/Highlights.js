@@ -71,7 +71,15 @@ export default function Highlights() {
                       <p className="text-sm font-medium text-gray-500 mb-3">Integrated with:</p>
                       <div className="flex flex-wrap gap-4">
                         <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg shadow-sm border border-gray-100">
-                          <span className="text-green-600 font-bold">W</span>
+                          <div className="w-8 h-6 relative flex items-center justify-center">
+                            <Image
+                              src="/images/integrations/whatsapp.jpg"
+                              alt="WhatsApp"
+                              width={32}
+                              height={24}
+                              className="max-w-full max-h-full object-contain"
+                            />
+                          </div>
                           <span className="text-sm font-medium text-gray-700">WhatsApp</span>
                         </div>
                         <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg shadow-sm border border-gray-100">
@@ -87,7 +95,15 @@ export default function Highlights() {
                           <span className="text-sm font-medium text-gray-700">M-Pesa</span>
                         </div>
                         <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg shadow-sm border border-gray-100">
-                          <span className="text-purple-600 font-bold">S</span>
+                          <div className="w-8 h-6 relative flex items-center justify-center">
+                            <Image
+                              src="/images/integrations/stripe.jpg"
+                              alt="Stripe"
+                              width={32}
+                              height={24}
+                              className="max-w-full max-h-full object-contain"
+                            />
+                          </div>
                           <span className="text-sm font-medium text-gray-700">Stripe</span>
                         </div>
                         <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 opacity-60">
