@@ -30,25 +30,25 @@ export default function Hero() {
               <span className="relative inline-block">
                 <span className="italic relative z-10">Your</span>
                 <svg 
-                  className="absolute -inset-x-6 -inset-y-2 w-[calc(100%+3rem)] h-[calc(100%+1rem)]" 
-                  viewBox="0 0 120 60" 
+                  className="absolute -bottom-1 left-0 w-full h-3" 
+                  viewBox="0 0 100 12" 
                   fill="none"
                   preserveAspectRatio="none"
                 >
                   <path
-                    d="M 10,30 Q 20,15 60,12 T 110,30 Q 100,45 60,48 T 10,30"
+                    d="M 5,8 Q 25,6 50,7 T 95,8"
                     stroke="#FF6B6B"
-                    strokeWidth="2.5"
+                    strokeWidth="3"
                     strokeLinecap="round"
                     fill="none"
-                    opacity="0.7"
+                    opacity="0.8"
                     strokeDasharray="0"
                   >
                     <animate
                       attributeName="strokeDasharray"
-                      from="0 400"
-                      to="400 0"
-                      dur="1.5s"
+                      from="0 100"
+                      to="100 0"
+                      dur="0.8s"
                       begin="0.5s"
                       fill="freeze"
                     />

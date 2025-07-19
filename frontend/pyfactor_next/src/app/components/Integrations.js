@@ -42,7 +42,7 @@ const integrations = {
       name: 'QuickBooks',
       logo: '/images/integrations/quickbooks.jpg',
       description: 'Import and export accounting data',
-      hasLogo: false // Logo file not found, will use placeholder
+      hasLogo: true
     },
     {
       name: 'Amazon Seller',
