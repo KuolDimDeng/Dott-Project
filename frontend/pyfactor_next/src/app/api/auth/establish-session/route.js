@@ -24,8 +24,7 @@ export async function POST(request) {
       return NextResponse.redirect(new URL('/auth/signin?error=no_session_token', baseUrl));
     }
     
-    // Form POST handler that sets cookies and redirects
-    const cookieStore = await cookies();
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://dottapps.com';
     const isProduction = process.env.NODE_ENV === 'production';
     
     const cookieOptions = {
@@ -33,23 +32,24 @@ export async function POST(request) {
       secure: isProduction,
       sameSite: 'lax',
       path: '/',
-      maxAge: 86400 // 24 hours
+      maxAge: 86400, // 24 hours
+      // Set domain explicitly for production
+      ...(isProduction && { domain: '.dottapps.com' })
     };
     
-    // Clear old session cookies first
-    cookieStore.set('sid', '', { ...cookieOptions, maxAge: 0 });
-    cookieStore.set('session_token', '', { ...cookieOptions, maxAge: 0 });
+    console.log('[EstablishSession] Cookie options:', cookieOptions);
     
-    // Set new session cookies
-    cookieStore.set('sid', token, cookieOptions);
-    cookieStore.set('session_token', token, cookieOptions);
+    // Create the redirect response first
+    const redirectResponse = NextResponse.redirect(new URL(redirectUrl, baseUrl));
     
-    console.log('[EstablishSession] Cookies set successfully');
+    // Set cookies on the redirect response
+    redirectResponse.cookies.set('sid', token, cookieOptions);
+    redirectResponse.cookies.set('session_token', token, cookieOptions);
+    
+    console.log('[EstablishSession] Cookies set on redirect response');
     console.log('[EstablishSession] Redirecting to:', redirectUrl);
     
-    // Return redirect response - cookies will be set on this response
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://dottapps.com';
-    return NextResponse.redirect(new URL(redirectUrl, baseUrl));
+    return redirectResponse;
     
   } catch (error) {
     console.error('[EstablishSession] Error:', error);
