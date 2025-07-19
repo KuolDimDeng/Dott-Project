@@ -209,6 +209,20 @@ class ConsolidatedAuthView(View):
             max_age = getattr(settings, 'SESSION_TTL', 86400)  # 24 hours
             samesite_policy = 'Lax'  # Changed back to Lax for better compatibility
             
+            # Determine domain based on environment
+            cookie_domain = None
+            if not settings.DEBUG:
+                # In production, use the specific domain
+                cookie_domain = '.dottapps.com'
+            
+            logger.info(f"[ConsolidatedAuth] Cookie configuration:")
+            logger.info(f"  - Domain: {cookie_domain or 'None (default)'}")
+            logger.info(f"  - Secure: {not settings.DEBUG}")
+            logger.info(f"  - SameSite: {samesite_policy}")
+            logger.info(f"  - HttpOnly: True")
+            logger.info(f"  - Path: /")
+            logger.info(f"  - Max Age: {max_age}")
+            
             response.set_cookie(
                 'sid',
                 str(session.session_id),
@@ -216,7 +230,7 @@ class ConsolidatedAuthView(View):
                 httponly=True,
                 secure=not settings.DEBUG,
                 samesite=samesite_policy,
-                domain=None,
+                domain=cookie_domain,
                 path='/'
             )
             
@@ -227,7 +241,7 @@ class ConsolidatedAuthView(View):
                 httponly=True,
                 secure=not settings.DEBUG,
                 samesite=samesite_policy,
-                domain=None,
+                domain=cookie_domain,
                 path='/'
             )
             
@@ -238,6 +252,12 @@ class ConsolidatedAuthView(View):
             logger.info(f"  - HttpOnly: True")
             logger.info(f"  - Secure: {not settings.DEBUG}")
             logger.info(f"  - SameSite: {samesite_policy}")
+            logger.info(f"  - Domain: {cookie_domain or 'None (default)'}")
+            
+            # Log the actual Set-Cookie headers
+            logger.info(f"[ConsolidatedAuth] Response cookies:")
+            for key, morsel in response.cookies.items():
+                logger.info(f"  - {key}: {morsel.value[:20]}... [{morsel}]")
             
             # Add CORS headers
             origin = request.META.get('HTTP_ORIGIN')

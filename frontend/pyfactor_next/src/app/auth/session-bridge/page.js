@@ -99,20 +99,45 @@ export default function SessionBridge() {
           console.log('[SessionBridge] ✅ Session established successfully via AJAX');
           console.log('[SessionBridge] 🔄 Redirecting to:', result.redirectUrl);
           
+          // Debug: Check cookie status immediately
+          console.log('[SessionBridge] 🔍 Checking cookie status immediately after AJAX...');
+          try {
+            const cookieDebugResponse = await fetch('/api/auth/debug-cookies');
+            const cookieDebug = await cookieDebugResponse.json();
+            console.log('[SessionBridge] 🔍 Cookie debug info:', cookieDebug);
+          } catch (debugError) {
+            console.error('[SessionBridge] Error checking cookie status:', debugError);
+          }
+          
           // Verify cookies are set before redirecting
-          const verifyCookiesAndRedirect = () => {
+          const verifyCookiesAndRedirect = async () => {
             // Check if cookies are visible to JavaScript (though session cookies are httpOnly)
             const allCookies = document.cookie;
-            console.log('[SessionBridge] Cookie check before redirect:', allCookies);
+            console.log('[SessionBridge] Cookie check before redirect (document.cookie):', allCookies);
+            
+            // Double-check with debug endpoint
+            console.log('[SessionBridge] 🔍 Final cookie check before redirect...');
+            try {
+              const finalDebugResponse = await fetch('/api/auth/debug-cookies');
+              const finalDebug = await finalDebugResponse.json();
+              console.log('[SessionBridge] 🔍 Final cookie status:', finalDebug);
+              
+              if (!finalDebug.cookies.session.sid.exists && !finalDebug.cookies.session.session_token.exists) {
+                console.error('[SessionBridge] ⚠️ WARNING: Session cookies not found after establishment!');
+                console.log('[SessionBridge] ⚠️ Proceeding with redirect anyway...');
+              }
+            } catch (finalDebugError) {
+              console.error('[SessionBridge] Error in final cookie check:', finalDebugError);
+            }
             
             // Add a slightly longer delay to ensure cookies are processed
             setTimeout(() => {
               console.log('[SessionBridge] Performing redirect to:', result.redirectUrl);
               window.location.href = result.redirectUrl;
-            }, 300);
+            }, 500);
           };
           
-          verifyCookiesAndRedirect();
+          await verifyCookiesAndRedirect();
         } else {
           console.error('[SessionBridge] ❌ AJAX session establishment failed:', result.error);
           router.push('/auth/signin?error=session_establishment_failed');

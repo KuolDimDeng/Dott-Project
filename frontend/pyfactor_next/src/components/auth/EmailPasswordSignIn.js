@@ -468,6 +468,9 @@ export default function EmailPasswordSignIn() {
       // If session was created successfully, use secure bridge
       if (loginResult.success && loginResult.useSessionBridge) {
         logger.info('[EmailPasswordSignIn] Session created successfully, using session bridge');
+        console.log('🔍 [EmailPasswordSignIn] ===== SESSION BRIDGE FLOW START =====');
+        console.log('🔍 [EmailPasswordSignIn] Session token:', loginResult.sessionToken || loginResult.session_token ? 'Present' : 'MISSING');
+        console.log('🔍 [EmailPasswordSignIn] Token length:', (loginResult.sessionToken || loginResult.session_token)?.length);
         
         // Store session data in sessionStorage for the bridge
         const bridgeData = {
@@ -478,8 +481,20 @@ export default function EmailPasswordSignIn() {
           tenantId: loginResult.tenant?.id || loginResult.tenant_id
         };
         
-        console.log('[EmailPasswordSignIn] Storing bridge data in sessionStorage');
+        console.log('🔍 [EmailPasswordSignIn] Bridge data to store:', {
+          hasToken: !!bridgeData.token,
+          tokenLength: bridgeData.token?.length,
+          redirectUrl: bridgeData.redirectUrl,
+          email: bridgeData.email,
+          tenantId: bridgeData.tenantId
+        });
+        console.log('🔍 [EmailPasswordSignIn] Storing bridge data in sessionStorage');
         sessionStorage.setItem('session_bridge', JSON.stringify(bridgeData));
+        
+        // Verify it was stored
+        const storedData = sessionStorage.getItem('session_bridge');
+        console.log('🔍 [EmailPasswordSignIn] Verification - bridge data stored:', !!storedData);
+        console.log('🔍 [EmailPasswordSignIn] ===== SESSION BRIDGE FLOW END =====')
         
         // Identify user in PostHog with complete data
         if (posthog) {
@@ -503,7 +518,13 @@ export default function EmailPasswordSignIn() {
         });
         
         // Redirect to session bridge page
-        console.log('[EmailPasswordSignIn] Redirecting to session bridge...');
+        console.log('🚀 [EmailPasswordSignIn] Redirecting to session bridge...');
+        console.log('🚀 [EmailPasswordSignIn] Expected flow:');
+        console.log('🚀 [EmailPasswordSignIn]   1. Navigate to /auth/session-bridge');
+        console.log('🚀 [EmailPasswordSignIn]   2. Bridge reads token from sessionStorage');
+        console.log('🚀 [EmailPasswordSignIn]   3. Bridge calls /api/auth/establish-session-ajax');
+        console.log('🚀 [EmailPasswordSignIn]   4. API sets httpOnly cookies');
+        console.log('🚀 [EmailPasswordSignIn]   5. Bridge redirects to:', redirectUrl);
         router.push('/auth/session-bridge');
         return;
       } else if (loginResult.success) {
