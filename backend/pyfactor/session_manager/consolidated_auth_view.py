@@ -75,6 +75,17 @@ class ConsolidatedAuthView(View):
             logger.info(f"  - email: {email}")
             logger.info(f"  - has_access_token: {bool(access_token)}")
             logger.info(f"  - access_token length: {len(access_token) if access_token else 0}")
+            logger.info(f"  - access_token first 20 chars: {access_token[:20] if access_token else 'NONE'}")
+            logger.info(f"  - access_token last 20 chars: {access_token[-20:] if access_token else 'NONE'}")
+            
+            # Check if this is a backend session (when access_token is actually a session_id)
+            # This happens when authenticating through the backend-auth endpoint
+            if access_token and len(access_token) == 36 and '-' in access_token:
+                logger.info(f"[ConsolidatedAuth] Access token appears to be a session ID (UUID format)")
+                # Generate a dummy token for session creation
+                import secrets
+                access_token = f"backend_session_{secrets.token_urlsafe(32)}"
+                logger.info(f"[ConsolidatedAuth] Generated dummy access token for backend session")
             
             if not auth0_sub or not email or not access_token:
                 logger.error(f"[ConsolidatedAuth] Missing required fields")
@@ -175,10 +186,18 @@ class ConsolidatedAuthView(View):
                 logger.info(f"  - Session ID: {session.session_id}")
                 logger.info(f"  - Expires at: {session.expires_at}")
                 
+                # Force session refresh from DB to ensure it's saved
+                session.refresh_from_db()
+                
                 # Verify session was saved to database
                 from .models import UserSession
                 verify_session = UserSession.objects.filter(session_id=session.session_id).exists()
                 logger.info(f"[ConsolidatedAuth] Session verification - exists in DB: {verify_session}")
+                
+                if not verify_session:
+                    logger.error(f"[ConsolidatedAuth] CRITICAL: Session was not saved to database!")
+                    logger.error(f"[ConsolidatedAuth] Session ID that failed: {session.session_id}")
+                    raise Exception("Session creation failed - not saved to database")
                 
             except Exception as e:
                 logger.error(f"[ConsolidatedAuth] Session creation failed: {e}")

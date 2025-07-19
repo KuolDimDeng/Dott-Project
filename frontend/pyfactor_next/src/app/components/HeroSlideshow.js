@@ -128,7 +128,7 @@ export default function HeroSlideshow() {
 
   return (
     <div className="relative w-full max-w-7xl mx-auto px-8">
-      <div className="relative h-[500px] flex items-center justify-center">
+      <div className="relative h-[650px] flex items-center justify-center">
         {/* Previous slide */}
         <div className="absolute left-0 w-[35%] h-[85%] opacity-60 transform scale-95 -translate-x-4 z-10">
           <div className="relative w-full h-full rounded-lg overflow-hidden shadow-lg bg-gray-100">

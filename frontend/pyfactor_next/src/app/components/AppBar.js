@@ -269,6 +269,12 @@ export default function AppBar() {
             >
               {t('navAbout', 'About')}
             </button>
+            <button 
+              className="px-3 py-3 text-gray-700 hover:text-blue-600 font-medium transition-colors duration-150 leading-normal"
+              onClick={() => router.push('/blog')}
+            >
+              {t('navBlog', 'Blog')}
+            </button>
             <a 
               href="#contact"
               className="px-3 py-3 text-gray-700 hover:text-blue-600 font-medium transition-colors duration-150 leading-normal"
@@ -402,6 +408,15 @@ export default function AppBar() {
             }}
           >
             {t('navAbout', 'About')}
+          </button>
+          <button
+            className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-100"
+            onClick={() => {
+              router.push('/blog');
+              setIsMobileMenuOpen(false);
+            }}
+          >
+            {t('navBlog', 'Blog')}
           </button>
           <a
             href="#contact"
