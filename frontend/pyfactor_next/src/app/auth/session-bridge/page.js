@@ -90,8 +90,8 @@ export default function SessionBridge() {
       setSessionToken(token);
       setRedirectUrl(redirectUrl || '/dashboard');
       
-      // Try form submission first as it's more reliable for cookies
-      console.log('[SessionBridge] 📝 Attempting form-based session establishment...');
+      // Use form submission as it's more reliable for cookies with Cloudflare
+      console.log('[SessionBridge] 📝 Using form-based session establishment for Cloudflare compatibility...');
       
       // Create and submit form programmatically
       const form = document.createElement('form');
@@ -113,10 +113,10 @@ export default function SessionBridge() {
       
       document.body.appendChild(form);
       
-      console.log('[SessionBridge] 📨 Using AJAX instead of form submission for better cookie handling...');
-      // Comment out form submission to use AJAX instead
-      // form.submit();
-      // return;
+      console.log('[SessionBridge] 📨 Submitting form to establish session...');
+      // Use form submission for better cookie handling with Cloudflare
+      form.submit();
+      return;
       
       try {
         console.log('[SessionBridge] 🚀 Sending AJAX request to establish session...');

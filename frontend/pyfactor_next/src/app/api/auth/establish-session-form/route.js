@@ -30,12 +30,19 @@ export async function POST(request) {
     }
     
     const isProduction = process.env.NODE_ENV === 'production';
+    const isSecureContext = request.headers.get('x-forwarded-proto') === 'https' || 
+                           request.url.startsWith('https://') ||
+                           isProduction;
+    
     console.log('🔍 [EstablishSessionForm] Environment:', {
       NODE_ENV: process.env.NODE_ENV,
       isProduction,
+      isSecureContext,
       hostname: request.headers.get('host'),
       origin: request.headers.get('origin'),
-      referer: request.headers.get('referer')
+      referer: request.headers.get('referer'),
+      'x-forwarded-proto': request.headers.get('x-forwarded-proto'),
+      url: request.url
     });
     
     // Create redirect response with proper base URL
@@ -62,8 +69,8 @@ export async function POST(request) {
     // Set cookies with explicit options
     const cookieOptions = {
       httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax', // 'none' for Cloudflare compatibility in production
+      secure: isSecureContext, // Use secure context detection
+      sameSite: isSecureContext ? 'none' : 'lax', // 'none' for secure contexts
       path: '/',
       maxAge: 86400, // 24 hours
       // Remove domain specification for better Cloudflare compatibility
@@ -76,13 +83,10 @@ export async function POST(request) {
     response.cookies.set('sid', token, cookieOptions);
     response.cookies.set('session_token', token, cookieOptions);
     
-    // Also try setting via headers directly (without domain)
-    const sameSiteValue = isProduction ? 'none' : 'lax'; // 'none' for Cloudflare in production
-    const cookieString = `sid=${token}; HttpOnly; Secure=${isProduction}; SameSite=${sameSiteValue}; Path=/; Max-Age=86400`;
-    const sessionTokenString = `session_token=${token}; HttpOnly; Secure=${isProduction}; SameSite=${sameSiteValue}; Path=/; Max-Age=86400`;
-    
-    response.headers.append('Set-Cookie', cookieString);
-    response.headers.append('Set-Cookie', sessionTokenString);
+    // Log the actual Set-Cookie headers
+    console.log('🔍 [EstablishSessionForm] Getting Set-Cookie headers...');
+    const setCookieHeaders = response.headers.getSetCookie ? response.headers.getSetCookie() : [];
+    console.log('🔍 [EstablishSessionForm] Set-Cookie headers:', setCookieHeaders);
     
     console.log('🔍 [EstablishSessionForm] Response headers:', Object.fromEntries(response.headers.entries()));
     console.log('✅ [EstablishSessionForm] Cookies set, redirecting to:', redirectUrl);
