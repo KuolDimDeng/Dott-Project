@@ -63,7 +63,7 @@ export async function POST(request) {
     const cookieOptions = {
       httpOnly: true,
       secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax', // 'none' required for cross-origin in production
+      sameSite: 'lax', // Use 'lax' for same-site requests
       path: '/',
       maxAge: 86400 // 24 hours
       // Don't set domain - let the browser handle it for better compatibility
@@ -76,7 +76,7 @@ export async function POST(request) {
     response.cookies.set('session_token', token, cookieOptions);
     
     // Also try setting via headers directly (without domain)
-    const sameSiteValue = isProduction ? 'none' : 'lax';
+    const sameSiteValue = 'lax'; // Always use 'lax' for same-site requests
     const cookieString = `sid=${token}; HttpOnly; Secure=${isProduction}; SameSite=${sameSiteValue}; Path=/; Max-Age=86400`;
     const sessionTokenString = `session_token=${token}; HttpOnly; Secure=${isProduction}; SameSite=${sameSiteValue}; Path=/; Max-Age=86400`;
     

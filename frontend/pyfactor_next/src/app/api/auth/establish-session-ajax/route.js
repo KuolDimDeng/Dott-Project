@@ -40,7 +40,7 @@ export async function POST(request) {
     const cookieOptions = {
       httpOnly: true,
       secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax', // 'none' required for cross-origin in production
+      sameSite: 'lax', // Use 'lax' for better same-site compatibility
       path: '/',
       maxAge: 86400 // 24 hours
       // Don't set domain - let the browser handle it for better compatibility
