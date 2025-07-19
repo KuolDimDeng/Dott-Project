@@ -106,6 +106,10 @@ export default function SessionBridge() {
       
       try {
         console.log('[SessionBridge] 🚀 Sending AJAX request to establish session...');
+        console.log('[SessionBridge] 🔍 Token being sent:', token ? `${token.substring(0, 20)}...` : 'MISSING');
+        console.log('[SessionBridge] 🔍 Token length:', token?.length);
+        console.log('[SessionBridge] 🔍 Current cookies before AJAX:', document.cookie);
+        
         const establishResponse = await fetch('/api/auth/establish-session-ajax', {
           method: 'POST',
           headers: {
@@ -134,10 +138,21 @@ export default function SessionBridge() {
           
           // Debug: Check cookie status immediately
           console.log('[SessionBridge] 🔍 Checking cookie status immediately after AJAX...');
+          console.log('[SessionBridge] 🔍 Document.cookie after AJAX:', document.cookie);
           try {
-            const cookieDebugResponse = await fetch('/api/auth/debug-cookies');
+            const cookieDebugResponse = await fetch('/api/auth/debug-cookies', {
+              credentials: 'include',
+              headers: {
+                'Cache-Control': 'no-cache'
+              }
+            });
             const cookieDebug = await cookieDebugResponse.json();
             console.log('[SessionBridge] 🔍 Cookie debug info:', cookieDebug);
+            console.log('[SessionBridge] 🔍 Session cookies found:', {
+              sid: cookieDebug.cookies.session.sid.exists,
+              session_token: cookieDebug.cookies.session.session_token.exists,
+              totalCookies: cookieDebug.cookies.total
+            });
           } catch (debugError) {
             console.error('[SessionBridge] Error checking cookie status:', debugError);
           }
@@ -158,11 +173,15 @@ export default function SessionBridge() {
               try {
                 await new Promise(resolve => setTimeout(resolve, 200)); // Wait 200ms between checks
                 
-                const finalDebugResponse = await fetch('/api/auth/debug-cookies');
+                const finalDebugResponse = await fetch('/api/auth/debug-cookies', {
+                  credentials: 'include'
+                });
                 const finalDebug = await finalDebugResponse.json();
                 console.log(`[SessionBridge] 🔍 Cookie check attempt ${retries + 1}:`, {
                   sid: finalDebug.cookies.session.sid,
-                  session_token: finalDebug.cookies.session.session_token
+                  session_token: finalDebug.cookies.session.session_token,
+                  totalCookies: finalDebug.cookies.total,
+                  allCookieNames: finalDebug.cookies.all.map(c => c.name)
                 });
                 
                 if (finalDebug.cookies.session.sid.exists || finalDebug.cookies.session.session_token.exists) {

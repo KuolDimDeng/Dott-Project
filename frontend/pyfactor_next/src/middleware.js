@@ -65,6 +65,11 @@ export async function middleware(request) {
     length: c.value ? c.value.length : 0
   })));
   
+  // Also log raw cookie header
+  const rawCookieHeader = request.headers.get('cookie');
+  console.log('[Middleware] Raw Cookie header:', rawCookieHeader);
+  console.log('[Middleware] Cookie header length:', rawCookieHeader?.length || 0);
+  
   // Check only session cookies - ignore onboarding cookies
   const sid = cookies.get('sid');
   const sessionToken = cookies.get('session_token');

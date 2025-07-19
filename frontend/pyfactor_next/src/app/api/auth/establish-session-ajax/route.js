@@ -40,11 +40,10 @@ export async function POST(request) {
     const cookieOptions = {
       httpOnly: true,
       secure: isProduction,
-      sameSite: 'lax', // Use 'lax' for better compatibility
+      sameSite: isProduction ? 'none' : 'lax', // 'none' required for cross-origin in production
       path: '/',
-      maxAge: 86400, // 24 hours
+      maxAge: 86400 // 24 hours
       // Don't set domain - let the browser handle it for better compatibility
-      // This ensures cookies work on both www.dottapps.com and dottapps.com
     };
     
     console.log('🔍 [EstablishSessionAjax] Cookie options to be used:', JSON.stringify(cookieOptions, null, 2));
@@ -62,10 +61,20 @@ export async function POST(request) {
     
     // Set cookies on the response object
     console.log('🔍 [EstablishSessionAjax] Setting cookie: sid');
+    console.log('🔍 [EstablishSessionAjax] Token value:', token);
+    console.log('🔍 [EstablishSessionAjax] Token length:', token?.length);
     response.cookies.set('sid', token, cookieOptions);
     
     console.log('🔍 [EstablishSessionAjax] Setting cookie: session_token');
     response.cookies.set('session_token', token, cookieOptions);
+    
+    // Try to read back the cookies we just set
+    console.log('🔍 [EstablishSessionAjax] Attempting to read back cookies from response...');
+    const setCookieHeaders = response.headers.getSetCookie ? response.headers.getSetCookie() : [];
+    console.log('🔍 [EstablishSessionAjax] Set-Cookie headers count:', setCookieHeaders.length);
+    setCookieHeaders.forEach((header, index) => {
+      console.log(`🔍 [EstablishSessionAjax] Set-Cookie[${index}]:`, header);
+    });
     
     // Log the response headers to verify cookies are set
     console.log('🔍 [EstablishSessionAjax] Response headers:', Object.fromEntries(response.headers.entries()));

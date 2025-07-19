@@ -15,7 +15,12 @@ export async function GET(request) {
   const cookieStore = cookies();
   const allCookies = cookieStore.getAll();
   
-  console.log('🔍 [DebugCookies] All cookies:', allCookies);
+  console.log('🔍 [DebugCookies] All cookies count:', allCookies.length);
+  console.log('🔍 [DebugCookies] All cookies:', allCookies.map(c => ({
+    name: c.name,
+    valuePreview: c.value ? `${c.value.substring(0, 20)}...` : 'empty',
+    length: c.value?.length || 0
+  })));
   
   // Check specific cookies
   const sid = cookieStore.get('sid');

@@ -401,7 +401,7 @@ export async function POST(request) {
     const cookieOptions = {
       httpOnly: true,
       secure: isProduction,  // Only secure in production
-      sameSite: 'lax',  // Use 'lax' for better compatibility
+      sameSite: isProduction ? 'none' : 'lax',  // 'none' required for cross-origin in production
       expires: new Date(sessionData.expires_at),
       path: '/'
       // Don't set domain for better compatibility
