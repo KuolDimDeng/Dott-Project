@@ -20,7 +20,8 @@ export async function POST(request) {
     
     if (!token) {
       // Redirect to signin with error
-      return NextResponse.redirect(new URL('/auth/signin?error=no_session_token', request.url));
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://dottapps.com';
+      return NextResponse.redirect(new URL('/auth/signin?error=no_session_token', baseUrl));
     }
     
     // Form POST handler that sets cookies and redirects
@@ -47,11 +48,13 @@ export async function POST(request) {
     console.log('[EstablishSession] Redirecting to:', redirectUrl);
     
     // Return redirect response - cookies will be set on this response
-    return NextResponse.redirect(new URL(redirectUrl, request.url));
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://dottapps.com';
+    return NextResponse.redirect(new URL(redirectUrl, baseUrl));
     
   } catch (error) {
     console.error('[EstablishSession] Error:', error);
     // Redirect to signin with error
-    return NextResponse.redirect(new URL('/auth/signin?error=session_error', request.url));
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://dottapps.com';
+    return NextResponse.redirect(new URL('/auth/signin?error=session_error', baseUrl));
   }
 }
