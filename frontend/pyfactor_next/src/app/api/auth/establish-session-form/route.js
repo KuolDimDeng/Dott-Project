@@ -33,11 +33,31 @@ export async function POST(request) {
     console.log('🔍 [EstablishSessionForm] Environment:', {
       NODE_ENV: process.env.NODE_ENV,
       isProduction,
-      hostname: request.headers.get('host')
+      hostname: request.headers.get('host'),
+      origin: request.headers.get('origin'),
+      referer: request.headers.get('referer')
     });
     
-    // Create redirect response
-    const response = NextResponse.redirect(new URL(redirectUrl, request.url), 303);
+    // Create redirect response with proper base URL
+    // In production, always use the production domain to avoid container addresses
+    let baseUrl;
+    if (isProduction) {
+      // Always use production domain in production to avoid 0.0.0.0:10000 issues
+      baseUrl = 'https://dottapps.com';
+    } else {
+      // In development, use environment variable or extract from request
+      baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `https://${request.headers.get('host')}`;
+    }
+    
+    const absoluteUrl = redirectUrl.startsWith('http') ? redirectUrl : `${baseUrl}${redirectUrl}`;
+    
+    console.log('🔍 [EstablishSessionForm] Redirect URL construction:');
+    console.log('  - Environment:', isProduction ? 'PRODUCTION' : 'DEVELOPMENT');
+    console.log('  - Base URL:', baseUrl);
+    console.log('  - Relative redirect URL:', redirectUrl);
+    console.log('  - Absolute redirect URL:', absoluteUrl);
+    
+    const response = NextResponse.redirect(absoluteUrl, 303);
     
     // Set cookies with explicit options
     const cookieOptions = {
