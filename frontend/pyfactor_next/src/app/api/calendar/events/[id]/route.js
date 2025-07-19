@@ -10,7 +10,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.co
 // Helper function to verify session
 async function verifySession() {
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionId = cookieStore.get('sid');
     
     if (!sessionId) {

@@ -11,7 +11,7 @@ export async function PUT(request) {
   try {
     console.log('[Timezone API] Updating user timezone');
     
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionId = cookieStore.get('sid');
     
     if (!sessionId) {
@@ -93,7 +93,7 @@ export async function PUT(request) {
 // GET - Get user's current timezone
 export async function GET(request) {
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionId = cookieStore.get('sid');
     
     if (!sessionId) {

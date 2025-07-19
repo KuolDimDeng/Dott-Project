@@ -7,7 +7,7 @@ export async function GET(request) {
   try {
     console.log('[Location Consent Check] === GET REQUEST START ===');
     
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sid = cookieStore.get('sid');
     
     if (!sid) {

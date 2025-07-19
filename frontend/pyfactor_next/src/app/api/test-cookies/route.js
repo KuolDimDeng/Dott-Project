@@ -11,7 +11,7 @@ export async function GET(request) {
   
   try {
     // Get all cookies
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const allCookies = cookieStore.getAll();
     
     // Get specific cookies

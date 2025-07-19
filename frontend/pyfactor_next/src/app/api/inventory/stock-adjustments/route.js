@@ -9,7 +9,7 @@ export async function GET(request) {
   try {
     logger.info('[API] GET /api/inventory/stock-adjustments');
     
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sidCookie = cookieStore.get('sid');
     
     if (!sidCookie?.value) {
@@ -57,7 +57,7 @@ export async function POST(request) {
     const body = await request.json();
     logger.info('[API] POST /api/inventory/stock-adjustments', { items: body.items?.length });
     
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sidCookie = cookieStore.get('sid');
     
     if (!sidCookie?.value) {

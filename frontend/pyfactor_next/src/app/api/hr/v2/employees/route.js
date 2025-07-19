@@ -37,7 +37,7 @@ export async function GET(request) {
     logger.info('[HR v2 Proxy] GET /api/hr/v2/employees');
 
     // Get session from cookies - properly await the cookies() call
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionId = cookieStore.get('sid');
     
     if (!sessionId) {
@@ -87,7 +87,7 @@ export async function POST(request) {
     logger.info('[HR v2 Proxy] POST /api/hr/v2/employees');
 
     // Get session from cookies - await is required in Next.js 15
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionId = cookieStore.get('sid');
     
     if (!sessionId) {

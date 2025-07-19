@@ -7,7 +7,7 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.dottapps
 // GET /api/smart-insights/credits - Get user's credit balance
 export async function GET(request) {
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sidCookie = cookieStore.get('sid');
     
     if (!sidCookie?.value) {
@@ -55,7 +55,7 @@ export async function GET(request) {
 // POST /api/smart-insights/credits/deduct - Deduct credits after successful query
 export async function POST(request) {
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sidCookie = cookieStore.get('sid');
     
     if (!sidCookie?.value) {

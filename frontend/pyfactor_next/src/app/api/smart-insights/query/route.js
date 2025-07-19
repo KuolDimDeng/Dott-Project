@@ -17,7 +17,7 @@ export async function POST(request) {
     }
 
     // Get session cookie
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sidCookie = cookieStore.get('sid');
 
     if (!sidCookie || !sidCookie.value) {

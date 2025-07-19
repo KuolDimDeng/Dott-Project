@@ -15,7 +15,7 @@ export async function POST(request) {
     logger.debug(`[SavePendingPayment:${requestId}] Processing save pending payment request`);
     
     // Get session ID
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionId = cookieStore.get('sid') || cookieStore.get('session_token');
     
     if (!sessionId) {

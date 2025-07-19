@@ -22,7 +22,7 @@ export async function POST(request) {
     }
     
     const isProduction = process.env.NODE_ENV === 'production';
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     
     const cookieOptions = {
       httpOnly: true,

@@ -5,7 +5,7 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.dottapps
 
 export async function GET(request) {
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sidCookie = cookieStore.get('sid');
     
     if (!sidCookie?.value) {
@@ -49,7 +49,7 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sidCookie = cookieStore.get('sid');
     
     if (!sidCookie?.value) {
@@ -92,7 +92,7 @@ export async function POST(request) {
 
 export async function PUT(request) {
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sidCookie = cookieStore.get('sid');
     
     if (!sidCookie?.value) {
@@ -143,7 +143,7 @@ export async function PUT(request) {
 
 export async function DELETE(request) {
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sidCookie = cookieStore.get('sid');
     
     if (!sidCookie?.value) {

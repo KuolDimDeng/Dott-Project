@@ -14,7 +14,7 @@ export async function POST(request) {
     }
     
     // Get the current session
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionToken = cookieStore.get('session_token')?.value;
     
     if (!sessionToken) {

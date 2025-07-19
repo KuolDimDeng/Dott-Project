@@ -11,7 +11,7 @@ export async function GET(request) {
     logger.info('[UnlinkedUsers API] ========== START ==========');
     
     // Get session ID from cookies
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionId = cookieStore.get('sid')?.value;
     
     logger.info('[UnlinkedUsers API] Session ID:', sessionId ? sessionId.substring(0, 8) + '...' : 'none');

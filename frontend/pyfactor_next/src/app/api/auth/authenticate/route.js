@@ -77,7 +77,7 @@ export async function POST(request) {
       addDebugEntry('Auth0 secrets not available, proxying through backend');
       
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
-      const cookieStore = await cookies();
+      const cookieStore = cookies();
       
       addDebugEntry('Backend proxy configuration', {
         apiUrl: API_URL,

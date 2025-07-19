@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 
 export async function POST(request, { params }) {
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionCookie = cookieStore.get('sid');
     
     if (!sessionCookie) {

@@ -6,7 +6,7 @@ export async function POST(request) {
   
   try {
     // Verify session by checking for session cookie
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionId = cookieStore.get('sid');
     
     if (!sessionId) {

@@ -6,7 +6,7 @@ import { cookies } from 'next/headers';
  */
 export async function GET(request) {
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const { searchParams } = new URL(request.url);
     
     // Get session token from cookies

@@ -19,7 +19,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.co
 // Helper function to verify session - try to get real session data
 async function verifySession() {
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionId = cookieStore.get('sid');
     
     if (!sessionId) {
@@ -120,7 +120,7 @@ export async function GET(request) {
     queryParams.append('page_size', '1000');
 
     // Call backend API
-    const sessionToken = sessionData.session_token || sessionData.access_token || (await cookies()).get('sid')?.value;
+    const sessionToken = sessionData.session_token || sessionData.access_token || cookies().get('sid')?.value;
     console.log('[Calendar API GET] Calling backend API for tenant:', tenantId);
     console.log('[Calendar API GET] Full URL:', `${API_BASE_URL}/api/calendar/events/?${queryParams.toString()}`);
     console.log('[Calendar API GET] Headers:', {
@@ -331,7 +331,7 @@ export async function POST(request) {
     console.log('[Calendar API POST] 🎯 ABOUT TO SAVE EVENT - This should persist to backend');
     
     // Call backend API
-    const sessionToken = sessionData.session_token || sessionData.access_token || (await cookies()).get('sid')?.value;
+    const sessionToken = sessionData.session_token || sessionData.access_token || cookies().get('sid')?.value;
     console.log('[Calendar API POST] Session token exists:', !!sessionToken);
     console.log('[Calendar API POST] Session token length:', sessionToken?.length);
     console.log('[Calendar API POST] Headers:', {
@@ -569,7 +569,7 @@ export async function PUT(request) {
     console.log('[Calendar API PUT] Backend data being sent:', backendData);
     console.log('[Calendar API PUT] Backend URL:', `${API_BASE_URL}/api/calendar/events/${id}/`);
     
-    const sessionToken = sessionData.session_token || sessionData.access_token || (await cookies()).get('sid')?.value;
+    const sessionToken = sessionData.session_token || sessionData.access_token || cookies().get('sid')?.value;
     const backendResponse = await fetch(
       `${API_BASE_URL}/api/calendar/events/${id}/`,
       {
@@ -707,7 +707,7 @@ export async function DELETE(request) {
     // Call backend API
     console.log('[Calendar API DELETE] Deleting event:', id);
     
-    const sessionToken = sessionData.session_token || sessionData.access_token || (await cookies()).get('sid')?.value;
+    const sessionToken = sessionData.session_token || sessionData.access_token || cookies().get('sid')?.value;
     const backendResponse = await fetch(
       `${API_BASE_URL}/api/calendar/events/${id}/`,
       {

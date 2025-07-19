@@ -7,7 +7,7 @@ export async function GET(request) {
   console.log('🔥 [USER_CURRENT] === STARTING USER CURRENT API ===');
   
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     // Check new session system first
     const sidCookie = cookieStore.get('sid');
     const sessionTokenCookie = cookieStore.get('session_token');

@@ -5,7 +5,7 @@ import { cookies } from 'next/headers';
  */
 export async function GET(request) {
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sidCookie = cookieStore.get('sid');
     
     if (!sidCookie) {

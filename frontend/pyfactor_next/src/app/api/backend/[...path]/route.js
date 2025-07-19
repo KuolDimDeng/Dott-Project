@@ -41,7 +41,7 @@ async function proxyRequest(request, { params }, method) {
     console.log(`[Backend Proxy] ${method} ${backendUrl}`);
     
     // Get cookies from the request
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     // Check new session system first
     const sidCookie = cookieStore.get('sid');
     const sessionTokenCookie = cookieStore.get('session_token');

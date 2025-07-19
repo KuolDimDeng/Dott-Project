@@ -22,7 +22,7 @@ export async function POST(request) {
 
   try {
     // Get session
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionId = cookieStore.get('sid') || cookieStore.get('session_token');
     
     if (!sessionId) {

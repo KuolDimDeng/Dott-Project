@@ -7,7 +7,7 @@ export async function GET(request) {
   
   try {
     // Get session
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionCookie = cookieStore.get('appSession');
     
     if (!sessionCookie) {

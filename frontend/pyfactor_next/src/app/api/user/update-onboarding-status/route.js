@@ -10,7 +10,7 @@ export async function POST(request) {
   
   try {
     // 1. Get session - try new name first, then old
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
     
     if (!sessionCookie) {

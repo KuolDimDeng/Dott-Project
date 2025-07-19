@@ -13,7 +13,7 @@ export async function GET(request) {
   
   try {
     // Get session from cookies
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionId = cookieStore.get('sid');
     
     if (!sessionId) {
@@ -213,7 +213,7 @@ export async function POST(request) {
     console.log('[Customers API] POST request received');
     
     // Get session from cookies
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionId = cookieStore.get('sid');
     
     if (!sessionId) {

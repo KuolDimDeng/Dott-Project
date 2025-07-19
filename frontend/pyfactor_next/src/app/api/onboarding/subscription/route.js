@@ -35,7 +35,7 @@ async function validateAuthentication(request) {
     }
     
     // Check for session cookie (backward compatibility)
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionCookie = cookieStore.get('appSession');
     const dottSessionCookie = cookieStore.get('dott_auth_session');
     const sessionTokenCookie = cookieStore.get('session_token') || cookieStore.get('sid'); // Check both cookie names
@@ -243,7 +243,7 @@ export async function POST(request) {
 
     try {
       // Use session token for backend authentication
-      const cookieStore = await cookies();
+      const cookieStore = cookies();
       const sessionTokenCookie = cookieStore.get('session_token') || cookieStore.get('sid');
       
       if (!sessionTokenCookie) {
@@ -428,7 +428,7 @@ export async function POST(request) {
       
       // Graceful degradation: save to cookies even if backend fails
       try {
-        const cookieStore = await cookies();
+        const cookieStore = cookies();
         
         // Mark subscription step as completed (cached)
         await cookieStore.set('subscriptionCompleted', 'true', COOKIE_OPTIONS);

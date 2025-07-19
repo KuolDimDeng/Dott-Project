@@ -15,7 +15,7 @@ export async function GET(request) {
   
   try {
     // Get session
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     
     // Log all cookies for debugging
     const allCookies = cookieStore.getAll();

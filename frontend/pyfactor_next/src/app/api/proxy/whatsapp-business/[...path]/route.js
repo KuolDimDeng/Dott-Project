@@ -11,7 +11,7 @@ const getBackendUrl = () => {
 
 // Helper function to get auth headers
 async function getAuthHeaders() {
-  const cookieStore = await cookies();
+  const cookieStore = cookies();
   const sessionToken = cookieStore.get('session_token')?.value || cookieStore.get('sid')?.value;
   
   if (!sessionToken) {

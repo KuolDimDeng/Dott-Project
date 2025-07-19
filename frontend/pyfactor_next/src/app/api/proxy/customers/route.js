@@ -23,7 +23,7 @@ export async function GET(request) {
     let tenantIdFromCognito = null;
     if (authHeader && authHeader.startsWith('Bearer ')) {
       try {
-        const cookieStore = await cookies();
+        const cookieStore = cookies();
         const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
         let session = null;
         if (sessionCookie) {

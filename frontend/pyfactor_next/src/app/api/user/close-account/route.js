@@ -74,7 +74,7 @@ export async function POST(request) {
   try {
     // 1. Get and validate session
     console.log('[CLOSE_ACCOUNT] Step 1: Validating Auth0 session');
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
     
     if (!sessionCookie) {

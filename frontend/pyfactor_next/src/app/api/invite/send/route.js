@@ -5,7 +5,7 @@ import { logger } from '@/utils/logger';
 export async function POST(request) {
   try {
     const body = await request.json();
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     
     logger.info('[Email Invite] 📧 === START EMAIL INVITATION ===', {
       email: body.email,

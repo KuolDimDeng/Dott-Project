@@ -12,7 +12,7 @@ export async function GET(request) {
     console.log('[Calendar Debug] Checking backend calendar API for tenant:', tenantId);
     
     // Get session
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionId = cookieStore.get('sid');
     
     if (!sessionId) {

@@ -5,7 +5,7 @@ export async function GET() {
   console.log('[TEST-COOKIE] Testing cookie setting mechanism');
   
   // Get current cookies
-  const cookieStore = await cookies();
+  const cookieStore = cookies();
   const currentCookie = cookieStore.get('test_cookie');
   console.log('[TEST-COOKIE] Current test_cookie:', currentCookie);
   
@@ -40,7 +40,7 @@ export async function GET() {
 export async function POST() {
   console.log('[TEST-COOKIE] POST: Testing cookie deletion and setting');
   
-  const cookieStore = await cookies();
+  const cookieStore = cookies();
   const currentCookie = cookieStore.get('test_cookie');
   console.log('[TEST-COOKIE] POST: Current cookie before delete:', currentCookie);
   

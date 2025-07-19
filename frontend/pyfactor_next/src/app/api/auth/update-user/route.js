@@ -13,7 +13,7 @@ export async function POST(request) {
     console.log('[Auth0 Update User] POST request received');
     
     // Get the current Auth0 session
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionCookie = cookieStore.get('appSession');
     
     if (!sessionCookie) {

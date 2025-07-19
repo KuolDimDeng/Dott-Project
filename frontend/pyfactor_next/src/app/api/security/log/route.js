@@ -11,7 +11,7 @@ export async function POST(request) {
     }
     
     // Get session info for context
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionToken = cookieStore.get('session_token');
     
     // Add server context to events

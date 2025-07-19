@@ -11,7 +11,7 @@ export async function POST(request) {
     console.log('[OnboardingComplete] Starting onboarding completion');
     
     // Get session token from cookies - await is required in Next.js 15
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionToken = cookieStore.get('session_token')?.value || cookieStore.get('sid')?.value;
     
     if (!sessionToken) {

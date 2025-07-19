@@ -16,7 +16,7 @@ export async function POST(request) {
     logger.info('[SmartInsights-Claude] Processing AI query request');
     
     // Verify session
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sidCookie = cookieStore.get('sid');
     
     if (!sidCookie?.value) {

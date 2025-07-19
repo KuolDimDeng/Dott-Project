@@ -57,7 +57,7 @@ export async function POST(request) {
   try {
     // 1. Get and validate session
     console.log('[CLOSE_ACCOUNT_FIXED] Step 1: Validating session');
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionCookie = cookieStore.get('appSession');
     
     if (!sessionCookie) {

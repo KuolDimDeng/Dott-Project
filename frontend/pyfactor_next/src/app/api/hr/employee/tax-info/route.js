@@ -5,7 +5,7 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:800
 
 export async function GET(request) {
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionId = cookieStore.get('sid')?.value;
 
     if (!sessionId) {
@@ -44,7 +44,7 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionId = cookieStore.get('sid')?.value;
 
     if (!sessionId) {

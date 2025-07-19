@@ -8,7 +8,7 @@ export async function POST(request) {
     console.log('[SetupComplete] Processing onboarding completion request');
     
     // Get Auth0 session
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
     
     if (!sessionCookie) {

@@ -19,7 +19,7 @@ async function validateAuthentication(request) {
     console.log('[api/onboarding/payment] Validating authentication');
     
     // Check for session cookie first
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionCookie = cookieStore.get('appSession');
     
     if (sessionCookie) {
@@ -170,7 +170,7 @@ export async function POST(request) {
 
     try {
       // Get Auth0 access token for backend authentication
-      const cookieStore = await cookies();
+      const cookieStore = cookies();
       const sessionCookie = cookieStore.get('appSession');
       let accessToken = null;
       
@@ -279,7 +279,7 @@ export async function POST(request) {
       
       // Graceful degradation: save to cookies even if backend fails
       try {
-        const cookieStore = await cookies();
+        const cookieStore = cookies();
         
         // Mark payment step as completed (cached)
         await cookieStore.set('paymentCompleted', 'true', COOKIE_OPTIONS);
@@ -449,7 +449,7 @@ export async function PUT(request) {
 
     try {
       // Get Auth0 access token for backend authentication
-      const cookieStore = await cookies();
+      const cookieStore = cookies();
       const sessionCookie = cookieStore.get('appSession');
       let accessToken = null;
       

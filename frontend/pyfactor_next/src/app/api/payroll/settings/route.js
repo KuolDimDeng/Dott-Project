@@ -7,7 +7,7 @@ export async function GET(request) {
   try {
     console.log('[Payroll Settings] === GET REQUEST START ===');
     
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sid = cookieStore.get('sid');
     
     if (!sid) {
@@ -59,7 +59,7 @@ export async function POST(request) {
   try {
     console.log('[Payroll Settings] === POST REQUEST START ===');
     
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sid = cookieStore.get('sid');
     
     if (!sid) {

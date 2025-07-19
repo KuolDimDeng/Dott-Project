@@ -19,7 +19,7 @@ export async function GET(request) {
     logger.info('[UserManagement] Request method:', request.method);
     
     // Use Next.js cookies API to access cookies properly
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const allCookies = cookieStore.getAll();
     logger.info('[UserManagement] All cookies from cookieStore:', allCookies.map(c => ({ name: c.name, valueLength: c.value.length })));
     
@@ -241,7 +241,7 @@ async function getSession(request) {
     logger.info('[UserManagement] Origin:', request.nextUrl.origin);
     
     // Use Next.js cookies API to properly access httpOnly cookies
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sidCookie = cookieStore.get('sid');
     const sessionTokenCookie = cookieStore.get('session_token');
     
@@ -386,7 +386,7 @@ async function fetchLocalUsers(tenantId, currentUser, request, unlinkedOnly = fa
     logger.info('[UserManagement] Unlinked only:', unlinkedOnly);
     
     // Get cookies properly using Next.js cookies API
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const allCookies = cookieStore.getAll();
     const cookieHeader = allCookies.map(c => `${c.name}=${c.value}`).join('; ');
     

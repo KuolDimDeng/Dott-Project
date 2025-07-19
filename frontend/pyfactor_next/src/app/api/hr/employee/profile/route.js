@@ -6,7 +6,7 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:800
 export async function GET(request) {
   try {
     console.log('[API Route] GET /api/hr/employee/profile - Starting');
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionId = cookieStore.get('sid')?.value;
 
     console.log('[API Route] Session ID:', sessionId ? 'Found' : 'Not found');
@@ -54,7 +54,7 @@ export async function GET(request) {
 
 export async function PATCH(request) {
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionId = cookieStore.get('sid')?.value;
 
     if (!sessionId) {

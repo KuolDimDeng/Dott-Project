@@ -8,7 +8,7 @@ import { logger } from '@/utils/logger';
 export async function getSession() {
   try {
     // Get session from cookies
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionId = cookieStore.get('sid') || cookieStore.get('session_token');
     
     console.log('[sessionHelper] Looking for session ID');

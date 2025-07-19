@@ -7,7 +7,7 @@ async function handleRequest(request, method) {
   try {
     console.log(`[Geofences API] === ${method} REQUEST START ===`);
     
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sid = cookieStore.get('sid');
     
     if (!sid) {

@@ -13,7 +13,7 @@ export async function GET(request) {
   try {
     logger.debug(`[UserProfile API] Fetching profile with Auth0 session, request ${requestId}`);
     
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     // Check new session system first
     const sidCookie = cookieStore.get('sid');
     const sessionTokenCookie = cookieStore.get('session_token');
@@ -257,7 +257,7 @@ export async function GET(request) {
  */
 export async function PUT(request) {
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sidCookie = cookieStore.get('sid');
     
     if (!sidCookie) {

@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 
 // Helper function to get session cookie
 async function getSessionCookie() {
-  const cookieStore = await cookies();
+  const cookieStore = cookies();
   const sidCookie = cookieStore.get('sid');
   return sidCookie;
 }

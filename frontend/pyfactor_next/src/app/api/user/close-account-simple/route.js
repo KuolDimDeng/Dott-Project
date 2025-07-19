@@ -10,7 +10,7 @@ export async function POST(request) {
   
   try {
     // 1. Get session
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionCookie = cookieStore.get('appSession');
     
     if (!sessionCookie) {

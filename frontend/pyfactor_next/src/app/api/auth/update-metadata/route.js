@@ -108,7 +108,7 @@ export async function POST(request) {
         logger.warn('[Update Metadata] Management API credentials not configured, proxying through backend');
         
         // Get cookies for session
-        const cookieStore = await cookies();
+        const cookieStore = cookies();
         
         // Proxy the request to backend
         const backendResponse = await fetch(`${API_URL}/api/auth/update-metadata/`, {

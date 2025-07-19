@@ -7,7 +7,7 @@ export async function POST(request) {
   try {
     console.log('[Geofence Event Log] === POST REQUEST START ===');
     
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sid = cookieStore.get('sid');
     
     if (!sid) {

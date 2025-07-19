@@ -24,7 +24,7 @@ const management = new ManagementClient({
 export async function GET(request) {
   try {
     console.log('[MFA API GET] Starting request...');
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sidCookie = cookieStore.get('sid');
     const sessionTokenCookie = cookieStore.get('session_token');
     
@@ -121,7 +121,7 @@ export async function POST(request) {
   try {
     const { enabled, preferredMethod } = await request.json();
     
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sidCookie = cookieStore.get('sid');
     const sessionTokenCookie = cookieStore.get('session_token');
     
@@ -191,7 +191,7 @@ export async function DELETE(request) {
   try {
     const { enrollmentId } = await request.json();
     
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sidCookie = cookieStore.get('sid');
     const sessionTokenCookie = cookieStore.get('session_token');
     

@@ -12,7 +12,7 @@ async function handleRequest(request, { params }) {
   const path = params.path ? params.path.join('/') : '';
   console.log('[Timesheets API Proxy] Path segments:', path);
   
-  const cookieStore = await cookies();
+  const cookieStore = cookies();
   const sid = cookieStore.get('sid');
   console.log('[Timesheets API Proxy] Session ID exists:', !!sid);
 

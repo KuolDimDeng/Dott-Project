@@ -11,7 +11,7 @@ export async function GET(request) {
     console.log('[Business Info API] Fetching business information');
     
     // Get session ID from cookie (Session V2 uses 'sid')
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionId = cookieStore.get('sid');
     
     if (!sessionId) {

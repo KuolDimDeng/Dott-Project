@@ -42,7 +42,7 @@ export async function POST(request) {
       logger.info('[Signup] Proxying signup through backend API');
       
       // Get cookies for session
-      const cookieStore = await cookies();
+      const cookieStore = cookies();
       
       // Proxy the signup request to backend
       const backendResponse = await fetch(`${API_URL}/api/auth/signup/`, {

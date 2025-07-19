@@ -19,7 +19,7 @@ export async function GET(request) {
     { name: 'GET /api/auth/session-v2', op: 'http.server' },
     async () => {
       try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     
     // Log all cookies for debugging
     const allCookies = cookieStore.getAll();
@@ -443,7 +443,7 @@ export async function POST(request) {
 
 export async function DELETE() {
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionId = cookieStore.get('sid');
     
     if (sessionId) {

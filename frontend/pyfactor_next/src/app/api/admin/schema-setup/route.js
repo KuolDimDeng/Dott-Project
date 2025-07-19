@@ -7,7 +7,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.co
 // Verify admin session
 async function verifyAdminSession() {
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionId = cookieStore.get('sid');
     
     if (!sessionId) {
@@ -57,7 +57,7 @@ export async function GET(request) {
     }
     
     // Call backend to check schema status
-    const sessionToken = sessionData.session_token || sessionData.access_token || (await cookies()).get('sid')?.value;
+    const sessionToken = sessionData.session_token || sessionData.access_token || cookies().get('sid')?.value;
     const response = await fetch(
       `${API_BASE_URL}/api/admin/schema-status/?tenant_id=${tenantId}`,
       {
@@ -116,7 +116,7 @@ export async function POST(request) {
     console.log('[Schema Setup API] Setting up schema for tenant:', tenantId);
     
     // Call backend to trigger schema setup
-    const sessionToken = sessionData.session_token || sessionData.access_token || (await cookies()).get('sid')?.value;
+    const sessionToken = sessionData.session_token || sessionData.access_token || cookies().get('sid')?.value;
     const response = await fetch(
       `${API_BASE_URL}/api/admin/setup-tenant-schema/`,
       {

@@ -10,7 +10,7 @@ export async function GET(request) {
     logger.info('[HR v2 Proxy] GET /api/hr/v2/employees/stats');
 
     // Get session from cookies
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionId = cookieStore.get('sid');
     
     if (!sessionId) {

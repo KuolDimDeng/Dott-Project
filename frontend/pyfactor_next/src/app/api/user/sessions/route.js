@@ -13,7 +13,7 @@ export async function GET(request) {
     logger.debug(`[Sessions API] Fetching user sessions, request ${requestId}`);
     
     // Check authentication
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sidCookie = cookieStore.get('sid');
     const sessionTokenCookie = cookieStore.get('session_token');
     const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');

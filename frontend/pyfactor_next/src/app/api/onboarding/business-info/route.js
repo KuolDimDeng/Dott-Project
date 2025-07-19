@@ -72,7 +72,7 @@ async function validateAuthentication(request) {
     }
     
     // Check for session cookie (backward compatibility)
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionCookie = cookieStore.get('appSession');
     const dottSessionCookie = cookieStore.get('dott_auth_session');
     const sessionTokenCookie = cookieStore.get('session_token') || cookieStore.get('sid'); // Check both cookie names
@@ -252,7 +252,7 @@ export async function POST(request) {
     console.log('🚨 [BUSINESS-INFO API] Request headers:', JSON.stringify(headers, null, 2));
     
     // Check cookies directly
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const allCookies = cookieStore.getAll();
     console.log('🚨 [BUSINESS-INFO API] Available cookies:', allCookies.map(c => ({
       name: c.name,
@@ -335,7 +335,7 @@ export async function POST(request) {
 
     try {
       // Get Auth0 access token for backend authentication
-      const cookieStore = await cookies();
+      const cookieStore = cookies();
       let accessToken = null;
       
       // First try to get token from Authorization header (v2 onboarding)
@@ -480,7 +480,7 @@ export async function POST(request) {
           console.log('🚨 [BUSINESS-INFO API] Environment:', process.env.NODE_ENV);
           
           try {
-            const cookieStore = await cookies();
+            const cookieStore = cookies();
             console.log('🚨 [BUSINESS-INFO API] Step 1: Got cookie store successfully');
             
             const sessionCookie = cookieStore.get('appSession');
@@ -667,7 +667,7 @@ export async function POST(request) {
           // SIMPLIFIED SESSION UPDATE FOR NO-JSON CASE
           console.log('🚨 [BUSINESS-INFO API] === SIMPLIFIED SESSION UPDATE (NO JSON CASE) ===');
           try {
-            const cookieStore = await cookies();
+            const cookieStore = cookies();
             const sessionCookie = cookieStore.get('appSession');
             
             if (sessionCookie) {
@@ -748,7 +748,7 @@ export async function POST(request) {
         console.log('🚨 [BUSINESS-INFO API] Backend failed, but we still need to update session');
         
         try {
-          const cookieStore = await cookies();
+          const cookieStore = cookies();
           console.log('🚨 [BUSINESS-INFO API] Step 1: Got cookie store successfully (fallback)');
           
           const sessionCookie = cookieStore.get('appSession');
@@ -919,7 +919,7 @@ export async function POST(request) {
           
           // Last resort: try basic cookie storage
           try {
-            const cookieStore = await cookies();
+            const cookieStore = cookies();
             await cookieStore.set('businessInfoCompleted', 'true', COOKIE_OPTIONS);
             await cookieStore.set('onboardingStep', 'subscription', COOKIE_OPTIONS);
             await cookieStore.set('businessName', businessData.businessName, COOKIE_OPTIONS);
@@ -961,7 +961,7 @@ export async function POST(request) {
       
       // ALWAYS set cookies for caching/fallback (regardless of backend success)
       try {
-        const cookieStore = await cookies();
+        const cookieStore = cookies();
         
         // Mark business info step as completed
         await cookieStore.set('businessInfoCompleted', 'true', COOKIE_OPTIONS);
@@ -1016,7 +1016,7 @@ export async function POST(request) {
       
       // Graceful degradation: save to cookies even if backend fails
       try {
-        const cookieStore = await cookies();
+        const cookieStore = cookies();
         
         console.log('🚨 [BUSINESS-INFO API] ATTEMPTING SESSION UPDATE - Backend failed, using fallback path');
         console.log('🚨 [BUSINESS-INFO API] Starting fallback session update process');

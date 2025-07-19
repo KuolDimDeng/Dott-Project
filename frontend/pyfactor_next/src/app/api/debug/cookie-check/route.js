@@ -7,7 +7,7 @@ import { cookies } from 'next/headers';
  */
 export async function GET(request) {
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const allCookies = cookieStore.getAll();
     
     // Get specific session cookies

@@ -13,7 +13,7 @@ export async function POST(request) {
   try {
     console.log('[Session Refresh] Refreshing session');
     
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionToken = cookieStore.get('session_token');
     
     if (!sessionToken) {

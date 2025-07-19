@@ -27,7 +27,7 @@ export async function POST(request) {
   // }
 
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     // Check new session system first
     const sidCookie = cookieStore.get('sid');
     const sessionTokenCookie = cookieStore.get('session_token');
