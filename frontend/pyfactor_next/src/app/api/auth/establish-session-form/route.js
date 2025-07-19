@@ -65,8 +65,9 @@ export async function POST(request) {
       secure: isProduction,
       sameSite: 'lax', // Use 'lax' for same-site requests
       path: '/',
-      maxAge: 86400 // 24 hours
-      // Don't set domain - let the browser handle it for better compatibility
+      maxAge: 86400, // 24 hours
+      // In production, set domain to ensure cookies work across the site
+      ...(isProduction && { domain: '.dottapps.com' })
     };
     
     console.log('🔍 [EstablishSessionForm] Setting cookies with options:', JSON.stringify(cookieOptions, null, 2));

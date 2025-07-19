@@ -42,8 +42,9 @@ export async function POST(request) {
       secure: isProduction,
       sameSite: 'lax', // Use 'lax' for better same-site compatibility
       path: '/',
-      maxAge: 86400 // 24 hours
-      // Don't set domain - let the browser handle it for better compatibility
+      maxAge: 86400, // 24 hours
+      // In production, set domain to ensure cookies work across the site
+      ...(isProduction && { domain: '.dottapps.com' })
     };
     
     console.log('🔍 [EstablishSessionAjax] Cookie options to be used:', JSON.stringify(cookieOptions, null, 2));
@@ -74,6 +75,20 @@ export async function POST(request) {
     console.log('🔍 [EstablishSessionAjax] Set-Cookie headers count:', setCookieHeaders.length);
     setCookieHeaders.forEach((header, index) => {
       console.log(`🔍 [EstablishSessionAjax] Set-Cookie[${index}]:`, header);
+      // Parse cookie attributes
+      const parts = header.split(';').map(p => p.trim());
+      const attributes = {};
+      parts.forEach((part, i) => {
+        if (i === 0) {
+          const [name, value] = part.split('=');
+          attributes.name = name;
+          attributes.value = value ? value.substring(0, 20) + '...' : '';
+        } else {
+          const [key, val] = part.split('=');
+          attributes[key.toLowerCase()] = val || true;
+        }
+      });
+      console.log(`🔍 [EstablishSessionAjax] Cookie[${index}] attributes:`, attributes);
     });
     
     // Log the response headers to verify cookies are set

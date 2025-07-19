@@ -60,6 +60,20 @@ export async function GET(request) {
     const sidCookie = cookieStore.get('sid');
     const sessionTokenCookie = cookieStore.get('session_token');
     
+    // CRITICAL: Also check raw cookie header
+    const rawCookieHeader = request.headers.get('cookie');
+    console.log('[Session-V2] 🔴 RAW COOKIE HEADER:', rawCookieHeader);
+    if (rawCookieHeader) {
+      console.log('[Session-V2] 🔴 Parsing raw cookies:');
+      const rawCookies = rawCookieHeader.split(';').map(c => c.trim());
+      rawCookies.forEach(cookie => {
+        const [name, value] = cookie.split('=');
+        if (name === 'sid' || name === 'session_token') {
+          console.log(`[Session-V2] 🔴 Found ${name} in raw header:`, value?.substring(0, 20) + '...');
+        }
+      });
+    }
+    
     console.log('[Session-V2] Cookie details:');
     console.log('  - sid cookie:', sidCookie ? { value: sidCookie.value.substring(0, 8) + '...', name: sidCookie.name } : 'NOT FOUND');
     console.log('  - session_token cookie:', sessionTokenCookie ? { value: sessionTokenCookie.value.substring(0, 8) + '...', name: sessionTokenCookie.name } : 'NOT FOUND');
