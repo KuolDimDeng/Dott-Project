@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Invalid Session</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            text-align: center;
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 500px;
+        }
+        button {
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background-color: #2563eb;
+        }
+        .message {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .error {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Session Issue Detected</h1>
+        <p>Your session token doesn't exist in our database. This can happen if:</p>
+        <ul style="text-align: left;">
+            <li>The session expired (after 24 hours)</li>
+            <li>You logged out on another device</li>
+            <li>There was an error during login</li>
+        </ul>
+        <p>Click the button below to clear the invalid session and log in again.</p>
+        
+        <button onclick="clearSession()">Clear Invalid Session</button>
+        <button onclick="window.location.href='/auth/signin'">Go to Login</button>
+        
+        <div id="message" class="message" style="display: none;"></div>
+    </div>
+
+    <script>
+        async function clearSession() {
+            const messageEl = document.getElementById('message');
+            messageEl.style.display = 'none';
+            
+            try {
+                // Clear all cookies on the client side
+                document.cookie.split(";").forEach(function(c) { 
+                    document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/;domain=.dottapps.com");
+                    document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+                });
+                
+                // Clear sessionStorage
+                sessionStorage.clear();
+                
+                // Call the API to clear server-side
+                const response = await fetch('/api/auth/clear-invalid-session', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    messageEl.textContent = 'Session cleared successfully! Redirecting to login...';
+                    messageEl.className = 'message success';
+                    messageEl.style.display = 'block';
+                    
+                    // Redirect to login after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = '/auth/signin';
+                    }, 2000);
+                } else {
+                    throw new Error(data.error || 'Failed to clear session');
+                }
+            } catch (error) {
+                messageEl.textContent = 'Error: ' + error.message;
+                messageEl.className = 'message error';
+                messageEl.style.display = 'block';
+            }
+        }
+        
+        // Show current session status
+        window.onload = function() {
+            const cookies = document.cookie;
+            console.log('Current cookies:', cookies);
+            console.log('Has sid cookie:', cookies.includes('sid='));
+            console.log('Has session_token cookie:', cookies.includes('session_token='));
+        };
+    </script>
+</body>
+</html>

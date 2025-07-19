@@ -276,6 +276,18 @@ class SessionService:
             print(f"[SessionService] get_session called for: {session_id}")
             print(f"[SessionService] Current time: {timezone.now()}")
             
+            # Add comprehensive debugging
+            print(f"[SessionService] DEBUG: Looking for session ID: '{session_id}'")
+            print(f"[SessionService] DEBUG: Session ID type: {type(session_id)}")
+            print(f"[SessionService] DEBUG: Session ID length: {len(session_id)}")
+            
+            # Check all sessions to debug
+            all_sessions = UserSession.objects.all().order_by('-created_at')[:10]
+            print(f"[SessionService] DEBUG: Total sessions in DB: {UserSession.objects.count()}")
+            print(f"[SessionService] DEBUG: Recent 10 sessions:")
+            for s in all_sessions:
+                print(f"  - {s.session_id} | User: {s.user.email} | Active: {s.is_active} | Expires: {s.expires_at}")
+            
             # First check if session exists at all
             exists = UserSession.objects.filter(session_id=session_id).exists()
             print(f"[SessionService] Session exists in DB: {exists}")
@@ -284,11 +296,26 @@ class SessionService:
                 # Get the raw session to see why it might be filtered out
                 raw_session = UserSession.objects.get(session_id=session_id)
                 print(f"[SessionService] Raw session details:")
+                print(f"  - session_id: {raw_session.session_id}")
                 print(f"  - is_active: {raw_session.is_active}")
                 print(f"  - expires_at: {raw_session.expires_at}")
                 print(f"  - expired: {raw_session.expires_at <= timezone.now()}")
                 print(f"  - user: {raw_session.user.email}")
                 print(f"  - created_at: {raw_session.created_at}")
+                print(f"  - tenant: {raw_session.tenant.name if raw_session.tenant else 'None'}")
+                print(f"  - user.business_id: {getattr(raw_session.user, 'business_id', 'NOT_SET')}")
+                print(f"  - user.tenant_id: {getattr(raw_session.user, 'tenant_id', 'NOT_SET')}")
+            else:
+                # Session doesn't exist - let's check why
+                print(f"[SessionService] DEBUG: Session {session_id} does NOT exist in database")
+                
+                # Check if it's a formatting issue
+                from uuid import UUID
+                try:
+                    uuid_obj = UUID(session_id)
+                    print(f"[SessionService] DEBUG: Valid UUID format: {uuid_obj}")
+                except ValueError:
+                    print(f"[SessionService] DEBUG: Invalid UUID format!")
             
             # Now try with filters
             session = UserSession.objects.select_related('user', 'tenant').get(

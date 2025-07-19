@@ -26,37 +26,47 @@ class SessionTokenAuthentication(BaseAuthentication):
         """
         Authenticate the request and return a two-tuple of (user, token).
         """
+        logger.info("[SessionTokenAuth] Starting authentication")
+        logger.info(f"[SessionTokenAuth] Request path: {request.path}")
+        logger.info(f"[SessionTokenAuth] Request method: {request.method}")
+        
         # Try to get token from Authorization header first
         auth_header = request.META.get('HTTP_AUTHORIZATION', '')
+        logger.info(f"[SessionTokenAuth] Authorization header: {auth_header}")
         token = None
         
         if auth_header:
             parts = auth_header.split()
             if len(parts) == 2:
                 auth_type, potential_token = parts
+                logger.info(f"[SessionTokenAuth] Auth type: {auth_type}, Token preview: {potential_token[:8] if potential_token else 'None'}...")
                 # Accept both 'Session' and 'Bearer' prefixes
                 if auth_type.lower() in ['session', 'bearer']:
                     # For Session tokens, check if it's a UUID (not JWT)
                     if auth_type.lower() == 'session' and '.' not in potential_token:
                         token = potential_token
-                        logger.debug(f"Session token (UUID) found in {auth_type} header")
+                        logger.info(f"[SessionTokenAuth] Session token (UUID) found in {auth_type} header")
                     elif auth_type.lower() == 'bearer' and '.' not in potential_token:
                         # Also accept Bearer with UUID tokens (for compatibility)
                         token = potential_token
-                        logger.debug(f"Session token (UUID) found in Bearer header")
+                        logger.info(f"[SessionTokenAuth] Session token (UUID) found in Bearer header")
                     elif auth_type.lower() == 'bearer' and '.' in potential_token:
                         # This is a JWT token, skip it (let Auth0 handle it)
-                        logger.debug(f"JWT token detected in Bearer header, skipping")
+                        logger.info(f"[SessionTokenAuth] JWT token detected in Bearer header, skipping")
                         return None
         
         # If no token in header, try cookies
         if not token:
-            token = request.COOKIES.get('sid') or request.COOKIES.get('session_token')
+            cookie_sid = request.COOKIES.get('sid')
+            cookie_session = request.COOKIES.get('session_token')
+            logger.info(f"[SessionTokenAuth] Cookie sid: {cookie_sid[:8] if cookie_sid else 'None'}...")
+            logger.info(f"[SessionTokenAuth] Cookie session_token: {cookie_session[:8] if cookie_session else 'None'}...")
+            token = cookie_sid or cookie_session
             if token:
-                logger.debug("Token found in cookies")
+                logger.info(f"[SessionTokenAuth] Token found in cookies: {token[:8]}...")
         
         if not token:
-            logger.debug("No session token found in request")
+            logger.info("[SessionTokenAuth] No session token found in request")
             return None
         
         try:

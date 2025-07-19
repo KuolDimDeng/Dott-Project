@@ -14,6 +14,7 @@ from .security_views import get_active_sessions
 from .views_validation import SessionValidateView
 from .cloudflare_session_view import CloudflareSessionCreateView
 from .consolidated_auth_view import ConsolidatedAuthView
+from .debug_views import SessionDebugView
 
 app_name = 'sessions'
 
@@ -39,6 +40,9 @@ urlpatterns = [
     # REMOVED - Use /api/auth/session-v2
     # path('active/', get_active_sessions, name='session-active'),
     path('invalidate-all/', SessionInvalidateAllView.as_view(), name='session-invalidate-all'),
+    
+    # Debug endpoint (temporary for troubleshooting)
+    path('debug/<uuid:session_id>/', SessionDebugView.as_view(), name='session-debug'),
     
     # Security endpoints
     path('security/', include('session_manager.security_urls')),
