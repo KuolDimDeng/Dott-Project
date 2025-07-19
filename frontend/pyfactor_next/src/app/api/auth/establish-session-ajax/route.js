@@ -40,10 +40,11 @@ export async function POST(request) {
     const cookieOptions = {
       httpOnly: true,
       secure: isProduction,
-      sameSite: isProduction ? 'lax' : 'lax', // Changed from 'none' to 'lax' for better compatibility
+      sameSite: 'lax', // Use 'lax' for better compatibility
       path: '/',
       maxAge: 86400, // 24 hours
-      ...(isProduction && { domain: '.dottapps.com' })
+      // Don't set domain - let the browser handle it for better compatibility
+      // This ensures cookies work on both www.dottapps.com and dottapps.com
     };
     
     console.log('🔍 [EstablishSessionAjax] Cookie options to be used:', JSON.stringify(cookieOptions, null, 2));

@@ -99,11 +99,10 @@ export default function SessionBridge() {
       
       document.body.appendChild(form);
       
-      console.log('[SessionBridge] 📨 Submitting form to establish-session-form...');
-      form.submit();
-      
-      // Form submission will cause a page navigation, so the code below won't execute
-      return;
+      console.log('[SessionBridge] 📨 Using AJAX instead of form submission for better cookie handling...');
+      // Comment out form submission to use AJAX instead
+      // form.submit();
+      // return;
       
       try {
         console.log('[SessionBridge] 🚀 Sending AJAX request to establish session...');
@@ -149,26 +148,51 @@ export default function SessionBridge() {
             const allCookies = document.cookie;
             console.log('[SessionBridge] Cookie check before redirect (document.cookie):', allCookies);
             
-            // Double-check with debug endpoint
-            console.log('[SessionBridge] 🔍 Final cookie check before redirect...');
-            try {
-              const finalDebugResponse = await fetch('/api/auth/debug-cookies');
-              const finalDebug = await finalDebugResponse.json();
-              console.log('[SessionBridge] 🔍 Final cookie status:', finalDebug);
-              
-              if (!finalDebug.cookies.session.sid.exists && !finalDebug.cookies.session.session_token.exists) {
-                console.error('[SessionBridge] ⚠️ WARNING: Session cookies not found after establishment!');
-                console.log('[SessionBridge] ⚠️ Proceeding with redirect anyway...');
+            // Double-check with debug endpoint - retry a few times to ensure cookies are set
+            console.log('[SessionBridge] 🔍 Verifying cookies are set before redirect...');
+            let cookiesSet = false;
+            let retries = 0;
+            const maxRetries = 3;
+            
+            while (!cookiesSet && retries < maxRetries) {
+              try {
+                await new Promise(resolve => setTimeout(resolve, 200)); // Wait 200ms between checks
+                
+                const finalDebugResponse = await fetch('/api/auth/debug-cookies');
+                const finalDebug = await finalDebugResponse.json();
+                console.log(`[SessionBridge] 🔍 Cookie check attempt ${retries + 1}:`, {
+                  sid: finalDebug.cookies.session.sid,
+                  session_token: finalDebug.cookies.session.session_token
+                });
+                
+                if (finalDebug.cookies.session.sid.exists || finalDebug.cookies.session.session_token.exists) {
+                  console.log('[SessionBridge] ✅ Session cookies confirmed!');
+                  cookiesSet = true;
+                } else {
+                  console.log(`[SessionBridge] ⏳ Cookies not yet set, retry ${retries + 1}/${maxRetries}`);
+                }
+              } catch (finalDebugError) {
+                console.error('[SessionBridge] Error in cookie check:', finalDebugError);
               }
-            } catch (finalDebugError) {
-              console.error('[SessionBridge] Error in final cookie check:', finalDebugError);
+              retries++;
             }
             
-            // Add a slightly longer delay to ensure cookies are processed
-            setTimeout(() => {
-              console.log('[SessionBridge] Performing redirect to:', result.redirectUrl);
-              window.location.href = result.redirectUrl;
-            }, 500);
+            if (!cookiesSet) {
+              console.error('[SessionBridge] ⚠️ WARNING: Session cookies not found after all retries!');
+              console.log('[SessionBridge] ⚠️ Attempting fallback to form submission...');
+              
+              // Try form submission as last resort
+              const form = document.getElementById('session-form');
+              if (form) {
+                console.log('[SessionBridge] 📋 Submitting form as fallback...');
+                form.submit();
+                return;
+              }
+            }
+            
+            // Proceed with redirect
+            console.log('[SessionBridge] Performing redirect to:', result.redirectUrl);
+            window.location.href = result.redirectUrl;
           };
           
           await verifyCookiesAndRedirect();

@@ -66,8 +66,8 @@ export async function POST(request) {
       sameSite: 'lax',
       path: '/',
       maxAge: 86400, // 24 hours
-      // Only set domain in production
-      ...(isProduction && { domain: '.dottapps.com' })
+      // Don't set domain - let the browser handle it for better compatibility
+      // This ensures cookies work on both www.dottapps.com and dottapps.com
     };
     
     console.log('🔍 [EstablishSessionForm] Setting cookies with options:', JSON.stringify(cookieOptions, null, 2));
@@ -76,9 +76,9 @@ export async function POST(request) {
     response.cookies.set('sid', token, cookieOptions);
     response.cookies.set('session_token', token, cookieOptions);
     
-    // Also try setting via headers directly
-    const cookieString = `sid=${token}; HttpOnly; Secure=${isProduction}; SameSite=lax; Path=/; Max-Age=86400${isProduction ? '; Domain=.dottapps.com' : ''}`;
-    const sessionTokenString = `session_token=${token}; HttpOnly; Secure=${isProduction}; SameSite=lax; Path=/; Max-Age=86400${isProduction ? '; Domain=.dottapps.com' : ''}`;
+    // Also try setting via headers directly (without domain)
+    const cookieString = `sid=${token}; HttpOnly; Secure=${isProduction}; SameSite=lax; Path=/; Max-Age=86400`;
+    const sessionTokenString = `session_token=${token}; HttpOnly; Secure=${isProduction}; SameSite=lax; Path=/; Max-Age=86400`;
     
     response.headers.append('Set-Cookie', cookieString);
     response.headers.append('Set-Cookie', sessionTokenString);

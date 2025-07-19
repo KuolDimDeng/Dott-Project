@@ -75,7 +75,15 @@ export default function Highlights() {
                           <span className="text-sm font-medium text-gray-700">WhatsApp</span>
                         </div>
                         <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg shadow-sm border border-gray-100">
-                          <span className="text-green-600 font-bold">M</span>
+                          <div className="w-6 h-6 relative">
+                            <Image
+                              src="/images/integrations/mpesa.jpg"
+                              alt="M-Pesa"
+                              width={24}
+                              height={24}
+                              className="object-contain"
+                            />
+                          </div>
                           <span className="text-sm font-medium text-gray-700">M-Pesa</span>
                         </div>
                         <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg shadow-sm border border-gray-100">

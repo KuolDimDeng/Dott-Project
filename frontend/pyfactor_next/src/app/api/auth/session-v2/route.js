@@ -82,9 +82,9 @@ export async function GET(request) {
         path: '/',
         httpOnly: true,
         secure: isProduction,
-        sameSite: isProduction ? 'none' : 'lax',
-        maxAge: 0,
-        ...(cookieDomain && { domain: cookieDomain })
+        sameSite: 'lax',
+        maxAge: 0
+        // Don't set domain for better compatibility
       };
       
       response.cookies.set('sid', '', clearOptions);
@@ -169,9 +169,9 @@ export async function GET(request) {
         path: '/',
         httpOnly: true,
         secure: isProduction,
-        sameSite: isProduction ? 'none' : 'lax',
-        maxAge: 0,
-        ...(cookieDomain && { domain: cookieDomain })
+        sameSite: 'lax',
+        maxAge: 0
+        // Don't set domain for better compatibility
       };
       
       res.cookies.set('sid', '', clearOptions);
@@ -401,10 +401,10 @@ export async function POST(request) {
     const cookieOptions = {
       httpOnly: true,
       secure: isProduction,  // Only secure in production
-      sameSite: isProduction ? 'none' : 'lax',  // 'none' for production to work with Cloudflare
+      sameSite: 'lax',  // Use 'lax' for better compatibility
       expires: new Date(sessionData.expires_at),
-      path: '/',
-      ...(cookieDomain && { domain: cookieDomain })
+      path: '/'
+      // Don't set domain for better compatibility
     };
     
     response.cookies.set('sid', sessionData.session_token, cookieOptions);
