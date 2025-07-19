@@ -163,7 +163,24 @@ class ConsolidatedAuthView(View):
                 'cf_country': request.META.get('HTTP_CF_IPCOUNTRY', 'unknown')
             }
             
-            logger.info(f"[ConsolidatedAuth] Creating session with session_service...")
+            # Check if user already has an active session
+            from .models import UserSession
+            from django.utils import timezone
+            existing_sessions = UserSession.objects.filter(
+                user=user,
+                is_active=True,
+                expires_at__gt=timezone.now()
+            ).order_by('-created_at')
+            
+            logger.info(f"[ConsolidatedAuth] 🔴 CRITICAL: Checking for existing sessions...")
+            logger.info(f"[ConsolidatedAuth] 🔴 Found {existing_sessions.count()} active sessions for user {user.email}")
+            
+            if existing_sessions.exists():
+                logger.info(f"[ConsolidatedAuth] 🔴 Recent active sessions:")
+                for idx, sess in enumerate(existing_sessions[:5]):
+                    logger.info(f"  - Session {idx+1}: {sess.session_id} | Created: {sess.created_at} | Expires: {sess.expires_at}")
+            
+            logger.info(f"[ConsolidatedAuth] Creating NEW session with session_service...")
             logger.info(f"[ConsolidatedAuth] Session data:")
             logger.info(f"  - User: {user.email} (ID: {user.id})")
             logger.info(f"  - Access token present: {bool(access_token)}")

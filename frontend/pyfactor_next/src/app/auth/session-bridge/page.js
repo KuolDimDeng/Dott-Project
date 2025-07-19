@@ -55,6 +55,12 @@ export default function SessionBridge() {
       console.log('🔴 [SessionBridge] Token first 20 chars:', token?.substring(0, 20));
       console.log('🔴 [SessionBridge] Token last 20 chars:', token?.substring(token.length - 20));
       console.log('🔴 [SessionBridge] Token length:', token?.length);
+      console.log('🔴 [SessionBridge] Token type check:', {
+        isUUID: token && token.length === 36 && token.includes('-'),
+        isBackendSession: token === 'backend_session',
+        tokenValue: token
+      });
+      console.log('🔴 [SessionBridge] Full bridge data:', parsed);
       
       // Verify the bridge data is recent (within 30 seconds)
       if (Date.now() - timestamp > 30000) {

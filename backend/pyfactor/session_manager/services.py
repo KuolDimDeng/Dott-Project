@@ -218,6 +218,9 @@ class SessionService:
             
             # Create session
             with transaction.atomic():
+                print(f"[SessionService] 🔴 CREATING NEW SESSION...")
+                print(f"[SessionService] 🔴 Transaction started")
+                
                 session = UserSession.objects.create(
                     user=user,
                     tenant=tenant,
@@ -232,7 +235,12 @@ class SessionService:
                     **kwargs
                 )
                 
-                print(f"[SessionService] Session created with ID: {session.session_id}")
+                print(f"[SessionService] 🔴 Session created with ID: {session.session_id}")
+                print(f"[SessionService] 🔴 Session object created in memory")
+                
+                # Force save to ensure it's in the database
+                session.save()
+                print(f"[SessionService] 🔴 Session.save() called explicitly")
                 
                 # Log session creation
                 print(f"[SessionService] Creating session event...")

@@ -72,11 +72,51 @@ export async function POST(request) {
       userSub: authData.user?.sub,
       hasAccessToken: !!authData.access_token,
       accessToken: authData.access_token ? authData.access_token.substring(0, 20) + '...' : 'MISSING',
-      hasIdToken: !!authData.id_token
+      hasIdToken: !!authData.id_token,
+      hasBackendSessionId: !!authData.backend_session_id,
+      backendSessionId: authData.backend_session_id
     });
     
-    // Step 2: Call consolidated backend endpoint
+    // Step 2: Check if we already have a backend session
+    if (authData.backend_session_id) {
+      console.log('[ConsolidatedLogin] 🔴 CRITICAL: Backend session already exists!');
+      console.log('[ConsolidatedLogin] 🔴 Backend session ID:', authData.backend_session_id);
+      console.log('[ConsolidatedLogin] 🔴 SKIPPING consolidated-auth to avoid duplicate session creation');
+      
+      // Fetch the existing session details
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://dott-api-y26w.onrender.com';
+      const sessionResponse = await fetch(`${API_URL}/api/sessions/${authData.backend_session_id}/`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Origin': 'https://dottapps.com',
+        }
+      });
+      
+      if (!sessionResponse.ok) {
+        console.error('[ConsolidatedLogin] Failed to fetch existing session:', sessionResponse.status);
+        throw new Error('Failed to fetch existing session');
+      }
+      
+      const sessionData = await sessionResponse.json();
+      console.log('[ConsolidatedLogin] Existing session fetched successfully');
+      
+      // Use the existing session data
+      const responseData = {
+        success: true,
+        ...sessionData,
+        sessionToken: authData.backend_session_id,
+        session_token: authData.backend_session_id,
+        useSessionBridge: true
+      };
+      
+      console.log('[ConsolidatedLogin] 🔴 Using existing session:', authData.backend_session_id);
+      return NextResponse.json(responseData);
+    }
+    
+    // Step 3: Call consolidated backend endpoint only if no existing session
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://dott-api-y26w.onrender.com';
+    console.log('[ConsolidatedLogin] No existing backend session, creating new one...');
     console.log('[ConsolidatedLogin] Calling backend consolidated-auth at:', `${API_URL}/api/sessions/consolidated-auth/`);
     
     // Use the access token from auth data directly
@@ -131,6 +171,7 @@ export async function POST(request) {
     }
     
     const sessionData = await consolidatedResponse.json();
+    console.log('[ConsolidatedLogin] Raw backend response:', JSON.stringify(sessionData, null, 2));
     console.log('[ConsolidatedLogin] Consolidated auth successful:', {
       hasSession: !!sessionData.session_token,
       hasTenant: !!sessionData.tenant,

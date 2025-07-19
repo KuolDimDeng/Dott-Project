@@ -17,6 +17,11 @@ export async function POST(request) {
     console.log('🔍 [EstablishSessionForm] Form data:');
     console.log('  - Token:', token ? `${token.substring(0, 20)}... (length: ${token.length})` : 'MISSING');
     console.log('  - Redirect URL:', redirectUrl);
+    console.log('🔴 [EstablishSessionForm] CRITICAL: Full token:', token);
+    console.log('🔴 [EstablishSessionForm] Token type check:', {
+      isUUID: token && token.length === 36 && token.includes('-'),
+      tokenValue: token
+    });
     
     if (!token) {
       // Return error page

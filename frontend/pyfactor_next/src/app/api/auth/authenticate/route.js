@@ -150,6 +150,7 @@ export async function POST(request) {
         });
         
         // Transform backend response to match Auth0 format expected by frontend
+        // IMPORTANT: Use a dummy token, not the session_id, to avoid confusion
         const auth0FormattedResponse = {
           user: {
             sub: backendResult.auth0_sub || backendResult.user?.auth0_sub || `auth0|${backendResult.user?.id}`,
@@ -160,10 +161,12 @@ export async function POST(request) {
             picture: backendResult.user?.picture || '',
             email_verified: backendResult.user?.email_verified !== false
           },
-          access_token: backendResult.session_id || 'backend_session',
-          id_token: backendResult.session_id || 'backend_session',
+          access_token: 'backend_authenticated', // Use a fixed token to indicate backend auth
+          id_token: 'backend_authenticated',
           token_type: 'Bearer',
-          expires_in: 86400
+          expires_in: 86400,
+          // Include the actual session_id separately
+          backend_session_id: backendResult.session_id
         };
         
         return NextResponse.json(auth0FormattedResponse);
