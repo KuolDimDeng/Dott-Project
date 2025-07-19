@@ -22,6 +22,14 @@ export default function SessionBridge() {
       console.log('[SessionBridge] ========== COMPONENT MOUNTED ==========');
       console.log('[SessionBridge] Starting bridge processing...');
       
+      // CRITICAL: Log Cloudflare client-side information
+      console.log('🔴 [SessionBridge] CLOUDFLARE CLIENT DEBUG:');
+      console.log('  - window.CF:', typeof window !== 'undefined' ? window.CF : 'N/A');
+      console.log('  - window.__CF:', typeof window !== 'undefined' ? window.__CF : 'N/A');
+      console.log('  - navigator.userAgentData:', typeof navigator !== 'undefined' ? navigator.userAgentData : 'N/A');
+      console.log('  - Has CF cookies:', typeof document !== 'undefined' ? document.cookie.includes('__cf') : 'N/A');
+      console.log('  - Document cookies:', typeof document !== 'undefined' ? document.cookie : 'N/A');
+      
       // Get session data from sessionStorage (set during login)
       const bridgeData = sessionStorage.getItem('session_bridge');
       console.log('[SessionBridge] Bridge data exists:', !!bridgeData);

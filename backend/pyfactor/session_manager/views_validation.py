@@ -27,8 +27,18 @@ class SessionValidateView(APIView):
     def get(self, request, session_id):
         """Validate session by ID"""
         try:
+            logger.info(f"[SessionValidate] ===== SESSION VALIDATION START =====")
             logger.info(f"[SessionValidate] Validating session: {session_id}")
-            logger.info(f"[SessionValidate] Request headers: {dict(request.headers)}")
+            logger.info(f"[SessionValidate] Session ID type: {type(session_id)}")
+            logger.info(f"[SessionValidate] Session ID first 20 chars: {str(session_id)[:20]}")
+            logger.info(f"[SessionValidate] Session ID last 20 chars: {str(session_id)[-20:]}")
+            logger.info(f"[SessionValidate] Session ID length: {len(str(session_id))}")
+            
+            # Log Cloudflare headers
+            logger.info(f"[SessionValidate] 🔴 CLOUDFLARE HEADERS:")
+            logger.info(f"  - CF-Ray: {request.META.get('HTTP_CF_RAY', 'NOT PRESENT')}")
+            logger.info(f"  - CF-Connecting-IP: {request.META.get('HTTP_CF_CONNECTING_IP', 'NOT PRESENT')}")
+            logger.info(f"  - Authorization header: {request.META.get('HTTP_AUTHORIZATION', 'NOT PRESENT')}")
             
             # Try to get session directly from database first
             from .models import UserSession

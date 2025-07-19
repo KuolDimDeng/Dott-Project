@@ -41,7 +41,21 @@ class ConsolidatedAuthView(View):
             
             logger.info(f"[ConsolidatedAuth] ===== AUTH REQUEST START =====")
             logger.info(f"[ConsolidatedAuth] Auth request from IP: {real_ip}, Ray: {cf_ray}")
-            logger.info(f"[ConsolidatedAuth] Request headers: {dict(request.META)}")
+            
+            # CRITICAL: Log all Cloudflare headers
+            logger.info(f"[ConsolidatedAuth] 🔴 CLOUDFLARE HEADERS DEBUG:")
+            logger.info(f"  - CF-Ray: {request.META.get('HTTP_CF_RAY', 'NOT PRESENT')}")
+            logger.info(f"  - CF-IPCountry: {request.META.get('HTTP_CF_IPCOUNTRY', 'NOT PRESENT')}")
+            logger.info(f"  - CF-Visitor: {request.META.get('HTTP_CF_VISITOR', 'NOT PRESENT')}")
+            logger.info(f"  - CF-Connecting-IP: {request.META.get('HTTP_CF_CONNECTING_IP', 'NOT PRESENT')}")
+            logger.info(f"  - CF-Request-ID: {request.META.get('HTTP_CF_REQUEST_ID', 'NOT PRESENT')}")
+            logger.info(f"  - CF-Worker: {request.META.get('HTTP_CF_WORKER', 'NOT PRESENT')}")
+            logger.info(f"  - X-Forwarded-For: {request.META.get('HTTP_X_FORWARDED_FOR', 'NOT PRESENT')}")
+            logger.info(f"  - X-Real-IP: {request.META.get('HTTP_X_REAL_IP', 'NOT PRESENT')}")
+            logger.info(f"  - X-Forwarded-Proto: {request.META.get('HTTP_X_FORWARDED_PROTO', 'NOT PRESENT')}")
+            
+            # Log cookie header to see what's coming in
+            logger.info(f"[ConsolidatedAuth] Cookie header: {request.META.get('HTTP_COOKIE', 'NO COOKIES')}")
             
             # Parse request body
             try:
@@ -178,6 +192,14 @@ class ConsolidatedAuthView(View):
             logger.info(f"  - user_email: {session.user.email}")
             logger.info(f"  - expires_at: {session.expires_at}")
             logger.info(f"  - is_active: {session.is_active}")
+            
+            # CRITICAL: Log the exact session token being created
+            logger.info(f"[ConsolidatedAuth] 🔴 CRITICAL SESSION TOKEN DEBUG:")
+            logger.info(f"  - Full session ID: {str(session.session_id)}")
+            logger.info(f"  - Session ID type: {type(session.session_id)}")
+            logger.info(f"  - Session ID first 20 chars: {str(session.session_id)[:20]}")
+            logger.info(f"  - Session ID last 20 chars: {str(session.session_id)[-20:]}")
+            logger.info(f"  - Session ID length: {len(str(session.session_id))}")
             
             # Build comprehensive response
             response_data = {

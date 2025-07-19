@@ -21,9 +21,26 @@ export async function GET(request) {
       try {
     const cookieStore = cookies();
     
+    // CRITICAL: Log Cloudflare headers to debug interference
+    console.log('[Session-V2] 🔴 CLOUDFLARE DEBUG START 🔴');
+    console.log('[Session-V2] Cloudflare headers:');
+    console.log('  - CF-Ray:', request.headers.get('cf-ray'));
+    console.log('  - CF-IPCountry:', request.headers.get('cf-ipcountry'));
+    console.log('  - CF-Visitor:', request.headers.get('cf-visitor'));
+    console.log('  - CF-Connecting-IP:', request.headers.get('cf-connecting-ip'));
+    console.log('  - CF-Request-ID:', request.headers.get('cf-request-id'));
+    console.log('  - CF-Worker:', request.headers.get('cf-worker'));
+    console.log('  - CF-Cache-Status:', request.headers.get('cf-cache-status'));
+    
     // Log all cookies for debugging
     const allCookies = cookieStore.getAll();
     console.log('[Session-V2] All cookies:', allCookies.map(c => ({ name: c.name, value: c.value?.substring(0, 8) + '...' })));
+    
+    // Check for Cloudflare cookies
+    const cfCookies = allCookies.filter(c => c.name.startsWith('__cf') || c.name.startsWith('cf_'));
+    if (cfCookies.length > 0) {
+      console.log('[Session-V2] Cloudflare cookies found:', cfCookies.map(c => c.name));
+    }
     
     // Additional debugging for cookie issues
     console.log('[Session-V2] Request details:');
@@ -34,7 +51,9 @@ export async function GET(request) {
       origin: request.headers.get('origin'),
       referer: request.headers.get('referer'),
       'x-forwarded-host': request.headers.get('x-forwarded-host'),
-      'x-forwarded-proto': request.headers.get('x-forwarded-proto')
+      'x-forwarded-proto': request.headers.get('x-forwarded-proto'),
+      'x-forwarded-for': request.headers.get('x-forwarded-for'),
+      'x-real-ip': request.headers.get('x-real-ip')
     });
     
     // Check for both cookie names

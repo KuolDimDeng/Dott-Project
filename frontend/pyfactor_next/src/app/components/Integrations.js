@@ -84,19 +84,23 @@ export default function Integrations() {
                   className="relative bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 border border-gray-100"
                 >
                   <div className="flex items-center space-x-4">
-                    <div className="flex-shrink-0 h-16 w-16 bg-gray-50 rounded-lg flex items-center justify-center overflow-hidden">
+                    <div className="flex-shrink-0 flex items-center justify-center">
                       {integration.hasLogo ? (
-                        <Image
-                          src={integration.logo}
-                          alt={`${integration.name} logo`}
-                          width={64}
-                          height={64}
-                          className="w-full h-full object-contain"
-                        />
+                        <div className="w-24 h-16 flex items-center justify-center">
+                          <Image
+                            src={integration.logo}
+                            alt={`${integration.name} logo`}
+                            width={96}
+                            height={64}
+                            className="max-w-full max-h-full object-contain"
+                          />
+                        </div>
                       ) : (
-                        <span className="text-2xl font-bold text-gray-400">
-                          {integration.name.charAt(0)}
-                        </span>
+                        <div className="h-16 w-16 bg-gray-50 rounded-lg flex items-center justify-center">
+                          <span className="text-2xl font-bold text-gray-400">
+                            {integration.name.charAt(0)}
+                          </span>
+                        </div>
                       )}
                     </div>
                     <div>
@@ -125,19 +129,23 @@ export default function Integrations() {
                   className="relative bg-gray-50 p-6 rounded-xl border-2 border-dashed border-gray-300 opacity-75"
                 >
                   <div className="text-center">
-                    <div className="mx-auto h-16 w-16 bg-gray-200 rounded-lg flex items-center justify-center mb-4 overflow-hidden">
+                    <div className="mx-auto flex items-center justify-center mb-4">
                       {integration.hasLogo ? (
-                        <Image
-                          src={integration.logo}
-                          alt={`${integration.name} logo`}
-                          width={64}
-                          height={64}
-                          className="w-full h-full object-contain opacity-70"
-                        />
+                        <div className="w-20 h-16 flex items-center justify-center">
+                          <Image
+                            src={integration.logo}
+                            alt={`${integration.name} logo`}
+                            width={80}
+                            height={64}
+                            className="max-w-full max-h-full object-contain opacity-60 grayscale"
+                          />
+                        </div>
                       ) : (
-                        <span className="text-2xl font-bold text-gray-400">
-                          {integration.name.charAt(0)}
-                        </span>
+                        <div className="h-16 w-16 bg-gray-200 rounded-lg flex items-center justify-center">
+                          <span className="text-2xl font-bold text-gray-400">
+                            {integration.name.charAt(0)}
+                          </span>
+                        </div>
                       )}
                     </div>
                     <h4 className="text-lg font-semibold text-gray-700">
