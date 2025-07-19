@@ -78,7 +78,12 @@ export const refreshUserSession = async () => {
  */
 export const getApiBaseUrl = () => {
   if (typeof window === 'undefined') {
-    return process.env.NEXT_PUBLIC_API_URL || 'https://localhost:3000';
+    // In production, use the proper domain
+    if (process.env.NODE_ENV === 'production') {
+      return process.env.NEXT_PUBLIC_API_URL || 'https://dottapps.com';
+    }
+    // In development, use localhost
+    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
   }
   
   // Get the current origin (protocol + hostname + port)

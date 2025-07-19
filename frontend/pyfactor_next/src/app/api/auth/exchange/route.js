@@ -302,29 +302,31 @@ export async function GET(request) {
       
       // Set the Auth0 session cookie
       const sessionCookie = Buffer.from(JSON.stringify(sessionData)).toString('base64');
-      response.cookies.set('appSession', sessionCookie, {
+      const isProduction = process.env.NODE_ENV === 'production';
+      const cookieDomain = isProduction ? '.dottapps.com' : undefined;
+      
+      const baseCookieOptions = {
         httpOnly: true,
         secure: true,
-        sameSite: 'lax',
-        maxAge: tokens.expires_in || 3600,
-        path: '/'
+        sameSite: isProduction ? 'none' : 'lax',
+        path: '/',
+        ...(cookieDomain && { domain: cookieDomain })
+      };
+      
+      response.cookies.set('appSession', sessionCookie, {
+        ...baseCookieOptions,
+        maxAge: tokens.expires_in || 3600
       });
       
       // Set backend session token if available
       if (backendSession?.session_token) {
         response.cookies.set('sid', backendSession.session_token, {
-          httpOnly: true,
-          secure: true,
-          sameSite: 'lax',
-          maxAge: 86400, // 24 hours
-          path: '/'
+          ...baseCookieOptions,
+          maxAge: 86400 // 24 hours
         });
         response.cookies.set('session_token', backendSession.session_token, {
-          httpOnly: true,
-          secure: true,
-          sameSite: 'lax',
-          maxAge: 86400, // 24 hours
-          path: '/'
+          ...baseCookieOptions,
+          maxAge: 86400 // 24 hours
         });
       }
       

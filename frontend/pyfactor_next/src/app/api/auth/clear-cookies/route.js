@@ -16,12 +16,16 @@ import { logger } from '@/utils/logger';
  */
 function clearAllCookies() {
   const isDev = process.env.NODE_ENV === 'development';
+  const isProduction = process.env.NODE_ENV === 'production';
+  const cookieDomain = isProduction ? '.dottapps.com' : undefined;
+  
   const expiredOptions = {
     path: '/',
     httpOnly: true,
     secure: !isDev,
-    sameSite: 'lax',
-    maxAge: 0
+    sameSite: isProduction ? 'none' : 'lax',
+    maxAge: 0,
+    ...(cookieDomain && { domain: cookieDomain })
   };
 
   const response = NextResponse.json({ 

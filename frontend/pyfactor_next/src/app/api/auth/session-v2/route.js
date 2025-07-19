@@ -63,12 +63,16 @@ export async function GET(request) {
       }, { status: 401 });
       
       // Clear any stale cookies with explicit options
+      const isProduction = process.env.NODE_ENV === 'production';
+      const cookieDomain = isProduction ? '.dottapps.com' : undefined;
+      
       const clearOptions = {
         path: '/',
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 0
+        secure: isProduction,
+        sameSite: isProduction ? 'none' : 'lax',
+        maxAge: 0,
+        ...(cookieDomain && { domain: cookieDomain })
       };
       
       response.cookies.set('sid', '', clearOptions);
@@ -146,12 +150,16 @@ export async function GET(request) {
         error: errorDetails
       }, { status: 401 });
       
+      const isProduction = process.env.NODE_ENV === 'production';
+      const cookieDomain = isProduction ? '.dottapps.com' : undefined;
+      
       const clearOptions = {
         path: '/',
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 0
+        secure: isProduction,
+        sameSite: isProduction ? 'none' : 'lax',
+        maxAge: 0,
+        ...(cookieDomain && { domain: cookieDomain })
       };
       
       res.cookies.set('sid', '', clearOptions);
@@ -367,13 +375,24 @@ export async function POST(request) {
     });
     
     const isProduction = process.env.NODE_ENV === 'production';
+    
+    // Get the proper domain from environment or request
+    let cookieDomain;
+    if (isProduction) {
+      // In production, use the configured domain
+      cookieDomain = '.dottapps.com'; // Leading dot allows subdomains
+    } else {
+      // In development, don't set domain to allow localhost
+      cookieDomain = undefined;
+    }
+    
     const cookieOptions = {
       httpOnly: true,
       secure: isProduction,  // Only secure in production
-      sameSite: 'lax',  // Try 'lax' instead of 'none'
+      sameSite: isProduction ? 'none' : 'lax',  // 'none' for production to work with Cloudflare
       expires: new Date(sessionData.expires_at),
       path: '/',
-      // Don't set domain to allow it to default to current domain
+      ...(cookieDomain && { domain: cookieDomain })
     };
     
     response.cookies.set('sid', sessionData.session_token, cookieOptions);
@@ -426,7 +445,23 @@ export async function DELETE() {
     }
     
     const response = NextResponse.json({ success: true });
-    response.cookies.delete('sid');
+    
+    // Clear cookies with proper domain
+    const isProduction = process.env.NODE_ENV === 'production';
+    const cookieDomain = isProduction ? '.dottapps.com' : undefined;
+    
+    const clearOptions = {
+      path: '/',
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
+      maxAge: 0,
+      ...(cookieDomain && { domain: cookieDomain })
+    };
+    
+    response.cookies.set('sid', '', clearOptions);
+    response.cookies.set('session_token', '', clearOptions);
+    
     return response;
     
   } catch (error) {

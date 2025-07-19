@@ -30,7 +30,7 @@ export async function POST(request) {
     const cookieOptions = {
       httpOnly: true,
       secure: isProduction,
-      sameSite: 'lax',
+      sameSite: isProduction ? 'none' : 'lax', // 'none' for Cloudflare compatibility
       path: '/',
       maxAge: 86400, // 24 hours
       // Set domain explicitly for production

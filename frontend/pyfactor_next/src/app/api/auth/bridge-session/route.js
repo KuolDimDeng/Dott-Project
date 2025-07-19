@@ -24,16 +24,15 @@ export async function GET(request) {
     // The token IS the session token (UUID from backend)
     // Configure cookie options
     const isProduction = process.env.NODE_ENV === 'production';
+    const cookieDomain = isProduction ? '.dottapps.com' : undefined;
     
-    // Don't set domain - let it default to current domain
-    // This ensures cookies work on the exact domain being accessed
     const cookieOptions = {
       httpOnly: true,
       secure: isProduction, // Only secure in production
-      sameSite: 'lax', // Try 'lax' instead of 'none'
+      sameSite: isProduction ? 'none' : 'lax', // 'none' for production to work with Cloudflare
       path: '/',
       maxAge: 86400, // 24 hours
-      // Remove domain setting to let it default
+      ...(cookieDomain && { domain: cookieDomain })
     };
     
     console.log('[BridgeSession] Setting session cookies...');
