@@ -79,12 +79,8 @@ export async function POST(request) {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://dott-api-y26w.onrender.com';
     console.log('[ConsolidatedLogin] Calling backend consolidated-auth at:', `${API_URL}/api/sessions/consolidated-auth/`);
     
-    // CRITICAL: If we're using backend auth, the access_token from authenticate is already the session ID
-    // We need to pass the actual Auth0 token or a valid token for the backend
-    const accessTokenToSend = authData.access_token === 'backend_session' ? 
-      // Generate a temporary token for backend auth
-      `temp_${Date.now()}_${Math.random().toString(36).substring(2)}` : 
-      authData.access_token;
+    // Use the access token from auth data directly
+    const accessTokenToSend = authData.access_token;
     
     console.log('[ConsolidatedLogin] Access token to send to backend:', accessTokenToSend ? accessTokenToSend.substring(0, 20) + '...' : 'MISSING');
     
@@ -148,38 +144,6 @@ export async function POST(request) {
       expires_at: sessionData.expires_at
     });
     
-    // CRITICAL: If backend didn't return a session token, we need to create one
-    if (!sessionData.session_token && authData.access_token) {
-      console.log('[ConsolidatedLogin] No session token from backend, creating session via session-v2...');
-      
-      // Create session using the session-v2 endpoint
-      const sessionResponse = await fetch(`${baseUrl}/api/auth/session-v2`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          accessToken: authData.access_token,
-          idToken: authData.id_token,
-          user: authData.user
-        })
-      });
-      
-      if (sessionResponse.ok) {
-        const newSessionData = await sessionResponse.json();
-        console.log('[ConsolidatedLogin] Created new session:', {
-          session_token: newSessionData.session_token ? newSessionData.session_token.substring(0, 20) + '...' : 'MISSING'
-        });
-        
-        // Merge the session data
-        sessionData.session_token = newSessionData.session_token;
-        if (newSessionData.user) {
-          sessionData.user = { ...sessionData.user, ...newSessionData.user };
-        }
-      } else {
-        console.error('[ConsolidatedLogin] Failed to create session via session-v2');
-      }
-    }
     
     // Step 3: Return complete response with all data
     if (!sessionData.session_token) {
@@ -192,36 +156,16 @@ export async function POST(request) {
     
     console.log('[ConsolidatedLogin] Session token received:', sessionData.session_token.substring(0, 20) + '...');
     
-    // TEMPORARY: Skip validation to work around backend bug
-    // The backend's consolidated-auth endpoint is returning tokens that don't exist
-    console.log('[ConsolidatedLogin] WARNING: Skipping session validation due to backend bug');
-    console.log('[ConsolidatedLogin] Backend consolidated-auth should create valid sessions');
-    
-    console.log('[ConsolidatedLogin] Will use session bridge for cookie setting');
-    
     // Create the complete response data
-    // CRITICAL: Only use session data from backend, not auth data
+    // Use session data from backend as the single source of truth
     const responseData = {
       success: true,
-      // DON'T spread authData - it contains wrong tokens!
-      // ...authData,  // This was causing the issue - it overwrites session_token
-      ...sessionData,  // Session and user data from backend
-      // Ensure consistent field names
-      needs_onboarding: sessionData.needs_onboarding,
-      tenant_id: sessionData.tenant?.id || sessionData.tenant_id,
-      // Add session bridge indicator
-      useSessionBridge: true,
+      ...sessionData,  // All session data from backend
+      // Ensure we have the session token in both formats for compatibility
       sessionToken: sessionData.session_token,
-      session_token: sessionData.session_token, // Include both formats
-      // Only include specific auth fields that don't conflict
-      user: {
-        ...sessionData.user,
-        // Merge any additional user data from auth that's not in session
-        ...(authData.user && {
-          picture: authData.user.picture || sessionData.user?.picture,
-          locale: authData.user.locale
-        })
-      }
+      session_token: sessionData.session_token,
+      // Add session bridge indicator
+      useSessionBridge: true
     };
     
     console.log('[ConsolidatedLogin] Returning response for session bridge...');
