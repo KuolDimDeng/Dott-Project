@@ -148,6 +148,39 @@ export async function POST(request) {
       expires_at: sessionData.expires_at
     });
     
+    // CRITICAL: If backend didn't return a session token, we need to create one
+    if (!sessionData.session_token && authData.access_token) {
+      console.log('[ConsolidatedLogin] No session token from backend, creating session via session-v2...');
+      
+      // Create session using the session-v2 endpoint
+      const sessionResponse = await fetch(`${baseUrl}/api/auth/session-v2`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          accessToken: authData.access_token,
+          idToken: authData.id_token,
+          user: authData.user
+        })
+      });
+      
+      if (sessionResponse.ok) {
+        const newSessionData = await sessionResponse.json();
+        console.log('[ConsolidatedLogin] Created new session:', {
+          session_token: newSessionData.session_token ? newSessionData.session_token.substring(0, 20) + '...' : 'MISSING'
+        });
+        
+        // Merge the session data
+        sessionData.session_token = newSessionData.session_token;
+        if (newSessionData.user) {
+          sessionData.user = { ...sessionData.user, ...newSessionData.user };
+        }
+      } else {
+        console.error('[ConsolidatedLogin] Failed to create session via session-v2');
+      }
+    }
+    
     // Step 3: Return complete response with all data
     if (!sessionData.session_token) {
       console.error('[ConsolidatedLogin] No session token in response!');
@@ -158,6 +191,54 @@ export async function POST(request) {
     }
     
     console.log('[ConsolidatedLogin] Session token received:', sessionData.session_token.substring(0, 20) + '...');
+    
+    // CRITICAL: Validate the session token exists before proceeding
+    console.log('[ConsolidatedLogin] Validating session token with backend...');
+    const validateResponse = await fetch(`${API_URL}/api/sessions/validate/${sessionData.session_token}/`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Session ${sessionData.session_token}`
+      }
+    });
+    
+    if (!validateResponse.ok) {
+      console.error('[ConsolidatedLogin] Session validation failed:', validateResponse.status);
+      console.log('[ConsolidatedLogin] Session token does not exist in backend, creating new session...');
+      
+      // The token doesn't exist, we need to create a proper session
+      // Use the Auth0 token to create a new session
+      const createResponse = await fetch(`${API_URL}/api/sessions/create/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authData.access_token}`,
+          'Origin': 'https://dottapps.com'
+        },
+        body: JSON.stringify({})
+      });
+      
+      if (createResponse.ok) {
+        const newSession = await createResponse.json();
+        console.log('[ConsolidatedLogin] Created new session:', {
+          session_token: newSession.session_token ? newSession.session_token.substring(0, 20) + '...' : 'MISSING'
+        });
+        
+        // Replace the invalid session token with the new one
+        sessionData.session_token = newSession.session_token;
+        sessionData.expires_at = newSession.expires_at;
+        if (newSession.user) {
+          sessionData.user = { ...sessionData.user, ...newSession.user };
+        }
+      } else {
+        console.error('[ConsolidatedLogin] Failed to create new session');
+        return NextResponse.json({
+          error: 'Failed to create valid session'
+        }, { status: 500 });
+      }
+    } else {
+      console.log('[ConsolidatedLogin] Session validation successful');
+    }
+    
     console.log('[ConsolidatedLogin] Will use session bridge for cookie setting');
     
     // Create the complete response data

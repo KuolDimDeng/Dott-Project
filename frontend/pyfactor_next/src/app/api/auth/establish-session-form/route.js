@@ -29,6 +29,14 @@ export async function POST(request) {
       );
     }
     
+    // Extract additional data that might be needed
+    const userEmail = formData.get('userEmail');
+    const accessToken = formData.get('accessToken');
+    
+    console.log('🔍 [EstablishSessionForm] Additional form data:');
+    console.log('  - User Email:', userEmail);
+    console.log('  - Access Token:', accessToken ? `${accessToken.substring(0, 20)}...` : 'MISSING');
+    
     const isProduction = process.env.NODE_ENV === 'production';
     const isSecureContext = request.headers.get('x-forwarded-proto') === 'https' || 
                            request.url.startsWith('https://') ||
