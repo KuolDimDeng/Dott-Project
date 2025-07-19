@@ -189,6 +189,11 @@ export async function GET(request) {
             logger.error('[Session-V2] Session endpoint not found, check backend URLs');
           }
           
+          // TEMPORARY: If validation fails but we have a cookie, it might be from consolidated-auth
+          // The backend bug causes tokens to not be persisted properly
+          console.log('[Session-V2] WARNING: Session validation failed but cookie exists');
+          console.log('[Session-V2] This may be due to backend consolidated-auth bug');
+          
       // Clear invalid session with explicit options
       const res = NextResponse.json({ 
         authenticated: false,

@@ -46,8 +46,9 @@
       "payroll": "Payroll & HR tools",
       "tax": "Tax compliance",
       "insights": "AI-powered insights",
-      "mobileMoney": "Mobile money payments",
-      "cardPayments": "Card payments worldwide"
+      "mobileMoney": "Mobile money payments (M-Pesa)",
+      "cardPayments": "Accept card payments worldwide",
+      "languages": "20+ languages supported"
     }
   },
   "heroTitle": "AI Global Business Platform",

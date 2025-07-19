@@ -132,23 +132,27 @@ export default function Hero() {
               </div>
               {t('hero.benefit.cardPayments')}
             </div>
+            <div className="flex items-center">
+              <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center mr-2">
+                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              {t('hero.benefit.languages')}
+            </div>
           </div>
           
           <div className="mt-10">
             <HeroSlideshow />
           </div>
           
-          <p className="mt-12 text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            {t('heroDescription', 'Run your international business with one powerful platform. Multi-currency invoicing, regional tax compliance, advanced inventory with barcode scanning, and local payment gateways - everything you need to succeed globally.')}
+          <p className="mt-12 text-xl text-blue-600 max-w-3xl mx-auto leading-relaxed">
+            {t('hero.description', 'Dott lets business owners like you create invoices, accept payments online, manage your accounting, and inventory, with barcode scanning—all in one intuitive platform.')}
           </p>
           
           <div className="mt-10">
             <AuthButton theme="light" />
           </div>
-          
-          <p className="mt-4 text-xs text-gray-500">
-            * {t('hero.paymentNote')}
-          </p>
         </div>
       </div>
     </div>
