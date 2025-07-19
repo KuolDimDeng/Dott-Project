@@ -79,9 +79,9 @@ export async function POST(request) {
     // Log the response headers to verify cookies are set
     console.log('🔍 [EstablishSessionAjax] Response headers:', Object.fromEntries(response.headers.entries()));
     
-    // Log cookie details
-    const setCookieHeaders = response.headers.get('set-cookie');
-    console.log('🔍 [EstablishSessionAjax] Set-Cookie headers:', setCookieHeaders);
+    // Log cookie details using the browser API
+    const setCookieHeader = response.headers.get('set-cookie');
+    console.log('🔍 [EstablishSessionAjax] Set-Cookie header (single):', setCookieHeader);
     
     console.log('✅ [EstablishSessionAjax] Cookies set successfully');
     console.log('🔍 [EstablishSessionAjax] ===== AJAX SESSION ESTABLISHMENT END =====');
