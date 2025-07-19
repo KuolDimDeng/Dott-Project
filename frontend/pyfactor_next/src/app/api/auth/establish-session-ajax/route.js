@@ -40,11 +40,11 @@ export async function POST(request) {
     const cookieOptions = {
       httpOnly: true,
       secure: isProduction,
-      sameSite: 'lax', // Use 'lax' for better same-site compatibility
+      sameSite: isProduction ? 'none' : 'lax', // 'none' for Cloudflare compatibility in production
       path: '/',
       maxAge: 86400, // 24 hours
-      // In production, set domain to ensure cookies work across the site
-      ...(isProduction && { domain: '.dottapps.com' })
+      // Remove domain specification for better Cloudflare compatibility
+      // Cloudflare will handle cookie domain automatically
     };
     
     console.log('🔍 [EstablishSessionAjax] Cookie options to be used:', JSON.stringify(cookieOptions, null, 2));

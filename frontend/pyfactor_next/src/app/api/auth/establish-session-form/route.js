@@ -63,11 +63,11 @@ export async function POST(request) {
     const cookieOptions = {
       httpOnly: true,
       secure: isProduction,
-      sameSite: 'lax', // Use 'lax' for same-site requests
+      sameSite: isProduction ? 'none' : 'lax', // 'none' for Cloudflare compatibility in production
       path: '/',
       maxAge: 86400, // 24 hours
-      // In production, set domain to ensure cookies work across the site
-      ...(isProduction && { domain: '.dottapps.com' })
+      // Remove domain specification for better Cloudflare compatibility
+      // Cloudflare will handle cookie domain automatically
     };
     
     console.log('🔍 [EstablishSessionForm] Setting cookies with options:', JSON.stringify(cookieOptions, null, 2));
@@ -77,7 +77,7 @@ export async function POST(request) {
     response.cookies.set('session_token', token, cookieOptions);
     
     // Also try setting via headers directly (without domain)
-    const sameSiteValue = 'lax'; // Always use 'lax' for same-site requests
+    const sameSiteValue = isProduction ? 'none' : 'lax'; // 'none' for Cloudflare in production
     const cookieString = `sid=${token}; HttpOnly; Secure=${isProduction}; SameSite=${sameSiteValue}; Path=/; Max-Age=86400`;
     const sessionTokenString = `session_token=${token}; HttpOnly; Secure=${isProduction}; SameSite=${sameSiteValue}; Path=/; Max-Age=86400`;
     

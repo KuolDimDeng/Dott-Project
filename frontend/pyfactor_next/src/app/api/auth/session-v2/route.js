@@ -115,7 +115,7 @@ export async function GET(request) {
         path: '/',
         httpOnly: true,
         secure: isProduction,
-        sameSite: 'lax',
+        sameSite: isProduction ? 'none' : 'lax',
         maxAge: 0
         // Don't set domain for better compatibility
       };
@@ -202,7 +202,7 @@ export async function GET(request) {
         path: '/',
         httpOnly: true,
         secure: isProduction,
-        sameSite: 'lax',
+        sameSite: isProduction ? 'none' : 'lax',
         maxAge: 0
         // Don't set domain for better compatibility
       };
@@ -434,7 +434,7 @@ export async function POST(request) {
     const cookieOptions = {
       httpOnly: true,
       secure: isProduction,  // Only secure in production
-      sameSite: 'lax',  // Use 'lax' for same-site requests
+      sameSite: isProduction ? 'none' : 'lax',  // 'none' for Cloudflare compatibility in production
       expires: new Date(sessionData.expires_at),
       path: '/'
       // Don't set domain for better compatibility
