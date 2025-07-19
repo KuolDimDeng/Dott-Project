@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cookie Test - Plain HTML</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .test-section {
+            background: #f5f5f5;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        button {
+            background: #0070f3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0051cc;
+        }
+        pre {
+            background: #fff;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .log {
+            background: #f0f0f0;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Plain HTML Cookie Test</h1>
+    <p>This tests cookie setting outside of Next.js framework</p>
+    
+    <div class="test-section">
+        <h2>Current Cookies</h2>
+        <pre id="current-cookies">Loading...</pre>
+        <button onclick="refreshCookies()">Refresh</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>JavaScript Cookie Tests</h2>
+        <button onclick="setTestCookie()">Set Test Cookie</button>
+        <button onclick="setSidCookie()">Set SID Cookie</button>
+        <button onclick="setSessionTokenCookie()">Set Session Token Cookie</button>
+        <button onclick="setAllSessionCookies()">Set All Session Cookies</button>
+        <button onclick="clearAllCookies()">Clear All Cookies</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test Log</h2>
+        <div id="test-log"></div>
+    </div>
+    
+    <script>
+        const testSessionId = '38a07d2b-a395-4b79-b190-2ca4ef5c70bc';
+        
+        function log(message, data = null) {
+            const logDiv = document.getElementById('test-log');
+            const entry = document.createElement('div');
+            entry.className = 'log';
+            entry.textContent = `[${new Date().toISOString()}] ${message}`;
+            if (data) {
+                entry.textContent += '\n' + JSON.stringify(data, null, 2);
+            }
+            logDiv.insertBefore(entry, logDiv.firstChild);
+        }
+        
+        function refreshCookies() {
+            const cookies = document.cookie;
+            document.getElementById('current-cookies').textContent = cookies || '(No cookies)';
+            
+            // Parse and display individual cookies
+            const parsed = {};
+            if (cookies) {
+                cookies.split(';').forEach(cookie => {
+                    const [name, value] = cookie.trim().split('=');
+                    if (name) {
+                        parsed[name] = value;
+                    }
+                });
+            }
+            log('Refreshed cookies', parsed);
+        }
+        
+        function setCookie(name, value, options = {}) {
+            let cookieString = `${name}=${value}`;
+            
+            if (options.path) cookieString += `; path=${options.path}`;
+            if (options.maxAge) cookieString += `; max-age=${options.maxAge}`;
+            if (options.expires) cookieString += `; expires=${options.expires.toUTCString()}`;
+            if (options.domain) cookieString += `; domain=${options.domain}`;
+            if (options.secure) cookieString += '; secure';
+            if (options.sameSite) cookieString += `; samesite=${options.sameSite}`;
+            
+            log(`Setting cookie: ${cookieString}`);
+            document.cookie = cookieString;
+            
+            // Verify it was set
+            const allCookies = document.cookie;
+            const wasSet = allCookies.includes(name);
+            log(`Cookie ${name} was ${wasSet ? 'SET' : 'NOT SET'}`);
+            
+            refreshCookies();
+            return wasSet;
+        }
+        
+        function setTestCookie() {
+            setCookie('html_test_cookie', `test_${Date.now()}`, {
+                path: '/',
+                maxAge: 3600
+            });
+        }
+        
+        function setSidCookie() {
+            setCookie('sid', testSessionId, {
+                path: '/',
+                maxAge: 86400
+            });
+        }
+        
+        function setSessionTokenCookie() {
+            setCookie('session_token', testSessionId, {
+                path: '/',
+                maxAge: 86400
+            });
+        }
+        
+        function setAllSessionCookies() {
+            // Try different variations
+            const variations = [
+                { name: 'sid', value: testSessionId },
+                { name: 'session_token', value: testSessionId },
+                { name: 'SID', value: testSessionId },
+                { name: 'SESSION_TOKEN', value: testSessionId },
+                { name: 'sessionId', value: testSessionId },
+                { name: 'sessionToken', value: testSessionId }
+            ];
+            
+            variations.forEach(({ name, value }) => {
+                setCookie(name, value, {
+                    path: '/',
+                    maxAge: 86400
+                });
+            });
+        }
+        
+        function clearAllCookies() {
+            const cookies = document.cookie.split(';');
+            cookies.forEach(cookie => {
+                const [name] = cookie.trim().split('=');
+                if (name) {
+                    // Clear with various path/domain combinations
+                    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+                    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.dottapps.com`;
+                    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=dottapps.com`;
+                    log(`Cleared cookie: ${name}`);
+                }
+            });
+            refreshCookies();
+        }
+        
+        // Initialize
+        window.onload = function() {
+            refreshCookies();
+            log('Page loaded', {
+                url: window.location.href,
+                protocol: window.location.protocol,
+                hostname: window.location.hostname,
+                isSecureContext: window.isSecureContext
+            });
+        };
+    </script>
+</body>
+</html>

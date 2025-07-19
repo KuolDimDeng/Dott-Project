@@ -86,6 +86,30 @@ export default function TestCookiesPage() {
         }
       });
 
+      // Test 5: Session cookie test
+      console.log('🧪 Test 5: Testing session-specific cookies...');
+      const sessionResponse = await fetch('/api/auth/test-session-cookies');
+      const sessionData = await sessionResponse.json();
+      
+      results.push({
+        name: 'Session Cookie Test',
+        success: sessionResponse.ok,
+        data: sessionData,
+        headers: Object.fromEntries(sessionResponse.headers.entries())
+      });
+
+      // Test 6: Cookie name test
+      console.log('🧪 Test 6: Testing different cookie names...');
+      const nameResponse = await fetch('/api/auth/test-cookie-names');
+      const nameData = await nameResponse.json();
+      
+      results.push({
+        name: 'Cookie Name Test',
+        success: nameResponse.ok,
+        data: nameData,
+        headers: Object.fromEntries(nameResponse.headers.entries())
+      });
+
       // Refresh cookie display
       const updatedCookies = document.cookie.split(';').reduce((acc, cookie) => {
         const [name, value] = cookie.trim().split('=');
