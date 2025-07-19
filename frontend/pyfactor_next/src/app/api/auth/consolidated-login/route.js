@@ -155,6 +155,12 @@ export async function POST(request) {
       success: responseData.success
     });
     
+    // CRITICAL DEBUG: Log the exact session token being returned
+    console.log('[ConsolidatedLogin] 🔴 CRITICAL: Session token being returned:', responseData.session_token);
+    console.log('[ConsolidatedLogin] 🔴 Token first 20 chars:', responseData.session_token?.substring(0, 20));
+    console.log('[ConsolidatedLogin] 🔴 Token last 20 chars:', responseData.session_token?.substring(responseData.session_token.length - 20));
+    console.log('[ConsolidatedLogin] 🔴 Token length:', responseData.session_token?.length);
+    
     return NextResponse.json(responseData);
     
   } catch (error) {

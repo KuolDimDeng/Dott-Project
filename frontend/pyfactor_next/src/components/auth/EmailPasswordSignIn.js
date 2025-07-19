@@ -472,9 +472,16 @@ export default function EmailPasswordSignIn() {
         console.log('🔍 [EmailPasswordSignIn] Session token:', loginResult.sessionToken || loginResult.session_token ? 'Present' : 'MISSING');
         console.log('🔍 [EmailPasswordSignIn] Token length:', (loginResult.sessionToken || loginResult.session_token)?.length);
         
+        // CRITICAL DEBUG: Log the exact token we're about to store
+        const tokenToStore = loginResult.sessionToken || loginResult.session_token;
+        console.log('🔴 [EmailPasswordSignIn] CRITICAL: Token to store:', tokenToStore);
+        console.log('🔴 [EmailPasswordSignIn] Token first 20 chars:', tokenToStore?.substring(0, 20));
+        console.log('🔴 [EmailPasswordSignIn] Token last 20 chars:', tokenToStore?.substring(tokenToStore.length - 20));
+        console.log('🔴 [EmailPasswordSignIn] Full loginResult:', JSON.stringify(loginResult, null, 2));
+        
         // Store session data in sessionStorage for the bridge
         const bridgeData = {
-          token: loginResult.sessionToken || loginResult.session_token,
+          token: tokenToStore,
           redirectUrl: redirectUrl,
           timestamp: Date.now(),
           email: loginResult.user?.email,

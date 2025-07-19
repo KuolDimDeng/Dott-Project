@@ -51,6 +51,12 @@ export default function SessionBridge() {
       
       const { token, redirectUrl, timestamp } = parsed;
       
+      // CRITICAL DEBUG: Log the exact token retrieved
+      console.log('🔴 [SessionBridge] CRITICAL: Token retrieved from sessionStorage:', token);
+      console.log('🔴 [SessionBridge] Token first 20 chars:', token?.substring(0, 20));
+      console.log('🔴 [SessionBridge] Token last 20 chars:', token?.substring(token.length - 20));
+      console.log('🔴 [SessionBridge] Token length:', token?.length);
+      
       // Verify the bridge data is recent (within 30 seconds)
       if (Date.now() - timestamp > 30000) {
         console.error('[SessionBridge] Bridge data expired', {
