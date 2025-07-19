@@ -15,6 +15,7 @@ from .views_validation import SessionValidateView
 from .cloudflare_session_view import CloudflareSessionCreateView
 from .consolidated_auth_view import ConsolidatedAuthView
 from .debug_views import SessionDebugView
+from .views_public import PublicSessionDetailView
 
 app_name = 'sessions'
 
@@ -30,6 +31,8 @@ urlpatterns = [
     # Session validation without authentication
     path('validate/<uuid:session_id>/', SessionValidateView.as_view(), name='session-validate'),
     path('validate/<uuid:session_id>', SessionValidateView.as_view(), name='session-validate-no-slash'),
+    # Public session details endpoint (no auth required)
+    path('public/<uuid:session_id>/', PublicSessionDetailView.as_view(), name='session-public-detail'),
     # Authenticated session detail (keeping for backward compatibility)
     path('<uuid:session_id>/', SessionDetailView.as_view(), name='session-detail'),
     path('<uuid:session_id>', SessionDetailView.as_view(), name='session-detail-no-slash'),

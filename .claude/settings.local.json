@@ -159,7 +159,8 @@
       "Bash(if [ ! -f \"$lang/calendar.json\" ])",
       "Bash(else)",
       "Bash(__NEW_LINE__ for lang in pt de ja tr id vi nl ha yo am zu ko)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(DJANGO_SETTINGS_MODULE=pyfactor.settings python3 -c \"import django; django.setup(); from session_manager.views_public import PublicSessionDetailView; print(''PublicSessionDetailView imported successfully'')\")"
     ],
     "deny": []
   }

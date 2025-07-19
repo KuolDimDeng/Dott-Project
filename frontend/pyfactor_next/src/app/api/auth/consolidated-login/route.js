@@ -83,9 +83,10 @@ export async function POST(request) {
       console.log('[ConsolidatedLogin] 🔴 Backend session ID:', authData.backend_session_id);
       console.log('[ConsolidatedLogin] 🔴 SKIPPING consolidated-auth to avoid duplicate session creation');
       
-      // Fetch the existing session details
+      // Fetch the existing session details using public endpoint
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://dott-api-y26w.onrender.com';
-      const sessionResponse = await fetch(`${API_URL}/api/sessions/${authData.backend_session_id}/`, {
+      console.log('[ConsolidatedLogin] Fetching existing session from public endpoint:', `${API_URL}/api/sessions/public/${authData.backend_session_id}/`);
+      const sessionResponse = await fetch(`${API_URL}/api/sessions/public/${authData.backend_session_id}/`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -94,24 +95,38 @@ export async function POST(request) {
       });
       
       if (!sessionResponse.ok) {
-        console.error('[ConsolidatedLogin] Failed to fetch existing session:', sessionResponse.status);
-        throw new Error('Failed to fetch existing session');
+        const errorText = await sessionResponse.text();
+        console.error('[ConsolidatedLogin] Failed to fetch existing session:', {
+          status: sessionResponse.status,
+          statusText: sessionResponse.statusText,
+          errorText: errorText.substring(0, 500)
+        });
+        
+        // Fall back to creating a new session if we can't fetch the existing one
+        console.log('[ConsolidatedLogin] Falling back to creating new session...');
+        // Continue with the regular flow instead of throwing
+      } else {
+        const sessionData = await sessionResponse.json();
+        console.log('[ConsolidatedLogin] Existing session fetched successfully');
+        console.log('[ConsolidatedLogin] Session data:', {
+          session_id: sessionData.session_id,
+          user_email: sessionData.user?.email,
+          tenant_id: sessionData.tenant?.id,
+          needs_onboarding: sessionData.needs_onboarding
+        });
+        
+        // Use the existing session data
+        const responseData = {
+          success: true,
+          ...sessionData,
+          sessionToken: authData.backend_session_id,
+          session_token: authData.backend_session_id,
+          useSessionBridge: true
+        };
+        
+        console.log('[ConsolidatedLogin] 🔴 Using existing session:', authData.backend_session_id);
+        return NextResponse.json(responseData);
       }
-      
-      const sessionData = await sessionResponse.json();
-      console.log('[ConsolidatedLogin] Existing session fetched successfully');
-      
-      // Use the existing session data
-      const responseData = {
-        success: true,
-        ...sessionData,
-        sessionToken: authData.backend_session_id,
-        session_token: authData.backend_session_id,
-        useSessionBridge: true
-      };
-      
-      console.log('[ConsolidatedLogin] 🔴 Using existing session:', authData.backend_session_id);
-      return NextResponse.json(responseData);
     }
     
     // Step 3: Call consolidated backend endpoint only if no existing session
