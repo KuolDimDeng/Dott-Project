@@ -5,6 +5,17 @@ import { cookies } from 'next/headers';
  * Consolidated login endpoint that handles authentication atomically
  * This follows security best practices by doing everything server-side
  */
+export async function OPTIONS(request) {
+  return new Response(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    },
+  });
+}
+
 export async function POST(request) {
   try {
     const { email, password } = await request.json();
