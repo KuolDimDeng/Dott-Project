@@ -56,10 +56,26 @@ export async function POST(request) {
     
     const authData = await authResponse.json();
     console.log('[ConsolidatedLogin] Auth successful, creating consolidated session...');
+    console.log('[ConsolidatedLogin] Auth data received:', {
+      hasUser: !!authData.user,
+      userSub: authData.user?.sub,
+      hasAccessToken: !!authData.access_token,
+      accessToken: authData.access_token ? authData.access_token.substring(0, 20) + '...' : 'MISSING',
+      hasIdToken: !!authData.id_token
+    });
     
     // Step 2: Call consolidated backend endpoint
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://dott-api-y26w.onrender.com';
     console.log('[ConsolidatedLogin] Calling backend consolidated-auth at:', `${API_URL}/api/sessions/consolidated-auth/`);
+    
+    // CRITICAL: If we're using backend auth, the access_token from authenticate is already the session ID
+    // We need to pass the actual Auth0 token or a valid token for the backend
+    const accessTokenToSend = authData.access_token === 'backend_session' ? 
+      // Generate a temporary token for backend auth
+      `temp_${Date.now()}_${Math.random().toString(36).substring(2)}` : 
+      authData.access_token;
+    
+    console.log('[ConsolidatedLogin] Access token to send to backend:', accessTokenToSend ? accessTokenToSend.substring(0, 20) + '...' : 'MISSING');
     
     const consolidatedResponse = await fetch(`${API_URL}/api/sessions/consolidated-auth/`, {
       method: 'POST',
@@ -70,7 +86,7 @@ export async function POST(request) {
       body: JSON.stringify({
         auth0_sub: authData.user.sub,
         email: authData.user.email,
-        access_token: authData.access_token,
+        access_token: accessTokenToSend,
         name: authData.user.name,
         given_name: authData.user.given_name,
         family_name: authData.user.family_name,
@@ -134,17 +150,28 @@ export async function POST(request) {
     console.log('[ConsolidatedLogin] Will use session bridge for cookie setting');
     
     // Create the complete response data
+    // CRITICAL: Only use session data from backend, not auth data
     const responseData = {
       success: true,
-      ...authData,  // Auth0 tokens
-      ...sessionData,  // Session and user data
+      // DON'T spread authData - it contains wrong tokens!
+      // ...authData,  // This was causing the issue - it overwrites session_token
+      ...sessionData,  // Session and user data from backend
       // Ensure consistent field names
       needs_onboarding: sessionData.needs_onboarding,
       tenant_id: sessionData.tenant?.id || sessionData.tenant_id,
       // Add session bridge indicator
       useSessionBridge: true,
       sessionToken: sessionData.session_token,
-      session_token: sessionData.session_token // Include both formats
+      session_token: sessionData.session_token, // Include both formats
+      // Only include specific auth fields that don't conflict
+      user: {
+        ...sessionData.user,
+        // Merge any additional user data from auth that's not in session
+        ...(authData.user && {
+          picture: authData.user.picture || sessionData.user?.picture,
+          locale: authData.user.locale
+        })
+      }
     };
     
     console.log('[ConsolidatedLogin] Returning response for session bridge...');
