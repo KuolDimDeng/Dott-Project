@@ -72,10 +72,38 @@ export default function SessionBridge() {
       console.log('[SessionBridge] 🔄 Preparing to establish session directly...');
       console.log('[SessionBridge] Session token:', token?.substring(0, 20) + '...');
       
-      // Use AJAX to establish session instead of form POST
-      console.log('[SessionBridge] 📝 Using AJAX to establish session...');
+      // Update state for form submission
       setSessionToken(token);
       setRedirectUrl(redirectUrl || '/dashboard');
+      
+      // Try form submission first as it's more reliable for cookies
+      console.log('[SessionBridge] 📝 Attempting form-based session establishment...');
+      
+      // Create and submit form programmatically
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = '/api/auth/establish-session-form';
+      form.style.display = 'none';
+      
+      const tokenInput = document.createElement('input');
+      tokenInput.type = 'hidden';
+      tokenInput.name = 'token';
+      tokenInput.value = token;
+      form.appendChild(tokenInput);
+      
+      const redirectInput = document.createElement('input');
+      redirectInput.type = 'hidden';
+      redirectInput.name = 'redirectUrl';
+      redirectInput.value = redirectUrl || '/dashboard';
+      form.appendChild(redirectInput);
+      
+      document.body.appendChild(form);
+      
+      console.log('[SessionBridge] 📨 Submitting form to establish-session-form...');
+      form.submit();
+      
+      // Form submission will cause a page navigation, so the code below won't execute
+      return;
       
       try {
         console.log('[SessionBridge] 🚀 Sending AJAX request to establish session...');
@@ -92,6 +120,12 @@ export default function SessionBridge() {
         });
         
         console.log('[SessionBridge] AJAX response status:', establishResponse.status);
+        console.log('[SessionBridge] AJAX response headers:', {
+          'content-type': establishResponse.headers.get('content-type'),
+          'set-cookie': establishResponse.headers.get('set-cookie'), // This will be null in browser for security
+          'all-headers': [...establishResponse.headers.entries()]
+        });
+        
         const result = await establishResponse.json();
         console.log('[SessionBridge] AJAX response:', result);
         
@@ -183,7 +217,7 @@ export default function SessionBridge() {
       <form 
         id="session-form"
         method="POST" 
-        action="/api/auth/establish-session"
+        action="/api/auth/establish-session-form"
         style={{ display: 'none' }}
       >
         <input type="hidden" name="token" value={sessionToken} />

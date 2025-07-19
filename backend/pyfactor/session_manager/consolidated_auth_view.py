@@ -138,15 +138,40 @@ class ConsolidatedAuthView(View):
                 'cf_country': request.META.get('HTTP_CF_IPCOUNTRY', 'unknown')
             }
             
-            session = session_service.create_session(
-                user=user,
-                access_token=access_token,
-                request_meta=request_meta,
-                tenant=tenant,
-                needs_onboarding=needs_onboarding,
-                onboarding_completed=user.onboarding_completed,
-                onboarding_step=onboarding_step
-            )
+            logger.info(f"[ConsolidatedAuth] Creating session with session_service...")
+            logger.info(f"[ConsolidatedAuth] Session data:")
+            logger.info(f"  - User: {user.email} (ID: {user.id})")
+            logger.info(f"  - Access token present: {bool(access_token)}")
+            logger.info(f"  - Tenant: {tenant.name if tenant else 'None'}")
+            logger.info(f"  - Needs onboarding: {needs_onboarding}")
+            logger.info(f"  - Onboarding step: {onboarding_step}")
+            
+            try:
+                session = session_service.create_session(
+                    user=user,
+                    access_token=access_token,
+                    request_meta=request_meta,
+                    tenant=tenant,
+                    needs_onboarding=needs_onboarding,
+                    onboarding_completed=user.onboarding_completed,
+                    onboarding_step=onboarding_step
+                )
+                
+                logger.info(f"[ConsolidatedAuth] Session created successfully!")
+                logger.info(f"  - Session ID: {session.session_id}")
+                logger.info(f"  - Expires at: {session.expires_at}")
+                
+                # Verify session was saved to database
+                from .models import UserSession
+                verify_session = UserSession.objects.filter(session_id=session.session_id).exists()
+                logger.info(f"[ConsolidatedAuth] Session verification - exists in DB: {verify_session}")
+                
+            except Exception as e:
+                logger.error(f"[ConsolidatedAuth] Session creation failed: {e}")
+                logger.error(f"[ConsolidatedAuth] Error type: {type(e).__name__}")
+                import traceback
+                logger.error(f"[ConsolidatedAuth] Traceback: {traceback.format_exc()}")
+                raise
             
             logger.info(f"[ConsolidatedAuth] Session created successfully!")
             logger.info(f"  - session_id: {session.session_id}")
