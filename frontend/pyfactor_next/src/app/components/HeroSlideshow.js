@@ -127,70 +127,42 @@ export default function HeroSlideshow() {
   };
 
   return (
-    <div className="relative w-full max-w-7xl mx-auto px-8">
-      <div className="relative h-[650px] flex items-center justify-center">
-        {/* Previous slide */}
-        <div className="absolute left-0 w-[35%] h-[85%] opacity-60 transform scale-95 -translate-x-4 z-10">
-          <div className="relative w-full h-full rounded-lg overflow-hidden shadow-lg bg-gray-100">
-            <Image
-              src={placeholderImages[getSlideIndex(-1)].src}
-              alt={placeholderImages[getSlideIndex(-1)].alt}
-              fill
-              className="object-contain"
-              sizes="(max-width: 768px) 35vw, 35vw"
-            />
-            <div className="absolute inset-0 bg-black/20"></div>
-          </div>
-        </div>
-
-        {/* Current slide - centered and larger */}
-        <div className="relative w-[65%] h-full z-20">
+    <div className="relative w-full max-w-7xl mx-auto px-4">
+      <div className="relative h-[800px] flex items-center justify-center">
+        {/* Main slide only - larger and centered */}
+        <div className="relative w-full h-full">
           <div className="relative w-full h-full rounded-lg overflow-hidden shadow-2xl bg-gray-50">
             <Image
               src={placeholderImages[currentIndex].src}
               alt={placeholderImages[currentIndex].alt}
               fill
-              className="object-contain"
-              sizes="(max-width: 768px) 100vw, 65vw"
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 100vw"
               priority
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
             <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
-              <h3 className="text-2xl font-semibold mb-2">{placeholderImages[currentIndex].title}</h3>
-              <p className="text-base opacity-95">{placeholderImages[currentIndex].description}</p>
+              <h3 className="text-3xl font-semibold mb-2">{placeholderImages[currentIndex].title}</h3>
+              <p className="text-lg opacity-95">{placeholderImages[currentIndex].description}</p>
             </div>
-          </div>
-        </div>
-
-        {/* Next slide */}
-        <div className="absolute right-0 w-[35%] h-[85%] opacity-60 transform scale-95 translate-x-4 z-10">
-          <div className="relative w-full h-full rounded-lg overflow-hidden shadow-lg bg-gray-100">
-            <Image
-              src={placeholderImages[getSlideIndex(1)].src}
-              alt={placeholderImages[getSlideIndex(1)].alt}
-              fill
-              className="object-contain"
-              sizes="(max-width: 768px) 35vw, 35vw"
-            />
-            <div className="absolute inset-0 bg-black/20"></div>
           </div>
         </div>
 
         {/* Navigation buttons */}
         <button
           onClick={goToPrevious}
-          className="absolute left-0 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 p-2 rounded-full shadow-lg transition-all duration-200 hover:scale-110 z-30"
+          className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 p-3 rounded-full shadow-lg transition-all duration-200 hover:scale-110 z-30"
           aria-label="Previous slide"
         >
-          <ChevronLeftIcon className="h-6 w-6" />
+          <ChevronLeftIcon className="h-8 w-8" />
         </button>
 
         <button
           onClick={goToNext}
-          className="absolute right-0 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 p-2 rounded-full shadow-lg transition-all duration-200 hover:scale-110 z-30"
+          className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-gray-800 p-3 rounded-full shadow-lg transition-all duration-200 hover:scale-110 z-30"
           aria-label="Next slide"
         >
-          <ChevronRightIcon className="h-6 w-6" />
+          <ChevronRightIcon className="h-8 w-8" />
         </button>
       </div>
 
