@@ -30,7 +30,7 @@ export async function POST(request) {
     const cookieOptions = {
       httpOnly: true,
       secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax', // 'none' for Cloudflare compatibility
+      sameSite: 'lax', // Changed to 'lax' for better browser compatibility
       path: '/',
       maxAge: 86400, // 24 hours
       // Set domain explicitly for production
@@ -39,15 +39,30 @@ export async function POST(request) {
     
     console.log('[EstablishSession] Cookie options:', cookieOptions);
     
-    // Create the redirect response first
-    const redirectResponse = NextResponse.redirect(new URL(redirectUrl, baseUrl));
+    // Create the redirect response with 303 status (See Other)
+    // 303 is better for form POST redirects as it explicitly changes method to GET
+    const redirectResponse = NextResponse.redirect(
+      new URL(redirectUrl, baseUrl),
+      { status: 303 }
+    );
     
     // Set cookies on the redirect response
     redirectResponse.cookies.set('sid', token, cookieOptions);
     redirectResponse.cookies.set('session_token', token, cookieOptions);
     
+    // Also set cookies using headers for better compatibility
+    const cookieString = `sid=${token}; Path=/; HttpOnly; Max-Age=86400; SameSite=Lax${isProduction ? '; Secure' : ''}${isProduction ? '; Domain=.dottapps.com' : ''}`;
+    const sessionCookieString = `session_token=${token}; Path=/; HttpOnly; Max-Age=86400; SameSite=Lax${isProduction ? '; Secure' : ''}${isProduction ? '; Domain=.dottapps.com' : ''}`;
+    
+    redirectResponse.headers.append('Set-Cookie', cookieString);
+    redirectResponse.headers.append('Set-Cookie', sessionCookieString);
+    
     console.log('[EstablishSession] Cookies set on redirect response');
-    console.log('[EstablishSession] Redirecting to:', redirectUrl);
+    console.log('[EstablishSession] Using 303 redirect to:', redirectUrl);
+    console.log('[EstablishSession] Cookie headers:', {
+      sid: cookieString.substring(0, 50) + '...',
+      session_token: sessionCookieString.substring(0, 50) + '...'
+    });
     
     return redirectResponse;
     

@@ -405,7 +405,7 @@ const nextConfig = {
               // Base URI
               "base-uri 'self'",
               // Form actions
-              "form-action 'self' https://auth.dottapps.com",
+              "form-action 'self' https://auth.dottapps.com https://dottapps.com https://www.dottapps.com",
               // Upgrade insecure requests
               "upgrade-insecure-requests"
             ].join('; ')

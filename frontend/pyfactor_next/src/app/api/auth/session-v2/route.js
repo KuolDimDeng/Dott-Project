@@ -25,6 +25,18 @@ export async function GET(request) {
     const allCookies = cookieStore.getAll();
     console.log('[Session-V2] All cookies:', allCookies.map(c => ({ name: c.name, value: c.value?.substring(0, 8) + '...' })));
     
+    // Additional debugging for cookie issues
+    console.log('[Session-V2] Request details:');
+    console.log('  - URL:', request.url);
+    console.log('  - Method:', request.method);
+    console.log('  - Headers:', {
+      host: request.headers.get('host'),
+      origin: request.headers.get('origin'),
+      referer: request.headers.get('referer'),
+      'x-forwarded-host': request.headers.get('x-forwarded-host'),
+      'x-forwarded-proto': request.headers.get('x-forwarded-proto')
+    });
+    
     // Check for both cookie names
     const sidCookie = cookieStore.get('sid');
     const sessionTokenCookie = cookieStore.get('session_token');

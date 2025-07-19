@@ -72,50 +72,67 @@ export default function SessionBridge() {
       console.log('[SessionBridge] 🔄 Preparing to establish session directly...');
       console.log('[SessionBridge] Session token:', token?.substring(0, 20) + '...');
       
-      // Set the session token in state to update the form
-      console.log('[SessionBridge] 📝 Setting session token in state...');
+      // Use AJAX to establish session instead of form POST
+      console.log('[SessionBridge] 📝 Using AJAX to establish session...');
       setSessionToken(token);
       setRedirectUrl(redirectUrl || '/dashboard');
       
-      // Wait for next render cycle to ensure form is updated
-      console.log('[SessionBridge] ⏱️  Waiting for form to update...');
-      setTimeout(() => {
-        console.log('[SessionBridge] 🔍 Looking for form element...');
-        const form = document.getElementById('session-form');
-        console.log('[SessionBridge] Form element found:', !!form);
+      try {
+        console.log('[SessionBridge] 🚀 Sending AJAX request to establish session...');
+        const establishResponse = await fetch('/api/auth/establish-session-ajax', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            token,
+            redirectUrl: redirectUrl || '/dashboard'
+          }),
+          credentials: 'include' // Important for cookies
+        });
         
-        if (form) {
-          console.log('[SessionBridge] ✅ Form found, preparing submission...');
+        console.log('[SessionBridge] AJAX response status:', establishResponse.status);
+        const result = await establishResponse.json();
+        console.log('[SessionBridge] AJAX response:', result);
+        
+        if (result.success) {
+          console.log('[SessionBridge] ✅ Session established successfully via AJAX');
+          console.log('[SessionBridge] 🔄 Redirecting to:', result.redirectUrl);
           
-          // Log all form inputs
-          const formData = new FormData(form);
-          const formEntries = {};
-          for (const [key, value] of formData.entries()) {
-            formEntries[key] = key === 'token' ? `${value.substring(0, 20)}...` : value;
-          }
+          // Verify cookies are set before redirecting
+          const verifyCookiesAndRedirect = () => {
+            // Check if cookies are visible to JavaScript (though session cookies are httpOnly)
+            const allCookies = document.cookie;
+            console.log('[SessionBridge] Cookie check before redirect:', allCookies);
+            
+            // Add a slightly longer delay to ensure cookies are processed
+            setTimeout(() => {
+              console.log('[SessionBridge] Performing redirect to:', result.redirectUrl);
+              window.location.href = result.redirectUrl;
+            }, 300);
+          };
           
-          console.log('[SessionBridge] 📋 Form submission data:', {
-            action: form.action,
-            method: form.method,
-            tokenLength: token?.length,
-            isUUID: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(token),
-            formData: formEntries
-          });
-          
-          // Submit the form
-          console.log('[SessionBridge] 🚀 Submitting form to establish session...');
-          form.submit();
+          verifyCookiesAndRedirect();
         } else {
-          console.error('[SessionBridge] ❌ Form element not found!');
-          console.log('[SessionBridge] DOM debug - body innerHTML length:', document.body.innerHTML.length);
-          console.log('[SessionBridge] DOM debug - forms in document:', document.forms.length);
-          console.log('[SessionBridge] DOM debug - element by ID:', document.getElementById('session-form'));
-          
-          // As a fallback, try direct navigation with session cookie
-          console.log('[SessionBridge] 🔄 Attempting direct navigation as fallback');
-          router.push(redirectUrl || '/dashboard');
+          console.error('[SessionBridge] ❌ AJAX session establishment failed:', result.error);
+          router.push('/auth/signin?error=session_establishment_failed');
         }
-      }, 200); // Increased delay to ensure state update
+      } catch (ajaxError) {
+        console.error('[SessionBridge] ❌ AJAX request failed:', ajaxError);
+        
+        // Fallback to form submission
+        console.log('[SessionBridge] 🔄 Falling back to form submission...');
+        setTimeout(() => {
+          const form = document.getElementById('session-form');
+          if (form) {
+            console.log('[SessionBridge] 📋 Submitting form as fallback...');
+            form.submit();
+          } else {
+            console.error('[SessionBridge] ❌ Form element not found for fallback!');
+            router.push('/auth/signin?error=session_bridge_failed');
+          }
+        }, 200);
+      }
     } catch (error) {
       console.error('[SessionBridge] ❌ Error processing bridge data:', error);
       console.error('[SessionBridge] Error stack:', error.stack);
