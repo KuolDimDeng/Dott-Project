@@ -72,8 +72,45 @@ export async function POST(request) {
     
     console.log('[EstablishSession] Full redirect URL:', fullRedirectUrl.toString());
     
-    // Create redirect response with proper headers
-    const redirectResponse = NextResponse.redirect(fullRedirectUrl);
+    // Instead of redirect, return HTML with meta refresh and JavaScript
+    // This ensures cookies are set before navigation
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Establishing session...</title>
+  <meta http-equiv="refresh" content="0; url=${fullRedirectUrl}">
+  <script>
+    // Set cookies via JavaScript as backup
+    document.cookie = 'sid=${token}; path=/; max-age=86400${isProduction ? '; secure' : ''}; samesite=lax';
+    document.cookie = 'session_token=${token}; path=/; max-age=86400${isProduction ? '; secure' : ''}; samesite=lax';
+    
+    // Clear old cookies
+    ['sessionId', 'session_id', 'auth_session'].forEach(name => {
+      document.cookie = name + '=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    });
+    
+    // Redirect after cookies are set
+    setTimeout(() => {
+      window.location.href = '${fullRedirectUrl}';
+    }, 100);
+  </script>
+</head>
+<body>
+  <p>Establishing session... If you are not redirected, <a href="${fullRedirectUrl}">click here</a>.</p>
+</body>
+</html>`;
+    
+    // Create response with HTML content
+    const response = new NextResponse(html, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/html',
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'Pragma': 'no-cache'
+      }
+    });
     
     // First, clear any existing cookies to ensure clean state
     const clearOptions = {
@@ -87,13 +124,13 @@ export async function POST(request) {
     // Clear old cookies first - also clear any other session-related cookies
     const cookiesToClear = ['sid', 'session_token', 'sessionId', 'session_id', 'auth_session'];
     cookiesToClear.forEach(cookieName => {
-      redirectResponse.cookies.set(cookieName, '', clearOptions);
+      response.cookies.set(cookieName, '', clearOptions);
     });
     console.log('[EstablishSession] Cleared old cookies:', cookiesToClear);
     
-    // Now set the new cookies
-    redirectResponse.cookies.set('sid', token, cookieOptions);
-    redirectResponse.cookies.set('session_token', token, cookieOptions);
+    // Now set the new cookies on the response
+    response.cookies.set('sid', token, cookieOptions);
+    response.cookies.set('session_token', token, cookieOptions);
     
     // Log server-side cookie setting for debugging
     console.log('[SERVER INFO] [EstablishSession] Setting cookies on redirect response:', {
@@ -112,7 +149,7 @@ export async function POST(request) {
       location: redirectResponse.headers.get('location')
     });
     
-    return redirectResponse;
+    return response;
     
   } catch (error) {
     console.error('[EstablishSession] Error:', error);

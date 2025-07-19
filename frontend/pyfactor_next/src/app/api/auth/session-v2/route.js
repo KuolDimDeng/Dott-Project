@@ -38,6 +38,20 @@ export async function GET(request) {
     console.log('  - Cookie header:', request.headers.get('cookie'));
     console.log('  - Origin:', request.headers.get('origin'));
     console.log('  - Referer:', request.headers.get('referer'));
+    console.log('  - User-Agent:', request.headers.get('user-agent'));
+    
+    // Also try to parse cookie header manually
+    const cookieHeader = request.headers.get('cookie');
+    if (cookieHeader) {
+      console.log('[Session-V2] Manual cookie parse:');
+      const cookies = cookieHeader.split(';').map(c => c.trim());
+      cookies.forEach(cookie => {
+        const [name, value] = cookie.split('=');
+        if (name && (name.includes('sid') || name.includes('session'))) {
+          console.log(`  - ${name}: ${value?.substring(0, 8)}...`);
+        }
+      });
+    }
     
     const sessionId = sidCookie || sessionTokenCookie;
     
