@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { standardSecurityHeaders } from '@/utils/responseHeaders';
 
 export async function POST(request) {
@@ -14,10 +13,14 @@ export async function POST(request) {
       );
     }
 
-    const cookieStore = cookies();
+    // Create the response
+    const response = NextResponse.json(
+      { success: true },
+      { status: 200, headers: standardSecurityHeaders }
+    );
     
     // Store access token in httpOnly cookie
-    cookieStore.set('admin_access_token', accessToken, {
+    response.cookies.set('admin_access_token', accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
@@ -26,7 +29,7 @@ export async function POST(request) {
     });
 
     // Store refresh token in httpOnly cookie
-    cookieStore.set('admin_refresh_token', refreshToken, {
+    response.cookies.set('admin_refresh_token', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
@@ -35,7 +38,7 @@ export async function POST(request) {
     });
 
     // Store CSRF token in regular cookie (needs to be readable by JavaScript)
-    cookieStore.set('admin_csrf_token', csrfToken, {
+    response.cookies.set('admin_csrf_token', csrfToken, {
       httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
@@ -43,10 +46,7 @@ export async function POST(request) {
       maxAge: 24 * 60 * 60, // 24 hours
     });
 
-    return NextResponse.json(
-      { success: true },
-      { status: 200, headers: standardSecurityHeaders }
-    );
+    return response;
 
   } catch (error) {
     console.error('[Admin Auth Store] Error:', error);

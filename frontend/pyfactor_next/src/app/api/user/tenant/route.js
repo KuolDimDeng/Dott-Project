@@ -170,9 +170,20 @@ export async function POST(request) {
       }, { status: 400 });
     }
     
+    logger.info('Updated tenant ID:', {
+      userId: user.sub?.substring(0, 8) + '...',
+      tenantId: tenantId?.substring(0, 8) + '...'
+    });
+    
+    // Create response
+    const response = NextResponse.json({
+      tenantId,
+      updated: true,
+      message: 'Tenant ID updated successfully'
+    });
+    
     // Store in cookie
-    const cookieStore = cookies();
-    cookieStore.set('tenantId', tenantId, {
+    response.cookies.set('tenantId', tenantId, {
       maxAge: 60 * 60 * 24 * 30, // 30 days
       path: '/',
       httpOnly: true,
@@ -180,16 +191,7 @@ export async function POST(request) {
       sameSite: 'lax',
     });
     
-    logger.info('Updated tenant ID:', {
-      userId: user.sub?.substring(0, 8) + '...',
-      tenantId: tenantId?.substring(0, 8) + '...'
-    });
-    
-    return NextResponse.json({
-      tenantId,
-      updated: true,
-      message: 'Tenant ID updated successfully'
-    });
+    return response;
     
   } catch (error) {
     logger.error('Error processing request:', {

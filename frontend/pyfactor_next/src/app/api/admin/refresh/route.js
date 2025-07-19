@@ -32,9 +32,15 @@ export async function POST(request) {
 
     const data = await response.json();
 
+    // Create the response
+    const apiResponse = NextResponse.json(data, { 
+      status: response.status,
+      headers: adminSecurityHeaders 
+    });
+
     // If refresh successful, update access token
     if (response.status === 200 && data.access_token) {
-      cookieStore.set('admin_access_token', data.access_token, {
+      apiResponse.cookies.set('admin_access_token', data.access_token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
@@ -43,10 +49,7 @@ export async function POST(request) {
       });
     }
 
-    return NextResponse.json(data, { 
-      status: response.status,
-      headers: adminSecurityHeaders 
-    });
+    return apiResponse;
 
   } catch (error) {
     console.error('[Admin Refresh API] Error:', error);

@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 
 /**
  * Endpoint to sync a repaired tenant ID with the system 
@@ -19,23 +18,6 @@ export async function POST(request) {
     }
     
     console.log(`[SyncTenantId] Syncing tenant ID: ${originalId} → ${repairedId}`);
-    
-    // Set cookies with the corrected tenant ID
-    const cookieStore = cookies();
-    
-    // Set the main tenantId cookie
-    cookieStore.set('tenantId', repairedId, {
-      path: '/',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 365, // 1 year
-    });
-    
-    // Set the businessid cookie as well (used by some parts of the system)
-    cookieStore.set('businessid', repairedId, {
-      path: '/',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 365, // 1 year
-    });
     
     // Update tenant schema mapping in the database if needed
     try {
@@ -129,11 +111,27 @@ export async function POST(request) {
       // Continue anyway - cookie update is most important
     }
     
-    return NextResponse.json({
+    // Create response
+    const response = NextResponse.json({
       success: true,
       tenantId: repairedId,
       message: `Successfully synced tenant ID: ${originalId} → ${repairedId}`
     });
+    
+    // Set cookies with the corrected tenant ID
+    const cookieOptions = {
+      path: '/',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 365, // 1 year
+    };
+    
+    // Set the main tenantId cookie
+    response.cookies.set('tenantId', repairedId, cookieOptions);
+    
+    // Set the businessid cookie as well (used by some parts of the system)
+    response.cookies.set('businessid', repairedId, cookieOptions);
+    
+    return response;
   } catch (error) {
     console.error(`[SyncTenantId] Error: ${error.message}`);
     return NextResponse.json(

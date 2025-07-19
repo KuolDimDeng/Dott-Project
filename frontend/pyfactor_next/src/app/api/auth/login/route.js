@@ -201,7 +201,13 @@ export async function GET(request) {
     response.headers.set('Expires', '0');
     
     // Set cookies for state and PKCE verifier
-    const cookieOptions = `Path=/; HttpOnly; SameSite=Lax; Max-Age=600; Secure`;
+    const cookieOptions = {
+      path: '/',
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: 600, // 10 minutes
+      secure: true
+    };
     
     console.log('🔄 [Auth0Login] ========== STEP 2D: SETTING PKCE COOKIES ==========');
     console.log('🔄 [Auth0Login] Setting auth0_state cookie:', state);
@@ -210,17 +216,17 @@ export async function GET(request) {
     console.log('🔄 [Auth0Login] Cookie domain:', 'default (current domain)');
     console.log('🔄 [Auth0Login] Cookie expiry:', '600 seconds (10 minutes)');
     
-    response.headers.append('Set-Cookie', `auth0_state=${state}; ${cookieOptions}`);
-    response.headers.append('Set-Cookie', `auth0_verifier=${verifier}; ${cookieOptions}`);
+    response.cookies.set('auth0_state', state, cookieOptions);
+    response.cookies.set('auth0_verifier', verifier, cookieOptions);
     
     // Store return URL if provided
     if (returnUrl) {
-      response.headers.append('Set-Cookie', `auth0_return_url=${encodeURIComponent(returnUrl)}; ${cookieOptions}`);
+      response.cookies.set('auth0_return_url', encodeURIComponent(returnUrl), cookieOptions);
     }
     
     // Store invitation token if provided
     if (invitation) {
-      response.headers.append('Set-Cookie', `auth0_invitation=${invitation}; ${cookieOptions}`);
+      response.cookies.set('auth0_invitation', invitation, cookieOptions);
     }
     
     return response;

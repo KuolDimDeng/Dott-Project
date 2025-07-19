@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { standardSecurityHeaders } from '@/utils/responseHeaders';
 
 const adminSecurityHeaders = {
@@ -26,12 +25,16 @@ export async function POST(request) {
 
     const data = await response.json();
 
+    // Create the response
+    const apiResponse = NextResponse.json(data, { 
+      status: response.status,
+      headers: adminSecurityHeaders 
+    });
+
     // If MFA verification successful, store tokens in cookies
     if (response.status === 200 && data.access_token) {
-      const cookieStore = cookies();
-      
       // Store tokens in httpOnly cookies
-      cookieStore.set('admin_access_token', data.access_token, {
+      apiResponse.cookies.set('admin_access_token', data.access_token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
@@ -39,7 +42,7 @@ export async function POST(request) {
         maxAge: 8 * 60 * 60, // 8 hours
       });
 
-      cookieStore.set('admin_refresh_token', data.refresh_token, {
+      apiResponse.cookies.set('admin_refresh_token', data.refresh_token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
@@ -48,7 +51,7 @@ export async function POST(request) {
       });
 
       // CSRF token needs to be readable by JavaScript
-      cookieStore.set('admin_csrf_token', data.csrf_token, {
+      apiResponse.cookies.set('admin_csrf_token', data.csrf_token, {
         httpOnly: false,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
@@ -57,10 +60,7 @@ export async function POST(request) {
       });
     }
 
-    return NextResponse.json(data, { 
-      status: response.status,
-      headers: adminSecurityHeaders 
-    });
+    return apiResponse;
 
   } catch (error) {
     console.error('[Admin MFA Verify API] Error:', error);

@@ -65,6 +65,31 @@ export default function Highlights() {
                     {highlight.description}
                   </p>
                   
+                  {/* Show integration logos for the integration highlight */}
+                  {highlight.title === t('highlights.integration.title', 'Seamless Integrations') && (
+                    <div className="mt-6">
+                      <p className="text-sm font-medium text-gray-500 mb-3">Integrated with:</p>
+                      <div className="flex flex-wrap gap-4">
+                        <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg shadow-sm border border-gray-100">
+                          <span className="text-green-600 font-bold">W</span>
+                          <span className="text-sm font-medium text-gray-700">WhatsApp</span>
+                        </div>
+                        <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg shadow-sm border border-gray-100">
+                          <span className="text-green-600 font-bold">M</span>
+                          <span className="text-sm font-medium text-gray-700">M-Pesa</span>
+                        </div>
+                        <div className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg shadow-sm border border-gray-100">
+                          <span className="text-purple-600 font-bold">S</span>
+                          <span className="text-sm font-medium text-gray-700">Stripe</span>
+                        </div>
+                        <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 opacity-60">
+                          <span className="text-gray-400">+</span>
+                          <span className="text-sm text-gray-500">More coming</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
                   <div className="mt-8">
                     <a
                       href="#"

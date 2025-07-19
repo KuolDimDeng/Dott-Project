@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 
 /**
  * AJAX version of establish-session endpoint
@@ -22,7 +21,6 @@ export async function POST(request) {
     }
     
     const isProduction = process.env.NODE_ENV === 'production';
-    const cookieStore = cookies();
     
     const cookieOptions = {
       httpOnly: true,
@@ -35,28 +33,18 @@ export async function POST(request) {
     
     console.log('[EstablishSessionAjax] Setting cookies with options:', cookieOptions);
     
-    // Set cookies using Next.js cookies API
-    cookieStore.set('sid', token, cookieOptions);
-    cookieStore.set('session_token', token, cookieOptions);
-    
-    // Create response
+    // Create response first
     const response = NextResponse.json({ 
       success: true,
       redirectUrl,
       message: 'Session established successfully'
     });
     
-    // Also set cookies using headers for redundancy
-    const cookieString = `sid=${token}; Path=/; HttpOnly; Max-Age=86400; SameSite=Lax${isProduction ? '; Secure' : ''}${isProduction ? '; Domain=.dottapps.com' : ''}`;
-    const sessionCookieString = `session_token=${token}; Path=/; HttpOnly; Max-Age=86400; SameSite=Lax${isProduction ? '; Secure' : ''}${isProduction ? '; Domain=.dottapps.com' : ''}`;
-    
-    response.headers.append('Set-Cookie', cookieString);
-    response.headers.append('Set-Cookie', sessionCookieString);
+    // Set cookies on the response object
+    response.cookies.set('sid', token, cookieOptions);
+    response.cookies.set('session_token', token, cookieOptions);
     
     console.log('[EstablishSessionAjax] Cookies set successfully');
-    console.log('[EstablishSessionAjax] Response headers:', {
-      'Set-Cookie': response.headers.get('Set-Cookie')
-    });
     
     return response;
     

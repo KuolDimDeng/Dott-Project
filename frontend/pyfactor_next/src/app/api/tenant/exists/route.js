@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
 import { validate as uuidValidate } from 'uuid';
-import { cookies } from 'next/headers';
 
 /**
  * Handles tenant existence check requests
@@ -33,11 +32,11 @@ export async function POST(request) {
 
     logger.debug('[/api/tenant/exists] Valid UUID format, setting tenant cookie');
     
-    // Set the cookie for tenant ID to maintain session consistency
-    const cookieStore = cookies();
+    // Create response
+    const response = NextResponse.json({ exists: true, tenantId });
     
-    // Set with 7-day expiration
-    cookieStore.set('tenantId', tenantId, {
+    // Set the cookie for tenant ID to maintain session consistency
+    response.cookies.set('tenantId', tenantId, {
       maxAge: 60 * 60 * 24 * 7, // 1 week
       path: '/',
       httpOnly: true,
@@ -45,9 +44,7 @@ export async function POST(request) {
       sameSite: 'strict',
     });
     
-    // For now, always assume the tenant exists if UUID is valid format
-    // This avoids JWT expiration and RLS issues during onboarding
-    return NextResponse.json({ exists: true, tenantId });
+    return response;
   } catch (error) {
     // Enhanced error logging
     logger.error('[/api/tenant/exists] Error processing request:', {

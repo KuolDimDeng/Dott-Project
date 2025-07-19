@@ -9,6 +9,7 @@ import AppBar from '@/app/components/AppBar';
 import Hero from '@/app/components/Hero';
 import Features from '@/app/components/Features';
 import Highlights from '@/app/components/Highlights';
+import Integrations from '@/app/components/Integrations';
 // import Pricing from '@/app/components/Pricing';
 import GeoPricing from '@/components/pricing/GeoPricing';
 import FAQ from '@/app/components/FAQ';
@@ -122,6 +123,10 @@ export default function Home() {
         <Highlights />
       </div>
       
+      {/* Integrations Section - White background */}
+      <div className="bg-white">
+        <Integrations />
+      </div>
       
       {/* Pricing Section - Light cyan background */}
       <div className="bg-cyan-50">
