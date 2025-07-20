@@ -51,10 +51,8 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
       container.id = 'google-maps-portal-container';
       container.style.width = '100%';
       container.style.height = '100%';
-      container.style.position = 'absolute';
-      container.style.top = '0';
-      container.style.left = '0';
-      container.style.zIndex = '1';
+      container.style.position = 'relative';
+      container.style.zIndex = '10';
       setPortalContainer(container);
       
       return () => {
@@ -191,9 +189,12 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
       }
 
       try {
-        console.log('[GeofencingSettings] Creating map instance in portal container...');
-        // Initialize map in the portal container instead of the React-managed container
-        const map = new window.google.maps.Map(portalContainer, {
+        console.log('[GeofencingSettings] Creating map instance...');
+        // Initialize map directly in the container
+        const targetContainer = mapContainerRef.current || portalContainer;
+        console.log('[GeofencingSettings] Using container:', targetContainer);
+        
+        const map = new window.google.maps.Map(targetContainer, {
           center: { lat: 37.7749, lng: -122.4194 }, // Default to San Francisco
           zoom: 15,
           mapTypeId: 'roadmap'
@@ -387,8 +388,11 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
           await loadGoogleMapsScript();
         }
         
-        console.log('[GeofencingSettings] Retry - Creating map instance in portal...');
-        const map = new window.google.maps.Map(portalContainer, {
+        console.log('[GeofencingSettings] Retry - Creating map instance...');
+        const targetContainer = mapContainerRef.current || portalContainer;
+        console.log('[GeofencingSettings] Retry - Using container:', targetContainer);
+        
+        const map = new window.google.maps.Map(targetContainer, {
           center: { lat: 37.7749, lng: -122.4194 }, // Default to San Francisco
           zoom: 15,
           mapTypeId: 'roadmap'
@@ -652,7 +656,7 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
             ref={mapContainerRefCallback}
             className="w-full h-full relative"
             onLoad={() => console.log('[GeofencingSettings] 📍 Map container div onLoad event')}
-            style={{ backgroundColor: 'lightblue', minHeight: '384px' }}
+            style={{ minHeight: '384px' }}
           >
             {console.log('[GeofencingSettings] 📍 Map container div is being rendered')}
             {console.log('[GeofencingSettings] 📍 mapContainerRef object:', mapContainerRef)}
