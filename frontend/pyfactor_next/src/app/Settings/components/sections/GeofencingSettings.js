@@ -18,9 +18,10 @@ import api from '@/utils/api';
 import StandardSpinner from '@/components/ui/StandardSpinner';
 import FieldTooltip from '@/components/ui/FieldTooltip';
 import { GOOGLE_MAPS_CONFIG } from '@/config/maps';
+import GoogleMapsGeofenceSetup from './GeofencingSettingsSimple';
 
-// Google Maps Integration
-const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => {
+// Google Maps Integration - REPLACED WITH SIMPLIFIED VERSION
+const GoogleMapsGeofenceSetup_OLD = ({ onGeofenceCreated, onCancel, isVisible }) => {
   const [loading, setLoading] = useState(true);
   const [map, setMap] = useState(null);
   const [geofence, setGeofence] = useState(null);
