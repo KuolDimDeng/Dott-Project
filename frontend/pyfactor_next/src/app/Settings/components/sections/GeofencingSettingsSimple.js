@@ -101,6 +101,13 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
         
         console.log('[GoogleMaps] Initialized successfully');
         
+        // Check for Google Maps errors
+        window.gm_authFailure = () => {
+          console.error('[GoogleMaps] Authentication failure - Invalid API key');
+          setMapError('Google Maps API key is invalid. Please contact support to update the API key.');
+          setLoading(false);
+        };
+        
         // Try to get user location
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition((position) => {
@@ -321,9 +328,15 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
           )}
           {mapError && (
             <div className="absolute inset-0 flex items-center justify-center bg-red-50 z-10">
-              <div className="text-center p-4">
+              <div className="text-center p-4 max-w-md">
                 <ExclamationTriangleIcon className="h-8 w-8 text-red-500 mx-auto mb-2" />
-                <p className="text-sm text-red-700">{mapError}</p>
+                <p className="text-sm text-red-700 font-medium">{mapError}</p>
+                <p className="text-xs text-red-600 mt-2">
+                  To fix this, you need a valid Google Maps API key with the Maps JavaScript API enabled.
+                </p>
+                <p className="text-xs text-red-600 mt-1">
+                  Please contact your administrator to update the API key in the configuration.
+                </p>
               </div>
             </div>
           )}
