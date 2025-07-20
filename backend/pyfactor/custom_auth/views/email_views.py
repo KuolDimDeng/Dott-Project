@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.core.mail import send_mail, EmailMessage
 from django.conf import settings
-from custom_auth.api.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 
 logger = logging.getLogger(__name__)
 
