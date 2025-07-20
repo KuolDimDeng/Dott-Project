@@ -17,6 +17,7 @@ import { logger } from '@/utils/logger';
 import api from '@/utils/api';
 import StandardSpinner from '@/components/ui/StandardSpinner';
 import FieldTooltip from '@/components/ui/FieldTooltip';
+import { GOOGLE_MAPS_CONFIG } from '@/config/maps';
 
 // Google Maps Integration
 const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => {
@@ -82,19 +83,12 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
     }
   }, [portalContainer]);
 
-  // Debug environment variable on component mount
+  // Debug component mount
   useEffect(() => {
-    console.log('[GeofencingSettings] Component mounted - v6');
-    console.log('[GeofencingSettings] NEXT_PUBLIC_GOOGLE_MAPS_API_KEY:', process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || 'NOT DEFINED');
-    console.log('[GeofencingSettings] Build time check - API key should be baked into build');
-    console.log('[GeofencingSettings] All env vars available:', Object.keys(process.env));
-    console.log('[GeofencingSettings] All NEXT_PUBLIC env vars:', Object.keys(process.env).filter(key => key.startsWith('NEXT_PUBLIC_')));
+    console.log('[GeofencingSettings] Component mounted - v7');
+    console.log('[GeofencingSettings] Google Maps config loaded:', !!GOOGLE_MAPS_CONFIG);
+    console.log('[GeofencingSettings] API key available:', !!GOOGLE_MAPS_CONFIG.apiKey);
     console.log('[GeofencingSettings] isVisible prop:', isVisible);
-    
-    // Try window approach as fallback
-    if (typeof window !== 'undefined' && window.__NEXT_DATA__) {
-      console.log('[GeofencingSettings] Next.js runtime config:', window.__NEXT_DATA__.runtimeConfig);
-    }
   }, []);
 
   // DISABLED: useLayoutEffect causes React DOM reconciliation conflicts
@@ -195,8 +189,8 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
         console.log('[GeofencingSettings] Using container:', targetContainer);
         
         const map = new window.google.maps.Map(targetContainer, {
-          center: { lat: 37.7749, lng: -122.4194 }, // Default to San Francisco
-          zoom: 15,
+          center: GOOGLE_MAPS_CONFIG.defaultCenter,
+          zoom: GOOGLE_MAPS_CONFIG.defaultZoom,
           mapTypeId: 'roadmap'
         });
 
@@ -264,8 +258,8 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
         return;
       }
       
-      // Use environment variable or fallback to hardcoded API key
-      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || 'AIzaSyDq2UEzOWBrWHgvbXVQfmLHXlpIqWwXGxs';
+      // Use API key from config
+      const apiKey = GOOGLE_MAPS_CONFIG.apiKey;
       console.log('[GeofencingSettings] Loading Google Maps with API key:', apiKey ? 'Found' : 'Missing');
       
       if (!apiKey) {
@@ -275,7 +269,7 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
       }
       
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=geometry,drawing`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=${GOOGLE_MAPS_CONFIG.libraries.join(',')}`;
       script.async = true;
       script.defer = true;
       
@@ -380,8 +374,8 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
       }
 
       try {
-        // Use environment variable or fallback to hardcoded API key
-        const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || 'AIzaSyDq2UEzOWBrWHgvbXVQfmLHXlpIqWwXGxs';
+        // Use API key from config
+        const apiKey = GOOGLE_MAPS_CONFIG.apiKey;
         console.log('[GeofencingSettings] Retry - Loading Google Maps with API key:', apiKey ? 'Found' : 'Missing');
         
         if (!window.google) {
@@ -393,8 +387,8 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
         console.log('[GeofencingSettings] Retry - Using container:', targetContainer);
         
         const map = new window.google.maps.Map(targetContainer, {
-          center: { lat: 37.7749, lng: -122.4194 }, // Default to San Francisco
-          zoom: 15,
+          center: GOOGLE_MAPS_CONFIG.defaultCenter,
+          zoom: GOOGLE_MAPS_CONFIG.defaultZoom,
           mapTypeId: 'roadmap'
         });
 
