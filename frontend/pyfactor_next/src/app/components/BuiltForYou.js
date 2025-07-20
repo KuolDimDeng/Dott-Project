@@ -91,7 +91,7 @@ export default function BuiltForYou() {
             Built For You
           </h2>
           <p className="mt-2 text-3xl font-extrabold text-gray-900 sm:text-4xl">
-            Manage your business like a PRO!
+            Manage your business like a Pro!
           </p>
           <p className="mt-4 max-w-2xl text-xl text-gray-500 mx-auto">
             Built for business owners like you
@@ -131,12 +131,9 @@ export default function BuiltForYou() {
 
         {/* Call to Action */}
         <div className="mt-16 text-center">
-          <p className="text-lg text-gray-600 mb-6">
+          <p className="text-lg text-gray-600">
             Join thousands of business owners worldwide who trust Dott to manage their business
           </p>
-          <button className="inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 transition-colors">
-            Start Your Free Trial
-          </button>
         </div>
       </div>
     </section>

@@ -88,4 +88,72 @@ export async function verifySenderEmail(senderEmail = process.env.SES_EMAIL_SEND
       sesRegion: process.env.SES_REGION || process.env.AWS_REGION || 'us-east-1'
     }
   };
+}
+
+/**
+ * Send email using the backend Resend integration
+ * 
+ * @param {Object} params - Email parameters
+ * @param {string} params.to - Recipient email address
+ * @param {string} params.subject - Email subject
+ * @param {string} params.htmlContent - HTML content for the email
+ * @param {string} params.textContent - Plain text content for the email
+ * @param {string} params.replyTo - Reply-to email address
+ * @returns {Promise<object>} - Result of the email send operation
+ */
+export async function sendEmailWithTemplate({ to, subject, htmlContent, textContent, replyTo }) {
+  try {
+    logger.info('[EMAIL] Sending email via backend Resend integration', {
+      to,
+      subject,
+      hasHtml: !!htmlContent,
+      hasText: !!textContent,
+      replyTo
+    });
+
+    // Call the backend API to send email via Resend
+    const response = await fetch('/api/send-email/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        to,
+        subject,
+        html_content: htmlContent,
+        text_content: textContent,
+        reply_to: replyTo
+      })
+    });
+
+    const data = await response.json();
+
+    if (response.ok && data.success) {
+      logger.info('[EMAIL] Email sent successfully via Resend', {
+        messageId: data.message_id
+      });
+      
+      return {
+        success: true,
+        messageId: data.message_id
+      };
+    } else {
+      logger.error('[EMAIL] Failed to send email via Resend', {
+        error: data.error || 'Unknown error',
+        status: response.status
+      });
+      
+      return {
+        success: false,
+        error: data.error || 'Failed to send email'
+      };
+    }
+  } catch (error) {
+    logger.error('[EMAIL] Error sending email via Resend:', error);
+    
+    return {
+      success: false,
+      error: error.message || 'Failed to send email'
+    };
+  }
 } 

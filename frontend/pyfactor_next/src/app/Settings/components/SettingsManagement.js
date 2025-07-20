@@ -19,7 +19,7 @@ import Integrations from './sections/Integrations';
 import BankConnections from './sections/BankConnections';
 import PayrollSettings from './sections/PayrollSettings';
 import GeofencingSettings from './sections/GeofencingSettings';
-import WhatsAppSettings from './sections/WhatsAppSettings';
+// import WhatsAppSettings from './sections/WhatsAppSettings'; // REMOVED - WhatsApp is in Integrations
 
 // Import icons
 import { 
@@ -46,10 +46,11 @@ const SettingsManagement = () => {
   const [loading, setLoading] = useState(false);
   
   // Settings sections configuration - updated based on requirements
+  // IMPORTANT NOTE: DO NOT ADD WHATSAPP TAB HERE - It's already in Integrations section
   const settingsSections = [
     {
       id: 'company-profile',
-      title: t('general.title'),
+      title: 'Company Profile', // Changed from General Settings
       icon: BuildingOfficeIcon,
       description: t('general.businessInfo'),
       component: CompanyProfile,
@@ -57,17 +58,17 @@ const SettingsManagement = () => {
     },
     {
       id: 'user-management',
-      title: t('tabs.security'),
+      title: t('tabs.userManagement'),
       icon: UserGroupIcon,
-      description: t('security.title'),
+      description: t('userManagement.title'),
       component: UserManagement,
       requiredRole: 'admin' // Admin and Owner can access
     },
     {
       id: 'bank-connections',
-      title: t('integrations.title'),
+      title: t('tabs.bankConnections'),
       icon: BanknotesIcon,
-      description: t('integrations.connectedApps'),
+      description: t('bankConnections.title'),
       component: BankConnections,
       requiredRole: 'admin' // Only admin and owner can access
     },
@@ -103,21 +104,14 @@ const SettingsManagement = () => {
       component: Integrations,
       requiredRole: 'user' // All users can access
     },
-    {
-      id: 'whatsapp',
-      title: t('tabs.whatsapp'),
-      icon: ChatBubbleLeftRightIcon,
-      description: t('whatsapp.title'),
-      component: WhatsAppSettings,
-      requiredRole: 'user' // All users can access
-    },
+    // NOTE: WhatsApp tab removed - functionality is in Integrations section
     {
       id: 'security',
       title: t('tabs.security'),
       icon: ShieldCheckIcon,
       description: t('security.title'),
       component: SecuritySettings,
-      requiredRole: 'admin' // Admin and Owner can access
+      requiredRole: 'admin' // Admin and Owner can access - MOVED TO END
     }
   ];
 

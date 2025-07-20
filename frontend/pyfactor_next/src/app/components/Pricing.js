@@ -425,15 +425,17 @@ export default function Pricing() {
 
                 <div className="mt-10">
                   <Link
-                    href={plan.name === 'Basic' ? '/api/auth/login' : `/api/auth/login?plan=${plan.name.toLowerCase()}&billing=${billingPeriod}`}
+                    href="/api/auth/login"
                     className={`block w-full text-center px-6 py-4 rounded-lg font-semibold transition-all duration-200 ${
-                      plan.popular && billingPeriod === '6month'
-                        ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
-                        : plan.highlight && billingPeriod === 'annual'
-                          ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
-                          : plan.name === 'Basic'
-                            ? 'bg-white border-2 border-primary-main text-primary-main hover:bg-primary-light hover:text-white'
-                            : 'bg-primary-main hover:bg-primary-dark text-white'
+                      plan.name === 'Enterprise'
+                        ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
+                        : plan.popular && billingPeriod === '6month'
+                          ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
+                          : plan.highlight && billingPeriod === 'annual'
+                            ? 'bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
+                            : plan.name === 'Basic'
+                              ? 'bg-white border-2 border-primary-main text-primary-main hover:bg-primary-light hover:text-white'
+                              : 'bg-primary-main hover:bg-primary-dark text-white'
                     }`}
                   >
                     {plan.cta}

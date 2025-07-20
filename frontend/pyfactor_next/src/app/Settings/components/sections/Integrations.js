@@ -14,7 +14,7 @@ import {
   CalculatorIcon,
   BanknotesIcon
 } from '@heroicons/react/24/outline';
-import WhatsAppSettings from './WhatsAppSettings';
+// import WhatsAppSettings from './WhatsAppSettings'; // Not used - WhatsApp is handled inline
 import { getWhatsAppBusinessVisibility } from '@/utils/whatsappCountryDetection';
 import { logger } from '@/utils/logger';
 

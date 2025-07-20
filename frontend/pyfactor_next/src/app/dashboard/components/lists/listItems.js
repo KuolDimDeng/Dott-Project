@@ -1934,7 +1934,7 @@ const MainListItems = ({
     },
     {
       icon: <NavIcons.Analytics className="w-5 h-5" />,
-      label: t('mainMenu.aiPoweredInsights'),
+      label: 'Analytics',
       onClick: () => {
         // Create navigation event for analytics dashboard
         const navigationKey = `nav-${Date.now()}`;
@@ -1956,7 +1956,7 @@ const MainListItems = ({
     },
     {
       icon: <NavIcons.SmartBusiness className="w-5 h-5" />,
-      label: t('mainMenu.smartBusinessAI'),
+      label: 'Smart Insights',
       onClick: () => {
         // Create navigation event for Smart Insight AI
         const navigationKey = `nav-${Date.now()}`;
