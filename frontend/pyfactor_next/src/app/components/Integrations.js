@@ -8,7 +8,7 @@ const integrations = {
   available: [
     {
       name: 'WhatsApp Business',
-      logo: '/images/Integrations/whatsapp.png',
+      logo: '/images/integrations/whatsapp.png',
       description: 'Send invoices and receipts directly to customers',
       hasLogo: true
     },

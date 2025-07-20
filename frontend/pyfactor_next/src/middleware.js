@@ -111,21 +111,24 @@ export async function middleware(request) {
   
   // For protected routes, check session cookie
   const protectedPaths = ['/dashboard', '/tenant/', '/settings'];
+  const publicPaths = ['/', '/about', '/blog', '/status', '/privacy', '/terms', '/cookie-policy'];
   const isProtectedPath = protectedPaths.some(path => pathname.startsWith(path)) ||
                          pathname.match(/^\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\//);
+  const isPublicPath = publicPaths.some(path => pathname === path || pathname.startsWith(path + '/'));
   
-  // Skip auth check for auth routes to prevent redirect loops
+  // Skip auth check for auth routes and public routes to prevent redirect loops
   const isAuthRoute = pathname.startsWith('/auth/');
   
   console.log('[Middleware] Protected path check:', {
     isProtectedPath,
+    isPublicPath,
     isAuthRoute,
     matchedPattern: protectedPaths.find(path => pathname.startsWith(path)) || 
                    (pathname.match(/^\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\//) ? 'tenant-uuid' : null)
   });
   
-  // Skip protection for API routes and auth routes (they handle auth themselves)
-  if (isProtectedPath && !pathname.startsWith('/api/') && !isAuthRoute) {
+  // Skip protection for API routes, auth routes, and public routes (they handle auth themselves)
+  if (isProtectedPath && !isPublicPath && !pathname.startsWith('/api/') && !isAuthRoute) {
     console.log('[Middleware] Checking auth for protected route:', pathname);
     console.log('[Middleware] Session check - sid:', !!sid, 'sessionToken:', !!sessionToken);
     

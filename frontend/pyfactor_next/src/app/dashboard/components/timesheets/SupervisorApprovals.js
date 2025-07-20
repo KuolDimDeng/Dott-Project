@@ -101,4 +101,34 @@ export default function SupervisorApprovals() {
     }
   };
 
-  const isSuper<truncated_message>
+  const isSupervisor = userData?.role === 'SUPERVISOR' || userData?.role === 'ADMIN' || userData?.role === 'OWNER';
+
+  if (loading) {
+    return <CenteredSpinner size="medium" />;
+  }
+
+  if (!isSupervisor) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-500">You do not have permission to view this page.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white shadow rounded-lg">
+        <div className="px-4 py-5 sm:p-6">
+          <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">
+            Pending Approvals
+          </h3>
+          
+          {/* Add your approval interface here */}
+          <div className="text-gray-500">
+            Supervisor approval interface coming soon...
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};<truncated_message>

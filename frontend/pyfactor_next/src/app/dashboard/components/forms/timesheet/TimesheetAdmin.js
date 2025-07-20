@@ -242,7 +242,7 @@ const TimesheetAdmin = ({ userData, isOwner }) => {
           {/* Pending Timesheets Tab */}
           <Tab.Panel>
             {loading ? (
-        <CenteredSpinner size="medium" /> : selectedTimesheet ? (
+        <CenteredSpinner size="medium" /> ) : selectedTimesheet ? (
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                 <div className="px-4 py-5 sm:p-6">
                   <div className="flex justify-between items-center mb-4">
@@ -393,7 +393,7 @@ const TimesheetAdmin = ({ userData, isOwner }) => {
           {/* Time Off Requests Tab */}
           <Tab.Panel>
             {loading ? (
-        <CenteredSpinner size="medium" /> : pendingTimeOff.length > 0 ? (
+        <CenteredSpinner size="medium" /> ) : pendingTimeOff.length > 0 ? (
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                 <div className="px-4 py-5 sm:p-6">
                   <h3 className="text-lg font-medium text-gray-900 mb-4">Pending Time Off Requests</h3>

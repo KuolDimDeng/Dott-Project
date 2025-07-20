@@ -95,28 +95,28 @@ const PaySettings = ({ userData }) => {
         <Tab.Panels className="mt-4">
           <Tab.Panel>
             {loading ? (
-        <CenteredSpinner size="medium" /> : (
+        <CenteredSpinner size="medium" /> ) : (
               <PayCycles userData={userData} />
             )}
           </Tab.Panel>
           
           <Tab.Panel>
             {loading ? (
-        <CenteredSpinner size="medium" /> : (
+        <CenteredSpinner size="medium" /> ) : (
               <BankAccounts userData={userData} />
             )}
           </Tab.Panel>
           
           <Tab.Panel>
             {loading ? (
-        <CenteredSpinner size="medium" /> : (
+        <CenteredSpinner size="medium" /> ) : (
               <TaxSettings userData={userData} />
             )}
           </Tab.Panel>
           
           <Tab.Panel>
             {loading ? (
-        <CenteredSpinner size="medium" /> : (
+        <CenteredSpinner size="medium" /> ) : (
               <GeneralSettings userData={userData} />
             )}
           </Tab.Panel>

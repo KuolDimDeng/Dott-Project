@@ -56,6 +56,7 @@ const PUBLIC_ROUTES = [
   '/mobile/landing',     // Mobile landing page - public route
   '/mobile',             // Mobile dashboard redirect route
   '/about',
+  '/blog',               // Blog page - public route
   '/privacy',
   '/terms',
   '/cookie-policy',  // Cookie policy page
@@ -111,10 +112,14 @@ export const isPublicRoute = (pathname) => {
   }
   
   // Check for path prefixes (e.g., /about/team should match /about)
-  const isPublic = PUBLIC_ROUTES.some(route =>
-    normalizedPath === route ||
-    (normalizedPath.startsWith(route + '/') && route !== '/')
-  );
+  const isPublic = PUBLIC_ROUTES.some(route => {
+    // Special handling for blog routes to include all blog articles
+    if (route === '/blog' && (normalizedPath === '/blog' || normalizedPath.startsWith('/blog/'))) {
+      return true;
+    }
+    return normalizedPath === route ||
+      (normalizedPath.startsWith(route + '/') && route !== '/');
+  });
   
   logger.debug(`[authUtils] Route ${pathname} is ${isPublic ? 'public' : 'private'} (prefix match)`);
   return isPublic;

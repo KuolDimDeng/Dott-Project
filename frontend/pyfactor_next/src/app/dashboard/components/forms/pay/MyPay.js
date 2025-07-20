@@ -193,42 +193,42 @@ const MyPay = ({ userData }) => {
         <Tab.Panels className="mt-4">
           <Tab.Panel>
             {loading ? (
-        <CenteredSpinner size="medium" /> : (
+        <CenteredSpinner size="medium" /> ) : (
               <CurrentPay currentPay={payData?.currentPay} />
             )}
           </Tab.Panel>
           
           <Tab.Panel>
             {loading ? (
-        <CenteredSpinner size="medium" /> : (
+        <CenteredSpinner size="medium" /> ) : (
               <PayHistory payStatements={payStatements} />
             )}
           </Tab.Panel>
           
           <Tab.Panel>
             {loading ? (
-        <CenteredSpinner size="medium" /> : (
+        <CenteredSpinner size="medium" /> ) : (
               <YTDSummary ytdSummary={payData?.ytdSummary} />
             )}
           </Tab.Panel>
           
           <Tab.Panel>
             {loading ? (
-        <CenteredSpinner size="medium" /> : (
+        <CenteredSpinner size="medium" /> ) : (
               <Deposit deposit={payData?.deposit} userData={userData} />
             )}
           </Tab.Panel>
           
           <Tab.Panel>
             {loading ? (
-        <CenteredSpinner size="medium" /> : (
+        <CenteredSpinner size="medium" /> ) : (
               <IncomeTax incomeTax={payData?.incomeTax} userData={userData} />
             )}
           </Tab.Panel>
           
           <Tab.Panel>
             {loading ? (
-        <CenteredSpinner size="medium" /> : (
+        <CenteredSpinner size="medium" /> ) : (
               <Statement payStatements={payStatements} />
             )}
           </Tab.Panel>

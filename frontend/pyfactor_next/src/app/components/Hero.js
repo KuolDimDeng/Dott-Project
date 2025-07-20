@@ -25,37 +25,43 @@ export default function Hero() {
       <div className="relative z-10 max-w-7xl mx-auto pt-20 pb-16 px-4 sm:pt-28 sm:pb-24 sm:px-6 lg:px-8">
         <div className="text-center">
           
-          <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl">
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-primary-main to-primary-light">
-              <span className="relative inline-block">
-                <span className="italic relative z-10">Your</span>
-                <svg 
-                  className="absolute -bottom-1 left-0 w-full h-3" 
-                  viewBox="0 0 100 12" 
-                  fill="none"
-                  preserveAspectRatio="none"
-                >
-                  <path
-                    d="M 5,8 Q 25,6 50,7 T 95,8"
-                    stroke="#FF6B6B"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    fill="none"
-                    opacity="0.8"
-                    strokeDasharray="0"
-                  >
-                    <animate
-                      attributeName="strokeDasharray"
-                      from="0 100"
-                      to="100 0"
-                      dur="0.8s"
-                      begin="0.5s"
-                      fill="freeze"
-                    />
-                  </path>
-                </svg>
-              </span>{' '}Global Business Platform
+          <div className="text-sm sm:text-base text-gray-600 font-medium tracking-wider mb-4">
+            <span className="inline-flex items-center">
+              <span className="text-gray-400 mr-3">★★★★★</span>
+              <span>SMART BUSINESS MANAGEMENT SOLUTIONS</span>
             </span>
+          </div>
+          
+          <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl text-transparent bg-clip-text bg-gradient-to-r from-primary-main to-primary-light">
+            <span className="relative inline-block mr-2">
+              <span className="italic">Your</span>
+              <svg 
+                className="absolute -bottom-1 left-0 w-full h-3 pointer-events-none" 
+                viewBox="0 0 100 12" 
+                fill="none"
+                preserveAspectRatio="none"
+              >
+                <path
+                  d="M 5,8 Q 25,6 50,7 T 95,8"
+                  stroke="#FF6B6B"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  fill="none"
+                  opacity="0.8"
+                  strokeDasharray="0"
+                >
+                  <animate
+                    attributeName="strokeDasharray"
+                    from="0 100"
+                    to="100 0"
+                    dur="0.8s"
+                    begin="0.5s"
+                    fill="freeze"
+                  />
+                </path>
+              </svg>
+            </span>
+            <span>Global Business Platform</span>
           </h1>
           
           {/* Key Benefits */}

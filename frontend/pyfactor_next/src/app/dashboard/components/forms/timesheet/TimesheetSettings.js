@@ -180,7 +180,7 @@ const TimesheetSettings = ({ userData }) => {
   return (
     <div>
       {loading ? (
-        <CenteredSpinner size="medium" /> : (
+        <CenteredSpinner size="medium" /> ) : (
         <>
           <Tab.Group selectedIndex={activeTab} onChange={setActiveTab}>
             <Tab.List className="flex border-b border-gray-200">

@@ -58,21 +58,21 @@ const MyBenefits = ({ userData }) => {
         <Tab.Panels className="mt-4">
           <Tab.Panel>
             {loading ? (
-        <CenteredSpinner size="medium" /> : (
+        <CenteredSpinner size="medium" /> ) : (
               <BenefitsSummary userData={userData} />
             )}
           </Tab.Panel>
           
           <Tab.Panel>
             {loading ? (
-        <CenteredSpinner size="medium" /> : (
+        <CenteredSpinner size="medium" /> ) : (
               <ManageBenefits userData={userData} />
             )}
           </Tab.Panel>
           
           <Tab.Panel>
             {loading ? (
-        <CenteredSpinner size="medium" /> : (
+        <CenteredSpinner size="medium" /> ) : (
               <BenefitsDocuments userData={userData} />
             )}
           </Tab.Panel>

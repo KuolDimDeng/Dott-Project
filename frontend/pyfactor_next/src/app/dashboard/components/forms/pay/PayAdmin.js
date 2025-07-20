@@ -108,28 +108,28 @@ const PayAdmin = ({ userData, isOwner }) => {
         <Tab.Panels className="mt-4">
           <Tab.Panel>
             {loading ? (
-        <CenteredSpinner size="medium" /> : (
+        <CenteredSpinner size="medium" /> ) : (
               <CompanyPayroll />
             )}
           </Tab.Panel>
           
           <Tab.Panel>
             {loading ? (
-        <CenteredSpinner size="medium" /> : (
+        <CenteredSpinner size="medium" /> ) : (
               <DepartmentPayroll />
             )}
           </Tab.Panel>
           
           <Tab.Panel>
             {loading ? (
-        <CenteredSpinner size="medium" /> : (
+        <CenteredSpinner size="medium" /> ) : (
               <EmployeePayroll userData={userData} isOwner={isOwner} />
             )}
           </Tab.Panel>
           
           <Tab.Panel>
             {loading ? (
-        <CenteredSpinner size="medium" /> : (
+        <CenteredSpinner size="medium" /> ) : (
               <PayrollHistory />
             )}
           </Tab.Panel>
@@ -137,7 +137,7 @@ const PayAdmin = ({ userData, isOwner }) => {
           {isOwner && (
             <Tab.Panel>
               {loading ? (
-        <CenteredSpinner size="medium" /> : (
+        <CenteredSpinner size="medium" /> ) : (
                 <PayrollReports />
               )}
             </Tab.Panel>
