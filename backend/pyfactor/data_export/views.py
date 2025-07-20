@@ -9,7 +9,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from session_manager.models import SessionModel
+from session_manager.models import UserSession
 from custom_auth.api.views.authentication_utils import get_user_from_session_token
 import pandas as pd
 from openpyxl import Workbook
