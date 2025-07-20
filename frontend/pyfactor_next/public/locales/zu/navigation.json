@@ -163,5 +163,31 @@
       "statusUpdates": "Izibuyekezo Zesimo",
       "followUs": "Silandele ukuze uthole izibuyekezo zesikhathi sangempela mayelana nesimo sesevisi"
     }
+  },
+  "invite": {
+    "title": "Mema Umnikazi Webhizinisi",
+    "description1": "Ingabe uyamazi umnikazi webhizinisi ofuna ukwenza lula ukusebenza kwakhe? Yabelana ngeDott nabo!",
+    "description2": "IDott isiza amabhizinisi ukuze azenzele uhlelo lwamashedjuli, aphathe ubudlelwano bamakhasimende futhi enze izinkokhelo - konke ku-app eyodwa elula. Ukuxhumana kwakho kungonga amahora omsebenzi wokuphatha isonto lonke.",
+    "formTitle": "Thumela Isimemo",
+    "methodLabel": "Khetha indlela yokumema",
+    "emailButton": "I-imeyili",
+    "whatsappButton": "WhatsApp",
+    "emailLabel": "Ikheli le-imeyili lomnikazi webhizinisi",
+    "emailPlaceholder": "business@example.com",
+    "phoneLabel": "Inombolo ye-WhatsApp yomnikazi webhizinisi",
+    "phonePlaceholder": "+1234567890",
+    "phoneHelperText": "Faka ikhodi yezwe (isib., +1 e-US, +27 eNingizimu Afrika)",
+    "sendingText": "Kuthunyelwa...",
+    "sendEmailButton": "Thumela nge-imeyili",
+    "sendWhatsappButton": "Thumela nge-WhatsApp",
+    "emailValidationError": "Sicela ufake ikheli le-imeyili elifanele.",
+    "phoneValidationError": "Sicela ufake inombolo yocingo efanele.",
+    "successMessage": "Isimemo sithunyelwe ngempumelelo nge-{{method}} ku-{{recipient}}!",
+    "errorMessage": "Kwehluleke ukuthumela isimemo. Sicela uzame futhi.",
+    "networkError": "Iphutha lenethiwekhi. Sicela uhlole ukuxhumana kwakho bese uzama futhi.",
+    "defaultSender": "Ozakwabo",
+    "defaultUser": "Umsebenzisi we-Dott",
+    "emailMessage": "Sawubona,\n\nU-{{senderName}} ukumemile ukuba uzame i-Dott, ithuluzi elibanzi lokwenza kube lula ukusebenza kwebhizinisi.\n\nKungani abanikazi bamabhizinisi bethanda i-Dott?\n✓ Ukwenza ama-invoyisi ngokuzenzakalelayo nokuphatha izinkokhelo\n✓ Ukuhlela ama-aphoyintimenti nezikhumbuzi zamakhasimende\n✓ Ukulandelela isitoko nokuphatha abahlinzeki\n✓ Ukuphatha amaholo nemibiko yentela\n✓ Ukuqonda ibhizinisi nokuhlaziya\n\nQala isivivinyo sakho samahhala namuhla:\nhttps://dottapps.com\n\nOkuhle kakhulu,\nIthimba le-Dott",
+    "whatsappMessage": "Sawubona 👋\n\nU-{{senderName}} ukumemile ukuba uzame i-Dott, ithuluzi elibanzi lokwenza kube lula ukusebenza kwebhizinisi.\n\n✓ Ukwenza ama-invoyisi ngokuzenzakalelayo\n✓ Ukuhlela ama-aphoyintimenti\n✓ Ukuphatha isitoko\n✓ Ukuphatha amaholo\n✓ Ukuhlaziya ibhizinisi\n\nQala isivivinyo samahhala: https://dottapps.com"
   }
 }

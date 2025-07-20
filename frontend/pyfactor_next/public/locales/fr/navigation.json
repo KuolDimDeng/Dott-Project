@@ -163,5 +163,31 @@
       "statusUpdates": "Mises à Jour du Statut",
       "followUs": "Suivez-nous pour des mises à jour en temps réel sur l'état du service"
     }
+  },
+  "invite": {
+    "title": "Inviter un Propriétaire d'Entreprise",
+    "description1": "Connaissez-vous un propriétaire d'entreprise cherchant à optimiser ses opérations ? Partagez Dott avec eux !",
+    "description2": "Dott aide les entreprises à automatiser la planification, gérer les relations clients et traiter les paiements, le tout dans une application simple. Votre connexion peut économiser des heures de travail administratif chaque semaine.",
+    "formTitle": "Envoyer l'Invitation",
+    "methodLabel": "Choisir la méthode d'invitation",
+    "emailButton": "E-mail",
+    "whatsappButton": "WhatsApp",
+    "emailLabel": "Adresse e-mail du propriétaire d'entreprise",
+    "emailPlaceholder": "business@example.com",
+    "phoneLabel": "Numéro WhatsApp du propriétaire d'entreprise",
+    "phonePlaceholder": "+1234567890",
+    "phoneHelperText": "Inclure le code pays (ex., +1 pour USA, +33 pour France)",
+    "sendingText": "Envoi en cours...",
+    "sendEmailButton": "Envoyer par e-mail",
+    "sendWhatsappButton": "Envoyer par WhatsApp",
+    "emailValidationError": "Veuillez entrer une adresse e-mail valide.",
+    "phoneValidationError": "Veuillez entrer un numéro de téléphone valide.",
+    "successMessage": "Invitation envoyée avec succès par {{method}} à {{recipient}} !",
+    "errorMessage": "Échec de l'envoi de l'invitation. Veuillez réessayer.",
+    "networkError": "Erreur réseau. Veuillez vérifier votre connexion et réessayer.",
+    "defaultSender": "Un collègue",
+    "defaultUser": "Un utilisateur Dott",
+    "emailMessage": "Bonjour,\n\n{{senderName}} vous a invité à essayer Dott, un outil tout-en-un pour simplifier les opérations commerciales.\n\nPourquoi les propriétaires d'entreprises adorent Dott ?\n✓ Facturation automatisée et gestion des paiements\n✓ Planification de rendez-vous et rappels clients\n✓ Suivi des stocks et gestion des fournisseurs\n✓ Traitement de la paie et rapports fiscaux\n✓ Analyses et perspectives commerciales\n\nCommencez votre essai gratuit aujourd'hui :\nhttps://dottapps.com\n\nCordialement,\nL'équipe Dott",
+    "whatsappMessage": "Bonjour 👋\n\n{{senderName}} vous a invité à essayer Dott, un outil tout-en-un pour simplifier les opérations commerciales.\n\n✓ Facturation automatisée\n✓ Planification de rendez-vous\n✓ Gestion des stocks\n✓ Traitement de la paie\n✓ Analyses commerciales\n\nCommencez votre essai gratuit : https://dottapps.com"
   }
 }

@@ -163,5 +163,31 @@
       "statusUpdates": "Cập Nhật Trạng Thái",
       "followUs": "Theo dõi chúng tôi để nhận cập nhật thời gian thực về trạng thái dịch vụ"
     }
+  },
+  "invite": {
+    "title": "Mời Chủ Doanh Nghiệp",
+    "description1": "Bạn có biết chủ doanh nghiệp nào đang tìm cách tối ưu hóa hoạt động không? Chia sẻ Dott với họ!",
+    "description2": "Dott giúp doanh nghiệp tự động hóa lịch trình, quản lý mối quan hệ khách hàng và xử lý thanh toán - tất cả trong một ứng dụng đơn giản. Kết nối của bạn có thể tiết kiệm hàng giờ công việc hành chính mỗi tuần.",
+    "formTitle": "Gửi Lời Mời",
+    "methodLabel": "Chọn phương thức mời",
+    "emailButton": "Email",
+    "whatsappButton": "WhatsApp",
+    "emailLabel": "Địa chỉ email của chủ doanh nghiệp",
+    "emailPlaceholder": "business@example.com",
+    "phoneLabel": "Số WhatsApp của chủ doanh nghiệp",
+    "phonePlaceholder": "+1234567890",
+    "phoneHelperText": "Bao gồm mã quốc gia (ví dụ: +1 cho Mỹ, +84 cho Việt Nam)",
+    "sendingText": "Đang gửi...",
+    "sendEmailButton": "Gửi qua email",
+    "sendWhatsappButton": "Gửi qua WhatsApp",
+    "emailValidationError": "Vui lòng nhập địa chỉ email hợp lệ.",
+    "phoneValidationError": "Vui lòng nhập số điện thoại hợp lệ.",
+    "successMessage": "Lời mời đã được gửi thành công qua {{method}} đến {{recipient}}!",
+    "errorMessage": "Gửi lời mời thất bại. Vui lòng thử lại.",
+    "networkError": "Lỗi mạng. Vui lòng kiểm tra kết nối và thử lại.",
+    "defaultSender": "Một đồng nghiệp",
+    "defaultUser": "Người dùng Dott",
+    "emailMessage": "Xin chào,\n\n{{senderName}} đã mời bạn thử Dott, một công cụ tất cả trong một để đơn giản hóa hoạt động kinh doanh.\n\nTại sao chủ doanh nghiệp yêu thích Dott?\n✓ Tự động hóa lập hóa đơn và quản lý thanh toán\n✓ Lên lịch hẹn và nhắc nhở khách hàng\n✓ Theo dõi tồn kho và quản lý nhà cung cấp\n✓ Xử lý bảng lương và báo cáo thuế\n✓ Phân tích và thông tin kinh doanh\n\nBắt đầu dùng thử miễn phí ngay hôm nay:\nhttps://dottapps.com\n\nTrân trọng,\nĐội ngũ Dott",
+    "whatsappMessage": "Xin chào 👋\n\n{{senderName}} đã mời bạn thử Dott, một công cụ tất cả trong một để đơn giản hóa hoạt động kinh doanh.\n\n✓ Tự động hóa lập hóa đơn\n✓ Lên lịch hẹn\n✓ Quản lý tồn kho\n✓ Xử lý bảng lương\n✓ Phân tích kinh doanh\n\nBắt đầu dùng thử miễn phí: https://dottapps.com"
   }
 }

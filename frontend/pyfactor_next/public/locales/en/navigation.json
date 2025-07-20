@@ -163,5 +163,31 @@
       "statusUpdates": "Status Updates",
       "followUs": "Follow us for real-time updates on service status"
     }
+  },
+  "invite": {
+    "title": "Invite a Business Owner",
+    "description1": "Know a business owner looking to streamline their operations? Share Dott with them!",
+    "description2": "Dott helps businesses automate scheduling, manage customer relationships, and handle payments—all in one simple app. Your connection can save hours of administrative work each week.",
+    "formTitle": "Send Invitation",
+    "methodLabel": "Choose invitation method",
+    "emailButton": "Email",
+    "whatsappButton": "WhatsApp",
+    "emailLabel": "Business Owner's Email Address",
+    "emailPlaceholder": "business@example.com",
+    "phoneLabel": "Business Owner's WhatsApp Number",
+    "phonePlaceholder": "+1234567890",
+    "phoneHelperText": "Include country code (e.g., +1 for US, +44 for UK)",
+    "sendingText": "Sending...",
+    "sendEmailButton": "Send via Email",
+    "sendWhatsappButton": "Send via WhatsApp",
+    "emailValidationError": "Please enter a valid email address.",
+    "phoneValidationError": "Please enter a valid phone number.",
+    "successMessage": "Invitation sent successfully via {{method}} to {{recipient}}!",
+    "errorMessage": "Failed to send invitation. Please try again.",
+    "networkError": "Network error. Please check your connection and try again.",
+    "defaultSender": "A colleague",
+    "defaultUser": "A Dott User",
+    "emailMessage": "{{senderName}} has invited you to join Dott: Global Business Platform!\n\nHello,\n\nI wanted to personally recommend Dott, a business management platform that has transformed how I run my operations.\n\nDott brings together everything you need in one place:\n• Sales and customer management\n• Inventory tracking and control\n• Professional invoicing and payments\n• Financial reporting and analytics\n• Team collaboration tools\n• AI Business insights and analytics\n• Geofencing and location tracking\n• Real-time business intelligence\n\nSince implementing Dott, I've reduced administrative work by hours each week while gaining real-time insights into my business performance. The platform delivers enterprise-grade capabilities at a fraction of traditional software costs.\n\nI believe Dott would be particularly valuable for your business operations and growth goals.\n\nGet started for free forever today: https://dottapps.com\n\nBest regards,\n{{userName}}",
+    "whatsappMessage": "🚀 *{{senderName}} has invited you to join Dott: Global Business Platform!*\n\nHello! I wanted to personally recommend Dott, a business management platform that has transformed how I run my operations.\n\nDott brings together everything you need:\n• Sales and customer management\n• Inventory tracking and control\n• Professional invoicing and payments\n• Financial reporting and analytics\n• Team collaboration tools\n• AI Business insights and analytics\n• Geofencing and location tracking\n• Real-time business intelligence\n\nSince implementing Dott, I've reduced administrative work by hours each week while gaining real-time insights into my business performance.\n\nGet started for free forever today: https://dottapps.com\n\nBest regards,\n{{userName}}"
   }
 }

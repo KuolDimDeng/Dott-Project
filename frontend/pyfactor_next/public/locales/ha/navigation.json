@@ -163,5 +163,31 @@
       "statusUpdates": "Sabuntawar Matsayi",
       "followUs": "Bi mu don samun sabuntawa na ainihi game da matsayin sabis"
     }
+  },
+  "invite": {
+    "title": "Gayyaci Mai Kasuwanci",
+    "description1": "Kun san mai kasuwanci wanda ke neman inganta ayyukansa? Raba Dott tare da su!",
+    "description2": "Dott yana taimakawa kasuwanci don sarrafa jadawalin aiki, gudanar da dangantakar abokan ciniki da kuma gudanar da biyan kuɗi - duk a cikin manhaja ɗaya mai sauƙi. Haɗin ku na iya adana sa'o'in aikin gudanarwa kowace mako.",
+    "formTitle": "Aika Gayyata",
+    "methodLabel": "Zaɓi hanyar gayyata",
+    "emailButton": "Imel",
+    "whatsappButton": "WhatsApp",
+    "emailLabel": "Adireshin imel na mai kasuwanci",
+    "emailPlaceholder": "business@example.com",
+    "phoneLabel": "Lambar WhatsApp na mai kasuwanci",
+    "phonePlaceholder": "+1234567890",
+    "phoneHelperText": "Haɗa lambar ƙasa (misali, +1 don Amurka, +234 don Najeriya)",
+    "sendingText": "Ana aikawa...",
+    "sendEmailButton": "Aika ta imel",
+    "sendWhatsappButton": "Aika ta WhatsApp",
+    "emailValidationError": "Don Allah shigar da adireshin imel mai inganci.",
+    "phoneValidationError": "Don Allah shigar da lambar waya mai inganci.",
+    "successMessage": "An aika gayyata cikin nasara ta {{method}} zuwa {{recipient}}!",
+    "errorMessage": "Aika gayyata ya gaza. Don Allah sake gwadawa.",
+    "networkError": "Kuskuren hanyar sadarwa. Don Allah duba haɗin ku kuma sake gwadawa.",
+    "defaultSender": "Abokin aiki",
+    "defaultUser": "Mai amfani da Dott",
+    "emailMessage": "Sannu,\n\n{{senderName}} ya gayyace ku don gwada Dott, kayan aiki cikakke don sauƙaƙe ayyukan kasuwanci.\n\nMe yasa masu kasuwanci suke son Dott?\n✓ Yin lissafin kuɗi ta atomatik da gudanar da biyan kuɗi\n✓ Tsara jadawalin alƙawari da tunatarwar abokan ciniki\n✓ Bin diddigin kayayyaki da gudanar da masu siyarwa\n✓ Sarrafa biyan albashi da rahotannin haraji\n✓ Fahimtar kasuwanci da bincike\n\nFara gwajin kyauta yau:\nhttps://dottapps.com\n\nMafi kyau,\nƘungiyar Dott",
+    "whatsappMessage": "Sannu 👋\n\n{{senderName}} ya gayyace ku don gwada Dott, kayan aiki cikakke don sauƙaƙe ayyukan kasuwanci.\n\n✓ Yin lissafin kuɗi ta atomatik\n✓ Tsara jadawalin alƙawari\n✓ Gudanar da kayayyaki\n✓ Sarrafa biyan albashi\n✓ Binciken kasuwanci\n\nFara gwajin kyauta: https://dottapps.com"
   }
 }

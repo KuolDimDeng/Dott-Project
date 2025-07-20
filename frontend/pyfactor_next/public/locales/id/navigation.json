@@ -163,5 +163,31 @@
       "statusUpdates": "Pembaruan Status",
       "followUs": "Ikuti kami untuk pembaruan real-time tentang status layanan"
     }
+  },
+  "invite": {
+    "title": "Undang Pemilik Bisnis",
+    "description1": "Apakah Anda mengenal pemilik bisnis yang ingin menyederhanakan operasinya? Bagikan Dott dengan mereka!",
+    "description2": "Dott membantu bisnis mengotomatisasi penjadwalan, mengelola hubungan pelanggan, dan menangani pembayaran — semua dalam satu aplikasi sederhana. Koneksi Anda dapat menghemat jam kerja administrasi setiap minggu.",
+    "formTitle": "Kirim Undangan",
+    "methodLabel": "Pilih metode undangan",
+    "emailButton": "Email",
+    "whatsappButton": "WhatsApp",
+    "emailLabel": "Alamat email pemilik bisnis",
+    "emailPlaceholder": "business@example.com",
+    "phoneLabel": "Nomor WhatsApp pemilik bisnis",
+    "phonePlaceholder": "+1234567890",
+    "phoneHelperText": "Sertakan kode negara (mis., +1 untuk AS, +62 untuk Indonesia)",
+    "sendingText": "Mengirim...",
+    "sendEmailButton": "Kirim melalui email",
+    "sendWhatsappButton": "Kirim melalui WhatsApp",
+    "emailValidationError": "Harap masukkan alamat email yang valid.",
+    "phoneValidationError": "Harap masukkan nomor telepon yang valid.",
+    "successMessage": "Undangan berhasil dikirim melalui {{method}} ke {{recipient}}!",
+    "errorMessage": "Gagal mengirim undangan. Silakan coba lagi.",
+    "networkError": "Kesalahan jaringan. Harap periksa koneksi Anda dan coba lagi.",
+    "defaultSender": "Seorang rekan",
+    "defaultUser": "Pengguna Dott",
+    "emailMessage": "Halo,\n\n{{senderName}} mengundang Anda untuk mencoba Dott, alat lengkap untuk menyederhanakan operasi bisnis.\n\nMengapa pemilik bisnis menyukai Dott?\n✓ Penagihan otomatis dan manajemen pembayaran\n✓ Penjadwalan janji temu dan pengingat pelanggan\n✓ Pelacakan inventori dan manajemen pemasok\n✓ Pemrosesan gaji dan laporan pajak\n✓ Wawasan dan analisis bisnis\n\nMulai uji coba gratis Anda hari ini:\nhttps://dottapps.com\n\nSalam hangat,\nTim Dott",
+    "whatsappMessage": "Halo 👋\n\n{{senderName}} mengundang Anda untuk mencoba Dott, alat lengkap untuk menyederhanakan operasi bisnis.\n\n✓ Penagihan otomatis\n✓ Penjadwalan janji temu\n✓ Manajemen inventori\n✓ Pemrosesan gaji\n✓ Analisis bisnis\n\nMulai uji coba gratis: https://dottapps.com"
   }
 }

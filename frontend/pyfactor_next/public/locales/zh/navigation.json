@@ -163,5 +163,31 @@
       "statusUpdates": "状态更新",
       "followUs": "关注我们获取服务状态的实时更新"
     }
+  },
+  "invite": {
+    "title": "邀请企业主",
+    "description1": "认识正在寻求优化运营的企业主吗？与他们分享 Dott！",
+    "description2": "Dott 帮助企业自动化排程、管理客户关系和处理付款——全部在一个简单的应用程序中。您的推荐可以每周节省数小时的行政工作。",
+    "formTitle": "发送邀请",
+    "methodLabel": "选择邀请方式",
+    "emailButton": "电子邮件",
+    "whatsappButton": "WhatsApp",
+    "emailLabel": "企业主的电子邮件地址",
+    "emailPlaceholder": "business@example.com",
+    "phoneLabel": "企业主的 WhatsApp 号码",
+    "phonePlaceholder": "+1234567890",
+    "phoneHelperText": "包括国家代码（例如，美国 +1，中国 +86）",
+    "sendingText": "发送中...",
+    "sendEmailButton": "通过电子邮件发送",
+    "sendWhatsappButton": "通过 WhatsApp 发送",
+    "emailValidationError": "请输入有效的电子邮件地址。",
+    "phoneValidationError": "请输入有效的电话号码。",
+    "successMessage": "邀请已成功通过 {{method}} 发送至 {{recipient}}！",
+    "errorMessage": "发送邀请失败。请重试。",
+    "networkError": "网络错误。请检查您的连接并重试。",
+    "defaultSender": "同事",
+    "defaultUser": "Dott 用户",
+    "emailMessage": "您好，\n\n{{senderName}} 邀请您试用 Dott，这是一个简化商业运营的一体化工具。\n\n为什么企业主喜爱 Dott？\n✓ 自动化发票和付款管理\n✓ 预约安排和客户提醒\n✓ 库存跟踪和供应商管理\n✓ 工资处理和税务报告\n✓ 商业洞察和分析\n\n立即开始免费试用：\nhttps://dottapps.com\n\n祝好，\nDott 团队",
+    "whatsappMessage": "您好 👋\n\n{{senderName}} 邀请您试用 Dott，这是一个简化商业运营的一体化工具。\n\n✓ 自动化发票\n✓ 预约安排\n✓ 库存管理\n✓ 工资处理\n✓ 商业分析\n\n开始免费试用：https://dottapps.com"
   }
 }

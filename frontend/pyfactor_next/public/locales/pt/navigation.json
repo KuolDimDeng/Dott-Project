@@ -163,5 +163,31 @@
       "statusUpdates": "Atualizações de Status",
       "followUs": "Siga-nos para atualizações em tempo real sobre o status do serviço"
     }
+  },
+  "invite": {
+    "title": "Convidar um Proprietário de Negócio",
+    "description1": "Conhece um proprietário de negócio procurando otimizar suas operações? Compartilhe o Dott com eles!",
+    "description2": "O Dott ajuda empresas a automatizar agendamentos, gerenciar relacionamentos com clientes e processar pagamentos — tudo em um aplicativo simples. Sua conexão pode economizar horas de trabalho administrativo a cada semana.",
+    "formTitle": "Enviar Convite",
+    "methodLabel": "Escolher método de convite",
+    "emailButton": "E-mail",
+    "whatsappButton": "WhatsApp",
+    "emailLabel": "Endereço de e-mail do proprietário do negócio",
+    "emailPlaceholder": "business@example.com",
+    "phoneLabel": "Número WhatsApp do proprietário do negócio",
+    "phonePlaceholder": "+1234567890",
+    "phoneHelperText": "Incluir código do país (ex., +1 para EUA, +55 para Brasil)",
+    "sendingText": "Enviando...",
+    "sendEmailButton": "Enviar por e-mail",
+    "sendWhatsappButton": "Enviar por WhatsApp",
+    "emailValidationError": "Por favor, insira um endereço de e-mail válido.",
+    "phoneValidationError": "Por favor, insira um número de telefone válido.",
+    "successMessage": "Convite enviado com sucesso via {{method}} para {{recipient}}!",
+    "errorMessage": "Falha ao enviar convite. Por favor, tente novamente.",
+    "networkError": "Erro de rede. Por favor, verifique sua conexão e tente novamente.",
+    "defaultSender": "Um colega",
+    "defaultUser": "Um usuário Dott",
+    "emailMessage": "Olá,\n\n{{senderName}} convidou você para experimentar o Dott, uma ferramenta completa para simplificar as operações comerciais.\n\nPor que os proprietários de negócios amam o Dott?\n✓ Faturamento automatizado e gestão de pagamentos\n✓ Agendamento de compromissos e lembretes para clientes\n✓ Rastreamento de estoque e gestão de fornecedores\n✓ Processamento de folha de pagamento e relatórios fiscais\n✓ Insights e análises de negócios\n\nComece seu teste gratuito hoje:\nhttps://dottapps.com\n\nAtenciosamente,\nEquipe Dott",
+    "whatsappMessage": "Olá 👋\n\n{{senderName}} convidou você para experimentar o Dott, uma ferramenta completa para simplificar as operações comerciais.\n\n✓ Faturamento automatizado\n✓ Agendamento de compromissos\n✓ Gestão de estoque\n✓ Processamento de folha de pagamento\n✓ Análises de negócios\n\nComece seu teste gratuito: https://dottapps.com"
   }
 }

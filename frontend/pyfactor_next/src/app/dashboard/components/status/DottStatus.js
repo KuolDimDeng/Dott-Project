@@ -55,12 +55,30 @@ class StatusErrorBoundary extends React.Component {
 }
 
 const DottStatusContent = () => {
-  const { t } = useTranslation('navigation');
+  const { t, i18n } = useTranslation('navigation');
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(new Date());
+  const [, forceUpdate] = useState({});
 
   // Service configuration is now fetched from API
+
+  // Listen for language changes and force re-render
+  useEffect(() => {
+    const handleLanguageChange = (lng) => {
+      console.log('DottStatus: Language changed to', lng);
+      forceUpdate({});
+    };
+
+    // Listen to both i18n and window events
+    i18n.on('languageChanged', handleLanguageChange);
+    window.addEventListener('languageChange', handleLanguageChange);
+
+    return () => {
+      i18n.off('languageChanged', handleLanguageChange);
+      window.removeEventListener('languageChange', handleLanguageChange);
+    };
+  }, [i18n]);
 
   useEffect(() => {
     fetchServiceStatus();

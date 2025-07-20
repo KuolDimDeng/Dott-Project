@@ -163,5 +163,31 @@
       "statusUpdates": "Sasisho za Hali",
       "followUs": "Tufuate kwa sasisho za wakati halisi kuhusu hali ya huduma"
     }
+  },
+  "invite": {
+    "title": "Mwalika Mmiliki wa Biashara",
+    "description1": "Je, unamjua mmiliki wa biashara anayetafuta kuboresha shughuli zake? Shiriki Dott naye!",
+    "description2": "Dott husaidia biashara kuhariri ratiba kiotomatiki, kudhibiti mahusiano ya wateja na kushughulikia malipo - yote katika programu rahisi moja. Muunganisho wako unaweza kuokoa saa za kazi za kiutawala kila wiki.",
+    "formTitle": "Tuma Mwaliko",
+    "methodLabel": "Chagua njia ya kumwalika",
+    "emailButton": "Barua pepe",
+    "whatsappButton": "WhatsApp",
+    "emailLabel": "Anwani ya barua pepe ya mmiliki wa biashara",
+    "emailPlaceholder": "business@example.com",
+    "phoneLabel": "Nambari ya WhatsApp ya mmiliki wa biashara",
+    "phonePlaceholder": "+1234567890",
+    "phoneHelperText": "Jumuisha msimbo wa nchi (mfano, +1 kwa Marekani, +254 kwa Kenya)",
+    "sendingText": "Inatuma...",
+    "sendEmailButton": "Tuma kupitia barua pepe",
+    "sendWhatsappButton": "Tuma kupitia WhatsApp",
+    "emailValidationError": "Tafadhali ingiza anwani sahihi ya barua pepe.",
+    "phoneValidationError": "Tafadhali ingiza nambari sahihi ya simu.",
+    "successMessage": "Mwaliko umetumwa kwa mafanikio kupitia {{method}} kwa {{recipient}}!",
+    "errorMessage": "Imeshindwa kutuma mwaliko. Tafadhali jaribu tena.",
+    "networkError": "Hitilafu ya mtandao. Tafadhali angalia muunganisho wako na ujaribu tena.",
+    "defaultSender": "Mfanyakazi mwenzako",
+    "defaultUser": "Mtumiaji wa Dott",
+    "emailMessage": "Habari,\n\n{{senderName}} amekualika kujaribu Dott, zana kamili ya kurahisisha shughuli za biashara.\n\nKwa nini wamiliki wa biashara wanapenda Dott?\n✓ Kutoa ankara kiotomatiki na udhibiti wa malipo\n✓ Ratiba za miadi na ukumbuzi wa wateja\n✓ Ufuatiliaji wa hisa na udhibiti wa wasambazaji\n✓ Uchakataji wa mishahara na ripoti za kodi\n✓ Ufahamu wa biashara na uchambuzi\n\nAnza jaribio lako la bure leo:\nhttps://dottapps.com\n\nKwa heri ya kheri,\nTimu ya Dott",
+    "whatsappMessage": "Habari 👋\n\n{{senderName}} amekualika kujaribu Dott, zana kamili ya kurahisisha shughuli za biashara.\n\n✓ Kutoa ankara kiotomatiki\n✓ Ratiba za miadi\n✓ Udhibiti wa hisa\n✓ Uchakataji wa mishahara\n✓ Uchambuzi wa biashara\n\nAnza jaribio la bure: https://dottapps.com"
   }
 }

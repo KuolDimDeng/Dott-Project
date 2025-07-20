@@ -163,5 +163,31 @@
       "statusUpdates": "Status-Updates",
       "followUs": "Folgen Sie uns für Echtzeit-Updates zum Servicestatus"
     }
+  },
+  "invite": {
+    "title": "Geschäftsinhaber einladen",
+    "description1": "Kennen Sie einen Geschäftsinhaber, der seine Abläufe optimieren möchte? Teilen Sie Dott mit ihm!",
+    "description2": "Dott hilft Unternehmen, die Terminplanung zu automatisieren, Kundenbeziehungen zu verwalten und Zahlungen abzuwickeln – alles in einer einfachen App. Ihre Verbindung kann jede Woche Stunden an Verwaltungsarbeit sparen.",
+    "formTitle": "Einladung senden",
+    "methodLabel": "Einladungsmethode wählen",
+    "emailButton": "E-Mail",
+    "whatsappButton": "WhatsApp",
+    "emailLabel": "E-Mail-Adresse des Geschäftsinhabers",
+    "emailPlaceholder": "business@example.com",
+    "phoneLabel": "WhatsApp-Nummer des Geschäftsinhabers",
+    "phonePlaceholder": "+1234567890",
+    "phoneHelperText": "Ländercode einschließen (z.B. +1 für USA, +49 für Deutschland)",
+    "sendingText": "Wird gesendet...",
+    "sendEmailButton": "Per E-Mail senden",
+    "sendWhatsappButton": "Per WhatsApp senden",
+    "emailValidationError": "Bitte geben Sie eine gültige E-Mail-Adresse ein.",
+    "phoneValidationError": "Bitte geben Sie eine gültige Telefonnummer ein.",
+    "successMessage": "Einladung erfolgreich per {{method}} an {{recipient}} gesendet!",
+    "errorMessage": "Einladung konnte nicht gesendet werden. Bitte versuchen Sie es erneut.",
+    "networkError": "Netzwerkfehler. Bitte überprüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
+    "defaultSender": "Ein Kollege",
+    "defaultUser": "Ein Dott-Benutzer",
+    "emailMessage": "Hallo,\n\n{{senderName}} hat Sie eingeladen, Dott auszuprobieren, ein All-in-One-Tool zur Vereinfachung von Geschäftsabläufen.\n\nWarum Geschäftsinhaber Dott lieben?\n✓ Automatisierte Rechnungsstellung und Zahlungsverwaltung\n✓ Terminplanung und Kundenerinnerungen\n✓ Bestandsverfolgung und Lieferantenverwaltung\n✓ Gehaltsabrechnung und Steuerberichte\n✓ Geschäftseinblicke und Analysen\n\nStarten Sie noch heute Ihre kostenlose Testversion:\nhttps://dottapps.com\n\nMit freundlichen Grüßen,\nDas Dott-Team",
+    "whatsappMessage": "Hallo 👋\n\n{{senderName}} hat Sie eingeladen, Dott auszuprobieren, ein All-in-One-Tool zur Vereinfachung von Geschäftsabläufen.\n\n✓ Automatisierte Rechnungsstellung\n✓ Terminplanung\n✓ Bestandsverwaltung\n✓ Gehaltsabrechnung\n✓ Geschäftsanalysen\n\nStarten Sie Ihre kostenlose Testversion: https://dottapps.com"
   }
 }

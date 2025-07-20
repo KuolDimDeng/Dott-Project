@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSessionContext } from '@/providers/SessionProvider';
 import { useTranslation } from 'react-i18next';
 import { 
@@ -16,19 +16,37 @@ import StandardSpinner from '@/components/ui/StandardSpinner';
 
 const InviteAFriend = () => {
   const { user } = useSessionContext();
-  const { t } = useTranslation('dashboard');
+  const { t, i18n } = useTranslation('navigation');
   const [inviteMethod, setInviteMethod] = useState('email'); // 'email' or 'whatsapp'
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState(null); // 'success', 'error', or null
+  const [, forceUpdate] = useState({});
+
+  // Listen for language changes and force re-render
+  useEffect(() => {
+    const handleLanguageChange = (lng) => {
+      console.log('InviteAFriend: Language changed to', lng);
+      forceUpdate({});
+    };
+
+    // Listen to both i18n and window events
+    i18n.on('languageChanged', handleLanguageChange);
+    window.addEventListener('languageChange', handleLanguageChange);
+
+    return () => {
+      i18n.off('languageChanged', handleLanguageChange);
+      window.removeEventListener('languageChange', handleLanguageChange);
+    };
+  }, [i18n]);
 
   const getDefaultMessage = (isWhatsApp = false) => {
-    const senderName = user?.name || t('dashboard.invite.defaultSender', 'A colleague');
-    const userName = user?.name || user?.email || t('dashboard.invite.defaultUser', 'A Dott User');
+    const senderName = user?.name || t('invite.defaultSender', 'A colleague');
+    const userName = user?.name || user?.email || t('invite.defaultUser', 'A Dott User');
     
     if (isWhatsApp) {
-      return t('dashboard.invite.whatsappMessage', {
+      return t('invite.whatsappMessage', {
         senderName,
         userName,
         defaultValue: `🚀 *{{senderName}} has invited you to join Dott: Global Business Platform!*
@@ -54,7 +72,7 @@ Best regards,
       });
     }
     
-    return t('dashboard.invite.emailMessage', {
+    return t('invite.emailMessage', {
       senderName,
       userName,
       defaultValue: `{{senderName}} has invited you to join Dott: Global Business Platform!
@@ -88,12 +106,12 @@ Best regards,
     e.preventDefault();
     
     if (inviteMethod === 'email' && !email.trim()) {
-      setStatus({ type: 'error', message: t('dashboard.invite.emailValidationError', 'Please enter a valid email address.') });
+      setStatus({ type: 'error', message: t('invite.emailValidationError', 'Please enter a valid email address.') });
       return;
     }
     
     if (inviteMethod === 'whatsapp' && !phoneNumber.trim()) {
-      setStatus({ type: 'error', message: t('dashboard.invite.phoneValidationError', 'Please enter a valid phone number.') });
+      setStatus({ type: 'error', message: t('invite.phoneValidationError', 'Please enter a valid phone number.') });
       return;
     }
 
@@ -132,21 +150,21 @@ Best regards,
         const method = inviteMethod === 'email' ? 'email' : 'WhatsApp';
         setStatus({ 
           type: 'success', 
-          message: t('dashboard.invite.successMessage', { method, recipient, defaultValue: `Invitation sent successfully via {{method}} to {{recipient}}!` })
+          message: t('invite.successMessage', { method, recipient, defaultValue: `Invitation sent successfully via {{method}} to {{recipient}}!` })
         });
         setEmail('');
         setPhoneNumber('');
       } else {
         setStatus({ 
           type: 'error', 
-          message: result.error || t('dashboard.invite.errorMessage', 'Failed to send invitation. Please try again.')
+          message: result.error || t('invite.errorMessage', 'Failed to send invitation. Please try again.')
         });
       }
     } catch (error) {
       console.error('Error sending invitation:', error);
       setStatus({ 
         type: 'error', 
-        message: t('dashboard.invite.networkError', 'Network error. Please check your connection and try again.')
+        message: t('invite.networkError', 'Network error. Please check your connection and try again.')
       });
     } finally {
       setIsLoading(false);
@@ -159,12 +177,12 @@ Best regards,
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-black mb-4 flex items-center">
           <UserPlusIcon className="h-6 w-6 text-blue-600 mr-2" />
-          {t('dashboard.invite.title', 'Invite a Business Owner')}
+          {t('invite.title', 'Invite a Business Owner')}
         </h1>
         <p className="text-gray-600 text-lg">
-          {t('dashboard.invite.description1', 'Know a business owner looking to streamline their operations? Share Dott with them!')}
+          {t('invite.description1', 'Know a business owner looking to streamline their operations? Share Dott with them!')}
           <br className="hidden sm:block" />
-          {t('dashboard.invite.description2', 'Dott helps businesses automate scheduling, manage customer relationships, and handle payments—all in one simple app. Your connection can save hours of administrative work each week.')}
+          {t('invite.description2', 'Dott helps businesses automate scheduling, manage customer relationships, and handle payments—all in one simple app. Your connection can save hours of administrative work each week.')}
         </p>
       </div>
 
@@ -177,14 +195,14 @@ Best regards,
             ) : (
               <EnvelopeIcon className="h-5 w-5 text-blue-600 mr-2" />
             )}
-            {t('dashboard.invite.formTitle', 'Send Invitation')}
+            {t('invite.formTitle', 'Send Invitation')}
           </h2>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Method Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
-                {t('dashboard.invite.methodLabel', 'Choose invitation method')}
+                {t('invite.methodLabel', 'Choose invitation method')}
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <button
@@ -197,7 +215,7 @@ Best regards,
                   }`}
                 >
                   <EnvelopeIcon className="h-4 w-4 mr-2" />
-                  {t('dashboard.invite.emailButton', 'Email')}
+                  {t('invite.emailButton', 'Email')}
                 </button>
                 <button
                   type="button"
@@ -209,7 +227,7 @@ Best regards,
                   }`}
                 >
                   <ChatBubbleLeftRightIcon className="h-4 w-4 mr-2" />
-                  {t('dashboard.invite.whatsappButton', 'WhatsApp')}
+                  {t('invite.whatsappButton', 'WhatsApp')}
                 </button>
               </div>
             </div>
@@ -218,7 +236,7 @@ Best regards,
             {inviteMethod === 'email' && (
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('dashboard.invite.emailLabel', "Business Owner's Email Address")}
+                  {t('invite.emailLabel', "Business Owner's Email Address")}
                 </label>
                 <input
                   type="email"
@@ -226,7 +244,7 @@ Best regards,
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder={t('dashboard.invite.emailPlaceholder', 'business@example.com')}
+                  placeholder={t('invite.emailPlaceholder', 'business@example.com')}
                   required={inviteMethod === 'email'}
                 />
               </div>
@@ -236,7 +254,7 @@ Best regards,
             {inviteMethod === 'whatsapp' && (
               <div>
                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('dashboard.invite.phoneLabel', "Business Owner's WhatsApp Number")}
+                  {t('invite.phoneLabel', "Business Owner's WhatsApp Number")}
                 </label>
                 <input
                   type="tel"
@@ -244,11 +262,11 @@ Best regards,
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  placeholder={t('dashboard.invite.phonePlaceholder', '+1234567890')}
+                  placeholder={t('invite.phonePlaceholder', '+1234567890')}
                   required={inviteMethod === 'whatsapp'}
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  {t('dashboard.invite.phoneHelperText', 'Include country code (e.g., +1 for US, +44 for UK)')}
+                  {t('invite.phoneHelperText', 'Include country code (e.g., +1 for US, +44 for UK)')}
                 </p>
               </div>
             )}
@@ -282,7 +300,7 @@ Best regards,
               {isLoading ? (
                 <>
                   <StandardSpinner size="small" color="white" className="inline mr-2" />
-                  {t('dashboard.invite.sendingText', 'Sending...')}
+                  {t('invite.sendingText', 'Sending...')}
                 </>
               ) : (
                 <>
@@ -291,7 +309,7 @@ Best regards,
                   ) : (
                     <PaperAirplaneIcon className="h-4 w-4 mr-2" />
                   )}
-                  {inviteMethod === 'whatsapp' ? t('dashboard.invite.sendWhatsappButton', 'Send via WhatsApp') : t('dashboard.invite.sendEmailButton', 'Send via Email')}
+                  {inviteMethod === 'whatsapp' ? t('invite.sendWhatsappButton', 'Send via WhatsApp') : t('invite.sendEmailButton', 'Send via Email')}
                 </>
               )}
             </button>

@@ -163,5 +163,31 @@
       "statusUpdates": "Actualizaciones de Estado",
       "followUs": "Síguenos para actualizaciones en tiempo real sobre el estado del servicio"
     }
+  },
+  "invite": {
+    "title": "Invitar a un Propietario de Negocio",
+    "description1": "¿Conoces a un propietario de negocio que busca optimizar sus operaciones? ¡Comparte Dott con ellos!",
+    "description2": "Dott ayuda a las empresas a automatizar la programación, gestionar las relaciones con los clientes y manejar los pagos, todo en una aplicación simple. Tu conexión puede ahorrar horas de trabajo administrativo cada semana.",
+    "formTitle": "Enviar Invitación",
+    "methodLabel": "Elegir método de invitación",
+    "emailButton": "Correo electrónico",
+    "whatsappButton": "WhatsApp",
+    "emailLabel": "Dirección de correo electrónico del propietario del negocio",
+    "emailPlaceholder": "business@example.com",
+    "phoneLabel": "Número de WhatsApp del propietario del negocio",
+    "phonePlaceholder": "+1234567890",
+    "phoneHelperText": "Incluye el código de país (ej., +1 para EE.UU., +34 para España)",
+    "sendingText": "Enviando...",
+    "sendEmailButton": "Enviar por correo electrónico",
+    "sendWhatsappButton": "Enviar por WhatsApp",
+    "emailValidationError": "Por favor, ingresa una dirección de correo electrónico válida.",
+    "phoneValidationError": "Por favor, ingresa un número de teléfono válido.",
+    "successMessage": "¡Invitación enviada exitosamente por {{method}} a {{recipient}}!",
+    "errorMessage": "Error al enviar la invitación. Por favor, intenta de nuevo.",
+    "networkError": "Error de red. Por favor, verifica tu conexión e intenta de nuevo.",
+    "defaultSender": "Un colega",
+    "defaultUser": "Un usuario de Dott",
+    "emailMessage": "Hola,\n\n{{senderName}} te ha invitado a probar Dott, una herramienta integral para simplificar las operaciones comerciales.\n\n¿Por qué los propietarios de negocios aman Dott?\n✓ Facturación automatizada y gestión de pagos\n✓ Programación de citas y recordatorios para clientes\n✓ Seguimiento de inventario y gestión de proveedores\n✓ Procesamiento de nómina e informes fiscales\n✓ Perspectivas empresariales y análisis\n\nComienza tu prueba gratuita hoy:\nhttps://dottapps.com\n\nMejores deseos,\nEl equipo de Dott",
+    "whatsappMessage": "Hola 👋\n\n{{senderName}} te ha invitado a probar Dott, una herramienta integral para simplificar las operaciones comerciales.\n\n✓ Facturación automatizada\n✓ Programación de citas\n✓ Gestión de inventario\n✓ Procesamiento de nómina\n✓ Análisis empresarial\n\nComienza tu prueba gratuita: https://dottapps.com"
   }
 }
