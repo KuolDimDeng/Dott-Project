@@ -74,12 +74,55 @@ function getAppCache() {
 }
 
 export const useAuth = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [authError, setAuthError] = useState(null);
-  const [user, setUser] = useState(null);
-  const router = useRouter();
-  const { refreshSession } = useSession();
+  console.log('🚨 [useAuth] === HOOK CALLED ===');
+  
+  let isAuthenticated, setIsAuthenticated, isLoading, setIsLoading, authError, setAuthError, user, setUser;
+  
+  try {
+    console.log('🚨 [useAuth] About to initialize state variables...');
+    [isAuthenticated, setIsAuthenticated] = useState(false);
+    [isLoading, setIsLoading] = useState(false);
+    [authError, setAuthError] = useState(null);
+    [user, setUser] = useState(null);
+    console.log('🚨 [useAuth] State variables initialized successfully');
+  } catch (stateError) {
+    console.error('🎯 [useAuth] ERROR initializing state:', stateError);
+    console.error('Stack:', stateError?.stack);
+    if (stateError?.message?.includes('t is not defined')) {
+      console.error('🎯 FOUND "t is not defined" ERROR IN useState!');
+    }
+    throw stateError; // Re-throw to prevent continuing with undefined values
+  }
+  
+  let router;
+  try {
+    console.log('🚨 [useAuth] About to call useRouter...');
+    router = useRouter();
+    console.log('🚨 [useAuth] useRouter successful');
+  } catch (routerError) {
+    console.error('🎯 [useAuth] ERROR in useRouter:', routerError);
+    console.error('Stack:', routerError?.stack);
+    if (routerError?.message?.includes('t is not defined')) {
+      console.error('🎯 FOUND "t is not defined" ERROR IN useRouter!');
+    }
+    throw routerError;
+  }
+  
+  let refreshSession;
+  try {
+    console.log('🚨 [useAuth] About to call useSession...');
+    const sessionResult = useSession();
+    refreshSession = sessionResult.refreshSession;
+    console.log('🚨 [useAuth] useSession successful');
+  } catch (sessionError) {
+    console.error('🎯 [useAuth] ERROR in useSession:', sessionError);
+    console.error('Stack:', sessionError?.stack);
+    if (sessionError?.message?.includes('t is not defined')) {
+      console.error('🎯 FOUND "t is not defined" ERROR IN useSession!');
+    }
+    throw sessionError;
+  }
+  
   const refreshingRef = useRef(false);
   const [userFriendlyMessage, setUserFriendlyMessage] = useState('');
 

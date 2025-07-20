@@ -49,8 +49,8 @@ const LoadingComponent = () => <DashboardLoader message="Loading dashboard compo
 
 function DashboardContent({ setupStatus = 'pending', customContent, mockData, userAttributes, tenantId: propTenantId }) {
   // CRITICAL DEBUG: Log all props received
-  console.log('🔴 [DashboardContent] === COMPONENT MOUNT DEBUG ===');
-  console.log('🔴 [DashboardContent] Props received:', {
+  console.log('🚨 [DashboardContent] === COMPONENT RENDER START ===');
+  console.log('🚨 [DashboardContent] Props received:', {
     setupStatus,
     hasCustomContent: !!customContent,
     hasMockData: !!mockData,
@@ -58,10 +58,56 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     userAttributesKeys: userAttributes ? Object.keys(userAttributes) : 'none',
     propTenantId
   });
-  console.log('🔴 [DashboardContent] Full userAttributes:', userAttributes);
-  const { user, isAuthenticated, logout } = useAuth();
-  const router = useRouter();
-  const { showNotification } = useNotification();
+  console.log('🚨 [DashboardContent] Full userAttributes:', userAttributes);
+  
+  let user, isAuthenticated, logout;
+  try {
+    console.log('🚨 [DashboardContent] About to call useAuth hook...');
+    const authResult = useAuth();
+    user = authResult.user;
+    isAuthenticated = authResult.isAuthenticated;
+    logout = authResult.logout;
+    console.log('🚨 [DashboardContent] useAuth successful:', { hasUser: !!user, isAuthenticated });
+  } catch (authError) {
+    console.error('🎯 [DashboardContent] ERROR in useAuth:', authError);
+    console.error('Stack:', authError?.stack);
+    if (authError?.message?.includes('t is not defined')) {
+      console.error('🎯 FOUND "t is not defined" ERROR IN useAuth!');
+    }
+    // Set default values
+    user = null;
+    isAuthenticated = false;
+    logout = () => {};
+  }
+  
+  let router;
+  try {
+    console.log('🚨 [DashboardContent] About to call useRouter...');
+    router = useRouter();
+    console.log('🚨 [DashboardContent] useRouter successful');
+  } catch (routerError) {
+    console.error('🎯 [DashboardContent] ERROR in useRouter:', routerError);
+    console.error('Stack:', routerError?.stack);
+    if (routerError?.message?.includes('t is not defined')) {
+      console.error('🎯 FOUND "t is not defined" ERROR IN useRouter!');
+    }
+  }
+  
+  let showNotification;
+  try {
+    console.log('🚨 [DashboardContent] About to call useNotification...');
+    const notifResult = useNotification();
+    showNotification = notifResult.showNotification;
+    console.log('🚨 [DashboardContent] useNotification successful');
+  } catch (notifError) {
+    console.error('🎯 [DashboardContent] ERROR in useNotification:', notifError);
+    console.error('Stack:', notifError?.stack);
+    if (notifError?.message?.includes('t is not defined')) {
+      console.error('🎯 FOUND "t is not defined" ERROR IN useNotification!');
+    }
+    // Set default value
+    showNotification = () => {};
+  }
   
   // Performance monitoring for dashboard render
   const renderStartTime = useRef(Date.now());

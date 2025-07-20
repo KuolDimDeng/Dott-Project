@@ -21,6 +21,7 @@ import { useSession } from '@/hooks/useSession-v2';
 // import { signIn } from '@/config/amplifyUnified'; // Removed - no longer using Cognito
 import Cookies from 'js-cookie';
 import SessionInitializer from '@/components/SessionInitializer';
+import DebugGlobals from './debug-globals';
 
 // Removed emergency access and recovery logic - only trust backend session
 
@@ -90,6 +91,8 @@ const checkAuthWithRetry = async (maxRetries = 3, delayMs = 1000) => {
  * TenantDashboard - A tenant-specific dashboard route
  */
 export default function TenantDashboard() {
+  console.log('🎯 [TenantDashboard] === COMPONENT RENDER START ===');
+  
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -100,15 +103,31 @@ export default function TenantDashboard() {
   const bridgeToken = searchParams.get('bridge');
   // Removed emergency access logic - only trust backend session
   
+  console.log('🎯 [TenantDashboard] Initial params:', {
+    tenantId,
+    fromSignIn,
+    fromSubscription,
+    sessionToken: !!sessionToken,
+    bridgeToken: !!bridgeToken
+  });
+  
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [tenantStatus, setTenantStatus] = useState('pending');
   const [userAttributes, setUserAttributes] = useState(null);
   
+  console.log('🎯 [TenantDashboard] State initialized');
+  
   // Use session hook for better localStorage sync
-  const { data: sessionData } = useSession();
-  const sessionUser = sessionData?.user;
+  console.log('🎯 [TenantDashboard] About to call useSession hook...');
+  try {
+    const { session: sessionData, user: sessionUser } = useSession();
+    console.log('🎯 [TenantDashboard] useSession successful:', { hasSessionData: !!sessionData, hasUser: !!sessionUser });
+  } catch (sessionError) {
+    console.error('🚨 [TenantDashboard] ERROR in useSession:', sessionError);
+    console.error('Stack:', sessionError?.stack);
+  }
 
   // Initialize dashboard
   useEffect(() => {
@@ -507,8 +526,13 @@ export default function TenantDashboard() {
   // Render dashboard within providers, using the ensured tenantId if possible
   const effectiveTenantId = tenantId;
   
+  console.log('🎯 [TenantDashboard] About to render dashboard with providers...');
+  console.log('🎯 [TenantDashboard] Dashboard params:', dashboardParams);
+  console.log('🎯 [TenantDashboard] Effective tenant ID:', effectiveTenantId);
+
   // If we have a bridge token, wrap in SessionInitializer
   if (bridgeToken) {
+    console.log('🎯 [TenantDashboard] Rendering with SessionInitializer (bridge token)');
     return (
       <SessionInitializer>
         <Suspense fallback={<DashboardLoader message="Loading dashboard content..." />}>
@@ -533,24 +557,28 @@ export default function TenantDashboard() {
     );
   }
   
+  console.log('🎯 [TenantDashboard] Rendering dashboard without SessionInitializer');
   return (
-    <Suspense fallback={<DashboardLoader message="Loading dashboard content..." />}>
-      <NotificationProvider>
-        <UserProfileProvider tenantId={effectiveTenantId}>
-          <DashboardProvider>
-            <DashboardContent
-              newAccount={dashboardParams.newAccount}
-              plan={dashboardParams.plan}
-              mockData={dashboardParams.mockData}
-              setupStatus={dashboardParams.setupStatus}
-              userAttributes={userAttributes}
-              tenantId={effectiveTenantId}
-              fromSignIn={fromSignIn}
-              fromSubscription={fromSubscription}
-            />
-          </DashboardProvider>
-        </UserProfileProvider>
-      </NotificationProvider>
-    </Suspense>
+    <>
+      <DebugGlobals />
+      <Suspense fallback={<DashboardLoader message="Loading dashboard content..." />}>
+        <NotificationProvider>
+          <UserProfileProvider tenantId={effectiveTenantId}>
+            <DashboardProvider>
+              <DashboardContent
+                newAccount={dashboardParams.newAccount}
+                plan={dashboardParams.plan}
+                mockData={dashboardParams.mockData}
+                setupStatus={dashboardParams.setupStatus}
+                userAttributes={userAttributes}
+                tenantId={effectiveTenantId}
+                fromSignIn={fromSignIn}
+                fromSubscription={fromSubscription}
+              />
+            </DashboardProvider>
+          </UserProfileProvider>
+        </NotificationProvider>
+      </Suspense>
+    </>
   );
 }

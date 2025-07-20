@@ -1,11 +1,35 @@
 'use client';
 
-
 import { useEffect } from 'react';
 import { logger } from '@/utils/logger';
 
 export default function TenantDashboardError({ error, reset }) {
   useEffect(() => {
+    // Comprehensive error logging with stack trace
+    console.error('🚨 [TenantDashboardError] === ERROR CAUGHT ===');
+    console.error('Error Name:', error?.name);
+    console.error('Error Message:', error?.message);
+    console.error('Error Stack:', error?.stack);
+    console.error('Error Details:', error);
+    console.error('Error Type:', typeof error);
+    console.error('Error Constructor:', error?.constructor?.name);
+    
+    // Check if this is the "t is not defined" error
+    if (error?.message?.includes('t is not defined')) {
+      console.error('🎯 FOUND "t is not defined" ERROR!');
+      console.error('Full stack trace for debugging:');
+      console.error(error?.stack);
+      
+      // Try to extract more context from the stack
+      if (error?.stack) {
+        const stackLines = error.stack.split('\n');
+        console.error('Stack trace lines:');
+        stackLines.forEach((line, index) => {
+          console.error(`  ${index}: ${line}`);
+        });
+      }
+    }
+    
     // Log the error to an error reporting service
     logger.error('[TenantDashboardError]', error);
   }, [error]);

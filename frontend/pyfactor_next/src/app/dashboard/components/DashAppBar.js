@@ -47,7 +47,7 @@ import { useRouter } from 'next/navigation';
 import DashboardLanguageSelector from './LanguageSelector';
 import { getSubscriptionPlanColor } from '@/utils/userAttributes';
 import { useMemoryOptimizer } from '@/utils/memoryManager';
-import { createOptions } from './lists/listItems';
+import { getCreateOptions } from './lists/listItems';
 import { useNotification } from '@/context/NotificationContext';
 import { logger } from '@/utils/logger';
 import SubscriptionPopup from './SubscriptionPopup';
@@ -61,6 +61,7 @@ import { useNotifications } from '@/hooks/useNotifications';
 import NotificationDropdown from '@/components/NotificationDropdown';
 import { APP_NAME, CREATE_NEW_ITEM_OPTIONS } from '@/config/constants';
 import { businessTypes, legalStructures } from '@/app/utils/businessData';
+import { useTranslation } from 'react-i18next';
 
 // Initialize global app cache if it doesn't exist
 if (typeof window !== 'undefined' && !appCache.getAll()) {
@@ -193,6 +194,9 @@ const DashAppBar = ({
   
   // Get user permissions
   const { isOwner, isAdmin, isOwnerOrAdmin } = usePermissions();
+  
+  // Get translation function
+  const { t } = useTranslation();
   
   // Get notification data
   const { 
@@ -1584,7 +1588,7 @@ const DashAppBar = ({
               </button>
             </div>
             <ul className="space-y-1">
-              {createOptions.filter(option => option.label !== 'Create New').map((option, index) => (
+              {getCreateOptions(t).filter(option => option.label !== 'Create New').map((option, index) => (
                 <li key={index}>
                   <button 
                     className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 flex items-center"

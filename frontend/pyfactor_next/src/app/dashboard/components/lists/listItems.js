@@ -175,8 +175,8 @@ const InventoryIcons = {
 
 const MENU_WIDTH = 258; // Increased to match the drawer width (260px, leaving 2px for borders)
 
-// Define createOptions outside the component so it can be exported
-const createOptions = [
+// Define createOptions as a function that takes t as parameter
+const getCreateOptions = (t) => [
   {
     label: t('mainMenu.createNew'),
     description: 'Create a new transaction, invoice, or entity',
@@ -2420,5 +2420,5 @@ const MainListItems = ({
   );
 };
 
-export { createOptions };
+export { getCreateOptions };
 export default MainListItems;
