@@ -24,7 +24,10 @@
     "smartBusinessAI": "ብልጥ ቢዝነስ AI",
     "aiPoweredInsights": "AI የተደገፉ ግንዛቤዎች",
     "importExport": "አስመጣ/አስወጣ",
-    "inviteBusinessOwner": "የንግድ ባለቤት ጋብዝ"
+    "inviteBusinessOwner": "የንግድ ባለቤት ጋብዝ",
+    "analytics": "ትንተና",
+    "smartInsights": "ብልህ ግንዛቤዎች",
+    "dottStatus": "የDott ሁኔታ"
   },
   "subMenu": {
     "dashboard": "ዳሽቦርድ",

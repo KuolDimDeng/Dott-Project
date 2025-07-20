@@ -82,43 +82,43 @@ export default function Highlights() {
                   {/* Show feature details for specific highlights */}
                   {highlight.title === t('highlights.pos.title', 'POS and Barcode Scanning') && (
                     <div className="mt-6">
-                      <p className="text-sm font-medium text-gray-500 mb-3">Key features:</p>
+                      <p className="text-sm font-medium text-gray-500 mb-3">{t('highlights.features.label', 'Key features:')}</p>
                       <div className="grid grid-cols-2 gap-3">
                         <div className="flex items-center gap-2">
                           <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                           </svg>
-                          <span className="text-sm text-gray-700">Quick checkout</span>
+                          <span className="text-sm text-gray-700">{t('highlights.pos.features.quickCheckout', 'Quick checkout')}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
                           </svg>
-                          <span className="text-sm text-gray-700">Barcode scanning</span>
+                          <span className="text-sm text-gray-700">{t('highlights.pos.features.barcodeScanning', 'Barcode scanning')}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                           </svg>
-                          <span className="text-sm text-gray-700">All payment types</span>
+                          <span className="text-sm text-gray-700">{t('highlights.pos.features.allPaymentTypes', 'All payment types')}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                           </svg>
-                          <span className="text-sm text-gray-700">Inventory tracking</span>
+                          <span className="text-sm text-gray-700">{t('highlights.pos.features.inventoryTracking', 'Inventory tracking')}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                           </svg>
-                          <span className="text-sm text-gray-700">Offline mode</span>
+                          <span className="text-sm text-gray-700">{t('highlights.pos.features.offlineMode', 'Offline mode')}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
                           </svg>
-                          <span className="text-sm text-gray-700">Mobile ready</span>
+                          <span className="text-sm text-gray-700">{t('highlights.pos.features.mobileReady', 'Mobile ready')}</span>
                         </div>
                       </div>
                     </div>
@@ -127,43 +127,43 @@ export default function Highlights() {
                   {/* Show geofencing features */}
                   {highlight.title === t('highlights.geofencing.title', 'Geofencing & Location Tracking') && (
                     <div className="mt-6">
-                      <p className="text-sm font-medium text-gray-500 mb-3">Key features:</p>
+                      <p className="text-sm font-medium text-gray-500 mb-3">{t('highlights.features.label', 'Key features:')}</p>
                       <div className="grid grid-cols-2 gap-3">
                         <div className="flex items-center gap-2">
                           <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                           </svg>
-                          <span className="text-sm text-gray-700">GPS clock in/out</span>
+                          <span className="text-sm text-gray-700">{t('highlights.geofencing.features.gpsClockInOut', 'GPS clock in/out')}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
                           </svg>
-                          <span className="text-sm text-gray-700">Virtual boundaries</span>
+                          <span className="text-sm text-gray-700">{t('highlights.geofencing.features.virtualBoundaries', 'Virtual boundaries')}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                           </svg>
-                          <span className="text-sm text-gray-700">Real-time alerts</span>
+                          <span className="text-sm text-gray-700">{t('highlights.geofencing.features.realTimeAlerts', 'Real-time alerts')}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
-                          <span className="text-sm text-gray-700">Automated timesheets</span>
+                          <span className="text-sm text-gray-700">{t('highlights.geofencing.features.automatedTimesheets', 'Automated timesheets')}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                           </svg>
-                          <span className="text-sm text-gray-700">Compliance ready</span>
+                          <span className="text-sm text-gray-700">{t('highlights.geofencing.features.complianceReady', 'Compliance ready')}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                           </svg>
-                          <span className="text-sm text-gray-700">Team management</span>
+                          <span className="text-sm text-gray-700">{t('highlights.geofencing.features.teamManagement', 'Team management')}</span>
                         </div>
                       </div>
                     </div>
@@ -172,7 +172,7 @@ export default function Highlights() {
                   {/* Show supported languages */}
                   {highlight.title === t('highlights.languages.title', '20+ Languages Supported') && (
                     <div className="mt-6">
-                      <p className="text-sm font-medium text-gray-500 mb-3">Available in:</p>
+                      <p className="text-sm font-medium text-gray-500 mb-3">{t('highlights.languages.availableIn', 'Available in:')}</p>
                       <div className="flex flex-wrap gap-2">
                         {['English', 'Español', 'Français', 'Português', 'Deutsch', '中文', 'العربية', 'Kiswahili', 'हिन्दी', 'Bahasa', 'Tiếng Việt', 'ภาษาไทย'].map((lang) => (
                           <span key={lang} className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">
@@ -180,7 +180,7 @@ export default function Highlights() {
                           </span>
                         ))}
                         <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm font-medium">
-                          +10 more
+                          {t('highlights.languages.more', '+10 more')}
                         </span>
                       </div>
                     </div>

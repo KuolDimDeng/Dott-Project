@@ -24,7 +24,10 @@
     "smartBusinessAI": "स्मार्ट बिज़नेस एआई",
     "aiPoweredInsights": "एआई संचालित अंतर्दृष्टि",
     "importExport": "आयात/निर्यात",
-    "inviteBusinessOwner": "व्यवसाय स्वामी को आमंत्रित करें"
+    "inviteBusinessOwner": "व्यवसाय स्वामी को आमंत्रित करें",
+    "analytics": "विश्लेषण",
+    "smartInsights": "स्मार्ट अंतर्दृष्टि",
+    "dottStatus": "Dott स्थिति"
   },
   "subMenu": {
     "dashboard": "डैशबोर्ड",

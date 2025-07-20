@@ -24,7 +24,10 @@
     "smartBusinessAI": "AI Bisnis Cerdas",
     "aiPoweredInsights": "Wawasan Berbasis AI",
     "importExport": "Impor/Ekspor",
-    "inviteBusinessOwner": "Undang Pemilik Bisnis"
+    "inviteBusinessOwner": "Undang Pemilik Bisnis",
+    "analytics": "Analitik",
+    "smartInsights": "Wawasan Cerdas",
+    "dottStatus": "Status Dott"
   },
   "subMenu": {
     "dashboard": "Dasbor",

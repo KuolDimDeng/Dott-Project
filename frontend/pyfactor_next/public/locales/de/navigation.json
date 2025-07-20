@@ -24,7 +24,10 @@
     "smartBusinessAI": "Intelligente Geschäfts-KI",
     "aiPoweredInsights": "KI-gestützte Einblicke",
     "importExport": "Import/Export",
-    "inviteBusinessOwner": "Geschäftsinhaber einladen"
+    "inviteBusinessOwner": "Geschäftsinhaber einladen",
+    "analytics": "Analytik",
+    "smartInsights": "Intelligente Einblicke",
+    "dottStatus": "Dott Status"
   },
   "subMenu": {
     "dashboard": "Dashboard",

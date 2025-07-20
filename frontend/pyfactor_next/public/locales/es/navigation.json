@@ -24,7 +24,10 @@
     "smartBusinessAI": "IA Empresarial Inteligente",
     "aiPoweredInsights": "Análisis Impulsado por IA",
     "importExport": "Importar/Exportar",
-    "inviteBusinessOwner": "Invitar a un Propietario de Negocio"
+    "inviteBusinessOwner": "Invitar a un Propietario de Negocio",
+    "analytics": "Análisis",
+    "smartInsights": "Perspectivas Inteligentes",
+    "dottStatus": "Estado de Dott"
   },
   "subMenu": {
     "dashboard": "Panel de Control",

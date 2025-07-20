@@ -238,7 +238,7 @@ export default function GeoPricing() {
         'SLA guarantee',
         'Training included'
       ],
-      cta: 'Contact Sales',
+      cta: 'Start Enterprise',
       popular: false
     }
   ];
@@ -389,15 +389,18 @@ export default function GeoPricing() {
                 ))}
               </ul>
 
-              <button
-                className={`mt-8 w-full py-3 px-4 rounded-lg font-semibold transition-all ${
-                  plan.popular
+              <a
+                href="/api/auth/login"
+                className={`mt-8 w-full py-3 px-4 rounded-lg font-semibold transition-all block text-center ${
+                  plan.name === 'Enterprise'
+                    ? 'bg-purple-600 text-white hover:bg-purple-700 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
+                    : plan.popular
                     ? 'bg-blue-600 text-white hover:bg-blue-700'
                     : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
                 }`}
               >
                 {plan.cta}
-              </button>
+              </a>
             </div>
           ))}
         </div>

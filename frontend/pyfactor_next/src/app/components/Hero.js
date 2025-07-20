@@ -34,13 +34,13 @@ export default function Hero() {
                   </svg>
                 ))}
               </span>
-              <span>SMART BUSINESS MANAGEMENT SOLUTIONS</span>
+              <span>{t('hero.tagline', 'SMART BUSINESS MANAGEMENT SOLUTIONS')}</span>
             </span>
           </div>
           
           <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl text-transparent bg-clip-text bg-gradient-to-r from-primary-main to-primary-light">
             <span className="relative inline-block mr-2">
-              <span className="font-normal" style={{ fontFamily: 'Caveat, cursive', fontSize: '1.2em' }}>Your</span>
+              <span className="font-normal" style={{ fontFamily: 'Caveat, cursive', fontSize: '1.2em' }}>{t('hero.your', 'Your')}</span>
               <svg 
                 className="absolute -bottom-1 left-0 w-full h-3 pointer-events-none" 
                 viewBox="0 0 100 12" 
@@ -68,7 +68,7 @@ export default function Hero() {
               </svg>
             </span>
             {' '}
-            <span>Global Business Platform</span>
+            <span>{t('hero.title', 'Global Business Platform')}</span>
           </h1>
           
           {/* Key Benefits */}

@@ -24,7 +24,10 @@
     "smartBusinessAI": "智能商业AI",
     "aiPoweredInsights": "AI驱动洞察",
     "importExport": "导入/导出",
-    "inviteBusinessOwner": "邀请企业主"
+    "inviteBusinessOwner": "邀请企业主",
+    "analytics": "分析",
+    "smartInsights": "智能洞察",
+    "dottStatus": "Dott 状态"
   },
   "subMenu": {
     "dashboard": "仪表板",

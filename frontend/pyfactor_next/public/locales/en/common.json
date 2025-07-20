@@ -30,7 +30,9 @@
   "missionStatement": "At Dott, our mission is to empower small businesses to thrive by providing them with affordable, accessible, and powerful management tools that simplify day-to-day operations.",
   "visionStatement": "We envision a world where small businesses have access to the same quality of management tools as large corporations, but tailored to their specific needs and scale.",
   "hero": {
-    "title": "Your Global Business Platform",
+    "tagline": "SMART BUSINESS MANAGEMENT SOLUTIONS",
+    "your": "Your",
+    "title": "Global Business Platform",
     "subtitle": "Free forever for basic features", 
     "description": "Dott lets business owners like you create invoices, accept payments online, manage your accounting, and inventory, with barcode scanning—all in one intuitive platform.",
     "button": "Get Started for Free",
@@ -50,6 +52,62 @@
       "cardPayments": "Accept card payments worldwide",
       "languages": "20+ languages supported",
       "mobilePhone": "Mobile phone app included"
+    }
+  },
+  "builtForYou": {
+    "title": "Built For You",
+    "heading": "Manage your business like a Pro!",
+    "subheading": "Built for business owners like you",
+    "cta": "Join thousands of business owners worldwide who trust Dott to manage their business",
+    "types": {
+      "freelancers": {
+        "title": "Freelancers",
+        "description": "Track projects, invoice clients instantly, and manage your finances all in one place. Get paid faster with professional invoices."
+      },
+      "contractors": {
+        "title": "Contractors",
+        "description": "Manage multiple projects, track materials and labor costs, and send professional quotes. Keep your cash flow healthy."
+      },
+      "entrepreneurs": {
+        "title": "Entrepreneurs",
+        "description": "Scale your startup with powerful tools for inventory, sales, and financial tracking. Make data-driven decisions."
+      },
+      "consultants": {
+        "title": "Consultants",
+        "description": "Bill by the hour or project, track expenses, and manage multiple clients effortlessly. Professional invoicing included."
+      },
+      "retail": {
+        "title": "Retail Shop Owners",
+        "description": "Manage inventory with barcode scanning, track sales, and accept multiple payment methods including mobile money."
+      },
+      "streetVendors": {
+        "title": "Street Vendors",
+        "description": "Simple mobile-first design to track daily sales, manage inventory, and accept digital payments on the go."
+      },
+      "marketStalls": {
+        "title": "Market Stall Owners",
+        "description": "Perfect for busy market days. Quick sales entry, inventory alerts, and daily profit tracking in your local currency."
+      },
+      "mobileMoneyAgents": {
+        "title": "Mobile Money Agents",
+        "description": "Track transactions, manage float balances, and generate reports for network operators. Built for M-Pesa, MTN, and more."
+      },
+      "restaurants": {
+        "title": "Small Restaurant Owners",
+        "description": "Manage orders, track ingredients, calculate food costs, and handle both dine-in and takeaway efficiently."
+      },
+      "serviceProviders": {
+        "title": "Service Providers",
+        "description": "For plumbers, electricians, mechanics, and more. Schedule jobs, track parts, and invoice on completion."
+      },
+      "onlineSellers": {
+        "title": "Online Sellers",
+        "description": "Sync inventory across platforms, manage orders, and track shipping. Perfect for social media sellers."
+      },
+      "transport": {
+        "title": "Transport Operators",
+        "description": "For taxi, boda boda, and tuk-tuk operators. Track daily earnings, fuel costs, and maintenance schedules."
+      }
     }
   },
   "heroTitle": "AI Global Business Platform",
@@ -112,7 +170,84 @@
       "title": "AI-Powered Insights",
       "description": "Get smart recommendations and predictive analytics based on your business data. Our AI helps you forecast demand, optimize inventory, and identify growth opportunities."
     },
+    "pos": {
+      "title": "POS and Barcode Scanning",
+      "description": "Transform any device into a powerful point-of-sale system. Scan barcodes instantly, process sales quickly, track inventory in real-time, and accept all payment methods including cash, cards, and mobile money.",
+      "features": {
+        "quickCheckout": "Quick checkout",
+        "barcodeScanning": "Barcode scanning",
+        "allPaymentTypes": "All payment types",
+        "inventoryTracking": "Inventory tracking",
+        "offlineMode": "Offline mode",
+        "mobileReady": "Mobile ready"
+      }
+    },
+    "geofencing": {
+      "title": "Geofencing & Location Tracking",
+      "description": "Ensure accurate time tracking with GPS-based clock in/out. Perfect for field teams, delivery drivers, and remote workers. Set up virtual boundaries for work sites and get alerts when employees enter or leave designated areas.",
+      "features": {
+        "gpsClockInOut": "GPS clock in/out",
+        "virtualBoundaries": "Virtual boundaries",
+        "realTimeAlerts": "Real-time alerts",
+        "automatedTimesheets": "Automated timesheets",
+        "complianceReady": "Compliance ready",
+        "teamManagement": "Team management"
+      }
+    },
+    "languages": {
+      "title": "20+ Languages Supported",
+      "description": "Reach customers and manage your business in your preferred language. From English to Swahili, Spanish to Mandarin, we support over 20 languages to make Dott accessible to businesses worldwide.",
+      "availableIn": "Available in:",
+      "more": "+10 more"
+    },
+    "features": {
+      "label": "Key features:"
+    },
     "learnMore": "Learn more"
+  },
+  "heroSlideshow": {
+    "slides": {
+      "businessOverview": {
+        "title": "Business Overview",
+        "description": "Monitor your entire business performance from one dashboard"
+      },
+      "pos": {
+        "title": "Point of Sale",
+        "description": "Process sales quickly with our integrated POS system"
+      },
+      "productManagement": {
+        "title": "Product Management",
+        "description": "Organize and track your products with advanced inventory control"
+      },
+      "barcodeScanning": {
+        "title": "Barcode Scanning",
+        "description": "Scan and manage inventory with built-in barcode support"
+      },
+      "supplierManagement": {
+        "title": "Supplier Management",
+        "description": "Manage vendor relationships and track purchase orders"
+      },
+      "financialAccounting": {
+        "title": "Financial Accounting",
+        "description": "Complete chart of accounts for professional bookkeeping"
+      },
+      "taxConfiguration": {
+        "title": "Tax Configuration",
+        "description": "Configure tax rates for multiple locations and jurisdictions"
+      },
+      "taxFiling": {
+        "title": "Tax Filing Service",
+        "description": "File your business taxes with our integrated filing service"
+      },
+      "smartCalendar": {
+        "title": "Smart Calendar",
+        "description": "Track important dates, deadlines, and business events"
+      }
+    },
+    "controls": {
+      "paused": "Paused",
+      "autoPlaying": "Auto-playing"
+    }
   },
   "faq": {
     "eyebrow": "FAQ",

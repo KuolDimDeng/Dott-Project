@@ -24,7 +24,10 @@
     "smartBusinessAI": "스마트 비즈니스 AI",
     "aiPoweredInsights": "AI 기반 인사이트",
     "importExport": "가져오기/내보내기",
-    "inviteBusinessOwner": "사업주 초대"
+    "inviteBusinessOwner": "사업주 초대",
+    "analytics": "분석",
+    "smartInsights": "스마트 인사이트",
+    "dottStatus": "Dott 상태"
   },
   "subMenu": {
     "dashboard": "대시보드",

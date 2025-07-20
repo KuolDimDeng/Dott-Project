@@ -24,7 +24,10 @@
     "smartBusinessAI": "スマートビジネスAI",
     "aiPoweredInsights": "AI駆動インサイト",
     "importExport": "インポート/エクスポート",
-    "inviteBusinessOwner": "事業主を招待"
+    "inviteBusinessOwner": "事業主を招待",
+    "analytics": "分析",
+    "smartInsights": "スマートインサイト",
+    "dottStatus": "Dottステータス"
   },
   "subMenu": {
     "dashboard": "ダッシュボード",

@@ -24,7 +24,10 @@
     "smartBusinessAI": "Smart Business AI",
     "aiPoweredInsights": "AI-Powered Insights",
     "importExport": "Import/Export",
-    "inviteBusinessOwner": "Invite a Business Owner"
+    "inviteBusinessOwner": "Invite a Business Owner",
+    "analytics": "Analytics",
+    "smartInsights": "Smart Insights",
+    "dottStatus": "Dott Status"
   },
   "subMenu": {
     "dashboard": "Dashboard",

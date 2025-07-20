@@ -3,68 +3,70 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
-
-const placeholderImages = [
-  {
-    src: '/static/images/slideshow/business-overview.png',
-    alt: 'Business Overview Dashboard',
-    title: 'Business Overview',
-    description: 'Monitor your entire business performance from one dashboard'
-  },
-  {
-    src: '/static/images/slideshow/point-of-sale.png',
-    alt: 'Point of Sale System',
-    title: 'Point of Sale',
-    description: 'Process sales quickly with our integrated POS system'
-  },
-  {
-    src: '/static/images/slideshow/product.png',
-    alt: 'Product Management',
-    title: 'Product Management',
-    description: 'Organize and track your products with advanced inventory control'
-  },
-  {
-    src: '/static/images/slideshow/bar-code.png',
-    alt: 'Barcode Scanning',
-    title: 'Barcode Scanning',
-    description: 'Scan and manage inventory with built-in barcode support'
-  },
-  {
-    src: '/static/images/slideshow/supplier.png',
-    alt: 'Supplier Management',
-    title: 'Supplier Management',
-    description: 'Manage vendor relationships and track purchase orders'
-  },
-  {
-    src: '/static/images/slideshow/chart-of-accounts.png',
-    alt: 'Chart of Accounts',
-    title: 'Financial Accounting',
-    description: 'Complete chart of accounts for professional bookkeeping'
-  },
-  {
-    src: '/static/images/slideshow/tax-settings.png',
-    alt: 'Tax Settings',
-    title: 'Tax Configuration',
-    description: 'Configure tax rates for multiple locations and jurisdictions'
-  },
-  {
-    src: '/static/images/slideshow/tax-filing.png',
-    alt: 'Tax Filing',
-    title: 'Tax Filing Service',
-    description: 'File your business taxes with our integrated filing service'
-  },
-  {
-    src: '/static/images/slideshow/calendar.png',
-    alt: 'Business Calendar',
-    title: 'Smart Calendar',
-    description: 'Track important dates, deadlines, and business events'
-  }
-];
+import { useTranslation } from 'react-i18next';
 
 export default function HeroSlideshow() {
+  const { t } = useTranslation();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const intervalRef = React.useRef(null);
+
+  const placeholderImages = [
+    {
+      src: '/static/images/slideshow/business-overview.png',
+      alt: 'Business Overview Dashboard',
+      title: t('heroSlideshow.slides.businessOverview.title', 'Business Overview'),
+      description: t('heroSlideshow.slides.businessOverview.description', 'Monitor your entire business performance from one dashboard')
+    },
+    {
+      src: '/static/images/slideshow/point-of-sale.png',
+      alt: 'Point of Sale System',
+      title: t('heroSlideshow.slides.pos.title', 'Point of Sale'),
+      description: t('heroSlideshow.slides.pos.description', 'Process sales quickly with our integrated POS system')
+    },
+    {
+      src: '/static/images/slideshow/product.png',
+      alt: 'Product Management',
+      title: t('heroSlideshow.slides.productManagement.title', 'Product Management'),
+      description: t('heroSlideshow.slides.productManagement.description', 'Organize and track your products with advanced inventory control')
+    },
+    {
+      src: '/static/images/slideshow/bar-code.png',
+      alt: 'Barcode Scanning',
+      title: t('heroSlideshow.slides.barcodeScanning.title', 'Barcode Scanning'),
+      description: t('heroSlideshow.slides.barcodeScanning.description', 'Scan and manage inventory with built-in barcode support')
+    },
+    {
+      src: '/static/images/slideshow/supplier.png',
+      alt: 'Supplier Management',
+      title: t('heroSlideshow.slides.supplierManagement.title', 'Supplier Management'),
+      description: t('heroSlideshow.slides.supplierManagement.description', 'Manage vendor relationships and track purchase orders')
+    },
+    {
+      src: '/static/images/slideshow/chart-of-accounts.png',
+      alt: 'Chart of Accounts',
+      title: t('heroSlideshow.slides.financialAccounting.title', 'Financial Accounting'),
+      description: t('heroSlideshow.slides.financialAccounting.description', 'Complete chart of accounts for professional bookkeeping')
+    },
+    {
+      src: '/static/images/slideshow/tax-settings.png',
+      alt: 'Tax Settings',
+      title: t('heroSlideshow.slides.taxConfiguration.title', 'Tax Configuration'),
+      description: t('heroSlideshow.slides.taxConfiguration.description', 'Configure tax rates for multiple locations and jurisdictions')
+    },
+    {
+      src: '/static/images/slideshow/tax-filing.png',
+      alt: 'Tax Filing',
+      title: t('heroSlideshow.slides.taxFiling.title', 'Tax Filing Service'),
+      description: t('heroSlideshow.slides.taxFiling.description', 'File your business taxes with our integrated filing service')
+    },
+    {
+      src: '/static/images/slideshow/calendar.png',
+      alt: 'Business Calendar',
+      title: t('heroSlideshow.slides.smartCalendar.title', 'Smart Calendar'),
+      description: t('heroSlideshow.slides.smartCalendar.description', 'Track important dates, deadlines, and business events')
+    }
+  ];
 
   // Auto-play functionality
   React.useEffect(() => {
@@ -187,7 +189,7 @@ export default function HeroSlideshow() {
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
             </svg>
           )}
-          {isPaused ? 'Paused' : 'Auto-playing'}
+          {isPaused ? t('heroSlideshow.controls.paused', 'Paused') : t('heroSlideshow.controls.autoPlaying', 'Auto-playing')}
         </div>
       </div>
     </div>

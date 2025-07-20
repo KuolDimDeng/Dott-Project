@@ -24,7 +24,10 @@
     "smartBusinessAI": "Akıllı İş Yapay Zekası",
     "aiPoweredInsights": "Yapay Zeka Destekli İçgörüler",
     "importExport": "İçe/Dışa Aktar",
-    "inviteBusinessOwner": "İşletme Sahibi Davet Et"
+    "inviteBusinessOwner": "İşletme Sahibi Davet Et",
+    "analytics": "Analitik",
+    "smartInsights": "Akıllı İçgörüler",
+    "dottStatus": "Dott Durumu"
   },
   "subMenu": {
     "dashboard": "Kontrol Paneli",

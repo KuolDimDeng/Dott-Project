@@ -24,7 +24,10 @@
     "smartBusinessAI": "الذكاء الاصطناعي للأعمال",
     "aiPoweredInsights": "رؤى مدعومة بالذكاء الاصطناعي",
     "importExport": "استيراد/تصدير",
-    "inviteBusinessOwner": "دعوة صاحب عمل"
+    "inviteBusinessOwner": "دعوة صاحب عمل",
+    "analytics": "التحليلات",
+    "smartInsights": "رؤى ذكية",
+    "dottStatus": "حالة Dott"
   },
   "subMenu": {
     "dashboard": "لوحة القيادة",

@@ -24,7 +24,10 @@
     "smartBusinessAI": "Slimme Zakelijke AI",
     "aiPoweredInsights": "AI-gedreven Inzichten",
     "importExport": "Importeren/Exporteren",
-    "inviteBusinessOwner": "Nodig Bedrijfseigenaar Uit"
+    "inviteBusinessOwner": "Nodig Bedrijfseigenaar Uit",
+    "analytics": "Analyse",
+    "smartInsights": "Slimme Inzichten",
+    "dottStatus": "Dott Status"
   },
   "subMenu": {
     "dashboard": "Dashboard",

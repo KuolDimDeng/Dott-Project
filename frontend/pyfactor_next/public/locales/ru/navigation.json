@@ -24,7 +24,10 @@
     "smartBusinessAI": "Умный бизнес ИИ",
     "aiPoweredInsights": "Аналитика на основе ИИ",
     "importExport": "Импорт/Экспорт",
-    "inviteBusinessOwner": "Пригласить владельца бизнеса"
+    "inviteBusinessOwner": "Пригласить владельца бизнеса",
+    "analytics": "Аналитика",
+    "smartInsights": "Умная Аналитика",
+    "dottStatus": "Статус Dott"
   },
   "subMenu": {
     "dashboard": "Панель управления",

@@ -24,7 +24,10 @@
     "smartBusinessAI": "AI Kinh Doanh Thông Minh",
     "aiPoweredInsights": "Phân Tích AI",
     "importExport": "Nhập/Xuất",
-    "inviteBusinessOwner": "Mời Chủ Doanh Nghiệp"
+    "inviteBusinessOwner": "Mời Chủ Doanh Nghiệp",
+    "analytics": "Phân tích",
+    "smartInsights": "Thông tin Thông minh",
+    "dottStatus": "Trạng thái Dott"
   },
   "subMenu": {
     "dashboard": "Bảng Điều Khiển",
