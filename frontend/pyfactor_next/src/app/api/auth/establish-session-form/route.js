@@ -86,8 +86,8 @@ export async function POST(request) {
       sameSite: isSecureContext ? 'none' : 'lax', // 'none' for secure contexts
       path: '/',
       maxAge: 86400, // 24 hours
-      // Remove domain specification for better Cloudflare compatibility
-      // Cloudflare will handle cookie domain automatically
+      // In production, set explicit domain for Cloudflare
+      domain: isProduction ? '.dottapps.com' : undefined
     };
     
     console.log('🔍 [EstablishSessionForm] Setting cookies with options:', JSON.stringify(cookieOptions, null, 2));
