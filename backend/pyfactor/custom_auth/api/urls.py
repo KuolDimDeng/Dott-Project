@@ -18,7 +18,8 @@ from .views.update_session_view import UpdateSessionView
 from .views.session_profile_view import SessionUserProfileView
 from .views.register_view import EmailPasswordRegisterView
 from .views.unified_profile_view import UnifiedProfileView
-from custom_auth.views.email_views import SendEmailView
+# Temporarily commenting out to debug import issue
+# from custom_auth.views.email_views import SendEmailView
 # Password login is now in auth_views
 # from .views.password_login_view import PasswordLoginView
 # from .views.test_endpoint_view import TestEndpointView
@@ -67,8 +68,8 @@ urlpatterns = [
     path('tenants/current/', tenant_views.CurrentTenantView.as_view(), name='current-tenant'),
     path('tenants/verify/', tenant_views.VerifyTenantOwnerView.as_view(), name='verify-tenant'),
     
-    # Email endpoints
-    path('send-email/', SendEmailView.as_view(), name='send-email'),
+    # Email endpoints - temporarily commented out to debug import issue
+    # path('send-email/', SendEmailView.as_view(), name='send-email'),
     
     # Include router URLs
     path('', include(router.urls)),
