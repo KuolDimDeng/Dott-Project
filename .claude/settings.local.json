@@ -161,7 +161,12 @@
       "Bash(__NEW_LINE__ for lang in pt de ja tr id vi nl ha yo am zu ko)",
       "Bash(git log:*)",
       "Bash(DJANGO_SETTINGS_MODULE=pyfactor.settings python3 -c \"import django; django.setup(); from session_manager.views_public import PublicSessionDetailView; print(''PublicSessionDetailView imported successfully'')\")",
-      "Bash(npx acorn:*)"
+      "Bash(npx acorn:*)",
+      "Bash(pgrep:*)",
+      "Bash(do if ! grep -q '\"\"monitoring\"\"' \"$lang/navigation.json\")",
+      "Bash(then echo \"Missing monitoring in: $lang\")",
+      "Bash(do if ! grep -q '\"\"help\"\"' \"$lang/navigation.json\")",
+      "Bash(then echo \"Missing help in: $lang\")"
     ],
     "deny": []
   }

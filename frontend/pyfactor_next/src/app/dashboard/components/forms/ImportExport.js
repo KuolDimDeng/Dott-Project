@@ -319,14 +319,26 @@ const ImportExport = () => {
   };
 
   const handleExportStart = async () => {
-    console.log('[ImportExport] handleExportStart called');
+    console.log('[ImportExport] === handleExportStart called ===');
     console.log('[ImportExport] Selected data types:', selectedDataTypes);
+    console.log('[ImportExport] Full session object:', session);
     console.log('[ImportExport] Session state:', { 
       authenticated: session?.authenticated,
       hasUser: !!session?.user,
       userEmail: session?.user?.email,
-      userRole: session?.user?.role 
+      userRole: session?.user?.role,
+      tenantId: session?.user?.tenant_id,
+      sessionToken: session?.token || session?.sid
     });
+    
+    // Log cookies for debugging
+    if (typeof document !== 'undefined') {
+      console.log('[ImportExport] Current cookies:', document.cookie);
+      const cookies = document.cookie.split(';').map(c => c.trim());
+      const hasSid = cookies.some(c => c.startsWith('sid='));
+      const hasSessionToken = cookies.some(c => c.startsWith('session_token='));
+      console.log('[ImportExport] Cookie check:', { hasSid, hasSessionToken });
+    }
     
     if (selectedDataTypes.length === 0) {
       setError('Please select at least one data type to export');
@@ -347,13 +359,23 @@ const ImportExport = () => {
       console.log('[ImportExport] Session test response:', {
         status: testResponse.status,
         ok: testResponse.ok,
+        statusText: testResponse.statusText,
         headers: Object.fromEntries(testResponse.headers.entries())
       });
       
       if (!testResponse.ok) {
         const errorText = await testResponse.text();
-        console.error('[ImportExport] Session validation failed:', errorText);
-        setError('Session validation failed. Please refresh the page and try again.');
+        console.error('[ImportExport] Session validation failed:', {
+          status: testResponse.status,
+          errorText: errorText.substring(0, 500)
+        });
+        
+        if (testResponse.status === 401) {
+          console.error('[ImportExport] 401 Unauthorized - Session invalid or expired');
+          setError('Your session has expired. Please refresh the page and sign in again.');
+        } else {
+          setError('Session validation failed. Please refresh the page and try again.');
+        }
         return;
       }
       
@@ -377,6 +399,7 @@ const ImportExport = () => {
     // Navigate to export options
     const exportUrl = `/dashboard/import-export/export?types=${selectedDataTypes.join(',')}`;
     console.log('[ImportExport] Navigating to:', exportUrl);
+    console.log('[ImportExport] === handleExportStart complete ===');
     router.push(exportUrl);
   };
 

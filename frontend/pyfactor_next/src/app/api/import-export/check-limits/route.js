@@ -42,7 +42,11 @@ function getUserImportKey(userId) {
 }
 
 export async function GET(request) {
-  console.log('[check-limits] GET request received');
+  console.log('[check-limits] === GET request received ===');
+  console.log('[check-limits] Request headers:', {
+    'cookie': request.headers.get('cookie')?.substring(0, 100) + '...',
+    'user-agent': request.headers.get('user-agent')
+  });
   
   return await Sentry.startSpan(
     { name: 'GET /api/import-export/check-limits', op: 'http.server' },
@@ -54,14 +58,28 @@ export async function GET(request) {
           hasSession: !!session,
           hasUser: !!session?.user,
           userId: session?.user?.id,
-          userEmail: session?.user?.email
+          userEmail: session?.user?.email,
+          userRole: session?.user?.role,
+          hasTenantId: !!session?.user?.tenant_id,
+          sessionToken: session?.token ? 'present' : 'missing',
+          sid: session?.sid ? 'present' : 'missing'
         });
         
+        if (!session) {
+          console.error('[check-limits] No session object returned from getSession()');
+          logger.warn('No session found in check-limits');
+          return NextResponse.json(
+            { error: 'No session found. Please sign in again.' },
+            { status: 401 }
+          );
+        }
+        
         if (!session?.user) {
-          console.error('[check-limits] No session user found, returning 401');
+          console.error('[check-limits] Session exists but no user found');
+          console.error('[check-limits] Full session object:', JSON.stringify(session, null, 2));
           logger.warn('Unauthorized access attempt to check-limits');
           return NextResponse.json(
-            { error: 'Unauthorized' },
+            { error: 'User not authenticated. Please sign in again.' },
             { status: 401 }
           );
         }

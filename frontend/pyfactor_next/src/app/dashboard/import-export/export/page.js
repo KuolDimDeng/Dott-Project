@@ -69,9 +69,18 @@ const ExportPage = () => {
   ];
 
   const handleExport = async () => {
-    console.log('[ExportPage] handleExport called');
+    console.log('[ExportPage] === handleExport called ===');
     console.log('[ExportPage] Data types:', dataTypes);
     console.log('[ExportPage] Selected format:', selectedFormat);
+    
+    // Log current cookies
+    if (typeof document !== 'undefined') {
+      console.log('[ExportPage] Current cookies:', document.cookie);
+      const cookies = document.cookie.split(';').map(c => c.trim());
+      const hasSid = cookies.some(c => c.startsWith('sid='));
+      const hasSessionToken = cookies.some(c => c.startsWith('session_token='));
+      console.log('[ExportPage] Cookie check:', { hasSid, hasSessionToken });
+    }
     
     if (dataTypes.length === 0) {
       alert('No data types selected');
@@ -94,30 +103,49 @@ const ExportPage = () => {
 
       // In production, this would call an API endpoint to generate the export
       console.log('[ExportPage] Calling /api/import-export/export-data');
+      const requestBody = {
+        dataTypes,
+        format: selectedFormat,
+        dateRange,
+        customDateRange: dateRange === 'custom' ? customDateRange : null,
+        options: includeOptions
+      };
+      console.log('[ExportPage] Request body:', requestBody);
+      
       const response = await fetch('/api/import-export/export-data', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({
-          dataTypes,
-          format: selectedFormat,
-          dateRange,
-          customDateRange: dateRange === 'custom' ? customDateRange : null,
-          options: includeOptions
-        })
+        body: JSON.stringify(requestBody)
       });
 
       console.log('[ExportPage] Export response:', {
         status: response.status,
         ok: response.ok,
+        statusText: response.statusText,
         headers: Object.fromEntries(response.headers.entries())
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('[ExportPage] Export failed:', errorText);
+        console.error('[ExportPage] Export failed:', {
+          status: response.status,
+          errorText: errorText.substring(0, 500)
+        });
+        
+        if (response.status === 401) {
+          console.error('[ExportPage] 401 Unauthorized - Redirecting to sign-in');
+          // Check if error contains redirect URL
+          if (errorText.includes('window.location')) {
+            console.error('[ExportPage] Redirect detected in response');
+          }
+          alert('Your session has expired. Please sign in again.');
+          window.location.href = '/sign-in';
+          return;
+        }
+        
         throw new Error('Export failed');
       }
 
