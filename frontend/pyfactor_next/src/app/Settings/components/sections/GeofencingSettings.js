@@ -263,12 +263,12 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
         return;
       }
       
-      // Use hardcoded API key as a temporary solution
-      const apiKey = 'AIzaSyDq2UEzOWBrWHgvbXVQfmLHXlpIqWwXGxs';
-      console.log('[GeofencingSettings] Loading Google Maps with hardcoded API key');
+      // Use environment variable or fallback to hardcoded API key
+      const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || 'AIzaSyDq2UEzOWBrWHgvbXVQfmLHXlpIqWwXGxs';
+      console.log('[GeofencingSettings] Loading Google Maps with API key:', apiKey ? 'Found' : 'Missing');
       
       if (!apiKey) {
-        console.error('[GeofencingSettings] NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is not defined');
+        console.error('[GeofencingSettings] No Google Maps API key available');
         reject(new Error('Google Maps API key is not configured'));
         return;
       }
@@ -379,9 +379,9 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
       }
 
       try {
-        // Use hardcoded API key as a temporary solution
-        const apiKey = 'AIzaSyDq2UEzOWBrWHgvbXVQfmLHXlpIqWwXGxs';
-        console.log('[GeofencingSettings] Retry - Loading Google Maps with hardcoded API key');
+        // Use environment variable or fallback to hardcoded API key
+        const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || 'AIzaSyDq2UEzOWBrWHgvbXVQfmLHXlpIqWwXGxs';
+        console.log('[GeofencingSettings] Retry - Loading Google Maps with API key:', apiKey ? 'Found' : 'Missing');
         
         if (!window.google) {
           await loadGoogleMapsScript();
