@@ -46,12 +46,15 @@ export const useSentryTracking = () => {
         { 
           name: operationName, 
           op: 'custom',
-          description: `${operationName} took ${duration}ms`
+          description: `${operationName} took ${duration}ms`,
+          attributes: {
+            duration: duration,
+            ...metadata
+          }
         },
         (span) => {
-          span.setData('duration', duration);
-          span.setData('metadata', metadata);
-          span.end();
+          // The span is automatically ended when the callback completes
+          // No need to manually set data or end the span
         }
       );
     } catch (error) {
@@ -130,33 +133,41 @@ export const useSentryTracking = () => {
   // Monitor API calls
   const trackApiCall = useCallback(async (url, method = 'GET', requestData = null) => {
     const startTime = Date.now();
-    const span = Sentry.startSpan({ 
-      name: `${method} ${url}`, 
-      op: 'http.client' 
-    });
-
-    try {
-      // This would be called around your actual API call
-      const duration = Date.now() - startTime;
-      logger.api(method, url, 200, duration, { requestData });
-      
-      span.setData('http.method', method);
-      span.setData('http.url', url);
-      span.setData('http.request_content_length', requestData ? JSON.stringify(requestData).length : 0);
-      span.setStatus({ code: 1 }); // OK
-      
-      return { success: true, duration };
-    } catch (error) {
-      const duration = Date.now() - startTime;
-      logger.api(method, url, 500, duration, { error: error.message });
-      
-      span.setStatus({ code: 2, message: error.message }); // ERROR
-      captureError(error, { url, method, requestData });
-      
-      return { success: false, duration, error };
-    } finally {
-      span.end();
-    }
+    
+    return Sentry.startSpan(
+      { 
+        name: `${method} ${url}`, 
+        op: 'http.client',
+        attributes: {
+          'http.method': method,
+          'http.url': url,
+          'http.request_content_length': requestData ? JSON.stringify(requestData).length : 0
+        }
+      },
+      async (span) => {
+        try {
+          // This would be called around your actual API call
+          const duration = Date.now() - startTime;
+          logger.api(method, url, 200, duration, { requestData });
+          
+          if (span && span.setStatus) {
+            span.setStatus({ code: 1 }); // OK
+          }
+          
+          return { success: true, duration };
+        } catch (error) {
+          const duration = Date.now() - startTime;
+          logger.api(method, url, 500, duration, { error: error.message });
+          
+          if (span && span.setStatus) {
+            span.setStatus({ code: 2, message: error.message }); // ERROR
+          }
+          captureError(error, { url, method, requestData });
+          
+          return { success: false, duration, error };
+        }
+      }
+    );
   }, [captureError]);
 
   return {
