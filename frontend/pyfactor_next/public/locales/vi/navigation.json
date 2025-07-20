@@ -149,6 +149,19 @@
     "timeline": {
       "past": "90 ngày trước",
       "today": "Hôm nay"
+    },
+    "monitoring": {
+      "title": "Về Giám Sát Của Chúng Tôi",
+      "checks": "Kiểm tra trạng thái mỗi 5 phút",
+      "response": "Thời gian phản hồi được đo từ nhiều vị trí",
+      "history": "Dữ liệu lịch sử được lưu trữ trong 90 ngày",
+      "alerts": "Cảnh báo tự động cho các gián đoạn dịch vụ"
+    },
+    "help": {
+      "title": "Cần Trợ Giúp?",
+      "supportEmail": "Email Hỗ Trợ",
+      "statusUpdates": "Cập Nhật Trạng Thái",
+      "followUs": "Theo dõi chúng tôi để nhận cập nhật thời gian thực về trạng thái dịch vụ"
     }
   }
 }

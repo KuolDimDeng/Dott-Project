@@ -149,6 +149,19 @@
     "timeline": {
       "past": "90 gün önce",
       "today": "Bugün"
+    },
+    "monitoring": {
+      "title": "İzlememiz Hakkında",
+      "checks": "Her 5 dakikada bir durum kontrolü",
+      "response": "Birden fazla konumdan ölçülen yanıt süreleri",
+      "history": "90 gün boyunca saklanan geçmiş veriler",
+      "alerts": "Hizmet kesintileri için otomatik uyarılar"
+    },
+    "help": {
+      "title": "Yardıma mı İhtiyacınız Var?",
+      "supportEmail": "Destek E-postası",
+      "statusUpdates": "Durum Güncellemeleri",
+      "followUs": "Hizmet durumu hakkında gerçek zamanlı güncellemeler için bizi takip edin"
     }
   }
 }

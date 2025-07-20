@@ -102,5 +102,34 @@
     "tryAgain": "Tekrar dene",
     "refresh": "Yenile",
     "connectionError": "Bağlantı hatası"
+  },
+  "invite": {
+    "title": "Bir İşletme Sahibini Davet Et",
+    "description": "Operasyonlarını kolaylaştırmak isteyen bir işletme sahibi tanıyor musunuz? Dott'u onlarla paylaşın!",
+    "benefits": "Dott, işletmelerin zamanlamayı otomatikleştirmesine, müşteri ilişkilerini yönetmesine ve ödemeleri işlemesine yardımcı olur - hepsi tek bir basit uygulamada. Bağlantınız her hafta saatlerce idari işten tasarruf sağlayabilir.",
+    "sendInvitation": "Davet Gönder",
+    "chooseMethod": "Davet yöntemini seçin",
+    "email": "E-posta",
+    "whatsapp": "WhatsApp",
+    "emailLabel": "İşletme sahibinin e-posta adresi",
+    "whatsappLabel": "İşletme sahibinin WhatsApp numarası",
+    "whatsappPlaceholder": "Ülke kodunu ekleyin (örn. ABD için +1, Türkiye için +90)",
+    "sending": "Gönderiliyor...",
+    "sendViaEmail": "E-posta ile gönder",
+    "sendViaWhatsApp": "WhatsApp ile gönder",
+    "validationEmail": "Lütfen geçerli bir e-posta adresi girin.",
+    "validationPhone": "Lütfen geçerli bir telefon numarası girin.",
+    "successMessage": "Davet {{method}} aracılığıyla {{recipient}} adresine başarıyla gönderildi!",
+    "errorMessage": "Davet gönderilemedi. Lütfen tekrar deneyin.",
+    "networkError": "Ağ hatası. Lütfen bağlantınızı kontrol edin ve tekrar deneyin.",
+    "colleague": "Bir meslektaş",
+    "dottUser": "Bir Dott Kullanıcısı",
+    "emailTemplate": {
+      "subject": "{{name}} sizi Dott'a katılmaya davet ediyor - İş operasyonlarınızı basitleştirin",
+      "body": "Merhaba,\n\n{{name}} sizi iş operasyonlarını basitleştirmek için çok yönlü bir araç olan Dott'u denemeye davet ediyor.\n\nİşletme sahipleri neden Dott'u seviyor?\n✓ Otomatik faturalandırma ve ödeme yönetimi\n✓ Randevu planlama ve müşteri hatırlatıcıları\n✓ Envanter takibi ve tedarikçi yönetimi\n✓ Bordro işleme ve vergi raporları\n✓ İş görüşleri ve analizler\n\nÜcretsiz denemenizi bugün başlatın:\n{{link}}\n\nSaygılarımızla,\nDott Ekibi"
+    },
+    "whatsappTemplate": {
+      "message": "Merhaba 👋\n\n{{name}} sizi iş operasyonlarını basitleştirmek için çok yönlü bir araç olan Dott'u denemeye davet ediyor.\n\n✓ Otomatik faturalandırma\n✓ Randevu planlama\n✓ Envanter yönetimi\n✓ Bordro işleme\n✓ İş analizleri\n\nÜcretsiz denemeyi başlat: {{link}}"
+    }
   }
 }

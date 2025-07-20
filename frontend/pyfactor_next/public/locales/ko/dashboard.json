@@ -102,5 +102,34 @@
     "tryAgain": "다시 시도",
     "refresh": "새로 고침",
     "connectionError": "연결 오류"
+  },
+  "invite": {
+    "title": "사업주 초대하기",
+    "description": "운영을 간소화하려는 사업주를 아시나요? Dott를 공유해보세요!",
+    "benefits": "Dott는 기업이 일정 관리를 자동화하고, 고객 관계를 관리하며, 결제를 처리할 수 있도록 도와줍니다. 모든 것이 하나의 간단한 앱에서 가능합니다. 귀하의 추천으로 매주 수 시간의 관리 업무를 절약할 수 있습니다.",
+    "sendInvitation": "초대장 보내기",
+    "chooseMethod": "초대 방법 선택",
+    "email": "이메일",
+    "whatsapp": "WhatsApp",
+    "emailLabel": "사업주의 이메일 주소",
+    "whatsappLabel": "사업주의 WhatsApp 번호",
+    "whatsappPlaceholder": "국가 코드 포함 (예: 미국 +1, 한국 +82)",
+    "sending": "전송 중...",
+    "sendViaEmail": "이메일로 보내기",
+    "sendViaWhatsApp": "WhatsApp으로 보내기",
+    "validationEmail": "유효한 이메일 주소를 입력해주세요.",
+    "validationPhone": "유효한 전화번호를 입력해주세요.",
+    "successMessage": "{{method}}을(를) 통해 {{recipient}}에게 초대장이 성공적으로 전송되었습니다!",
+    "errorMessage": "초대장 전송에 실패했습니다. 다시 시도해주세요.",
+    "networkError": "네트워크 오류. 연결을 확인하고 다시 시도해주세요.",
+    "colleague": "동료",
+    "dottUser": "Dott 사용자",
+    "emailTemplate": {
+      "subject": "{{name}}님이 Dott에 초대합니다 - 비즈니스 운영을 간소화하세요",
+      "body": "안녕하세요,\n\n{{name}}님이 비즈니스 운영을 간소화하는 올인원 도구인 Dott를 사용해보도록 초대했습니다.\n\n사업주들이 Dott를 사랑하는 이유:\n✓ 자동화된 송장 발행 및 결제 관리\n✓ 예약 일정 관리 및 고객 알림\n✓ 재고 추적 및 공급업체 관리\n✓ 급여 처리 및 세금 보고서\n✓ 비즈니스 인사이트 및 분석\n\n오늘 무료 체험을 시작하세요:\n{{link}}\n\n감사합니다,\nDott 팀"
+    },
+    "whatsappTemplate": {
+      "message": "안녕하세요 👋\n\n{{name}}님이 비즈니스 운영을 간소화하는 올인원 도구인 Dott를 사용해보도록 초대했습니다.\n\n✓ 자동화된 송장 발행\n✓ 예약 일정 관리\n✓ 재고 관리\n✓ 급여 처리\n✓ 비즈니스 분석\n\n무료 체험 시작: {{link}}"
+    }
   }
 }

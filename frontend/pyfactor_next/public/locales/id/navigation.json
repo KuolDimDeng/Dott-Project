@@ -149,6 +149,19 @@
     "timeline": {
       "past": "90 hari yang lalu",
       "today": "Hari ini"
+    },
+    "monitoring": {
+      "title": "Tentang Pemantauan Kami",
+      "checks": "Pemeriksaan status setiap 5 menit",
+      "response": "Waktu respons diukur dari beberapa lokasi",
+      "history": "Data historis disimpan selama 90 hari",
+      "alerts": "Peringatan otomatis untuk gangguan layanan"
+    },
+    "help": {
+      "title": "Butuh Bantuan?",
+      "supportEmail": "Email Dukungan",
+      "statusUpdates": "Pembaruan Status",
+      "followUs": "Ikuti kami untuk pembaruan real-time tentang status layanan"
     }
   }
 }

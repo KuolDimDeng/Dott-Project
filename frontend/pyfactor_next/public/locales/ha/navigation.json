@@ -149,6 +149,19 @@
     "timeline": {
       "past": "Kwanaki 90 da suka wuce",
       "today": "Yau"
+    },
+    "monitoring": {
+      "title": "Game da Sa Ido",
+      "checks": "Duba yanayi kowane minti 5",
+      "response": "Lokutan amsa da aka auna daga wurare da yawa",
+      "history": "Bayanan tarihi da aka adana na kwanaki 90",
+      "alerts": "Fadakarwa ta atomatik don katsewar sabis"
+    },
+    "help": {
+      "title": "Kuna Bukatar Taimako?",
+      "supportEmail": "Imel ɗin Tallafi",
+      "statusUpdates": "Sabuntawar Matsayi",
+      "followUs": "Bi mu don samun sabuntawa na ainihi game da matsayin sabis"
     }
   }
 }

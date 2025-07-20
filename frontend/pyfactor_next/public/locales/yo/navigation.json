@@ -149,6 +149,19 @@
     "timeline": {
       "past": "Ọjọ́ 90 sẹ́yìn",
       "today": "Òní"
+    },
+    "monitoring": {
+      "title": "Nipa Abojuto Wa",
+      "checks": "Ayewo ipo ni gbogbo iseju 5",
+      "response": "Awon akoko idahun ti a won lati opo ibi",
+      "history": "Data itan ti a fi pamọ fun ojo 90",
+      "alerts": "Awọn ikilọ adaṣe fun awọn idaduro iṣẹ"
+    },
+    "help": {
+      "title": "Ṣe O Nilo Iranlọwọ?",
+      "supportEmail": "Imeeli Atilẹyin",
+      "statusUpdates": "Awọn Imudojuiwọn Ipo",
+      "followUs": "Tẹle wa fun awọn imudojuiwọn akoko gidi nipa ipo iṣẹ"
     }
   }
 }

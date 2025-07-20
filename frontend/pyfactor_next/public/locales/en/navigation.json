@@ -149,6 +149,19 @@
     "timeline": {
       "past": "90 days ago",
       "today": "Today"
+    },
+    "monitoring": {
+      "title": "About Our Monitoring",
+      "checks": "Status checks run every 5 minutes",
+      "response": "Response times measured from multiple locations",
+      "history": "Historical data stored for 90 days",
+      "alerts": "Automatic alerts for service disruptions"
+    },
+    "help": {
+      "title": "Need Help?",
+      "supportEmail": "Support Email",
+      "statusUpdates": "Status Updates",
+      "followUs": "Follow us for real-time updates on service status"
     }
   }
 }

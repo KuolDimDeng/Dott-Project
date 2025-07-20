@@ -102,5 +102,34 @@
     "tryAgain": "再試行",
     "refresh": "更新",
     "connectionError": "接続エラー"
+  },
+  "invite": {
+    "title": "ビジネスオーナーを招待",
+    "description": "業務を効率化したいビジネスオーナーをご存知ですか？Dottを共有しましょう！",
+    "benefits": "Dottは、スケジューリングの自動化、顧客関係の管理、支払い処理をすべて1つのシンプルなアプリで実現します。あなたの紹介により、毎週数時間の管理作業を節約できます。",
+    "sendInvitation": "招待を送信",
+    "chooseMethod": "招待方法を選択",
+    "email": "メール",
+    "whatsapp": "WhatsApp",
+    "emailLabel": "ビジネスオーナーのメールアドレス",
+    "whatsappLabel": "ビジネスオーナーのWhatsApp番号",
+    "whatsappPlaceholder": "国番号を含む（例：米国 +1、日本 +81）",
+    "sending": "送信中...",
+    "sendViaEmail": "メールで送信",
+    "sendViaWhatsApp": "WhatsAppで送信",
+    "validationEmail": "有効なメールアドレスを入力してください。",
+    "validationPhone": "有効な電話番号を入力してください。",
+    "successMessage": "{{method}}で{{recipient}}への招待が正常に送信されました！",
+    "errorMessage": "招待の送信に失敗しました。もう一度お試しください。",
+    "networkError": "ネットワークエラー。接続を確認してもう一度お試しください。",
+    "colleague": "同僚",
+    "dottUser": "Dottユーザー",
+    "emailTemplate": {
+      "subject": "{{name}}があなたをDottに招待しています - ビジネス運営を簡素化",
+      "body": "こんにちは、\n\n{{name}}があなたをDottにお試しいただくよう招待しています。Dottはビジネス運営を簡素化するオールインワンツールです。\n\nビジネスオーナーがDottを愛する理由\n✓ 自動請求書発行と支払い管理\n✓ 予約スケジューリングと顧客リマインダー\n✓ 在庫追跡とサプライヤー管理\n✓ 給与処理と税務レポート\n✓ ビジネスインサイトと分析\n\n今すぐ無料トライアルを開始：\n{{link}}\n\nよろしくお願いします、\nDottチーム"
+    },
+    "whatsappTemplate": {
+      "message": "こんにちは 👋\n\n{{name}}があなたをDottにお試しいただくよう招待しています。Dottはビジネス運営を簡素化するオールインワンツールです。\n\n✓ 自動請求書発行\n✓ 予約スケジューリング\n✓ 在庫管理\n✓ 給与処理\n✓ ビジネス分析\n\n無料トライアル開始：{{link}}"
+    }
   }
 }

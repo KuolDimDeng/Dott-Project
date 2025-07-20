@@ -149,6 +149,19 @@
     "timeline": {
       "past": "90일 전",
       "today": "오늘"
+    },
+    "monitoring": {
+      "title": "모니터링 정보",
+      "checks": "5분마다 상태 확인 실행",
+      "response": "여러 위치에서 응답 시간 측정",
+      "history": "90일간의 기록 데이터 저장",
+      "alerts": "서비스 중단에 대한 자동 알림"
+    },
+    "help": {
+      "title": "도움이 필요하신가요?",
+      "supportEmail": "지원 이메일",
+      "statusUpdates": "상태 업데이트",
+      "followUs": "서비스 상태에 대한 실시간 업데이트를 팔로우하세요"
     }
   }
 }

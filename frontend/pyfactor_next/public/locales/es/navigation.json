@@ -149,6 +149,19 @@
     "timeline": {
       "past": "Hace 90 días",
       "today": "Hoy"
+    },
+    "monitoring": {
+      "title": "Acerca de Nuestro Monitoreo",
+      "checks": "Verificaciones de estado cada 5 minutos",
+      "response": "Tiempos de respuesta medidos desde múltiples ubicaciones",
+      "history": "Datos históricos almacenados durante 90 días",
+      "alerts": "Alertas automáticas para interrupciones del servicio"
+    },
+    "help": {
+      "title": "¿Necesitas Ayuda?",
+      "supportEmail": "Correo de Soporte",
+      "statusUpdates": "Actualizaciones de Estado",
+      "followUs": "Síguenos para actualizaciones en tiempo real sobre el estado del servicio"
     }
   }
 }

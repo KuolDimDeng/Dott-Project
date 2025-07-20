@@ -102,5 +102,34 @@
     "tryAgain": "Jaribu tena",
     "refresh": "Burudisha",
     "connectionError": "Hitilafu ya muunganisho"
+  },
+  "invite": {
+    "title": "Mwalika Mmiliki wa Biashara",
+    "description": "Je, unamjua mmiliki wa biashara anayetafuta kuboresha shughuli zake? Shiriki Dott naye!",
+    "benefits": "Dott husaidia biashara kuhariri ratiba kiotomatiki, kudhibiti mahusiano ya wateja na kushughulikia malipo - yote katika programu rahisi moja. Muunganisho wako unaweza kuokoa saa za kazi za kiutawala kila wiki.",
+    "sendInvitation": "Tuma Mwaliko",
+    "chooseMethod": "Chagua njia ya kumwalika",
+    "email": "Barua pepe",
+    "whatsapp": "WhatsApp",
+    "emailLabel": "Anwani ya barua pepe ya mmiliki wa biashara",
+    "whatsappLabel": "Nambari ya WhatsApp ya mmiliki wa biashara",
+    "whatsappPlaceholder": "Jumuisha msimbo wa nchi (mfano, +1 kwa Marekani, +254 kwa Kenya)",
+    "sending": "Inatuma...",
+    "sendViaEmail": "Tuma kupitia barua pepe",
+    "sendViaWhatsApp": "Tuma kupitia WhatsApp",
+    "validationEmail": "Tafadhali ingiza anwani sahihi ya barua pepe.",
+    "validationPhone": "Tafadhali ingiza nambari sahihi ya simu.",
+    "successMessage": "Mwaliko umetumwa kwa mafanikio kupitia {{method}} kwa {{recipient}}!",
+    "errorMessage": "Imeshindwa kutuma mwaliko. Tafadhali jaribu tena.",
+    "networkError": "Hitilafu ya mtandao. Tafadhali angalia muunganisho wako na ujaribu tena.",
+    "colleague": "Mfanyakazi mwenzako",
+    "dottUser": "Mtumiaji wa Dott",
+    "emailTemplate": {
+      "subject": "{{name}} amekualika kujiunga na Dott - Rahisisha shughuli za biashara yako",
+      "body": "Habari,\n\n{{name}} amekualika kujaribu Dott, zana kamili ya kurahisisha shughuli za biashara.\n\nKwa nini wamiliki wa biashara wanapenda Dott?\n✓ Kutoa ankara kiotomatiki na udhibiti wa malipo\n✓ Ratiba za miadi na ukumbuzi wa wateja\n✓ Ufuatiliaji wa hisa na udhibiti wa wasambazaji\n✓ Uchakataji wa mishahara na ripoti za kodi\n✓ Ufahamu wa biashara na uchambuzi\n\nAnza jaribio lako la bure leo:\n{{link}}\n\nKwa heri ya kheri,\nTimu ya Dott"
+    },
+    "whatsappTemplate": {
+      "message": "Habari 👋\n\n{{name}} amekualika kujaribu Dott, zana kamili ya kurahisisha shughuli za biashara.\n\n✓ Kutoa ankara kiotomatiki\n✓ Ratiba za miadi\n✓ Udhibiti wa hisa\n✓ Uchakataji wa mishahara\n✓ Uchambuzi wa biashara\n\nAnza jaribio la bure: {{link}}"
+    }
   }
 }

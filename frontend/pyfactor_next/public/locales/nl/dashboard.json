@@ -102,5 +102,34 @@
     "tryAgain": "Probeer opnieuw",
     "refresh": "Vernieuwen",
     "connectionError": "Verbindingsfout"
+  },
+  "invite": {
+    "title": "Nodig een Bedrijfseigenaar uit",
+    "description": "Kent u een bedrijfseigenaar die zijn activiteiten wil stroomlijnen? Deel Dott met hen!",
+    "benefits": "Dott helpt bedrijven bij het automatiseren van planning, het beheren van klantrelaties en het verwerken van betalingen - alles in één eenvoudige app. Uw connectie kan wekelijks uren administratief werk besparen.",
+    "sendInvitation": "Uitnodiging versturen",
+    "chooseMethod": "Kies uitnodigingsmethode",
+    "email": "E-mail",
+    "whatsapp": "WhatsApp",
+    "emailLabel": "E-mailadres van bedrijfseigenaar",
+    "whatsappLabel": "WhatsApp-nummer van bedrijfseigenaar",
+    "whatsappPlaceholder": "Inclusief landcode (bijv. +1 voor VS, +31 voor Nederland)",
+    "sending": "Versturen...",
+    "sendViaEmail": "Verstuur via e-mail",
+    "sendViaWhatsApp": "Verstuur via WhatsApp",
+    "validationEmail": "Voer een geldig e-mailadres in.",
+    "validationPhone": "Voer een geldig telefoonnummer in.",
+    "successMessage": "Uitnodiging succesvol verzonden via {{method}} naar {{recipient}}!",
+    "errorMessage": "Uitnodiging verzenden mislukt. Probeer het opnieuw.",
+    "networkError": "Netwerkfout. Controleer uw verbinding en probeer het opnieuw.",
+    "colleague": "Een collega",
+    "dottUser": "Een Dott-gebruiker",
+    "emailTemplate": {
+      "subject": "{{name}} heeft u uitgenodigd om lid te worden van Dott - Vereenvoudig uw bedrijfsactiviteiten",
+      "body": "Hallo,\n\n{{name}} heeft u uitgenodigd om Dott te proberen, een alles-in-één tool om bedrijfsactiviteiten te vereenvoudigen.\n\nWaarom houden bedrijfseigenaren van Dott?\n✓ Geautomatiseerde facturering en betalingsbeheer\n✓ Afspraken plannen en klantberinneringen\n✓ Voorraadbeheer en leveranciersbeheer\n✓ Salarisverwerking en belastingrapporten\n✓ Bedrijfsinzichten en analyses\n\nStart vandaag nog uw gratis proefperiode:\n{{link}}\n\nMet vriendelijke groet,\nHet Dott-team"
+    },
+    "whatsappTemplate": {
+      "message": "Hallo 👋\n\n{{name}} heeft u uitgenodigd om Dott te proberen, een alles-in-één tool om bedrijfsactiviteiten te vereenvoudigen.\n\n✓ Geautomatiseerde facturering\n✓ Afspraken plannen\n✓ Voorraadbeheer\n✓ Salarisverwerking\n✓ Bedrijfsanalyses\n\nStart gratis proefperiode: {{link}}"
+    }
   }
 }

@@ -149,6 +149,19 @@
     "timeline": {
       "past": "90日前",
       "today": "今日"
+    },
+    "monitoring": {
+      "title": "監視について",
+      "checks": "5分ごとにステータスチェックを実行",
+      "response": "複数の場所から応答時間を測定",
+      "history": "90日間の履歴データを保存",
+      "alerts": "サービス中断の自動アラート"
+    },
+    "help": {
+      "title": "お困りですか？",
+      "supportEmail": "サポートメール",
+      "statusUpdates": "ステータス更新",
+      "followUs": "サービスステータスのリアルタイム更新をフォローしてください"
     }
   }
 }

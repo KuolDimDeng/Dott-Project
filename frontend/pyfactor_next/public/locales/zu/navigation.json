@@ -149,6 +149,19 @@
     "timeline": {
       "past": "Izinsuku ezingu-90 ezedlule",
       "today": "Namuhla"
+    },
+    "monitoring": {
+      "title": "Mayelana Nokuqapha Kwethu",
+      "checks": "Ukuhlola isimo njalo ngemizuzu emi-5",
+      "response": "Izikhathi zokuphendula ezilinganiswa ezindaweni eziningi",
+      "history": "Idatha yomlando egcinwe izinsuku ezingu-90",
+      "alerts": "Izaziso ezizenzakalelayo zokuphazamiseka kwesevisi"
+    },
+    "help": {
+      "title": "Udinga Usizo?",
+      "supportEmail": "I-imeyili Yokusekela",
+      "statusUpdates": "Izibuyekezo Zesimo",
+      "followUs": "Silandele ukuze uthole izibuyekezo zesikhathi sangempela mayelana nesimo sesevisi"
     }
   }
 }

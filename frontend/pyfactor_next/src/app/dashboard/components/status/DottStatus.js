@@ -308,29 +308,29 @@ const DottStatusContent = () => {
       {/* Additional Info */}
       <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-lg shadow-lg">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">About Our Monitoring</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('status.monitoring.title', 'About Our Monitoring')}</h3>
           <ul className="space-y-2 text-sm text-gray-600">
-            <li>• Status checks run every 5 minutes</li>
-            <li>• Response times measured from multiple locations</li>
-            <li>• Historical data stored for 90 days</li>
-            <li>• Automatic alerts for service disruptions</li>
+            <li>• {t('status.monitoring.checks', 'Status checks run every 5 minutes')}</li>
+            <li>• {t('status.monitoring.response', 'Response times measured from multiple locations')}</li>
+            <li>• {t('status.monitoring.history', 'Historical data stored for 90 days')}</li>
+            <li>• {t('status.monitoring.alerts', 'Automatic alerts for service disruptions')}</li>
           </ul>
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow-lg">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Need Help?</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('status.help.title', 'Need Help?')}</h3>
           <div className="space-y-3 text-sm">
             <div>
-              <span className="font-medium text-gray-900">Support Email:</span>
+              <span className="font-medium text-gray-900">{t('status.help.supportEmail', 'Support Email')}:</span>
               <br />
               <a href="mailto:support@dottapps.com" className="text-blue-600 hover:text-blue-800">
                 support@dottapps.com
               </a>
             </div>
             <div>
-              <span className="font-medium text-gray-900">Status Updates:</span>
+              <span className="font-medium text-gray-900">{t('status.help.statusUpdates', 'Status Updates')}:</span>
               <br />
-              <span className="text-gray-600">Follow us for real-time updates on service status</span>
+              <span className="text-gray-600">{t('status.help.followUs', 'Follow us for real-time updates on service status')}</span>
             </div>
           </div>
         </div>

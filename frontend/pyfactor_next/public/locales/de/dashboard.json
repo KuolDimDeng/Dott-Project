@@ -102,5 +102,34 @@
     "tryAgain": "Erneut versuchen",
     "refresh": "Aktualisieren",
     "connectionError": "Verbindungsfehler"
+  },
+  "invite": {
+    "title": "Geschäftsinhaber einladen",
+    "description": "Kennen Sie einen Geschäftsinhaber, der seine Abläufe optimieren möchte? Teilen Sie Dott mit ihm!",
+    "benefits": "Dott hilft Unternehmen, die Terminplanung zu automatisieren, Kundenbeziehungen zu verwalten und Zahlungen abzuwickeln – alles in einer einfachen App. Ihre Verbindung kann jede Woche Stunden an Verwaltungsarbeit sparen.",
+    "sendInvitation": "Einladung senden",
+    "chooseMethod": "Einladungsmethode wählen",
+    "email": "E-Mail",
+    "whatsapp": "WhatsApp",
+    "emailLabel": "E-Mail-Adresse des Geschäftsinhabers",
+    "whatsappLabel": "WhatsApp-Nummer des Geschäftsinhabers",
+    "whatsappPlaceholder": "Ländercode einschließen (z.B. +1 für USA, +49 für Deutschland)",
+    "sending": "Wird gesendet...",
+    "sendViaEmail": "Per E-Mail senden",
+    "sendViaWhatsApp": "Per WhatsApp senden",
+    "validationEmail": "Bitte geben Sie eine gültige E-Mail-Adresse ein.",
+    "validationPhone": "Bitte geben Sie eine gültige Telefonnummer ein.",
+    "successMessage": "Einladung erfolgreich per {{method}} an {{recipient}} gesendet!",
+    "errorMessage": "Einladung konnte nicht gesendet werden. Bitte versuchen Sie es erneut.",
+    "networkError": "Netzwerkfehler. Bitte überprüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
+    "colleague": "Ein Kollege",
+    "dottUser": "Ein Dott-Benutzer",
+    "emailTemplate": {
+      "subject": "{{name}} hat Sie eingeladen, Dott beizutreten - Vereinfachen Sie Ihre Geschäftsabläufe",
+      "body": "Hallo,\n\n{{name}} hat Sie eingeladen, Dott auszuprobieren, ein All-in-One-Tool zur Vereinfachung von Geschäftsabläufen.\n\nWarum Geschäftsinhaber Dott lieben?\n✓ Automatisierte Rechnungsstellung und Zahlungsverwaltung\n✓ Terminplanung und Kundenerinnerungen\n✓ Bestandsverfolgung und Lieferantenverwaltung\n✓ Gehaltsabrechnung und Steuerberichte\n✓ Geschäftseinblicke und Analysen\n\nStarten Sie noch heute Ihre kostenlose Testversion:\n{{link}}\n\nMit freundlichen Grüßen,\nDas Dott-Team"
+    },
+    "whatsappTemplate": {
+      "message": "Hallo 👋\n\n{{name}} hat Sie eingeladen, Dott auszuprobieren, ein All-in-One-Tool zur Vereinfachung von Geschäftsabläufen.\n\n✓ Automatisierte Rechnungsstellung\n✓ Terminplanung\n✓ Bestandsverwaltung\n✓ Gehaltsabrechnung\n✓ Geschäftsanalysen\n\nStarten Sie Ihre kostenlose Testversion: {{link}}"
+    }
   }
 }

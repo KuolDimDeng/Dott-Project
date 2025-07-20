@@ -149,6 +149,19 @@
     "timeline": {
       "past": "90天前",
       "today": "今天"
+    },
+    "monitoring": {
+      "title": "关于我们的监控",
+      "checks": "每5分钟进行一次状态检查",
+      "response": "从多个位置测量响应时间",
+      "history": "历史数据保存90天",
+      "alerts": "服务中断自动警报"
+    },
+    "help": {
+      "title": "需要帮助？",
+      "supportEmail": "支持邮箱",
+      "statusUpdates": "状态更新",
+      "followUs": "关注我们获取服务状态的实时更新"
     }
   }
 }

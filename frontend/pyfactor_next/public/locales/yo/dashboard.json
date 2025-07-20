@@ -102,5 +102,34 @@
     "tryAgain": "Gbiyanju lẹẹkansi",
     "refresh": "Tun ṣe",
     "connectionError": "Aṣiṣe asopọ"
+  },
+  "invite": {
+    "title": "Pe Oniwunti Iṣowo",
+    "description": "Ṣe o mọ oniwunti iṣowo ti o n wa lati mu awọn iṣẹ wọn ṣiṣẹ daradara? Pin Dott pẹlu wọn!",
+    "benefits": "Dott n ṣe iranlọwọ fun awọn iṣowo lati ṣe adaṣe eto akoko, ṣakoso awọn ibasepọ alabara ati ṣe awọn sisanwo - gbogbo ninu ohun elo kan ti o rọrun. Isọpọ rẹ le fi awọn wakati iṣẹ iṣakoso pamọ ni ọsẹ kọọkan.",
+    "sendInvitation": "Fi Ifiwepe ranṣẹ",
+    "chooseMethod": "Yan ọna ifiwepe",
+    "email": "Imeeli",
+    "whatsapp": "WhatsApp",
+    "emailLabel": "Adirẹsi imeeli oniwunti iṣowo",
+    "whatsappLabel": "Nọmba WhatsApp oniwunti iṣowo",
+    "whatsappPlaceholder": "Pẹlu koodu orilẹ-ede (fun apẹẹrẹ, +1 fun US, +234 fun Nigeria)",
+    "sending": "Nfi ranṣẹ...",
+    "sendViaEmail": "Fi ranṣẹ nipasẹ imeeli",
+    "sendViaWhatsApp": "Fi ranṣẹ nipasẹ WhatsApp",
+    "validationEmail": "Jọwọ tẹ adirẹsi imeeli to tọ sii.",
+    "validationPhone": "Jọwọ tẹ nọmba foonu to tọ sii.",
+    "successMessage": "Ifiwepe ti ranṣẹ ni aṣeyọri nipasẹ {{method}} si {{recipient}}!",
+    "errorMessage": "Kuna lati fi ifiwepe ranṣẹ. Jọwọ gbiyanju lẹẹkansi.",
+    "networkError": "Aṣiṣe nẹtiwọọki. Jọwọ ṣayẹwo asopọ rẹ ki o gbiyanju lẹẹkansi.",
+    "colleague": "Ẹlẹgbẹ iṣẹ",
+    "dottUser": "Olumulo Dott",
+    "emailTemplate": {
+      "subject": "{{name}} ti pe ọ lati darapọ mọ Dott - Mu awọn iṣẹ iṣowo rẹ rọrun",
+      "body": "Pẹlẹ o,\n\n{{name}} ti pe ọ lati gbiyanju Dott, ohun elo gbogbo-ninu-ọkan lati mu awọn iṣẹ iṣowo rọrun.\n\nKini idi ti awọn oniwunti iṣowo ṣe nifẹ Dott?\n✓ Ṣiṣe awọn ikọṣilẹ adaṣe ati iṣakoso sisanwo\n✓ Ṣiṣeto ipade ati awọn iranti alabara\n✓ Titọpa ija-ọja ati iṣakoso awọn olupese\n✓ Ṣiṣẹ sisanwo oṣu ati awọn ijabọ ori-owo\n✓ Awọn oye iṣowo ati awọn itupalẹ\n\nBẹrẹ idanwo ọfẹ rẹ loni:\n{{link}}\n\nKi o dara,\nEgbe Dott"
+    },
+    "whatsappTemplate": {
+      "message": "Pẹlẹ o 👋\n\n{{name}} ti pe ọ lati gbiyanju Dott, ohun elo gbogbo-ninu-ọkan lati mu awọn iṣẹ iṣowo rọrun.\n\n✓ Ṣiṣe awọn ikọṣilẹ adaṣe\n✓ Ṣiṣeto ipade\n✓ Iṣakoso ija-ọja\n✓ Ṣiṣẹ sisanwo oṣu\n✓ Awọn itupalẹ iṣowo\n\nBẹrẹ idanwo ọfẹ: {{link}}"
+    }
   }
 }

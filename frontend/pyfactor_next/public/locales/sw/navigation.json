@@ -149,6 +149,19 @@
     "timeline": {
       "past": "Siku 90 zilizopita",
       "today": "Leo"
+    },
+    "monitoring": {
+      "title": "Kuhusu Ufuatiliaji Wetu",
+      "checks": "Ukaguzi wa hali kila dakika 5",
+      "response": "Nyakati za majibu zinazopimwa kutoka maeneo mengi",
+      "history": "Data ya kihistoria iliyohifadhiwa kwa siku 90",
+      "alerts": "Arifa za kiotomatiki za usumbufu wa huduma"
+    },
+    "help": {
+      "title": "Unahitaji Msaada?",
+      "supportEmail": "Barua pepe ya Msaada",
+      "statusUpdates": "Sasisho za Hali",
+      "followUs": "Tufuate kwa sasisho za wakati halisi kuhusu hali ya huduma"
     }
   }
 }

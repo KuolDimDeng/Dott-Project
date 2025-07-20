@@ -102,5 +102,34 @@
     "tryAgain": "Coba lagi",
     "refresh": "Segarkan",
     "connectionError": "Kesalahan koneksi"
+  },
+  "invite": {
+    "title": "Undang Pemilik Bisnis",
+    "description": "Apakah Anda mengenal pemilik bisnis yang ingin menyederhanakan operasinya? Bagikan Dott dengan mereka!",
+    "benefits": "Dott membantu bisnis mengotomatisasi penjadwalan, mengelola hubungan pelanggan, dan menangani pembayaran — semua dalam satu aplikasi sederhana. Koneksi Anda dapat menghemat jam kerja administrasi setiap minggu.",
+    "sendInvitation": "Kirim Undangan",
+    "chooseMethod": "Pilih metode undangan",
+    "email": "Email",
+    "whatsapp": "WhatsApp",
+    "emailLabel": "Alamat email pemilik bisnis",
+    "whatsappLabel": "Nomor WhatsApp pemilik bisnis",
+    "whatsappPlaceholder": "Sertakan kode negara (mis., +1 untuk AS, +62 untuk Indonesia)",
+    "sending": "Mengirim...",
+    "sendViaEmail": "Kirim melalui email",
+    "sendViaWhatsApp": "Kirim melalui WhatsApp",
+    "validationEmail": "Harap masukkan alamat email yang valid.",
+    "validationPhone": "Harap masukkan nomor telepon yang valid.",
+    "successMessage": "Undangan berhasil dikirim melalui {{method}} ke {{recipient}}!",
+    "errorMessage": "Gagal mengirim undangan. Silakan coba lagi.",
+    "networkError": "Kesalahan jaringan. Harap periksa koneksi Anda dan coba lagi.",
+    "colleague": "Seorang rekan",
+    "dottUser": "Pengguna Dott",
+    "emailTemplate": {
+      "subject": "{{name}} mengundang Anda untuk bergabung dengan Dott - Sederhanakan operasi bisnis Anda",
+      "body": "Halo,\n\n{{name}} mengundang Anda untuk mencoba Dott, alat lengkap untuk menyederhanakan operasi bisnis.\n\nMengapa pemilik bisnis menyukai Dott?\n✓ Penagihan otomatis dan manajemen pembayaran\n✓ Penjadwalan janji temu dan pengingat pelanggan\n✓ Pelacakan inventori dan manajemen pemasok\n✓ Pemrosesan gaji dan laporan pajak\n✓ Wawasan dan analisis bisnis\n\nMulai uji coba gratis Anda hari ini:\n{{link}}\n\nSalam hangat,\nTim Dott"
+    },
+    "whatsappTemplate": {
+      "message": "Halo 👋\n\n{{name}} mengundang Anda untuk mencoba Dott, alat lengkap untuk menyederhanakan operasi bisnis.\n\n✓ Penagihan otomatis\n✓ Penjadwalan janji temu\n✓ Manajemen inventori\n✓ Pemrosesan gaji\n✓ Analisis bisnis\n\nMulai uji coba gratis: {{link}}"
+    }
   }
 }

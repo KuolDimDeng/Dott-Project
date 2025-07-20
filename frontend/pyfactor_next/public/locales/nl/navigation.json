@@ -149,6 +149,19 @@
     "timeline": {
       "past": "90 dagen geleden",
       "today": "Vandaag"
+    },
+    "monitoring": {
+      "title": "Over Onze Monitoring",
+      "checks": "Statuscontroles elke 5 minuten",
+      "response": "Responstijden gemeten vanaf meerdere locaties",
+      "history": "Historische gegevens opgeslagen voor 90 dagen",
+      "alerts": "Automatische waarschuwingen voor service-onderbrekingen"
+    },
+    "help": {
+      "title": "Hulp Nodig?",
+      "supportEmail": "Support E-mail",
+      "statusUpdates": "Status Updates",
+      "followUs": "Volg ons voor real-time updates over de servicestatus"
     }
   }
 }
