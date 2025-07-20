@@ -3015,6 +3015,100 @@ export const payrollApi = {
   }
 };
 
+// Purchase Return related API methods - Using local proxy pattern (industry standard)
+export const purchaseReturnApi = {
+  async getAll(params = {}) {
+    const response = await fetch('/api/purchases/returns', {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
+    }
+    
+    return response.json();
+  },
+  
+  async getById(id, params = {}) {
+    const response = await fetch(`/api/purchases/returns/${id}`, {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
+    }
+    
+    return response.json();
+  },
+  
+  async create(data, params = {}) {
+    logger.info('[PurchaseReturnApi] Creating purchase return:', data);
+    
+    const response = await fetch('/api/purchases/returns', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
+    }
+    
+    const result = await response.json();
+    logger.info('[PurchaseReturnApi] Purchase return created successfully:', result);
+    return result;
+  },
+  
+  async update(id, data, params = {}) {
+    const response = await fetch(`/api/purchases/returns/${id}`, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
+    }
+    
+    return response.json();
+  },
+  
+  async delete(id, params = {}) {
+    const response = await fetch(`/api/purchases/returns/${id}`, {
+      method: 'DELETE',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
+    }
+    
+    return response.json();
+  }
+};
+
 // Additional API exports for backward compatibility
 export const billApi = accountingApi;
 export const expenseApi = accountingApi;

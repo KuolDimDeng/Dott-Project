@@ -77,35 +77,41 @@ export async function POST(request) {
     console.log('  - Relative redirect URL:', redirectUrl);
     console.log('  - Absolute redirect URL:', absoluteUrl);
     
-    const response = NextResponse.redirect(absoluteUrl, 303);
+    // Instead of redirect, return HTML with JavaScript that sets cookies then redirects
+    // This approach works better with Cloudflare
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Setting up your session...</title>
+  <script>
+    // Set cookies via JavaScript
+    const token = '${token}';
+    const maxAge = 86400; // 24 hours
+    const expires = new Date(Date.now() + maxAge * 1000).toUTCString();
     
-    // Set cookies with explicit options
-    const cookieOptions = {
-      httpOnly: true,
-      secure: isSecureContext, // Use secure context detection
-      sameSite: isSecureContext ? 'none' : 'lax', // 'none' for secure contexts
-      path: '/',
-      maxAge: 86400, // 24 hours
-      // In production, set explicit domain for Cloudflare
-      domain: isProduction ? '.dottapps.com' : undefined
-    };
+    // Set cookies with all necessary attributes
+    document.cookie = 'sid=' + token + '; path=/; max-age=' + maxAge + '; expires=' + expires + '; secure; samesite=none';
+    document.cookie = 'session_token=' + token + '; path=/; max-age=' + maxAge + '; expires=' + expires + '; secure; samesite=none';
     
-    console.log('🔍 [EstablishSessionForm] Setting cookies with options:', JSON.stringify(cookieOptions, null, 2));
+    // Redirect after cookies are set
+    window.location.href = '${absoluteUrl}';
+  </script>
+</head>
+<body>
+  <p>Setting up your session...</p>
+</body>
+</html>`;
     
-    // Set both cookie variants
-    response.cookies.set('sid', token, cookieOptions);
-    response.cookies.set('session_token', token, cookieOptions);
-    
-    // Log the actual Set-Cookie headers
-    console.log('🔍 [EstablishSessionForm] Getting Set-Cookie headers...');
-    const setCookieHeaders = response.headers.getSetCookie ? response.headers.getSetCookie() : [];
-    console.log('🔍 [EstablishSessionForm] Set-Cookie headers:', setCookieHeaders);
-    
-    console.log('🔍 [EstablishSessionForm] Response headers:', Object.fromEntries(response.headers.entries()));
-    console.log('✅ [EstablishSessionForm] Cookies set, redirecting to:', redirectUrl);
+    console.log('✅ [EstablishSessionForm] Returning HTML to set cookies via JavaScript');
     console.log('🔍 [EstablishSessionForm] ===== FORM SESSION ESTABLISHMENT END =====');
     
-    return response;
+    return new NextResponse(html, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/html',
+      }
+    });
     
   } catch (error) {
     console.error('❌ [EstablishSessionForm] Error:', error);

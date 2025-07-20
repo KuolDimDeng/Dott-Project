@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   DocumentTextIcon, 
   CalendarIcon, 
-  DownloadIcon, 
+  ArrowDownTrayIcon, 
   EyeIcon,
   XMarkIcon
 } from '@heroicons/react/24/outline';
@@ -184,7 +184,7 @@ export default function PayStubViewer({ isModal = false, onClose }) {
                     disabled={downloading}
                     className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
                   >
-                    <DownloadIcon className="h-4 w-4 mr-1" />
+                    <ArrowDownTrayIcon className="h-4 w-4 mr-1" />
                     {downloading ? 'Downloading...' : 'Download'}
                   </button>
                 </div>

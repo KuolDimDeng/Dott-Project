@@ -32,6 +32,9 @@ const DEVELOPING_COUNTRIES = [
 // Cache TTL for country detection (24 hours)
 const COUNTRY_CACHE_TTL = 24 * 60 * 60 * 1000;
 
+// Export the DEVELOPING_COUNTRIES list for use in other modules
+export { DEVELOPING_COUNTRIES };
+
 /**
  * Detect user's country using multiple methods
  * @returns {Promise<string>} Country code (ISO 3166-1 alpha-2)
