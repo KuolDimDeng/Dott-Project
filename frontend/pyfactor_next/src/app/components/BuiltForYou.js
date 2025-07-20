@@ -99,31 +99,21 @@ export default function BuiltForYou() {
         </div>
 
         {/* Business Type Cards */}
-        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {businessTypes.map((type) => (
             <div
               key={type.id}
               className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden"
             >
-              {/* Image Placeholder */}
+              {/* Image */}
               <div className="h-48 bg-gray-200 relative">
-                <div className="absolute inset-0 flex items-center justify-center text-gray-400">
-                  <div className="text-center">
-                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    <p className="mt-2 text-sm">Stock Photo</p>
-                    <p className="text-xs">{type.title}</p>
-                  </div>
-                </div>
-                {/* Uncomment when you have actual images
                 <Image
                   src={type.image}
                   alt={type.title}
                   fill
                   className="object-cover"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
                 />
-                */}
               </div>
               
               {/* Card Content */}

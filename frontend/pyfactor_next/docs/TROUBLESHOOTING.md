@@ -5,7 +5,8 @@
 **Quick Navigation:**
 - [Authentication Issues](#authentication-issues)
   - [Google OAuth Sign-in Stuck in Redirect Loop](#google-oauth-sign-in-stuck-in-redirect-loop)
-  - [Mobile Login Session Bridge Issues](#mobile-login-session-bridge-issues) ⬅️ **NEW**
+  - [Mobile Login Session Bridge Issues](#mobile-login-session-bridge-issues)
+  - [Session Cookie Persistence with Cloudflare (2-Day Debug)](#session-cookie-persistence-with-cloudflare-2-day-debug) ⬅️ **NEW**
 - [Frontend Component Issues](#frontend-component-issues)
 - [Calendar/Event Management](#calendarevent-management)
 - [HR Employee Management](#hr-employee-management)
@@ -280,6 +281,151 @@ Mobile login was not properly establishing browser sessions after authentication
 - `/src/components/Dashboard/DashboardContent.js` - Fixed all state setter callbacks
 - `/src/app/dashboard/components/DashAppBar.js` - Added handleDrawerToggle to memoization
 - `/src/app/dashboard/components/Drawer.js` - Added debugging attributes
+
+---
+
+## Session Cookie Persistence with Cloudflare (2-Day Debug)
+
+**Issue**: Users cannot sign in - session appears to be created successfully but cookies aren't persisting, causing authentication loop where users are redirected back to signin immediately after "successful" login.
+
+**Symptoms**:
+- Login returns success with session token in console logs
+- Session bridge shows "Session establishment successful!" 
+- Backend logs show session created in database
+- But middleware shows empty cookies: `[Middleware] All cookies: []`
+- User immediately redirected back to signin page
+- Console error: "t is not defined" preventing dashboard from loading
+- Session validation returns 401: "Session not found"
+
+**Root Causes**:
+1. **Cookie Setting Issue**: Cookies set with `sameSite: 'lax'` are not persisting through Cloudflare proxy - need `sameSite: 'none'` for cross-origin contexts
+2. **JavaScript Cookie Setting**: Server-side Set-Cookie headers don't work reliably with Cloudflare, need client-side JavaScript approach
+3. **Import Errors**: Missing exports causing "t is not defined" runtime errors
+4. **Hook Usage Error**: Incorrect destructuring of `useSession` hook causing undefined reference
+
+**Detailed Timeline of Issues**:
+1. Initial issue: Cookies set in API routes with `cookies().set()` not persisting
+2. Changed to `sameSite: 'none'` but still not working
+3. Backend creating sessions correctly but frontend can't access them
+4. Session validation failing with 401 errors
+5. "t is not defined" error preventing dashboard from rendering
+6. Multiple session creation attempts due to token transformation issues
+
+**Solution**:
+
+1. **Fix Cookie Setting with JavaScript Approach** (`/src/app/api/auth/establish-session-form/route.js`):
+   ```javascript
+   // Instead of server-side redirect with cookies, return HTML that sets cookies via JavaScript
+   const html = `
+   <!DOCTYPE html>
+   <html>
+   <head>
+     <title>Setting up your session...</title>
+     <script>
+       const token = '${token}';
+       const maxAge = 86400; // 24 hours
+       const expires = new Date(Date.now() + maxAge * 1000).toUTCString();
+       
+       // Set cookies with all necessary attributes for Cloudflare
+       document.cookie = 'sid=' + token + '; path=/; max-age=' + maxAge + '; expires=' + expires + '; secure; samesite=none';
+       document.cookie = 'session_token=' + token + '; path=/; max-age=' + maxAge + '; expires=' + expires + '; secure; samesite=none';
+       
+       // Redirect after cookies are set
+       window.location.href = '${absoluteUrl}';
+     </script>
+   </head>
+   <body>
+     <p>Setting up your session...</p>
+   </body>
+   </html>`;
+   
+   return new NextResponse(html, {
+     status: 200,
+     headers: { 'Content-Type': 'text/html' }
+   });
+   ```
+
+2. **Fix useSession Hook Destructuring** (`/src/app/[tenantId]/dashboard/page.js`):
+   ```javascript
+   // ❌ WRONG - useSession doesn't return { data }
+   const { data: sessionData } = useSession();
+   
+   // ✅ CORRECT - useSession returns session properties directly
+   const { session: sessionData, user: sessionUser } = useSession();
+   ```
+
+3. **Create Missing Session Verify Endpoint** (`/src/app/api/auth/session-verify/route.js`):
+   ```javascript
+   export async function GET() {
+     const cookieStore = await cookies();
+     const sessionToken = cookieStore.get('sid')?.value || cookieStore.get('session_token')?.value;
+     
+     if (!sessionToken) {
+       return NextResponse.json({ valid: false, reason: 'No session token found' });
+     }
+     
+     // Verify with backend
+     const response = await fetch(`${API_URL}/api/sessions/public/${sessionToken}/`, {
+       method: 'GET',
+       headers: { 'Content-Type': 'application/json' }
+     });
+     
+     if (response.ok) {
+       return NextResponse.json({ valid: true, session: await response.json() });
+     }
+     
+     return NextResponse.json({ valid: false, reason: 'Session not found in backend' });
+   }
+   ```
+
+4. **Fix Import/Export Errors**:
+   - Added missing `purchaseReturnApi` export in `/src/utils/apiClient.js`
+   - Exported `DEVELOPING_COUNTRIES` in `/src/services/countryDetectionService.js`
+   - Fixed `DownloadIcon` import (changed to `ArrowDownTrayIcon`) in components
+
+5. **Fix Syntax Errors in Dashboard Components**:
+   ```javascript
+   // ❌ WRONG - Missing closing parenthesis
+   <CenteredSpinner size="medium" /> ) : (
+   
+   // ✅ CORRECT
+   <CenteredSpinner size="medium" />
+   ) : (
+   ```
+
+**Key Learnings**:
+1. **Cloudflare Cookie Handling**: Server-side Set-Cookie headers don't work reliably with Cloudflare proxy. Use client-side JavaScript for cookie setting.
+2. **Session Bridge Pattern**: Keep the session bridge mechanism but use form submission + JavaScript for better compatibility.
+3. **Debug with Comprehensive Logging**: Add detailed logs throughout the authentication flow to track session creation and cookie setting.
+4. **Trust Backend as Single Source of Truth**: Don't create multiple sessions or transform tokens - use the session ID from backend directly.
+5. **Fix All Import Errors First**: Runtime errors like "t is not defined" often mask the real authentication issues.
+
+**Prevention Checklist**:
+- [ ] Always use `sameSite: 'none'` for production cookies with Cloudflare
+- [ ] Use JavaScript cookie setting for critical auth cookies
+- [ ] Verify all imports/exports when seeing undefined errors
+- [ ] Add session verification endpoints for debugging
+- [ ] Test cookie persistence in production environment
+- [ ] Use form submission instead of AJAX for session establishment
+
+**Debug Commands**:
+```javascript
+// Check all cookies in browser console
+document.cookie.split(';').map(c => c.trim())
+
+// Check session in dashboard
+console.log('[Debug] All cookies:', document.cookie)
+console.log('[Debug] Has sid:', document.cookie.includes('sid'))
+console.log('[Debug] Has session_token:', document.cookie.includes('session_token'))
+```
+
+**Related Files**:
+- `/src/app/api/auth/establish-session-form/route.js` - JavaScript cookie setting
+- `/src/app/auth/session-bridge/page.js` - Session bridge with form submission
+- `/src/app/[tenantId]/dashboard/page.js` - Fixed useSession destructuring
+- `/src/app/api/auth/session-verify/route.js` - New verification endpoint
+- `/src/hooks/useSession-v2.js` - Session hook implementation
+- `/backend/pyfactor/session_manager/consolidated_auth_view.py` - Backend session creation
 
 ---
 

@@ -545,3 +545,29 @@ NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=<your-google-maps-api-key>
   - `/src/app/Settings/components/sections/WhatsAppSettings.js` - Settings UI
   - `/src/app/Settings/components/SettingsManagement.js` - Added WhatsApp tab
   - `/src/app/dashboard/components/lists/listItems.js` - Menu conditional logic
+
+### [39.0.0] - 2025-07-20 - CURRENT - Session Cookie Persistence Fix (Cloudflare)
+- **Purpose**: Fix session cookies not persisting through Cloudflare proxy, causing authentication loops
+- **Problem**: 2-day debugging - cookies set with server-side headers weren't persisting
+- **Root Causes**:
+  - Cloudflare proxy doesn't reliably forward Set-Cookie headers
+  - Cookies with `sameSite: 'lax'` don't persist in cross-origin contexts
+  - Import errors ("t is not defined") masking authentication issues
+  - Incorrect `useSession` hook destructuring
+- **Solution**:
+  - Use client-side JavaScript to set cookies instead of server headers
+  - Set cookies with `sameSite: 'none'` and `secure` attributes
+  - Fix all import/export errors before debugging auth issues
+  - Create session-verify endpoint for debugging
+- **Implementation**:
+  - JavaScript cookie setting in `/src/app/api/auth/establish-session-form/route.js`
+  - Return HTML with script that sets cookies then redirects
+  - Keep session bridge pattern but use form submission
+  - Fix `useSession` destructuring: `{ session, user }` not `{ data }`
+- **Key Learning**: Cloudflare requires client-side cookie setting for reliability
+- **Debug Tools**:
+  - Check cookies: `document.cookie.split(';').map(c => c.trim())`
+  - Verify session: `/api/auth/session-verify` endpoint
+  - Add comprehensive logging throughout auth flow
+- **Prevention**: Always test cookie persistence in production with Cloudflare
+- **Documentation**: Added to `/frontend/pyfactor_next/docs/TROUBLESHOOTING.md`

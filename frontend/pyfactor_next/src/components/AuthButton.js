@@ -261,7 +261,8 @@ export default function AuthButton({ size = 'medium', variant = 'primary', theme
   const themeClasses = {
     light: 'bg-blue-600 hover:bg-blue-700 text-white',
     dark: 'bg-white hover:bg-gray-100 text-blue-600',
-    primary: 'bg-blue-600 hover:bg-blue-700 text-white'
+    primary: 'bg-blue-600 hover:bg-blue-700 text-white',
+    orange: 'bg-orange-500 hover:bg-orange-600 text-white'
   };
 
   const finalTheme = theme || variant;

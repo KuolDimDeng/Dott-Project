@@ -40,7 +40,7 @@ export default function Hero() {
           
           <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl text-transparent bg-clip-text bg-gradient-to-r from-primary-main to-primary-light">
             <span className="relative inline-block mr-2">
-              <span className="italic font-normal">Your</span>
+              <span className="italic font-normal" style={{ fontFamily: 'Caveat, cursive', fontSize: '1.2em' }}>Your</span>
               <svg 
                 className="absolute -bottom-1 left-0 w-full h-3 pointer-events-none" 
                 viewBox="0 0 100 12" 
@@ -67,6 +67,7 @@ export default function Hero() {
                 </path>
               </svg>
             </span>
+            {' '}
             <span>Global Business Platform</span>
           </h1>
           
@@ -152,6 +153,14 @@ export default function Hero() {
               </div>
               {t('hero.benefit.languages')}
             </div>
+            <div className="flex items-center">
+              <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center mr-2">
+                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              {t('hero.benefit.mobilePhone', 'Mobile phone app included')}
+            </div>
           </div>
           
           <div className="mt-10">
@@ -163,7 +172,7 @@ export default function Hero() {
           </p>
           
           <div className="mt-10">
-            <AuthButton theme="light" />
+            <AuthButton theme="orange" />
           </div>
         </div>
       </div>
