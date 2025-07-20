@@ -55,7 +55,7 @@ class StatusErrorBoundary extends React.Component {
 }
 
 const DottStatusContent = () => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('navigation');
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(new Date());

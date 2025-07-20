@@ -39,7 +39,7 @@ import StandardSpinner from '@/components/ui/StandardSpinner';
 import { toast } from 'react-hot-toast';
 
 const BusinessOverview = () => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('navigation');
   const [isLoading, setIsLoading] = useState(true);
   const [metrics, setMetrics] = useState({
     // Financial metrics
