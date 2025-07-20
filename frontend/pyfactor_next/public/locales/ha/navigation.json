@@ -108,5 +108,47 @@
     "taxReports": "Rahotannin Haraji",
     "payrollReports": "Rahotannin Albashi",
     "customReports": "Rahotanni na Musamman"
+  },
+  "dashboard": {
+    "businessOverview": {
+      "title": "Bayyanannen Kasuwanci",
+      "subtitle": "Cikakken hoto na aikin kasuwancin ku"
+    }
+  },
+  "status": {
+    "title": "Matsayin Dott",
+    "subtitle": "Halin tsarin yanzu da kula da lokacin aiki",
+    "refresh": "Sabunta",
+    "refreshing": "Ana sabuntawa...",
+    "lastUpdated": "Sabuntawa ta ƙarshe",
+    "checking": "Ana bincika matsayin sabis...",
+    "uptime": "lokacin aiki",
+    "duration": "kwanaki 90",
+    "responseTime": "Lokacin amsa",
+    "error": {
+      "title": "Kuskuren Shafin Matsayi",
+      "message": "Ba za a iya loda shafin matsayi ba. Da fatan za a gwada sabuntawa.",
+      "refresh": "Sabunta Shafi"
+    },
+    "overall": {
+      "operational": "Duk Tsarin Suna Aiki",
+      "degraded": "Wasu Tsarin Suna Fuskantar Matsaloli",
+      "outage": "An Gano Katsalandan Sabis",
+      "unknown": "Ba a San Matsayin Tsarin Ba"
+    },
+    "serviceStatus": {
+      "title": "Matsayin Sabis",
+      "description": "Lokacin aiki a cikin kwanaki 90 da suka wuce. Kula da duk sabis masu mahimmanci."
+    },
+    "state": {
+      "operational": "Yana aiki",
+      "degraded": "Ya ragu",
+      "outage": "Katsalandan",
+      "unknown": "Ba a sani ba"
+    },
+    "timeline": {
+      "past": "Kwanaki 90 da suka wuce",
+      "today": "Yau"
+    }
   }
 }

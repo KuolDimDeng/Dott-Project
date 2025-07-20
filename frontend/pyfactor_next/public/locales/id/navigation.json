@@ -108,5 +108,47 @@
     "taxReports": "Laporan Pajak",
     "payrollReports": "Laporan Penggajian",
     "customReports": "Laporan Khusus"
+  },
+  "dashboard": {
+    "businessOverview": {
+      "title": "Ikhtisar Bisnis",
+      "subtitle": "Gambaran lengkap kinerja bisnis Anda"
+    }
+  },
+  "status": {
+    "title": "Status Dott",
+    "subtitle": "Status sistem saat ini dan pemantauan waktu aktif",
+    "refresh": "Segarkan",
+    "refreshing": "Menyegarkan...",
+    "lastUpdated": "Terakhir diperbarui",
+    "checking": "Memeriksa status layanan...",
+    "uptime": "waktu aktif",
+    "duration": "90 hari",
+    "responseTime": "Waktu respons",
+    "error": {
+      "title": "Kesalahan Halaman Status",
+      "message": "Tidak dapat memuat halaman status. Silakan coba segarkan.",
+      "refresh": "Segarkan Halaman"
+    },
+    "overall": {
+      "operational": "Semua Sistem Beroperasi",
+      "degraded": "Beberapa Sistem Mengalami Masalah",
+      "outage": "Gangguan Layanan Terdeteksi",
+      "unknown": "Status Sistem Tidak Diketahui"
+    },
+    "serviceStatus": {
+      "title": "Status Layanan",
+      "description": "Waktu aktif selama 90 hari terakhir. Memantau semua layanan penting."
+    },
+    "state": {
+      "operational": "Beroperasi",
+      "degraded": "Terdegradasi",
+      "outage": "Gangguan",
+      "unknown": "Tidak Diketahui"
+    },
+    "timeline": {
+      "past": "90 hari yang lalu",
+      "today": "Hari ini"
+    }
   }
 }

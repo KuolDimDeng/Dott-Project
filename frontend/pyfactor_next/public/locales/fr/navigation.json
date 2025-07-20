@@ -108,5 +108,47 @@
     "taxReports": "Rapports Fiscaux",
     "payrollReports": "Rapports de Paie",
     "customReports": "Rapports Personnalisés"
+  },
+  "dashboard": {
+    "businessOverview": {
+      "title": "Vue d'Ensemble de l'Entreprise",
+      "subtitle": "Aperçu complet de la performance de votre entreprise"
+    }
+  },
+  "status": {
+    "title": "État de Dott",
+    "subtitle": "État actuel du système et surveillance de la disponibilité",
+    "refresh": "Actualiser",
+    "refreshing": "Actualisation...",
+    "lastUpdated": "Dernière mise à jour",
+    "checking": "Vérification de l'état du service...",
+    "uptime": "temps de disponibilité",
+    "duration": "90 jours",
+    "responseTime": "Temps de réponse",
+    "error": {
+      "title": "Erreur de la Page d'État",
+      "message": "Impossible de charger la page d'état. Veuillez essayer d'actualiser.",
+      "refresh": "Actualiser la Page"
+    },
+    "overall": {
+      "operational": "Tous les Systèmes Opérationnels",
+      "degraded": "Certains Systèmes Rencontrent des Problèmes",
+      "outage": "Panne de Service Détectée",
+      "unknown": "État du Système Inconnu"
+    },
+    "serviceStatus": {
+      "title": "État du Service",
+      "description": "Temps de disponibilité au cours des 90 derniers jours. Surveillance de tous les services critiques."
+    },
+    "state": {
+      "operational": "Opérationnel",
+      "degraded": "Dégradé",
+      "outage": "Panne",
+      "unknown": "Inconnu"
+    },
+    "timeline": {
+      "past": "Il y a 90 jours",
+      "today": "Aujourd'hui"
+    }
   }
 }

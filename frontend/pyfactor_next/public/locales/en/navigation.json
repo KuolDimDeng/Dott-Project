@@ -108,5 +108,47 @@
     "taxReports": "Tax Reports",
     "payrollReports": "Payroll Reports",
     "customReports": "Custom Reports"
+  },
+  "dashboard": {
+    "businessOverview": {
+      "title": "Business Overview",
+      "subtitle": "Complete snapshot of your business performance"
+    }
+  },
+  "status": {
+    "title": "Dott Status",
+    "subtitle": "Current system status and uptime monitoring",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing...",
+    "lastUpdated": "Last updated",
+    "checking": "Checking service status...",
+    "uptime": "uptime",
+    "duration": "90 days",
+    "responseTime": "Response time",
+    "error": {
+      "title": "Status Page Error",
+      "message": "Unable to load the status page. Please try refreshing.",
+      "refresh": "Refresh Page"
+    },
+    "overall": {
+      "operational": "All Systems Operational",
+      "degraded": "Some Systems Experiencing Issues",
+      "outage": "Service Outage Detected",
+      "unknown": "System Status Unknown"
+    },
+    "serviceStatus": {
+      "title": "Service Status",
+      "description": "Uptime over the past 90 days. Monitoring all critical services."
+    },
+    "state": {
+      "operational": "Operational",
+      "degraded": "Degraded",
+      "outage": "Outage",
+      "unknown": "Unknown"
+    },
+    "timeline": {
+      "past": "90 days ago",
+      "today": "Today"
+    }
   }
 }

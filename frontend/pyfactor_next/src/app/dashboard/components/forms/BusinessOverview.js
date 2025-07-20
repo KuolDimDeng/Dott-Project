@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { 
   ChartBarIcon,
   CurrencyDollarIcon,
@@ -38,6 +39,7 @@ import StandardSpinner from '@/components/ui/StandardSpinner';
 import { toast } from 'react-hot-toast';
 
 const BusinessOverview = () => {
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const [metrics, setMetrics] = useState({
     // Financial metrics
@@ -497,9 +499,9 @@ const BusinessOverview = () => {
         <div>
           <h1 className="text-2xl font-bold text-black mb-2 flex items-center">
             <ChartBarIcon className="h-6 w-6 text-blue-600 mr-2" />
-            Business Overview
+            {t('dashboard.businessOverview.title', 'Business Overview')}
           </h1>
-          <p className="text-gray-600">Complete snapshot of your business performance</p>
+          <p className="text-gray-600">{t('dashboard.businessOverview.subtitle', 'Complete snapshot of your business performance')}</p>
         </div>
         <button
           onClick={fetchBusinessData}

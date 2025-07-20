@@ -108,5 +108,47 @@
     "taxReports": "税务报告",
     "payrollReports": "工资报告",
     "customReports": "自定义报告"
+  },
+  "dashboard": {
+    "businessOverview": {
+      "title": "业务概览",
+      "subtitle": "您业务表现的完整快照"
+    }
+  },
+  "status": {
+    "title": "Dott 状态",
+    "subtitle": "当前系统状态和正常运行时间监控",
+    "refresh": "刷新",
+    "refreshing": "正在刷新...",
+    "lastUpdated": "最后更新",
+    "checking": "正在检查服务状态...",
+    "uptime": "正常运行时间",
+    "duration": "90天",
+    "responseTime": "响应时间",
+    "error": {
+      "title": "状态页面错误",
+      "message": "无法加载状态页面。请尝试刷新。",
+      "refresh": "刷新页面"
+    },
+    "overall": {
+      "operational": "所有系统正常运行",
+      "degraded": "部分系统出现问题",
+      "outage": "检测到服务中断",
+      "unknown": "系统状态未知"
+    },
+    "serviceStatus": {
+      "title": "服务状态",
+      "description": "过去90天的正常运行时间。监控所有关键服务。"
+    },
+    "state": {
+      "operational": "正常运行",
+      "degraded": "性能下降",
+      "outage": "服务中断",
+      "unknown": "未知"
+    },
+    "timeline": {
+      "past": "90天前",
+      "today": "今天"
+    }
   }
 }

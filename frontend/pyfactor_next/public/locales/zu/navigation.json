@@ -108,5 +108,47 @@
     "taxReports": "Imibiko Yentela",
     "payrollReports": "Imibiko Yamaholo",
     "customReports": "Imibiko Yangokwezifiso"
+  },
+  "dashboard": {
+    "businessOverview": {
+      "title": "Isifinyezo Sebhizinisi",
+      "subtitle": "Umbono ophelele wokusebenza kwebhizinisi lakho"
+    }
+  },
+  "status": {
+    "title": "Isimo seDott",
+    "subtitle": "Isimo sesistimu samanje nokugadwa kwesikhathi sokusebenza",
+    "refresh": "Vuselela",
+    "refreshing": "Iyavuselela...",
+    "lastUpdated": "Igcine ukubuyekezwa",
+    "checking": "Ihlola isimo sesevisi...",
+    "uptime": "isikhathi sokusebenza",
+    "duration": "izinsuku ezingu-90",
+    "responseTime": "Isikhathi sokuphendula",
+    "error": {
+      "title": "Iphutha Lekhasi Lesimo",
+      "message": "Ayikwazi ukulayisha ikhasi lesimo. Sicela uzame ukuvuselela.",
+      "refresh": "Vuselela Ikhasi"
+    },
+    "overall": {
+      "operational": "Zonke Izinhlelo Ziyasebenza",
+      "degraded": "Ezinye Izinhlelo Zihlangabezana Nezinkinga",
+      "outage": "Kutholwe Ukuphazamiseka Kwesevisi",
+      "unknown": "Isimo Sesistimu Asaziwa"
+    },
+    "serviceStatus": {
+      "title": "Isimo Sesevisi",
+      "description": "Isikhathi sokusebenza ezinsukwini ezingu-90 ezedlule. Ukugada zonke izinsiza ezibalulekile."
+    },
+    "state": {
+      "operational": "Iyasebenza",
+      "degraded": "Yehlile",
+      "outage": "Iphazamisekile",
+      "unknown": "Akwaziwa"
+    },
+    "timeline": {
+      "past": "Izinsuku ezingu-90 ezedlule",
+      "today": "Namuhla"
+    }
   }
 }

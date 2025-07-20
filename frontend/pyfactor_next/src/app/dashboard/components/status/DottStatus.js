@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { 
   CheckCircleIcon,
   ExclamationTriangleIcon,
@@ -54,6 +55,7 @@ class StatusErrorBoundary extends React.Component {
 }
 
 const DottStatusContent = () => {
+  const { t } = useTranslation();
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(new Date());
@@ -171,9 +173,9 @@ const DottStatusContent = () => {
           <div>
             <h1 className="text-2xl font-bold text-black mb-4 flex items-center">
               <SignalIcon className="h-6 w-6 text-blue-600 mr-2" />
-              Dott Status
+              {t('status.title', 'Dott Status')}
             </h1>
-            <p className="text-gray-600">Current system status and uptime monitoring</p>
+            <p className="text-gray-600">{t('status.subtitle', 'Current system status and uptime monitoring')}</p>
           </div>
           
           <button
@@ -184,12 +186,12 @@ const DottStatusContent = () => {
             {loading ? (
               <>
                 <StandardSpinner size="small" color="white" className="inline mr-2" />
-                Refreshing...
+                {t('status.refreshing', 'Refreshing...')}
               </>
             ) : (
               <>
                 <ArrowPathIcon className="h-4 w-4 mr-2" />
-                Refresh
+                {t('status.refresh', 'Refresh')}
               </>
             )}
           </button>
@@ -206,13 +208,13 @@ const DottStatusContent = () => {
             {getStatusIcon(overallStatus)}
             <div className="ml-3">
               <h2 className="text-xl font-semibold text-gray-900">
-                {overallStatus === 'operational' ? 'All Systems Operational' :
-                 overallStatus === 'degraded' ? 'Some Systems Experiencing Issues' :
-                 overallStatus === 'outage' ? 'Service Outage Detected' :
-                 'System Status Unknown'}
+                {overallStatus === 'operational' ? t('status.overall.operational', 'All Systems Operational') :
+                 overallStatus === 'degraded' ? t('status.overall.degraded', 'Some Systems Experiencing Issues') :
+                 overallStatus === 'outage' ? t('status.overall.outage', 'Service Outage Detected') :
+                 t('status.overall.unknown', 'System Status Unknown')}
               </h2>
               <p className="text-gray-600">
-                Last updated: {formatTime(lastUpdated)}
+                {t('status.lastUpdated', 'Last updated')}: {formatTime(lastUpdated)}
               </p>
             </div>
           </div>
@@ -222,9 +224,9 @@ const DottStatusContent = () => {
       {/* Services Status */}
       <div className="bg-white rounded-lg shadow-lg overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">Service Status</h3>
+          <h3 className="text-lg font-semibold text-gray-900">{t('status.serviceStatus.title', 'Service Status')}</h3>
           <p className="text-sm text-gray-600 mt-1">
-            Uptime over the past 90 days. Monitoring all critical services.
+            {t('status.serviceStatus.description', 'Uptime over the past 90 days. Monitoring all critical services.')}
           </p>
         </div>
 
@@ -232,7 +234,7 @@ const DottStatusContent = () => {
           {loading && services.length === 0 ? (
             <CenteredSpinner 
               size="default" 
-              text="Checking service status..." 
+              text={t('status.checking', 'Checking service status...')} 
               showText={true}
               minHeight="h-32"
             />
@@ -262,20 +264,20 @@ const DottStatusContent = () => {
                   
                   <div className="flex items-center space-x-6">
                     <div className="text-right">
-                      <div className="text-sm font-medium text-gray-900">{service.uptime} uptime</div>
-                      <div className="text-sm text-gray-500">90 days</div>
+                      <div className="text-sm font-medium text-gray-900">{service.uptime} {t('status.uptime', 'uptime')}</div>
+                      <div className="text-sm text-gray-500">{t('status.duration', '90 days')}</div>
                     </div>
                     
                     <div className="text-right">
                       <div className="text-sm font-medium text-gray-900">{service.responseTime}</div>
-                      <div className="text-sm text-gray-500">Response time</div>
+                      <div className="text-sm text-gray-500">{t('status.responseTime', 'Response time')}</div>
                     </div>
                     
                     <div className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(service.status)}`}>
-                      {service.status === 'operational' ? 'Operational' :
-                       service.status === 'degraded' ? 'Degraded' :
-                       service.status === 'outage' ? 'Outage' :
-                       'Unknown'}
+                      {service.status === 'operational' ? t('status.state.operational', 'Operational') :
+                       service.status === 'degraded' ? t('status.state.degraded', 'Degraded') :
+                       service.status === 'outage' ? t('status.state.outage', 'Outage') :
+                       t('status.state.unknown', 'Unknown')}
                     </div>
                   </div>
                 </div>
@@ -283,8 +285,8 @@ const DottStatusContent = () => {
                 {/* Status Bar */}
                 <div className="mt-4">
                   <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
-                    <span>90 days ago</span>
-                    <span>Today</span>
+                    <span>{t('status.timeline.past', '90 days ago')}</span>
+                    <span>{t('status.timeline.today', 'Today')}</span>
                   </div>
                   <div className="w-full h-8 bg-gray-100 rounded">
                     <div 

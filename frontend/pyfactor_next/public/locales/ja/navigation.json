@@ -108,5 +108,47 @@
     "taxReports": "税務レポート",
     "payrollReports": "給与レポート",
     "customReports": "カスタムレポート"
+  },
+  "dashboard": {
+    "businessOverview": {
+      "title": "ビジネス概要",
+      "subtitle": "ビジネスパフォーマンスの完全なスナップショット"
+    }
+  },
+  "status": {
+    "title": "Dottステータス",
+    "subtitle": "現在のシステムステータスと稼働時間の監視",
+    "refresh": "更新",
+    "refreshing": "更新中...",
+    "lastUpdated": "最終更新",
+    "checking": "サービスステータスを確認中...",
+    "uptime": "稼働時間",
+    "duration": "90日間",
+    "responseTime": "応答時間",
+    "error": {
+      "title": "ステータスページエラー",
+      "message": "ステータスページを読み込めません。ページを更新してください。",
+      "refresh": "ページを更新"
+    },
+    "overall": {
+      "operational": "すべてのシステムが正常稼働中",
+      "degraded": "一部のシステムで問題が発生",
+      "outage": "サービス停止を検出",
+      "unknown": "システムステータス不明"
+    },
+    "serviceStatus": {
+      "title": "サービスステータス",
+      "description": "過去90日間の稼働時間。すべての重要なサービスを監視。"
+    },
+    "state": {
+      "operational": "稼働中",
+      "degraded": "低下",
+      "outage": "停止",
+      "unknown": "不明"
+    },
+    "timeline": {
+      "past": "90日前",
+      "today": "今日"
+    }
   }
 }

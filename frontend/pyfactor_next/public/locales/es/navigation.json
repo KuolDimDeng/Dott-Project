@@ -108,5 +108,47 @@
     "taxReports": "Informes de Impuestos",
     "payrollReports": "Informes de Nómina",
     "customReports": "Informes Personalizados"
+  },
+  "dashboard": {
+    "businessOverview": {
+      "title": "Resumen del Negocio",
+      "subtitle": "Vista completa del rendimiento de tu negocio"
+    }
+  },
+  "status": {
+    "title": "Estado de Dott",
+    "subtitle": "Estado actual del sistema y monitoreo de tiempo de actividad",
+    "refresh": "Actualizar",
+    "refreshing": "Actualizando...",
+    "lastUpdated": "Última actualización",
+    "checking": "Verificando estado del servicio...",
+    "uptime": "tiempo de actividad",
+    "duration": "90 días",
+    "responseTime": "Tiempo de respuesta",
+    "error": {
+      "title": "Error en la Página de Estado",
+      "message": "No se puede cargar la página de estado. Por favor, intente actualizar.",
+      "refresh": "Actualizar Página"
+    },
+    "overall": {
+      "operational": "Todos los Sistemas Operativos",
+      "degraded": "Algunos Sistemas con Problemas",
+      "outage": "Interrupción del Servicio Detectada",
+      "unknown": "Estado del Sistema Desconocido"
+    },
+    "serviceStatus": {
+      "title": "Estado del Servicio",
+      "description": "Tiempo de actividad en los últimos 90 días. Monitoreando todos los servicios críticos."
+    },
+    "state": {
+      "operational": "Operativo",
+      "degraded": "Degradado",
+      "outage": "Interrupción",
+      "unknown": "Desconocido"
+    },
+    "timeline": {
+      "past": "Hace 90 días",
+      "today": "Hoy"
+    }
   }
 }

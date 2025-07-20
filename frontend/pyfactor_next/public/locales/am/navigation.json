@@ -108,5 +108,47 @@
     "taxReports": "የግብር ሪፖርቶች",
     "payrollReports": "የደመወዝ ሪፖርቶች",
     "customReports": "ብጁ ሪፖርቶች"
+  },
+  "dashboard": {
+    "businessOverview": {
+      "title": "የንግድ አጠቃላይ እይታ",
+      "subtitle": "የንግድዎ አፈጻጸም ሙሉ ገጽታ"
+    }
+  },
+  "status": {
+    "title": "የDott ሁኔታ",
+    "subtitle": "የአሁኑ ስርዓት ሁኔታ እና የስራ ጊዜ ክትትል",
+    "refresh": "አድስ",
+    "refreshing": "እያደሰ ነው...",
+    "lastUpdated": "መጨረሻ የተዘመነ",
+    "checking": "የአገልግሎት ሁኔታን በመፈተሽ ላይ...",
+    "uptime": "የስራ ጊዜ",
+    "duration": "90 ቀናት",
+    "responseTime": "ምላሽ ጊዜ",
+    "error": {
+      "title": "የሁኔታ ገጽ ስህተት",
+      "message": "የሁኔታ ገጹን መጫን አልተቻለም። እባክዎ ለማደስ ይሞክሩ።",
+      "refresh": "ገጹን አድስ"
+    },
+    "overall": {
+      "operational": "ሁሉም ስርዓቶች እየሰሩ ናቸው",
+      "degraded": "አንዳንድ ስርዓቶች ችግሮች እያጋጠሟቸው ነው",
+      "outage": "የአገልግሎት መቋረጥ ተገኝቷል",
+      "unknown": "የስርዓት ሁኔታ አይታወቅም"
+    },
+    "serviceStatus": {
+      "title": "የአገልግሎት ሁኔታ",
+      "description": "ላለፉት 90 ቀናት የስራ ጊዜ። ሁሉንም ወሳኝ አገልግሎቶች በመከታተል ላይ።"
+    },
+    "state": {
+      "operational": "እየሰራ ነው",
+      "degraded": "ተዳክሟል",
+      "outage": "መቋረጥ",
+      "unknown": "አይታወቅም"
+    },
+    "timeline": {
+      "past": "ከ90 ቀናት በፊት",
+      "today": "ዛሬ"
+    }
   }
 }

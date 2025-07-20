@@ -108,5 +108,47 @@
     "taxReports": "Steuerberichte",
     "payrollReports": "Lohnabrechnungsberichte",
     "customReports": "Benutzerdefinierte Berichte"
+  },
+  "dashboard": {
+    "businessOverview": {
+      "title": "Geschäftsübersicht",
+      "subtitle": "Vollständige Übersicht über Ihre Geschäftsleistung"
+    }
+  },
+  "status": {
+    "title": "Dott Status",
+    "subtitle": "Aktueller Systemstatus und Verfügbarkeitsüberwachung",
+    "refresh": "Aktualisieren",
+    "refreshing": "Aktualisiere...",
+    "lastUpdated": "Zuletzt aktualisiert",
+    "checking": "Prüfe Dienststatus...",
+    "uptime": "Betriebszeit",
+    "duration": "90 Tage",
+    "responseTime": "Antwortzeit",
+    "error": {
+      "title": "Statusseite Fehler",
+      "message": "Die Statusseite kann nicht geladen werden. Bitte versuchen Sie zu aktualisieren.",
+      "refresh": "Seite Aktualisieren"
+    },
+    "overall": {
+      "operational": "Alle Systeme Betriebsbereit",
+      "degraded": "Einige Systeme mit Problemen",
+      "outage": "Dienstausfall Erkannt",
+      "unknown": "Systemstatus Unbekannt"
+    },
+    "serviceStatus": {
+      "title": "Dienststatus",
+      "description": "Betriebszeit der letzten 90 Tage. Überwachung aller kritischen Dienste."
+    },
+    "state": {
+      "operational": "Betriebsbereit",
+      "degraded": "Beeinträchtigt",
+      "outage": "Ausfall",
+      "unknown": "Unbekannt"
+    },
+    "timeline": {
+      "past": "Vor 90 Tagen",
+      "today": "Heute"
+    }
   }
 }

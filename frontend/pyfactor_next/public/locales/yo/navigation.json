@@ -108,5 +108,47 @@
     "taxReports": "Ìjábọ̀ Owó-orí",
     "payrollReports": "Ìjábọ̀ Owó Oṣù",
     "customReports": "Ìjábọ̀ Àkànṣe"
+  },
+  "dashboard": {
+    "businessOverview": {
+      "title": "Àkópọ̀ Iṣẹ́",
+      "subtitle": "Àkópọ̀ kíkún ti ìṣe iṣẹ́ rẹ"
+    }
+  },
+  "status": {
+    "title": "Ipò Dott",
+    "subtitle": "Ipò ètò lọ́wọ́lọ́wọ́ àti ìbójútó àkókò ìṣiṣẹ́",
+    "refresh": "Tún ṣe",
+    "refreshing": "Ń tún ṣe...",
+    "lastUpdated": "Ìmúdójúìwọ̀n tó kẹ́yìn",
+    "checking": "Ń yẹ̀wò ipò iṣẹ́...",
+    "uptime": "àkókò ìṣiṣẹ́",
+    "duration": "ọjọ́ 90",
+    "responseTime": "Àkókò ìdáhùn",
+    "error": {
+      "title": "Àṣìṣe Ojú-ìwé Ipò",
+      "message": "Kò lè ṣí ojú-ìwé ipò. Jọ̀wọ́ gbìyànjú láti tún ṣe.",
+      "refresh": "Tún Ojú-ìwé Ṣe"
+    },
+    "overall": {
+      "operational": "Gbogbo Ètò Ń Ṣiṣẹ́",
+      "degraded": "Àwọn Ètò Kan Ń Ní Ìṣòro",
+      "outage": "Ìdádúró Iṣẹ́ Ti Fojúhàn",
+      "unknown": "Ipò Ètò Kò Dá"
+    },
+    "serviceStatus": {
+      "title": "Ipò Iṣẹ́",
+      "description": "Àkókò ìṣiṣẹ́ láàárín ọjọ́ 90 sẹ́yìn. Ń ṣe àbójútó gbogbo iṣẹ́ pàtàkì."
+    },
+    "state": {
+      "operational": "Ń ṣiṣẹ́",
+      "degraded": "Ti dínkù",
+      "outage": "Ìdádúró",
+      "unknown": "Àìmọ̀"
+    },
+    "timeline": {
+      "past": "Ọjọ́ 90 sẹ́yìn",
+      "today": "Òní"
+    }
   }
 }

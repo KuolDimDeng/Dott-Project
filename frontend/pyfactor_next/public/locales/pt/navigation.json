@@ -108,5 +108,47 @@
     "taxReports": "Relatórios Fiscais",
     "payrollReports": "Relatórios de Folha",
     "customReports": "Relatórios Personalizados"
+  },
+  "dashboard": {
+    "businessOverview": {
+      "title": "Visão Geral do Negócio",
+      "subtitle": "Visão completa do desempenho do seu negócio"
+    }
+  },
+  "status": {
+    "title": "Status do Dott",
+    "subtitle": "Status atual do sistema e monitoramento de disponibilidade",
+    "refresh": "Atualizar",
+    "refreshing": "Atualizando...",
+    "lastUpdated": "Última atualização",
+    "checking": "Verificando status do serviço...",
+    "uptime": "tempo de atividade",
+    "duration": "90 dias",
+    "responseTime": "Tempo de resposta",
+    "error": {
+      "title": "Erro na Página de Status",
+      "message": "Não foi possível carregar a página de status. Por favor, tente atualizar.",
+      "refresh": "Atualizar Página"
+    },
+    "overall": {
+      "operational": "Todos os Sistemas Operacionais",
+      "degraded": "Alguns Sistemas com Problemas",
+      "outage": "Interrupção de Serviço Detectada",
+      "unknown": "Status do Sistema Desconhecido"
+    },
+    "serviceStatus": {
+      "title": "Status do Serviço",
+      "description": "Tempo de atividade nos últimos 90 dias. Monitorando todos os serviços críticos."
+    },
+    "state": {
+      "operational": "Operacional",
+      "degraded": "Degradado",
+      "outage": "Interrupção",
+      "unknown": "Desconhecido"
+    },
+    "timeline": {
+      "past": "90 dias atrás",
+      "today": "Hoje"
+    }
   }
 }

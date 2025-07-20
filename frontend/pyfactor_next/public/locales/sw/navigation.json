@@ -108,5 +108,47 @@
     "taxReports": "Ripoti za Kodi",
     "payrollReports": "Ripoti za Mishahara",
     "customReports": "Ripoti Maalum"
+  },
+  "dashboard": {
+    "businessOverview": {
+      "title": "Muhtasari wa Biashara",
+      "subtitle": "Picha kamili ya utendaji wa biashara yako"
+    }
+  },
+  "status": {
+    "title": "Hali ya Dott",
+    "subtitle": "Hali ya sasa ya mfumo na ufuatiliaji wa muda wa kutumika",
+    "refresh": "Onyesha Upya",
+    "refreshing": "Inaonyesha upya...",
+    "lastUpdated": "Imesasishwa mwisho",
+    "checking": "Inakagua hali ya huduma...",
+    "uptime": "muda wa kutumika",
+    "duration": "siku 90",
+    "responseTime": "Muda wa majibu",
+    "error": {
+      "title": "Hitilafu ya Ukurasa wa Hali",
+      "message": "Haiwezi kupakia ukurasa wa hali. Tafadhali jaribu kuonyesha upya.",
+      "refresh": "Onyesha Ukurasa Upya"
+    },
+    "overall": {
+      "operational": "Mifumo Yote Inafanya Kazi",
+      "degraded": "Baadhi ya Mifumo Inakabiliwa na Matatizo",
+      "outage": "Kukatika kwa Huduma Kumegundulika",
+      "unknown": "Hali ya Mfumo Haijulikani"
+    },
+    "serviceStatus": {
+      "title": "Hali ya Huduma",
+      "description": "Muda wa kutumika katika siku 90 zilizopita. Kufuatilia huduma zote muhimu."
+    },
+    "state": {
+      "operational": "Inafanya kazi",
+      "degraded": "Imedhoofika",
+      "outage": "Imekatika",
+      "unknown": "Haijulikani"
+    },
+    "timeline": {
+      "past": "Siku 90 zilizopita",
+      "today": "Leo"
+    }
   }
 }

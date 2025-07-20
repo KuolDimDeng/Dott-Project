@@ -108,5 +108,47 @@
     "taxReports": "Belastingrapporten",
     "payrollReports": "Salarisrapporten",
     "customReports": "Aangepaste Rapporten"
+  },
+  "dashboard": {
+    "businessOverview": {
+      "title": "Bedrijfsoverzicht",
+      "subtitle": "Volledig overzicht van uw bedrijfsprestaties"
+    }
+  },
+  "status": {
+    "title": "Dott Status",
+    "subtitle": "Huidige systeemstatus en uptime monitoring",
+    "refresh": "Vernieuwen",
+    "refreshing": "Vernieuwen...",
+    "lastUpdated": "Laatst bijgewerkt",
+    "checking": "Service status controleren...",
+    "uptime": "uptime",
+    "duration": "90 dagen",
+    "responseTime": "Reactietijd",
+    "error": {
+      "title": "Statuspagina Fout",
+      "message": "Kan de statuspagina niet laden. Probeer te vernieuwen.",
+      "refresh": "Pagina Vernieuwen"
+    },
+    "overall": {
+      "operational": "Alle Systemen Operationeel",
+      "degraded": "Sommige Systemen Ondervinden Problemen",
+      "outage": "Service Onderbreking Gedetecteerd",
+      "unknown": "Systeemstatus Onbekend"
+    },
+    "serviceStatus": {
+      "title": "Service Status",
+      "description": "Uptime over de afgelopen 90 dagen. Monitoring van alle kritieke diensten."
+    },
+    "state": {
+      "operational": "Operationeel",
+      "degraded": "Verminderd",
+      "outage": "Onderbreking",
+      "unknown": "Onbekend"
+    },
+    "timeline": {
+      "past": "90 dagen geleden",
+      "today": "Vandaag"
+    }
   }
 }

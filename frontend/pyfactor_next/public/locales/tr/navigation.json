@@ -108,5 +108,47 @@
     "taxReports": "Vergi Raporları",
     "payrollReports": "Bordro Raporları",
     "customReports": "Özel Raporlar"
+  },
+  "dashboard": {
+    "businessOverview": {
+      "title": "İş Genel Bakışı",
+      "subtitle": "İşletme performansınızın eksiksiz görünümü"
+    }
+  },
+  "status": {
+    "title": "Dott Durumu",
+    "subtitle": "Mevcut sistem durumu ve çalışma süresi izleme",
+    "refresh": "Yenile",
+    "refreshing": "Yenileniyor...",
+    "lastUpdated": "Son güncelleme",
+    "checking": "Servis durumu kontrol ediliyor...",
+    "uptime": "çalışma süresi",
+    "duration": "90 gün",
+    "responseTime": "Yanıt süresi",
+    "error": {
+      "title": "Durum Sayfası Hatası",
+      "message": "Durum sayfası yüklenemiyor. Lütfen yenilemeyi deneyin.",
+      "refresh": "Sayfayı Yenile"
+    },
+    "overall": {
+      "operational": "Tüm Sistemler Çalışıyor",
+      "degraded": "Bazı Sistemlerde Sorun Var",
+      "outage": "Hizmet Kesintisi Tespit Edildi",
+      "unknown": "Sistem Durumu Bilinmiyor"
+    },
+    "serviceStatus": {
+      "title": "Servis Durumu",
+      "description": "Son 90 gündeki çalışma süresi. Tüm kritik servisleri izleme."
+    },
+    "state": {
+      "operational": "Çalışıyor",
+      "degraded": "Düşük Performans",
+      "outage": "Kesinti",
+      "unknown": "Bilinmiyor"
+    },
+    "timeline": {
+      "past": "90 gün önce",
+      "today": "Bugün"
+    }
   }
 }

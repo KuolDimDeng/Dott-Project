@@ -108,5 +108,47 @@
     "taxReports": "Báo Cáo Thuế",
     "payrollReports": "Báo Cáo Lương",
     "customReports": "Báo Cáo Tùy Chỉnh"
+  },
+  "dashboard": {
+    "businessOverview": {
+      "title": "Tổng Quan Kinh Doanh",
+      "subtitle": "Cái nhìn toàn diện về hiệu suất kinh doanh của bạn"
+    }
+  },
+  "status": {
+    "title": "Trạng Thái Dott",
+    "subtitle": "Trạng thái hệ thống hiện tại và giám sát thời gian hoạt động",
+    "refresh": "Làm mới",
+    "refreshing": "Đang làm mới...",
+    "lastUpdated": "Cập nhật lần cuối",
+    "checking": "Đang kiểm tra trạng thái dịch vụ...",
+    "uptime": "thời gian hoạt động",
+    "duration": "90 ngày",
+    "responseTime": "Thời gian phản hồi",
+    "error": {
+      "title": "Lỗi Trang Trạng Thái",
+      "message": "Không thể tải trang trạng thái. Vui lòng thử làm mới.",
+      "refresh": "Làm Mới Trang"
+    },
+    "overall": {
+      "operational": "Tất Cả Hệ Thống Hoạt Động",
+      "degraded": "Một Số Hệ Thống Gặp Sự Cố",
+      "outage": "Phát Hiện Gián Đoạn Dịch Vụ",
+      "unknown": "Trạng Thái Hệ Thống Không Xác Định"
+    },
+    "serviceStatus": {
+      "title": "Trạng Thái Dịch Vụ",
+      "description": "Thời gian hoạt động trong 90 ngày qua. Giám sát tất cả các dịch vụ quan trọng."
+    },
+    "state": {
+      "operational": "Hoạt động",
+      "degraded": "Suy giảm",
+      "outage": "Gián đoạn",
+      "unknown": "Không xác định"
+    },
+    "timeline": {
+      "past": "90 ngày trước",
+      "today": "Hôm nay"
+    }
   }
 }
