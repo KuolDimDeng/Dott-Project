@@ -515,7 +515,7 @@ STRIPE_SECRET_KEY=sk_...
 STRIPE_EXPRESS_ACCOUNT_ID=acct_1RkYGFC77wwa4lUB
 WHATSAPP_ACCESS_TOKEN=<generate-from-meta-business-platform>
 WHATSAPP_PHONE_NUMBER_ID=676188225586230
-NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=<your-google-maps-api-key>
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSyCC7KgQRztJDsoaQa94zMO7F4Pa-4R73E0
 ```
 
 ### [36.0.0] - 2025-07-15 - CURRENT - WhatsApp Commerce Menu Settings
@@ -571,3 +571,43 @@ NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=<your-google-maps-api-key>
   - Add comprehensive logging throughout auth flow
 - **Prevention**: Always test cookie persistence in production with Cloudflare
 - **Documentation**: Added to `/frontend/pyfactor_next/docs/TROUBLESHOOTING.md`
+
+### [40.0.0] - 2025-07-21 - CURRENT - Google Maps Geofencing Implementation
+- **Purpose**: Enable location-based employee time tracking with interactive map interface
+- **Problem**: Geofencing creation wasn't working - map not displaying, save button non-functional
+- **Root Causes**:
+  - Environment variables not loading in client-side build
+  - React portal timing issues with map container
+  - Invalid Google Maps API key
+  - Missing error handling in save functionality
+- **Solution**:
+  - Created centralized maps config: `/src/config/maps.js`
+  - Simplified component removing portal pattern
+  - Added proper API key: `AIzaSyCC7KgQRztJDsoaQa94zMO7F4Pa-4R73E0`
+  - Enhanced save functionality with detailed error handling
+- **Features Added**:
+  - Click on map to place geofence circle
+  - Drag to reposition, resize by dragging edge
+  - Remove Circle button to clear selection
+  - Real-time coordinate and radius display
+  - Loading states and error messages
+  - Disabled save until required fields filled
+- **Implementation**:
+  - `/src/app/Settings/components/sections/GeofencingSettingsSimple.js` - Main component
+  - `/src/config/maps.js` - Google Maps configuration
+  - `/src/app/api/hr/geofences/route.js` - API proxy route
+  - Backend ViewSet at `/backend/pyfactor/hr/views.py`
+- **User Experience**:
+  - Settings → Geofencing (Admin/Owner only)
+  - Accept legal compliance on first use
+  - Click "Add Geofence" to create new
+  - Click map to place, adjust radius, configure rules
+  - Save creates geofence in backend
+- **Documentation**: `/docs/GOOGLE_MAPS_GEOFENCING_SETUP.md`
+- **Key Learning**: Direct DOM manipulation more reliable than React portals for Google Maps
+
+# important-instruction-reminders
+Do what has been asked; nothing more, nothing less.
+NEVER create files unless they're absolutely necessary for achieving your goal.
+ALWAYS prefer editing an existing file to creating a new one.
+NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.

@@ -182,13 +182,13 @@ function PublicStatusPageContent() {
               {getStatusIcon(overallStatus)}
               <div className="ml-3">
                 <h2 className="text-xl font-semibold text-gray-900">
-                  {overallStatus === 'operational' ? 'All Systems Operational' :
-                   overallStatus === 'degraded' ? 'Partial Service Disruption' :
-                   overallStatus === 'outage' ? 'Service Outage' :
-                   'Checking System Status'}
+                  {overallStatus === 'operational' ? t('status.allSystemsOperational', 'All Systems Operational') :
+                   overallStatus === 'degraded' ? t('status.partialDisruption', 'Partial Service Disruption') :
+                   overallStatus === 'outage' ? t('status.serviceOutage', 'Service Outage') :
+                   t('status.checkingStatus', 'Checking System Status')}
                 </h2>
                 <p className="text-gray-600 text-sm mt-1">
-                  Last checked: {formatTime(lastUpdated)}
+                  {t('status.lastChecked', 'Last checked: {{time}}', { time: formatTime(lastUpdated) })}
                 </p>
               </div>
             </div>
@@ -198,7 +198,7 @@ function PublicStatusPageContent() {
         {/* Simplified Services Status */}
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900">Service Status</h3>
+            <h3 className="text-lg font-semibold text-gray-900">{t('status.serviceStatus', 'Service Status')}</h3>
           </div>
 
           <div className="divide-y divide-gray-200">
@@ -208,22 +208,22 @@ function PublicStatusPageContent() {
                 <div className="flex items-center">
                   {getStatusIcon(serviceStatuses.platform.status)}
                   <div className="ml-4">
-                    <h4 className="text-lg font-medium text-gray-900">Dott Platform</h4>
-                    <p className="text-sm text-gray-600">Application and website</p>
+                    <h4 className="text-lg font-medium text-gray-900">{t('status.platform.title', 'Dott Platform')}</h4>
+                    <p className="text-sm text-gray-600">{t('status.platform.description', 'Application and website')}</p>
                   </div>
                 </div>
                 
                 <div className="flex items-center space-x-6">
                   <div className="text-right">
                     <div className="text-sm font-medium text-gray-900">{serviceStatuses.platform.uptime}</div>
-                    <div className="text-sm text-gray-500">Uptime</div>
+                    <div className="text-sm text-gray-500">{t('status.uptime', 'Uptime')}</div>
                   </div>
                   
                   <div className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(serviceStatuses.platform.status)}`}>
-                    {serviceStatuses.platform.status === 'operational' ? 'Operational' :
-                     serviceStatuses.platform.status === 'degraded' ? 'Degraded' :
-                     serviceStatuses.platform.status === 'outage' ? 'Outage' :
-                     'Checking'}
+                    {serviceStatuses.platform.status === 'operational' ? t('status.operational', 'Operational') :
+                     serviceStatuses.platform.status === 'degraded' ? t('status.degraded', 'Degraded') :
+                     serviceStatuses.platform.status === 'outage' ? t('status.outage', 'Outage') :
+                     t('status.checkingShort', 'Checking')}
                   </div>
                 </div>
               </div>
@@ -235,22 +235,22 @@ function PublicStatusPageContent() {
                 <div className="flex items-center">
                   {getStatusIcon(serviceStatuses.api.status)}
                   <div className="ml-4">
-                    <h4 className="text-lg font-medium text-gray-900">API Services</h4>
-                    <p className="text-sm text-gray-600">Backend services and data processing</p>
+                    <h4 className="text-lg font-medium text-gray-900">{t('status.api.title', 'API Services')}</h4>
+                    <p className="text-sm text-gray-600">{t('status.api.description', 'Backend services and data processing')}</p>
                   </div>
                 </div>
                 
                 <div className="flex items-center space-x-6">
                   <div className="text-right">
                     <div className="text-sm font-medium text-gray-900">{serviceStatuses.api.uptime}</div>
-                    <div className="text-sm text-gray-500">Uptime</div>
+                    <div className="text-sm text-gray-500">{t('status.uptime', 'Uptime')}</div>
                   </div>
                   
                   <div className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(serviceStatuses.api.status)}`}>
-                    {serviceStatuses.api.status === 'operational' ? 'Operational' :
-                     serviceStatuses.api.status === 'degraded' ? 'Degraded' :
-                     serviceStatuses.api.status === 'outage' ? 'Outage' :
-                     'Checking'}
+                    {serviceStatuses.api.status === 'operational' ? t('status.operational', 'Operational') :
+                     serviceStatuses.api.status === 'degraded' ? t('status.degraded', 'Degraded') :
+                     serviceStatuses.api.status === 'outage' ? t('status.outage', 'Outage') :
+                     t('status.checkingShort', 'Checking')}
                   </div>
                 </div>
               </div>
@@ -260,15 +260,15 @@ function PublicStatusPageContent() {
 
         {/* Support Info */}
         <div className="mt-8 bg-white p-6 rounded-lg shadow-lg">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Need Help?</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('status.needHelp', 'Need Help?')}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
               <p className="text-gray-600">
-                If you're experiencing issues, please check this page first for any known service disruptions.
+                {t('status.supportInfo', "If you're experiencing issues, please check this page first for any known service disruptions.")}
               </p>
             </div>
             <div>
-              <p className="font-medium text-gray-900">Support Contact:</p>
+              <p className="font-medium text-gray-900">{t('status.supportContact', 'Support Contact:')}</p>
               <a href="mailto:support@dottapps.com" className="text-blue-600 hover:text-blue-800">
                 support@dottapps.com
               </a>
@@ -281,15 +281,23 @@ function PublicStatusPageContent() {
       <div className="bg-white border-t border-gray-200 mt-12">
         <div className="max-w-6xl mx-auto px-6 py-8">
           <div className="text-center text-sm text-gray-600">
-            <p>&copy; {new Date().getFullYear()} Dott. All rights reserved.</p>
+            <p>&copy; {new Date().getFullYear()} Dott. {t('status.allRightsReserved', 'All rights reserved.')}</p>
             <div className="mt-2 space-x-4">
-              <a href="/privacy" className="hover:text-blue-600">Privacy Policy</a>
+              <a href="/privacy" className="hover:text-blue-600">{t('status.privacyPolicy', 'Privacy Policy')}</a>
               <span>·</span>
-              <a href="/terms" className="hover:text-blue-600">Terms of Service</a>
+              <a href="/terms" className="hover:text-blue-600">{t('status.termsOfService', 'Terms of Service')}</a>
             </div>
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PublicStatusPage() {
+  return (
+    <I18nextProvider i18n={i18nInstance}>
+      <PublicStatusPageContent />
+    </I18nextProvider>
   );
 }
