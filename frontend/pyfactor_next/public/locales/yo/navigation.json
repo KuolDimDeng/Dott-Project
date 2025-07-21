@@ -273,5 +273,81 @@
     "defaultUser": "Olumulo Dott",
     "emailMessage": "Pẹlẹ o,\n\n{{senderName}} ti pe ọ lati gbiyanju Dott, ohun elo gbogbo-ninu-ọkan lati mu awọn iṣẹ iṣowo rọrun.\n\nKini idi ti awọn oniwunti iṣowo ṣe nifẹ Dott?\n✓ Ṣiṣe awọn ikọṣilẹ adaṣe ati iṣakoso sisanwo\n✓ Ṣiṣeto ipade ati awọn iranti alabara\n✓ Titọpa ija-ọja ati iṣakoso awọn olupese\n✓ Ṣiṣẹ sisanwo oṣu ati awọn ijabọ ori-owo\n✓ Awọn oye iṣowo ati awọn itupalẹ\n\nBẹrẹ idanwo ọfẹ rẹ loni:\nhttps://dottapps.com\n\nKi o dara,\nEgbe Dott",
     "whatsappMessage": "Pẹlẹ o 👋\n\n{{senderName}} ti pe ọ lati gbiyanju Dott, ohun elo gbogbo-ninu-ọkan lati mu awọn iṣẹ iṣowo rọrun.\n\n✓ Ṣiṣe awọn ikọṣilẹ adaṣe\n✓ Ṣiṣeto ipade\n✓ Iṣakoso ija-ọja\n✓ Ṣiṣẹ sisanwo oṣu\n✓ Awọn itupalẹ iṣowo\n\nBẹrẹ idanwo ọfẹ: https://dottapps.com"
+  },
+  "smartInsights": {
+    "title": "Awọn Oye Ọgbọn",
+    "subtitle": "Oluranlọwọ ọgbọn iṣowo ti AI n ṣiṣẹ",
+    "loading": "N bẹrẹ Awọn Oye Ọgbọn...",
+    "popularQueries": "Awọn Ibeere Olokiki",
+    "credits": {
+      "available": "Awọn Kirẹditi Ti o Wa",
+      "usedThisMonth": "Ti lo oṣu yii: {{count}}",
+      "buyButton": "Ra Awọn Kirẹditi"
+    },
+    "chat": {
+      "startConversation": "Bẹrẹ ibaraẹnisọrọ",
+      "askAnything": "Beere mi ohunkohun nipa data iṣowo rẹ",
+      "placeholder": "Beere nipa iṣowo rẹ..."
+    },
+    "categories": {
+      "revenue": {
+        "title": "Owo-wiwọle ati Tita",
+        "query1": "Fi aṣa owo-wiwọle mi han pẹlu aworan",
+        "query2": "Awọn ọja wo ni o ta julọ? Pẹlu aworan",
+        "query3": "Ṣẹda aworan tita nipasẹ apakan alabara",
+        "query4": "Kini aṣa iye aṣẹ apapọ mi?"
+      },
+      "customers": {
+        "title": "Awọn Oye Alabara",
+        "query1": "Fi awọn alabara to ga julọ mi han ninu aworan",
+        "query2": "Kini oṣuwọn idaduro alabara mi? Fi han bi aworan ogorun",
+        "query3": "Ṣẹda ifihan ti awọn alabara tuntun vs awọn ti n pada",
+        "query4": "Awọn alabara wo ni o wa ninu ewu? Pẹlu aworan itupalẹ"
+      },
+      "inventory": {
+        "title": "Itupalẹ Iṣura",
+        "query1": "Awọn ọja wo ni o nilo atunṣe? Fi han ninu aworan",
+        "query2": "Ṣe afihan awọn oṣuwọn iyipo iṣura",
+        "query3": "Ṣẹda aworan ti awọn nkan ti n lọ laiyara vs yiyara",
+        "query4": "Fi pinpin iye iṣura lọwọlọwọ mi han"
+      },
+      "performance": {
+        "title": "Iṣẹ Iṣowo",
+        "query1": "Bawo ni iṣowo mi ṣe n ṣiṣẹ? Pẹlu awọn aworan",
+        "query2": "Ṣe afiwe oṣu yii pẹlu oṣu to kọja pẹlu awọn ifihan",
+        "query3": "Fi awọn ala ere mi han ninu aworan",
+        "query4": "Ṣẹda ifihan pinpin inawo"
+      }
+    },
+    "packages": {
+      "starter": {
+        "name": "Idii Ibẹrẹ"
+      },
+      "growth": {
+        "name": "Idii Idagba"
+      },
+      "pro": {
+        "name": "Alamọdaju"
+      },
+      "enterprise": {
+        "name": "Ile-iṣẹ"
+      }
+    },
+    "buyCredits": {
+      "title": "Ra Awọn Kirẹditi Oye Ọgbọn",
+      "description": "Yan idii kirẹditi lati tẹsiwaju lilo Awọn Oye Ọgbọn",
+      "bestValue": "Iye To Dara Julọ",
+      "creditsCount": "Awọn kirẹditi {{count}}",
+      "perCredit": "${{price}} fun kirẹditi kọọkan",
+      "loadingPackages": "N gbe awọn idii kirẹditi...",
+      "cancel": "Fagile",
+      "continueToPayment": "Tẹsiwaju si Isanwo"
+    },
+    "errors": {
+      "noCredits": "Ko si awọn kirẹditi to ku. Jọwọ ra awọn kirẹditi diẹ sii.",
+      "initFailed": "Ibẹrẹ kuna. Jọwọ sọ oju-iwe di otun.",
+      "processingError": "Ma binu, mo ba aṣiṣe pade nigba ti mo n ṣiṣẹ ibeere rẹ. Jọwọ gbiyanju lẹẹkansi.",
+      "loadingError": "Aṣiṣe ninu gbigbe Awọn Oye Ọgbọn"
+    }
   }
 }

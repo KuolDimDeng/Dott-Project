@@ -35,69 +35,69 @@ import {
 } from '@heroicons/react/24/outline';
 
 // Query categories for Smart Insight
-const INSIGHT_CATEGORIES = [
+const getInsightCategories = (t) => [
   {
     id: 'revenue',
-    title: 'Revenue & Sales',
+    title: t('smartInsights.categories.revenue.title', 'Revenue & Sales'),
     icon: ArrowTrendingUpIcon,
     color: 'blue',
     queries: [
-      "Show my revenue trend with a chart",
-      "Which products are bestsellers? Include a chart",
-      "Create a chart of sales by customer segment",
-      "What's my average order value trend?"
+      t('smartInsights.categories.revenue.query1', 'Show my revenue trend with a chart'),
+      t('smartInsights.categories.revenue.query2', 'Which products are bestsellers? Include a chart'),
+      t('smartInsights.categories.revenue.query3', 'Create a chart of sales by customer segment'),
+      t('smartInsights.categories.revenue.query4', "What's my average order value trend?")
     ]
   },
   {
     id: 'customers',
-    title: 'Customer Insights',
+    title: t('smartInsights.categories.customers.title', 'Customer Insights'),
     icon: UserGroupIcon,
     color: 'green',
     queries: [
-      "Show my top customers in a chart",
-      "What's my customer retention rate? Show as percentage chart",
-      "Create a visualization of new vs returning customers",
-      "Which customers are at risk? Include analysis chart"
+      t('smartInsights.categories.customers.query1', 'Show my top customers in a chart'),
+      t('smartInsights.categories.customers.query2', "What's my customer retention rate? Show as percentage chart"),
+      t('smartInsights.categories.customers.query3', 'Create a visualization of new vs returning customers'),
+      t('smartInsights.categories.customers.query4', 'Which customers are at risk? Include analysis chart')
     ]
   },
   {
     id: 'inventory',
-    title: 'Inventory Analysis',
+    title: t('smartInsights.categories.inventory.title', 'Inventory Analysis'),
     icon: ShoppingBagIcon,
     color: 'purple',
     queries: [
-      "What products need restocking? Show in a chart",
-      "Visualize inventory turnover rates",
-      "Create a chart of slow-moving vs fast-moving items",
-      "Show my current stock value breakdown"
+      t('smartInsights.categories.inventory.query1', 'What products need restocking? Show in a chart'),
+      t('smartInsights.categories.inventory.query2', 'Visualize inventory turnover rates'),
+      t('smartInsights.categories.inventory.query3', 'Create a chart of slow-moving vs fast-moving items'),
+      t('smartInsights.categories.inventory.query4', 'Show my current stock value breakdown')
     ]
   },
   {
     id: 'performance',
-    title: 'Business Performance',
+    title: t('smartInsights.categories.performance.title', 'Business Performance'),
     icon: ChartBarIcon,
     color: 'yellow',
     queries: [
-      "How is my business performing? Include charts",
-      "Compare this month to last month with visualizations",
-      "Show my profit margins in a chart",
-      "Create an expense breakdown visualization"
+      t('smartInsights.categories.performance.query1', 'How is my business performing? Include charts'),
+      t('smartInsights.categories.performance.query2', 'Compare this month to last month with visualizations'),
+      t('smartInsights.categories.performance.query3', 'Show my profit margins in a chart'),
+      t('smartInsights.categories.performance.query4', 'Create an expense breakdown visualization')
     ]
   }
 ];
 
 // Credit packages
-const CREDIT_PACKAGES = [
+const getCreditPackages = (t) => [
   {
     id: 'starter',
-    name: 'Starter Pack',
+    name: t('smartInsights.packages.starter.name', 'Starter Pack'),
     credits: 100,
     price: 0.99,
     popular: false
   },
   {
     id: 'growth',
-    name: 'Growth Pack',
+    name: t('smartInsights.packages.growth.name', 'Growth Pack'),
     credits: 500,
     price: 3.99,
     popular: true,
@@ -105,7 +105,7 @@ const CREDIT_PACKAGES = [
   },
   {
     id: 'pro',
-    name: 'Professional',
+    name: t('smartInsights.packages.pro.name', 'Professional'),
     credits: 1000,
     price: 6.99,
     popular: false,
@@ -113,7 +113,7 @@ const CREDIT_PACKAGES = [
   },
   {
     id: 'enterprise',
-    name: 'Enterprise',
+    name: t('smartInsights.packages.enterprise.name', 'Enterprise'),
     credits: 5000,
     price: 29.99,
     popular: false,
@@ -125,6 +125,7 @@ const CREDIT_PACKAGES = [
 
 export default function SmartInsight({ onNavigate }) {
   console.log('[SmartInsight] Component mounting');
+  const { t } = useTranslation('navigation');
   
   const router = useRouter();
   const chatEndRef = useRef(null);
@@ -142,6 +143,8 @@ export default function SmartInsight({ onNavigate }) {
   const [isInitialized, setIsInitialized] = useState(false);
   const [creditPackages, setCreditPackages] = useState([]);
   const [monthlyUsage, setMonthlyUsage] = useState(null);
+  const INSIGHT_CATEGORIES = getInsightCategories(t);
+  const CREDIT_PACKAGES = getCreditPackages(t);
 
   console.log('[SmartInsight] Initial state setup complete');
 
@@ -176,11 +179,11 @@ export default function SmartInsight({ onNavigate }) {
           }
         } else {
           console.error('[SmartInsight] No tenant ID returned');
-          toast.error('Failed to initialize. Please refresh the page.');
+          toast.error(t('smartInsights.errors.initFailed', 'Failed to initialize. Please refresh the page.'));
         }
       } catch (error) {
         console.error('[SmartInsight] Error during initialization:', error);
-        toast.error('Failed to initialize. Please try again.');
+        toast.error(t('smartInsights.errors.initFailed', 'Failed to initialize. Please try again.'));
       } finally {
         console.log('[SmartInsight] Setting isInitialized to true');
         setIsInitialized(true);
@@ -211,7 +214,7 @@ export default function SmartInsight({ onNavigate }) {
     if (!inputValue.trim() || isLoading) return;
 
     if (credits <= 0) {
-      toast.error('No credits remaining. Please purchase more credits.');
+      toast.error(t('smartInsights.errors.noCredits', 'No credits remaining. Please purchase more credits.'));
       setShowBuyCredits(true);
       return;
     }
@@ -286,7 +289,7 @@ export default function SmartInsight({ onNavigate }) {
       const errorMessage = {
         id: Date.now() + 1,
         type: 'ai',
-        content: 'I apologize, but I encountered an error processing your request. Please try again.',
+        content: t('smartInsights.errors.processingError', 'I apologize, but I encountered an error processing your request. Please try again.'),
         timestamp: new Date(),
         isError: true
       };
@@ -347,7 +350,7 @@ export default function SmartInsight({ onNavigate }) {
   
   if (!isInitialized || !tenantId) {
     console.log('[SmartInsight] Showing loading spinner');
-    return <CenteredSpinner size="large" text="Initializing Smart Insight..." showText={true} />;
+    return <CenteredSpinner size="large" text={t('smartInsights.loading', 'Initializing Smart Insight...')} showText={true} />;
   }
   
   console.log('[SmartInsight] Proceeding with main render');
@@ -375,19 +378,19 @@ export default function SmartInsight({ onNavigate }) {
           <div className="flex items-center">
             <LightBulbIcon className="h-8 w-8 text-blue-600 mr-3" />
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Smart Insight</h1>
-              <p className="text-gray-600">AI-powered business intelligence assistant</p>
+              <h1 className="text-2xl font-bold text-gray-900">{t('smartInsights.title', 'Smart Insight')}</h1>
+              <p className="text-gray-600">{t('smartInsights.subtitle', 'AI-powered business intelligence assistant')}</p>
             </div>
           </div>
           
           {/* Credits Display */}
           <div className="flex items-center space-x-4">
             <div className="text-right">
-              <p className="text-sm text-gray-500">Available Credits</p>
+              <p className="text-sm text-gray-500">{t('smartInsights.credits.available', 'Available Credits')}</p>
               <p className="text-2xl font-bold text-blue-600">{credits || 0}</p>
               {monthlyUsage && (
                 <p className="text-xs text-gray-500 mt-1">
-                  Used this month: {monthlyUsage.total_credits_used || 0}
+                  {t('smartInsights.credits.usedThisMonth', 'Used this month: {{count}}', { count: monthlyUsage.total_credits_used || 0 })}
                 </p>
               )}
             </div>
@@ -396,7 +399,7 @@ export default function SmartInsight({ onNavigate }) {
               className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               <PlusIcon className="h-5 w-5 mr-2" />
-              Buy Credits
+              {t('smartInsights.credits.buyButton', 'Buy Credits')}
             </button>
           </div>
         </div>
@@ -411,8 +414,8 @@ export default function SmartInsight({ onNavigate }) {
             {messages.length === 0 ? (
               <div className="text-center text-gray-500 mt-12">
                 <SparklesIcon className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                <p className="text-lg font-medium">Start a conversation</p>
-                <p className="text-sm mt-2">Ask me anything about your business data</p>
+                <p className="text-lg font-medium">{t('smartInsights.chat.startConversation', 'Start a conversation')}</p>
+                <p className="text-sm mt-2">{t('smartInsights.chat.askAnything', 'Ask me anything about your business data')}</p>
               </div>
             ) : (
               messages.map((message) => (
@@ -481,7 +484,7 @@ export default function SmartInsight({ onNavigate }) {
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                placeholder="Ask about your business..."
+                placeholder={t('smartInsights.chat.placeholder', 'Ask about your business...')}
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={isLoading}
               />
@@ -502,7 +505,7 @@ export default function SmartInsight({ onNavigate }) {
 
         {/* Query Templates */}
         <div className="space-y-3 lg:col-span-1">
-          <h3 className="text-lg font-semibold text-gray-900">Popular Queries</h3>
+          <h3 className="text-lg font-semibold text-gray-900">{t('smartInsights.popularQueries', 'Popular Queries')}</h3>
           
           {INSIGHT_CATEGORIES && INSIGHT_CATEGORIES.map((category) => {
             const IconComponent = category.icon;
@@ -570,7 +573,7 @@ export default function SmartInsight({ onNavigate }) {
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-4">
                     <Dialog.Title className="text-xl font-semibold text-gray-900">
-                      Buy Smart Insight Credits
+                      {t('smartInsights.buyCredits.title', 'Buy Smart Insight Credits')}
                     </Dialog.Title>
                     <button
                       onClick={() => setShowBuyCredits(false)}
@@ -581,7 +584,7 @@ export default function SmartInsight({ onNavigate }) {
                   </div>
 
                   <p className="text-gray-600 mb-6">
-                    Choose a credit package to continue using Smart Insight
+                    {t('smartInsights.buyCredits.description', 'Choose a credit package to continue using Smart Insight')}
                   </p>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -597,7 +600,7 @@ export default function SmartInsight({ onNavigate }) {
                       >
                         {pkg.credits >= 500 && pkg.credits < 1000 && (
                           <span className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
-                            Best Value
+                            {t('smartInsights.buyCredits.bestValue', 'Best Value')}
                           </span>
                         )}
                         
@@ -606,16 +609,16 @@ export default function SmartInsight({ onNavigate }) {
                           ${pkg.price}
                         </p>
                         <p className="text-gray-600 text-sm mt-1">
-                          {pkg.credits} credits
+                          {t('smartInsights.buyCredits.creditsCount', '{{count}} credits', { count: pkg.credits })}
                         </p>
                         <p className="text-gray-500 text-xs mt-1">
-                          ${(pkg.price / pkg.credits).toFixed(3)} per credit
+                          {t('smartInsights.buyCredits.perCredit', '${{price}} per credit', { price: (pkg.price / pkg.credits).toFixed(3) })}
                         </p>
                       </div>
                     )) : (
                       <div className="col-span-2 text-center text-gray-500 py-8">
                         <CreditCardIcon className="h-12 w-12 mx-auto mb-2 text-gray-400" />
-                        <p>Loading credit packages...</p>
+                        <p>{t('smartInsights.buyCredits.loadingPackages', 'Loading credit packages...')}</p>
                       </div>
                     )}
                   </div>
@@ -625,7 +628,7 @@ export default function SmartInsight({ onNavigate }) {
                       onClick={() => setShowBuyCredits(false)}
                       className="px-4 py-2 text-gray-700 hover:text-gray-900"
                     >
-                      Cancel
+                      {t('smartInsights.buyCredits.cancel', 'Cancel')}
                     </button>
                     <button
                       onClick={() => {
@@ -636,7 +639,7 @@ export default function SmartInsight({ onNavigate }) {
                       disabled={!selectedPackage}
                       className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Continue to Payment
+                      {t('smartInsights.buyCredits.continueToPayment', 'Continue to Payment')}
                     </button>
                   </div>
                 </div>
@@ -653,7 +656,7 @@ export default function SmartInsight({ onNavigate }) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="text-red-500">
-          <p>Error loading Smart Insight</p>
+          <p>{t('smartInsights.errors.loadingError', 'Error loading Smart Insight')}</p>
           <p className="text-sm">{error.message || 'Unknown error'}</p>
         </div>
       </div>

@@ -401,5 +401,81 @@
       "sessionValidationFailed": "Session validation failed. Please refresh the page and try again.",
       "unableToValidate": "Unable to validate session. Please refresh the page and try again."
     }
+  },
+  "smartInsights": {
+    "title": "Smart Insights",
+    "subtitle": "AI-powered business intelligence assistant",
+    "loading": "Initializing Smart Insights...",
+    "popularQueries": "Popular Queries",
+    "credits": {
+      "available": "Available Credits",
+      "usedThisMonth": "Used this month: {{count}}",
+      "buyButton": "Buy Credits"
+    },
+    "chat": {
+      "startConversation": "Start a conversation",
+      "askAnything": "Ask me anything about your business data",
+      "placeholder": "Ask about your business..."
+    },
+    "categories": {
+      "revenue": {
+        "title": "Revenue & Sales",
+        "query1": "Show my revenue trend with a chart",
+        "query2": "Which products are bestsellers? Include a chart",
+        "query3": "Create a chart of sales by customer segment",
+        "query4": "What's my average order value trend?"
+      },
+      "customers": {
+        "title": "Customer Insights",
+        "query1": "Show my top customers in a chart",
+        "query2": "What's my customer retention rate? Show as percentage chart",
+        "query3": "Create a visualization of new vs returning customers",
+        "query4": "Which customers are at risk? Include analysis chart"
+      },
+      "inventory": {
+        "title": "Inventory Analysis",
+        "query1": "What products need restocking? Show in a chart",
+        "query2": "Visualize inventory turnover rates",
+        "query3": "Create a chart of slow-moving vs fast-moving items",
+        "query4": "Show my current stock value breakdown"
+      },
+      "performance": {
+        "title": "Business Performance",
+        "query1": "How is my business performing? Include charts",
+        "query2": "Compare this month to last month with visualizations",
+        "query3": "Show my profit margins in a chart",
+        "query4": "Create an expense breakdown visualization"
+      }
+    },
+    "packages": {
+      "starter": {
+        "name": "Starter Pack"
+      },
+      "growth": {
+        "name": "Growth Pack"
+      },
+      "pro": {
+        "name": "Professional"
+      },
+      "enterprise": {
+        "name": "Enterprise"
+      }
+    },
+    "buyCredits": {
+      "title": "Buy Smart Insight Credits",
+      "description": "Choose a credit package to continue using Smart Insights",
+      "bestValue": "Best Value",
+      "creditsCount": "{{count}} credits",
+      "perCredit": "${{price}} per credit",
+      "loadingPackages": "Loading credit packages...",
+      "cancel": "Cancel",
+      "continueToPayment": "Continue to Payment"
+    },
+    "errors": {
+      "noCredits": "No credits remaining. Please purchase more credits.",
+      "initFailed": "Failed to initialize. Please refresh the page.",
+      "processingError": "I apologize, but I encountered an error processing your request. Please try again.",
+      "loadingError": "Error loading Smart Insights"
+    }
   }
 }

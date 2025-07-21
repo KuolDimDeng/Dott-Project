@@ -398,5 +398,81 @@
       "sessionValidationFailed": "Sitzungsvalidierung fehlgeschlagen. Bitte aktualisieren Sie die Seite und versuchen Sie es erneut.",
       "unableToValidate": "Sitzung kann nicht validiert werden. Bitte aktualisieren Sie die Seite und versuchen Sie es erneut."
     }
+  },
+  "smartInsights": {
+    "title": "Intelligente Einblicke",
+    "subtitle": "KI-gestützter Business Intelligence-Assistent",
+    "loading": "Intelligente Einblicke werden initialisiert...",
+    "popularQueries": "Beliebte Abfragen",
+    "credits": {
+      "available": "Verfügbare Credits",
+      "usedThisMonth": "Diesen Monat verwendet: {{count}}",
+      "buyButton": "Credits kaufen"
+    },
+    "chat": {
+      "startConversation": "Gespräch beginnen",
+      "askAnything": "Fragen Sie mich alles über Ihre Geschäftsdaten",
+      "placeholder": "Fragen Sie nach Ihrem Geschäft..."
+    },
+    "categories": {
+      "revenue": {
+        "title": "Umsatz & Verkäufe",
+        "query1": "Zeigen Sie meinen Umsatztrend mit einem Diagramm",
+        "query2": "Welche Produkte sind Bestseller? Mit Diagramm einschließen",
+        "query3": "Erstellen Sie ein Diagramm der Verkäufe nach Kundensegmenten",
+        "query4": "Wie ist mein durchschnittlicher Bestellwerttrend?"
+      },
+      "customers": {
+        "title": "Kundeneinblicke",
+        "query1": "Zeigen Sie meine Top-Kunden in einem Diagramm",
+        "query2": "Wie hoch ist meine Kundenbindungsrate? Als Prozentdiagramm anzeigen",
+        "query3": "Erstellen Sie eine Visualisierung von neuen vs wiederkehrenden Kunden",
+        "query4": "Welche Kunden sind gefährdet? Mit Analysediagramm einschließen"
+      },
+      "inventory": {
+        "title": "Bestandsanalyse",
+        "query1": "Welche Produkte müssen aufgefüllt werden? In einem Diagramm anzeigen",
+        "query2": "Visualisieren Sie Lagerumschlagsraten",
+        "query3": "Erstellen Sie ein Diagramm von langsam vs schnell bewegten Artikeln",
+        "query4": "Zeigen Sie meine aktuelle Bestandswertaufschlüsselung"
+      },
+      "performance": {
+        "title": "Geschäftsleistung",
+        "query1": "Wie läuft mein Geschäft? Mit Diagrammen einschließen",
+        "query2": "Vergleichen Sie diesen Monat mit dem letzten Monat mit Visualisierungen",
+        "query3": "Zeigen Sie meine Gewinnmargen in einem Diagramm",
+        "query4": "Erstellen Sie eine Visualisierung der Ausgabenaufschlüsselung"
+      }
+    },
+    "packages": {
+      "starter": {
+        "name": "Starterpaket"
+      },
+      "growth": {
+        "name": "Wachstumspaket"
+      },
+      "pro": {
+        "name": "Professionell"
+      },
+      "enterprise": {
+        "name": "Unternehmen"
+      }
+    },
+    "buyCredits": {
+      "title": "Intelligente Einblicke Credits kaufen",
+      "description": "Wählen Sie ein Credit-Paket, um Intelligente Einblicke weiter zu nutzen",
+      "bestValue": "Bester Wert",
+      "creditsCount": "{{count}} Credits",
+      "perCredit": "${{price}} pro Credit",
+      "loadingPackages": "Credit-Pakete werden geladen...",
+      "cancel": "Abbrechen",
+      "continueToPayment": "Weiter zur Zahlung"
+    },
+    "errors": {
+      "noCredits": "Keine Credits mehr vorhanden. Bitte kaufen Sie weitere Credits.",
+      "initFailed": "Initialisierung fehlgeschlagen. Bitte aktualisieren Sie die Seite.",
+      "processingError": "Entschuldigung, bei der Verarbeitung Ihrer Anfrage ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.",
+      "loadingError": "Fehler beim Laden der Intelligenten Einblicke"
+    }
   }
 }

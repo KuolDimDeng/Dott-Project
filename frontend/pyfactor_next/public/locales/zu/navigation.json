@@ -273,5 +273,81 @@
     "defaultUser": "Umsebenzisi we-Dott",
     "emailMessage": "Sawubona,\n\nU-{{senderName}} ukumemile ukuba uzame i-Dott, ithuluzi elibanzi lokwenza kube lula ukusebenza kwebhizinisi.\n\nKungani abanikazi bamabhizinisi bethanda i-Dott?\n✓ Ukwenza ama-invoyisi ngokuzenzakalelayo nokuphatha izinkokhelo\n✓ Ukuhlela ama-aphoyintimenti nezikhumbuzi zamakhasimende\n✓ Ukulandelela isitoko nokuphatha abahlinzeki\n✓ Ukuphatha amaholo nemibiko yentela\n✓ Ukuqonda ibhizinisi nokuhlaziya\n\nQala isivivinyo sakho samahhala namuhla:\nhttps://dottapps.com\n\nOkuhle kakhulu,\nIthimba le-Dott",
     "whatsappMessage": "Sawubona 👋\n\nU-{{senderName}} ukumemile ukuba uzame i-Dott, ithuluzi elibanzi lokwenza kube lula ukusebenza kwebhizinisi.\n\n✓ Ukwenza ama-invoyisi ngokuzenzakalelayo\n✓ Ukuhlela ama-aphoyintimenti\n✓ Ukuphatha isitoko\n✓ Ukuphatha amaholo\n✓ Ukuhlaziya ibhizinisi\n\nQala isivivinyo samahhala: https://dottapps.com"
+  },
+  "smartInsights": {
+    "title": "Ukuqonda Okuhlakaniphile",
+    "subtitle": "Umsizi wobuhlakani bebhizinisi oqhutshwa yi-AI",
+    "loading": "Iqalisa Ukuqonda Okuhlakaniphile...",
+    "popularQueries": "Imibuzo Edumile",
+    "credits": {
+      "available": "Amakhredithi Atholakalayo",
+      "usedThisMonth": "Asetshenzisiwe kule nyanga: {{count}}",
+      "buyButton": "Thenga Amakhredithi"
+    },
+    "chat": {
+      "startConversation": "Qala ingxoxo",
+      "askAnything": "Ngibuze noma yini ngedatha yebhizinisi lakho",
+      "placeholder": "Buza ngebhizinisi lakho..."
+    },
+    "categories": {
+      "revenue": {
+        "title": "Imali Engenayo Nokuthengisa",
+        "query1": "Khombisa ukuthambekela kwemali yami engenayo ngeshadi",
+        "query2": "Yimiphi imikhiqizo ethengiswa kakhulu? Faka ishadi",
+        "query3": "Dala ishadi lokuthengisa ngokwengxenye yamakhasimende",
+        "query4": "Lithini ithrendi lenani lami eli-oda eliphakathi?"
+      },
+      "customers": {
+        "title": "Ukuqonda Kwamakhasimende",
+        "query1": "Khombisa amakhasimende ami aphezulu eshadini",
+        "query2": "Lithini izinga lami lokugcina amakhasimende? Khombisa njengeshadi lephesenti",
+        "query3": "Dala umbono wamakhasimende amasha vs abuyayo",
+        "query4": "Yimaphi amakhasimende asengozini? Faka ishadi lokuhlaziya"
+      },
+      "inventory": {
+        "title": "Ukuhlaziya Impahla",
+        "query1": "Yimiphi imikhiqizo edinga ukugcwaliswa? Khombisa eshadini",
+        "query2": "Bonisa amazinga okuphenduka kwempahla",
+        "query3": "Dala ishadi lezinto ezihamba kancane vs ngokushesha",
+        "query4": "Khombisa ukuhlukaniswa kwenani lempahla yami yamanje"
+      },
+      "performance": {
+        "title": "Ukusebenza Kwebhizinisi",
+        "query1": "Ibhizinisi lami lisebenza kanjani? Faka amashadi",
+        "query2": "Qhathanisa le nyanga nenyanga edlule ngemibono",
+        "query3": "Khombisa amamajini ami enzuzo eshadini",
+        "query4": "Dala umbono wokuhlukaniswa kwezindleko"
+      }
+    },
+    "packages": {
+      "starter": {
+        "name": "Iphakethe Lokuqala"
+      },
+      "growth": {
+        "name": "Iphakethe Lokukhula"
+      },
+      "pro": {
+        "name": "Uchwepheshe"
+      },
+      "enterprise": {
+        "name": "Ibhizinisi"
+      }
+    },
+    "buyCredits": {
+      "title": "Thenga Amakhredithi Okuqonda Okuhlakaniphile",
+      "description": "Khetha iphakethe lamakhredithi ukuze uqhubeke usebenzisa Ukuqonda Okuhlakaniphile",
+      "bestValue": "Inani Elihle Kakhulu",
+      "creditsCount": "Amakhredithi angu-{{count}}",
+      "perCredit": "${{price}} ngekhredithi",
+      "loadingPackages": "Ilayisha amaphakethe amakhredithi...",
+      "cancel": "Khansela",
+      "continueToPayment": "Qhubeka Nokukhokha"
+    },
+    "errors": {
+      "noCredits": "Awekho amakhredithi asele. Sicela uthenge amakhredithi amaningi.",
+      "initFailed": "Ukuqalisa kuhlulekile. Sicela uvuselele ikhasi.",
+      "processingError": "Ngiyaxolisa, ngihlangabezane nephutha lapho ngicubungula isicelo sakho. Sicela uzame futhi.",
+      "loadingError": "Iphutha ekulayisheni Ukuqonda Okuhlakaniphile"
+    }
   }
 }

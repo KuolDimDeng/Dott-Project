@@ -398,5 +398,81 @@
       "sessionValidationFailed": "会话验证失败。请刷新页面并重试。",
       "unableToValidate": "无法验证会话。请刷新页面并重试。"
     }
+  },
+  "smartInsights": {
+    "title": "智能洞察",
+    "subtitle": "AI驱动的商业智能助手",
+    "loading": "正在初始化智能洞察...",
+    "popularQueries": "热门查询",
+    "credits": {
+      "available": "可用积分",
+      "usedThisMonth": "本月已使用：{{count}}",
+      "buyButton": "购买积分"
+    },
+    "chat": {
+      "startConversation": "开始对话",
+      "askAnything": "询问有关您业务数据的任何问题",
+      "placeholder": "询问您的业务..."
+    },
+    "categories": {
+      "revenue": {
+        "title": "收入与销售",
+        "query1": "显示我的收入趋势图表",
+        "query2": "哪些产品是畅销品？包括图表",
+        "query3": "创建按客户细分的销售图表",
+        "query4": "我的平均订单价值趋势是什么？"
+      },
+      "customers": {
+        "title": "客户洞察",
+        "query1": "在图表中显示我的顶级客户",
+        "query2": "我的客户保留率是多少？显示为百分比图表",
+        "query3": "创建新客户与回头客的可视化",
+        "query4": "哪些客户有风险？包括分析图表"
+      },
+      "inventory": {
+        "title": "库存分析",
+        "query1": "哪些产品需要补货？在图表中显示",
+        "query2": "可视化库存周转率",
+        "query3": "创建慢速与快速移动商品的图表",
+        "query4": "显示我当前的库存价值细分"
+      },
+      "performance": {
+        "title": "业务绩效",
+        "query1": "我的业务表现如何？包括图表",
+        "query2": "用可视化比较本月与上月",
+        "query3": "在图表中显示我的利润率",
+        "query4": "创建费用明细可视化"
+      }
+    },
+    "packages": {
+      "starter": {
+        "name": "入门包"
+      },
+      "growth": {
+        "name": "成长包"
+      },
+      "pro": {
+        "name": "专业版"
+      },
+      "enterprise": {
+        "name": "企业版"
+      }
+    },
+    "buyCredits": {
+      "title": "购买智能洞察积分",
+      "description": "选择积分套餐以继续使用智能洞察",
+      "bestValue": "超值",
+      "creditsCount": "{{count}} 积分",
+      "perCredit": "每积分 ${{price}}",
+      "loadingPackages": "正在加载积分套餐...",
+      "cancel": "取消",
+      "continueToPayment": "继续付款"
+    },
+    "errors": {
+      "noCredits": "没有剩余积分。请购买更多积分。",
+      "initFailed": "初始化失败。请刷新页面。",
+      "processingError": "抱歉，处理您的请求时遇到错误。请重试。",
+      "loadingError": "加载智能洞察时出错"
+    }
   }
 }

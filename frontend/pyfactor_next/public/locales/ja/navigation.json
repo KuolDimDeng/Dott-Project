@@ -398,5 +398,81 @@
       "sessionValidationFailed": "セッションの検証に失敗しました。ページを更新して再試行してください。",
       "unableToValidate": "セッションを検証できません。ページを更新して再試行してください。"
     }
+  },
+  "smartInsights": {
+    "title": "スマートインサイト",
+    "subtitle": "AI搭載のビジネスインテリジェンスアシスタント",
+    "loading": "スマートインサイトを初期化しています...",
+    "popularQueries": "人気のクエリ",
+    "credits": {
+      "available": "利用可能なクレジット",
+      "usedThisMonth": "今月の使用数：{{count}}",
+      "buyButton": "クレジットを購入"
+    },
+    "chat": {
+      "startConversation": "会話を開始",
+      "askAnything": "ビジネスデータについて何でも聞いてください",
+      "placeholder": "ビジネスについて質問..."
+    },
+    "categories": {
+      "revenue": {
+        "title": "収益と売上",
+        "query1": "収益トレンドをチャートで表示",
+        "query2": "どの製品がベストセラーですか？チャートを含める",
+        "query3": "顧客セグメント別の売上チャートを作成",
+        "query4": "平均注文額のトレンドは？"
+      },
+      "customers": {
+        "title": "顧客インサイト",
+        "query1": "トップ顧客をチャートで表示",
+        "query2": "顧客維持率は？パーセンテージチャートで表示",
+        "query3": "新規顧客とリピート顧客の視覚化を作成",
+        "query4": "どの顧客がリスクにありますか？分析チャートを含める"
+      },
+      "inventory": {
+        "title": "在庫分析",
+        "query1": "どの製品が補充必要？チャートで表示",
+        "query2": "在庫回転率を視覚化",
+        "query3": "動きの遅い商品と速い商品のチャートを作成",
+        "query4": "現在の在庫価値の内訳を表示"
+      },
+      "performance": {
+        "title": "ビジネスパフォーマンス",
+        "query1": "ビジネスの調子は？チャートを含める",
+        "query2": "今月と先月を視覚化で比較",
+        "query3": "利益率をチャートで表示",
+        "query4": "経費内訳の視覚化を作成"
+      }
+    },
+    "packages": {
+      "starter": {
+        "name": "スターターパック"
+      },
+      "growth": {
+        "name": "グロースパック"
+      },
+      "pro": {
+        "name": "プロフェッショナル"
+      },
+      "enterprise": {
+        "name": "エンタープライズ"
+      }
+    },
+    "buyCredits": {
+      "title": "スマートインサイトクレジットを購入",
+      "description": "スマートインサイトの使用を続けるためにクレジットパッケージを選択",
+      "bestValue": "最高値",
+      "creditsCount": "{{count}}クレジット",
+      "perCredit": "クレジットあたり${{price}}",
+      "loadingPackages": "クレジットパッケージを読み込み中...",
+      "cancel": "キャンセル",
+      "continueToPayment": "支払いへ進む"
+    },
+    "errors": {
+      "noCredits": "クレジットが残っていません。追加のクレジットを購入してください。",
+      "initFailed": "初期化に失敗しました。ページを更新してください。",
+      "processingError": "申し訳ございません。リクエストの処理中にエラーが発生しました。もう一度お試しください。",
+      "loadingError": "スマートインサイトの読み込みエラー"
+    }
   }
 }

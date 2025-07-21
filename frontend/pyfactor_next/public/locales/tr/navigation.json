@@ -398,5 +398,81 @@
       "sessionValidationFailed": "Oturum doğrulaması başarısız oldu. Lütfen sayfayı yenileyin ve tekrar deneyin.",
       "unableToValidate": "Oturum doğrulanamıyor. Lütfen sayfayı yenileyin ve tekrar deneyin."
     }
+  },
+  "smartInsights": {
+    "title": "Akıllı İçgörüler",
+    "subtitle": "Yapay zeka destekli iş zekası asistanı",
+    "loading": "Akıllı İçgörüler başlatılıyor...",
+    "popularQueries": "Popüler Sorgular",
+    "credits": {
+      "available": "Kullanılabilir Krediler",
+      "usedThisMonth": "Bu ay kullanılan: {{count}}",
+      "buyButton": "Kredi Satın Al"
+    },
+    "chat": {
+      "startConversation": "Sohbet başlat",
+      "askAnything": "İş verileriniz hakkında bana herhangi bir şey sorun",
+      "placeholder": "İşiniz hakkında sorun..."
+    },
+    "categories": {
+      "revenue": {
+        "title": "Gelir ve Satışlar",
+        "query1": "Gelir trendimi grafikle göster",
+        "query2": "Hangi ürünler en çok satanlar? Grafik ekle",
+        "query3": "Müşteri segmentine göre satış grafiği oluştur",
+        "query4": "Ortalama sipariş değeri trendim nedir?"
+      },
+      "customers": {
+        "title": "Müşteri İçgörüleri",
+        "query1": "En iyi müşterilerimi grafikte göster",
+        "query2": "Müşteri tutma oranım nedir? Yüzde grafiği olarak göster",
+        "query3": "Yeni ve geri dönen müşterilerin görselleştirmesini oluştur",
+        "query4": "Hangi müşteriler risk altında? Analiz grafiği ekle"
+      },
+      "inventory": {
+        "title": "Envanter Analizi",
+        "query1": "Hangi ürünlerin yeniden stoklanması gerekiyor? Grafikte göster",
+        "query2": "Envanter devir hızlarını görselleştir",
+        "query3": "Yavaş ve hızlı hareket eden ürünlerin grafiğini oluştur",
+        "query4": "Mevcut stok değeri dağılımımı göster"
+      },
+      "performance": {
+        "title": "İş Performansı",
+        "query1": "İşim nasıl performans gösteriyor? Grafikler ekle",
+        "query2": "Bu ayı geçen ayla görselleştirmelerle karşılaştır",
+        "query3": "Kar marjlarımı grafikte göster",
+        "query4": "Gider dağılımı görselleştirmesi oluştur"
+      }
+    },
+    "packages": {
+      "starter": {
+        "name": "Başlangıç Paketi"
+      },
+      "growth": {
+        "name": "Büyüme Paketi"
+      },
+      "pro": {
+        "name": "Profesyonel"
+      },
+      "enterprise": {
+        "name": "Kurumsal"
+      }
+    },
+    "buyCredits": {
+      "title": "Akıllı İçgörü Kredisi Satın Al",
+      "description": "Akıllı İçgörüleri kullanmaya devam etmek için bir kredi paketi seçin",
+      "bestValue": "En İyi Değer",
+      "creditsCount": "{{count}} kredi",
+      "perCredit": "Kredi başına ${{price}}",
+      "loadingPackages": "Kredi paketleri yükleniyor...",
+      "cancel": "İptal",
+      "continueToPayment": "Ödemeye Devam Et"
+    },
+    "errors": {
+      "noCredits": "Kalan kredi yok. Lütfen daha fazla kredi satın alın.",
+      "initFailed": "Başlatma başarısız. Lütfen sayfayı yenileyin.",
+      "processingError": "Özür dilerim, isteğinizi işlerken bir hatayla karşılaştım. Lütfen tekrar deneyin.",
+      "loadingError": "Akıllı İçgörüler yüklenirken hata"
+    }
   }
 }

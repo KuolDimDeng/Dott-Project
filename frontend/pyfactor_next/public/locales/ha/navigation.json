@@ -398,5 +398,81 @@
       "sessionValidationFailed": "Tabbatar da zama ya gaza. Da fatan sabunta shafin kuma sake gwadawa.",
       "unableToValidate": "Ba za a iya tabbatar da zama ba. Da fatan sabunta shafin kuma sake gwadawa."
     }
+  },
+  "smartInsights": {
+    "title": "Basirar Wayo",
+    "subtitle": "Mataimakin hankali na kasuwanci mai ikon AI",
+    "loading": "Ana fara Basirar Wayo...",
+    "popularQueries": "Tambayoyi Shahararru",
+    "credits": {
+      "available": "Ƙididdigar da ake da su",
+      "usedThisMonth": "An yi amfani wannan watan: {{count}}",
+      "buyButton": "Sayi Ƙididdiga"
+    },
+    "chat": {
+      "startConversation": "Fara tattaunawa",
+      "askAnything": "Tambaye ni komai game da bayanan kasuwancin ku",
+      "placeholder": "Tambaya game da kasuwancin ku..."
+    },
+    "categories": {
+      "revenue": {
+        "title": "Kuɗin Shiga da Tallace-tallace",
+        "query1": "Nuna yanayin kuɗin shiga na tare da jadawali",
+        "query2": "Wane samfurori ne suka fi sayarwa? Haɗa jadawali",
+        "query3": "Ƙirƙiri jadawalin tallace-tallace ta ɓangaren abokan ciniki",
+        "query4": "Menene matsakaicin ƙimar oda ta?"
+      },
+      "customers": {
+        "title": "Basirar Abokan Ciniki",
+        "query1": "Nuna manyan abokan cinikina a cikin jadawali",
+        "query2": "Menene adadin riƙe abokan ciniki na? Nuna a matsayin jadawalin kashi",
+        "query3": "Ƙirƙiri hoto na sabbin abokan ciniki da masu dawowa",
+        "query4": "Wane abokan ciniki ne ke cikin haɗari? Haɗa jadawalin bincike"
+      },
+      "inventory": {
+        "title": "Binciken Kayayyaki",
+        "query1": "Wane samfurori ne ke buƙatar sake cikawa? Nuna a cikin jadawali",
+        "query2": "Nuna yanayin jujjuyawar kayayyaki",
+        "query3": "Ƙirƙiri jadawalin kayayyaki masu tafiya a hankali da sauri",
+        "query4": "Nuna rarrabuwar ƙimar kaya na yanzu"
+      },
+      "performance": {
+        "title": "Aikin Kasuwanci",
+        "query1": "Yaya kasuwanci na yake aiki? Haɗa jadawali",
+        "query2": "Kwatanta wannan watan da watan da ya wuce tare da hotuna",
+        "query3": "Nuna ribar riba ta a cikin jadawali",
+        "query4": "Ƙirƙiri hoton rarrabuwar kashe kuɗi"
+      }
+    },
+    "packages": {
+      "starter": {
+        "name": "Kunshin Farawa"
+      },
+      "growth": {
+        "name": "Kunshin Haɓaka"
+      },
+      "pro": {
+        "name": "Ƙwararru"
+      },
+      "enterprise": {
+        "name": "Kasuwanci"
+      }
+    },
+    "buyCredits": {
+      "title": "Sayi Ƙididdigar Basirar Wayo",
+      "description": "Zaɓi kunshin ƙididdiga don ci gaba da amfani da Basirar Wayo",
+      "bestValue": "Mafi Kyawun Ƙima",
+      "creditsCount": "Ƙididdiga {{count}}",
+      "perCredit": "${{price}} kowace ƙididdiga",
+      "loadingPackages": "Ana loda kunshiyoyin ƙididdiga...",
+      "cancel": "Soke",
+      "continueToPayment": "Ci gaba zuwa Biyan Kuɗi"
+    },
+    "errors": {
+      "noCredits": "Babu sauran ƙididdiga. Da fatan za a sayi ƙarin ƙididdiga.",
+      "initFailed": "An gaza farawa. Da fatan za a sabunta shafin.",
+      "processingError": "Yi haƙuri, na ci karo da kuskure wajen aiwatar da buƙatarku. Da fatan za a sake gwadawa.",
+      "loadingError": "Kuskure wajen loda Basirar Wayo"
+    }
   }
 }

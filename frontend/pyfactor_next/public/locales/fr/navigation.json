@@ -398,5 +398,81 @@
       "sessionValidationFailed": "Échec de la validation de session. Veuillez actualiser la page et réessayer.",
       "unableToValidate": "Impossible de valider la session. Veuillez actualiser la page et réessayer."
     }
+  },
+  "smartInsights": {
+    "title": "Analyses Intelligentes",
+    "subtitle": "Assistant d'intelligence d'affaires alimenté par l'IA",
+    "loading": "Initialisation des Analyses Intelligentes...",
+    "popularQueries": "Requêtes Populaires",
+    "credits": {
+      "available": "Crédits Disponibles",
+      "usedThisMonth": "Utilisés ce mois-ci : {{count}}",
+      "buyButton": "Acheter des Crédits"
+    },
+    "chat": {
+      "startConversation": "Démarrer une conversation",
+      "askAnything": "Demandez-moi n'importe quoi sur vos données d'entreprise",
+      "placeholder": "Posez des questions sur votre entreprise..."
+    },
+    "categories": {
+      "revenue": {
+        "title": "Revenus et Ventes",
+        "query1": "Montrez ma tendance de revenus avec un graphique",
+        "query2": "Quels produits sont les plus vendus ? Inclure un graphique",
+        "query3": "Créer un graphique des ventes par segment de clients",
+        "query4": "Quelle est ma tendance de valeur moyenne de commande ?"
+      },
+      "customers": {
+        "title": "Analyses Clients",
+        "query1": "Montrez mes meilleurs clients dans un graphique",
+        "query2": "Quel est mon taux de rétention client ? Afficher en graphique de pourcentage",
+        "query3": "Créer une visualisation des clients nouveaux vs récurrents",
+        "query4": "Quels clients sont à risque ? Inclure un graphique d'analyse"
+      },
+      "inventory": {
+        "title": "Analyse d'Inventaire",
+        "query1": "Quels produits ont besoin d'être réapprovisionnés ? Afficher dans un graphique",
+        "query2": "Visualiser les taux de rotation des stocks",
+        "query3": "Créer un graphique des articles à rotation lente vs rapide",
+        "query4": "Montrer ma répartition actuelle de la valeur du stock"
+      },
+      "performance": {
+        "title": "Performance de l'Entreprise",
+        "query1": "Comment mon entreprise se porte-t-elle ? Inclure des graphiques",
+        "query2": "Comparer ce mois au mois dernier avec des visualisations",
+        "query3": "Montrez mes marges bénéficiaires dans un graphique",
+        "query4": "Créer une visualisation de la répartition des dépenses"
+      }
+    },
+    "packages": {
+      "starter": {
+        "name": "Pack Débutant"
+      },
+      "growth": {
+        "name": "Pack Croissance"
+      },
+      "pro": {
+        "name": "Professionnel"
+      },
+      "enterprise": {
+        "name": "Entreprise"
+      }
+    },
+    "buyCredits": {
+      "title": "Acheter des Crédits d'Analyses Intelligentes",
+      "description": "Choisissez un forfait de crédits pour continuer à utiliser les Analyses Intelligentes",
+      "bestValue": "Meilleure Valeur",
+      "creditsCount": "{{count}} crédits",
+      "perCredit": "{{price}}$ par crédit",
+      "loadingPackages": "Chargement des forfaits de crédits...",
+      "cancel": "Annuler",
+      "continueToPayment": "Continuer vers le Paiement"
+    },
+    "errors": {
+      "noCredits": "Aucun crédit restant. Veuillez acheter plus de crédits.",
+      "initFailed": "Échec de l'initialisation. Veuillez actualiser la page.",
+      "processingError": "Je m'excuse, mais j'ai rencontré une erreur lors du traitement de votre demande. Veuillez réessayer.",
+      "loadingError": "Erreur lors du chargement des Analyses Intelligentes"
+    }
   }
 }

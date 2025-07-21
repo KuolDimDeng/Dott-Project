@@ -398,5 +398,81 @@
       "sessionValidationFailed": "Xác thực phiên thất bại. Vui lòng làm mới trang và thử lại.",
       "unableToValidate": "Không thể xác thực phiên. Vui lòng làm mới trang và thử lại."
     }
+  },
+  "smartInsights": {
+    "title": "Thông Tin Thông Minh",
+    "subtitle": "Trợ lý thông tin kinh doanh được hỗ trợ bởi AI",
+    "loading": "Đang khởi tạo Thông Tin Thông Minh...",
+    "popularQueries": "Câu Hỏi Phổ Biến",
+    "credits": {
+      "available": "Tín Dụng Khả Dụng",
+      "usedThisMonth": "Đã sử dụng tháng này: {{count}}",
+      "buyButton": "Mua Tín Dụng"
+    },
+    "chat": {
+      "startConversation": "Bắt đầu cuộc trò chuyện",
+      "askAnything": "Hỏi tôi bất cứ điều gì về dữ liệu kinh doanh của bạn",
+      "placeholder": "Hỏi về doanh nghiệp của bạn..."
+    },
+    "categories": {
+      "revenue": {
+        "title": "Doanh Thu & Bán Hàng",
+        "query1": "Hiển thị xu hướng doanh thu của tôi với biểu đồ",
+        "query2": "Sản phẩm nào bán chạy nhất? Bao gồm biểu đồ",
+        "query3": "Tạo biểu đồ bán hàng theo phân khúc khách hàng",
+        "query4": "Xu hướng giá trị đơn hàng trung bình của tôi là gì?"
+      },
+      "customers": {
+        "title": "Thông Tin Khách Hàng",
+        "query1": "Hiển thị khách hàng hàng đầu của tôi trong biểu đồ",
+        "query2": "Tỷ lệ giữ chân khách hàng của tôi là bao nhiêu? Hiển thị dưới dạng biểu đồ phần trăm",
+        "query3": "Tạo hình ảnh trực quan về khách hàng mới so với khách hàng quay lại",
+        "query4": "Khách hàng nào có rủi ro? Bao gồm biểu đồ phân tích"
+      },
+      "inventory": {
+        "title": "Phân Tích Hàng Tồn Kho",
+        "query1": "Sản phẩm nào cần bổ sung? Hiển thị trong biểu đồ",
+        "query2": "Trực quan hóa tỷ lệ luân chuyển hàng tồn kho",
+        "query3": "Tạo biểu đồ các mặt hàng chậm luân chuyển so với nhanh",
+        "query4": "Hiển thị phân tích giá trị tồn kho hiện tại"
+      },
+      "performance": {
+        "title": "Hiệu Suất Kinh Doanh",
+        "query1": "Doanh nghiệp của tôi đang hoạt động như thế nào? Bao gồm biểu đồ",
+        "query2": "So sánh tháng này với tháng trước bằng hình ảnh trực quan",
+        "query3": "Hiển thị biên lợi nhuận của tôi trong biểu đồ",
+        "query4": "Tạo hình ảnh trực quan phân tích chi phí"
+      }
+    },
+    "packages": {
+      "starter": {
+        "name": "Gói Khởi Đầu"
+      },
+      "growth": {
+        "name": "Gói Tăng Trưởng"
+      },
+      "pro": {
+        "name": "Chuyên Nghiệp"
+      },
+      "enterprise": {
+        "name": "Doanh Nghiệp"
+      }
+    },
+    "buyCredits": {
+      "title": "Mua Tín Dụng Thông Tin Thông Minh",
+      "description": "Chọn gói tín dụng để tiếp tục sử dụng Thông Tin Thông Minh",
+      "bestValue": "Giá Trị Tốt Nhất",
+      "creditsCount": "{{count}} tín dụng",
+      "perCredit": "${{price}} mỗi tín dụng",
+      "loadingPackages": "Đang tải gói tín dụng...",
+      "cancel": "Hủy",
+      "continueToPayment": "Tiếp Tục Thanh Toán"
+    },
+    "errors": {
+      "noCredits": "Không còn tín dụng. Vui lòng mua thêm tín dụng.",
+      "initFailed": "Không thể khởi tạo. Vui lòng làm mới trang.",
+      "processingError": "Xin lỗi, tôi gặp lỗi khi xử lý yêu cầu của bạn. Vui lòng thử lại.",
+      "loadingError": "Lỗi khi tải Thông Tin Thông Minh"
+    }
   }
 }

@@ -398,5 +398,81 @@
       "sessionValidationFailed": "Sessievalidatie mislukt. Vernieuw de pagina en probeer het opnieuw.",
       "unableToValidate": "Kan sessie niet valideren. Vernieuw de pagina en probeer het opnieuw."
     }
+  },
+  "smartInsights": {
+    "title": "Slimme Inzichten",
+    "subtitle": "AI-aangedreven business intelligence-assistent",
+    "loading": "Slimme Inzichten initialiseren...",
+    "popularQueries": "Populaire Zoekopdrachten",
+    "credits": {
+      "available": "Beschikbare Credits",
+      "usedThisMonth": "Deze maand gebruikt: {{count}}",
+      "buyButton": "Credits Kopen"
+    },
+    "chat": {
+      "startConversation": "Start een gesprek",
+      "askAnything": "Vraag me alles over uw bedrijfsgegevens",
+      "placeholder": "Vraag over uw bedrijf..."
+    },
+    "categories": {
+      "revenue": {
+        "title": "Omzet & Verkoop",
+        "query1": "Toon mijn omzettrend met een grafiek",
+        "query2": "Welke producten zijn bestsellers? Voeg een grafiek toe",
+        "query3": "Maak een grafiek van verkoop per klantsegment",
+        "query4": "Wat is mijn gemiddelde bestelwaarde trend?"
+      },
+      "customers": {
+        "title": "Klantinzichten",
+        "query1": "Toon mijn topklanten in een grafiek",
+        "query2": "Wat is mijn klantretentiepercentage? Toon als percentagegrafiek",
+        "query3": "Maak een visualisatie van nieuwe versus terugkerende klanten",
+        "query4": "Welke klanten lopen risico? Voeg analysegrafiek toe"
+      },
+      "inventory": {
+        "title": "Voorraadanalyse",
+        "query1": "Welke producten moeten worden aangevuld? Toon in een grafiek",
+        "query2": "Visualiseer voorraadomloopcijfers",
+        "query3": "Maak een grafiek van langzaam versus snel bewegende artikelen",
+        "query4": "Toon mijn huidige voorraadwaarde-uitsplitsing"
+      },
+      "performance": {
+        "title": "Bedrijfsprestaties",
+        "query1": "Hoe presteert mijn bedrijf? Voeg grafieken toe",
+        "query2": "Vergelijk deze maand met vorige maand met visualisaties",
+        "query3": "Toon mijn winstmarges in een grafiek",
+        "query4": "Maak een visualisatie van uitgavenuitsplitsing"
+      }
+    },
+    "packages": {
+      "starter": {
+        "name": "Starterspakket"
+      },
+      "growth": {
+        "name": "Groeipakket"
+      },
+      "pro": {
+        "name": "Professioneel"
+      },
+      "enterprise": {
+        "name": "Onderneming"
+      }
+    },
+    "buyCredits": {
+      "title": "Koop Slimme Inzichten Credits",
+      "description": "Kies een creditpakket om Slimme Inzichten te blijven gebruiken",
+      "bestValue": "Beste Waarde",
+      "creditsCount": "{{count}} credits",
+      "perCredit": "${{price}} per credit",
+      "loadingPackages": "Creditpakketten laden...",
+      "cancel": "Annuleren",
+      "continueToPayment": "Doorgaan naar Betaling"
+    },
+    "errors": {
+      "noCredits": "Geen credits meer. Koop alstublieft meer credits.",
+      "initFailed": "Initialisatie mislukt. Vernieuw de pagina.",
+      "processingError": "Sorry, ik ondervond een fout bij het verwerken van uw verzoek. Probeer het opnieuw.",
+      "loadingError": "Fout bij het laden van Slimme Inzichten"
+    }
   }
 }

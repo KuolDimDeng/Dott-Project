@@ -398,5 +398,81 @@
       "sessionValidationFailed": "Uthibitishaji wa kipindi umeshindwa. Tafadhali onyesha upya ukurasa na ujaribu tena.",
       "unableToValidate": "Haiwezi kuthibitisha kipindi. Tafadhali onyesha upya ukurasa na ujaribu tena."
     }
+  },
+  "smartInsights": {
+    "title": "Maarifa Makini",
+    "subtitle": "Msaidizi wa akili ya biashara unaoendeshwa na AI",
+    "loading": "Inaanzisha Maarifa Makini...",
+    "popularQueries": "Maswali Maarufu",
+    "credits": {
+      "available": "Mikopo Inayopatikana",
+      "usedThisMonth": "Iliyotumika mwezi huu: {{count}}",
+      "buyButton": "Nunua Mikopo"
+    },
+    "chat": {
+      "startConversation": "Anza mazungumzo",
+      "askAnything": "Niulize chochote kuhusu data ya biashara yako",
+      "placeholder": "Uliza kuhusu biashara yako..."
+    },
+    "categories": {
+      "revenue": {
+        "title": "Mapato na Mauzo",
+        "query1": "Onyesha mwelekeo wa mapato yangu kwa chati",
+        "query2": "Ni bidhaa zipi zinazouzwa zaidi? Jumuisha chati",
+        "query3": "Unda chati ya mauzo kwa kundi la wateja",
+        "query4": "Mwelekeo wa wastani wa thamani ya agizo langu ni upi?"
+      },
+      "customers": {
+        "title": "Maarifa ya Wateja",
+        "query1": "Onyesha wateja wangu wakuu katika chati",
+        "query2": "Kiwango changu cha kuhifadhi wateja ni kipi? Onyesha kama chati ya asilimia",
+        "query3": "Unda taswira ya wateja wapya dhidi ya wanaorudia",
+        "query4": "Ni wateja gani walio hatarini? Jumuisha chati ya uchambuzi"
+      },
+      "inventory": {
+        "title": "Uchambuzi wa Hesabu",
+        "query1": "Ni bidhaa zipi zinahitaji kujazwa tena? Onyesha katika chati",
+        "query2": "Onyesha viwango vya mzunguko wa hesabu",
+        "query3": "Unda chati ya vitu vinavyosonga polepole dhidi ya haraka",
+        "query4": "Onyesha mgawanyiko wa thamani ya hisa yangu ya sasa"
+      },
+      "performance": {
+        "title": "Utendaji wa Biashara",
+        "query1": "Biashara yangu inafanyaje? Jumuisha chati",
+        "query2": "Linganisha mwezi huu na mwezi uliopita kwa taswira",
+        "query3": "Onyesha pato langu katika chati",
+        "query4": "Unda taswira ya mgawanyiko wa gharama"
+      }
+    },
+    "packages": {
+      "starter": {
+        "name": "Kifurushi cha Kuanza"
+      },
+      "growth": {
+        "name": "Kifurushi cha Ukuaji"
+      },
+      "pro": {
+        "name": "Kitaalamu"
+      },
+      "enterprise": {
+        "name": "Biashara"
+      }
+    },
+    "buyCredits": {
+      "title": "Nunua Mikopo ya Maarifa Makini",
+      "description": "Chagua kifurushi cha mikopo ili kuendelea kutumia Maarifa Makini",
+      "bestValue": "Thamani Bora",
+      "creditsCount": "Mikopo {{count}}",
+      "perCredit": "${{price}} kwa mkopo",
+      "loadingPackages": "Inapakia vifurushi vya mikopo...",
+      "cancel": "Ghairi",
+      "continueToPayment": "Endelea kwa Malipo"
+    },
+    "errors": {
+      "noCredits": "Hakuna mikopo iliyobaki. Tafadhali nunua mikopo zaidi.",
+      "initFailed": "Imeshindwa kuanzisha. Tafadhali onyesha upya ukurasa.",
+      "processingError": "Samahani, nimekutana na hitilafu wakati wa kushughulikia ombi lako. Tafadhali jaribu tena.",
+      "loadingError": "Hitilafu katika kupakia Maarifa Makini"
+    }
   }
 }

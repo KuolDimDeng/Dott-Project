@@ -398,5 +398,81 @@
       "sessionValidationFailed": "Falha na validação da sessão. Por favor, atualize a página e tente novamente.",
       "unableToValidate": "Não foi possível validar a sessão. Por favor, atualize a página e tente novamente."
     }
+  },
+  "smartInsights": {
+    "title": "Insights Inteligentes",
+    "subtitle": "Assistente de inteligência empresarial alimentado por IA",
+    "loading": "Inicializando Insights Inteligentes...",
+    "popularQueries": "Consultas Populares",
+    "credits": {
+      "available": "Créditos Disponíveis",
+      "usedThisMonth": "Usados este mês: {{count}}",
+      "buyButton": "Comprar Créditos"
+    },
+    "chat": {
+      "startConversation": "Iniciar uma conversa",
+      "askAnything": "Pergunte-me qualquer coisa sobre os dados do seu negócio",
+      "placeholder": "Pergunte sobre o seu negócio..."
+    },
+    "categories": {
+      "revenue": {
+        "title": "Receitas e Vendas",
+        "query1": "Mostre minha tendência de receita com um gráfico",
+        "query2": "Quais produtos são mais vendidos? Inclua um gráfico",
+        "query3": "Crie um gráfico de vendas por segmento de clientes",
+        "query4": "Qual é minha tendência de valor médio de pedido?"
+      },
+      "customers": {
+        "title": "Insights de Clientes",
+        "query1": "Mostre meus melhores clientes em um gráfico",
+        "query2": "Qual é minha taxa de retenção de clientes? Mostre como gráfico de porcentagem",
+        "query3": "Crie uma visualização de clientes novos vs recorrentes",
+        "query4": "Quais clientes estão em risco? Inclua gráfico de análise"
+      },
+      "inventory": {
+        "title": "Análise de Inventário",
+        "query1": "Quais produtos precisam de reabastecimento? Mostre em um gráfico",
+        "query2": "Visualize as taxas de rotatividade de estoque",
+        "query3": "Crie um gráfico de itens de movimento lento vs rápido",
+        "query4": "Mostre minha divisão atual do valor do estoque"
+      },
+      "performance": {
+        "title": "Desempenho do Negócio",
+        "query1": "Como está o desempenho do meu negócio? Inclua gráficos",
+        "query2": "Compare este mês com o mês passado com visualizações",
+        "query3": "Mostre minhas margens de lucro em um gráfico",
+        "query4": "Crie uma visualização da divisão de despesas"
+      }
+    },
+    "packages": {
+      "starter": {
+        "name": "Pacote Inicial"
+      },
+      "growth": {
+        "name": "Pacote de Crescimento"
+      },
+      "pro": {
+        "name": "Profissional"
+      },
+      "enterprise": {
+        "name": "Empresarial"
+      }
+    },
+    "buyCredits": {
+      "title": "Comprar Créditos de Insights Inteligentes",
+      "description": "Escolha um pacote de créditos para continuar usando Insights Inteligentes",
+      "bestValue": "Melhor Valor",
+      "creditsCount": "{{count}} créditos",
+      "perCredit": "${{price}} por crédito",
+      "loadingPackages": "Carregando pacotes de créditos...",
+      "cancel": "Cancelar",
+      "continueToPayment": "Continuar para Pagamento"
+    },
+    "errors": {
+      "noCredits": "Sem créditos restantes. Por favor, compre mais créditos.",
+      "initFailed": "Falha ao inicializar. Por favor, atualize a página.",
+      "processingError": "Desculpe, encontrei um erro ao processar sua solicitação. Por favor, tente novamente.",
+      "loadingError": "Erro ao carregar Insights Inteligentes"
+    }
   }
 }

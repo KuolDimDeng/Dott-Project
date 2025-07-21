@@ -398,5 +398,81 @@
       "sessionValidationFailed": "Validasi sesi gagal. Silakan muat ulang halaman dan coba lagi.",
       "unableToValidate": "Tidak dapat memvalidasi sesi. Silakan muat ulang halaman dan coba lagi."
     }
+  },
+  "smartInsights": {
+    "title": "Wawasan Cerdas",
+    "subtitle": "Asisten intelijen bisnis bertenaga AI",
+    "loading": "Menginisialisasi Wawasan Cerdas...",
+    "popularQueries": "Pertanyaan Populer",
+    "credits": {
+      "available": "Kredit Tersedia",
+      "usedThisMonth": "Digunakan bulan ini: {{count}}",
+      "buyButton": "Beli Kredit"
+    },
+    "chat": {
+      "startConversation": "Mulai percakapan",
+      "askAnything": "Tanyakan apa saja tentang data bisnis Anda",
+      "placeholder": "Tanyakan tentang bisnis Anda..."
+    },
+    "categories": {
+      "revenue": {
+        "title": "Pendapatan & Penjualan",
+        "query1": "Tampilkan tren pendapatan saya dengan grafik",
+        "query2": "Produk mana yang terlaris? Sertakan grafik",
+        "query3": "Buat grafik penjualan berdasarkan segmen pelanggan",
+        "query4": "Bagaimana tren nilai pesanan rata-rata saya?"
+      },
+      "customers": {
+        "title": "Wawasan Pelanggan",
+        "query1": "Tampilkan pelanggan teratas saya dalam grafik",
+        "query2": "Berapa tingkat retensi pelanggan saya? Tampilkan sebagai grafik persentase",
+        "query3": "Buat visualisasi pelanggan baru vs pelanggan yang kembali",
+        "query4": "Pelanggan mana yang berisiko? Sertakan grafik analisis"
+      },
+      "inventory": {
+        "title": "Analisis Inventaris",
+        "query1": "Produk mana yang perlu diisi ulang? Tampilkan dalam grafik",
+        "query2": "Visualisasikan tingkat perputaran inventaris",
+        "query3": "Buat grafik barang bergerak lambat vs cepat",
+        "query4": "Tampilkan rincian nilai stok saat ini"
+      },
+      "performance": {
+        "title": "Kinerja Bisnis",
+        "query1": "Bagaimana kinerja bisnis saya? Sertakan grafik",
+        "query2": "Bandingkan bulan ini dengan bulan lalu dengan visualisasi",
+        "query3": "Tampilkan margin keuntungan saya dalam grafik",
+        "query4": "Buat visualisasi rincian pengeluaran"
+      }
+    },
+    "packages": {
+      "starter": {
+        "name": "Paket Pemula"
+      },
+      "growth": {
+        "name": "Paket Pertumbuhan"
+      },
+      "pro": {
+        "name": "Profesional"
+      },
+      "enterprise": {
+        "name": "Perusahaan"
+      }
+    },
+    "buyCredits": {
+      "title": "Beli Kredit Wawasan Cerdas",
+      "description": "Pilih paket kredit untuk melanjutkan menggunakan Wawasan Cerdas",
+      "bestValue": "Nilai Terbaik",
+      "creditsCount": "{{count}} kredit",
+      "perCredit": "${{price}} per kredit",
+      "loadingPackages": "Memuat paket kredit...",
+      "cancel": "Batal",
+      "continueToPayment": "Lanjut ke Pembayaran"
+    },
+    "errors": {
+      "noCredits": "Tidak ada kredit tersisa. Silakan beli lebih banyak kredit.",
+      "initFailed": "Gagal menginisialisasi. Silakan muat ulang halaman.",
+      "processingError": "Maaf, saya mengalami kesalahan saat memproses permintaan Anda. Silakan coba lagi.",
+      "loadingError": "Kesalahan memuat Wawasan Cerdas"
+    }
   }
 }
