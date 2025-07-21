@@ -452,7 +452,7 @@ const GoogleMapsGeofenceSetup_OLD = ({ onGeofenceCreated, onCancel, isVisible })
       return;
     }
 
-    if (!geofenceData.name.trim()) {
+    if (!geofenceData || !geofenceData.name || !geofenceData.name.trim()) {
       toast.error('Please enter a name for the geofence');
       return;
     }
@@ -770,6 +770,8 @@ const LegalComplianceInfo = ({ onAccept }) => {
 
 // Main Geofencing Settings Component
 const GeofencingSettings = ({ user, isOwner, isAdmin, notifySuccess, notifyError }) => {
+  // Add comprehensive error handling
+  try {
   const [loading, setLoading] = useState(true);
   const [geofences, setGeofences] = useState([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -964,14 +966,16 @@ const GeofencingSettings = ({ user, isOwner, isAdmin, notifySuccess, notifyError
           </div>
         ) : (
           <div className="divide-y divide-gray-200">
-            {geofences.map((geofence) => (
-              <div key={geofence.id} className="p-4 hover:bg-gray-50">
+            {geofences
+              .filter(geofence => geofence && geofence.id) // Filter out invalid geofences
+              .map((geofence) => (
+                <div key={geofence.id} className="p-4 hover:bg-gray-50">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex items-center">
                       <MapPinIcon className="h-5 w-5 text-gray-400 mr-2" />
                       <div>
-                        <h4 className="text-sm font-medium text-gray-900">{geofence.name}</h4>
+                        <h4 className="text-sm font-medium text-gray-900">{geofence?.name || 'Unnamed Geofence'}</h4>
                         <p className="text-sm text-gray-500">
                           {geofence.location_type?.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} • {geofence.radius}m radius
                         </p>
@@ -1050,6 +1054,28 @@ const GeofencingSettings = ({ user, isOwner, isAdmin, notifySuccess, notifyError
       />
     </div>
   );
+  } catch (error) {
+    console.error('[GeofencingSettings] Critical error in component render:', error);
+    logger.error('GeofencingSettings component error', error);
+    
+    return (
+      <div className="p-8 text-center">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <ExclamationTriangleIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-red-900 mb-2">Component Error</h3>
+          <p className="text-sm text-red-700 mb-4">
+            There was an error loading the geofencing settings. Please refresh the page and try again.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
+          >
+            Refresh Page
+          </button>
+        </div>
+      </div>
+    );
+  }
 };
 
 export default GeofencingSettings;
