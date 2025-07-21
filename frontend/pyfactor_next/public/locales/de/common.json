@@ -920,5 +920,32 @@
         "description": "Für Taxi-, Boda-Boda- und Tuk-Tuk-Betreiber. Verfolgen Sie tägliche Einnahmen, Kraftstoffkosten und Wartungspläne."
       }
     }
+  },
+  "cookieBanner": {
+    "title": "Cookie-Hinweis",
+    "message": "Wir verwenden Cookies, um Ihre Erfahrung zu verbessern, die Nutzung zu analysieren und wichtige Funktionen bereitzustellen. Durch die weitere Nutzung unserer Website stimmen Sie unserer Verwendung von Cookies zu.",
+    "learnMore": "Mehr erfahren",
+    "customize": "Anpassen",
+    "rejectAll": "Alle Ablehnen",
+    "acceptAll": "Alle Akzeptieren",
+    "preferencesTitle": "Cookie-Einstellungen",
+    "savePreferences": "Einstellungen Speichern",
+    "alwaysOn": "Immer Aktiv",
+    "essential": {
+      "title": "Notwendige Cookies",
+      "description": "Erforderlich für grundlegende Website-Funktionen und Sicherheit"
+    },
+    "functional": {
+      "title": "Funktionale Cookies",
+      "description": "Speichern Ihre Präferenzen und Einstellungen"
+    },
+    "analytics": {
+      "title": "Analyse-Cookies",
+      "description": "Helfen uns zu verstehen, wie Sie unsere Website nutzen"
+    },
+    "marketing": {
+      "title": "Marketing-Cookies",
+      "description": "Werden verwendet, um Ihnen relevante Werbung zu zeigen"
+    }
   }
 }

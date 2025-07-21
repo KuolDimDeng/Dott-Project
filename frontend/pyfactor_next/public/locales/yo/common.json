@@ -658,5 +658,32 @@
     "allRightsReserved": "Gbogbo eto ni a pamọ.",
     "privacyPolicy": "Eto Ikoko",
     "termsOfService": "Awon ofin Ise"
+  },
+  "cookieBanner": {
+    "title": "Akiyesi Cookie",
+    "message": "A n lo awọn cookies lati mu iriri rẹ dara si, ṣe itupalẹ lilo, ati pese iṣẹ pataki. Nipa titẹsiwaju lilo aaye wa, o gba pẹlu lilo awọn cookies.",
+    "learnMore": "Kọ ẹkọ diẹ sii",
+    "customize": "Ṣe akanṣe",
+    "rejectAll": "Kọ Gbogbo",
+    "acceptAll": "Gba Gbogbo",
+    "preferencesTitle": "Awọn Aṣayan Cookie",
+    "savePreferences": "Fi Awọn Aṣayan Pamọ",
+    "alwaysOn": "Nigbagbogbo Titan",
+    "essential": {
+      "title": "Awọn Cookies Pataki",
+      "description": "Wọn nilo fun iṣẹ ipilẹ aaye ati aabo"
+    },
+    "functional": {
+      "title": "Awọn Cookies Iṣẹ",
+      "description": "Ranti awọn aṣayan ati awọn eto rẹ"
+    },
+    "analytics": {
+      "title": "Awọn Cookies Itupalẹ",
+      "description": "Ṣe iranlọwọ fun wa lati ni oye bi o ṣe n lo aaye wa"
+    },
+    "marketing": {
+      "title": "Awọn Cookies Tita",
+      "description": "Lo lati fi awọn ipolowo to yẹ han ọ"
+    }
   }
 }

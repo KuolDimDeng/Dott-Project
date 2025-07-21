@@ -966,5 +966,32 @@
         "description": "Kwa madereva wa teksi, boda boda na bajaji. Fuatilia mapato ya kila siku, gharama za mafuta na ratiba za matengenezo."
       }
     }
+  },
+  "cookieBanner": {
+    "title": "Ilani ya Vidakuzi",
+    "message": "Tunatumia vidakuzi kuboresha matumizi yako, kuchambua matumizi, na kutoa utendaji muhimu. Kwa kuendelea kutumia tovuti yetu, unakubali matumizi yetu ya vidakuzi.",
+    "learnMore": "Jifunze zaidi",
+    "customize": "Geuza kukufaa",
+    "rejectAll": "Kataa Vyote",
+    "acceptAll": "Kubali Vyote",
+    "preferencesTitle": "Mapendeleo ya Vidakuzi",
+    "savePreferences": "Hifadhi Mapendeleo",
+    "alwaysOn": "Imewashwa Kila Wakati",
+    "essential": {
+      "title": "Vidakuzi Muhimu",
+      "description": "Vinahitajika kwa utendaji wa msingi wa tovuti na usalama"
+    },
+    "functional": {
+      "title": "Vidakuzi vya Utendaji",
+      "description": "Kukumbusha mapendeleo na mipangilio yako"
+    },
+    "analytics": {
+      "title": "Vidakuzi vya Uchanganuzi",
+      "description": "Kutusaidia kuelewa jinsi unavyotumia tovuti yetu"
+    },
+    "marketing": {
+      "title": "Vidakuzi vya Uuzaji",
+      "description": "Kutumika kukuonyesha matangazo yanayokufaa"
+    }
   }
 }

@@ -849,5 +849,32 @@
       "label": "Tính năng chính:"
     },
     "learnMore": "Tìm hiểu thêm"
+  },
+  "cookieBanner": {
+    "title": "Thông báo Cookie",
+    "message": "Chúng tôi sử dụng cookie để nâng cao trải nghiệm của bạn, phân tích việc sử dụng và cung cấp chức năng thiết yếu. Bằng cách tiếp tục sử dụng trang web của chúng tôi, bạn đồng ý với việc sử dụng cookie của chúng tôi.",
+    "learnMore": "Tìm hiểu thêm",
+    "customize": "Tùy chỉnh",
+    "rejectAll": "Từ chối tất cả",
+    "acceptAll": "Chấp nhận tất cả",
+    "preferencesTitle": "Tùy chọn Cookie",
+    "savePreferences": "Lưu tùy chọn",
+    "alwaysOn": "Luôn bật",
+    "essential": {
+      "title": "Cookie thiết yếu",
+      "description": "Cần thiết cho chức năng cơ bản và bảo mật của trang web"
+    },
+    "functional": {
+      "title": "Cookie chức năng",
+      "description": "Ghi nhớ các tùy chọn và cài đặt của bạn"
+    },
+    "analytics": {
+      "title": "Cookie phân tích",
+      "description": "Giúp chúng tôi hiểu cách bạn sử dụng trang web"
+    },
+    "marketing": {
+      "title": "Cookie tiếp thị",
+      "description": "Được sử dụng để hiển thị quảng cáo phù hợp với bạn"
+    }
   }
 }

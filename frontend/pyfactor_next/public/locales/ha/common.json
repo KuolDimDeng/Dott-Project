@@ -814,5 +814,32 @@
     "allRightsReserved": "Duk haƙƙoƙin an kiyaye su.",
     "privacyPolicy": "Manufar Sirri",
     "termsOfService": "Sharuɗɗan Sabis"
+  },
+  "cookieBanner": {
+    "title": "Sanarwar Cookie",
+    "message": "Muna amfani da cookies don inganta kwarewarku, nazarin amfani, da samar da ayyuka masu mahimmanci. Ta ci gaba da amfani da rukunin yanar gizon mu, kuna yarda da amfani da cookies.",
+    "learnMore": "Koyi ƙari",
+    "customize": "Keɓance",
+    "rejectAll": "Ƙi Duka",
+    "acceptAll": "Karɓi Duka",
+    "preferencesTitle": "Zaɓuɓɓukan Cookie",
+    "savePreferences": "Ajiye Zaɓuɓɓuka",
+    "alwaysOn": "Koyaushe Yana Kunna",
+    "essential": {
+      "title": "Cookies Masu Mahimmanci",
+      "description": "Ana buƙata don ayyukan shafin yanar gizo na asali da tsaro"
+    },
+    "functional": {
+      "title": "Cookies na Aiki",
+      "description": "Tuna da zaɓuɓɓuka da saitunan ku"
+    },
+    "analytics": {
+      "title": "Cookies na Nazari",
+      "description": "Taimaka mana mu fahimci yadda kuke amfani da rukunin yanar gizon mu"
+    },
+    "marketing": {
+      "title": "Cookies na Tallace-tallace",
+      "description": "Ana amfani don nuna muku tallace-tallacen da suka dace"
+    }
   }
 }

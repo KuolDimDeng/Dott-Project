@@ -849,5 +849,32 @@
       "label": "Belangrijkste functies:"
     },
     "learnMore": "Meer informatie"
+  },
+  "cookieBanner": {
+    "title": "Cookie Melding",
+    "message": "Wij gebruiken cookies om uw ervaring te verbeteren, gebruik te analyseren en essentiële functionaliteit te bieden. Door onze site te blijven gebruiken, stemt u in met ons gebruik van cookies.",
+    "learnMore": "Meer informatie",
+    "customize": "Aanpassen",
+    "rejectAll": "Alles Weigeren",
+    "acceptAll": "Alles Accepteren",
+    "preferencesTitle": "Cookie Voorkeuren",
+    "savePreferences": "Voorkeuren Opslaan",
+    "alwaysOn": "Altijd Aan",
+    "essential": {
+      "title": "Essentiële Cookies",
+      "description": "Vereist voor basisfunctionaliteit en beveiliging van de site"
+    },
+    "functional": {
+      "title": "Functionele Cookies",
+      "description": "Onthouden uw voorkeuren en instellingen"
+    },
+    "analytics": {
+      "title": "Analytische Cookies",
+      "description": "Helpen ons te begrijpen hoe u onze site gebruikt"
+    },
+    "marketing": {
+      "title": "Marketing Cookies",
+      "description": "Gebruikt om u relevante advertenties te tonen"
+    }
   }
 }

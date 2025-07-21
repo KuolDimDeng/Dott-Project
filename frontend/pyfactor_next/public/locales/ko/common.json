@@ -551,5 +551,32 @@
       "label": "주요 기능:"
     },
     "learnMore": "자세히 알아보기"
+  },
+  "cookieBanner": {
+    "title": "쿠키 알림",
+    "message": "저희는 귀하의 경험을 향상시키고, 사용을 분석하며, 필수 기능을 제공하기 위해 쿠키를 사용합니다. 저희 사이트를 계속 사용하시면 쿠키 사용에 동의하시는 것입니다.",
+    "learnMore": "자세히 알아보기",
+    "customize": "맞춤 설정",
+    "rejectAll": "모두 거부",
+    "acceptAll": "모두 수락",
+    "preferencesTitle": "쿠키 환경설정",
+    "savePreferences": "환경설정 저장",
+    "alwaysOn": "항상 켜짐",
+    "essential": {
+      "title": "필수 쿠키",
+      "description": "기본 사이트 기능 및 보안에 필요합니다"
+    },
+    "functional": {
+      "title": "기능 쿠키",
+      "description": "귀하의 환경설정과 설정을 기억합니다"
+    },
+    "analytics": {
+      "title": "분석 쿠키",
+      "description": "저희 사이트를 어떻게 사용하시는지 이해하는데 도움이 됩니다"
+    },
+    "marketing": {
+      "title": "마케팅 쿠키",
+      "description": "귀하와 관련된 광고를 표시하는 데 사용됩니다"
+    }
   }
 }

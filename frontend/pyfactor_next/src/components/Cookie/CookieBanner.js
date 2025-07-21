@@ -2,11 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import NextLink from 'next/link';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Cookie consent banner using localStorage for storage
  */
 const CookieBanner = () => {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [showPreferences, setShowPreferences] = useState(false);
   const [preferences, setPreferences] = useState({
@@ -136,13 +138,12 @@ const CookieBanner = () => {
                 <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                 </svg>
-                <h3 className="font-semibold text-gray-900">Cookie Notice</h3>
+                <h3 className="font-semibold text-gray-900">{t('cookieBanner.title', 'Cookie Notice')}</h3>
               </div>
               <p className="text-sm text-gray-600">
-                We use cookies to enhance your experience, analyze usage, and provide essential functionality. 
-                By continuing to use our site, you consent to our use of cookies.{' '}
+                {t('cookieBanner.message', 'We use cookies to enhance your experience, analyze usage, and provide essential functionality. By continuing to use our site, you consent to our use of cookies.')}{' '}
                 <NextLink href="/cookie-policy" className="text-blue-600 hover:underline">
-                  Learn more
+                  {t('cookieBanner.learnMore', 'Learn more')}
                 </NextLink>
               </p>
             </div>
@@ -152,19 +153,19 @@ const CookieBanner = () => {
                 onClick={() => setShowPreferences(true)}
                 className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
               >
-                Customize
+                {t('cookieBanner.customize', 'Customize')}
               </button>
               <button
                 onClick={handleRejectAll}
                 className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
               >
-                Reject All
+                {t('cookieBanner.rejectAll', 'Reject All')}
               </button>
               <button
                 onClick={handleAcceptAll}
                 className="px-6 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
               >
-                Accept All
+                {t('cookieBanner.acceptAll', 'Accept All')}
               </button>
             </div>
           </div>
@@ -172,7 +173,7 @@ const CookieBanner = () => {
           // Preferences panel
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-900">Cookie Preferences</h3>
+              <h3 className="font-semibold text-gray-900">{t('cookieBanner.preferencesTitle', 'Cookie Preferences')}</h3>
               <button
                 onClick={() => setShowPreferences(false)}
                 className="text-gray-400 hover:text-gray-600"
@@ -187,8 +188,8 @@ const CookieBanner = () => {
               {/* Essential Cookies */}
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-medium text-gray-900">Essential Cookies</h4>
-                  <p className="text-sm text-gray-600">Required for basic site functionality and security</p>
+                  <h4 className="font-medium text-gray-900">{t('cookieBanner.essential.title', 'Essential Cookies')}</h4>
+                  <p className="text-sm text-gray-600">{t('cookieBanner.essential.description', 'Required for basic site functionality and security')}</p>
                 </div>
                 <div className="flex items-center">
                   <input
@@ -197,15 +198,15 @@ const CookieBanner = () => {
                     disabled
                     className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
                   />
-                  <span className="ml-2 text-sm text-gray-500">Always On</span>
+                  <span className="ml-2 text-sm text-gray-500">{t('cookieBanner.alwaysOn', 'Always On')}</span>
                 </div>
               </div>
               
               {/* Functional Cookies */}
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-medium text-gray-900">Functional Cookies</h4>
-                  <p className="text-sm text-gray-600">Remember your preferences and settings</p>
+                  <h4 className="font-medium text-gray-900">{t('cookieBanner.functional.title', 'Functional Cookies')}</h4>
+                  <p className="text-sm text-gray-600">{t('cookieBanner.functional.description', 'Remember your preferences and settings')}</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -221,8 +222,8 @@ const CookieBanner = () => {
               {/* Analytics Cookies */}
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-medium text-gray-900">Analytics Cookies</h4>
-                  <p className="text-sm text-gray-600">Help us understand how you use our site</p>
+                  <h4 className="font-medium text-gray-900">{t('cookieBanner.analytics.title', 'Analytics Cookies')}</h4>
+                  <p className="text-sm text-gray-600">{t('cookieBanner.analytics.description', 'Help us understand how you use our site')}</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -238,8 +239,8 @@ const CookieBanner = () => {
               {/* Marketing Cookies */}
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-medium text-gray-900">Marketing Cookies</h4>
-                  <p className="text-sm text-gray-600">Used to show you relevant advertisements</p>
+                  <h4 className="font-medium text-gray-900">{t('cookieBanner.marketing.title', 'Marketing Cookies')}</h4>
+                  <p className="text-sm text-gray-600">{t('cookieBanner.marketing.description', 'Used to show you relevant advertisements')}</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -258,7 +259,7 @@ const CookieBanner = () => {
                 onClick={handleSavePreferences}
                 className="px-6 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
               >
-                Save Preferences
+                {t('cookieBanner.savePreferences', 'Save Preferences')}
               </button>
             </div>
           </div>

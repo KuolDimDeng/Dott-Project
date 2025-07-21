@@ -962,5 +962,32 @@
     "allRightsReserved": "Todos los derechos reservados.",
     "privacyPolicy": "Política de Privacidad",
     "termsOfService": "Términos de Servicio"
+  },
+  "cookieBanner": {
+    "title": "Aviso de Cookies",
+    "message": "Utilizamos cookies para mejorar tu experiencia, analizar el uso y proporcionar funcionalidad esencial. Al continuar usando nuestro sitio, aceptas nuestro uso de cookies.",
+    "learnMore": "Más información",
+    "customize": "Personalizar",
+    "rejectAll": "Rechazar Todo",
+    "acceptAll": "Aceptar Todo",
+    "preferencesTitle": "Preferencias de Cookies",
+    "savePreferences": "Guardar Preferencias",
+    "alwaysOn": "Siempre Activo",
+    "essential": {
+      "title": "Cookies Esenciales",
+      "description": "Requeridas para la funcionalidad básica del sitio y seguridad"
+    },
+    "functional": {
+      "title": "Cookies Funcionales",
+      "description": "Recuerdan tus preferencias y configuraciones"
+    },
+    "analytics": {
+      "title": "Cookies Analíticas",
+      "description": "Nos ayudan a entender cómo usas nuestro sitio"
+    },
+    "marketing": {
+      "title": "Cookies de Marketing",
+      "description": "Se utilizan para mostrarte anuncios relevantes"
+    }
   }
 }

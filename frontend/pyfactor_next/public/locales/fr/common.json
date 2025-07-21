@@ -920,5 +920,32 @@
         "description": "Pour les chauffeurs de taxi, boda boda et tuk-tuk. Suivez les gains quotidiens, les coûts de carburant et les calendriers d'entretien."
       }
     }
+  },
+  "cookieBanner": {
+    "title": "Avis sur les Cookies",
+    "message": "Nous utilisons des cookies pour améliorer votre expérience, analyser l'utilisation et fournir des fonctionnalités essentielles. En continuant à utiliser notre site, vous acceptez notre utilisation des cookies.",
+    "learnMore": "En savoir plus",
+    "customize": "Personnaliser",
+    "rejectAll": "Tout Refuser",
+    "acceptAll": "Tout Accepter",
+    "preferencesTitle": "Préférences des Cookies",
+    "savePreferences": "Enregistrer les Préférences",
+    "alwaysOn": "Toujours Actif",
+    "essential": {
+      "title": "Cookies Essentiels",
+      "description": "Requis pour la fonctionnalité de base du site et la sécurité"
+    },
+    "functional": {
+      "title": "Cookies Fonctionnels",
+      "description": "Se souviennent de vos préférences et paramètres"
+    },
+    "analytics": {
+      "title": "Cookies Analytiques",
+      "description": "Nous aident à comprendre comment vous utilisez notre site"
+    },
+    "marketing": {
+      "title": "Cookies Marketing",
+      "description": "Utilisés pour vous montrer des publicités pertinentes"
+    }
   }
 }

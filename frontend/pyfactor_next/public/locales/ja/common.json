@@ -966,5 +966,32 @@
         "description": "タクシー、ボダボダ、トゥクトゥク運営者向け。日々の収益、燃料費、メンテナンススケジュールを追跡。"
       }
     }
+  },
+  "cookieBanner": {
+    "title": "クッキー通知",
+    "message": "私たちは、お客様の体験を向上させ、使用状況を分析し、必要な機能を提供するためにクッキーを使用しています。当サイトの利用を続けることで、クッキーの使用に同意したものとみなされます。",
+    "learnMore": "詳細を見る",
+    "customize": "カスタマイズ",
+    "rejectAll": "すべて拒否",
+    "acceptAll": "すべて受け入れる",
+    "preferencesTitle": "クッキーの設定",
+    "savePreferences": "設定を保存",
+    "alwaysOn": "常にオン",
+    "essential": {
+      "title": "必須クッキー",
+      "description": "基本的なサイト機能とセキュリティに必要です"
+    },
+    "functional": {
+      "title": "機能性クッキー",
+      "description": "お客様の設定と設定を記憶します"
+    },
+    "analytics": {
+      "title": "分析クッキー",
+      "description": "お客様がサイトをどのように使用しているかを理解するのに役立ちます"
+    },
+    "marketing": {
+      "title": "マーケティングクッキー",
+      "description": "関連する広告を表示するために使用されます"
+    }
   }
 }

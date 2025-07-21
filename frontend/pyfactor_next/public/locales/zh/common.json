@@ -921,5 +921,32 @@
         "description": "适用于出租车、摩托车和嘟嘟车经营者。跟踪每日收入、燃料成本和维护计划。"
       }
     }
+  },
+  "cookieBanner": {
+    "title": "Cookie 通知",
+    "message": "我们使用 cookies 来改善您的体验、分析使用情况并提供必要功能。继续使用我们的网站即表示您同意我们使用 cookies。",
+    "learnMore": "了解更多",
+    "customize": "自定义",
+    "rejectAll": "全部拒绝",
+    "acceptAll": "全部接受",
+    "preferencesTitle": "Cookie 偏好设置",
+    "savePreferences": "保存偏好设置",
+    "alwaysOn": "始终开启",
+    "essential": {
+      "title": "必要 Cookies",
+      "description": "网站基本功能和安全所必需"
+    },
+    "functional": {
+      "title": "功能性 Cookies",
+      "description": "记住您的偏好和设置"
+    },
+    "analytics": {
+      "title": "分析 Cookies",
+      "description": "帮助我们了解您如何使用我们的网站"
+    },
+    "marketing": {
+      "title": "营销 Cookies",
+      "description": "用于向您展示相关广告"
+    }
   }
 }

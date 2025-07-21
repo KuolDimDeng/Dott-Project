@@ -966,5 +966,32 @@
         "description": "Taksi, boda boda ve tuk-tuk operatörleri için. Günlük kazançları, yakıt maliyetlerini ve bakım programlarını takip edin."
       }
     }
+  },
+  "cookieBanner": {
+    "title": "Çerez Bildirimi",
+    "message": "Deneyiminizi geliştirmek, kullanımı analiz etmek ve temel işlevleri sağlamak için çerezler kullanıyoruz. Sitemizi kullanmaya devam ederek çerez kullanımımızı kabul etmiş olursunuz.",
+    "learnMore": "Daha fazla bilgi",
+    "customize": "Özelleştir",
+    "rejectAll": "Tümünü Reddet",
+    "acceptAll": "Tümünü Kabul Et",
+    "preferencesTitle": "Çerez Tercihleri",
+    "savePreferences": "Tercihleri Kaydet",
+    "alwaysOn": "Her Zaman Açık",
+    "essential": {
+      "title": "Zorunlu Çerezler",
+      "description": "Temel site işlevleri ve güvenlik için gereklidir"
+    },
+    "functional": {
+      "title": "İşlevsel Çerezler",
+      "description": "Tercihlerinizi ve ayarlarınızı hatırlar"
+    },
+    "analytics": {
+      "title": "Analiz Çerezleri",
+      "description": "Sitemizi nasıl kullandığınızı anlamamıza yardımcı olur"
+    },
+    "marketing": {
+      "title": "Pazarlama Çerezleri",
+      "description": "Size ilgili reklamları göstermek için kullanılır"
+    }
   }
 }

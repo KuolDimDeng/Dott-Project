@@ -849,5 +849,32 @@
       "label": "Fitur utama:"
     },
     "learnMore": "Pelajari lebih lanjut"
+  },
+  "cookieBanner": {
+    "title": "Pemberitahuan Cookie",
+    "message": "Kami menggunakan cookie untuk meningkatkan pengalaman Anda, menganalisis penggunaan, dan menyediakan fungsionalitas penting. Dengan melanjutkan menggunakan situs kami, Anda menyetujui penggunaan cookie kami.",
+    "learnMore": "Pelajari lebih lanjut",
+    "customize": "Sesuaikan",
+    "rejectAll": "Tolak Semua",
+    "acceptAll": "Terima Semua",
+    "preferencesTitle": "Preferensi Cookie",
+    "savePreferences": "Simpan Preferensi",
+    "alwaysOn": "Selalu Aktif",
+    "essential": {
+      "title": "Cookie Penting",
+      "description": "Diperlukan untuk fungsionalitas dan keamanan situs dasar"
+    },
+    "functional": {
+      "title": "Cookie Fungsional",
+      "description": "Mengingat preferensi dan pengaturan Anda"
+    },
+    "analytics": {
+      "title": "Cookie Analitik",
+      "description": "Membantu kami memahami bagaimana Anda menggunakan situs kami"
+    },
+    "marketing": {
+      "title": "Cookie Pemasaran",
+      "description": "Digunakan untuk menampilkan iklan yang relevan kepada Anda"
+    }
   }
 }

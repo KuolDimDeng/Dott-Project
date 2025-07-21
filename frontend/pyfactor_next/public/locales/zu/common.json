@@ -516,5 +516,32 @@
         "description": "Abashayeli bamatekisi, boda boda, nama-tuk-tuk. Landelela imali engenayo yansuku zonke, izindleko zikaphethiloli, namashejuli okulungiswa."
       }
     }
+  },
+  "cookieBanner": {
+    "title": "Isaziso Se-Cookie",
+    "message": "Sisebenzisa ama-cookies ukuthuthukisa ukuzizwisa kwakho, ukuhlaziya ukusetshenziswa, nokuhlinzeka ngezici ezibalulekile. Ngokuqhubeka nokusebenzisa isayithi yethu, uyavuma ukusebenzisa ama-cookies.",
+    "learnMore": "Funda kabanzi",
+    "customize": "Hlela ngokwezifiso",
+    "rejectAll": "Enqaba Konke",
+    "acceptAll": "Yamukela Konke",
+    "preferencesTitle": "Izintandokazi Ze-Cookie",
+    "savePreferences": "Gcina Izintandokazi",
+    "alwaysOn": "Njalo Ivuliwe",
+    "essential": {
+      "title": "Ama-Cookies Abalulekile",
+      "description": "Ayadingeka ukuze kusebenze isayithi ngokuyisisekelo kanye nokuphepha"
+    },
+    "functional": {
+      "title": "Ama-Cookies Okusebenza",
+      "description": "Khumbula izintandokazi zakho kanye nezilungiselelo"
+    },
+    "analytics": {
+      "title": "Ama-Cookies Okuhlaziya",
+      "description": "Sisize ukuqonda ukuthi usebenzisa kanjani isayithi yethu"
+    },
+    "marketing": {
+      "title": "Ama-Cookies Okumaketha",
+      "description": "Asetshenziselwa ukukhombisa izikhangiso ezifanele"
+    }
   }
 }

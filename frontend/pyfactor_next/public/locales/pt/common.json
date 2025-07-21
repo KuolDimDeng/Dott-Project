@@ -920,5 +920,32 @@
         "description": "Para operadores de táxi, boda boda e tuk-tuk. Rastreie ganhos diários, custos de combustível e cronogramas de manutenção."
       }
     }
+  },
+  "cookieBanner": {
+    "title": "Aviso de Cookies",
+    "message": "Utilizamos cookies para melhorar sua experiência, analisar o uso e fornecer funcionalidade essencial. Ao continuar usando nosso site, você concorda com nosso uso de cookies.",
+    "learnMore": "Saiba mais",
+    "customize": "Personalizar",
+    "rejectAll": "Rejeitar Todos",
+    "acceptAll": "Aceitar Todos",
+    "preferencesTitle": "Preferências de Cookies",
+    "savePreferences": "Salvar Preferências",
+    "alwaysOn": "Sempre Ativo",
+    "essential": {
+      "title": "Cookies Essenciais",
+      "description": "Necessários para funcionalidade básica do site e segurança"
+    },
+    "functional": {
+      "title": "Cookies Funcionais",
+      "description": "Lembram suas preferências e configurações"
+    },
+    "analytics": {
+      "title": "Cookies Analíticos",
+      "description": "Nos ajudam a entender como você usa nosso site"
+    },
+    "marketing": {
+      "title": "Cookies de Marketing",
+      "description": "Usados para mostrar anúncios relevantes"
+    }
   }
 }
