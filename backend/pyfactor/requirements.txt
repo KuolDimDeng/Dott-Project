@@ -47,7 +47,7 @@ posthog==6.0.0
 user-agents==2.2.0
 
 # IP address detection
-django-ipware==7.0.1
+django-ipware==5.0.2
 
 # MFA/2FA Support
 pyotp==2.9.0

@@ -42,6 +42,7 @@ django-cors-headers==4.7.0
 django-countries==7.6.1
 django-phonenumber-field==8.1.0
 phonenumbers==8.13.45
+django-ipware==5.0.2
 django-cryptography==1.1
 django-extensions==4.1
 django-filter==24.3
