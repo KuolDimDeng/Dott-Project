@@ -19,6 +19,9 @@ import StandardSpinner from '@/components/ui/StandardSpinner';
 import FieldTooltip from '@/components/ui/FieldTooltip';
 import { GOOGLE_MAPS_CONFIG } from '@/config/maps';
 import GoogleMapsGeofenceSetup from './GeofencingSettingsSimple';
+import InlineEmployeeAssignment from './InlineEmployeeAssignment';
+import ViewGeofenceModal from './ViewGeofenceModal';
+import EditGeofenceModal from './EditGeofenceModal';
 
 // Google Maps Integration - REPLACED WITH SIMPLIFIED VERSION
 const GoogleMapsGeofenceSetup_OLD = ({ onGeofenceCreated, onCancel, isVisible }) => {
@@ -772,6 +775,11 @@ const GeofencingSettings = ({ user, isOwner, isAdmin, notifySuccess, notifyError
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showLegalCompliance, setShowLegalCompliance] = useState(false);
   const [legalAccepted, setLegalAccepted] = useState(false);
+  const [showEmployeeAssignment, setShowEmployeeAssignment] = useState(false);
+  const [newlyCreatedGeofence, setNewlyCreatedGeofence] = useState(null);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedGeofence, setSelectedGeofence] = useState(null);
 
   // Debug state changes
   useEffect(() => {
@@ -815,8 +823,37 @@ const GeofencingSettings = ({ user, isOwner, isAdmin, notifySuccess, notifyError
 
   const handleGeofenceCreated = (geofence) => {
     setGeofences(prev => [...prev, geofence]);
+    setNewlyCreatedGeofence(geofence);
     setShowCreateForm(false);
-    notifySuccess('Geofence created successfully');
+    setShowEmployeeAssignment(true);
+    notifySuccess('Geofence created successfully! Now assign employees.');
+  };
+
+  const handleEmployeeAssignmentComplete = (assignedEmployeeIds) => {
+    setShowEmployeeAssignment(false);
+    setNewlyCreatedGeofence(null);
+    notifySuccess(`Assigned ${assignedEmployeeIds.length} employees to geofence`);
+  };
+
+  const handleSkipEmployeeAssignment = () => {
+    setShowEmployeeAssignment(false);
+    setNewlyCreatedGeofence(null);
+    notifySuccess('Geofence created. You can assign employees later.');
+  };
+
+  const handleViewGeofence = (geofence) => {
+    setSelectedGeofence(geofence);
+    setShowViewModal(true);
+  };
+
+  const handleEditGeofence = (geofence) => {
+    setSelectedGeofence(geofence);
+    setShowEditModal(true);
+  };
+
+  const handleGeofenceUpdated = (updatedGeofence) => {
+    setGeofences(prev => prev.map(g => g.id === updatedGeofence.id ? updatedGeofence : g));
+    notifySuccess('Geofence updated successfully');
   };
 
   const handleDeleteGeofence = async (geofenceId) => {
@@ -893,6 +930,15 @@ const GeofencingSettings = ({ user, isOwner, isAdmin, notifySuccess, notifyError
         </div>
       )}
 
+      {/* Employee Assignment - Inline after geofence creation */}
+      {showEmployeeAssignment && newlyCreatedGeofence && (
+        <InlineEmployeeAssignment
+          geofence={newlyCreatedGeofence}
+          onComplete={handleEmployeeAssignmentComplete}
+          onSkip={handleSkipEmployeeAssignment}
+        />
+      )}
+
       {/* Info Box */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <div className="flex items-start">
@@ -953,23 +999,23 @@ const GeofencingSettings = ({ user, isOwner, isAdmin, notifySuccess, notifyError
                   
                   <div className="flex items-center space-x-2">
                     <button
-                      onClick={() => {/* TODO: Implement view */}}
+                      onClick={() => handleViewGeofence(geofence)}
                       className="text-gray-400 hover:text-gray-600"
-                      title="View"
+                      title="View Details"
                     >
                       <EyeIcon className="h-4 w-4" />
                     </button>
                     <button
-                      onClick={() => {/* TODO: Implement edit */}}
+                      onClick={() => handleEditGeofence(geofence)}
                       className="text-blue-600 hover:text-blue-900"
-                      title="Edit"
+                      title="Edit Geofence"
                     >
                       <PencilIcon className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => handleDeleteGeofence(geofence.id)}
                       className="text-red-600 hover:text-red-900"
-                      title="Delete"
+                      title="Delete Geofence"
                     >
                       <TrashIcon className="h-4 w-4" />
                     </button>
@@ -980,6 +1026,28 @@ const GeofencingSettings = ({ user, isOwner, isAdmin, notifySuccess, notifyError
           </div>
         )}
       </div>
+
+      {/* View Geofence Modal */}
+      <ViewGeofenceModal
+        isOpen={showViewModal}
+        onClose={() => {
+          setShowViewModal(false);
+          setSelectedGeofence(null);
+        }}
+        geofence={selectedGeofence}
+        onEdit={handleEditGeofence}
+      />
+
+      {/* Edit Geofence Modal */}
+      <EditGeofenceModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setSelectedGeofence(null);
+        }}
+        geofence={selectedGeofence}
+        onGeofenceUpdated={handleGeofenceUpdated}
+      />
     </div>
   );
 };
