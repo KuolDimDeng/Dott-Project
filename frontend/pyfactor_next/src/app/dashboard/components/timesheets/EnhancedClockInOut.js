@@ -96,6 +96,7 @@ const GeofenceStatus = ({ geofenceStatus, location }) => {
     switch (status) {
       case 'inside': return 'text-green-600 bg-green-50 border-green-200';
       case 'outside': return 'text-red-600 bg-red-50 border-red-200';
+      case 'no_geofences': return 'text-blue-600 bg-blue-50 border-blue-200';
       case 'unknown': return 'text-yellow-600 bg-yellow-50 border-yellow-200';
       default: return 'text-gray-600 bg-gray-50 border-gray-200';
     }
@@ -110,6 +111,60 @@ const GeofenceStatus = ({ geofenceStatus, location }) => {
     }
   };
 
+  // Show status for no geofences
+  if (geofenceStatus.status === 'no_geofences') {
+    return (
+      <div className="p-3 rounded-lg border bg-blue-50 border-blue-200">
+        <div className="flex items-center">
+          <InformationCircleIcon className="h-5 w-5 text-blue-600" />
+          <div className="ml-3">
+            <h4 className="text-sm font-medium text-blue-800">No Location Requirements</h4>
+            <p className="text-xs mt-1 text-blue-600">
+              You can clock in from any location
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle multiple geofences
+  if (geofenceStatus.geofences && geofenceStatus.geofences.length > 0) {
+    const insideGeofences = geofenceStatus.geofences.filter(g => g.is_inside);
+    const hasRequiredClockIn = geofenceStatus.geofences.some(g => 
+      g.geofence.require_for_clock_in && !g.can_clock_in_outside
+    );
+    
+    return (
+      <div className="space-y-2">
+        {geofenceStatus.geofences.map((gf, index) => (
+          <div key={gf.geofence.id} 
+               className={`p-3 rounded-lg border ${gf.is_inside ? getStatusColor('inside') : getStatusColor('outside')}`}>
+            <div className="flex items-center">
+              {gf.is_inside ? getStatusIcon('inside') : getStatusIcon('outside')}
+              <div className="ml-3">
+                <h4 className="text-sm font-medium">
+                  {gf.geofence.name}
+                </h4>
+                <p className="text-xs mt-1">
+                  {gf.is_inside ? 'Inside work area' : `${Math.round(gf.distance)}m away`}
+                  {gf.can_clock_in_outside && !gf.is_inside && ' • Override allowed'}
+                </p>
+              </div>
+            </div>
+          </div>
+        ))}
+        
+        {!geofenceStatus.can_clock_in && hasRequiredClockIn && (
+          <p className="text-xs text-red-600 font-medium mt-2">
+            You must be at a designated work location to clock in
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  // Fallback for simple status
   return (
     <div className={`p-3 rounded-lg border ${getStatusColor(geofenceStatus.status)}`}>
       <div className="flex items-center">
@@ -120,17 +175,6 @@ const GeofenceStatus = ({ geofenceStatus, location }) => {
             {geofenceStatus.status === 'outside' && 'Outside Work Area'}
             {geofenceStatus.status === 'unknown' && 'Location Unknown'}
           </h4>
-          {geofenceStatus.geofence && (
-            <p className="text-xs mt-1">
-              {geofenceStatus.geofence.name} • {geofenceStatus.distance ? `${Math.round(geofenceStatus.distance)}m away` : 'At location'}
-            </p>
-          )}
-          {geofenceStatus.status === 'outside' && geofenceStatus.requirement && (
-            <p className="text-xs mt-1 font-medium">
-              {geofenceStatus.requirement === 'clock_in' && 'You must be at a work location to clock in'}
-              {geofenceStatus.requirement === 'clock_out' && 'You must be at a work location to clock out'}
-            </p>
-          )}
         </div>
       </div>
     </div>
@@ -241,16 +285,47 @@ export default function EnhancedClockInOut() {
   };
 
   const checkGeofenceStatus = async (locationData) => {
-    if (!locationData || geofences.length === 0) return;
-
+    if (!locationData) return;
+    
     try {
-      const response = await api.post('/api/hr/geofence-events/check/', {
-        latitude: locationData.latitude,
-        longitude: locationData.longitude
+      // Get employee ID from session/user context
+      const userResponse = await api.get('/api/users/me/');
+      const employeeId = userResponse.data.employee?.id;
+      
+      if (!employeeId) {
+        console.error('[ClockInOut] No employee ID found for user');
+        return;
+      }
+      
+      // Use correct endpoint with GET method and query params
+      const response = await api.get('/api/hr/geofences/check_location/', {
+        params: {
+          latitude: locationData.latitude,
+          longitude: locationData.longitude,
+          employee_id: employeeId
+        }
       });
-      setGeofenceStatus(response.data);
+      
+      console.log('[ClockInOut] Geofence check response:', response.data);
+      
+      // Update geofence status based on response
+      if (response.data.geofences && response.data.geofences.length > 0) {
+        const insideAnyGeofence = response.data.geofences.some(g => g.is_inside);
+        setGeofenceStatus({
+          status: insideAnyGeofence ? 'inside' : 'outside',
+          can_clock_in: response.data.can_clock_in,
+          geofences: response.data.geofences
+        });
+      } else {
+        setGeofenceStatus({
+          status: 'no_geofences',
+          can_clock_in: true, // Allow clock in if no geofences assigned
+          geofences: []
+        });
+      }
     } catch (error) {
-      logger.error('Error checking geofence status:', error);
+      console.error('[ClockInOut] Error checking geofence status:', error);
+      setGeofenceStatus(null);
     }
   };
 
@@ -277,15 +352,21 @@ export default function EnhancedClockInOut() {
   const canPerformAction = (action) => {
     if (!geofenceStatus) return true;
     
-    const activeGeofences = geofences.filter(g => g.is_active);
-    const requiredGeofences = activeGeofences.filter(g => 
-      (action === 'clock_in' && g.require_for_clock_in) ||
-      (action === 'clock_out' && g.require_for_clock_out)
-    );
+    // If no geofences are assigned, allow the action
+    if (geofenceStatus.status === 'no_geofences') return true;
     
-    if (requiredGeofences.length === 0) return true;
+    // Check if any geofence requires this action
+    const hasRequiredGeofence = geofenceStatus.geofences?.some(g => {
+      const geofence = g.geofence;
+      return (action === 'clock_in' && geofence.require_for_clock_in) ||
+             (action === 'clock_out' && geofence.require_for_clock_out);
+    });
     
-    return geofenceStatus.status === 'inside';
+    // If no geofence requires this action, allow it
+    if (!hasRequiredGeofence) return true;
+    
+    // Otherwise, check if user can clock in based on geofence status
+    return geofenceStatus.can_clock_in;
   };
 
   const handleClockAction = async (action) => {
@@ -337,14 +418,21 @@ export default function EnhancedClockInOut() {
 
       setClockStatus(response);
       
-      // Log geofence event
-      if (location && geofenceStatus) {
-        await api.post('/api/hr/geofence-events/log_event/', {
-          event_type: action,
-          latitude: location.latitude,
-          longitude: location.longitude,
-          geofence_id: geofenceStatus.geofence?.id
-        });
+      // Log geofence event for any inside geofences
+      if (location && geofenceStatus && geofenceStatus.geofences) {
+        const insideGeofences = geofenceStatus.geofences.filter(g => g.is_inside);
+        for (const gf of insideGeofences) {
+          try {
+            await api.post('/api/hr/geofence-events/log_event/', {
+              event_type: action,
+              latitude: location.latitude,
+              longitude: location.longitude,
+              geofence_id: gf.geofence.id
+            });
+          } catch (error) {
+            console.error('[ClockInOut] Error logging geofence event:', error);
+          }
+        }
       }
       
       toast.success(
