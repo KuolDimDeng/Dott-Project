@@ -822,15 +822,6 @@ const GeofencingSettings = ({ user, isOwner, isAdmin, notifySuccess, notifyError
   };
 
   const handleGeofenceCreated = (geofence) => {
-    console.log('[GeofencingSettings] Geofence created:', geofence);
-    
-    // Ensure geofence object is valid
-    if (!geofence || !geofence.id) {
-      console.error('[GeofencingSettings] Invalid geofence object received:', geofence);
-      notifyError('Failed to create geofence properly');
-      return;
-    }
-    
     setGeofences(prev => [...prev, geofence]);
     setNewlyCreatedGeofence(geofence);
     setShowCreateForm(false);
@@ -973,24 +964,17 @@ const GeofencingSettings = ({ user, isOwner, isAdmin, notifySuccess, notifyError
           </div>
         ) : (
           <div className="divide-y divide-gray-200">
-            {geofences.map((geofence) => {
-              // Skip invalid geofence objects
-              if (!geofence || !geofence.id) {
-                console.error('[GeofencingSettings] Invalid geofence in list:', geofence);
-                return null;
-              }
-              
-              return (
-                <div key={geofence.id} className="p-4 hover:bg-gray-50">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center">
-                        <MapPinIcon className="h-5 w-5 text-gray-400 mr-2" />
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-900">{geofence.name || 'Unnamed Geofence'}</h4>
-                          <p className="text-sm text-gray-500">
-                            {geofence.location_type?.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Unknown Type'} • {geofence.radius || 0}m radius
-                          </p>
+            {geofences.map((geofence) => (
+              <div key={geofence.id} className="p-4 hover:bg-gray-50">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center">
+                      <MapPinIcon className="h-5 w-5 text-gray-400 mr-2" />
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-900">{geofence.name}</h4>
+                        <p className="text-sm text-gray-500">
+                          {geofence.location_type?.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} • {geofence.radius}m radius
+                        </p>
                         {geofence.description && (
                           <p className="text-xs text-gray-500 mt-1">{geofence.description}</p>
                         )}
@@ -1037,8 +1021,8 @@ const GeofencingSettings = ({ user, isOwner, isAdmin, notifySuccess, notifyError
                     </button>
                   </div>
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         )}
       </div>
