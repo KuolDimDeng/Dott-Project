@@ -273,5 +273,130 @@
     "defaultUser": "Um usuário Dott",
     "emailMessage": "Olá,\n\n{{senderName}} convidou você para experimentar o Dott, uma ferramenta completa para simplificar as operações comerciais.\n\nPor que os proprietários de negócios amam o Dott?\n✓ Faturamento automatizado e gestão de pagamentos\n✓ Agendamento de compromissos e lembretes para clientes\n✓ Rastreamento de estoque e gestão de fornecedores\n✓ Processamento de folha de pagamento e relatórios fiscais\n✓ Insights e análises de negócios\n\nComece seu teste gratuito hoje:\nhttps://dottapps.com\n\nAtenciosamente,\nEquipe Dott",
     "whatsappMessage": "Olá 👋\n\n{{senderName}} convidou você para experimentar o Dott, uma ferramenta completa para simplificar as operações comerciais.\n\n✓ Faturamento automatizado\n✓ Agendamento de compromissos\n✓ Gestão de estoque\n✓ Processamento de folha de pagamento\n✓ Análises de negócios\n\nComece seu teste gratuito: https://dottapps.com"
+  },
+  "importExport": {
+    "title": "Importar/Exportar Dados",
+    "description": "Migre facilmente seus dados comerciais para e do Dott. Importe de planilhas ou outros softwares de contabilidade e exporte seus dados em múltiplos formatos. Nosso mapeador de campos com IA torna a importação de dados rápida e precisa.",
+    "backButton": "Voltar para Importar/Exportar",
+    "getStarted": "Começar",
+    "loading": "Carregando...",
+    "processingFile": "Processando arquivo...",
+    "comingSoon": "Em Breve",
+    "import": {
+      "title": "Importar Dados",
+      "description": "Traga seus dados existentes para o Dott do Excel, QuickBooks ou outras fontes.",
+      "step1Title": "Passo 1: O que você gostaria de importar?",
+      "step2Title": "Passo 2: Como você gostaria de importar?",
+      "features": {
+        "aiMapping": "Mapeamento de campos com IA",
+        "multipleFormats": "Suporte para múltiplos formatos de arquivo",
+        "dataValidation": "Validação automática de dados",
+        "bulkImport": "Capacidades de importação em massa"
+      }
+    },
+    "export": {
+      "title": "Exportar Dados",
+      "description": "Baixe seus dados do Dott em vários formatos para backup ou uso em outras aplicações.",
+      "selectData": "Selecionar dados para exportar",
+      "dataTypesSelected": "{{count}} tipo de dado selecionado",
+      "dataTypesSelected_plural": "{{count}} tipos de dados selecionados",
+      "continueButton": "Continuar para Opções de Exportação",
+      "formatsTitle": "Formatos de Exportação Disponíveis",
+      "formats": {
+        "excel": "Excel (.xlsx) - Recomendado para reimportar",
+        "csv": "CSV (.csv) - Compatibilidade universal",
+        "pdf": "PDF - Para relatórios e documentação",
+        "quickbooks": "Formato QuickBooks - Para entregar ao contador"
+      },
+      "features": {
+        "excelCsv": "Exportar para Excel ou CSV",
+        "financialFormats": "Formatos de relatórios financeiros",
+        "accountantReady": "Arquivos prontos para o contador",
+        "scheduledExports": "Exportações agendadas disponíveis"
+      }
+    },
+    "dataTypes": {
+      "products": {
+        "label": "Produtos/Serviços",
+        "description": "Catálogo de produtos com preços e inventário"
+      },
+      "customers": {
+        "label": "Clientes",
+        "description": "Base de dados de clientes com informações de contato"
+      },
+      "invoices": {
+        "label": "Faturas",
+        "description": "Faturas de vendas e histórico de pagamentos"
+      },
+      "bills": {
+        "label": "Contas e Despesas",
+        "description": "Contas de compra e registros de despesas"
+      },
+      "chartOfAccounts": {
+        "label": "Plano de Contas",
+        "description": "Estrutura de contas e saldos"
+      },
+      "taxRates": {
+        "label": "Alíquotas de Impostos",
+        "description": "Configurações de impostos por localização"
+      },
+      "vendors": {
+        "label": "Fornecedores",
+        "description": "Base de dados de fornecedores e condições de pagamento"
+      },
+      "employees": {
+        "label": "Funcionários",
+        "description": "Registros de funcionários e dados da folha de pagamento"
+      }
+    },
+    "importSources": {
+      "excel": {
+        "label": "Excel/CSV",
+        "description": "Carregar arquivos .xlsx ou .csv"
+      },
+      "quickbooks": {
+        "label": "QuickBooks",
+        "description": "Importação direta do QuickBooks Online"
+      },
+      "wave": {
+        "label": "Wave",
+        "description": "Importar do Wave Accounting"
+      },
+      "xero": {
+        "label": "Xero",
+        "description": "Importar do Xero"
+      },
+      "shopify": {
+        "label": "Shopify",
+        "description": "Importar produtos e clientes do Shopify"
+      }
+    },
+    "aiFeature": {
+      "title": "Nova Funcionalidade: Mapeador de Dados com IA",
+      "description": "Nosso sistema inteligente de mapeamento de campos usa Claude IA para corresponder automaticamente seus campos de dados com a estrutura de banco de dados do Dott, tornando as importações mais rápidas e precisas do que nunca."
+    },
+    "limits": {
+      "title": "Limites de Importação - Plano {{plan}}",
+      "importsUsed": "Importações usadas: {{used}} de {{limit}} este mês",
+      "aiAnalysisUsed": "Análise IA usada: {{used}} de {{limit}}",
+      "maxFileSize": "Tamanho máximo do arquivo: {{size}}MB",
+      "maxRows": "Máximo de linhas por importação: {{rows}}",
+      "upgradePlan": "Atualizar Plano"
+    },
+    "accessRestricted": {
+      "title": "Acesso Restrito",
+      "message": "A funcionalidade de Importar/Exportar está disponível apenas para usuários Admin e Proprietário.",
+      "returnButton": "Voltar ao Painel de Controle"
+    },
+    "errors": {
+      "integrationComingSoon": "Integração com {{sourceName}} em breve!",
+      "selectDataType": "Por favor, selecione pelo menos um tipo de dado para importar",
+      "selectDataTypeExport": "Por favor, selecione pelo menos um tipo de dado para exportar",
+      "importLimitReached": "Você atingiu seu limite mensal de importação ({{limit}} importações). Por favor, atualize seu plano para mais importações.",
+      "fileSizeExceeded": "O tamanho do arquivo excede o limite. Máximo permitido: {{maxSize}}MB",
+      "sessionExpired": "Sua sessão expirou. Por favor, atualize a página e faça login novamente.",
+      "sessionValidationFailed": "Falha na validação da sessão. Por favor, atualize a página e tente novamente.",
+      "unableToValidate": "Não foi possível validar a sessão. Por favor, atualize a página e tente novamente."
+    }
   }
 }

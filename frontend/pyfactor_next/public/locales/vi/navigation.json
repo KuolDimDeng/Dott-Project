@@ -273,5 +273,130 @@
     "defaultUser": "Người dùng Dott",
     "emailMessage": "Xin chào,\n\n{{senderName}} đã mời bạn thử Dott, một công cụ tất cả trong một để đơn giản hóa hoạt động kinh doanh.\n\nTại sao chủ doanh nghiệp yêu thích Dott?\n✓ Tự động hóa lập hóa đơn và quản lý thanh toán\n✓ Lên lịch hẹn và nhắc nhở khách hàng\n✓ Theo dõi tồn kho và quản lý nhà cung cấp\n✓ Xử lý bảng lương và báo cáo thuế\n✓ Phân tích và thông tin kinh doanh\n\nBắt đầu dùng thử miễn phí ngay hôm nay:\nhttps://dottapps.com\n\nTrân trọng,\nĐội ngũ Dott",
     "whatsappMessage": "Xin chào 👋\n\n{{senderName}} đã mời bạn thử Dott, một công cụ tất cả trong một để đơn giản hóa hoạt động kinh doanh.\n\n✓ Tự động hóa lập hóa đơn\n✓ Lên lịch hẹn\n✓ Quản lý tồn kho\n✓ Xử lý bảng lương\n✓ Phân tích kinh doanh\n\nBắt đầu dùng thử miễn phí: https://dottapps.com"
+  },
+  "importExport": {
+    "title": "Nhập/Xuất Dữ liệu",
+    "description": "Di chuyển dữ liệu doanh nghiệp của bạn vào và ra khỏi Dott một cách liền mạch. Nhập từ bảng tính hoặc phần mềm kế toán khác, và xuất dữ liệu của bạn ở nhiều định dạng. Trình ánh xạ trường dữ liệu hỗ trợ AI của chúng tôi giúp việc nhập dữ liệu nhanh chóng và chính xác.",
+    "backButton": "Quay lại Nhập/Xuất",
+    "getStarted": "Bắt đầu",
+    "loading": "Đang tải...",
+    "processingFile": "Đang xử lý tệp...",
+    "comingSoon": "Sắp ra mắt",
+    "import": {
+      "title": "Nhập Dữ liệu",
+      "description": "Mang dữ liệu hiện có của bạn vào Dott từ Excel, QuickBooks hoặc các nguồn khác.",
+      "step1Title": "Bước 1: Bạn muốn nhập gì?",
+      "step2Title": "Bước 2: Bạn muốn nhập như thế nào?",
+      "features": {
+        "aiMapping": "Ánh xạ trường dữ liệu hỗ trợ AI",
+        "multipleFormats": "Hỗ trợ nhiều định dạng tệp",
+        "dataValidation": "Xác thực dữ liệu tự động",
+        "bulkImport": "Khả năng nhập hàng loạt"
+      }
+    },
+    "export": {
+      "title": "Xuất Dữ liệu",
+      "description": "Tải xuống dữ liệu Dott của bạn ở nhiều định dạng khác nhau để sao lưu hoặc sử dụng trong các ứng dụng khác.",
+      "selectData": "Chọn dữ liệu để xuất",
+      "dataTypesSelected": "Đã chọn {{count}} loại dữ liệu",
+      "dataTypesSelected_plural": "Đã chọn {{count}} loại dữ liệu",
+      "continueButton": "Tiếp tục đến Tùy chọn Xuất",
+      "formatsTitle": "Các Định dạng Xuất Có sẵn",
+      "formats": {
+        "excel": "Excel (.xlsx) - Đề xuất cho việc nhập lại",
+        "csv": "CSV (.csv) - Tương thích phổ quật",
+        "pdf": "PDF - Cho báo cáo và tài liệu",
+        "quickbooks": "Định dạng QuickBooks - Để bàn giao cho kế toán"
+      },
+      "features": {
+        "excelCsv": "Xuất sang Excel hoặc CSV",
+        "financialFormats": "Định dạng báo cáo tài chính",
+        "accountantReady": "Tệp sẵn sàng cho kế toán",
+        "scheduledExports": "Xuất theo lịch có sẵn"
+      }
+    },
+    "dataTypes": {
+      "products": {
+        "label": "Sản phẩm/Dịch vụ",
+        "description": "Danh mục sản phẩm với giá và tồn kho"
+      },
+      "customers": {
+        "label": "Khách hàng",
+        "description": "Cơ sở dữ liệu khách hàng với thông tin liên lạc"
+      },
+      "invoices": {
+        "label": "Hóa đơn",
+        "description": "Hóa đơn bán hàng và lịch sử thanh toán"
+      },
+      "bills": {
+        "label": "Hóa đơn & Chi phí",
+        "description": "Hóa đơn mua hàng và hồ sơ chi phí"
+      },
+      "chartOfAccounts": {
+        "label": "Sơ đồ Tài khoản",
+        "description": "Cấu trúc tài khoản và số dư"
+      },
+      "taxRates": {
+        "label": "Thuế suất",
+        "description": "Cấu hình thuế theo địa điểm"
+      },
+      "vendors": {
+        "label": "Nhà cung cấp",
+        "description": "Cơ sở dữ liệu nhà cung cấp và điều khoản thanh toán"
+      },
+      "employees": {
+        "label": "Nhân viên",
+        "description": "Hồ sơ nhân viên và dữ liệu tiền lương"
+      }
+    },
+    "importSources": {
+      "excel": {
+        "label": "Excel/CSV",
+        "description": "Tải lên tệp .xlsx hoặc .csv"
+      },
+      "quickbooks": {
+        "label": "QuickBooks",
+        "description": "Nhập trực tiếp từ QuickBooks Online"
+      },
+      "wave": {
+        "label": "Wave",
+        "description": "Nhập từ Wave Accounting"
+      },
+      "xero": {
+        "label": "Xero",
+        "description": "Nhập từ Xero"
+      },
+      "shopify": {
+        "label": "Shopify",
+        "description": "Nhập sản phẩm và khách hàng từ Shopify"
+      }
+    },
+    "aiFeature": {
+      "title": "Tính năng Mới: Trình Ánh xạ Dữ liệu Hỗ trợ AI",
+      "description": "Hệ thống ánh xạ trường thông minh của chúng tôi sử dụng Claude AI để tự động khớp các trường dữ liệu của bạn với cấu trúc cơ sở dữ liệu của Dott, giúp việc nhập nhanh hơn và chính xác hơn bao giờ hết."
+    },
+    "limits": {
+      "title": "Giới hạn Nhập - Gói {{plan}}",
+      "importsUsed": "Số lần nhập đã dùng: {{used}} trong số {{limit}} tháng này",
+      "aiAnalysisUsed": "Phân tích AI đã dùng: {{used}} trong số {{limit}}",
+      "maxFileSize": "Kích thước tệp tối đa: {{size}}MB",
+      "maxRows": "Số hàng tối đa mỗi lần nhập: {{rows}}",
+      "upgradePlan": "Nâng cấp Gói"
+    },
+    "accessRestricted": {
+      "title": "Quyền Truy cập Bị hạn chế",
+      "message": "Chức năng Nhập/Xuất chỉ dành cho người dùng Quản trị viên và Chủ sở hữu.",
+      "returnButton": "Quay lại Bảng điều khiển"
+    },
+    "errors": {
+      "integrationComingSoon": "Tích hợp {{sourceName}} sắp ra mắt!",
+      "selectDataType": "Vui lòng chọn ít nhất một loại dữ liệu để nhập",
+      "selectDataTypeExport": "Vui lòng chọn ít nhất một loại dữ liệu để xuất",
+      "importLimitReached": "Bạn đã đạt đến giới hạn nhập hàng tháng ({{limit}} lần nhập). Vui lòng nâng cấp gói của bạn để nhập thêm.",
+      "fileSizeExceeded": "Kích thước tệp vượt quá giới hạn. Tối đa cho phép: {{maxSize}}MB",
+      "sessionExpired": "Phiên của bạn đã hết hạn. Vui lòng làm mới trang và đăng nhập lại.",
+      "sessionValidationFailed": "Xác thực phiên thất bại. Vui lòng làm mới trang và thử lại.",
+      "unableToValidate": "Không thể xác thực phiên. Vui lòng làm mới trang và thử lại."
+    }
   }
 }

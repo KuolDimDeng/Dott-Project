@@ -273,5 +273,130 @@
     "defaultUser": "Pengguna Dott",
     "emailMessage": "Halo,\n\n{{senderName}} mengundang Anda untuk mencoba Dott, alat lengkap untuk menyederhanakan operasi bisnis.\n\nMengapa pemilik bisnis menyukai Dott?\n✓ Penagihan otomatis dan manajemen pembayaran\n✓ Penjadwalan janji temu dan pengingat pelanggan\n✓ Pelacakan inventori dan manajemen pemasok\n✓ Pemrosesan gaji dan laporan pajak\n✓ Wawasan dan analisis bisnis\n\nMulai uji coba gratis Anda hari ini:\nhttps://dottapps.com\n\nSalam hangat,\nTim Dott",
     "whatsappMessage": "Halo 👋\n\n{{senderName}} mengundang Anda untuk mencoba Dott, alat lengkap untuk menyederhanakan operasi bisnis.\n\n✓ Penagihan otomatis\n✓ Penjadwalan janji temu\n✓ Manajemen inventori\n✓ Pemrosesan gaji\n✓ Analisis bisnis\n\nMulai uji coba gratis: https://dottapps.com"
+  },
+  "importExport": {
+    "title": "Impor/Ekspor Data",
+    "description": "Migrasikan data bisnis Anda ke dan dari Dott dengan lancar. Impor dari spreadsheet atau perangkat lunak akuntansi lainnya, dan ekspor data Anda dalam berbagai format. Pemeta bidang bertenaga AI kami membuat impor data cepat dan akurat.",
+    "backButton": "Kembali ke Impor/Ekspor",
+    "getStarted": "Mulai",
+    "loading": "Memuat...",
+    "processingFile": "Memproses file...",
+    "comingSoon": "Segera Hadir",
+    "import": {
+      "title": "Impor Data",
+      "description": "Bawa data yang ada ke Dott dari Excel, QuickBooks, atau sumber lainnya.",
+      "step1Title": "Langkah 1: Apa yang ingin Anda impor?",
+      "step2Title": "Langkah 2: Bagaimana Anda ingin mengimpor?",
+      "features": {
+        "aiMapping": "Pemetaan bidang bertenaga AI",
+        "multipleFormats": "Dukungan untuk berbagai format file",
+        "dataValidation": "Validasi data otomatis",
+        "bulkImport": "Kemampuan impor massal"
+      }
+    },
+    "export": {
+      "title": "Ekspor Data",
+      "description": "Unduh data Dott Anda dalam berbagai format untuk cadangan atau penggunaan di aplikasi lain.",
+      "selectData": "Pilih data untuk diekspor",
+      "dataTypesSelected": "{{count}} jenis data dipilih",
+      "dataTypesSelected_plural": "{{count}} jenis data dipilih",
+      "continueButton": "Lanjutkan ke Opsi Ekspor",
+      "formatsTitle": "Format Ekspor yang Tersedia",
+      "formats": {
+        "excel": "Excel (.xlsx) - Direkomendasikan untuk mengimpor ulang",
+        "csv": "CSV (.csv) - Kompatibilitas universal",
+        "pdf": "PDF - Untuk laporan dan dokumentasi",
+        "quickbooks": "Format QuickBooks - Untuk diserahkan ke akuntan"
+      },
+      "features": {
+        "excelCsv": "Ekspor ke Excel atau CSV",
+        "financialFormats": "Format laporan keuangan",
+        "accountantReady": "File siap akuntan",
+        "scheduledExports": "Ekspor terjadwal tersedia"
+      }
+    },
+    "dataTypes": {
+      "products": {
+        "label": "Produk/Layanan",
+        "description": "Katalog produk dengan harga dan inventaris"
+      },
+      "customers": {
+        "label": "Pelanggan",
+        "description": "Database pelanggan dengan informasi kontak"
+      },
+      "invoices": {
+        "label": "Faktur",
+        "description": "Faktur penjualan dan riwayat pembayaran"
+      },
+      "bills": {
+        "label": "Tagihan & Pengeluaran",
+        "description": "Tagihan pembelian dan catatan pengeluaran"
+      },
+      "chartOfAccounts": {
+        "label": "Bagan Akun",
+        "description": "Struktur akun dan saldo"
+      },
+      "taxRates": {
+        "label": "Tarif Pajak",
+        "description": "Konfigurasi pajak berdasarkan lokasi"
+      },
+      "vendors": {
+        "label": "Vendor",
+        "description": "Database pemasok dan syarat pembayaran"
+      },
+      "employees": {
+        "label": "Karyawan",
+        "description": "Catatan karyawan dan data gaji"
+      }
+    },
+    "importSources": {
+      "excel": {
+        "label": "Excel/CSV",
+        "description": "Unggah file .xlsx atau .csv"
+      },
+      "quickbooks": {
+        "label": "QuickBooks",
+        "description": "Impor langsung dari QuickBooks Online"
+      },
+      "wave": {
+        "label": "Wave",
+        "description": "Impor dari Wave Accounting"
+      },
+      "xero": {
+        "label": "Xero",
+        "description": "Impor dari Xero"
+      },
+      "shopify": {
+        "label": "Shopify",
+        "description": "Impor produk dan pelanggan dari Shopify"
+      }
+    },
+    "aiFeature": {
+      "title": "Fitur Baru: Pemeta Data Bertenaga AI",
+      "description": "Sistem pemetaan bidang cerdas kami menggunakan Claude AI untuk secara otomatis mencocokkan bidang data Anda dengan struktur database Dott, membuat impor lebih cepat dan lebih akurat dari sebelumnya."
+    },
+    "limits": {
+      "title": "Batas Impor - Paket {{plan}}",
+      "importsUsed": "Impor yang digunakan: {{used}} dari {{limit}} bulan ini",
+      "aiAnalysisUsed": "Analisis AI yang digunakan: {{used}} dari {{limit}}",
+      "maxFileSize": "Ukuran file maksimal: {{size}}MB",
+      "maxRows": "Baris maksimal per impor: {{rows}}",
+      "upgradePlan": "Tingkatkan Paket"
+    },
+    "accessRestricted": {
+      "title": "Akses Dibatasi",
+      "message": "Fungsi Impor/Ekspor hanya tersedia untuk pengguna Admin dan Pemilik.",
+      "returnButton": "Kembali ke Dasbor"
+    },
+    "errors": {
+      "integrationComingSoon": "Integrasi {{sourceName}} segera hadir!",
+      "selectDataType": "Silakan pilih setidaknya satu jenis data untuk diimpor",
+      "selectDataTypeExport": "Silakan pilih setidaknya satu jenis data untuk diekspor",
+      "importLimitReached": "Anda telah mencapai batas impor bulanan ({{limit}} impor). Silakan tingkatkan paket Anda untuk lebih banyak impor.",
+      "fileSizeExceeded": "Ukuran file melebihi batas. Maksimal yang diizinkan: {{maxSize}}MB",
+      "sessionExpired": "Sesi Anda telah berakhir. Silakan muat ulang halaman dan masuk lagi.",
+      "sessionValidationFailed": "Validasi sesi gagal. Silakan muat ulang halaman dan coba lagi.",
+      "unableToValidate": "Tidak dapat memvalidasi sesi. Silakan muat ulang halaman dan coba lagi."
+    }
   }
 }

@@ -273,5 +273,130 @@
     "defaultUser": "Mtumiaji wa Dott",
     "emailMessage": "Habari,\n\n{{senderName}} amekualika kujaribu Dott, zana kamili ya kurahisisha shughuli za biashara.\n\nKwa nini wamiliki wa biashara wanapenda Dott?\n✓ Kutoa ankara kiotomatiki na udhibiti wa malipo\n✓ Ratiba za miadi na ukumbuzi wa wateja\n✓ Ufuatiliaji wa hisa na udhibiti wa wasambazaji\n✓ Uchakataji wa mishahara na ripoti za kodi\n✓ Ufahamu wa biashara na uchambuzi\n\nAnza jaribio lako la bure leo:\nhttps://dottapps.com\n\nKwa heri ya kheri,\nTimu ya Dott",
     "whatsappMessage": "Habari 👋\n\n{{senderName}} amekualika kujaribu Dott, zana kamili ya kurahisisha shughuli za biashara.\n\n✓ Kutoa ankara kiotomatiki\n✓ Ratiba za miadi\n✓ Udhibiti wa hisa\n✓ Uchakataji wa mishahara\n✓ Uchambuzi wa biashara\n\nAnza jaribio la bure: https://dottapps.com"
+  },
+  "importExport": {
+    "title": "Kuingiza/Kutoa Data",
+    "description": "Hamisha data ya biashara yako kwa urahisi ndani na nje ya Dott. Ingiza kutoka kwa lahajedwali au programu nyingine za uhasibu, na utoe data yako katika muundo mbalimbali. Kirambaaji chetu cha uwanja unaotumia AI hufanya uingizaji wa data kuwa wa haraka na sahihi.",
+    "backButton": "Rudi kwa Kuingiza/Kutoa",
+    "getStarted": "Anza",
+    "loading": "Inapakia...",
+    "processingFile": "Inachakata faili...",
+    "comingSoon": "Inakuja Hivi Karibuni",
+    "import": {
+      "title": "Ingiza Data",
+      "description": "Leta data yako iliyopo kwenye Dott kutoka Excel, QuickBooks au vyanzo vingine.",
+      "step1Title": "Hatua ya 1: Unataka kuingiza nini?",
+      "step2Title": "Hatua ya 2: Unataka kuingiza vipi?",
+      "features": {
+        "aiMapping": "Urambaaji wa uwanja unaotumia AI",
+        "multipleFormats": "Usaidizi wa fomati nyingi za faili",
+        "dataValidation": "Uthibitishaji wa data otomatiki",
+        "bulkImport": "Uwezo wa kuingiza kwa wingi"
+      }
+    },
+    "export": {
+      "title": "Toa Data",
+      "description": "Pakua data yako ya Dott katika fomati mbalimbali kwa ajili ya kuhifadhi nakala au kutumia katika programu nyingine.",
+      "selectData": "Chagua data ya kutoa",
+      "dataTypesSelected": "Aina {{count}} ya data imechaguliwa",
+      "dataTypesSelected_plural": "Aina {{count}} za data zimechaguliwa",
+      "continueButton": "Endelea kwa Chaguzi za Kutoa",
+      "formatsTitle": "Fomati za Kutoa Zinazopatikana",
+      "formats": {
+        "excel": "Excel (.xlsx) - Inashauriwa kwa kuingiza tena",
+        "csv": "CSV (.csv) - Uoanifu wa ulimwengu",
+        "pdf": "PDF - Kwa ripoti na nyaraka",
+        "quickbooks": "Fomati ya QuickBooks - Kwa kukabidhi kwa mhasibu"
+      },
+      "features": {
+        "excelCsv": "Toa kwa Excel au CSV",
+        "financialFormats": "Fomati za ripoti za kifedha",
+        "accountantReady": "Faili tayari kwa mhasibu",
+        "scheduledExports": "Utoaji uliopangwa unapatikana"
+      }
+    },
+    "dataTypes": {
+      "products": {
+        "label": "Bidhaa/Huduma",
+        "description": "Katalogi ya bidhaa yenye bei na hesabu"
+      },
+      "customers": {
+        "label": "Wateja",
+        "description": "Hifadhidata ya wateja yenye maelezo ya mawasiliano"
+      },
+      "invoices": {
+        "label": "Ankara",
+        "description": "Ankara za mauzo na historia ya malipo"
+      },
+      "bills": {
+        "label": "Bili na Gharama",
+        "description": "Bili za ununuzi na rekodi za gharama"
+      },
+      "chartOfAccounts": {
+        "label": "Chati ya Akaunti",
+        "description": "Muundo wa akaunti na salio"
+      },
+      "taxRates": {
+        "label": "Viwango vya Kodi",
+        "description": "Mipangilio ya kodi kwa eneo"
+      },
+      "vendors": {
+        "label": "Wasambazaji",
+        "description": "Hifadhidata ya wasambazaji na masharti ya malipo"
+      },
+      "employees": {
+        "label": "Wafanyakazi",
+        "description": "Rekodi za wafanyakazi na data ya mishahara"
+      }
+    },
+    "importSources": {
+      "excel": {
+        "label": "Excel/CSV",
+        "description": "Pakia faili za .xlsx au .csv"
+      },
+      "quickbooks": {
+        "label": "QuickBooks",
+        "description": "Ingiza moja kwa moja kutoka QuickBooks Online"
+      },
+      "wave": {
+        "label": "Wave",
+        "description": "Ingiza kutoka Wave Accounting"
+      },
+      "xero": {
+        "label": "Xero",
+        "description": "Ingiza kutoka Xero"
+      },
+      "shopify": {
+        "label": "Shopify",
+        "description": "Ingiza bidhaa na wateja kutoka Shopify"
+      }
+    },
+    "aiFeature": {
+      "title": "Kipengele Kipya: Kirambaaji cha Data cha AI",
+      "description": "Mfumo wetu wa akili wa kulinganisha uwanja unatumia Claude AI kulinganisha uwanja wako wa data na muundo wa hifadhidata ya Dott kiotomatiki, ikifanya uingizaji kuwa wa haraka na sahihi zaidi kuliko hapo awali."
+    },
+    "limits": {
+      "title": "Vikomo vya Uingizaji - Mpango wa {{plan}}",
+      "importsUsed": "Uingizaji uliotumika: {{used}} kati ya {{limit}} mwezi huu",
+      "aiAnalysisUsed": "Uchambuzi wa AI uliotumika: {{used}} kati ya {{limit}}",
+      "maxFileSize": "Ukubwa mkubwa wa faili: {{size}}MB",
+      "maxRows": "Safu za juu kwa kila uingizaji: {{rows}}",
+      "upgradePlan": "Boresha Mpango"
+    },
+    "accessRestricted": {
+      "title": "Ufikiaji Umezuiwa",
+      "message": "Utendaji wa Kuingiza/Kutoa unapatikana tu kwa watumiaji wa Msimamizi na Mmiliki.",
+      "returnButton": "Rudi kwa Dashibodi"
+    },
+    "errors": {
+      "integrationComingSoon": "Uunganishaji wa {{sourceName}} unakuja hivi karibuni!",
+      "selectDataType": "Tafadhali chagua angalau aina moja ya data ya kuingiza",
+      "selectDataTypeExport": "Tafadhali chagua angalau aina moja ya data ya kutoa",
+      "importLimitReached": "Umefikia kikomo chako cha uingizaji wa kila mwezi (uingizaji {{limit}}). Tafadhali boresha mpango wako kwa uingizaji zaidi.",
+      "fileSizeExceeded": "Ukubwa wa faili umezidi kikomo. Kiwango cha juu kinachoruhusiwa: {{maxSize}}MB",
+      "sessionExpired": "Kipindi chako kimekwisha. Tafadhali onyesha upya ukurasa na uingie tena.",
+      "sessionValidationFailed": "Uthibitishaji wa kipindi umeshindwa. Tafadhali onyesha upya ukurasa na ujaribu tena.",
+      "unableToValidate": "Haiwezi kuthibitisha kipindi. Tafadhali onyesha upya ukurasa na ujaribu tena."
+    }
   }
 }

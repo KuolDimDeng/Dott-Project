@@ -9,9 +9,11 @@ import { useSession } from '@/hooks/useSession-v2';
 import * as Sentry from '@sentry/nextjs';
 import { logger } from '@/utils/logger';
 import { useSentryTracking } from '@/hooks/useSentryTracking';
+import { useTranslation } from 'react-i18next';
 
 const ImportExport = () => {
   const router = useRouter();
+  const { t } = useTranslation('navigation');
   const { session, loading: sessionLoading } = useSession();
   const { trackUserAction, trackPageView, trackPerformance, captureError } = useSentryTracking();
   const [mode, setMode] = useState(null); // null, 'import', 'export'
@@ -135,51 +137,51 @@ const ImportExport = () => {
 
   // Data types available for import/export
   const dataTypes = [
-    { id: 'products', label: 'Products/Services', description: 'Product catalog with prices and inventory' },
-    { id: 'customers', label: 'Customers', description: 'Customer database with contact information' },
-    { id: 'invoices', label: 'Invoices', description: 'Sales invoices and payment history' },
-    { id: 'bills', label: 'Bills & Expenses', description: 'Purchase bills and expense records' },
-    { id: 'chart-of-accounts', label: 'Chart of Accounts', description: 'Account structure and balances' },
-    { id: 'tax-rates', label: 'Tax Rates', description: 'Tax configurations by location' },
-    { id: 'vendors', label: 'Vendors', description: 'Supplier database and payment terms' },
-    { id: 'employees', label: 'Employees', description: 'Employee records and payroll data' },
+    { id: 'products', label: t('importExport.dataTypes.products.label', 'Products/Services'), description: t('importExport.dataTypes.products.description', 'Product catalog with prices and inventory') },
+    { id: 'customers', label: t('importExport.dataTypes.customers.label', 'Customers'), description: t('importExport.dataTypes.customers.description', 'Customer database with contact information') },
+    { id: 'invoices', label: t('importExport.dataTypes.invoices.label', 'Invoices'), description: t('importExport.dataTypes.invoices.description', 'Sales invoices and payment history') },
+    { id: 'bills', label: t('importExport.dataTypes.bills.label', 'Bills & Expenses'), description: t('importExport.dataTypes.bills.description', 'Purchase bills and expense records') },
+    { id: 'chart-of-accounts', label: t('importExport.dataTypes.chartOfAccounts.label', 'Chart of Accounts'), description: t('importExport.dataTypes.chartOfAccounts.description', 'Account structure and balances') },
+    { id: 'tax-rates', label: t('importExport.dataTypes.taxRates.label', 'Tax Rates'), description: t('importExport.dataTypes.taxRates.description', 'Tax configurations by location') },
+    { id: 'vendors', label: t('importExport.dataTypes.vendors.label', 'Vendors'), description: t('importExport.dataTypes.vendors.description', 'Supplier database and payment terms') },
+    { id: 'employees', label: t('importExport.dataTypes.employees.label', 'Employees'), description: t('importExport.dataTypes.employees.description', 'Employee records and payroll data') },
   ];
 
   // Import sources
   const importSources = [
     { 
       id: 'excel', 
-      label: 'Excel/CSV', 
+      label: t('importExport.importSources.excel.label', 'Excel/CSV'), 
       icon: DocumentTextIcon,
-      description: 'Upload .xlsx or .csv files',
+      description: t('importExport.importSources.excel.description', 'Upload .xlsx or .csv files'),
       supported: true 
     },
     { 
       id: 'quickbooks', 
-      label: 'QuickBooks', 
+      label: t('importExport.importSources.quickbooks.label', 'QuickBooks'), 
       icon: CloudArrowUpIcon,
-      description: 'Direct import from QuickBooks Online',
+      description: t('importExport.importSources.quickbooks.description', 'Direct import from QuickBooks Online'),
       supported: true 
     },
     { 
       id: 'wave', 
-      label: 'Wave', 
+      label: t('importExport.importSources.wave.label', 'Wave'), 
       icon: CloudArrowUpIcon,
-      description: 'Import from Wave Accounting',
+      description: t('importExport.importSources.wave.description', 'Import from Wave Accounting'),
       supported: false 
     },
     { 
       id: 'xero', 
-      label: 'Xero', 
+      label: t('importExport.importSources.xero.label', 'Xero'), 
       icon: CloudArrowUpIcon,
-      description: 'Import from Xero',
+      description: t('importExport.importSources.xero.description', 'Import from Xero'),
       supported: false 
     },
     { 
       id: 'shopify', 
-      label: 'Shopify', 
+      label: t('importExport.importSources.shopify.label', 'Shopify'), 
       icon: CloudArrowUpIcon,
-      description: 'Import products and customers from Shopify',
+      description: t('importExport.importSources.shopify.description', 'Import products and customers from Shopify'),
       supported: false 
     },
   ];
@@ -217,7 +219,7 @@ const ImportExport = () => {
 
   const handleImportSourceSelect = (source) => {
     if (!source.supported) {
-      setError(`${source.label} integration coming soon!`);
+      setError(t('importExport.errors.integrationComingSoon', `{{sourceName}} integration coming soon!`, { sourceName: source.label }));
       setTimeout(() => setError(null), 3000);
       return;
     }
@@ -246,19 +248,19 @@ const ImportExport = () => {
     if (!file) return;
 
     if (selectedDataTypes.length === 0) {
-      setError('Please select at least one data type to import');
+      setError(t('importExport.errors.selectDataType', 'Please select at least one data type to import'));
       return;
     }
 
     // Check import limits
     if (limits && !limits.remaining.canImport) {
-      setError(`You've reached your monthly import limit (${limits.limits.importsPerMonth} imports). Please upgrade your plan for more imports.`);
+      setError(t('importExport.errors.importLimitReached', `You've reached your monthly import limit ({{limit}} imports). Please upgrade your plan for more imports.`, { limit: limits.limits.importsPerMonth }));
       return;
     }
 
     // Check file size limits
     if (limits && file.size > limits.limits.maxFileSize) {
-      setError(`File size exceeds limit. Maximum allowed: ${(limits.limits.maxFileSize / (1024 * 1024)).toFixed(1)}MB`);
+      setError(t('importExport.errors.fileSizeExceeded', `File size exceeds limit. Maximum allowed: {{maxSize}}MB`, { maxSize: (limits.limits.maxFileSize / (1024 * 1024)).toFixed(1) }));
       return;
     }
 
@@ -341,7 +343,7 @@ const ImportExport = () => {
     }
     
     if (selectedDataTypes.length === 0) {
-      setError('Please select at least one data type to export');
+      setError(t('importExport.errors.selectDataTypeExport', 'Please select at least one data type to export'));
       return;
     }
 
@@ -372,9 +374,9 @@ const ImportExport = () => {
         
         if (testResponse.status === 401) {
           console.error('[ImportExport] 401 Unauthorized - Session invalid or expired');
-          setError('Your session has expired. Please refresh the page and sign in again.');
+          setError(t('importExport.errors.sessionExpired', 'Your session has expired. Please refresh the page and sign in again.'));
         } else {
-          setError('Session validation failed. Please refresh the page and try again.');
+          setError(t('importExport.errors.sessionValidationFailed', 'Session validation failed. Please refresh the page and try again.'));
         }
         return;
       }
@@ -384,7 +386,7 @@ const ImportExport = () => {
       
     } catch (error) {
       console.error('[ImportExport] Session validation error:', error);
-      setError('Unable to validate session. Please refresh the page and try again.');
+      setError(t('importExport.errors.unableToValidate', 'Unable to validate session. Please refresh the page and try again.'));
       return;
     }
 
@@ -417,15 +419,15 @@ const ImportExport = () => {
       return (
         <div className="max-w-4xl mx-auto p-6">
           <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-            <h2 className="text-xl font-semibold text-red-900 mb-2">Access Restricted</h2>
+            <h2 className="text-xl font-semibold text-red-900 mb-2">{t('importExport.accessRestricted.title', 'Access Restricted')}</h2>
             <p className="text-red-700">
-              Import/Export functionality is only available to Admin and Owner users.
+              {t('importExport.accessRestricted.message', 'Import/Export functionality is only available to Admin and Owner users.')}
             </p>
             <button
               onClick={() => router.push('/dashboard')}
               className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
             >
-              Return to Dashboard
+              {t('importExport.accessRestricted.returnButton', 'Return to Dashboard')}
             </button>
           </div>
         </div>
@@ -437,7 +439,7 @@ const ImportExport = () => {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <StandardSpinner size="large" />
-        <span className="ml-3 text-gray-600">Loading...</span>
+        <span className="ml-3 text-gray-600">{t('importExport.loading', 'Loading...')}</span>
       </div>
     );
   }
@@ -447,11 +449,10 @@ const ImportExport = () => {
       <div className="max-w-4xl mx-auto p-6">
         <h1 className="text-2xl font-bold text-black mb-4 flex items-center">
           <ArrowsUpDownIcon className="h-6 w-6 text-blue-600 mr-2" />
-          Import/Export Data
+          {t('importExport.title', 'Import/Export Data')}
         </h1>
         <p className="text-gray-600 mb-8">
-          Seamlessly migrate your business data in and out of Dott. Import from spreadsheets or other accounting software, 
-          and export your data in multiple formats. Our AI-powered field mapper makes importing data quick and accurate.
+          {t('importExport.description', 'Seamlessly migrate your business data in and out of Dott. Import from spreadsheets or other accounting software, and export your data in multiple formats. Our AI-powered field mapper makes importing data quick and accurate.')}
         </p>
         
         <div className="grid md:grid-cols-2 gap-6">
@@ -462,19 +463,19 @@ const ImportExport = () => {
           >
             <div className="flex items-center mb-4">
               <ArrowDownTrayIcon className="h-12 w-12 text-blue-600" />
-              <h2 className="text-xl font-semibold ml-4">Import Data</h2>
+              <h2 className="text-xl font-semibold ml-4">{t('importExport.import.title', 'Import Data')}</h2>
             </div>
             <p className="text-gray-600 mb-4">
-              Bring your existing data into Dott from Excel, QuickBooks, or other sources.
+              {t('importExport.import.description', 'Bring your existing data into Dott from Excel, QuickBooks, or other sources.')}
             </p>
             <ul className="text-sm text-gray-500 space-y-1">
-              <li>• AI-powered field mapping</li>
-              <li>• Support for multiple file formats</li>
-              <li>• Automatic data validation</li>
-              <li>• Bulk import capabilities</li>
+              <li>• {t('importExport.import.features.aiMapping', 'AI-powered field mapping')}</li>
+              <li>• {t('importExport.import.features.multipleFormats', 'Support for multiple file formats')}</li>
+              <li>• {t('importExport.import.features.dataValidation', 'Automatic data validation')}</li>
+              <li>• {t('importExport.import.features.bulkImport', 'Bulk import capabilities')}</li>
             </ul>
             <div className="mt-4 flex items-center text-blue-600">
-              <span className="text-sm font-medium">Get Started</span>
+              <span className="text-sm font-medium">{t('importExport.getStarted', 'Get Started')}</span>
               <ChevronRightIcon className="h-4 w-4 ml-1" />
             </div>
           </div>
@@ -486,29 +487,28 @@ const ImportExport = () => {
           >
             <div className="flex items-center mb-4">
               <ArrowUpTrayIcon className="h-12 w-12 text-green-600" />
-              <h2 className="text-xl font-semibold ml-4">Export Data</h2>
+              <h2 className="text-xl font-semibold ml-4">{t('importExport.export.title', 'Export Data')}</h2>
             </div>
             <p className="text-gray-600 mb-4">
-              Download your Dott data in various formats for backup or use in other applications.
+              {t('importExport.export.description', 'Download your Dott data in various formats for backup or use in other applications.')}
             </p>
             <ul className="text-sm text-gray-500 space-y-1">
-              <li>• Export to Excel or CSV</li>
-              <li>• Financial report formats</li>
-              <li>• Accountant-ready files</li>
-              <li>• Scheduled exports available</li>
+              <li>• {t('importExport.export.features.excelCsv', 'Export to Excel or CSV')}</li>
+              <li>• {t('importExport.export.features.financialFormats', 'Financial report formats')}</li>
+              <li>• {t('importExport.export.features.accountantReady', 'Accountant-ready files')}</li>
+              <li>• {t('importExport.export.features.scheduledExports', 'Scheduled exports available')}</li>
             </ul>
             <div className="mt-4 flex items-center text-green-600">
-              <span className="text-sm font-medium">Get Started</span>
+              <span className="text-sm font-medium">{t('importExport.getStarted', 'Get Started')}</span>
               <ChevronRightIcon className="h-4 w-4 ml-1" />
             </div>
           </div>
         </div>
 
         <div className="mt-8 p-4 bg-blue-50 rounded-lg">
-          <h3 className="font-medium text-blue-900 mb-2">New Feature: AI-Powered Data Mapper</h3>
+          <h3 className="font-medium text-blue-900 mb-2">{t('importExport.aiFeature.title', 'New Feature: AI-Powered Data Mapper')}</h3>
           <p className="text-sm text-blue-700">
-            Our intelligent field mapping system uses Claude AI to automatically match your data fields 
-            with Dott's database structure, making imports faster and more accurate than ever.
+            {t('importExport.aiFeature.description', "Our intelligent field mapping system uses Claude AI to automatically match your data fields with Dott's database structure, making imports faster and more accurate than ever.")}
           </p>
         </div>
       </div>
@@ -524,11 +524,11 @@ const ImportExport = () => {
             className="text-blue-600 hover:text-blue-800 flex items-center"
           >
             <ChevronRightIcon className="h-4 w-4 mr-1 rotate-180" />
-            Back to Import/Export
+            {t('importExport.backButton', 'Back to Import/Export')}
           </button>
         </div>
 
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Import Data</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">{t('importExport.import.title', 'Import Data')}</h1>
 
         {/* Import Limits Display */}
         {limits && (
@@ -543,25 +543,25 @@ const ImportExport = () => {
                 <h3 className={`font-medium ${
                   limits.remaining.canImport ? 'text-blue-900' : 'text-red-900'
                 }`}>
-                  Import Limits - {limits.plan} Plan
+                  {t('importExport.limits.title', 'Import Limits - {{plan}} Plan', { plan: limits.plan })}
                 </h3>
                 <div className="text-sm mt-1">
                   <p className={limits.remaining.canImport ? 'text-blue-700' : 'text-red-700'}>
-                    • Imports used: {limits.usage.importsUsed} of {limits.limits.importsPerMonth} this month
+                    • {t('importExport.limits.importsUsed', 'Imports used: {{used}} of {{limit}} this month', { used: limits.usage.importsUsed, limit: limits.limits.importsPerMonth })}
                   </p>
                   <p className={limits.remaining.canImport ? 'text-blue-700' : 'text-red-700'}>
-                    • AI analysis used: {limits.usage.aiAnalysisUsed} of {limits.limits.aiAnalysisPerMonth}
+                    • {t('importExport.limits.aiAnalysisUsed', 'AI analysis used: {{used}} of {{limit}}', { used: limits.usage.aiAnalysisUsed, limit: limits.limits.aiAnalysisPerMonth })}
                   </p>
                   <p className={limits.remaining.canImport ? 'text-blue-700' : 'text-red-700'}>
-                    • Max file size: {(limits.limits.maxFileSize / (1024 * 1024)).toFixed(0)}MB
+                    • {t('importExport.limits.maxFileSize', 'Max file size: {{size}}MB', { size: (limits.limits.maxFileSize / (1024 * 1024)).toFixed(0) })}
                   </p>
                   <p className={limits.remaining.canImport ? 'text-blue-700' : 'text-red-700'}>
-                    • Max rows per import: {limits.limits.maxRowsPerImport.toLocaleString()}
+                    • {t('importExport.limits.maxRows', 'Max rows per import: {{rows}}', { rows: limits.limits.maxRowsPerImport.toLocaleString() })}
                   </p>
                 </div>
                 {!limits.remaining.canImport && (
                   <button className="mt-2 text-sm font-medium text-red-700 hover:text-red-800">
-                    Upgrade Plan →
+                    {t('importExport.limits.upgradePlan', 'Upgrade Plan')} →
                   </button>
                 )}
               </div>
@@ -571,7 +571,7 @@ const ImportExport = () => {
 
         {/* Step 1: Select Data Types */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-lg font-semibold mb-4">Step 1: What would you like to import?</h2>
+          <h2 className="text-lg font-semibold mb-4">{t('importExport.import.step1Title', 'Step 1: What would you like to import?')}</h2>
           <div className="grid md:grid-cols-2 gap-3">
             {dataTypes.map(dataType => (
               <label
@@ -599,7 +599,7 @@ const ImportExport = () => {
 
         {/* Step 2: Select Import Source */}
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-lg font-semibold mb-4">Step 2: How would you like to import?</h2>
+          <h2 className="text-lg font-semibold mb-4">{t('importExport.import.step2Title', 'Step 2: How would you like to import?')}</h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {importSources.map(source => {
               const Icon = source.icon;
@@ -618,7 +618,7 @@ const ImportExport = () => {
                   <div className="font-medium text-gray-900">{source.label}</div>
                   <div className="text-sm text-gray-500 mt-1">{source.description}</div>
                   {!source.supported && (
-                    <div className="text-xs text-orange-600 mt-2">Coming Soon</div>
+                    <div className="text-xs text-orange-600 mt-2">{t('importExport.comingSoon', 'Coming Soon')}</div>
                   )}
                 </button>
               );
@@ -646,7 +646,7 @@ const ImportExport = () => {
         {loading && (
           <div className="mt-6 flex items-center justify-center">
             <StandardSpinner size="default" />
-            <span className="ml-2 text-gray-600">Processing file...</span>
+            <span className="ml-2 text-gray-600">{t('importExport.processingFile', 'Processing file...')}</span>
           </div>
         )}
       </div>
@@ -662,15 +662,15 @@ const ImportExport = () => {
             className="text-blue-600 hover:text-blue-800 flex items-center"
           >
             <ChevronRightIcon className="h-4 w-4 mr-1 rotate-180" />
-            Back to Import/Export
+            {t('importExport.backButton', 'Back to Import/Export')}
           </button>
         </div>
 
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Export Data</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">{t('importExport.export.title', 'Export Data')}</h1>
 
         {/* Select Data Types */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-lg font-semibold mb-4">Select data to export</h2>
+          <h2 className="text-lg font-semibold mb-4">{t('importExport.export.selectData', 'Select data to export')}</h2>
           <div className="grid md:grid-cols-2 gap-3">
             {dataTypes.map(dataType => (
               <label
@@ -697,7 +697,7 @@ const ImportExport = () => {
 
           <div className="mt-6 flex items-center justify-between">
             <div className="text-sm text-gray-600">
-              {selectedDataTypes.length} data type{selectedDataTypes.length !== 1 ? 's' : ''} selected
+              {t('importExport.export.dataTypesSelected', '{{count}} data type selected', { count: selectedDataTypes.length })}
             </div>
             <button
               onClick={handleExportStart}
@@ -708,19 +708,19 @@ const ImportExport = () => {
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
-              Continue to Export Options
+              {t('importExport.export.continueButton', 'Continue to Export Options')}
             </button>
           </div>
         </div>
 
         {/* Export format options */}
         <div className="bg-blue-50 rounded-lg p-4">
-          <h3 className="font-medium text-blue-900 mb-2">Export Formats Available</h3>
+          <h3 className="font-medium text-blue-900 mb-2">{t('importExport.export.formatsTitle', 'Export Formats Available')}</h3>
           <ul className="text-sm text-blue-700 space-y-1">
-            <li>• Excel (.xlsx) - Recommended for reimporting</li>
-            <li>• CSV (.csv) - Universal compatibility</li>
-            <li>• PDF - For reports and documentation</li>
-            <li>• QuickBooks format - For accountant handoff</li>
+            <li>• {t('importExport.export.formats.excel', 'Excel (.xlsx) - Recommended for reimporting')}</li>
+            <li>• {t('importExport.export.formats.csv', 'CSV (.csv) - Universal compatibility')}</li>
+            <li>• {t('importExport.export.formats.pdf', 'PDF - For reports and documentation')}</li>
+            <li>• {t('importExport.export.formats.quickbooks', 'QuickBooks format - For accountant handoff')}</li>
           </ul>
         </div>
 

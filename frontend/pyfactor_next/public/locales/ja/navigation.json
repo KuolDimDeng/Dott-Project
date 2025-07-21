@@ -273,5 +273,130 @@
     "defaultUser": "Dottユーザー",
     "emailMessage": "こんにちは、\n\n{{senderName}}があなたをDottにお試しいただくよう招待しています。Dottはビジネス運営を簡素化するオールインワンツールです。\n\nビジネスオーナーがDottを愛する理由\n✓ 自動請求書発行と支払い管理\n✓ 予約スケジューリングと顧客リマインダー\n✓ 在庫追跡とサプライヤー管理\n✓ 給与処理と税務レポート\n✓ ビジネスインサイトと分析\n\n今すぐ無料トライアルを開始：\nhttps://dottapps.com\n\nよろしくお願いします、\nDottチーム",
     "whatsappMessage": "こんにちは 👋\n\n{{senderName}}があなたをDottにお試しいただくよう招待しています。Dottはビジネス運営を簡素化するオールインワンツールです。\n\n✓ 自動請求書発行\n✓ 予約スケジューリング\n✓ 在庫管理\n✓ 給与処理\n✓ ビジネス分析\n\n無料トライアル開始：https://dottapps.com"
+  },
+  "importExport": {
+    "title": "データのインポート/エクスポート",
+    "description": "Dottへのビジネスデータの移行をシームレスに行います。スプレッドシートや他の会計ソフトウェアからインポートし、複数の形式でデータをエクスポートできます。AIを活用したフィールドマッパーにより、データのインポートが迅速かつ正確になります。",
+    "backButton": "インポート/エクスポートに戻る",
+    "getStarted": "開始",
+    "loading": "読み込み中...",
+    "processingFile": "ファイルを処理中...",
+    "comingSoon": "近日公開",
+    "import": {
+      "title": "データのインポート",
+      "description": "Excel、QuickBooks、その他のソースから既存のデータをDottに取り込みます。",
+      "step1Title": "ステップ1：何をインポートしますか？",
+      "step2Title": "ステップ2：どのようにインポートしますか？",
+      "features": {
+        "aiMapping": "AIによるフィールドマッピング",
+        "multipleFormats": "複数のファイル形式に対応",
+        "dataValidation": "自動データ検証",
+        "bulkImport": "一括インポート機能"
+      }
+    },
+    "export": {
+      "title": "データのエクスポート",
+      "description": "Dottのデータをさまざまな形式でダウンロードし、バックアップや他のアプリケーションでの使用に備えます。",
+      "selectData": "エクスポートするデータを選択",
+      "dataTypesSelected": "{{count}}個のデータタイプを選択",
+      "dataTypesSelected_plural": "{{count}}個のデータタイプを選択",
+      "continueButton": "エクスポートオプションに進む",
+      "formatsTitle": "利用可能なエクスポート形式",
+      "formats": {
+        "excel": "Excel (.xlsx) - 再インポートに推奨",
+        "csv": "CSV (.csv) - 汎用互換性",
+        "pdf": "PDF - レポートと文書用",
+        "quickbooks": "QuickBooks形式 - 会計士への引き継ぎ用"
+      },
+      "features": {
+        "excelCsv": "ExcelまたはCSVへのエクスポート",
+        "financialFormats": "財務レポート形式",
+        "accountantReady": "会計士対応ファイル",
+        "scheduledExports": "スケジュールエクスポート利用可"
+      }
+    },
+    "dataTypes": {
+      "products": {
+        "label": "製品/サービス",
+        "description": "価格と在庫を含む製品カタログ"
+      },
+      "customers": {
+        "label": "顧客",
+        "description": "連絡先情報を含む顧客データベース"
+      },
+      "invoices": {
+        "label": "請求書",
+        "description": "売上請求書と支払い履歴"
+      },
+      "bills": {
+        "label": "請求書と経費",
+        "description": "購入請求書と経費記録"
+      },
+      "chartOfAccounts": {
+        "label": "勘定科目表",
+        "description": "アカウント構造と残高"
+      },
+      "taxRates": {
+        "label": "税率",
+        "description": "地域別の税設定"
+      },
+      "vendors": {
+        "label": "ベンダー",
+        "description": "サプライヤーデータベースと支払い条件"
+      },
+      "employees": {
+        "label": "従業員",
+        "description": "従業員記録と給与データ"
+      }
+    },
+    "importSources": {
+      "excel": {
+        "label": "Excel/CSV",
+        "description": ".xlsxまたは.csvファイルをアップロード"
+      },
+      "quickbooks": {
+        "label": "QuickBooks",
+        "description": "QuickBooks Onlineから直接インポート"
+      },
+      "wave": {
+        "label": "Wave",
+        "description": "Wave Accountingからインポート"
+      },
+      "xero": {
+        "label": "Xero",
+        "description": "Xeroからインポート"
+      },
+      "shopify": {
+        "label": "Shopify",
+        "description": "Shopifyから製品と顧客をインポート"
+      }
+    },
+    "aiFeature": {
+      "title": "新機能：AIデータマッパー",
+      "description": "当社のインテリジェントなフィールドマッピングシステムはClaude AIを使用して、お客様のデータフィールドをDottのデータベース構造と自動的に一致させ、インポートをこれまで以上に高速かつ正確にします。"
+    },
+    "limits": {
+      "title": "インポート制限 - {{plan}}プラン",
+      "importsUsed": "使用済みインポート：今月{{used}}/{{limit}}",
+      "aiAnalysisUsed": "使用済みAI分析：{{used}}/{{limit}}",
+      "maxFileSize": "最大ファイルサイズ：{{size}}MB",
+      "maxRows": "インポートあたりの最大行数：{{rows}}",
+      "upgradePlan": "プランをアップグレード"
+    },
+    "accessRestricted": {
+      "title": "アクセス制限",
+      "message": "インポート/エクスポート機能は、管理者およびオーナーユーザーのみ利用可能です。",
+      "returnButton": "ダッシュボードに戻る"
+    },
+    "errors": {
+      "integrationComingSoon": "{{sourceName}}統合は近日公開予定です！",
+      "selectDataType": "インポートするデータタイプを少なくとも1つ選択してください",
+      "selectDataTypeExport": "エクスポートするデータタイプを少なくとも1つ選択してください",
+      "importLimitReached": "月間インポート制限（{{limit}}回）に達しました。さらにインポートするにはプランをアップグレードしてください。",
+      "fileSizeExceeded": "ファイルサイズが制限を超えています。最大許容：{{maxSize}}MB",
+      "sessionExpired": "セッションの期限が切れました。ページを更新して再度サインインしてください。",
+      "sessionValidationFailed": "セッションの検証に失敗しました。ページを更新して再試行してください。",
+      "unableToValidate": "セッションを検証できません。ページを更新して再試行してください。"
+    }
   }
 }

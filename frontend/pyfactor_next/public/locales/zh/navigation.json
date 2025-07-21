@@ -273,5 +273,130 @@
     "defaultUser": "Dott 用户",
     "emailMessage": "您好，\n\n{{senderName}} 邀请您试用 Dott，这是一个简化商业运营的一体化工具。\n\n为什么企业主喜爱 Dott？\n✓ 自动化发票和付款管理\n✓ 预约安排和客户提醒\n✓ 库存跟踪和供应商管理\n✓ 工资处理和税务报告\n✓ 商业洞察和分析\n\n立即开始免费试用：\nhttps://dottapps.com\n\n祝好，\nDott 团队",
     "whatsappMessage": "您好 👋\n\n{{senderName}} 邀请您试用 Dott，这是一个简化商业运营的一体化工具。\n\n✓ 自动化发票\n✓ 预约安排\n✓ 库存管理\n✓ 工资处理\n✓ 商业分析\n\n开始免费试用：https://dottapps.com"
+  },
+  "importExport": {
+    "title": "导入/导出数据",
+    "description": "无缝地将您的业务数据迁移到Dott或从Dott迁出。从电子表格或其他会计软件导入，并以多种格式导出您的数据。我们的AI驱动字段映射器使导入数据快速准确。",
+    "backButton": "返回导入/导出",
+    "getStarted": "开始",
+    "loading": "加载中...",
+    "processingFile": "文件处理中...",
+    "comingSoon": "即将推出",
+    "import": {
+      "title": "导入数据",
+      "description": "将您的现有数据从Excel、QuickBooks或其他来源导入Dott。",
+      "step1Title": "第1步：您想导入什么？",
+      "step2Title": "第2步：您想如何导入？",
+      "features": {
+        "aiMapping": "AI驱动的字段映射",
+        "multipleFormats": "支持多种文件格式",
+        "dataValidation": "自动数据验证",
+        "bulkImport": "批量导入功能"
+      }
+    },
+    "export": {
+      "title": "导出数据",
+      "description": "以各种格式下载您的Dott数据，用于备份或在其他应用程序中使用。",
+      "selectData": "选择要导出的数据",
+      "dataTypesSelected": "已选择{{count}}种数据类型",
+      "dataTypesSelected_plural": "已选择{{count}}种数据类型",
+      "continueButton": "继续到导出选项",
+      "formatsTitle": "可用的导出格式",
+      "formats": {
+        "excel": "Excel (.xlsx) - 推荐用于重新导入",
+        "csv": "CSV (.csv) - 通用兼容性",
+        "pdf": "PDF - 用于报告和文档",
+        "quickbooks": "QuickBooks格式 - 用于交给会计师"
+      },
+      "features": {
+        "excelCsv": "导出到Excel或CSV",
+        "financialFormats": "财务报表格式",
+        "accountantReady": "会计师可用文件",
+        "scheduledExports": "定时导出可用"
+      }
+    },
+    "dataTypes": {
+      "products": {
+        "label": "产品/服务",
+        "description": "包含价格和库存的产品目录"
+      },
+      "customers": {
+        "label": "客户",
+        "description": "客户数据库和联系信息"
+      },
+      "invoices": {
+        "label": "发票",
+        "description": "销售发票和付款历史"
+      },
+      "bills": {
+        "label": "账单和费用",
+        "description": "采购账单和费用记录"
+      },
+      "chartOfAccounts": {
+        "label": "会计科目表",
+        "description": "账户结构和余额"
+      },
+      "taxRates": {
+        "label": "税率",
+        "description": "按地点配置的税收"
+      },
+      "vendors": {
+        "label": "供应商",
+        "description": "供应商数据库和付款条款"
+      },
+      "employees": {
+        "label": "员工",
+        "description": "员工记录和工资数据"
+      }
+    },
+    "importSources": {
+      "excel": {
+        "label": "Excel/CSV",
+        "description": "上传.xlsx或.csv文件"
+      },
+      "quickbooks": {
+        "label": "QuickBooks",
+        "description": "从QuickBooks Online直接导入"
+      },
+      "wave": {
+        "label": "Wave",
+        "description": "从Wave Accounting导入"
+      },
+      "xero": {
+        "label": "Xero",
+        "description": "从Xero导入"
+      },
+      "shopify": {
+        "label": "Shopify",
+        "description": "从Shopify导入产品和客户"
+      }
+    },
+    "aiFeature": {
+      "title": "新功能：AI驱动的数据映射器",
+      "description": "我们的智能字段映射系统使用Claude AI自动将您的数据字段与Dott的数据库结构匹配，使导入比以往更快更准确。"
+    },
+    "limits": {
+      "title": "导入限制 - {{plan}}计划",
+      "importsUsed": "已使用导入：本月{{used}}/{{limit}}",
+      "aiAnalysisUsed": "已使用AI分析：{{used}}/{{limit}}",
+      "maxFileSize": "最大文件大小：{{size}}MB",
+      "maxRows": "每次导入最大行数：{{rows}}",
+      "upgradePlan": "升级计划"
+    },
+    "accessRestricted": {
+      "title": "访问受限",
+      "message": "导入/导出功能仅限管理员和所有者用户使用。",
+      "returnButton": "返回控制面板"
+    },
+    "errors": {
+      "integrationComingSoon": "{{sourceName}}集成即将推出！",
+      "selectDataType": "请选择至少一种要导入的数据类型",
+      "selectDataTypeExport": "请选择至少一种要导出的数据类型",
+      "importLimitReached": "您已达到每月导入限制（{{limit}}次导入）。请升级您的计划以获得更多导入次数。",
+      "fileSizeExceeded": "文件大小超出限制。最大允许：{{maxSize}}MB",
+      "sessionExpired": "您的会话已过期。请刷新页面并重新登录。",
+      "sessionValidationFailed": "会话验证失败。请刷新页面并重试。",
+      "unableToValidate": "无法验证会话。请刷新页面并重试。"
+    }
   }
 }

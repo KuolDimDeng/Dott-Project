@@ -1,0 +1,272 @@
+{
+  "mainPage": {
+    "title": "Import/Export Data",
+    "description": "Seamlessly migrate your business data in and out of Dott. Import from spreadsheets or other accounting software, and export your data in multiple formats. Our AI-powered field mapper makes importing data quick and accurate.",
+    "importCard": {
+      "title": "Import Data",
+      "description": "Bring your existing data into Dott from Excel, QuickBooks, or other sources.",
+      "features": {
+        "aiMapping": "AI-powered field mapping",
+        "multiFormat": "Support for multiple file formats",
+        "validation": "Automatic data validation",
+        "bulk": "Bulk import capabilities"
+      },
+      "action": "Get Started"
+    },
+    "exportCard": {
+      "title": "Export Data",
+      "description": "Download your Dott data in various formats for backup or use in other applications.",
+      "features": {
+        "excel": "Export to Excel or CSV",
+        "financial": "Financial report formats",
+        "accountant": "Accountant-ready files",
+        "scheduled": "Scheduled exports available"
+      },
+      "action": "Get Started"
+    },
+    "aiFeature": {
+      "title": "New Feature: AI-Powered Data Mapper",
+      "description": "Our intelligent field mapping system uses Claude AI to automatically match your data fields with Dott's database structure, making imports faster and more accurate than ever."
+    }
+  },
+  "importPage": {
+    "title": "Import Data",
+    "backButton": "Back to Import/Export",
+    "limits": {
+      "title": "Import Limits - {{plan}} Plan",
+      "importsUsed": "Imports used: {{used}} of {{limit}} this month",
+      "aiAnalysisUsed": "AI analysis used: {{used}} of {{limit}}",
+      "maxFileSize": "Max file size: {{size}}MB",
+      "maxRows": "Max rows per import: {{rows}}",
+      "upgradeButton": "Upgrade Plan →"
+    },
+    "step1": {
+      "title": "Step 1: What would you like to import?",
+      "dataTypes": {
+        "products": {
+          "label": "Products/Services",
+          "description": "Product catalog with prices and inventory"
+        },
+        "customers": {
+          "label": "Customers",
+          "description": "Customer database with contact information"
+        },
+        "invoices": {
+          "label": "Invoices",
+          "description": "Sales invoices and payment history"
+        },
+        "bills": {
+          "label": "Bills & Expenses",
+          "description": "Purchase bills and expense records"
+        },
+        "chartOfAccounts": {
+          "label": "Chart of Accounts",
+          "description": "Account structure and balances"
+        },
+        "taxRates": {
+          "label": "Tax Rates",
+          "description": "Tax configurations by location"
+        },
+        "vendors": {
+          "label": "Vendors",
+          "description": "Supplier database and payment terms"
+        },
+        "employees": {
+          "label": "Employees",
+          "description": "Employee records and payroll data"
+        }
+      }
+    },
+    "step2": {
+      "title": "Step 2: How would you like to import?",
+      "sources": {
+        "excel": {
+          "label": "Excel/CSV",
+          "description": "Upload .xlsx or .csv files"
+        },
+        "quickbooks": {
+          "label": "QuickBooks",
+          "description": "Direct import from QuickBooks Online"
+        },
+        "wave": {
+          "label": "Wave",
+          "description": "Import from Wave Accounting",
+          "comingSoon": "Coming Soon"
+        },
+        "xero": {
+          "label": "Xero",
+          "description": "Import from Xero",
+          "comingSoon": "Coming Soon"
+        },
+        "shopify": {
+          "label": "Shopify",
+          "description": "Import products and customers from Shopify",
+          "comingSoon": "Coming Soon"
+        }
+      }
+    },
+    "errors": {
+      "selectDataType": "Please select at least one data type to import",
+      "limitReached": "You've reached your monthly import limit ({{limit}} imports). Please upgrade your plan for more imports.",
+      "fileSizeExceeded": "File size exceeds limit. Maximum allowed: {{maxSize}}MB",
+      "integrationComingSoon": "{{source}} integration coming soon!"
+    },
+    "processing": "Processing file..."
+  },
+  "exportPage": {
+    "title": "Export Options",
+    "backButton": "Back to Import/Export",
+    "subtitle": "Configure how you want to export your {{dataTypes}} data",
+    "noDataSelected": "No data types selected for export",
+    "goBack": "Go Back",
+    "selectedData": {
+      "title": "Data to Export",
+      "requiresAttention": "Requires Attention"
+    },
+    "formats": {
+      "title": "Select Export Format",
+      "excel": {
+        "label": "Excel (.xlsx)",
+        "description": "Best for reimporting or further analysis",
+        "recommended": "Recommended"
+      },
+      "csv": {
+        "label": "CSV (.csv)",
+        "description": "Universal format, compatible with all systems"
+      },
+      "pdf": {
+        "label": "PDF",
+        "description": "Best for reports and documentation"
+      },
+      "quickbooks": {
+        "label": "QuickBooks",
+        "description": "IIF format for QuickBooks import"
+      }
+    },
+    "dateRange": {
+      "title": "Date Range",
+      "allTime": "All Time",
+      "thisMonth": "This Month",
+      "lastMonth": "Last Month",
+      "thisQuarter": "This Quarter",
+      "thisYear": "This Year",
+      "custom": "Custom Range",
+      "startDate": "Start Date",
+      "endDate": "End Date"
+    },
+    "excelOptions": {
+      "title": "Excel Options",
+      "includeHeaders": "Include column headers",
+      "includeFormulas": "Include formulas",
+      "preserveFormatting": "Preserve formatting"
+    },
+    "actions": {
+      "cancel": "Cancel",
+      "export": "Export Data",
+      "exporting": "Exporting... {{progress}}%"
+    },
+    "tips": {
+      "title": "Export Tips",
+      "excel": "Excel format preserves all data types and relationships",
+      "csv": "CSV format is best for universal compatibility",
+      "pdf": "PDF format is ideal for reports and documentation",
+      "large": "Large exports may take several minutes to complete"
+    },
+    "success": {
+      "message": "Export complete! Your download should start automatically."
+    },
+    "errors": {
+      "noDataTypes": "No data types selected",
+      "sessionExpired": "Your session has expired. Please sign in again.",
+      "exportFailed": "Export failed. Please try again."
+    }
+  },
+  "dataMapper": {
+    "title": "Data Mapper",
+    "subtitle": "Map your Excel columns to Dott fields for {{dataType}}",
+    "backButton": "Back to Import",
+    "loading": "Loading file data...",
+    "aiAnalysis": {
+      "analyzing": "AI is analyzing your data...",
+      "title": "AI Mapping Analysis",
+      "description": "Claude AI has analyzed your Excel file and automatically mapped {{mapped}} of {{total}} columns with high confidence."
+    },
+    "columns": {
+      "excelColumn": "Excel Column",
+      "status": "Status",
+      "mapsTo": "Maps To",
+      "aiSuggestion": "AI Suggestion",
+      "selectField": "-- Select Field --",
+      "required": "*"
+    },
+    "confidence": {
+      "label": "({{percentage}}% confidence)"
+    },
+    "requiredNote": "* Required fields must be mapped before importing",
+    "actions": {
+      "cancel": "Cancel Import",
+      "proceed": "Proceed to Import"
+    },
+    "errors": {
+      "requiredFields": "Please map the following required fields: {{fields}}",
+      "aiLimitReached": "You've reached your monthly AI analysis limit ({{limit}}). Manual mapping is still available.",
+      "analysisUnavailable": "AI analysis unavailable - please map manually"
+    }
+  },
+  "importProgress": {
+    "title": "Import Progress",
+    "steps": {
+      "upload": {
+        "label": "Uploading File",
+        "status": "Uploading your file..."
+      },
+      "parse": {
+        "label": "Parsing Data",
+        "status": "Parsing Excel data..."
+      },
+      "validate": {
+        "label": "Validating with AI",
+        "status": "AI is validating your data..."
+      },
+      "import": {
+        "label": "Importing Records",
+        "status": "Importing {{processed}} of {{total}} records..."
+      },
+      "complete": {
+        "label": "Import Complete",
+        "status": "✓ Import completed successfully!"
+      }
+    },
+    "summary": {
+      "title": "Import Summary",
+      "totalRecords": "Total Records",
+      "imported": "Imported",
+      "duplicates": "Duplicates",
+      "failed": "Failed"
+    },
+    "errors": {
+      "title": "Import Errors",
+      "row": "Row {{row}}: {{error}} (Field: {{field}})",
+      "moreErrors": "And {{count}} more errors..."
+    },
+    "actions": {
+      "importMore": "Import More Data",
+      "viewData": "View Imported Data"
+    },
+    "aiInsights": {
+      "title": "AI Import Insights",
+      "description": "Most errors were related to number formatting. Consider using consistent decimal separators and removing currency symbols from price fields before importing."
+    },
+    "errorStatus": "✗ Import failed. Please try again."
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "accessRestricted": {
+      "title": "Access Restricted",
+      "message": "Import/Export functionality is only available to Admin and Owner users.",
+      "button": "Return to Dashboard"
+    }
+  }
+}

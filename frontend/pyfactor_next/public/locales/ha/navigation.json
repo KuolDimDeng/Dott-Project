@@ -273,5 +273,130 @@
     "defaultUser": "Mai amfani da Dott",
     "emailMessage": "Sannu,\n\n{{senderName}} ya gayyace ku don gwada Dott, kayan aiki cikakke don sauƙaƙe ayyukan kasuwanci.\n\nMe yasa masu kasuwanci suke son Dott?\n✓ Yin lissafin kuɗi ta atomatik da gudanar da biyan kuɗi\n✓ Tsara jadawalin alƙawari da tunatarwar abokan ciniki\n✓ Bin diddigin kayayyaki da gudanar da masu siyarwa\n✓ Sarrafa biyan albashi da rahotannin haraji\n✓ Fahimtar kasuwanci da bincike\n\nFara gwajin kyauta yau:\nhttps://dottapps.com\n\nMafi kyau,\nƘungiyar Dott",
     "whatsappMessage": "Sannu 👋\n\n{{senderName}} ya gayyace ku don gwada Dott, kayan aiki cikakke don sauƙaƙe ayyukan kasuwanci.\n\n✓ Yin lissafin kuɗi ta atomatik\n✓ Tsara jadawalin alƙawari\n✓ Gudanar da kayayyaki\n✓ Sarrafa biyan albashi\n✓ Binciken kasuwanci\n\nFara gwajin kyauta: https://dottapps.com"
+  },
+  "importExport": {
+    "title": "Shigo da/Fitar da Bayanai",
+    "description": "Matsawa bayanan kasuwancin ku zuwa cikin da daga Dott ba tare da matsala ba. Shigo da su daga spreadsheets ko wasu software na lissafin kudi, kuma fitar da bayanan ku a nau'uka daban-daban. Mai yin taswirar filayen mu mai ikon AI yana sanya shigo da bayanai cikin sauri da daidai.",
+    "backButton": "Koma zuwa Shigo da/Fitar da",
+    "getStarted": "Fara",
+    "loading": "Ana lodi...",
+    "processingFile": "Ana aiwatar da fayil...",
+    "comingSoon": "Yana Zuwa Nan ba da jimawa ba",
+    "import": {
+      "title": "Shigo da Bayanai",
+      "description": "Kawo bayanan da kuke da su zuwa Dott daga Excel, QuickBooks ko wasu wurare.",
+      "step1Title": "Mataki na 1: Me kuke son shigo da shi?",
+      "step2Title": "Mataki na 2: Ta yaya kuke son shigo da shi?",
+      "features": {
+        "aiMapping": "Yin taswirar filaye mai ikon AI",
+        "multipleFormats": "Tallafin nau'ukan fayiloli da yawa",
+        "dataValidation": "Tabbatar da bayanai ta atomatik",
+        "bulkImport": "Damar shigo da su da yawa"
+      }
+    },
+    "export": {
+      "title": "Fitar da Bayanai",
+      "description": "Sauke bayanan Dott ɗinku a nau'uka daban-daban don ajiyewa ko amfani a wasu aikace-aikace.",
+      "selectData": "Zaɓi bayanai don fitarwa",
+      "dataTypesSelected": "An zaɓi nau'in bayanai {{count}}",
+      "dataTypesSelected_plural": "An zaɓi nau'ukan bayanai {{count}}",
+      "continueButton": "Ci gaba zuwa Zaɓuɓukan Fitarwa",
+      "formatsTitle": "Nau'ukan Fitarwa da Ake da Su",
+      "formats": {
+        "excel": "Excel (.xlsx) - An ba da shawarar sake shigo da shi",
+        "csv": "CSV (.csv) - Dacewa ta duniya",
+        "pdf": "PDF - Don rahotanni da takardu",
+        "quickbooks": "Tsarin QuickBooks - Don mika wa mai lissafin kuɗi"
+      },
+      "features": {
+        "excelCsv": "Fitar zuwa Excel ko CSV",
+        "financialFormats": "Nau'ukan rahoton kuɗi",
+        "accountantReady": "Fayilolin da suka shirya wa mai lissafin kuɗi",
+        "scheduledExports": "Akwai fitarwa da aka tsara"
+      }
+    },
+    "dataTypes": {
+      "products": {
+        "label": "Kayayyaki/Ayyuka",
+        "description": "Kasida ta kayayyaki tare da farashi da kaya"
+      },
+      "customers": {
+        "label": "Abokan Ciniki",
+        "description": "Bayanan abokan ciniki tare da bayanan lamba"
+      },
+      "invoices": {
+        "label": "Takardar Kuɗi",
+        "description": "Takardun kuɗin tallace-tallace da tarihin biɗa"
+      },
+      "bills": {
+        "label": "Takardun Kuɗi & Kashe Kuɗi",
+        "description": "Takardun siyan kaya da bayanan kashe kuɗi"
+      },
+      "chartOfAccounts": {
+        "label": "Jadawalin Asusu",
+        "description": "Tsarin asusu da ma'auni"
+      },
+      "taxRates": {
+        "label": "Adadin Haraji",
+        "description": "Saitin haraji ta wuri"
+      },
+      "vendors": {
+        "label": "Masu Siyarwa",
+        "description": "Bayanan masu siyarwa da sharuddan biɗa"
+      },
+      "employees": {
+        "label": "Ma'aikata",
+        "description": "Bayanan ma'aikata da bayanan albashi"
+      }
+    },
+    "importSources": {
+      "excel": {
+        "label": "Excel/CSV",
+        "description": "Loda fayilolin .xlsx ko .csv"
+      },
+      "quickbooks": {
+        "label": "QuickBooks",
+        "description": "Shigo kai tsaye daga QuickBooks Online"
+      },
+      "wave": {
+        "label": "Wave",
+        "description": "Shigo daga Wave Accounting"
+      },
+      "xero": {
+        "label": "Xero",
+        "description": "Shigo daga Xero"
+      },
+      "shopify": {
+        "label": "Shopify",
+        "description": "Shigo da kayayyaki da abokan ciniki daga Shopify"
+      }
+    },
+    "aiFeature": {
+      "title": "Sabon Fasali: Mai Yin Taswirar Bayanai mai Ikon AI",
+      "description": "Tsarin taswirar filayen mu mai hankali yana amfani da Claude AI don daidaita filayen bayanan ku ta atomatik da tsarin bayanan Dott, yana sanya shigo da su cikin sauri da daidai fiye da kowane lokaci."
+    },
+    "limits": {
+      "title": "Iyakokin Shigo da su - Shirin {{plan}}",
+      "importsUsed": "Shigo da aka yi amfani: {{used}} daga cikin {{limit}} a wannan watan",
+      "aiAnalysisUsed": "Binciken AI da aka yi amfani: {{used}} daga cikin {{limit}}",
+      "maxFileSize": "Girman fayil mafi girma: {{size}}MB",
+      "maxRows": "Layukan mafi yawa a kowane shigo: {{rows}}",
+      "upgradePlan": "Haɓaka Shiri"
+    },
+    "accessRestricted": {
+      "title": "An Hana Shiga",
+      "message": "Aikin Shigo da/Fitar da yana samuwa ne kawai ga masu amfani da Admin da Mai shi.",
+      "returnButton": "Koma zuwa Dashboard"
+    },
+    "errors": {
+      "integrationComingSoon": "Haɗakar {{sourceName}} tana zuwa nan ba da jimawa ba!",
+      "selectDataType": "Da fatan zaɓi aƙalla nau'in bayanai ɗaya don shigo da shi",
+      "selectDataTypeExport": "Da fatan zaɓi aƙalla nau'in bayanai ɗaya don fitarwa",
+      "importLimitReached": "Kun kai iyakar shigo da ku na wata-wata (shigo da {{limit}}). Da fatan ku haɓaka shirin ku don ƙarin shigo da su.",
+      "fileSizeExceeded": "Girman fayil ya wuce iyaka. Mafi girman da aka yarda: {{maxSize}}MB",
+      "sessionExpired": "Zaman ku ya ƙare. Da fatan sabunta shafin kuma sake shiga.",
+      "sessionValidationFailed": "Tabbatar da zama ya gaza. Da fatan sabunta shafin kuma sake gwadawa.",
+      "unableToValidate": "Ba za a iya tabbatar da zama ba. Da fatan sabunta shafin kuma sake gwadawa."
+    }
   }
 }

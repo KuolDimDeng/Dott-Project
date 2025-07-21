@@ -273,5 +273,130 @@
     "defaultUser": "Een Dott-gebruiker",
     "emailMessage": "Hallo,\n\n{{senderName}} heeft u uitgenodigd om Dott te proberen, een alles-in-één tool om bedrijfsactiviteiten te vereenvoudigen.\n\nWaarom houden bedrijfseigenaren van Dott?\n✓ Geautomatiseerde facturering en betalingsbeheer\n✓ Afspraken plannen en klantberinneringen\n✓ Voorraadbeheer en leveranciersbeheer\n✓ Salarisverwerking en belastingrapporten\n✓ Bedrijfsinzichten en analyses\n\nStart vandaag nog uw gratis proefperiode:\nhttps://dottapps.com\n\nMet vriendelijke groet,\nHet Dott-team",
     "whatsappMessage": "Hallo 👋\n\n{{senderName}} heeft u uitgenodigd om Dott te proberen, een alles-in-één tool om bedrijfsactiviteiten te vereenvoudigen.\n\n✓ Geautomatiseerde facturering\n✓ Afspraken plannen\n✓ Voorraadbeheer\n✓ Salarisverwerking\n✓ Bedrijfsanalyses\n\nStart gratis proefperiode: https://dottapps.com"
+  },
+  "importExport": {
+    "title": "Gegevens importeren/exporteren",
+    "description": "Migreer uw bedrijfsgegevens naadloos naar en van Dott. Importeer uit spreadsheets of andere boekhoudsoftware, en exporteer uw gegevens in meerdere formaten. Onze AI-gestuurde veldmapper maakt het importeren van gegevens snel en nauwkeurig.",
+    "backButton": "Terug naar Importeren/Exporteren",
+    "getStarted": "Aan de slag",
+    "loading": "Laden...",
+    "processingFile": "Bestand verwerken...",
+    "comingSoon": "Binnenkort beschikbaar",
+    "import": {
+      "title": "Gegevens importeren",
+      "description": "Breng uw bestaande gegevens naar Dott vanuit Excel, QuickBooks of andere bronnen.",
+      "step1Title": "Stap 1: Wat wilt u importeren?",
+      "step2Title": "Stap 2: Hoe wilt u importeren?",
+      "features": {
+        "aiMapping": "AI-gestuurde veldtoewijzing",
+        "multipleFormats": "Ondersteuning voor meerdere bestandsformaten",
+        "dataValidation": "Automatische gegevensvalidatie",
+        "bulkImport": "Bulk importeermogelijkheden"
+      }
+    },
+    "export": {
+      "title": "Gegevens exporteren",
+      "description": "Download uw Dott-gegevens in verschillende formaten voor back-up of gebruik in andere applicaties.",
+      "selectData": "Selecteer gegevens om te exporteren",
+      "dataTypesSelected": "{{count}} gegevenstype geselecteerd",
+      "dataTypesSelected_plural": "{{count}} gegevenstypen geselecteerd",
+      "continueButton": "Doorgaan naar Exportopties",
+      "formatsTitle": "Beschikbare exportformaten",
+      "formats": {
+        "excel": "Excel (.xlsx) - Aanbevolen voor herimporteren",
+        "csv": "CSV (.csv) - Universele compatibiliteit",
+        "pdf": "PDF - Voor rapporten en documentatie",
+        "quickbooks": "QuickBooks-formaat - Voor overdracht aan accountant"
+      },
+      "features": {
+        "excelCsv": "Exporteren naar Excel of CSV",
+        "financialFormats": "Financiële rapportformaten",
+        "accountantReady": "Accountant-klare bestanden",
+        "scheduledExports": "Geplande exports beschikbaar"
+      }
+    },
+    "dataTypes": {
+      "products": {
+        "label": "Producten/Diensten",
+        "description": "Productcatalogus met prijzen en voorraad"
+      },
+      "customers": {
+        "label": "Klanten",
+        "description": "Klantendatabase met contactgegevens"
+      },
+      "invoices": {
+        "label": "Facturen",
+        "description": "Verkoopfacturen en betalingsgeschiedenis"
+      },
+      "bills": {
+        "label": "Rekeningen & Uitgaven",
+        "description": "Aankooprekeningen en uitgavenrecords"
+      },
+      "chartOfAccounts": {
+        "label": "Rekeningschema",
+        "description": "Accountstructuur en saldi"
+      },
+      "taxRates": {
+        "label": "Belastingtarieven",
+        "description": "Belastingconfiguraties per locatie"
+      },
+      "vendors": {
+        "label": "Leveranciers",
+        "description": "Leveranciersdatabase en betalingsvoorwaarden"
+      },
+      "employees": {
+        "label": "Werknemers",
+        "description": "Werknemersgegevens en salarisgegevens"
+      }
+    },
+    "importSources": {
+      "excel": {
+        "label": "Excel/CSV",
+        "description": "Upload .xlsx- of .csv-bestanden"
+      },
+      "quickbooks": {
+        "label": "QuickBooks",
+        "description": "Direct importeren vanuit QuickBooks Online"
+      },
+      "wave": {
+        "label": "Wave",
+        "description": "Importeren vanuit Wave Accounting"
+      },
+      "xero": {
+        "label": "Xero",
+        "description": "Importeren vanuit Xero"
+      },
+      "shopify": {
+        "label": "Shopify",
+        "description": "Importeer producten en klanten vanuit Shopify"
+      }
+    },
+    "aiFeature": {
+      "title": "Nieuwe functie: AI-gestuurde gegevensmapper",
+      "description": "Ons intelligente veldtoewijzingssysteem gebruikt Claude AI om uw gegevensvelden automatisch te matchen met de databasestructuur van Dott, waardoor imports sneller en nauwkeuriger worden dan ooit tevoren."
+    },
+    "limits": {
+      "title": "Importlimieten - {{plan}} Plan",
+      "importsUsed": "Gebruikte imports: {{used}} van {{limit}} deze maand",
+      "aiAnalysisUsed": "Gebruikte AI-analyse: {{used}} van {{limit}}",
+      "maxFileSize": "Maximale bestandsgrootte: {{size}}MB",
+      "maxRows": "Maximaal aantal rijen per import: {{rows}}",
+      "upgradePlan": "Plan upgraden"
+    },
+    "accessRestricted": {
+      "title": "Toegang beperkt",
+      "message": "Import/Export-functionaliteit is alleen beschikbaar voor Admin- en Eigenaar-gebruikers.",
+      "returnButton": "Terug naar Dashboard"
+    },
+    "errors": {
+      "integrationComingSoon": "{{sourceName}}-integratie komt binnenkort!",
+      "selectDataType": "Selecteer minimaal één gegevenstype om te importeren",
+      "selectDataTypeExport": "Selecteer minimaal één gegevenstype om te exporteren",
+      "importLimitReached": "U heeft uw maandelijkse importlimiet bereikt ({{limit}} imports). Upgrade uw plan voor meer imports.",
+      "fileSizeExceeded": "Bestandsgrootte overschrijdt limiet. Maximaal toegestaan: {{maxSize}}MB",
+      "sessionExpired": "Uw sessie is verlopen. Vernieuw de pagina en log opnieuw in.",
+      "sessionValidationFailed": "Sessievalidatie mislukt. Vernieuw de pagina en probeer het opnieuw.",
+      "unableToValidate": "Kan sessie niet valideren. Vernieuw de pagina en probeer het opnieuw."
+    }
   }
 }

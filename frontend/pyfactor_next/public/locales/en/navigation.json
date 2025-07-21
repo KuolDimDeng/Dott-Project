@@ -276,5 +276,130 @@
     "defaultUser": "A Dott User",
     "emailMessage": "{{senderName}} has invited you to join Dott: Global Business Platform!\n\nHello,\n\nI wanted to personally recommend Dott, a business management platform that has transformed how I run my operations.\n\nDott brings together everything you need in one place:\n• Sales and customer management\n• Inventory tracking and control\n• Professional invoicing and payments\n• Financial reporting and analytics\n• Team collaboration tools\n• AI Business insights and analytics\n• Geofencing and location tracking\n• Real-time business intelligence\n\nSince implementing Dott, I've reduced administrative work by hours each week while gaining real-time insights into my business performance. The platform delivers enterprise-grade capabilities at a fraction of traditional software costs.\n\nI believe Dott would be particularly valuable for your business operations and growth goals.\n\nGet started for free forever today: https://dottapps.com\n\nBest regards,\n{{userName}}",
     "whatsappMessage": "🚀 *{{senderName}} has invited you to join Dott: Global Business Platform!*\n\nHello! I wanted to personally recommend Dott, a business management platform that has transformed how I run my operations.\n\nDott brings together everything you need:\n• Sales and customer management\n• Inventory tracking and control\n• Professional invoicing and payments\n• Financial reporting and analytics\n• Team collaboration tools\n• AI Business insights and analytics\n• Geofencing and location tracking\n• Real-time business intelligence\n\nSince implementing Dott, I've reduced administrative work by hours each week while gaining real-time insights into my business performance.\n\nGet started for free forever today: https://dottapps.com\n\nBest regards,\n{{userName}}"
+  },
+  "importExport": {
+    "title": "Import/Export Data",
+    "description": "Seamlessly migrate your business data in and out of Dott. Import from spreadsheets or other accounting software, and export your data in multiple formats. Our AI-powered field mapper makes importing data quick and accurate.",
+    "backButton": "Back to Import/Export",
+    "getStarted": "Get Started",
+    "loading": "Loading...",
+    "processingFile": "Processing file...",
+    "comingSoon": "Coming Soon",
+    "import": {
+      "title": "Import Data",
+      "description": "Bring your existing data into Dott from Excel, QuickBooks, or other sources.",
+      "step1Title": "Step 1: What would you like to import?",
+      "step2Title": "Step 2: How would you like to import?",
+      "features": {
+        "aiMapping": "AI-powered field mapping",
+        "multipleFormats": "Support for multiple file formats",
+        "dataValidation": "Automatic data validation",
+        "bulkImport": "Bulk import capabilities"
+      }
+    },
+    "export": {
+      "title": "Export Data",
+      "description": "Download your Dott data in various formats for backup or use in other applications.",
+      "selectData": "Select data to export",
+      "dataTypesSelected": "{{count}} data type selected",
+      "dataTypesSelected_plural": "{{count}} data types selected",
+      "continueButton": "Continue to Export Options",
+      "formatsTitle": "Export Formats Available",
+      "formats": {
+        "excel": "Excel (.xlsx) - Recommended for reimporting",
+        "csv": "CSV (.csv) - Universal compatibility",
+        "pdf": "PDF - For reports and documentation",
+        "quickbooks": "QuickBooks format - For accountant handoff"
+      },
+      "features": {
+        "excelCsv": "Export to Excel or CSV",
+        "financialFormats": "Financial report formats",
+        "accountantReady": "Accountant-ready files",
+        "scheduledExports": "Scheduled exports available"
+      }
+    },
+    "dataTypes": {
+      "products": {
+        "label": "Products/Services",
+        "description": "Product catalog with prices and inventory"
+      },
+      "customers": {
+        "label": "Customers",
+        "description": "Customer database with contact information"
+      },
+      "invoices": {
+        "label": "Invoices",
+        "description": "Sales invoices and payment history"
+      },
+      "bills": {
+        "label": "Bills & Expenses",
+        "description": "Purchase bills and expense records"
+      },
+      "chartOfAccounts": {
+        "label": "Chart of Accounts",
+        "description": "Account structure and balances"
+      },
+      "taxRates": {
+        "label": "Tax Rates",
+        "description": "Tax configurations by location"
+      },
+      "vendors": {
+        "label": "Vendors",
+        "description": "Supplier database and payment terms"
+      },
+      "employees": {
+        "label": "Employees",
+        "description": "Employee records and payroll data"
+      }
+    },
+    "importSources": {
+      "excel": {
+        "label": "Excel/CSV",
+        "description": "Upload .xlsx or .csv files"
+      },
+      "quickbooks": {
+        "label": "QuickBooks",
+        "description": "Direct import from QuickBooks Online"
+      },
+      "wave": {
+        "label": "Wave",
+        "description": "Import from Wave Accounting"
+      },
+      "xero": {
+        "label": "Xero",
+        "description": "Import from Xero"
+      },
+      "shopify": {
+        "label": "Shopify",
+        "description": "Import products and customers from Shopify"
+      }
+    },
+    "aiFeature": {
+      "title": "New Feature: AI-Powered Data Mapper",
+      "description": "Our intelligent field mapping system uses Claude AI to automatically match your data fields with Dott's database structure, making imports faster and more accurate than ever."
+    },
+    "limits": {
+      "title": "Import Limits - {{plan}} Plan",
+      "importsUsed": "Imports used: {{used}} of {{limit}} this month",
+      "aiAnalysisUsed": "AI analysis used: {{used}} of {{limit}}",
+      "maxFileSize": "Max file size: {{size}}MB",
+      "maxRows": "Max rows per import: {{rows}}",
+      "upgradePlan": "Upgrade Plan"
+    },
+    "accessRestricted": {
+      "title": "Access Restricted",
+      "message": "Import/Export functionality is only available to Admin and Owner users.",
+      "returnButton": "Return to Dashboard"
+    },
+    "errors": {
+      "integrationComingSoon": "{{sourceName}} integration coming soon!",
+      "selectDataType": "Please select at least one data type to import",
+      "selectDataTypeExport": "Please select at least one data type to export",
+      "importLimitReached": "You've reached your monthly import limit ({{limit}} imports). Please upgrade your plan for more imports.",
+      "fileSizeExceeded": "File size exceeds limit. Maximum allowed: {{maxSize}}MB",
+      "sessionExpired": "Your session has expired. Please refresh the page and sign in again.",
+      "sessionValidationFailed": "Session validation failed. Please refresh the page and try again.",
+      "unableToValidate": "Unable to validate session. Please refresh the page and try again."
+    }
   }
 }

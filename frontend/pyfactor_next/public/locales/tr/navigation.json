@@ -273,5 +273,130 @@
     "defaultUser": "Bir Dott Kullanıcısı",
     "emailMessage": "Merhaba,\n\n{{senderName}} sizi iş operasyonlarını basitleştirmek için çok yönlü bir araç olan Dott'u denemeye davet ediyor.\n\nİşletme sahipleri neden Dott'u seviyor?\n✓ Otomatik faturalandırma ve ödeme yönetimi\n✓ Randevu planlama ve müşteri hatırlatıcıları\n✓ Envanter takibi ve tedarikçi yönetimi\n✓ Bordro işleme ve vergi raporları\n✓ İş görüşleri ve analizler\n\nÜcretsiz denemenizi bugün başlatın:\nhttps://dottapps.com\n\nSaygılarımızla,\nDott Ekibi",
     "whatsappMessage": "Merhaba 👋\n\n{{senderName}} sizi iş operasyonlarını basitleştirmek için çok yönlü bir araç olan Dott'u denemeye davet ediyor.\n\n✓ Otomatik faturalandırma\n✓ Randevu planlama\n✓ Envanter yönetimi\n✓ Bordro işleme\n✓ İş analizleri\n\nÜcretsiz denemeyi başlat: https://dottapps.com"
+  },
+  "importExport": {
+    "title": "Veri İçe/Dışa Aktar",
+    "description": "İşletme verilerinizi Dott'a ve Dott'tan sorunsuz bir şekilde taşıyın. Elektronik tablolardan veya diğer muhasebe yazılımlarından içe aktarın ve verilerinizi birden fazla formatta dışa aktarın. Yapay zeka destekli alan eşleştiricimiz, veri içe aktarmayı hızlı ve doğru hale getirir.",
+    "backButton": "İçe/Dışa Aktarmaya Dön",
+    "getStarted": "Başla",
+    "loading": "Yükleniyor...",
+    "processingFile": "Dosya işleniyor...",
+    "comingSoon": "Yakında",
+    "import": {
+      "title": "Veri İçe Aktar",
+      "description": "Mevcut verilerinizi Excel, QuickBooks veya diğer kaynaklardan Dott'a getirin.",
+      "step1Title": "Adım 1: Neyi içe aktarmak istersiniz?",
+      "step2Title": "Adım 2: Nasıl içe aktarmak istersiniz?",
+      "features": {
+        "aiMapping": "Yapay zeka destekli alan eşleştirme",
+        "multipleFormats": "Birden fazla dosya formatı desteği",
+        "dataValidation": "Otomatik veri doğrulama",
+        "bulkImport": "Toplu içe aktarma yetenekleri"
+      }
+    },
+    "export": {
+      "title": "Veri Dışa Aktar",
+      "description": "Dott verilerinizi yedekleme veya diğer uygulamalarda kullanma amacıyla çeşitli formatlarda indirin.",
+      "selectData": "Dışa aktaracağınız veriyi seçin",
+      "dataTypesSelected": "{{count}} veri türü seçildi",
+      "dataTypesSelected_plural": "{{count}} veri türü seçildi",
+      "continueButton": "Dışa Aktarma Seçeneklerine Devam Et",
+      "formatsTitle": "Mevcut Dışa Aktarma Formatları",
+      "formats": {
+        "excel": "Excel (.xlsx) - Yeniden içe aktarma için önerilen",
+        "csv": "CSV (.csv) - Evrensel uyumluluk",
+        "pdf": "PDF - Raporlar ve dokümantasyon için",
+        "quickbooks": "QuickBooks formatı - Muhasebeciye teslim için"
+      },
+      "features": {
+        "excelCsv": "Excel veya CSV'ye aktar",
+        "financialFormats": "Finansal rapor formatları",
+        "accountantReady": "Muhasebeci hazır dosyalar",
+        "scheduledExports": "Zamanlanmış dışa aktarmalar mevcut"
+      }
+    },
+    "dataTypes": {
+      "products": {
+        "label": "Ürünler/Hizmetler",
+        "description": "Fiyatlar ve envanter ile ürün kataloğu"
+      },
+      "customers": {
+        "label": "Müşteriler",
+        "description": "İletişim bilgileriyle müşteri veritabanı"
+      },
+      "invoices": {
+        "label": "Faturalar",
+        "description": "Satış faturaları ve ödeme geçmişi"
+      },
+      "bills": {
+        "label": "Faturalar ve Giderler",
+        "description": "Satın alma faturaları ve gider kayıtları"
+      },
+      "chartOfAccounts": {
+        "label": "Hesap Planı",
+        "description": "Hesap yapısı ve bakiyeler"
+      },
+      "taxRates": {
+        "label": "Vergi Oranları",
+        "description": "Konuma göre vergi yapılandırmaları"
+      },
+      "vendors": {
+        "label": "Tedarikçiler",
+        "description": "Tedarikçi veritabanı ve ödeme koşulları"
+      },
+      "employees": {
+        "label": "Çalışanlar",
+        "description": "Çalışan kayıtları ve maaş verileri"
+      }
+    },
+    "importSources": {
+      "excel": {
+        "label": "Excel/CSV",
+        "description": ".xlsx veya .csv dosyalarını yükle"
+      },
+      "quickbooks": {
+        "label": "QuickBooks",
+        "description": "QuickBooks Online'dan doğrudan içe aktar"
+      },
+      "wave": {
+        "label": "Wave",
+        "description": "Wave Accounting'den içe aktar"
+      },
+      "xero": {
+        "label": "Xero",
+        "description": "Xero'dan içe aktar"
+      },
+      "shopify": {
+        "label": "Shopify",
+        "description": "Shopify'dan ürünleri ve müşterileri içe aktar"
+      }
+    },
+    "aiFeature": {
+      "title": "Yeni Özellik: Yapay Zeka Destekli Veri Eşleştirici",
+      "description": "Akıllı alan eşleştirme sistemimiz, veri alanlarınızı Dott'un veritabanı yapısıyla otomatik olarak eşleştirmek için Claude AI kullanır ve içe aktarmaları her zamankinden daha hızlı ve doğru hale getirir."
+    },
+    "limits": {
+      "title": "İçe Aktarma Limitleri - {{plan}} Planı",
+      "importsUsed": "Kullanılan içe aktarmalar: Bu ay {{used}} / {{limit}}",
+      "aiAnalysisUsed": "Kullanılan AI analizi: {{used}} / {{limit}}",
+      "maxFileSize": "Maksimum dosya boyutu: {{size}}MB",
+      "maxRows": "İçe aktarma başına maksimum satır: {{rows}}",
+      "upgradePlan": "Planı Yükselt"
+    },
+    "accessRestricted": {
+      "title": "Erişim Kısıtlandı",
+      "message": "İçe/Dışa Aktarma işlevselliği yalnızca Yönetici ve Sahip kullanıcılar için kullanılabilir.",
+      "returnButton": "Kontrol Paneline Dön"
+    },
+    "errors": {
+      "integrationComingSoon": "{{sourceName}} entegrasyonu yakında geliyor!",
+      "selectDataType": "Lütfen içe aktarmak için en az bir veri türü seçin",
+      "selectDataTypeExport": "Lütfen dışa aktarmak için en az bir veri türü seçin",
+      "importLimitReached": "Aylık içe aktarma limitinize ulaştınız ({{limit}} içe aktarma). Daha fazla içe aktarma için lütfen planınızı yükseltin.",
+      "fileSizeExceeded": "Dosya boyutu limiti aşıyor. İzin verilen maksimum: {{maxSize}}MB",
+      "sessionExpired": "Oturumunuzun süresi doldu. Lütfen sayfayı yenileyin ve tekrar giriş yapın.",
+      "sessionValidationFailed": "Oturum doğrulaması başarısız oldu. Lütfen sayfayı yenileyin ve tekrar deneyin.",
+      "unableToValidate": "Oturum doğrulanamıyor. Lütfen sayfayı yenileyin ve tekrar deneyin."
+    }
   }
 }
