@@ -846,5 +846,64 @@
     "allRightsReserved": "すべての権利を保護します。",
     "privacyPolicy": "プライバシーポリシー",
     "termsOfService": "利用規約"
+  },
+  "highlights": {
+    "eyebrow": "主な利点",
+    "heading": "企業がDottを選ぶ理由",
+    "subheading": "競合他社との差別化を図り、ビジネスの成長を支援する高度な機能。",
+    "mobile": {
+      "title": "モバイルアプリケーション",
+      "description": "強力なモバイルアプリでいつでもどこでもビジネスデータにアクセス。在庫管理、売上処理、リアルタイムレポート閲覧を外出先で行えます。",
+      "imageAlt": "モバイルアプリのスクリーンショット"
+    },
+    "pos": {
+      "title": "POSシステムとバーコードスキャン",
+      "description": "あらゆるデバイスを強力なPOSシステムに変換。バーコードを瞬時にスキャン、売上を迅速に処理、在庫をリアルタイムで追跡し、現金、カード、モバイルマネーを含むすべての決済方法に対応。",
+      "imageAlt": "バーコードスキャン機能付きPOSシステム",
+      "features": {
+        "quickCheckout": "迅速会計",
+        "barcodeScanning": "バーコードスキャン",
+        "allPaymentTypes": "全決済タイプ",
+        "inventoryTracking": "在庫追跡",
+        "offlineMode": "オフラインモード",
+        "mobileReady": "モバイル対応"
+      }
+    },
+    "ai": {
+      "title": "AI駆動インサイト",
+      "description": "ビジネスデータに基づくスマートな推奨と予測分析を取得。AIが需要予測、在庫最適化、成長機会の特定を支援します。",
+      "imageAlt": "AI分析ダッシュボードのスクリーンショット"
+    },
+    "geofencing": {
+      "title": "ジオフェンシング＆位置追跡",
+      "description": "GPSベースの出退勤で正確な時間追跡を保証。フィールドチーム、配送ドライバー、リモートワーカーに最適。職場に仮想境界を設定し、従業員が指定エリアに出入りする際にアラートを受信。",
+      "imageAlt": "ジオフェンシングと位置追跡インターフェース",
+      "features": {
+        "gpsClockInOut": "GPS出退勤",
+        "virtualBoundaries": "仮想境界",
+        "realTimeAlerts": "リアルタイムアラート",
+        "automatedTimesheets": "自動勤怠表",
+        "complianceReady": "コンプライアンス対応",
+        "teamManagement": "チーム管理"
+      }
+    },
+    "mobilemoney": {
+      "title": "モバイルマネー決済",
+      "description": "世界中どこからでも決済を受け付けます。M-Pesa統合はケニアで稼働中、MTN Mobile Money、Airtel Money、Orange Money、GCash、Paytm、Pix、Mercado Pagoが近日対応予定。従来の銀行サービスよりもモバイルマネーを好む数十億の顧客にリーチ。",
+      "imageAlt": "モバイルマネー決済オプション",
+      "available": "決済方法：",
+      "live": "現在利用可能：",
+      "coming": "近日対応："
+    },
+    "languages": {
+      "title": "20以上の言語をサポート",
+      "description": "お好みの言語で顧客にリーチし、ビジネスを管理。英語からスワヒリ語、スペイン語から中国語まで、20以上の言語をサポートし、世界中の企業がDottを利用できるようにします。",
+      "imageAlt": "多言語インターフェースのデモンストレーション",
+      "availableIn": "利用可能言語："
+    },
+    "features": {
+      "label": "主な機能："
+    },
+    "learnMore": "詳細を見る"
   }
 }

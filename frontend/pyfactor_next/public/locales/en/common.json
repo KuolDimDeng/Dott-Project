@@ -194,6 +194,13 @@
         "teamManagement": "Team management"
       }
     },
+    "mobilemoney": {
+      "title": "Mobile Money Payments",
+      "description": "Accept payments from anywhere in the world. M-Pesa integration is live in Kenya, with MTN Mobile Money, Airtel Money, Orange Money, GCash, Paytm, Pix, and Mercado Pago coming soon. Reach billions of customers who prefer mobile money over traditional banking.",
+      "available": "Payment methods:",
+      "live": "Now Available:",
+      "coming": "Coming Soon:"
+    },
     "languages": {
       "title": "20+ Languages Supported",
       "description": "Reach customers and manage your business in your preferred language. From English to Swahili, Spanish to Mandarin, we support over 20 languages to make Dott accessible to businesses worldwide.",
@@ -1014,5 +1021,198 @@
     "allRightsReserved": "All rights reserved.",
     "privacyPolicy": "Privacy Policy",
     "termsOfService": "Terms of Service"
+  },
+  "featureDetails": {
+    "screenshots": "Screenshots & Examples",
+    "cta": {
+      "heading": "Ready to get started?",
+      "text": "Join thousands of businesses already using Dott to grow.",
+      "button": "Start Free Trial"
+    },
+    "mobile": {
+      "title": "Mobile Application",
+      "subtitle": "Your Business in Your Pocket",
+      "overview": {
+        "heading": "Complete Business Management on the Go",
+        "content": "Access your entire business from your smartphone or tablet. Our mobile app is designed to give you full control whether you're at the office, in the field, or traveling. With offline capabilities, you can continue working even without an internet connection."
+      },
+      "features": {
+        "heading": "Key Mobile Features",
+        "1": "Real-time sales and inventory tracking",
+        "2": "Create and send invoices instantly",
+        "3": "Accept payments on the spot",
+        "4": "View business analytics and reports",
+        "5": "Manage employees and timesheets",
+        "6": "Scan barcodes with your camera",
+        "7": "Works offline with automatic sync",
+        "8": "Push notifications for important events"
+      },
+      "benefits": {
+        "heading": "Benefits for Your Business",
+        "content": "Stay connected to your business 24/7. Make informed decisions with real-time data. Serve customers faster with mobile POS. Reduce paperwork and manual processes."
+      },
+      "images": {
+        "dashboard": "Mobile dashboard view",
+        "dashboardCaption": "Dashboard with key metrics at a glance",
+        "pos": "Mobile POS screen",
+        "posCaption": "Process sales from anywhere",
+        "inventory": "Mobile inventory management",
+        "inventoryCaption": "Track inventory in real-time"
+      }
+    },
+    "pos": {
+      "title": "POS and Barcode Scanning",
+      "subtitle": "Fast, Accurate, and Efficient Sales",
+      "overview": {
+        "heading": "Modern Point of Sale System",
+        "content": "Transform any device into a powerful point-of-sale system. Our POS is designed for speed and simplicity, allowing you to process sales quickly while maintaining accurate inventory tracking. The integrated barcode scanner makes checkout lightning fast."
+      },
+      "features": {
+        "heading": "Advanced POS Features",
+        "1": "Barcode scanning with camera or Bluetooth scanner",
+        "2": "Support for all payment types including mobile money",
+        "3": "Automatic inventory updates with each sale",
+        "4": "Customer management and loyalty programs",
+        "5": "Split payments and partial payments",
+        "6": "Returns and exchanges handling",
+        "7": "Offline mode with queue management",
+        "8": "Multi-location inventory tracking"
+      },
+      "barcode": {
+        "heading": "Powerful Barcode System",
+        "content": "Generate custom barcodes for your products. Print barcode labels in various sizes. Scan products instantly during sales or inventory counts. Support for QR codes and standard barcodes."
+      },
+      "images": {
+        "checkout": "POS checkout screen",
+        "checkoutCaption": "Fast and intuitive checkout process",
+        "scanning": "Barcode scanning in action",
+        "scanningCaption": "Scan products instantly with camera or scanner",
+        "payments": "Multiple payment methods",
+        "paymentsCaption": "Accept cash, cards, and mobile money"
+      }
+    },
+    "ai": {
+      "title": "AI-Powered Insights",
+      "subtitle": "Smart Recommendations for Growth",
+      "overview": {
+        "heading": "Artificial Intelligence for Your Business",
+        "content": "Our AI analyzes your business data to provide actionable insights and recommendations. Get predictive analytics, demand forecasting, and smart alerts that help you make better business decisions."
+      },
+      "features": {
+        "heading": "AI-Powered Features",
+        "1": "Demand forecasting based on historical data",
+        "2": "Inventory optimization recommendations",
+        "3": "Best selling product analysis",
+        "4": "Customer behavior insights",
+        "5": "Pricing optimization suggestions",
+        "6": "Seasonal trend detection",
+        "7": "Cash flow predictions",
+        "8": "Automated financial reports"
+      },
+      "benefits": {
+        "heading": "How AI Helps Your Business",
+        "content": "Reduce stockouts and overstock situations. Identify growth opportunities. Optimize pricing for maximum profit. Understand customer preferences better."
+      },
+      "images": {
+        "dashboard": "AI analytics dashboard",
+        "dashboardCaption": "Smart insights at your fingertips",
+        "forecast": "Demand forecasting chart",
+        "forecastCaption": "Predict future demand accurately",
+        "inventory": "Inventory optimization",
+        "inventoryCaption": "AI-powered inventory recommendations"
+      }
+    },
+    "geofencing": {
+      "title": "Geofencing & Location Tracking",
+      "subtitle": "Smart Location-Based Management",
+      "overview": {
+        "heading": "Advanced Location Intelligence",
+        "content": "Ensure accurate time tracking and improve accountability with GPS-based clock in/out. Create virtual boundaries around work sites and get instant notifications when employees enter or leave designated areas."
+      },
+      "features": {
+        "heading": "Location Management Features",
+        "1": "GPS-based clock in/out with location verification",
+        "2": "Create unlimited geofence zones",
+        "3": "Real-time employee location during work hours",
+        "4": "Automated timesheet creation",
+        "5": "Mileage tracking for delivery drivers",
+        "6": "Site visit verification for field teams",
+        "7": "Privacy-focused with employee consent",
+        "8": "Detailed location history and reports"
+      },
+      "compliance": {
+        "heading": "Privacy & Compliance",
+        "content": "Full GDPR and privacy law compliance. Employee consent management. Location tracking only during work hours. Transparent data usage policies."
+      },
+      "images": {
+        "map": "Geofence map view",
+        "mapCaption": "Create and manage work zones easily",
+        "tracking": "Employee tracking dashboard",
+        "trackingCaption": "Real-time team location overview",
+        "reports": "Location reports",
+        "reportsCaption": "Detailed location analytics"
+      }
+    },
+    "mobilemoney": {
+      "title": "Mobile Money Payments",
+      "subtitle": "Accept Payments from Billions of Users Worldwide",
+      "overview": {
+        "heading": "Global Payment Acceptance",
+        "content": "Break down payment barriers and reach customers everywhere. Mobile money is the preferred payment method for billions of people globally, especially in emerging markets. With Dott, you can accept payments from M-Pesa users today, with many more mobile money providers coming soon."
+      },
+      "current": {
+        "heading": "Currently Available",
+        "1": "M-Pesa (Kenya) - Over 30 million active users",
+        "2": "Credit and Debit Cards (Visa, Mastercard, Amex)",
+        "3": "Bank transfers and ACH payments",
+        "4": "Cash payments (tracked in system)"
+      },
+      "coming": {
+        "heading": "Coming Soon",
+        "1": "MTN Mobile Money - 180+ million users across Africa",
+        "2": "Airtel Money - 125+ million users in Africa and Asia",
+        "3": "Orange Money - 70+ million users in Africa and Middle East",
+        "4": "GCash (Philippines) - 81+ million registered users",
+        "5": "Paytm (India) - 350+ million users",
+        "6": "Pix (Brazil) - 140+ million users",
+        "7": "Mercado Pago - 80+ million users in Latin America",
+        "8": "bKash (Bangladesh), OVO (Indonesia), and more"
+      },
+      "benefits": {
+        "heading": "Why Mobile Money Matters",
+        "content": "Instant payments with lower transaction fees. No bank account required for customers. Reach underbanked populations. Enable cross-border transactions. Perfect for small transactions and daily purchases."
+      },
+      "images": {
+        "options": "Mobile money payment options",
+        "optionsCaption": "Multiple payment methods in one platform",
+        "mpesa": "M-Pesa payment flow",
+        "mpesaCaption": "Simple and secure M-Pesa integration",
+        "global": "Global payment coverage map",
+        "globalCaption": "Worldwide mobile money coverage"
+      }
+    },
+    "languages": {
+      "title": "20+ Languages Supported",
+      "subtitle": "Speak Your Customer's Language",
+      "overview": {
+        "heading": "True Global Accessibility",
+        "content": "Dott is available in over 20 languages, making it accessible to businesses worldwide. Every feature, button, and message is fully translated by native speakers to ensure clarity and cultural appropriateness."
+      },
+      "supported": {
+        "heading": "Supported Languages"
+      },
+      "benefits": {
+        "heading": "Benefits of Multilingual Support",
+        "content": "Serve customers in their preferred language. Expand to new markets easily. Train employees faster with native language support. Build trust with localized content."
+      },
+      "images": {
+        "selector": "Language selector",
+        "selectorCaption": "Switch languages instantly",
+        "interface": "Multilingual interface",
+        "interfaceCaption": "Fully translated user interface",
+        "map": "Global availability map",
+        "mapCaption": "Available worldwide in local languages"
+      }
+    }
   }
 }

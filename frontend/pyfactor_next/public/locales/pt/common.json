@@ -287,33 +287,63 @@
     "legal": "Legal"
   },
   "highlights": {
-    "bluetooth": "Integração de scanner Bluetooth",
-    "printBarcodes": "Imprima códigos de barras personalizados",
-    "lowStock": "Alertas de estoque baixo",
-    "customLabel": "Impressão de etiquetas personalizadas",
-    "mobileScanning": "Escaneamento móvel",
-    "batchProcessing": "Processamento em lote",
-    "offlineMode": "Modo offline",
-    "multiplePayments": "Múltiplos métodos de pagamento",
-    "receiptCustom": "Personalização de recibos",
-    "recurringInvoices": "Faturas recorrentes",
-    "paymentReminders": "Lembretes de pagamento",
-    "invoiceFactoring": "Factoring de faturas",
-    "vatGst": "Suporte IVA/GST",
-    "taxReports": "Relatórios fiscais",
-    "eFilingReady": "Pronto para e-filing",
-    "customDashboards": "Dashboards personalizados",
-    "profitAnalysis": "Análise de lucros",
-    "cashFlowForecast": "Previsão de fluxo de caixa",
-    "mobileMoney": "Dinheiro móvel",
-    "bankTransfers": "Transferências bancárias",
-    "digitalWallets": "Carteiras digitais",
-    "customsDocuments": "Documentos alfandegários",
-    "shippingIntegration": "Integração de envio",
-    "tradeCompliance": "Conformidade comercial",
-    "soc2Compliant": "Conforme SOC2",
-    "dataEncryption": "Criptografia de dados",
-    "gdprReady": "Pronto para GDPR"
+    "eyebrow": "Principais Benefícios",
+    "heading": "Por que as empresas escolhem Dott",
+    "subheading": "Recursos avançados que nos diferenciam da concorrência e ajudam sua empresa a crescer.",
+    "mobile": {
+      "title": "Aplicativo Mobile",
+      "description": "Acesse os dados da sua empresa a qualquer momento, em qualquer lugar, com nosso poderoso aplicativo mobile. Gerencie estoque, processe vendas e visualize relatórios em tempo real em movimento.",
+      "imageAlt": "Captura de tela do aplicativo mobile"
+    },
+    "pos": {
+      "title": "PDV e Leitura de Códigos de Barras",
+      "description": "Transforme qualquer dispositivo em um poderoso sistema de ponto de venda. Escaneie códigos de barras instantaneamente, processe vendas rapidamente, acompanhe o estoque em tempo real e aceite todos os métodos de pagamento, incluindo dinheiro, cartões e mobile money.",
+      "imageAlt": "Sistema PDV com funcionalidade de leitura de códigos de barras",
+      "features": {
+        "quickCheckout": "Checkout rápido",
+        "barcodeScanning": "Leitura de códigos",
+        "allPaymentTypes": "Todos tipos de pagamento",
+        "inventoryTracking": "Rastreamento de estoque",
+        "offlineMode": "Modo offline",
+        "mobileReady": "Pronto para mobile"
+      }
+    },
+    "ai": {
+      "title": "Insights com IA",
+      "description": "Obtenha recomendações inteligentes e análises preditivas baseadas nos dados da sua empresa. Nossa IA ajuda você a prever demanda, otimizar estoque e identificar oportunidades de crescimento.",
+      "imageAlt": "Captura de tela do dashboard de análises com IA"
+    },
+    "geofencing": {
+      "title": "Geofencing e Rastreamento de Localização",
+      "description": "Garanta um rastreamento preciso de tempo com ponto eletrônico baseado em GPS. Perfeito para equipes de campo, entregadores e trabalhadores remotos. Configure limites virtuais para locais de trabalho e receba alertas quando funcionários entrarem ou saírem de áreas designadas.",
+      "imageAlt": "Interface de geofencing e rastreamento de localização",
+      "features": {
+        "gpsClockInOut": "Ponto GPS",
+        "virtualBoundaries": "Limites virtuais",
+        "realTimeAlerts": "Alertas tempo real",
+        "automatedTimesheets": "Folhas ponto automatizadas",
+        "complianceReady": "Conforme regulamentações",
+        "teamManagement": "Gestão de equipe"
+      }
+    },
+    "mobilemoney": {
+      "title": "Pagamentos Mobile Money",
+      "description": "Aceite pagamentos de qualquer lugar do mundo. A integração M-Pesa está ativa no Quênia, com MTN Mobile Money, Airtel Money, Orange Money, GCash, Paytm, Pix e Mercado Pago chegando em breve. Alcance bilhões de clientes que preferem mobile money ao sistema bancário tradicional.",
+      "imageAlt": "Opções de pagamento mobile money",
+      "available": "Métodos de pagamento:",
+      "live": "Disponível Agora:",
+      "coming": "Em Breve:"
+    },
+    "languages": {
+      "title": "Mais de 20 Idiomas Suportados",
+      "description": "Alcance clientes e gerencie sua empresa no seu idioma preferido. Do inglês ao suaíli, espanhol ao mandarim, suportamos mais de 20 idiomas para tornar o Dott acessível a empresas em todo o mundo.",
+      "imageAlt": "Demonstração de interface multilíngue",
+      "availableIn": "Disponível em:"
+    },
+    "features": {
+      "label": "Principais recursos:"
+    },
+    "learnMore": "Saiba mais"
   },
   "faq": {
     "eyebrow": "FAQ",

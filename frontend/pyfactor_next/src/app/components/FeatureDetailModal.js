@@ -183,6 +183,59 @@ const getFeatureDetails = (t) => ({
       }
     ]
   },
+  mobilemoney: {
+    title: t('featureDetails.mobilemoney.title', 'Mobile Money Payments'),
+    subtitle: t('featureDetails.mobilemoney.subtitle', 'Accept Payments from Billions of Users Worldwide'),
+    sections: [
+      {
+        heading: t('featureDetails.mobilemoney.overview.heading', 'Global Payment Acceptance'),
+        content: t('featureDetails.mobilemoney.overview.content', 'Break down payment barriers and reach customers everywhere. Mobile money is the preferred payment method for billions of people globally, especially in emerging markets. With Dott, you can accept payments from M-Pesa users today, with many more mobile money providers coming soon.')
+      },
+      {
+        heading: t('featureDetails.mobilemoney.current.heading', 'Currently Available'),
+        bullets: [
+          t('featureDetails.mobilemoney.current.1', 'M-Pesa (Kenya) - Over 30 million active users'),
+          t('featureDetails.mobilemoney.current.2', 'Credit and Debit Cards (Visa, Mastercard, Amex)'),
+          t('featureDetails.mobilemoney.current.3', 'Bank transfers and ACH payments'),
+          t('featureDetails.mobilemoney.current.4', 'Cash payments (tracked in system)')
+        ]
+      },
+      {
+        heading: t('featureDetails.mobilemoney.coming.heading', 'Coming Soon'),
+        bullets: [
+          t('featureDetails.mobilemoney.coming.1', 'MTN Mobile Money - 180+ million users across Africa'),
+          t('featureDetails.mobilemoney.coming.2', 'Airtel Money - 125+ million users in Africa and Asia'),
+          t('featureDetails.mobilemoney.coming.3', 'Orange Money - 70+ million users in Africa and Middle East'),
+          t('featureDetails.mobilemoney.coming.4', 'GCash (Philippines) - 81+ million registered users'),
+          t('featureDetails.mobilemoney.coming.5', 'Paytm (India) - 350+ million users'),
+          t('featureDetails.mobilemoney.coming.6', 'Pix (Brazil) - 140+ million users'),
+          t('featureDetails.mobilemoney.coming.7', 'Mercado Pago - 80+ million users in Latin America'),
+          t('featureDetails.mobilemoney.coming.8', 'bKash (Bangladesh), OVO (Indonesia), and more')
+        ]
+      },
+      {
+        heading: t('featureDetails.mobilemoney.benefits.heading', 'Why Mobile Money Matters'),
+        content: t('featureDetails.mobilemoney.benefits.content', 'Instant payments with lower transaction fees. No bank account required for customers. Reach underbanked populations. Enable cross-border transactions. Perfect for small transactions and daily purchases.')
+      }
+    ],
+    images: [
+      {
+        src: '/static/images/mobile-money-options.jpg',
+        alt: t('featureDetails.mobilemoney.images.options', 'Mobile money payment options'),
+        caption: t('featureDetails.mobilemoney.images.optionsCaption', 'Multiple payment methods in one platform')
+      },
+      {
+        src: '/static/images/mpesa-payment-flow.jpg',
+        alt: t('featureDetails.mobilemoney.images.mpesa', 'M-Pesa payment flow'),
+        caption: t('featureDetails.mobilemoney.images.mpesaCaption', 'Simple and secure M-Pesa integration')
+      },
+      {
+        src: '/static/images/global-payment-map.jpg',
+        alt: t('featureDetails.mobilemoney.images.global', 'Global payment coverage map'),
+        caption: t('featureDetails.mobilemoney.images.globalCaption', 'Worldwide mobile money coverage')
+      }
+    ]
+  },
   languages: {
     title: t('featureDetails.languages.title', '20+ Languages Supported'),
     subtitle: t('featureDetails.languages.subtitle', 'Speak Your Customer\'s Language'),

@@ -287,33 +287,63 @@
     "legal": "Rechtliches"
   },
   "highlights": {
-    "bluetooth": "Bluetooth-Scanner-Integration",
-    "printBarcodes": "Benutzerdefinierte Barcodes drucken",
-    "lowStock": "Niedrigbestand-Warnungen",
-    "customLabel": "Benutzerdefinierter Etikettendruck",
-    "mobileScanning": "Mobiles Scannen",
-    "batchProcessing": "Stapelverarbeitung",
-    "offlineMode": "Offline-Modus",
-    "multiplePayments": "Mehrere Zahlungsmethoden",
-    "receiptCustom": "Beleg-Anpassung",
-    "recurringInvoices": "Wiederkehrende Rechnungen",
-    "paymentReminders": "Zahlungserinnerungen",
-    "invoiceFactoring": "Rechnungsfactoring",
-    "vatGst": "MwSt./GST-Support",
-    "taxReports": "Steuerberichte",
-    "eFilingReady": "E-Filing bereit",
-    "customDashboards": "Benutzerdefinierte Dashboards",
-    "profitAnalysis": "Gewinnanalyse",
-    "cashFlowForecast": "Cashflow-Prognose",
-    "mobileMoney": "Mobile Geldbörse",
-    "bankTransfers": "Banküberweisungen",
-    "digitalWallets": "Digitale Geldbörsen",
-    "customsDocuments": "Zolldokumente",
-    "shippingIntegration": "Versand-Integration",
-    "tradeCompliance": "Handels-Compliance",
-    "soc2Compliant": "SOC2-konform",
-    "dataEncryption": "Datenverschlüsselung",
-    "gdprReady": "DSGVO-bereit"
+    "eyebrow": "Hauptvorteile",
+    "heading": "Warum Unternehmen Dott wählen",
+    "subheading": "Erweiterte Funktionen, die uns von der Konkurrenz abheben und Ihrem Unternehmen beim Wachstum helfen.",
+    "mobile": {
+      "title": "Mobile App",
+      "description": "Greifen Sie jederzeit und überall mit unserer leistungsstarken mobilen App auf Ihre Unternehmensdaten zu. Verwalten Sie Lagerbestände, bearbeiten Sie Verkäufe und sehen Sie Berichte in Echtzeit unterwegs.",
+      "imageAlt": "Screenshot der mobilen App"
+    },
+    "pos": {
+      "title": "Kassensystem und Barcode-Scanning",
+      "description": "Verwandeln Sie jedes Gerät in ein leistungsstarkes Kassensystem. Scannen Sie Barcodes sofort, bearbeiten Sie Verkäufe schnell, verfolgen Sie Lagerbestände in Echtzeit und akzeptieren Sie alle Zahlungsmethoden einschließlich Bargeld, Karten und Mobile Money.",
+      "imageAlt": "Kassensystem mit Barcode-Scanning-Funktion",
+      "features": {
+        "quickCheckout": "Schneller Checkout",
+        "barcodeScanning": "Barcode-Scanning",
+        "allPaymentTypes": "Alle Zahlungsarten",
+        "inventoryTracking": "Lagerbestandsverfolgung",
+        "offlineMode": "Offline-Modus",
+        "mobileReady": "Mobile-ready"
+      }
+    },
+    "ai": {
+      "title": "KI-gestützte Einblicke",
+      "description": "Erhalten Sie intelligente Empfehlungen und prädiktive Analysen basierend auf Ihren Unternehmensdaten. Unsere KI hilft Ihnen bei der Nachfrageprognose, Lagerbestandsoptimierung und Identifizierung von Wachstumschancen.",
+      "imageAlt": "Screenshot des KI-Analyse-Dashboards"
+    },
+    "geofencing": {
+      "title": "Geofencing & Standortverfolgung",
+      "description": "Gewährleisten Sie präzise Zeiterfassung mit GPS-basiertem Ein-/Ausstempeln. Perfekt für Außendienstteams, Lieferfahrer und Remote-Mitarbeiter. Richten Sie virtuelle Grenzen für Arbeitsplätze ein und erhalten Sie Benachrichtigungen, wenn Mitarbeiter bestimmte Bereiche betreten oder verlassen.",
+      "imageAlt": "Geofencing- und Standortverfolgungsschnittstelle",
+      "features": {
+        "gpsClockInOut": "GPS-Zeitstempel",
+        "virtualBoundaries": "Virtuelle Grenzen",
+        "realTimeAlerts": "Echtzeit-Benachrichtigungen",
+        "automatedTimesheets": "Automatisierte Stundenzettel",
+        "complianceReady": "Compliance-bereit",
+        "teamManagement": "Team-Management"
+      }
+    },
+    "mobilemoney": {
+      "title": "Mobile Money Zahlungen",
+      "description": "Akzeptieren Sie Zahlungen von überall auf der Welt. M-Pesa-Integration ist in Kenia verfügbar, mit MTN Mobile Money, Airtel Money, Orange Money, GCash, Paytm, Pix und Mercado Pago in Kürze. Erreichen Sie Milliarden von Kunden, die Mobile Money gegenüber herkömmlichen Bankdienstleistungen bevorzugen.",
+      "imageAlt": "Mobile Money Zahlungsoptionen",
+      "available": "Zahlungsmethoden:",
+      "live": "Jetzt Verfügbar:",
+      "coming": "Demnächst:"
+    },
+    "languages": {
+      "title": "Über 20 Sprachen Unterstützt",
+      "description": "Erreichen Sie Kunden und verwalten Sie Ihr Unternehmen in Ihrer bevorzugten Sprache. Von Englisch bis Suaheli, von Spanisch bis Mandarin unterstützen wir über 20 Sprachen, um Dott für Unternehmen weltweit zugänglich zu machen.",
+      "imageAlt": "Mehrsprachige Schnittstellen-Demonstration",
+      "availableIn": "Verfügbar in:"
+    },
+    "features": {
+      "label": "Hauptfunktionen:"
+    },
+    "learnMore": "Mehr erfahren"
   },
   "faq": {
     "eyebrow": "FAQ",

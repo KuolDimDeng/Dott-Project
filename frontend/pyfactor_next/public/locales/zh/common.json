@@ -288,33 +288,63 @@
     "legal": "法律"
   },
   "highlights": {
-    "bluetooth": "蓝牙扫描仪集成",
-    "printBarcodes": "打印定制条码",
-    "lowStock": "低库存警报",
-    "customLabel": "定制标签打印",
-    "mobileScanning": "移动扫描",
-    "batchProcessing": "批量处理",
-    "offlineMode": "离线模式",
-    "multiplePayments": "多种支付方式",
-    "receiptCustom": "收据定制",
-    "recurringInvoices": "循环发票",
-    "paymentReminders": "付款提醒",
-    "invoiceFactoring": "发票保理",
-    "vatGst": "增值税/GST支持",
-    "taxReports": "税务报告",
-    "eFilingReady": "电子申报就绪",
-    "customDashboards": "定制仪表板",
-    "profitAnalysis": "利润分析",
-    "cashFlowForecast": "现金流预测",
-    "mobileMoney": "移动支付",
-    "bankTransfers": "银行转账",
-    "digitalWallets": "数字钱包",
-    "customsDocuments": "海关文件",
-    "shippingIntegration": "运输集成",
-    "tradeCompliance": "贸易合规",
-    "soc2Compliant": "SOC2合规",
-    "dataEncryption": "数据加密",
-    "gdprReady": "GDPR就绪"
+    "eyebrow": "核心优势",
+    "heading": "企业选择Dott的原因",
+    "subheading": "先进的功能让我们在竞争中脱颖而出，帮助您的企业增长。",
+    "mobile": {
+      "title": "移动应用程序",
+      "description": "通过我们强大的移动应用随时随地访问您的企业数据。管理库存、处理销售并在移动中查看实时报告。",
+      "imageAlt": "移动应用程序截图"
+    },
+    "pos": {
+      "title": "收银系统和条码扫描",
+      "description": "将任何设备转换为强大的销售点系统。立即扫描条码、快速处理销售、实时跟踪库存，并接受包括现金、卡片和移动支付在内的所有支付方式。",
+      "imageAlt": "带条码扫描功能的收银系统",
+      "features": {
+        "quickCheckout": "快速结账",
+        "barcodeScanning": "条码扫描",
+        "allPaymentTypes": "所有支付类型",
+        "inventoryTracking": "库存跟踪",
+        "offlineMode": "离线模式",
+        "mobileReady": "移动就绪"
+      }
+    },
+    "ai": {
+      "title": "AI智能洞察",
+      "description": "基于您的企业数据获得智能推荐和预测分析。我们的AI帮助您预测需求、优化库存并识别增长机会。",
+      "imageAlt": "AI分析仪表板截图"
+    },
+    "geofencing": {
+      "title": "地理围栏和位置跟踪",
+      "description": "通过基于GPS的打卡签到/签退确保精确的时间跟踪。非常适合外勤团队、送货司机和远程工作者。为工作场所设置虚拟边界，当员工进入或离开指定区域时接收警报。",
+      "imageAlt": "地理围栏和位置跟踪界面",
+      "features": {
+        "gpsClockInOut": "GPS打卡",
+        "virtualBoundaries": "虚拟边界",
+        "realTimeAlerts": "实时警报",
+        "automatedTimesheets": "自动考勤表",
+        "complianceReady": "合规就绪",
+        "teamManagement": "团队管理"
+      }
+    },
+    "mobilemoney": {
+      "title": "移动支付",
+      "description": "接受来自世界任何地方的付款。M-Pesa集成已在肯尼亚上线，MTN Mobile Money、Airtel Money、Orange Money、GCash、Paytm、Pix和Mercado Pago即将推出。覆盖数十亿偏好移动支付而非传统银行服务的客户。",
+      "imageAlt": "移动支付选项",
+      "available": "支付方式：",
+      "live": "现已可用：",
+      "coming": "即将推出："
+    },
+    "languages": {
+      "title": "支持20多种语言",
+      "description": "用您喜欢的语言接触客户和管理您的企业。从英语到斯瓦希里语，从西班牙语到中文，我们支持20多种语言，让全世界的企业都能使用Dott。",
+      "imageAlt": "多语言界面演示",
+      "availableIn": "支持语言："
+    },
+    "features": {
+      "label": "核心功能："
+    },
+    "learnMore": "了解更多"
   },
   "faq": {
     "eyebrow": "常见问题",

@@ -43,12 +43,20 @@ export default function Highlights() {
       reverse: true,
     },
     {
+      key: 'mobilemoney',
+      title: t('highlights.mobilemoney.title', 'Mobile Money Payments'),
+      description: t('highlights.mobilemoney.description', 'Accept payments from anywhere in the world. M-Pesa integration is live in Kenya, with MTN Mobile Money, Airtel Money, Orange Money, GCash, Paytm, Pix, and Mercado Pago coming soon. Reach billions of customers who prefer mobile money over traditional banking.'),
+      image: '/static/images/mobile-money-screenshot.jpg',
+      imageAlt: t('highlights.mobilemoney.imageAlt', 'Mobile money payment options'),
+      reverse: false,
+    },
+    {
       key: 'languages',
       title: t('highlights.languages.title', '20+ Languages Supported'),
       description: t('highlights.languages.description', 'Reach customers and manage your business in your preferred language. From English to Swahili, Spanish to Mandarin, we support over 20 languages to make Dott accessible to businesses worldwide.'),
       image: '/static/images/languages-screenshot.jpg',
       imageAlt: t('highlights.languages.imageAlt', 'Multi-language interface demonstration'),
-      reverse: false,
+      reverse: true,
     },
   ];
 
@@ -171,6 +179,52 @@ export default function Highlights() {
                             <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                           </svg>
                           <span className="text-sm text-gray-700">{t('highlights.geofencing.features.teamManagement', 'Team management')}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Show mobile money options */}
+                  {highlight.title === t('highlights.mobilemoney.title', 'Mobile Money Payments') && (
+                    <div className="mt-6">
+                      <p className="text-sm font-medium text-gray-500 mb-3">{t('highlights.mobilemoney.available', 'Payment methods:')}</p>
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-sm font-medium text-green-600 mb-2">{t('highlights.mobilemoney.live', 'Now Available:')}</p>
+                          <div className="flex flex-wrap gap-2">
+                            <span className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-sm font-medium">
+                              M-Pesa (Kenya)
+                            </span>
+                            <span className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-sm font-medium">
+                              Credit/Debit Cards
+                            </span>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-blue-600 mb-2">{t('highlights.mobilemoney.coming', 'Coming Soon:')}</p>
+                          <div className="flex flex-wrap gap-2">
+                            <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">
+                              MTN Mobile Money
+                            </span>
+                            <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">
+                              Airtel Money
+                            </span>
+                            <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">
+                              Orange Money
+                            </span>
+                            <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">
+                              GCash
+                            </span>
+                            <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">
+                              Paytm
+                            </span>
+                            <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">
+                              Pix
+                            </span>
+                            <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">
+                              Mercado Pago
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>

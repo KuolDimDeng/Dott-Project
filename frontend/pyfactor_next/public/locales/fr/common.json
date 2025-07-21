@@ -287,33 +287,63 @@
     "legal": "Légal"
   },
   "highlights": {
-    "bluetooth": "Intégration scanner Bluetooth",
-    "printBarcodes": "Imprimez des codes-barres personnalisés",
-    "lowStock": "Alertes de stock faible",
-    "customLabel": "Impression d'étiquettes personnalisées",
-    "mobileScanning": "Scan mobile",
-    "batchProcessing": "Traitement par lots",
-    "offlineMode": "Mode hors ligne",
-    "multiplePayments": "Multiples méthodes de paiement",
-    "receiptCustom": "Personnalisation des reçus",
-    "recurringInvoices": "Factures récurrentes",
-    "paymentReminders": "Rappels de paiement",
-    "invoiceFactoring": "Affacturage",
-    "vatGst": "Support TVA/TPS",
-    "taxReports": "Rapports fiscaux",
-    "eFilingReady": "Prêt pour déclaration électronique",
-    "customDashboards": "Tableaux de bord personnalisés",
-    "profitAnalysis": "Analyse des profits",
-    "cashFlowForecast": "Prévision de flux de trésorerie",
-    "mobileMoney": "Argent mobile",
-    "bankTransfers": "Virements bancaires",
-    "digitalWallets": "Portefeuilles numériques",
-    "customsDocuments": "Documents douaniers",
-    "shippingIntegration": "Intégration d'expédition",
-    "tradeCompliance": "Conformité commerciale",
-    "soc2Compliant": "Conforme SOC2",
-    "dataEncryption": "Chiffrement des données",
-    "gdprReady": "Prêt pour RGPD"
+    "eyebrow": "Avantages Clés",
+    "heading": "Pourquoi les entreprises choisissent Dott",
+    "subheading": "Des fonctionnalités avancées qui nous distinguent de la concurrence et aident votre entreprise à croître.",
+    "mobile": {
+      "title": "Application Mobile",
+      "description": "Accédez aux données de votre entreprise n'importe quand, n'importe où avec notre puissante application mobile. Gérez l'inventaire, traitez les ventes et consultez des rapports en temps réel lors de vos déplacements.",
+      "imageAlt": "Capture d'écran de l'application mobile"
+    },
+    "pos": {
+      "title": "TPV et Scan de Codes-Barres",
+      "description": "Transformez n'importe quel appareil en système de point de vente puissant. Scannez les codes-barres instantanément, traitez les ventes rapidement, suivez l'inventaire en temps réel et acceptez tous les moyens de paiement y compris espèces, cartes et argent mobile.",
+      "imageAlt": "Système TPV avec fonction de scan de codes-barres",
+      "features": {
+        "quickCheckout": "Paiement rapide",
+        "barcodeScanning": "Scan de codes-barres",
+        "allPaymentTypes": "Tous types de paiement",
+        "inventoryTracking": "Suivi inventaire",
+        "offlineMode": "Mode hors ligne",
+        "mobileReady": "Prêt mobile"
+      }
+    },
+    "ai": {
+      "title": "Analyses IA",
+      "description": "Obtenez des recommandations intelligentes et des analyses prédictives basées sur vos données d'entreprise. Notre IA vous aide à prévoir la demande, optimiser l'inventaire et identifier les opportunités de croissance.",
+      "imageAlt": "Capture d'écran du tableau de bord d'analyses IA"
+    },
+    "geofencing": {
+      "title": "Géorepérage et Suivi de Localisation",
+      "description": "Assurez un suivi précis du temps avec pointage GPS d'entrée/sortie. Parfait pour les équipes terrain, livreurs et travailleurs distants. Configurez des limites virtuelles pour les sites de travail et recevez des alertes quand les employés entrent ou sortent des zones désignées.",
+      "imageAlt": "Interface de géorepérage et suivi de localisation",
+      "features": {
+        "gpsClockInOut": "Pointage GPS",
+        "virtualBoundaries": "Limites virtuelles",
+        "realTimeAlerts": "Alertes temps réel",
+        "automatedTimesheets": "Feuilles temps automatisées",
+        "complianceReady": "Conforme réglementations",
+        "teamManagement": "Gestion d'équipe"
+      }
+    },
+    "mobilemoney": {
+      "title": "Paiements Mobile Money",
+      "description": "Acceptez des paiements depuis n'importe où dans le monde. L'intégration M-Pesa est active au Kenya, avec MTN Mobile Money, Airtel Money, Orange Money, GCash, Paytm, Pix et Mercado Pago bientôt disponibles. Atteignez des milliards de clients qui préfèrent l'argent mobile aux services bancaires traditionnels.",
+      "imageAlt": "Options de paiement mobile money",
+      "available": "Méthodes de paiement:",
+      "live": "Disponible Maintenant:",
+      "coming": "Bientôt Disponible:"
+    },
+    "languages": {
+      "title": "Plus de 20 Langues Supportées",
+      "description": "Atteignez vos clients et gérez votre entreprise dans votre langue préférée. De l'anglais au swahili, de l'espagnol au mandarin, nous supportons plus de 20 langues pour rendre Dott accessible aux entreprises du monde entier.",
+      "imageAlt": "Démonstration d'interface multilingue",
+      "availableIn": "Disponible en:"
+    },
+    "features": {
+      "label": "Fonctionnalités clés:"
+    },
+    "learnMore": "En savoir plus"
   },
   "faq": {
     "eyebrow": "FAQ",

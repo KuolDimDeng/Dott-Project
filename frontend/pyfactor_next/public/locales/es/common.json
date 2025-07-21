@@ -160,15 +160,60 @@
     "subheading": "Características avanzadas que nos distinguen de la competencia y ayudan a crecer tu negocio.",
     "mobile": {
       "title": "Aplicación Móvil",
-      "description": "Accede a los datos de tu negocio en cualquier momento y lugar con nuestra potente aplicación móvil. Gestiona inventario, procesa ventas y ve informes en tiempo real sobre la marcha."
+      "description": "Accede a los datos de tu negocio en cualquier momento y lugar con nuestra potente aplicación móvil. Gestiona inventario, procesa ventas y ve informes en tiempo real sobre la marcha.",
+      "imageAlt": "Captura de pantalla de la aplicación móvil"
     },
     "integration": {
       "title": "Integraciones Perfectas",
       "description": "Conecta con tus herramientas y servicios favoritos. Nuestra plataforma se integra con procesadores de pago, software de contabilidad, plataformas de comercio electrónico y más."
     },
+    "pos": {
+      "title": "TPV y Escaneado de Códigos de Barras",
+      "description": "Transforma cualquier dispositivo en un potente sistema de punto de venta. Escanea códigos de barras al instante, procesa ventas rápidamente, rastrea inventario en tiempo real y acepta todos los métodos de pago incluyendo efectivo, tarjetas y dinero móvil.",
+      "imageAlt": "Sistema TPV con funcionalidad de escaneado de códigos de barras",
+      "features": {
+        "quickCheckout": "Pago rápido",
+        "barcodeScanning": "Escaneado de códigos",
+        "allPaymentTypes": "Todos los tipos de pago",
+        "inventoryTracking": "Seguimiento de inventario",
+        "offlineMode": "Modo sin conexión",
+        "mobileReady": "Listo para móvil"
+      }
+    },
     "ai": {
       "title": "Análisis con IA",
-      "description": "Obtén recomendaciones inteligentes y análisis predictivos basados en los datos de tu negocio. Nuestra IA te ayuda a pronosticar la demanda, optimizar el inventario e identificar oportunidades de crecimiento."
+      "description": "Obtén recomendaciones inteligentes y análisis predictivos basados en los datos de tu negocio. Nuestra IA te ayuda a pronosticar la demanda, optimizar el inventario e identificar oportunidades de crecimiento.",
+      "imageAlt": "Captura de pantalla del panel de análisis con IA"
+    },
+    "geofencing": {
+      "title": "Geovallado y Seguimiento de Ubicación",
+      "description": "Garantiza un seguimiento preciso del tiempo con fichar entrada/salida basado en GPS. Perfecto para equipos de campo, conductores de reparto y trabajadores remotos. Configura límites virtuales para sitios de trabajo y recibe alertas cuando los empleados entren o salgan de áreas designadas.",
+      "imageAlt": "Interfaz de geovallado y seguimiento de ubicación",
+      "features": {
+        "gpsClockInOut": "Fichar con GPS",
+        "virtualBoundaries": "Límites virtuales",
+        "realTimeAlerts": "Alertas en tiempo real",
+        "automatedTimesheets": "Partes de horas automatizados",
+        "complianceReady": "Listo para cumplimiento",
+        "teamManagement": "Gestión de equipo"
+      }
+    },
+    "mobilemoney": {
+      "title": "Pagos con Dinero Móvil",
+      "description": "Acepta pagos desde cualquier parte del mundo. La integración con M-Pesa está activa en Kenia, con MTN Mobile Money, Airtel Money, Orange Money, GCash, Paytm, Pix y Mercado Pago próximamente. Alcanza miles de millones de clientes que prefieren el dinero móvil sobre la banca tradicional.",
+      "imageAlt": "Opciones de pago con dinero móvil",
+      "available": "Métodos de pago:",
+      "live": "Disponible Ahora:",
+      "coming": "Próximamente:"
+    },
+    "languages": {
+      "title": "Más de 20 Idiomas Soportados",
+      "description": "Llega a clientes y gestiona tu negocio en tu idioma preferido. Desde inglés hasta suajili, español hasta mandarín, soportamos más de 20 idiomas para hacer Dott accesible a empresas en todo el mundo.",
+      "imageAlt": "Demostración de interfaz multiidioma",
+      "availableIn": "Disponible en:"
+    },
+    "features": {
+      "label": "Características clave:"
     },
     "learnMore": "Más información"
   },

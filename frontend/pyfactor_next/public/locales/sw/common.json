@@ -846,5 +846,64 @@
     "allRightsReserved": "Haki zote zimehifadhiwa.",
     "privacyPolicy": "Sera ya Faragha",
     "termsOfService": "Masharti ya Huduma"
+  },
+  "highlights": {
+    "eyebrow": "Faida Kuu",
+    "heading": "Kwa nini biashara zinachagua Dott",
+    "subheading": "Vipengele vya hali ya juu vinavyotutofautisha na ushindani na kusaidia biashara yako kukua.",
+    "mobile": {
+      "title": "Programu ya Simu",
+      "description": "Fikia data ya biashara yako wakati wowote, popote na programu yetu yenye nguvu ya simu. Simamia bidhaa, chakata mauzo na ona ripoti za wakati halisi unapotembea.",
+      "imageAlt": "Picha ya skrini ya programu ya simu"
+    },
+    "pos": {
+      "title": "Mfumo wa Mauzo na Usomaji wa Msimbo wa Pau",
+      "description": "Badilisha kifaa chochote kuwa mfumo wenye nguvu wa mauzo. Soma msimbo wa pau papo hapo, chakata mauzo haraka, fuatilia bidhaa za hifadhi wakati halisi na kubali njia zote za malipo ikijumuisha pesa taslimu, kadi na pesa za simu.",
+      "imageAlt": "Mfumo wa mauzo na kipengele cha usomaji wa msimbo wa pau",
+      "features": {
+        "quickCheckout": "Malipo ya haraka",
+        "barcodeScanning": "Usomaji wa msimbo wa pau",
+        "allPaymentTypes": "Aina zote za malipo",
+        "inventoryTracking": "Ufuatiliaji wa bidhaa",
+        "offlineMode": "Modi ya nje ya mtandao",
+        "mobileReady": "Tayari kwa simu"
+      }
+    },
+    "ai": {
+      "title": "Ufahamu wa Akili Bandia",
+      "description": "Pata mapendekezo ya akili na uchambuzi wa utabiri kulingana na data ya biashara yako. AI yetu inakusaidia kutabiri mahitaji, kuboresha bidhaa za hifadhi na kutambua fursa za ukuaji.",
+      "imageAlt": "Picha ya skrini ya dashibodi ya uchambuzi wa AI"
+    },
+    "geofencing": {
+      "title": "Geofencing na Ufuatiliaji wa Mahali",
+      "description": "Hakikisha ufuatiliaji sahihi wa muda na kuingia/kutoka kwa msingi wa GPS. Bora kwa timu za uwandani, madereva wa uwasilishaji na wafanyakazi wa mbali. Weka mipaka ya kipepo kwa maeneo ya kazi na upokee tahadhari wakati wafanyakazi wakiingia au kutoka maeneo yaliyoteuliwa.",
+      "imageAlt": "Kiolesura cha geofencing na ufuatiliaji wa mahali",
+      "features": {
+        "gpsClockInOut": "Kuingia/kutoka kwa GPS",
+        "virtualBoundaries": "Mipaka ya kipepo",
+        "realTimeAlerts": "Tahadhari za wakati halisi",
+        "automatedTimesheets": "Karatasi za muda za kiotomatiki",
+        "complianceReady": "Tayari kwa kufuata sheria",
+        "teamManagement": "Usimamizi wa timu"
+      }
+    },
+    "mobilemoney": {
+      "title": "Malipo ya Pesa za Simu",
+      "description": "Kubali malipo kutoka popote duniani. Uunganishaji wa M-Pesa una nguvu Kenya, na MTN Mobile Money, Airtel Money, Orange Money, GCash, Paytm, Pix na Mercado Pago zinakuja hivi karibuni. Fikia mabilioni ya wateja wanaopendelea pesa za simu kuliko huduma za benki za jadi.",
+      "imageAlt": "Chaguo za malipo ya pesa za simu",
+      "available": "Njia za malipo:",
+      "live": "Zinapatikana Sasa:",
+      "coming": "Zinakuja:"
+    },
+    "languages": {
+      "title": "Lugha Zaidi ya 20 Zinazosaidwa",
+      "description": "Fikia wateja na simamia biashara yako kwa lugha unayoipendelea. Kutoka Kiingereza hadi Kiswahili, Kihispania hadi Kichina, tunasaidia lugha zaidi ya 20 ili kufanya Dott iwe rahisi kwa biashara duniani kote.",
+      "imageAlt": "Onyesho la kiolesura cha kilugha nyingi",
+      "availableIn": "Inapatikana katika:"
+    },
+    "features": {
+      "label": "Vipengele muhimu:"
+    },
+    "learnMore": "Jifunze zaidi"
   }
 }
