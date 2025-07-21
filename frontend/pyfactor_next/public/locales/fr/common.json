@@ -864,5 +864,61 @@
     "allRightsReserved": "Tous droits réservés.",
     "privacyPolicy": "Politique de Confidentialité",
     "termsOfService": "Conditions de Service"
+  },
+  "builtForYou": {
+    "title": "Conçu Pour Vous",
+    "heading": "Gérez votre entreprise comme un Pro !",
+    "subheading": "Conçu pour les propriétaires d'entreprises comme vous",
+    "cta": "Rejoignez des milliers de propriétaires d'entreprises dans le monde entier qui font confiance à Dott pour gérer leur entreprise",
+    "types": {
+      "freelancers": {
+        "title": "Freelances",
+        "description": "Suivez les projets, facturez instantanément les clients et gérez vos finances en un seul endroit. Soyez payé plus rapidement avec des factures professionnelles."
+      },
+      "contractors": {
+        "title": "Entrepreneurs",
+        "description": "Gérez plusieurs projets, suivez les coûts des matériaux et de la main-d'œuvre, et envoyez des devis professionnels. Maintenez votre trésorerie en bonne santé."
+      },
+      "entrepreneurs": {
+        "title": "Entrepreneurs",
+        "description": "Développez votre startup avec des outils puissants pour l'inventaire, les ventes et le suivi financier. Prenez des décisions basées sur les données."
+      },
+      "consultants": {
+        "title": "Consultants",
+        "description": "Facturez à l'heure ou au projet, suivez les dépenses et gérez plusieurs clients sans effort. Facturation professionnelle incluse."
+      },
+      "retail": {
+        "title": "Propriétaires de Magasins de Détail",
+        "description": "Gérez l'inventaire avec scan de codes-barres, suivez les ventes et acceptez plusieurs méthodes de paiement, y compris l'argent mobile."
+      },
+      "streetVendors": {
+        "title": "Vendeurs de Rue",
+        "description": "Design mobile simple pour suivre les ventes quotidiennes, gérer l'inventaire et accepter les paiements numériques en déplacement."
+      },
+      "marketStalls": {
+        "title": "Propriétaires d'Étals de Marché",
+        "description": "Parfait pour les journées de marché chargées. Saisie rapide des ventes, alertes d'inventaire et suivi des bénéfices quotidiens dans votre devise locale."
+      },
+      "mobileMoneyAgents": {
+        "title": "Agents d'Argent Mobile",
+        "description": "Suivez les transactions, gérez les soldes flottants et générez des rapports pour les opérateurs de réseau. Conçu pour M-Pesa, MTN et plus."
+      },
+      "restaurants": {
+        "title": "Propriétaires de Petits Restaurants",
+        "description": "Gérez les commandes, suivez les ingrédients, calculez les coûts alimentaires et gérez efficacement le service sur place et à emporter."
+      },
+      "serviceProviders": {
+        "title": "Prestataires de Services",
+        "description": "Pour plombiers, électriciens, mécaniciens et plus. Planifiez les travaux, suivez les pièces et facturez à la fin."
+      },
+      "onlineSellers": {
+        "title": "Vendeurs en Ligne",
+        "description": "Synchronisez l'inventaire sur toutes les plateformes, gérez les commandes et suivez les expéditions. Parfait pour les vendeurs sur les réseaux sociaux."
+      },
+      "transport": {
+        "title": "Opérateurs de Transport",
+        "description": "Pour les chauffeurs de taxi, boda boda et tuk-tuk. Suivez les gains quotidiens, les coûts de carburant et les calendriers d'entretien."
+      }
+    }
   }
 }

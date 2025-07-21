@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('custom_auth', '0001_initial'),
+        # Remove hard dependency on custom_auth to avoid circular issues
     ]
 
     operations = [
@@ -42,8 +42,8 @@ class Migration(migrations.Migration):
                 ('converted_at', models.DateTimeField(blank=True, help_text='When the lead converted to customer', null=True)),
                 ('created_at', models.DateTimeField(default=django.utils.timezone.now, help_text='When the lead was created')),
                 ('updated_at', models.DateTimeField(auto_now=True, help_text='When the lead was last updated')),
-                ('assigned_to', models.ForeignKey(blank=True, help_text='Staff member assigned to this lead', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='assigned_leads', to='custom_auth.user')),
-                ('created_by', models.ForeignKey(blank=True, help_text='Staff member who created this lead', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='created_leads', to='custom_auth.user')),
+                ('assigned_to', models.ForeignKey(blank=True, help_text='Staff member assigned to this lead', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='assigned_leads', to='custom_auth.User')),
+                ('created_by', models.ForeignKey(blank=True, help_text='Staff member who created this lead', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='created_leads', to='custom_auth.User')),
             ],
             options={
                 'verbose_name': 'Lead',
@@ -60,7 +60,7 @@ class Migration(migrations.Migration):
                 ('description', models.TextField(help_text='Description of the activity')),
                 ('metadata', models.JSONField(blank=True, default=dict, help_text='Additional activity metadata', null=True)),
                 ('created_at', models.DateTimeField(default=django.utils.timezone.now, help_text='When the activity occurred')),
-                ('created_by', models.ForeignKey(blank=True, help_text='Staff member who performed the activity', null=True, on_delete=django.db.models.deletion.SET_NULL, to='custom_auth.user')),
+                ('created_by', models.ForeignKey(blank=True, help_text='Staff member who performed the activity', null=True, on_delete=django.db.models.deletion.SET_NULL, to='custom_auth.User')),
                 ('lead', models.ForeignKey(help_text='Lead this activity is associated with', on_delete=django.db.models.deletion.CASCADE, related_name='activities', to='leads.lead')),
             ],
             options={
