@@ -51,12 +51,20 @@ export default function Highlights() {
       reverse: false,
     },
     {
+      key: 'whatsapp',
+      title: t('highlights.whatsapp.title', 'WhatsApp Business'),
+      description: t('highlights.whatsapp.description', 'Transform customer communication with WhatsApp Business integration. Create and manage your product catalog, automatically send invoices and receipts, provide instant customer support, and reach customers on their preferred messaging platform.'),
+      image: '/static/images/whatsapp-business-screenshot.jpg',
+      imageAlt: t('highlights.whatsapp.imageAlt', 'WhatsApp Business integration interface'),
+      reverse: true,
+    },
+    {
       key: 'languages',
       title: t('highlights.languages.title', '20+ Languages Supported'),
       description: t('highlights.languages.description', 'Reach customers and manage your business in your preferred language. From English to Swahili, Spanish to Mandarin, we support over 20 languages to make Dott accessible to businesses worldwide.'),
       image: '/static/images/languages-screenshot.jpg',
       imageAlt: t('highlights.languages.imageAlt', 'Multi-language interface demonstration'),
-      reverse: true,
+      reverse: false,
     },
   ];
 
