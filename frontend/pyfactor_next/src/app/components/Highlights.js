@@ -269,30 +269,15 @@ export default function Highlights() {
                 
                 <div className={`mt-10 lg:mt-0 ${highlight.reverse ? 'lg:col-start-1' : 'lg:col-start-2'}`}>
                   <div className="relative overflow-hidden rounded-lg shadow-xl">
-                    {/* Special styling for mobile app image - reduce size to 1/4 */}
-                    {highlight.title === t('highlights.mobile.title', 'Mobile Application') ? (
-                      <div className="aspect-w-5 aspect-h-3 flex justify-center items-center bg-gray-50 rounded-lg">
-                        <div className="w-1/4 h-auto">
-                          <Image
-                            src={highlight.image}
-                            alt={highlight.imageAlt}
-                            width={200}
-                            height={120}
-                            className="w-full h-auto object-contain rounded-lg"
-                          />
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="aspect-w-5 aspect-h-3">
-                        <Image
-                          src={highlight.image}
-                          alt={highlight.imageAlt}
-                          width={800}
-                          height={480}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    )}
+                    <div className="aspect-w-5 aspect-h-3">
+                      <Image
+                        src={highlight.image}
+                        alt={highlight.imageAlt}
+                        width={800}
+                        height={480}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
