@@ -46,6 +46,9 @@ posthog==6.0.0
 # User agent parsing
 user-agents==2.2.0
 
+# IP address detection
+django-ipware==7.0.1
+
 # MFA/2FA Support
 pyotp==2.9.0
 qrcode==8.0
