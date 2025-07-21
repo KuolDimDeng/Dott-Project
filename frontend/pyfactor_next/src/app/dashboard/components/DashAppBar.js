@@ -195,8 +195,9 @@ const DashAppBar = ({
   // Get user permissions
   const { isOwner, isAdmin, isOwnerOrAdmin } = usePermissions();
   
-  // Get translation function
-  const { t } = useTranslation();
+  // Get translation functions - navigation for menu items, common for subscription labels
+  const { t } = useTranslation('navigation');
+  const { t: tCommon } = useTranslation('common');
   
   // Get notification data
   const { 
@@ -798,13 +799,13 @@ const DashAppBar = ({
   const getSubscriptionLabel = useCallback((type) => {
     switch (type?.toLowerCase()) {
       case 'professional':
-        return t('subscription.professionalPlan', 'Professional Plan');
+        return tCommon('subscription.professionalPlan', 'Professional Plan');
       case 'enterprise':
-        return t('subscription.enterprisePlan', 'Enterprise Plan');
+        return tCommon('subscription.enterprisePlan', 'Enterprise Plan');
       default:
-        return t('subscription.freePlan', 'Free Plan');
+        return tCommon('subscription.freePlan', 'Free Plan');
     }
-  }, [t]);
+  }, [tCommon]);
 
   // Updated subscription display
   // Memoize subscription type to prevent recalculation on every render
@@ -1326,7 +1327,7 @@ const DashAppBar = ({
               <div className="flex items-center">
                 {/* Business name - make it visible on all screen sizes and add fallback display */}
                 <div className="text-white flex items-center mr-3">
-                  <span className="font-semibold">{businessName || fetchedBusinessName || auth0BusinessName || profileData?.businessName || profileData?.business_name || t('common.loading', 'Loading...')}</span>
+                  <span className="font-semibold">{businessName || fetchedBusinessName || auth0BusinessName || profileData?.businessName || profileData?.business_name || tCommon('common.loading', 'Loading...')}</span>
                   <span className="mx-2 h-4 w-px bg-white/30"></span>
                 </div>
                 
@@ -1355,7 +1356,7 @@ const DashAppBar = ({
                         handleSubscriptionClick();
                       }}
                     >
-                      {t('subscription.upgrade', 'Upgrade')}
+                      {tCommon('subscription.upgrade', 'Upgrade')}
                     </button>
                   )}
                 </div>
