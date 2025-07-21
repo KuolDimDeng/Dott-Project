@@ -392,5 +392,147 @@
     "professionalPlan": "Ètò Ọ̀jọ́gbọ́n",
     "enterprisePlan": "Ètò Ilé-iṣẹ́",
     "upgrade": "Ṣàtúnṣe"
+  },
+  "about": {
+    "backToHome": "Pada si Ile",
+    "hero": {
+      "title": "Fifun awon isowo agbara lati",
+      "subtitle": "dagba ni agbaye",
+      "description": "A n ko eto sisise fun awon isowo kekere ode oni, ti o jeki awon ohun elo ipele ile-ise wa fun gbogbo eniyan."
+    },
+    "story": {
+      "title": "Itan Wa",
+      "paragraph1": "Dott jade lati akiyesi ti o rorun: awon isowo kekere n rimi ninu idiju. Awon ohun elo pupo, data ti ko ni asopo, ati awon ilana ti a se fun awon ile-ise nla n dena awon olowo-isowo kaakiri agbaye.",
+      "paragraph2": "Ti a da ni 2023, a bere lati ko nkan ti o yato. Syeed ti o ye awon italaya oto ti awon isowo kekere, paapaa ni awon oja ti n dagba nibiti awon ojutu ibile ti kuna.",
+      "paragraph3": "Loni, a ni igberaga lati sin awon isowo kaakiri agbaye. Sugbon a sese bere."
+    },
+    "timeline": {
+      "beginning": {
+        "title": "Ibere",
+        "description": "Mo awon aini fun awon ohun elo isakoso isowo ti o sopupo fun SMBs"
+      },
+      "launch": {
+        "title": "Ifihan Oja",
+        "description": "Fi syeed idi pelu isakoso owo ati oja ti o mu jade"
+      },
+      "expansion": {
+        "title": "Imugborooja Agbaye",
+        "description": "Gbooro si awon orilede to ju 25 lo pelu awon asa agbegbe"
+      },
+      "ai": {
+        "title": "Isopomora AI",
+        "description": "Fifihan oye to moye ati isise laifowosowopo"
+      }
+    },
+    "mission": {
+      "title": "Ise Wa",
+      "description": "Lati se tiwantiwa isakoso isowo nipa fifun awon isowo kekere ni awon ohun elo to lagbara, ti o ni idiyele ti o se agbekale awon ise ati fun idagbasoke, lai wo ibi tabi imooye imose."
+    },
+    "vision": {
+      "title": "Iran Wa",
+      "description": "Agbaye nibiti gbogbo isowo kekere ni anfani si iru didara awon ohun elo isakoso bi awon ile-ise Fortune 500, fifun agbara awon isowo milionu kan lati dagba ni odun 2030."
+    },
+    "journey": {
+      "title": "Irin-ajo Wa"
+    },
+    "values": {
+      "title": "Awon Iye Wa",
+      "subtitle": "Awon ilana ti n toso gbogbo ipinnu ti a n se",
+      "simplicity": {
+        "title": "Irorun Ni Akoko",
+        "description": "Awon ise isowo ti o nira ti a mu rorun nipase apero ti o ye ni"
+      },
+      "innovation": {
+        "title": "Isodotun Laelae",
+        "description": "Idagbasoke pelu awon aini ti n yipada ti awon isowo ode oni"
+      },
+      "success": {
+        "title": "Aseyori Onibara",
+        "description": "Idagbasoke re ni aseyori wa - a segun nigbati o ba segun"
+      },
+      "empowerment": {
+        "title": "Agbara Agbaye",
+        "description": "Fifo awon idena fun awon isowo kaakiri agbaye"
+      }
+    },
+    "differentiators": {
+      "title": "Kini O Je Ki Dott Yato",
+      "unified": {
+        "title": "Syeed Ti O Sopupo",
+        "description": "Gbogbo awon ohun elo isowo re ni ibi kan"
+      },
+      "global": {
+        "title": "Agbaye, Sugbon Agbegbe",
+        "description": "Awon iwon kariaye pelu itele agbegbe"
+      },
+      "security": {
+        "title": "Aabo Ile-ise",
+        "description": "Aabo ipele banki fun data re"
+      },
+      "insights": {
+        "title": "Oye Ti O Moye",
+        "description": "Itupalese ti AI n ran fun awon ipinnu to dara julọ"
+      }
+    }
+  },
+  "blog": {
+    "hero": {
+      "title": "Dott Isowo Blog",
+      "subtitle": "Ko nipa isakoso owo isowo re pelu Dott. Gba awon imoran, oye, ati awon oge lati dagba isowo re."
+    },
+    "newsletter": {
+      "title": "Foruko fun iwe iroyin wa fun awon imudojuwo oja ati awon ifiweranṣẹ blog tuntun!",
+      "placeholder": "Adiresi imeeli re",
+      "button": "Alabapin"
+    },
+    "categories": {
+      "all": "Gbogbo Awon Nkan",
+      "accounting": "Isiro ati Owo-ori",
+      "business": "Isowo"
+    },
+    "search": {
+      "placeholder": "Wa awon nkan..."
+    },
+    "featured": "Ti a fihan",
+    "readTime": "{{minutes}} iseju kika",
+    "noArticles": "Ko si awon nkan ti a ri ti o baamu pelu awon ami-ami re.",
+    "articles": {
+      "profitLoss": {
+        "title": "Oye Ere ati Pipadanu: Itosona Igbadun fun Awon Oluwa Isowo",
+        "excerpt": "Se awari bi o se le ka ati ye alaye P&L re lai sun. A se ileri lati je ki o nifesi!"
+      }
+    }
+  },
+  "status": {
+    "backToHome": "Pada si Ile",
+    "title": "Ipo Eto Dott",
+    "subtitle": "Ipo ise lowolowo ti awon ise Dott",
+    "checking": "N yẹwo...",
+    "refresh": "Sọdọtun",
+    "allSystemsOperational": "Gbogbo Awon Eto N sise",
+    "partialDisruption": "Idaduro Ise Die",
+    "serviceOutage": "Idaduro Ise",
+    "checkingStatus": "N Ṣayẹwo Ipo Eto",
+    "lastChecked": "Ayewo to kẹhin: {{time}}",
+    "serviceStatus": "Ipo Ise",
+    "platform": {
+      "title": "Syeed Dott",
+      "description": "Ohun elo ati oju opo weebu"
+    },
+    "api": {
+      "title": "Awon ise API",
+      "description": "Awon ise ehin ati siseto data"
+    },
+    "uptime": "Akoko Sise",
+    "operational": "N sise",
+    "degraded": "Ti dinku",
+    "outage": "Idaduro",
+    "checkingShort": "N yẹwo",
+    "needHelp": "Se O Nilo Iranlowo?",
+    "supportInfo": "Ti o ba n koju awon isoro, jowo yẹ oju-iwe yii ni akoko fun eyikeyi idaduro ise ti a mo.",
+    "supportContact": "Olubasoro Atileyin:",
+    "allRightsReserved": "Gbogbo eto ni a pamọ.",
+    "privacyPolicy": "Eto Ikoko",
+    "termsOfService": "Awon ofin Ise"
   }
 }
