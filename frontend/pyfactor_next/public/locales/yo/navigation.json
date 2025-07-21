@@ -112,7 +112,91 @@
   "dashboard": {
     "businessOverview": {
       "title": "Àkópọ̀ Iṣẹ́",
-      "subtitle": "Àkópọ̀ kíkún ti ìṣe iṣẹ́ rẹ"
+      "subtitle": "Àkópọ̀ kíkún ti ìṣe iṣẹ́ rẹ",
+      "sections": {
+        "todaysPerformance": "Ìṣe Òní",
+        "financialPosition": "Ipò Owó",
+        "cashFlowRevenue": "Ṣíṣàn Owó & Owó Wọlé",
+        "operationsOverview": "Àkópọ̀ Ìṣẹ́",
+        "topSellingProducts": "Ọjà Tí Ó Ta Jùlọ",
+        "recentOrders": "Àṣẹ Àìpẹ́",
+        "quickActions": "Ìgbésẹ̀ Kíákíá"
+      },
+      "metrics": {
+        "todaysRevenue": "Owó Wọlé Òní",
+        "newOrders": "Àṣẹ Tuntun",
+        "newCustomers": "Oníbàrà Tuntun",
+        "lowStockAlert": "Ìkìlọ̀ Ọjà Tó Kù Díẹ̀",
+        "totalAssets": "Àpapọ̀ Ohun Ìní",
+        "totalLiabilities": "Àpapọ̀ Gbèsè",
+        "equity": "Ìní",
+        "bankBalance": "Iye Owó Ní Ilé Ìfowópamọ́",
+        "monthlyRevenue": "Owó Wọlé Oṣù",
+        "accountsReceivable": "Owó Tí A Ń Retí",
+        "profitMargin": "Ìwọ̀n Èrè",
+        "weeklyRevenue": "Owó Wọlé Ọ̀sẹ̀",
+        "totalOrders": "Àpapọ̀ Àṣẹ",
+        "activeCustomers": "Oníbàrà Alágbéka",
+        "productCatalog": "Àtòjọ Ọjà",
+        "invoiceStatus": "Ipò Ìwé Ìgbowó"
+      },
+      "timeframes": {
+        "soFarToday": "Títí di ìsinsìnyí lónìí",
+        "last7Days": "Ọjọ́ méje sẹ́yìn",
+        "last30Days": "Ọgbọ̀n ọjọ́ sẹ́yìn"
+      },
+      "statuses": {
+        "pendingProcessing": "Ń dúró fún ìṣètò",
+        "productsNeedReorder": "Ọjà tí ó nílò àtúnrà",
+        "overdueCount": "{{count}} ti pẹ́ jù",
+        "completedCount": "{{count}} ti parí",
+        "ofTotalCount": "nínú {{count}} lapapọ̀",
+        "lowStockCount": "{{count}} tó kù díẹ̀",
+        "paidInvoices": "Ìwé ìgbowó tí a ti san",
+        "productsSold": "{{count}} tí a tà"
+      },
+      "descriptions": {
+        "cashInventoryReceivables": "Owó + Ọjà + Owó Tí A Ń Retí",
+        "payablesLoans": "Gbèsè + Yàá",
+        "assetsMinusLiabilities": "Ohun Ìní - Gbèsè",
+        "allAccounts": "Gbogbo àkáùntì",
+        "revenueMinusExpenses": "Owó Wọlé - Ìnáwó"
+      },
+      "alerts": {
+        "requiresAttention": "Ó Nílò Àbójútó",
+        "overdueInvoices": "{{count}} ìwé ìgbowó tó ti pẹ́",
+        "lowStock": "{{count}} ọjà tó kù díẹ̀",
+        "pendingOrders": "{{count}} àṣẹ tó ń dúró"
+      },
+      "actions": {
+        "refresh": "Sọ di titun",
+        "reviewNow": "Yẹ̀ wò báyìí",
+        "reorder": "Tún rà",
+        "process": "Ṣètò"
+      },
+      "quickActions": {
+        "newOrder": "Àṣẹ Tuntun",
+        "createInvoice": "Ṣe Ìwé Ìgbowó",
+        "addCustomer": "Fi Oníbàrà Kún",
+        "addProduct": "Fi Ọjà Kún",
+        "viewReports": "Wo Ìjábọ̀",
+        "recordPayment": "Kọ Ìsanwó Sílẹ̀"
+      },
+      "orderStatus": {
+        "completed": "Ti parí",
+        "pending": "Ń dúró",
+        "processing": "Ń ṣètò",
+        "cancelled": "Ti fagi lé",
+        "shipped": "Ti fi ránṣẹ́",
+        "delivered": "Ti dé"
+      },
+      "messages": {
+        "noSalesData": "Kò sí àlàyé títà",
+        "noRecentOrders": "Kò sí àṣẹ àìpẹ́"
+      },
+      "common": {
+        "unknown": "Àìmọ̀"
+      }
     }
   },
   "status": {

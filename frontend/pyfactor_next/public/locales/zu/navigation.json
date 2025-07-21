@@ -112,7 +112,91 @@
   "dashboard": {
     "businessOverview": {
       "title": "Isifinyezo Sebhizinisi",
-      "subtitle": "Umbono ophelele wokusebenza kwebhizinisi lakho"
+      "subtitle": "Umbono ophelele wokusebenza kwebhizinisi lakho",
+      "sections": {
+        "todaysPerformance": "Ukusebenza Kwanamuhla",
+        "financialPosition": "Isimo Sezimali",
+        "cashFlowRevenue": "Ukugeleza Kwemali Nengeniso",
+        "operationsOverview": "Isifinyezo Semisebenzi",
+        "topSellingProducts": "Imikhiqizo Edume Kakhulu",
+        "recentOrders": "Ama-oda Akamuva",
+        "quickActions": "Izenzo Ezisheshayo"
+      },
+      "metrics": {
+        "todaysRevenue": "Ingeniso Yanamuhla",
+        "newOrders": "Ama-oda Amasha",
+        "newCustomers": "Amakhasimende Amasha",
+        "lowStockAlert": "Isexwayiso Sesitoko Esiphansi",
+        "totalAssets": "Impahla Yonke",
+        "totalLiabilities": "Izikweletu Zonke",
+        "equity": "Ulingano",
+        "bankBalance": "Ibhalansi Yasebhange",
+        "monthlyRevenue": "Ingeniso Yenyanga",
+        "accountsReceivable": "Ama-akhawunti Afanele Ukutholwa",
+        "profitMargin": "Umkhawulo Wenzuzo",
+        "weeklyRevenue": "Ingeniso Yesonto",
+        "totalOrders": "Ama-oda Onke",
+        "activeCustomers": "Amakhasimende Asebenzayo",
+        "productCatalog": "Ikhathalogi Yemikhiqizo",
+        "invoiceStatus": "Isimo Se-invoyisi"
+      },
+      "timeframes": {
+        "soFarToday": "Kuze kube manje namuhla",
+        "last7Days": "Izinsuku ezingu-7 ezedlule",
+        "last30Days": "Izinsuku ezingu-30 ezedlule"
+      },
+      "statuses": {
+        "pendingProcessing": "Kulindele ukucutshungulwa",
+        "productsNeedReorder": "Imikhiqizo edinga ukuphinda i-odwe",
+        "overdueCount": "{{count}} esedlulile",
+        "completedCount": "{{count}} eqediwe",
+        "ofTotalCount": "kwengu-{{count}} isiyonke",
+        "lowStockCount": "{{count}} isitoko esiphansi",
+        "paidInvoices": "Ama-invoyisi akhokhiwe",
+        "productsSold": "{{count}} ethengisiwe"
+      },
+      "descriptions": {
+        "cashInventoryReceivables": "Imali + Isitoko + Okufanele Kutholwe",
+        "payablesLoans": "Okufanele Kukhokhelwe + Imali Ebolekiwe",
+        "assetsMinusLiabilities": "Impahla - Izikweletu",
+        "allAccounts": "Wonke ama-akhawunti",
+        "revenueMinusExpenses": "Ingeniso - Izindleko"
+      },
+      "alerts": {
+        "requiresAttention": "Kudinga Ukunakwa",
+        "overdueInvoices": "{{count}} ama-invoyisi asedlulile",
+        "lowStock": "{{count}} imikhiqizo enesitoko esiphansi",
+        "pendingOrders": "{{count}} ama-oda alindile"
+      },
+      "actions": {
+        "refresh": "Vuselela",
+        "reviewNow": "Buyekeza manje",
+        "reorder": "Phinda u-ode",
+        "process": "Cubungula"
+      },
+      "quickActions": {
+        "newOrder": "I-oda Elisha",
+        "createInvoice": "Dala I-invoyisi",
+        "addCustomer": "Engeza Ikhasimende",
+        "addProduct": "Engeza Umkhiqizo",
+        "viewReports": "Buka Imibiko",
+        "recordPayment": "Bhala Inkokhelo"
+      },
+      "orderStatus": {
+        "completed": "Iqediwe",
+        "pending": "Ilindile",
+        "processing": "Iyacutshungulwa",
+        "cancelled": "Ikhanseliwe",
+        "shipped": "Ithunyelwe",
+        "delivered": "Ilethiwe"
+      },
+      "messages": {
+        "noSalesData": "Ayikho idatha yokuthengisa",
+        "noRecentOrders": "Awekho ama-oda akamuva"
+      },
+      "common": {
+        "unknown": "Akwaziwa"
+      }
     }
   },
   "status": {
