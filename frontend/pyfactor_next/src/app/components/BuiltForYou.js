@@ -109,7 +109,7 @@ export default function BuiltForYou() {
               <div className="h-48 bg-gray-200 relative">
                 <Image
                   src={type.image}
-                  alt={type.title}
+                  alt={t(`builtForYou.types.${type.id}.imageAlt`, `${type.title} working`)}
                   fill
                   className="object-cover"
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"

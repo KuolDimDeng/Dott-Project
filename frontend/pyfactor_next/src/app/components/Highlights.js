@@ -12,35 +12,35 @@ export default function Highlights() {
       title: t('highlights.mobile.title', 'Mobile Application'),
       description: t('highlights.mobile.description', 'Access your business data anytime, anywhere with our powerful mobile app. Manage inventory, process sales, and view real-time reports on the go.'),
       image: '/static/images/mobile-app-screenshot.jpg',
-      imageAlt: 'Mobile application screenshot',
+      imageAlt: t('highlights.mobile.imageAlt', 'Mobile application screenshot'),
       reverse: false,
     },
     {
       title: t('highlights.pos.title', 'POS and Barcode Scanning'),
       description: t('highlights.pos.description', 'Transform any device into a powerful point-of-sale system. Scan barcodes instantly, process sales quickly, track inventory in real-time, and accept all payment methods including cash, cards, and mobile money.'),
       image: '/static/images/pos-barcode-screenshot.jpg',
-      imageAlt: 'POS system with barcode scanning feature',
+      imageAlt: t('highlights.pos.imageAlt', 'POS system with barcode scanning feature'),
       reverse: true,
     },
     {
       title: t('highlights.ai.title', 'AI-Powered Insights'),
       description: t('highlights.ai.description', 'Get smart recommendations and predictive analytics based on your business data. Our AI helps you forecast demand, optimize inventory, and identify growth opportunities.'),
       image: '/static/images/ai-dashboard-screenshot.jpg',
-      imageAlt: 'AI analytics dashboard screenshot',
+      imageAlt: t('highlights.ai.imageAlt', 'AI analytics dashboard screenshot'),
       reverse: false,
     },
     {
       title: t('highlights.geofencing.title', 'Geofencing & Location Tracking'),
       description: t('highlights.geofencing.description', 'Ensure accurate time tracking with GPS-based clock in/out. Perfect for field teams, delivery drivers, and remote workers. Set up virtual boundaries for work sites and get alerts when employees enter or leave designated areas.'),
       image: '/static/images/geofencing-screenshot.jpg',
-      imageAlt: 'Geofencing and location tracking interface',
+      imageAlt: t('highlights.geofencing.imageAlt', 'Geofencing and location tracking interface'),
       reverse: true,
     },
     {
       title: t('highlights.languages.title', '20+ Languages Supported'),
       description: t('highlights.languages.description', 'Reach customers and manage your business in your preferred language. From English to Swahili, Spanish to Mandarin, we support over 20 languages to make Dott accessible to businesses worldwide.'),
       image: '/static/images/languages-screenshot.jpg',
-      imageAlt: 'Multi-language interface demonstration',
+      imageAlt: t('highlights.languages.imageAlt', 'Multi-language interface demonstration'),
       reverse: false,
     },
   ];
@@ -211,16 +211,16 @@ export default function Highlights() {
                 
                 <div className={`mt-10 lg:mt-0 ${highlight.reverse ? 'lg:col-start-1' : 'lg:col-start-2'}`}>
                   <div className="relative overflow-hidden rounded-lg shadow-xl">
-                    {/* Special styling for mobile app image - reduce size by half */}
+                    {/* Special styling for mobile app image - reduce size to 1/4 */}
                     {highlight.title === t('highlights.mobile.title', 'Mobile Application') ? (
-                      <div className="aspect-w-5 aspect-h-3 flex justify-center items-center">
-                        <div className="w-1/2 h-auto">
+                      <div className="aspect-w-5 aspect-h-3 flex justify-center items-center bg-gray-50 rounded-lg">
+                        <div className="w-1/4 h-auto">
                           <Image
                             src={highlight.image}
                             alt={highlight.imageAlt}
-                            width={400}
-                            height={240}
-                            className="w-full h-auto object-cover rounded-lg"
+                            width={200}
+                            height={120}
+                            className="w-full h-auto object-contain rounded-lg"
                           />
                         </div>
                       </div>

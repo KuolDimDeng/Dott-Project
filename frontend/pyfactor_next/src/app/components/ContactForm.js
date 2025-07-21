@@ -166,10 +166,10 @@ export default function ContactForm() {
                     <div className="ml-4">
                       <p className="font-medium">{t('contact.address', 'Address')}</p>
                       <p className="mt-1 text-primary-light/80">
-                        800 N King Street<br />
-                        Suite 304 #2797<br />
-                        Wilmington, DE 19801<br />
-                        United States
+                        {t('contact.addressLine1', '800 N King Street')}<br />
+                        {t('contact.addressLine2', 'Suite 304 #2797')}<br />
+                        {t('contact.addressLine3', 'Wilmington, DE 19801')}<br />
+                        {t('contact.addressLine4', 'United States')}
                       </p>
                     </div>
                   </div>
@@ -268,7 +268,7 @@ export default function ContactForm() {
                   
                   <div>
                     <label htmlFor="subject" className="block text-sm font-medium text-gray-700">
-                      What can we help you with?
+                      {t('contact.form.subject.label', 'What can we help you with?')}
                     </label>
                     <select
                       id="subject"

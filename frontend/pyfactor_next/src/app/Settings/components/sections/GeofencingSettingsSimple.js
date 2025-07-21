@@ -11,7 +11,6 @@ import {
   InformationCircleIcon
 } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
-import { logger } from '@/utils/logger';
 import api from '@/utils/api';
 import StandardSpinner from '@/components/ui/StandardSpinner';
 import FieldTooltip from '@/components/ui/FieldTooltip';
@@ -93,14 +92,6 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
 
         googleMap.addListener('click', (event) => {
           handleMapClick(event, googleMap);
-        });
-
-        // Add double-click listener to remove geofence
-        googleMap.addListener('dblclick', (event) => {
-          if (geofence) {
-            removeGeofence();
-            event.stop(); // Prevent map zoom on double-click
-          }
         });
 
         mapRef.current = googleMap;
@@ -187,11 +178,6 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
         center_longitude: newCenter.lng()
       }));
     });
-
-    // Add double-click listener to the circle itself
-    window.google.maps.event.addListener(newGeofence, 'dblclick', () => {
-      removeGeofence();
-    });
   };
 
   const removeGeofence = () => {
@@ -220,9 +206,9 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
 
     setSaving(true);
     try {
-      logger.log('[GeofenceSetup] Saving geofence:', geofenceData);
+      console.log('[GeofenceSetup] Saving geofence:', geofenceData);
       const response = await api.post('/api/hr/geofences/', geofenceData);
-      logger.log('[GeofenceSetup] Geofence created:', response.data);
+      console.log('[GeofenceSetup] Geofence created:', response.data);
       toast.success('Geofence created successfully');
       
       // Clear the map circle
@@ -235,7 +221,7 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
         onGeofenceCreated(response.data);
       }
     } catch (error) {
-      logger.error('[GeofenceSetup] Error creating geofence:', error);
+      console.error('[GeofenceSetup] Error creating geofence:', error);
       const errorMessage = error.response?.data?.detail || error.response?.data?.error || 'Failed to create geofence';
       toast.error(errorMessage);
     } finally {
@@ -357,8 +343,19 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <label className="text-sm font-medium text-gray-700">
-            Click to place geofence • Double-click to remove
+            Click on the map to set geofence location
           </label>
+          {geofence && (
+            <button
+              onClick={removeGeofence}
+              className="flex items-center px-3 py-1 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 transition-colors"
+            >
+              <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Remove Circle
+            </button>
+          )}
         </div>
         <div className="relative w-full h-96 border border-gray-300 rounded-lg overflow-hidden bg-gray-50">
           {loading && (
@@ -386,14 +383,9 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
           <div ref={mapContainerRef} className="w-full h-full" />
         </div>
         {geofenceData.center_latitude && geofenceData.center_longitude && (
-          <div className="mt-1">
-            <p className="text-xs text-gray-600">
-              Location: {geofenceData.center_latitude.toFixed(6)}, {geofenceData.center_longitude.toFixed(6)} • Radius: {geofenceData.radius}m
-            </p>
-            <p className="text-xs text-gray-500 italic">
-              Tip: Double-click anywhere on the map or circle to remove it
-            </p>
-          </div>
+          <p className="text-xs text-gray-600 mt-1">
+            Location: {geofenceData.center_latitude.toFixed(6)}, {geofenceData.center_longitude.toFixed(6)} • Radius: {geofenceData.radius}m
+          </p>
         )}
       </div>
 

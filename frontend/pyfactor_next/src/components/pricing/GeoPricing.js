@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CheckIcon } from '@heroicons/react/24/solid';
+import { useTranslation } from 'react-i18next';
 
 // Helper function to format price in local currency
 function formatLocalPrice(usdPrice, exchangeRate) {
@@ -21,6 +22,7 @@ function formatLocalPrice(usdPrice, exchangeRate) {
 }
 
 export default function GeoPricing() {
+  const { t } = useTranslation();
   const [pricing, setPricing] = useState(null);
   const [loading, setLoading] = useState(true);
   const [billingCycle, setBillingCycle] = useState('monthly');
@@ -179,21 +181,21 @@ export default function GeoPricing() {
 
   const plans = [
     {
-      name: 'Free',
+      name: t('pricing.plans.free.name', 'Free'),
       price: { monthly: '$0', six_month: '$0', yearly: '$0' },
-      description: 'Perfect for getting started',
+      description: t('pricing.plans.free.description', 'Perfect for getting started'),
       features: [
-        '1 user',
-        '3GB storage',
-        'Basic features',
-        'Community support',
-        'Mobile app access'
+        t('pricing.plans.free.features.0', '1 user'),
+        t('pricing.plans.free.features.1', '3GB storage'),
+        t('pricing.plans.free.features.2', 'Basic features'),
+        t('pricing.plans.free.features.3', 'Community support'),
+        t('pricing.plans.free.features.4', 'Mobile app access')
       ],
-      cta: 'Start Free',
+      cta: t('pricing.plans.free.cta', 'Start Free'),
       popular: false
     },
     {
-      name: 'Professional',
+      name: t('pricing.plans.professional.name', 'Professional'),
       price: {
         monthly: pricing.pricing.professional.monthly_display,
         six_month: pricing.pricing.professional.six_month_display,
@@ -204,20 +206,20 @@ export default function GeoPricing() {
         six_month: '$78.00',
         yearly: '$144.00'
       } : null,
-      description: 'For growing businesses',
+      description: t('pricing.plans.professional.description', 'For growing businesses'),
       features: [
-        'Up to 10 users',
-        '50GB storage',
-        'All features',
-        'Priority support',
-        'API access',
-        'Advanced analytics'
+        t('pricing.plans.professional.features.0', 'Up to 10 users'),
+        t('pricing.plans.professional.features.1', '50GB storage'),
+        t('pricing.plans.professional.features.2', 'All features'),
+        t('pricing.plans.professional.features.3', 'Priority support'),
+        t('pricing.plans.professional.features.4', 'API access'),
+        t('pricing.plans.professional.features.5', 'Advanced analytics')
       ],
-      cta: 'Start Professional',
+      cta: t('pricing.plans.professional.cta', 'Start Professional'),
       popular: true
     },
     {
-      name: 'Enterprise',
+      name: t('pricing.plans.enterprise.name', 'Enterprise'),
       price: {
         monthly: pricing.pricing.enterprise.monthly_display,
         six_month: pricing.pricing.enterprise.six_month_display,
@@ -228,17 +230,17 @@ export default function GeoPricing() {
         six_month: '$234.00',
         yearly: '$432.00'
       } : null,
-      description: 'For large organizations',
+      description: t('pricing.plans.enterprise.description', 'For large organizations'),
       features: [
-        'Unlimited users',
-        'Unlimited storage',
-        'All features',
-        'Dedicated support',
-        'Custom integrations',
-        'SLA guarantee',
-        'Training included'
+        t('pricing.plans.enterprise.features.0', 'Unlimited users'),
+        t('pricing.plans.enterprise.features.1', 'Unlimited storage'),
+        t('pricing.plans.enterprise.features.2', 'All features'),
+        t('pricing.plans.enterprise.features.3', 'Dedicated support'),
+        t('pricing.plans.enterprise.features.4', 'Custom integrations'),
+        t('pricing.plans.enterprise.features.5', 'SLA guarantee'),
+        t('pricing.plans.enterprise.features.6', 'Training included')
       ],
-      cta: 'Start Enterprise',
+      cta: t('pricing.plans.enterprise.cta', 'Start Enterprise'),
       popular: false
     }
   ];
@@ -249,13 +251,13 @@ export default function GeoPricing() {
         {/* Pricing Header */}
         <div className="text-center mb-12">
           <h2 className="text-base font-semibold text-blue-600 uppercase tracking-wide">
-            Simple, Transparent Pricing
+            {t('pricing.title', 'Simple, Transparent Pricing')}
           </h2>
           <p className="mt-2 text-3xl font-extrabold text-gray-900 sm:text-4xl lg:text-5xl">
-            Choose the Right Plan for Your Business
+            {t('pricing.heading', 'Choose the Right Plan for Your Business')}
           </p>
           <p className="mt-4 max-w-2xl text-xl text-gray-600 mx-auto">
-            No hidden fees. No credit card required for Free plan. Cancel anytime.
+            {t('pricing.subheading', 'No hidden fees. No credit card required for Free plan. Cancel anytime.')}
           </p>
         </div>
         
@@ -263,13 +265,13 @@ export default function GeoPricing() {
         {pricing && pricing.discount_percentage > 0 && (
           <div className="mb-8 bg-gradient-to-r from-green-500 to-emerald-600 text-white p-6 rounded-xl shadow-lg text-center">
             <h3 className="text-2xl font-bold mb-2">
-              🎉 {pricing.discount_percentage}% Off All Plans!
+              🎉 {t('pricing.discount.title', '{{percentage}}% Off All Plans!', { percentage: pricing.discount_percentage })}
             </h3>
             <p className="text-xl">
-              Special pricing for businesses in {pricing.country_code}
+              {t('pricing.discount.subtitle', 'Special pricing for businesses in {{country}}', { country: pricing.country_code })}
             </p>
             <p className="text-sm mt-2 opacity-90">
-              Supporting local entrepreneurship with regional pricing
+              {t('pricing.discount.support', 'Supporting local entrepreneurship with regional pricing')}
             </p>
           </div>
         )}
@@ -278,10 +280,10 @@ export default function GeoPricing() {
         {pricing.currency && pricing.currency !== 'USD' && pricing.discount_percentage === 0 && (
           <div className="mb-8 bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
             <p className="text-blue-800 font-semibold">
-              💱 Prices shown in {pricing.currency} (local currency)
+              💱 {t('pricing.currency.title', 'Prices shown in {{currency}} (local currency)', { currency: pricing.currency })}
             </p>
             <p className="text-blue-600 text-sm mt-1">
-              Converted at current exchange rates with 1% processing fee
+              {t('pricing.currency.subtitle', 'Converted at current exchange rates with 1% processing fee')}
             </p>
           </div>
         )}
@@ -297,7 +299,7 @@ export default function GeoPricing() {
               }`}
               onClick={() => setBillingCycle('monthly')}
             >
-              Monthly
+              {t('pricing.billing.monthly', 'Monthly')}
             </button>
             <button
               className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
@@ -307,8 +309,8 @@ export default function GeoPricing() {
               }`}
               onClick={() => setBillingCycle('six_month')}
             >
-              6 Months
-              <span className="ml-1 text-green-600 text-xs">Save 13%</span>
+              {t('pricing.billing.sixMonths', '6 Months')}
+              <span className="ml-1 text-green-600 text-xs">{t('pricing.billing.save13', 'Save 13%')}</span>
             </button>
             <button
               className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
@@ -318,8 +320,8 @@ export default function GeoPricing() {
               }`}
               onClick={() => setBillingCycle('yearly')}
             >
-              Yearly
-              <span className="ml-1 text-green-600 text-xs">Save 20%</span>
+              {t('pricing.billing.yearly', 'Yearly')}
+              <span className="ml-1 text-green-600 text-xs">{t('pricing.billing.save20', 'Save 20%')}</span>
             </button>
           </div>
         </div>
@@ -338,7 +340,7 @@ export default function GeoPricing() {
               {plan.popular && (
                 <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                   <span className="bg-blue-600 text-white px-4 py-1 rounded-full text-sm font-semibold">
-                    Most Popular
+                    {t('pricing.mostPopular', 'Most Popular')}
                   </span>
                 </div>
               )}
@@ -352,7 +354,7 @@ export default function GeoPricing() {
                     {plan.price[billingCycle]}
                   </span>
                   <span className="ml-2 text-gray-500">
-                    /{billingCycle === 'monthly' ? 'month' : billingCycle === 'six_month' ? '6 months' : 'year'}
+                    /{billingCycle === 'monthly' ? t('pricing.per.month', 'month') : billingCycle === 'six_month' ? t('pricing.per.sixMonths', '6 months') : t('pricing.per.year', 'year')}
                   </span>
                 </div>
                 {plan.originalPrice && (
@@ -361,7 +363,7 @@ export default function GeoPricing() {
                       {plan.originalPrice[billingCycle]}
                     </span>
                     <span className="ml-2 text-green-600 font-semibold">
-                      {pricing.discount_percentage}% off
+                      {t('pricing.percentOff', '{{percentage}}% off', { percentage: pricing.discount_percentage })}
                     </span>
                   </p>
                 )}
@@ -407,19 +409,19 @@ export default function GeoPricing() {
 
         {/* Additional Info */}
         <div className="mt-12 text-center text-gray-600">
-          <p>All plans include automatic backups, SSL certificates, and 99.9% uptime SLA</p>
+          <p>{t('pricing.allPlansInclude', 'All plans include automatic backups, SSL certificates, and 99.9% uptime SLA')}</p>
           {pricing.discount_percentage > 0 && (
             <p className="mt-2 text-sm">
-              Regional pricing is automatically applied based on your location.
+              {t('pricing.regionalPricing', 'Regional pricing is automatically applied based on your location.')}
               <br />
-              Verification may be required within 30 days.
+              {t('pricing.verificationRequired', 'Verification may be required within 30 days.')}
             </p>
           )}
           {pricing.currency && pricing.currency !== 'USD' && (
             <p className="mt-2 text-sm">
-              Prices converted from USD using current exchange rates.
+              {t('pricing.pricesConverted', 'Prices converted from USD using current exchange rates.')}
               <br />
-              Final charges may vary slightly based on exchange rate fluctuations.
+              {t('pricing.chargesMayVary', 'Final charges may vary slightly based on exchange rate fluctuations.')}
             </p>
           )}
           {pricing.exchange_info && (
@@ -449,7 +451,7 @@ export default function GeoPricing() {
         {userCountry === 'KE' && (
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
-              💳 Pay with credit card (USD) or M-Pesa (KES)
+              💳 {t('pricing.paymentMethods.kenya', 'Pay with credit card (USD) or M-Pesa (KES)')}
             </p>
           </div>
         )}

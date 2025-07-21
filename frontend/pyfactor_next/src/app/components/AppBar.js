@@ -241,7 +241,7 @@ export default function AppBar() {
             >
               <img
                 src="/static/images/PyfactorLandingpage.png"
-                alt="PyFactor Logo"
+                alt={t('appBar.logoAlt', 'PyFactor Logo')}
                 width={270}
                 height={90}
                 className="h-14 md:h-20 w-auto object-contain"
@@ -303,7 +303,7 @@ export default function AppBar() {
               <button
                 className="flex items-center space-x-1 px-2 py-1 text-gray-700 hover:text-blue-600 transition-colors duration-150"
                 onClick={toggleLanguageMenu}
-                aria-label="Change language"
+                aria-label={t('appBar.changeLanguage', 'Change language')}
               >
                 <svg 
                   className="h-5 w-5" 
@@ -354,7 +354,7 @@ export default function AppBar() {
                 onClick={toggleMobileMenu}
                 aria-expanded="false"
               >
-                <span className="sr-only">Open main menu</span>
+                <span className="sr-only">{t('appBar.openMenu', 'Open main menu')}</span>
                 {/* Icon for menu (three lines) */}
                 <svg
                   className={`${isMobileMenuOpen ? 'hidden' : 'block'} h-6 w-6`}

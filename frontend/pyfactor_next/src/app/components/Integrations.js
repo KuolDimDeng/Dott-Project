@@ -4,70 +4,75 @@ import * as React from 'react';
 import Image from 'next/image';
 import { useTranslation } from 'react-i18next';
 
-const integrations = {
-  available: [
-    {
-      name: 'WhatsApp Business',
-      logo: '/images/integrations/whatsapp.png',
-      description: 'Send invoices and receipts directly to customers',
-      hasLogo: true
-    },
-    {
-      name: 'M-Pesa',
-      logo: '/images/integrations/mpesa.jpg',
-      description: 'Accept mobile money payments seamlessly',
-      hasLogo: true
-    },
-    {
-      name: 'Stripe',
-      logo: '/images/integrations/stripe.jpg',
-      description: 'Process card payments globally',
-      hasLogo: true
-    }
-  ],
-  comingSoon: [
-    {
-      name: 'Shopify',
-      logo: '/images/integrations/shopify.jpg',
-      description: 'Sync your e-commerce inventory',
-      hasLogo: true
-    },
-    {
-      name: 'WooCommerce',
-      logo: '/images/integrations/woocommerce.jpg',
-      description: 'Connect your WordPress store',
-      hasLogo: true
-    },
-    {
-      name: 'QuickBooks',
-      logo: '/images/integrations/quickbooks.jpg',
-      description: 'Import and export accounting data',
-      hasLogo: true
-    },
-    {
-      name: 'Amazon Seller',
-      logo: '/images/integrations/amazon.jpg',
-      description: 'Manage your Amazon business',
-      hasLogo: true
-    }
-  ]
-};
+function useIntegrations() {
+  const { t } = useTranslation();
+  
+  return {
+    available: [
+      {
+        name: t('integrations.whatsapp.name', 'WhatsApp Business'),
+        logo: '/images/integrations/whatsapp.png',
+        description: t('integrations.whatsapp.description', 'Send invoices and receipts directly to customers'),
+        hasLogo: true
+      },
+      {
+        name: t('integrations.mpesa.name', 'M-Pesa'),
+        logo: '/images/integrations/mpesa.jpg',
+        description: t('integrations.mpesa.description', 'Accept mobile money payments seamlessly'),
+        hasLogo: true
+      },
+      {
+        name: t('integrations.stripe.name', 'Stripe'),
+        logo: '/images/integrations/stripe.jpg',
+        description: t('integrations.stripe.description', 'Process card payments globally'),
+        hasLogo: true
+      }
+    ],
+    comingSoon: [
+      {
+        name: t('integrations.shopify.name', 'Shopify'),
+        logo: '/images/integrations/shopify.jpg',
+        description: t('integrations.shopify.description', 'Sync your e-commerce inventory'),
+        hasLogo: true
+      },
+      {
+        name: t('integrations.woocommerce.name', 'WooCommerce'),
+        logo: '/images/integrations/woocommerce.jpg',
+        description: t('integrations.woocommerce.description', 'Connect your WordPress store'),
+        hasLogo: true
+      },
+      {
+        name: t('integrations.quickbooks.name', 'QuickBooks'),
+        logo: '/images/integrations/quickbooks.jpg',
+        description: t('integrations.quickbooks.description', 'Import and export accounting data'),
+        hasLogo: true
+      },
+      {
+        name: t('integrations.amazon.name', 'Amazon Seller'),
+        logo: '/images/integrations/amazon.jpg',
+        description: t('integrations.amazon.description', 'Manage your Amazon business'),
+        hasLogo: true
+      }
+    ]
+  };
+}
 
 export default function Integrations() {
   const { t } = useTranslation();
+  const integrations = useIntegrations();
   
   return (
     <section className="py-16 sm:py-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center">
           <h2 className="text-base font-semibold text-indigo-600 tracking-wide uppercase">
-            Integrations
+            {t('integrations.title', 'Integrations')}
           </h2>
           <p className="mt-2 text-3xl font-extrabold text-gray-900 sm:text-4xl">
-            Connect with the tools you love
+            {t('integrations.heading', 'Connect with the tools you love')}
           </p>
           <p className="mt-4 max-w-2xl text-xl text-gray-500 mx-auto">
-            Seamlessly integrate with popular business tools and payment platforms
+            {t('integrations.subheading', 'Seamlessly integrate with popular business tools and payment platforms')}
           </p>
         </div>
 
@@ -75,7 +80,7 @@ export default function Integrations() {
           {/* Available Now */}
           <div className="mb-16">
             <h3 className="text-2xl font-bold text-gray-900 mb-8 flex items-center justify-center">
-              <span className="text-green-600 mr-2">✅</span> Available Now
+              <span className="text-green-600 mr-2">✅</span> {t('integrations.availableNow', 'Available Now')}
             </h3>
             <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-3">
               {integrations.available.map((integration) => (
@@ -89,7 +94,7 @@ export default function Integrations() {
                         <div className="w-24 h-16 flex items-center justify-center">
                           <Image
                             src={integration.logo}
-                            alt={`${integration.name} logo`}
+                            alt={t('integrations.logoAlt', '{{name}} logo', { name: integration.name })}
                             width={96}
                             height={64}
                             className="max-w-full max-h-full object-contain"
@@ -120,7 +125,7 @@ export default function Integrations() {
           {/* Coming Soon */}
           <div>
             <h3 className="text-2xl font-bold text-gray-900 mb-8 flex items-center justify-center">
-              <span className="text-blue-600 mr-2">🚀</span> Coming Soon
+              <span className="text-blue-600 mr-2">🚀</span> {t('integrations.comingSoon', 'Coming Soon')}
             </h3>
             <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-4">
               {integrations.comingSoon.map((integration) => (
@@ -134,7 +139,7 @@ export default function Integrations() {
                         <div className="w-20 h-16 flex items-center justify-center">
                           <Image
                             src={integration.logo}
-                            alt={`${integration.name} logo`}
+                            alt={t('integrations.logoAlt', '{{name}} logo', { name: integration.name })}
                             width={80}
                             height={64}
                             className="max-w-full max-h-full object-contain opacity-60 grayscale"

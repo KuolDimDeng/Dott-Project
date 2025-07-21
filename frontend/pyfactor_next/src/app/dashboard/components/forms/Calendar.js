@@ -6,6 +6,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import listPlugin from '@fullcalendar/list';
 import interactionPlugin from '@fullcalendar/interaction';
+import allLocales from '@fullcalendar/core/locales-all';
 import { 
   CalendarDaysIcon,
   PlusIcon,
@@ -118,6 +119,34 @@ const getTimezoneDisplayName = (timezone) => {
   
   // Fallback: convert underscores to spaces
   return timezone.replace(/_/g, ' ');
+};
+
+// Helper function to map i18n language code to FullCalendar locale
+const getFullCalendarLocale = (languageCode) => {
+  const localeMap = {
+    'en': 'en',
+    'es': 'es',
+    'fr': 'fr',
+    'pt': 'pt',
+    'de': 'de',
+    'zh': 'zh-cn',
+    'ar': 'ar',
+    'hi': 'hi',
+    'ru': 'ru',
+    'ja': 'ja',
+    'sw': 'sw', // Swahili
+    'tr': 'tr',
+    'id': 'id',
+    'vi': 'vi',
+    'nl': 'nl',
+    'ha': 'ha', // Hausa
+    'yo': 'yo', // Yoruba - may not be available in FullCalendar
+    'am': 'am', // Amharic - may not be available in FullCalendar
+    'zu': 'zu', // Zulu - may not be available in FullCalendar
+    'ko': 'ko'
+  };
+  
+  return localeMap[languageCode] || 'en';
 };
 
 export default function Calendar({ onNavigate }) {
@@ -437,7 +466,7 @@ export default function Calendar({ onNavigate }) {
         const data = await response.json();
         return (data.birthdays || []).map(birthday => ({
           id: `birthday-${birthday.employeeId}`,
-          title: `🎂 ${birthday.name}'s Birthday`,
+          title: `🎂 ${birthday.name}${t('systemEventTitles.birthdaySuffix')}`,
           start: birthday.date,
           allDay: true,
           type: 'birthday',
@@ -491,7 +520,7 @@ export default function Calendar({ onNavigate }) {
         const data = await response.json();
         return (data.payrollDates || []).map(payroll => ({
           id: `payroll-${payroll.id}`,
-          title: `💰 Payroll Processing`,
+          title: `💰 ${t('systemEventTitles.payrollProcessing')}`,
           start: payroll.date,
           allDay: true,
           type: 'payroll',
@@ -518,7 +547,7 @@ export default function Calendar({ onNavigate }) {
         const data = await response.json();
         return (data.products || []).map(product => ({
           id: `expiry-${product.id}`,
-          title: `⚠️ ${product.name} expires`,
+          title: `⚠️ ${product.name}${t('systemEventTitles.productExpires')}`,
           start: product.expiryDate,
           allDay: true,
           type: 'productExpiry',
@@ -817,7 +846,7 @@ export default function Calendar({ onNavigate }) {
 
   // Delete event
   const handleDeleteEvent = async () => {
-    if (!selectedEvent || !confirm('Are you sure you want to delete this event?')) {
+    if (!selectedEvent || !confirm(t('confirmations.deleteEvent'))) {
       return;
     }
     
@@ -992,6 +1021,8 @@ export default function Calendar({ onNavigate }) {
           ref={setCalendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
           initialView="dayGridMonth"
+          locale={getFullCalendarLocale(i18n.language)}
+          locales={allLocales}
           timeZone={userTimezone}
           headerToolbar={{
             left: 'prev,next today',
@@ -1071,20 +1102,20 @@ export default function Calendar({ onNavigate }) {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Title *
+                  {t('form.title')}
                 </label>
                 <input
                   type="text"
                   value={eventForm.title}
                   onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Event title"
+                  placeholder={t('placeholders.eventTitle')}
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Type
+                  {t('form.type')}
                 </label>
                 <select
                   value={eventForm.type}
@@ -1102,7 +1133,7 @@ export default function Calendar({ onNavigate }) {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Start Date
+                      {t('form.startDate')}
                     </label>
                     <input
                       type="date"
@@ -1114,7 +1145,7 @@ export default function Calendar({ onNavigate }) {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      End Date
+                      {t('form.endDate')}
                     </label>
                     <input
                       type="date"
@@ -1132,7 +1163,7 @@ export default function Calendar({ onNavigate }) {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Start Time
+                          {t('form.startTime')}
                         </label>
                         <input
                           type="time"
@@ -1144,7 +1175,7 @@ export default function Calendar({ onNavigate }) {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          End Time
+                          {t('form.endTime')}
                         </label>
                         <input
                           type="time"
@@ -1176,33 +1207,33 @@ export default function Calendar({ onNavigate }) {
                     }}
                     className="mr-2"
                   />
-                  <span className="text-sm text-gray-700">All day event</span>
+                  <span className="text-sm text-gray-700">{t('form.allDayEvent')}</span>
                 </label>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Location
+                  {t('form.location')}
                 </label>
                 <input
                   type="text"
                   value={eventForm.location}
                   onChange={(e) => setEventForm({ ...eventForm, location: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Event location"
+                  placeholder={t('placeholders.eventLocation')}
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description
+                  {t('form.description')}
                 </label>
                 <textarea
                   value={eventForm.description}
                   onChange={(e) => setEventForm({ ...eventForm, description: e.target.value })}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Event description"
+                  placeholder={t('placeholders.eventDescription')}
                 />
               </div>
 
@@ -1214,23 +1245,23 @@ export default function Calendar({ onNavigate }) {
                     onChange={(e) => setEventForm({ ...eventForm, sendReminder: e.target.checked })}
                     className="mr-2"
                   />
-                  <span className="text-sm text-gray-700">Send reminder</span>
+                  <span className="text-sm text-gray-700">{t('form.sendReminder')}</span>
                 </label>
                 {eventForm.sendReminder && (
                   <div className="mt-2 ml-6">
                     <label className="block text-xs text-gray-600 mb-1">
-                      Minutes before
+                      {t('form.minutesBefore')}
                     </label>
                     <select
                       value={eventForm.reminderMinutes}
                       onChange={(e) => setEventForm({ ...eventForm, reminderMinutes: parseInt(e.target.value) })}
                       className="px-2 py-1 border border-gray-300 rounded text-sm"
                     >
-                      <option value={15}>15 minutes</option>
-                      <option value={30}>30 minutes</option>
-                      <option value={60}>1 hour</option>
-                      <option value={120}>2 hours</option>
-                      <option value={1440}>1 day</option>
+                      <option value={15}>{t('reminderOptions.15minutes')}</option>
+                      <option value={30}>{t('reminderOptions.30minutes')}</option>
+                      <option value={60}>{t('reminderOptions.1hour')}</option>
+                      <option value={120}>{t('reminderOptions.2hours')}</option>
+                      <option value={1440}>{t('reminderOptions.1day')}</option>
                     </select>
                   </div>
                 )}
@@ -1270,7 +1301,7 @@ export default function Calendar({ onNavigate }) {
                   {isSaving ? (
                     <>
                       <StandardSpinner size="small" className="mr-2" />
-                      Saving...
+                      {t('saving')}
                     </>
                   ) : (
                     <>

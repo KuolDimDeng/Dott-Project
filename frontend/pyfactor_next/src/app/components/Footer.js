@@ -40,7 +40,7 @@ export default function Footer() {
     ],
     social: [
       {
-        name: 'Facebook',
+        name: t('footer.social.facebook', 'Facebook'),
         href: 'https://facebook.com',
         icon: (props) => (
           <svg fill="currentColor" viewBox="0 0 24 24" {...props}>
@@ -53,7 +53,7 @@ export default function Footer() {
         ),
       },
       {
-        name: 'Twitter',
+        name: t('footer.social.twitter', 'Twitter'),
         href: 'https://twitter.com',
         icon: (props) => (
           <svg fill="currentColor" viewBox="0 0 24 24" {...props}>
@@ -62,7 +62,7 @@ export default function Footer() {
         ),
       },
       {
-        name: 'LinkedIn',
+        name: t('footer.social.linkedin', 'LinkedIn'),
         href: 'https://linkedin.com',
         icon: (props) => (
           <svg fill="currentColor" viewBox="0 0 24 24" {...props}>
@@ -80,14 +80,14 @@ export default function Footer() {
   return (
     <footer className="bg-white border-t border-gray-200" aria-labelledby="footer-heading">
       <h2 id="footer-heading" className="sr-only">
-        Footer
+        {t('footer.footerHeading', 'Footer')}
       </h2>
       <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:py-16 lg:px-8">
         <div className="xl:grid xl:grid-cols-3 xl:gap-8">
           <div className="space-y-8 xl:col-span-1">
             <Image
               src="/static/images/PyfactorLandingpage.png"
-              alt="Dott Logo"
+              alt={t('footer.logoAlt', 'Dott Logo')}
               width={150}
               height={40}
               className="h-10 w-auto"
