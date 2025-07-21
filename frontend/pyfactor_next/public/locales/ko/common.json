@@ -1,6 +1,25 @@
 {
   "about": "회사 소개",
-  "features": "기능",
+  "features": {
+    "eyebrow": "완전한 비즈니스 솔루션",
+    "heading": "글로벌 성장에 필요한 모든 것",
+    "subheading": "국경을 넘나드는 현대 비즈니스를 위해 설계된 강력한 도구",
+    "operations": {
+      "title": "운영 관리",
+      "description": "일상적인 비즈니스 운영을 간소화하세요"
+    },
+    "financial": {
+      "title": "재무 관리",
+      "description": "비즈니스 재정을 완전히 제어하세요"
+    },
+    "global": {
+      "title": "글로벌 비즈니스 도구",
+      "description": "국제적으로 운영하는 데 필요한 모든 것"
+    },
+    "trust": {
+      "title": "보안 및 규정 준수를 위해 구축됨"
+    }
+  },
   "pricing": "가격",
   "contact": "연락처",
   "getStarted": "시작하기",
@@ -58,8 +77,9 @@
   "navFeatures": "기능",
   "navPricing": "가격",
   "navAbout": "회사 소개",
+  "navBlog": "Blog",
   "navContact": "연락처",
-  "navStatus": "상태",
+  "navStatus": "시스템 상태",
   "navSignIn": "로그인",
   "featuresTitle": "글로벌 비즈니스 기능",
   "featuresSubtitle": "100개 이상의 국가에서 비즈니스를 효율적으로 운영하는 데 필요한 모든 것",
@@ -347,26 +367,6 @@
   "security_badge_1": "은행 수준의 암호화",
   "security_badge_2": "GDPR 준수",
   "security_badge_3": "99.9% 가동 시간",
-  "features": {
-    "eyebrow": "완전한 비즈니스 솔루션",
-    "heading": "글로벌 성장에 필요한 모든 것",
-    "subheading": "국경을 넘나드는 현대 비즈니스를 위해 설계된 강력한 도구",
-    "operations": {
-      "title": "운영 관리",
-      "description": "일상적인 비즈니스 운영을 간소화하세요"
-    },
-    "financial": {
-      "title": "재무 관리",
-      "description": "비즈니스 재정을 완전히 제어하세요"
-    },
-    "global": {
-      "title": "글로벌 비즈니스 도구",
-      "description": "국제적으로 운영하는 데 필요한 모든 것"
-    },
-    "trust": {
-      "title": "보안 및 규정 준수를 위해 구축됨"
-    }
-  },
   "feature": {
     "inventory": "고급 재고 관리",
     "inventory.description": "바코드 스캔 및 다중 위치 지원을 통한 실시간 재고 추적",

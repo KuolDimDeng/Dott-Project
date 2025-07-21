@@ -1,8 +1,98 @@
 {
   "about": "Tentang Kami",
-  "features": "Fitur",
-  "pricing": "Harga",
-  "contact": "Kontak",
+  "features": {
+    "eyebrow": "Solusi Bisnis Lengkap",
+    "heading": "Semua yang Anda Butuhkan untuk Tumbuh Global",
+    "subheading": "Alat-alat canggih yang dirancang untuk bisnis modern yang beroperasi lintas batas",
+    "operations": {
+      "title": "Manajemen Operasi",
+      "description": "Sederhanakan operasi bisnis harian Anda"
+    },
+    "financial": {
+      "title": "Manajemen Keuangan",
+      "description": "Kontrol penuh atas keuangan bisnis Anda"
+    },
+    "global": {
+      "title": "Alat Bisnis Global",
+      "description": "Semua yang Anda butuhkan untuk beroperasi secara internasional"
+    },
+    "trust": {
+      "title": "Dibangun untuk Keamanan & Kepatuhan"
+    }
+  },
+  "pricing": {
+    "eyebrow": "Harga",
+    "heading": "Paket untuk Setiap Ukuran Bisnis",
+    "subheading": "Mulai gratis dan upgrade seiring berkembangnya bisnis Anda.",
+    "monthly": "Bulanan",
+    "annually": "Tahunan",
+    "save": "Hemat 20%",
+    "plans": {
+      "basic": {
+        "name": "Basic",
+        "price": "Gratis",
+        "description": "Sempurna untuk freelancer dan startup",
+        "features": [
+          "1 pengguna",
+          "Hingga 100 transaksi/bulan",
+          "Fakturisasi dasar",
+          "2GB penyimpanan",
+          "Dukungan email"
+        ]
+      },
+      "professional": {
+        "name": "Professional",
+        "price": "$15",
+        "priceAnnual": "$12",
+        "description": "Untuk bisnis yang berkembang",
+        "popular": true,
+        "features": [
+          "Pengguna tak terbatas",
+          "Transaksi tak terbatas",
+          "Fitur lanjutan",
+          "30GB penyimpanan",
+          "Dukungan prioritas"
+        ]
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "price": "$45",
+        "priceAnnual": "$36",
+        "description": "Untuk perusahaan mapan",
+        "features": [
+          "Semua fitur Professional",
+          "Penyimpanan tak terbatas",
+          "Manager akun khusus",
+          "Akses API",
+          "SLA 99.9%"
+        ]
+      }
+    }
+  },
+  "contact": {
+    "eyebrow": "Kontak",
+    "heading": "Mari Berbicara",
+    "subheading": "Kami senang mendengar dari Anda. Kirimkan pesan dan kami akan merespons sesegera mungkin.",
+    "form": {
+      "name": "Nama",
+      "email": "Email",
+      "message": "Pesan",
+      "submit": "Kirim Pesan",
+      "subject": {
+        "label": "Subjek",
+        "general": "Pertanyaan Umum",
+        "sales": "Pertanyaan Penjualan",
+        "support": "Dukungan Teknis",
+        "partnership": "Kemitraan",
+        "other": "Lainnya"
+      }
+    },
+    "info": {
+      "email": "hello@dottapps.com",
+      "phone": "+1 (555) 123-4567",
+      "address": "123 Business Street, Suite 100, New York, NY 10001"
+    }
+  },
   "getStarted": "Mulai Sekarang",
   "login": "Masuk",
   "signUp": "Daftar",
@@ -58,8 +148,9 @@
   "navFeatures": "Fitur",
   "navPricing": "Harga",
   "navAbout": "Tentang",
+  "navBlog": "Blog",
   "navContact": "Kontak",
-  "navStatus": "Status",
+  "navStatus": "Status Sistem",
   "navSignIn": "MASUK",
   "footer": {
     "home": "Beranda",
@@ -91,25 +182,33 @@
     "legal": "Hukum"
   },
   "highlights": {
-    "eyebrow": "Keunggulan Utama",
-    "heading": "Mengapa Bisnis Memilih Dott",
-    "subheading": "Fitur-fitur canggih yang membedakan kami dari kompetitor dan membantu bisnis Anda berkembang.",
-    "mobile": {
-      "title": "Aplikasi Mobile",
-      "description": "Akses data bisnis Anda kapan saja, di mana saja dengan aplikasi mobile kami yang canggih. Kelola inventaris, proses penjualan, dan lihat laporan secara real-time."
-    },
-    "integration": {
-      "title": "Integrasi Tanpa Batas",
-      "description": "Hubungkan alat dan layanan favorit Anda. Platform kami terintegrasi dengan pemroses pembayaran, software akuntansi, platform e-commerce, dan banyak lagi."
-    },
-    "support": {
-      "title": "Dukungan 24/7",
-      "description": "Tim dukungan ahli kami tersedia sepanjang waktu untuk membantu Anda sukses. Dapatkan bantuan melalui chat, email, atau panggilan telepon."
-    },
-    "security": {
-      "title": "Keamanan Tingkat Bank",
-      "description": "Data Anda dilindungi dengan enkripsi tingkat militer dan protokol keamanan terbaik di industri. Sesuai dengan GDPR, SOC 2, dan standar keamanan lainnya."
-    }
+    "bluetooth": "Integrasi scanner Bluetooth",
+    "printBarcodes": "Cetak barcode kustom",
+    "lowStock": "Peringatan stok rendah",
+    "customLabel": "Pencetakan label kustom",
+    "mobileScanning": "Pemindaian mobile",
+    "batchProcessing": "Pemrosesan batch",
+    "offlineMode": "Mode offline",
+    "multiplePayments": "Metode pembayaran ganda",
+    "receiptCustom": "Kustomisasi tanda terima",
+    "recurringInvoices": "Faktur berulang",
+    "paymentReminders": "Pengingat pembayaran",
+    "invoiceFactoring": "Faktoring faktur",
+    "vatGst": "Dukungan VAT/GST",
+    "taxReports": "Laporan pajak",
+    "eFilingReady": "Siap e-filing",
+    "customDashboards": "Dashboard kustom",
+    "profitAnalysis": "Analisis keuntungan",
+    "cashFlowForecast": "Prakiraan arus kas",
+    "mobileMoney": "Uang mobile",
+    "bankTransfers": "Transfer bank",
+    "digitalWallets": "Dompet digital",
+    "customsDocuments": "Dokumen bea cukai",
+    "shippingIntegration": "Integrasi pengiriman",
+    "tradeCompliance": "Kepatuhan perdagangan",
+    "soc2Compliant": "Sesuai SOC2",
+    "dataEncryption": "Enkripsi data",
+    "gdprReady": "Siap GDPR"
   },
   "faq": {
     "eyebrow": "FAQ",
@@ -141,79 +240,6 @@
         "answer": "Tentu saja. Kami menggunakan enkripsi keamanan tingkat bank dan mengikuti praktik terbaik industri untuk melindungi data Anda. Platform kami dihosting pada infrastruktur cloud yang aman dengan beberapa lapisan keamanan, fitur kepatuhan regional, dan backup rutin."
       }
     ]
-  },
-  "contact": {
-    "eyebrow": "Kontak",
-    "heading": "Mari Berbicara",
-    "subheading": "Kami senang mendengar dari Anda. Kirimkan pesan dan kami akan merespons sesegera mungkin.",
-    "form": {
-      "name": "Nama",
-      "email": "Email",
-      "message": "Pesan",
-      "submit": "Kirim Pesan",
-      "subject": {
-        "label": "Subjek",
-        "general": "Pertanyaan Umum",
-        "sales": "Pertanyaan Penjualan",
-        "support": "Dukungan Teknis",
-        "partnership": "Kemitraan",
-        "other": "Lainnya"
-      }
-    },
-    "info": {
-      "email": "hello@dottapps.com",
-      "phone": "+1 (555) 123-4567",
-      "address": "123 Business Street, Suite 100, New York, NY 10001"
-    }
-  },
-  "pricing": {
-    "eyebrow": "Harga",
-    "heading": "Paket untuk Setiap Ukuran Bisnis",
-    "subheading": "Mulai gratis dan upgrade seiring berkembangnya bisnis Anda.",
-    "monthly": "Bulanan",
-    "annually": "Tahunan",
-    "save": "Hemat 20%",
-    "plans": {
-      "basic": {
-        "name": "Basic",
-        "price": "Gratis",
-        "description": "Sempurna untuk freelancer dan startup",
-        "features": [
-          "1 pengguna",
-          "Hingga 100 transaksi/bulan",
-          "Fakturisasi dasar",
-          "2GB penyimpanan",
-          "Dukungan email"
-        ]
-      },
-      "professional": {
-        "name": "Professional",
-        "price": "$15",
-        "priceAnnual": "$12",
-        "description": "Untuk bisnis yang berkembang",
-        "popular": true,
-        "features": [
-          "Pengguna tak terbatas",
-          "Transaksi tak terbatas",
-          "Fitur lanjutan",
-          "30GB penyimpanan",
-          "Dukungan prioritas"
-        ]
-      },
-      "enterprise": {
-        "name": "Enterprise",
-        "price": "$45",
-        "priceAnnual": "$36",
-        "description": "Untuk perusahaan mapan",
-        "features": [
-          "Semua fitur Professional",
-          "Penyimpanan tak terbatas",
-          "Manager akun khusus",
-          "Akses API",
-          "SLA 99.9%"
-        ]
-      }
-    }
   },
   "auth": {
     "signIn": "Masuk",
@@ -478,9 +504,6 @@
   "complete_onboarding": "LENGKAPI PENDAFTARAN",
   "your_dashboard": "DASHBOARD ANDA",
   "sign_in": "MASUK",
-  "heroSubtitle": "Gratis selamanya untuk fitur dasar",
-  "heroButton": "Mulai gratis",
-  "heroTrustedBy": "Dipercaya oleh lebih dari 10.000 bisnis di seluruh dunia",
   "feature_inventory": "Manajemen Inventaris",
   "feature_inventory_desc": "Lacak tingkat stok, buat barcode, dan kelola beberapa lokasi dengan pembaruan real-time.",
   "feature_pos": "Point of Sale",
@@ -529,26 +552,6 @@
   "security_badge_1": "Enkripsi tingkat bank",
   "security_badge_2": "Sesuai GDPR",
   "security_badge_3": "99,9% uptime",
-  "features": {
-    "eyebrow": "Solusi Bisnis Lengkap",
-    "heading": "Semua yang Anda Butuhkan untuk Tumbuh Global",
-    "subheading": "Alat-alat canggih yang dirancang untuk bisnis modern yang beroperasi lintas batas",
-    "operations": {
-      "title": "Manajemen Operasi",
-      "description": "Sederhanakan operasi bisnis harian Anda"
-    },
-    "financial": {
-      "title": "Manajemen Keuangan",
-      "description": "Kontrol penuh atas keuangan bisnis Anda"
-    },
-    "global": {
-      "title": "Alat Bisnis Global",
-      "description": "Semua yang Anda butuhkan untuk beroperasi secara internasional"
-    },
-    "trust": {
-      "title": "Dibangun untuk Keamanan & Kepatuhan"
-    }
-  },
   "feature": {
     "inventory": "Manajemen Inventori Lanjutan",
     "inventory.description": "Pelacakan stok real-time dengan pemindaian barcode dan dukungan multi-lokasi",
@@ -568,35 +571,6 @@
     "global.description": "Tangani dokumentasi perdagangan internasional dan kepatuhan",
     "security": "Keamanan Enterprise",
     "security.description": "Keamanan tingkat bank dengan kepatuhan regional"
-  },
-  "highlights": {
-    "bluetooth": "Integrasi scanner Bluetooth",
-    "printBarcodes": "Cetak barcode kustom",
-    "lowStock": "Peringatan stok rendah",
-    "customLabel": "Pencetakan label kustom",
-    "mobileScanning": "Pemindaian mobile",
-    "batchProcessing": "Pemrosesan batch",
-    "offlineMode": "Mode offline",
-    "multiplePayments": "Metode pembayaran ganda",
-    "receiptCustom": "Kustomisasi tanda terima",
-    "recurringInvoices": "Faktur berulang",
-    "paymentReminders": "Pengingat pembayaran",
-    "invoiceFactoring": "Faktoring faktur",
-    "vatGst": "Dukungan VAT/GST",
-    "taxReports": "Laporan pajak",
-    "eFilingReady": "Siap e-filing",
-    "customDashboards": "Dashboard kustom",
-    "profitAnalysis": "Analisis keuntungan",
-    "cashFlowForecast": "Prakiraan arus kas",
-    "mobileMoney": "Uang mobile",
-    "bankTransfers": "Transfer bank",
-    "digitalWallets": "Dompet digital",
-    "customsDocuments": "Dokumen bea cukai",
-    "shippingIntegration": "Integrasi pengiriman",
-    "tradeCompliance": "Kepatuhan perdagangan",
-    "soc2Compliant": "Sesuai SOC2",
-    "dataEncryption": "Enkripsi data",
-    "gdprReady": "Siap GDPR"
   },
   "trust": {
     "soc2Title": "Sesuai SOC2",

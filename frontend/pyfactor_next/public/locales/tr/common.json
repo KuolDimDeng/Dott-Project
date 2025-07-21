@@ -1,8 +1,201 @@
 {
   "about": "Hakkımızda",
-  "features": "Özellikler",
-  "pricing": "Fiyatlandırma",
-  "contact": "İletişim",
+  "features": {
+    "eyebrow": "Eksiksiz İş Çözümü",
+    "heading": "Küresel Büyüme İçin İhtiyaç Duyduğunuz Her Şey",
+    "subheading": "Sınırları aşan modern işletmeler için tasarlanmış güçlü araçlar",
+    "operations": {
+      "title": "Operasyon Yönetimi",
+      "description": "Günlük iş operasyonlarınızı sadeleştirin"
+    },
+    "financial": {
+      "title": "Finansal Yönetim",
+      "description": "İş finanslarınızüzerinde tam kontrol"
+    },
+    "global": {
+      "title": "Küresel İş Araçları",
+      "description": "Uluslararası faaliyet için ihtiyaç duyduğunuz her şey"
+    },
+    "trust": {
+      "title": "Güvenlik ve Uyumluluk İçin Yapıldı"
+    }
+  },
+  "pricing": {
+    "eyebrow": "Basit, Şeffaf Fiyatlandırma",
+    "heading": "İşletmeniz için Doğru Planı Seçin",
+    "subheading": "Gizli ücretler yok. Temel plan için kredi kartı gerekmiyor. İstediğiniz zaman iptal edin.",
+    "discount": {
+      "title": "Tüm Ücretli Planlarda %50 İndirim!",
+      "subtitle": "{{country}}'daki işletmeler için özel fiyatlandırma - Yerel girişimciliği destekleme"
+    },
+    "billing": {
+      "monthly": "Aylık",
+      "sixMonths": "6 Ay",
+      "annual": "Yıllık",
+      "popular": "POPÜLER",
+      "save20": "%20 TASARRUF"
+    },
+    "period": {
+      "month": "/ay",
+      "sixMonths": "/6 ay",
+      "year": "/yıl"
+    },
+    "save": "{{amount}} tasarruf edin ({{monthly}}/ay)",
+    "mostPopular": "EN POPÜLER",
+    "plans": {
+      "basic": {
+        "name": "Temel",
+        "description": "Serbest çalışanlar ve küçük işletmeler için mükemmel",
+        "features": {
+          "0": "1 kullanıcı",
+          "1": "3GB depolama",
+          "2": "Tüm temel özellikler",
+          "3": "Temel destek",
+          "4": "Mobil uygulama erişimi"
+        },
+        "cta": "Ücretsiz Başla"
+      },
+      "professional": {
+        "name": "Profesyonel",
+        "description": "Daha fazlaya ihtiyaç duyan büyüyen işletmeler için",
+        "features": {
+          "0": "3 kullanıcıya kadar",
+          "1": "Sınırsız depolama",
+          "2": "Tüm özellikler dahil",
+          "3": "Öncelikli destek",
+          "4": "Gelişmiş analitik",
+          "5": "Çok lokasyon desteği"
+        },
+        "cta": "Profesyonel Edinin"
+      },
+      "enterprise": {
+        "name": "Kurumsal",
+        "description": "Büyük organizasyonlar için sınırsız ölçek",
+        "features": {
+          "0": "Sınırsız kullanıcı",
+          "1": "Sınırsız her şey",
+          "2": "Tüm özellikler dahil",
+          "3": "Özel destek",
+          "4": "Özel uyum",
+          "5": "Yapay zeka destekli içgörüler",
+          "6": "API erişimi"
+        },
+        "cta": "Kurumsal Edinin"
+      }
+    },
+    "comparison": {
+      "show": "Karşılaştır",
+      "hide": "Gizle",
+      "allFeatures": "Tüm Özellikler",
+      "title": "Ayrıntılı Özellik Karşılaştırması",
+      "features": "Özellikler"
+    },
+    "features": {
+      "categories": {
+        "core": "Temel Özellikler",
+        "business": "İşletme Yönetimi",
+        "inventory": "Envanter ve POS",
+        "payments": "Ödemeler ve Faturalama",
+        "tax": "Vergi ve Uyumluluk",
+        "analytics": "Analitik ve Raporlama",
+        "importExport": "İthalat/İhracat",
+        "security": "Güvenlik ve Uyumluluk"
+      },
+      "users": "Kullanıcılar",
+      "users.basic": "1 kullanıcı",
+      "users.professional": "3 kullanıcıya kadar",
+      "users.enterprise": "Sınırsız kullanıcı",
+      "storage": "Depolama",
+      "storage.basic": "3GB",
+      "storage.professional": "Sınırsız",
+      "storage.enterprise": "Sınırsız",
+      "support": "Destek",
+      "support.basic": "Temel destek",
+      "support.professional": "Öncelikli destek",
+      "support.enterprise": "Özel destek",
+      "onboarding": "Uyum",
+      "onboarding.basic": "Self-servis",
+      "onboarding.professional": "E-posta yardımı",
+      "onboarding.enterprise": "Özel uyum",
+      "income": "Gelir ve Gider Takibi",
+      "multicurrency": "Çoklu Para Birimi Desteği",
+      "invoices": "Fatura Oluşturma",
+      "reminders": "Otomatik Hatırlatıcılar",
+      "customers": "Müşteri Yönetimi",
+      "products": "Ürün Kataloğu",
+      "inventory": "Envanter Takibi",
+      "barcode": "Barkod Tarama",
+      "barcodePrint": "Özel Barkod Yazdırma",
+      "stockAlerts": "Düşük Stok Uyarıları",
+      "multiLocation": "Çok Lokasyonlu Envanter",
+      "pos": "POS Sistemi",
+      "offline": "Çevrimdışı Mod",
+      "stripe": "Stripe Entegrasyonu",
+      "paypal": "PayPal Entegrasyonu",
+      "mobileMoney": "Mobil Para (M-Pesa, vb.)",
+      "regionalPayments": "Bölgesel Ödeme Yöntemleri",
+      "factoring": "Fatura Faktöringi",
+      "recurring": "Yinelenen Faturalar",
+      "paymentLinks": "Ödeme Bağlantıları",
+      "taxCalc": "Bölgesel Vergi Hesaplamaları",
+      "vatGst": "KDV/GST Desteği",
+      "taxReports": "Vergi Raporları",
+      "eFiling": "E-Dosyalama Hazır",
+      "multiRegion": "Çok Bölgeli Uyumluluk",
+      "basicReports": "Temel Raporlar",
+      "customReports": "Özel Raporlar",
+      "dashboard": "Gerçek Zamanlı Gösterge Paneli",
+      "profit": "Kar Analizi",
+      "cashFlow": "Nakit Akışı Tahmini",
+      "ai": "Yapay Zeka Önerileri",
+      "importExport": "İthalat/İhracat Yönetimi",
+      "customs": "Gümrük Belgeleri",
+      "shipping": "Kargo Entegrasyonu",
+      "trade": "Ticaret Uyumluluğu",
+      "encryption": "Veri Şifreleme",
+      "twoFactor": "İki Faktörlü Kimlik Doğrulama",
+      "gdpr": "GDPR Uyumluluğu",
+      "soc2": "SOC2 Uyumluluğu",
+      "customSecurity": "Özel Güvenlik Politikaları"
+    }
+  },
+  "contact": {
+    "eyebrow": "Bizimle İletişime Geçin",
+    "heading": "İletişime geçin",
+    "subheading": "Dott hakkında sorularınız mı var? Ekibimiz işletmeniz için mükemmel çözümü bulmanıza yardımcı olmak için burada.",
+    "infoTitle": "İletişim Bilgileri",
+    "infoSubtitle": "Formu doldurun veya aşağıdaki bilgileri kullanarak doğrudan bizimle iletişime geçin.",
+    "email": "E-posta",
+    "address": "Adres",
+    "social": "Bizi Takip Edin",
+    "submitting": "Mesajınız gönderiliyor...",
+    "success": "Bize ulaştığınız için teşekkürler! Kısa süre içinde size geri döneceğiz.",
+    "error": {
+      "name": "Ad gereklidir",
+      "email": {
+        "required": "E-posta gereklidir",
+        "invalid": "Lütfen geçerli bir e-posta adresi girin"
+      },
+      "message": "Mesaj gereklidir"
+    },
+    "form": {
+      "name": "Ad Soyad",
+      "email": "E-posta Adresi",
+      "company": "Şirket",
+      "phone": "Telefon Numarası",
+      "message": "Mesaj",
+      "submit": "Mesaj Gönder",
+      "sending": "Gönderiliyor...",
+      "subject": {
+        "label": "Size nasıl yardımcı olabiliriz?",
+        "general": "Genel Sorgu",
+        "sales": "Satış Sorusu",
+        "support": "Teknik Destek",
+        "demo": "Demo Talep Et",
+        "partnership": "Ortaklık Fırsatı"
+      }
+    }
+  },
   "getStarted": "Hemen Başla",
   "login": "Giriş Yap",
   "signUp": "Kaydol",
@@ -58,8 +251,9 @@
   "navFeatures": "Özellikler",
   "navPricing": "Fiyatlandırma",
   "navAbout": "Hakkımızda",
+  "navBlog": "Blog",
   "navContact": "İletişim",
-  "navStatus": "Durum",
+  "navStatus": "Sistem Durumu",
   "navSignIn": "GİRİŞ YAP",
   "featuresTitle": "Küresel İşletme Özellikleri",
   "featuresSubtitle": "İşletmenizi 100'den fazla ülkede verimli bir şekilde yönetmek için ihtiyacınız olan her şey",
@@ -377,22 +571,33 @@
     "legal": "Yasal"
   },
   "highlights": {
-    "eyebrow": "Ana Avantajlar",
-    "heading": "İşletmeler neden Dott'u seçiyor",
-    "subheading": "Bizi rakiplerden ayıran ve işletmenizin büyümesine yardımcı olan gelişmiş özellikler.",
-    "mobile": {
-      "title": "Mobil Uygulama",
-      "description": "Güçlü mobil uygulamamızla işletme verilerinize her zaman, her yerden erişin. Hareket halindeyken envanteri yönetin, satışları işleyin ve gerçek zamanlı raporları görüntüleyin."
-    },
-    "integration": {
-      "title": "Sorunsuz Entegrasyonlar",
-      "description": "Favori araçlarınız ve hizmetlerinizle bağlantı kurun. Platformumuz ödeme işlemcileri, muhasebe yazılımları, e-ticaret platformları ve daha fazlasıyla entegre olur."
-    },
-    "ai": {
-      "title": "Yapay Zeka Destekli İçgörüler",
-      "description": "İşletme verilerinize dayanarak akıllı öneriler ve tahmine dayalı analizler elde edin. Yapay zekamız talep tahmininde bulunmanıza, envanteri optimize etmenize ve büyüme fırsatlarını belirlemenize yardımcı olur."
-    },
-    "learnMore": "Daha fazla bilgi"
+    "bluetooth": "Bluetooth tarayıcı entegrasyonu",
+    "printBarcodes": "Özel barkodları yazdırın",
+    "lowStock": "Düşük stok uyarıları",
+    "customLabel": "Özel etiket yazdırma",
+    "mobileScanning": "Mobil tarama",
+    "batchProcessing": "Toplu işleme",
+    "offlineMode": "Offline modu",
+    "multiplePayments": "Birden fazla ödeme yöntemi",
+    "receiptCustom": "Fiş özelleştirme",
+    "recurringInvoices": "Yinelenen faturalar",
+    "paymentReminders": "Ödeme hatırlatmaları",
+    "invoiceFactoring": "Fatura faktoring",
+    "vatGst": "KDV/GST desteği",
+    "taxReports": "Vergi raporları",
+    "eFilingReady": "E-dosyalama hazır",
+    "customDashboards": "Özel panolar",
+    "profitAnalysis": "Kâr analizi",
+    "cashFlowForecast": "Nakit akışı tahmini",
+    "mobileMoney": "Mobil para",
+    "bankTransfers": "Banka transferleri",
+    "digitalWallets": "Dijital cüzdanlar",
+    "customsDocuments": "Gümrük belgeleri",
+    "shippingIntegration": "Kargo entegrasyonu",
+    "tradeCompliance": "Ticaret uyumu",
+    "soc2Compliant": "SOC2 uyumlu",
+    "dataEncryption": "Veri şifreleme",
+    "gdprReady": "GDPR hazır"
   },
   "faq": {
     "eyebrow": "SSS",
@@ -421,183 +626,6 @@
     "integration": {
       "question": "Kullandığım diğer araçlarla entegre olabilir miyim?",
       "answer": "Kesinlikle. Dott popüler ödeme işlemcileri, muhasebe yazılımları, e-ticaret platformları ve diğer işletme araçlarıyla entegre olur. Ayrıca özel entegrasyonlar için API sunuyoruz. Desteklenen hizmetlerin tam listesi için entegrasyon sayfamızı kontrol edin."
-    }
-  },
-  "contact": {
-    "eyebrow": "Bizimle İletişime Geçin",
-    "heading": "İletişime geçin",
-    "subheading": "Dott hakkında sorularınız mı var? Ekibimiz işletmeniz için mükemmel çözümü bulmanıza yardımcı olmak için burada.",
-    "infoTitle": "İletişim Bilgileri",
-    "infoSubtitle": "Formu doldurun veya aşağıdaki bilgileri kullanarak doğrudan bizimle iletişime geçin.",
-    "email": "E-posta",
-    "address": "Adres",
-    "social": "Bizi Takip Edin",
-    "submitting": "Mesajınız gönderiliyor...",
-    "success": "Bize ulaştığınız için teşekkürler! Kısa süre içinde size geri döneceğiz.",
-    "error": "Mesajınız gönderilemedi. Lütfen tekrar deneyin veya doğrudan support@dottapps.com adresine e-posta gönderin.",
-    "form": {
-      "name": "Ad Soyad",
-      "email": "E-posta Adresi",
-      "company": "Şirket",
-      "phone": "Telefon Numarası",
-      "message": "Mesaj",
-      "submit": "Mesaj Gönder",
-      "sending": "Gönderiliyor...",
-      "subject": {
-        "label": "Size nasıl yardımcı olabiliriz?",
-        "general": "Genel Sorgu",
-        "sales": "Satış Sorusu",
-        "support": "Teknik Destek",
-        "demo": "Demo Talep Et",
-        "partnership": "Ortaklık Fırsatı"
-      }
-    },
-    "error": {
-      "name": "Ad gereklidir",
-      "email": {
-        "required": "E-posta gereklidir",
-        "invalid": "Lütfen geçerli bir e-posta adresi girin"
-      },
-      "message": "Mesaj gereklidir"
-    }
-  },
-  "pricing": {
-    "eyebrow": "Basit, Şeffaf Fiyatlandırma",
-    "heading": "İşletmeniz için Doğru Planı Seçin",
-    "subheading": "Gizli ücretler yok. Temel plan için kredi kartı gerekmiyor. İstediğiniz zaman iptal edin.",
-    "discount": {
-      "title": "Tüm Ücretli Planlarda %50 İndirim!",
-      "subtitle": "{{country}}'daki işletmeler için özel fiyatlandırma - Yerel girişimciliği destekleme"
-    },
-    "billing": {
-      "monthly": "Aylık",
-      "sixMonths": "6 Ay",
-      "annual": "Yıllık",
-      "popular": "POPÜLER",
-      "save20": "%20 TASARRUF"
-    },
-    "period": {
-      "month": "/ay",
-      "sixMonths": "/6 ay",
-      "year": "/yıl"
-    },
-    "save": "{{amount}} tasarruf edin ({{monthly}}/ay)",
-    "mostPopular": "EN POPÜLER",
-    "plans": {
-      "basic": {
-        "name": "Temel",
-        "description": "Serbest çalışanlar ve küçük işletmeler için mükemmel",
-        "features": {
-          "0": "1 kullanıcı",
-          "1": "3GB depolama",
-          "2": "Tüm temel özellikler",
-          "3": "Temel destek",
-          "4": "Mobil uygulama erişimi"
-        },
-        "cta": "Ücretsiz Başla"
-      },
-      "professional": {
-        "name": "Profesyonel",
-        "description": "Daha fazlaya ihtiyaç duyan büyüyen işletmeler için",
-        "features": {
-          "0": "3 kullanıcıya kadar",
-          "1": "Sınırsız depolama",
-          "2": "Tüm özellikler dahil",
-          "3": "Öncelikli destek",
-          "4": "Gelişmiş analitik",
-          "5": "Çok lokasyon desteği"
-        },
-        "cta": "Profesyonel Edinin"
-      },
-      "enterprise": {
-        "name": "Kurumsal",
-        "description": "Büyük organizasyonlar için sınırsız ölçek",
-        "features": {
-          "0": "Sınırsız kullanıcı",
-          "1": "Sınırsız her şey",
-          "2": "Tüm özellikler dahil",
-          "3": "Özel destek",
-          "4": "Özel uyum",
-          "5": "Yapay zeka destekli içgörüler",
-          "6": "API erişimi"
-        },
-        "cta": "Kurumsal Edinin"
-      }
-    },
-    "comparison": {
-      "show": "Karşılaştır",
-      "hide": "Gizle",
-      "allFeatures": "Tüm Özellikler",
-      "title": "Ayrıntılı Özellik Karşılaştırması",
-      "features": "Özellikler"
-    },
-    "features": {
-      "categories": {
-        "core": "Temel Özellikler",
-        "business": "İşletme Yönetimi",
-        "inventory": "Envanter ve POS",
-        "payments": "Ödemeler ve Faturalama",
-        "tax": "Vergi ve Uyumluluk",
-        "analytics": "Analitik ve Raporlama",
-        "importExport": "İthalat/İhracat",
-        "security": "Güvenlik ve Uyumluluk"
-      },
-      "users": "Kullanıcılar",
-      "users.basic": "1 kullanıcı",
-      "users.professional": "3 kullanıcıya kadar",
-      "users.enterprise": "Sınırsız kullanıcı",
-      "storage": "Depolama",
-      "storage.basic": "3GB",
-      "storage.professional": "Sınırsız",
-      "storage.enterprise": "Sınırsız",
-      "support": "Destek",
-      "support.basic": "Temel destek",
-      "support.professional": "Öncelikli destek",
-      "support.enterprise": "Özel destek",
-      "onboarding": "Uyum",
-      "onboarding.basic": "Self-servis",
-      "onboarding.professional": "E-posta yardımı",
-      "onboarding.enterprise": "Özel uyum",
-      "income": "Gelir ve Gider Takibi",
-      "multicurrency": "Çoklu Para Birimi Desteği",
-      "invoices": "Fatura Oluşturma",
-      "reminders": "Otomatik Hatırlatıcılar",
-      "customers": "Müşteri Yönetimi",
-      "products": "Ürün Kataloğu",
-      "inventory": "Envanter Takibi",
-      "barcode": "Barkod Tarama",
-      "barcodePrint": "Özel Barkod Yazdırma",
-      "stockAlerts": "Düşük Stok Uyarıları",
-      "multiLocation": "Çok Lokasyonlu Envanter",
-      "pos": "POS Sistemi",
-      "offline": "Çevrimdışı Mod",
-      "stripe": "Stripe Entegrasyonu",
-      "paypal": "PayPal Entegrasyonu",
-      "mobileMoney": "Mobil Para (M-Pesa, vb.)",
-      "regionalPayments": "Bölgesel Ödeme Yöntemleri",
-      "factoring": "Fatura Faktöringi",
-      "recurring": "Yinelenen Faturalar",
-      "paymentLinks": "Ödeme Bağlantıları",
-      "taxCalc": "Bölgesel Vergi Hesaplamaları",
-      "vatGst": "KDV/GST Desteği",
-      "taxReports": "Vergi Raporları",
-      "eFiling": "E-Dosyalama Hazır",
-      "multiRegion": "Çok Bölgeli Uyumluluk",
-      "basicReports": "Temel Raporlar",
-      "customReports": "Özel Raporlar",
-      "dashboard": "Gerçek Zamanlı Gösterge Paneli",
-      "profit": "Kar Analizi",
-      "cashFlow": "Nakit Akışı Tahmini",
-      "ai": "Yapay Zeka Önerileri",
-      "importExport": "İthalat/İhracat Yönetimi",
-      "customs": "Gümrük Belgeleri",
-      "shipping": "Kargo Entegrasyonu",
-      "trade": "Ticaret Uyumluluğu",
-      "encryption": "Veri Şifreleme",
-      "twoFactor": "İki Faktörlü Kimlik Doğrulama",
-      "gdpr": "GDPR Uyumluluğu",
-      "soc2": "SOC2 Uyumluluğu",
-      "customSecurity": "Özel Güvenlik Politikaları"
     }
   },
   "auth": {
@@ -641,26 +669,6 @@
       "securityNote": "E-posta doğrulaması hesap güvenliğinizi sağlamamıza ve yetkisiz erişimi önlememize yardımcı olur."
     }
   },
-  "features": {
-    "eyebrow": "Eksiksiz İş Çözümü",
-    "heading": "Küresel Büyüme İçin İhtiyaç Duyduğunuz Her Şey",
-    "subheading": "Sınırları aşan modern işletmeler için tasarlanmış güçlü araçlar",
-    "operations": {
-      "title": "Operasyon Yönetimi",
-      "description": "Günlük iş operasyonlarınızı sadeleştirin"
-    },
-    "financial": {
-      "title": "Finansal Yönetim",
-      "description": "İş finanslarınızüzerinde tam kontrol"
-    },
-    "global": {
-      "title": "Küresel İş Araçları",
-      "description": "Uluslararası faaliyet için ihtiyaç duyduğunuz her şey"
-    },
-    "trust": {
-      "title": "Güvenlik ve Uyumluluk İçin Yapıldı"
-    }
-  },
   "feature": {
     "inventory": "Gelişmiş Envanter Yönetimi",
     "inventory.description": "Barkod tarama ve çoklu lokasyon desteği ile gerçek zamanlı stok takibi",
@@ -680,35 +688,6 @@
     "global.description": "Uluslararası ticaret belgelerini ve uyumunu yönetin",
     "security": "Kurumsal Güvenlik",
     "security.description": "Bölgesel uyumla banka düzeyi güvenlik"
-  },
-  "highlights": {
-    "bluetooth": "Bluetooth tarayıcı entegrasyonu",
-    "printBarcodes": "Özel barkodları yazdırın",
-    "lowStock": "Düşük stok uyarıları",
-    "customLabel": "Özel etiket yazdırma",
-    "mobileScanning": "Mobil tarama",
-    "batchProcessing": "Toplu işleme",
-    "offlineMode": "Offline modu",
-    "multiplePayments": "Birden fazla ödeme yöntemi",
-    "receiptCustom": "Fiş özelleştirme",
-    "recurringInvoices": "Yinelenen faturalar",
-    "paymentReminders": "Ödeme hatırlatmaları",
-    "invoiceFactoring": "Fatura faktoring",
-    "vatGst": "KDV/GST desteği",
-    "taxReports": "Vergi raporları",
-    "eFilingReady": "E-dosyalama hazır",
-    "customDashboards": "Özel panolar",
-    "profitAnalysis": "Kâr analizi",
-    "cashFlowForecast": "Nakit akışı tahmini",
-    "mobileMoney": "Mobil para",
-    "bankTransfers": "Banka transferleri",
-    "digitalWallets": "Dijital cüzdanlar",
-    "customsDocuments": "Gümrük belgeleri",
-    "shippingIntegration": "Kargo entegrasyonu",
-    "tradeCompliance": "Ticaret uyumu",
-    "soc2Compliant": "SOC2 uyumlu",
-    "dataEncryption": "Veri şifreleme",
-    "gdprReady": "GDPR hazır"
   },
   "trust": {
     "soc2Title": "SOC2 Uyumlu",

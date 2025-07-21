@@ -557,7 +557,7 @@ const MainListItems = ({
         value: 'products' 
       },
       { 
-        label: t('subMenu.catalog'), 
+        label: t('subMenu.service'), 
         path: '/dashboard/services',
         onClick: (value) => {
           // Create navigation event for services
@@ -1449,7 +1449,7 @@ const MainListItems = ({
         { label: t('subMenu.managePay'), onClick: handleHRClick, value: 'pay', path: '/dashboard/pay' },
         { label: t('subMenu.benefits'), onClick: handleHRClick, value: 'benefits', path: '/dashboard/benefits' },
         { label: t('mainMenu.reports'), onClick: handleHRClick, value: 'reports', path: '/dashboard/reports' },
-        { label: t('subMenu.teams'), onClick: handleHRClick, value: 'performance', path: '/dashboard/performance' },
+        { label: t('subMenu.performance'), onClick: handleHRClick, value: 'performance', path: '/dashboard/performance' },
       ],
     },
     {
@@ -1501,7 +1501,7 @@ const MainListItems = ({
           value: 'payroll-wizard' 
         },
         { 
-          label: t('subMenu.processPayroll'), 
+          label: t('subMenu.payrollTransactions'), 
           onClick: (value) => {
             // Create navigation event for payroll transactions
             const navigationKey = `nav-${Date.now()}`;

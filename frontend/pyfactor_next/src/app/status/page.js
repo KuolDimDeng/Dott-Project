@@ -1,6 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { I18nextProvider } from 'react-i18next';
+import i18nInstance from '@/i18n';
 import { 
   CheckCircleIcon,
   ExclamationTriangleIcon,
@@ -11,7 +14,8 @@ import {
 } from '@heroicons/react/24/outline';
 import StandardSpinner from '@/components/ui/StandardSpinner';
 
-export default function PublicStatusPage() {
+function PublicStatusPageContent() {
+  const { t } = useTranslation();
   const [overallStatus, setOverallStatus] = useState('checking');
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [loading, setLoading] = useState(true);
@@ -129,7 +133,7 @@ export default function PublicStatusPage() {
               href="/"
               className="text-sm text-blue-600 hover:text-blue-700 font-medium"
             >
-              Back to Home
+              {t('status.backToHome', 'Back to Home')}
             </a>
           </div>
         </div>
@@ -143,9 +147,9 @@ export default function PublicStatusPage() {
             <div>
               <h1 className="text-2xl font-bold text-black mb-2 flex items-center">
                 <SignalIcon className="h-6 w-6 text-blue-600 mr-2" />
-                Dott System Status
+                {t('status.title', 'Dott System Status')}
               </h1>
-              <p className="text-gray-600">Current operational status of Dott services</p>
+              <p className="text-gray-600">{t('status.subtitle', 'Current operational status of Dott services')}</p>
             </div>
             
             <button
@@ -156,12 +160,12 @@ export default function PublicStatusPage() {
               {loading ? (
                 <>
                   <StandardSpinner size="small" color="white" className="inline mr-2" />
-                  Checking...
+                  {t('status.checking', 'Checking...')}
                 </>
               ) : (
                 <>
                   <ArrowPathIcon className="h-4 w-4 mr-2" />
-                  Refresh
+                  {t('status.refresh', 'Refresh')}
                 </>
               )}
             </button>

@@ -21,6 +21,7 @@ import { GOOGLE_MAPS_CONFIG } from '@/config/maps';
 // Google Maps Integration - Simplified Version
 const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => {
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [map, setMap] = useState(null);
   const [geofence, setGeofence] = useState(null);
   const [mapError, setMapError] = useState(null);
@@ -181,6 +182,19 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
     });
   };
 
+  const removeGeofence = () => {
+    if (geofence) {
+      geofence.setMap(null);
+      setGeofence(null);
+      setGeofenceData(prev => ({
+        ...prev,
+        center_latitude: null,
+        center_longitude: null
+      }));
+      toast.success('Geofence removed');
+    }
+  };
+
   const handleSave = async () => {
     if (!geofenceData.name) {
       toast.error('Please enter a geofence name');
@@ -192,13 +206,28 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
       return;
     }
 
+    setSaving(true);
     try {
+      logger.log('[GeofenceSetup] Saving geofence:', geofenceData);
       const response = await api.post('/api/hr/geofences/', geofenceData);
+      logger.log('[GeofenceSetup] Geofence created:', response.data);
       toast.success('Geofence created successfully');
-      onGeofenceCreated(response.data);
+      
+      // Clear the map circle
+      if (geofence) {
+        geofence.setMap(null);
+      }
+      
+      // Call the callback if provided
+      if (onGeofenceCreated) {
+        onGeofenceCreated(response.data);
+      }
     } catch (error) {
-      console.error('Error creating geofence:', error);
-      toast.error('Failed to create geofence');
+      logger.error('[GeofenceSetup] Error creating geofence:', error);
+      const errorMessage = error.response?.data?.detail || error.response?.data?.error || 'Failed to create geofence';
+      toast.error(errorMessage);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -314,9 +343,20 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
 
       {/* Map */}
       <div className="space-y-2">
-        <label className="text-sm font-medium text-gray-700">
-          Click on the map to set geofence location
-        </label>
+        <div className="flex items-center justify-between">
+          <label className="text-sm font-medium text-gray-700">
+            Click on the map to set geofence location
+          </label>
+          {geofence && (
+            <button
+              onClick={removeGeofence}
+              className="flex items-center px-3 py-1 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-md hover:bg-red-100"
+            >
+              <TrashIcon className="h-4 w-4 mr-1" />
+              Remove Circle
+            </button>
+          )}
+        </div>
         <div className="relative w-full h-96 border border-gray-300 rounded-lg overflow-hidden bg-gray-50">
           {loading && (
             <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-10">
@@ -342,21 +382,35 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
           )}
           <div ref={mapContainerRef} className="w-full h-full" />
         </div>
+        {geofenceData.center_latitude && geofenceData.center_longitude && (
+          <p className="text-xs text-gray-600 mt-1">
+            Location: {geofenceData.center_latitude.toFixed(6)}, {geofenceData.center_longitude.toFixed(6)} • Radius: {geofenceData.radius}m
+          </p>
+        )}
       </div>
 
       {/* Actions */}
       <div className="flex justify-end space-x-3">
         <button
           onClick={onCancel}
-          className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200"
+          disabled={saving}
+          className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 disabled:opacity-50"
         >
           Cancel
         </button>
         <button
           onClick={handleSave}
-          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700"
+          disabled={saving || !geofenceData.name || !geofenceData.center_latitude}
+          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
         >
-          Create Geofence
+          {saving ? (
+            <>
+              <StandardSpinner size="small" color="white" className="mr-2" />
+              Creating...
+            </>
+          ) : (
+            'Create Geofence'
+          )}
         </button>
       </div>
     </div>

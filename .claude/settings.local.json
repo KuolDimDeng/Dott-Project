@@ -168,7 +168,8 @@
       "Bash(do if ! grep -q '\"\"help\"\"' \"$lang/navigation.json\")",
       "Bash(then echo \"Missing help in: $lang\")",
       "Bash(do echo \"=== $lang ===\")",
-      "Bash(do echo \"=== $lang navigation.json has invite section ===\")"
+      "Bash(do echo \"=== $lang navigation.json has invite section ===\")",
+      "Bash(do echo \"=== $lang ===\")"
     ],
     "deny": []
   }

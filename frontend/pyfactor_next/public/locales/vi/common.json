@@ -1,8 +1,98 @@
 {
   "about": "Giới thiệu",
-  "features": "Tính năng",
-  "pricing": "Giá cả",
-  "contact": "Liên hệ",
+  "features": {
+    "eyebrow": "Giải pháp kinh doanh hoàn chỉnh",
+    "heading": "Mọi thứ bạn cần để phát triển toàn cầu",
+    "subheading": "Các công cụ mạnh mẽ được thiết kế cho các doanh nghiệp hiện đại hoạt động xuyên biên giới",
+    "operations": {
+      "title": "Quản lý vận hành",
+      "description": "Tối ưu hóa các hoạt động kinh doanh hàng ngày của bạn"
+    },
+    "financial": {
+      "title": "Quản lý tài chính",
+      "description": "Kiểm soát hoàn toàn tài chính doanh nghiệp của bạn"
+    },
+    "global": {
+      "title": "Công cụ kinh doanh toàn cầu",
+      "description": "Tất cả những gì bạn cần để hoạt động quốc tế"
+    },
+    "trust": {
+      "title": "Xây dựng cho bảo mật và tuân thủ"
+    }
+  },
+  "pricing": {
+    "eyebrow": "Giá cả",
+    "heading": "Gói cho mọi quy mô doanh nghiệp",
+    "subheading": "Bắt đầu miễn phí và nâng cấp khi doanh nghiệp của bạn phát triển.",
+    "monthly": "Hàng tháng",
+    "annually": "Hàng năm",
+    "save": "Tiết kiệm 20%",
+    "plans": {
+      "basic": {
+        "name": "Cơ bản",
+        "price": "Miễn phí",
+        "description": "Hoàn hảo cho freelancer và startup",
+        "features": [
+          "1 người dùng",
+          "Tối đa 100 giao dịch/tháng",
+          "Hóa đơn cơ bản",
+          "2GB lưu trữ",
+          "Hỗ trợ email"
+        ]
+      },
+      "professional": {
+        "name": "Chuyên nghiệp",
+        "price": "$15",
+        "priceAnnual": "$12",
+        "description": "Cho doanh nghiệp đang phát triển",
+        "popular": true,
+        "features": [
+          "Người dùng không giới hạn",
+          "Giao dịch không giới hạn",
+          "Tính năng nâng cao",
+          "30GB lưu trữ",
+          "Hỗ trợ ưu tiên"
+        ]
+      },
+      "enterprise": {
+        "name": "Doanh nghiệp",
+        "price": "$45",
+        "priceAnnual": "$36",
+        "description": "Cho các công ty đã thành lập",
+        "features": [
+          "Tất cả tính năng Professional",
+          "Lưu trữ không giới hạn",
+          "Quản lý tài khoản chuyên dụng",
+          "Truy cập API",
+          "SLA 99.9%"
+        ]
+      }
+    }
+  },
+  "contact": {
+    "eyebrow": "Liên hệ",
+    "heading": "Hãy trò chuyện",
+    "subheading": "Chúng tôi rất vui được nghe từ bạn. Gửi cho chúng tôi một tin nhắn và chúng tôi sẽ phản hồi ngay khi có thể.",
+    "form": {
+      "name": "Tên",
+      "email": "Email",
+      "message": "Tin nhắn",
+      "submit": "Gửi tin nhắn",
+      "subject": {
+        "label": "Chủ đề",
+        "general": "Câu hỏi chung",
+        "sales": "Câu hỏi bán hàng",
+        "support": "Hỗ trợ kỹ thuật",
+        "partnership": "Đối tác",
+        "other": "Khác"
+      }
+    },
+    "info": {
+      "email": "hello@dottapps.com",
+      "phone": "+1 (555) 123-4567",
+      "address": "123 Business Street, Suite 100, New York, NY 10001"
+    }
+  },
   "getStarted": "Bắt đầu",
   "login": "Đăng nhập",
   "signUp": "Đăng ký",
@@ -58,8 +148,9 @@
   "navFeatures": "Tính năng",
   "navPricing": "Bảng giá",
   "navAbout": "Giới thiệu",
+  "navBlog": "Blog",
   "navContact": "Liên hệ",
-  "navStatus": "Trạng thái",
+  "navStatus": "Trạng thái hệ thống",
   "navSignIn": "ĐĂNG NHẬP",
   "footer": {
     "home": "Trang chủ",
@@ -91,25 +182,33 @@
     "legal": "Pháp lý"
   },
   "highlights": {
-    "eyebrow": "Điểm nổi bật chính",
-    "heading": "Tại sao doanh nghiệp chọn Dott",
-    "subheading": "Các tính năng tiên tiến khiến chúng tôi khác biệt với đối thủ cạnh tranh và giúp doanh nghiệp của bạn phát triển.",
-    "mobile": {
-      "title": "Ứng dụng di động",
-      "description": "Truy cập dữ liệu doanh nghiệp của bạn mọi lúc, mọi nơi với ứng dụng di động mạnh mẽ của chúng tôi. Quản lý hàng tồn kho, xử lý bán hàng và xem báo cáo theo thời gian thực."
-    },
-    "integration": {
-      "title": "Tích hợp liền mạch",
-      "description": "Kết nối các công cụ và dịch vụ yêu thích của bạn. Nền tảng của chúng tôi tích hợp với bộ xử lý thanh toán, phần mềm kế toán, nền tảng thương mại điện tử và nhiều hơn nữa."
-    },
-    "support": {
-      "title": "Hỗ trợ 24/7",
-      "description": "Đội ngũ hỗ trợ chuyên gia của chúng tôi luôn sẵn sàng giúp bạn thành công. Nhận trợ giúp qua chat, email hoặc cuộc gọi điện thoại."
-    },
-    "security": {
-      "title": "Bảo mật cấp ngân hàng",
-      "description": "Dữ liệu của bạn được bảo vệ bằng mã hóa cấp quân sự và các giao thức bảo mật tốt nhất trong ngành. Tuân thủ GDPR, SOC 2 và các tiêu chuẩn bảo mật khác."
-    }
+    "bluetooth": "Tích hợp máy quét Bluetooth",
+    "printBarcodes": "In mã vạch tùy chỉnh",
+    "lowStock": "Cảnh báo tồn kho thấp",
+    "customLabel": "In nhãn tùy chỉnh",
+    "mobileScanning": "Quét di động",
+    "batchProcessing": "Xử lý hàng loạt",
+    "offlineMode": "Chế độ offline",
+    "multiplePayments": "Nhiều phương thức thanh toán",
+    "receiptCustom": "Tùy chỉnh hóa đơn",
+    "recurringInvoices": "Hóa đơn định kỳ",
+    "paymentReminders": "Nhắc nhở thanh toán",
+    "invoiceFactoring": "Factoring hóa đơn",
+    "vatGst": "Hỗ trợ VAT/GST",
+    "taxReports": "Báo cáo thuế",
+    "eFilingReady": "Sẵn sàng nộp điện tử",
+    "customDashboards": "Trang tổng quan tùy chỉnh",
+    "profitAnalysis": "Phân tích lợi nhuận",
+    "cashFlowForecast": "Dự báo dòng tiền",
+    "mobileMoney": "Tiền di động",
+    "bankTransfers": "Chuyển khoản ngân hàng",
+    "digitalWallets": "Ví điện tử",
+    "customsDocuments": "Tài liệu hải quan",
+    "shippingIntegration": "Tích hợp vận chuyển",
+    "tradeCompliance": "Tuân thủ thương mại",
+    "soc2Compliant": "Tuân thủ SOC2",
+    "dataEncryption": "Mã hóa dữ liệu",
+    "gdprReady": "Sẵn sàng GDPR"
   },
   "faq": {
     "eyebrow": "FAQ",
@@ -141,79 +240,6 @@
         "answer": "Tuyệt đối. Chúng tôi sử dụng mã hóa bảo mật cấp ngân hàng và tuân theo các thực hành tốt nhất trong ngành để bảo vệ dữ liệu của bạn. Nền tảng của chúng tôi được lưu trữ trên cơ sở hạ tầng đám mây an toàn với nhiều lớp bảo mật, tính năng tuân thủ khu vực và sao lưu thường xuyên."
       }
     ]
-  },
-  "contact": {
-    "eyebrow": "Liên hệ",
-    "heading": "Hãy trò chuyện",
-    "subheading": "Chúng tôi rất vui được nghe từ bạn. Gửi cho chúng tôi một tin nhắn và chúng tôi sẽ phản hồi ngay khi có thể.",
-    "form": {
-      "name": "Tên",
-      "email": "Email",
-      "message": "Tin nhắn",
-      "submit": "Gửi tin nhắn",
-      "subject": {
-        "label": "Chủ đề",
-        "general": "Câu hỏi chung",
-        "sales": "Câu hỏi bán hàng",
-        "support": "Hỗ trợ kỹ thuật",
-        "partnership": "Đối tác",
-        "other": "Khác"
-      }
-    },
-    "info": {
-      "email": "hello@dottapps.com",
-      "phone": "+1 (555) 123-4567",
-      "address": "123 Business Street, Suite 100, New York, NY 10001"
-    }
-  },
-  "pricing": {
-    "eyebrow": "Giá cả",
-    "heading": "Gói cho mọi quy mô doanh nghiệp",
-    "subheading": "Bắt đầu miễn phí và nâng cấp khi doanh nghiệp của bạn phát triển.",
-    "monthly": "Hàng tháng",
-    "annually": "Hàng năm",
-    "save": "Tiết kiệm 20%",
-    "plans": {
-      "basic": {
-        "name": "Cơ bản",
-        "price": "Miễn phí",
-        "description": "Hoàn hảo cho freelancer và startup",
-        "features": [
-          "1 người dùng",
-          "Tối đa 100 giao dịch/tháng",
-          "Hóa đơn cơ bản",
-          "2GB lưu trữ",
-          "Hỗ trợ email"
-        ]
-      },
-      "professional": {
-        "name": "Chuyên nghiệp",
-        "price": "$15",
-        "priceAnnual": "$12",
-        "description": "Cho doanh nghiệp đang phát triển",
-        "popular": true,
-        "features": [
-          "Người dùng không giới hạn",
-          "Giao dịch không giới hạn",
-          "Tính năng nâng cao",
-          "30GB lưu trữ",
-          "Hỗ trợ ưu tiên"
-        ]
-      },
-      "enterprise": {
-        "name": "Doanh nghiệp",
-        "price": "$45",
-        "priceAnnual": "$36",
-        "description": "Cho các công ty đã thành lập",
-        "features": [
-          "Tất cả tính năng Professional",
-          "Lưu trữ không giới hạn",
-          "Quản lý tài khoản chuyên dụng",
-          "Truy cập API",
-          "SLA 99.9%"
-        ]
-      }
-    }
   },
   "auth": {
     "signIn": "Đăng nhập",
@@ -526,26 +552,6 @@
   "security_badge_1": "Mã hóa cấp ngân hàng",
   "security_badge_2": "Tuân thủ GDPR",
   "security_badge_3": "99,9% thời gian hoạt động",
-  "features": {
-    "eyebrow": "Giải pháp kinh doanh hoàn chỉnh",
-    "heading": "Mọi thứ bạn cần để phát triển toàn cầu",
-    "subheading": "Các công cụ mạnh mẽ được thiết kế cho các doanh nghiệp hiện đại hoạt động xuyên biên giới",
-    "operations": {
-      "title": "Quản lý vận hành",
-      "description": "Tối ưu hóa các hoạt động kinh doanh hàng ngày của bạn"
-    },
-    "financial": {
-      "title": "Quản lý tài chính",
-      "description": "Kiểm soát hoàn toàn tài chính doanh nghiệp của bạn"
-    },
-    "global": {
-      "title": "Công cụ kinh doanh toàn cầu",
-      "description": "Tất cả những gì bạn cần để hoạt động quốc tế"
-    },
-    "trust": {
-      "title": "Xây dựng cho bảo mật và tuân thủ"
-    }
-  },
   "feature": {
     "inventory": "Quản lý tồn kho nâng cao",
     "inventory.description": "Theo dõi tồn kho thời gian thực với quét mã vạch và hỗ trợ nhiều địa điểm",
@@ -565,35 +571,6 @@
     "global.description": "Xử lý tài liệu thương mại quốc tế và tuân thủ",
     "security": "Bảo mật doanh nghiệp",
     "security.description": "Bảo mật cấp ngân hàng với tuân thủ khu vực"
-  },
-  "highlights": {
-    "bluetooth": "Tích hợp máy quét Bluetooth",
-    "printBarcodes": "In mã vạch tùy chỉnh",
-    "lowStock": "Cảnh báo tồn kho thấp",
-    "customLabel": "In nhãn tùy chỉnh",
-    "mobileScanning": "Quét di động",
-    "batchProcessing": "Xử lý hàng loạt",
-    "offlineMode": "Chế độ offline",
-    "multiplePayments": "Nhiều phương thức thanh toán",
-    "receiptCustom": "Tùy chỉnh hóa đơn",
-    "recurringInvoices": "Hóa đơn định kỳ",
-    "paymentReminders": "Nhắc nhở thanh toán",
-    "invoiceFactoring": "Factoring hóa đơn",
-    "vatGst": "Hỗ trợ VAT/GST",
-    "taxReports": "Báo cáo thuế",
-    "eFilingReady": "Sẵn sàng nộp điện tử",
-    "customDashboards": "Trang tổng quan tùy chỉnh",
-    "profitAnalysis": "Phân tích lợi nhuận",
-    "cashFlowForecast": "Dự báo dòng tiền",
-    "mobileMoney": "Tiền di động",
-    "bankTransfers": "Chuyển khoản ngân hàng",
-    "digitalWallets": "Ví điện tử",
-    "customsDocuments": "Tài liệu hải quan",
-    "shippingIntegration": "Tích hợp vận chuyển",
-    "tradeCompliance": "Tuân thủ thương mại",
-    "soc2Compliant": "Tuân thủ SOC2",
-    "dataEncryption": "Mã hóa dữ liệu",
-    "gdprReady": "Sẵn sàng GDPR"
   },
   "trust": {
     "soc2Title": "Tuân thủ SOC2",

@@ -3,6 +3,9 @@
 import * as React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
+import { I18nextProvider } from 'react-i18next';
+import i18nInstance from '@/i18n';
 import { 
   ArrowLeft, 
   Target, 
@@ -18,77 +21,78 @@ import {
   HandHeart
 } from '@phosphor-icons/react';
 
-export default function AboutUs() {
+function AboutUsContent() {
+  const { t } = useTranslation();
 
   const timeline = [
     {
       year: '2022',
-      title: 'The Beginning',
-      description: 'Identified the need for unified business management tools for SMBs',
+      title: t('about.timeline.beginning.title', 'The Beginning'),
+      description: t('about.timeline.beginning.description', 'Identified the need for unified business management tools for SMBs'),
       icon: <Lightbulb size={24} weight="duotone" />
     },
     {
       year: '2023',
-      title: 'Product Launch',
-      description: 'Launched core platform with financial and inventory management',
+      title: t('about.timeline.launch.title', 'Product Launch'),
+      description: t('about.timeline.launch.description', 'Launched core platform with financial and inventory management'),
       icon: <Rocket size={24} weight="duotone" />
     },
     {
       year: '2024',
-      title: 'Global Expansion',
-      description: 'Extended to 25+ countries with localized features',
+      title: t('about.timeline.expansion.title', 'Global Expansion'),
+      description: t('about.timeline.expansion.description', 'Extended to 25+ countries with localized features'),
       icon: <Globe size={24} weight="duotone" />
     },
     {
       year: '2025',
-      title: 'AI Integration',
-      description: 'Introducing intelligent insights and automation',
+      title: t('about.timeline.ai.title', 'AI Integration'),
+      description: t('about.timeline.ai.description', 'Introducing intelligent insights and automation'),
       icon: <ChartBar size={24} weight="duotone" />
     }
   ];
 
   const values = [
     {
-      title: 'Simplicity First',
-      description: 'Complex business operations made simple through intuitive design',
+      title: t('about.values.simplicity.title', 'Simplicity First'),
+      description: t('about.values.simplicity.description', 'Complex business operations made simple through intuitive design'),
       icon: <Heart size={32} weight="duotone" className="text-blue-600" />
     },
     {
-      title: 'Continuous Innovation',
-      description: 'Evolving with the changing needs of modern businesses',
+      title: t('about.values.innovation.title', 'Continuous Innovation'),
+      description: t('about.values.innovation.description', 'Evolving with the changing needs of modern businesses'),
       icon: <Lightbulb size={32} weight="duotone" className="text-purple-600" />
     },
     {
-      title: 'Customer Success',
-      description: 'Your growth is our success - we win when you win',
+      title: t('about.values.success.title', 'Customer Success'),
+      description: t('about.values.success.description', 'Your growth is our success - we win when you win'),
       icon: <Target size={32} weight="duotone" className="text-green-600" />
     },
     {
-      title: 'Global Empowerment',
-      description: 'Breaking barriers for businesses worldwide',
+      title: t('about.values.empowerment.title', 'Global Empowerment'),
+      description: t('about.values.empowerment.description', 'Breaking barriers for businesses worldwide'),
       icon: <HandHeart size={32} weight="duotone" className="text-orange-600" />
     }
   ];
 
   const differentiators = [
     {
-      title: 'Unified Platform',
-      description: 'All your business tools in one place',
+      title: t('about.differentiators.unified.title', 'Unified Platform'),
+      description: t('about.differentiators.unified.description', 'All your business tools in one place'),
       icon: <Package size={24} weight="duotone" />
     },
     {
-      title: 'Global, Yet Local',
-      description: 'International standards with local compliance',
+      title: t('about.differentiators.global.title', 'Global, Yet Local'),
+      description: t('about.differentiators.global.description', 'International standards with local compliance'),
       icon: <Globe size={24} weight="duotone" />
     },
     {
-      title: 'Enterprise Security',
-      description: 'Bank-level protection for your data',
+      title: t('about.differentiators.security.title', 'Enterprise Security'),
+      description: t('about.differentiators.security.description', 'Bank-level protection for your data'),
       icon: <Shield size={24} weight="duotone" />
     },
     {
-      title: 'Smart Insights',
-      description: 'AI-powered analytics for better decisions',
+      title: t('about.differentiators.insights.title', 'Smart Insights'),
+      description: t('about.differentiators.insights.description', 'AI-powered analytics for better decisions'),
       icon: <ChartBar size={24} weight="duotone" />
     }
   ];
@@ -105,7 +109,7 @@ export default function AboutUs() {
               className="flex items-center gap-2 text-gray-700 hover:text-gray-900 transition-colors"
             >
               <ArrowLeft size={20} weight="bold" />
-              <span className="font-medium leading-relaxed">Back to Home</span>
+              <span className="font-medium leading-relaxed">{t('about.backToHome', 'Back to Home')}</span>
             </Link>
           </div>
         </div>
@@ -117,14 +121,13 @@ export default function AboutUs() {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto">
             <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
-              Empowering businesses to
+              {t('about.hero.title', 'Empowering businesses to')}
               <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-                thrive globally
+                {t('about.hero.subtitle', 'thrive globally')}
               </span>
             </h1>
             <p className="text-xl text-gray-600 leading-relaxed">
-              We're building the operating system for modern small businesses, 
-              making enterprise-grade tools accessible to everyone.
+              {t('about.hero.description', "We're building the operating system for modern small businesses, making enterprise-grade tools accessible to everyone.")}
             </p>
           </div>
         </div>
@@ -137,21 +140,17 @@ export default function AboutUs() {
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-                Our Story
+                {t('about.story.title', 'Our Story')}
               </h2>
               <div className="space-y-4 text-gray-600">
                 <p>
-                  Dott was born from a simple observation: small businesses were drowning 
-                  in complexity. Multiple tools, disconnected data, and processes designed 
-                  for enterprises were holding back entrepreneurs worldwide.
+                  {t('about.story.paragraph1', 'Dott was born from a simple observation: small businesses were drowning in complexity. Multiple tools, disconnected data, and processes designed for enterprises were holding back entrepreneurs worldwide.')}
                 </p>
                 <p>
-                  Founded in 2023, we set out to build something different. A platform that 
-                  understands the unique challenges of small businesses, especially in emerging 
-                  markets where traditional solutions fall short.
+                  {t('about.story.paragraph2', 'Founded in 2023, we set out to build something different. A platform that understands the unique challenges of small businesses, especially in emerging markets where traditional solutions fall short.')}
                 </p>
                 <p>
-                  Today, we're proud to serve businesses worldwide. But we're just getting started.
+                  {t('about.story.paragraph3', "Today, we're proud to serve businesses worldwide. But we're just getting started.")}
                 </p>
               </div>
             </div>
@@ -176,23 +175,19 @@ export default function AboutUs() {
             <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-8 md:p-10">
               <div className="flex items-center gap-3 mb-4">
                 <Target size={32} weight="duotone" className="text-blue-600" />
-                <h3 className="text-2xl font-bold text-gray-900">Our Mission</h3>
+                <h3 className="text-2xl font-bold text-gray-900">{t('about.mission.title', 'Our Mission')}</h3>
               </div>
               <p className="text-gray-700 leading-relaxed">
-                To democratize business management by providing small businesses with 
-                powerful, affordable tools that simplify operations and enable growth, 
-                regardless of location or technical expertise.
+                {t('about.mission.description', 'To democratize business management by providing small businesses with powerful, affordable tools that simplify operations and enable growth, regardless of location or technical expertise.')}
               </p>
             </div>
             <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-8 md:p-10">
               <div className="flex items-center gap-3 mb-4">
                 <Eye size={32} weight="duotone" className="text-purple-600" />
-                <h3 className="text-2xl font-bold text-gray-900">Our Vision</h3>
+                <h3 className="text-2xl font-bold text-gray-900">{t('about.vision.title', 'Our Vision')}</h3>
               </div>
               <p className="text-gray-700 leading-relaxed">
-                A world where every small business has access to the same quality of 
-                management tools as Fortune 500 companies, empowering one million 
-                businesses to thrive by 2030.
+                {t('about.vision.description', 'A world where every small business has access to the same quality of management tools as Fortune 500 companies, empowering one million businesses to thrive by 2030.')}
               </p>
             </div>
           </div>
@@ -203,7 +198,7 @@ export default function AboutUs() {
       <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-16">
-            Our Journey
+            {t('about.journey.title', 'Our Journey')}
           </h2>
           <div className="relative">
             <div className="absolute left-1/2 transform -translate-x-1/2 h-full w-0.5 bg-gray-300"></div>
@@ -236,10 +231,10 @@ export default function AboutUs() {
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-4">
-            Our Values
+            {t('about.values.title', 'Our Values')}
           </h2>
           <p className="text-xl text-center text-gray-600 mb-16 max-w-2xl mx-auto leading-relaxed">
-            The principles that guide every decision we make
+            {t('about.values.subtitle', 'The principles that guide every decision we make')}
           </p>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {values.map((value, index) => (
@@ -257,7 +252,7 @@ export default function AboutUs() {
       <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-16">
-            What Makes Dott Different
+            {t('about.differentiators.title', 'What Makes Dott Different')}
           </h2>
           <div className="grid md:grid-cols-2 gap-8">
             {differentiators.map((item, index) => (
@@ -279,5 +274,13 @@ export default function AboutUs() {
       {/* Footer spacing */}
       <div className="h-20"></div>
     </div>
+  );
+}
+
+export default function AboutUs() {
+  return (
+    <I18nextProvider i18n={i18nInstance}>
+      <AboutUsContent />
+    </I18nextProvider>
   );
 }

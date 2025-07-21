@@ -1,8 +1,201 @@
 {
   "about": "Kuhusu",
-  "features": "Vipengele",
-  "pricing": "Bei",
-  "contact": "Wasiliana",
+  "features": {
+    "eyebrow": "Suluhisho Kamili la Biashara",
+    "heading": "Kila Kitu Unachohitaji Kukua Kimataifa",
+    "subheading": "Zana zenye nguvu zilizoundwa kwa biashara za kisasa zinazofanya kazi kupitia mipaka",
+    "operations": {
+      "title": "Usimamizi wa Uendeshaji",
+      "description": "Rahisisha shughuli zako za biashara za kila siku"
+    },
+    "financial": {
+      "title": "Usimamizi wa Kifedha",
+      "description": "Udhibiti kamili wa fedha za biashara yako"
+    },
+    "global": {
+      "title": "Zana za Biashara ya Kimataifa",
+      "description": "Kila kitu unachohitaji kufanya biashara kimataifa"
+    },
+    "trust": {
+      "title": "Imejengwa kwa Usalama na Kufuata Sheria"
+    }
+  },
+  "pricing": {
+    "eyebrow": "Bei Rahisi na Wazi",
+    "heading": "Chagua Mpango Muafaka kwa Biashara Yako",
+    "subheading": "Hakuna ada zilizofichwa. Hakuna kadi ya mkopo inayohitajika kwa mpango wa Msingi. Futa wakati wowote.",
+    "discount": {
+      "title": "Punguzo la 50% kwa Mipango Yote ya Kulipa!",
+      "subtitle": "Bei maalum kwa biashara {{country}} - Kuunga mkono ujasiriamali wa mtaa"
+    },
+    "billing": {
+      "monthly": "Kila Mwezi",
+      "sixMonths": "Miezi 6",
+      "annual": "Kila Mwaka",
+      "popular": "MAARUFU",
+      "save20": "OKOA 20%"
+    },
+    "period": {
+      "month": "/mwezi",
+      "sixMonths": "/miezi 6",
+      "year": "/mwaka"
+    },
+    "save": "Okoa {{amount}} ({{monthly}}/mwezi)",
+    "mostPopular": "MAARUFU ZAIDI",
+    "plans": {
+      "basic": {
+        "name": "Msingi",
+        "description": "Kamili kwa wafanyabiashara huru na biashara ndogo",
+        "features": {
+          "0": "Mtumiaji 1",
+          "1": "Hifadhi ya GB 3",
+          "2": "Vipengele vyote vya msingi",
+          "3": "Msaada wa msingi",
+          "4": "Ufikiaji wa programu ya simu"
+        },
+        "cta": "Anza Bure"
+      },
+      "professional": {
+        "name": "Kitaalamu",
+        "description": "Kwa biashara zinazokua zinazohitaji zaidi",
+        "features": {
+          "0": "Hadi watumiaji 3",
+          "1": "Hifadhi isiyo na kikomo",
+          "2": "Vipengele vyote vimejumuishwa",
+          "3": "Msaada wa kipaumbele",
+          "4": "Uchanganuzi wa hali ya juu",
+          "5": "Msaada wa maeneo mengi"
+        },
+        "cta": "Pata Kitaalamu"
+      },
+      "enterprise": {
+        "name": "Shirika",
+        "description": "Ukuaji usio na kikomo kwa mashirika makubwa",
+        "features": {
+          "0": "Watumiaji wasio na kikomo",
+          "1": "Kila kitu kisio na kikomo",
+          "2": "Vipengele vyote vimejumuishwa",
+          "3": "Msaada maalum",
+          "4": "Uongozaji wa kibinafsi",
+          "5": "Maarifa yanayoendeshwa na AI",
+          "6": "Ufikiaji wa API"
+        },
+        "cta": "Pata Shirika"
+      }
+    },
+    "comparison": {
+      "show": "Linganisha",
+      "hide": "Ficha",
+      "allFeatures": "Vipengele Vyote",
+      "title": "Mulinganisho wa Kina wa Vipengele",
+      "features": "Vipengele"
+    },
+    "features": {
+      "categories": {
+        "core": "Vipengele vya Msingi",
+        "business": "Usimamizi wa Biashara",
+        "inventory": "Bidhaa na POS",
+        "payments": "Malipo na Ankara",
+        "tax": "Kodi na Uzingatiaji",
+        "analytics": "Uchanganuzi na Ripoti",
+        "importExport": "Uingizaji/Usafirishaji",
+        "security": "Usalama na Uzingatiaji"
+      },
+      "users": "Watumiaji",
+      "users.basic": "Mtumiaji 1",
+      "users.professional": "Hadi watumiaji 3",
+      "users.enterprise": "Watumiaji wasio na kikomo",
+      "storage": "Hifadhi",
+      "storage.basic": "GB 3",
+      "storage.professional": "Bila kikomo",
+      "storage.enterprise": "Bila kikomo",
+      "support": "Msaada",
+      "support.basic": "Msaada wa msingi",
+      "support.professional": "Msaada wa kipaumbele",
+      "support.enterprise": "Msaada maalum",
+      "onboarding": "Uongozaji",
+      "onboarding.basic": "Kujitegemea",
+      "onboarding.professional": "Msaada wa barua pepe",
+      "onboarding.enterprise": "Uongozaji wa kibinafsi",
+      "income": "Ufuatiliaji wa Mapato na Matumizi",
+      "multicurrency": "Msaada wa Sarafu Nyingi",
+      "invoices": "Uundaji wa Ankara",
+      "reminders": "Vikumbusho vya Kiotomatiki",
+      "customers": "Usimamizi wa Wateja",
+      "products": "Orodha ya Bidhaa",
+      "inventory": "Ufuatiliaji wa Bidhaa",
+      "barcode": "Usomaji wa Msimbo wa Pau",
+      "barcodePrint": "Uchapishaji wa Msimbo wa Pau wa Kibinafsi",
+      "stockAlerts": "Arifa za Bidhaa Kidogo",
+      "multiLocation": "Bidhaa za Maeneo Mengi",
+      "pos": "Mfumo wa POS",
+      "offline": "Hali ya Nje ya Mtandao",
+      "stripe": "Miunganisho ya Stripe",
+      "paypal": "Miunganisho ya PayPal",
+      "mobileMoney": "Pesa za Simu (M-Pesa, n.k.)",
+      "regionalPayments": "Njia za Malipo za Kikanda",
+      "factoring": "Factoring ya Ankara",
+      "recurring": "Ankara za Mara kwa Mara",
+      "paymentLinks": "Viungo vya Malipo",
+      "taxCalc": "Mahesabu ya Kodi za Kikanda",
+      "vatGst": "Msaada wa VAT/GST",
+      "taxReports": "Ripoti za Kodi",
+      "eFiling": "Tayari kwa Kufailia kwa Elektroniki",
+      "multiRegion": "Uzingatiaji wa Maeneo Mengi",
+      "basicReports": "Ripoti za Msingi",
+      "customReports": "Ripoti za Kibinafsi",
+      "dashboard": "Dashibodi ya Wakati Halisi",
+      "profit": "Uchanganuzi wa Faida",
+      "cashFlow": "Utabiri wa Mtiririko wa Pesa",
+      "ai": "Mapendekezo ya AI",
+      "importExport": "Usimamizi wa Uingizaji/Usafirishaji",
+      "customs": "Nyaraka za Forodha",
+      "shipping": "Miunganisho ya Usafirishaji",
+      "trade": "Uzingatiaji wa Biashara",
+      "encryption": "Usimbaji Fiche wa Data",
+      "twoFactor": "Uthibitishaji wa Hatua Mbili",
+      "gdpr": "Uzingatiaji wa GDPR",
+      "soc2": "Uzingatiaji wa SOC2",
+      "customSecurity": "Sera za Usalama za Kibinafsi"
+    }
+  },
+  "contact": {
+    "eyebrow": "Wasiliana Nasi",
+    "heading": "Ongea nasi",
+    "subheading": "Una maswali kuhusu Dott? Timu yetu iko hapa kukusaidia kupata suluhisho kamili kwa biashara yako.",
+    "infoTitle": "Taarifa za Mawasiliano",
+    "infoSubtitle": "Jaza fomu au wasiliana nasi moja kwa moja kwa kutumia taarifa hapa chini.",
+    "email": "Barua pepe",
+    "address": "Anwani",
+    "social": "Tufuate",
+    "submitting": "Inatuma ujumbe wako...",
+    "success": "Asante kwa kutufikia! Tutakupigia upande huu hivi karibuni.",
+    "error": {
+      "name": "Jina linahitajika",
+      "email": {
+        "required": "Barua pepe inahitajika",
+        "invalid": "Tafadhali ingiza anwani halali ya barua pepe"
+      },
+      "message": "Ujumbe unahitajika"
+    },
+    "form": {
+      "name": "Jina Kamili",
+      "email": "Anwani ya Barua pepe",
+      "company": "Kampuni",
+      "phone": "Nambari ya Simu",
+      "message": "Ujumbe",
+      "submit": "Tuma Ujumbe",
+      "sending": "Inatuma...",
+      "subject": {
+        "label": "Tunaweza kukusaidia vipi?",
+        "general": "Hojaji ya Jumla",
+        "sales": "Swali la Mauzo",
+        "support": "Msaada wa Kiufundi",
+        "demo": "Omba Onyesho",
+        "partnership": "Fursa ya Ushirikiano"
+      }
+    }
+  },
   "getStarted": "Anza Sasa",
   "login": "Ingia",
   "signUp": "Jisajili",
@@ -58,8 +251,9 @@
   "navFeatures": "Vipengele",
   "navPricing": "Bei",
   "navAbout": "Kuhusu",
-  "navContact": "Wasiliana", 
-  "navStatus": "Hali",
+  "navBlog": "Blog",
+  "navContact": "Wasiliana",
+  "navStatus": "Hali ya Mfumo",
   "navSignIn": "INGIA",
   "featuresTitle": "Vipengele vya Biashara vya Kimataifa",
   "featuresSubtitle": "Kila kitu unachohitaji kusimamia biashara yako kwa ufanisi katika zaidi ya nchi 100",
@@ -377,22 +571,33 @@
     "legal": "Kisheria"
   },
   "highlights": {
-    "eyebrow": "Manufaa Makuu",
-    "heading": "Kwa nini biashara huchagua Dott",
-    "subheading": "Vipengele vya hali ya juu vinavyotutenga na washindani na kusaidia biashara yako kukua.",
-    "mobile": {
-      "title": "Programu ya Simu",
-      "description": "Fikia data ya biashara yako wakati wowote, mahali popote na programu yetu yenye nguvu ya simu. Simamia bidhaa, chakata mauzo, na ona ripoti za wakati halisi ukiwa njiani."
-    },
-    "integration": {
-      "title": "Miunganisho Isiyo na Matatizo",
-      "description": "Unganisha na zana na huduma unazozipenda. Jukwaa letu linaunganishwa na wachakataji malipo, programu za uhasibu, majukwaa ya biashara ya elektroniki, na zaidi."
-    },
-    "ai": {
-      "title": "Maarifa Yanayoendeshwa na AI",
-      "description": "Pata mapendekezo ya akili na uchanganuzi wa utabiri kulingana na data ya biashara yako. AI yetu inakusaidia kutabiri mahitaji, kuongeza ufanisi wa bidhaa, na kutambua fursa za ukuaji."
-    },
-    "learnMore": "Jifunze zaidi"
+    "bluetooth": "Ujumuishaji wa kipima Bluetooth",
+    "printBarcodes": "Chapisha misimbo maalum",
+    "lowStock": "Tahadhari za hisa chache",
+    "customLabel": "Uchapishaji wa lebo maalum",
+    "mobileScanning": "Upimaji wa simu",
+    "batchProcessing": "Uchakataji wa kundi",
+    "offlineMode": "Hali ya bila mtandao",
+    "multiplePayments": "Njia nyingi za malipo",
+    "receiptCustom": "Urembo wa risiti",
+    "recurringInvoices": "Ankara za kurudia",
+    "paymentReminders": "Vikumbusho vya malipo",
+    "invoiceFactoring": "Factoring ya ankara",
+    "vatGst": "Msaada wa VAT/GST",
+    "taxReports": "Ripoti za kodi",
+    "eFilingReady": "Tayari kwa uwasilishaji wa kielektroniki",
+    "customDashboards": "Dashibodi maalum",
+    "profitAnalysis": "Uchanganuzi wa faida",
+    "cashFlowForecast": "Utabiri wa mtiririko wa pesa",
+    "mobileMoney": "Pesa za simu",
+    "bankTransfers": "Uhamishaji wa benki",
+    "digitalWallets": "Pochi za kidijitali",
+    "customsDocuments": "Hati za forodha",
+    "shippingIntegration": "Ujumuishaji wa usafirishaji",
+    "tradeCompliance": "Kufuata sheria za biashara",
+    "soc2Compliant": "Inafuata SOC2",
+    "dataEncryption": "Usimbaji fiche wa data",
+    "gdprReady": "Tayari kwa GDPR"
   },
   "faq": {
     "eyebrow": "Maswali Yanayoulizwa Mara kwa Mara",
@@ -421,183 +626,6 @@
     "integration": {
       "question": "Je, ninaweza kuunganisha na zana nyingine ninazotumia?",
       "answer": "Kabisa. Dott inaunganishwa na wachakataji malipo maarufu, programu za uhasibu, majukwaa ya biashara ya elektroniki, na zana nyingine za biashara. Pia tunatoa API kwa miunganisho ya kibinafsi. Angalia ukurasa wetu wa miunganisho kwa orodha kamili ya huduma zinazotumika."
-    }
-  },
-  "contact": {
-    "eyebrow": "Wasiliana Nasi",
-    "heading": "Ongea nasi",
-    "subheading": "Una maswali kuhusu Dott? Timu yetu iko hapa kukusaidia kupata suluhisho kamili kwa biashara yako.",
-    "infoTitle": "Taarifa za Mawasiliano",
-    "infoSubtitle": "Jaza fomu au wasiliana nasi moja kwa moja kwa kutumia taarifa hapa chini.",
-    "email": "Barua pepe",
-    "address": "Anwani",
-    "social": "Tufuate",
-    "submitting": "Inatuma ujumbe wako...",
-    "success": "Asante kwa kutufikia! Tutakupigia upande huu hivi karibuni.",
-    "error": "Kushindwa kutuma ujumbe wako. Tafadhali jaribu tena au tutumiee barua pepe moja kwa moja kwa support@dottapps.com.",
-    "form": {
-      "name": "Jina Kamili",
-      "email": "Anwani ya Barua pepe",
-      "company": "Kampuni",
-      "phone": "Nambari ya Simu",
-      "message": "Ujumbe",
-      "submit": "Tuma Ujumbe",
-      "sending": "Inatuma...",
-      "subject": {
-        "label": "Tunaweza kukusaidia vipi?",
-        "general": "Hojaji ya Jumla",
-        "sales": "Swali la Mauzo",
-        "support": "Msaada wa Kiufundi",
-        "demo": "Omba Onyesho",
-        "partnership": "Fursa ya Ushirikiano"
-      }
-    },
-    "error": {
-      "name": "Jina linahitajika",
-      "email": {
-        "required": "Barua pepe inahitajika",
-        "invalid": "Tafadhali ingiza anwani halali ya barua pepe"
-      },
-      "message": "Ujumbe unahitajika"
-    }
-  },
-  "pricing": {
-    "eyebrow": "Bei Rahisi na Wazi",
-    "heading": "Chagua Mpango Muafaka kwa Biashara Yako",
-    "subheading": "Hakuna ada zilizofichwa. Hakuna kadi ya mkopo inayohitajika kwa mpango wa Msingi. Futa wakati wowote.",
-    "discount": {
-      "title": "Punguzo la 50% kwa Mipango Yote ya Kulipa!",
-      "subtitle": "Bei maalum kwa biashara {{country}} - Kuunga mkono ujasiriamali wa mtaa"
-    },
-    "billing": {
-      "monthly": "Kila Mwezi",
-      "sixMonths": "Miezi 6",
-      "annual": "Kila Mwaka",
-      "popular": "MAARUFU",
-      "save20": "OKOA 20%"
-    },
-    "period": {
-      "month": "/mwezi",
-      "sixMonths": "/miezi 6",
-      "year": "/mwaka"
-    },
-    "save": "Okoa {{amount}} ({{monthly}}/mwezi)",
-    "mostPopular": "MAARUFU ZAIDI",
-    "plans": {
-      "basic": {
-        "name": "Msingi",
-        "description": "Kamili kwa wafanyabiashara huru na biashara ndogo",
-        "features": {
-          "0": "Mtumiaji 1",
-          "1": "Hifadhi ya GB 3",
-          "2": "Vipengele vyote vya msingi",
-          "3": "Msaada wa msingi",
-          "4": "Ufikiaji wa programu ya simu"
-        },
-        "cta": "Anza Bure"
-      },
-      "professional": {
-        "name": "Kitaalamu",
-        "description": "Kwa biashara zinazokua zinazohitaji zaidi",
-        "features": {
-          "0": "Hadi watumiaji 3",
-          "1": "Hifadhi isiyo na kikomo",
-          "2": "Vipengele vyote vimejumuishwa",
-          "3": "Msaada wa kipaumbele",
-          "4": "Uchanganuzi wa hali ya juu",
-          "5": "Msaada wa maeneo mengi"
-        },
-        "cta": "Pata Kitaalamu"
-      },
-      "enterprise": {
-        "name": "Shirika",
-        "description": "Ukuaji usio na kikomo kwa mashirika makubwa",
-        "features": {
-          "0": "Watumiaji wasio na kikomo",
-          "1": "Kila kitu kisio na kikomo",
-          "2": "Vipengele vyote vimejumuishwa",
-          "3": "Msaada maalum",
-          "4": "Uongozaji wa kibinafsi",
-          "5": "Maarifa yanayoendeshwa na AI",
-          "6": "Ufikiaji wa API"
-        },
-        "cta": "Pata Shirika"
-      }
-    },
-    "comparison": {
-      "show": "Linganisha",
-      "hide": "Ficha",
-      "allFeatures": "Vipengele Vyote",
-      "title": "Mulinganisho wa Kina wa Vipengele",
-      "features": "Vipengele"
-    },
-    "features": {
-      "categories": {
-        "core": "Vipengele vya Msingi",
-        "business": "Usimamizi wa Biashara",
-        "inventory": "Bidhaa na POS",
-        "payments": "Malipo na Ankara",
-        "tax": "Kodi na Uzingatiaji",
-        "analytics": "Uchanganuzi na Ripoti",
-        "importExport": "Uingizaji/Usafirishaji",
-        "security": "Usalama na Uzingatiaji"
-      },
-      "users": "Watumiaji",
-      "users.basic": "Mtumiaji 1",
-      "users.professional": "Hadi watumiaji 3",
-      "users.enterprise": "Watumiaji wasio na kikomo",
-      "storage": "Hifadhi",
-      "storage.basic": "GB 3",
-      "storage.professional": "Bila kikomo",
-      "storage.enterprise": "Bila kikomo",
-      "support": "Msaada",
-      "support.basic": "Msaada wa msingi",
-      "support.professional": "Msaada wa kipaumbele",
-      "support.enterprise": "Msaada maalum",
-      "onboarding": "Uongozaji",
-      "onboarding.basic": "Kujitegemea",
-      "onboarding.professional": "Msaada wa barua pepe",
-      "onboarding.enterprise": "Uongozaji wa kibinafsi",
-      "income": "Ufuatiliaji wa Mapato na Matumizi",
-      "multicurrency": "Msaada wa Sarafu Nyingi",
-      "invoices": "Uundaji wa Ankara",
-      "reminders": "Vikumbusho vya Kiotomatiki",
-      "customers": "Usimamizi wa Wateja",
-      "products": "Orodha ya Bidhaa",
-      "inventory": "Ufuatiliaji wa Bidhaa",
-      "barcode": "Usomaji wa Msimbo wa Pau",
-      "barcodePrint": "Uchapishaji wa Msimbo wa Pau wa Kibinafsi",
-      "stockAlerts": "Arifa za Bidhaa Kidogo",
-      "multiLocation": "Bidhaa za Maeneo Mengi",
-      "pos": "Mfumo wa POS",
-      "offline": "Hali ya Nje ya Mtandao",
-      "stripe": "Miunganisho ya Stripe",
-      "paypal": "Miunganisho ya PayPal",
-      "mobileMoney": "Pesa za Simu (M-Pesa, n.k.)",
-      "regionalPayments": "Njia za Malipo za Kikanda",
-      "factoring": "Factoring ya Ankara",
-      "recurring": "Ankara za Mara kwa Mara",
-      "paymentLinks": "Viungo vya Malipo",
-      "taxCalc": "Mahesabu ya Kodi za Kikanda",
-      "vatGst": "Msaada wa VAT/GST",
-      "taxReports": "Ripoti za Kodi",
-      "eFiling": "Tayari kwa Kufailia kwa Elektroniki",
-      "multiRegion": "Uzingatiaji wa Maeneo Mengi",
-      "basicReports": "Ripoti za Msingi",
-      "customReports": "Ripoti za Kibinafsi",
-      "dashboard": "Dashibodi ya Wakati Halisi",
-      "profit": "Uchanganuzi wa Faida",
-      "cashFlow": "Utabiri wa Mtiririko wa Pesa",
-      "ai": "Mapendekezo ya AI",
-      "importExport": "Usimamizi wa Uingizaji/Usafirishaji",
-      "customs": "Nyaraka za Forodha",
-      "shipping": "Miunganisho ya Usafirishaji",
-      "trade": "Uzingatiaji wa Biashara",
-      "encryption": "Usimbaji Fiche wa Data",
-      "twoFactor": "Uthibitishaji wa Hatua Mbili",
-      "gdpr": "Uzingatiaji wa GDPR",
-      "soc2": "Uzingatiaji wa SOC2",
-      "customSecurity": "Sera za Usalama za Kibinafsi"
     }
   },
   "auth": {
@@ -641,26 +669,6 @@
       "securityNote": "Uthibitishaji wa barua pepe unatusaidia kuhakikisha usalama wa akaunti yako na kuzuia ufikiaji usioruhusiwa."
     }
   },
-  "features": {
-    "eyebrow": "Suluhisho Kamili la Biashara",
-    "heading": "Kila Kitu Unachohitaji Kukua Kimataifa",
-    "subheading": "Zana zenye nguvu zilizoundwa kwa biashara za kisasa zinazofanya kazi kupitia mipaka",
-    "operations": {
-      "title": "Usimamizi wa Uendeshaji",
-      "description": "Rahisisha shughuli zako za biashara za kila siku"
-    },
-    "financial": {
-      "title": "Usimamizi wa Kifedha",
-      "description": "Udhibiti kamili wa fedha za biashara yako"
-    },
-    "global": {
-      "title": "Zana za Biashara ya Kimataifa",
-      "description": "Kila kitu unachohitaji kufanya biashara kimataifa"
-    },
-    "trust": {
-      "title": "Imejengwa kwa Usalama na Kufuata Sheria"
-    }
-  },
   "feature": {
     "inventory": "Usimamizi wa Hisa wa Kiwango cha Juu",
     "inventory.description": "Ufuatiliaji wa hisa wakati halisi ukiwa na upimaji wa msimbo na msaada wa maeneo mengi",
@@ -680,35 +688,6 @@
     "global.description": "Shughulikia hati za biashara ya kimataifa na kufuata sheria",
     "security": "Usalama wa Kampuni",
     "security.description": "Usalama wa kiwango cha benki na kufuata sheria za kikanda"
-  },
-  "highlights": {
-    "bluetooth": "Ujumuishaji wa kipima Bluetooth",
-    "printBarcodes": "Chapisha misimbo maalum",
-    "lowStock": "Tahadhari za hisa chache",
-    "customLabel": "Uchapishaji wa lebo maalum",
-    "mobileScanning": "Upimaji wa simu",
-    "batchProcessing": "Uchakataji wa kundi",
-    "offlineMode": "Hali ya bila mtandao",
-    "multiplePayments": "Njia nyingi za malipo",
-    "receiptCustom": "Urembo wa risiti",
-    "recurringInvoices": "Ankara za kurudia",
-    "paymentReminders": "Vikumbusho vya malipo",
-    "invoiceFactoring": "Factoring ya ankara",
-    "vatGst": "Msaada wa VAT/GST",
-    "taxReports": "Ripoti za kodi",
-    "eFilingReady": "Tayari kwa uwasilishaji wa kielektroniki",
-    "customDashboards": "Dashibodi maalum",
-    "profitAnalysis": "Uchanganuzi wa faida",
-    "cashFlowForecast": "Utabiri wa mtiririko wa pesa",
-    "mobileMoney": "Pesa za simu",
-    "bankTransfers": "Uhamishaji wa benki",
-    "digitalWallets": "Pochi za kidijitali",
-    "customsDocuments": "Hati za forodha",
-    "shippingIntegration": "Ujumuishaji wa usafirishaji",
-    "tradeCompliance": "Kufuata sheria za biashara",
-    "soc2Compliant": "Inafuata SOC2",
-    "dataEncryption": "Usimbaji fiche wa data",
-    "gdprReady": "Tayari kwa GDPR"
   },
   "trust": {
     "soc2Title": "Inafuata SOC2",

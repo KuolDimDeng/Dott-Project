@@ -30,9 +30,11 @@
   "missionStatement": "En Dott, nuestra misión es empoderar a las pequeñas empresas para que prosperen proporcionándoles herramientas de gestión asequibles, accesibles y potentes que simplifiquen las operaciones diarias.",
   "visionStatement": "Visualizamos un mundo donde las pequeñas empresas tengan acceso a la misma calidad de herramientas de gestión que las grandes corporaciones, pero adaptadas a sus necesidades y escala específicas.",
   "hero": {
-    "title": "Software empresarial todo en uno",
+    "tagline": "SOLUCIONES INTELIGENTES DE GESTIÓN EMPRESARIAL",
+    "your": "Tu",
+    "title": "Plataforma Empresarial Global",
     "subtitle": "Gratis para siempre con funciones básicas",
-    "description": "Gestión empresarial global con inventario avanzado, escaneo de códigos de barras y soluciones de pago regionales, todo en una plataforma intuitiva para empresas de todo el mundo.",
+    "description": "Dott te permite crear facturas, aceptar pagos en línea, gestionar tu contabilidad e inventario, con escaneo de códigos de barras, todo en una plataforma intuitiva.",
     "button": "Comienza gratis",
     "trustedBy": "Confianza de más de 10,000 empresas en todo el mundo",
     "imageAlt": "Ilustración de Gestión Empresarial",
@@ -46,8 +48,66 @@
       "payroll": "Herramientas de nómina y RRHH",
       "tax": "Cumplimiento fiscal",
       "insights": "Análisis con IA",
-      "mobileMoney": "Pagos con dinero móvil",
-      "cardPayments": "Pagos con tarjeta en todo el mundo"
+      "mobileMoney": "Pagos con dinero móvil (M-Pesa)",
+      "cardPayments": "Acepta pagos con tarjeta en todo el mundo",
+      "languages": "Más de 20 idiomas soportados",
+      "mobilePhone": "Aplicación móvil incluida"
+    }
+  },
+  "builtForYou": {
+    "title": "Hecho Para Ti",
+    "heading": "¡Gestiona tu negocio como un Pro!",
+    "subheading": "Creado para dueños de negocios como tú",
+    "cta": "Únete a miles de dueños de negocios en todo el mundo que confían en Dott para gestionar su negocio",
+    "types": {
+      "freelancers": {
+        "title": "Freelancers",
+        "description": "Rastrea proyectos, factura a clientes al instante y gestiona tus finanzas todo en un solo lugar. Cobra más rápido con facturas profesionales."
+      },
+      "contractors": {
+        "title": "Contratistas",
+        "description": "Gestiona múltiples proyectos, rastrea materiales y costos laborales, y envía cotizaciones profesionales. Mantén tu flujo de efectivo saludable."
+      },
+      "entrepreneurs": {
+        "title": "Emprendedores",
+        "description": "Escala tu startup con herramientas potentes para inventario, ventas y seguimiento financiero. Toma decisiones basadas en datos."
+      },
+      "consultants": {
+        "title": "Consultores",
+        "description": "Factura por hora o proyecto, rastrea gastos y gestiona múltiples clientes sin esfuerzo. Facturación profesional incluida."
+      },
+      "retail": {
+        "title": "Dueños de Tiendas",
+        "description": "Gestiona inventario con escaneo de códigos de barras, rastrea ventas y acepta múltiples métodos de pago incluyendo dinero móvil."
+      },
+      "streetVendors": {
+        "title": "Vendedores Ambulantes",
+        "description": "Diseño móvil simple para rastrear ventas diarias, gestionar inventario y aceptar pagos digitales sobre la marcha."
+      },
+      "marketStalls": {
+        "title": "Dueños de Puestos de Mercado",
+        "description": "Perfecto para días ocupados de mercado. Entrada rápida de ventas, alertas de inventario y seguimiento de ganancias diarias en tu moneda local."
+      },
+      "mobileMoneyAgents": {
+        "title": "Agentes de Dinero Móvil",
+        "description": "Rastrea transacciones, gestiona saldos flotantes y genera informes para operadores de red. Creado para M-Pesa, MTN y más."
+      },
+      "restaurants": {
+        "title": "Dueños de Pequeños Restaurantes",
+        "description": "Gestiona pedidos, rastrea ingredientes, calcula costos de alimentos y maneja tanto comedor como para llevar eficientemente."
+      },
+      "serviceProviders": {
+        "title": "Proveedores de Servicios",
+        "description": "Para plomeros, electricistas, mecánicos y más. Programa trabajos, rastrea piezas y factura al completar."
+      },
+      "onlineSellers": {
+        "title": "Vendedores en Línea",
+        "description": "Sincroniza inventario a través de plataformas, gestiona pedidos y rastrea envíos. Perfecto para vendedores de redes sociales."
+      },
+      "transport": {
+        "title": "Operadores de Transporte",
+        "description": "Para operadores de taxi, boda boda y tuk-tuk. Rastrea ganancias diarias, costos de combustible y horarios de mantenimiento."
+      }
     }
   },
   "heroTitle": "Software empresarial todo en uno",
@@ -61,8 +121,9 @@
   "navFeatures": "Características",
   "navPricing": "Precios",
   "navAbout": "Acerca de",
+  "navBlog": "Blog",
   "navContact": "Contacto",
-  "navStatus": "Estado",
+  "navStatus": "Estado del Sistema",
   "navSignIn": "INICIAR SESIÓN",
   "footer": {
     "home": "Inicio",

@@ -1,8 +1,98 @@
 {
   "about": "Game da",
-  "features": "Abubuwan da ake iya yi",
-  "pricing": "Farashin",
-  "contact": "Tuntuɓi",
+  "features": {
+    "eyebrow": "Cikakken Magani na Kasuwanci",
+    "heading": "Duk Abin Da Kuke Bukata Don Girma a Duniya",
+    "subheading": "Kayan aiki masu ƙarfi da aka tsara don kasuwanci na zamani da ke aiki a kan iyakoki",
+    "operations": {
+      "title": "Sarrafa Ayyuka",
+      "description": "Sauƙaƙa ayyukan kasuwancin ku na yau da kullum"
+    },
+    "financial": {
+      "title": "Sarrafa Kuɗi",
+      "description": "Cikakken iko akan kuɗin kasuwancin ku"
+    },
+    "global": {
+      "title": "Kayan Aikin Kasuwanci na Duniya",
+      "description": "Duk abin da kuke bukata don aiki a duniya"
+    },
+    "trust": {
+      "title": "An Gina Don Tsaro da Cika Dokoki"
+    }
+  },
+  "pricing": {
+    "eyebrow": "Farashin",
+    "heading": "Tsare-tsare don kowane girman kasuwanci",
+    "subheading": "Fara kyauta kuma haɓaka yayin da kasuwancin ku ke girma.",
+    "monthly": "Kowane wata",
+    "annually": "Kowace shekara",
+    "save": "Ajiye 20%",
+    "plans": {
+      "basic": {
+        "name": "Asali",
+        "price": "Kyauta",
+        "description": "Cikakke ga masu zaman kansu da farawa",
+        "features": [
+          "Mai amfani 1",
+          "Har ciniki 100/wata",
+          "Taluci na asali",
+          "2GB ajiya",
+          "Tallafi ta imel"
+        ]
+      },
+      "professional": {
+        "name": "Ƙwararru",
+        "price": "$15",
+        "priceAnnual": "$12",
+        "description": "Don kasuwancin da ke girma",
+        "popular": true,
+        "features": [
+          "Masu amfani ba iyaka",
+          "Ciniki ba iyaka",
+          "Abubuwa masu ci gaba",
+          "30GB ajiya",
+          "Tallafi na farko"
+        ]
+      },
+      "enterprise": {
+        "name": "Kamfani",
+        "price": "$45",
+        "priceAnnual": "$36",
+        "description": "Don kamfanoni da aka kafa",
+        "features": [
+          "Duka abubuwan Ƙwararru",
+          "Ajiya ba iyaka",
+          "Mai kula da asusun keɓance",
+          "Damar shiga API",
+          "SLA 99.9%"
+        ]
+      }
+    }
+  },
+  "contact": {
+    "eyebrow": "Tuntuɓi",
+    "heading": "Mu yi hira",
+    "subheading": "Muna jin daɗin jin daga gare ku. Aika mana saƙo za mu amsa da sauri.",
+    "form": {
+      "name": "Suna",
+      "email": "Imel",
+      "message": "Saƙo",
+      "submit": "Aika saƙo",
+      "subject": {
+        "label": "Batun",
+        "general": "Tambayar gaba ɗaya",
+        "sales": "Tambayar tallace-tallace",
+        "support": "Tallafi na fasaha",
+        "partnership": "Haɗin gwiwa",
+        "other": "Wani abu"
+      }
+    },
+    "info": {
+      "email": "hello@dottapps.com",
+      "phone": "+1 (555) 123-4567",
+      "address": "123 Business Street, Suite 100, New York, NY 10001"
+    }
+  },
   "getStarted": "Fara",
   "login": "Shiga",
   "signUp": "Yi Rajista",
@@ -58,8 +148,9 @@
   "navFeatures": "Fasaloli",
   "navPricing": "Farashin",
   "navAbout": "Game da mu",
+  "navBlog": "Blog",
   "navContact": "Tuntuɓa",
-  "navStatus": "Matsayi",
+  "navStatus": "Matsayin Tsarin",
   "navSignIn": "SHIGA",
   "footer": {
     "home": "Gida",
@@ -141,79 +232,6 @@
         "answer": "Tabbas. Muna amfani da rufe bayani na mataki na banki kuma muna bin dokokin mafi inganci na masana'anta don kare bayananka. Dandamalinmu yana samuwa a tsarin cloud mai tsaro tare da matakan tsaro da yawa, abubuwan cikata dokoki na yanki, da ɗaukar kwafin bayani akai-akai."
       }
     ]
-  },
-  "contact": {
-    "eyebrow": "Tuntuɓi",
-    "heading": "Mu yi hira",
-    "subheading": "Muna jin daɗin jin daga gare ku. Aika mana saƙo za mu amsa da sauri.",
-    "form": {
-      "name": "Suna",
-      "email": "Imel",
-      "message": "Saƙo",
-      "submit": "Aika saƙo",
-      "subject": {
-        "label": "Batun",
-        "general": "Tambayar gaba ɗaya",
-        "sales": "Tambayar tallace-tallace",
-        "support": "Tallafi na fasaha",
-        "partnership": "Haɗin gwiwa",
-        "other": "Wani abu"
-      }
-    },
-    "info": {
-      "email": "hello@dottapps.com",
-      "phone": "+1 (555) 123-4567",
-      "address": "123 Business Street, Suite 100, New York, NY 10001"
-    }
-  },
-  "pricing": {
-    "eyebrow": "Farashin",
-    "heading": "Tsare-tsare don kowane girman kasuwanci",
-    "subheading": "Fara kyauta kuma haɓaka yayin da kasuwancin ku ke girma.",
-    "monthly": "Kowane wata",
-    "annually": "Kowace shekara",
-    "save": "Ajiye 20%",
-    "plans": {
-      "basic": {
-        "name": "Asali",
-        "price": "Kyauta",
-        "description": "Cikakke ga masu zaman kansu da farawa",
-        "features": [
-          "Mai amfani 1",
-          "Har ciniki 100/wata",
-          "Taluci na asali",
-          "2GB ajiya",
-          "Tallafi ta imel"
-        ]
-      },
-      "professional": {
-        "name": "Ƙwararru",
-        "price": "$15",
-        "priceAnnual": "$12",
-        "description": "Don kasuwancin da ke girma",
-        "popular": true,
-        "features": [
-          "Masu amfani ba iyaka",
-          "Ciniki ba iyaka",
-          "Abubuwa masu ci gaba",
-          "30GB ajiya",
-          "Tallafi na farko"
-        ]
-      },
-      "enterprise": {
-        "name": "Kamfani",
-        "price": "$45",
-        "priceAnnual": "$36",
-        "description": "Don kamfanoni da aka kafa",
-        "features": [
-          "Duka abubuwan Ƙwararru",
-          "Ajiya ba iyaka",
-          "Mai kula da asusun keɓance",
-          "Damar shiga API",
-          "SLA 99.9%"
-        ]
-      }
-    }
   },
   "auth": {
     "signIn": "Shiga",
@@ -526,26 +544,6 @@
   "security_badge_1": "Ɓoyayyen matakin banki",
   "security_badge_2": "Mai bin GDPR",
   "security_badge_3": "99.9% lokacin aiki",
-  "features": {
-    "eyebrow": "Cikakken Magani na Kasuwanci",
-    "heading": "Duk Abin Da Kuke Bukata Don Girma a Duniya",
-    "subheading": "Kayan aiki masu ƙarfi da aka tsara don kasuwanci na zamani da ke aiki a kan iyakoki",
-    "operations": {
-      "title": "Sarrafa Ayyuka",
-      "description": "Sauƙaƙa ayyukan kasuwancin ku na yau da kullum"
-    },
-    "financial": {
-      "title": "Sarrafa Kuɗi",
-      "description": "Cikakken iko akan kuɗin kasuwancin ku"
-    },
-    "global": {
-      "title": "Kayan Aikin Kasuwanci na Duniya",
-      "description": "Duk abin da kuke bukata don aiki a duniya"
-    },
-    "trust": {
-      "title": "An Gina Don Tsaro da Cika Dokoki"
-    }
-  },
   "feature": {
     "inventory": "Ci-gaban Sarrafa Kayayyaki",
     "inventory.description": "Bin diddigin matakan kayayyaki cikin lokaci na ainihi da daukar bayanin barcode da tallafin wurare da yawa",
