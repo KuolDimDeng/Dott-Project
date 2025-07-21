@@ -112,7 +112,91 @@
   "dashboard": {
     "businessOverview": {
       "title": "Resumen del Negocio",
-      "subtitle": "Vista completa del rendimiento de tu negocio"
+      "subtitle": "Vista completa del rendimiento de tu negocio",
+      "sections": {
+        "todaysPerformance": "Rendimiento de Hoy",
+        "financialPosition": "Posición Financiera",
+        "cashFlowRevenue": "Flujo de Caja e Ingresos",
+        "operationsOverview": "Resumen de Operaciones",
+        "topSellingProducts": "Productos Más Vendidos",
+        "recentOrders": "Pedidos Recientes",
+        "quickActions": "Acciones Rápidas"
+      },
+      "metrics": {
+        "todaysRevenue": "Ingresos de Hoy",
+        "newOrders": "Nuevos Pedidos",
+        "newCustomers": "Nuevos Clientes",
+        "lowStockAlert": "Alerta de Stock Bajo",
+        "totalAssets": "Activos Totales",
+        "totalLiabilities": "Pasivos Totales",
+        "equity": "Patrimonio",
+        "bankBalance": "Saldo Bancario",
+        "monthlyRevenue": "Ingresos Mensuales",
+        "accountsReceivable": "Cuentas por Cobrar",
+        "profitMargin": "Margen de Beneficio",
+        "weeklyRevenue": "Ingresos Semanales",
+        "totalOrders": "Pedidos Totales",
+        "activeCustomers": "Clientes Activos",
+        "productCatalog": "Catálogo de Productos",
+        "invoiceStatus": "Estado de Facturas"
+      },
+      "timeframes": {
+        "soFarToday": "Hasta ahora hoy",
+        "last7Days": "Últimos 7 días",
+        "last30Days": "Últimos 30 días"
+      },
+      "statuses": {
+        "pendingProcessing": "Pendiente de procesamiento",
+        "productsNeedReorder": "Productos necesitan reordenar",
+        "overdueCount": "{{count}} vencidas",
+        "completedCount": "{{count}} completadas",
+        "ofTotalCount": "de {{count}} totales",
+        "lowStockCount": "{{count}} con stock bajo",
+        "paidInvoices": "Facturas pagadas",
+        "productsSold": "{{count}} vendidos"
+      },
+      "descriptions": {
+        "cashInventoryReceivables": "Efectivo + Inventario + Cuentas por Cobrar",
+        "payablesLoans": "Cuentas por Pagar + Préstamos",
+        "assetsMinusLiabilities": "Activos - Pasivos",
+        "allAccounts": "Todas las cuentas",
+        "revenueMinusExpenses": "Ingresos - Gastos"
+      },
+      "alerts": {
+        "requiresAttention": "Requiere Atención",
+        "overdueInvoices": "{{count}} facturas vencidas",
+        "lowStock": "{{count}} productos con stock bajo",
+        "pendingOrders": "{{count}} pedidos pendientes"
+      },
+      "actions": {
+        "refresh": "Actualizar",
+        "reviewNow": "Revisar ahora",
+        "reorder": "Reordenar",
+        "process": "Procesar"
+      },
+      "quickActions": {
+        "newOrder": "Nuevo Pedido",
+        "createInvoice": "Crear Factura",
+        "addCustomer": "Añadir Cliente",
+        "addProduct": "Añadir Producto",
+        "viewReports": "Ver Informes",
+        "recordPayment": "Registrar Pago"
+      },
+      "orderStatus": {
+        "completed": "Completado",
+        "pending": "Pendiente",
+        "processing": "Procesando",
+        "cancelled": "Cancelado",
+        "shipped": "Enviado",
+        "delivered": "Entregado"
+      },
+      "messages": {
+        "noSalesData": "No hay datos de ventas disponibles",
+        "noRecentOrders": "No hay pedidos recientes"
+      },
+      "common": {
+        "unknown": "Desconocido"
+      }
     }
   },
   "status": {

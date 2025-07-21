@@ -112,7 +112,91 @@
   "dashboard": {
     "businessOverview": {
       "title": "Geschäftsübersicht",
-      "subtitle": "Vollständige Übersicht über Ihre Geschäftsleistung"
+      "subtitle": "Vollständige Übersicht über Ihre Geschäftsleistung",
+      "sections": {
+        "todaysPerformance": "Heutige Leistung",
+        "financialPosition": "Finanzlage",
+        "cashFlowRevenue": "Cashflow & Umsatz",
+        "operationsOverview": "Betriebsübersicht",
+        "topSellingProducts": "Meistverkaufte Produkte",
+        "recentOrders": "Aktuelle Bestellungen",
+        "quickActions": "Schnellaktionen"
+      },
+      "metrics": {
+        "todaysRevenue": "Heutiger Umsatz",
+        "newOrders": "Neue Bestellungen",
+        "newCustomers": "Neue Kunden",
+        "lowStockAlert": "Niedrigbestandswarnung",
+        "totalAssets": "Gesamtvermögen",
+        "totalLiabilities": "Gesamtverbindlichkeiten",
+        "equity": "Eigenkapital",
+        "bankBalance": "Bankguthaben",
+        "monthlyRevenue": "Monatsumsatz",
+        "accountsReceivable": "Forderungen",
+        "profitMargin": "Gewinnspanne",
+        "weeklyRevenue": "Wochenumsatz",
+        "totalOrders": "Gesamtbestellungen",
+        "activeCustomers": "Aktive Kunden",
+        "productCatalog": "Produktkatalog",
+        "invoiceStatus": "Rechnungsstatus"
+      },
+      "timeframes": {
+        "soFarToday": "Bisher heute",
+        "last7Days": "Letzte 7 Tage",
+        "last30Days": "Letzte 30 Tage"
+      },
+      "statuses": {
+        "pendingProcessing": "Ausstehende Bearbeitung",
+        "productsNeedReorder": "Produkte benötigen Nachbestellung",
+        "overdueCount": "{{count}} überfällig",
+        "completedCount": "{{count}} abgeschlossen",
+        "ofTotalCount": "von {{count}} insgesamt",
+        "lowStockCount": "{{count}} mit niedrigem Bestand",
+        "paidInvoices": "Bezahlte Rechnungen",
+        "productsSold": "{{count}} verkauft"
+      },
+      "descriptions": {
+        "cashInventoryReceivables": "Barmittel + Lagerbestand + Forderungen",
+        "payablesLoans": "Verbindlichkeiten + Kredite",
+        "assetsMinusLiabilities": "Vermögen - Verbindlichkeiten",
+        "allAccounts": "Alle Konten",
+        "revenueMinusExpenses": "Umsatz - Ausgaben"
+      },
+      "alerts": {
+        "requiresAttention": "Erfordert Aufmerksamkeit",
+        "overdueInvoices": "{{count}} überfällige Rechnungen",
+        "lowStock": "{{count}} Produkte mit niedrigem Lagerbestand",
+        "pendingOrders": "{{count}} ausstehende Bestellungen"
+      },
+      "actions": {
+        "refresh": "Aktualisieren",
+        "reviewNow": "Jetzt überprüfen",
+        "reorder": "Nachbestellen",
+        "process": "Bearbeiten"
+      },
+      "quickActions": {
+        "newOrder": "Neue Bestellung",
+        "createInvoice": "Rechnung erstellen",
+        "addCustomer": "Kunde hinzufügen",
+        "addProduct": "Produkt hinzufügen",
+        "viewReports": "Berichte anzeigen",
+        "recordPayment": "Zahlung erfassen"
+      },
+      "orderStatus": {
+        "completed": "Abgeschlossen",
+        "pending": "Ausstehend",
+        "processing": "In Bearbeitung",
+        "cancelled": "Storniert",
+        "shipped": "Versendet",
+        "delivered": "Geliefert"
+      },
+      "messages": {
+        "noSalesData": "Keine Verkaufsdaten verfügbar",
+        "noRecentOrders": "Keine aktuellen Bestellungen"
+      },
+      "common": {
+        "unknown": "Unbekannt"
+      }
     }
   },
   "status": {

@@ -115,7 +115,91 @@
   "dashboard": {
     "businessOverview": {
       "title": "Business Overview",
-      "subtitle": "Complete snapshot of your business performance"
+      "subtitle": "Complete snapshot of your business performance",
+      "sections": {
+        "todaysPerformance": "Today's Performance",
+        "financialPosition": "Financial Position",
+        "cashFlowRevenue": "Cash Flow & Revenue",
+        "operationsOverview": "Operations Overview",
+        "topSellingProducts": "Top Selling Products",
+        "recentOrders": "Recent Orders",
+        "quickActions": "Quick Actions"
+      },
+      "metrics": {
+        "todaysRevenue": "Today's Revenue",
+        "newOrders": "New Orders",
+        "newCustomers": "New Customers",
+        "lowStockAlert": "Low Stock Alert",
+        "totalAssets": "Total Assets",
+        "totalLiabilities": "Total Liabilities",
+        "equity": "Equity",
+        "bankBalance": "Bank Balance",
+        "monthlyRevenue": "Monthly Revenue",
+        "accountsReceivable": "Accounts Receivable",
+        "profitMargin": "Profit Margin",
+        "weeklyRevenue": "Weekly Revenue",
+        "totalOrders": "Total Orders",
+        "activeCustomers": "Active Customers",
+        "productCatalog": "Product Catalog",
+        "invoiceStatus": "Invoice Status"
+      },
+      "timeframes": {
+        "soFarToday": "So far today",
+        "last7Days": "Last 7 days",
+        "last30Days": "Last 30 days"
+      },
+      "statuses": {
+        "pendingProcessing": "Pending processing",
+        "productsNeedReorder": "Products need reorder",
+        "overdueCount": "{{count}} overdue",
+        "completedCount": "{{count}} completed",
+        "ofTotalCount": "of {{count}} total",
+        "lowStockCount": "{{count}} low stock",
+        "paidInvoices": "Paid invoices",
+        "productsSold": "{{count}} sold"
+      },
+      "descriptions": {
+        "cashInventoryReceivables": "Cash + Inventory + Receivables",
+        "payablesLoans": "Payables + Loans",
+        "assetsMinusLiabilities": "Assets - Liabilities",
+        "allAccounts": "All accounts",
+        "revenueMinusExpenses": "Revenue - Expenses"
+      },
+      "alerts": {
+        "requiresAttention": "Requires Attention",
+        "overdueInvoices": "{{count}} overdue invoices",
+        "lowStock": "{{count}} products low on stock",
+        "pendingOrders": "{{count}} pending orders"
+      },
+      "actions": {
+        "refresh": "Refresh",
+        "reviewNow": "Review now",
+        "reorder": "Reorder",
+        "process": "Process"
+      },
+      "quickActions": {
+        "newOrder": "New Order",
+        "createInvoice": "Create Invoice",
+        "addCustomer": "Add Customer",
+        "addProduct": "Add Product",
+        "viewReports": "View Reports",
+        "recordPayment": "Record Payment"
+      },
+      "orderStatus": {
+        "completed": "Completed",
+        "pending": "Pending",
+        "processing": "Processing",
+        "cancelled": "Cancelled",
+        "shipped": "Shipped",
+        "delivered": "Delivered"
+      },
+      "messages": {
+        "noSalesData": "No sales data available",
+        "noRecentOrders": "No recent orders"
+      },
+      "common": {
+        "unknown": "Unknown"
+      }
     }
   },
   "status": {

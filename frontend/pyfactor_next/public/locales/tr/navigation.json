@@ -112,7 +112,91 @@
   "dashboard": {
     "businessOverview": {
       "title": "İş Genel Bakışı",
-      "subtitle": "İşletme performansınızın eksiksiz görünümü"
+      "subtitle": "İşletme performansınızın eksiksiz görünümü",
+      "sections": {
+        "todaysPerformance": "Bugünün Performansı",
+        "financialPosition": "Finansal Durum",
+        "cashFlowRevenue": "Nakit Akışı ve Gelir",
+        "operationsOverview": "Operasyonel Genel Bakış",
+        "topSellingProducts": "En Çok Satan Ürünler",
+        "recentOrders": "Son Siparişler",
+        "quickActions": "Hızlı İşlemler"
+      },
+      "metrics": {
+        "todaysRevenue": "Bugünün Geliri",
+        "newOrders": "Yeni Siparişler",
+        "newCustomers": "Yeni Müşteriler",
+        "lowStockAlert": "Düşük Stok Uyarısı",
+        "totalAssets": "Toplam Varlıklar",
+        "totalLiabilities": "Toplam Yükümlülükler",
+        "equity": "Öz Sermaye",
+        "bankBalance": "Banka Bakiyesi",
+        "monthlyRevenue": "Aylık Gelir",
+        "accountsReceivable": "Alacak Hesapları",
+        "profitMargin": "Kâr Marjı",
+        "weeklyRevenue": "Haftalık Gelir",
+        "totalOrders": "Toplam Siparişler",
+        "activeCustomers": "Aktif Müşteriler",
+        "productCatalog": "Ürün Kataloğu",
+        "invoiceStatus": "Fatura Durumu"
+      },
+      "timeframes": {
+        "soFarToday": "Bugüne kadar",
+        "last7Days": "Son 7 gün",
+        "last30Days": "Son 30 gün"
+      },
+      "statuses": {
+        "pendingProcessing": "İşlem bekliyor",
+        "productsNeedReorder": "Yeniden sipariş verilmesi gereken ürünler",
+        "overdueCount": "{{count}} gecikmiş",
+        "completedCount": "{{count}} tamamlandı",
+        "ofTotalCount": "toplam {{count}} içinden",
+        "lowStockCount": "{{count}} düşük stok",
+        "paidInvoices": "Ödenmiş faturalar",
+        "productsSold": "{{count}} satıldı"
+      },
+      "descriptions": {
+        "cashInventoryReceivables": "Nakit + Stok + Alacaklar",
+        "payablesLoans": "Borçlar + Krediler",
+        "assetsMinusLiabilities": "Varlıklar - Yükümlülükler",
+        "allAccounts": "Tüm hesaplar",
+        "revenueMinusExpenses": "Gelir - Giderler"
+      },
+      "alerts": {
+        "requiresAttention": "Dikkat Gerektiriyor",
+        "overdueInvoices": "{{count}} gecikmiş fatura",
+        "lowStock": "{{count}} ürün düşük stokta",
+        "pendingOrders": "{{count}} bekleyen sipariş"
+      },
+      "actions": {
+        "refresh": "Yenile",
+        "reviewNow": "Şimdi incele",
+        "reorder": "Yeniden sipariş ver",
+        "process": "İşle"
+      },
+      "quickActions": {
+        "newOrder": "Yeni Sipariş",
+        "createInvoice": "Fatura Oluştur",
+        "addCustomer": "Müşteri Ekle",
+        "addProduct": "Ürün Ekle",
+        "viewReports": "Raporları Görüntüle",
+        "recordPayment": "Ödeme Kaydet"
+      },
+      "orderStatus": {
+        "completed": "Tamamlandı",
+        "pending": "Beklemede",
+        "processing": "İşleniyor",
+        "cancelled": "İptal edildi",
+        "shipped": "Gönderildi",
+        "delivered": "Teslim edildi"
+      },
+      "messages": {
+        "noSalesData": "Satış verisi bulunamadı",
+        "noRecentOrders": "Yakın tarihli sipariş yok"
+      },
+      "common": {
+        "unknown": "Bilinmiyor"
+      }
     }
   },
   "status": {

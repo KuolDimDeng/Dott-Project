@@ -112,7 +112,91 @@
   "dashboard": {
     "businessOverview": {
       "title": "Обзор бизнеса",
-      "subtitle": "Полная картина эффективности вашего бизнеса"
+      "subtitle": "Полная картина эффективности вашего бизнеса",
+      "sections": {
+        "todaysPerformance": "Показатели сегодня",
+        "financialPosition": "Финансовое положение",
+        "cashFlowRevenue": "Денежный поток и доход",
+        "operationsOverview": "Обзор операций",
+        "topSellingProducts": "Самые продаваемые товары",
+        "recentOrders": "Недавние заказы",
+        "quickActions": "Быстрые действия"
+      },
+      "metrics": {
+        "todaysRevenue": "Доход за сегодня",
+        "newOrders": "Новые заказы",
+        "newCustomers": "Новые клиенты",
+        "lowStockAlert": "Предупреждение о низком запасе",
+        "totalAssets": "Общие активы",
+        "totalLiabilities": "Общие обязательства",
+        "equity": "Собственный капитал",
+        "bankBalance": "Банковский баланс",
+        "monthlyRevenue": "Месячный доход",
+        "accountsReceivable": "Дебиторская задолженность",
+        "profitMargin": "Маржа прибыли",
+        "weeklyRevenue": "Недельный доход",
+        "totalOrders": "Всего заказов",
+        "activeCustomers": "Активные клиенты",
+        "productCatalog": "Каталог товаров",
+        "invoiceStatus": "Статус счетов"
+      },
+      "timeframes": {
+        "soFarToday": "На данный момент сегодня",
+        "last7Days": "Последние 7 дней",
+        "last30Days": "Последние 30 дней"
+      },
+      "statuses": {
+        "pendingProcessing": "Ожидает обработки",
+        "productsNeedReorder": "Товары требуют повторного заказа",
+        "overdueCount": "{{count}} просрочено",
+        "completedCount": "{{count}} выполнено",
+        "ofTotalCount": "из {{count}} всего",
+        "lowStockCount": "{{count}} с низким запасом",
+        "paidInvoices": "Оплаченные счета",
+        "productsSold": "{{count}} продано"
+      },
+      "descriptions": {
+        "cashInventoryReceivables": "Наличные + Запасы + Дебиторская задолженность",
+        "payablesLoans": "Кредиторская задолженность + Кредиты",
+        "assetsMinusLiabilities": "Активы - Обязательства",
+        "allAccounts": "Все счета",
+        "revenueMinusExpenses": "Доходы - Расходы"
+      },
+      "alerts": {
+        "requiresAttention": "Требует внимания",
+        "overdueInvoices": "{{count}} просроченных счетов",
+        "lowStock": "{{count}} товаров с низким запасом",
+        "pendingOrders": "{{count}} ожидающих заказов"
+      },
+      "actions": {
+        "refresh": "Обновить",
+        "reviewNow": "Проверить сейчас",
+        "reorder": "Повторить заказ",
+        "process": "Обработать"
+      },
+      "quickActions": {
+        "newOrder": "Новый заказ",
+        "createInvoice": "Создать счёт",
+        "addCustomer": "Добавить клиента",
+        "addProduct": "Добавить товар",
+        "viewReports": "Просмотреть отчёты",
+        "recordPayment": "Записать платёж"
+      },
+      "orderStatus": {
+        "completed": "Завершён",
+        "pending": "Ожидает",
+        "processing": "Обрабатывается",
+        "cancelled": "Отменён",
+        "shipped": "Отправлен",
+        "delivered": "Доставлен"
+      },
+      "messages": {
+        "noSalesData": "Нет данных о продажах",
+        "noRecentOrders": "Нет недавних заказов"
+      },
+      "common": {
+        "unknown": "Неизвестно"
+      }
     }
   },
   "status": {

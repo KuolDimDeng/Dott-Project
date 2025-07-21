@@ -112,7 +112,91 @@
   "dashboard": {
     "businessOverview": {
       "title": "Muhtasari wa Biashara",
-      "subtitle": "Picha kamili ya utendaji wa biashara yako"
+      "subtitle": "Picha kamili ya utendaji wa biashara yako",
+      "sections": {
+        "todaysPerformance": "Utendaji wa Leo",
+        "financialPosition": "Hali ya Kifedha",
+        "cashFlowRevenue": "Mtiririko wa Pesa na Mapato",
+        "operationsOverview": "Muhtasari wa Shughuli",
+        "topSellingProducts": "Bidhaa Zinazouzwa Zaidi",
+        "recentOrders": "Maagizo ya Hivi Karibuni",
+        "quickActions": "Hatua za Haraka"
+      },
+      "metrics": {
+        "todaysRevenue": "Mapato ya Leo",
+        "newOrders": "Maagizo Mapya",
+        "newCustomers": "Wateja Wapya",
+        "lowStockAlert": "Tahadhari ya Hisa Chache",
+        "totalAssets": "Jumla ya Mali",
+        "totalLiabilities": "Jumla ya Madeni",
+        "equity": "Mtaji",
+        "bankBalance": "Salio la Benki",
+        "monthlyRevenue": "Mapato ya Mwezi",
+        "accountsReceivable": "Akaunti Zinazodaiwa",
+        "profitMargin": "Kiwango cha Faida",
+        "weeklyRevenue": "Mapato ya Wiki",
+        "totalOrders": "Jumla ya Maagizo",
+        "activeCustomers": "Wateja Hai",
+        "productCatalog": "Katalogi ya Bidhaa",
+        "invoiceStatus": "Hali ya Ankara"
+      },
+      "timeframes": {
+        "soFarToday": "Hadi sasa leo",
+        "last7Days": "Siku 7 zilizopita",
+        "last30Days": "Siku 30 zilizopita"
+      },
+      "statuses": {
+        "pendingProcessing": "Inasubiri kuchakatwa",
+        "productsNeedReorder": "Bidhaa zinahitaji kuagizwa tena",
+        "overdueCount": "{{count}} zimechelewa",
+        "completedCount": "{{count}} zimekamilika",
+        "ofTotalCount": "kati ya {{count}} jumla",
+        "lowStockCount": "{{count}} zina hisa chache",
+        "paidInvoices": "Ankara zilizolipiwa",
+        "productsSold": "{{count}} zimeuzwa"
+      },
+      "descriptions": {
+        "cashInventoryReceivables": "Pesa Taslimu + Hisa + Akaunti Zinazodaiwa",
+        "payablesLoans": "Akaunti Zinazodeni + Mikopo",
+        "assetsMinusLiabilities": "Mali - Madeni",
+        "allAccounts": "Akaunti zote",
+        "revenueMinusExpenses": "Mapato - Gharama"
+      },
+      "alerts": {
+        "requiresAttention": "Inahitaji Uangalifu",
+        "overdueInvoices": "Ankara {{count}} zimechelewa",
+        "lowStock": "Bidhaa {{count}} zina hisa chache",
+        "pendingOrders": "Maagizo {{count}} yanasubiri"
+      },
+      "actions": {
+        "refresh": "Onyesha Upya",
+        "reviewNow": "Kagua sasa",
+        "reorder": "Agiza tena",
+        "process": "Chakata"
+      },
+      "quickActions": {
+        "newOrder": "Agizo Jipya",
+        "createInvoice": "Tengeneza Ankara",
+        "addCustomer": "Ongeza Mteja",
+        "addProduct": "Ongeza Bidhaa",
+        "viewReports": "Tazama Ripoti",
+        "recordPayment": "Rekodi Malipo"
+      },
+      "orderStatus": {
+        "completed": "Imekamilika",
+        "pending": "Inasubiri",
+        "processing": "Inachakatwa",
+        "cancelled": "Imefutwa",
+        "shipped": "Imesafirishwa",
+        "delivered": "Imefikishwa"
+      },
+      "messages": {
+        "noSalesData": "Hakuna data ya mauzo inayopatikana",
+        "noRecentOrders": "Hakuna maagizo ya hivi karibuni"
+      },
+      "common": {
+        "unknown": "Haijulikani"
+      }
     }
   },
   "status": {

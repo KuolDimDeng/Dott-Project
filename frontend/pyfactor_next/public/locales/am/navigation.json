@@ -112,7 +112,91 @@
   "dashboard": {
     "businessOverview": {
       "title": "የንግድ አጠቃላይ እይታ",
-      "subtitle": "የንግድዎ አፈጻጸም ሙሉ ገጽታ"
+      "subtitle": "የንግድዎ አፈጻጸም ሙሉ ገጽታ",
+      "sections": {
+        "todaysPerformance": "የዛሬ አፈጻጸም",
+        "financialPosition": "የገንዘብ ሁኔታ",
+        "cashFlowRevenue": "የጥሪት ውፍፈት እና ገቢ",
+        "operationsOverview": "የስራዎች አጠቃላይ እይታ",
+        "topSellingProducts": "በጣም የሚሸጡ ምርቶች",
+        "recentOrders": "የቅርብ ጥያቄዎች",
+        "quickActions": "ፈጣን እርምጃዎች"
+      },
+      "metrics": {
+        "todaysRevenue": "የዛሬ ገቢ",
+        "newOrders": "አዲስ ጥያቄዎች",
+        "newCustomers": "አዲስ ደንበኞች",
+        "lowStockAlert": "የትቅው ስቶክ ማንቂያ",
+        "totalAssets": "ጠቅላላ ንብረት",
+        "totalLiabilities": "ጠቅላላ ደፍታረፍነት",
+        "equity": "ክፍል",
+        "bankBalance": "የባንክ ቀሪ",
+        "monthlyRevenue": "የወር ገቢ",
+        "accountsReceivable": "ምጸልሰለፍ ሁሳቦች",
+        "profitMargin": "የትርፍ መጠን",
+        "weeklyRevenue": "የሳምንት ገቢ",
+        "totalOrders": "ጠቅላላ ጥያቄዎች",
+        "activeCustomers": "ንቁስ ደንበኞች",
+        "productCatalog": "የምርት ካታሎግ",
+        "invoiceStatus": "የደረሰኝ ሁኔታ"
+      },
+      "timeframes": {
+        "soFarToday": "እስካሁን ዛሬ",
+        "last7Days": "ባለፉት 7 ቀናት",
+        "last30Days": "ባለፉት 30 ቀናት"
+      },
+      "statuses": {
+        "pendingProcessing": "ማስተናበሪያን በመጠበቅ ላይ",
+        "productsNeedReorder": "እንደገና መዘዝ የሚፈልጉ ምርቶች",
+        "overdueCount": "{{count}} የተላለፉ",
+        "completedCount": "{{count}} የተጠናቀቁ",
+        "ofTotalCount": "ከ{{count}} ጠቅላላ",
+        "lowStockCount": "{{count}} ትቅው ስቶክ",
+        "paidInvoices": "የተከፈሉ ደረሰኞች",
+        "productsSold": "{{count}} የተሸጡ"
+      },
+      "descriptions": {
+        "cashInventoryReceivables": "ጥሪት + ስቶክ + መቀበል",
+        "payablesLoans": "መከፈል + ብድሮች",
+        "assetsMinusLiabilities": "ንብረቶች - ደፍታረፍነቶች",
+        "allAccounts": "ሁሉም ሁሳቦች",
+        "revenueMinusExpenses": "ገቢ - ወጪዎች"
+      },
+      "alerts": {
+        "requiresAttention": "ትኩረት ይፈልጋል",
+        "overdueInvoices": "{{count}} የተላለፉ ደረሰኞች",
+        "lowStock": "{{count}} ትቅው ስቶክ ያላቸው ምርቶች",
+        "pendingOrders": "{{count}} በመጠበቅ ላይ ያሉ ጥያቄዎች"
+      },
+      "actions": {
+        "refresh": "አድስ",
+        "reviewNow": "አሁን ተመልከት",
+        "reorder": "እንደገና አዝ",
+        "process": "አስተናብር"
+      },
+      "quickActions": {
+        "newOrder": "አዲስ ጥያቄ",
+        "createInvoice": "ደረሰኝ ፍጠር",
+        "addCustomer": "ደንበኛ ከምር",
+        "addProduct": "ምርት ከምር",
+        "viewReports": "ሪፖርቶችን አይ",
+        "recordPayment": "ክፍያ መዝግብ"
+      },
+      "orderStatus": {
+        "completed": "ተጠናቀቀ",
+        "pending": "በመጠበቅ ላይ",
+        "processing": "በማስተናበር ላይ",
+        "cancelled": "ተሰርዟል",
+        "shipped": "ተላክል",
+        "delivered": "ደርሷል"
+      },
+      "messages": {
+        "noSalesData": "የሽያጭ መረጃ የለም",
+        "noRecentOrders": "የቅርብ ጥያቄዎች የሉም"
+      },
+      "common": {
+        "unknown": "የማይታወቅ"
+      }
     }
   },
   "status": {

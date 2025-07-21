@@ -45,11 +45,11 @@ const EditGeofenceModal = ({ isOpen, onClose, geofence, onGeofenceUpdated }) => 
       // Initialize geofence data
       setGeofenceData({
         name: geofence.name || '',
-        geofence_type: geofence.geofence_type || 'office',
+        location_type: geofence.location_type || 'OFFICE',
         radius: geofence.radius || 100,
-        enforce_clock_in: geofence.enforce_clock_in ?? true,
-        enforce_clock_out: geofence.enforce_clock_out ?? true,
-        auto_clock_out: geofence.auto_clock_out ?? false,
+        require_for_clock_in: geofence.require_for_clock_in ?? true,
+        require_for_clock_out: geofence.require_for_clock_out ?? false,
+        auto_clock_out_on_exit: geofence.auto_clock_out_on_exit ?? false,
         alert_on_unexpected_exit: geofence.alert_on_unexpected_exit ?? true
       });
 
@@ -226,16 +226,16 @@ const EditGeofenceModal = ({ isOpen, onClose, geofence, onGeofenceUpdated }) => 
                       Location Type
                     </label>
                     <select
-                      value={geofenceData.geofence_type}
-                      onChange={(e) => setGeofenceData(prev => ({ ...prev, geofence_type: e.target.value }))}
+                      value={geofenceData.location_type}
+                      onChange={(e) => setGeofenceData(prev => ({ ...prev, location_type: e.target.value }))}
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                     >
-                      <option value="office">Office</option>
-                      <option value="construction_site">Construction Site</option>
-                      <option value="client_location">Client Location</option>
-                      <option value="delivery_zone">Delivery Zone</option>
-                      <option value="field_location">Field Location</option>
-                      <option value="custom">Custom</option>
+                      <option value="OFFICE">Office</option>
+                      <option value="CONSTRUCTION">Construction Site</option>
+                      <option value="CLIENT">Client Location</option>
+                      <option value="DELIVERY">Delivery Zone</option>
+                      <option value="FIELD">Field Location</option>
+                      <option value="CUSTOM">Custom</option>
                     </select>
                   </div>
 
@@ -264,8 +264,8 @@ const EditGeofenceModal = ({ isOpen, onClose, geofence, onGeofenceUpdated }) => 
                     <label className="flex items-center">
                       <input
                         type="checkbox"
-                        checked={geofenceData.enforce_clock_in}
-                        onChange={(e) => setGeofenceData(prev => ({ ...prev, enforce_clock_in: e.target.checked }))}
+                        checked={geofenceData.require_for_clock_in}
+                        onChange={(e) => setGeofenceData(prev => ({ ...prev, require_for_clock_in: e.target.checked }))}
                         className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                       />
                       <span className="ml-2 text-sm text-gray-700">Require location for clock in</span>
@@ -275,8 +275,8 @@ const EditGeofenceModal = ({ isOpen, onClose, geofence, onGeofenceUpdated }) => 
                     <label className="flex items-center">
                       <input
                         type="checkbox"
-                        checked={geofenceData.enforce_clock_out}
-                        onChange={(e) => setGeofenceData(prev => ({ ...prev, enforce_clock_out: e.target.checked }))}
+                        checked={geofenceData.require_for_clock_out}
+                        onChange={(e) => setGeofenceData(prev => ({ ...prev, require_for_clock_out: e.target.checked }))}
                         className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                       />
                       <span className="ml-2 text-sm text-gray-700">Require location for clock out</span>
@@ -286,8 +286,8 @@ const EditGeofenceModal = ({ isOpen, onClose, geofence, onGeofenceUpdated }) => 
                     <label className="flex items-center">
                       <input
                         type="checkbox"
-                        checked={geofenceData.auto_clock_out}
-                        onChange={(e) => setGeofenceData(prev => ({ ...prev, auto_clock_out: e.target.checked }))}
+                        checked={geofenceData.auto_clock_out_on_exit}
+                        onChange={(e) => setGeofenceData(prev => ({ ...prev, auto_clock_out_on_exit: e.target.checked }))}
                         className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                       />
                       <span className="ml-2 text-sm text-gray-700">Auto clock-out when leaving</span>

@@ -319,7 +319,7 @@ const BusinessOverview = () => {
         .slice(0, 5)
         .map(o => ({
           id: o.order_number || o.id,
-          customer: o.customer_name || 'Unknown',
+          customer: o.customer_name || t('dashboard.businessOverview.common.unknown', 'Unknown'),
           amount: parseFloat(o.total_amount || 0),
           status: o.status,
           date: new Date(o.created_at).toLocaleDateString()
@@ -329,23 +329,23 @@ const BusinessOverview = () => {
       const pendingTasks = [];
       if (overdueCount > 0) {
         pendingTasks.push({
-          title: `${overdueCount} overdue invoices`,
+          title: t('dashboard.businessOverview.alerts.overdueInvoices', `${overdueCount} overdue invoices`, { count: overdueCount }),
           type: 'warning',
-          action: 'Review now'
+          action: t('dashboard.businessOverview.actions.reviewNow', 'Review now')
         });
       }
       if (lowStockCount > 0) {
         pendingTasks.push({
-          title: `${lowStockCount} products low on stock`,
+          title: t('dashboard.businessOverview.alerts.lowStock', `${lowStockCount} products low on stock`, { count: lowStockCount }),
           type: 'alert',
-          action: 'Reorder'
+          action: t('dashboard.businessOverview.actions.reorder', 'Reorder')
         });
       }
       if (pendingOrderCount > 0) {
         pendingTasks.push({
-          title: `${pendingOrderCount} pending orders`,
+          title: t('dashboard.businessOverview.alerts.pendingOrders', `${pendingOrderCount} pending orders`, { count: pendingOrderCount }),
           type: 'info',
-          action: 'Process'
+          action: t('dashboard.businessOverview.actions.process', 'Process')
         });
       }
 
@@ -508,7 +508,7 @@ const BusinessOverview = () => {
           className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
         >
           <ArrowPathIcon className="w-4 h-4 mr-2" />
-          Refresh
+          {t('dashboard.businessOverview.actions.refresh', 'Refresh')}
         </button>
       </div>
 
@@ -517,7 +517,7 @@ const BusinessOverview = () => {
         <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <div className="flex items-center mb-2">
             <BellAlertIcon className="w-5 h-5 text-yellow-600 mr-2" />
-            <h3 className="text-lg font-semibold text-gray-900">Requires Attention</h3>
+            <h3 className="text-lg font-semibold text-gray-900">{t('dashboard.businessOverview.alerts.requiresAttention', 'Requires Attention')}</h3>
           </div>
           <div className="space-y-2">
             {metrics.pendingTasks.map((task, index) => (
@@ -536,34 +536,34 @@ const BusinessOverview = () => {
       <div className="mb-8">
         <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
           <FireIcon className="w-5 h-5 text-gray-600 mr-2" />
-          Today\'s Performance
+          {t('dashboard.businessOverview.sections.todaysPerformance', "Today's Performance")}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <MetricCard
-            title="Today\'s Revenue"
+            title={t('dashboard.businessOverview.metrics.todaysRevenue', "Today's Revenue")}
             value={formatCurrency(metrics.todayRevenue)}
-            subValue="So far today"
+            subValue={t('dashboard.businessOverview.timeframes.soFarToday', 'So far today')}
             icon={CurrencyDollarIcon}
             color="green"
           />
           <MetricCard
-            title="New Orders"
+            title={t('dashboard.businessOverview.metrics.newOrders', 'New Orders')}
             value={formatNumber(metrics.pendingOrders)}
-            subValue="Pending processing"
+            subValue={t('dashboard.businessOverview.statuses.pendingProcessing', 'Pending processing')}
             icon={ShoppingCartIcon}
             color="blue"
           />
           <MetricCard
-            title="New Customers"
+            title={t('dashboard.businessOverview.metrics.newCustomers', 'New Customers')}
             value={formatNumber(metrics.newCustomers)}
-            subValue="Last 7 days"
+            subValue={t('dashboard.businessOverview.timeframes.last7Days', 'Last 7 days')}
             icon={UserPlusIcon}
             color="purple"
           />
           <MetricCard
-            title="Low Stock Alert"
+            title={t('dashboard.businessOverview.metrics.lowStockAlert', 'Low Stock Alert')}
             value={formatNumber(metrics.lowStockProducts)}
-            subValue="Products need reorder"
+            subValue={t('dashboard.businessOverview.statuses.productsNeedReorder', 'Products need reorder')}
             icon={ExclamationTriangleIcon}
             color={metrics.lowStockProducts > 0 ? 'yellow' : 'green'}
           />
@@ -574,34 +574,34 @@ const BusinessOverview = () => {
       <div className="mb-8">
         <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
           <ScaleIcon className="w-5 h-5 text-gray-600 mr-2" />
-          Financial Position
+          {t('dashboard.businessOverview.sections.financialPosition', 'Financial Position')}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <MetricCard
-            title="Total Assets"
+            title={t('dashboard.businessOverview.metrics.totalAssets', 'Total Assets')}
             value={formatCurrency(metrics.totalAssets)}
-            subValue="Cash + Inventory + Receivables"
+            subValue={t('dashboard.businessOverview.descriptions.cashInventoryReceivables', 'Cash + Inventory + Receivables')}
             icon={ChartPieIcon}
             color="blue"
           />
           <MetricCard
-            title="Total Liabilities"
+            title={t('dashboard.businessOverview.metrics.totalLiabilities', 'Total Liabilities')}
             value={formatCurrency(metrics.totalLiabilities)}
-            subValue="Payables + Loans"
+            subValue={t('dashboard.businessOverview.descriptions.payablesLoans', 'Payables + Loans')}
             icon={CreditCardIcon}
             color="red"
           />
           <MetricCard
-            title="Equity"
+            title={t('dashboard.businessOverview.metrics.equity', 'Equity')}
             value={formatCurrency(metrics.equity)}
-            subValue="Assets - Liabilities"
+            subValue={t('dashboard.businessOverview.descriptions.assetsMinusLiabilities', 'Assets - Liabilities')}
             icon={ScaleIcon}
             color="green"
           />
           <MetricCard
-            title="Bank Balance"
+            title={t('dashboard.businessOverview.metrics.bankBalance', 'Bank Balance')}
             value={formatCurrency(metrics.bankBalance)}
-            subValue="All accounts"
+            subValue={t('dashboard.businessOverview.descriptions.allAccounts', 'All accounts')}
             icon={BuildingLibraryIcon}
             color="purple"
           />
@@ -612,35 +612,35 @@ const BusinessOverview = () => {
       <div className="mb-8">
         <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
           <BanknotesIcon className="w-5 h-5 text-gray-600 mr-2" />
-          Cash Flow & Revenue
+          {t('dashboard.businessOverview.sections.cashFlowRevenue', 'Cash Flow & Revenue')}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <MetricCard
-            title="Monthly Revenue"
+            title={t('dashboard.businessOverview.metrics.monthlyRevenue', 'Monthly Revenue')}
             value={formatCurrency(metrics.monthlyRevenue)}
-            subValue="Last 30 days"
+            subValue={t('dashboard.businessOverview.timeframes.last30Days', 'Last 30 days')}
             icon={CalendarIcon}
             color="blue"
             trend={metrics.revenueTrend}
           />
           <MetricCard
-            title="Accounts Receivable"
+            title={t('dashboard.businessOverview.metrics.accountsReceivable', 'Accounts Receivable')}
             value={formatCurrency(metrics.accountsReceivable)}
-            subValue={`${metrics.overdueInvoices} overdue`}
+            subValue={t('dashboard.businessOverview.statuses.overdueCount', `${metrics.overdueInvoices} overdue`, { count: metrics.overdueInvoices })}
             icon={DocumentTextIcon}
             color={metrics.overdueInvoices > 0 ? 'orange' : 'green'}
           />
           <MetricCard
-            title="Profit Margin"
+            title={t('dashboard.businessOverview.metrics.profitMargin', 'Profit Margin')}
             value={`${metrics.profitMargin}%`}
-            subValue="Revenue - Expenses"
+            subValue={t('dashboard.businessOverview.descriptions.revenueMinusExpenses', 'Revenue - Expenses')}
             icon={ChartBarIcon}
             color="purple"
           />
           <MetricCard
-            title="Weekly Revenue"
+            title={t('dashboard.businessOverview.metrics.weeklyRevenue', 'Weekly Revenue')}
             value={formatCurrency(metrics.weeklyRevenue)}
-            subValue="Last 7 days"
+            subValue={t('dashboard.businessOverview.timeframes.last7Days', 'Last 7 days')}
             icon={ArrowTrendingUpIcon}
             color="teal"
           />
@@ -651,36 +651,36 @@ const BusinessOverview = () => {
       <div className="mb-8">
         <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
           <TruckIcon className="w-5 h-5 text-gray-600 mr-2" />
-          Operations Overview
+          {t('dashboard.businessOverview.sections.operationsOverview', 'Operations Overview')}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <MetricCard
-            title="Total Orders"
+            title={t('dashboard.businessOverview.metrics.totalOrders', 'Total Orders')}
             value={formatNumber(metrics.totalOrders)}
-            subValue={`${metrics.completedOrders} completed`}
+            subValue={t('dashboard.businessOverview.statuses.completedCount', `${metrics.completedOrders} completed`, { count: metrics.completedOrders })}
             icon={ShoppingCartIcon}
             color="indigo"
             trend={metrics.orderTrend}
           />
           <MetricCard
-            title="Active Customers"
+            title={t('dashboard.businessOverview.metrics.activeCustomers', 'Active Customers')}
             value={formatNumber(metrics.activeCustomers)}
-            subValue={`of ${metrics.totalCustomers} total`}
+            subValue={t('dashboard.businessOverview.statuses.ofTotalCount', `of ${metrics.totalCustomers} total`, { count: metrics.totalCustomers })}
             icon={UserGroupIcon}
             color="green"
             trend={metrics.customerTrend}
           />
           <MetricCard
-            title="Product Catalog"
+            title={t('dashboard.businessOverview.metrics.productCatalog', 'Product Catalog')}
             value={formatNumber(metrics.totalProducts)}
-            subValue={`${metrics.lowStockProducts} low stock`}
+            subValue={t('dashboard.businessOverview.statuses.lowStockCount', `${metrics.lowStockProducts} low stock`, { count: metrics.lowStockProducts })}
             icon={CubeIcon}
             color="orange"
           />
           <MetricCard
-            title="Invoice Status"
+            title={t('dashboard.businessOverview.metrics.invoiceStatus', 'Invoice Status')}
             value={`${metrics.paidInvoices}/${metrics.totalInvoices}`}
-            subValue="Paid invoices"
+            subValue={t('dashboard.businessOverview.statuses.paidInvoices', 'Paid invoices')}
             icon={ReceiptPercentIcon}
             color="blue"
           />
@@ -693,7 +693,7 @@ const BusinessOverview = () => {
         <div className="bg-white rounded-lg shadow-md p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
             <FireIcon className="w-5 h-5 text-orange-500 mr-2" />
-            Top Selling Products
+            {t('dashboard.businessOverview.sections.topSellingProducts', 'Top Selling Products')}
           </h3>
           {metrics.topProducts.length > 0 ? (
             <div className="space-y-3">
@@ -701,14 +701,14 @@ const BusinessOverview = () => {
                 <div key={index} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
                   <div>
                     <p className="font-medium text-gray-900">{product.name}</p>
-                    <p className="text-sm text-gray-500">{product.sales} sold</p>
+                    <p className="text-sm text-gray-500">{t('dashboard.businessOverview.statuses.productsSold', `${product.sales} sold`, { count: product.sales })}</p>
                   </div>
                   <p className="font-semibold text-gray-900">{formatCurrency(product.revenue)}</p>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-gray-500">No sales data available</p>
+            <p className="text-gray-500">{t('dashboard.businessOverview.messages.noSalesData', 'No sales data available')}</p>
           )}
         </div>
 
@@ -716,7 +716,7 @@ const BusinessOverview = () => {
         <div className="bg-white rounded-lg shadow-md p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
             <ClockIcon className="w-5 h-5 text-blue-500 mr-2" />
-            Recent Orders
+            {t('dashboard.businessOverview.sections.recentOrders', 'Recent Orders')}
           </h3>
           {metrics.recentOrders.length > 0 ? (
             <div className="space-y-3">
@@ -733,45 +733,45 @@ const BusinessOverview = () => {
                       order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                       'bg-gray-100 text-gray-800'
                     }`}>
-                      {order.status}
+                      {t(`dashboard.businessOverview.orderStatus.${order.status}`, order.status)}
                     </span>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-gray-500">No recent orders</p>
+            <p className="text-gray-500">{t('dashboard.businessOverview.messages.noRecentOrders', 'No recent orders')}</p>
           )}
         </div>
       </div>
 
       {/* Quick Actions */}
       <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('dashboard.businessOverview.sections.quickActions', 'Quick Actions')}</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
           <button className="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
             <ShoppingCartIcon className="w-6 h-6 text-blue-600 mb-2" />
-            <span className="text-sm text-gray-700">New Order</span>
+            <span className="text-sm text-gray-700">{t('dashboard.businessOverview.quickActions.newOrder', 'New Order')}</span>
           </button>
           <button className="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
             <CurrencyDollarIcon className="w-6 h-6 text-green-600 mb-2" />
-            <span className="text-sm text-gray-700">Create Invoice</span>
+            <span className="text-sm text-gray-700">{t('dashboard.businessOverview.quickActions.createInvoice', 'Create Invoice')}</span>
           </button>
           <button className="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
             <UserGroupIcon className="w-6 h-6 text-purple-600 mb-2" />
-            <span className="text-sm text-gray-700">Add Customer</span>
+            <span className="text-sm text-gray-700">{t('dashboard.businessOverview.quickActions.addCustomer', 'Add Customer')}</span>
           </button>
           <button className="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
             <CubeIcon className="w-6 h-6 text-orange-600 mb-2" />
-            <span className="text-sm text-gray-700">Add Product</span>
+            <span className="text-sm text-gray-700">{t('dashboard.businessOverview.quickActions.addProduct', 'Add Product')}</span>
           </button>
           <button className="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
             <ChartBarIcon className="w-6 h-6 text-indigo-600 mb-2" />
-            <span className="text-sm text-gray-700">View Reports</span>
+            <span className="text-sm text-gray-700">{t('dashboard.businessOverview.quickActions.viewReports', 'View Reports')}</span>
           </button>
           <button className="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
             <BanknotesIcon className="w-6 h-6 text-teal-600 mb-2" />
-            <span className="text-sm text-gray-700">Record Payment</span>
+            <span className="text-sm text-gray-700">{t('dashboard.businessOverview.quickActions.recordPayment', 'Record Payment')}</span>
           </button>
         </div>
       </div>

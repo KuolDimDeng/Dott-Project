@@ -112,7 +112,91 @@
   "dashboard": {
     "businessOverview": {
       "title": "비즈니스 개요",
-      "subtitle": "비즈니스 성과의 완전한 스냅샷"
+      "subtitle": "비즈니스 성과의 완전한 스냅샷",
+      "sections": {
+        "todaysPerformance": "오늘의 성과",
+        "financialPosition": "재무 상태",
+        "cashFlowRevenue": "현금 흐름 & 수익",
+        "operationsOverview": "운영 개요",
+        "topSellingProducts": "가장 많이 팔린 제품",
+        "recentOrders": "최근 주문",
+        "quickActions": "빠른 작업"
+      },
+      "metrics": {
+        "todaysRevenue": "오늘의 수익",
+        "newOrders": "신규 주문",
+        "newCustomers": "신규 고객",
+        "lowStockAlert": "낮은 재고 경고",
+        "totalAssets": "총 자산",
+        "totalLiabilities": "총 부채",
+        "equity": "자본",
+        "bankBalance": "은행 잔고",
+        "monthlyRevenue": "월 수익",
+        "accountsReceivable": "미수금",
+        "profitMargin": "이익률",
+        "weeklyRevenue": "주간 수익",
+        "totalOrders": "총 주문 수",
+        "activeCustomers": "활성 고객",
+        "productCatalog": "제품 카탈로그",
+        "invoiceStatus": "송장 상태"
+      },
+      "timeframes": {
+        "soFarToday": "오늘 현재까지",
+        "last7Days": "지난 7일",
+        "last30Days": "지난 30일"
+      },
+      "statuses": {
+        "pendingProcessing": "처리 대기 중",
+        "productsNeedReorder": "재주문이 필요한 제품",
+        "overdueCount": "{{count}}개 연체",
+        "completedCount": "{{count}}개 완료",
+        "ofTotalCount": "총 {{count}}개 중",
+        "lowStockCount": "{{count}}개 낮은 재고",
+        "paidInvoices": "결제된 송장",
+        "productsSold": "{{count}}개 판매"
+      },
+      "descriptions": {
+        "cashInventoryReceivables": "현금 + 재고 + 미수금",
+        "payablesLoans": "미지급금 + 대출",
+        "assetsMinusLiabilities": "자산 - 부채",
+        "allAccounts": "모든 계정",
+        "revenueMinusExpenses": "수익 - 비용"
+      },
+      "alerts": {
+        "requiresAttention": "주의 필요",
+        "overdueInvoices": "{{count}}개의 연체된 송장",
+        "lowStock": "{{count}}개 제품이 낮은 재고",
+        "pendingOrders": "{{count}}개의 대기 중인 주문"
+      },
+      "actions": {
+        "refresh": "새로고침",
+        "reviewNow": "지금 검토",
+        "reorder": "재주문",
+        "process": "처리"
+      },
+      "quickActions": {
+        "newOrder": "새 주문",
+        "createInvoice": "송장 생성",
+        "addCustomer": "고객 추가",
+        "addProduct": "제품 추가",
+        "viewReports": "보고서 보기",
+        "recordPayment": "결제 기록"
+      },
+      "orderStatus": {
+        "completed": "완료",
+        "pending": "대기 중",
+        "processing": "처리 중",
+        "cancelled": "취소됨",
+        "shipped": "배송됨",
+        "delivered": "배달 완료"
+      },
+      "messages": {
+        "noSalesData": "판매 데이터가 없습니다",
+        "noRecentOrders": "최근 주문이 없습니다"
+      },
+      "common": {
+        "unknown": "알 수 없음"
+      }
     }
   },
   "status": {

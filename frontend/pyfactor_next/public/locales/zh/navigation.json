@@ -112,7 +112,91 @@
   "dashboard": {
     "businessOverview": {
       "title": "业务概览",
-      "subtitle": "您业务表现的完整快照"
+      "subtitle": "您业务表现的完整快照",
+      "sections": {
+        "todaysPerformance": "今日表现",
+        "financialPosition": "财务状况",
+        "cashFlowRevenue": "现金流与收入",
+        "operationsOverview": "运营概览",
+        "topSellingProducts": "热销产品",
+        "recentOrders": "最近订单",
+        "quickActions": "快速操作"
+      },
+      "metrics": {
+        "todaysRevenue": "今日收入",
+        "newOrders": "新订单",
+        "newCustomers": "新客户",
+        "lowStockAlert": "低库存警报",
+        "totalAssets": "总资产",
+        "totalLiabilities": "总负债",
+        "equity": "所有者权益",
+        "bankBalance": "银行余额",
+        "monthlyRevenue": "月收入",
+        "accountsReceivable": "应收账款",
+        "profitMargin": "利润率",
+        "weeklyRevenue": "周收入",
+        "totalOrders": "订单总数",
+        "activeCustomers": "活跃客户",
+        "productCatalog": "产品目录",
+        "invoiceStatus": "发票状态"
+      },
+      "timeframes": {
+        "soFarToday": "今日至今",
+        "last7Days": "过去7天",
+        "last30Days": "过去30天"
+      },
+      "statuses": {
+        "pendingProcessing": "待处理",
+        "productsNeedReorder": "产品需要补货",
+        "overdueCount": "{{count}} 个逾期",
+        "completedCount": "{{count}} 个已完成",
+        "ofTotalCount": "共 {{count}} 个",
+        "lowStockCount": "{{count}} 个库存不足",
+        "paidInvoices": "已付发票",
+        "productsSold": "已售出 {{count}} 个"
+      },
+      "descriptions": {
+        "cashInventoryReceivables": "现金 + 库存 + 应收账款",
+        "payablesLoans": "应付账款 + 贷款",
+        "assetsMinusLiabilities": "资产 - 负债",
+        "allAccounts": "所有账户",
+        "revenueMinusExpenses": "收入 - 支出"
+      },
+      "alerts": {
+        "requiresAttention": "需要关注",
+        "overdueInvoices": "{{count}} 张逾期发票",
+        "lowStock": "{{count}} 个产品库存不足",
+        "pendingOrders": "{{count}} 个待处理订单"
+      },
+      "actions": {
+        "refresh": "刷新",
+        "reviewNow": "立即查看",
+        "reorder": "补货",
+        "process": "处理"
+      },
+      "quickActions": {
+        "newOrder": "新订单",
+        "createInvoice": "创建发票",
+        "addCustomer": "添加客户",
+        "addProduct": "添加产品",
+        "viewReports": "查看报告",
+        "recordPayment": "记录付款"
+      },
+      "orderStatus": {
+        "completed": "已完成",
+        "pending": "待处理",
+        "processing": "处理中",
+        "cancelled": "已取消",
+        "shipped": "已发货",
+        "delivered": "已送达"
+      },
+      "messages": {
+        "noSalesData": "暂无销售数据",
+        "noRecentOrders": "暂无最近订单"
+      },
+      "common": {
+        "unknown": "未知"
+      }
     }
   },
   "status": {

@@ -112,7 +112,91 @@
   "dashboard": {
     "businessOverview": {
       "title": "व्यवसाय अवलोकन",
-      "subtitle": "आपके व्यवसाय प्रदर्शन का संपूर्ण स्नैपशॉट"
+      "subtitle": "आपके व्यवसाय प्रदर्शन का संपूर्ण स्नैपशॉट",
+      "sections": {
+        "todaysPerformance": "आज का प्रदर्शन",
+        "financialPosition": "वित्तीय स्थिति",
+        "cashFlowRevenue": "नकदी प्रवाह और राजस्व",
+        "operationsOverview": "संचालन अवलोकन",
+        "topSellingProducts": "सबसे ज्यादा बिकने वाले उत्पाद",
+        "recentOrders": "हाल के ऑर्डर",
+        "quickActions": "त्वरित क्रियाएं"
+      },
+      "metrics": {
+        "todaysRevenue": "आज का राजस्व",
+        "newOrders": "नए ऑर्डर",
+        "newCustomers": "नए ग्राहक",
+        "lowStockAlert": "कम स्टॉक अलर्ट",
+        "totalAssets": "कुल संपत्तियां",
+        "totalLiabilities": "कुल देयताएं",
+        "equity": "इक्विटी",
+        "bankBalance": "बैंक बैलेंस",
+        "monthlyRevenue": "मासिक राजस्व",
+        "accountsReceivable": "प्राप्य खाते",
+        "profitMargin": "लाभ मार्जिन",
+        "weeklyRevenue": "साप्ताहिक राजस्व",
+        "totalOrders": "कुल ऑर्डर",
+        "activeCustomers": "सक्रिय ग्राहक",
+        "productCatalog": "उत्पाद कैटलॉग",
+        "invoiceStatus": "चालान स्थिति"
+      },
+      "timeframes": {
+        "soFarToday": "आज अब तक",
+        "last7Days": "पिछले 7 दिन",
+        "last30Days": "पिछले 30 दिन"
+      },
+      "statuses": {
+        "pendingProcessing": "प्रसंस्करण के लिए लंबित",
+        "productsNeedReorder": "उत्पादों को पुनः ऑर्डर की आवश्यकता",
+        "overdueCount": "{{count}} अतिदेय",
+        "completedCount": "{{count}} पूर्ण",
+        "ofTotalCount": "कुल {{count}} में से",
+        "lowStockCount": "{{count}} कम स्टॉक",
+        "paidInvoices": "भुगतान किए गए चालान",
+        "productsSold": "{{count}} बेचे गए"
+      },
+      "descriptions": {
+        "cashInventoryReceivables": "नकद + इन्वेंट्री + प्राप्य",
+        "payablesLoans": "देय + ऋण",
+        "assetsMinusLiabilities": "संपत्तियां - देयताएं",
+        "allAccounts": "सभी खाते",
+        "revenueMinusExpenses": "राजस्व - व्यय"
+      },
+      "alerts": {
+        "requiresAttention": "ध्यान देने की आवश्यकता",
+        "overdueInvoices": "{{count}} अतिदेय चालान",
+        "lowStock": "{{count}} उत्पाद कम स्टॉक में",
+        "pendingOrders": "{{count}} लंबित ऑर्डर"
+      },
+      "actions": {
+        "refresh": "रीफ्रेश करें",
+        "reviewNow": "अभी समीक्षा करें",
+        "reorder": "पुनः ऑर्डर करें",
+        "process": "प्रसंस्करण करें"
+      },
+      "quickActions": {
+        "newOrder": "नया ऑर्डर",
+        "createInvoice": "चालान बनाएं",
+        "addCustomer": "ग्राहक जोड़ें",
+        "addProduct": "उत्पाद जोड़ें",
+        "viewReports": "रिपोर्ट देखें",
+        "recordPayment": "भुगतान रिकॉर्ड करें"
+      },
+      "orderStatus": {
+        "completed": "पूर्ण",
+        "pending": "लंबित",
+        "processing": "प्रसंस्करण",
+        "cancelled": "रद्द",
+        "shipped": "भेज दिया गया",
+        "delivered": "डिलीवर किया गया"
+      },
+      "messages": {
+        "noSalesData": "कोई बिक्री डेटा उपलब्ध नहीं",
+        "noRecentOrders": "कोई हाल के ऑर्डर नहीं"
+      },
+      "common": {
+        "unknown": "अज्ञात"
+      }
     }
   },
   "status": {

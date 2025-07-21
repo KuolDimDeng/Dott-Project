@@ -112,7 +112,91 @@
   "dashboard": {
     "businessOverview": {
       "title": "نظرة عامة على الأعمال",
-      "subtitle": "لمحة شاملة عن أداء عملك"
+      "subtitle": "لمحة شاملة عن أداء عملك",
+      "sections": {
+        "todaysPerformance": "أداء اليوم",
+        "financialPosition": "الوضع المالي",
+        "cashFlowRevenue": "التدفق النقدي والإيرادات",
+        "operationsOverview": "نظرة عامة على العمليات",
+        "topSellingProducts": "المنتجات الأكثر مبيعاً",
+        "recentOrders": "الطلبات الأخيرة",
+        "quickActions": "إجراءات سريعة"
+      },
+      "metrics": {
+        "todaysRevenue": "إيرادات اليوم",
+        "newOrders": "طلبات جديدة",
+        "newCustomers": "عملاء جدد",
+        "lowStockAlert": "تنبيه المخزون المنخفض",
+        "totalAssets": "إجمالي الأصول",
+        "totalLiabilities": "إجمالي الالتزامات",
+        "equity": "حقوق الملكية",
+        "bankBalance": "الرصيد البنكي",
+        "monthlyRevenue": "الإيرادات الشهرية",
+        "accountsReceivable": "الذمم المدينة",
+        "profitMargin": "هامش الربح",
+        "weeklyRevenue": "الإيرادات الأسبوعية",
+        "totalOrders": "إجمالي الطلبات",
+        "activeCustomers": "العملاء النشطون",
+        "productCatalog": "كتالوج المنتجات",
+        "invoiceStatus": "حالة الفواتير"
+      },
+      "timeframes": {
+        "soFarToday": "حتى الآن اليوم",
+        "last7Days": "آخر 7 أيام",
+        "last30Days": "آخر 30 يوماً"
+      },
+      "statuses": {
+        "pendingProcessing": "في انتظار المعالجة",
+        "productsNeedReorder": "المنتجات تحتاج إعادة طلب",
+        "overdueCount": "{{count}} متأخرة",
+        "completedCount": "{{count}} مكتملة",
+        "ofTotalCount": "من أصل {{count}}",
+        "lowStockCount": "{{count}} بمخزون منخفض",
+        "paidInvoices": "الفواتير المدفوعة",
+        "productsSold": "{{count}} مبيعة"
+      },
+      "descriptions": {
+        "cashInventoryReceivables": "النقد + المخزون + الذمم المدينة",
+        "payablesLoans": "الذمم الدائنة + القروض",
+        "assetsMinusLiabilities": "الأصول - الالتزامات",
+        "allAccounts": "جميع الحسابات",
+        "revenueMinusExpenses": "الإيرادات - المصروفات"
+      },
+      "alerts": {
+        "requiresAttention": "يتطلب الانتباه",
+        "overdueInvoices": "{{count}} فواتير متأخرة",
+        "lowStock": "{{count}} منتجات بمخزون منخفض",
+        "pendingOrders": "{{count}} طلبات معلقة"
+      },
+      "actions": {
+        "refresh": "تحديث",
+        "reviewNow": "مراجعة الآن",
+        "reorder": "إعادة الطلب",
+        "process": "معالجة"
+      },
+      "quickActions": {
+        "newOrder": "طلب جديد",
+        "createInvoice": "إنشاء فاتورة",
+        "addCustomer": "إضافة عميل",
+        "addProduct": "إضافة منتج",
+        "viewReports": "عرض التقارير",
+        "recordPayment": "تسجيل دفعة"
+      },
+      "orderStatus": {
+        "completed": "مكتمل",
+        "pending": "معلق",
+        "processing": "قيد المعالجة",
+        "cancelled": "ملغي",
+        "shipped": "تم الشحن",
+        "delivered": "تم التسليم"
+      },
+      "messages": {
+        "noSalesData": "لا توجد بيانات مبيعات متاحة",
+        "noRecentOrders": "لا توجد طلبات حديثة"
+      },
+      "common": {
+        "unknown": "غير معروف"
+      }
     }
   },
   "status": {

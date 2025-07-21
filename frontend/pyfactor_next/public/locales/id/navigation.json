@@ -112,7 +112,91 @@
   "dashboard": {
     "businessOverview": {
       "title": "Ikhtisar Bisnis",
-      "subtitle": "Gambaran lengkap kinerja bisnis Anda"
+      "subtitle": "Gambaran lengkap kinerja bisnis Anda",
+      "sections": {
+        "todaysPerformance": "Kinerja Hari Ini",
+        "financialPosition": "Posisi Keuangan",
+        "cashFlowRevenue": "Arus Kas & Pendapatan",
+        "operationsOverview": "Ikhtisar Operasi",
+        "topSellingProducts": "Produk Terlaris",
+        "recentOrders": "Pesanan Terbaru",
+        "quickActions": "Tindakan Cepat"
+      },
+      "metrics": {
+        "todaysRevenue": "Pendapatan Hari Ini",
+        "newOrders": "Pesanan Baru",
+        "newCustomers": "Pelanggan Baru",
+        "lowStockAlert": "Peringatan Stok Rendah",
+        "totalAssets": "Total Aset",
+        "totalLiabilities": "Total Kewajiban",
+        "equity": "Ekuitas",
+        "bankBalance": "Saldo Bank",
+        "monthlyRevenue": "Pendapatan Bulanan",
+        "accountsReceivable": "Piutang Usaha",
+        "profitMargin": "Margin Laba",
+        "weeklyRevenue": "Pendapatan Mingguan",
+        "totalOrders": "Total Pesanan",
+        "activeCustomers": "Pelanggan Aktif",
+        "productCatalog": "Katalog Produk",
+        "invoiceStatus": "Status Faktur"
+      },
+      "timeframes": {
+        "soFarToday": "Sejauh ini hari ini",
+        "last7Days": "7 hari terakhir",
+        "last30Days": "30 hari terakhir"
+      },
+      "statuses": {
+        "pendingProcessing": "Menunggu pemrosesan",
+        "productsNeedReorder": "Produk perlu dipesan ulang",
+        "overdueCount": "{{count}} terlambat",
+        "completedCount": "{{count}} selesai",
+        "ofTotalCount": "dari {{count}} total",
+        "lowStockCount": "{{count}} stok rendah",
+        "paidInvoices": "Faktur terbayar",
+        "productsSold": "{{count}} terjual"
+      },
+      "descriptions": {
+        "cashInventoryReceivables": "Kas + Persediaan + Piutang",
+        "payablesLoans": "Utang + Pinjaman",
+        "assetsMinusLiabilities": "Aset - Kewajiban",
+        "allAccounts": "Semua akun",
+        "revenueMinusExpenses": "Pendapatan - Pengeluaran"
+      },
+      "alerts": {
+        "requiresAttention": "Memerlukan Perhatian",
+        "overdueInvoices": "{{count}} faktur terlambat",
+        "lowStock": "{{count}} produk stok rendah",
+        "pendingOrders": "{{count}} pesanan tertunda"
+      },
+      "actions": {
+        "refresh": "Segarkan",
+        "reviewNow": "Tinjau sekarang",
+        "reorder": "Pesan ulang",
+        "process": "Proses"
+      },
+      "quickActions": {
+        "newOrder": "Pesanan Baru",
+        "createInvoice": "Buat Faktur",
+        "addCustomer": "Tambah Pelanggan",
+        "addProduct": "Tambah Produk",
+        "viewReports": "Lihat Laporan",
+        "recordPayment": "Catat Pembayaran"
+      },
+      "orderStatus": {
+        "completed": "Selesai",
+        "pending": "Tertunda",
+        "processing": "Diproses",
+        "cancelled": "Dibatalkan",
+        "shipped": "Dikirim",
+        "delivered": "Terkirim"
+      },
+      "messages": {
+        "noSalesData": "Tidak ada data penjualan tersedia",
+        "noRecentOrders": "Tidak ada pesanan terbaru"
+      },
+      "common": {
+        "unknown": "Tidak diketahui"
+      }
     }
   },
   "status": {

@@ -112,7 +112,91 @@
   "dashboard": {
     "businessOverview": {
       "title": "Bedrijfsoverzicht",
-      "subtitle": "Volledig overzicht van uw bedrijfsprestaties"
+      "subtitle": "Volledig overzicht van uw bedrijfsprestaties",
+      "sections": {
+        "todaysPerformance": "Prestaties van Vandaag",
+        "financialPosition": "Financiële Positie",
+        "cashFlowRevenue": "Cashflow & Omzet",
+        "operationsOverview": "Operationeel Overzicht",
+        "topSellingProducts": "Bestverkochte Producten",
+        "recentOrders": "Recente Bestellingen",
+        "quickActions": "Snelle Acties"
+      },
+      "metrics": {
+        "todaysRevenue": "Omzet van Vandaag",
+        "newOrders": "Nieuwe Bestellingen",
+        "newCustomers": "Nieuwe Klanten",
+        "lowStockAlert": "Lage Voorraad Waarschuwing",
+        "totalAssets": "Totale Activa",
+        "totalLiabilities": "Totale Passiva",
+        "equity": "Eigen Vermogen",
+        "bankBalance": "Banksaldo",
+        "monthlyRevenue": "Maandelijkse Omzet",
+        "accountsReceivable": "Debiteuren",
+        "profitMargin": "Winstmarge",
+        "weeklyRevenue": "Wekelijkse Omzet",
+        "totalOrders": "Totaal Bestellingen",
+        "activeCustomers": "Actieve Klanten",
+        "productCatalog": "Productcatalogus",
+        "invoiceStatus": "Factuurstatus"
+      },
+      "timeframes": {
+        "soFarToday": "Tot nu toe vandaag",
+        "last7Days": "Laatste 7 dagen",
+        "last30Days": "Laatste 30 dagen"
+      },
+      "statuses": {
+        "pendingProcessing": "In afwachting van verwerking",
+        "productsNeedReorder": "Producten moeten opnieuw besteld worden",
+        "overdueCount": "{{count}} achterstallig",
+        "completedCount": "{{count}} voltooid",
+        "ofTotalCount": "van {{count}} totaal",
+        "lowStockCount": "{{count}} lage voorraad",
+        "paidInvoices": "Betaalde facturen",
+        "productsSold": "{{count}} verkocht"
+      },
+      "descriptions": {
+        "cashInventoryReceivables": "Contanten + Voorraad + Debiteuren",
+        "payablesLoans": "Crediteuren + Leningen",
+        "assetsMinusLiabilities": "Activa - Passiva",
+        "allAccounts": "Alle rekeningen",
+        "revenueMinusExpenses": "Omzet - Kosten"
+      },
+      "alerts": {
+        "requiresAttention": "Vereist Aandacht",
+        "overdueInvoices": "{{count}} achterstallige facturen",
+        "lowStock": "{{count}} producten met lage voorraad",
+        "pendingOrders": "{{count}} openstaande bestellingen"
+      },
+      "actions": {
+        "refresh": "Vernieuwen",
+        "reviewNow": "Nu beoordelen",
+        "reorder": "Opnieuw bestellen",
+        "process": "Verwerken"
+      },
+      "quickActions": {
+        "newOrder": "Nieuwe Bestelling",
+        "createInvoice": "Factuur Maken",
+        "addCustomer": "Klant Toevoegen",
+        "addProduct": "Product Toevoegen",
+        "viewReports": "Rapporten Bekijken",
+        "recordPayment": "Betaling Registreren"
+      },
+      "orderStatus": {
+        "completed": "Voltooid",
+        "pending": "In afwachting",
+        "processing": "In verwerking",
+        "cancelled": "Geannuleerd",
+        "shipped": "Verzonden",
+        "delivered": "Geleverd"
+      },
+      "messages": {
+        "noSalesData": "Geen verkoopgegevens beschikbaar",
+        "noRecentOrders": "Geen recente bestellingen"
+      },
+      "common": {
+        "unknown": "Onbekend"
+      }
     }
   },
   "status": {

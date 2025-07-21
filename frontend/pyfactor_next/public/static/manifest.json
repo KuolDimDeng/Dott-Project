@@ -1,8 +1,8 @@
 
 {
-  "name": "Dott Business",
+  "name": "Dott: Global Business Platform",
   "short_name": "Dott",
-  "description": "All-in-one business management platform for small businesses",
+  "description": "Global business management platform for small businesses",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#FFFFFF",

@@ -54,7 +54,7 @@ const ViewGeofenceModal = ({ isOpen, onClose, geofence, onEdit }) => {
             <MapPinIcon className="h-6 w-6 text-blue-600 mr-2" />
             <div>
               <h3 className="text-lg font-medium text-gray-900">{geofence.name}</h3>
-              <p className="text-sm text-gray-600">{formatGeofenceType(geofence.geofence_type)}</p>
+              <p className="text-sm text-gray-600">{formatGeofenceType(geofence.location_type)}</p>
             </div>
           </div>
           <div className="flex items-center space-x-2">
@@ -98,7 +98,7 @@ const ViewGeofenceModal = ({ isOpen, onClose, geofence, onEdit }) => {
                   </div>
                   <div>
                     <span className="text-sm text-gray-600">Type:</span>
-                    <p className="text-sm text-gray-900">{formatGeofenceType(geofence.geofence_type)}</p>
+                    <p className="text-sm text-gray-900">{formatGeofenceType(geofence.location_type)}</p>
                   </div>
                 </div>
               </div>
@@ -108,7 +108,7 @@ const ViewGeofenceModal = ({ isOpen, onClose, geofence, onEdit }) => {
                 <h4 className="text-sm font-medium text-gray-900 mb-3">Enforcement Rules</h4>
                 <div className="space-y-2">
                   <div className="flex items-center">
-                    {geofence.enforce_clock_in ? (
+                    {geofence.require_for_clock_in ? (
                       <CheckCircleIcon className="h-4 w-4 text-green-600 mr-2" />
                     ) : (
                       <XCircleIcon className="h-4 w-4 text-gray-400 mr-2" />
@@ -116,7 +116,7 @@ const ViewGeofenceModal = ({ isOpen, onClose, geofence, onEdit }) => {
                     <span className="text-sm text-gray-700">Require location for clock in</span>
                   </div>
                   <div className="flex items-center">
-                    {geofence.enforce_clock_out ? (
+                    {geofence.require_for_clock_out ? (
                       <CheckCircleIcon className="h-4 w-4 text-green-600 mr-2" />
                     ) : (
                       <XCircleIcon className="h-4 w-4 text-gray-400 mr-2" />
@@ -124,7 +124,7 @@ const ViewGeofenceModal = ({ isOpen, onClose, geofence, onEdit }) => {
                     <span className="text-sm text-gray-700">Require location for clock out</span>
                   </div>
                   <div className="flex items-center">
-                    {geofence.auto_clock_out ? (
+                    {geofence.auto_clock_out_on_exit ? (
                       <CheckCircleIcon className="h-4 w-4 text-green-600 mr-2" />
                     ) : (
                       <XCircleIcon className="h-4 w-4 text-gray-400 mr-2" />

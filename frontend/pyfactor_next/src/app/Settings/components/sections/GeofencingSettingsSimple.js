@@ -27,14 +27,14 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
   const mapRef = useRef(null);
   const [geofenceData, setGeofenceData] = useState({
     name: '',
-    geofence_type: 'office',
+    location_type: 'OFFICE',  // Changed from geofence_type to location_type (backend field name)
     center_latitude: null,
     center_longitude: null,
     radius: 100,
-    enforce_clock_in: true,
-    enforce_clock_out: true,
-    auto_clock_out: false,
-    alert_on_unexpected_exit: true
+    require_for_clock_in: true,  // Changed from enforce_clock_in (backend field name)
+    require_for_clock_out: false,  // Changed from enforce_clock_out (backend field name)
+    auto_clock_out_on_exit: false,  // Changed from auto_clock_out (backend field name)
+    alert_on_unexpected_exit: false
   });
 
   // Load Google Maps script
@@ -222,7 +222,13 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
       }
     } catch (error) {
       console.error('[GeofenceSetup] Error creating geofence:', error);
-      const errorMessage = error.response?.data?.detail || error.response?.data?.error || 'Failed to create geofence';
+      // Safely access error properties
+      let errorMessage = 'Failed to create geofence';
+      if (error && error.response && error.response.data) {
+        errorMessage = error.response.data.detail || error.response.data.error || errorMessage;
+      } else if (error && error.message) {
+        errorMessage = error.message;
+      }
       toast.error(errorMessage);
     } finally {
       setSaving(false);
@@ -253,16 +259,16 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
           Location Type
         </label>
         <select
-          value={geofenceData.geofence_type}
-          onChange={(e) => setGeofenceData(prev => ({ ...prev, geofence_type: e.target.value }))}
+          value={geofenceData.location_type}
+          onChange={(e) => setGeofenceData(prev => ({ ...prev, location_type: e.target.value }))}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
         >
-          <option value="office">Office</option>
-          <option value="construction_site">Construction Site</option>
-          <option value="client_location">Client Location</option>
-          <option value="delivery_zone">Delivery Zone</option>
-          <option value="field_location">Field Location</option>
-          <option value="custom">Custom</option>
+          <option value="OFFICE">Office</option>
+          <option value="CONSTRUCTION">Construction Site</option>
+          <option value="CLIENT">Client Location</option>
+          <option value="DELIVERY">Delivery Zone</option>
+          <option value="FIELD">Field Location</option>
+          <option value="CUSTOM">Custom</option>
         </select>
       </div>
 
@@ -297,8 +303,8 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
         <label className="flex items-center">
           <input
             type="checkbox"
-            checked={geofenceData.enforce_clock_in}
-            onChange={(e) => setGeofenceData(prev => ({ ...prev, enforce_clock_in: e.target.checked }))}
+            checked={geofenceData.require_for_clock_in}
+            onChange={(e) => setGeofenceData(prev => ({ ...prev, require_for_clock_in: e.target.checked }))}
             className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
           />
           <span className="ml-2 text-sm text-gray-700">Require location for clock in</span>
@@ -308,8 +314,8 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
         <label className="flex items-center">
           <input
             type="checkbox"
-            checked={geofenceData.enforce_clock_out}
-            onChange={(e) => setGeofenceData(prev => ({ ...prev, enforce_clock_out: e.target.checked }))}
+            checked={geofenceData.require_for_clock_out}
+            onChange={(e) => setGeofenceData(prev => ({ ...prev, require_for_clock_out: e.target.checked }))}
             className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
           />
           <span className="ml-2 text-sm text-gray-700">Require location for clock out</span>
@@ -319,8 +325,8 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
         <label className="flex items-center">
           <input
             type="checkbox"
-            checked={geofenceData.auto_clock_out}
-            onChange={(e) => setGeofenceData(prev => ({ ...prev, auto_clock_out: e.target.checked }))}
+            checked={geofenceData.auto_clock_out_on_exit}
+            onChange={(e) => setGeofenceData(prev => ({ ...prev, auto_clock_out_on_exit: e.target.checked }))}
             className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
           />
           <span className="ml-2 text-sm text-gray-700">Auto clock-out when leaving</span>

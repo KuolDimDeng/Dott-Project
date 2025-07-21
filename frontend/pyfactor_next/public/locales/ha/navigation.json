@@ -112,7 +112,91 @@
   "dashboard": {
     "businessOverview": {
       "title": "Bayyanannen Kasuwanci",
-      "subtitle": "Cikakken hoto na aikin kasuwancin ku"
+      "subtitle": "Cikakken hoto na aikin kasuwancin ku",
+      "sections": {
+        "todaysPerformance": "Aikin Yau",
+        "financialPosition": "Matsayin Kuɗi",
+        "cashFlowRevenue": "Kwararar Kuɗi & Kuɗin Shiga",
+        "operationsOverview": "Cikakken Bayani na Ayyuka",
+        "topSellingProducts": "Kayayyakin da Suka Fi Sayarwa",
+        "recentOrders": "Odar Kwanan Nan",
+        "quickActions": "Ayyuka Masu Sauri"
+      },
+      "metrics": {
+        "todaysRevenue": "Kuɗin Shiga na Yau",
+        "newOrders": "Sabbin Oda",
+        "newCustomers": "Sabbin Abokan Ciniki",
+        "lowStockAlert": "Gargaɗin Ƙarancin Kaya",
+        "totalAssets": "Jimillar Dukiya",
+        "totalLiabilities": "Jimillar Basussuka",
+        "equity": "Dukiya",
+        "bankBalance": "Ma'aunin Banki",
+        "monthlyRevenue": "Kuɗin Shiga na Wata",
+        "accountsReceivable": "Asusu Mai Karɓa",
+        "profitMargin": "Ribar Riba",
+        "weeklyRevenue": "Kuɗin Shiga na Mako",
+        "totalOrders": "Jimillar Oda",
+        "activeCustomers": "Abokan Ciniki Masu Aiki",
+        "productCatalog": "Littafin Kayayyaki",
+        "invoiceStatus": "Matsayin Daftari"
+      },
+      "timeframes": {
+        "soFarToday": "Har zuwa yanzu yau",
+        "last7Days": "Kwanaki 7 da suka wuce",
+        "last30Days": "Kwanaki 30 da suka wuce"
+      },
+      "statuses": {
+        "pendingProcessing": "Ana jiran sarrafa",
+        "productsNeedReorder": "Kayayyakin da ke buƙatar sake oda",
+        "overdueCount": "{{count}} sun ƙare",
+        "completedCount": "{{count}} an kammala",
+        "ofTotalCount": "daga cikin {{count}} duka",
+        "lowStockCount": "{{count}} ƙarancin kaya",
+        "paidInvoices": "Daftarin da aka biya",
+        "productsSold": "{{count}} an sayar"
+      },
+      "descriptions": {
+        "cashInventoryReceivables": "Tsabar Kuɗi + Kayayyaki + Abubuwan Karɓa",
+        "payablesLoans": "Abubuwan Biya + Lamuni",
+        "assetsMinusLiabilities": "Dukiya - Basussuka",
+        "allAccounts": "Duk asusun",
+        "revenueMinusExpenses": "Kuɗin shiga - Kashe kuɗi"
+      },
+      "alerts": {
+        "requiresAttention": "Yana Buƙatar Kulawa",
+        "overdueInvoices": "{{count}} daftarin da suka ƙare",
+        "lowStock": "{{count}} kayayyaki masu ƙarancin kaya",
+        "pendingOrders": "{{count}} oda masu jira"
+      },
+      "actions": {
+        "refresh": "Sabunta",
+        "reviewNow": "Duba yanzu",
+        "reorder": "Sake oda",
+        "process": "Sarrafa"
+      },
+      "quickActions": {
+        "newOrder": "Sabon Oda",
+        "createInvoice": "Ƙirƙiri Daftari",
+        "addCustomer": "Ƙara Abokin Ciniki",
+        "addProduct": "Ƙara Kayayyaki",
+        "viewReports": "Duba Rahotanni",
+        "recordPayment": "Rikodin Biyan Kuɗi"
+      },
+      "orderStatus": {
+        "completed": "An kammala",
+        "pending": "Ana jira",
+        "processing": "Ana aiwatarwa",
+        "cancelled": "An soke",
+        "shipped": "An aika",
+        "delivered": "An kai"
+      },
+      "messages": {
+        "noSalesData": "Babu bayanan tallace-tallace",
+        "noRecentOrders": "Babu oda na kwanan nan"
+      },
+      "common": {
+        "unknown": "Ba a sani ba"
+      }
     }
   },
   "status": {

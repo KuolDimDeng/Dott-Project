@@ -112,7 +112,91 @@
   "dashboard": {
     "businessOverview": {
       "title": "ビジネス概要",
-      "subtitle": "ビジネスパフォーマンスの完全なスナップショット"
+      "subtitle": "ビジネスパフォーマンスの完全なスナップショット",
+      "sections": {
+        "todaysPerformance": "今日のパフォーマンス",
+        "financialPosition": "財務状況",
+        "cashFlowRevenue": "キャッシュフローと収益",
+        "operationsOverview": "業務概要",
+        "topSellingProducts": "人気商品",
+        "recentOrders": "最近の注文",
+        "quickActions": "クイックアクション"
+      },
+      "metrics": {
+        "todaysRevenue": "今日の収益",
+        "newOrders": "新規注文",
+        "newCustomers": "新規顧客",
+        "lowStockAlert": "在庫不足アラート",
+        "totalAssets": "総資産",
+        "totalLiabilities": "総負債",
+        "equity": "資本",
+        "bankBalance": "銀行残高",
+        "monthlyRevenue": "月次収益",
+        "accountsReceivable": "売掛金",
+        "profitMargin": "利益率",
+        "weeklyRevenue": "週次収益",
+        "totalOrders": "総注文数",
+        "activeCustomers": "アクティブ顧客",
+        "productCatalog": "商品カタログ",
+        "invoiceStatus": "請求書ステータス"
+      },
+      "timeframes": {
+        "soFarToday": "今日のこれまで",
+        "last7Days": "過去7日間",
+        "last30Days": "過去30日間"
+      },
+      "statuses": {
+        "pendingProcessing": "処理待ち",
+        "productsNeedReorder": "再注文が必要な商品",
+        "overdueCount": "{{count}}件の期限切れ",
+        "completedCount": "{{count}}件完了",
+        "ofTotalCount": "合計{{count}}件中",
+        "lowStockCount": "{{count}}件の在庫不足",
+        "paidInvoices": "支払済み請求書",
+        "productsSold": "{{count}}個販売"
+      },
+      "descriptions": {
+        "cashInventoryReceivables": "現金 + 在庫 + 売掛金",
+        "payablesLoans": "買掛金 + 借入金",
+        "assetsMinusLiabilities": "資産 - 負債",
+        "allAccounts": "すべてのアカウント",
+        "revenueMinusExpenses": "収益 - 費用"
+      },
+      "alerts": {
+        "requiresAttention": "注意が必要",
+        "overdueInvoices": "{{count}}件の期限切れ請求書",
+        "lowStock": "{{count}}件の商品が在庫不足",
+        "pendingOrders": "{{count}}件の保留中注文"
+      },
+      "actions": {
+        "refresh": "更新",
+        "reviewNow": "今すぐ確認",
+        "reorder": "再注文",
+        "process": "処理"
+      },
+      "quickActions": {
+        "newOrder": "新規注文",
+        "createInvoice": "請求書作成",
+        "addCustomer": "顧客追加",
+        "addProduct": "商品追加",
+        "viewReports": "レポート表示",
+        "recordPayment": "支払い記録"
+      },
+      "orderStatus": {
+        "completed": "完了",
+        "pending": "保留中",
+        "processing": "処理中",
+        "cancelled": "キャンセル",
+        "shipped": "発送済",
+        "delivered": "配達済"
+      },
+      "messages": {
+        "noSalesData": "販売データがありません",
+        "noRecentOrders": "最近の注文がありません"
+      },
+      "common": {
+        "unknown": "不明"
+      }
     }
   },
   "status": {

@@ -112,7 +112,91 @@
   "dashboard": {
     "businessOverview": {
       "title": "Tổng Quan Kinh Doanh",
-      "subtitle": "Cái nhìn toàn diện về hiệu suất kinh doanh của bạn"
+      "subtitle": "Cái nhìn toàn diện về hiệu suất kinh doanh của bạn",
+      "sections": {
+        "todaysPerformance": "Hiệu Suất Hôm Nay",
+        "financialPosition": "Tình Hình Tài Chính",
+        "cashFlowRevenue": "Dòng Tiền & Doanh Thu",
+        "operationsOverview": "Tổng Quan Hoạt Động",
+        "topSellingProducts": "Sản Phẩm Bán Chạy Nhất",
+        "recentOrders": "Đơn Hàng Gần Đây",
+        "quickActions": "Hành Động Nhanh"
+      },
+      "metrics": {
+        "todaysRevenue": "Doanh Thu Hôm Nay",
+        "newOrders": "Đơn Hàng Mới",
+        "newCustomers": "Khách Hàng Mới",
+        "lowStockAlert": "Cảnh Báo Hàng Tồn Kho Thấp",
+        "totalAssets": "Tổng Tài Sản",
+        "totalLiabilities": "Tổng Nợ Phải Trả",
+        "equity": "Vốn Chủ Sở Hữu",
+        "bankBalance": "Số Dư Ngân Hàng",
+        "monthlyRevenue": "Doanh Thu Hàng Tháng",
+        "accountsReceivable": "Khoản Phải Thu",
+        "profitMargin": "Biên Lợi Nhuận",
+        "weeklyRevenue": "Doanh Thu Hàng Tuần",
+        "totalOrders": "Tổng Đơn Hàng",
+        "activeCustomers": "Khách Hàng Hoạt Động",
+        "productCatalog": "Danh Mục Sản Phẩm",
+        "invoiceStatus": "Trạng Thái Hóa Đơn"
+      },
+      "timeframes": {
+        "soFarToday": "Tính đến hiện tại hôm nay",
+        "last7Days": "7 ngày qua",
+        "last30Days": "30 ngày qua"
+      },
+      "statuses": {
+        "pendingProcessing": "Đang chờ xử lý",
+        "productsNeedReorder": "Sản phẩm cần đặt hàng lại",
+        "overdueCount": "{{count}} quá hạn",
+        "completedCount": "{{count}} hoàn thành",
+        "ofTotalCount": "trong tổng số {{count}}",
+        "lowStockCount": "{{count}} tồn kho thấp",
+        "paidInvoices": "Hóa đơn đã thanh toán",
+        "productsSold": "{{count}} đã bán"
+      },
+      "descriptions": {
+        "cashInventoryReceivables": "Tiền mặt + Hàng tồn kho + Khoản phải thu",
+        "payablesLoans": "Khoản phải trả + Các khoản vay",
+        "assetsMinusLiabilities": "Tài sản - Nợ phải trả",
+        "allAccounts": "Tất cả tài khoản",
+        "revenueMinusExpenses": "Doanh thu - Chi phí"
+      },
+      "alerts": {
+        "requiresAttention": "Cần Chú Ý",
+        "overdueInvoices": "{{count}} hóa đơn quá hạn",
+        "lowStock": "{{count}} sản phẩm tồn kho thấp",
+        "pendingOrders": "{{count}} đơn hàng đang chờ"
+      },
+      "actions": {
+        "refresh": "Làm mới",
+        "reviewNow": "Xem xét ngay",
+        "reorder": "Đặt hàng lại",
+        "process": "Xử lý"
+      },
+      "quickActions": {
+        "newOrder": "Đơn Hàng Mới",
+        "createInvoice": "Tạo Hóa Đơn",
+        "addCustomer": "Thêm Khách Hàng",
+        "addProduct": "Thêm Sản Phẩm",
+        "viewReports": "Xem Báo Cáo",
+        "recordPayment": "Ghi Nhận Thanh Toán"
+      },
+      "orderStatus": {
+        "completed": "Hoàn thành",
+        "pending": "Đang chờ",
+        "processing": "Đang xử lý",
+        "cancelled": "Đã hủy",
+        "shipped": "Đã gửi",
+        "delivered": "Đã giao"
+      },
+      "messages": {
+        "noSalesData": "Không có dữ liệu bán hàng",
+        "noRecentOrders": "Không có đơn hàng gần đây"
+      },
+      "common": {
+        "unknown": "Không xác định"
+      }
     }
   },
   "status": {
