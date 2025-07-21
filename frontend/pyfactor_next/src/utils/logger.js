@@ -156,9 +156,9 @@ export const logger = {
     if (LOG_LEVELS[minLevel] <= LOG_LEVELS.error) {
       const logData = logger.fmt(message, {
         error: error ? {
-          message: error.message,
-          stack: error.stack,
-          name: error.name,
+          message: error?.message || String(error),
+          stack: error?.stack || null,
+          name: error?.name || 'UnknownError',
         } : null,
       });
       

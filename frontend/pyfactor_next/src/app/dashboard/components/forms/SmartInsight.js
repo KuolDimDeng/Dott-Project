@@ -8,6 +8,7 @@ import { getSecureTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
 import StandardSpinner, { CenteredSpinner, ButtonSpinner } from '@/components/ui/StandardSpinner';
 import { parseVisualizationData, shouldShowVisualization } from '@/utils/visualizationUtils';
+import { useTranslation } from 'react-i18next';
 
 // Dynamic import for visualization to prevent SSR issues
 const SmartInsightVisualization = React.lazy(() => 

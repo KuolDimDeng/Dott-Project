@@ -174,14 +174,11 @@ export default function Highlights() {
                     <div className="mt-6">
                       <p className="text-sm font-medium text-gray-500 mb-3">{t('highlights.languages.availableIn', 'Available in:')}</p>
                       <div className="flex flex-wrap gap-2">
-                        {['English', 'Español', 'Français', 'Português', 'Deutsch', '中文', 'العربية', 'Kiswahili', 'हिन्दी', 'Bahasa', 'Tiếng Việt', 'ภาษาไทย'].map((lang) => (
+                        {['English', 'Español', 'Français', 'Português', 'Deutsch', '中文', 'العربية', 'Kiswahili', 'हिन्दी', 'Русский', '日本語', 'Türkçe', 'Bahasa Indonesia', 'Tiếng Việt', 'Nederlands', 'Hausa', 'Yorùbá', 'አማርኛ', 'isiZulu', '한국어'].map((lang) => (
                           <span key={lang} className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">
                             {lang}
                           </span>
                         ))}
-                        <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm font-medium">
-                          {t('highlights.languages.more', '+10 more')}
-                        </span>
                       </div>
                     </div>
                   )}
