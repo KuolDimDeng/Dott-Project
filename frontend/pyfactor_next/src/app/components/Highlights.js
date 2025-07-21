@@ -1,14 +1,17 @@
 'use client';
 
-
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Image from 'next/image';
+import FeatureDetailModal from './FeatureDetailModal';
 
 export default function Highlights() {
   const { t } = useTranslation();
+  const [openModal, setOpenModal] = useState(null);
   
   const highlights = [
     {
+      key: 'mobile',
       title: t('highlights.mobile.title', 'Mobile Application'),
       description: t('highlights.mobile.description', 'Access your business data anytime, anywhere with our powerful mobile app. Manage inventory, process sales, and view real-time reports on the go.'),
       image: '/static/images/mobile-app-screenshot.jpg',
@@ -16,6 +19,7 @@ export default function Highlights() {
       reverse: false,
     },
     {
+      key: 'pos',
       title: t('highlights.pos.title', 'POS and Barcode Scanning'),
       description: t('highlights.pos.description', 'Transform any device into a powerful point-of-sale system. Scan barcodes instantly, process sales quickly, track inventory in real-time, and accept all payment methods including cash, cards, and mobile money.'),
       image: '/static/images/pos-barcode-screenshot.jpg',
@@ -23,6 +27,7 @@ export default function Highlights() {
       reverse: true,
     },
     {
+      key: 'ai',
       title: t('highlights.ai.title', 'AI-Powered Insights'),
       description: t('highlights.ai.description', 'Get smart recommendations and predictive analytics based on your business data. Our AI helps you forecast demand, optimize inventory, and identify growth opportunities.'),
       image: '/static/images/ai-dashboard-screenshot.jpg',
@@ -30,6 +35,7 @@ export default function Highlights() {
       reverse: false,
     },
     {
+      key: 'geofencing',
       title: t('highlights.geofencing.title', 'Geofencing & Location Tracking'),
       description: t('highlights.geofencing.description', 'Ensure accurate time tracking with GPS-based clock in/out. Perfect for field teams, delivery drivers, and remote workers. Set up virtual boundaries for work sites and get alerts when employees enter or leave designated areas.'),
       image: '/static/images/geofencing-screenshot.jpg',
@@ -37,6 +43,7 @@ export default function Highlights() {
       reverse: true,
     },
     {
+      key: 'languages',
       title: t('highlights.languages.title', '20+ Languages Supported'),
       description: t('highlights.languages.description', 'Reach customers and manage your business in your preferred language. From English to Swahili, Spanish to Mandarin, we support over 20 languages to make Dott accessible to businesses worldwide.'),
       image: '/static/images/languages-screenshot.jpg',
@@ -184,8 +191,8 @@ export default function Highlights() {
                   )}
                   
                   <div className="mt-8">
-                    <a
-                      href="#"
+                    <button
+                      onClick={() => setOpenModal(highlight.key)}
                       className="inline-flex items-center text-primary-main font-medium hover:text-primary-dark"
                     >
                       {t('highlights.learnMore', 'Learn more')}
@@ -202,7 +209,7 @@ export default function Highlights() {
                           clipRule="evenodd" 
                         />
                       </svg>
-                    </a>
+                    </button>
                   </div>
                 </div>
                 
@@ -239,6 +246,13 @@ export default function Highlights() {
           ))}
         </div>
       </div>
+      
+      {/* Feature Detail Modal */}
+      <FeatureDetailModal
+        isOpen={openModal !== null}
+        onClose={() => setOpenModal(null)}
+        featureKey={openModal}
+      />
     </div>
   );
 }
