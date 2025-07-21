@@ -910,5 +910,61 @@
       "label": "Vipengele muhimu:"
     },
     "learnMore": "Jifunze zaidi"
+  },
+  "builtForYou": {
+    "title": "Imejengwa Kwa Ajili Yako",
+    "heading": "Simamia biashara yako kama Mtaalamu!",
+    "subheading": "Imejengwa kwa wamiliki biashara kama wewe",
+    "cta": "Jiunge na maelfu ya wamiliki biashara duniani kote wanaomwamini Dott kusimamia biashara zao",
+    "types": {
+      "freelancers": {
+        "title": "Wafanyakazi Huru",
+        "description": "Fuatilia miradi, tuma bili kwa wateja mara moja, na simamia fedha zako mahali pamoja. Pata malipo haraka zaidi kwa ankara za kitaalamu."
+      },
+      "contractors": {
+        "title": "Makandarasi",
+        "description": "Simamia miradi mingi, fuatilia gharama za vifaa na kazi, na tuma makadirio ya kitaalamu. Weka mtiririko wako wa fedha taslimu wenye afya."
+      },
+      "entrepreneurs": {
+        "title": "Wajasiriamali",
+        "description": "Panua kampuni yako chipukizi kwa zana zenye nguvu za hesabu, mauzo, na ufuatiliaji wa fedha. Fanya maamuzi yanayotokana na data."
+      },
+      "consultants": {
+        "title": "Washauri",
+        "description": "Toza kwa saa au mradi, fuatilia matumizi, na simamia wateja wengi bila shida. Kutoa ankara za kitaalamu kumejumuishwa."
+      },
+      "retail": {
+        "title": "Wamiliki wa Maduka ya Rejareja",
+        "description": "Simamia hesabu kwa kupima msimbo wa pau, fuatilia mauzo, na pokea njia nyingi za malipo ikijumuisha pesa za simu."
+      },
+      "streetVendors": {
+        "title": "Wachuuzi wa Mitaani",
+        "description": "Muundo rahisi wa kwanza-simu kufuatilia mauzo ya kila siku, kusimamia hesabu na kupokea malipo ya kidijitali ukiwa safarini."
+      },
+      "marketStalls": {
+        "title": "Wamiliki wa Vibanda vya Soko",
+        "description": "Kamili kwa siku za soko zenye shughuli nyingi. Uingizaji wa mauzo wa haraka, tahadhari za hesabu na ufuatiliaji wa faida za kila siku katika sarafu yako ya mtaa."
+      },
+      "mobileMoneyAgents": {
+        "title": "Mawakala wa Pesa za Simu",
+        "description": "Fuatilia miamala, simamia mizania ya float na tengeneza ripoti kwa waendeshaji wa mitandao. Imejengwa kwa M-Pesa, MTN na zaidi."
+      },
+      "restaurants": {
+        "title": "Wamiliki wa Mikahawa Midogo",
+        "description": "Simamia maagizo, fuatilia viungo, hesabu gharama za chakula na shughulikia vyakula vya kuliwa na vya kuchukua kwa ufanisi."
+      },
+      "serviceProviders": {
+        "title": "Watoa Huduma",
+        "description": "Kwa mafundi bomba, wahandisi umeme, mafundi na wengine. Panga kazi, fuatilia sehemu na tuma ankara baada ya kukamilika."
+      },
+      "onlineSellers": {
+        "title": "Wauzaji wa Mtandaoni",
+        "description": "Sawazisha hesabu katika majukwaa yote, simamia maagizo na fuatilia usafirishaji. Kamili kwa wauzaji wa mitandao ya kijamii."
+      },
+      "transport": {
+        "title": "Waendeshaji wa Usafiri",
+        "description": "Kwa madereva wa teksi, boda boda na bajaji. Fuatilia mapato ya kila siku, gharama za mafuta na ratiba za matengenezo."
+      }
+    }
   }
 }

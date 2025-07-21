@@ -864,5 +864,61 @@
     "allRightsReserved": "Alle Rechte vorbehalten.",
     "privacyPolicy": "Datenschutzrichtlinie",
     "termsOfService": "Nutzungsbedingungen"
+  },
+  "builtForYou": {
+    "title": "Für Sie gemacht",
+    "heading": "Verwalten Sie Ihr Unternehmen wie ein Profi!",
+    "subheading": "Für Unternehmer wie Sie entwickelt",
+    "cta": "Schließen Sie sich Tausenden von Unternehmern weltweit an, die Dott für die Verwaltung ihres Unternehmens vertrauen",
+    "types": {
+      "freelancers": {
+        "title": "Freiberufler",
+        "description": "Verfolgen Sie Projekte, stellen Sie Kunden sofort Rechnungen und verwalten Sie Ihre Finanzen an einem Ort. Werden Sie mit professionellen Rechnungen schneller bezahlt."
+      },
+      "contractors": {
+        "title": "Auftragnehmer",
+        "description": "Verwalten Sie mehrere Projekte, verfolgen Sie Material- und Arbeitskosten und senden Sie professionelle Angebote. Halten Sie Ihren Cashflow gesund."
+      },
+      "entrepreneurs": {
+        "title": "Unternehmer",
+        "description": "Skalieren Sie Ihr Startup mit leistungsstarken Tools für Inventar, Vertrieb und Finanzverfolgung. Treffen Sie datengestützte Entscheidungen."
+      },
+      "consultants": {
+        "title": "Berater",
+        "description": "Rechnen Sie nach Stunden oder Projekt ab, verfolgen Sie Ausgaben und verwalten Sie mühelos mehrere Kunden. Professionelle Rechnungsstellung inklusive."
+      },
+      "retail": {
+        "title": "Einzelhändler",
+        "description": "Verwalten Sie Lagerbestände mit Barcode-Scanning, verfolgen Sie Verkäufe und akzeptieren Sie mehrere Zahlungsmethoden einschließlich Mobile Money."
+      },
+      "streetVendors": {
+        "title": "Straßenhändler",
+        "description": "Einfaches Mobile-First-Design zur Verfolgung täglicher Verkäufe, Verwaltung des Lagerbestands und Akzeptanz digitaler Zahlungen unterwegs."
+      },
+      "marketStalls": {
+        "title": "Marktstandbesitzer",
+        "description": "Perfekt für geschäftige Markttage. Schnelle Verkaufseingabe, Lagerbestandswarnungen und tägliche Gewinnverfolgung in Ihrer lokalen Währung."
+      },
+      "mobileMoneyAgents": {
+        "title": "Mobile Money Agenten",
+        "description": "Verfolgen Sie Transaktionen, verwalten Sie Float-Salden und erstellen Sie Berichte für Netzbetreiber. Gebaut für M-Pesa, MTN und mehr."
+      },
+      "restaurants": {
+        "title": "Kleine Restaurantbesitzer",
+        "description": "Verwalten Sie Bestellungen, verfolgen Sie Zutaten, berechnen Sie Lebensmittelkosten und handhaben Sie sowohl Dine-in als auch Takeaway effizient."
+      },
+      "serviceProviders": {
+        "title": "Dienstleister",
+        "description": "Für Klempner, Elektriker, Mechaniker und mehr. Planen Sie Aufträge, verfolgen Sie Teile und stellen Sie nach Abschluss Rechnungen."
+      },
+      "onlineSellers": {
+        "title": "Online-Verkäufer",
+        "description": "Synchronisieren Sie Lagerbestände über Plattformen hinweg, verwalten Sie Bestellungen und verfolgen Sie den Versand. Perfekt für Social-Media-Verkäufer."
+      },
+      "transport": {
+        "title": "Transportbetreiber",
+        "description": "Für Taxi-, Boda-Boda- und Tuk-Tuk-Betreiber. Verfolgen Sie tägliche Einnahmen, Kraftstoffkosten und Wartungspläne."
+      }
+    }
   }
 }

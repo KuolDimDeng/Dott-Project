@@ -542,6 +542,62 @@
       }
     }
   },
+  "builtForYou": {
+    "title": "A Kọ́ Fún Ẹ",
+    "heading": "Ṣàkóso iṣẹ́ rẹ bí Ọ̀jọ́gbọ́n!",
+    "subheading": "A kọ́ fún àwọn olówó iṣẹ́ bí ìwọ",
+    "cta": "Darapọ̀ mọ́ ẹgbẹẹgbẹ̀rún àwọn olówó iṣẹ́ kárí ayé tí wọ́n gbẹ́kẹ̀lé Dott láti ṣàkóso iṣẹ́ wọn",
+    "types": {
+      "freelancers": {
+        "title": "Àwọn Aláìgbéṣẹ́",
+        "description": "Ṣe àbójútó iṣẹ́ àkànṣe, fi ìwé ìsanwó ránṣẹ́ sí àwọn oníbàárà lẹ́sẹ̀kẹsẹ̀, àti ṣàkóso owó rẹ ní ibi kan. Gba owó kíákíá pẹ̀lú àwọn ìwé ìsanwó tó dára."
+      },
+      "contractors": {
+        "title": "Àwọn Kọ́ntírátọ̀",
+        "description": "Ṣàkóso ọ̀pọ̀ iṣẹ́ àkànṣe, ṣe àkóso àwọn ohun èlò àti owó iṣẹ́, kí o sì fi àwọn ìkànìyàn tó dára ránṣẹ́. Jẹ́ kí owó ń wọlé dáradára."
+      },
+      "entrepreneurs": {
+        "title": "Àwọn Òṣèré Iṣẹ́",
+        "description": "Mú iṣẹ́ rẹ dàgbà pẹ̀lú àwọn irinṣẹ́ tó lágbára fún àjọjọpọ̀ ọjà, títà, àti àbójútó owó. Ṣe ìpinnu tó dá lórí dátà."
+      },
+      "consultants": {
+        "title": "Àwọn Olùdámọ̀ràn",
+        "description": "Gba owó nípa wákàtí tàbí iṣẹ́ àkànṣe, ṣe àbójútó ìnáwó, kí o sì ṣàkóso ọ̀pọ̀ oníbàárà láìní wàhálà. Ìwé ìsanwó ọ̀jọ́gbọ́n ti wà nínú."
+      },
+      "retail": {
+        "title": "Àwọn Olóhun Ṣọ́ọ̀bù Kékeré",
+        "description": "Ṣàkóso àjọjọpọ̀ ọjà pẹ̀lú yíyà báàkódù, ṣe àbójútó títà, àti gba ọ̀nà ìsanwó púpọ̀ pẹ̀lú owó fóònù."
+      },
+      "streetVendors": {
+        "title": "Àwọn Olùtajà Òpópónà",
+        "description": "Ìṣe tó rọrùn fún fóònù láti ṣe àbójútó títà ojoojúmọ́, ṣàkóso àjọjọpọ̀ ọjà, àti gba ìsanwó oní nọ́mbà lọ́nà."
+      },
+      "marketStalls": {
+        "title": "Àwọn Olóhun Ọjà",
+        "description": "Ó dára fún àwọn ọjọ́ ọjà tó kún. Títẹ̀ sínú títà yára, ìkìlọ̀ àjọjọpọ̀ ọjà kékeré, àti àbójútó èrè ojoojúmọ́ nínú owó agbègbè rẹ."
+      },
+      "mobileMoneyAgents": {
+        "title": "Àwọn Aṣojú Owó Fóònù",
+        "description": "Ṣe àbójútó ìdúnàdúrà, ṣàkóso ìwọ̀ntúnwọ̀nsí, àti ṣe ìjábọ̀ fún àwọn olùpèsè ìlànà. A kọ́ fún M-Pesa, MTN, àti àwọn míràn."
+      },
+      "restaurants": {
+        "title": "Àwọn Olóhun Ilé Oúnjẹ Kékeré",
+        "description": "Ṣàkóso àṣẹ, ṣe àbójútó èròjà, ṣírò iye owó oúnjẹ, àti ṣàkóso jíjẹun nínú àti gbígbé lọ dáradára."
+      },
+      "serviceProviders": {
+        "title": "Àwọn Olùpèsè Iṣẹ́",
+        "description": "Fún àwọn plọ́mbà, oníná, mẹ́káníkì, àti bẹ́ẹ̀ bẹ́ẹ̀ lọ. Ṣètò iṣẹ́, ṣe àbójútó àwọn ẹ̀yà ara, àti fi ìwé ìsanwó ránṣẹ́ lẹ́yìn tí iṣẹ́ bá parí."
+      },
+      "onlineSellers": {
+        "title": "Àwọn Olùtajà Orí Ayélujára",
+        "description": "Mu àjọjọpọ̀ ọjà ṣe déédé láàárín àwọn pẹ̀pẹ̀, ṣàkóso àṣẹ, àti ṣe àbójútó gbígbé. Ó dára fún àwọn olùtajà orí ẹ̀rọ alátagbà."
+      },
+      "transport": {
+        "title": "Àwọn Oníṣẹ́ Ọkọ̀",
+        "description": "Fún àwọn taksi, boda boda, àti tuk-tuk. Ṣe àbójútó owó tó ń wọlé ojoojúmọ́, iye owó epo, àti ètò ìtọ́jú."
+      }
+    }
+  },
   "status": {
     "backToHome": "Pada si Ile",
     "title": "Ipo Eto Dott",

@@ -698,6 +698,62 @@
     "enterprisePlan": "Shirin Kamfani",
     "upgrade": "Haɓaka"
   },
+  "builtForYou": {
+    "title": "An Gina Don Ku",
+    "heading": "Sarrafa kasuwancin ku kamar Gwani!",
+    "subheading": "An gina don masu kasuwanci kamar ku",
+    "cta": "Ku shiga cikin dubban masu kasuwanci a duniya waɗanda suka amince da Dott don sarrafa kasuwancinsu",
+    "types": {
+      "freelancers": {
+        "title": "Masu aiki da kansu",
+        "description": "Bi ayyuka, aika lissafin kuɗi ga abokan ciniki nan take, da sarrafa kuɗinku duka a wuri ɗaya. Sami biyan kuɗi da sauri tare da ƙwararrun taluci."
+      },
+      "contractors": {
+        "title": "Ƴan kwangila",
+        "description": "Sarrafa ayyuka da yawa, bi sawun kayan aiki da farashin aiki, da aika ƙididdiga na ƙwararru. Kiyaye lafiyar kuɗin shiga."
+      },
+      "entrepreneurs": {
+        "title": "Masu kasuwanci",
+        "description": "Haɓaka farawa da ku tare da kayan aiki masu ƙarfi don kayayyaki, tallace-tallace, da bin diddigin kuɗi. Yi yanke shawara bisa bayani."
+      },
+      "consultants": {
+        "title": "Masu ba da shawara",
+        "description": "Yi lissafin kuɗi ta sa'a ko aikin, bi kashe kuɗi, da sarrafa abokan ciniki da yawa ba tare da wahala ba. An haɗa lissafin kuɗi na ƙwararru."
+      },
+      "retail": {
+        "title": "Masu shagunan dillalai",
+        "description": "Sarrafa kayayyaki tare da daukar barcode, bi tallace-tallace, da karɓar hanyoyin biyan kuɗi da yawa har da kuɗin wayar hannu."
+      },
+      "streetVendors": {
+        "title": "Masu sayar da kayayyaki a titi",
+        "description": "Sauƙi ƙira ta farko ta wayar hannu don bin tallace-tallace na yau da kullun, sarrafa kayayyaki, da karɓar biyan kuɗi na dijital yayin tafiya."
+      },
+      "marketStalls": {
+        "title": "Masu rumfunan kasuwa",
+        "description": "Cikakke don ranakun kasuwa masu yawa. Saurin shigar da tallace-tallace, faɗakarwar kayayyaki, da bin ribar yau da kullun cikin kuɗin yankinku."
+      },
+      "mobileMoneyAgents": {
+        "title": "Wakilai na Kuɗin Wayar Hannu",
+        "description": "Bi ma'amaloli, sarrafa ma'auni, da samar da rahotanni ga masu samar da hanyar sadarwa. An gina don M-Pesa, MTN, da ƙari."
+      },
+      "restaurants": {
+        "title": "Masu Ƙananan Gidajen Abinci",
+        "description": "Sarrafa oda, bi sinadaran, ƙididdige farashin abinci, da sarrafa duka cin abinci a ciki da ɗauka da kyau."
+      },
+      "serviceProviders": {
+        "title": "Masu Bayar da Sabis",
+        "description": "Ga masu gyaran bututu, masu aikin lantarki, makanikoci, da ƙari. Tsara ayyuka, bi sassa, da aika lissafin kuɗi bayan kammala."
+      },
+      "onlineSellers": {
+        "title": "Masu Sayar da Kayayyaki ta Yanar Gizo",
+        "description": "Daidaita kayayyaki a dandamali, sarrafa oda, da bin jigilar kaya. Cikakke ga masu siyar da kafofin watsa labarun."
+      },
+      "transport": {
+        "title": "Masu Ayyukan Sufuri",
+        "description": "Ga masu tasi, boda boda, da masu tuk-tuk. Bi kuɗin shiga na yau da kullun, farashin mai, da jadawalin kula da injuna."
+      }
+    }
+  },
   "status": {
     "backToHome": "Koma Gida",
     "title": "Matsayin Tsarin Dott",

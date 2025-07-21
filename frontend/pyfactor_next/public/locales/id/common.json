@@ -730,6 +730,62 @@
     "privacyPolicy": "Kebijakan Privasi",
     "termsOfService": "Ketentuan Layanan"
   },
+  "builtForYou": {
+    "title": "Dibuat Untuk Anda",
+    "heading": "Kelola bisnis Anda seperti seorang Pro!",
+    "subheading": "Dibuat untuk pemilik bisnis seperti Anda",
+    "cta": "Bergabunglah dengan ribuan pemilik bisnis di seluruh dunia yang mempercayai Dott untuk mengelola bisnis mereka",
+    "types": {
+      "freelancers": {
+        "title": "Freelancer",
+        "description": "Lacak proyek, kirim invoice kepada klien secara instan, dan kelola keuangan Anda semua di satu tempat. Dibayar lebih cepat dengan invoice profesional."
+      },
+      "contractors": {
+        "title": "Kontraktor",
+        "description": "Kelola beberapa proyek, lacak biaya material dan tenaga kerja, dan kirim penawaran profesional. Jaga arus kas Anda tetap sehat."
+      },
+      "entrepreneurs": {
+        "title": "Pengusaha",
+        "description": "Kembangkan startup Anda dengan alat yang kuat untuk inventaris, penjualan, dan pelacakan keuangan. Buat keputusan berdasarkan data."
+      },
+      "consultants": {
+        "title": "Konsultan",
+        "description": "Tagih per jam atau per proyek, lacak pengeluaran, dan kelola beberapa klien dengan mudah. Termasuk penagihan profesional."
+      },
+      "retail": {
+        "title": "Pemilik Toko Ritel",
+        "description": "Kelola inventaris dengan pemindaian barcode, lacak penjualan, dan terima berbagai metode pembayaran termasuk uang elektronik."
+      },
+      "streetVendors": {
+        "title": "Pedagang Kaki Lima",
+        "description": "Desain sederhana yang mengutamakan mobile untuk melacak penjualan harian, mengelola inventaris, dan menerima pembayaran digital saat bepergian."
+      },
+      "marketStalls": {
+        "title": "Pemilik Kios Pasar",
+        "description": "Sempurna untuk hari-hari pasar yang sibuk. Entri penjualan cepat, peringatan inventaris, dan pelacakan keuntungan harian dalam mata uang lokal Anda."
+      },
+      "mobileMoneyAgents": {
+        "title": "Agen Uang Elektronik",
+        "description": "Lacak transaksi, kelola saldo float, dan buat laporan untuk operator jaringan. Dibuat untuk M-Pesa, MTN, dan lainnya."
+      },
+      "restaurants": {
+        "title": "Pemilik Restoran Kecil",
+        "description": "Kelola pesanan, lacak bahan baku, hitung biaya makanan, dan tangani baik makan di tempat maupun bawa pulang dengan efisien."
+      },
+      "serviceProviders": {
+        "title": "Penyedia Jasa",
+        "description": "Untuk tukang ledeng, tukang listrik, mekanik, dan lainnya. Jadwalkan pekerjaan, lacak suku cadang, dan kirim invoice setelah selesai."
+      },
+      "onlineSellers": {
+        "title": "Penjual Online",
+        "description": "Sinkronkan inventaris di berbagai platform, kelola pesanan, dan lacak pengiriman. Sempurna untuk penjual media sosial."
+      },
+      "transport": {
+        "title": "Operator Transportasi",
+        "description": "Untuk operator taksi, ojek, dan bajaj. Lacak pendapatan harian, biaya bahan bakar, dan jadwal pemeliharaan."
+      }
+    }
+  },
   "highlights": {
     "eyebrow": "Manfaat Utama",
     "heading": "Mengapa bisnis memilih Dott",

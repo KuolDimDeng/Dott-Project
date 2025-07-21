@@ -730,6 +730,62 @@
     "privacyPolicy": "Privacybeleid",
     "termsOfService": "Servicevoorwaarden"
   },
+  "builtForYou": {
+    "title": "Gebouwd Voor U",
+    "heading": "Beheer uw bedrijf als een professional!",
+    "subheading": "Gebouwd voor ondernemers zoals u",
+    "cta": "Sluit u aan bij duizenden ondernemers wereldwijd die Dott vertrouwen om hun bedrijf te beheren",
+    "types": {
+      "freelancers": {
+        "title": "Freelancers",
+        "description": "Volg projecten, factureer klanten direct en beheer uw financiën allemaal op één plek. Word sneller betaald met professionele facturen."
+      },
+      "contractors": {
+        "title": "Aannemers",
+        "description": "Beheer meerdere projecten, volg materiaal- en arbeidskosten en verstuur professionele offertes. Houd uw cashflow gezond."
+      },
+      "entrepreneurs": {
+        "title": "Ondernemers",
+        "description": "Schaal uw startup met krachtige tools voor voorraad, verkoop en financiële tracking. Neem datagestuurde beslissingen."
+      },
+      "consultants": {
+        "title": "Consultants",
+        "description": "Factureer per uur of project, volg uitgaven en beheer meerdere klanten moeiteloos. Professionele facturering inbegrepen."
+      },
+      "retail": {
+        "title": "Winkeliers",
+        "description": "Beheer voorraad met barcodescanning, volg verkopen en accepteer meerdere betaalmethoden inclusief mobiel geld."
+      },
+      "streetVendors": {
+        "title": "Straatverkopers",
+        "description": "Eenvoudig mobiel-eerst ontwerp om dagelijkse verkopen te volgen, voorraad te beheren en digitale betalingen onderweg te accepteren."
+      },
+      "marketStalls": {
+        "title": "Marktkraamhouders",
+        "description": "Perfect voor drukke marktdagen. Snelle verkoopcategorie, voorraadarraringen en dagelijkse winsttracking in uw lokale valuta."
+      },
+      "mobileMoneyAgents": {
+        "title": "Mobiel Geld Agenten",
+        "description": "Volg transacties, beheer floatsaldi en genereer rapporten voor netwerkoperators. Gebouwd voor M-Pesa, MTN en meer."
+      },
+      "restaurants": {
+        "title": "Kleine Restauranthouders",
+        "description": "Beheer bestellingen, volg ingrediënten, bereken voedselkosten en handel zowel ter plaatse dineren als afhalen efficiënt af."
+      },
+      "serviceProviders": {
+        "title": "Dienstverleners",
+        "description": "Voor loodgieters, elektriciens, monteurs en meer. Plan klussen, volg onderdelen en factureer bij voltooiing."
+      },
+      "onlineSellers": {
+        "title": "Online Verkopers",
+        "description": "Synchroniseer voorraad over platforms, beheer bestellingen en volg verzendingen. Perfect voor social media verkopers."
+      },
+      "transport": {
+        "title": "Transportondernemers",
+        "description": "Voor taxi-, motor- en tuktukbestuurders. Volg dagelijkse inkomsten, brandstofkosten en onderhoudsschema's."
+      }
+    }
+  },
   "highlights": {
     "eyebrow": "Belangrijkste Voordelen",
     "heading": "Waarom bedrijven voor Dott kiezen",

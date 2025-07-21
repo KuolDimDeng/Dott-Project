@@ -864,5 +864,61 @@
     "allRightsReserved": "Todos os direitos reservados.",
     "privacyPolicy": "Política de Privacidade",
     "termsOfService": "Termos de Serviço"
+  },
+  "builtForYou": {
+    "title": "Feito Para Você",
+    "heading": "Gerencie seu negócio como um Profissional!",
+    "subheading": "Feito para proprietários de empresas como você",
+    "cta": "Junte-se a milhares de proprietários de empresas em todo o mundo que confiam no Dott para gerenciar seus negócios",
+    "types": {
+      "freelancers": {
+        "title": "Freelancers",
+        "description": "Acompanhe projetos, fature clientes instantaneamente e gerencie suas finanças em um só lugar. Receba pagamentos mais rápido com faturas profissionais."
+      },
+      "contractors": {
+        "title": "Empreiteiros",
+        "description": "Gerencie múltiplos projetos, acompanhe custos de materiais e mão de obra e envie orçamentos profissionais. Mantenha seu fluxo de caixa saudável."
+      },
+      "entrepreneurs": {
+        "title": "Empreendedores",
+        "description": "Escale sua startup com ferramentas poderosas para inventário, vendas e rastreamento financeiro. Tome decisões baseadas em dados."
+      },
+      "consultants": {
+        "title": "Consultores",
+        "description": "Cobre por hora ou projeto, acompanhe despesas e gerencie vários clientes sem esforço. Faturamento profissional incluído."
+      },
+      "retail": {
+        "title": "Proprietários de Lojas de Varejo",
+        "description": "Gerencie o inventário com leitura de código de barras, acompanhe vendas e aceite vários métodos de pagamento, incluindo dinheiro móvel."
+      },
+      "streetVendors": {
+        "title": "Vendedores de Rua",
+        "description": "Design simples para celular para rastrear vendas diárias, gerenciar inventário e aceitar pagamentos digitais em movimento."
+      },
+      "marketStalls": {
+        "title": "Proprietários de Barracas de Mercado",
+        "description": "Perfeito para dias movimentados de mercado. Entrada rápida de vendas, alertas de inventário e rastreamento de lucro diário em sua moeda local."
+      },
+      "mobileMoneyAgents": {
+        "title": "Agentes de Dinheiro Móvel",
+        "description": "Rastreie transações, gerencie saldos flutuantes e gere relatórios para operadoras de rede. Feito para M-Pesa, MTN e mais."
+      },
+      "restaurants": {
+        "title": "Proprietários de Pequenos Restaurantes",
+        "description": "Gerencie pedidos, rastreie ingredientes, calcule custos de alimentos e lide com refeições no local e para viagem com eficiência."
+      },
+      "serviceProviders": {
+        "title": "Prestadores de Serviços",
+        "description": "Para encanadores, eletricistas, mecânicos e mais. Agende trabalhos, rastreie peças e fature na conclusão."
+      },
+      "onlineSellers": {
+        "title": "Vendedores Online",
+        "description": "Sincronize o inventário em todas as plataformas, gerencie pedidos e rastreie remessas. Perfeito para vendedores de mídia social."
+      },
+      "transport": {
+        "title": "Operadores de Transporte",
+        "description": "Para operadores de táxi, boda boda e tuk-tuk. Rastreie ganhos diários, custos de combustível e cronogramas de manutenção."
+      }
+    }
   }
 }

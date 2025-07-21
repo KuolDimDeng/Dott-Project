@@ -910,5 +910,61 @@
       "label": "Ana özellikler:"
     },
     "learnMore": "Daha fazla öğren"
+  },
+  "builtForYou": {
+    "title": "Sizin İçin Üretildi",
+    "heading": "İşinizi bir profesyonel gibi yönetin!",
+    "subheading": "Sizin gibi işletme sahipleri için üretildi",
+    "cta": "İşlerini yönetmek için Dott'a güvenen dünya çapında binlerce işletme sahibine katılın",
+    "types": {
+      "freelancers": {
+        "title": "Serbest Çalışanlar",
+        "description": "Projeleri takip edin, müşterilere anında fatura gönderin ve tüm finanslarınızı tek bir yerde yönetin. Profesyonel faturalarla daha hızlı ödeme alın."
+      },
+      "contractors": {
+        "title": "Müteahhitler",
+        "description": "Birden fazla projeyi yönetin, malzeme ve işçilik maliyetlerini takip edin, profesyonel teklifler gönderin. Nakit akışınızı sağlıklı tutun."
+      },
+      "entrepreneurs": {
+        "title": "Girişimciler",
+        "description": "Envanter, satış ve finansal takip için güçlü araçlarla startup'ınızı ölçeklendirin. Veri odaklı kararlar alın."
+      },
+      "consultants": {
+        "title": "Danışmanlar",
+        "description": "Saatlik veya proje bazında faturalandırın, harcamaları takip edin ve birden fazla müşteriyi kolayca yönetin. Profesyonel faturalama dahil."
+      },
+      "retail": {
+        "title": "Perakende Mağaza Sahipleri",
+        "description": "Barkod tarama ile envanteri yönetin, satışları takip edin ve mobil para dahil birden fazla ödeme yöntemini kabul edin."
+      },
+      "streetVendors": {
+        "title": "Sokak Satıcıları",
+        "description": "Günlük satışları takip etmek, envanteri yönetmek ve hareket halindeyken dijital ödemeleri kabul etmek için basit mobil öncelikli tasarım."
+      },
+      "marketStalls": {
+        "title": "Pazar Tezgahı Sahipleri",
+        "description": "Yoğun pazar günleri için mükemmel. Hızlı satış girişi, envanter uyarıları ve yerel para biriminizde günlük kar takibi."
+      },
+      "mobileMoneyAgents": {
+        "title": "Mobil Para Acenteleri",
+        "description": "İşlemleri takip edin, yüzde bakiyelerini yönetin ve ağ operatörleri için raporlar oluşturun. M-Pesa, MTN ve daha fazlası için üretildi."
+      },
+      "restaurants": {
+        "title": "Küçük Restoran Sahipleri",
+        "description": "Siparişleri yönetin, malzemeleri takip edin, yemek maliyetlerini hesaplayın ve hem restoranda yemeyi hem de paket servisi verimli bir şekilde yönetin."
+      },
+      "serviceProviders": {
+        "title": "Hizmet Sağlayıcılar",
+        "description": "Tesisatçılar, elektrikçiler, tamirciler ve daha fazlası için. İşleri planlayın, parçaları takip edin ve tamamlandığında fatura kesin."
+      },
+      "onlineSellers": {
+        "title": "Online Satıcılar",
+        "description": "Platformlar arasında envanteri senkronize edin, siparişleri yönetin ve gönderimleri takip edin. Sosyal medya satıcıları için mükemmel."
+      },
+      "transport": {
+        "title": "Ulaşım Operatörleri",
+        "description": "Taksi, boda boda ve tuk-tuk operatörleri için. Günlük kazançları, yakıt maliyetlerini ve bakım programlarını takip edin."
+      }
+    }
   }
 }

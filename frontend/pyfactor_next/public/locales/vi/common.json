@@ -730,6 +730,62 @@
     "privacyPolicy": "Chính sách bảo mật",
     "termsOfService": "Điều khoản dịch vụ"
   },
+  "builtForYou": {
+    "title": "Xây Dựng Cho Bạn",
+    "heading": "Quản lý doanh nghiệp của bạn như một chuyên gia!",
+    "subheading": "Được xây dựng cho các chủ doanh nghiệp như bạn",
+    "cta": "Tham gia cùng hàng ngàn chủ doanh nghiệp trên toàn thế giới tin tưởng Dott để quản lý doanh nghiệp của họ",
+    "types": {
+      "freelancers": {
+        "title": "Người làm tự do",
+        "description": "Theo dõi dự án, lập hóa đơn cho khách hàng ngay lập tức và quản lý tài chính của bạn tất cả ở một nơi. Được thanh toán nhanh hơn với hóa đơn chuyên nghiệp."
+      },
+      "contractors": {
+        "title": "Nhà thầu",
+        "description": "Quản lý nhiều dự án, theo dõi chi phí vật liệu và nhân công, và gửi báo giá chuyên nghiệp. Giữ dòng tiền của bạn luôn khỏe mạnh."
+      },
+      "entrepreneurs": {
+        "title": "Doanh nhân",
+        "description": "Mở rộng startup của bạn với các công cụ mạnh mẽ cho hàng tồn kho, bán hàng và theo dõi tài chính. Đưa ra quyết định dựa trên dữ liệu."
+      },
+      "consultants": {
+        "title": "Nhà tư vấn",
+        "description": "Tính phí theo giờ hoặc dự án, theo dõi chi phí và quản lý nhiều khách hàng một cách dễ dàng. Bao gồm lập hóa đơn chuyên nghiệp."
+      },
+      "retail": {
+        "title": "Chủ cửa hàng bán lẻ",
+        "description": "Quản lý hàng tồn kho với quét mã vạch, theo dõi doanh số và chấp nhận nhiều phương thức thanh toán bao gồm ví điện tử."
+      },
+      "streetVendors": {
+        "title": "Người bán hàng rong",
+        "description": "Thiết kế đơn giản ưu tiên di động để theo dõi doanh số hàng ngày, quản lý hàng tồn kho và chấp nhận thanh toán kỹ thuật số khi di chuyển."
+      },
+      "marketStalls": {
+        "title": "Chủ quầy hàng ở chợ",
+        "description": "Hoàn hảo cho những ngày chợ bận rộn. Nhập doanh số nhanh chóng, cảnh báo hàng tồn kho và theo dõi lợi nhuận hàng ngày bằng tiền tệ địa phương của bạn."
+      },
+      "mobileMoneyAgents": {
+        "title": "Đại lý tiền di động",
+        "description": "Theo dõi giao dịch, quản lý số dư float và tạo báo cáo cho các nhà điều hành mạng. Được xây dựng cho M-Pesa, MTN và nhiều hơn nữa."
+      },
+      "restaurants": {
+        "title": "Chủ nhà hàng nhỏ",
+        "description": "Quản lý đơn hàng, theo dõi nguyên liệu, tính toán chi phí thực phẩm và xử lý cả dịch vụ ăn tại chỗ và mang về một cách hiệu quả."
+      },
+      "serviceProviders": {
+        "title": "Nhà cung cấp dịch vụ",
+        "description": "Dành cho thợ sửa ống nước, thợ điện, thợ cơ khí và nhiều hơn nữa. Lên lịch công việc, theo dõi phụ tùng và lập hóa đơn khi hoàn thành."
+      },
+      "onlineSellers": {
+        "title": "Người bán hàng trực tuyến",
+        "description": "Đồng bộ hàng tồn kho trên các nền tảng, quản lý đơn hàng và theo dõi vận chuyển. Hoàn hảo cho người bán hàng trên mạng xã hội."
+      },
+      "transport": {
+        "title": "Nhà điều hành vận tải",
+        "description": "Dành cho tài xế taxi, xe ôm và xích lô. Theo dõi thu nhập hàng ngày, chi phí nhiên liệu và lịch bảo dưỡng."
+      }
+    }
+  },
   "highlights": {
     "eyebrow": "Lợi Ích Chính",
     "heading": "Tại sao doanh nghiệp chọn Dott",

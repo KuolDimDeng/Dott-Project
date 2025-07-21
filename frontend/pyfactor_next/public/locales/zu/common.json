@@ -431,5 +431,61 @@
     "professionalPlan": "Uhlelo Lochwepheshe",
     "enterprisePlan": "Uhlelo Lwenkampani",
     "upgrade": "Thuthukisa"
+  },
+  "builtForYou": {
+    "title": "Kwakhelwe Wena",
+    "heading": "Phatha ibhizinisi lakho njengoChwepheshe!",
+    "subheading": "Kwakhelwe abanikazi bamabhizinisi abanjengawe",
+    "cta": "Joyina izinkulungwane zabanikazi bamabhizinisi emhlabeni jikelele abathemba i-Dott ukuphatha amabhizinisi abo",
+    "types": {
+      "freelancers": {
+        "title": "Abasebenzi Abazimele",
+        "description": "Landelela amaphrojekthi, khokhisa amakhasimende ngokushesha, futhi uphathe izezimali zakho zonke endaweni eyodwa. Khokhwa ngokushesha ngama-invoysi anobuchule."
+      },
+      "contractors": {
+        "title": "Osonkontileka",
+        "description": "Phatha amaphrojekthi amaningi, landelela izinto nezindleko zabasebenzi, futhi uthumele amakhotheshini anobuchule. Gcina ukugeleza kwemali yakho kuphilile."
+      },
+      "entrepreneurs": {
+        "title": "Osomabhizinisi",
+        "description": "Khulisa isiqalo sakho ngamathuluzi anamandla okwenza impahlakahle, ukuthengisa, nokulandelela kwezezimali. Yenza izinqumo ezisekelwe kudatha."
+      },
+      "consultants": {
+        "title": "Abeluleki",
+        "description": "Khokhisa ngehora noma ngephrojekthi, landelela izindleko, futhi uphathe amakhasimende amaningi kalula. Ufaka ama-invoysi anobuchule."
+      },
+      "retail": {
+        "title": "Abanikazi Bezitolo Zokudayisa",
+        "description": "Phatha impahlakahle ngokuskena i-barcode, landelela ukuthengisa, futhi wamukele izindlela zokukhokha eziningi kuhlanganise nemali yeselula."
+      },
+      "streetVendors": {
+        "title": "Abadayisi Basemgwaqweni",
+        "description": "Idizayini elula yeselula-kuqala ukuze ulandelele ukuthengisa kwansuku zonke, uphathe impahlakahle, futhi wamukele izinkokhelo zedijithali lapho uhamba."
+      },
+      "marketStalls": {
+        "title": "Abanikazi Bezitolo Zemakethe",
+        "description": "Iphelele ezinsukwini zemakethe eziphithizelayo. Ukufaka okuthengisayo okusheshayo, izaziso zempahlakahle encane, nokulandelela inzuzo yansuku zonke ngemali yakho yendawo."
+      },
+      "mobileMoneyAgents": {
+        "title": "Ama-ejenti Emali Yeselula",
+        "description": "Landelela izimali, phatha amabhalansi antantayo, futhi ukhiqize imibiko yabaphathi benethiwekhi. Kwakhelwe i-M-Pesa, MTN, nabanye."
+      },
+      "restaurants": {
+        "title": "Abanikazi Bezindawo Zokudlela Ezincane",
+        "description": "Phatha ama-oda, landelela izithako, bala izindleko zokudla, futhi uphathise kokubili ukudla phakathi nokuthatha ngaphandle ngempumelelo."
+      },
+      "serviceProviders": {
+        "title": "Abahlinzeki Besevisi",
+        "description": "Abaphulumbi, ogesi, omakhenikha, nabanye. Hlela imisebenzi, landelela izingxenye, futhi khokhisa ngokuphela."
+      },
+      "onlineSellers": {
+        "title": "Abadayisi Ku-inthanethi",
+        "description": "Vumelanisa impahlakahle kuwo wonke amapulatifomu, phatha ama-oda, futhi ulandelele ukuthunyelwa. Iphelele kubadayisi bezinkundla zokuxhumana."
+      },
+      "transport": {
+        "title": "Abaqhubi Bezokuthutha",
+        "description": "Abashayeli bamatekisi, boda boda, nama-tuk-tuk. Landelela imali engenayo yansuku zonke, izindleko zikaphethiloli, namashejuli okulungiswa."
+      }
+    }
   }
 }

@@ -865,5 +865,61 @@
     "allRightsReserved": "保留所有权利。",
     "privacyPolicy": "隐私政策",
     "termsOfService": "服务条款"
+  },
+  "builtForYou": {
+    "title": "为您打造",
+    "heading": "像专业人士一样管理您的业务！",
+    "subheading": "专为像您这样的企业主打造",
+    "cta": "加入全球数千位信任 Dott 管理其业务的企业主",
+    "types": {
+      "freelancers": {
+        "title": "自由职业者",
+        "description": "跟踪项目、即时向客户开具发票，并在一个地方管理您的财务。通过专业发票更快获得付款。"
+      },
+      "contractors": {
+        "title": "承包商",
+        "description": "管理多个项目，跟踪材料和人工成本，并发送专业报价。保持您的现金流健康。"
+      },
+      "entrepreneurs": {
+        "title": "企业家",
+        "description": "使用强大的库存、销售和财务跟踪工具扩展您的初创企业。做出数据驱动的决策。"
+      },
+      "consultants": {
+        "title": "顾问",
+        "description": "按小时或项目计费，跟踪费用，轻松管理多个客户。包含专业发票功能。"
+      },
+      "retail": {
+        "title": "零售店主",
+        "description": "使用条形码扫描管理库存，跟踪销售，并接受包括移动支付在内的多种付款方式。"
+      },
+      "streetVendors": {
+        "title": "街头小贩",
+        "description": "简单的移动优先设计，用于跟踪每日销售、管理库存并在移动中接受数字付款。"
+      },
+      "marketStalls": {
+        "title": "市场摊主",
+        "description": "非常适合繁忙的市场日。快速销售录入、库存警报和以当地货币进行的每日利润跟踪。"
+      },
+      "mobileMoneyAgents": {
+        "title": "移动支付代理",
+        "description": "跟踪交易、管理浮动余额并为网络运营商生成报告。专为 M-Pesa、MTN 等打造。"
+      },
+      "restaurants": {
+        "title": "小餐厅老板",
+        "description": "管理订单、跟踪原料、计算食品成本，并高效处理堂食和外卖。"
+      },
+      "serviceProviders": {
+        "title": "服务提供商",
+        "description": "适用于水管工、电工、机械师等。安排工作、跟踪零件并在完成时开具发票。"
+      },
+      "onlineSellers": {
+        "title": "网上卖家",
+        "description": "跨平台同步库存、管理订单并跟踪运输。非常适合社交媒体卖家。"
+      },
+      "transport": {
+        "title": "运输经营者",
+        "description": "适用于出租车、摩托车和嘟嘟车经营者。跟踪每日收入、燃料成本和维护计划。"
+      }
+    }
   }
 }
