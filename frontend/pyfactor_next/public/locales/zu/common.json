@@ -387,6 +387,40 @@
   "security_badge_1": "Ukubethela kweleveli yasebhange",
   "security_badge_2": "Ihambisana ne-GDPR",
   "security_badge_3": "99.9% isikhathi sokusebenza",
+  "highlights": {
+    "eyebrow": "Izinzuzo Eziyinhloko",
+    "heading": "Kungani amabhizinisi ekhetha i-Dott",
+    "mobile": {
+      "title": "Uhlelo Lokusebenza Lweselula",
+      "description": "Phatha ibhizinisi lakho noma kuphi emhlabeni wonke ngezinhlelo zokusebenza ze-Android ne-iOS zethu.",
+      "learnMore": "Funda Kabanzi"
+    },
+    "pos": {
+      "title": "I-POS Nokuskena Ngebhakhodi",
+      "description": "Yamukela izinkokhelo ngokushesha ngezinhlelo zokucubungula izinkokhelo ezinamandla kanye nezithuluzi zokuskena ngebhakhodi.",
+      "learnMore": "Funda Kabanzi"
+    },
+    "ai": {
+      "title": "Ukuqonda Okuqhutshwa Yi-AI",
+      "description": "Sebenzisa i-AI ukuthola ukuqonda okujulile ngamabhizinisi akho neziphakamiso eziwusizo.",
+      "learnMore": "Funda Kabanzi"
+    },
+    "geofencing": {
+      "title": "I-Geofencing Nokulandelela Indawo",
+      "description": "Gada abasebenzi bakho bese uphatha imisebenzi ngokulandelela indawo kwesimanje kanye ne-geofencing.",
+      "learnMore": "Funda Kabanzi"
+    },
+    "mobilemoney": {
+      "title": "Izinkokhelo Zemali Yeselula",
+      "description": "Yamukela izinkokhelo noma kuphi emhlabeni nge-M-Pesa, i-MTN Mobile Money, i-Airtel Money, nabanye.",
+      "learnMore": "Funda Kabanzi"
+    },
+    "languages": {
+      "title": "Ukuxhaswa Kwezilimi Ezingu-20+",
+      "description": "Sebenza ngolimi lwakho. Sixhasa izilimi ezingaphezu kuku-20 yamabhizinisi omhlaba wonke.",
+      "learnMore": "Funda Kabanzi"
+    }
+  },
   "subscription": {
     "freePlan": "Uhlelo Lwamahhala",
     "professionalPlan": "Uhlelo Lochwepheshe",

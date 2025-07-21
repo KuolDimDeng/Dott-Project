@@ -729,5 +729,64 @@
     "allRightsReserved": "Alle rechten voorbehouden.",
     "privacyPolicy": "Privacybeleid",
     "termsOfService": "Servicevoorwaarden"
+  },
+  "highlights": {
+    "eyebrow": "Belangrijkste Voordelen",
+    "heading": "Waarom bedrijven voor Dott kiezen",
+    "subheading": "Geavanceerde functies die ons onderscheiden van de concurrentie en uw bedrijf helpen groeien.",
+    "mobile": {
+      "title": "Mobiele Applicatie",
+      "description": "Toegang tot uw bedrijfsgegevens altijd en overal met onze krachtige mobiele app. Beheer voorraad, verwerk verkopen en bekijk realtime rapporten onderweg.",
+      "imageAlt": "Screenshot van mobiele applicatie"
+    },
+    "pos": {
+      "title": "POS en Barcode Scannen",
+      "description": "Verander elk apparaat in een krachtig kassasysteem. Scan barcodes direct, verwerk verkopen snel, volg voorraad in realtime en accepteer alle betaalmethoden inclusief contant, kaarten en mobiel geld.",
+      "imageAlt": "POS-systeem met barcode scan functie",
+      "features": {
+        "quickCheckout": "Snelle afrekening",
+        "barcodeScanning": "Barcode scannen",
+        "allPaymentTypes": "Alle betalingstypen",
+        "inventoryTracking": "Voorraad tracking",
+        "offlineMode": "Offline modus",
+        "mobileReady": "Mobiel klaar"
+      }
+    },
+    "ai": {
+      "title": "AI-Gedreven Inzichten",
+      "description": "Krijg slimme aanbevelingen en voorspellende analyses gebaseerd op uw bedrijfsgegevens. Onze AI helpt met vraagvoorspelling, voorraadoptimalisatie en het identificeren van groeimogelijkheden.",
+      "imageAlt": "Screenshot van AI-analyse dashboard"
+    },
+    "geofencing": {
+      "title": "Geofencing & Locatie Tracking",
+      "description": "Zorg voor nauwkeurige tijdregistratie met GPS-gebaseerde in-/uitklokken. Perfect voor veldteams, bezorgchauffeurs en remote werknemers. Stel virtuele grenzen in voor werkplekken en ontvang waarschuwingen wanneer werknemers aangewezen gebieden betreden of verlaten.",
+      "imageAlt": "Geofencing en locatie tracking interface",
+      "features": {
+        "gpsClockInOut": "GPS in-/uitklokken",
+        "virtualBoundaries": "Virtuele grenzen",
+        "realTimeAlerts": "Realtime waarschuwingen",
+        "automatedTimesheets": "Geautomatiseerde urenstaten",
+        "complianceReady": "Compliance klaar",
+        "teamManagement": "Team management"
+      }
+    },
+    "mobilemoney": {
+      "title": "Mobiel Geld Betalingen",
+      "description": "Accepteer betalingen van overal ter wereld. M-Pesa integratie is live in Kenia, met MTN Mobile Money, Airtel Money, Orange Money, GCash, Paytm, Pix en Mercado Pago binnenkort beschikbaar. Bereik miljarden klanten die mobiel geld verkiezen boven traditionele bankdiensten.",
+      "imageAlt": "Mobiel geld betalingsopties",
+      "available": "Betaalmethoden:",
+      "live": "Nu Beschikbaar:",
+      "coming": "Binnenkort:"
+    },
+    "languages": {
+      "title": "20+ Talen Ondersteund",
+      "description": "Bereik klanten en beheer uw bedrijf in uw voorkeurstaal. Van Engels tot Swahili, Spaans tot Mandarijn, wij ondersteunen 20+ talen om Dott toegankelijk te maken voor bedrijven wereldwijd.",
+      "imageAlt": "Meertalige interface demonstratie",
+      "availableIn": "Beschikbaar in:"
+    },
+    "features": {
+      "label": "Belangrijkste functies:"
+    },
+    "learnMore": "Meer informatie"
   }
 }

@@ -431,5 +431,64 @@
     "professionalPlan": "프로페셔널 플랜",
     "enterprisePlan": "엔터프라이즈 플랜",
     "upgrade": "업그레이드"
+  },
+  "highlights": {
+    "eyebrow": "주요 혜택",
+    "heading": "기업들이 Dott을 선택하는 이유",
+    "subheading": "경쟁사와 차별화되고 비즈니스 성장을 돕는 고급 기능들.",
+    "mobile": {
+      "title": "모바일 애플리케이션",
+      "description": "강력한 모바일 앱으로 언제 어디서나 비즈니스 데이터에 접근하세요. 재고 관리, 판매 처리, 실시간 보고서 확인을 이동 중에도 할 수 있습니다.",
+      "imageAlt": "모바일 애플리케이션 스크린샷"
+    },
+    "pos": {
+      "title": "POS 및 바코드 스캔",
+      "description": "모든 기기를 강력한 판매시점 시스템으로 변환하세요. 바코드를 즉시 스캔하고, 판매를 빠르게 처리하며, 실시간으로 재고를 추적하고, 현금, 카드, 모바일 머니를 포함한 모든 결제 방법을 받아보세요.",
+      "imageAlt": "바코드 스캔 기능이 있는 POS 시스템",
+      "features": {
+        "quickCheckout": "빠른 결제",
+        "barcodeScanning": "바코드 스캔",
+        "allPaymentTypes": "모든 결제 유형",
+        "inventoryTracking": "재고 추적",
+        "offlineMode": "오프라인 모드",
+        "mobileReady": "모바일 지원"
+      }
+    },
+    "ai": {
+      "title": "AI 기반 인사이트",
+      "description": "비즈니스 데이터를 기반으로 한 스마트 추천과 예측 분석을 받아보세요. 저희 AI는 수요 예측, 재고 최적화, 성장 기회 식별을 도와드립니다.",
+      "imageAlt": "AI 분석 대시보드 스크린샷"
+    },
+    "geofencing": {
+      "title": "지오펜싱 및 위치 추적",
+      "description": "GPS 기반 출퇴근으로 정확한 시간 추적을 보장하세요. 현장팀, 배송 기사, 원격 근무자에게 완벽합니다. 작업장에 가상 경계를 설정하고 직원이 지정된 구역을 출입할 때 알림을 받으세요.",
+      "imageAlt": "지오펜싱 및 위치 추적 인터페이스",
+      "features": {
+        "gpsClockInOut": "GPS 출퇴근",
+        "virtualBoundaries": "가상 경계",
+        "realTimeAlerts": "실시간 알림",
+        "automatedTimesheets": "자동 근무시간표",
+        "complianceReady": "규정 준수 지원",
+        "teamManagement": "팀 관리"
+      }
+    },
+    "mobilemoney": {
+      "title": "모바일 머니 결제",
+      "description": "전세계 어디서든 결제를 받아보세요. M-Pesa 통합이 케냐에서 운영 중이며, MTN Mobile Money, Airtel Money, Orange Money, GCash, Paytm, Pix, Mercado Pago가 곧 출시됩니다. 전통적인 은행 서비스보다 모바일 머니를 선호하는 수십억 명의 고객에게 도달하세요.",
+      "imageAlt": "모바일 머니 결제 옵션",
+      "available": "결제 방법:",
+      "live": "현재 이용 가능:",
+      "coming": "곧 출시:"
+    },
+    "languages": {
+      "title": "20개 이상 언어 지원",
+      "description": "선호하는 언어로 고객에게 다가가고 비즈니스를 관리하세요. 영어부터 스와힐리어까지, 스페인어부터 중국어까지, 전세계 기업들이 Dott에 접근할 수 있도록 20개 이상의 언어를 지원합니다.",
+      "imageAlt": "다국어 인터페이스 시연",
+      "availableIn": "지원 언어:"
+    },
+    "features": {
+      "label": "주요 기능:"
+    },
+    "learnMore": "자세히 알아보기"
   }
 }

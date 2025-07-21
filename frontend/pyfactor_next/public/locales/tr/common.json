@@ -846,5 +846,64 @@
     "allRightsReserved": "Tüm hakları saklıdır.",
     "privacyPolicy": "Gizlilik Politikası",
     "termsOfService": "Hizmet Şartları"
+  },
+  "highlights": {
+    "eyebrow": "Temel Avantajlar",
+    "heading": "İşletmeler neden Dott'u seçiyor",
+    "subheading": "Bizi rekabetten ayıran ve işinizin büyümesine yardımcı olan gelişmiş özellikler.",
+    "mobile": {
+      "title": "Mobil Uygulama",
+      "description": "Güçlü mobil uygulamamız ile işletme verilerinize her zaman, her yerden erişin. Envanteri yönetin, satışları işleyin ve hareket halindeyken gerçek zamanlı raporları görüntüleyin.",
+      "imageAlt": "Mobil uygulama ekran görüntüsü"
+    },
+    "pos": {
+      "title": "POS ve Barkod Tarama",
+      "description": "Herhangi bir cihazı güçlü bir satış noktası sistemine dönüştürün. Barkodları anında tarayın, satışları hızlıca işleyin, envanteri gerçek zamanlı takip edin ve nakit, kart ve mobil para dahil tüm ödeme yöntemlerini kabul edin.",
+      "imageAlt": "Barkod tarama özellikli POS sistemi",
+      "features": {
+        "quickCheckout": "Hızlı ödeme",
+        "barcodeScanning": "Barkod tarama",
+        "allPaymentTypes": "Tüm ödeme türleri",
+        "inventoryTracking": "Envanter takibi",
+        "offlineMode": "Çevrimdışı mod",
+        "mobileReady": "Mobil hazır"
+      }
+    },
+    "ai": {
+      "title": "AI Destekli İçgörüler",
+      "description": "İşletme verilerinize dayalı akıllı öneriler ve tahmine dayalı analizler alın. AI'mız talep tahmini, envanter optimizasyonu ve büyüme fırsatlarının belirlenmesinde yardımcı olur.",
+      "imageAlt": "AI analiz paneli ekran görüntüsü"
+    },
+    "geofencing": {
+      "title": "Coğrafi Sınırlama ve Konum Takibi",
+      "description": "GPS tabanlı giriş/çıkış ile hassas zaman takibi sağlayın. Saha ekipleri, teslimat sürücüleri ve uzaktan çalışanlar için mükemmel. Çalışma alanları için sanal sınırlar oluşturun ve çalışanlar belirlenen alanları terk ettiğinde veya girdiğinde uyarı alın.",
+      "imageAlt": "Coğrafi sınırlama ve konum takibi arayüzü",
+      "features": {
+        "gpsClockInOut": "GPS giriş/çıkış",
+        "virtualBoundaries": "Sanal sınırlar",
+        "realTimeAlerts": "Gerçek zamanlı uyarılar",
+        "automatedTimesheets": "Otomatik zaman çizelgeleri",
+        "complianceReady": "Uyumluluk hazır",
+        "teamManagement": "Takım yönetimi"
+      }
+    },
+    "mobilemoney": {
+      "title": "Mobil Para Ödemeleri",
+      "description": "Dünyanın her yerinden ödemeleri kabul edin. M-Pesa entegrasyonu Kenya'da canlı, MTN Mobile Money, Airtel Money, Orange Money, GCash, Paytm, Pix ve Mercado Pago yakında geliyor. Geleneksel bankacılık hizmetlerine mobil parayı tercih eden milyarlarca müşteriye ulaşın.",
+      "imageAlt": "Mobil para ödeme seçenekleri",
+      "available": "Ödeme yöntemleri:",
+      "live": "Şimdi Mevcut:",
+      "coming": "Yakında:"
+    },
+    "languages": {
+      "title": "20+ Dil Desteği",
+      "description": "Müşterilere ulaşın ve işinizi tercih ettiğiniz dilde yönetin. İngilizceden Svahiliceye, İspanyolcadan Mandarince'ye, Dott'u dünya çapında işletmeler için erişilebilir kılmak üzere 20+ dili destekliyoruz.",
+      "imageAlt": "Çok dilli arayüz gösterimi",
+      "availableIn": "Şu dillerde mevcut:"
+    },
+    "features": {
+      "label": "Ana özellikler:"
+    },
+    "learnMore": "Daha fazla öğren"
   }
 }

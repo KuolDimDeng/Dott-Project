@@ -173,6 +173,40 @@
   "still_have_questions": "Ṣé o tún ní àwọn ìbéèrè?",
   "contact_support": "Kàn sí ẹgbẹ́ àtìlẹ́yìn àgbáyé wa ní support@dottapps.com",
   "copyright_text": "Dott, LLC. Gbogbo àwọn ẹ̀tọ́ jẹ́ ààbò.",
+  "highlights": {
+    "eyebrow": "Àwọn Àńfàní Kòkò",
+    "heading": "Kí Ló Máa Mú Àwọn Iṣẹ́ Yàn Dott",
+    "mobile": {
+      "title": "Àkọsílẹ̀ Fóònù",
+      "description": "Ṣàkóso iṣẹ́ rẹ láti ibikíbi ní àgbáyé pẹ̀lú àwọn àkọsílẹ̀ Android àti iOS wa.",
+      "learnMore": "Kọ́ Sí i"
+    },
+    "pos": {
+      "title": "POS àti Yíyan Báàkódù",
+      "description": "Gbà owó lẹ́sẹ̀kẹsẹ̀ pẹ̀lú àwọn ètò gbígbà owó àti yíyan báàkódù tó lágbára.",
+      "learnMore": "Kọ́ Sí i"
+    },
+    "ai": {
+      "title": "Òye Láti Ọ̀dọ̀ AI",
+      "description": "Lo AI láti gba òye tó jinlẹ̀ nípa iṣẹ́ rẹ àti àwọn ìmọ̀ràn tó wúlò.",
+      "learnMore": "Kọ́ Sí i"
+    },
+    "geofencing": {
+      "title": "Geofencing àti Títọ́pá Ipò",
+      "description": "Ṣe àbójútó àwọn oṣìṣẹ́ rẹ kí o sì ṣàkóso àwọn iṣẹ́ nípa títọ́pá ipò àti geofencing ọ̀dájú.",
+      "learnMore": "Kọ́ Sí i"
+    },
+    "mobilemoney": {
+      "title": "Àwọn Ìsanwó Owó Fóònù",
+      "description": "Gbà àwọn ìsanwó láti ibikíbi ní àgbáyé pẹ̀lú M-Pesa, MTN Mobile Money, Airtel Money, àti àwọn míràn.",
+      "learnMore": "Kọ́ Sí i"
+    },
+    "languages": {
+      "title": "Èdè 20+ Tí a Ṣàtìlẹ́yìn",
+      "description": "Ṣiṣẹ́ ní èdè rẹ. A ń ṣàtìlẹ́yìn fún èdè tó ju 20 lọ fún àwọn iṣẹ́ àgbáyé.",
+      "learnMore": "Kọ́ Sí i"
+    }
+  },
   "footer_product": "Ọjà",
   "footer_company": "Ilé-iṣẹ́",
   "footer_legal": "Òfin",

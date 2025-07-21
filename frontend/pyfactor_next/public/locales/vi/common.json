@@ -729,5 +729,64 @@
     "allRightsReserved": "Tất cả các quyền được bảo lưu.",
     "privacyPolicy": "Chính sách bảo mật",
     "termsOfService": "Điều khoản dịch vụ"
+  },
+  "highlights": {
+    "eyebrow": "Lợi Ích Chính",
+    "heading": "Tại sao doanh nghiệp chọn Dott",
+    "subheading": "Các tính năng tiên tiến giúp chúng tôi khác biệt với đối thủ cạnh tranh và hỗ trợ doanh nghiệp của bạn phát triển.",
+    "mobile": {
+      "title": "Ứng Dụng Di Động",
+      "description": "Truy cập dữ liệu doanh nghiệp của bạn bất cứ lúc nào, bất cứ đâu với ứng dụng di động mạnh mẽ của chúng tôi. Quản lý hàng tồn kho, xử lý bán hàng và xem báo cáo thời gian thực khi di chuyển.",
+      "imageAlt": "Ảnh chụp màn hình ứng dụng di động"
+    },
+    "pos": {
+      "title": "POS và Quét Mã Vạch",
+      "description": "Biến bất kỳ thiết bị nào thành hệ thống điểm bán hàng mạnh mẽ. Quét mã vạch ngay lập tức, xử lý bán hàng nhanh chóng, theo dõi hàng tồn kho theo thời gian thực và chấp nhận tất cả các phương thức thanh toán bao gồm tiền mặt, thẻ và tiền di động.",
+      "imageAlt": "Hệ thống POS với tính năng quét mã vạch",
+      "features": {
+        "quickCheckout": "Thanh toán nhanh",
+        "barcodeScanning": "Quét mã vạch",
+        "allPaymentTypes": "Tất cả loại thanh toán",
+        "inventoryTracking": "Theo dõi hàng tồn kho",
+        "offlineMode": "Chế độ offline",
+        "mobileReady": "Sẵn sàng di động"
+      }
+    },
+    "ai": {
+      "title": "Thông Tin Chi Tiết Hỗ Trợ AI",
+      "description": "Nhận các đề xuất thông minh và phân tích dự đoán dựa trên dữ liệu doanh nghiệp của bạn. AI của chúng tôi giúp dự báo nhu cầu, tối ưu hóa hàng tồn kho và xác định cơ hội tăng trưởng.",
+      "imageAlt": "Ảnh chụp màn hình bảng điều khiển phân tích AI"
+    },
+    "geofencing": {
+      "title": "Geofencing & Theo Dõi Vị Trí",
+      "description": "Đảm bảo theo dõi thời gian chính xác với chấm công vào/ra dựa trên GPS. Hoàn hảo cho các đội ngũ thực địa, tài xế giao hàng và nhân viên làm việc từ xa. Thiết lập ranh giới ảo cho các địa điểm làm việc và nhận cảnh báo khi nhân viên vào hoặc rời khỏi các khu vực được chỉ định.",
+      "imageAlt": "Giao diện geofencing và theo dõi vị trí",
+      "features": {
+        "gpsClockInOut": "Chấm công GPS",
+        "virtualBoundaries": "Ranh giới ảo",
+        "realTimeAlerts": "Cảnh báo thời gian thực",
+        "automatedTimesheets": "Bảng chấm công tự động",
+        "complianceReady": "Sẵn sàng tuân thủ",
+        "teamManagement": "Quản lý đội nhóm"
+      }
+    },
+    "mobilemoney": {
+      "title": "Thanh Toán Tiền Di Động",
+      "description": "Chấp nhận thanh toán từ bất kỳ đâu trên thế giới. Tích hợp M-Pesa đang hoạt động tại Kenya, với MTN Mobile Money, Airtel Money, Orange Money, GCash, Paytm, Pix và Mercado Pago sắp ra mắt. Tiếp cận hàng tỷ khách hàng ưa thích tiền di động hơn các dịch vụ ngân hàng truyền thống.",
+      "imageAlt": "Các tùy chọn thanh toán tiền di động",
+      "available": "Phương thức thanh toán:",
+      "live": "Hiện Có Sẵn:",
+      "coming": "Sắp Ra Mắt:"
+    },
+    "languages": {
+      "title": "Hỗ Trợ Hơn 20 Ngôn Ngữ",
+      "description": "Tiếp cận khách hàng và quản lý doanh nghiệp của bạn bằng ngôn ngữ ưa thích. Từ tiếng Anh đến tiếng Swahili, từ tiếng Tây Ban Nha đến tiếng Quan Thoại, chúng tôi hỗ trợ hơn 20 ngôn ngữ để làm cho Dott có thể truy cập được cho các doanh nghiệp trên toàn thế giới.",
+      "imageAlt": "Trình diễn giao diện đa ngôn ngữ",
+      "availableIn": "Có sẵn trong:"
+    },
+    "features": {
+      "label": "Tính năng chính:"
+    },
+    "learnMore": "Tìm hiểu thêm"
   }
 }

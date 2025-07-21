@@ -729,5 +729,64 @@
     "allRightsReserved": "Semua hak dilindungi undang-undang.",
     "privacyPolicy": "Kebijakan Privasi",
     "termsOfService": "Ketentuan Layanan"
+  },
+  "highlights": {
+    "eyebrow": "Manfaat Utama",
+    "heading": "Mengapa bisnis memilih Dott",
+    "subheading": "Fitur-fitur canggih yang membedakan kami dari pesaing dan membantu bisnis Anda berkembang.",
+    "mobile": {
+      "title": "Aplikasi Mobile",
+      "description": "Akses data bisnis Anda kapan saja, di mana saja dengan aplikasi mobile kami yang powerful. Kelola inventaris, proses penjualan, dan lihat laporan real-time saat bepergian.",
+      "imageAlt": "Screenshot aplikasi mobile"
+    },
+    "pos": {
+      "title": "POS dan Scan Barcode",
+      "description": "Ubah perangkat apa pun menjadi sistem point-of-sale yang powerful. Scan barcode secara instan, proses penjualan dengan cepat, lacak inventaris secara real-time, dan terima semua metode pembayaran termasuk tunai, kartu, dan uang digital.",
+      "imageAlt": "Sistem POS dengan fitur scan barcode",
+      "features": {
+        "quickCheckout": "Checkout cepat",
+        "barcodeScanning": "Scan barcode",
+        "allPaymentTypes": "Semua jenis pembayaran",
+        "inventoryTracking": "Pelacakan inventaris",
+        "offlineMode": "Mode offline",
+        "mobileReady": "Siap mobile"
+      }
+    },
+    "ai": {
+      "title": "Wawasan Bertenaga AI",
+      "description": "Dapatkan rekomendasi cerdas dan analitik prediktif berdasarkan data bisnis Anda. AI kami membantu memperkirakan permintaan, mengoptimalkan inventaris, dan mengidentifikasi peluang pertumbuhan.",
+      "imageAlt": "Screenshot dashboard analitik AI"
+    },
+    "geofencing": {
+      "title": "Geofencing & Pelacakan Lokasi",
+      "description": "Pastikan pelacakan waktu yang akurat dengan clock in/out berbasis GPS. Sempurna untuk tim lapangan, driver pengiriman, dan pekerja remote. Atur batas virtual untuk tempat kerja dan terima alert ketika karyawan masuk atau keluar dari area yang ditentukan.",
+      "imageAlt": "Interface geofencing dan pelacakan lokasi",
+      "features": {
+        "gpsClockInOut": "Clock in/out GPS",
+        "virtualBoundaries": "Batas virtual",
+        "realTimeAlerts": "Alert real-time",
+        "automatedTimesheets": "Timesheet otomatis",
+        "complianceReady": "Siap compliance",
+        "teamManagement": "Manajemen tim"
+      }
+    },
+    "mobilemoney": {
+      "title": "Pembayaran Mobile Money",
+      "description": "Terima pembayaran dari mana saja di dunia. Integrasi M-Pesa sudah live di Kenya, dengan MTN Mobile Money, Airtel Money, Orange Money, GCash, Paytm, Pix, dan Mercado Pago segera hadir. Jangkau miliaran pelanggan yang lebih memilih mobile money daripada layanan perbankan tradisional.",
+      "imageAlt": "Opsi pembayaran mobile money",
+      "available": "Metode pembayaran:",
+      "live": "Tersedia Sekarang:",
+      "coming": "Segera Hadir:"
+    },
+    "languages": {
+      "title": "Dukungan 20+ Bahasa",
+      "description": "Jangkau pelanggan dan kelola bisnis Anda dalam bahasa pilihan Anda. Dari Bahasa Inggris hingga Swahili, Spanyol hingga Mandarin, kami mendukung 20+ bahasa untuk membuat Dott dapat diakses oleh bisnis di seluruh dunia.",
+      "imageAlt": "Demonstrasi interface multibahasa",
+      "availableIn": "Tersedia dalam:"
+    },
+    "features": {
+      "label": "Fitur utama:"
+    },
+    "learnMore": "Pelajari lebih lanjut"
   }
 }

@@ -182,24 +182,37 @@
     "legal": "Na Doka"
   },
   "highlights": {
-    "eyebrow": "Manyan Abubuwa",
-    "heading": "Me ya sa kasuwanci ke zaɓar Dott",
-    "subheading": "Abubuwan da za a iya yi masu ci gaba waɗanda ke sa mu bambanta da masu fafatawa kuma suna taimaka wa kasuwancin ku ya ci gaba.",
+    "eyebrow": "Amfanin Mahimmi",
+    "heading": "Me yasa kasuwanci ke zabar Dott",
     "mobile": {
-      "title": "Aikace-aikacen wayar hannu",
-      "description": "Sami damar yin amfani da bayanan kasuwancin ku ko'ina koyaushe tare da aikace-aikacen wayar hannu mai ƙarfi. Sarrafa kayayyaki, sarrafa tallace-tallace da duba rahotanni cikin lokaci na ainihi."
+      "title": "Aikace-aikacen Hannu",
+      "description": "Sarrafa kasuwancinka daga ko'ina a duniya tare da aikace-aikacen Android da iOS mu.",
+      "learnMore": "Koyi Ƙara"
     },
-    "integration": {
-      "title": "Haɗawa ba tare da matsala ba",
-      "description": "Haɗa kayan aiki da sabis ɗin da kuke so. Dandamalinmu yana haɗuwa da masu sarrafa biyan kuɗi, software na lissafi, dandamali na kasuwanci ta intanet da dai sauransu."
+    "pos": {
+      "title": "POS da Nazarin Barcode",
+      "description": "Karɓi kuɗi nan da nan tare da na'urar karɓar kuɗi da duban barcode mai karfi.",
+      "learnMore": "Koyi Ƙara"
     },
-    "support": {
-      "title": "Tallafi 24/7",
-      "description": "Ƙungiyarmu ta tallafi ta himma tana nan ko yaushe don taimaka muku samun nasara. Samu taimako ta hula, imel ko kiran waya."
+    "ai": {
+      "title": "Fahimta ta Hanyar AI",
+      "description": "Yi amfani da AI don samun fahimta mai zurfi game da ayyukan kasuwancinka da kuma shawarwari masu amfani.",
+      "learnMore": "Koyi Ƙara"
     },
-    "security": {
-      "title": "Tsaro na matakin banki",
-      "description": "An kare bayananku da ɓoyayyen tsaro na matakin soja da mafi kyawun ka'idojin tsaro a masana'anta. Ya cika GDPR, SOC 2 da sauran ka'idojin tsaro."
+    "geofencing": {
+      "title": "Geofencing da Bin Wuri",
+      "description": "Lura da ma'aikatan ka da kuma sarrafa ayyuka ta hanyar bin wuri da geofencing na zamani.",
+      "learnMore": "Koyi Ƙara"
+    },
+    "mobilemoney": {
+      "title": "Biyan Kuɗi ta Hannu",
+      "description": "Karɓi biyan kuɗi daga ko'ina a duniya tare da M-Pesa, MTN Mobile Money, Airtel Money, da sauransu.",
+      "learnMore": "Koyi Ƙara"
+    },
+    "languages": {
+      "title": "Harsuna 20+ da ake Tallafawa",
+      "description": "Yi aiki cikin harshenka na gida. Muna tallafawa harsuna fiye da 20 don kasuwanci ta duniya.",
+      "learnMore": "Koyi Ƙara"
     }
   },
   "faq": {

@@ -386,6 +386,40 @@
   "security_badge_1": "የባንክ ደረጃ ምስጠራ",
   "security_badge_2": "GDPR ተገዢ",
   "security_badge_3": "99.9% የስራ ጊዜ",
+  "highlights": {
+    "eyebrow": "ዋና ጥቅሞች",
+    "heading": "ንግዶች ዶትን የሚመርጡት ለምን ነው",
+    "mobile": {
+      "title": "የሞባይል መተግበሪያ",
+      "description": "ከAndroid እና iOS መተግበሪያዎቻችን ጋር ንግድዎን ከዓለም ውስጥ በማንኛውም ቦታ ያስተዳድሩ።",
+      "learnMore": "የበለጠ ይወቁ"
+    },
+    "pos": {
+      "title": "POS እና ባርኮድ ስካኒንግ",
+      "description": "ጠንካራ የክፍያ ማቀነባበሪያ እና ባርኮድ ስካን መሳሪያዎች ጋር ወዲያውኑ ክፍያዎችን ይቀበሉ።",
+      "learnMore": "የበለጠ ይወቁ"
+    },
+    "ai": {
+      "title": "በAI የተደገፉ ግንዛቤዎች",
+      "description": "ስለንግድዎ ጥልቅ ግንዛቤዎችን እና ጠቃሚ ምክሮችን ለማግኘት AIን ይጠቀሙ።",
+      "learnMore": "የበለጠ ይወቁ"
+    },
+    "geofencing": {
+      "title": "ጂኦፌንሲንግ እና ቦታ መከታተል",
+      "description": "ሰራተኞችዎን ይከታተሉ እና ዘመናዊ ቦታ መከታተል እና ጂኦፌንሲንግ ስራዎችን ያስተዳድሩ።",
+      "learnMore": "የበለጠ ይወቁ"
+    },
+    "mobilemoney": {
+      "title": "የሞባይል ገንዘብ ክፍያዎች",
+      "description": "ከM-Pesa፣ MTN Mobile Money፣ Airtel Money፣ እና ሌሎች ጋር በዓለም ዙሪያ ከየትኛውም ቦታ ክፍያዎችን ይቀበሉ።",
+      "learnMore": "የበለጠ ይወቁ"
+    },
+    "languages": {
+      "title": "ከ20+ ቋንቋዎች ድጋፍ",
+      "description": "በራስዎ ቋንቋ ይሰሩ። ለዓለም አቀፍ ንግድ ከ20 በላይ ቋንቋዎችን እንደግፋለን።",
+      "learnMore": "የበለጠ ይወቁ"
+    }
+  },
   "subscription": {
     "freePlan": "ነፃ ዕቅድ",
     "professionalPlan": "ሙያዊ ዕቅድ",
