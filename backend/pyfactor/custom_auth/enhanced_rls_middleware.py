@@ -80,6 +80,7 @@ class EnhancedRowLevelSecurityMiddleware:
             '/api/onboarding/api/pricing/',  # Public pricing endpoints for country-based pricing
             '/api/onboarding/api/debug/',  # Debug endpoints for testing
             '/api/payments/webhooks/paystack/',  # Paystack webhook doesn't have auth
+            '/api/contact-form/',  # Public contact form endpoint from landing page
         ]
         
         # Auth0 tenant management endpoints - require Auth0 authentication but can lookup/create tenant IDs

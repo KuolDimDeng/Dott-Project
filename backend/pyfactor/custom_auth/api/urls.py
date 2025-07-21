@@ -18,7 +18,7 @@ from .views.update_session_view import UpdateSessionView
 from .views.session_profile_view import SessionUserProfileView
 from .views.register_view import EmailPasswordRegisterView
 from .views.unified_profile_view import UnifiedProfileView
-from custom_auth.views.email_views import SendEmailView
+from custom_auth.views.email_views import SendEmailView, ContactFormView
 # Password login is now in auth_views
 # from .views.password_login_view import PasswordLoginView
 # from .views.test_endpoint_view import TestEndpointView
@@ -69,6 +69,7 @@ urlpatterns = [
     
     # Email endpoints
     path('send-email/', SendEmailView.as_view(), name='send-email'),
+    path('contact-form/', ContactFormView.as_view(), name='contact-form'),
     
     # Include router URLs
     path('', include(router.urls)),

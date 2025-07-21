@@ -852,6 +852,7 @@ SHARED_APPS = (
     'dj_rest_auth.registration',
     'allauth',
     'allauth.account',
+    'leads.apps.LeadsConfig',  # Lead management system
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
     'phonenumber_field',

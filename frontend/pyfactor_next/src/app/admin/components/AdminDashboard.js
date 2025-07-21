@@ -12,6 +12,7 @@ import {
   ArrowRightOnRectangleIcon,
   ShieldCheckIcon,
   ExclamationTriangleIcon,
+  EnvelopeIcon,
 } from '@heroicons/react/24/outline';
 
 import DashboardOverview from './DashboardOverview';
@@ -20,11 +21,13 @@ import NotificationManager from './NotificationManager';
 import UserManager from './UserManager';
 import AdminAnalytics from './AdminAnalytics';
 import AdminSettings from './AdminSettings';
+import LeadManager from './LeadManager';
 import { useAdminAuth } from '../hooks/useAdminAuth';
 import StandardSpinner, { CenteredSpinner } from '@/components/ui/StandardSpinner';
 
 const navigation = [
   { id: 'overview', name: 'Overview', icon: HomeIcon },
+  { id: 'leads', name: 'Leads', icon: EnvelopeIcon },
   { id: 'notifications', name: 'Notifications', icon: BellIcon },
   { id: 'feedback', name: 'Tax Feedback', icon: ChatBubbleLeftRightIcon },
   { id: 'users', name: 'Users', icon: UserGroupIcon },
@@ -82,6 +85,8 @@ export default function AdminDashboard({ adminUser, onLogout }) {
     switch (activeTab) {
       case 'overview':
         return <DashboardOverview data={dashboardData} onRefresh={loadDashboardData} />;
+      case 'leads':
+        return <LeadManager adminUser={adminUser} />;
       case 'notifications':
         return <NotificationManager adminUser={adminUser} />;
       case 'feedback':
@@ -204,6 +209,8 @@ function checkPermission(tabId, adminUser) {
   switch (tabId) {
     case 'overview':
       return true; // Everyone can see overview
+    case 'leads':
+      return adminUser.can_view_all_users || adminUser.admin_role === 'super_admin' || adminUser.admin_role === 'admin';
     case 'notifications':
       return adminUser.can_send_notifications;
     case 'feedback':

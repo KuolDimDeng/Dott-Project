@@ -334,6 +334,11 @@
       "live": "Disponível Agora:",
       "coming": "Em Breve:"
     },
+    "whatsapp": {
+      "title": "WhatsApp Business",
+      "description": "Transforme a comunicação com clientes através da integração do WhatsApp Business. Crie e gerencie seu catálogo de produtos, envie automaticamente faturas e recibos, forneça suporte instantâneo ao cliente, e conecte-se em sua plataforma de mensagens preferida.",
+      "learnMore": "Saiba Mais"
+    },
     "languages": {
       "title": "Mais de 20 Idiomas Suportados",
       "description": "Alcance clientes e gerencie sua empresa no seu idioma preferido. Do inglês ao suaíli, espanhol ao mandarim, suportamos mais de 20 idiomas para tornar o Dott acessível a empresas em todo o mundo.",

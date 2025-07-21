@@ -895,6 +895,11 @@
       "live": "Şimdi Mevcut:",
       "coming": "Yakında:"
     },
+    "whatsapp": {
+      "title": "WhatsApp Business",
+      "description": "WhatsApp Business entegrasyonu ile müşteri iletişimini dönüştürün. Ürün kataloğunuzu oluşturun ve yönetin, faturaları ve makbuzları otomatik olarak gönderin, anlık müşteri desteği sağlayın ve tercih ettikleri mesajlaşma platformunda onlarla bağlantı kurun.",
+      "learnMore": "Daha Fazla Öğren"
+    },
     "languages": {
       "title": "20+ Dil Desteği",
       "description": "Müşterilere ulaşın ve işinizi tercih ettiğiniz dilde yönetin. İngilizceden Svahiliceye, İspanyolcadan Mandarince'ye, Dott'u dünya çapında işletmeler için erişilebilir kılmak üzere 20+ dili destekliyoruz.",

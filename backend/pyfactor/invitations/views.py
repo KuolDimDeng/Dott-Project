@@ -8,7 +8,144 @@ from django.template.loader import render_to_string
 from django.conf import settings
 from communications.whatsapp_service import whatsapp_service
 
+# Import Lead models for saving invitations
+from leads.models import Lead, LeadActivity
+
 logger = logging.getLogger(__name__)
+
+
+def save_invitation_lead(invitation_type, contact_info, sender_name, sender_email, message, request, recipient_name='', company_name=''):
+    """
+    Helper function to save invitation data as a lead
+    
+    Args:
+        invitation_type: 'email' or 'whatsapp'
+        contact_info: email address or phone number
+        sender_name: name of the person sending invitation
+        sender_email: email of the person sending invitation  
+        message: invitation message content
+        request: Django request object
+    """
+    try:
+        logger.info(f'[LeadSave] === SAVING INVITATION AS LEAD ===')
+        logger.info(f'[LeadSave] Type: {invitation_type}, Contact: {contact_info}')
+        
+        # Get client IP for tracking
+        # Handle the case where get_client_ip might not be available
+        client_ip = None
+        try:
+            # Temporarily handle import issue
+            try:
+                from ipware import get_client_ip
+                client_ip, _ = get_client_ip(request)
+            except ImportError:
+                # Fallback function
+                x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+                if x_forwarded_for:
+                    client_ip = x_forwarded_for.split(',')[0]
+                else:
+                    client_ip = request.META.get('REMOTE_ADDR')
+        except Exception as ip_error:
+            logger.warning(f'[LeadSave] Could not get client IP: {str(ip_error)}')
+        
+        # Determine email and phone based on invitation type
+        email = contact_info if invitation_type == 'email' else None
+        phone_number = contact_info if invitation_type == 'whatsapp' else None
+        
+        # Parse recipient name if provided
+        first_name = ''
+        last_name = ''
+        if recipient_name.strip():
+            name_parts = recipient_name.strip().split(' ', 1)
+            first_name = name_parts[0] if name_parts else ''
+            last_name = name_parts[1] if len(name_parts) > 1 else ''
+        
+        # Check if lead already exists for this contact and source
+        source = 'invite_business_owner'
+        existing_lead = Lead.objects.filter(
+            email=email if email else '',
+            phone_number=phone_number if phone_number else '',
+            source=source
+        ).first()
+        
+        if existing_lead:
+            # Update existing lead with new invitation data
+            lead = existing_lead
+            lead.message = message
+            lead.ip_address = client_ip or lead.ip_address
+            
+            # Update name and company if provided
+            if first_name:
+                lead.first_name = first_name
+            if last_name:
+                lead.last_name = last_name
+            if company_name.strip():
+                lead.company_name = company_name.strip()
+            
+            # Update additional data with invitation details
+            additional_data = lead.additional_data or {}
+            additional_data.update({
+                'last_invitation_type': invitation_type,
+                'last_invitation_date': request.META.get('HTTP_DATE', ''),
+                'sender_name': sender_name,
+                'sender_email': sender_email,
+                'user_agent': request.META.get('HTTP_USER_AGENT', ''),
+                'referer': request.META.get('HTTP_REFERER', ''),
+                'invitation_count': additional_data.get('invitation_count', 0) + 1
+            })
+            lead.additional_data = additional_data
+            lead.save()
+            
+            # Log activity
+            LeadActivity.objects.create(
+                lead=lead,
+                activity_type='contacted',
+                description=f'Received {invitation_type} invitation from {sender_name} ({sender_email})',
+                created_by=request.user if request.user.is_authenticated else None
+            )
+            
+            logger.info(f'[LeadSave] Updated existing lead: {contact_info}')
+            
+        else:
+            # Create new lead
+            lead = Lead.objects.create(
+                email=email or '',
+                phone_number=phone_number or '',
+                first_name=first_name,
+                last_name=last_name,
+                company_name=company_name.strip() if company_name.strip() else None,
+                source=source,
+                message=message,
+                ip_address=client_ip,
+                status='new',
+                priority='medium',
+                additional_data={
+                    'invitation_type': invitation_type,
+                    'invitation_date': request.META.get('HTTP_DATE', ''),
+                    'sender_name': sender_name,
+                    'sender_email': sender_email,
+                    'user_agent': request.META.get('HTTP_USER_AGENT', ''),
+                    'referer': request.META.get('HTTP_REFERER', ''),
+                    'invitation_count': 1
+                }
+            )
+            
+            # Log activity
+            LeadActivity.objects.create(
+                lead=lead,
+                activity_type='created',
+                description=f'New lead from {invitation_type} invitation sent by {sender_name} ({sender_email})',
+                created_by=request.user if request.user.is_authenticated else None
+            )
+            
+            logger.info(f'[LeadSave] Created new lead: {contact_info}')
+            
+        return lead
+        
+    except Exception as e:
+        logger.error(f'[LeadSave] Failed to save lead: {str(e)}', exc_info=True)
+        # Don't fail the invitation if lead saving fails
+        return None
 
 
 @api_view(['POST'])
@@ -24,6 +161,8 @@ def send_whatsapp_invitation(request):
         message = request.data.get('message')
         sender_name = request.data.get('senderName')
         sender_email = request.data.get('senderEmail')
+        recipient_name = request.data.get('recipientName', '')
+        company_name = request.data.get('companyName', '')
         
         logger.info('[WhatsApp Invite] Extracted data:', {
             'phone_number': phone_number,
@@ -76,6 +215,25 @@ def send_whatsapp_invitation(request):
             message_id = result.get('messages', [{}])[0].get('id')
             logger.info(f'[WhatsApp Invite] ✅ Successfully sent WhatsApp invitation to {cleaned_phone}, message_id: {message_id}')
             
+            # Save invitation as lead
+            try:
+                lead = save_invitation_lead(
+                    invitation_type='whatsapp',
+                    contact_info=cleaned_phone,
+                    sender_name=sender_name,
+                    sender_email=sender_email,
+                    message=message,
+                    request=request,
+                    recipient_name=recipient_name,
+                    company_name=company_name
+                )
+                if lead:
+                    logger.info(f'[WhatsApp Invite] ✅ Invitation saved as lead: {lead.id}')
+                else:
+                    logger.warning('[WhatsApp Invite] ⚠️ Failed to save invitation as lead')
+            except Exception as lead_error:
+                logger.error(f'[WhatsApp Invite] ❌ Lead saving error: {str(lead_error)}')
+            
             return Response({
                 'success': True,
                 'message': 'WhatsApp invitation sent successfully',
@@ -108,6 +266,8 @@ def send_email_invitation(request):
         message = request.data.get('message')
         sender_name = request.data.get('senderName')
         sender_email = request.data.get('senderEmail')
+        recipient_name = request.data.get('recipientName', '')
+        company_name = request.data.get('companyName', '')
         
         logger.info('[Email Invite] Extracted data:', {
             'recipient_email': email,
@@ -245,6 +405,25 @@ def send_email_invitation(request):
             
             logger.info(f'[Email Invite] ✅ Django send_mail completed successfully for {email}')
             logger.info('[Email Invite] 📮 Email should be delivered by SMTP server')
+            
+            # Save invitation as lead
+            try:
+                lead = save_invitation_lead(
+                    invitation_type='email',
+                    contact_info=email,
+                    sender_name=sender_name,
+                    sender_email=sender_email,
+                    message=message,
+                    request=request,
+                    recipient_name=recipient_name,
+                    company_name=company_name
+                )
+                if lead:
+                    logger.info(f'[Email Invite] ✅ Invitation saved as lead: {lead.id}')
+                else:
+                    logger.warning('[Email Invite] ⚠️ Failed to save invitation as lead')
+            except Exception as lead_error:
+                logger.error(f'[Email Invite] ❌ Lead saving error: {str(lead_error)}')
             
             return Response({
                 'success': True,

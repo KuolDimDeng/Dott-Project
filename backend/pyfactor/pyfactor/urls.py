@@ -127,6 +127,9 @@ urlpatterns = [
     # Data Export API routes
     path('api/data-export/', include('data_export.urls')),
     
+    # Leads API routes  
+    path('api/leads/', include('leads.urls')),
+    
     # Main app routes
     path('', include('users.urls')),
     

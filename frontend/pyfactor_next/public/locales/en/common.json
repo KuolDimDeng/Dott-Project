@@ -201,6 +201,11 @@
       "live": "Now Available:",
       "coming": "Coming Soon:"
     },
+    "whatsapp": {
+      "title": "WhatsApp Business",
+      "description": "Transform customer communication with WhatsApp Business integration. Create and manage your product catalog, automatically send invoices and receipts, provide instant customer support, and reach customers on their preferred messaging platform.",
+      "learnMore": "Learn More"
+    },
     "languages": {
       "title": "20+ Languages Supported",
       "description": "Reach customers and manage your business in your preferred language. From English to Swahili, Spanish to Mandarin, we support over 20 languages to make Dott accessible to businesses worldwide.",
@@ -1189,6 +1194,37 @@
         "mpesaCaption": "Simple and secure M-Pesa integration",
         "global": "Global payment coverage map",
         "globalCaption": "Worldwide mobile money coverage"
+      }
+    },
+    "whatsapp": {
+      "title": "WhatsApp Business",
+      "subtitle": "Transform Customer Communication",
+      "overview": {
+        "heading": "All-in-One WhatsApp Business Integration",
+        "content": "Connect with your customers on the world's most popular messaging platform. Create stunning product catalogs, automate invoice and receipt delivery, provide instant customer support, and turn conversations into sales. With over 2 billion users worldwide, WhatsApp Business is essential for modern customer engagement."
+      },
+      "features": {
+        "heading": "Key WhatsApp Business Features",
+        "1": "Professional business catalog with product photos and descriptions",
+        "2": "Automated invoice and receipt delivery to customers",
+        "3": "Instant customer support and live chat",
+        "4": "Broadcast messages for promotions and announcements",
+        "5": "Order management directly through WhatsApp",
+        "6": "Payment confirmations and transaction notifications",
+        "7": "Quick replies and automated responses",
+        "8": "Customer data sync with your business contacts"
+      },
+      "benefits": {
+        "heading": "Benefits for Your Business",
+        "content": "Reach customers where they already are. Increase sales conversion rates with instant communication. Reduce customer service costs with automated responses. Build stronger customer relationships through personalized messaging."
+      },
+      "images": {
+        "catalog": "WhatsApp Business catalog",
+        "catalogCaption": "Beautiful product showcase within WhatsApp",
+        "invoice": "Automated invoice delivery",
+        "invoiceCaption": "Send invoices instantly through WhatsApp",
+        "support": "Customer support chat",
+        "supportCaption": "Provide instant help and build relationships"
       }
     },
     "languages": {
