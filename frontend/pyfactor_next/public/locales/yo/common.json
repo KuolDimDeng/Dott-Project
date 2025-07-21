@@ -386,5 +386,11 @@
   "integration_subtitle": "So Dott pọ mọ awọn ohun elo ayanfẹ rẹ",
   "security_badge_1": "Fifi ẹnikan pamọ ipele banki",
   "security_badge_2": "Ni ibamu GDPR",
-  "security_badge_3": "99.9% akoko iṣẹ"
+  "security_badge_3": "99.9% akoko iṣẹ",
+  "subscription": {
+    "freePlan": "Ètò Ọ̀fẹ́",
+    "professionalPlan": "Ètò Ọ̀jọ́gbọ́n",
+    "enterprisePlan": "Ètò Ilé-iṣẹ́",
+    "upgrade": "Ṣàtúnṣe"
+  }
 }

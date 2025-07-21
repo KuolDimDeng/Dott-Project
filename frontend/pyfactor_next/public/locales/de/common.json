@@ -681,5 +681,153 @@
     "gdprDesc": "Datenschutz-konform",
     "uptimeTitle": "99.9% Verfügbarkeit",
     "uptimeDesc": "Immer verfügbar"
+  },
+  "about": {
+    "backToHome": "Zurück zur Startseite",
+    "hero": {
+      "title": "Unternehmen befähigen",
+      "subtitle": "weltweit zu florieren",
+      "description": "Wir bauen das Betriebssystem für moderne kleine Unternehmen und machen Unternehmenstools für alle zugänglich."
+    },
+    "story": {
+      "title": "Unsere Geschichte",
+      "paragraph1": "Dott entstand aus einer einfachen Beobachtung: Kleine Unternehmen ertranken in Komplexität. Mehrere Tools, getrennte Daten und für Unternehmen entwickelte Prozesse hielten Unternehmer weltweit zurück.",
+      "paragraph2": "Gegründet im Jahr 2023, machten wir uns daran, etwas anderes zu bauen. Eine Plattform, die die einzigartigen Herausforderungen kleiner Unternehmen versteht, insbesondere in aufstrebenden Märkten, wo traditionelle Lösungen versagen.",
+      "paragraph3": "Heute sind wir stolz darauf, Unternehmen weltweit zu bedienen. Aber wir fangen gerade erst an."
+    },
+    "timeline": {
+      "beginning": {
+        "title": "Der Anfang",
+        "description": "Den Bedarf an einheitlichen Geschäftsverwaltungstools für KMU identifiziert"
+      },
+      "launch": {
+        "title": "Produkteinführung",
+        "description": "Hauptplattform mit Finanz- und Bestandsverwaltung gestartet"
+      },
+      "expansion": {
+        "title": "Globale Expansion",
+        "description": "Auf über 25 Länder mit lokalisierten Funktionen erweitert"
+      },
+      "ai": {
+        "title": "KI-Integration",
+        "description": "Einführung intelligenter Einblicke und Automatisierung"
+      }
+    },
+    "mission": {
+      "title": "Unsere Mission",
+      "description": "Die Geschäftsverwaltung zu demokratisieren, indem wir kleinen Unternehmen leistungsstarke, erschwingliche Tools zur Verfügung stellen, die den Betrieb vereinfachen und Wachstum ermöglichen, unabhängig von Standort oder technischer Expertise."
+    },
+    "vision": {
+      "title": "Unsere Vision",
+      "description": "Eine Welt, in der jedes kleine Unternehmen Zugang zu derselben Qualität von Verwaltungstools hat wie Fortune-500-Unternehmen und bis 2030 eine Million Unternehmen zum Erfolg befähigt."
+    },
+    "journey": {
+      "title": "Unsere Reise"
+    },
+    "values": {
+      "title": "Unsere Werte",
+      "subtitle": "Die Prinzipien, die jede unserer Entscheidungen leiten",
+      "simplicity": {
+        "title": "Einfachheit zuerst",
+        "description": "Komplexe Geschäftsabläufe durch intuitives Design vereinfacht"
+      },
+      "innovation": {
+        "title": "Kontinuierliche Innovation",
+        "description": "Weiterentwicklung mit den sich ändernden Bedürfnissen moderner Unternehmen"
+      },
+      "success": {
+        "title": "Kundenerfolg",
+        "description": "Ihr Wachstum ist unser Erfolg - wir gewinnen, wenn Sie gewinnen"
+      },
+      "empowerment": {
+        "title": "Globale Befähigung",
+        "description": "Barrieren für Unternehmen weltweit abbauen"
+      }
+    },
+    "differentiators": {
+      "title": "Was Dott anders macht",
+      "unified": {
+        "title": "Einheitliche Plattform",
+        "description": "Alle Ihre Geschäftstools an einem Ort"
+      },
+      "global": {
+        "title": "Global, aber lokal",
+        "description": "Internationale Standards mit lokaler Compliance"
+      },
+      "security": {
+        "title": "Unternehmenssicherheit",
+        "description": "Schutz auf Bankniveau für Ihre Daten"
+      },
+      "insights": {
+        "title": "Intelligente Einblicke",
+        "description": "KI-gestützte Analysen für bessere Entscheidungen"
+      }
+    }
+  },
+  "blog": {
+    "hero": {
+      "title": "Dott Business Blog",
+      "subtitle": "Erfahren Sie mehr über die Verwaltung Ihrer Geschäftsfinanzen mit Dott. Erhalten Sie Tipps, Einblicke und Strategien für das Wachstum Ihres Unternehmens."
+    },
+    "newsletter": {
+      "title": "Melden Sie sich für unseren Newsletter an, um Produktupdates und neue Blogbeiträge zu erhalten!",
+      "placeholder": "Ihre E-Mail-Adresse",
+      "button": "Abonnieren"
+    },
+    "categories": {
+      "all": "Alle Artikel",
+      "accounting": "Buchhaltung & Steuern",
+      "business": "Geschäft"
+    },
+    "search": {
+      "placeholder": "Artikel suchen..."
+    },
+    "featured": "Empfohlen",
+    "readTime": "{{minutes}} Min. Lesezeit",
+    "noArticles": "Keine Artikel gefunden, die Ihren Kriterien entsprechen.",
+    "articles": {
+      "profitLoss": {
+        "title": "Gewinn und Verlust verstehen: Ein unterhaltsamer Leitfaden für Unternehmer",
+        "excerpt": "Entdecken Sie, wie Sie Ihre GuV-Aufstellung lesen und verstehen, ohne einzuschlafen. Wir versprechen, es interessant zu machen!"
+      }
+    }
+  },
+  "subscription": {
+    "freePlan": "Kostenloser Plan",
+    "professionalPlan": "Professioneller Plan",
+    "enterprisePlan": "Unternehmensplan",
+    "upgrade": "Upgrade"
+  },
+  "status": {
+    "backToHome": "Zurück zur Startseite",
+    "title": "Dott Systemstatus",
+    "subtitle": "Aktueller Betriebsstatus der Dott-Dienste",
+    "checking": "Überprüfung...",
+    "refresh": "Aktualisieren",
+    "allSystemsOperational": "Alle Systeme betriebsbereit",
+    "partialDisruption": "Teilweise Dienstunterbrechung",
+    "serviceOutage": "Dienstausfall",
+    "checkingStatus": "Systemstatus überprüfen",
+    "lastChecked": "Zuletzt geprüft: {{time}}",
+    "serviceStatus": "Dienststatus",
+    "platform": {
+      "title": "Dott-Plattform",
+      "description": "Anwendung und Website"
+    },
+    "api": {
+      "title": "API-Dienste",
+      "description": "Backend-Dienste und Datenverarbeitung"
+    },
+    "uptime": "Verfügbarkeit",
+    "operational": "Betriebsbereit",
+    "degraded": "Beeinträchtigt",
+    "outage": "Ausfall",
+    "checkingShort": "Überprüfung",
+    "needHelp": "Brauchen Sie Hilfe?",
+    "supportInfo": "Wenn Sie Probleme haben, überprüfen Sie bitte zuerst diese Seite auf bekannte Dienstunterbrechungen.",
+    "supportContact": "Support-Kontakt:",
+    "allRightsReserved": "Alle Rechte vorbehalten.",
+    "privacyPolicy": "Datenschutzrichtlinie",
+    "termsOfService": "Nutzungsbedingungen"
   }
 }

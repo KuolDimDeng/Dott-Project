@@ -4,7 +4,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   MapPinIcon, 
   PlusCircleIcon, 
-  TrashIcon, 
   PencilIcon,
   EyeIcon,
   ShieldCheckIcon,
@@ -96,6 +95,14 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
           handleMapClick(event, googleMap);
         });
 
+        // Add double-click listener to remove geofence
+        googleMap.addListener('dblclick', (event) => {
+          if (geofence) {
+            removeGeofence();
+            event.stop(); // Prevent map zoom on double-click
+          }
+        });
+
         mapRef.current = googleMap;
         setMap(googleMap);
         setLoading(false);
@@ -179,6 +186,11 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
         center_latitude: newCenter.lat(),
         center_longitude: newCenter.lng()
       }));
+    });
+
+    // Add double-click listener to the circle itself
+    window.google.maps.event.addListener(newGeofence, 'dblclick', () => {
+      removeGeofence();
     });
   };
 
@@ -345,17 +357,8 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <label className="text-sm font-medium text-gray-700">
-            Click on the map to set geofence location
+            Click to place geofence • Double-click to remove
           </label>
-          {geofence && (
-            <button
-              onClick={removeGeofence}
-              className="flex items-center px-3 py-1 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-md hover:bg-red-100"
-            >
-              <TrashIcon className="h-4 w-4 mr-1" />
-              Remove Circle
-            </button>
-          )}
         </div>
         <div className="relative w-full h-96 border border-gray-300 rounded-lg overflow-hidden bg-gray-50">
           {loading && (
@@ -383,9 +386,14 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
           <div ref={mapContainerRef} className="w-full h-full" />
         </div>
         {geofenceData.center_latitude && geofenceData.center_longitude && (
-          <p className="text-xs text-gray-600 mt-1">
-            Location: {geofenceData.center_latitude.toFixed(6)}, {geofenceData.center_longitude.toFixed(6)} • Radius: {geofenceData.radius}m
-          </p>
+          <div className="mt-1">
+            <p className="text-xs text-gray-600">
+              Location: {geofenceData.center_latitude.toFixed(6)}, {geofenceData.center_longitude.toFixed(6)} • Radius: {geofenceData.radius}m
+            </p>
+            <p className="text-xs text-gray-500 italic">
+              Tip: Double-click anywhere on the map or circle to remove it
+            </p>
+          </div>
         )}
       </div>
 

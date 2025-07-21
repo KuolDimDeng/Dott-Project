@@ -563,5 +563,153 @@
     "global.description": "Sarrafa takardun kasuwanci na ƙasashen waje da cika dokoki",
     "security": "Tsaron Kamfani",
     "security.description": "Tsaro mai matsayin banki da cika dokoki na yanki"
+  },
+  "about": {
+    "backToHome": "Koma Gida",
+    "hero": {
+      "title": "ƴarfafa kasuwanci don",
+      "subtitle": "bunƙasa a duniya",
+      "description": "Muna gina tsarin aiki don ƙananan kasuwanci na zamani, yana sanya kayan aikin matakin kamfani su kasance ga kowa."
+    },
+    "story": {
+      "title": "Labarin Mu",
+      "paragraph1": "Dott ya fito daga sauki: ƙananan kasuwanci suna nutsewa cikin rikitarwa. Kayan aiki da yawa, bayanan da ba su haɗu ba, da hanyoyin da aka tsara don manyan kamfanoni suna hana 'yan kasuwa a duk duniya.",
+      "paragraph2": "An kafa shi a cikin 2023, mun fara gina wani abu na daban. Dandamali wanda ya fahimci ƙalubalen musamman na ƙananan kasuwanci, musamman a kasuwannin da ke tasowa inda mafita na gargajiya ba su yi nasara ba.",
+      "paragraph3": "Yau, muna alfahari da hidimar kasuwanci a duk duniya. Amma mun fara ne kawai."
+    },
+    "timeline": {
+      "beginning": {
+        "title": "Farko",
+        "description": "Ya gano buƙatar kayan aikin gudanarwa na kasuwanci ga SMBs"
+      },
+      "launch": {
+        "title": "Ƙaddamar da Samfur",
+        "description": "Ya ƙaddamar da dandamali na asali tare da gudanarwar kuɗi da kaya"
+      },
+      "expansion": {
+        "title": "Faɗaɗa Duniya",
+        "description": "Ya faɗaɗa zuwa ƙasashe sama da 25 tare da abubuwan gida"
+      },
+      "ai": {
+        "title": "Haɗin AI",
+        "description": "Gabatar da fahimta mai wayo da aiki ta atomatik"
+      }
+    },
+    "mission": {
+      "title": "Manufar Mu",
+      "description": "Yin dimokuradiyyar gudanarwar kasuwanci ta hanyar samar wa ƙananan kasuwanci kayan aiki masu ƙarfi, masu araha waɗanda ke sauƙaƙe ayyuka kuma suna ba da damar haɓaka, ba tare da la'akari da wuri ko ƙwarewar fasaha ba."
+    },
+    "vision": {
+      "title": "Hangen Nesa",
+      "description": "Duniya inda kowane ƙaramin kasuwanci yana da damar samun ingancin kayan aikin gudanarwa iri ɗaya da kamfanonin Fortune 500, yana ƙarfafa kasuwanci miliyan ɗaya don bunƙasa nan da 2030."
+    },
+    "journey": {
+      "title": "Tafiyar Mu"
+    },
+    "values": {
+      "title": "Darajar Mu",
+      "subtitle": "Ka'idodin da ke jagorantar kowane yanke shawara da muke yi",
+      "simplicity": {
+        "title": "Sauƙi na Farko",
+        "description": "Ayyukan kasuwanci masu rikitarwa sun sauƙaƙa ta hanyar ƙira mai sauƙi"
+      },
+      "innovation": {
+        "title": "Ci gaba mai Ci gaba",
+        "description": "Haɓaka tare da canza buƙatun kasuwanci na zamani"
+      },
+      "success": {
+        "title": "Nasarar Abokin Ciniki",
+        "description": "Haɓakar ku shine nasarar mu - muna cin nasara lokacin da kuka ci nasara"
+      },
+      "empowerment": {
+        "title": "ƴarfafawa na Duniya",
+        "description": "Karya shingen kasuwanci a duk duniya"
+      }
+    },
+    "differentiators": {
+      "title": "Abin da Ya Sa Dott ya Bambanta",
+      "unified": {
+        "title": "Dandamali na Haɗin Kai",
+        "description": "Duk kayan aikin kasuwanci a wuri ɗaya"
+      },
+      "global": {
+        "title": "Duniya, Amma Gida",
+        "description": "Ma'auni na ƙasa da ƙasa tare da bin doka na gida"
+      },
+      "security": {
+        "title": "Tsaron Kasuwanci",
+        "description": "Kariyar matakin banki don bayananku"
+      },
+      "insights": {
+        "title": "Fahimtar Wayo",
+        "description": "Bincike mai ƙarfin AI don yanke shawara mafi kyau"
+      }
+    }
+  },
+  "blog": {
+    "hero": {
+      "title": "Blog ɗin Kasuwancin Dott",
+      "subtitle": "Koyi game da sarrafa kuɗin kasuwancin ku tare da Dott. Sami shawarwari, fahimta, da dabarun haɓaka kasuwancin ku."
+    },
+    "newsletter": {
+      "title": "Yi rajista don sabon labarin mu don sabuntawar samfur da sabbin rubuce-rubucen blog!",
+      "placeholder": "Adireshin imel ɗinku",
+      "button": "Yi rajista"
+    },
+    "categories": {
+      "all": "Duk Labaran",
+      "accounting": "Lissafi & Haraji",
+      "business": "Kasuwanci"
+    },
+    "search": {
+      "placeholder": "Bincika labaran..."
+    },
+    "featured": "Fitaccen",
+    "readTime": "{{minutes}} min karatu",
+    "noArticles": "Babu labaran da aka samu daidai da ka'idojin ku.",
+    "articles": {
+      "profitLoss": {
+        "title": "Fahimtar Riba & Asara: Jagora Mai Nishaɗi ga Masu Kasuwanci",
+        "excerpt": "Gano yadda ake karantawa da fahimtar bayanin P&L ɗin ku ba tare da barci ba. Muna yin alkawarin sanya shi ya zama mai ban sha'awa!"
+      }
+    }
+  },
+  "subscription": {
+    "freePlan": "Shirin Kyauta",
+    "professionalPlan": "Shirin Ƙwararru",
+    "enterprisePlan": "Shirin Kamfani",
+    "upgrade": "Haɓaka"
+  },
+  "status": {
+    "backToHome": "Koma Gida",
+    "title": "Matsayin Tsarin Dott",
+    "subtitle": "Matsayin aiki na yanzu na ayyukan Dott",
+    "checking": "Ana dubawa...",
+    "refresh": "Sabunta",
+    "allSystemsOperational": "Duk Tsarin Yana Aiki",
+    "partialDisruption": "Ɓangaren Rashin Sabis",
+    "serviceOutage": "Katsewar Sabis",
+    "checkingStatus": "Duba Matsayin Tsarin",
+    "lastChecked": "Dubawa ta ƙarshe: {{time}}",
+    "serviceStatus": "Matsayin Sabis",
+    "platform": {
+      "title": "Dandalin Dott",
+      "description": "Aikace-aikace da gidan yanar gizo"
+    },
+    "api": {
+      "title": "Ayyukan API",
+      "description": "Ayyukan baya da sarrafa bayanai"
+    },
+    "uptime": "Lokacin Aiki",
+    "operational": "Yana Aiki",
+    "degraded": "An Rage",
+    "outage": "Katse",
+    "checkingShort": "Dubawa",
+    "needHelp": "Kuna Buƙatar Taimako?",
+    "supportInfo": "Idan kuna fuskantar matsaloli, da fatan za a duba wannan shafin da farko don sanin duk wani sanannun katsewar sabis.",
+    "supportContact": "Tuntuɓar Tallafi:",
+    "allRightsReserved": "Duk haƙƙoƙin an kiyaye su.",
+    "privacyPolicy": "Manufar Sirri",
+    "termsOfService": "Sharuɗɗan Sabis"
   }
 }

@@ -698,5 +698,153 @@
     "gdprDesc": "Inafuata faragha",
     "uptimeTitle": "99.9% Wakati wa Kufanya Kazi",
     "uptimeDesc": "Inapatikana kila wakati"
+  },
+  "about": {
+    "backToHome": "Rudi Nyumbani",
+    "hero": {
+      "title": "Kuwezesha biashara",
+      "subtitle": "kustawi kimataifa",
+      "description": "Tunajenga mfumo wa uendeshaji kwa biashara ndogo za kisasa, tukifanya zana za kiwango cha makampuni zipatikane kwa kila mtu."
+    },
+    "story": {
+      "title": "Hadithi Yetu",
+      "paragraph1": "Dott ilizaliwa kutoka uchunguzi rahisi: biashara ndogo zilikuwa zikizama katika ugumu. Zana nyingi, data iliyotenganishwa, na michakato iliyoundwa kwa makampuni ilikuwa ikizuia wajasiriamali ulimwenguni kote.",
+      "paragraph2": "Iliyoanzishwa mnamo 2023, tulianza kujenga kitu tofauti. Jukwaa linalolewa changamoto za kipekee za biashara ndogo, hasa katika masoko yanayoibuka ambapo suluhisho za jadi zinashindwa.",
+      "paragraph3": "Leo, tunajivunia kutumikia biashara ulimwenguni kote. Lakini tumeanza tu."
+    },
+    "timeline": {
+      "beginning": {
+        "title": "Mwanzo",
+        "description": "Ilitambua hitaji la zana za usimamizi wa biashara zilizounganishwa kwa SMB"
+      },
+      "launch": {
+        "title": "Uzinduzi wa Bidhaa",
+        "description": "Ilizindua jukwaa kuu lenye usimamizi wa fedha na hesabu"
+      },
+      "expansion": {
+        "title": "Upanuzi wa Kimataifa",
+        "description": "Ilipanuka kwa nchi zaidi ya 25 na vipengele vya ndani"
+      },
+      "ai": {
+        "title": "Ushirikiano wa AI",
+        "description": "Kuanzisha maarifa ya akili na otomatiki"
+      }
+    },
+    "mission": {
+      "title": "Dhamira Yetu",
+      "description": "Kuwezesha usimamizi wa biashara kwa kuwapa biashara ndogo zana zenye nguvu, zinazopatikana ambazo hurahisisha shughuli na kuwezesha ukuaji, bila kujali mahali au utaalam wa kiufundi."
+    },
+    "vision": {
+      "title": "Maono Yetu",
+      "description": "Ulimwengu ambapo kila biashara ndogo ina ufikiaji wa ubora sawa wa zana za usimamizi kama makampuni ya Fortune 500, kuwezesha biashara milioni moja kustawi ifikapo 2030."
+    },
+    "journey": {
+      "title": "Safari Yetu"
+    },
+    "values": {
+      "title": "Maadili Yetu",
+      "subtitle": "Kanuni zinazoongoza kila uamuzi tunaofanya",
+      "simplicity": {
+        "title": "Urahisi Kwanza",
+        "description": "Shughuli ngumu za biashara zilizofanywa kuwa rahisi kupitia muundo wa angavu"
+      },
+      "innovation": {
+        "title": "Ubunifu Endelevu",
+        "description": "Kukua na mahitaji yanayobadilika ya biashara ya kisasa"
+      },
+      "success": {
+        "title": "Mafanikio ya Wateja",
+        "description": "Ukuaji wako ni mafanikio yetu - tunashinda unaposhinda"
+      },
+      "empowerment": {
+        "title": "Uwezeshaji wa Kimataifa",
+        "description": "Kuvunja vizuizi kwa biashara ulimwenguni kote"
+      }
+    },
+    "differentiators": {
+      "title": "Kile Kinachofanya Dott Kuwa Tofauti",
+      "unified": {
+        "title": "Jukwaa Lililounganishwa",
+        "description": "Zana zako zote za biashara mahali pamoja"
+      },
+      "global": {
+        "title": "Kimataifa, Lakini ya Ndani",
+        "description": "Viwango vya kimataifa na utii wa ndani"
+      },
+      "security": {
+        "title": "Usalama wa Biashara",
+        "description": "Ulinzi wa kiwango cha benki kwa data yako"
+      },
+      "insights": {
+        "title": "Maarifa ya Akili",
+        "description": "Uchambuzi unaotumia AI kwa maamuzi bora"
+      }
+    }
+  },
+  "blog": {
+    "hero": {
+      "title": "Blogu ya Biashara ya Dott",
+      "subtitle": "Jifunze kuhusu kusimamia fedha za biashara yako na Dott. Pata vidokezo, maarifa, na mikakati ya kukuza biashara yako."
+    },
+    "newsletter": {
+      "title": "Jiandikishe kwa jarida letu kwa masasisho ya bidhaa na machapisho mapya ya blogu!",
+      "placeholder": "Anwani yako ya barua pepe",
+      "button": "Jiandikishe"
+    },
+    "categories": {
+      "all": "Makala Zote",
+      "accounting": "Uhasibu na Kodi",
+      "business": "Biashara"
+    },
+    "search": {
+      "placeholder": "Tafuta makala..."
+    },
+    "featured": "Zilizoangaziwa",
+    "readTime": "Dakika {{minutes}} za kusoma",
+    "noArticles": "Hakuna makala zilizopatikana zinazolingana na vigezo vyako.",
+    "articles": {
+      "profitLoss": {
+        "title": "Kuelewa Faida na Hasara: Mwongozo wa Kufurahisha kwa Wamiliki wa Biashara",
+        "excerpt": "Gundua jinsi ya kusoma na kuelewa taarifa yako ya P&L bila kulala. Tunaahidi kuifanya iwe ya kuvutia!"
+      }
+    }
+  },
+  "subscription": {
+    "freePlan": "Mpango wa Bure",
+    "professionalPlan": "Mpango wa Kitaaluma",
+    "enterprisePlan": "Mpango wa Biashara",
+    "upgrade": "Boresha"
+  },
+  "status": {
+    "backToHome": "Rudi Nyumbani",
+    "title": "Hali ya Mfumo wa Dott",
+    "subtitle": "Hali ya sasa ya uendeshaji wa huduma za Dott",
+    "checking": "Inakagua...",
+    "refresh": "Onyesha Upya",
+    "allSystemsOperational": "Mifumo Yote Inafanya Kazi",
+    "partialDisruption": "Usumbufu wa Sehemu ya Huduma",
+    "serviceOutage": "Kukatika kwa Huduma",
+    "checkingStatus": "Inakagua Hali ya Mfumo",
+    "lastChecked": "Ilikaguliwa mwisho: {{time}}",
+    "serviceStatus": "Hali ya Huduma",
+    "platform": {
+      "title": "Jukwaa la Dott",
+      "description": "Programu na tovuti"
+    },
+    "api": {
+      "title": "Huduma za API",
+      "description": "Huduma za nyuma na uchakataji wa data"
+    },
+    "uptime": "Muda wa Kufanya Kazi",
+    "operational": "Inafanya Kazi",
+    "degraded": "Imedhoofika",
+    "outage": "Imesimama",
+    "checkingShort": "Inakagua",
+    "needHelp": "Unahitaji Msaada?",
+    "supportInfo": "Ukipata matatizo, tafadhali angalia ukurasa huu kwanza kwa usumbufu wowote unaojulikana wa huduma.",
+    "supportContact": "Wasiliana na Msaada:",
+    "allRightsReserved": "Haki zote zimehifadhiwa.",
+    "privacyPolicy": "Sera ya Faragha",
+    "termsOfService": "Masharti ya Huduma"
   }
 }

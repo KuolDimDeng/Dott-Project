@@ -681,5 +681,153 @@
     "gdprDesc": "Conforme à la vie privée",
     "uptimeTitle": "99.9% de Disponibilité",
     "uptimeDesc": "Toujours disponible"
+  },
+  "about": {
+    "backToHome": "Retour à l'Accueil",
+    "hero": {
+      "title": "Donner aux entreprises les moyens de",
+      "subtitle": "prospérer mondialement",
+      "description": "Nous construisons le système d'exploitation pour les petites entreprises modernes, rendant les outils de niveau entreprise accessibles à tous."
+    },
+    "story": {
+      "title": "Notre Histoire",
+      "paragraph1": "Dott est né d'une simple observation : les petites entreprises se noyaient dans la complexité. Plusieurs outils, des données déconnectées et des processus conçus pour les entreprises freinaient les entrepreneurs du monde entier.",
+      "paragraph2": "Fondée en 2023, nous avons entrepris de construire quelque chose de différent. Une plateforme qui comprend les défis uniques des petites entreprises, en particulier sur les marchés émergents où les solutions traditionnelles échouent.",
+      "paragraph3": "Aujourd'hui, nous sommes fiers de servir des entreprises dans le monde entier. Mais nous ne faisons que commencer."
+    },
+    "timeline": {
+      "beginning": {
+        "title": "Le Début",
+        "description": "Identification du besoin d'outils de gestion d'entreprise unifiés pour les PME"
+      },
+      "launch": {
+        "title": "Lancement du Produit",
+        "description": "Lancement de la plateforme principale avec gestion financière et des stocks"
+      },
+      "expansion": {
+        "title": "Expansion Mondiale",
+        "description": "Extension à plus de 25 pays avec des fonctionnalités localisées"
+      },
+      "ai": {
+        "title": "Intégration IA",
+        "description": "Introduction d'insights intelligents et d'automatisation"
+      }
+    },
+    "mission": {
+      "title": "Notre Mission",
+      "description": "Démocratiser la gestion d'entreprise en fournissant aux petites entreprises des outils puissants et abordables qui simplifient les opérations et permettent la croissance, quel que soit l'emplacement ou l'expertise technique."
+    },
+    "vision": {
+      "title": "Notre Vision",
+      "description": "Un monde où chaque petite entreprise a accès à la même qualité d'outils de gestion que les entreprises Fortune 500, permettant à un million d'entreprises de prospérer d'ici 2030."
+    },
+    "journey": {
+      "title": "Notre Parcours"
+    },
+    "values": {
+      "title": "Nos Valeurs",
+      "subtitle": "Les principes qui guident chaque décision que nous prenons",
+      "simplicity": {
+        "title": "La Simplicité d'Abord",
+        "description": "Les opérations commerciales complexes simplifiées grâce à un design intuitif"
+      },
+      "innovation": {
+        "title": "Innovation Continue",
+        "description": "Évolution avec les besoins changeants des entreprises modernes"
+      },
+      "success": {
+        "title": "Succès Client",
+        "description": "Votre croissance est notre succès - nous gagnons quand vous gagnez"
+      },
+      "empowerment": {
+        "title": "Autonomisation Mondiale",
+        "description": "Briser les barrières pour les entreprises du monde entier"
+      }
+    },
+    "differentiators": {
+      "title": "Ce qui Rend Dott Différent",
+      "unified": {
+        "title": "Plateforme Unifiée",
+        "description": "Tous vos outils d'entreprise en un seul endroit"
+      },
+      "global": {
+        "title": "Global, mais Local",
+        "description": "Normes internationales avec conformité locale"
+      },
+      "security": {
+        "title": "Sécurité d'Entreprise",
+        "description": "Protection de niveau bancaire pour vos données"
+      },
+      "insights": {
+        "title": "Insights Intelligents",
+        "description": "Analyses alimentées par IA pour de meilleures décisions"
+      }
+    }
+  },
+  "blog": {
+    "hero": {
+      "title": "Blog d'Entreprise Dott",
+      "subtitle": "Apprenez à gérer les finances de votre entreprise avec Dott. Obtenez des conseils, des insights et des stratégies pour développer votre entreprise."
+    },
+    "newsletter": {
+      "title": "Inscrivez-vous à notre newsletter pour les mises à jour de produits et les nouvelles publications de blog !",
+      "placeholder": "Votre adresse e-mail",
+      "button": "S'abonner"
+    },
+    "categories": {
+      "all": "Tous les Articles",
+      "accounting": "Comptabilité et Impôts",
+      "business": "Entreprise"
+    },
+    "search": {
+      "placeholder": "Rechercher des articles..."
+    },
+    "featured": "En Vedette",
+    "readTime": "{{minutes}} min de lecture",
+    "noArticles": "Aucun article trouvé correspondant à vos critères.",
+    "articles": {
+      "profitLoss": {
+        "title": "Comprendre les Profits et Pertes : Un Guide Amusant pour les Propriétaires d'Entreprise",
+        "excerpt": "Découvrez comment lire et comprendre votre état P&L sans vous endormir. Nous promettons de le rendre intéressant !"
+      }
+    }
+  },
+  "subscription": {
+    "freePlan": "Plan Gratuit",
+    "professionalPlan": "Plan Professionnel",
+    "enterprisePlan": "Plan Entreprise",
+    "upgrade": "Mettre à niveau"
+  },
+  "status": {
+    "backToHome": "Retour à l'Accueil",
+    "title": "État du Système Dott",
+    "subtitle": "État opérationnel actuel des services Dott",
+    "checking": "Vérification...",
+    "refresh": "Actualiser",
+    "allSystemsOperational": "Tous les Systèmes Opérationnels",
+    "partialDisruption": "Perturbation Partielle du Service",
+    "serviceOutage": "Panne de Service",
+    "checkingStatus": "Vérification de l'État du Système",
+    "lastChecked": "Dernière vérification : {{time}}",
+    "serviceStatus": "État du Service",
+    "platform": {
+      "title": "Plateforme Dott",
+      "description": "Application et site web"
+    },
+    "api": {
+      "title": "Services API",
+      "description": "Services backend et traitement des données"
+    },
+    "uptime": "Temps de Fonctionnement",
+    "operational": "Opérationnel",
+    "degraded": "Dégradé",
+    "outage": "Panne",
+    "checkingShort": "Vérification",
+    "needHelp": "Besoin d'Aide ?",
+    "supportInfo": "Si vous rencontrez des problèmes, veuillez d'abord consulter cette page pour toute perturbation de service connue.",
+    "supportContact": "Contact Support :",
+    "allRightsReserved": "Tous droits réservés.",
+    "privacyPolicy": "Politique de Confidentialité",
+    "termsOfService": "Conditions de Service"
   }
 }

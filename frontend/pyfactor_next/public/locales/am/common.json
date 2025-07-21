@@ -385,5 +385,11 @@
   "integration_subtitle": "Dottን ከሚወዷቸው መተግበሪያዎች ጋር ያገናኙ",
   "security_badge_1": "የባንክ ደረጃ ምስጠራ",
   "security_badge_2": "GDPR ተገዢ",
-  "security_badge_3": "99.9% የስራ ጊዜ"
+  "security_badge_3": "99.9% የስራ ጊዜ",
+  "subscription": {
+    "freePlan": "ነፃ ዕቅድ",
+    "professionalPlan": "ሙያዊ ዕቅድ",
+    "enterprisePlan": "ድርጅታዊ ዕቅድ",
+    "upgrade": "አሻሽል"
+  }
 }

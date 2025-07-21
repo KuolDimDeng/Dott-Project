@@ -2346,10 +2346,14 @@ const MainListItems = ({
           className={`flex items-center w-full rounded-md text-left ${
             isIconOnly ? 'justify-center py-3 px-0' : 'px-4 py-2'
           } ${
-            hoveredItem === item.label
-              ? 'text-white bg-blue-600 hover:bg-blue-700'
-              : 'text-blue-900 hover:bg-gray-100 hover:text-gray-900'
-          } transition-colors duration-150`}
+            item.isSpecial 
+              ? hoveredItem === item.label
+                ? 'text-white bg-blue-600 hover:bg-blue-700 border-2 border-blue-600'
+                : 'text-blue-600 hover:bg-blue-600 hover:text-white border-2 border-blue-600'
+              : hoveredItem === item.label
+                ? 'text-white bg-blue-600 hover:bg-blue-700'
+                : 'text-blue-900 hover:bg-gray-100 hover:text-gray-900'
+          } transition-all duration-150`}
           onClick={(e) => {
             // If drawer is closed and item has subItems, open drawer and expand submenu
             if (isIconOnly && item.subItems && handleDrawerOpen) {

@@ -581,5 +581,153 @@
     "gdprDesc": "Privacy conform",
     "uptimeTitle": "99.9% uptime",
     "uptimeDesc": "Altijd beschikbaar"
+  },
+  "about": {
+    "backToHome": "Terug naar Home",
+    "hero": {
+      "title": "Bedrijven in staat stellen om",
+      "subtitle": "wereldwijd te floreren",
+      "description": "We bouwen het besturingssysteem voor moderne kleine bedrijven, waardoor tools op ondernemingsniveau voor iedereen toegankelijk worden."
+    },
+    "story": {
+      "title": "Ons Verhaal",
+      "paragraph1": "Dott ontstond uit een eenvoudige observatie: kleine bedrijven verdronken in complexiteit. Meerdere tools, losgekoppelde gegevens en processen die zijn ontworpen voor ondernemingen hielden ondernemers wereldwijd tegen.",
+      "paragraph2": "Opgericht in 2023, begonnen we met het bouwen van iets anders. Een platform dat de unieke uitdagingen van kleine bedrijven begrijpt, vooral in opkomende markten waar traditionele oplossingen falen.",
+      "paragraph3": "Vandaag zijn we trots om bedrijven wereldwijd te bedienen. Maar we zijn nog maar net begonnen."
+    },
+    "timeline": {
+      "beginning": {
+        "title": "Het Begin",
+        "description": "Identificeerde de behoefte aan uniforme bedrijfsbeheerstools voor het MKB"
+      },
+      "launch": {
+        "title": "Productlancering",
+        "description": "Lanceerde het kernplatform met financiël en voorraadbeheer"
+      },
+      "expansion": {
+        "title": "Wereldwijde Uitbreiding",
+        "description": "Uitgebreid naar 25+ landen met gelokaliseerde functies"
+      },
+      "ai": {
+        "title": "AI-integratie",
+        "description": "Introductie van intelligente inzichten en automatisering"
+      }
+    },
+    "mission": {
+      "title": "Onze Missie",
+      "description": "Bedrijfsbeheer democratiseren door kleine bedrijven krachtige, betaalbare tools te bieden die activiteiten vereenvoudigen en groei mogelijk maken, ongeacht locatie of technische expertise."
+    },
+    "vision": {
+      "title": "Onze Visie",
+      "description": "Een wereld waarin elk klein bedrijf toegang heeft tot dezelfde kwaliteit beheertools als Fortune 500-bedrijven, waardoor één miljoen bedrijven kunnen floreren tegen 2030."
+    },
+    "journey": {
+      "title": "Onze Reis"
+    },
+    "values": {
+      "title": "Onze Waarden",
+      "subtitle": "De principes die elke beslissing die we nemen begeleiden",
+      "simplicity": {
+        "title": "Eenvoud Eerst",
+        "description": "Complexe bedrijfsactiviteiten vereenvoudigd door intuïtief ontwerp"
+      },
+      "innovation": {
+        "title": "Continue Innovatie",
+        "description": "Evolueren met de veranderende behoeften van moderne bedrijven"
+      },
+      "success": {
+        "title": "Klantsucces",
+        "description": "Uw groei is ons succes - we winnen wanneer u wint"
+      },
+      "empowerment": {
+        "title": "Wereldwijde Empowerment",
+        "description": "Barrières doorbreken voor bedrijven wereldwijd"
+      }
+    },
+    "differentiators": {
+      "title": "Wat Dott Anders Maakt",
+      "unified": {
+        "title": "Geïntegreerd Platform",
+        "description": "Al uw bedrijfstools op één plek"
+      },
+      "global": {
+        "title": "Globaal, maar Lokaal",
+        "description": "Internationale normen met lokale naleving"
+      },
+      "security": {
+        "title": "Ondernemingsbeveiliging",
+        "description": "Bescherming op bankniveau voor uw gegevens"
+      },
+      "insights": {
+        "title": "Slimme Inzichten",
+        "description": "AI-aangedreven analyses voor betere beslissingen"
+      }
+    }
+  },
+  "blog": {
+    "hero": {
+      "title": "Dott Zakelijke Blog",
+      "subtitle": "Leer over het beheren van uw bedrijfsfinanciën met Dott. Krijg tips, inzichten en strategieën om uw bedrijf te laten groeien."
+    },
+    "newsletter": {
+      "title": "Meld u aan voor onze nieuwsbrief voor productupdates en nieuwe blogposts!",
+      "placeholder": "Uw e-mailadres",
+      "button": "Abonneren"
+    },
+    "categories": {
+      "all": "Alle Artikelen",
+      "accounting": "Boekhouding & Belastingen",
+      "business": "Bedrijf"
+    },
+    "search": {
+      "placeholder": "Zoek artikelen..."
+    },
+    "featured": "Uitgelicht",
+    "readTime": "{{minutes}} min lezen",
+    "noArticles": "Geen artikelen gevonden die aan uw criteria voldoen.",
+    "articles": {
+      "profitLoss": {
+        "title": "Winst & Verlies Begrijpen: Een Leuke Gids voor Bedrijfseigenaren",
+        "excerpt": "Ontdek hoe u uw W&V-overzicht kunt lezen en begrijpen zonder in slaap te vallen. We beloven het interessant te maken!"
+      }
+    }
+  },
+  "subscription": {
+    "freePlan": "Gratis Plan",
+    "professionalPlan": "Professioneel Plan",
+    "enterprisePlan": "Ondernemingsplan",
+    "upgrade": "Upgraden"
+  },
+  "status": {
+    "backToHome": "Terug naar Home",
+    "title": "Dott Systeemstatus",
+    "subtitle": "Huidige operationele status van Dott-diensten",
+    "checking": "Controleren...",
+    "refresh": "Vernieuwen",
+    "allSystemsOperational": "Alle Systemen Operationeel",
+    "partialDisruption": "Gedeeltelijke Dienstverstoring",
+    "serviceOutage": "Dienststoring",
+    "checkingStatus": "Systeemstatus Controleren",
+    "lastChecked": "Laatst gecontroleerd: {{time}}",
+    "serviceStatus": "Servicestatus",
+    "platform": {
+      "title": "Dott Platform",
+      "description": "Applicatie en website"
+    },
+    "api": {
+      "title": "API-diensten",
+      "description": "Backend-diensten en gegevensverwerking"
+    },
+    "uptime": "Bedrijfstijd",
+    "operational": "Operationeel",
+    "degraded": "Verminderd",
+    "outage": "Storing",
+    "checkingShort": "Controleren",
+    "needHelp": "Hulp Nodig?",
+    "supportInfo": "Als u problemen ondervindt, controleer dan eerst deze pagina op bekende dienstverstoringen.",
+    "supportContact": "Ondersteuningscontact:",
+    "allRightsReserved": "Alle rechten voorbehouden.",
+    "privacyPolicy": "Privacybeleid",
+    "termsOfService": "Servicevoorwaarden"
   }
 }

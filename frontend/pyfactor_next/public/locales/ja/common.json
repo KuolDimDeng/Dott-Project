@@ -698,5 +698,153 @@
     "gdprDesc": "プライバシー準拠",
     "uptimeTitle": "99.9%稼働率",
     "uptimeDesc": "常時利用可能"
+  },
+  "about": {
+    "backToHome": "ホームに戻る",
+    "hero": {
+      "title": "企業に力を与え",
+      "subtitle": "グローバルに繁栄させる",
+      "description": "私たちは現代の中小企業向けのオペレーティングシステムを構築し、エンタープライズグレードのツールをすべての人に利用可能にしています。"
+    },
+    "story": {
+      "title": "私たちのストーリー",
+      "paragraph1": "Dottはシンプルな観察から生まれました：中小企業は複雑さに溺れていました。複数のツール、切断されたデータ、そして大企業向けに設計されたプロセスが、世界中の起業家を妨げていました。",
+      "paragraph2": "2023年に設立され、私たちは違うものを構築し始めました。中小企業の独特な課題を理解するプラットフォームで、特に伝統的なソリューションが失敗する新興市場です。",
+      "paragraph3": "今日、私たちは世界中のビジネスにサービスを提供できることを誇りに思います。しかし、私たちはまだ始まったばかりです。"
+    },
+    "timeline": {
+      "beginning": {
+        "title": "始まり",
+        "description": "中小企業向け統合ビジネス管理ツールの必要性を特定"
+      },
+      "launch": {
+        "title": "製品ローンチ",
+        "description": "財務・在庫管理機能を備えたコアプラットフォームをローンチ"
+      },
+      "expansion": {
+        "title": "グローバル展開",
+        "description": "25カ国以上にローカライズされた機能で拡大"
+      },
+      "ai": {
+        "title": "AI統合",
+        "description": "インテリジェントなインサイトと自動化を導入"
+      }
+    },
+    "mission": {
+      "title": "私たちのミッション",
+      "description": "場所や技術的専門知識に関係なく、中小企業に運営を簡素化し成長を可能にする強力で手頃なツールを提供することで、ビジネス管理を民主化する。"
+    },
+    "vision": {
+      "title": "私たちのビジョン",
+      "description": "すべての中小企業がFortune 500企業と同じ品質の管理ツールにアクセスできる世界を実現し、2030年までに100万社の企業を繁栄させること。"
+    },
+    "journey": {
+      "title": "私たちの旅"
+    },
+    "values": {
+      "title": "私たちの価値観",
+      "subtitle": "私たちのすべての決定を導く原則",
+      "simplicity": {
+        "title": "シンプルさを最優先",
+        "description": "直感的なデザインで複雑なビジネスオペレーションをシンプルに"
+      },
+      "innovation": {
+        "title": "継続的なイノベーション",
+        "description": "現代のビジネスの変化するニーズに合わせて進化"
+      },
+      "success": {
+        "title": "顧客の成功",
+        "description": "あなたの成長は私たちの成功 - あなたが勝つとき、私たちも勝つ"
+      },
+      "empowerment": {
+        "title": "グローバルエンパワーメント",
+        "description": "世界中のビジネスの障壁を打破"
+      }
+    },
+    "differentiators": {
+      "title": "Dottを特別にするもの",
+      "unified": {
+        "title": "統合プラットフォーム",
+        "description": "すべてのビジネスツールを一箇所に"
+      },
+      "global": {
+        "title": "グローバルでありながらローカル",
+        "description": "ローカルコンプライアンスを伴う国際標準"
+      },
+      "security": {
+        "title": "エンタープライズセキュリティ",
+        "description": "あなたのデータのための銀行レベルの保護"
+      },
+      "insights": {
+        "title": "スマートインサイト",
+        "description": "より良い意思決定のためのAI駆動分析"
+      }
+    }
+  },
+  "blog": {
+    "hero": {
+      "title": "Dottビジネスブログ",
+      "subtitle": "Dottでビジネスの財務管理について学びましょう。ビジネスを成長させるためのヒント、インサイト、戦略を入手してください。"
+    },
+    "newsletter": {
+      "title": "製品のアップデートや新しいブログ投稿については、ニュースレターに登録してください！",
+      "placeholder": "メールアドレス",
+      "button": "購読する"
+    },
+    "categories": {
+      "all": "すべての記事",
+      "accounting": "会計・税務",
+      "business": "ビジネス"
+    },
+    "search": {
+      "placeholder": "記事を検索..."
+    },
+    "featured": "注目",
+    "readTime": "{{minutes}}分で読めます",
+    "noArticles": "あなたの条件に一致する記事が見つかりませんでした。",
+    "articles": {
+      "profitLoss": {
+        "title": "損益を理解する：ビジネスオーナーのための楽しいガイド",
+        "excerpt": "眠くならずにP&Lステートメントを読んで理解する方法を発見してください。面白くすることを約束します！"
+      }
+    }
+  },
+  "subscription": {
+    "freePlan": "無料プラン",
+    "professionalPlan": "プロフェッショナルプラン",
+    "enterprisePlan": "エンタープライズプラン",
+    "upgrade": "アップグレード"
+  },
+  "status": {
+    "backToHome": "ホームに戻る",
+    "title": "Dottシステムステータス",
+    "subtitle": "Dottサービスの現在の運用状況",
+    "checking": "確認中...",
+    "refresh": "更新",
+    "allSystemsOperational": "すべてのシステムが正常に稼働中",
+    "partialDisruption": "部分的なサービス中断",
+    "serviceOutage": "サービス停止",
+    "checkingStatus": "システムステータスを確認中",
+    "lastChecked": "最終確認: {{time}}",
+    "serviceStatus": "サービスステータス",
+    "platform": {
+      "title": "Dottプラットフォーム",
+      "description": "アプリケーションとウェブサイト"
+    },
+    "api": {
+      "title": "APIサービス",
+      "description": "バックエンドサービスとデータ処理"
+    },
+    "uptime": "稼働時間",
+    "operational": "正常稼働",
+    "degraded": "低下",
+    "outage": "停止",
+    "checkingShort": "確認中",
+    "needHelp": "お困りですか？",
+    "supportInfo": "問題が発生している場合は、まずこのページで既知のサービス中断を確認してください。",
+    "supportContact": "サポート連絡先:",
+    "allRightsReserved": "すべての権利を保護します。",
+    "privacyPolicy": "プライバシーポリシー",
+    "termsOfService": "利用規約"
   }
 }

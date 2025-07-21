@@ -386,5 +386,11 @@
   "integration_subtitle": "Xhuma i-Dott nezinhlelo zakho ozithandayo",
   "security_badge_1": "Ukubethela kweleveli yasebhange",
   "security_badge_2": "Ihambisana ne-GDPR",
-  "security_badge_3": "99.9% isikhathi sokusebenza"
+  "security_badge_3": "99.9% isikhathi sokusebenza",
+  "subscription": {
+    "freePlan": "Uhlelo Lwamahhala",
+    "professionalPlan": "Uhlelo Lochwepheshe",
+    "enterprisePlan": "Uhlelo Lwenkampani",
+    "upgrade": "Thuthukisa"
+  }
 }

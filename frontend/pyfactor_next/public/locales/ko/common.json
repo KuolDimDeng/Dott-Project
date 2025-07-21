@@ -425,5 +425,11 @@
     "gdprDesc": "개인정보 보호 준수",
     "uptimeTitle": "99.9% 가동 시간",
     "uptimeDesc": "항상 사용 가능"
+  },
+  "subscription": {
+    "freePlan": "무료 플랜",
+    "professionalPlan": "프로페셔널 플랜",
+    "enterprisePlan": "엔터프라이즈 플랜",
+    "upgrade": "업그레이드"
   }
 }

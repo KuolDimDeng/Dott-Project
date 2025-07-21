@@ -581,5 +581,153 @@
     "gdprDesc": "Tuân thủ quyền riêng tư",
     "uptimeTitle": "99.9% thời gian hoạt động",
     "uptimeDesc": "Luôn sẵn sàng"
+  },
+  "about": {
+    "backToHome": "Quay về Trang chủ",
+    "hero": {
+      "title": "Tập đoàn doanh nghiệp để",
+      "subtitle": "phát triển toàn cầu",
+      "description": "Chúng tôi đang xây dựng hệ điều hành cho các doanh nghiệp nhỏ hiện đại, làm cho các công cụ cấp doanh nghiệp có thể tiếp cận được với mọi người."
+    },
+    "story": {
+      "title": "Câu chuyện của chúng tôi",
+      "paragraph1": "Dott ra đời từ một quan sát đơn giản: các doanh nghiệp nhỏ đang chìm trong sự phức tạp. Nhiều công cụ, dữ liệu bị ngắt kết nối và các quy trình được thiết kế cho các doanh nghiệp lớn đang cản trở các doanh nhân trên toàn thế giới.",
+      "paragraph2": "Thành lập vào năm 2023, chúng tôi bắt đầu xây dựng một thứ khác biệt. Một nền tảng hiểu được những thách thức độc đáo của các doanh nghiệp nhỏ, đặc biệt là trên các thị trường mới nổi nơi các giải pháp truyền thống thất bại.",
+      "paragraph3": "Hôm nay, chúng tôi tự hào phục vụ các doanh nghiệp trên toàn thế giới. Nhưng chúng tôi chỉ mới bắt đầu."
+    },
+    "timeline": {
+      "beginning": {
+        "title": "Khởi đầu",
+        "description": "Xác định nhu cầu về các công cụ quản lý doanh nghiệp thống nhất cho SMB"
+      },
+      "launch": {
+        "title": "Ra mắt sản phẩm",
+        "description": "Ra mắt nền tảng cốt lõi với quản lý tài chính và hàng tồn kho"
+      },
+      "expansion": {
+        "title": "Mở rộng toàn cầu",
+        "description": "Mở rộng đến hơn 25 quốc gia với các tính năng địa phương hóa"
+      },
+      "ai": {
+        "title": "Tích hợp AI",
+        "description": "Giới thiệu những hiểu biết thông minh và tự động hóa"
+      }
+    },
+    "mission": {
+      "title": "Sứ mệnh của chúng tôi",
+      "description": "Dân chủ hóa quản lý doanh nghiệp bằng cách cung cấp cho các doanh nghiệp nhỏ những công cụ mạnh mẽ, giá cả phải chăng giúp đơn giản hóa hoạt động và cho phép tăng trưởng, bất kể vị trí hay chuyên môn kỹ thuật."
+    },
+    "vision": {
+      "title": "Tầm nhìn của chúng tôi",
+      "description": "Một thế giới nơi mọi doanh nghiệp nhỏ đều có quyền truy cập vào cùng chất lượng công cụ quản lý như các công ty Fortune 500, tập đoàn một triệu doanh nghiệp phát triển mạnh vào năm 2030."
+    },
+    "journey": {
+      "title": "Hành trình của chúng tôi"
+    },
+    "values": {
+      "title": "Giá trị của chúng tôi",
+      "subtitle": "Những nguyên tắc hướng dẫn mọi quyết định chúng tôi đưa ra",
+      "simplicity": {
+        "title": "Đơn giản trước tiên",
+        "description": "Hoạt động kinh doanh phức tạp được đơn giản hóa thông qua thiết kế trực quan"
+      },
+      "innovation": {
+        "title": "Đổi mới liên tục",
+        "description": "Phát triển cùng với nhu cầu thay đổi của các doanh nghiệp hiện đại"
+      },
+      "success": {
+        "title": "Thành công của khách hàng",
+        "description": "Sự phát triển của bạn là thành công của chúng tôi - chúng tôi chiến thắng khi bạn chiến thắng"
+      },
+      "empowerment": {
+        "title": "Tập đoàn toàn cầu",
+        "description": "Phá vỡ rào cản cho các doanh nghiệp trên toàn thế giới"
+      }
+    },
+    "differentiators": {
+      "title": "Điều làm cho Dott khác biệt",
+      "unified": {
+        "title": "Nền tảng thống nhất",
+        "description": "Tất cả các công cụ kinh doanh của bạn tại một nơi"
+      },
+      "global": {
+        "title": "Toàn cầu, nhưng cục bộ",
+        "description": "Tiêu chuẩn quốc tế với sự tuân thủ cục bộ"
+      },
+      "security": {
+        "title": "Bảo mật doanh nghiệp",
+        "description": "Bảo vệ cấp ngân hàng cho dữ liệu của bạn"
+      },
+      "insights": {
+        "title": "Hiểu biết thông minh",
+        "description": "Phân tích được hỗ trợ bởi AI để đưa ra quyết định tốt hơn"
+      }
+    }
+  },
+  "blog": {
+    "hero": {
+      "title": "Blog Kinh doanh Dott",
+      "subtitle": "Tìm hiểu về việc quản lý tài chính doanh nghiệp của bạn với Dott. Nhận lời khuyên, hiểu biết và chiến lược để phát triển doanh nghiệp của bạn."
+    },
+    "newsletter": {
+      "title": "Đăng ký nhận bản tin của chúng tôi để cập nhật sản phẩm và bài viết blog mới!",
+      "placeholder": "Địa chỉ email của bạn",
+      "button": "Đăng ký"
+    },
+    "categories": {
+      "all": "Tất cả bài viết",
+      "accounting": "Kế toán & Thuế",
+      "business": "Kinh doanh"
+    },
+    "search": {
+      "placeholder": "Tìm kiếm bài viết..."
+    },
+    "featured": "Nổi bật",
+    "readTime": "{{minutes}} phút đọc",
+    "noArticles": "Không tìm thấy bài viết nào phù hợp với tiêu chí của bạn.",
+    "articles": {
+      "profitLoss": {
+        "title": "Hiểu về Lãi & Lỗ: Hướng dẫn vui vẻ cho chủ doanh nghiệp",
+        "excerpt": "Khám phá cách đọc và hiểu báo cáo P&L của bạn mà không buồn ngủ. Chúng tôi hứa sẽ làm cho nó thú vị!"
+      }
+    }
+  },
+  "subscription": {
+    "freePlan": "Gói miễn phí",
+    "professionalPlan": "Gói chuyên nghiệp",
+    "enterprisePlan": "Gói doanh nghiệp",
+    "upgrade": "Nâng cấp"
+  },
+  "status": {
+    "backToHome": "Quay về Trang chủ",
+    "title": "Trạng thái hệ thống Dott",
+    "subtitle": "Trạng thái hoạt động hiện tại của các dịch vụ Dott",
+    "checking": "Đang kiểm tra...",
+    "refresh": "Làm mới",
+    "allSystemsOperational": "Tất cả hệ thống hoạt động",
+    "partialDisruption": "Gián đoạn dịch vụ một phần",
+    "serviceOutage": "Dịch vụ gián đoạn",
+    "checkingStatus": "Kiểm tra trạng thái hệ thống",
+    "lastChecked": "Lần kiểm tra cuối: {{time}}",
+    "serviceStatus": "Trạng thái dịch vụ",
+    "platform": {
+      "title": "Nền tảng Dott",
+      "description": "Ứng dụng và trang web"
+    },
+    "api": {
+      "title": "Dịch vụ API",
+      "description": "Dịch vụ backend và xử lý dữ liệu"
+    },
+    "uptime": "Thời gian hoạt động",
+    "operational": "Hoạt động",
+    "degraded": "Suy giảm",
+    "outage": "Gián đoạn",
+    "checkingShort": "Kiểm tra",
+    "needHelp": "Cần trợ giúp?",
+    "supportInfo": "Nếu bạn đang gặp vấn đề, vui lòng kiểm tra trang này trước để biết bất kỳ gián đoạn dịch vụ nào đã biết.",
+    "supportContact": "Liên hệ hỗ trợ:",
+    "allRightsReserved": "Tất cả các quyền được bảo lưu.",
+    "privacyPolicy": "Chính sách bảo mật",
+    "termsOfService": "Điều khoản dịch vụ"
   }
 }

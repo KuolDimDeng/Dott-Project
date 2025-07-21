@@ -682,5 +682,153 @@
     "gdprDesc": "隐私合规",
     "uptimeTitle": "99.9%正常运行时间",
     "uptimeDesc": "始终可用"
+  },
+  "about": {
+    "backToHome": "返回首页",
+    "hero": {
+      "title": "赋能企业",
+      "subtitle": "在全球范围内舣勃发展",
+      "description": "我们正在为现代小型企业构建操作系统，让企业级工具为每个人所用。"
+    },
+    "story": {
+      "title": "我们的故事",
+      "paragraph1": "Dott诞生于一个简单的观察：小型企业深陷复杂性之中。多种工具、断开的数据以及为大企业设计的流程正在阻碍全球的企业家。",
+      "paragraph2": "成立于2023年，我们着手构建一些不同的东西。一个理解小型企业独特挑战的平台，特别是在传统解决方案失败的新兴市场。",
+      "paragraph3": "今天，我们为服务全球企业而感到自豪。但我们才刚刚开始。"
+    },
+    "timeline": {
+      "beginning": {
+        "title": "开始",
+        "description": "确定了中小企业对统一业务管理工具的需求"
+      },
+      "launch": {
+        "title": "产品发布",
+        "description": "推出具有财务和库存管理功能的核心平台"
+      },
+      "expansion": {
+        "title": "全球扩张",
+        "description": "扩展到超过25个国家，提供本地化功能"
+      },
+      "ai": {
+        "title": "AI集成",
+        "description": "引入智能洞察和自动化"
+      }
+    },
+    "mission": {
+      "title": "我们的使命",
+      "description": "通过为小型企业提供强大、可负担的工具来民主化业务管理，这些工具简化了运营并实现增长，无论地点或技术专长如何。"
+    },
+    "vision": {
+      "title": "我们的愿景",
+      "description": "一个每个小型企业都能获得与财富500强企业相同质量管理工具的世界，到2030年赋能一百万家企业舣勃发展。"
+    },
+    "journey": {
+      "title": "我们的旅程"
+    },
+    "values": {
+      "title": "我们的价值观",
+      "subtitle": "指导我们每一个决定的原则",
+      "simplicity": {
+        "title": "简单至上",
+        "description": "通过直观设计简化复杂的业务操作"
+      },
+      "innovation": {
+        "title": "持续创新",
+        "description": "随着现代企业不断变化的需求而发展"
+      },
+      "success": {
+        "title": "客户成功",
+        "description": "您的成长就是我们的成功 - 您赢我们就赢"
+      },
+      "empowerment": {
+        "title": "全球赋能",
+        "description": "为全球企业打破障碍"
+      }
+    },
+    "differentiators": {
+      "title": "Dott的不同之处",
+      "unified": {
+        "title": "统一平台",
+        "description": "所有业务工具集于一处"
+      },
+      "global": {
+        "title": "全球化且本地化",
+        "description": "国际标准与本地合规"
+      },
+      "security": {
+        "title": "企业级安全",
+        "description": "银行级别的数据保护"
+      },
+      "insights": {
+        "title": "智能洞察",
+        "description": "AI驱动的分析以做出更好的决策"
+      }
+    }
+  },
+  "blog": {
+    "hero": {
+      "title": "Dott商业博客",
+      "subtitle": "了解如何使用Dott管理您的企业财务。获取提示、见解和策略以发展您的业务。"
+    },
+    "newsletter": {
+      "title": "订阅我们的新闻通讯，获取产品更新和新博客文章！",
+      "placeholder": "您的电子邮件地址",
+      "button": "订阅"
+    },
+    "categories": {
+      "all": "所有文章",
+      "accounting": "会计与税务",
+      "business": "商业"
+    },
+    "search": {
+      "placeholder": "搜索文章..."
+    },
+    "featured": "特色",
+    "readTime": "{{minutes}}分钟阅读",
+    "noArticles": "没有找到符合您标准的文章。",
+    "articles": {
+      "profitLoss": {
+        "title": "理解损益：企业主的有趣指南",
+        "excerpt": "发现如何阅读和理解您的损益表而不会睡着。我们保证会让它变得有趣！"
+      }
+    }
+  },
+  "subscription": {
+    "freePlan": "免费计划",
+    "professionalPlan": "专业计划",
+    "enterprisePlan": "企业计划",
+    "upgrade": "升级"
+  },
+  "status": {
+    "backToHome": "返回首页",
+    "title": "Dott系统状态",
+    "subtitle": "Dott服务当前运行状态",
+    "checking": "正在检查...",
+    "refresh": "刷新",
+    "allSystemsOperational": "所有系统正常运行",
+    "partialDisruption": "部分服务中断",
+    "serviceOutage": "服务中断",
+    "checkingStatus": "检查系统状态",
+    "lastChecked": "最后检查：{{time}}",
+    "serviceStatus": "服务状态",
+    "platform": {
+      "title": "Dott平台",
+      "description": "应用程序和网站"
+    },
+    "api": {
+      "title": "API服务",
+      "description": "后端服务和数据处理"
+    },
+    "uptime": "正常运行时间",
+    "operational": "正常运行",
+    "degraded": "性能下降",
+    "outage": "中断",
+    "checkingShort": "检查中",
+    "needHelp": "需要帮助吗？",
+    "supportInfo": "如果您遇到问题，请先查看此页面以了解任何已知的服务中断。",
+    "supportContact": "支持联系：",
+    "allRightsReserved": "保留所有权利。",
+    "privacyPolicy": "隐私政策",
+    "termsOfService": "服务条款"
   }
 }

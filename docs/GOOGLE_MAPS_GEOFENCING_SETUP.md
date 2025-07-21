@@ -83,13 +83,13 @@ export const GOOGLE_MAPS_CONFIG = {
 - **View**: All active geofences listed with details
 - **Edit**: Click edit icon to modify geofence settings
 - **Delete**: Click delete icon to remove geofence
-- **Remove Circle**: While creating, click "Remove Circle" to clear selection
+- **Remove Circle**: While creating, double-click to clear selection
 
 ### Circle Manipulation
 - **Place**: Single click on map
 - **Move**: Drag the circle to new location
 - **Resize**: Drag the circle edge to adjust radius
-- **Remove**: Click "Remove Circle" button
+- **Remove**: Double-click anywhere on the map or the circle
 
 ## Troubleshooting
 

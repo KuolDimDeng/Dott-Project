@@ -846,5 +846,153 @@
     "gdprDesc": "Privacy compliant",
     "uptimeTitle": "99.9% Uptime",
     "uptimeDesc": "Always available"
+  },
+  "about": {
+    "backToHome": "Back to Home",
+    "hero": {
+      "title": "Empowering businesses to",
+      "subtitle": "thrive globally",
+      "description": "We're building the operating system for modern small businesses, making enterprise-grade tools accessible to everyone."
+    },
+    "story": {
+      "title": "Our Story",
+      "paragraph1": "Dott was born from a simple observation: small businesses were drowning in complexity. Multiple tools, disconnected data, and processes designed for enterprises were holding back entrepreneurs worldwide.",
+      "paragraph2": "Founded in 2023, we set out to build something different. A platform that understands the unique challenges of small businesses, especially in emerging markets where traditional solutions fall short.",
+      "paragraph3": "Today, we're proud to serve businesses worldwide. But we're just getting started."
+    },
+    "timeline": {
+      "beginning": {
+        "title": "The Beginning",
+        "description": "Identified the need for unified business management tools for SMBs"
+      },
+      "launch": {
+        "title": "Product Launch",
+        "description": "Launched core platform with financial and inventory management"
+      },
+      "expansion": {
+        "title": "Global Expansion",
+        "description": "Extended to 25+ countries with localized features"
+      },
+      "ai": {
+        "title": "AI Integration",
+        "description": "Introducing intelligent insights and automation"
+      }
+    },
+    "mission": {
+      "title": "Our Mission",
+      "description": "To democratize business management by providing small businesses with powerful, affordable tools that simplify operations and enable growth, regardless of location or technical expertise."
+    },
+    "vision": {
+      "title": "Our Vision",
+      "description": "A world where every small business has access to the same quality of management tools as Fortune 500 companies, empowering one million businesses to thrive by 2030."
+    },
+    "journey": {
+      "title": "Our Journey"
+    },
+    "values": {
+      "title": "Our Values",
+      "subtitle": "The principles that guide every decision we make",
+      "simplicity": {
+        "title": "Simplicity First",
+        "description": "Complex business operations made simple through intuitive design"
+      },
+      "innovation": {
+        "title": "Continuous Innovation",
+        "description": "Evolving with the changing needs of modern businesses"
+      },
+      "success": {
+        "title": "Customer Success",
+        "description": "Your growth is our success - we win when you win"
+      },
+      "empowerment": {
+        "title": "Global Empowerment",
+        "description": "Breaking barriers for businesses worldwide"
+      }
+    },
+    "differentiators": {
+      "title": "What Makes Dott Different",
+      "unified": {
+        "title": "Unified Platform",
+        "description": "All your business tools in one place"
+      },
+      "global": {
+        "title": "Global, Yet Local",
+        "description": "International standards with local compliance"
+      },
+      "security": {
+        "title": "Enterprise Security",
+        "description": "Bank-level protection for your data"
+      },
+      "insights": {
+        "title": "Smart Insights",
+        "description": "AI-powered analytics for better decisions"
+      }
+    }
+  },
+  "blog": {
+    "hero": {
+      "title": "Dott Business Blog",
+      "subtitle": "Learn about managing your business finances with Dott. Get tips, insights, and strategies to grow your business."
+    },
+    "newsletter": {
+      "title": "Sign up for our newsletter for product updates and new blog posts!",
+      "placeholder": "Your email address",
+      "button": "Subscribe"
+    },
+    "categories": {
+      "all": "All Articles",
+      "accounting": "Accounting & Taxes",
+      "business": "Business"
+    },
+    "search": {
+      "placeholder": "Search articles..."
+    },
+    "featured": "Featured",
+    "readTime": "{{minutes}} min read",
+    "noArticles": "No articles found matching your criteria.",
+    "articles": {
+      "profitLoss": {
+        "title": "Understanding Profit & Loss: A Fun Guide for Business Owners",
+        "excerpt": "Discover how to read and understand your P&L statement without falling asleep. We promise to make it interesting!"
+      }
+    }
+  },
+  "subscription": {
+    "freePlan": "Free Plan",
+    "professionalPlan": "Professional Plan", 
+    "enterprisePlan": "Enterprise Plan",
+    "upgrade": "Upgrade"
+  },
+  "status": {
+    "backToHome": "Back to Home",
+    "title": "Dott System Status",
+    "subtitle": "Current operational status of Dott services",
+    "checking": "Checking...",
+    "refresh": "Refresh",
+    "allSystemsOperational": "All Systems Operational",
+    "partialDisruption": "Partial Service Disruption",
+    "serviceOutage": "Service Outage",
+    "checkingStatus": "Checking System Status",
+    "lastChecked": "Last checked: {{time}}",
+    "serviceStatus": "Service Status",
+    "platform": {
+      "title": "Dott Platform",
+      "description": "Application and website"
+    },
+    "api": {
+      "title": "API Services",
+      "description": "Backend services and data processing"
+    },
+    "uptime": "Uptime",
+    "operational": "Operational",
+    "degraded": "Degraded",
+    "outage": "Outage",
+    "checkingShort": "Checking",
+    "needHelp": "Need Help?",
+    "supportInfo": "If you're experiencing issues, please check this page first for any known service disruptions.",
+    "supportContact": "Support Contact:",
+    "allRightsReserved": "All rights reserved.",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service"
   }
 }

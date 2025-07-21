@@ -581,5 +581,153 @@
     "gdprDesc": "Sesuai privasi",
     "uptimeTitle": "99.9% Uptime",
     "uptimeDesc": "Selalu tersedia"
+  },
+  "about": {
+    "backToHome": "Kembali ke Beranda",
+    "hero": {
+      "title": "Memberdayakan bisnis untuk",
+      "subtitle": "berkembang secara global",
+      "description": "Kami membangun sistem operasi untuk bisnis kecil modern, membuat alat tingkat perusahaan dapat diakses oleh semua orang."
+    },
+    "story": {
+      "title": "Cerita Kami",
+      "paragraph1": "Dott lahir dari pengamatan sederhana: bisnis kecil tenggelam dalam kerumitan. Berbagai alat, data yang terputus, dan proses yang dirancang untuk perusahaan menghambat pengusaha di seluruh dunia.",
+      "paragraph2": "Didirikan pada tahun 2023, kami mulai membangun sesuatu yang berbeda. Platform yang memahami tantangan unik bisnis kecil, terutama di pasar berkembang di mana solusi tradisional gagal.",
+      "paragraph3": "Hari ini, kami bangga melayani bisnis di seluruh dunia. Tapi kami baru saja memulai."
+    },
+    "timeline": {
+      "beginning": {
+        "title": "Awal",
+        "description": "Mengidentifikasi kebutuhan alat manajemen bisnis terpadu untuk UKM"
+      },
+      "launch": {
+        "title": "Peluncuran Produk",
+        "description": "Meluncurkan platform inti dengan manajemen keuangan dan inventaris"
+      },
+      "expansion": {
+        "title": "Ekspansi Global",
+        "description": "Diperluas ke 25+ negara dengan fitur lokal"
+      },
+      "ai": {
+        "title": "Integrasi AI",
+        "description": "Memperkenalkan wawasan cerdas dan otomatisasi"
+      }
+    },
+    "mission": {
+      "title": "Misi Kami",
+      "description": "Mendemokratisasi manajemen bisnis dengan menyediakan bisnis kecil dengan alat yang kuat dan terjangkau yang menyederhanakan operasi dan memungkinkan pertumbuhan, terlepas dari lokasi atau keahlian teknis."
+    },
+    "vision": {
+      "title": "Visi Kami",
+      "description": "Dunia di mana setiap bisnis kecil memiliki akses ke kualitas alat manajemen yang sama dengan perusahaan Fortune 500, memberdayakan satu juta bisnis untuk berkembang pada tahun 2030."
+    },
+    "journey": {
+      "title": "Perjalanan Kami"
+    },
+    "values": {
+      "title": "Nilai-Nilai Kami",
+      "subtitle": "Prinsip yang memandu setiap keputusan yang kami buat",
+      "simplicity": {
+        "title": "Kesederhanaan Pertama",
+        "description": "Operasi bisnis yang kompleks disederhanakan melalui desain intuitif"
+      },
+      "innovation": {
+        "title": "Inovasi Berkelanjutan",
+        "description": "Berkembang dengan kebutuhan bisnis modern yang berubah"
+      },
+      "success": {
+        "title": "Kesuksesan Pelanggan",
+        "description": "Pertumbuhan Anda adalah kesuksesan kami - kami menang ketika Anda menang"
+      },
+      "empowerment": {
+        "title": "Pemberdayaan Global",
+        "description": "Menghancurkan hambatan untuk bisnis di seluruh dunia"
+      }
+    },
+    "differentiators": {
+      "title": "Apa yang Membuat Dott Berbeda",
+      "unified": {
+        "title": "Platform Terpadu",
+        "description": "Semua alat bisnis Anda di satu tempat"
+      },
+      "global": {
+        "title": "Global, Namun Lokal",
+        "description": "Standar internasional dengan kepatuhan lokal"
+      },
+      "security": {
+        "title": "Keamanan Perusahaan",
+        "description": "Perlindungan tingkat bank untuk data Anda"
+      },
+      "insights": {
+        "title": "Wawasan Cerdas",
+        "description": "Analitik bertenaga AI untuk keputusan yang lebih baik"
+      }
+    }
+  },
+  "blog": {
+    "hero": {
+      "title": "Blog Bisnis Dott",
+      "subtitle": "Pelajari tentang mengelola keuangan bisnis Anda dengan Dott. Dapatkan tips, wawasan, dan strategi untuk mengembangkan bisnis Anda."
+    },
+    "newsletter": {
+      "title": "Daftar untuk buletin kami untuk pembaruan produk dan posting blog baru!",
+      "placeholder": "Alamat email Anda",
+      "button": "Berlangganan"
+    },
+    "categories": {
+      "all": "Semua Artikel",
+      "accounting": "Akuntansi & Pajak",
+      "business": "Bisnis"
+    },
+    "search": {
+      "placeholder": "Cari artikel..."
+    },
+    "featured": "Unggulan",
+    "readTime": "{{minutes}} menit membaca",
+    "noArticles": "Tidak ada artikel yang ditemukan sesuai kriteria Anda.",
+    "articles": {
+      "profitLoss": {
+        "title": "Memahami Laba & Rugi: Panduan Menyenangkan untuk Pemilik Bisnis",
+        "excerpt": "Temukan cara membaca dan memahami laporan L&R Anda tanpa tertidur. Kami berjanji membuatnya menarik!"
+      }
+    }
+  },
+  "subscription": {
+    "freePlan": "Paket Gratis",
+    "professionalPlan": "Paket Profesional",
+    "enterprisePlan": "Paket Perusahaan",
+    "upgrade": "Tingkatkan"
+  },
+  "status": {
+    "backToHome": "Kembali ke Beranda",
+    "title": "Status Sistem Dott",
+    "subtitle": "Status operasional saat ini dari layanan Dott",
+    "checking": "Memeriksa...",
+    "refresh": "Segarkan",
+    "allSystemsOperational": "Semua Sistem Beroperasi",
+    "partialDisruption": "Gangguan Layanan Sebagian",
+    "serviceOutage": "Layanan Terputus",
+    "checkingStatus": "Memeriksa Status Sistem",
+    "lastChecked": "Terakhir diperiksa: {{time}}",
+    "serviceStatus": "Status Layanan",
+    "platform": {
+      "title": "Platform Dott",
+      "description": "Aplikasi dan situs web"
+    },
+    "api": {
+      "title": "Layanan API",
+      "description": "Layanan backend dan pemrosesan data"
+    },
+    "uptime": "Waktu Aktif",
+    "operational": "Beroperasi",
+    "degraded": "Terdegradasi",
+    "outage": "Terputus",
+    "checkingShort": "Memeriksa",
+    "needHelp": "Butuh Bantuan?",
+    "supportInfo": "Jika Anda mengalami masalah, silakan periksa halaman ini terlebih dahulu untuk gangguan layanan yang diketahui.",
+    "supportContact": "Kontak Dukungan:",
+    "allRightsReserved": "Semua hak dilindungi undang-undang.",
+    "privacyPolicy": "Kebijakan Privasi",
+    "termsOfService": "Ketentuan Layanan"
   }
 }

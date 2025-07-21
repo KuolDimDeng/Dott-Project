@@ -698,5 +698,153 @@
     "gdprDesc": "Gizlilik uyumlu",
     "uptimeTitle": "%99.9 Çalışma Süresi",
     "uptimeDesc": "Her zaman kullanılabilir"
+  },
+  "about": {
+    "backToHome": "Ana Sayfaya Dön",
+    "hero": {
+      "title": "İşletmelere güç vermek için",
+      "subtitle": "küresel ölçekte büyümek",
+      "description": "Modern küçük işletmeler için işletim sistemi oluşturuyoruz, kurumsal düzeydeki araçları herkes için erişilebilir hale getiriyoruz."
+    },
+    "story": {
+      "title": "Hikayemiz",
+      "paragraph1": "Dott basit bir gözlemden doğdu: küçük işletmeler karmaşıklıkta boğuluyordu. Birden fazla araç, bağlantısı kesilmiş veriler ve kurumlar için tasarlanmış süreçler, dünya çapındaki girişimcileri engelliyordu.",
+      "paragraph2": "2023'te kuruldu, farklı bir şey inşa etmeye başladık. Küçük işletmelerin benzersiz zorluklarını anlayan bir platform, özellikle geleneksel çözümlerin başarısız olduğu gelişmekte olan pazarlarda.",
+      "paragraph3": "Bugün, dünya çapında işletmelere hizmet vermekten gurur duyuyoruz. Ama daha yeni başlıyoruz."
+    },
+    "timeline": {
+      "beginning": {
+        "title": "Başlangıç",
+        "description": "KOBİ'ler için birleşik iş yönetimi araçlarına olan ihtiyacı belirledik"
+      },
+      "launch": {
+        "title": "Ürün Lansmannı",
+        "description": "Finansal ve envanter yönetimi ile ana platformu başlattık"
+      },
+      "expansion": {
+        "title": "Küresel Genişleme",
+        "description": "Yerelleştirilmiş özelliklerle 25'ten fazla ülkeye yayıldık"
+      },
+      "ai": {
+        "title": "Yapay Zeka Entegrasyonu",
+        "description": "Akıllı içgörüler ve otomasyon sunuyoruz"
+      }
+    },
+    "mission": {
+      "title": "Misyonumuz",
+      "description": "Küçük işletmelere operasyonları basitleştiren ve konumdan veya teknik uzmanlıktan bağımsız olarak büyümeyi sağlayan güçlü, uygun fiyatlı araçlar sağlayarak iş yönetimini demokratikleştirmek."
+    },
+    "vision": {
+      "title": "Vizyonumuz",
+      "description": "Her küçük işletmenin Fortune 500 şirketleriyle aynı kalitede yönetim araçlarına erişebildiği, 2030'a kadar bir milyon işletmeyi başarıya ulaştıran bir dünya."
+    },
+    "journey": {
+      "title": "Yolculuğumuz"
+    },
+    "values": {
+      "title": "Değerlerimiz",
+      "subtitle": "Aldığımız her kararı yönlendiren ilkeler",
+      "simplicity": {
+        "title": "Önce Basitlik",
+        "description": "Sezgisel tasarım yoluyla basitleştirilmiş karmaşık iş operasyonları"
+      },
+      "innovation": {
+        "title": "Sürekli Yenilik",
+        "description": "Modern işletmelerin değişen ihtiyaçlarıyla evrimleşme"
+      },
+      "success": {
+        "title": "Müşteri Başarısı",
+        "description": "Sizin büyümeniz bizim başarımız - siz kazanınca biz kazanırız"
+      },
+      "empowerment": {
+        "title": "Küresel Güçlendirme",
+        "description": "Dünya çapındaki işletmeler için engelleri kırma"
+      }
+    },
+    "differentiators": {
+      "title": "Dott'ı Farklı Kılan",
+      "unified": {
+        "title": "Birleşik Platform",
+        "description": "Tüm iş araçlarınız tek bir yerde"
+      },
+      "global": {
+        "title": "Küresel Ama Yerel",
+        "description": "Yerel uyumlulukla uluslararası standartlar"
+      },
+      "security": {
+        "title": "Kurumsal Güvenlik",
+        "description": "Verileriniz için banka seviyesinde koruma"
+      },
+      "insights": {
+        "title": "Akıllı İçgörüler",
+        "description": "Daha iyi kararlar için yapay zeka destekli analizler"
+      }
+    }
+  },
+  "blog": {
+    "hero": {
+      "title": "Dott İş Blogu",
+      "subtitle": "Dott ile işletmenizin finanslarını yönetme hakkında bilgi edinin. İşletmenizi büyütmek için ipuçları, içgörüler ve stratejiler alın."
+    },
+    "newsletter": {
+      "title": "Ürün güncellemeleri ve yeni blog yazıları için bültenimize kaydolun!",
+      "placeholder": "E-posta adresiniz",
+      "button": "Abone Ol"
+    },
+    "categories": {
+      "all": "Tüm Makaleler",
+      "accounting": "Muhasebe ve Vergiler",
+      "business": "İş"
+    },
+    "search": {
+      "placeholder": "Makale ara..."
+    },
+    "featured": "Öne Çıkan",
+    "readTime": "{{minutes}} dakika okuma",
+    "noArticles": "Kriterlerinize uyan makale bulunamadı.",
+    "articles": {
+      "profitLoss": {
+        "title": "Kâr ve Zararı Anlamak: İşletme Sahipleri İçin Eğlenceli Bir Rehber",
+        "excerpt": "Uyumadan K&Z tablonuzu nasıl okuyacağınızı ve anlayacağınızı keşfedin. İlginç hale getireceğimize söz veriyoruz!"
+      }
+    }
+  },
+  "subscription": {
+    "freePlan": "Ücretsiz Plan",
+    "professionalPlan": "Profesyonel Plan",
+    "enterprisePlan": "Kurumsal Plan",
+    "upgrade": "Yükselt"
+  },
+  "status": {
+    "backToHome": "Ana Sayfaya Dön",
+    "title": "Dott Sistem Durumu",
+    "subtitle": "Dott hizmetlerinin mevcut operasyonel durumu",
+    "checking": "Kontrol ediliyor...",
+    "refresh": "Yenile",
+    "allSystemsOperational": "Tüm Sistemler Çalışıyor",
+    "partialDisruption": "Kısmi Hizmet Kesintisi",
+    "serviceOutage": "Hizmet Kesintisi",
+    "checkingStatus": "Sistem Durumu Kontrol Ediliyor",
+    "lastChecked": "Son kontrol: {{time}}",
+    "serviceStatus": "Hizmet Durumu",
+    "platform": {
+      "title": "Dott Platformu",
+      "description": "Uygulama ve web sitesi"
+    },
+    "api": {
+      "title": "API Hizmetleri",
+      "description": "Arka uç hizmetleri ve veri işleme"
+    },
+    "uptime": "Çalışma Süresi",
+    "operational": "Çalışıyor",
+    "degraded": "Bozulmuş",
+    "outage": "Kesinti",
+    "checkingShort": "Kontrol",
+    "needHelp": "Yardıma mı İhtiyacınız Var?",
+    "supportInfo": "Sorun yaşıyorsanız, lütfen bilinen hizmet kesintileri için önce bu sayfayı kontrol edin.",
+    "supportContact": "Destek İletişim:",
+    "allRightsReserved": "Tüm hakları saklıdır.",
+    "privacyPolicy": "Gizlilik Politikası",
+    "termsOfService": "Hizmet Şartları"
   }
 }

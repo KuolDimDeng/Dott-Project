@@ -798,15 +798,13 @@ const DashAppBar = ({
   const getSubscriptionLabel = useCallback((type) => {
     switch (type?.toLowerCase()) {
       case 'professional':
-        return 'Professional Plan';
+        return t('subscription.professionalPlan', 'Professional Plan');
       case 'enterprise':
-        return 'Enterprise Plan';
-      case 'premium':
-        return 'Premium Plan';
+        return t('subscription.enterprisePlan', 'Enterprise Plan');
       default:
-        return 'Free Plan';
+        return t('subscription.freePlan', 'Free Plan');
     }
-  }, []);
+  }, [t]);
 
   // Updated subscription display
   // Memoize subscription type to prevent recalculation on every render
@@ -1328,7 +1326,7 @@ const DashAppBar = ({
               <div className="flex items-center">
                 {/* Business name - make it visible on all screen sizes and add fallback display */}
                 <div className="text-white flex items-center mr-3">
-                  <span className="font-semibold">{businessName || fetchedBusinessName || auth0BusinessName || profileData?.businessName || profileData?.business_name || 'Loading...'}</span>
+                  <span className="font-semibold">{businessName || fetchedBusinessName || auth0BusinessName || profileData?.businessName || profileData?.business_name || t('common.loading', 'Loading...')}</span>
                   <span className="mx-2 h-4 w-px bg-white/30"></span>
                 </div>
                 
@@ -1357,18 +1355,12 @@ const DashAppBar = ({
                         handleSubscriptionClick();
                       }}
                     >
-                      Upgrade
+                      {t('subscription.upgrade', 'Upgrade')}
                     </button>
                   )}
                 </div>
               </div>
 
-              {/* Shopify connection indicator */}
-              {isShopifyConnected && (
-                <span className="text-sm text-green-300 mr-2 hidden md:flex items-center h-full">
-                  Connected to Shopify
-                </span>
-              )}
 
               {/* Notification button */}
               <button

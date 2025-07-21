@@ -587,8 +587,8 @@ NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSyCC7KgQRztJDsoaQa94zMO7F4Pa-4R73E0
   - Enhanced save functionality with detailed error handling
 - **Features Added**:
   - Click on map to place geofence circle
+  - Double-click to remove circle (map or circle)
   - Drag to reposition, resize by dragging edge
-  - Remove Circle button to clear selection
   - Real-time coordinate and radius display
   - Loading states and error messages
   - Disabled save until required fields filled
