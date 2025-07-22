@@ -374,6 +374,8 @@
   "pricing_footer": "価格には適用される税金は含まれていません。サブスクリプションは自動更新されます。いつでもキャンセル可能です。",
   "developing_country_discount": "特別地域料金を適用: エンタープライズ層で50%割引",
   "button_get_started_for_free": "無料で始める",
+  "button_go_to_dashboard": "ダッシュボード",
+  "button_complete_onboarding": "セットアップを完了",
   "button_start_professional": "プロフェッショナルを始める",
   "button_start_enterprise": "エンタープライズを始める",
   "category_core_business_tools": "コアビジネスツール",

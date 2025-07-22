@@ -531,6 +531,8 @@
   "pricing_footer": "价格不包括适用税款。订阅自动续订。可随时取消。",
   "developing_country_discount": "已应用特殊区域定价：企业级50%折扣",
   "button_get_started_for_free": "免费开始使用",
+  "button_go_to_dashboard": "控制面板",
+  "button_complete_onboarding": "完成设置",
   "button_start_professional": "开始使用专业版",
   "button_start_enterprise": "开始使用企业版",
   "category_core_business_tools": "核心业务工具",

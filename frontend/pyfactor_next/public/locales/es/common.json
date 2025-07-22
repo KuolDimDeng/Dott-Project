@@ -575,6 +575,8 @@
   "pricing_footer": "Los precios no incluyen impuestos aplicables. Las suscripciones se renuevan automáticamente. Cancela en cualquier momento.",
   "developing_country_discount": "Precios regionales especiales aplicados: 50% de descuento en el nivel Enterprise",
   "button_get_started_for_free": "COMENZAR GRATIS",
+  "button_go_to_dashboard": "PANEL",
+  "button_complete_onboarding": "COMPLETAR CONFIGURACIÓN",
   "button_start_professional": "Comenzar Profesional",
   "button_start_enterprise": "Comenzar Enterprise",
   "category_core_business_tools": "Herramientas Empresariales Básicas",

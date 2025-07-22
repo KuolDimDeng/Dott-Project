@@ -530,6 +530,8 @@
   "pricing_footer": "Preise beinhalten keine anwendbaren Steuern. Abonnements verlängern sich automatisch. Jederzeit kündbar.",
   "developing_country_discount": "Spezielle regionale Preisgestaltung angewendet: 50% Rabatt auf Enterprise-Tarif",
   "button_get_started_for_free": "KOSTENLOS STARTEN",
+  "button_go_to_dashboard": "DASHBOARD",
+  "button_complete_onboarding": "EINRICHTUNG ABSCHLIESSEN",
   "button_start_professional": "Professional starten",
   "button_start_enterprise": "Enterprise starten",
   "category_core_business_tools": "Kern-Geschäftstools",

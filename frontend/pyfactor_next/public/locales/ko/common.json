@@ -200,6 +200,8 @@
   "pricing_footer": "가격에는 해당 세금이 포함되어 있지 않습니다. 구독은 자동으로 갱신됩니다. 언제든지 취소할 수 있습니다.",
   "developing_country_discount": "특별 지역 가격 적용: 엔터프라이즈 등급에서 50% 할인",
   "button_get_started_for_free": "무료로 시작하기",
+  "button_go_to_dashboard": "대시보드",
+  "button_complete_onboarding": "설정 완료",
   "button_start_professional": "프로페셔널 시작하기",
   "button_start_enterprise": "엔터프라이즈 시작하기",
   "category_core_business_tools": "핵심 비즈니스 도구",

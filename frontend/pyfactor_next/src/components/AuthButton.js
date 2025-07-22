@@ -38,7 +38,7 @@ export default function AuthButton({ size = 'medium', variant = 'primary', theme
     tenantId: null,
     loading: true
   });
-  const { t, i18n } = useTranslation('auth');
+  const { t, i18n } = useTranslation('common');
 
   // Check Auth0 authentication and onboarding status
   useEffect(() => {
@@ -139,7 +139,7 @@ export default function AuthButton({ size = 'medium', variant = 'primary', theme
     // Case 1: User is authenticated AND has completed onboarding
     if (isAuthenticated && onboardingCompleted && tenantId) {
       return {
-        text: t('go_to_dashboard', 'DASHBOARD'),
+        text: t('button_go_to_dashboard', 'DASHBOARD'),
         action: () => {
           router.push(`/${tenantId}/dashboard`);
         }
@@ -149,7 +149,7 @@ export default function AuthButton({ size = 'medium', variant = 'primary', theme
     // Case 2: User is authenticated BUT onboarding not completed
     if (isAuthenticated && needsOnboarding && !onboardingCompleted) {
       return {
-        text: t('complete_onboarding', 'COMPLETE ONBOARDING'),
+        text: t('button_complete_onboarding', 'COMPLETE ONBOARDING'),
         action: () => {
           // All onboarding steps now go to the simplified form
           const currentLang = i18n.language || 'en';
@@ -161,7 +161,7 @@ export default function AuthButton({ size = 'medium', variant = 'primary', theme
     // Case 3: User is authenticated but we're unsure of status (fallback)
     if (isAuthenticated) {
       return {
-        text: t('go_to_dashboard', 'DASHBOARD'),
+        text: t('button_go_to_dashboard', 'DASHBOARD'),
         action: async () => {
           // **CRITICAL FIX: Always fetch latest profile to get current tenant ID**
           try {
@@ -207,7 +207,7 @@ export default function AuthButton({ size = 'medium', variant = 'primary', theme
     
     // Case 4: User is not authenticated (default)
     return {
-      text: t('get_started_for_free', 'GET STARTED FOR FREE'),
+      text: t('button_get_started_for_free', 'GET STARTED FOR FREE'),
       action: () => {
         // Get current language to pass to auth pages
         const currentLang = i18n.language || 'en';

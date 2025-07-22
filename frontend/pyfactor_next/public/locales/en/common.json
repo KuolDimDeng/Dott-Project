@@ -620,6 +620,8 @@
   "pricing_footer": "Prices do not include applicable tax. Subscriptions auto-renew. Cancel anytime.",
   "developing_country_discount": "Special regional pricing applied: 50% discount on Enterprise tier",
   "button_get_started_for_free": "GET STARTED FOR FREE",
+  "button_go_to_dashboard": "DASHBOARD",
+  "button_complete_onboarding": "COMPLETE ONBOARDING",
   "button_start_professional": "Start Professional",
   "button_start_enterprise": "Start Enterprise",
   "category_core_business_tools": "Core Business Tools",

@@ -496,6 +496,8 @@
   "pricing_footer": "الأسعار لا تشمل الضريبة المطبقة. الاشتراكات تتجدد تلقائيًا. يمكنك الإلغاء في أي وقت.",
   "developing_country_discount": "تم تطبيق تسعير إقليمي خاص: خصم 50% على مستوى المؤسسات",
   "button_get_started_for_free": "ابدأ مجانًا",
+  "button_go_to_dashboard": "لوحة التحكم",
+  "button_complete_onboarding": "إكمال الإعداد",
   "button_start_professional": "ابدأ الاحترافي",
   "button_start_enterprise": "ابدأ المؤسسات",
   "category_core_business_tools": "أدوات الأعمال الأساسية",

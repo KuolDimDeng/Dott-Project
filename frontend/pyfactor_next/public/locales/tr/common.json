@@ -374,6 +374,8 @@
   "pricing_footer": "Fiyatlara geçerli vergiler dahil değildir. Abonelikler otomatik olarak yenilenir. İstediğiniz zaman iptal edebilirsiniz.",
   "developing_country_discount": "Özel bölgesel fiyatlandırma uygulandı: Kurumsal seviyede %50 indirim",
   "button_get_started_for_free": "ÜCRETSİZ BAŞLA",
+  "button_go_to_dashboard": "KONTROL PANELİ",
+  "button_complete_onboarding": "KURULUMU TAMAMLA",
   "button_start_professional": "Profesyonel'e Başla",
   "button_start_enterprise": "Kurumsal'a Başla",
   "category_core_business_tools": "Temel İşletme Araçları",

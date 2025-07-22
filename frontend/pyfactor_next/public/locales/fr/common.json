@@ -530,6 +530,8 @@
   "pricing_footer": "Les prix n'incluent pas les taxes applicables. Les abonnements se renouvellent automatiquement. Annulez à tout moment.",
   "developing_country_discount": "Tarification régionale spéciale appliquée : 50% de réduction sur le forfait Enterprise",
   "button_get_started_for_free": "COMMENCER GRATUITEMENT",
+  "button_go_to_dashboard": "TABLEAU DE BORD",
+  "button_complete_onboarding": "TERMINER LA CONFIGURATION",
   "button_start_professional": "Commencer Professionnel",
   "button_start_enterprise": "Commencer Enterprise",
   "category_core_business_tools": "Outils d'Entreprise Essentiels",
