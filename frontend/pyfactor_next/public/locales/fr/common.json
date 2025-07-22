@@ -921,6 +921,230 @@
       }
     }
   },
+  "featureDetails": {
+    "screenshots": "Captures d'Écran et Exemples",
+    "cta": {
+      "heading": "Prêt à commencer ?",
+      "text": "Rejoignez des milliers d'entreprises qui utilisent déjà Dott pour croître.",
+      "button": "Commencer l'Essai Gratuit"
+    },
+    "mobile": {
+      "title": "Application Mobile",
+      "subtitle": "Votre Entreprise dans Votre Poche",
+      "overview": {
+        "heading": "Gestion Complète d'Entreprise en Déplacement",
+        "content": "Accédez à toute votre entreprise depuis votre smartphone ou tablette. Notre application mobile est conçue pour vous donner un contrôle total que vous soyez au bureau, sur le terrain ou en voyage. Avec des capacités hors ligne, vous pouvez continuer à travailler même sans connexion internet."
+      },
+      "features": {
+        "heading": "Fonctionnalités Mobiles Clés",
+        "1": "Suivi des ventes et de l'inventaire en temps réel",
+        "2": "Créer et envoyer des factures instantanément",
+        "3": "Accepter les paiements sur place",
+        "4": "Consulter les analyses et rapports d'entreprise",
+        "5": "Gérer les employés et les feuilles de temps",
+        "6": "Scanner les codes-barres avec votre caméra",
+        "7": "Fonctionne hors ligne avec synchronisation automatique",
+        "8": "Notifications push pour les événements importants"
+      },
+      "benefits": {
+        "heading": "Avantages pour Votre Entreprise",
+        "content": "Restez connecté à votre entreprise 24/7. Prenez des décisions éclairées avec des données en temps réel. Servez les clients plus rapidement avec un PDV mobile. Réduisez la paperasserie et les processus manuels."
+      },
+      "images": {
+        "dashboard": "Vue du tableau de bord mobile",
+        "dashboardCaption": "Tableau de bord avec métriques clés d'un coup d'œil",
+        "pos": "Écran PDV mobile",
+        "posCaption": "Traitez les ventes de n'importe où",
+        "inventory": "Gestion d'inventaire mobile",
+        "inventoryCaption": "Suivez l'inventaire en temps réel"
+      }
+    },
+    "pos": {
+      "title": "PDV et Scan de Codes-Barres",
+      "subtitle": "Ventes Rapides, Précises et Efficaces",
+      "overview": {
+        "heading": "Système de Point de Vente Moderne",
+        "content": "Transformez n'importe quel appareil en système de point de vente puissant. Notre PDV est conçu pour la vitesse et la simplicité, vous permettant de traiter les ventes rapidement tout en maintenant un suivi précis de l'inventaire. Le scanner de codes-barres intégré rend le checkout ultra rapide."
+      },
+      "features": {
+        "heading": "Fonctionnalités PDV Avancées",
+        "1": "Scan de codes-barres avec caméra ou scanner Bluetooth",
+        "2": "Support pour tous les types de paiement y compris l'argent mobile",
+        "3": "Mises à jour automatiques de l'inventaire à chaque vente",
+        "4": "Gestion des clients et programmes de fidélité",
+        "5": "Paiements fractionnés et paiements partiels",
+        "6": "Gestion des retours et échanges",
+        "7": "Mode hors ligne avec gestion de file d'attente",
+        "8": "Suivi d'inventaire multi-emplacements"
+      },
+      "barcode": {
+        "heading": "Système de Codes-Barres Puissant",
+        "content": "Générez des codes-barres personnalisés pour vos produits. Imprimez des étiquettes de codes-barres en diverses tailles. Scannez les produits instantanément lors des ventes ou comptages d'inventaire. Support pour codes QR et codes-barres standards."
+      },
+      "images": {
+        "checkout": "Écran de caisse PDV",
+        "checkoutCaption": "Processus de caisse rapide et intuitif",
+        "scanning": "Scan de codes-barres en action",
+        "scanningCaption": "Scannez les produits instantanément avec caméra ou scanner",
+        "payments": "Multiples méthodes de paiement",
+        "paymentsCaption": "Acceptez espèces, cartes et argent mobile"
+      }
+    },
+    "ai": {
+      "title": "Insights Alimentés par l'IA",
+      "subtitle": "Recommandations Intelligentes pour la Croissance",
+      "overview": {
+        "heading": "Intelligence Artificielle pour Votre Entreprise",
+        "content": "Notre IA analyse vos données d'entreprise pour fournir des insights et recommandations actionnables. Obtenez des analyses prédictives, prévisions de demande et alertes intelligentes qui vous aident à prendre de meilleures décisions d'entreprise."
+      },
+      "features": {
+        "heading": "Fonctionnalités Alimentées par l'IA",
+        "1": "Prévision de la demande basée sur les données historiques",
+        "2": "Recommandations d'optimisation d'inventaire",
+        "3": "Analyse des produits les plus vendus",
+        "4": "Insights sur le comportement des clients",
+        "5": "Suggestions d'optimisation des prix",
+        "6": "Détection des tendances saisonnières",
+        "7": "Prédictions de flux de trésorerie",
+        "8": "Rapports financiers automatisés"
+      },
+      "benefits": {
+        "heading": "Comment l'IA Aide Votre Entreprise",
+        "content": "Réduisez les ruptures de stock et situations de surstock. Identifiez les opportunités de croissance. Optimisez les prix pour un profit maximum. Comprenez mieux les préférences des clients."
+      },
+      "images": {
+        "dashboard": "Tableau de bord d'analyses IA",
+        "dashboardCaption": "Insights intelligents à portée de main",
+        "forecast": "Graphique de prévision de demande",
+        "forecastCaption": "Prédisez précisément la demande future",
+        "inventory": "Optimisation d'inventaire",
+        "inventoryCaption": "Recommandations d'inventaire alimentées par l'IA"
+      }
+    },
+    "geofencing": {
+      "title": "Géorepérage et Suivi de Localisation",
+      "subtitle": "Gestion Intelligente Basée sur la Localisation",
+      "overview": {
+        "heading": "Intelligence de Localisation Avancée",
+        "content": "Assurez un suivi précis du temps avec pointage GPS d'entrée/sortie. Créez des limites virtuelles autour des sites de travail et recevez des notifications instantanées quand les employés entrent ou sortent des zones désignées."
+      },
+      "features": {
+        "heading": "Fonctionnalités de Gestion de Localisation",
+        "1": "Pointage GPS d'entrée/sortie avec vérification de localisation",
+        "2": "Créer des zones de géorepérage illimitées",
+        "3": "Localisation temps réel des employés pendant les heures de travail",
+        "4": "Création automatisée de feuilles de temps",
+        "5": "Suivi kilométrique pour les chauffeurs-livreurs",
+        "6": "Vérification de visite de site pour les équipes terrain",
+        "7": "Axé sur la confidentialité avec consentement des employés",
+        "8": "Historique détaillé de localisation et rapports"
+      },
+      "compliance": {
+        "heading": "Confidentialité et Conformité",
+        "content": "Conformité complète RGPD et lois de confidentialité. Gestion du consentement des employés. Suivi de localisation uniquement pendant les heures de travail. Politiques d'utilisation des données transparentes."
+      },
+      "images": {
+        "map": "Vue cartographique des géorepères",
+        "mapCaption": "Créez et gérez facilement les zones de travail",
+        "tracking": "Tableau de bord de suivi des employés",
+        "trackingCaption": "Vue d'ensemble temps réel de localisation d'équipe",
+        "reports": "Rapports de localisation",
+        "reportsCaption": "Analyses détaillées de localisation"
+      }
+    },
+    "mobilemoney": {
+      "title": "Paiements Mobile Money",
+      "subtitle": "Acceptez les Paiements de Milliards d'Utilisateurs Mondialement",
+      "overview": {
+        "heading": "Acceptation de Paiements Globale",
+        "content": "Brisez les barrières de paiement et atteignez les clients partout. L'argent mobile est la méthode de paiement préférée pour des milliards de personnes mondialement, surtout sur les marchés émergents. Avec Dott, vous pouvez accepter les paiements des utilisateurs M-Pesa aujourd'hui, avec beaucoup d'autres fournisseurs d'argent mobile bientôt disponibles."
+      },
+      "current": {
+        "heading": "Actuellement Disponible",
+        "1": "M-Pesa (Kenya) - Plus de 30 millions d'utilisateurs actifs",
+        "2": "Cartes de crédit et débit (Visa, Mastercard, Amex)",
+        "3": "Virements bancaires et paiements ACH",
+        "4": "Paiements en espèces (suivis dans le système)"
+      },
+      "coming": {
+        "heading": "Bientôt Disponible",
+        "1": "MTN Mobile Money - 180+ millions d'utilisateurs à travers l'Afrique",
+        "2": "Airtel Money - 125+ millions d'utilisateurs en Afrique et Asie",
+        "3": "Orange Money - 70+ millions d'utilisateurs en Afrique et Moyen-Orient",
+        "4": "GCash (Philippines) - 81+ millions d'utilisateurs enregistrés",
+        "5": "Paytm (Inde) - 350+ millions d'utilisateurs",
+        "6": "Pix (Brésil) - 140+ millions d'utilisateurs",
+        "7": "Mercado Pago - 80+ millions d'utilisateurs en Amérique Latine",
+        "8": "bKash (Bangladesh), OVO (Indonésie), et plus"
+      },
+      "benefits": {
+        "heading": "Pourquoi l'Argent Mobile Compte",
+        "content": "Paiements instantanés avec frais de transaction inférieurs. Aucun compte bancaire requis pour les clients. Atteignez les populations non bancarisées. Permettez les transactions transfrontalières. Parfait pour les petites transactions et achats quotidiens."
+      },
+      "images": {
+        "options": "Options de paiement mobile money",
+        "optionsCaption": "Multiples méthodes de paiement dans une plateforme",
+        "mpesa": "Flux de paiement M-Pesa",
+        "mpesaCaption": "Intégration M-Pesa simple et sécurisée",
+        "global": "Carte de couverture paiements globaux",
+        "globalCaption": "Couverture mondiale d'argent mobile"
+      }
+    },
+    "whatsapp": {
+      "title": "WhatsApp Business",
+      "subtitle": "Transformez la Communication Client",
+      "overview": {
+        "heading": "Intégration WhatsApp Business Tout-en-Un",
+        "content": "Connectez-vous avec vos clients sur la plateforme de messagerie la plus populaire au monde. Créez des catalogues de produits époustouflants, automatisez la livraison de factures et reçus, fournissez un support client instantané et transformez les conversations en ventes. Avec plus de 2 milliards d'utilisateurs mondialement, WhatsApp Business est essentiel pour l'engagement client moderne."
+      },
+      "features": {
+        "heading": "Fonctionnalités Clés WhatsApp Business",
+        "1": "Catalogue professionnel avec photos et descriptions de produits",
+        "2": "Livraison automatisée de factures et reçus aux clients",
+        "3": "Support client instantané et chat en direct",
+        "4": "Messages de diffusion pour promotions et annonces",
+        "5": "Gestion de commandes directement via WhatsApp",
+        "6": "Confirmations de paiement et notifications de transaction",
+        "7": "Réponses rapides et réponses automatisées",
+        "8": "Synchronisation des données client avec vos contacts d'entreprise"
+      },
+      "benefits": {
+        "heading": "Avantages pour Votre Entreprise",
+        "content": "Atteignez les clients là où ils sont déjà. Augmentez les taux de conversion des ventes avec communication instantanée. Réduisez les coûts de service client avec réponses automatisées. Construisez des relations client plus solides grâce à la messagerie personnalisée."
+      },
+      "images": {
+        "catalog": "Catalogue WhatsApp Business",
+        "catalogCaption": "Belle vitrine de produits dans WhatsApp",
+        "invoice": "Livraison automatisée de factures",
+        "invoiceCaption": "Envoyez des factures instantanément via WhatsApp",
+        "support": "Chat de support client",
+        "supportCaption": "Fournissez une aide instantanée et construisez des relations"
+      }
+    },
+    "languages": {
+      "title": "Plus de 20 Langues Supportées",
+      "subtitle": "Parlez la Langue de Votre Client",
+      "overview": {
+        "heading": "Véritable Accessibilité Globale",
+        "content": "Dott est disponible en plus de 20 langues, le rendant accessible aux entreprises mondiales. Chaque fonctionnalité, bouton et message est entièrement traduit par des locuteurs natifs pour assurer clarté et appropriation culturelle."
+      },
+      "supported": {
+        "heading": "Langues Supportées"
+      },
+      "benefits": {
+        "heading": "Avantages du Support Multilingue",
+        "content": "Servez les clients dans leur langue préférée. Expandez vers de nouveaux marchés facilement. Formez les employés plus rapidement avec support en langue native. Construisez la confiance avec contenu localisé."
+      },
+      "images": {
+        "selector": "Sélecteur de langue",
+        "selectorCaption": "Changez de langue instantanément",
+        "interface": "Interface multilingue",
+        "interfaceCaption": "Interface utilisateur entièrement traduite",
+        "map": "Carte de disponibilité globale",
+        "mapCaption": "Disponible mondialement en langues locales"
+      }
+    }
+  },
   "cookieBanner": {
     "title": "Avis sur les Cookies",
     "message": "Nous utilisons des cookies pour améliorer votre expérience, analyser l'utilisation et fournir des fonctionnalités essentielles. En continuant à utiliser notre site, vous acceptez notre utilisation des cookies.",

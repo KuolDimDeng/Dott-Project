@@ -963,6 +963,230 @@
     "privacyPolicy": "Política de Privacidad",
     "termsOfService": "Términos de Servicio"
   },
+  "featureDetails": {
+    "screenshots": "Capturas de Pantalla y Ejemplos",
+    "cta": {
+      "heading": "¿Listo para comenzar?",
+      "text": "Únete a miles de empresas que ya usan Dott para crecer.",
+      "button": "Comenzar Prueba Gratuita"
+    },
+    "mobile": {
+      "title": "Aplicación Móvil",
+      "subtitle": "Tu Negocio en tu Bolsillo",
+      "overview": {
+        "heading": "Gestión Empresarial Completa en Movimiento",
+        "content": "Accede a todo tu negocio desde tu smartphone o tablet. Nuestra aplicación móvil está diseñada para darte control total ya sea que estés en la oficina, en el campo o viajando. Con capacidades offline, puedes seguir trabajando incluso sin conexión a internet."
+      },
+      "features": {
+        "heading": "Características Móviles Clave",
+        "1": "Seguimiento de ventas e inventario en tiempo real",
+        "2": "Crear y enviar facturas al instante",
+        "3": "Aceptar pagos en el momento",
+        "4": "Ver análisis y reportes empresariales",
+        "5": "Gestionar empleados y hojas de tiempo",
+        "6": "Escanear códigos de barras con tu cámara",
+        "7": "Funciona offline con sincronización automática",
+        "8": "Notificaciones push para eventos importantes"
+      },
+      "benefits": {
+        "heading": "Beneficios para tu Negocio",
+        "content": "Mantente conectado con tu negocio 24/7. Toma decisiones informadas con datos en tiempo real. Atiende clientes más rápido con POS móvil. Reduce el papeleo y procesos manuales."
+      },
+      "images": {
+        "dashboard": "Vista del panel móvil",
+        "dashboardCaption": "Panel con métricas clave de un vistazo",
+        "pos": "Pantalla POS móvil",
+        "posCaption": "Procesa ventas desde cualquier lugar",
+        "inventory": "Gestión de inventario móvil",
+        "inventoryCaption": "Rastrea inventario en tiempo real"
+      }
+    },
+    "pos": {
+      "title": "TPV y Escaneo de Códigos de Barras",
+      "subtitle": "Ventas Rápidas, Precisas y Eficientes",
+      "overview": {
+        "heading": "Sistema de Punto de Venta Moderno",
+        "content": "Transforma cualquier dispositivo en un potente sistema de punto de venta. Nuestro TPV está diseñado para velocidad y simplicidad, permitiéndote procesar ventas rápidamente mientras mantienes un seguimiento preciso del inventario. El escáner de códigos de barras integrado hace que el checkout sea ultrarrápido."
+      },
+      "features": {
+        "heading": "Características Avanzadas del TPV",
+        "1": "Escaneo de códigos de barras con cámara o escáner Bluetooth",
+        "2": "Soporte para todos los tipos de pago incluyendo dinero móvil",
+        "3": "Actualizaciones automáticas de inventario con cada venta",
+        "4": "Gestión de clientes y programas de fidelidad",
+        "5": "Pagos divididos y pagos parciales",
+        "6": "Manejo de devoluciones e intercambios",
+        "7": "Modo offline con gestión de cola",
+        "8": "Seguimiento de inventario multi-ubicación"
+      },
+      "barcode": {
+        "heading": "Sistema de Códigos de Barras Potente",
+        "content": "Genera códigos de barras personalizados para tus productos. Imprime etiquetas de códigos de barras en varios tamaños. Escanea productos al instante durante ventas o conteos de inventario. Soporte para códigos QR y códigos de barras estándar."
+      },
+      "images": {
+        "checkout": "Pantalla de checkout del TPV",
+        "checkoutCaption": "Proceso de checkout rápido e intuitivo",
+        "scanning": "Escaneo de códigos de barras en acción",
+        "scanningCaption": "Escanea productos al instante con cámara o escáner",
+        "payments": "Múltiples métodos de pago",
+        "paymentsCaption": "Acepta efectivo, tarjetas y dinero móvil"
+      }
+    },
+    "ai": {
+      "title": "Análisis con IA",
+      "subtitle": "Recomendaciones Inteligentes para el Crecimiento",
+      "overview": {
+        "heading": "Inteligencia Artificial para tu Negocio",
+        "content": "Nuestra IA analiza los datos de tu negocio para proporcionar insights accionables y recomendaciones. Obtén análisis predictivos, pronósticos de demanda y alertas inteligentes que te ayuden a tomar mejores decisiones empresariales."
+      },
+      "features": {
+        "heading": "Características con IA",
+        "1": "Pronóstico de demanda basado en datos históricos",
+        "2": "Recomendaciones de optimización de inventario",
+        "3": "Análisis de productos más vendidos",
+        "4": "Insights de comportamiento del cliente",
+        "5": "Sugerencias de optimización de precios",
+        "6": "Detección de tendencias estacionales",
+        "7": "Predicciones de flujo de efectivo",
+        "8": "Reportes financieros automatizados"
+      },
+      "benefits": {
+        "heading": "Cómo la IA Ayuda a tu Negocio",
+        "content": "Reduce situaciones de falta de stock y exceso de inventario. Identifica oportunidades de crecimiento. Optimiza precios para máximas ganancias. Entiende mejor las preferencias del cliente."
+      },
+      "images": {
+        "dashboard": "Panel de análisis con IA",
+        "dashboardCaption": "Insights inteligentes al alcance de tus dedos",
+        "forecast": "Gráfico de pronóstico de demanda",
+        "forecastCaption": "Predice la demanda futura con precisión",
+        "inventory": "Optimización de inventario",
+        "inventoryCaption": "Recomendaciones de inventario con IA"
+      }
+    },
+    "geofencing": {
+      "title": "Geovallado y Seguimiento de Ubicación",
+      "subtitle": "Gestión Inteligente Basada en Ubicación",
+      "overview": {
+        "heading": "Inteligencia de Ubicación Avanzada",
+        "content": "Garantiza un seguimiento preciso del tiempo y mejora la responsabilidad con fichar entrada/salida basado en GPS. Crea límites virtuales alrededor de sitios de trabajo y recibe notificaciones instantáneas cuando los empleados entren o salgan de áreas designadas."
+      },
+      "features": {
+        "heading": "Características de Gestión de Ubicación",
+        "1": "Fichar entrada/salida basado en GPS con verificación de ubicación",
+        "2": "Crear zonas de geovallado ilimitadas",
+        "3": "Ubicación de empleados en tiempo real durante horas laborales",
+        "4": "Creación automatizada de hojas de tiempo",
+        "5": "Seguimiento de kilometraje para conductores de reparto",
+        "6": "Verificación de visitas a sitios para equipos de campo",
+        "7": "Enfoque en privacidad con consentimiento del empleado",
+        "8": "Historial detallado de ubicación y reportes"
+      },
+      "compliance": {
+        "heading": "Privacidad y Cumplimiento",
+        "content": "Cumplimiento completo con GDPR y leyes de privacidad. Gestión de consentimiento del empleado. Seguimiento de ubicación solo durante horas laborales. Políticas transparentes de uso de datos."
+      },
+      "images": {
+        "map": "Vista de mapa de geovallado",
+        "mapCaption": "Crea y gestiona zonas de trabajo fácilmente",
+        "tracking": "Panel de seguimiento de empleados",
+        "trackingCaption": "Vista general de ubicación del equipo en tiempo real",
+        "reports": "Reportes de ubicación",
+        "reportsCaption": "Análisis detallado de ubicación"
+      }
+    },
+    "mobilemoney": {
+      "title": "Pagos con Dinero Móvil",
+      "subtitle": "Acepta Pagos de Miles de Millones de Usuarios en Todo el Mundo",
+      "overview": {
+        "heading": "Aceptación Global de Pagos",
+        "content": "Rompe las barreras de pago y alcanza clientes en todas partes. El dinero móvil es el método de pago preferido para miles de millones de personas globalmente, especialmente en mercados emergentes. Con Dott, puedes aceptar pagos de usuarios de M-Pesa hoy, con muchos más proveedores de dinero móvil próximamente."
+      },
+      "current": {
+        "heading": "Actualmente Disponible",
+        "1": "M-Pesa (Kenia) - Más de 30 millones de usuarios activos",
+        "2": "Tarjetas de crédito y débito (Visa, Mastercard, Amex)",
+        "3": "Transferencias bancarias y pagos ACH",
+        "4": "Pagos en efectivo (rastreados en el sistema)"
+      },
+      "coming": {
+        "heading": "Próximamente",
+        "1": "MTN Mobile Money - 180+ millones de usuarios en África",
+        "2": "Airtel Money - 125+ millones de usuarios en África y Asia",
+        "3": "Orange Money - 70+ millones de usuarios en África y Medio Oriente",
+        "4": "GCash (Filipinas) - 81+ millones de usuarios registrados",
+        "5": "Paytm (India) - 350+ millones de usuarios",
+        "6": "Pix (Brasil) - 140+ millones de usuarios",
+        "7": "Mercado Pago - 80+ millones de usuarios en América Latina",
+        "8": "bKash (Bangladesh), OVO (Indonesia) y más"
+      },
+      "benefits": {
+        "heading": "Por Qué Importa el Dinero Móvil",
+        "content": "Pagos instantáneos con tarifas de transacción más bajas. No se requiere cuenta bancaria para los clientes. Alcanza poblaciones sin servicios bancarios. Permite transacciones transfronterizas. Perfecto para transacciones pequeñas y compras diarias."
+      },
+      "images": {
+        "options": "Opciones de pago con dinero móvil",
+        "optionsCaption": "Múltiples métodos de pago en una plataforma",
+        "mpesa": "Flujo de pago M-Pesa",
+        "mpesaCaption": "Integración M-Pesa simple y segura",
+        "global": "Mapa de cobertura global de pagos",
+        "globalCaption": "Cobertura mundial de dinero móvil"
+      }
+    },
+    "whatsapp": {
+      "title": "WhatsApp Business",
+      "subtitle": "Transforma la Comunicación con Clientes",
+      "overview": {
+        "heading": "Integración Todo-en-Uno de WhatsApp Business",
+        "content": "Conecta con tus clientes en la plataforma de mensajería más popular del mundo. Crea catálogos de productos impresionantes, automatiza la entrega de facturas y recibos, proporciona soporte instantáneo al cliente y convierte conversaciones en ventas. Con más de 2 mil millones de usuarios en todo el mundo, WhatsApp Business es esencial para el engagement moderno con clientes."
+      },
+      "features": {
+        "heading": "Características Clave de WhatsApp Business",
+        "1": "Catálogo empresarial profesional con fotos y descripciones de productos",
+        "2": "Entrega automatizada de facturas y recibos a clientes",
+        "3": "Soporte instantáneo al cliente y chat en vivo",
+        "4": "Mensajes de difusión para promociones y anuncios",
+        "5": "Gestión de pedidos directamente a través de WhatsApp",
+        "6": "Confirmaciones de pago y notificaciones de transacciones",
+        "7": "Respuestas rápidas y respuestas automatizadas",
+        "8": "Sincronización de datos de clientes con tus contactos empresariales"
+      },
+      "benefits": {
+        "heading": "Beneficios para tu Negocio",
+        "content": "Alcanza clientes donde ya están. Aumenta las tasas de conversión de ventas con comunicación instantánea. Reduce costos de servicio al cliente con respuestas automatizadas. Construye relaciones más sólidas con clientes a través de mensajería personalizada."
+      },
+      "images": {
+        "catalog": "Catálogo de WhatsApp Business",
+        "catalogCaption": "Hermosa vitrina de productos dentro de WhatsApp",
+        "invoice": "Entrega automatizada de facturas",
+        "invoiceCaption": "Envía facturas al instante a través de WhatsApp",
+        "support": "Chat de soporte al cliente",
+        "supportCaption": "Proporciona ayuda instantánea y construye relaciones"
+      }
+    },
+    "languages": {
+      "title": "Más de 20 Idiomas Soportados",
+      "subtitle": "Habla el Idioma de tu Cliente",
+      "overview": {
+        "heading": "Verdadera Accesibilidad Global",
+        "content": "Dott está disponible en más de 20 idiomas, haciéndolo accesible a empresas en todo el mundo. Cada característica, botón y mensaje está completamente traducido por hablantes nativos para asegurar claridad y apropiación cultural."
+      },
+      "supported": {
+        "heading": "Idiomas Soportados"
+      },
+      "benefits": {
+        "heading": "Beneficios del Soporte Multiidioma",
+        "content": "Sirve a clientes en su idioma preferido. Expándete a nuevos mercados fácilmente. Entrena empleados más rápido con soporte en idioma nativo. Construye confianza con contenido localizado."
+      },
+      "images": {
+        "selector": "Selector de idiomas",
+        "selectorCaption": "Cambia idiomas al instante",
+        "interface": "Interfaz multiidioma",
+        "interfaceCaption": "Interfaz de usuario completamente traducida",
+        "map": "Mapa de disponibilidad global",
+        "mapCaption": "Disponible en todo el mundo en idiomas locales"
+      }
+    }
+  },
   "cookieBanner": {
     "title": "Aviso de Cookies",
     "message": "Utilizamos cookies para mejorar tu experiencia, analizar el uso y proporcionar funcionalidad esencial. Al continuar usando nuestro sitio, aceptas nuestro uso de cookies.",

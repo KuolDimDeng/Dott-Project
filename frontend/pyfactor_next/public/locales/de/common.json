@@ -921,6 +921,230 @@
       }
     }
   },
+  "featureDetails": {
+    "screenshots": "Screenshots & Beispiele",
+    "cta": {
+      "heading": "Bereit loszulegen?",
+      "text": "Schließen Sie sich Tausenden von Unternehmen an, die bereits Dott nutzen, um zu wachsen.",
+      "button": "Kostenlose Testversion starten"
+    },
+    "mobile": {
+      "title": "Mobile Anwendung",
+      "subtitle": "Ihr Unternehmen in der Hosentasche",
+      "overview": {
+        "heading": "Komplettes Unternehmensmanagement unterwegs",
+        "content": "Greifen Sie von Ihrem Smartphone oder Tablet auf Ihr gesamtes Unternehmen zu. Unsere mobile App ist so konzipiert, dass Sie die volle Kontrolle haben, egal ob Sie im Büro, im Außendienst oder auf Reisen sind. Mit Offline-Funktionen können Sie auch ohne Internetverbindung weiterarbeiten."
+      },
+      "features": {
+        "heading": "Wichtigste Mobile Funktionen",
+        "1": "Echtzeiterfassung von Verkäufen und Lagerbeständen",
+        "2": "Rechnungen sofort erstellen und versenden",
+        "3": "Zahlungen vor Ort akzeptieren",
+        "4": "Geschäftsanalysen und Berichte anzeigen",
+        "5": "Mitarbeiter und Arbeitszeiterfassung verwalten",
+        "6": "Barcodes mit der Kamera scannen",
+        "7": "Funktioniert offline mit automatischer Synchronisation",
+        "8": "Push-Benachrichtigungen für wichtige Ereignisse"
+      },
+      "benefits": {
+        "heading": "Vorteile für Ihr Unternehmen",
+        "content": "Bleiben Sie 24/7 mit Ihrem Unternehmen verbunden. Treffen Sie fundierte Entscheidungen mit Echtzeitdaten. Bedienen Sie Kunden schneller mit mobilem POS. Reduzieren Sie Papierkram und manuelle Prozesse."
+      },
+      "images": {
+        "dashboard": "Mobile Dashboard-Ansicht",
+        "dashboardCaption": "Dashboard mit Kennzahlen auf einen Blick",
+        "pos": "Mobile POS-Bildschirm",
+        "posCaption": "Verkäufe von überall aus bearbeiten",
+        "inventory": "Mobile Lagerverwaltung",
+        "inventoryCaption": "Lagerbestände in Echtzeit verfolgen"
+      }
+    },
+    "pos": {
+      "title": "POS und Barcode-Scanning",
+      "subtitle": "Schnell, Genau und Effizient",
+      "overview": {
+        "heading": "Modernes Kassensystem",
+        "content": "Verwandeln Sie jedes Gerät in ein leistungsstarkes Kassensystem. Unser POS ist auf Geschwindigkeit und Einfachheit ausgelegt und ermöglicht es Ihnen, Verkäufe schnell zu bearbeiten und dabei eine genaue Bestandsverfolgung aufrechtzuerhalten. Der integrierte Barcode-Scanner macht das Checkout blitzschnell."
+      },
+      "features": {
+        "heading": "Erweiterte POS-Funktionen",
+        "1": "Barcode-Scanning mit Kamera oder Bluetooth-Scanner",
+        "2": "Unterstützung für alle Zahlungsarten einschließlich Mobile Money",
+        "3": "Automatische Bestandsaktualisierungen bei jedem Verkauf",
+        "4": "Kundenverwaltung und Treueprogramme",
+        "5": "Geteilte Zahlungen und Teilzahlungen",
+        "6": "Rücksendungen und Umtausch abwickeln",
+        "7": "Offline-Modus mit Warteschlangenmanagement",
+        "8": "Multi-Standort-Bestandsverfolgung"
+      },
+      "barcode": {
+        "heading": "Leistungsstarkes Barcode-System",
+        "content": "Erstellen Sie benutzerdefinierte Barcodes für Ihre Produkte. Drucken Sie Barcode-Etiketten in verschiedenen Größen. Scannen Sie Produkte sofort bei Verkäufen oder Bestandszählungen. Unterstützung für QR-Codes und Standard-Barcodes."
+      },
+      "images": {
+        "checkout": "POS-Checkout-Bildschirm",
+        "checkoutCaption": "Schneller und intuitiver Checkout-Prozess",
+        "scanning": "Barcode-Scanning in Aktion",
+        "scanningCaption": "Produkte sofort mit Kamera oder Scanner scannen",
+        "payments": "Mehrere Zahlungsmethoden",
+        "paymentsCaption": "Bargeld, Karten und Mobile Money akzeptieren"
+      }
+    },
+    "ai": {
+      "title": "KI-gestützte Einblicke",
+      "subtitle": "Intelligente Empfehlungen für Wachstum",
+      "overview": {
+        "heading": "Künstliche Intelligenz für Ihr Unternehmen",
+        "content": "Unsere KI analysiert Ihre Unternehmensdaten, um umsetzbare Einblicke und Empfehlungen zu bieten. Erhalten Sie prädiktive Analysen, Nachfrageprognosen und intelligente Warnungen, die Ihnen helfen, bessere Geschäftsentscheidungen zu treffen."
+      },
+      "features": {
+        "heading": "KI-gestützte Funktionen",
+        "1": "Nachfrageprognose basierend auf historischen Daten",
+        "2": "Empfehlungen zur Bestandsoptimierung",
+        "3": "Analyse der meistverkauften Produkte",
+        "4": "Einblicke in das Kundenverhalten",
+        "5": "Vorschläge zur Preisoptimierung",
+        "6": "Erkennung saisonaler Trends",
+        "7": "Cashflow-Prognosen",
+        "8": "Automatisierte Finanzberichte"
+      },
+      "benefits": {
+        "heading": "Wie KI Ihrem Unternehmen hilft",
+        "content": "Reduzieren Sie Lagerausfälle und Überbestände. Identifizieren Sie Wachstumschancen. Optimieren Sie Preise für maximalen Gewinn. Verstehen Sie Kundenpräferenzen besser."
+      },
+      "images": {
+        "dashboard": "KI-Analyse-Dashboard",
+        "dashboardCaption": "Intelligente Einblicke zur Hand",
+        "forecast": "Nachfrageprognose-Diagramm",
+        "forecastCaption": "Zukünftige Nachfrage genau vorhersagen",
+        "inventory": "Bestandsoptimierung",
+        "inventoryCaption": "KI-gestützte Bestandsempfehlungen"
+      }
+    },
+    "geofencing": {
+      "title": "Geofencing & Standortverfolgung",
+      "subtitle": "Intelligentes standortbasiertes Management",
+      "overview": {
+        "heading": "Erweiterte Standortintelligenz",
+        "content": "Gewährleisten Sie genaue Zeiterfassung und verbessern Sie die Rechenschaftspflicht mit GPS-basiertem Ein-/Ausstempeln. Erstellen Sie virtuelle Grenzen um Arbeitsplätze und erhalten Sie sofortige Benachrichtigungen, wenn Mitarbeiter bestimmte Bereiche betreten oder verlassen."
+      },
+      "features": {
+        "heading": "Standortverwaltungsfunktionen",
+        "1": "GPS-basiertes Ein-/Ausstempeln mit Standortverifikation",
+        "2": "Unbegrenzte Geofence-Zonen erstellen",
+        "3": "Echtzeit-Mitarbeiterstandort während der Arbeitszeiten",
+        "4": "Automatisierte Arbeitszeiterfassung",
+        "5": "Kilometerstandsverfolgung für Lieferfahrer",
+        "6": "Standortbesuche-Verifizierung für Außendienstteams",
+        "7": "Datenschutzorientiert mit Mitarbeiterzustimmung",
+        "8": "Detaillierter Standortverlauf und Berichte"
+      },
+      "compliance": {
+        "heading": "Datenschutz & Compliance",
+        "content": "Vollständige DSGVO und Datenschutzgesetz-Compliance. Verwaltung der Mitarbeiterzustimmung. Standortverfolgung nur während der Arbeitszeiten. Transparente Datennutzungsrichtlinien."
+      },
+      "images": {
+        "map": "Geofence-Kartenansicht",
+        "mapCaption": "Arbeitszonen einfach erstellen und verwalten",
+        "tracking": "Mitarbeiterverfolgung-Dashboard",
+        "trackingCaption": "Echtzeit-Team-Standortübersicht",
+        "reports": "Standortberichte",
+        "reportsCaption": "Detaillierte Standortanalysen"
+      }
+    },
+    "mobilemoney": {
+      "title": "Mobile Money Zahlungen",
+      "subtitle": "Zahlungen von Milliarden Nutzern weltweit akzeptieren",
+      "overview": {
+        "heading": "Globale Zahlungsakzeptanz",
+        "content": "Durchbrechen Sie Zahlungsbarrieren und erreichen Sie Kunden überall. Mobile Money ist die bevorzugte Zahlungsmethode für Milliarden von Menschen weltweit, besonders in aufstrebenden Märkten. Mit Dott können Sie heute Zahlungen von M-Pesa-Nutzern akzeptieren, und viele weitere Mobile Money-Anbieter folgen bald."
+      },
+      "current": {
+        "heading": "Derzeit verfügbar",
+        "1": "M-Pesa (Kenia) - Über 30 Millionen aktive Nutzer",
+        "2": "Kredit- und Debitkarten (Visa, Mastercard, Amex)",
+        "3": "Banküberweisungen und ACH-Zahlungen",
+        "4": "Barzahlungen (im System erfasst)"
+      },
+      "coming": {
+        "heading": "Demnächst verfügbar",
+        "1": "MTN Mobile Money - 180+ Millionen Nutzer in Afrika",
+        "2": "Airtel Money - 125+ Millionen Nutzer in Afrika und Asien",
+        "3": "Orange Money - 70+ Millionen Nutzer in Afrika und Nahost",
+        "4": "GCash (Philippinen) - 81+ Millionen registrierte Nutzer",
+        "5": "Paytm (Indien) - 350+ Millionen Nutzer",
+        "6": "Pix (Brasilien) - 140+ Millionen Nutzer",
+        "7": "Mercado Pago - 80+ Millionen Nutzer in Lateinamerika",
+        "8": "bKash (Bangladesch), OVO (Indonesien) und weitere"
+      },
+      "benefits": {
+        "heading": "Warum Mobile Money wichtig ist",
+        "content": "Sofortige Zahlungen mit niedrigeren Transaktionsgebühren. Kein Bankkonto für Kunden erforderlich. Erreichen Sie unterversorgte Bevölkerungsgruppen. Ermöglichen Sie grenzüberschreitende Transaktionen. Perfekt für kleine Transaktionen und tägliche Einkäufe."
+      },
+      "images": {
+        "options": "Mobile Money Zahlungsoptionen",
+        "optionsCaption": "Mehrere Zahlungsmethoden in einer Plattform",
+        "mpesa": "M-Pesa Zahlungsablauf",
+        "mpesaCaption": "Einfache und sichere M-Pesa Integration",
+        "global": "Globale Zahlungsabdeckung-Karte",
+        "globalCaption": "Weltweite Mobile Money Abdeckung"
+      }
+    },
+    "whatsapp": {
+      "title": "WhatsApp Business",
+      "subtitle": "Kundenkommunikation transformieren",
+      "overview": {
+        "heading": "All-in-One WhatsApp Business Integration",
+        "content": "Verbinden Sie sich mit Ihren Kunden auf der weltweit beliebtesten Messaging-Plattform. Erstellen Sie beeindruckende Produktkataloge, automatisieren Sie die Zustellung von Rechnungen und Belegen, bieten Sie sofortigen Kundensupport und verwandeln Sie Gespräche in Verkäufe. Mit über 2 Milliarden Nutzern weltweit ist WhatsApp Business unerlässlich für modernes Kundenengagement."
+      },
+      "features": {
+        "heading": "Wichtigste WhatsApp Business Funktionen",
+        "1": "Professioneller Geschäftskatalog mit Produktfotos und Beschreibungen",
+        "2": "Automatisierte Rechnungs- und Belegzustellung an Kunden",
+        "3": "Sofortiger Kundensupport und Live-Chat",
+        "4": "Broadcast-Nachrichten für Werbeaktionen und Ankündigungen",
+        "5": "Bestellverwaltung direkt über WhatsApp",
+        "6": "Zahlungsbestätigungen und Transaktionsbenachrichtigungen",
+        "7": "Schnellantworten und automatisierte Antworten",
+        "8": "Kundendatensynchronisation mit Ihren Geschäftskontakten"
+      },
+      "benefits": {
+        "heading": "Vorteile für Ihr Unternehmen",
+        "content": "Erreichen Sie Kunden dort, wo sie bereits sind. Erhöhen Sie Verkaufskonversionsraten durch sofortige Kommunikation. Reduzieren Sie Kundenservice-Kosten mit automatisierten Antworten. Bauen Sie stärkere Kundenbeziehungen durch personalisierte Nachrichten auf."
+      },
+      "images": {
+        "catalog": "WhatsApp Business Katalog",
+        "catalogCaption": "Schöne Produktpräsentation innerhalb WhatsApp",
+        "invoice": "Automatisierte Rechnungszustellung",
+        "invoiceCaption": "Rechnungen sofort über WhatsApp versenden",
+        "support": "Kundensupport-Chat",
+        "supportCaption": "Sofortige Hilfe bieten und Beziehungen aufbauen"
+      }
+    },
+    "languages": {
+      "title": "20+ Unterstützte Sprachen",
+      "subtitle": "Sprechen Sie die Sprache Ihrer Kunden",
+      "overview": {
+        "heading": "Wahre globale Zugänglichkeit",
+        "content": "Dott ist in über 20 Sprachen verfügbar und macht es für Unternehmen weltweit zugänglich. Jede Funktion, jeder Button und jede Nachricht wird vollständig von Muttersprachlern übersetzt, um Klarheit und kulturelle Angemessenheit zu gewährleisten."
+      },
+      "supported": {
+        "heading": "Unterstützte Sprachen"
+      },
+      "benefits": {
+        "heading": "Vorteile der mehrsprachigen Unterstützung",
+        "content": "Bedienen Sie Kunden in ihrer bevorzugten Sprache. Expandieren Sie einfach in neue Märkte. Schulen Sie Mitarbeiter schneller mit muttersprachlicher Unterstützung. Bauen Sie Vertrauen mit lokalisiertem Inhalt auf."
+      },
+      "images": {
+        "selector": "Sprachauswahl",
+        "selectorCaption": "Sprachen sofort wechseln",
+        "interface": "Mehrsprachige Benutzeroberfläche",
+        "interfaceCaption": "Vollständig übersetzte Benutzeroberfläche",
+        "map": "Globale Verfügbarkeitskarte",
+        "mapCaption": "Weltweit in lokalen Sprachen verfügbar"
+      }
+    }
+  },
   "cookieBanner": {
     "title": "Cookie-Hinweis",
     "message": "Wir verwenden Cookies, um Ihre Erfahrung zu verbessern, die Nutzung zu analysieren und wichtige Funktionen bereitzustellen. Durch die weitere Nutzung unserer Website stimmen Sie unserer Verwendung von Cookies zu.",

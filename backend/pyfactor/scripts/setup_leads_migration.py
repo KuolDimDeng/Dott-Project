@@ -70,7 +70,7 @@ def create_leads_tables_manually():
             cursor.execute("""
                 SELECT EXISTS (
                     SELECT FROM information_schema.tables 
-                    WHERE table_name = 'leads_lead'
+                    WHERE table_name = 'leads'
                 )
             """)
             
@@ -78,9 +78,9 @@ def create_leads_tables_manually():
                 print("✅ Leads tables already exist!")
                 return True
             
-            # Create leads_lead table
+            # Create leads table (not leads_lead - model specifies db_table = 'leads')
             cursor.execute("""
-                CREATE TABLE IF NOT EXISTS leads_lead (
+                CREATE TABLE IF NOT EXISTS leads (
                     id BIGSERIAL PRIMARY KEY,
                     email VARCHAR(254) NOT NULL,
                     first_name VARCHAR(100),
@@ -90,56 +90,40 @@ def create_leads_tables_manually():
                     source VARCHAR(25) NOT NULL,
                     message TEXT,
                     status VARCHAR(15) NOT NULL DEFAULT 'new',
-                    priority VARCHAR(10) NOT NULL DEFAULT 'medium',
+                    country VARCHAR(100),
                     ip_address INET,
-                    user_agent TEXT,
-                    referrer VARCHAR(500),
-                    utm_source VARCHAR(100),
-                    utm_medium VARCHAR(100),
-                    utm_campaign VARCHAR(100),
-                    utm_term VARCHAR(100),
-                    utm_content VARCHAR(100),
                     additional_data JSONB DEFAULT '{}',
-                    tags VARCHAR(500),
                     notes TEXT,
                     contacted_at TIMESTAMPTZ,
-                    converted_at TIMESTAMPTZ,
                     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-                    assigned_to_id BIGINT REFERENCES custom_auth_user(id) ON DELETE SET NULL,
-                    created_by_id BIGINT REFERENCES custom_auth_user(id) ON DELETE SET NULL
+                    assigned_to_id BIGINT REFERENCES custom_auth_user(id) ON DELETE SET NULL
                 )
             """)
             
-            # Create leads_leadactivity table
+            # Create lead_activities table (not leads_leadactivity - model specifies db_table = 'lead_activities')
             cursor.execute("""
-                CREATE TABLE IF NOT EXISTS leads_leadactivity (
+                CREATE TABLE IF NOT EXISTS lead_activities (
                     id BIGSERIAL PRIMARY KEY,
                     activity_type VARCHAR(20) NOT NULL,
                     description TEXT NOT NULL,
-                    metadata JSONB DEFAULT '{}',
                     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                     created_by_id BIGINT REFERENCES custom_auth_user(id) ON DELETE SET NULL,
-                    lead_id BIGINT NOT NULL REFERENCES leads_lead(id) ON DELETE CASCADE
+                    lead_id BIGINT NOT NULL REFERENCES leads(id) ON DELETE CASCADE
                 )
             """)
             
-            # Create unique constraint
-            cursor.execute("""
-                CREATE UNIQUE INDEX IF NOT EXISTS unique_lead_email_source 
-                ON leads_lead (email, source) 
-                WHERE email != ''
-            """)
+            # Create indexes for leads table
+            cursor.execute("CREATE INDEX IF NOT EXISTS leads_email_idx ON leads (email)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS leads_source_idx ON leads (source)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS leads_status_idx ON leads (status)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS leads_created_idx ON leads (created_at)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS leads_assigned_idx ON leads (assigned_to_id)")
             
-            # Create indexes
-            cursor.execute("CREATE INDEX IF NOT EXISTS leads_lead_email_idx ON leads_lead (email)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS leads_lead_source_idx ON leads_lead (source)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS leads_lead_status_idx ON leads_lead (status)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS leads_lead_created_idx ON leads_lead (created_at)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS leads_lead_assigned_idx ON leads_lead (assigned_to_id)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS leads_leadact_lead_idx ON leads_leadactivity (lead_id)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS leads_leadact_type_idx ON leads_leadactivity (activity_type)")
-            cursor.execute("CREATE INDEX IF NOT EXISTS leads_leadact_created_idx ON leads_leadactivity (created_at)")
+            # Create indexes for lead_activities table
+            cursor.execute("CREATE INDEX IF NOT EXISTS lead_activities_lead_idx ON lead_activities (lead_id)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS lead_activities_type_idx ON lead_activities (activity_type)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS lead_activities_created_idx ON lead_activities (created_at)")
             
             print("✅ Leads tables created successfully!")
             return True
