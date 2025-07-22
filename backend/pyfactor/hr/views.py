@@ -1545,9 +1545,6 @@ class GeofenceViewSet(viewsets.ModelViewSet):
             
             logger.info(f"[GeofenceViewSet] Queryset count: {queryset.count()}")
             
-            # Log SQL query for debugging
-            logger.info(f"[GeofenceViewSet] SQL Query: {queryset.query}")
-            
             return queryset
         except Exception as e:
             logger.error(f"[GeofenceViewSet] Error in get_queryset: {str(e)}")
@@ -1573,16 +1570,27 @@ class GeofenceViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def debug_list(self, request):
         """Debug endpoint to check all geofences"""
-        all_geofences = Geofence.objects.all().values('id', 'name', 'business_id', 'is_active', 'created_at')
-        user_geofences = Geofence.objects.filter(business_id=request.user.business_id).values('id', 'name', 'business_id', 'is_active', 'created_at')
-        
-        return Response({
-            'user_business_id': str(request.user.business_id),
-            'total_geofences_in_db': Geofence.objects.count(),
-            'user_geofences_count': user_geofences.count(),
-            'all_geofences': list(all_geofences[:10]),  # First 10
-            'user_geofences': list(user_geofences)
-        })
+        try:
+            logger.info(f"[GeofenceViewSet] debug_list called by {request.user.email}")
+            
+            all_geofences = Geofence.objects.all().values('id', 'name', 'business_id', 'is_active', 'created_at')
+            user_geofences = Geofence.objects.filter(business_id=request.user.business_id).values('id', 'name', 'business_id', 'is_active', 'created_at')
+            
+            return Response({
+                'user_business_id': str(request.user.business_id),
+                'total_geofences_in_db': Geofence.objects.count(),
+                'user_geofences_count': user_geofences.count(),
+                'all_geofences': list(all_geofences[:10]),  # First 10
+                'user_geofences': list(user_geofences)
+            })
+        except Exception as e:
+            logger.error(f"[GeofenceViewSet] Error in debug_list: {str(e)}")
+            import traceback
+            logger.error(f"[GeofenceViewSet] Traceback: {traceback.format_exc()}")
+            return Response({
+                'error': str(e),
+                'type': str(type(e))
+            }, status=500)
     
     @action(detail=True, methods=['post'])
     def assign_employees(self, request, pk=None):
