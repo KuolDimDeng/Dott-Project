@@ -8,7 +8,7 @@ import uuid
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('custom_auth', '0026_accountdeletionlog_user_deleted_at_and_more'),
+        ('custom_auth', '0017_merge'),
     ]
 
     operations = [

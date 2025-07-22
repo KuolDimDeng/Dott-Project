@@ -16,6 +16,18 @@ export async function POST(request, { params }) {
     const { id } = params;
     logger.info(`[UserManagement] Updating permissions for user: ${id}`);
     
+    // Get cookies for session authentication
+    const cookieHeader = request.headers.get('cookie') || '';
+    logger.info('[UserManagement] Cookie header present:', !!cookieHeader);
+    
+    if (!cookieHeader || !cookieHeader.includes('sid=')) {
+      logger.error('[UserManagement] No session cookie found');
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+    
     // Get request body
     const data = await request.json();
     
@@ -27,10 +39,14 @@ export async function POST(request, { params }) {
     }
     
     // Get backend URL from environment
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8001';
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+    const apiUrl = `${backendUrl}/auth/rbac/direct-users/${id}/update-permissions/`;
+    
+    logger.info('[UserManagement] Making request to:', apiUrl);
+    logger.info('[UserManagement] Request data:', processedData);
     
     // Forward request to Django backend with the update_permissions action
-    const response = await fetch(`${backendUrl}/api/user-management/users/${id}/update_permissions/`, {
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

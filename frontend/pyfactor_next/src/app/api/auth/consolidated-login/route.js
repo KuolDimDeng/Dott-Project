@@ -35,7 +35,7 @@ export async function POST(request) {
     });
     
     // Step 1: Authenticate with Auth0
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://dottapps.com';
+    const baseUrl = 'http://localhost:3000'; // Use local URL for API routes
     console.log('[ConsolidatedLogin] Auth endpoint:', `${baseUrl}/api/auth/authenticate`);
     
     const authResponse = await fetch(`${baseUrl}/api/auth/authenticate`, {
@@ -84,7 +84,7 @@ export async function POST(request) {
       console.log('[ConsolidatedLogin] 🔴 SKIPPING consolidated-auth to avoid duplicate session creation');
       
       // Fetch the existing session details using public endpoint
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://dott-api-y26w.onrender.com';
+      const API_URL = 'https://api.dottapps.com';
       console.log('[ConsolidatedLogin] Fetching existing session from public endpoint:', `${API_URL}/api/sessions/public/${authData.backend_session_id}/`);
       const sessionResponse = await fetch(`${API_URL}/api/sessions/public/${authData.backend_session_id}/`, {
         method: 'GET',
@@ -130,7 +130,7 @@ export async function POST(request) {
     }
     
     // Step 3: Call consolidated backend endpoint only if no existing session
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://dott-api-y26w.onrender.com';
+    const API_URL = 'https://api.dottapps.com';
     console.log('[ConsolidatedLogin] No existing backend session, creating new one...');
     console.log('[ConsolidatedLogin] Calling backend consolidated-auth at:', `${API_URL}/api/sessions/consolidated-auth/`);
     

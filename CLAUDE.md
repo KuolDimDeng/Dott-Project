@@ -606,6 +606,45 @@ NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSyCC7KgQRztJDsoaQa94zMO7F4Pa-4R73E0
 - **Documentation**: `/docs/GOOGLE_MAPS_GEOFENCING_SETUP.md`
 - **Key Learning**: Direct DOM manipulation more reliable than React portals for Google Maps
 
+### [41.0.0] - 2025-07-22 - CURRENT - Local Docker Development Environment
+- **Purpose**: Mirror production environment locally for faster development and testing
+- **Problem**: Needed to test changes locally before deploying to Render production
+- **Solution**: Complete Docker Compose setup replicating production stack
+- **Key Files Created**:
+  - `docker-compose.local.yml` - Full stack configuration (PostgreSQL, Redis, Django, Next.js)
+  - `frontend/pyfactor_next/Dockerfile.local` - Frontend container with hot reload
+  - `frontend/pyfactor_next/.dockerignore` - Exclude node_modules from build
+  - `.env.local.example` - Template for environment variables
+  - `scripts/setup-local-dev.sh` - Automated setup script
+  - `backend/pyfactor/scripts/seed_local_data.py` - Sample data creation
+  - `LOCAL_DEVELOPMENT_GUIDE.md` - Complete documentation
+- **Working Services**:
+  - Frontend: http://localhost:3000 ✅ (full landing page with hot reload)
+  - PostgreSQL: localhost:5432 ✅ (database ready)
+  - Redis: localhost:6379 ✅ (session storage ready)
+  - Backend: localhost:8000 🔧 (migration dependency issues)
+- **Key Benefits**:
+  - Instant frontend changes without waiting for deployments
+  - Test all 20 language translations locally
+  - Verify responsive design across devices
+  - Safe environment to break things
+  - Exact production parity (same versions, configs)
+- **Usage**:
+  - Start: `docker-compose -f docker-compose.local.yml up -d`
+  - View logs: `docker-compose -f docker-compose.local.yml logs -f`
+  - Stop: `docker-compose -f docker-compose.local.yml down`
+  - Frontend changes: Edit files in `/frontend/pyfactor_next/src/`
+- **Common Issues**:
+  - Backend migration error: `NodeNotFoundError` - needs migration dependency fix
+  - Docker build cache: Run `docker system prune -f` to clear
+  - Port conflicts: Change ports in docker-compose.local.yml
+- **Development Workflow**:
+  1. Make changes locally
+  2. Test at http://localhost:3000
+  3. When satisfied: `git push origin Dott_Main_Dev_Deploy`
+  4. Render auto-deploys to production
+- **Next Steps**: Fix Django migration dependencies for full backend functionality
+
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
 NEVER create files unless they're absolutely necessary for achieving your goal.

@@ -1,0 +1,119 @@
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: dott_local
+      POSTGRES_USER: dott_user
+      POSTGRES_PASSWORD: dott_password
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dott_user -d dott_local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for sessions and caching
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Django Backend
+  backend:
+    build:
+      context: ./backend/pyfactor
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=True
+      - DATABASE_URL=postgresql://dott_user:dott_password@db:5432/dott_local
+      - REDIS_URL=redis://redis:6379/0
+      - DJANGO_SECRET_KEY=local-development-secret-key-not-for-production
+      - ALLOWED_HOSTS=localhost,127.0.0.1,backend
+      - CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+      # Auth0 settings (use your production values)
+      - AUTH0_DOMAIN=dev-cbyy63jovi6zrcos.us.auth0.com
+      - AUTH0_CLIENT_ID=9i7GSU4bgh6hFtMXnQACwiRxTudpuOSF
+      - AUTH0_CLIENT_SECRET=${AUTH0_CLIENT_SECRET:-your-client-secret}
+      - AUTH0_M2M_CLIENT_ID=${AUTH0_M2M_CLIENT_ID:-your-m2m-client-id}
+      - AUTH0_M2M_CLIENT_SECRET=${AUTH0_M2M_CLIENT_SECRET:-your-m2m-secret}
+      # API Keys (add your actual keys to .env file)
+      - CLAUDE_API_KEY=${CLAUDE_API_KEY:-}
+      - CLAUDE_SMART_INSIGHTS_API_KEY=${CLAUDE_SMART_INSIGHTS_API_KEY:-}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
+      - STRIPE_EXPRESS_ACCOUNT_ID=${STRIPE_EXPRESS_ACCOUNT_ID:-acct_1RkYGFC77wwa4lUB}
+      - WHATSAPP_ACCESS_TOKEN=${WHATSAPP_ACCESS_TOKEN:-}
+      - WHATSAPP_PHONE_NUMBER_ID=${WHATSAPP_PHONE_NUMBER_ID:-676188225586230}
+      - RESEND_API_KEY=${RESEND_API_KEY:-}
+      - NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY:-}
+    volumes:
+      - ./backend/pyfactor:/app
+      - backend_media:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      sh -c "
+        echo 'Waiting for database to be ready...' &&
+        sleep 5 &&
+        echo 'Running database migrations...' &&
+        python manage.py migrate &&
+        echo 'Collecting static files...' &&
+        python manage.py collectstatic --noinput &&
+        echo 'Starting Django development server...' &&
+        python manage.py runserver 0.0.0.0:8000
+      "
+
+  # Next.js Frontend
+  frontend:
+    build:
+      context: ./frontend/pyfactor_next
+      dockerfile: Dockerfile.local
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_BASE_URL=https://api.dottapps.com
+      - NEXT_PUBLIC_FRONTEND_URL=http://localhost:3000
+      - NEXT_PUBLIC_AUTH0_DOMAIN=dev-cbyy63jovi6zrcos.us.auth0.com
+      - NEXT_PUBLIC_AUTH0_CLIENT_ID=9i7GSU4bgh6hFtMXnQACwiRxTudpuOSF
+      - NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY:-}
+      - NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:-}
+    volumes:
+      - ./frontend/pyfactor_next:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - backend
+    command: >
+      sh -c "
+        echo 'Installing dependencies...' &&
+        pnpm install &&
+        echo 'Starting Next.js development server...' &&
+        pnpm dev
+      "
+
+volumes:
+  postgres_data:
+  redis_data:
+  backend_media:
+
+networks:
+  default:
+    name: dott_local_network
