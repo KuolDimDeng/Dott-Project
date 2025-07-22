@@ -178,7 +178,9 @@
       "Bash(then echo \"✓ $lang has tagline\")",
       "Bash(else echo \"✗ $lang missing tagline\")",
       "Bash(do if [ -f \"$lang/common.json\" ])",
-      "Bash(then echo -n \"$lang: \")"
+      "Bash(then echo -n \"$lang: \")",
+      "Bash(do echo \"=== Checking $lang ===\")",
+      "Bash(do grep -q \"\"\"$key\"\":\" $lang/common.json)"
     ],
     "deny": []
   }
