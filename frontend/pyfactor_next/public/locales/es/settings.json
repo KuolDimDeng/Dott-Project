@@ -9,7 +9,9 @@
     "payroll": "Nómina",
     "geofencing": "Geolocalización",
     "billing": "Facturación",
-    "whatsapp": "WhatsApp"
+    "whatsapp": "WhatsApp",
+    "userManagement": "Gestión de Usuarios",
+    "bankConnections": "Conexiones Bancarias"
   },
   "general": {
     "title": "Configuración General",
@@ -38,5 +40,13 @@
   "whatsapp": {
     "title": "WhatsApp Business",
     "preferences": "Preferencias de WhatsApp Commerce"
+  },
+  "userManagement": {
+    "title": "Gestionar usuarios y permisos",
+    "description": "Agregar, editar y gestionar el acceso de usuarios"
+  },
+  "bankConnections": {
+    "title": "Conecta tus cuentas bancarias",
+    "description": "Vincula cuentas bancarias para conciliación automática"
   }
 }

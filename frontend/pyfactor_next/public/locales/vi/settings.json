@@ -13,7 +13,9 @@
     "payroll": "Bảng lương",
     "pos": "POS",
     "geofencing": "Ranh giới địa lý",
-    "whatsapp": "WhatsApp"
+    "whatsapp": "WhatsApp",
+    "userManagement": "Quản lý Người dùng",
+    "bankConnections": "Kết nối Ngân hàng"
   },
   "general": {
     "title": "Cài đặt chung",
@@ -149,6 +151,14 @@
     "catalogSync": "Đồng bộ danh mục",
     "paymentEnabled": "Bật thanh toán",
     "showCommerce": "Hiển thị menu WhatsApp Commerce"
+  },
+  "userManagement": {
+    "title": "Quản lý người dùng và quyền hạn",
+    "description": "Thêm, chỉnh sửa và quản lý quyền truy cập người dùng"
+  },
+  "bankConnections": {
+    "title": "Kết nối tài khoản ngân hàng của bạn",
+    "description": "Liên kết tài khoản ngân hàng để đối chiếu tự động"
   },
   "messages": {
     "saveSuccess": "Cài đặt đã được lưu thành công",

@@ -13,7 +13,9 @@
     "payroll": "የደመወዝ ክፍያ",
     "pos": "የሽያጭ ነጥብ",
     "geofencing": "የቦታ አጥር",
-    "whatsapp": "ዋትስአፕ"
+    "whatsapp": "ዋትስአፕ",
+    "userManagement": "የተጠቃሚ አስተዳደር",
+    "bankConnections": "የባንክ ግንኙነቶች"
   },
   "general": {
     "title": "አጠቃላይ ቅንብሮች",

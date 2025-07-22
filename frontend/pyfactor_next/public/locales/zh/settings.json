@@ -13,7 +13,9 @@
     "payroll": "工资单",
     "pos": "收银系统",
     "geofencing": "地理围栏",
-    "whatsapp": "WhatsApp"
+    "whatsapp": "WhatsApp",
+    "userManagement": "用户管理",
+    "bankConnections": "银行连接"
   },
   "general": {
     "title": "常规设置",
@@ -149,6 +151,14 @@
     "catalogSync": "目录同步",
     "paymentEnabled": "启用支付",
     "showCommerce": "显示WhatsApp商务菜单"
+  },
+  "userManagement": {
+    "title": "管理用户和权限",
+    "description": "添加、编辑和管理用户访问权限"
+  },
+  "bankConnections": {
+    "title": "连接您的银行账户",
+    "description": "关联银行账户以实现自动对账"
   },
   "messages": {
     "saveSuccess": "设置保存成功",

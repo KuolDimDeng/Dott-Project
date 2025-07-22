@@ -13,7 +13,9 @@
     "payroll": "Payroll",
     "pos": "POS",
     "geofencing": "Geofencing",
-    "whatsapp": "WhatsApp"
+    "whatsapp": "WhatsApp",
+    "userManagement": "User Management",
+    "bankConnections": "Bank Connections"
   },
   "general": {
     "title": "General Settings",
@@ -149,6 +151,14 @@
     "catalogSync": "Catalog Sync",
     "paymentEnabled": "Enable Payments",
     "showCommerce": "Show WhatsApp Commerce Menu"
+  },
+  "userManagement": {
+    "title": "Manage users and permissions",
+    "description": "Add, edit, and manage user access"
+  },
+  "bankConnections": {
+    "title": "Connect your bank accounts",
+    "description": "Link bank accounts for automatic reconciliation"
   },
   "messages": {
     "saveSuccess": "Settings saved successfully",

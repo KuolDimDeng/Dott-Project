@@ -13,7 +13,9 @@
     "payroll": "Salarisadministratie",
     "pos": "Kassa",
     "geofencing": "Geofencing",
-    "whatsapp": "WhatsApp"
+    "whatsapp": "WhatsApp",
+    "userManagement": "Gebruikersbeheer",
+    "bankConnections": "Bankverbindingen"
   },
   "general": {
     "title": "Algemene instellingen",

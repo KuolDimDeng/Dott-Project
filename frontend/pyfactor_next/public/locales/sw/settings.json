@@ -13,7 +13,9 @@
     "payroll": "Mishahara",
     "pos": "POS",
     "geofencing": "Ukingo wa Kijiografia",
-    "whatsapp": "WhatsApp"
+    "whatsapp": "WhatsApp",
+    "userManagement": "Usimamizi wa Watumiaji",
+    "bankConnections": "Miunganisho ya Benki"
   },
   "general": {
     "title": "Mipangilio ya Jumla",
@@ -149,6 +151,14 @@
     "catalogSync": "Ulandanishi wa Katalogi",
     "paymentEnabled": "Wezesha Malipo",
     "showCommerce": "Onyesha Menyu ya WhatsApp Commerce"
+  },
+  "userManagement": {
+    "title": "Simamia watumiaji na ruhusa",
+    "description": "Ongeza, hariri na simamia ufikiaji wa watumiaji"
+  },
+  "bankConnections": {
+    "title": "Unganisha akaunti zako za benki",
+    "description": "Unganisha akaunti za benki kwa upatanishi wa kiotomatiki"
   },
   "messages": {
     "saveSuccess": "Mipangilio imehifadhiwa kwa mafanikio",

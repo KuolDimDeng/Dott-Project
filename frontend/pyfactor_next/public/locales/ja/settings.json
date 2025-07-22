@@ -13,7 +13,9 @@
     "payroll": "給与",
     "pos": "POS",
     "geofencing": "ジオフェンシング",
-    "whatsapp": "WhatsApp"
+    "whatsapp": "WhatsApp",
+    "userManagement": "ユーザー管理",
+    "bankConnections": "銀行接続"
   },
   "general": {
     "title": "一般設定",

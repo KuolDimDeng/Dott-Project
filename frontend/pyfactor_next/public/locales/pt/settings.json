@@ -13,7 +13,9 @@
     "payroll": "Folha de Pagamento",
     "pos": "PDV",
     "geofencing": "Geolocalização",
-    "whatsapp": "WhatsApp"
+    "whatsapp": "WhatsApp",
+    "userManagement": "Gestão de Usuários",
+    "bankConnections": "Conexões Bancárias"
   },
   "general": {
     "title": "Configurações Gerais",
@@ -149,6 +151,14 @@
     "catalogSync": "Sincronização de Catálogo",
     "paymentEnabled": "Habilitar Pagamentos",
     "showCommerce": "Mostrar Menu WhatsApp Commerce"
+  },
+  "userManagement": {
+    "title": "Gerenciar usuários e permissões",
+    "description": "Adicionar, editar e gerenciar acesso de usuários"
+  },
+  "bankConnections": {
+    "title": "Conecte suas contas bancárias",
+    "description": "Vincule contas bancárias para reconciliação automática"
   },
   "messages": {
     "saveSuccess": "Configurações salvas com sucesso",

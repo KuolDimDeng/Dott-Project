@@ -13,7 +13,9 @@
     "payroll": "Lohnabrechnung",
     "pos": "Kassensystem",
     "geofencing": "Geofencing",
-    "whatsapp": "WhatsApp"
+    "whatsapp": "WhatsApp",
+    "userManagement": "Benutzerverwaltung",
+    "bankConnections": "Bankverbindungen"
   },
   "general": {
     "title": "Allgemeine Einstellungen",
@@ -149,6 +151,14 @@
     "catalogSync": "Katalogsynchronisierung",
     "paymentEnabled": "Zahlungen aktivieren",
     "showCommerce": "WhatsApp Commerce-Menü anzeigen"
+  },
+  "userManagement": {
+    "title": "Benutzer und Berechtigungen verwalten",
+    "description": "Hinzufügen, bearbeiten und verwalten Sie den Benutzerzugriff"
+  },
+  "bankConnections": {
+    "title": "Verbinden Sie Ihre Bankkonten",
+    "description": "Verknüpfen Sie Bankkonten für automatischen Abgleich"
   },
   "messages": {
     "saveSuccess": "Einstellungen erfolgreich gespeichert",

@@ -13,7 +13,9 @@
     "payroll": "Bordro",
     "pos": "POS",
     "geofencing": "Coğrafi Sınırlama",
-    "whatsapp": "WhatsApp"
+    "whatsapp": "WhatsApp",
+    "userManagement": "Kullanıcı Yönetimi",
+    "bankConnections": "Banka Bağlantıları"
   },
   "general": {
     "title": "Genel Ayarlar",

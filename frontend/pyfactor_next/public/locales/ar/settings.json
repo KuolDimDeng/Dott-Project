@@ -13,7 +13,9 @@
     "payroll": "كشف الرواتب",
     "pos": "نقاط البيع",
     "geofencing": "السياج الجغرافي",
-    "whatsapp": "واتساب"
+    "whatsapp": "واتساب",
+    "userManagement": "إدارة المستخدمين",
+    "bankConnections": "الاتصالات المصرفية"
   },
   "general": {
     "title": "الإعدادات العامة",
@@ -149,6 +151,14 @@
     "catalogSync": "مزامنة الكتالوج",
     "paymentEnabled": "تفعيل المدفوعات",
     "showCommerce": "إظهار قائمة واتساب للتجارة"
+  },
+  "userManagement": {
+    "title": "إدارة المستخدمين والصلاحيات",
+    "description": "إضافة وتعديل وإدارة وصول المستخدمين"
+  },
+  "bankConnections": {
+    "title": "ربط حساباتك المصرفية",
+    "description": "ربط الحسابات المصرفية للمطابقة التلقائية"
   },
   "messages": {
     "saveSuccess": "تم حفظ الإعدادات بنجاح",

@@ -13,7 +13,9 @@
     "payroll": "Зарплата",
     "pos": "Касса",
     "geofencing": "Геозоны",
-    "whatsapp": "WhatsApp"
+    "whatsapp": "WhatsApp",
+    "userManagement": "Управление пользователями",
+    "bankConnections": "Банковские подключения"
   },
   "general": {
     "title": "Общие настройки",

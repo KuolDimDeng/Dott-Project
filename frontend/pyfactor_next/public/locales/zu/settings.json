@@ -13,7 +13,9 @@
     "payroll": "Imiholo",
     "pos": "I-POS",
     "geofencing": "Ukubiyela indawo",
-    "whatsapp": "I-WhatsApp"
+    "whatsapp": "I-WhatsApp",
+    "userManagement": "Ukuphatha Abasebenzisi",
+    "bankConnections": "Ukuxhumana Kwebhange"
   },
   "general": {
     "title": "Izilungiselelo Ezijwayelekile",

@@ -13,7 +13,9 @@
     "payroll": "Penggajian",
     "pos": "POS",
     "geofencing": "Geofencing",
-    "whatsapp": "WhatsApp"
+    "whatsapp": "WhatsApp",
+    "userManagement": "Manajemen Pengguna",
+    "bankConnections": "Koneksi Bank"
   },
   "general": {
     "title": "Pengaturan Umum",
@@ -149,6 +151,14 @@
     "catalogSync": "Sinkronisasi Katalog",
     "paymentEnabled": "Aktifkan Pembayaran",
     "showCommerce": "Tampilkan Menu WhatsApp Commerce"
+  },
+  "userManagement": {
+    "title": "Kelola pengguna dan izin",
+    "description": "Tambah, edit, dan kelola akses pengguna"
+  },
+  "bankConnections": {
+    "title": "Hubungkan rekening bank Anda",
+    "description": "Tautkan rekening bank untuk rekonsiliasi otomatis"
   },
   "messages": {
     "saveSuccess": "Pengaturan berhasil disimpan",
