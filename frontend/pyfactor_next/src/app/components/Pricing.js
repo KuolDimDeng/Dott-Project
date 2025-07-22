@@ -42,10 +42,10 @@ export default function Pricing() {
     {
       category: t('pricing.features.categories.core', 'Core Features'),
       features: [
-        { name: t('pricing.features.users', 'Users'), basic: t('pricing.features.users.basic', '1 user'), professional: t('pricing.features.users.professional', 'Up to 3 users'), enterprise: t('pricing.features.users.enterprise', 'Unlimited users') },
+        { name: t('pricing.features.users', 'Users'), basic: t('pricing.features.users.basic', '1 user'), professional: t('pricing.features.users.professional', 'Up to 5 users'), enterprise: t('pricing.features.users.enterprise', 'Unlimited users') },
         { name: t('pricing.features.storage', 'Storage'), basic: t('pricing.features.storage.basic', '3GB'), professional: t('pricing.features.storage.professional', 'Unlimited'), enterprise: t('pricing.features.storage.enterprise', 'Unlimited') },
-        { name: t('pricing.features.support', 'Support'), basic: t('pricing.features.support.basic', 'Basic support'), professional: t('pricing.features.support.professional', 'Priority support'), enterprise: t('pricing.features.support.enterprise', 'Dedicated support') },
-        { name: t('pricing.features.onboarding', 'Onboarding'), basic: t('pricing.features.onboarding.basic', 'Self-service'), professional: t('pricing.features.onboarding.professional', 'Email assistance'), enterprise: t('pricing.features.onboarding.enterprise', 'Custom onboarding') }
+        { name: t('pricing.features.support', 'Support'), basic: t('pricing.features.support.basic', 'Community support'), professional: t('pricing.features.support.professional', 'Priority support'), enterprise: t('pricing.features.support.enterprise', 'Dedicated support') },
+        { name: t('pricing.features.onboarding', 'Onboarding'), basic: t('pricing.features.onboarding.basic', 'Self-service'), professional: t('pricing.features.onboarding.professional', 'Email assistance'), enterprise: t('pricing.features.onboarding.enterprise', 'Premium onboarding') }
       ]
     },
     {
@@ -120,7 +120,7 @@ export default function Pricing() {
         { name: t('pricing.features.twoFactor', 'Two-Factor Authentication'), basic: true, professional: true, enterprise: true },
         { name: t('pricing.features.gdpr', 'GDPR Compliance'), basic: true, professional: true, enterprise: true },
         { name: t('pricing.features.soc2', 'SOC2 Compliance'), basic: false, professional: false, enterprise: true },
-        { name: t('pricing.features.customSecurity', 'Custom Security Policies'), basic: false, professional: false, enterprise: true }
+        { name: t('pricing.features.geofencing', 'Geofencing & Location'), basic: false, professional: true, enterprise: true }
       ]
     }
   ];
@@ -196,7 +196,7 @@ export default function Pricing() {
   const plans = [
     {
       name: t('pricing.plans.basic.name', 'Basic'),
-      description: t('pricing.plans.basic.description', 'Perfect for freelancers and small businesses'),
+      description: t('pricing.plans.basic.description', 'Perfect for getting started'),
       price: { 
         monthly: 'FREE', 
         '6month': 'FREE',
@@ -209,9 +209,10 @@ export default function Pricing() {
       features: [
         t('pricing.plans.basic.features.0', '1 user'),
         t('pricing.plans.basic.features.1', '3GB storage'),
-        t('pricing.plans.basic.features.2', 'All core features'),
-        t('pricing.plans.basic.features.3', 'Basic support'),
-        t('pricing.plans.basic.features.4', 'Mobile app access')
+        t('pricing.plans.basic.features.2', 'Basic features'),
+        t('pricing.plans.basic.features.3', 'Community support'),
+        t('pricing.plans.basic.features.4', 'Mobile app access'),
+        t('pricing.plans.basic.features.5', 'Invoice & POS')
       ],
       cta: t('pricing.plans.basic.cta', 'Start Free'),
       highlight: false,
@@ -237,12 +238,12 @@ export default function Pricing() {
         annual: hasDiscount && userCountry !== 'US' ? '$18' : '$36'
       },
       features: [
-        t('pricing.plans.professional.features.0', 'Up to 3 users'),
+        t('pricing.plans.professional.features.0', 'Up to 5 users'),
         t('pricing.plans.professional.features.1', 'Unlimited storage'),
         t('pricing.plans.professional.features.2', 'All features included'),
         t('pricing.plans.professional.features.3', 'Priority support'),
-        t('pricing.plans.professional.features.4', 'Advanced analytics'),
-        t('pricing.plans.professional.features.5', 'Multi-location support')
+        t('pricing.plans.professional.features.4', 'Geofencing & location'),
+        t('pricing.plans.professional.features.5', 'Advanced analytics')
       ],
       cta: t('pricing.plans.professional.cta', 'Get Professional'),
       highlight: false,
@@ -272,9 +273,8 @@ export default function Pricing() {
         t('pricing.plans.enterprise.features.1', 'Unlimited everything'),
         t('pricing.plans.enterprise.features.2', 'All features included'),
         t('pricing.plans.enterprise.features.3', 'Dedicated support'),
-        t('pricing.plans.enterprise.features.4', 'Custom onboarding'),
-        t('pricing.plans.enterprise.features.5', 'AI-powered insights'),
-        t('pricing.plans.enterprise.features.6', 'API access')
+        t('pricing.plans.enterprise.features.4', 'AI-powered insights'),
+        t('pricing.plans.enterprise.features.5', 'API access')
       ],
       cta: t('pricing.plans.enterprise.cta', 'Get Enterprise'),
       highlight: billingPeriod === 'annual',

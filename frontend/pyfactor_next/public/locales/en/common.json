@@ -463,13 +463,14 @@
     "plans": {
       "basic": {
         "name": "Basic",
-        "description": "Perfect for freelancers and small businesses",
+        "description": "Perfect for getting started",
         "features": {
           "0": "1 user",
           "1": "3GB storage",
           "2": "All core features",
-          "3": "Basic support",
-          "4": "Mobile app access"
+          "3": "Community support",
+          "4": "Mobile app access",
+          "5": "Invoice & POS"
         },
         "cta": "Start Free"
       },
@@ -477,12 +478,12 @@
         "name": "Professional",
         "description": "For growing businesses that need more",
         "features": {
-          "0": "Up to 3 users",
+          "0": "Up to 5 users",
           "1": "Unlimited storage",
           "2": "All features included",
           "3": "Priority support",
           "4": "Advanced analytics",
-          "5": "Multi-location support"
+          "5": "Geofencing & location"
         },
         "cta": "Get Professional"
       },
@@ -494,9 +495,8 @@
           "1": "Unlimited everything",
           "2": "All features included",
           "3": "Dedicated support",
-          "4": "Custom onboarding",
-          "5": "AI-powered insights",
-          "6": "API access"
+          "4": "AI-powered insights",
+          "5": "API access"
         },
         "cta": "Start Enterprise"
       }
@@ -521,20 +521,20 @@
       },
       "users": "Users",
       "users.basic": "1 user",
-      "users.professional": "Up to 3 users",
+      "users.professional": "Up to 5 users",
       "users.enterprise": "Unlimited users",
       "storage": "Storage",
       "storage.basic": "3GB",
       "storage.professional": "Unlimited",
       "storage.enterprise": "Unlimited",
       "support": "Support",
-      "support.basic": "Basic support",
+      "support.basic": "Community support",
       "support.professional": "Priority support",
       "support.enterprise": "Dedicated support",
       "onboarding": "Onboarding",
       "onboarding.basic": "Self-service",
       "onboarding.professional": "Email assistance",
-      "onboarding.enterprise": "Custom onboarding",
+      "onboarding.enterprise": "Premium onboarding",
       "income": "Income & Expense Tracking",
       "multicurrency": "Multi-Currency Support",
       "invoices": "Invoice Creation",
@@ -574,6 +574,7 @@
       "twoFactor": "Two-Factor Authentication",
       "gdpr": "GDPR Compliance",
       "soc2": "SOC2 Compliance",
+      "geofencing": "Geofencing & Location",
       "customSecurity": "Custom Security Policies"
     }
   },

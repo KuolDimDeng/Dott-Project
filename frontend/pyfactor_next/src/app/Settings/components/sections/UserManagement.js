@@ -336,18 +336,42 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
       logger.info('[UserManagement Frontend] Number of users from API:', apiUsers.length);
       
       // Transform users to match our expected format
-      const transformedUsers = apiUsers.map(apiUser => ({
-        id: apiUser.id || apiUser.user_id || apiUser.auth0_id,
-        email: apiUser.email,
-        name: apiUser.name || apiUser.full_name || apiUser.email,
-        role: apiUser.role || 'USER',
-        status: apiUser.status || (apiUser.is_active ? 'active' : 'inactive'),
-        lastLogin: apiUser.last_login || apiUser.last_active || apiUser.updated_at,
-        twoFactorEnabled: apiUser.mfa_enabled || apiUser.two_factor_enabled || false,
-        permissions: apiUser.permissions || apiUser.page_permissions || [],
-        invitedDate: apiUser.invited_at || apiUser.created_at,
-        inviteStatus: apiUser.invite_status || (apiUser.email_verified ? 'accepted' : 'pending')
-      }));
+      const transformedUsers = apiUsers.map(apiUser => {
+        // Convert permissions from array to object format
+        let permissions = {};
+        const rawPermissions = apiUser.permissions || apiUser.page_permissions || [];
+        
+        if (Array.isArray(rawPermissions)) {
+          rawPermissions.forEach(perm => {
+            if (typeof perm === 'string') {
+              permissions[perm] = { canAccess: true, canWrite: false };
+            } else if (perm && typeof perm === 'object') {
+              if (perm.page_id || perm.page) {
+                const pageId = perm.page_id || perm.page;
+                permissions[pageId] = {
+                  canAccess: perm.can_read || true,
+                  canWrite: perm.can_write || false
+                };
+              }
+            }
+          });
+        } else if (typeof rawPermissions === 'object' && !Array.isArray(rawPermissions)) {
+          permissions = rawPermissions;
+        }
+        
+        return {
+          id: apiUser.id || apiUser.user_id || apiUser.auth0_id,
+          email: apiUser.email,
+          name: apiUser.name || apiUser.full_name || apiUser.email,
+          role: apiUser.role || 'USER',
+          status: apiUser.status || (apiUser.is_active ? 'active' : 'inactive'),
+          lastLogin: apiUser.last_login || apiUser.last_active || apiUser.updated_at,
+          twoFactorEnabled: apiUser.mfa_enabled || apiUser.two_factor_enabled || false,
+          permissions: permissions,
+          invitedDate: apiUser.invited_at || apiUser.created_at,
+          inviteStatus: apiUser.invite_status || (apiUser.email_verified ? 'accepted' : 'pending')
+        };
+      });
 
       // Always include the current user if not already in the list
       if (user) {
@@ -364,7 +388,7 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
             status: 'active',
             lastLogin: new Date().toISOString(),
             twoFactorEnabled: user.mfa_enabled || false,
-            permissions: [],
+            permissions: {},
             inviteStatus: 'accepted'
           });
         }
@@ -399,7 +423,7 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
           status: 'active',
           lastLogin: new Date().toISOString(),
           twoFactorEnabled: user.mfa_enabled || false,
-          permissions: [],
+          permissions: {},
           inviteStatus: 'accepted'
         };
         setUsers([fallbackUser]);
@@ -582,19 +606,20 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
   // Handle inline permission toggle
   const handleInlinePermissionToggle = (userId, permissionId) => {
     setEditingPermissions(prev => {
-      const userPermissions = prev[userId] || [];
-      const isChecked = userPermissions.includes(permissionId);
+      const userPermissions = prev[userId] || {};
+      const isChecked = userPermissions[permissionId]?.canAccess;
       
-      let newPermissions;
+      let newPermissions = { ...userPermissions };
       if (isChecked) {
         // Unchecking
-        newPermissions = userPermissions.filter(p => p !== permissionId);
+        delete newPermissions[permissionId];
         
         // Handle parent/child logic
         const parentMenu = MENU_STRUCTURE.find(menu => menu.id === permissionId);
         if (parentMenu && parentMenu.subItems) {
-          const childIds = parentMenu.subItems.map(sub => sub.id);
-          newPermissions = newPermissions.filter(p => !childIds.includes(p));
+          parentMenu.subItems.forEach(sub => {
+            delete newPermissions[sub.id];
+          });
         }
         
         const parentOfChild = MENU_STRUCTURE.find(menu => 
@@ -602,22 +627,21 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
         );
         if (parentOfChild) {
           const siblingsChecked = parentOfChild.subItems.some(sub => 
-            sub.id !== permissionId && newPermissions.includes(sub.id)
+            sub.id !== permissionId && newPermissions[sub.id]?.canAccess
           );
           if (!siblingsChecked) {
-            newPermissions = newPermissions.filter(p => p !== parentOfChild.id);
+            delete newPermissions[parentOfChild.id];
           }
         }
       } else {
         // Checking
-        newPermissions = [...userPermissions, permissionId];
+        newPermissions[permissionId] = { canAccess: true, canWrite: false };
         
         const parentMenu = MENU_STRUCTURE.find(menu => menu.id === permissionId);
         if (parentMenu && parentMenu.subItems) {
-          const childIds = parentMenu.subItems.map(sub => sub.id);
-          childIds.forEach(childId => {
-            if (!newPermissions.includes(childId)) {
-              newPermissions.push(childId);
+          parentMenu.subItems.forEach(sub => {
+            if (!newPermissions[sub.id]) {
+              newPermissions[sub.id] = { canAccess: true, canWrite: false };
             }
           });
         }
@@ -625,8 +649,8 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
         const parentOfChild = MENU_STRUCTURE.find(menu => 
           menu.subItems && menu.subItems.some(sub => sub.id === permissionId)
         );
-        if (parentOfChild && !newPermissions.includes(parentOfChild.id)) {
-          newPermissions.push(parentOfChild.id);
+        if (parentOfChild && !newPermissions[parentOfChild.id]) {
+          newPermissions[parentOfChild.id] = { canAccess: true, canWrite: false };
         }
       }
       
@@ -634,6 +658,38 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
         ...prev,
         [userId]: newPermissions
       };
+    });
+  };
+
+  // Handle inline permission level change (read/write)
+  const handleInlinePermissionLevelChange = (userId, permissionId, level) => {
+    setEditingPermissions(prev => {
+      const userPermissions = prev[userId] || {};
+      
+      if (userPermissions[permissionId]) {
+        const newPermissions = { ...userPermissions };
+        newPermissions[permissionId] = {
+          canAccess: true,
+          canWrite: level === 'write'
+        };
+        
+        // Update children if this is a parent
+        const parentMenu = MENU_STRUCTURE.find(menu => menu.id === permissionId);
+        if (parentMenu && parentMenu.subItems) {
+          parentMenu.subItems.forEach(sub => {
+            if (newPermissions[sub.id]) {
+              newPermissions[sub.id] = {
+                canAccess: true,
+                canWrite: level === 'write'
+              };
+            }
+          });
+        }
+        
+        return { ...prev, [userId]: newPermissions };
+      }
+      
+      return prev;
     });
   };
   
