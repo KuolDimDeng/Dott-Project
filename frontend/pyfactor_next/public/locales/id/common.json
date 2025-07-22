@@ -1101,5 +1101,41 @@
       "title": "Cookie Pemasaran",
       "description": "Digunakan untuk menampilkan iklan yang relevan kepada Anda"
     }
+  },
+  "integrations": {
+    "title": "Integrasi",
+    "heading": "Terhubung dengan alat yang Anda sukai",
+    "subheading": "Integrasi mulus dengan alat bisnis dan platform pembayaran populer",
+    "availableNow": "Tersedia sekarang",
+    "comingSoon": "Segera hadir",
+    "logoAlt": "Logo {{name}}",
+    "whatsapp": {
+      "name": "WhatsApp Business",
+      "description": "Kirim faktur dan tanda terima langsung ke pelanggan"
+    },
+    "mpesa": {
+      "name": "M-Pesa",
+      "description": "Terima pembayaran uang seluler dengan mulus"
+    },
+    "stripe": {
+      "name": "Stripe",
+      "description": "Proses pembayaran kartu secara global"
+    },
+    "shopify": {
+      "name": "Shopify",
+      "description": "Sinkronkan inventaris e-commerce Anda"
+    },
+    "woocommerce": {
+      "name": "WooCommerce",
+      "description": "Hubungkan toko WordPress Anda"
+    },
+    "quickbooks": {
+      "name": "QuickBooks",
+      "description": "Impor dan ekspor data akuntansi"
+    },
+    "amazon": {
+      "name": "Amazon Seller",
+      "description": "Kelola bisnis Amazon Anda"
+    }
   }
 }

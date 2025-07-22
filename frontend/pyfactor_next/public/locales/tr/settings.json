@@ -152,6 +152,14 @@
     "paymentEnabled": "Ödemeleri Etkinleştir",
     "showCommerce": "WhatsApp Commerce Menüsünü Göster"
   },
+  "userManagement": {
+    "title": "Kullanıcıları ve izinleri yönet",
+    "description": "Kullanıcı erişimini ekle, düzenle ve yönet"
+  },
+  "bankConnections": {
+    "title": "Banka hesaplarınızı bağlayın",
+    "description": "Otomatik mutabakat için banka hesaplarını bağlayın"
+  },
   "messages": {
     "saveSuccess": "Ayarlar başarıyla kaydedildi",
     "saveError": "Ayarlar kaydedilemedi",

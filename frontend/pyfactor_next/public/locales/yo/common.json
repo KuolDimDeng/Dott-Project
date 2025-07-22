@@ -910,5 +910,41 @@
       "title": "Awọn Cookies Tita",
       "description": "Lo lati fi awọn ipolowo to yẹ han ọ"
     }
+  },
+  "integrations": {
+    "title": "Awọn Iṣọpọ",
+    "heading": "Ṣopọ mọ awọn irinse ti o nifẹ",
+    "subheading": "Iṣọpọ alaimọgbọn pẹlu awọn irinse iṣowo olokiki ati awọn syeed iṣanọa",
+    "availableNow": "Wa bayi",
+    "comingSoon": "Nbọ laipẹ",
+    "logoAlt": "Ami {{name}}",
+    "whatsapp": {
+      "name": "WhatsApp Business",
+      "description": "Fi awọn iwe-aṣe ati awọn iwe-ẹri ranṣẹ si awọn onilọja taara"
+    },
+    "mpesa": {
+      "name": "M-Pesa",
+      "description": "Gba awọn iṣanọa owo alagbeka laisi wahala"
+    },
+    "stripe": {
+      "name": "Stripe",
+      "description": "Ṣe ilana awọn iṣanọa kaadi kakiri agbaye"
+    },
+    "shopify": {
+      "name": "Shopify",
+      "description": "Mu akọjọpọ ọja iṣowo elekitiọọnki rẹ ṣiṣẹpọ"
+    },
+    "woocommerce": {
+      "name": "WooCommerce",
+      "description": "Ṣopọ itaja WordPress rẹ"
+    },
+    "quickbooks": {
+      "name": "QuickBooks",
+      "description": "Gbe wọlẹ ati gbe data iṣirọ jade"
+    },
+    "amazon": {
+      "name": "Amazon Seller",
+      "description": "Ṣakoso iṣowo Amazon rẹ"
+    }
   }
 }

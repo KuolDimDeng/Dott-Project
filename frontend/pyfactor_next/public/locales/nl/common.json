@@ -1088,5 +1088,41 @@
       "title": "Marketing Cookies",
       "description": "Gebruikt om u relevante advertenties te tonen"
     }
+  },
+  "integrations": {
+    "title": "Integraties",
+    "heading": "Verbind met de tools die je leuk vindt",
+    "subheading": "Naadloze integratie met populaire zakelijke tools en betalingsplatformen",
+    "availableNow": "Nu beschikbaar",
+    "comingSoon": "Binnenkort",
+    "logoAlt": "{{name}} logo",
+    "whatsapp": {
+      "name": "WhatsApp Business",
+      "description": "Stuur facturen en bonnetjes rechtstreeks naar klanten"
+    },
+    "mpesa": {
+      "name": "M-Pesa",
+      "description": "Accepteer mobiele betalingen naadloos"
+    },
+    "stripe": {
+      "name": "Stripe",
+      "description": "Verwerk kaartbetalingen wereldwijd"
+    },
+    "shopify": {
+      "name": "Shopify",
+      "description": "Synchroniseer je e-commerce voorraad"
+    },
+    "woocommerce": {
+      "name": "WooCommerce",
+      "description": "Verbind je WordPress winkel"
+    },
+    "quickbooks": {
+      "name": "QuickBooks",
+      "description": "Importeer en exporteer boekhoudgegevens"
+    },
+    "amazon": {
+      "name": "Amazon Seller",
+      "description": "Beheer je Amazon bedrijf"
+    }
   }
 }

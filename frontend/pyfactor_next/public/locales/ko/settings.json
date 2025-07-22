@@ -152,6 +152,14 @@
     "paymentEnabled": "결제 활성화",
     "showCommerce": "WhatsApp Commerce 메뉴 표시"
   },
+  "userManagement": {
+    "title": "사용자 및 권한 관리",
+    "description": "사용자 액세스 추가, 편집 및 관리"
+  },
+  "bankConnections": {
+    "title": "은행 계좌 연결",
+    "description": "자동 조정을 위한 은행 계좌 연결"
+  },
   "messages": {
     "saveSuccess": "설정이 성공적으로 저장되었습니다",
     "saveError": "설정을 저장할 수 없습니다",

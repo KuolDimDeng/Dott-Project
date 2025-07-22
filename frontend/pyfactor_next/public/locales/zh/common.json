@@ -1173,5 +1173,41 @@
       "title": "营销 Cookies",
       "description": "用于向您展示相关广告"
     }
+  },
+  "integrations": {
+    "title": "集成",
+    "heading": "连接您喜爱的工具",
+    "subheading": "与流行的商业工具和支付平台无缝集成",
+    "availableNow": "现在可用",
+    "comingSoon": "即将推出",
+    "logoAlt": "{{name}} 标志",
+    "whatsapp": {
+      "name": "WhatsApp Business",
+      "description": "直接向客户发送发票和收据"
+    },
+    "mpesa": {
+      "name": "M-Pesa",
+      "description": "无缝接受移动支付"
+    },
+    "stripe": {
+      "name": "Stripe",
+      "description": "在全球范围内处理卡支付"
+    },
+    "shopify": {
+      "name": "Shopify",
+      "description": "同步您的电子商务库存"
+    },
+    "woocommerce": {
+      "name": "WooCommerce",
+      "description": "连接您的 WordPress 商店"
+    },
+    "quickbooks": {
+      "name": "QuickBooks",
+      "description": "导入和导出会计数据"
+    },
+    "amazon": {
+      "name": "Amazon Seller",
+      "description": "管理您的亚马逊业务"
+    }
   }
 }

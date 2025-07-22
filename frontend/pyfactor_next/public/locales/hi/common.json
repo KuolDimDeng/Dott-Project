@@ -978,5 +978,41 @@
       "title": "मार्केटिंग कुकीज़",
       "description": "आपको प्रासंगिक विज्ञापन दिखाने के लिए उपयोग की जाती हैं"
     }
+  },
+  "integrations": {
+    "title": "एकीकरण",
+    "heading": "आपके पसंदीदा टूल्स से जुड़ें",
+    "subheading": "लोकप्रिय व्यावसायिक टूल और भुगतान प्लेटफॉर्म के साथ निर्बाध रूप से एकीकृत करें",
+    "availableNow": "अभी उपलब्ध",
+    "comingSoon": "जल्द आ रहा है",
+    "logoAlt": "{{name}} लोगो",
+    "whatsapp": {
+      "name": "WhatsApp Business",
+      "description": "ग्राहकों को सीधे इनवॉइस और रसीदें भेजें"
+    },
+    "mpesa": {
+      "name": "M-Pesa",
+      "description": "मोबाइल मनी भुगतान आसानी से स्वीकार करें"
+    },
+    "stripe": {
+      "name": "Stripe",
+      "description": "वैश्विक स्तर पर कार्ड भुगतान प्रोसेस करें"
+    },
+    "shopify": {
+      "name": "Shopify",
+      "description": "अपनी ई-कॉमर्स इन्वेंटरी सिंक करें"
+    },
+    "woocommerce": {
+      "name": "WooCommerce",
+      "description": "अपनी WordPress स्टोर कनेक्ट करें"
+    },
+    "quickbooks": {
+      "name": "QuickBooks",
+      "description": "लेखांकन डेटा आयात और निर्यात करें"
+    },
+    "amazon": {
+      "name": "Amazon Seller",
+      "description": "अपने Amazon व्यवसाय का प्रबंधन करें"
+    }
   }
 }

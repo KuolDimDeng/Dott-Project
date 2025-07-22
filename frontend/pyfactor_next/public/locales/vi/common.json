@@ -1101,5 +1101,41 @@
       "title": "Cookie tiếp thị",
       "description": "Được sử dụng để hiển thị quảng cáo phù hợp với bạn"
     }
+  },
+  "integrations": {
+    "title": "Tích hợp",
+    "heading": "Kết nối với các công cụ bạn yêu thích",
+    "subheading": "Tích hợp liền mạch với các công cụ kinh doanh và nền tảng thanh toán phổ biến",
+    "availableNow": "Hiện có sẵn",
+    "comingSoon": "Sắp ra mắt",
+    "logoAlt": "Logo {{name}}",
+    "whatsapp": {
+      "name": "WhatsApp Business",
+      "description": "Gửi hóa đơn và biên lai trực tiếp cho khách hàng"
+    },
+    "mpesa": {
+      "name": "M-Pesa",
+      "description": "Chấp nhận thanh toán tiền di động một cách liền mạch"
+    },
+    "stripe": {
+      "name": "Stripe",
+      "description": "Xử lý thanh toán thẻ trên toàn cầu"
+    },
+    "shopify": {
+      "name": "Shopify",
+      "description": "Đồng bộ hàng tồn kho thương mại điện tử"
+    },
+    "woocommerce": {
+      "name": "WooCommerce",
+      "description": "Kết nối cửa hàng WordPress của bạn"
+    },
+    "quickbooks": {
+      "name": "QuickBooks",
+      "description": "Nhập và xuất dữ liệu kế toán"
+    },
+    "amazon": {
+      "name": "Amazon Seller",
+      "description": "Quản lý doanh nghiệp Amazon của bạn"
+    }
   }
 }

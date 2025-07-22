@@ -152,6 +152,14 @@
     "paymentEnabled": "Betalingen inschakelen",
     "showCommerce": "WhatsApp Commerce-menu tonen"
   },
+  "userManagement": {
+    "title": "Gebruikers en machtigingen beheren",
+    "description": "Toevoegen, bewerken en beheren van gebruikerstoegang"
+  },
+  "bankConnections": {
+    "title": "Verbind uw bankrekeningen",
+    "description": "Koppel bankrekeningen voor automatische afstemming"
+  },
   "messages": {
     "saveSuccess": "Instellingen succesvol opgeslagen",
     "saveError": "Kan instellingen niet opslaan",

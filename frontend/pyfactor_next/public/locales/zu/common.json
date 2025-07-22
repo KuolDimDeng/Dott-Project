@@ -768,5 +768,41 @@
       "title": "Ama-Cookies Okumaketha",
       "description": "Asetshenziselwa ukukhombisa izikhangiso ezifanele"
     }
+  },
+  "integrations": {
+    "title": "Ukuhlanganisa",
+    "heading": "Xhuma namathuluzi owathandayo",
+    "subheading": "Hlanganisa ngaphandle kwenkinga namathuluzi ebhizinisi athandwayo namapulatifomu okukhokha",
+    "availableNow": "Kuyatholakala manje",
+    "comingSoon": "Kuzofika maduze",
+    "logoAlt": "Ilogo ye-{{name}}",
+    "whatsapp": {
+      "name": "WhatsApp Business",
+      "description": "Thumela ama-invoyisi namarisidi ngqo kumakhasimende"
+    },
+    "mpesa": {
+      "name": "M-Pesa",
+      "description": "Yamukela izinkokhelo zemali yeselula ngaphandle kwenkinga"
+    },
+    "stripe": {
+      "name": "Stripe",
+      "description": "Sebenzisa izinkokhelo zekhadi emhlabeni wonke"
+    },
+    "shopify": {
+      "name": "Shopify",
+      "description": "Vumelanisa uhlu lwempahla ye-e-commerce yakho"
+    },
+    "woocommerce": {
+      "name": "WooCommerce",
+      "description": "Xhuma isitolo sakho se-WordPress"
+    },
+    "quickbooks": {
+      "name": "QuickBooks",
+      "description": "Ngenisa futhi ukhiphe idatha ye-accounting"
+    },
+    "amazon": {
+      "name": "Amazon Seller",
+      "description": "Phatha ibhizinisi lakho le-Amazon"
+    }
   }
 }

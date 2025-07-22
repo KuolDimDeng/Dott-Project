@@ -842,5 +842,41 @@
       "title": "Cookies na Tallace-tallace",
       "description": "Ana amfani don nuna muku tallace-tallacen da suka dace"
     }
+  },
+  "integrations": {
+    "title": "Haɗaɗu",
+    "heading": "Haɗa da kayan aikin da kuke so",
+    "subheading": "Haɗaɗu mara wahala da shahararrun kayan aikin kasuwanci da dandamalin biyan kuɗi",
+    "availableNow": "Akwai yanzu",
+    "comingSoon": "Yana zuwa nan ba da jimawa ba",
+    "logoAlt": "Tambarin {{name}}",
+    "whatsapp": {
+      "name": "WhatsApp Business",
+      "description": "Aika daftari da rasiti kai tsaye ga abokan ciniki"
+    },
+    "mpesa": {
+      "name": "M-Pesa",
+      "description": "Karɓi biyan kuɗin wayar hannu ba tare da wahala ba"
+    },
+    "stripe": {
+      "name": "Stripe",
+      "description": "Sarrafa biyan kuɗin kati a duk duniya"
+    },
+    "shopify": {
+      "name": "Shopify",
+      "description": "Daidaita kayan kasuwancin e-commerce ɗinku"
+    },
+    "woocommerce": {
+      "name": "WooCommerce",
+      "description": "Haɗa shagon WordPress ɗinku"
+    },
+    "quickbooks": {
+      "name": "QuickBooks",
+      "description": "Shigo da fitar da bayanan lissafi"
+    },
+    "amazon": {
+      "name": "Amazon Seller",
+      "description": "Sarrafa kasuwancin Amazon ɗinku"
+    }
   }
 }

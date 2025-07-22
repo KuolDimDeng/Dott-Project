@@ -994,5 +994,41 @@
       "title": "Vidakuzi vya Uuzaji",
       "description": "Kutumika kukuonyesha matangazo yanayokufaa"
     }
+  },
+  "integrations": {
+    "title": "Muunganisho",
+    "heading": "Unganisha na zana unazozipenda",
+    "subheading": "Unganisha kwa urahisi na zana za biashara na majukwaa ya malipo maarufu",
+    "availableNow": "Inapatikana sasa",
+    "comingSoon": "Inakuja hivi karibuni",
+    "logoAlt": "Nembo ya {{name}}",
+    "whatsapp": {
+      "name": "WhatsApp Business",
+      "description": "Tuma ankara na risiti moja kwa moja kwa wateja"
+    },
+    "mpesa": {
+      "name": "M-Pesa",
+      "description": "Pokea malipo ya simu bila matatizo"
+    },
+    "stripe": {
+      "name": "Stripe",
+      "description": "Chakata malipo ya kadi ulimwenguni kote"
+    },
+    "shopify": {
+      "name": "Shopify",
+      "description": "Sawazisha hesabu ya bidhaa za e-commerce"
+    },
+    "woocommerce": {
+      "name": "WooCommerce",
+      "description": "Unganisha duka lako la WordPress"
+    },
+    "quickbooks": {
+      "name": "QuickBooks",
+      "description": "Leta na peleka data za uhasibu"
+    },
+    "amazon": {
+      "name": "Amazon Seller",
+      "description": "Simamia biashara yako ya Amazon"
+    }
   }
 }

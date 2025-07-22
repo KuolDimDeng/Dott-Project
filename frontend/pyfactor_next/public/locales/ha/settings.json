@@ -152,6 +152,14 @@
     "paymentEnabled": "Kunna biyan kuɗi",
     "showCommerce": "Nuna menu na WhatsApp Commerce"
   },
+  "userManagement": {
+    "title": "Gudanar da masu amfani da izini",
+    "description": "Ƙara, gyara, da gudanar da damar masu amfani"
+  },
+  "bankConnections": {
+    "title": "Haɗa asusun bankin ku",
+    "description": "Haɗa asusun banki don daidaitawa ta atomatik"
+  },
   "messages": {
     "saveSuccess": "An ajiye saituna cikin nasara",
     "saveError": "An kasa ajiye saituna",

@@ -994,5 +994,41 @@
       "title": "Маркетинговые файлы cookie",
       "description": "Используются для показа вам релевантной рекламы"
     }
+  },
+  "integrations": {
+    "title": "Интеграции",
+    "heading": "Подключайтесь к любимым инструментам",
+    "subheading": "Беспрепятственная интеграция с популярными бизнес-инструментами и платежными платформами",
+    "availableNow": "Доступно сейчас",
+    "comingSoon": "Скоро",
+    "logoAlt": "Логотип {{name}}",
+    "whatsapp": {
+      "name": "WhatsApp Business",
+      "description": "Отправляйте счета и квитанции напрямую клиентам"
+    },
+    "mpesa": {
+      "name": "M-Pesa",
+      "description": "Принимайте мобильные платежи без проблем"
+    },
+    "stripe": {
+      "name": "Stripe",
+      "description": "Обрабатывайте карточные платежи по всему миру"
+    },
+    "shopify": {
+      "name": "Shopify",
+      "description": "Синхронизируйте инвентарь электронной коммерции"
+    },
+    "woocommerce": {
+      "name": "WooCommerce",
+      "description": "Подключите ваш магазин WordPress"
+    },
+    "quickbooks": {
+      "name": "QuickBooks",
+      "description": "Импортируйте и экспортируйте бухгалтерские данные"
+    },
+    "amazon": {
+      "name": "Amazon Seller",
+      "description": "Управляйте своим бизнесом на Amazon"
+    }
   }
 }

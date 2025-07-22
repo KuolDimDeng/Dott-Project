@@ -579,5 +579,41 @@
       "title": "마케팅 쿠키",
       "description": "귀하와 관련된 광고를 표시하는 데 사용됩니다"
     }
+  },
+  "integrations": {
+    "title": "통합",
+    "heading": "사랑하는 도구와 연결하세요",
+    "subheading": "인기 비즈니스 도구 및 결제 플랫폼과 원활하게 통합",
+    "availableNow": "현재 사용 가능",
+    "comingSoon": "공 예정",
+    "logoAlt": "{{name}} 로고",
+    "whatsapp": {
+      "name": "WhatsApp Business",
+      "description": "고객에게 직접 송장 및 영수증 전송"
+    },
+    "mpesa": {
+      "name": "M-Pesa",
+      "description": "모바일 머니 결제를 원활하게 수락"
+    },
+    "stripe": {
+      "name": "Stripe",
+      "description": "전 세계에서 카드 결제 처리"
+    },
+    "shopify": {
+      "name": "Shopify",
+      "description": "전자상거래 재고 동기화"
+    },
+    "woocommerce": {
+      "name": "WooCommerce",
+      "description": "WordPress 스토어 연결"
+    },
+    "quickbooks": {
+      "name": "QuickBooks",
+      "description": "회계 데이터 가져오기 및 내보내기"
+    },
+    "amazon": {
+      "name": "Amazon Seller",
+      "description": "Amazon 비즈니스 관리"
+    }
   }
 }

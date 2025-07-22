@@ -1218,5 +1218,41 @@
       "title": "Pazarlama Çerezleri",
       "description": "Size ilgili reklamları göstermek için kullanılır"
     }
+  },
+  "integrations": {
+    "title": "Entegrasyonlar",
+    "heading": "Sevdiğiniz araçlarla bağlanın",
+    "subheading": "Popüler iş araçları ve ödeme platformlarıyla sorunsuz entegrasyon",
+    "availableNow": "Şu anda mevcut",
+    "comingSoon": "Yakında",
+    "logoAlt": "{{name}} logosu",
+    "whatsapp": {
+      "name": "WhatsApp Business",
+      "description": "Faturaları ve makbuzları doğrudan müşterilere gönderin"
+    },
+    "mpesa": {
+      "name": "M-Pesa",
+      "description": "Mobil para ödemelerini sorunsuz kabul edin"
+    },
+    "stripe": {
+      "name": "Stripe",
+      "description": "Kart ödemelerini global olarak işleyin"
+    },
+    "shopify": {
+      "name": "Shopify",
+      "description": "E-ticaret envanterinizi senkronize edin"
+    },
+    "woocommerce": {
+      "name": "WooCommerce",
+      "description": "WordPress mağazanızı bağlayın"
+    },
+    "quickbooks": {
+      "name": "QuickBooks",
+      "description": "Muhasebe verilerini içe ve dışa aktarın"
+    },
+    "amazon": {
+      "name": "Amazon Seller",
+      "description": "Amazon işletmenizi yönetin"
+    }
   }
 }

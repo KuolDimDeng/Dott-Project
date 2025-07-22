@@ -994,5 +994,41 @@
       "title": "マーケティングクッキー",
       "description": "関連する広告を表示するために使用されます"
     }
+  },
+  "integrations": {
+    "title": "統合",
+    "heading": "お気に入りのツールと接続",
+    "subheading": "人気のビジネスツールや決済プラットフォームとシームレスに統合",
+    "availableNow": "現在利用可能",
+    "comingSoon": "近日公開",
+    "logoAlt": "{{name}} ロゴ",
+    "whatsapp": {
+      "name": "WhatsApp Business",
+      "description": "請求書や領収書を顧客に直接送信"
+    },
+    "mpesa": {
+      "name": "M-Pesa",
+      "description": "モバイルマネー決済をスムーズに受け入れ"
+    },
+    "stripe": {
+      "name": "Stripe",
+      "description": "世界中でカード決済を処理"
+    },
+    "shopify": {
+      "name": "Shopify",
+      "description": "eコマース在庫を同期"
+    },
+    "woocommerce": {
+      "name": "WooCommerce",
+      "description": "WordPressストアを接続"
+    },
+    "quickbooks": {
+      "name": "QuickBooks",
+      "description": "会計データをインポート・エクスポート"
+    },
+    "amazon": {
+      "name": "Amazon Seller",
+      "description": "Amazonビジネスを管理"
+    }
   }
 }

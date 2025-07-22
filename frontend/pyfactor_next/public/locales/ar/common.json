@@ -978,5 +978,41 @@
       "title": "ملفات تعريف الارتباط التسويقية",
       "description": "تُستخدم لعرض إعلانات ذات صلة لك"
     }
+  },
+  "integrations": {
+    "title": "التكاملات",
+    "heading": "اتصل بالأدوات التي تحبها",
+    "subheading": "تكامل سلس مع أدوات الأعمال ومنصات الدفع الشائعة",
+    "availableNow": "متاح الآن",
+    "comingSoon": "قريبًا",
+    "logoAlt": "شعار {{name}}",
+    "whatsapp": {
+      "name": "WhatsApp Business",
+      "description": "أرسل الفواتير والإيصالات مباشرة للعملاء"
+    },
+    "mpesa": {
+      "name": "M-Pesa",
+      "description": "اقبل مدفوعات الهاتف المحمول بسلاسة"
+    },
+    "stripe": {
+      "name": "Stripe",
+      "description": "معالجة مدفوعات البطاقات عالميًا"
+    },
+    "shopify": {
+      "name": "Shopify",
+      "description": "مزامنة مخزون التجارة الإلكترونية"
+    },
+    "woocommerce": {
+      "name": "WooCommerce",
+      "description": "ربط متجرك على WordPress"
+    },
+    "quickbooks": {
+      "name": "QuickBooks",
+      "description": "استيراد وتصدير بيانات المحاسبة"
+    },
+    "amazon": {
+      "name": "Amazon Seller",
+      "description": "إدارة نشاطك على أمازون"
+    }
   }
 }

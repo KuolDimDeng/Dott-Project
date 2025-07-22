@@ -152,6 +152,14 @@
     "paymentEnabled": "支払いを有効化",
     "showCommerce": "WhatsAppコマースメニューを表示"
   },
+  "userManagement": {
+    "title": "ユーザーと権限を管理",
+    "description": "ユーザーアクセスを追加、編集、管理"
+  },
+  "bankConnections": {
+    "title": "銀行口座を接続",
+    "description": "自動照合のために銀行口座をリンク"
+  },
   "messages": {
     "saveSuccess": "設定を正常に保存しました",
     "saveError": "設定の保存に失敗しました",

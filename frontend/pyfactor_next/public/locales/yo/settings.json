@@ -152,6 +152,14 @@
     "paymentEnabled": "Tan Ìsanwó",
     "showCommerce": "Fi Mẹ́nù WhatsApp Commerce Hàn"
   },
+  "userManagement": {
+    "title": "Ṣakoso awọn olumulo ati awọn igbanilaaye",
+    "description": "Ṣafikun, ṣatunkọ, ati ṣakoso iraye si awọn olumulo"
+  },
+  "bankConnections": {
+    "title": "So awọn akaunti banki rẹ pọ",
+    "description": "So awọn akaunti banki pọ fun isọdọkan laifọwọyi"
+  },
   "messages": {
     "saveSuccess": "A ti fi àwọn ètò pamọ́ dáradára",
     "saveError": "Kò le fi àwọn ètò pamọ́",

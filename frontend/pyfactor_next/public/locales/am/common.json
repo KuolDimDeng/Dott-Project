@@ -543,5 +543,41 @@
       "title": "የግብይት ኩኪዎች",
       "description": "ተዛማጅ ማስታወቂያዎችን ለማሳየት ያገለግላል"
     }
+  },
+  "integrations": {
+    "title": "እንተግባባሮች",
+    "heading": "የሚወዷቸው መጣሪያዎች ጋር ይጋንዩ",
+    "subheading": "ከኳወቁ የተኋውቁ የነግድ መጣሪያዎች እና የክፍያ መድረክዎች ጋር ብዝብታዊ ይጠገባኙ",
+    "availableNow": "አሁን ይገዛል",
+    "comingSoon": "በቅርቡ ይመጣል",
+    "logoAlt": "የ{{name}} ሎጎ",
+    "whatsapp": {
+      "name": "WhatsApp Business",
+      "description": "ደንበኖውን የደረሰ-ግብሮችን እና ደረሰቶችን በቅጣ ይላኩ"
+    },
+    "mpesa": {
+      "name": "M-Pesa",
+      "description": "የሞባይል ገንዘብ ክፍያዎችን በትክክል ይቀበሉ"
+    },
+    "stripe": {
+      "name": "Stripe",
+      "description": "በዓለም አቀፍ የካርድ ክፍያዎችን ያሰራሩ"
+    },
+    "shopify": {
+      "name": "Shopify",
+      "description": "የኢ-ኮመርስ እቅዎን ያሰማምሩ"
+    },
+    "woocommerce": {
+      "name": "WooCommerce",
+      "description": "የ WordPress ስቶርዎን ያገናኙ"
+    },
+    "quickbooks": {
+      "name": "QuickBooks",
+      "description": "የሂሳብ መረጃዎችን ያውጣኡ እና ያውጡ"
+    },
+    "amazon": {
+      "name": "Amazon Seller",
+      "description": "የ Amazon ነግድዎን ያስተዳድሩ"
+    }
   }
 }

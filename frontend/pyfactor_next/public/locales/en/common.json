@@ -1277,5 +1277,41 @@
       "title": "Marketing Cookies",
       "description": "Used to show you relevant advertisements"
     }
+  },
+  "integrations": {
+    "title": "Integrations",
+    "heading": "Connect with the tools you love",
+    "subheading": "Seamlessly integrate with popular business tools and payment platforms",
+    "availableNow": "Available Now",
+    "comingSoon": "Coming Soon",
+    "logoAlt": "{{name}} logo",
+    "whatsapp": {
+      "name": "WhatsApp Business",
+      "description": "Send invoices and receipts directly to customers"
+    },
+    "mpesa": {
+      "name": "M-Pesa",
+      "description": "Accept mobile money payments seamlessly"
+    },
+    "stripe": {
+      "name": "Stripe",
+      "description": "Process card payments globally"
+    },
+    "shopify": {
+      "name": "Shopify",
+      "description": "Sync your e-commerce inventory"
+    },
+    "woocommerce": {
+      "name": "WooCommerce",
+      "description": "Connect your WordPress store"
+    },
+    "quickbooks": {
+      "name": "QuickBooks",
+      "description": "Import and export accounting data"
+    },
+    "amazon": {
+      "name": "Amazon Seller",
+      "description": "Manage your Amazon business"
+    }
   }
 }

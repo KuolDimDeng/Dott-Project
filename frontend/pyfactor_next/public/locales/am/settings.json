@@ -152,6 +152,14 @@
     "paymentEnabled": "ክፍያ አንቃ",
     "showCommerce": "የዋትስአፕ ንግድ ሜኑ አሳይ"
   },
+  "userManagement": {
+    "title": "ተጠቃሚዎችን እና ፈቃዶችን ያስተዳድሩ",
+    "description": "የተጠቃሚ መዳረሻን ያክሉ፣ ያርትዑ እና ያስተዳድሩ"
+  },
+  "bankConnections": {
+    "title": "የባንክ ሂሳቦችዎን ያገናኙ",
+    "description": "ለራስ-ሰር ማስታረቅ የባንክ ሂሳቦችን ያገናኙ"
+  },
   "messages": {
     "saveSuccess": "ቅንብሮች በተሳካ ሁኔታ ተቀምጠዋል",
     "saveError": "ቅንብሮችን ማስቀመጥ አልተቻለም",

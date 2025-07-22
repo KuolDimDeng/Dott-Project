@@ -1213,5 +1213,41 @@
       "title": "Cookies de Marketing",
       "description": "Se utilizan para mostrarte anuncios relevantes"
     }
+  },
+  "integrations": {
+    "title": "Integraciones",
+    "heading": "Conecta con las herramientas que amas",
+    "subheading": "Integra sin problemas con herramientas empresariales y plataformas de pago populares",
+    "availableNow": "Disponible ahora",
+    "comingSoon": "Próximamente",
+    "logoAlt": "Logo de {{name}}",
+    "whatsapp": {
+      "name": "WhatsApp Business",
+      "description": "Envía facturas y recibos directamente a los clientes"
+    },
+    "mpesa": {
+      "name": "M-Pesa",
+      "description": "Acepta pagos móviles sin problemas"
+    },
+    "stripe": {
+      "name": "Stripe",
+      "description": "Procesa pagos con tarjeta a nivel global"
+    },
+    "shopify": {
+      "name": "Shopify",
+      "description": "Sincroniza tu inventario de comercio electrónico"
+    },
+    "woocommerce": {
+      "name": "WooCommerce",
+      "description": "Conecta tu tienda WordPress"
+    },
+    "quickbooks": {
+      "name": "QuickBooks",
+      "description": "Importa y exporta datos contables"
+    },
+    "amazon": {
+      "name": "Amazon Seller",
+      "description": "Gestiona tu negocio en Amazon"
+    }
   }
 }

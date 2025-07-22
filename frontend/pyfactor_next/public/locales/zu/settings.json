@@ -152,6 +152,14 @@
     "paymentEnabled": "Vula Izinkokhelo",
     "showCommerce": "Bonisa Imenyu Ye-WhatsApp Commerce"
   },
+  "userManagement": {
+    "title": "Phatha abasebenzisi nemvume",
+    "description": "Engeza, hlela, uphath ukufinyelela kwabasebenzisi"
+  },
+  "bankConnections": {
+    "title": "Xhuma ama-akhawunti akho asebhange",
+    "description": "Xhuma ama-akhawunti asebhange ukuze kuvumelane ngokuzenzakalela"
+  },
   "messages": {
     "saveSuccess": "Izilungiselelo zigcinwe ngempumelelo",
     "saveError": "Kwehlulekile ukugcina izilungiselelo",
