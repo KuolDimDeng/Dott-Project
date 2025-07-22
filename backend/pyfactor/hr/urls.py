@@ -66,9 +66,6 @@ urlpatterns = [
     path('clock-in-location/', clock_in_with_location, name='clock-in-location'),
     path('clock-out-location/', clock_out_with_location, name='clock-out-location'),
     
-    # Test endpoint for geofences
-    path('geofences/test/', views.test_geofences, name='test-geofences'),
-    
     # Include router URLs
     path('', include(router.urls)),
 ]
