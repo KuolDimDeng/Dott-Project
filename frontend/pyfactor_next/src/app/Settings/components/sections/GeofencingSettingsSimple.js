@@ -207,7 +207,7 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
     setSaving(true);
     try {
       console.log('[GeofenceSetup] Saving geofence:', geofenceData);
-      const response = await api.post('/api/hr/geofences/', geofenceData);
+      const response = await api.post('/api/hr/geofences', geofenceData);
       console.log('[GeofenceSetup] Geofence created - Full response:', response);
       console.log('[GeofenceSetup] Geofence created - Response data:', response.data);
       console.log('[GeofenceSetup] Geofence created - Response data type:', typeof response.data);
@@ -451,8 +451,8 @@ const GeofencingSettings = () => {
     console.log('[GeofencingSettings] 🔄 loadGeofences called');
     try {
       setLoading(true);
-      console.log('[GeofencingSettings] 📡 Making API request to /api/hr/geofences/');
-      const response = await api.get('/api/hr/geofences/');
+      console.log('[GeofencingSettings] 📡 Making API request to /api/hr/geofences');
+      const response = await api.get('/api/hr/geofences');
       console.log('[GeofencingSettings] ✅ API Response:', response);
       console.log('[GeofencingSettings] Response type:', typeof response);
       console.log('[GeofencingSettings] Response keys:', Object.keys(response || {}));

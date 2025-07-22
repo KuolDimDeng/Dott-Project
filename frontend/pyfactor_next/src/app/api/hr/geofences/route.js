@@ -40,10 +40,16 @@ async function handleRequest(request, method) {
     let subPath = '';
     if (pathname.includes('/api/hr/geofences/')) {
       subPath = pathname.split('/api/hr/geofences/')[1] || '';
+    } else if (pathname.includes('/api/hr/geofences')) {
+      // Handle case without trailing slash
+      const parts = pathname.split('/api/hr/geofences');
+      subPath = parts[1] ? parts[1].replace(/^//, '') : '';
     }
     
     const backendUrl = `${BACKEND_URL}/api/hr/geofences/${subPath}${searchParams ? `?${searchParams}` : ''}`;
     
+    console.log(`[Geofences API] Original pathname:`, pathname);
+    console.log(`[Geofences API] Extracted subPath:`, JSON.stringify(subPath));
     console.log(`[Geofences API] Backend URL:`, backendUrl);
     
     const response = await fetch(backendUrl, {
