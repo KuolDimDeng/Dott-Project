@@ -4,7 +4,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0015_add_whatsapp_commerce_preference'),
+        ('users', '0014_merge'),
     ]
 
     operations = [

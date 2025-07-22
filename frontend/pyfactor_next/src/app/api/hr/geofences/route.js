@@ -43,7 +43,7 @@ async function handleRequest(request, method) {
     } else if (pathname.includes('/api/hr/geofences')) {
       // Handle case without trailing slash
       const parts = pathname.split('/api/hr/geofences');
-      subPath = parts[1] ? parts[1].replace(/^//, '') : '';
+      subPath = parts[1] ? parts[1].replace(/^\/+/, '') : '';
     }
     
     const backendUrl = `${BACKEND_URL}/api/hr/geofences/${subPath}${searchParams ? `?${searchParams}` : ''}`;
