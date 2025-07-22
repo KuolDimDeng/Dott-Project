@@ -5,6 +5,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { logger } from '@/utils/logger';
+import { convertPageIdsToPermissions } from '@/utils/permissionMapping';
 
 /**
  * POST /api/user-management/users/[id]/update-permissions
@@ -18,6 +19,13 @@ export async function POST(request, { params }) {
     // Get request body
     const data = await request.json();
     
+    // Convert permissions if needed
+    let processedData = { ...data };
+    if (data.page_permissions && typeof data.page_permissions === 'object' && !Array.isArray(data.page_permissions)) {
+      // Convert from frontend object format to backend array format
+      processedData.page_permissions = convertPageIdsToPermissions(data.page_permissions);
+    }
+    
     // Get backend URL from environment
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8001';
     
@@ -28,7 +36,7 @@ export async function POST(request, { params }) {
         'Content-Type': 'application/json',
         'Cookie': request.headers.get('cookie') || '',
       },
-      body: JSON.stringify(data),
+      body: JSON.stringify(processedData),
       credentials: 'include',
     });
 

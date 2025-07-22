@@ -5,6 +5,7 @@
 import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
 import { cookies } from 'next/headers';
+import { convertPageIdsToPermissions } from '@/utils/permissionMapping';
 
 /**
  * POST /api/user-management/create
@@ -56,11 +57,24 @@ export async function POST(request) {
       );
     }
     
+    // Convert page permissions from frontend format to backend format
+    const pagePermissions = userData.page_permissions || [];
+    
+    // If permissions came as an object (new format), convert it
+    let convertedPermissions = [];
+    if (pagePermissions && typeof pagePermissions === 'object' && !Array.isArray(pagePermissions)) {
+      // This is the new object format from frontend
+      convertedPermissions = convertPageIdsToPermissions(pagePermissions);
+    } else if (Array.isArray(pagePermissions)) {
+      // This is already in array format (legacy or from backend)
+      convertedPermissions = pagePermissions;
+    }
+    
     // Prepare the request body for backend
     const backendData = {
       email: userData.email,
       role: userData.role || 'USER',
-      page_permissions: userData.page_permissions || [],
+      page_permissions: convertedPermissions,
       send_password_reset: true, // Always send password reset email for new users
       onboarding_completed: true, // Skip onboarding for invited users
       create_employee: userData.create_employee || false,
