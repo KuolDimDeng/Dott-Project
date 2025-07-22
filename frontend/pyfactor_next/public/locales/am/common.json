@@ -584,5 +584,34 @@
       "name": "Amazon Seller",
       "description": "የ Amazon ነግድዎን ያስተዳድሩ"
     }
+  },
+  "highlights": {
+    "bluetooth": "ብልቱው ስካነር እንተግሪሽን",
+    "printBarcodes": "ግላዊ ባርኮዶችን ማታተም",
+    "lowStock": "ዝቅተኛ ስቶክ ማንቂያዎች",
+    "customLabel": "ግላዊ መጠቀማ ማታተም",
+    "mobileScanning": "ተንቀሳቂስ ስካን",
+    "batchProcessing": "ክፍል ቅርፃት",
+    "offlineMode": "የኢንተርኔት የለለ ሁኔታ",
+    "multiplePayments": "ብዙ ከፍያ ሜታዎች",
+    "receiptCustom": "ደረሰኝ ግላዊ ሁኔታ",
+    "recurringInvoices": "ተደግሜ ይመጠቁ ወጨቦች",
+    "paymentReminders": "የክፍያ ማስታወሻዎች",
+    "invoiceFactoring": "የወጨብ ፋክተሪንግ",
+    "vatGst": "VAT/GST ድግፍ",
+    "taxReports": "የግብር ሪፖርቶች",
+    "eFilingReady": "ለኢ-ፋይሊንግ ዝጉጁ",
+    "customDashboards": "ግላዊ ዳሽቦርዶች",
+    "profitAnalysis": "የትርፍ ትንተና",
+    "cashFlowForecast": "የግንዘብ ፍሰት ትንበያ",
+    "mobileMoney": "ተንቀሳቂስ ግንዘብ",
+    "bankTransfers": "የባንክ ግልፍቶች",
+    "digitalWallets": "ዲጂታል ከሦከቶች",
+    "customsDocuments": "የጘምረክ ሰነዶች",
+    "shippingIntegration": "የማፍረስ እንተግሪሽን",
+    "tradeCompliance": "የንግድ መመጠት",
+    "soc2Compliant": "SOC2 መመጠት",
+    "dataEncryption": "የመረጃ መስጣር",
+    "gdprReady": "GDPR ዝጉጁ"
   }
 }

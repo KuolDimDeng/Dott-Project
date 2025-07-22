@@ -620,5 +620,34 @@
       "name": "Amazon Seller",
       "description": "Amazon 비즈니스 관리"
     }
+  },
+  "highlights": {
+    "bluetooth": "블루투스 스캐너 통합",
+    "printBarcodes": "사용자 정의 바코드 인쇄",
+    "lowStock": "낮은 재고 경고",
+    "customLabel": "사용자 정의 라벨 인쇄",
+    "mobileScanning": "모바일 스캐닝",
+    "batchProcessing": "일괄 처리",
+    "offlineMode": "오프라인 모드",
+    "multiplePayments": "다중 결제 방법",
+    "receiptCustom": "영수증 사용자 지정",
+    "recurringInvoices": "반복 청구서",
+    "paymentReminders": "결제 알리미",
+    "invoiceFactoring": "청구서 팩토링",
+    "vatGst": "VAT/GST 지원",
+    "taxReports": "세무 보고서",
+    "eFilingReady": "전자 신고 준비",
+    "customDashboards": "사용자 정의 대시보드",
+    "profitAnalysis": "수익 분석",
+    "cashFlowForecast": "현금 흐름 예측",
+    "mobileMoney": "모바일 머니",
+    "bankTransfers": "은행 송금",
+    "digitalWallets": "디지털 지갑",
+    "customsDocuments": "관세 문서",
+    "shippingIntegration": "배송 통합",
+    "tradeCompliance": "무역 규정 준수",
+    "soc2Compliant": "SOC2 규정 준수",
+    "dataEncryption": "데이터 암호화",
+    "gdprReady": "GDPR 준비"
   }
 }

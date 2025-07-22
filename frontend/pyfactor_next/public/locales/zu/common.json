@@ -809,5 +809,34 @@
       "name": "Amazon Seller",
       "description": "Phatha ibhizinisi lakho le-Amazon"
     }
+  },
+  "highlights": {
+    "bluetooth": "Ukuhlanganiswa kwesikena se-Bluetooth",
+    "printBarcodes": "Phrinta ama-barcode angokwezifiso",
+    "lowStock": "Izaziso zesitoko esiphansi",
+    "customLabel": "Ukuphrinta amalebula angokwezifiso",
+    "mobileScanning": "Ukuskena kweselula",
+    "batchProcessing": "Ukucubungula ngeqoqo",
+    "offlineMode": "Imodi engaxhunyiwe",
+    "multiplePayments": "Izindlela zokukhokha eziningi",
+    "receiptCustom": "Ukwenza ngokwezifiso kwamarisidi",
+    "recurringInvoices": "Ama-invoyisi aphindaphindayo",
+    "paymentReminders": "Izikhumbuzi zokukhokha",
+    "invoiceFactoring": "I-invoice factoring",
+    "vatGst": "Ukusekela i-VAT/GST",
+    "taxReports": "Imibiko yentela",
+    "eFilingReady": "Ilungele i-e-filing",
+    "customDashboards": "Amadashbhodi angokwezifiso",
+    "profitAnalysis": "Ukuhlaziywa kwenzuzo",
+    "cashFlowForecast": "Ukubikezela ukugeleza kwemali",
+    "mobileMoney": "Imali yeselula",
+    "bankTransfers": "Ukudluliswa kwebhangi",
+    "digitalWallets": "Izikhwama zemali zedijithali",
+    "customsDocuments": "Amadokhumenti entengo",
+    "shippingIntegration": "Ukuhlanganiswa kokuthunyelwa",
+    "tradeCompliance": "Ukuthobela kwezohwebo",
+    "soc2Compliant": "Kuhambisana ne-SOC2",
+    "dataEncryption": "Ukubethela idatha",
+    "gdprReady": "Ilungele i-GDPR"
   }
 }

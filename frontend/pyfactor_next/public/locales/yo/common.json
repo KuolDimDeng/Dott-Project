@@ -951,5 +951,34 @@
       "name": "Amazon Seller",
       "description": "Ṣakoso iṣowo Amazon rẹ"
     }
+  },
+  "highlights": {
+    "bluetooth": "Iṣọsọpọ mọ ọkà Bluetooth",
+    "printBarcodes": "Tẹjade baakọ́ọdù adani",
+    "lowStock": "Itọnilọkuro iṣura kékeré",
+    "customLabel": "Tẹjade lebù adani",
+    "mobileScanning": "Aawayika alágùtan",
+    "batchProcessing": "Iṣẹ akójọpọ",
+    "offlineMode": "Mọ́dù ailórí",
+    "multiplePayments": "Ọpọlọpọ ọna iṣanwo",
+    "receiptCustom": "Iṣelọkan ìwé ìrìípadà",
+    "recurringInvoices": "Àwọn ìwé-áṣà igbagbogbo",
+    "paymentReminders": "Àwọn ìrántí iṣanwo",
+    "invoiceFactoring": "Àràn ìwé-áṣà",
+    "vatGst": "Atìlẹyìn VAT/GST",
+    "taxReports": "Ìròyìn orí-ìṣanà",
+    "eFilingReady": "Múra fún E-filing",
+    "customDashboards": "Daṣibọdù adani",
+    "profitAnalysis": "Ìtúpàlẹ èrè",
+    "cashFlowForecast": "Asọtẹlẹ iṣan-owo",
+    "mobileMoney": "Owo alágùtan",
+    "bankTransfers": "Gbigbé owo bankì",
+    "digitalWallets": "Apo owo ọlọ́pagé",
+    "customsDocuments": "Ìwé kọkọrò",
+    "shippingIntegration": "Iṣọsọpọ fífí",
+    "tradeCompliance": "Ìbámu ìṣòwo",
+    "soc2Compliant": "Ìbámu SOC2",
+    "dataEncryption": "Ìpámọ déètà",
+    "gdprReady": "Múra fún GDPR"
   }
 }
