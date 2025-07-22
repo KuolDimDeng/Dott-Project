@@ -850,6 +850,230 @@
     },
     "learnMore": "Pelajari lebih lanjut"
   },
+  "featureDetails": {
+    "screenshots": "Screenshot & Contoh",
+    "cta": {
+      "heading": "Siap untuk memulai?",
+      "text": "Bergabunglah dengan ribuan bisnis yang sudah menggunakan Dott untuk berkembang.",
+      "button": "Mulai Uji Coba Gratis"
+    },
+    "mobile": {
+      "title": "Aplikasi Mobile",
+      "subtitle": "Bisnis Anda di Saku Anda",
+      "overview": {
+        "heading": "Manajemen Bisnis Lengkap di Perjalanan",
+        "content": "Akses seluruh bisnis Anda dari smartphone atau tablet. Aplikasi mobile kami dirancang untuk memberikan Anda kendali penuh baik saat di kantor, di lapangan, atau bepergian. Dengan kemampuan offline, Anda dapat terus bekerja bahkan tanpa koneksi internet."
+      },
+      "features": {
+        "heading": "Fitur Mobile Utama",
+        "1": "Pelacakan penjualan dan inventaris real-time",
+        "2": "Buat dan kirim faktur secara instan",
+        "3": "Terima pembayaran di tempat",
+        "4": "Lihat analitik dan laporan bisnis",
+        "5": "Kelola karyawan dan timesheet",
+        "6": "Pindai barcode dengan kamera Anda",
+        "7": "Bekerja offline dengan sinkronisasi otomatis",
+        "8": "Notifikasi push untuk kejadian penting"
+      },
+      "benefits": {
+        "heading": "Manfaat untuk Bisnis Anda",
+        "content": "Tetap terhubung dengan bisnis Anda 24/7. Buat keputusan yang tepat dengan data real-time. Layani pelanggan lebih cepat dengan POS mobile. Kurangi paperwork dan proses manual."
+      },
+      "images": {
+        "dashboard": "Tampilan dashboard mobile",
+        "dashboardCaption": "Dashboard dengan metrik kunci sekilas pandang",
+        "pos": "Layar POS mobile",
+        "posCaption": "Proses penjualan dari mana saja",
+        "inventory": "Manajemen inventaris mobile",
+        "inventoryCaption": "Lacak inventaris secara real-time"
+      }
+    },
+    "pos": {
+      "title": "POS dan Pemindaian Barcode",
+      "subtitle": "Penjualan yang Cepat, Akurat, dan Efisien",
+      "overview": {
+        "heading": "Sistem Point of Sale Modern",
+        "content": "Ubah perangkat apa pun menjadi sistem point-of-sale yang powerful. POS kami dirancang untuk kecepatan dan kesederhanaan, memungkinkan Anda memproses penjualan dengan cepat sambil mempertahankan pelacakan inventaris yang akurat. Scanner barcode terintegrasi membuat checkout menjadi sangat cepat."
+      },
+      "features": {
+        "heading": "Fitur POS Lanjutan",
+        "1": "Pemindaian barcode dengan kamera atau scanner Bluetooth",
+        "2": "Dukungan untuk semua jenis pembayaran termasuk mobile money",
+        "3": "Update inventaris otomatis dengan setiap penjualan",
+        "4": "Manajemen pelanggan dan program loyalitas",
+        "5": "Split payment dan pembayaran parsial",
+        "6": "Penanganan return dan tukar barang",
+        "7": "Mode offline dengan manajemen antrian",
+        "8": "Pelacakan inventaris multi-lokasi"
+      },
+      "barcode": {
+        "heading": "Sistem Barcode yang Powerful",
+        "content": "Generate barcode kustom untuk produk Anda. Cetak label barcode dalam berbagai ukuran. Pindai produk secara instan selama penjualan atau perhitungan inventaris. Dukungan untuk QR code dan barcode standar."
+      },
+      "images": {
+        "checkout": "Layar checkout POS",
+        "checkoutCaption": "Proses checkout yang cepat dan intuitif",
+        "scanning": "Pemindaian barcode dalam aksi",
+        "scanningCaption": "Pindai produk secara instan dengan kamera atau scanner",
+        "payments": "Multiple metode pembayaran",
+        "paymentsCaption": "Terima tunai, kartu, dan mobile money"
+      }
+    },
+    "ai": {
+      "title": "Wawasan Bertenaga AI",
+      "subtitle": "Rekomendasi Cerdas untuk Pertumbuhan",
+      "overview": {
+        "heading": "Artificial Intelligence untuk Bisnis Anda",
+        "content": "AI kami menganalisis data bisnis Anda untuk memberikan wawasan dan rekomendasi yang dapat ditindaklanjuti. Dapatkan analitik prediktif, peramalan permintaan, dan alert cerdas yang membantu Anda membuat keputusan bisnis yang lebih baik."
+      },
+      "features": {
+        "heading": "Fitur Bertenaga AI",
+        "1": "Peramalan permintaan berdasarkan data historis",
+        "2": "Rekomendasi optimisasi inventaris",
+        "3": "Analisis produk terlaris",
+        "4": "Wawasan perilaku pelanggan",
+        "5": "Saran optimisasi harga",
+        "6": "Deteksi tren musiman",
+        "7": "Prediksi arus kas",
+        "8": "Laporan keuangan otomatis"
+      },
+      "benefits": {
+        "heading": "Bagaimana AI Membantu Bisnis Anda",
+        "content": "Kurangi kehabisan stok dan situasi kelebihan stok. Identifikasi peluang pertumbuhan. Optimalisasi harga untuk profit maksimum. Pahami preferensi pelanggan dengan lebih baik."
+      },
+      "images": {
+        "dashboard": "Dashboard analitik AI",
+        "dashboardCaption": "Wawasan cerdas di ujung jari Anda",
+        "forecast": "Chart peramalan permintaan",
+        "forecastCaption": "Prediksi permintaan masa depan dengan akurat",
+        "inventory": "Optimisasi inventaris",
+        "inventoryCaption": "Rekomendasi inventaris bertenaga AI"
+      }
+    },
+    "geofencing": {
+      "title": "Geofencing & Pelacakan Lokasi",
+      "subtitle": "Manajemen Berbasis Lokasi yang Cerdas",
+      "overview": {
+        "heading": "Intelligence Lokasi Lanjutan",
+        "content": "Pastikan pelacakan waktu yang akurat dan tingkatkan akuntabilitas dengan clock in/out berbasis GPS. Buat batas virtual di sekitar lokasi kerja dan dapatkan notifikasi instan ketika karyawan masuk atau meninggalkan area yang ditentukan."
+      },
+      "features": {
+        "heading": "Fitur Manajemen Lokasi",
+        "1": "Clock in/out berbasis GPS dengan verifikasi lokasi",
+        "2": "Buat zona geofence tanpa batas",
+        "3": "Lokasi karyawan real-time selama jam kerja",
+        "4": "Pembuatan timesheet otomatis",
+        "5": "Pelacakan jarak tempuh untuk driver pengiriman",
+        "6": "Verifikasi kunjungan site untuk tim lapangan",
+        "7": "Fokus privasi dengan persetujuan karyawan",
+        "8": "Riwayat lokasi detail dan laporan"
+      },
+      "compliance": {
+        "heading": "Privasi & Kepatuhan",
+        "content": "Kepatuhan penuh GDPR dan hukum privasi. Manajemen persetujuan karyawan. Pelacakan lokasi hanya selama jam kerja. Kebijakan penggunaan data yang transparan."
+      },
+      "images": {
+        "map": "Tampilan peta geofence",
+        "mapCaption": "Buat dan kelola zona kerja dengan mudah",
+        "tracking": "Dashboard pelacakan karyawan",
+        "trackingCaption": "Overview lokasi tim real-time",
+        "reports": "Laporan lokasi",
+        "reportsCaption": "Analitik lokasi yang detail"
+      }
+    },
+    "mobilemoney": {
+      "title": "Pembayaran Mobile Money",
+      "subtitle": "Terima Pembayaran dari Miliaran Pengguna di Seluruh Dunia",
+      "overview": {
+        "heading": "Penerimaan Pembayaran Global",
+        "content": "Hancurkan hambatan pembayaran dan jangkau pelanggan di mana-mana. Mobile money adalah metode pembayaran yang disukai oleh miliaran orang secara global, terutama di pasar berkembang. Dengan Dott, Anda dapat menerima pembayaran dari pengguna M-Pesa hari ini, dengan banyak penyedia mobile money lainnya yang akan segera hadir."
+      },
+      "current": {
+        "heading": "Saat Ini Tersedia",
+        "1": "M-Pesa (Kenya) - Lebih dari 30 juta pengguna aktif",
+        "2": "Kartu Kredit dan Debit (Visa, Mastercard, Amex)",
+        "3": "Transfer bank dan pembayaran ACH",
+        "4": "Pembayaran tunai (dilacak dalam sistem)"
+      },
+      "coming": {
+        "heading": "Segera Hadir",
+        "1": "MTN Mobile Money - 180+ juta pengguna di Afrika",
+        "2": "Airtel Money - 125+ juta pengguna di Afrika dan Asia",
+        "3": "Orange Money - 70+ juta pengguna di Afrika dan Timur Tengah",
+        "4": "GCash (Filipina) - 81+ juta pengguna terdaftar",
+        "5": "Paytm (India) - 350+ juta pengguna",
+        "6": "Pix (Brasil) - 140+ juta pengguna",
+        "7": "Mercado Pago - 80+ juta pengguna di Amerika Latin",
+        "8": "bKash (Bangladesh), OVO (Indonesia), dan lainnya"
+      },
+      "benefits": {
+        "heading": "Mengapa Mobile Money Penting",
+        "content": "Pembayaran instan dengan biaya transaksi yang lebih rendah. Tidak memerlukan rekening bank untuk pelanggan. Jangkau populasi yang tidak memiliki akses perbankan. Memungkinkan transaksi lintas batas. Sempurna untuk transaksi kecil dan pembelian harian."
+      },
+      "images": {
+        "options": "Opsi pembayaran mobile money",
+        "optionsCaption": "Multiple metode pembayaran dalam satu platform",
+        "mpesa": "Alur pembayaran M-Pesa",
+        "mpesaCaption": "Integrasi M-Pesa yang sederhana dan aman",
+        "global": "Peta cakupan pembayaran global",
+        "globalCaption": "Cakupan mobile money seluruh dunia"
+      }
+    },
+    "whatsapp": {
+      "title": "WhatsApp Business",
+      "subtitle": "Transformasi Komunikasi Pelanggan",
+      "overview": {
+        "heading": "Integrasi WhatsApp Business All-in-One",
+        "content": "Terhubung dengan pelanggan Anda di platform messaging paling populer di dunia. Buat katalog produk yang menakjubkan, otomatisasi pengiriman faktur dan struk, berikan dukungan pelanggan instan, dan ubah percakapan menjadi penjualan. Dengan lebih dari 2 miliar pengguna di seluruh dunia, WhatsApp Business adalah esensial untuk engagement pelanggan modern."
+      },
+      "features": {
+        "heading": "Fitur WhatsApp Business Utama",
+        "1": "Katalog bisnis profesional dengan foto dan deskripsi produk",
+        "2": "Pengiriman faktur dan struk otomatis ke pelanggan",
+        "3": "Dukungan pelanggan instan dan live chat",
+        "4": "Broadcast message untuk promosi dan pengumuman",
+        "5": "Manajemen pesanan langsung melalui WhatsApp",
+        "6": "Konfirmasi pembayaran dan notifikasi transaksi",
+        "7": "Quick replies dan respons otomatis",
+        "8": "Sinkronisasi data pelanggan dengan kontak bisnis Anda"
+      },
+      "benefits": {
+        "heading": "Manfaat untuk Bisnis Anda",
+        "content": "Jangkau pelanggan di tempat mereka sudah berada. Tingkatkan tingkat konversi penjualan dengan komunikasi instan. Kurangi biaya layanan pelanggan dengan respons otomatis. Bangun hubungan pelanggan yang lebih kuat melalui messaging yang dipersonalisasi."
+      },
+      "images": {
+        "catalog": "Katalog WhatsApp Business",
+        "catalogCaption": "Showcase produk yang indah dalam WhatsApp",
+        "invoice": "Pengiriman faktur otomatis",
+        "invoiceCaption": "Kirim faktur secara instan melalui WhatsApp",
+        "support": "Chat dukungan pelanggan",
+        "supportCaption": "Berikan bantuan instan dan bangun hubungan"
+      }
+    },
+    "languages": {
+      "title": "20+ Bahasa Didukung",
+      "subtitle": "Bicara dalam Bahasa Pelanggan Anda",
+      "overview": {
+        "heading": "Aksesibilitas Global yang Sejati",
+        "content": "Dott tersedia dalam lebih dari 20 bahasa, membuatnya dapat diakses oleh bisnis di seluruh dunia. Setiap fitur, tombol, dan pesan diterjemahkan sepenuhnya oleh penutur asli untuk memastikan kejelasan dan kesesuaian budaya."
+      },
+      "supported": {
+        "heading": "Bahasa yang Didukung"
+      },
+      "benefits": {
+        "heading": "Manfaat Dukungan Multibahasa",
+        "content": "Layani pelanggan dalam bahasa pilihan mereka. Ekspansi ke pasar baru dengan mudah. Latih karyawan lebih cepat dengan dukungan bahasa asli. Bangun kepercayaan dengan konten yang dilokalkan."
+      },
+      "images": {
+        "selector": "Pemilih bahasa",
+        "selectorCaption": "Ganti bahasa secara instan",
+        "interface": "Interface multibahasa",
+        "interfaceCaption": "User interface yang diterjemahkan sepenuhnya",
+        "map": "Peta ketersediaan global",
+        "mapCaption": "Tersedia di seluruh dunia dalam bahasa lokal"
+      }
+    }
+  },
   "cookieBanner": {
     "title": "Pemberitahuan Cookie",
     "message": "Kami menggunakan cookie untuk meningkatkan pengalaman Anda, menganalisis penggunaan, dan menyediakan fungsionalitas penting. Dengan melanjutkan menggunakan situs kami, Anda menyetujui penggunaan cookie kami.",

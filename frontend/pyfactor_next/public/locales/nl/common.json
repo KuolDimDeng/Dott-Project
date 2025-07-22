@@ -850,6 +850,217 @@
     },
     "learnMore": "Meer informatie"
   },
+  "featureDetails": {
+    "mobile": {
+      "title": "Mobiele Applicatie",
+      "subtitle": "Uw bedrijf altijd binnen handbereik",
+      "description": "Toegang tot uw volledige bedrijfsplatform vanaf elk apparaat. Onze mobiele-eerst ontwerp zorgt ervoor dat u uw bedrijf kunt beheren of u nu onderweg bent, op kantoor of thuis aan het werk bent.",
+      "features": {
+        "offlineAccess": {
+          "title": "Offline toegang",
+          "description": "Werk zonder internetverbinding en synchroniseer automatisch wanneer u weer online bent"
+        },
+        "realTimeSync": {
+          "title": "Realtime synchronisatie",
+          "description": "Alle wijzigingen worden onmiddellijk gesynchroniseerd tussen alle apparaten"
+        },
+        "touchOptimized": {
+          "title": "Touch-geoptimaliseerd",
+          "description": "Interface ontworpen voor mobiele en tabletgebruik"
+        },
+        "pushNotifications": {
+          "title": "Push notificaties",
+          "description": "Ontvang onmiddellijke updates over verkopen, betalingen en voorraadniveaus"
+        }
+      }
+    },
+    "pos": {
+      "title": "POS en Barcode Scannen",
+      "subtitle": "Verander elk apparaat in een krachtig kassasysteem",
+      "description": "Professioneel point-of-sale systeem met ingebouwde barcode scanning, voorraadbeheer en ondersteuning voor alle betaalmethoden. Perfect voor winkels, marktstallen en mobiele verkopers.",
+      "features": {
+        "barcodeScanning": {
+          "title": "Barcode scanning",
+          "description": "Scan producten direct met de camera van uw apparaat of verbind met Bluetooth scanners"
+        },
+        "multiplePayments": {
+          "title": "Meerdere betaalmethoden",
+          "description": "Accepteer contant geld, kaarten, mobiel geld, QR-codes en meer allemaal in één systeem"
+        },
+        "quickCheckout": {
+          "title": "Snelle afrekening",
+          "description": "Verwerk verkopen in seconden met onze gestroomlijnde afrekening interface"
+        },
+        "inventoryIntegration": {
+          "title": "Voorraad integratie",
+          "description": "Voorraadniveaus worden automatisch bijgewerkt bij elke verkoop"
+        },
+        "receiptGeneration": {
+          "title": "Bonnetje generatie",
+          "description": "Verstuur digitale bonnetjes via e-mail, SMS of WhatsApp of print ze direct"
+        },
+        "offlineMode": {
+          "title": "Offline modus",
+          "description": "Blijf verkopen verwerken zelfs zonder internetverbinding"
+        }
+      }
+    },
+    "ai": {
+      "title": "AI-Gedreven Inzichten",
+      "subtitle": "Slimme bedrijfsintelligentie voor betere beslissingen",
+      "description": "Krijg krachtige inzichten en voorspellingen uit uw bedrijfsgegevens. Onze AI analyseert uw verkooppatronen, voorraadtrends en klantgedrag om u te helpen betere zakelijke beslissingen te nemen.",
+      "features": {
+        "demandForecasting": {
+          "title": "Vraagvoorspelling",
+          "description": "Voorspel toekomstige vraag naar uw producten op basis van historische gegevens en trends"
+        },
+        "inventoryOptimization": {
+          "title": "Voorraadoptimalisatie",
+          "description": "AI-aanbevelingen voor optimale voorraadniveaus om verspilling te voorkomen en verkopen te maximaliseren"
+        },
+        "customerInsights": {
+          "title": "Klantinzichten",
+          "description": "Begrijp klantgedrag, voorkeuren en kooppatronen om de verkoop te stimuleren"
+        },
+        "financialAnalysis": {
+          "title": "Financiële analyse",
+          "description": "Geautomatiseerde financiële rapporten met inzichten over winstgevendheid en cashflow"
+        },
+        "businessRecommendations": {
+          "title": "Bedrijfsaanbevelingen",
+          "description": "Gepersonaliseerde aanbevelingen voor het verbeteren van efficiëntie en winstgevendheid"
+        },
+        "competitiveAnalysis": {
+          "title": "Concurrentieanalyse",
+          "description": "Vergelijk uw prestaties met branchegemiddelden en concurrenten"
+        }
+      }
+    },
+    "geofencing": {
+      "title": "Geofencing & Locatie Tracking",
+      "subtitle": "Geavanceerde locatie-gebaseerde bedrijfstools",
+      "description": "Krachtige geofencing en locatie tracking functionaliteit voor moderne bedrijven. Perfect voor veldteams, bezorgdiensten, aannemers en elk bedrijf dat locatie-gebaseerde operaties beheert.",
+      "features": {
+        "virtualBoundaries": {
+          "title": "Virtuele grenzen",
+          "description": "Stel aangepaste geofences in rond werklocaties, magazijnen of klantsites"
+        },
+        "automaticClocking": {
+          "title": "Automatisch in-/uitklokken",
+          "description": "Werknemers klokken automatisch in wanneer ze een aangewezen werkgebied betreden"
+        },
+        "realTimeAlerts": {
+          "title": "Realtime waarschuwingen",
+          "description": "Ontvang onmiddellijke notificaties wanneer teamleden locaties betreden of verlaten"
+        },
+        "routeOptimization": {
+          "title": "Route optimalisatie",
+          "description": "AI-gedreven routeplanning voor bezorg- en serviceteams"
+        },
+        "locationReporting": {
+          "title": "Locatie rapportage",
+          "description": "Gedetailleerde rapporten over teamlocaties, reistijden en site bezoeken"
+        },
+        "complianceTracking": {
+          "title": "Compliance tracking",
+          "description": "Voldoe aan arbeidsregels met nauwkeurige locatie- en tijdregistratie"
+        }
+      }
+    },
+    "mobileMoney": {
+      "title": "Mobiel Geld Betalingen",
+      "subtitle": "Wereldwijde mobiele betalingsoplossingen",
+      "description": "Accepteer betalingen van klanten wereldwijd met uitgebreide mobiele geld integratie. Van M-Pesa in Afrika tot Paytm in Azië, bereik miljarden klanten die mobiele betalingen verkiezen boven traditionele bankdiensten.",
+      "features": {
+        "mpesaIntegration": {
+          "title": "M-Pesa integratie",
+          "description": "Directe integratie met M-Pesa voor betalingen in Kenia en andere Oost-Afrikaanse markten"
+        },
+        "mtnMobileMoney": {
+          "title": "MTN Mobile Money",
+          "description": "Accepteer betalingen via MTN's mobiele geld netwerk in Afrika"
+        },
+        "globalCoverage": {
+          "title": "Wereldwijde dekking",
+          "description": "Ondersteuning voor 50+ mobiele geld operators wereldwijd"
+        },
+        "instantPayments": {
+          "title": "Directe betalingen",
+          "description": "Ontvang betalingen onmiddellijk met realtime bevestiging"
+        },
+        "multiCurrency": {
+          "title": "Multi-valuta",
+          "description": "Accepteer betalingen in lokale valuta's en converteer automatisch"
+        },
+        "lowFees": {
+          "title": "Lage kosten",
+          "description": "Concurrerende transactiekosten voor mobiele geld betalingen"
+        }
+      }
+    },
+    "whatsapp": {
+      "title": "WhatsApp Business",
+      "subtitle": "Transformeer klantcommunicatie",
+      "description": "Integreer uw bedrijf met WhatsApp Business voor naadloze klantcommunicatie, geautomatiseerde berichten en verbeterde klantenservice. Bereik uw klanten op hun favoriete berichtenplatform.",
+      "features": {
+        "catalogManagement": {
+          "title": "Catalogusbeheer",
+          "description": "Creëer en beheer uw productcatalogus direct binnen WhatsApp"
+        },
+        "automatedInvoices": {
+          "title": "Geautomatiseerde facturen",
+          "description": "Verstuur facturen en betalingsherinneringen automatisch via WhatsApp"
+        },
+        "customerSupport": {
+          "title": "Klantondersteuning",
+          "description": "Bied 24/7 klantondersteuning met geautomatiseerde antwoorden en chatbots"
+        },
+        "orderManagement": {
+          "title": "Bestellingenbeheer",
+          "description": "Ontvang en beheer bestellingen direct via WhatsApp gesprekken"
+        },
+        "broadcastMessages": {
+          "title": "Broadcast berichten",
+          "description": "Verstuur promotionele berichten en updates naar klantlijsten"
+        },
+        "paymentLinks": {
+          "title": "Betalingslinks",
+          "description": "Deel veilige betalingslinks via WhatsApp voor snelle transacties"
+        }
+      }
+    },
+    "languages": {
+      "title": "Meertalige Ondersteuning",
+      "subtitle": "Bedrijfsvoering in uw voorkeurstaal",
+      "description": "Volledig gelokaliseerde ervaring in 20+ talen. Van interface tot klantenondersteuning, Dott spreekt uw taal en begrijpt lokale bedrijfspraktijken en regelgeving.",
+      "features": {
+        "multilingualInterface": {
+          "title": "Meertalige interface",
+          "description": "Volledige platformvertaling in 20+ talen met lokale formaten"
+        },
+        "localizedReporting": {
+          "title": "Gelokaliseerde rapportage",
+          "description": "Rapporten en analyses in uw voorkeurstaal en lokale formaten"
+        },
+        "culturalCustomization": {
+          "title": "Culturele aanpassing",
+          "description": "Interface en workflows aangepast aan lokale bedrijfspraktijken"
+        },
+        "multilingualSupport": {
+          "title": "Meertalige ondersteuning",
+          "description": "Klantenondersteuning beschikbaar in meerdere talen"
+        },
+        "localCompliance": {
+          "title": "Lokale compliance",
+          "description": "Voldoe aan lokale regelgeving en bedrijfsnormen per regio"
+        },
+        "rtlSupport": {
+          "title": "RTL ondersteuning",
+          "description": "Volledige ondersteuning voor rechts-naar-links talen zoals Arabisch en Hebreeuws"
+        }
+      }
+    }
+  },
   "cookieBanner": {
     "title": "Cookie Melding",
     "message": "Wij gebruiken cookies om uw ervaring te verbeteren, gebruik te analyseren en essentiële functionaliteit te bieden. Door onze site te blijven gebruiken, stemt u in met ons gebruik van cookies.",

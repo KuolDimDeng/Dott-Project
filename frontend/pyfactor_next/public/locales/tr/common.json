@@ -967,6 +967,230 @@
       }
     }
   },
+  "featureDetails": {
+    "screenshots": "Ekran Görüntüleri ve Örnekler",
+    "cta": {
+      "heading": "Başlamaya hazır mısınız?",
+      "text": "Büyümek için Dott kullanan binlerce işletmeye katılın.",
+      "button": "Ücretsiz Deneme Başlatın"
+    },
+    "mobile": {
+      "title": "Mobil Uygulama",
+      "subtitle": "İşletmeniz Cebinizde",
+      "overview": {
+        "heading": "Hareket Halinde Eksiksiz İşletme Yönetimi",
+        "content": "Akıllı telefonunuz veya tabletinizden tüm işletmenize erişin. Mobil uygulamamız size ister ofiste, ister sahada, ister seyahatte olun tam kontrol sağlamak için tasarlandı. Çevrimdışı özellikler ile internet bağlantısı olmasa bile çalışmaya devam edebilirsiniz."
+      },
+      "features": {
+        "heading": "Ana Mobil Özellikler",
+        "1": "Gerçek zamanlı satış ve envanter takibi",
+        "2": "Anında fatura oluştur ve gönder",
+        "3": "Yerinde ödemeleri kabul et",
+        "4": "İş analitiği ve raporları görüntüle",
+        "5": "Çalışanları ve zaman çizelgelerini yönet",
+        "6": "Kameranla barkod tarayın",
+        "7": "Otomatik senkronizasyonla çevrimdışı çalışır",
+        "8": "Önemli olaylar için anlık bildirimler"
+      },
+      "benefits": {
+        "heading": "İşletmeniz için Faydalar",
+        "content": "İşletmenizle 7/24 bağlı kalın. Gerçek zamanlı verilerle bilinçli kararlar alın. Mobil POS ile müşterilere daha hızlı hizmet verin. Evrak işlerini ve manuel süreçleri azaltın."
+      },
+      "images": {
+        "dashboard": "Mobil gösterge paneli görünümü",
+        "dashboardCaption": "Önemli metrikleri bir bakışta gösteren gösterge paneli",
+        "pos": "Mobil POS ekranı",
+        "posCaption": "Her yerden satış işlemleri yapın",
+        "inventory": "Mobil envanter yönetimi",
+        "inventoryCaption": "Envanteri gerçek zamanlı takip edin"
+      }
+    },
+    "pos": {
+      "title": "POS ve Barkod Tarama",
+      "subtitle": "Hızlı, Doğru ve Verimli Satışlar",
+      "overview": {
+        "heading": "Modern Satış Noktası Sistemi",
+        "content": "Herhangi bir cihazı güçlü bir satış noktası sistemine dönüştürün. POS'umuz hız ve basitlik için tasarlandı, doğru envanter takibini sürdürürken satışları hızlıca işlemenizi sağlar. Entegre barkod tarayıcı ödemeyi şimşek gibi hızlı hale getirir."
+      },
+      "features": {
+        "heading": "Gelişmiş POS Özellikleri",
+        "1": "Kamera veya Bluetooth tarayıcı ile barkod tarama",
+        "2": "Mobil para dahil tüm ödeme türleri için destek",
+        "3": "Her satışla otomatik envanter güncellemeleri",
+        "4": "Müşteri yönetimi ve sadakat programları",
+        "5": "Bölünmüş ödemeler ve kısmi ödemeler",
+        "6": "İadeler ve değişimler",
+        "7": "Kuyruk yönetimi ile çevrimdışı mod",
+        "8": "Çok lokasyonlu envanter takibi"
+      },
+      "barcode": {
+        "heading": "Güçlü Barkod Sistemi",
+        "content": "Ürünleriniz için özel barkodlar oluşturun. Çeşitli boyutlarda barkod etiketleri yazdırın. Satış veya envanter sayımları sırasında ürünleri anında tarayın. QR kod ve standart barkod desteği."
+      },
+      "images": {
+        "checkout": "POS ödeme ekranı",
+        "checkoutCaption": "Hızlı ve sezgisel ödeme süreci",
+        "scanning": "Barkod tarama işlemi",
+        "scanningCaption": "Kamera veya tarayıcı ile ürünleri anında tarayın",
+        "payments": "Çoklu ödeme yöntemleri",
+        "paymentsCaption": "Nakit, kart ve mobil para kabul edin"
+      }
+    },
+    "ai": {
+      "title": "Yapay Zeka Destekli İçgörüler",
+      "subtitle": "Büyüme için Akıllı Öneriler",
+      "overview": {
+        "heading": "İşletmeniz için Yapay Zeka",
+        "content": "Yapay zekamız işletme verilerinizi analiz ederek eyleme geçirilebilir içgörüler ve öneriler sunar. Tahmine dayalı analitik, talep tahmini ve daha iyi iş kararları vermenize yardımcı olan akıllı uyarılar alın."
+      },
+      "features": {
+        "heading": "Yapay Zeka Destekli Özellikler",
+        "1": "Geçmiş verilere dayalı talep tahmini",
+        "2": "Envanter optimizasyon önerileri",
+        "3": "En çok satan ürün analizi",
+        "4": "Müşteri davranışı içgörüleri",
+        "5": "Fiyatlandırma optimizasyon önerileri",
+        "6": "Mevsimsel trend algılama",
+        "7": "Nakit akışı tahminleri",
+        "8": "Otomatik finansal raporlar"
+      },
+      "benefits": {
+        "heading": "Yapay Zeka İşletmenize Nasıl Yardımcı Olur",
+        "content": "Stok tükenmesi ve aşırı stok durumlarını azaltın. Büyüme fırsatlarını belirleyin. Maksimum kar için fiyatlandırmayı optimize edin. Müşteri tercihlerini daha iyi anlayın."
+      },
+      "images": {
+        "dashboard": "Yapay zeka analitik gösterge paneli",
+        "dashboardCaption": "Akıllı içgörüler parmaklarınızın ucunda",
+        "forecast": "Talep tahmin grafiği",
+        "forecastCaption": "Gelecekteki talebi doğru bir şekilde tahmin edin",
+        "inventory": "Envanter optimizasyonu",
+        "inventoryCaption": "Yapay zeka destekli envanter önerileri"
+      }
+    },
+    "geofencing": {
+      "title": "Coğrafi Sınırlama ve Konum Takibi",
+      "subtitle": "Akıllı Konum Tabanlı Yönetim",
+      "overview": {
+        "heading": "Gelişmiş Konum Zekası",
+        "content": "GPS tabanlı giriş/çıkış ile doğru zaman takibi sağlayın ve hesap verebilirliği artırın. Çalışma alanları etrafında sanal sınırlar oluşturun ve çalışanlar belirlenen alanları terk ettiğinde veya girdiğinde anında bildirimler alın."
+      },
+      "features": {
+        "heading": "Konum Yönetimi Özellikleri",
+        "1": "Konum doğrulaması ile GPS tabanlı giriş/çıkış",
+        "2": "Sınırsız coğrafi sınır bölgeleri oluşturun",
+        "3": "Çalışma saatleri boyunca gerçek zamanlı çalışan konumu",
+        "4": "Otomatik zaman çizelgesi oluşturma",
+        "5": "Teslimat sürücüleri için kilometre takibi",
+        "6": "Saha ekipleri için site ziyareti doğrulaması",
+        "7": "Çalışan rızasıyla gizlilik odaklı",
+        "8": "Detaylı konum geçmişi ve raporlar"
+      },
+      "compliance": {
+        "heading": "Gizlilik ve Uyumluluk",
+        "content": "Tam GDPR ve gizlilik yasası uyumluluğu. Çalışan rızası yönetimi. Sadece çalışma saatleri boyunca konum takibi. Şeffaf veri kullanım politikaları."
+      },
+      "images": {
+        "map": "Coğrafi sınır harita görünümü",
+        "mapCaption": "Çalışma bölgelerini kolayca oluşturun ve yönetin",
+        "tracking": "Çalışan takip gösterge paneli",
+        "trackingCaption": "Gerçek zamanlı takım konumu genel bakışı",
+        "reports": "Konum raporları",
+        "reportsCaption": "Detaylı konum analitiği"
+      }
+    },
+    "mobilemoney": {
+      "title": "Mobil Para Ödemeleri",
+      "subtitle": "Dünya Çapında Milyarlarca Kullanıcıdan Ödeme Kabul Edin",
+      "overview": {
+        "heading": "Küresel Ödeme Kabulü",
+        "content": "Ödeme engellerini kaldırın ve her yerdeki müşterilere ulaşın. Mobil para, özellikle gelişmekte olan pazarlarda olmak üzere dünya çapında milyarlarca insan için tercih edilen ödeme yöntemidir. Dott ile bugün M-Pesa kullanıcılarından ödeme kabul edebilir, yakında çok daha fazla mobil para sağlayıcısı gelecektir."
+      },
+      "current": {
+        "heading": "Şu Anda Mevcut",
+        "1": "M-Pesa (Kenya) - 30 milyon aktif kullanıcı",
+        "2": "Kredi ve Banka Kartları (Visa, Mastercard, Amex)",
+        "3": "Banka havaleleri ve ACH ödemeleri",
+        "4": "Nakit ödemeler (sistemde takip ediliyor)"
+      },
+      "coming": {
+        "heading": "Yakında Gelecek",
+        "1": "MTN Mobile Money - Afrika genelinde 180+ milyon kullanıcı",
+        "2": "Airtel Money - Afrika ve Asya'da 125+ milyon kullanıcı",
+        "3": "Orange Money - Afrika ve Orta Doğu'da 70+ milyon kullanıcı",
+        "4": "GCash (Filipinler) - 81+ milyon kayıtlı kullanıcı",
+        "5": "Paytm (Hindistan) - 350+ milyon kullanıcı",
+        "6": "Pix (Brezilya) - 140+ milyon kullanıcı",
+        "7": "Mercado Pago - Latin Amerika'da 80+ milyon kullanıcı",
+        "8": "bKash (Bangladeş), OVO (Endonezya) ve daha fazlası"
+      },
+      "benefits": {
+        "heading": "Mobil Para Neden Önemli",
+        "content": "Düşük işlem ücretleriyle anında ödemeler. Müşteriler için banka hesabı gerekli değil. Bankasız nüfusa ulaşın. Sınır ötesi işlemleri mümkün kılın. Küçük işlemler ve günlük alışverişler için mükemmel."
+      },
+      "images": {
+        "options": "Mobil para ödeme seçenekleri",
+        "optionsCaption": "Tek platformda birden fazla ödeme yöntemi",
+        "mpesa": "M-Pesa ödeme akışı",
+        "mpesaCaption": "Basit ve güvenli M-Pesa entegrasyonu",
+        "global": "Küresel ödeme kapsama haritası",
+        "globalCaption": "Dünya çapında mobil para kapsamı"
+      }
+    },
+    "whatsapp": {
+      "title": "WhatsApp Business",
+      "subtitle": "Müşteri İletişimini Dönüştürün",
+      "overview": {
+        "heading": "Hepsi Bir Arada WhatsApp Business Entegrasyonu",
+        "content": "Müşterilerinizle dünyanın en popüler mesajlaşma platformunda bağlantı kurun. Çarpıcı ürün katalogları oluşturun, fatura ve makbuz teslimatını otomatikleştirin, anında müşteri desteği sağlayın ve konuşmaları satışa dönüştürün. Dünya çapında 2 milyardan fazla kullanıcı ile WhatsApp Business modern müşteri etkileşimi için gereklidir."
+      },
+      "features": {
+        "heading": "Ana WhatsApp Business Özellikleri",
+        "1": "Ürün fotoğrafları ve açıklamaları ile profesyonel iş kataloğu",
+        "2": "Müşterilere otomatik fatura ve makbuz teslimatı",
+        "3": "Anında müşteri desteği ve canlı sohbet",
+        "4": "Promosyonlar ve duyurular için yayın mesajları",
+        "5": "Doğrudan WhatsApp üzerinden sipariş yönetimi",
+        "6": "Ödeme onayları ve işlem bildirimleri",
+        "7": "Hızlı yanıtlar ve otomatik cevaplar",
+        "8": "Müşteri verileri iş kişilerinizle senkronize"
+      },
+      "benefits": {
+        "heading": "İşletmeniz için Faydalar",
+        "content": "Müşterilere zaten bulundukları yerde ulaşın. Anında iletişimle satış dönüşüm oranlarını artırın. Otomatik yanıtlarla müşteri hizmetleri maliyetlerini azaltın. Kişiselleştirilmiş mesajlaşma ile daha güçlü müşteri ilişkileri kurun."
+      },
+      "images": {
+        "catalog": "WhatsApp Business kataloğu",
+        "catalogCaption": "WhatsApp içinde güzel ürün vitrin",
+        "invoice": "Otomatik fatura teslimatı",
+        "invoiceCaption": "WhatsApp üzerinden anında fatura gönderin",
+        "support": "Müşteri destek sohbeti",
+        "supportCaption": "Anında yardım sağlayın ve ilişkiler kurun"
+      }
+    },
+    "languages": {
+      "title": "20+ Dil Desteklenir",
+      "subtitle": "Müşterinizin Dilini Konuşun",
+      "overview": {
+        "heading": "Gerçek Küresel Erişilebilirlik",
+        "content": "Dott 20'den fazla dilde mevcuttur ve dünya çapındaki işletmeler için erişilebilir kılar. Her özellik, düğme ve mesaj netlik ve kültürel uygunluğu sağlamak için ana dil konuşanları tarafından tam olarak çevrilmiştir."
+      },
+      "supported": {
+        "heading": "Desteklenen Diller"
+      },
+      "benefits": {
+        "heading": "Çok Dilli Desteğin Faydaları",
+        "content": "Müşterilere tercih ettikleri dilde hizmet verin. Yeni pazarlara kolayca genişleyin. Ana dil desteğiyle çalışanları daha hızlı eğitin. Yerelleştirilmiş içerikle güven oluşturun."
+      },
+      "images": {
+        "selector": "Dil seçici",
+        "selectorCaption": "Dilleri anında değiştirin",
+        "interface": "Çok dilli arayüz",
+        "interfaceCaption": "Tam olarak çevrilmiş kullanıcı arayüzü",
+        "map": "Küresel kullanılabilirlik haritası",
+        "mapCaption": "Yerel dillerde dünya çapında mevcut"
+      }
+    }
+  },
   "cookieBanner": {
     "title": "Çerez Bildirimi",
     "message": "Deneyiminizi geliştirmek, kullanımı analiz etmek ve temel işlevleri sağlamak için çerezler kullanıyoruz. Sitemizi kullanmaya devam ederek çerez kullanımımızı kabul etmiş olursunuz.",

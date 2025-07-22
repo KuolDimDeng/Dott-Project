@@ -518,6 +518,230 @@
       }
     }
   },
+  "featureDetails": {
+    "screenshots": "Izithombe Zokukhomba Nezibonelo",
+    "cta": {
+      "heading": "Usukulungele ukuqala?",
+      "text": "Joyina izinkulungwane zamabhizinisi asevele esebenzisa i-Dott ukukhula.",
+      "button": "Qala Ukuhlola Kwamahhala"
+    },
+    "mobile": {
+      "title": "Uhlelo Lweselula",
+      "subtitle": "Ibhizinisi Lakho Ephaketheni Yakho",
+      "overview": {
+        "heading": "Ukuphatha Okugcwele Kwebhizinisi Kuhamba",
+        "content": "Finyelela kuyo yonke ibhizinisi lakho kusuka kufoni yakho ehlakaniphile noma kuthebulethi. Uhlelo lwethu lweselula lwenzelwe ukuthi lukunike ukulawula okugcwele kungakhathaliseki ukuthi usehhovisi, ensimini, noma uhamba. Ngamandla okusebenza ngaphandle kwe-inthanethi, ungaqhubeka nokusebenza ngisho kungenasixhumanisi se-inthanethi."
+      },
+      "features": {
+        "heading": "Izici Zeselula Ezibalulekile",
+        "1": "Ukulandelela kwethengiso nokuphatha kwamaseli ngesikhathi sangempela",
+        "2": "Dala futhi uthumele ama-invoysi ngokushesha",
+        "3": "Yamukela izinkokhelo ngokushesha",
+        "4": "Buka izihlaziya zebhizinisi nemibiko",
+        "5": "Phatha abasebenzi namashidi esikhathi",
+        "6": "Skena ama-barcode ngekhamera yakho",
+        "7": "Sebenza ngaphandle kwe-inthanethi ngokuvumelanisa okuzenzakalelayo",
+        "8": "Izaziso zokusunduza zezigameko ezibalulekile"
+      },
+      "benefits": {
+        "heading": "Izinzuzo Zebhizinisi Lakho",
+        "content": "Hlala uxhunywe nebhizinisi lakho i-24/7. Yenza izinqumo ezifundisekile ngedatha yangesikhathi sangempela. Khongolose amakhasimende ngokushesha nge-POS yeselula. Yehlisa amaphepha nomisebenzi eyenziwa ngesandla."
+      },
+      "images": {
+        "dashboard": "Ukubuka idashbhodi yeselula",
+        "dashboardCaption": "Idashbhodi enamezinga abalulekile ngokubuka okukodwa",
+        "pos": "Isikrini se-POS yeselula",
+        "posCaption": "Yenza ukuthengisa kunoma kuphi",
+        "inventory": "Ukuphatha amaseli kweselula",
+        "inventoryCaption": "Landelela amaseli ngesikhathi sangempela"
+      }
+    },
+    "pos": {
+      "title": "I-POS Nokuskena Kwe-Barcode",
+      "subtitle": "Okusheshayo, Okunembile, Nokusebenza Kahle Kwethengiso",
+      "overview": {
+        "heading": "Isistimu Yanamuhla Yomhlaba Wokuthengisa",
+        "content": "Guqula noma yiluphi idivaysi libe isistimu yamandla yomhlaba wokuthengisa. I-POS yethu yenzelwe ukuze ishesha futhi ibe lula, ikuvumela ukuthi uziphathe ukuthengisa ngokushesha lapho ugcina ukulandelela amaseli okuvumelana naleyo nto. Iskena se-barcode esihlanganisiwe senza ukusiza kube njengemfezi."
+      },
+      "features": {
+        "heading": "Izici Ze-POS Ezithuthukile",
+        "1": "Ukuskena kwe-barcode ngekhamera noma i-Bluetooth scanner",
+        "2": "Ukusekela zonke izinhlobo zezinkokhelo ezifaka nemali yeselula",
+        "3": "Ukuvuselela amaseli ngokuzenzakalelayo ngokuthengisa ngakunye",
+        "4": "Ukuphatha amakhasimende nezinhlelo zothando",
+        "5": "Ukuhlukanisa izinkokhelo nezinkokhelo ezingaphelelanga",
+        "6": "Ukubuyisela nokushintshisana",
+        "7": "Imodi engekho ku-inthanethi nokuphatha kolayini",
+        "8": "Ukulandelela amaseli ezindawo eziningi"
+      },
+      "barcode": {
+        "heading": "Isistimu Ye-Barcode Enamandla",
+        "content": "Khiqiza ama-barcode angokwezifiso ezimpahlakatini zakho. Phrinta amalebuli we-barcode ngobukhulu obuhlukahlukene. Skena imikhiqizo ngokushesha ngesikhathi sokuthengisa noma ukubala amaseli. Ukusekela kwama-QR code nama-barcode ajwayelekile."
+      },
+      "images": {
+        "checkout": "Isikrini sokukhokha se-POS",
+        "checkoutCaption": "Inqubo yokukhokha esheshayo futhi elula",
+        "scanning": "Ukuskena kwe-barcode ekusebenzeni",
+        "scanningCaption": "Skena imikhiqizo ngokushesha ngekhamera noma iskena",
+        "payments": "Izindlela zokukhokha eziningi",
+        "paymentsCaption": "Yamukela imali, amakhadi, nemali yeselula"
+      }
+    },
+    "ai": {
+      "title": "Imininingwane Enamandla e-AI",
+      "subtitle": "Izincomo Ezihlakaniphile Zokukhula",
+      "overview": {
+        "heading": "Ubuhlakani Bokwenziwa Bebhizinisi Lakho",
+        "content": "I-AI yethu ihlaziya idatha yebhizinisi lakho ukuze inikeze imininingwane eyehlukene nezincomo. Thola izihlaziya zokusola kusengaphambili, ukubikezela kwesidingo, nezixwayiso ezihlakaniphile ezikusiza wenze izinqumo zebhizinisi ezingcono."
+      },
+      "features": {
+        "heading": "Izici Ezinamandla e-AI",
+        "1": "Ukubikezela kwesidingo ngokusekelwa idatha yomlando",
+        "2": "Izincomo zokuthuthukisa amaseli",
+        "3": "Ukuhlaziya kwamikhiqizo edayiseka kakhulu",
+        "4": "Imininingwane yokuziphatha kwamakhasimende",
+        "5": "Iziphakamiso zokuthuthukisa amanani",
+        "6": "Ukuthola amavavy ezinkathi",
+        "7": "Ukubikezela ukugeleza kwemali",
+        "8": "Imibiko yezezimali ezenzakalelayo"
+      },
+      "benefits": {
+        "heading": "Indlela i-AI Esiza Ngayo Ibhizinisi Lakho",
+        "content": "Yehlisa izimo zokungabi namaseli nezimo zokuba namaseli amaningi. Thola amathuba okukhula. Thuthukisa amanani ukuze uthole inzuzo enkulu. Qonda kangcono lokho amakhasimende afuna."
+      },
+      "images": {
+        "dashboard": "Idashbhodi yesihlaziya se-AI",
+        "dashboardCaption": "Imininingwane ehlakaniphile ezandleni zakho",
+        "forecast": "Ishathi lokubikezela isidingo",
+        "forecastCaption": "Bikezela isidingo sikasasa ngokunembile",
+        "inventory": "Ukuthuthukisa amaseli",
+        "inventoryCaption": "Izincomo zamaseli ezinamandla e-AI"
+      }
+    },
+    "geofencing": {
+      "title": "I-Geofencing Nokulandelela Indawo",
+      "subtitle": "Ukuphatha Okuhlakaniphile Okunxutshwa Yindawo",
+      "overview": {
+        "heading": "Ubuhlakani Bendawo Obuthuthukile",
+        "content": "Qinisekisa ukulandelela esikhathini okunembile futhi uthuthukise ukuziphendulela ngokusayina ngaphakathi/ngaphandle okusekelwa i-GPS. Dala imingcele engabonakali endaweni yokusebenza futhi uthole izaziso ngokushesha lapho abasebenzi bengena noma bephuma ezindaweni ezikhethiwe."
+      },
+      "features": {
+        "heading": "Izici Zokuphatha Indawo",
+        "1": "Ukusayina ngaphakathi/ngaphandle okusekelwa i-GPS nokuqinisekisa indawo",
+        "2": "Dala izindawo ze-geofence ezingenamkhawulo",
+        "3": "Indawo yesisebenzi ngesikhathi sangempela ngesikhathi sokusebenza",
+        "4": "Ukudala ishidi lesikhathi okuzenzakalelayo",
+        "5": "Ukulandelela ikhilomitha zabashayeli abadlulisayo",
+        "6": "Ukuqinisekisa ukuvakasha kwendawo yamaqembu asensimini",
+        "7": "Okugxile kubumfihlo ngokuvuma kwabasebenzi",
+        "8": "Umlando wendawo onemininingwane nemibiko"
+      },
+      "compliance": {
+        "heading": "Ubumfihlo Nokuthobela",
+        "content": "Ukuthobela okugcwele kwe-GDPR nemithetho yobumfihlo. Ukuphatha ukuvuma kwabasebenzi. Ukulandelela indawo ngesikhathi sokusebenza kuphela. Izinqubomgomo zokusebenzisa idatha ezicacile."
+      },
+      "images": {
+        "map": "Ukubuka ibalazwe le-geofence",
+        "mapCaption": "Dala futhi uphathe izindawo zokusebenza kalula",
+        "tracking": "Idashbhodi yokulandelela abasebenzi",
+        "trackingCaption": "Ukubuka iqembu lendawo ngesikhathi sangempela",
+        "reports": "Imibiko yendawo",
+        "reportsCaption": "Ukuhlaziya indawo okunemininingwane"
+      }
+    },
+    "mobilemoney": {
+      "title": "Izinkokhelo Zemali Yeselula",
+      "subtitle": "Yamukela Izinkokhelo Kusuka Ezigidini Zabasebenzisi Emhlabeni Wonke",
+      "overview": {
+        "heading": "Ukwamukelwa Kwezinkokhelo Emhlabeni Wonke",
+        "content": "Phula imigoqo yezinkokhelo futhi ufinyelele amakhasimende kunoma kuphi. Imali yeselula yindlela yokukhokha eyintandokazi yezigidigidi zabantu emhlabeni wonke, ikakhulukazi emakethe akhulayo. Nge-Dott, ungamukela izinkokhelo kubasebenzisi be-M-Pesa namhlanje, nabaningi abahlinzeki bemali yeselula bezayo masinyane."
+      },
+      "current": {
+        "heading": "Okukhona Khona Manje",
+        "1": "I-M-Pesa (Kenya) - Ngaphezu kwezigidi ezingu-30 abasebenzisi abakahle",
+        "2": "Amakhadi esikweletu nePlini (Visa, Mastercard, Amex)",
+        "3": "Ukudluliswa kwemali yasebhange nezinkokhelo ze-ACH",
+        "4": "Izinkokhelo zemali (ezilandelwa ohlelweni)"
+      },
+      "coming": {
+        "heading": "Kuyeza Masinyane",
+        "1": "I-MTN Mobile Money - ngaphezu kwezigidi ezingu-180 abasebenzisi e-Afrika",
+        "2": "I-Airtel Money - ngaphezu kwezigidi ezingu-125 abasebenzisi e-Afrika naseAsiya",
+        "3": "I-Orange Money - ngaphezu kwezigidi ezingu-70 abasebenzisi e-Afrika naseMpumalanga Ephakathi",
+        "4": "I-GCash (Philippines) - ngaphezu kwezigidi ezingu-81 abasebenzisi ababhalisiwe",
+        "5": "I-Paytm (India) - izigidi ezingu-350 abasebenzisi",
+        "6": "I-Pix (Brazil) - ngaphezu kwezigidi ezingu-140 abasebenzisi",
+        "7": "I-Mercado Pago - izigidi ezingu-80 abasebenzisi eLatin America",
+        "8": "I-bKash (Bangladesh), i-OVO (Indonesia), nabanye"
+      },
+      "benefits": {
+        "heading": "Kungani Imali Yeselula Ibalulekile",
+        "content": "Izinkokhelo ezisheshayo nezindleko eziphansi zokusebenza. Ayidingi i-akhawunti yasebhange yamakhasimende. Finyelela abantu abangenayo ibhange. Enza izinkokhelo zemazweni zingenzeka. Iphelele ezinkokhelweni ezincane nezithengo zansuku zonke."
+      },
+      "images": {
+        "options": "Izinketho zokukhokha kwemali yeselula",
+        "optionsCaption": "Izindlela zokukhokha eziningi enkundleni eyodwa",
+        "mpesa": "Ukugeleza kokukhokha kwe-M-Pesa",
+        "mpesaCaption": "Ukuxhuma kwe-M-Pesa okulula nokunephephile",
+        "global": "Ibalazwe lesibonakaliso sokukhokha emhlabeni wonke",
+        "globalCaption": "Ukumboza kwemali yeselula emhlabeni wonke"
+      }
+    },
+    "whatsapp": {
+      "title": "I-WhatsApp Business",
+      "subtitle": "Guqula Ukuxhumana Namakhasimende",
+      "overview": {
+        "heading": "Ukuxhuma Kwe-WhatsApp Business Konke-ku-kunye",
+        "content": "Xhuma namakhasimende akho kunkundla yokuthumela imiyalezo ethandwa kakhulu emhlabeni. Dala ikhathalogi yemikhiqizo emihle, zenzakalelise ukudluliswa kwama-invoysi namaresethi, nikeza ukusekela amakhasimende ngokushesha, futhi uphendule izingxoxo zibe ukuthengisa. Ngabasebenzisi abazigidigidi ezi-2 emhlabeni wonke, i-WhatsApp Business ibalulekile ekuxhumaneni namakhasimende kwanamuhla."
+      },
+      "features": {
+        "heading": "Izici Ze-WhatsApp Business Ezibalulekile",
+        "1": "Ikhathalogi yebhizinisi enobuchule nezithombe zemikhiqizo nezincazelo",
+        "2": "Ukudluliswa kwama-invoysi namaresethi ngokuzenzakalelayo kumakhasimende",
+        "3": "Ukusekela amakhasimende ngokushesha nengxoxo ephilayo",
+        "4": "Imiyalezo yokusakaza yeziphakamiso nezimemezelo",
+        "5": "Ukuphatha oda ngqo nge-WhatsApp",
+        "6": "Ukuqinisekisa izinkokhelo nezaziso zokuhwebelana",
+        "7": "Izimpendulo ezisheshayo nezimpendulo ezizenzakalelayo",
+        "8": "Ukuvumelanisa idatha yamakhasimende noxhumano lwakho lebhizinisi"
+      },
+      "benefits": {
+        "heading": "Izinzuzo Zebhizinisi Lakho",
+        "content": "Finyelela amakhasimende lapho abekho khona. Khulisa amazinga okudayisa ngokuxhumana okusheshayo. Yehlisa izindleko zesevisi yamakhasimende ngezimpendulo ezizenzakalelayo. Yakha ubuhlobo obujulile namakhasimende ngokuthumela imiyalezo eqondene nabo."
+      },
+      "images": {
+        "catalog": "Ikhathalogi ye-WhatsApp Business",
+        "catalogCaption": "Ukuboniswa kwemikhiqizo okuhle ngaphakathi kwe-WhatsApp",
+        "invoice": "Ukudluliswa kwama-invoysi ngokuzenzakalelayo",
+        "invoiceCaption": "Thumela ama-invoysi ngokushesha nge-WhatsApp",
+        "support": "Ingxoxo yokusekelwa kwamakhasimende",
+        "supportCaption": "Nikeza usizo olusheshayo futhi wakhe ubuhlobo"
+      }
+    },
+    "languages": {
+      "title": "Ukusekela Izilimi Ezingu-20+",
+      "subtitle": "Khuluma Ulimi Lwekhasimende Lakho",
+      "overview": {
+        "heading": "Ukufinyelela Kwangempela Emhlabeni Wonke",
+        "content": "I-Dott itholakala ezilimini ezingaphezu kuka-20, okuyenza ifinyeleke yamabhizinisi emhlabeni wonke. Sonke isici, inkinobho, nomyalezo kuhunyushelwe ngokugcwele izakhono zasobuzwe ukuze kuqinisekiswe ukucaca nokufaneleka kwenhlalo."
+      },
+      "supported": {
+        "heading": "Izilimi Ezisekelwayo"
+      },
+      "benefits": {
+        "heading": "Izinzuzo Zokusekela Izilimi Eziningi",
+        "content": "Sekelela amakhasimende ngolimi alukhethayo. Nweba emakethe amasha kalula. Qeqesha abasebenzi ngokushesha ngokusekela ulimi lwekhaya. Yakha ukwethembeka ngokuqukethwe kwendawo."
+      },
+      "images": {
+        "selector": "Isikhethi solimi",
+        "selectorCaption": "Shintsha izilimi ngokushesha",
+        "interface": "Ukusebenzisana ngezilimi eziningi",
+        "interfaceCaption": "Ukusebenzisana komsebenzisi okuhunyushelwe ngokugcwele",
+        "map": "Imephu yokutholakala emhlabeni wonke",
+        "mapCaption": "Iyatholakala emhlabeni wonke ngezilimi zendawo"
+      }
+    }
+  },
   "cookieBanner": {
     "title": "Isaziso Se-Cookie",
     "message": "Sisebenzisa ama-cookies ukuthuthukisa ukuzizwisa kwakho, ukuhlaziya ukusetshenziswa, nokuhlinzeka ngezici ezibalulekile. Ngokuqhubeka nokusebenzisa isayithi yethu, uyavuma ukusebenzisa ama-cookies.",

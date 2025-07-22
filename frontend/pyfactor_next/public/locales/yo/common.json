@@ -660,6 +660,230 @@
     "privacyPolicy": "Eto Ikoko",
     "termsOfService": "Awon ofin Ise"
   },
+  "featureDetails": {
+    "screenshots": "Àwọn Àwòrán àti Àpẹẹrẹ",
+    "cta": {
+      "heading": "Ṣétan láti bẹ̀rẹ̀?",
+      "text": "Darapọ̀ mọ́ ẹgbẹẹgbẹ̀rún àwọn iṣọ̀wọ́ tí wọ́n ti ń lo Dott láti dàgbà.",
+      "button": "Bẹ̀rẹ̀ Ìdànwò Ọ̀fẹ́"
+    },
+    "mobile": {
+      "title": "Ohun Èlò Fóònù",
+      "subtitle": "Iṣọ̀wọ́ Rẹ Nínú Àpò Rẹ",
+      "overview": {
+        "heading": "Ìṣàkóso Iṣọ̀wọ́ Pípé Lórí Rírìnrìn",
+        "content": "Wọlé sí gbogbo iṣọ̀wọ́ rẹ láti orí fóònù aláìlágbára tàbí tábìlẹ́tì rẹ. Ohun èlò fóònù wa ni a ṣe láti fún ọ ní ìṣàkóso pípé bóyá o wà ní ọ́fíìsì, nínú pápá, tàbí o ń rìnrìn àjò. Pẹ̀lú àgbára aìlórí-itanna, o lè tẹ̀síwájú láti ṣiṣẹ́ kódà láìsí ìsopọ̀ intánẹ́ẹ̀tì."
+      },
+      "features": {
+        "heading": "Àwọn Àbùdá Fóònù Pàtàkì",
+        "1": "Àbójútó títà àti àjọjọpọ̀ ọjà lọ́nà tó yará",
+        "2": "Ṣẹ̀dá àti fi àwọn ìwé ìsanwó ránṣẹ́ lọ́gán",
+        "3": "Gba àwọn ìsanwó ní ojú kan náà",
+        "4": "Wo àwọn ìtupale àti ìjábọ̀ iṣọ̀wọ́",
+        "5": "Ṣàkóso àwọn òṣìṣẹ́ àti àwọn àkọsílẹ̀ wákàtí",
+        "6": "Ṣẹ áábù àmì-àpótí pẹ̀lú kámẹ́rà rẹ",
+        "7": "Ṣiṣẹ́ láìlórí-itanna pẹ̀lú àfikún aifọwọ́yi",
+        "8": "Ìwífúnni ìfibọ̀ fún àwọn ìṣẹ̀lẹ̀ pàtàkì"
+      },
+      "benefits": {
+        "heading": "Àwọn Àǹfàní fún Iṣọ̀wọ́ Rẹ",
+        "content": "Wà ní asopọ̀ mọ́ iṣọ̀wọ́ rẹ ní 24/7. Ṣe àwọn ìpinnu tó ṣe pàtàkì pẹ̀lú data tó wà lójú kan. Ṣe ìrànlọ́wọ́ àwọn onígbọ̀wọ́ yára si pẹ̀lú POS fóònù. Dín àwọn ìwé àti àwọn ìlànà afọwọ́ra kù."
+      },
+      "images": {
+        "dashboard": "Ìwòye pátákó fóònù",
+        "dashboardCaption": "Pátákó pẹ̀lú àwọn ìwọ̀n pàtàkì ní ìwòye kan",
+        "pos": "Ojú fóònù POS",
+        "posCaption": "Ṣe ìsòdípò títà láti ibikíbi",
+        "inventory": "Ìṣàkóso àjọjọpọ̀ ọjà fóònù",
+        "inventoryCaption": "Ṣe àbójútó àjọjọpọ̀ ọjà ní àkókò gidi"
+      }
+    },
+    "pos": {
+      "title": "POS àti Àbójútó Àmì-àpótí",
+      "subtitle": "Yára, Déédé, àti Ìtúpalẹ̀ Títà",
+      "overview": {
+        "heading": "Ètò Ojú-ìtà Òde-òní",
+        "content": "Yí eyíkéyìí ohun èlò padà sí ètò ojú-ìtà tó ní agbára. POS wa ni a ṣe fún iyára àti ìrọ̀rùn, tó ń gbà ọ́ láàyè láti ṣe ìsòdípò títà ní kíákíá láti ṣe àbójútó àjọjọpọ̀ ọjà déédé. Ọ̀nà àbójútó àmì-àpótí tó darapọ̀ mọ́ wa ní jẹ́ kí ìsanwó jẹ́ yára bí mọ̀nàmọ́ná."
+      },
+      "features": {
+        "heading": "Àwọn Àbùdá POS To Tẹ̀síwájú",
+        "1": "Àbójútó àmì-àpótí pẹ̀lú kámẹ́rà tàbí ọ̀nà àbójútó Bluetooth",
+        "2": "Àtìlẹ́yìn fún gbogbo irú ìsanwó pẹ̀lú owó fóònù",
+        "3": "Ìtúnṣe àjọjọpọ̀ ọjà aifọwọ́yi pẹ̀lú títà kọ̀ọ̀kan",
+        "4": "Ìṣàkóso onígbọ̀wọ́ àti àwọn ètò ìtẹ̀lọ́rùn",
+        "5": "Pín àwọn ìsanwó àti àwọn ìsanwó apá",
+        "6": "Àmúpadà àti ìpaṣípaarọ̀",
+        "7": "Ipò aìlórí-itanna pẹ̀lú ìṣàkóso ìla",
+        "8": "Àbójútó àjọjọpọ̀ ọjà ibì-púpọ̀"
+      },
+      "barcode": {
+        "heading": "Ètò Àmì-àpótí Alágbára",
+        "content": "Ṣẹ̀dá àwọn àmì-àpótí aládàáṣe fún àwọn ọjà rẹ. Tẹ̀ àwọn àkọsílẹ̀ àmì-àpótí nínú àwọn ìwọ̀n oriṣiríṣi. Ṣe áábù àwọn ọjà lọ́gán láti àkókò títà tàbí ìkàníírò àjọjọpọ̀ ọjà. Àtìlẹ́yìn fún àwọn àmì QR àti àwọn àmì-àpótí àsáwọ́n."
+      },
+      "images": {
+        "checkout": "Ojú ìsanwó POS",
+        "checkoutCaption": "Ìlànà ìsanwó tó yára àti tó ní àkóso",
+        "scanning": "Àbójútó àmì-àpótí ní iṣẹ́",
+        "scanningCaption": "Ṣe áábù àwọn ọjà lọ́gán pẹ̀lú kámẹ́rà tàbí ọ̀nà àbójútó",
+        "payments": "Àwọn ọ̀nà ìsanwó púpọ̀",
+        "paymentsCaption": "Gba owó lọ́wọ́, káàdì, àti owó fóònù"
+      }
+    },
+    "ai": {
+      "title": "Àwọn Ìmọ̀ Tó Ní Agbára AI",
+      "subtitle": "Àwọn Ìmọ̀ràn Ọlọ́gbọ́n fún Ìdàgbàsókè",
+      "overview": {
+        "heading": "Ìmọ̀ Atòpọ̀ fún Iṣọ̀wọ́ Rẹ",
+        "content": "AI wa ń ṣe ìtúpalẹ̀ data iṣọ̀wọ́ rẹ láti pèsè àwọn ìmọ̀ràn àti ìmọ̀ tó lè ṣe. Gba àwọn ìtúpalẹ̀ àsọtẹ́lẹ̀, àfojúsùn òtítọ́, àti àwọn ìkìlọ̀ ọlọ́gbọ́n tó ń ṣe ìrànlọ́wọ́ ọ láti ṣe àwọn ìpinnu iṣọ̀wọ́ tó dára jù."
+      },
+      "features": {
+        "heading": "Àwọn Àbùdá Tó Ní Agbára AI",
+        "1": "Àfojúsùn òtítọ́ tó dá lórí data ìtàn",
+        "2": "Àwọn ìmọ̀ràn ìdásílẹ̀ àjọjọpọ̀ ọjà",
+        "3": "Ìtúpalẹ̀ ọjà tó ń tà jù",
+        "4": "Àwọn ìmọ̀ ìhùwàsí onígbọ̀wọ́",
+        "5": "Àwọn ìdábàá ìdásílẹ̀ iye",
+        "6": "Àmúdènù àwọn ìyípadà àsìkò",
+        "7": "Àwọn àsọtẹ́lẹ̀ owó dídé",
+        "8": "Àwọn ìjábọ̀ owó aifọwọ́yi"
+      },
+      "benefits": {
+        "heading": "Bí AI Ṣe Ń Ṣe Ìrànlọ́wọ́ Iṣọ̀wọ́ Rẹ",
+        "content": "Dín àwọn ìpò àjọjọpọ̀ ọjà tó kéré àti tó pọ̀jù kù. Dá àwọn àǹfàní ìdàgbàsókè mọ̀. Ṣe ìdásílẹ̀ iye fún èrè tó pọ̀ jù. Ní òye àwọn ìfẹ́ onígbọ̀wọ́ dáadáa jù."
+      },
+      "images": {
+        "dashboard": "Pátákó ìtúpalẹ̀ AI",
+        "dashboardCaption": "Àwọn ìmọ̀ ọlọ́gbọ́n ní àwọn ọwọ́ rẹ",
+        "forecast": "Àkọsílẹ̀ àfojúsùn òtítọ́",
+        "forecastCaption": "Sọ àfojúsùn ọ̀la déédé",
+        "inventory": "Ìdásílẹ̀ àjọjọpọ̀ ọjà",
+        "inventoryCaption": "Àwọn ìmọ̀ràn àjọjọpọ̀ ọjà tí AI ń ṣe"
+      }
+    },
+    "geofencing": {
+      "title": "Geofencing àti Àbójútó Ipò",
+      "subtitle": "Ìṣàkóso Tó Dá Lórí-ipò Ọlọ́gbọ́n",
+      "overview": {
+        "heading": "Ìmọ̀ Ipò Tó Tẹ̀síwájú",
+        "content": "Rí dájú àbójútó àkókò tó péye àti ìwà tó tọ́ pẹ̀lú ìfowóṣí tó dá lórí GPS. Ṣẹ̀dá àwọn àlá tó rí bí ààlà káàkiri àwọn ibí iṣẹ́ kí o sì gba àwọn ìkìlọ̀ lọ́gán nígbà tí àwọn òṣìṣẹ́ bá wọlé tàbí jáde kúrò ní àwọn agbègbè tí a yàn."
+      },
+      "features": {
+        "heading": "Àwọn Àbùdá Ìṣàkóso Ipò",
+        "1": "Ìfowóṣí tó dá lórí GPS pẹ̀lú ìdánilójú ipò",
+        "2": "Ṣẹ̀dá àwọn agbègbè geofence àìlóye",
+        "3": "Ipò òṣìṣẹ́ lọ́nà-tó-yára láti àkókò iṣẹ́",
+        "4": "Ṣíṣẹ̀dá timesheet aifọwọ́yi",
+        "5": "Àbójútó ìrin-àjò fún àwọn awakọ̀ ìgbàsílẹ̀",
+        "6": "Ìjẹ́rìí ìbẹ̀wò ibí fún àwọn ègbé pápá",
+        "7": "Ìdámọ̀ràn ikọ̀kọ̀ pẹ̀lú ìfọwọ́sí òṣìṣẹ́",
+        "8": "Ìtàn ipò àlàyé àti àwọn ìjábọ̀"
+      },
+      "compliance": {
+        "heading": "Ikọ̀kọ̀ àti Ìbámu",
+        "content": "Ìbámu pípé GDPR àti òfin ikọ̀kọ̀. Ìṣàkóso ìfọwọ́sí òṣìṣẹ́. Àbójútó ipò nígbà àkókò iṣẹ́ nìkan. Àwọn ètò lilo data tó hàn gbangba."
+      },
+      "images": {
+        "map": "Ìwòye mápù geofence",
+        "mapCaption": "Ṣẹ̀dá àti ṣàkóso àwọn agbègbè iṣẹ́ ní ìrọ̀rùn",
+        "tracking": "Pátákó àbójútó òṣìṣẹ́",
+        "trackingCaption": "Àkópọ̀ ipò ègbé ní àkókò gidi",
+        "reports": "Àwọn ìjábọ̀ ipò",
+        "reportsCaption": "Ìtúpalẹ̀ ipò àlàyé"
+      }
+    },
+    "mobilemoney": {
+      "title": "Àwọn Ìsanwó Owó Fóònù",
+      "subtitle": "Gba Àwọn Ìsanwó Láti Ọ̀dọ̀ Bílíọ̀nù Àwọn Òlò Káàkiri Ayé",
+      "overview": {
+        "heading": "Gbígba Ìsanwó Káàkiri Ayé",
+        "content": "Já àwọn ìdínà ìsanwó kúrò kí o sì dé ọ̀dọ̀ àwọn onígbọ̀wọ́ níbikíbi. Owó fóònù ni ọ̀nà ìsanwó tí bílíọ̀nù ènìyàn fẹ́ràn káàkiri ayé, pàápàá ní àwọn ọjà tó ń dàgbàsókè. Pẹ̀lú Dott, o lè gba àwọn ìsanwó láti ọ̀dọ̀ àwọn òlò M-Pesa lónìí, pẹ̀lú ọ̀pọ̀lọpọ̀ àwọn olùpèsè owó fóònù míràn tó ń bọ̀ láìpẹ́."
+      },
+      "current": {
+        "heading": "Tó Wà Báyìí",
+        "1": "M-Pesa (Kenya) - Ju mílíọ̀nù 30 àwọn òlò tó ń lò ó",
+        "2": "Àwọn Káàdì Kírẹ́dítì àti Débítì (Visa, Mastercard, Amex)",
+        "3": "Àwọn gbígbé owó bánkì àti àwọn ìsanwó ACH",
+        "4": "Àwọn ìsanwó owó lọ́wọ́ (tí a ṣe àbójútó nínú ètò)"
+      },
+      "coming": {
+        "heading": "Tó Ń Bọ̀ Láìpẹ́",
+        "1": "MTN Mobile Money - ju mílíọ̀nù 180 àwọn òlò ní Áfíríkà",
+        "2": "Airtel Money - ju mílíọ̀nù 125 àwọn òlò ní Áfíríkà àti Ẹ́síà",
+        "3": "Orange Money - ju mílíọ̀nù 70 àwọn òlò ní Áfíríkà àti Àríwá Ìhà Ìlà-oòrùn",
+        "4": "GCash (Philippines) - ju mílíọ̀nù 81 àwọn òlò tí wọ́n forúkọsílẹ̀",
+        "5": "Paytm (India) - mílíọ̀nù 350 àwọn òlò",
+        "6": "Pix (Brazil) - ju mílíọ̀nù 140 àwọn òlò",
+        "7": "Mercado Pago - mílíọ̀nù 80 àwọn òlò ní Latin America",
+        "8": "bKash (Bangladesh), OVO (Indonesia), àti àwọn míràn"
+      },
+      "benefits": {
+        "heading": "Ìdí Tí Owó Fóònù Ṣe Ṣe Pàtàkì",
+        "content": "Àwọn ìsanwó lọ́gán pẹ̀lú àwọn iye ìdúnàdúrà tó kéré. Kò nílò àkánṣe bánkì fún àwọn onígbọ̀wọ́. Dé ọ̀dọ̀ àwọn ènìyàn tí wọn kò bá bánkì. Jẹ́ kí àwọn ìdúnàdúrà àgbéyẹ̀wò ṣeé ṣe. Ó dára fún àwọn ìdúnàdúrà kékeré àti àwọn rírà ojoojúmọ́."
+      },
+      "images": {
+        "options": "Àwọn aṣàyàn ìsanwó owó fóònù",
+        "optionsCaption": "Àwọn ọ̀nà ìsanwó púpọ̀ nínú pẹpẹ kan",
+        "mpesa": "Ìlànà ìsanwó M-Pesa",
+        "mpesaCaption": "Ìsọpọ̀ M-Pesa tó rọrùn àti tó ní aabo",
+        "global": "Mápù ìbòrí ìsanwó káàkiri ayé",
+        "globalCaption": "Ìbòrí owó fóònù káàkiri ayé"
+      }
+    },
+    "whatsapp": {
+      "title": "WhatsApp Business",
+      "subtitle": "Yí Ìbánisọ̀rọ̀ Onígbọ̀wọ́ Padà",
+      "overview": {
+        "heading": "Ìsọpọ̀ WhatsApp Business Gbogbo-ní-ọ̀kan",
+        "content": "Bá àwọn onígbọ̀wọ́ rẹ sọ̀rọ̀ lórí pẹpẹ ìránṣẹ́ tó gbajúmọ̀ jù lágbàáyé. Ṣẹ̀dá àwọn àkójọpọ̀ ọjà tó lẹ́wà, ṣe àfikún ìgbásílẹ̀ ìwé ìsanwó àti ìwé ìrísílẹ̀ aifọwọ́yi, pèsè àtìlẹ́yìn onígbọ̀wọ́ lọ́gán, àti yí àwọn ìjiroro dí títà. Pẹ̀lú bílíọ̀nù 2 àwọn òlò káàkiri ayé, WhatsApp Business jẹ́ pàtàkì fún ìbáraenisọ̀rọ̀ onígbọ̀wọ́ òde-òní."
+      },
+      "features": {
+        "heading": "Àwọn Àbùdá WhatsApp Business Pàtàkì",
+        "1": "Àkójọpọ̀ iṣọ̀wọ́ alájẹ pẹ̀lú àwọn àwòrán àti àpèjúwe ọjà",
+        "2": "Ìgbásílẹ̀ ìwé ìsanwó àti ìwé ìrísílẹ̀ aifọwọ́yi sí àwọn onígbọ̀wọ́",
+        "3": "Àtìlẹ́yìn onígbọ̀wọ́ lọ́gán àti ìbánisọ̀rọ̀ ààyè",
+        "4": "Àwọn ìránṣẹ́ ìkédè fún àwọn ìpolówó àti ìpolongo",
+        "5": "Ìṣàkóso ìbéèrè tààrà nípasẹ̀ WhatsApp",
+        "6": "Àwọn ìjẹ́rìí ìsanwó àti àwọn ìkìlọ̀ ìdúnàdúrà",
+        "7": "Àwọn ìdáhùn kíákíá àti àwọn ìdáhùn aifọwọ́yi",
+        "8": "Àfikún data onígbọ̀wọ́ pẹ̀lú àwọn ọ̀rẹ́ iṣọ̀wọ́ rẹ"
+      },
+      "benefits": {
+        "heading": "Àwọn Àǹfàní fún Iṣọ̀wọ́ Rẹ",
+        "content": "Dé ọ̀dọ̀ àwọn onígbọ̀wọ́ níbi tí wọ́n ti wà tẹ́lẹ̀. Ṣe àlékún àwọn ìpínrọ̀ títà pẹ̀lú ìbánisọ̀rọ̀ lọ́gán. Dín àwọn iye owó ìrànlọ́wọ́ onígbọ̀wọ́ kù pẹ̀lú àwọn ìdáhùn aifọwọ́yi. Kọ́ àwọn ìbáṣepọ̀ onígbọ̀wọ́ tó lágbára nípasẹ̀ ìránṣẹ́ aládàáni."
+      },
+      "images": {
+        "catalog": "Àkójọpọ̀ WhatsApp Business",
+        "catalogCaption": "Ìfihàn ọjà lẹ́wà láàárín WhatsApp",
+        "invoice": "Ìgbásílẹ̀ ìwé ìsanwó aifọwọ́yi",
+        "invoiceCaption": "Fi àwọn ìwé ìsanwó ránṣẹ́ lọ́gán nípasẹ̀ WhatsApp",
+        "support": "Ìbánisọ̀rọ̀ àtìlẹ́yìn onígbọ̀wọ́",
+        "supportCaption": "Pèsè ìrànlọ́wọ́ lọ́gán àti kọ́ àwọn ìbáṣepọ̀"
+      }
+    },
+    "languages": {
+      "title": "Àtìlẹ́yìn Àwọn Èdè 20+",
+      "subtitle": "Sọ Èdè Onígbọ̀wọ́ Rẹ",
+      "overview": {
+        "heading": "Ìrọ̀rùn Káàkiri Ayé Tòótọ́",
+        "content": "Dott wà nínú àwọn èdè tó ju 20 lọ, tó jẹ́ kó ṣeeṣe fún àwọn iṣọ̀wọ́ káàkiri ayé. Gbogbo àbùdá, bọ́tìnì, àti ìránṣẹ́ ni àwọn afèdè ìbílẹ̀ ṣe ní kíkún láti rí dájú kíkúm àti ìbámu àṣà."
+      },
+      "supported": {
+        "heading": "Àwọn Èdè Tí A Ń Ṣàtìlẹ́yìn"
+      },
+      "benefits": {
+        "heading": "Àwọn Àǹfàní Àtìlẹ́yìn Èdè Púpọ̀",
+        "content": "Ṣe ìrànlọ́wọ́ àwọn onígbọ̀wọ́ nínú èdè tí wọ́n fẹ́ràn. Ṣe àgbékalẹ̀ sí àwọn ọjà tuntun ní ìrọ̀rùn. Kọ́ àwọn òṣìṣẹ́ yára sí pẹ̀lú àtìlẹ́yìn èdè ìbílẹ̀. Kọ́ ìgbẹ́kẹ̀lé pẹ̀lú akoonu agbègbè."
+      },
+      "images": {
+        "selector": "Aṣàyàn èdè",
+        "selectorCaption": "Yí àwọn èdè padà lọ́gán",
+        "interface": "Ojú-ìmúlò onírúurú èdè",
+        "interfaceCaption": "Ojú-ìmúlò òǹlò tí a tú ní kíkún",
+        "map": "Mápù àyíká káàkiri ayé",
+        "mapCaption": "Ó wà káàkiri ayé nínú àwọn èdè agbègbè"
+      }
+    }
+  },
   "cookieBanner": {
     "title": "Akiyesi Cookie",
     "message": "A n lo awọn cookies lati mu iriri rẹ dara si, ṣe itupalẹ lilo, ati pese iṣẹ pataki. Nipa titẹsiwaju lilo aaye wa, o gba pẹlu lilo awọn cookies.",

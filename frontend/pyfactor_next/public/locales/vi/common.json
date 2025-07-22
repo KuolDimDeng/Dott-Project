@@ -850,6 +850,230 @@
     },
     "learnMore": "Tìm hiểu thêm"
   },
+  "featureDetails": {
+    "screenshots": "Ảnh chụp màn hình và Ví dụ",
+    "cta": {
+      "heading": "Sẵn sàng bắt đầu?",
+      "text": "Tham gia với hàng nghìn doanh nghiệp đang sử dụng Dott để phát triển.",
+      "button": "Bắt Đầu Dùng Thử Miễn Phí"
+    },
+    "mobile": {
+      "title": "Ứng Dụng Di Động",
+      "subtitle": "Doanh Nghiệp Trong Túi Bạn",
+      "overview": {
+        "heading": "Quản Lý Doanh Nghiệp Hoàn Chỉnh Khi Di Chuyển",
+        "content": "Truy cập toàn bộ doanh nghiệp của bạn từ điện thoại thông minh hoặc máy tính bảng. Ứng dụng di động của chúng tôi được thiết kế để cung cấp cho bạn quyền kiểm soát hoàn toàn dù bạn đang ở văn phòng, ngoài hiện trường hay đang đi du lịch. Với khả năng offline, bạn có thể tiếp tục làm việc ngay cả khi không có kết nối internet."
+      },
+      "features": {
+        "heading": "Tính Năng Di Động Chính",
+        "1": "Theo dõi bán hàng và tồn kho thời gian thực",
+        "2": "Tạo và gửi hóa đơn ngay lập tức",
+        "3": "Chấp nhận thanh toán tại chỗ",
+        "4": "Xem phân tích và báo cáo kinh doanh",
+        "5": "Quản lý nhân viên và bảng chấm công",
+        "6": "Quét mã vạch bằng camera của bạn",
+        "7": "Hoạt động offline với đồng bộ tự động",
+        "8": "Thông báo đẩy cho các sự kiện quan trọng"
+      },
+      "benefits": {
+        "heading": "Lợi Ích Cho Doanh Nghiệp Của Bạn",
+        "content": "Luôn kết nối với doanh nghiệp của bạn 24/7. Đưa ra quyết định thông minh với dữ liệu thời gian thực. Phục vụ khách hàng nhanh hơn với POS di động. Giảm giấy tờ và quy trình thủ công."
+      },
+      "images": {
+        "dashboard": "Giao diện dashboard di động",
+        "dashboardCaption": "Dashboard với các chỉ số chính trong tầm mắt",
+        "pos": "Màn hình POS di động",
+        "posCaption": "Xử lý bán hàng từ bất kỳ đâu",
+        "inventory": "Quản lý tồn kho di động",
+        "inventoryCaption": "Theo dõi tồn kho theo thời gian thực"
+      }
+    },
+    "pos": {
+      "title": "POS và Quét Mã Vạch",
+      "subtitle": "Bán Hàng Nhanh, Chính Xác và Hiệu Quả",
+      "overview": {
+        "heading": "Hệ Thống Điểm Bán Hàng Hiện Đại",
+        "content": "Biến bất kỳ thiết bị nào thành hệ thống điểm bán hàng mạnh mẽ. POS của chúng tôi được thiết kế cho tốc độ và sự đơn giản, cho phép bạn xử lý bán hàng nhanh chóng trong khi vẫn duy trì theo dõi tồn kho chính xác. Máy quét mã vạch tích hợp làm cho việc thanh toán trở nên cực kỳ nhanh."
+      },
+      "features": {
+        "heading": "Tính Năng POS Nâng Cao",
+        "1": "Quét mã vạch bằng camera hoặc máy quét Bluetooth",
+        "2": "Hỗ trợ tất cả các loại thanh toán bao gồm mobile money",
+        "3": "Cập nhật tồn kho tự động với mỗi lần bán",
+        "4": "Quản lý khách hàng và chương trình khách hàng thân thiết",
+        "5": "Chia nhỏ thanh toán và thanh toán một phần",
+        "6": "Xử lý trả hàng và đổi hàng",
+        "7": "Chế độ offline với quản lý hàng đợi",
+        "8": "Theo dõi tồn kho đa địa điểm"
+      },
+      "barcode": {
+        "heading": "Hệ Thống Mã Vạch Mạnh Mẽ",
+        "content": "Tạo mã vạch tùy chỉnh cho sản phẩm của bạn. In nhãn mã vạch với nhiều kích cỡ khác nhau. Quét sản phẩm ngay lập tức trong quá trình bán hàng hoặc kiểm kê tồn kho. Hỗ trợ mã QR và mã vạch tiêu chuẩn."
+      },
+      "images": {
+        "checkout": "Màn hình thanh toán POS",
+        "checkoutCaption": "Quy trình thanh toán nhanh và trực quan",
+        "scanning": "Quét mã vạch đang hoạt động",
+        "scanningCaption": "Quét sản phẩm ngay lập tức bằng camera hoặc máy quét",
+        "payments": "Nhiều phương thức thanh toán",
+        "paymentsCaption": "Chấp nhận tiền mặt, thẻ và mobile money"
+      }
+    },
+    "ai": {
+      "title": "Thông Tin Hỗ Trợ AI",
+      "subtitle": "Khuyến Nghị Thông Minh Cho Tăng Trưởng",
+      "overview": {
+        "heading": "Trí Tuệ Nhân Tạo Cho Doanh Nghiệp Của Bạn",
+        "content": "AI của chúng tôi phân tích dữ liệu kinh doanh của bạn để cung cấp thông tin chi tiết và khuyến nghị có thể hành động. Nhận phân tích dự đoán, dự báo nhu cầu và cảnh báo thông minh giúp bạn đưa ra quyết định kinh doanh tốt hơn."
+      },
+      "features": {
+        "heading": "Tính Năng Được Hỗ Trợ Bởi AI",
+        "1": "Dự báo nhu cầu dựa trên dữ liệu lịch sử",
+        "2": "Khuyến nghị tối ưu hóa tồn kho",
+        "3": "Phân tích sản phẩm bán chạy nhất",
+        "4": "Thông tin chi tiết về hành vi khách hàng",
+        "5": "Đề xuất tối ưu hóa giá cả",
+        "6": "Phát hiện xu hướng theo mùa",
+        "7": "Dự đoán dòng tiền",
+        "8": "Báo cáo tài chính tự động"
+      },
+      "benefits": {
+        "heading": "AI Giúp Doanh Nghiệp Của Bạn Như Thế Nào",
+        "content": "Giảm tình trạng hết hàng và dư thừa tồn kho. Xác định cơ hội tăng trưởng. Tối ưu hóa giá cả để có lợi nhuận tối đa. Hiểu rõ hơn về sở thích của khách hàng."
+      },
+      "images": {
+        "dashboard": "Dashboard phân tích AI",
+        "dashboardCaption": "Thông tin thông minh trong tầm tay bạn",
+        "forecast": "Biểu đồ dự báo nhu cầu",
+        "forecastCaption": "Dự đoán nhu cầu tương lai một cách chính xác",
+        "inventory": "Tối ưu hóa tồn kho",
+        "inventoryCaption": "Khuyến nghị tồn kho được hỗ trợ bởi AI"
+      }
+    },
+    "geofencing": {
+      "title": "Geofencing & Theo Dõi Vị Trí",
+      "subtitle": "Quản Lý Thông Minh Dựa Trên Vị Trí",
+      "overview": {
+        "heading": "Trí Tuệ Vị Trí Nâng Cao",
+        "content": "Đảm bảo theo dõi thời gian chính xác và cải thiện trách nhiệm giải trình với chấm công vào/ra dựa trên GPS. Tạo ranh giới ảo xung quanh các địa điểm làm việc và nhận thông báo tức thì khi nhân viên vào hoặc rời khỏi các khu vực được chỉ định."
+      },
+      "features": {
+        "heading": "Tính Năng Quản Lý Vị Trí",
+        "1": "Chấm công vào/ra dựa trên GPS với xác minh vị trí",
+        "2": "Tạo vùng geofence không giới hạn",
+        "3": "Vị trí nhân viên thời gian thực trong giờ làm việc",
+        "4": "Tạo bảng chấm công tự động",
+        "5": "Theo dõi quãng đường cho tài xế giao hàng",
+        "6": "Xác minh thăm quan địa điểm cho đội ngũ thực địa",
+        "7": "Tập trung vào quyền riêng tư với sự đồng ý của nhân viên",
+        "8": "Lịch sử vị trí chi tiết và báo cáo"
+      },
+      "compliance": {
+        "heading": "Quyền Riêng Tư & Tuân Thủ",
+        "content": "Tuân thủ đầy đủ GDPR và luật quyền riêng tư. Quản lý sự đồng ý của nhân viên. Theo dõi vị trí chỉ trong giờ làm việc. Chính sách sử dụng dữ liệu minh bạch."
+      },
+      "images": {
+        "map": "Giao diện bản đồ geofence",
+        "mapCaption": "Tạo và quản lý vùng làm việc dễ dàng",
+        "tracking": "Dashboard theo dõi nhân viên",
+        "trackingCaption": "Tổng quan vị trí đội ngũ thời gian thực",
+        "reports": "Báo cáo vị trí",
+        "reportsCaption": "Phân tích vị trí chi tiết"
+      }
+    },
+    "mobilemoney": {
+      "title": "Thanh Toán Mobile Money",
+      "subtitle": "Chấp Nhận Thanh Toán Từ Hàng Tỷ Người Dùng Trên Thế Giới",
+      "overview": {
+        "heading": "Chấp Nhận Thanh Toán Toàn Cầu",
+        "content": "Phá vỡ rào cản thanh toán và tiếp cận khách hàng ở mọi nơi. Mobile money là phương thức thanh toán được ưa thích bởi hàng tỷ người trên toàn cầu, đặc biệt là ở các thị trường mới nổi. Với Dott, bạn có thể chấp nhận thanh toán từ người dùng M-Pesa ngay hôm nay, với nhiều nhà cung cấp mobile money khác sắp ra mắt."
+      },
+      "current": {
+        "heading": "Hiện Tại Có Sẵn",
+        "1": "M-Pesa (Kenya) - Hơn 30 triệu người dùng hoạt động",
+        "2": "Thẻ Tín Dụng và Ghi Nợ (Visa, Mastercard, Amex)",
+        "3": "Chuyển khoản ngân hàng và thanh toán ACH",
+        "4": "Thanh toán tiền mặt (được theo dõi trong hệ thống)"
+      },
+      "coming": {
+        "heading": "Sắp Ra Mắt",
+        "1": "MTN Mobile Money - 180+ triệu người dùng trên khắp châu Phi",
+        "2": "Airtel Money - 125+ triệu người dùng ở châu Phi và châu Á",
+        "3": "Orange Money - 70+ triệu người dùng ở châu Phi và Trung Đông",
+        "4": "GCash (Philippines) - 81+ triệu người dùng đã đăng ký",
+        "5": "Paytm (Ấn Độ) - 350+ triệu người dùng",
+        "6": "Pix (Brazil) - 140+ triệu người dùng",
+        "7": "Mercado Pago - 80+ triệu người dùng ở Mỹ Latinh",
+        "8": "bKash (Bangladesh), OVO (Indonesia), và nhiều hơn nữa"
+      },
+      "benefits": {
+        "heading": "Tại Sao Mobile Money Quan Trọng",
+        "content": "Thanh toán tức thì với phí giao dịch thấp hơn. Không cần tài khoản ngân hàng cho khách hàng. Tiếp cận những người không có tài khoản ngân hàng. Cho phép giao dịch xuyên biên giới. Hoàn hảo cho các giao dịch nhỏ và mua sắm hàng ngày."
+      },
+      "images": {
+        "options": "Tùy chọn thanh toán mobile money",
+        "optionsCaption": "Nhiều phương thức thanh toán trong một nền tảng",
+        "mpesa": "Quy trình thanh toán M-Pesa",
+        "mpesaCaption": "Tích hợp M-Pesa đơn giản và an toàn",
+        "global": "Bản đồ phủ sóng thanh toán toàn cầu",
+        "globalCaption": "Phủ sóng mobile money trên toàn thế giới"
+      }
+    },
+    "whatsapp": {
+      "title": "WhatsApp Business",
+      "subtitle": "Chuyển Đổi Giao Tiếp Khách Hàng",
+      "overview": {
+        "heading": "Tích Hợp WhatsApp Business Tất Cả Trong Một",
+        "content": "Kết nối với khách hàng của bạn trên nền tảng nhắn tin phổ biến nhất thế giới. Tạo catalog sản phẩm tuyệt đẹp, tự động hóa việc gửi hóa đơn và biên lai, cung cấp hỗ trợ khách hàng tức thì, và biến cuộc trò chuyện thành doanh số. Với hơn 2 tỷ người dùng trên toàn thế giới, WhatsApp Business là thiết yếu cho việc tương tác khách hàng hiện đại."
+      },
+      "features": {
+        "heading": "Tính Năng WhatsApp Business Chính",
+        "1": "Catalog kinh doanh chuyên nghiệp với ảnh và mô tả sản phẩm",
+        "2": "Gửi hóa đơn và biên lai tự động cho khách hàng",
+        "3": "Hỗ trợ khách hàng tức thì và chat trực tiếp",
+        "4": "Tin nhắn broadcast cho khuyến mại và thông báo",
+        "5": "Quản lý đơn hàng trực tiếp qua WhatsApp",
+        "6": "Xác nhận thanh toán và thông báo giao dịch",
+        "7": "Trả lời nhanh và phản hồi tự động",
+        "8": "Đồng bộ dữ liệu khách hàng với danh bạ kinh doanh của bạn"
+      },
+      "benefits": {
+        "heading": "Lợi Ích Cho Doanh Nghiệp Của Bạn",
+        "content": "Tiếp cận khách hàng nơi họ đã có mặt. Tăng tỷ lệ chuyển đổi bán hàng với giao tiếp tức thì. Giảm chi phí dịch vụ khách hàng với phản hồi tự động. Xây dựng mối quan hệ khách hàng mạnh mẽ hơn thông qua tin nhắn được cá nhân hóa."
+      },
+      "images": {
+        "catalog": "Catalog WhatsApp Business",
+        "catalogCaption": "Trưng bày sản phẩm đẹp mắt trong WhatsApp",
+        "invoice": "Gửi hóa đơn tự động",
+        "invoiceCaption": "Gửi hóa đơn tức thì qua WhatsApp",
+        "support": "Chat hỗ trợ khách hàng",
+        "supportCaption": "Cung cấp trợ giúp tức thì và xây dựng mối quan hệ"
+      }
+    },
+    "languages": {
+      "title": "Hỗ Trợ 20+ Ngôn Ngữ",
+      "subtitle": "Nói Ngôn Ngữ Của Khách Hàng Bạn",
+      "overview": {
+        "heading": "Khả Năng Tiếp Cận Toàn Cầu Thực Sự",
+        "content": "Dott có sẵn bằng hơn 20 ngôn ngữ, làm cho nó có thể tiếp cận được với các doanh nghiệp trên toàn thế giới. Mọi tính năng, nút bấm và tin nhắn đều được dịch hoàn toàn bởi người bản địa để đảm bảo tính rõ ràng và phù hợp về văn hóa."
+      },
+      "supported": {
+        "heading": "Ngôn Ngữ Được Hỗ Trợ"
+      },
+      "benefits": {
+        "heading": "Lợi Ích Của Hỗ Trợ Đa Ngôn Ngữ",
+        "content": "Phục vụ khách hàng bằng ngôn ngữ họ ưa thích. Mở rộng ra thị trường mới một cách dễ dàng. Đào tạo nhân viên nhanh hơn với hỗ trợ ngôn ngữ bản địa. Xây dựng niềm tin với nội dung được bản địa hóa."
+      },
+      "images": {
+        "selector": "Bộ chọn ngôn ngữ",
+        "selectorCaption": "Chuyển đổi ngôn ngữ tức thì",
+        "interface": "Giao diện đa ngôn ngữ",
+        "interfaceCaption": "Giao diện người dùng được dịch hoàn toàn",
+        "map": "Bản đồ có sẵn toàn cầu",
+        "mapCaption": "Có sẵn trên toàn thế giới bằng ngôn ngữ địa phương"
+      }
+    }
+  },
   "cookieBanner": {
     "title": "Thông báo Cookie",
     "message": "Chúng tôi sử dụng cookie để nâng cao trải nghiệm của bạn, phân tích việc sử dụng và cung cấp chức năng thiết yếu. Bằng cách tiếp tục sử dụng trang web của chúng tôi, bạn đồng ý với việc sử dụng cookie của chúng tôi.",
