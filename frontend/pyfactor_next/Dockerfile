@@ -1,6 +1,6 @@
 # ========================================
 # Stage 1: Base image with pnpm
-# Cache bust: 2025-06-23-v2
+# Cache bust: 2025-07-22-v1
 # ========================================
 FROM node:18-alpine AS base
 # Install system dependencies
