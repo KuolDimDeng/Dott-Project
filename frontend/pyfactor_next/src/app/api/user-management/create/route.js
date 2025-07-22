@@ -60,7 +60,7 @@ export async function POST(request) {
     const backendData = {
       email: userData.email,
       role: userData.role || 'USER',
-      permissions: userData.permissions || [],
+      page_permissions: userData.page_permissions || [],
       send_password_reset: true, // Always send password reset email for new users
       onboarding_completed: true, // Skip onboarding for invited users
       create_employee: userData.create_employee || false,

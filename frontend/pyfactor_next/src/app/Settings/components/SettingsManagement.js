@@ -142,23 +142,7 @@ const SettingsManagement = () => {
   }, [activeSection, availableSections]);
 
   return (
-    <>
-      <style jsx>{`
-        .settings-tabs-scroll::-webkit-scrollbar {
-          height: 6px;
-        }
-        .settings-tabs-scroll::-webkit-scrollbar-track {
-          background: #f1f1f1;
-        }
-        .settings-tabs-scroll::-webkit-scrollbar-thumb {
-          background: #888;
-          border-radius: 3px;
-        }
-        .settings-tabs-scroll::-webkit-scrollbar-thumb:hover {
-          background: #555;
-        }
-      `}</style>
-      <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="py-6">
@@ -168,41 +152,38 @@ const SettingsManagement = () => {
           </p>
         </div>
 
-        {/* Tab Navigation - Responsive */}
+        {/* Tab Navigation - Responsive Grid */}
         <div className="bg-white shadow-sm rounded-lg mb-6">
-          <div className="border-b border-gray-200 overflow-x-auto settings-tabs-scroll">
-            <nav className="-mb-px flex min-w-full px-4 sm:px-6" aria-label="Settings tabs">
-              <div className="flex space-x-4 sm:space-x-6 md:space-x-8">
-                {availableSections.map((section) => {
-                  const Icon = section.icon;
-                  const isActive = activeSection === section.id;
-                  
-                  return (
-                    <button
-                      key={section.id}
-                      onClick={() => setActiveSection(section.id)}
-                      className={`
-                        group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm
-                        transition-all duration-200 whitespace-nowrap
-                        ${isActive 
-                          ? 'border-blue-500 text-blue-600' 
-                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                        }
-                      `}
-                    >
-                      <Icon 
-                        className={`mr-1.5 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 ${
-                          isActive 
-                            ? 'text-blue-600' 
-                            : 'text-gray-400 group-hover:text-gray-500'
-                        }`} 
-                      />
-                      <span className="hidden sm:inline">{section.title}</span>
-                      <span className="sm:hidden">{section.title.split(' ')[0]}</span>
-                    </button>
-                  );
-                })}
-              </div>
+          <div className="border-b border-gray-200">
+            <nav className="-mb-px grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-8" aria-label="Settings tabs">
+              {availableSections.map((section) => {
+                const Icon = section.icon;
+                const isActive = activeSection === section.id;
+                
+                return (
+                  <button
+                    key={section.id}
+                    onClick={() => setActiveSection(section.id)}
+                    className={`
+                      group flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-3 sm:py-4 px-2 border-b-2 font-medium text-xs sm:text-sm
+                      transition-all duration-200
+                      ${isActive 
+                        ? 'border-blue-500 text-blue-600' 
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }
+                    `}
+                  >
+                    <Icon 
+                      className={`h-5 w-5 ${
+                        isActive 
+                          ? 'text-blue-600' 
+                          : 'text-gray-400 group-hover:text-gray-500'
+                      }`} 
+                    />
+                    <span className="text-center">{section.title}</span>
+                  </button>
+                );
+              })}
             </nav>
           </div>
         </div>
@@ -228,7 +209,6 @@ const SettingsManagement = () => {
         </main>
       </div>
     </div>
-    </>
   );
 };
 

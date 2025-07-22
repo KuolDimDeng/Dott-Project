@@ -789,6 +789,9 @@ const GeofencingSettings = ({ user, isOwner, isAdmin, notifySuccess, notifyError
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedGeofence, setSelectedGeofence] = useState(null);
+  
+  // Debug: Log initial render
+  console.log('[GeofencingSettings] 🎬 Component rendered with isOwner:', isOwner, 'isAdmin:', isAdmin);
 
   // Debug state changes
   useEffect(() => {
@@ -797,8 +800,18 @@ const GeofencingSettings = ({ user, isOwner, isAdmin, notifySuccess, notifyError
     console.log('[GeofencingSettings] 🔄 State change - legalAccepted:', legalAccepted);
   }, [showCreateForm, showLegalCompliance, legalAccepted]);
 
+  // Load geofences on mount
   useEffect(() => {
-    console.log('[GeofencingSettings] 🔧 useEffect triggered - isOwner:', isOwner, 'isAdmin:', isAdmin);
+    console.log('[GeofencingSettings] 🔧 === MOUNT EFFECT TRIGGERED ===');
+    console.log('[GeofencingSettings] 🔧 isOwner:', isOwner, 'type:', typeof isOwner);
+    console.log('[GeofencingSettings] 🔧 isAdmin:', isAdmin, 'type:', typeof isAdmin);
+    
+    // Reset stuck state on mount
+    if (showEmployeeAssignment && !newlyCreatedGeofence) {
+      console.log('[GeofencingSettings] 🧹 Cleaning up stuck employee assignment state');
+      setShowEmployeeAssignment(false);
+    }
+    
     if (isOwner || isAdmin) {
       console.log('[GeofencingSettings] 👤 User has permissions, loading geofences...');
       loadGeofences();
@@ -806,6 +819,15 @@ const GeofencingSettings = ({ user, isOwner, isAdmin, notifySuccess, notifyError
       console.log('[GeofencingSettings] 🚫 User does not have owner/admin permissions');
     }
   }, [isOwner, isAdmin]);
+  
+  // Also load on initial mount regardless
+  useEffect(() => {
+    console.log('[GeofencingSettings] 🚀 === INITIAL MOUNT ===');
+    if (isOwner === true || isAdmin === true) {
+      console.log('[GeofencingSettings] 📡 Loading geofences on initial mount');
+      loadGeofences();
+    }
+  }, []);
 
   const loadGeofences = async () => {
     try {
@@ -1036,10 +1058,13 @@ const GeofencingSettings = ({ user, isOwner, isAdmin, notifySuccess, notifyError
           <h3 className="text-lg font-medium text-gray-900">Active Geofences</h3>
           <button
             onClick={async () => {
-              console.log('[GeofencingSettings] Manual refresh triggered');
+              console.log('[GeofencingSettings] 🔄 === MANUAL REFRESH TRIGGERED ===');
+              console.log('[GeofencingSettings] 🧹 Clearing stuck states...');
               setShowEmployeeAssignment(false);
               setNewlyCreatedGeofence(null);
+              console.log('[GeofencingSettings] 📡 Calling loadGeofences...');
               await loadGeofences();
+              console.log('[GeofencingSettings] ✅ Refresh complete');
             }}
             className="flex items-center px-3 py-1 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 transition-colors"
           >

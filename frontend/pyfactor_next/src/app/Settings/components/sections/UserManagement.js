@@ -36,6 +36,19 @@ import { logger } from '@/utils/logger';
 import { usePermissions } from '@/hooks/usePermissions';
 import { FieldTooltip } from '@/components/ui/FieldTooltip';
 
+// Define pages that support read/write permissions
+const PAGES_WITH_WRITE_ACCESS = [
+  'create-new-product', 'create-new-service', 'create-new-customer', 'create-new-vendor',
+  'sales-products', 'sales-services', 'sales-customers', 'sales-estimates', 'sales-orders', 'sales-invoices',
+  'inventory-stock', 'inventory-locations', 'inventory-suppliers',
+  'payments-receive', 'payments-make', 'payments-methods', 'payments-recurring', 'payments-refunds',
+  'hr-employees', 'hr-timesheets', 'hr-benefits', 'hr-performance',
+  'banking-transactions', 'banking-reconciliation',
+  'purchases-orders', 'purchases-bills', 'purchases-expenses', 'purchases-vendors',
+  'payroll-run', 'payroll-schedule',
+  'taxes-forms', 'taxes-filing'
+];
+
 // Define the complete menu structure based on listItems.js
 const MENU_STRUCTURE = [
   {
@@ -43,15 +56,15 @@ const MENU_STRUCTURE = [
     label: 'Create New',
     icon: PlusIcon,
     subItems: [
-      { id: 'create-new-transaction', label: 'Transaction', path: '/dashboard/transactions/new' },
-      { id: 'create-new-pos', label: 'Point of Sale', path: '/dashboard/pos' },
-      { id: 'create-new-product', label: 'Product', path: '/dashboard/products/new' },
-      { id: 'create-new-service', label: 'Service', path: '/dashboard/services/new' },
-      { id: 'create-new-invoice', label: 'Invoice', path: '/dashboard/invoices/new' },
-      { id: 'create-new-bill', label: 'Bill', path: '/dashboard/bills/new' },
-      { id: 'create-new-estimate', label: 'Estimate', path: '/dashboard/estimates/new' },
-      { id: 'create-new-customer', label: 'Customer', path: '/dashboard/customers/new' },
-      { id: 'create-new-vendor', label: 'Vendor', path: '/dashboard/vendors/new' }
+      { id: 'create-new-transaction', label: 'Transaction', path: '/dashboard/transactions/new', hasWriteAccess: true },
+      { id: 'create-new-pos', label: 'Point of Sale', path: '/dashboard/pos', hasWriteAccess: true },
+      { id: 'create-new-product', label: 'Product', path: '/dashboard/products/new', hasWriteAccess: true },
+      { id: 'create-new-service', label: 'Service', path: '/dashboard/services/new', hasWriteAccess: true },
+      { id: 'create-new-invoice', label: 'Invoice', path: '/dashboard/invoices/new', hasWriteAccess: true },
+      { id: 'create-new-bill', label: 'Bill', path: '/dashboard/bills/new', hasWriteAccess: true },
+      { id: 'create-new-estimate', label: 'Estimate', path: '/dashboard/estimates/new', hasWriteAccess: true },
+      { id: 'create-new-customer', label: 'Customer', path: '/dashboard/customers/new', hasWriteAccess: true },
+      { id: 'create-new-vendor', label: 'Vendor', path: '/dashboard/vendors/new', hasWriteAccess: true }
     ]
   },
   {
@@ -74,12 +87,12 @@ const MENU_STRUCTURE = [
     icon: ShoppingCartIcon,
     subItems: [
       { id: 'sales-dashboard', label: 'Dashboard', path: '/dashboard/sales' },
-      { id: 'sales-products', label: 'Products', path: '/dashboard/products' },
-      { id: 'sales-services', label: 'Services', path: '/dashboard/services' },
-      { id: 'sales-customers', label: 'Customers', path: '/dashboard/customers' },
-      { id: 'sales-estimates', label: 'Estimates', path: '/dashboard/estimates' },
-      { id: 'sales-orders', label: 'Orders', path: '/dashboard/orders' },
-      { id: 'sales-invoices', label: 'Invoices', path: '/dashboard/invoices' },
+      { id: 'sales-products', label: 'Products', path: '/dashboard/products', hasWriteAccess: true },
+      { id: 'sales-services', label: 'Services', path: '/dashboard/services', hasWriteAccess: true },
+      { id: 'sales-customers', label: 'Customers', path: '/dashboard/customers', hasWriteAccess: true },
+      { id: 'sales-estimates', label: 'Estimates', path: '/dashboard/estimates', hasWriteAccess: true },
+      { id: 'sales-orders', label: 'Orders', path: '/dashboard/orders', hasWriteAccess: true },
+      { id: 'sales-invoices', label: 'Invoices', path: '/dashboard/invoices', hasWriteAccess: true },
       { id: 'sales-reports', label: 'Reports', path: '/dashboard/sales/reports' }
     ]
   },
@@ -89,9 +102,9 @@ const MENU_STRUCTURE = [
     icon: CubeIcon,
     subItems: [
       { id: 'inventory-dashboard', label: 'Dashboard', path: '/dashboard/inventory' },
-      { id: 'inventory-stock', label: 'Stock Adjustments', path: '/dashboard/inventory/stock' },
-      { id: 'inventory-locations', label: 'Locations', path: '/dashboard/inventory/locations' },
-      { id: 'inventory-suppliers', label: 'Suppliers', path: '/dashboard/inventory/suppliers' },
+      { id: 'inventory-stock', label: 'Stock Adjustments', path: '/dashboard/inventory/stock', hasWriteAccess: true },
+      { id: 'inventory-locations', label: 'Locations', path: '/dashboard/inventory/locations', hasWriteAccess: true },
+      { id: 'inventory-suppliers', label: 'Suppliers', path: '/dashboard/inventory/suppliers', hasWriteAccess: true },
       { id: 'inventory-reports', label: 'Reports', path: '/dashboard/inventory/reports' }
     ]
   },
@@ -101,11 +114,11 @@ const MENU_STRUCTURE = [
     icon: CreditCardIcon,
     subItems: [
       { id: 'payments-dashboard', label: 'Dashboard', path: '/dashboard/payments' },
-      { id: 'payments-receive', label: 'Receive Payments', path: '/dashboard/payments/receive' },
-      { id: 'payments-make', label: 'Make Payments', path: '/dashboard/payments/make' },
-      { id: 'payments-methods', label: 'Payment Methods', path: '/dashboard/payments/methods' },
-      { id: 'payments-recurring', label: 'Recurring Payments', path: '/dashboard/payments/recurring' },
-      { id: 'payments-refunds', label: 'Refunds', path: '/dashboard/payments/refunds' }
+      { id: 'payments-receive', label: 'Receive Payments', path: '/dashboard/payments/receive', hasWriteAccess: true },
+      { id: 'payments-make', label: 'Make Payments', path: '/dashboard/payments/make', hasWriteAccess: true },
+      { id: 'payments-methods', label: 'Payment Methods', path: '/dashboard/payments/methods', hasWriteAccess: true },
+      { id: 'payments-recurring', label: 'Recurring Payments', path: '/dashboard/payments/recurring', hasWriteAccess: true },
+      { id: 'payments-refunds', label: 'Refunds', path: '/dashboard/payments/refunds', hasWriteAccess: true }
     ]
   },
   {
@@ -114,10 +127,10 @@ const MENU_STRUCTURE = [
     icon: UserGroupIcon,
     subItems: [
       { id: 'hr-dashboard', label: 'Dashboard', path: '/dashboard/hr' },
-      { id: 'hr-employees', label: 'Employees', path: '/dashboard/employees' },
-      { id: 'hr-timesheets', label: 'Timesheets', path: '/dashboard/timesheets' },
-      { id: 'hr-benefits', label: 'Benefits', path: '/dashboard/benefits' },
-      { id: 'hr-performance', label: 'Performance', path: '/dashboard/performance' }
+      { id: 'hr-employees', label: 'Employees', path: '/dashboard/employees', hasWriteAccess: true },
+      { id: 'hr-timesheets', label: 'Timesheets', path: '/dashboard/timesheets', hasWriteAccess: true },
+      { id: 'hr-benefits', label: 'Benefits', path: '/dashboard/benefits', hasWriteAccess: true },
+      { id: 'hr-performance', label: 'Performance', path: '/dashboard/performance', hasWriteAccess: true }
     ]
   },
   {
@@ -127,8 +140,8 @@ const MENU_STRUCTURE = [
     subItems: [
       { id: 'banking-dashboard', label: 'Dashboard', path: '/dashboard/banking' },
       { id: 'banking-connect', label: 'Connect Bank', path: '/dashboard/banking/connect' },
-      { id: 'banking-transactions', label: 'Transactions', path: '/dashboard/banking/transactions' },
-      { id: 'banking-reconciliation', label: 'Reconciliation', path: '/dashboard/banking/reconciliation' },
+      { id: 'banking-transactions', label: 'Transactions', path: '/dashboard/banking/transactions', hasWriteAccess: true },
+      { id: 'banking-reconciliation', label: 'Reconciliation', path: '/dashboard/banking/reconciliation', hasWriteAccess: true },
       { id: 'banking-reports', label: 'Bank Reports', path: '/dashboard/banking/bank-reports' }
     ]
   },
@@ -138,10 +151,10 @@ const MENU_STRUCTURE = [
     icon: ShoppingBagIcon,
     subItems: [
       { id: 'purchases-dashboard', label: 'Dashboard', path: '/dashboard/purchases' },
-      { id: 'purchases-orders', label: 'Purchase Orders', path: '/dashboard/purchases/orders' },
-      { id: 'purchases-bills', label: 'Bills', path: '/dashboard/bills' },
-      { id: 'purchases-expenses', label: 'Expenses', path: '/dashboard/expenses' },
-      { id: 'purchases-vendors', label: 'Vendors', path: '/dashboard/vendors' },
+      { id: 'purchases-orders', label: 'Purchase Orders', path: '/dashboard/purchases/orders', hasWriteAccess: true },
+      { id: 'purchases-bills', label: 'Bills', path: '/dashboard/bills', hasWriteAccess: true },
+      { id: 'purchases-expenses', label: 'Expenses', path: '/dashboard/expenses', hasWriteAccess: true },
+      { id: 'purchases-vendors', label: 'Vendors', path: '/dashboard/vendors', hasWriteAccess: true },
       { id: 'purchases-reports', label: 'Purchase Reports', path: '/dashboard/purchases/reports' }
     ]
   },
@@ -151,8 +164,8 @@ const MENU_STRUCTURE = [
     icon: BriefcaseIcon,
     subItems: [
       { id: 'payroll-dashboard', label: 'Dashboard', path: '/dashboard/payroll' },
-      { id: 'payroll-run', label: 'Run Payroll', path: '/dashboard/payroll/run' },
-      { id: 'payroll-schedule', label: 'Payroll Schedule', path: '/dashboard/payroll/schedule' },
+      { id: 'payroll-run', label: 'Run Payroll', path: '/dashboard/payroll/run', hasWriteAccess: true },
+      { id: 'payroll-schedule', label: 'Payroll Schedule', path: '/dashboard/payroll/schedule', hasWriteAccess: true },
       { id: 'payroll-settings', label: 'Payroll Settings', path: '/dashboard/payroll/settings' },
       { id: 'payroll-reports', label: 'Payroll Reports', path: '/dashboard/payroll/reports' },
       { id: 'payroll-export', label: 'Export Reports', path: '/dashboard/payroll/export-report' }
@@ -164,8 +177,8 @@ const MENU_STRUCTURE = [
     icon: DocumentTextIcon,
     subItems: [
       { id: 'taxes-dashboard', label: 'Dashboard', path: '/dashboard/taxes' },
-      { id: 'taxes-forms', label: 'Tax Forms', path: '/dashboard/taxes/forms' },
-      { id: 'taxes-filing', label: 'Tax Filing', path: '/dashboard/taxes/filing' },
+      { id: 'taxes-forms', label: 'Tax Forms', path: '/dashboard/taxes/forms', hasWriteAccess: true },
+      { id: 'taxes-filing', label: 'Tax Filing', path: '/dashboard/taxes/filing', hasWriteAccess: true },
       { id: 'taxes-deadlines', label: 'Tax Deadlines', path: '/dashboard/taxes/deadlines' },
       { id: 'taxes-settings', label: 'Tax Settings', path: '/dashboard/taxes/settings' },
       { id: 'taxes-reports', label: 'Tax Reports', path: '/dashboard/taxes/reports' }
@@ -225,7 +238,7 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
   const [inviteData, setInviteData] = useState({
     email: '',
     role: 'USER',
-    permissions: [],
+    permissions: {}, // Now stores { pageId: { canAccess: true, canWrite: false } }
     createEmployee: false,
     linkEmployee: false,
     selectedEmployeeId: '',
@@ -242,7 +255,7 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
   const [editingUserId, setEditingUserId] = useState(null); // For inline editing
   const [deleteConfirmUser, setDeleteConfirmUser] = useState(null);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
-  const [editingPermissions, setEditingPermissions] = useState({});
+  const [editingPermissions, setEditingPermissions] = useState({}); // Now stores { userId: { pageId: { canAccess: true, canWrite: false } } }
 
   const fetchUsers = async () => {
     console.log('🔴 [UserManagement] === FETCH USERS CALLED ===');
@@ -466,20 +479,58 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
       
       if (response.ok) {
         const permissionsData = await response.json();
+        
+        // Convert permissions to new format if needed
+        const formattedPermissions = {};
+        const perms = permissionsData.permissions || [];
+        
+        if (Array.isArray(perms)) {
+          perms.forEach(perm => {
+            if (typeof perm === 'string') {
+              formattedPermissions[perm] = { canAccess: true, canWrite: false };
+            } else if (perm && typeof perm === 'object' && perm.page) {
+              formattedPermissions[perm.page] = { 
+                canAccess: perm.can_read || false, 
+                canWrite: perm.can_write || false 
+              };
+            }
+          });
+        } else if (typeof perms === 'object') {
+          Object.assign(formattedPermissions, perms);
+        }
+        
         setEditingPermissions({
-          [userToEdit.id]: permissionsData.permissions || []
+          [userToEdit.id]: formattedPermissions
         });
       } else {
         // Fallback to local permissions if fetch fails
+        const formattedPermissions = {};
+        if (Array.isArray(userToEdit.permissions)) {
+          userToEdit.permissions.forEach(perm => {
+            formattedPermissions[perm] = { canAccess: true, canWrite: false };
+          });
+        } else if (userToEdit.permissions && typeof userToEdit.permissions === 'object') {
+          Object.assign(formattedPermissions, userToEdit.permissions);
+        }
+        
         setEditingPermissions({
-          [userToEdit.id]: userToEdit.permissions || []
+          [userToEdit.id]: formattedPermissions
         });
       }
     } catch (error) {
       logger.error('[UserManagement] Error fetching user permissions:', error);
       // Fallback to local permissions
+      const formattedPermissions = {};
+      if (Array.isArray(userToEdit.permissions)) {
+        userToEdit.permissions.forEach(perm => {
+          formattedPermissions[perm] = { canAccess: true, canWrite: false };
+        });
+      } else if (userToEdit.permissions && typeof userToEdit.permissions === 'object') {
+        Object.assign(formattedPermissions, userToEdit.permissions);
+      }
+      
       setEditingPermissions({
-        [userToEdit.id]: userToEdit.permissions || []
+        [userToEdit.id]: formattedPermissions
       });
     }
   };
@@ -591,14 +642,30 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
     try {
       setLoading(true);
       
-      const response = await fetch(`/api/user-management/users/${userId}/permissions`, {
-        method: 'PUT',
+      // Convert permissions to backend format
+      const permissions = editingPermissions[userId] || {};
+      const pagePermissions = [];
+      
+      Object.keys(permissions).forEach(pageId => {
+        if (permissions[pageId].canAccess) {
+          pagePermissions.push({
+            page_id: pageId,
+            can_read: true,
+            can_write: permissions[pageId].canWrite || false,
+            can_edit: permissions[pageId].canWrite || false,
+            can_delete: permissions[pageId].canWrite || false
+          });
+        }
+      });
+      
+      const response = await fetch(`/api/user-management/users/${userId}/update-permissions`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
         body: JSON.stringify({
-          permissions: editingPermissions[userId] || []
+          page_permissions: pagePermissions
         })
       });
 
@@ -612,7 +679,7 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
       // Update local state with the updated permissions
       setUsers(users.map(u => 
         u.id === userId 
-          ? { ...u, permissions: result.user?.permissions || editingPermissions[userId] || [] }
+          ? { ...u, permissions: permissions }
           : u
       ));
       
@@ -773,6 +840,22 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
     try {
       setLoading(true);
       
+      // Convert permissions to backend format
+      const permissions = inviteData.permissions || {};
+      const pagePermissions = [];
+      
+      Object.keys(permissions).forEach(pageId => {
+        if (permissions[pageId].canAccess) {
+          pagePermissions.push({
+            page_id: pageId,
+            can_read: true,
+            can_write: permissions[pageId].canWrite || false,
+            can_edit: permissions[pageId].canWrite || false,
+            can_delete: permissions[pageId].canWrite || false
+          });
+        }
+      });
+      
       // Call the updated API to create user directly
       const response = await fetch('/api/user-management/create', {
         method: 'POST',
@@ -782,7 +865,7 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
         body: JSON.stringify({
           email: inviteData.email,
           role: inviteData.role,
-          permissions: inviteData.permissions,
+          page_permissions: pagePermissions,
           create_employee: inviteData.createEmployee,
           link_employee: inviteData.linkEmployee,
           employee_id: inviteData.selectedEmployeeId,
@@ -806,7 +889,7 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
       setInviteData({ 
         email: '', 
         role: 'USER', 
-        permissions: [], 
+        permissions: {}, 
         createEmployee: false,
         linkEmployee: false,
         selectedEmployeeId: '',
@@ -863,19 +946,20 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
 
   const handlePermissionToggle = (permissionId) => {
     setInviteData(prev => {
-      const currentPermissions = prev.permissions;
-      const isCurrentlyChecked = currentPermissions.includes(permissionId);
+      const currentPermissions = { ...prev.permissions };
+      const currentPermission = currentPermissions[permissionId];
       
-      if (isCurrentlyChecked) {
+      if (currentPermission && currentPermission.canAccess) {
         // Unchecking: remove this permission and handle parent/child logic
-        let newPermissions = currentPermissions.filter(p => p !== permissionId);
+        delete currentPermissions[permissionId];
         
         // Find if this is a parent menu
         const parentMenu = MENU_STRUCTURE.find(menu => menu.id === permissionId);
         if (parentMenu && parentMenu.subItems) {
           // If unchecking a parent, remove all its children
-          const childIds = parentMenu.subItems.map(sub => sub.id);
-          newPermissions = newPermissions.filter(p => !childIds.includes(p));
+          parentMenu.subItems.forEach(sub => {
+            delete currentPermissions[sub.id];
+          });
         }
         
         // Find if this is a child menu and check if parent should be unchecked
@@ -884,33 +968,32 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
         );
         if (parentOfChild) {
           // Check if any other children of this parent are still checked
-          const siblingIds = parentOfChild.subItems.map(sub => sub.id);
-          const hasOtherCheckedSiblings = siblingIds.some(id => 
-            id !== permissionId && newPermissions.includes(id)
+          const hasOtherCheckedSiblings = parentOfChild.subItems.some(sub => 
+            sub.id !== permissionId && currentPermissions[sub.id]?.canAccess
           );
           
           // If no other children are checked, uncheck the parent
           if (!hasOtherCheckedSiblings) {
-            newPermissions = newPermissions.filter(p => p !== parentOfChild.id);
+            delete currentPermissions[parentOfChild.id];
           }
         }
-        
-        return {
-          ...prev,
-          permissions: newPermissions
-        };
       } else {
-        // Checking: add this permission and handle parent/child logic
-        let newPermissions = [...currentPermissions, permissionId];
+        // Checking: add this permission with default read-only access
+        currentPermissions[permissionId] = {
+          canAccess: true,
+          canWrite: false
+        };
         
         // Find if this is a parent menu
         const parentMenu = MENU_STRUCTURE.find(menu => menu.id === permissionId);
         if (parentMenu && parentMenu.subItems) {
-          // If checking a parent, add all its children
-          const childIds = parentMenu.subItems.map(sub => sub.id);
-          childIds.forEach(childId => {
-            if (!newPermissions.includes(childId)) {
-              newPermissions.push(childId);
+          // If checking a parent, add all its children with same access level
+          parentMenu.subItems.forEach(sub => {
+            if (!currentPermissions[sub.id]) {
+              currentPermissions[sub.id] = {
+                canAccess: true,
+                canWrite: false
+              };
             }
           });
         }
@@ -919,15 +1002,46 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
         const parentOfChild = MENU_STRUCTURE.find(menu => 
           menu.subItems && menu.subItems.some(sub => sub.id === permissionId)
         );
-        if (parentOfChild && !newPermissions.includes(parentOfChild.id)) {
-          newPermissions.push(parentOfChild.id);
+        if (parentOfChild && !currentPermissions[parentOfChild.id]) {
+          currentPermissions[parentOfChild.id] = {
+            canAccess: true,
+            canWrite: false
+          };
         }
-        
-        return {
-          ...prev,
-          permissions: newPermissions
-        };
       }
+      
+      return {
+        ...prev,
+        permissions: currentPermissions
+      };
+    });
+  };
+
+  const handlePermissionLevelChange = (permissionId, level) => {
+    setInviteData(prev => {
+      const currentPermissions = { ...prev.permissions };
+      
+      if (currentPermissions[permissionId]) {
+        currentPermissions[permissionId] = {
+          canAccess: true,
+          canWrite: level === 'write'
+        };
+        
+        // Update children if this is a parent
+        const parentMenu = MENU_STRUCTURE.find(menu => menu.id === permissionId);
+        if (parentMenu && parentMenu.subItems) {
+          parentMenu.subItems.forEach(sub => {
+            if (currentPermissions[sub.id]) {
+              currentPermissions[sub.id] = {
+                canAccess: true,
+                canWrite: level === 'write'
+              };
+            }
+          });
+        }
+      }
+      
+      return { ...prev, permissions: currentPermissions };
     });
   };
 
@@ -1048,7 +1162,7 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
                 setInviteData({
                   email: '',
                   role: 'USER',
-                  permissions: [],
+                  permissions: {},
                   createEmployee: false,
                   linkEmployee: false,
                   selectedEmployeeId: '',
@@ -1269,7 +1383,7 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
                         <input
                           type="checkbox"
                           id={`inline-${menu.id}`}
-                          checked={inviteData.permissions.includes(menu.id)}
+                          checked={!!inviteData.permissions[menu.id]?.canAccess}
                           onChange={() => handlePermissionToggle(menu.id)}
                           className="h-4 w-4 text-blue-600 rounded border-gray-300"
                         />
@@ -1299,13 +1413,24 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
                               <input
                                 type="checkbox"
                                 id={`inline-${subItem.id}`}
-                                checked={inviteData.permissions.includes(subItem.id)}
+                                checked={!!inviteData.permissions[subItem.id]?.canAccess}
                                 onChange={() => handlePermissionToggle(subItem.id)}
                                 className="h-4 w-4 text-blue-600 rounded border-gray-300"
                               />
-                              <label htmlFor={`inline-${subItem.id}`} className="ml-2 text-sm text-gray-700">
+                              <label htmlFor={`inline-${subItem.id}`} className="ml-2 text-sm text-gray-700 flex-1">
                                 {subItem.label}
                               </label>
+                              {subItem.hasWriteAccess && inviteData.permissions[subItem.id]?.canAccess && (
+                                <select
+                                  value={inviteData.permissions[subItem.id]?.canWrite ? 'write' : 'read'}
+                                  onChange={(e) => handlePermissionLevelChange(subItem.id, e.target.value)}
+                                  className="ml-2 text-xs px-2 py-1 border border-gray-300 rounded"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <option value="read">Read Only</option>
+                                  <option value="write">Read/Write</option>
+                                </select>
+                              )}
                             </div>
                           ))}
                         </div>
@@ -1337,7 +1462,7 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
                 setInviteData({
                   email: '',
                   role: 'USER',
-                  permissions: [],
+                  permissions: {},
                   createEmployee: false,
                   linkEmployee: false,
                   selectedEmployeeId: '',
@@ -1498,7 +1623,8 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
                       </h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {MENU_STRUCTURE.map((menu) => {
-                          const isParentChecked = (editingPermissions[userItem.id] || userItem.permissions || []).includes(menu.id);
+                          const permissions = editingPermissions[userItem.id] || {};
+                          const isParentChecked = !!permissions[menu.id]?.canAccess;
                           const Icon = menu.icon;
                           
                           return (
@@ -1523,7 +1649,7 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
                               {menu.subItems && (
                                 <div className="ml-6 space-y-1">
                                   {menu.subItems.map((subItem) => {
-                                    const isSubChecked = (editingPermissions[userItem.id] || userItem.permissions || []).includes(subItem.id);
+                                    const isSubChecked = !!permissions[subItem.id]?.canAccess;
                                     return (
                                       <div key={subItem.id} className="flex items-center">
                                         <input
@@ -1535,10 +1661,21 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
                                         />
                                         <label 
                                           htmlFor={`edit-${userItem.id}-${subItem.id}`} 
-                                          className="ml-2 text-xs text-gray-700 cursor-pointer"
+                                          className="ml-2 text-xs text-gray-700 cursor-pointer flex-1"
                                         >
                                           {subItem.label}
                                         </label>
+                                        {subItem.hasWriteAccess && permissions[subItem.id]?.canAccess && (
+                                          <select
+                                            value={permissions[subItem.id]?.canWrite ? 'write' : 'read'}
+                                            onChange={(e) => handleInlinePermissionLevelChange(userItem.id, subItem.id, e.target.value)}
+                                            className="ml-2 text-xs px-2 py-0.5 border border-gray-300 rounded"
+                                            onClick={(e) => e.stopPropagation()}
+                                          >
+                                            <option value="read">Read Only</option>
+                                            <option value="write">Read/Write</option>
+                                          </select>
+                                        )}
                                       </div>
                                     );
                                   })}
