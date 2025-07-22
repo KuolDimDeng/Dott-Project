@@ -1235,9 +1235,9 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
             </button>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Left Column - Basic Info */}
-            <div className="space-y-4">
+            <div className="space-y-4 md:col-span-1">
               <div>
                 <div className="mb-1">
                   <label className="block text-sm font-medium text-gray-700">
@@ -1422,8 +1422,8 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
 
             {/* Right Column - Permissions */}
             {inviteData.role === 'USER' && (
-              <div>
-                <div className="mb-2">
+              <div className="md:col-span-2">
+                <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700">
                     Page Permissions
                     <FieldTooltip content="Select which pages this user can access" />
@@ -1432,74 +1432,75 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
                     Select which pages and features this user will have access to in the system
                   </p>
                 </div>
-                <div className="border border-gray-200 rounded-lg p-4 max-h-[400px] overflow-y-auto">
-                  {MENU_STRUCTURE.map((menu) => (
-                    <div key={menu.id} className="mb-4">
-                      <div className="flex items-center">
-                        <input
-                          type="checkbox"
-                          id={`inline-${menu.id}`}
-                          checked={!!inviteData.permissions[menu.id]?.canAccess}
-                          onChange={() => handlePermissionToggle(menu.id)}
-                          className="h-4 w-4 text-blue-600 rounded border-gray-300"
-                        />
-                        <label htmlFor={`inline-${menu.id}`} className="ml-2 font-medium text-gray-900 flex items-center">
-                          <menu.icon className="h-4 w-4 text-gray-600 mr-2" />
-                          {menu.label}
-                        </label>
-                        {menu.subItems && (
-                          <button
-                            type="button"
-                            onClick={() => toggleMenuExpansion(menu.id)}
-                            className="ml-2"
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {MENU_STRUCTURE.map((menu) => {
+                    const Icon = menu.icon;
+                    const isParentChecked = !!inviteData.permissions[menu.id]?.canAccess;
+                    
+                    return (
+                      <div key={menu.id} className="bg-white border border-gray-200 rounded-lg p-3">
+                        <div className="flex items-center mb-2">
+                          <input
+                            type="checkbox"
+                            id={`new-${menu.id}`}
+                            checked={isParentChecked}
+                            onChange={() => handlePermissionToggle(menu.id)}
+                            className="h-4 w-4 text-blue-600 rounded border-gray-300"
+                          />
+                          <label 
+                            htmlFor={`new-${menu.id}`} 
+                            className="ml-2 flex items-center cursor-pointer"
                           >
-                            {expandedMenus[menu.id] ? (
-                              <ChevronDownIcon className="h-4 w-4 text-gray-500" />
-                            ) : (
-                              <ChevronRightIcon className="h-4 w-4 text-gray-500" />
-                            )}
-                          </button>
+                            <Icon className="h-4 w-4 text-gray-600 mr-1" />
+                            <span className="text-sm font-medium text-gray-900">{menu.label}</span>
+                          </label>
+                        </div>
+                        
+                        {menu.subItems && (
+                          <div className="ml-6 space-y-1">
+                            {menu.subItems.map((subItem) => {
+                              const isSubChecked = !!inviteData.permissions[subItem.id]?.canAccess;
+                              return (
+                                <div key={subItem.id} className="flex items-center">
+                                  <input
+                                    type="checkbox"
+                                    id={`new-${subItem.id}`}
+                                    checked={isSubChecked}
+                                    onChange={() => handlePermissionToggle(subItem.id)}
+                                    className="h-3 w-3 text-blue-600 rounded border-gray-300"
+                                  />
+                                  <label 
+                                    htmlFor={`new-${subItem.id}`} 
+                                    className="ml-2 text-xs text-gray-700 cursor-pointer flex-1"
+                                  >
+                                    {subItem.label}
+                                  </label>
+                                  {subItem.hasWriteAccess && inviteData.permissions[subItem.id]?.canAccess && (
+                                    <select
+                                      value={inviteData.permissions[subItem.id]?.canWrite ? 'write' : 'read'}
+                                      onChange={(e) => handlePermissionLevelChange(subItem.id, e.target.value)}
+                                      className="ml-2 text-xs px-2 py-0.5 border border-gray-300 rounded"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <option value="read">Read Only</option>
+                                      <option value="write">Read/Write</option>
+                                    </select>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
                         )}
                       </div>
-                      
-                      {menu.subItems && expandedMenus[menu.id] && (
-                        <div className="ml-8 mt-2 space-y-2">
-                          {menu.subItems.map((subItem) => (
-                            <div key={subItem.id} className="flex items-center">
-                              <input
-                                type="checkbox"
-                                id={`inline-${subItem.id}`}
-                                checked={!!inviteData.permissions[subItem.id]?.canAccess}
-                                onChange={() => handlePermissionToggle(subItem.id)}
-                                className="h-4 w-4 text-blue-600 rounded border-gray-300"
-                              />
-                              <label htmlFor={`inline-${subItem.id}`} className="ml-2 text-sm text-gray-700 flex-1">
-                                {subItem.label}
-                              </label>
-                              {subItem.hasWriteAccess && inviteData.permissions[subItem.id]?.canAccess && (
-                                <select
-                                  value={inviteData.permissions[subItem.id]?.canWrite ? 'write' : 'read'}
-                                  onChange={(e) => handlePermissionLevelChange(subItem.id, e.target.value)}
-                                  className="ml-2 text-xs px-2 py-1 border border-gray-300 rounded"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <option value="read">Read Only</option>
-                                  <option value="write">Read/Write</option>
-                                </select>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
 
             {/* Admin message for admin role */}
             {inviteData.role === 'ADMIN' && (
-              <div className="flex items-center justify-center">
+              <div className="flex items-center justify-center md:col-span-2">
                 <div className="text-center p-8 bg-gray-50 rounded-lg">
                   <ShieldCheckIcon className="h-12 w-12 text-blue-600 mx-auto mb-3" />
                   <p className="text-gray-700 font-medium">Admin Access</p>
