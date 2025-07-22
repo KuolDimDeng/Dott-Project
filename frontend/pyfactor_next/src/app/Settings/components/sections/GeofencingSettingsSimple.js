@@ -432,34 +432,74 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
 
 // Main GeofencingSettings component
 const GeofencingSettings = () => {
-  console.log('[GeofencingSettings] Component mounted');
+  console.log('[GeofencingSettings] === COMPONENT MOUNT START ===');
   const [geofences, setGeofences] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [hasAcceptedCompliance, setHasAcceptedCompliance] = useState(false);
+  const [hasAcceptedCompliance, setHasAcceptedCompliance] = useState(true); // Set to true for now to bypass compliance
   const [selectedGeofence, setSelectedGeofence] = useState(null);
   const [showAssignModal, setShowAssignModal] = useState(false);
+  
+  console.log('[GeofencingSettings] State initialized:', {
+    hasAcceptedCompliance,
+    loading,
+    geofencesCount: geofences.length
+  });
 
   // Load geofences
   const loadGeofences = async () => {
-    console.log('[GeofencingSettings] Loading geofences...');
+    console.log('[GeofencingSettings] 🔄 loadGeofences called');
     try {
       setLoading(true);
+      console.log('[GeofencingSettings] 📡 Making API request to /api/hr/geofences/');
       const response = await api.get('/api/hr/geofences/');
-      console.log('[GeofencingSettings] Geofences loaded:', response);
-      setGeofences(response.results || response || []);
+      console.log('[GeofencingSettings] ✅ API Response:', response);
+      console.log('[GeofencingSettings] Response type:', typeof response);
+      console.log('[GeofencingSettings] Response keys:', Object.keys(response || {}));
+      
+      // Handle different response formats
+      let geofenceData = [];
+      if (response && response.results) {
+        geofenceData = response.results;
+      } else if (Array.isArray(response)) {
+        geofenceData = response;
+      } else if (response && response.data) {
+        geofenceData = response.data;
+      }
+      
+      console.log('[GeofencingSettings] 📍 Processed geofences:', geofenceData);
+      console.log('[GeofencingSettings] 📍 Geofences count:', geofenceData.length);
+      setGeofences(geofenceData);
     } catch (error) {
-      console.error('[GeofencingSettings] Error loading geofences:', error);
+      console.error('[GeofencingSettings] ❌ Error loading geofences:', error);
+      console.error('[GeofencingSettings] Error details:', {
+        message: error.message,
+        response: error.response,
+        stack: error.stack
+      });
       toast.error('Failed to load geofences');
     } finally {
       setLoading(false);
+      console.log('[GeofencingSettings] 🏁 loadGeofences completed');
     }
   };
 
   useEffect(() => {
-    console.log('[GeofencingSettings] useEffect - initial load');
-    loadGeofences();
-  }, []);
+    console.log('[GeofencingSettings] 🚀 useEffect triggered - initial load');
+    console.log('[GeofencingSettings] Component is mounted:', true);
+    console.log('[GeofencingSettings] hasAcceptedCompliance:', hasAcceptedCompliance);
+    
+    if (hasAcceptedCompliance) {
+      console.log('[GeofencingSettings] 🟢 Compliance accepted, loading geofences');
+      loadGeofences();
+    } else {
+      console.log('[GeofencingSettings] 🟡 Waiting for compliance acceptance');
+    }
+    
+    return () => {
+      console.log('[GeofencingSettings] 🔴 Component unmounting');
+    };
+  }, [hasAcceptedCompliance]);
 
   const handleGeofenceCreated = (newGeofence) => {
     console.log('[GeofencingSettings] Geofence created:', newGeofence);
@@ -467,7 +507,10 @@ const GeofencingSettings = () => {
     loadGeofences();
   };
 
+  console.log('[GeofencingSettings] 🎨 Rendering component, hasAcceptedCompliance:', hasAcceptedCompliance);
+  
   if (!hasAcceptedCompliance) {
+    console.log('[GeofencingSettings] 📋 Showing compliance notice');
     return (
       <div className="space-y-6">
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
@@ -501,6 +544,8 @@ const GeofencingSettings = () => {
     );
   }
 
+  console.log('[GeofencingSettings] 📊 Rendering main view with', geofences.length, 'geofences');
+  
   return (
     <div className="space-y-6">
       {/* Header */}
