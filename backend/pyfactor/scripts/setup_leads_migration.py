@@ -154,10 +154,20 @@ def mark_migration_as_applied():
     
     try:
         with connection.cursor() as cursor:
+            # First check if migration already exists
+            cursor.execute("""
+                SELECT COUNT(*) FROM django_migrations 
+                WHERE app = 'leads' AND name = '0001_initial'
+            """)
+            
+            if cursor.fetchone()[0] > 0:
+                print("✅ Migration already marked as applied!")
+                return True
+            
+            # Insert the migration record
             cursor.execute("""
                 INSERT INTO django_migrations (app, name, applied)
                 VALUES ('leads', '0001_initial', NOW())
-                ON CONFLICT (app, name) DO NOTHING
             """)
             
         print("✅ Migration marked as applied!")
