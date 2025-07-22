@@ -831,29 +831,52 @@ const GeofencingSettings = ({ user, isOwner, isAdmin, notifySuccess, notifyError
   };
 
   const handleGeofenceCreated = async (geofence) => {
-    console.log('[GeofencingSettings] Geofence created:', geofence);
+    console.log('[GeofencingSettings] === handleGeofenceCreated START ===');
+    console.log('[GeofencingSettings] Received geofence:', geofence);
+    console.log('[GeofencingSettings] Geofence type:', typeof geofence);
+    console.log('[GeofencingSettings] Geofence keys:', Object.keys(geofence || {}));
+    console.log('[GeofencingSettings] Geofence stringified:', JSON.stringify(geofence, null, 2));
     
-    // Add to current list immediately for UI responsiveness
-    setGeofences(prev => [...prev, geofence]);
+    // Use functional state updates to ensure proper batching
+    setGeofences(prev => {
+      console.log('[GeofencingSettings] Adding to geofences, prev:', prev.length, 'items');
+      const newList = [...prev, geofence];
+      console.log('[GeofencingSettings] New geofences list:', newList.length, 'items');
+      return newList;
+    });
+    
+    console.log('[GeofencingSettings] Setting newlyCreatedGeofence to:', geofence);
     setNewlyCreatedGeofence(geofence);
     setShowCreateForm(false);
     setShowEmployeeAssignment(true);
     
-    // Also reload the complete list to ensure consistency
-    await loadGeofences();
+    console.log('[GeofencingSettings] State set - showEmployeeAssignment: true, newlyCreatedGeofence:', geofence);
+    
+    // IMPORTANT: Don't reload immediately to avoid state conflicts
+    // The geofence is already added to the list above
+    console.log('[GeofencingSettings] Skipping loadGeofences to preserve newlyCreatedGeofence state');
     
     notifySuccess('Geofence created successfully! Now assign employees.');
+    console.log('[GeofencingSettings] === handleGeofenceCreated END ===');
   };
 
-  const handleEmployeeAssignmentComplete = (assignedEmployeeIds) => {
+  const handleEmployeeAssignmentComplete = async (assignedEmployeeIds) => {
     setShowEmployeeAssignment(false);
     setNewlyCreatedGeofence(null);
+    
+    // Now reload geofences to get the complete updated list
+    await loadGeofences();
+    
     notifySuccess(`Assigned ${assignedEmployeeIds.length} employees to geofence`);
   };
 
-  const handleSkipEmployeeAssignment = () => {
+  const handleSkipEmployeeAssignment = async () => {
     setShowEmployeeAssignment(false);
     setNewlyCreatedGeofence(null);
+    
+    // Reload geofences to get the complete updated list
+    await loadGeofences();
+    
     notifySuccess('Geofence created. You can assign employees later.');
   };
 
@@ -947,7 +970,11 @@ const GeofencingSettings = ({ user, isOwner, isAdmin, notifySuccess, notifyError
       )}
 
       {/* Employee Assignment - Inline after geofence creation */}
-      {console.log('[GeofencingSettings] Render check - showEmployeeAssignment:', showEmployeeAssignment, 'newlyCreatedGeofence:', newlyCreatedGeofence)}
+      {console.log('[GeofencingSettings] 🔍 RENDER CHECK - showEmployeeAssignment:', showEmployeeAssignment)}
+      {console.log('[GeofencingSettings] 🔍 RENDER CHECK - newlyCreatedGeofence:', newlyCreatedGeofence)}
+      {console.log('[GeofencingSettings] 🔍 RENDER CHECK - newlyCreatedGeofence type:', typeof newlyCreatedGeofence)}
+      {console.log('[GeofencingSettings] 🔍 RENDER CHECK - newlyCreatedGeofence truthy:', !!newlyCreatedGeofence)}
+      {console.log('[GeofencingSettings] 🔍 RENDER CHECK - Condition result:', showEmployeeAssignment && newlyCreatedGeofence)}
       {showEmployeeAssignment && newlyCreatedGeofence && (
         <InlineEmployeeAssignment
           geofence={newlyCreatedGeofence}

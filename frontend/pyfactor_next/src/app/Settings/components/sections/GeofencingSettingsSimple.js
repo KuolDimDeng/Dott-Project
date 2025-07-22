@@ -208,7 +208,11 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
     try {
       console.log('[GeofenceSetup] Saving geofence:', geofenceData);
       const response = await api.post('/api/hr/geofences/', geofenceData);
-      console.log('[GeofenceSetup] Geofence created:', response.data);
+      console.log('[GeofenceSetup] Geofence created - Full response:', response);
+      console.log('[GeofenceSetup] Geofence created - Response data:', response.data);
+      console.log('[GeofenceSetup] Geofence created - Response data type:', typeof response.data);
+      console.log('[GeofenceSetup] Geofence created - Response data keys:', Object.keys(response.data || {}));
+      
       toast.success('Geofence created successfully');
       
       // Clear the map circle
@@ -218,7 +222,10 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
       
       // Call the callback if provided
       if (onGeofenceCreated) {
+        console.log('[GeofenceSetup] Calling onGeofenceCreated with:', response.data);
         onGeofenceCreated(response.data);
+      } else {
+        console.warn('[GeofenceSetup] No onGeofenceCreated callback provided');
       }
     } catch (error) {
       console.error('[GeofenceSetup] Error creating geofence:', error);
