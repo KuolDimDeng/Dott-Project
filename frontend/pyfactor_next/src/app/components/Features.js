@@ -60,7 +60,7 @@ const SecurityIcon = () => (
 );
 
 export default function Features() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation('common');
   const [renderKey, setRenderKey] = useState(0);
   
   useEffect(() => {
@@ -73,6 +73,12 @@ export default function Features() {
       window.removeEventListener('languageChange', handleLanguageChange);
     };
   }, []);
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('Features component - Current language:', i18n.language);
+    console.log('Features component - Sample translation test:', t('feature.inventory'));
+  }, [i18n.language, t]);
   
   const featureCategories = [
     {
