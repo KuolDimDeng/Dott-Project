@@ -430,5 +430,157 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
   );
 };
 
-// Main component remains the same, just export the simplified version
-export default GoogleMapsGeofenceSetup;
+// Main GeofencingSettings component
+const GeofencingSettings = () => {
+  console.log('[GeofencingSettings] Component mounted');
+  const [geofences, setGeofences] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [hasAcceptedCompliance, setHasAcceptedCompliance] = useState(false);
+  const [selectedGeofence, setSelectedGeofence] = useState(null);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+
+  // Load geofences
+  const loadGeofences = async () => {
+    console.log('[GeofencingSettings] Loading geofences...');
+    try {
+      setLoading(true);
+      const response = await api.get('/api/hr/geofences/');
+      console.log('[GeofencingSettings] Geofences loaded:', response);
+      setGeofences(response.results || response || []);
+    } catch (error) {
+      console.error('[GeofencingSettings] Error loading geofences:', error);
+      toast.error('Failed to load geofences');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    console.log('[GeofencingSettings] useEffect - initial load');
+    loadGeofences();
+  }, []);
+
+  const handleGeofenceCreated = (newGeofence) => {
+    console.log('[GeofencingSettings] Geofence created:', newGeofence);
+    setShowCreateForm(false);
+    loadGeofences();
+  };
+
+  if (!hasAcceptedCompliance) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+          <div className="flex items-start">
+            <ShieldCheckIcon className="h-8 w-8 text-yellow-600 mr-3 flex-shrink-0" />
+            <div className="flex-1">
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Legal Compliance Notice
+              </h3>
+              <p className="text-sm text-gray-700 mb-4">
+                Geofencing tracks employee locations during work hours. Before enabling this feature:
+              </p>
+              <ul className="list-disc pl-5 space-y-2 text-sm text-gray-700 mb-4">
+                <li>You must notify all employees about location tracking</li>
+                <li>Obtain explicit consent from each employee</li>
+                <li>Comply with local privacy laws (GDPR, CCPA, etc.)</li>
+                <li>Provide employees with opt-out options</li>
+              </ul>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setHasAcceptedCompliance(true)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  I Understand and Accept
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h3 className="text-lg font-medium text-gray-900">Geofencing</h3>
+          <p className="mt-1 text-sm text-gray-500">
+            Set up location-based zones for employee time tracking
+          </p>
+        </div>
+        <button
+          onClick={() => setShowCreateForm(true)}
+          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+        >
+          <PlusCircleIcon className="h-5 w-5 mr-2" />
+          Add Geofence
+        </button>
+      </div>
+
+      {/* Create Form */}
+      {showCreateForm && (
+        <GoogleMapsGeofenceSetup
+          onGeofenceCreated={handleGeofenceCreated}
+          onCancel={() => setShowCreateForm(false)}
+          isVisible={showCreateForm}
+        />
+      )}
+
+      {/* Geofences List */}
+      {loading ? (
+        <div className="flex justify-center py-8">
+          <StandardSpinner size="medium" />
+        </div>
+      ) : geofences.length > 0 ? (
+        <div className="bg-white shadow overflow-hidden sm:rounded-md">
+          <ul className="divide-y divide-gray-200">
+            {geofences.map((geofence) => (
+              <li key={geofence.id} className="px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <MapPinIcon className="h-10 w-10 text-gray-400 mr-4" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{geofence.name}</p>
+                      <p className="text-sm text-gray-500">
+                        {geofence.location_type} • Radius: {geofence.radius}m
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    {geofence.is_active && (
+                      <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                        Active
+                      </span>
+                    )}
+                    <button
+                      onClick={() => {
+                        setSelectedGeofence(geofence);
+                        setShowAssignModal(true);
+                      }}
+                      className="text-blue-600 hover:text-blue-800"
+                    >
+                      Assign Employees
+                    </button>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : (
+        <div className="text-center py-8 bg-gray-50 rounded-lg">
+          <MapPinIcon className="mx-auto h-12 w-12 text-gray-400" />
+          <h3 className="mt-2 text-sm font-medium text-gray-900">No geofences</h3>
+          <p className="mt-1 text-sm text-gray-500">
+            Get started by creating your first geofence.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default GeofencingSettings;
