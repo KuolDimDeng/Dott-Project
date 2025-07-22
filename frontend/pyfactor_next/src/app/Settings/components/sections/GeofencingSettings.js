@@ -770,6 +770,13 @@ const LegalComplianceInfo = ({ onAccept }) => {
 
 // Main Geofencing Settings Component
 const GeofencingSettings = ({ user, isOwner, isAdmin, notifySuccess, notifyError }) => {
+  console.log('[GeofencingSettings] 🏁 === COMPONENT MOUNT ===');
+  console.log('[GeofencingSettings] 👤 User:', user);
+  console.log('[GeofencingSettings] 👑 isOwner:', isOwner);
+  console.log('[GeofencingSettings] 🛡️ isAdmin:', isAdmin);
+  console.log('[GeofencingSettings] 📢 Has notifySuccess:', !!notifySuccess);
+  console.log('[GeofencingSettings] ⚠️ Has notifyError:', !!notifyError);
+  
   // Add comprehensive error handling
   try {
   const [loading, setLoading] = useState(true);
@@ -791,24 +798,53 @@ const GeofencingSettings = ({ user, isOwner, isAdmin, notifySuccess, notifyError
   }, [showCreateForm, showLegalCompliance, legalAccepted]);
 
   useEffect(() => {
+    console.log('[GeofencingSettings] 🔧 useEffect triggered - isOwner:', isOwner, 'isAdmin:', isAdmin);
     if (isOwner || isAdmin) {
+      console.log('[GeofencingSettings] 👤 User has permissions, loading geofences...');
       loadGeofences();
+    } else {
+      console.log('[GeofencingSettings] 🚫 User does not have owner/admin permissions');
     }
   }, [isOwner, isAdmin]);
 
   const loadGeofences = async () => {
     try {
       setLoading(true);
-      console.log('[GeofencingSettings] Loading geofences...');
+      console.log('[GeofencingSettings] 🚀 === LOADING GEOFENCES START ===');
+      console.log('[GeofencingSettings] 📍 API URL:', '/api/hr/geofences/');
+      
       const response = await api.get('/api/hr/geofences/');
-      console.log('[GeofencingSettings] Geofences response:', response.data);
+      
+      console.log('[GeofencingSettings] ✅ Response received:', response);
+      console.log('[GeofencingSettings] 📊 Response status:', response.status);
+      console.log('[GeofencingSettings] 📦 Response data:', response.data);
+      console.log('[GeofencingSettings] 🔍 Response data type:', typeof response.data);
       
       // Handle both paginated and non-paginated responses
-      const geofencesData = response.data?.results || response.data || [];
-      console.log('[GeofencingSettings] Setting geofences:', geofencesData);
+      let geofencesData = [];
+      if (response.data?.results) {
+        console.log('[GeofencingSettings] 📄 Paginated response detected');
+        geofencesData = response.data.results;
+      } else if (Array.isArray(response.data)) {
+        console.log('[GeofencingSettings] 📋 Array response detected');
+        geofencesData = response.data;
+      } else if (response.data) {
+        console.log('[GeofencingSettings] ⚠️ Unknown response format, wrapping in array');
+        geofencesData = [response.data];
+      }
+      
+      console.log('[GeofencingSettings] 🎯 Final geofences count:', geofencesData.length);
+      console.log('[GeofencingSettings] 📝 Geofences data:', JSON.stringify(geofencesData, null, 2));
+      
       setGeofences(geofencesData);
+      console.log('[GeofencingSettings] ✅ === LOADING GEOFENCES END ===');
     } catch (error) {
-      console.error('[GeofencingSettings] Error loading geofences:', error);
+      console.error('[GeofencingSettings] ❌ === ERROR LOADING GEOFENCES ===');
+      console.error('[GeofencingSettings] 🚨 Error object:', error);
+      console.error('[GeofencingSettings] 🚨 Error message:', error?.message);
+      console.error('[GeofencingSettings] 🚨 Error response:', error?.response);
+      console.error('[GeofencingSettings] 🚨 Error status:', error?.response?.status);
+      console.error('[GeofencingSettings] 🚨 Error data:', error?.response?.data);
       logger.error('Error loading geofences:', error);
       notifyError('Failed to load geofences');
     } finally {

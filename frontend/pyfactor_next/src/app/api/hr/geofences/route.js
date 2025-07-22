@@ -57,7 +57,16 @@ async function handleRequest(request, method) {
     }
 
     const data = await response.json();
-    console.log(`[Geofences API] Success, returning data`);
+    console.log(`[Geofences API] Success, data received:`, data);
+    console.log(`[Geofences API] Data type:`, typeof data);
+    console.log(`[Geofences API] Is array:`, Array.isArray(data));
+    console.log(`[Geofences API] Data keys:`, Object.keys(data || {}));
+    if (Array.isArray(data)) {
+      console.log(`[Geofences API] Array length:`, data.length);
+    } else if (data?.results) {
+      console.log(`[Geofences API] Paginated results count:`, data.results?.length);
+    }
+    console.log(`[Geofences API] === ${method} REQUEST END ===`);
     
     return NextResponse.json(data);
   } catch (error) {

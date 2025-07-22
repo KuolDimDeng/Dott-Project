@@ -176,7 +176,9 @@
       "Bash(pip search:*)",
       "Bash(do if grep -q '\"\"tagline\"\"' \"$langcommon.json\")",
       "Bash(then echo \"✓ $lang has tagline\")",
-      "Bash(else echo \"✗ $lang missing tagline\")"
+      "Bash(else echo \"✗ $lang missing tagline\")",
+      "Bash(do if [ -f \"$lang/common.json\" ])",
+      "Bash(then echo -n \"$lang: \")"
     ],
     "deny": []
   }

@@ -1487,20 +1487,58 @@ class GeofenceViewSet(viewsets.ModelViewSet):
     serializer_class = GeofenceSerializer
     permission_classes = [IsAuthenticated]
     
+    def list(self, request, *args, **kwargs):
+        logger.info(f"[GeofenceViewSet] === LIST REQUEST START ===")
+        logger.info(f"[GeofenceViewSet] User: {request.user.email}")
+        logger.info(f"[GeofenceViewSet] Business ID: {request.user.business_id}")
+        
+        response = super().list(request, *args, **kwargs)
+        
+        logger.info(f"[GeofenceViewSet] Response status: {response.status_code}")
+        logger.info(f"[GeofenceViewSet] Response data: {response.data}")
+        logger.info(f"[GeofenceViewSet] === LIST REQUEST END ===")
+        
+        return response
+    
+    def create(self, request, *args, **kwargs):
+        logger.info(f"[GeofenceViewSet] === CREATE REQUEST START ===")
+        logger.info(f"[GeofenceViewSet] User: {request.user.email}")
+        logger.info(f"[GeofenceViewSet] Business ID: {request.user.business_id}")
+        logger.info(f"[GeofenceViewSet] Request data: {request.data}")
+        
+        response = super().create(request, *args, **kwargs)
+        
+        logger.info(f"[GeofenceViewSet] Response status: {response.status_code}")
+        logger.info(f"[GeofenceViewSet] Response data: {response.data}")
+        logger.info(f"[GeofenceViewSet] === CREATE REQUEST END ===")
+        
+        return response
+    
     def get_queryset(self):
         # Filter by business_id for multi-tenant isolation
-        return self.queryset.filter(
+        logger.info(f"[GeofenceViewSet] Getting queryset for business: {self.request.user.business_id}")
+        
+        queryset = self.queryset.filter(
             business_id=self.request.user.business_id,
             is_active=True
         ).annotate(
             assigned_employees_count=Count('assigned_employees')
         ).select_related('created_by')
+        
+        logger.info(f"[GeofenceViewSet] Queryset count: {queryset.count()}")
+        
+        return queryset
     
     def perform_create(self, serializer):
-        serializer.save(
+        logger.info(f"[GeofenceViewSet] Performing create with data: {serializer.validated_data}")
+        
+        instance = serializer.save(
             business_id=self.request.user.business_id,
             created_by=self.request.user
         )
+        
+        logger.info(f"[GeofenceViewSet] Created geofence ID: {instance.id}")
+        logger.info(f"[GeofenceViewSet] Created geofence: {instance.__dict__}")
     
     @action(detail=True, methods=['post'])
     def assign_employees(self, request, pk=None):
