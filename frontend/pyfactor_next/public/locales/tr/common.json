@@ -242,7 +242,9 @@
       "tax": "Vergi uyumluluğu",
       "insights": "Yapay zeka destekli içgörüler",
       "mobileMoney": "Mobil para ödemeleri",
-      "cardPayments": "Dünya çapında kart ödemeleri"
+      "cardPayments": "Dünya çapında kart ödemeleri",
+      "languages": "20'den fazla dil desteklenir",
+      "mobilePhone": "Mobil telefon uygulaması dahil"
     }
   },
   "heroTitle": "Hepsi Bir Arada İşletme Yazılımı",

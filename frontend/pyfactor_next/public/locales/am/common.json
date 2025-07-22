@@ -80,7 +80,9 @@
       "tax": "የታክስ ተገዥነት",
       "insights": "በAI የተደገፉ ግንዛቤዎች",
       "mobileMoney": "የሞባይል ገንዘብ ክፍያዎች",
-      "cardPayments": "የዓለም አቀፍ ካርድ ክፍያዎች"
+      "cardPayments": "የዓለም አቀፍ ካርድ ክፍያዎች",
+      "languages": "ከ20 በላይ ቃንቃዎች ይደገፋሉ",
+      "mobilePhone": "የሞባይል ስልክ መተግበሪያ ተካትቷል"
     }
   },
   "featuresTitle": "ዓለም አቀፍ የንግድ ባህሪያት",
