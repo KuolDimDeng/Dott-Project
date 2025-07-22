@@ -33,8 +33,16 @@ async function handleRequest(request, method) {
     }
 
     const url = new URL(request.url);
+    const pathname = url.pathname;
     const searchParams = url.searchParams.toString();
-    const backendUrl = `${BACKEND_URL}/api/hr/geofences/${searchParams ? `?${searchParams}` : ''}`;
+    
+    // Extract subpath from the request
+    let subPath = '';
+    if (pathname.includes('/api/hr/geofences/')) {
+      subPath = pathname.split('/api/hr/geofences/')[1] || '';
+    }
+    
+    const backendUrl = `${BACKEND_URL}/api/hr/geofences/${subPath}${searchParams ? `?${searchParams}` : ''}`;
     
     console.log(`[Geofences API] Backend URL:`, backendUrl);
     

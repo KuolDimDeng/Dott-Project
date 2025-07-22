@@ -874,6 +874,35 @@ const GeofencingSettings = ({ user, isOwner, isAdmin, notifySuccess, notifyError
     }
   };
 
+  // Debug function to check geofences in database
+  const debugGeofences = async () => {
+    console.log('[GeofencingSettings] 🔍 === DEBUG CHECK START ===');
+    try {
+      const response = await api.get('/api/hr/geofences/debug_list/');
+      console.log('[GeofencingSettings] 🔍 Debug response:', response.data);
+      console.log('[GeofencingSettings] 🔍 User business ID:', response.data.user_business_id);
+      console.log('[GeofencingSettings] 🔍 Total geofences in DB:', response.data.total_geofences_in_db);
+      console.log('[GeofencingSettings] 🔍 User geofences count:', response.data.user_geofences_count);
+      console.log('[GeofencingSettings] 🔍 All geofences:', response.data.all_geofences);
+      console.log('[GeofencingSettings] 🔍 User geofences:', response.data.user_geofences);
+      
+      // If there are geofences but they're not showing, there's a filtering issue
+      if (response.data.total_geofences_in_db > 0 && response.data.user_geofences_count === 0) {
+        console.error('[GeofencingSettings] ⚠️ BUSINESS ID MISMATCH - geofences exist but not for this business');
+        console.error('[GeofencingSettings] ⚠️ User business ID:', response.data.user_business_id);
+        console.error('[GeofencingSettings] ⚠️ Geofence business IDs:', response.data.all_geofences.map(g => g.business_id));
+      }
+    } catch (error) {
+      console.error('[GeofencingSettings] ❌ Debug error:', error);
+    }
+    console.log('[GeofencingSettings] 🔍 === DEBUG CHECK END ===');
+  };
+
+  // Call debug function on mount
+  useEffect(() => {
+    debugGeofences();
+  }, []);
+
   const handleCreateGeofence = () => {
     if (!legalAccepted) {
       setShowLegalCompliance(true);

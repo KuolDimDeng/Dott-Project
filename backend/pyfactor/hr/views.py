@@ -1492,6 +1492,16 @@ class GeofenceViewSet(viewsets.ModelViewSet):
         logger.info(f"[GeofenceViewSet] User: {request.user.email}")
         logger.info(f"[GeofenceViewSet] Business ID: {request.user.business_id}")
         
+        # Debug: Check all geofences in database
+        all_geofences = Geofence.objects.all()
+        logger.info(f"[GeofenceViewSet] Total geofences in DB: {all_geofences.count()}")
+        for g in all_geofences[:5]:  # Log first 5
+            logger.info(f"[GeofenceViewSet] Geofence: ID={g.id}, Name={g.name}, Business={g.business_id}, Active={g.is_active}")
+        
+        # Debug: Check filtered geofences
+        filtered_geofences = self.get_queryset()
+        logger.info(f"[GeofenceViewSet] Filtered geofences for business {request.user.business_id}: {filtered_geofences.count()}")
+        
         response = super().list(request, *args, **kwargs)
         
         logger.info(f"[GeofenceViewSet] Response status: {response.status_code}")
@@ -1531,6 +1541,7 @@ class GeofenceViewSet(viewsets.ModelViewSet):
     
     def perform_create(self, serializer):
         logger.info(f"[GeofenceViewSet] Performing create with data: {serializer.validated_data}")
+        logger.info(f"[GeofenceViewSet] Request user business_id: {self.request.user.business_id}")
         
         instance = serializer.save(
             business_id=self.request.user.business_id,
@@ -1538,7 +1549,23 @@ class GeofenceViewSet(viewsets.ModelViewSet):
         )
         
         logger.info(f"[GeofenceViewSet] Created geofence ID: {instance.id}")
-        logger.info(f"[GeofenceViewSet] Created geofence: {instance.__dict__}")
+        logger.info(f"[GeofenceViewSet] Created geofence business_id: {instance.business_id}")
+        logger.info(f"[GeofenceViewSet] Created geofence name: {instance.name}")
+        logger.info(f"[GeofenceViewSet] Created geofence is_active: {instance.is_active}")
+        
+    @action(detail=False, methods=['get'])
+    def debug_list(self, request):
+        """Debug endpoint to check all geofences"""
+        all_geofences = Geofence.objects.all().values('id', 'name', 'business_id', 'is_active', 'created_at')
+        user_geofences = Geofence.objects.filter(business_id=request.user.business_id).values('id', 'name', 'business_id', 'is_active', 'created_at')
+        
+        return Response({
+            'user_business_id': str(request.user.business_id),
+            'total_geofences_in_db': Geofence.objects.count(),
+            'user_geofences_count': user_geofences.count(),
+            'all_geofences': list(all_geofences[:10]),  # First 10
+            'user_geofences': list(user_geofences)
+        })
     
     @action(detail=True, methods=['post'])
     def assign_employees(self, request, pk=None):
