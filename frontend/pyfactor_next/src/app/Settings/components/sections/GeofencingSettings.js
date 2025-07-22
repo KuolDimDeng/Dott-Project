@@ -835,24 +835,31 @@ const GeofencingSettings = ({ user, isOwner, isAdmin, notifySuccess, notifyError
       console.log('[GeofencingSettings] 🚀 === LOADING GEOFENCES START ===');
       console.log('[GeofencingSettings] 📍 API URL:', '/api/hr/geofences/');
       
-      const response = await api.get('/api/hr/geofences/');
+      // Ensure trailing slash to avoid redirect
+      const data = await api.get('/api/hr/geofences/');
       
-      console.log('[GeofencingSettings] ✅ Response received:', response);
-      console.log('[GeofencingSettings] 📊 Response status:', response.status);
-      console.log('[GeofencingSettings] 📦 Response data:', response.data);
-      console.log('[GeofencingSettings] 🔍 Response data type:', typeof response.data);
+      console.log('[GeofencingSettings] ✅ Response received:', data);
+      console.log('[GeofencingSettings] 📦 Response data:', data);
+      console.log('[GeofencingSettings] 🔍 Response data type:', typeof data);
+      
+      // Check if response is an error
+      if (data?.error) {
+        console.error('[GeofencingSettings] ❌ API returned error:', data.error);
+        console.error('[GeofencingSettings] ❌ Error detail:', data.detail);
+        throw new Error(data.error);
+      }
       
       // Handle both paginated and non-paginated responses
       let geofencesData = [];
-      if (response.data?.results) {
+      if (data?.results) {
         console.log('[GeofencingSettings] 📄 Paginated response detected');
-        geofencesData = response.data.results;
-      } else if (Array.isArray(response.data)) {
+        geofencesData = data.results;
+      } else if (Array.isArray(data)) {
         console.log('[GeofencingSettings] 📋 Array response detected');
-        geofencesData = response.data;
-      } else if (response.data) {
+        geofencesData = data;
+      } else if (data) {
         console.log('[GeofencingSettings] ⚠️ Unknown response format, wrapping in array');
-        geofencesData = [response.data];
+        geofencesData = [data];
       }
       
       console.log('[GeofencingSettings] 🎯 Final geofences count:', geofencesData.length);
@@ -867,8 +874,16 @@ const GeofencingSettings = ({ user, isOwner, isAdmin, notifySuccess, notifyError
       console.error('[GeofencingSettings] 🚨 Error response:', error?.response);
       console.error('[GeofencingSettings] 🚨 Error status:', error?.response?.status);
       console.error('[GeofencingSettings] 🚨 Error data:', error?.response?.data);
+      console.error('[GeofencingSettings] 🚨 Error detail:', error?.response?.data?.detail);
+      
+      // Show more detailed error
+      const errorMessage = error?.response?.data?.detail?.detail || 
+                          error?.response?.data?.detail || 
+                          error?.response?.data?.error ||
+                          'Failed to load geofences';
+      
       logger.error('Error loading geofences:', error);
-      notifyError('Failed to load geofences');
+      notifyError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -898,9 +913,19 @@ const GeofencingSettings = ({ user, isOwner, isAdmin, notifySuccess, notifyError
     console.log('[GeofencingSettings] 🔍 === DEBUG CHECK END ===');
   };
 
-  // Call debug function on mount
+  // Call debug function on mount - ensure it runs
   useEffect(() => {
+    console.log('[GeofencingSettings] 🚀 useEffect for debugGeofences triggered');
     debugGeofences();
+  }, []);
+  
+  // Another useEffect to ensure loadGeofences runs
+  useEffect(() => {
+    console.log('[GeofencingSettings] 🚀 useEffect for loadGeofences triggered');
+    if (!loading && geofences.length === 0) {
+      console.log('[GeofencingSettings] 🚀 Calling loadGeofences from useEffect');
+      loadGeofences();
+    }
   }, []);
 
   const handleCreateGeofence = () => {

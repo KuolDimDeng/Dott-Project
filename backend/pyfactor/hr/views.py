@@ -1526,18 +1526,35 @@ class GeofenceViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         # Filter by business_id for multi-tenant isolation
-        logger.info(f"[GeofenceViewSet] Getting queryset for business: {self.request.user.business_id}")
-        
-        queryset = self.queryset.filter(
-            business_id=self.request.user.business_id,
-            is_active=True
-        ).annotate(
-            assigned_employees_count=Count('assigned_employees')
-        ).select_related('created_by')
-        
-        logger.info(f"[GeofenceViewSet] Queryset count: {queryset.count()}")
-        
-        return queryset
+        try:
+            logger.info(f"[GeofenceViewSet] Getting queryset for business: {self.request.user.business_id}")
+            logger.info(f"[GeofenceViewSet] User email: {self.request.user.email}")
+            logger.info(f"[GeofenceViewSet] Request method: {self.request.method}")
+            
+            # Check if user has business_id
+            if not self.request.user.business_id:
+                logger.error(f"[GeofenceViewSet] User {self.request.user.email} has no business_id!")
+                return Geofence.objects.none()
+            
+            queryset = self.queryset.filter(
+                business_id=self.request.user.business_id,
+                is_active=True
+            ).annotate(
+                assigned_employees_count=Count('assigned_employees')
+            ).select_related('created_by')
+            
+            logger.info(f"[GeofenceViewSet] Queryset count: {queryset.count()}")
+            
+            # Log SQL query for debugging
+            logger.info(f"[GeofenceViewSet] SQL Query: {queryset.query}")
+            
+            return queryset
+        except Exception as e:
+            logger.error(f"[GeofenceViewSet] Error in get_queryset: {str(e)}")
+            logger.error(f"[GeofenceViewSet] Error type: {type(e)}")
+            import traceback
+            logger.error(f"[GeofenceViewSet] Traceback: {traceback.format_exc()}")
+            raise
     
     def perform_create(self, serializer):
         logger.info(f"[GeofenceViewSet] Performing create with data: {serializer.validated_data}")

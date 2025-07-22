@@ -58,8 +58,23 @@ async function handleRequest(request, method) {
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`[Geofences API] Backend error:`, errorText);
+      console.error(`[Geofences API] Backend status:`, response.status);
+      console.error(`[Geofences API] Backend URL was:`, backendUrl);
+      
+      // Try to parse error as JSON
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch (e) {
+        errorData = { detail: errorText };
+      }
+      
       return NextResponse.json(
-        { error: 'Failed to process geofence request' },
+        { 
+          error: 'Failed to process geofence request',
+          detail: errorData,
+          status: response.status 
+        },
         { status: response.status }
       );
     }

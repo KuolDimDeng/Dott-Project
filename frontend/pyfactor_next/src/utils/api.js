@@ -107,7 +107,16 @@ export async function fetchWithAuth(url, options = {}) {
  */
 export async function get(url) {
   const response = await fetchWithAuth(url);
-  return response.json();
+  const data = await response.json();
+  
+  // If response is not ok and data contains error, throw it
+  if (!response.ok && data) {
+    const error = new Error(data.error || 'Request failed');
+    error.response = { data, status: response.status };
+    throw error;
+  }
+  
+  return data;
 }
 
 /**
