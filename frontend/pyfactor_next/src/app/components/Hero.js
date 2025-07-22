@@ -38,9 +38,9 @@ export default function Hero() {
             </span>
           </div>
           
-          <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl text-transparent bg-clip-text bg-gradient-to-r from-primary-main to-primary-light">
+          <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl">
             <span className="relative inline-block mr-2">
-              <span className="font-normal" style={{ fontFamily: 'Caveat, cursive', fontSize: '1.2em' }}>{t('hero.your', 'Your')}</span>
+              <span className="font-normal text-primary-main" style={{ fontFamily: "'Caveat', cursive", fontSize: '1.2em', fontWeight: 400 }}>{t('hero.your', 'Your')}</span>
               <svg 
                 className="absolute -bottom-1 left-0 w-full h-3 pointer-events-none" 
                 viewBox="0 0 100 12" 
@@ -68,7 +68,7 @@ export default function Hero() {
               </svg>
             </span>
             {' '}
-            <span>{t('hero.title', 'Global Business Platform')}</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-main to-primary-light">{t('hero.title', 'Global Business Platform')}</span>
           </h1>
           
           {/* Key Benefits */}
