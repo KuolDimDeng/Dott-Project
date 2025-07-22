@@ -799,9 +799,16 @@ const GeofencingSettings = ({ user, isOwner, isAdmin, notifySuccess, notifyError
   const loadGeofences = async () => {
     try {
       setLoading(true);
+      console.log('[GeofencingSettings] Loading geofences...');
       const response = await api.get('/api/hr/geofences/');
-      setGeofences(response.data?.results || []);
+      console.log('[GeofencingSettings] Geofences response:', response.data);
+      
+      // Handle both paginated and non-paginated responses
+      const geofencesData = response.data?.results || response.data || [];
+      console.log('[GeofencingSettings] Setting geofences:', geofencesData);
+      setGeofences(geofencesData);
     } catch (error) {
+      console.error('[GeofencingSettings] Error loading geofences:', error);
       logger.error('Error loading geofences:', error);
       notifyError('Failed to load geofences');
     } finally {
@@ -823,11 +830,18 @@ const GeofencingSettings = ({ user, isOwner, isAdmin, notifySuccess, notifyError
     setShowCreateForm(true);
   };
 
-  const handleGeofenceCreated = (geofence) => {
+  const handleGeofenceCreated = async (geofence) => {
+    console.log('[GeofencingSettings] Geofence created:', geofence);
+    
+    // Add to current list immediately for UI responsiveness
     setGeofences(prev => [...prev, geofence]);
     setNewlyCreatedGeofence(geofence);
     setShowCreateForm(false);
     setShowEmployeeAssignment(true);
+    
+    // Also reload the complete list to ensure consistency
+    await loadGeofences();
+    
     notifySuccess('Geofence created successfully! Now assign employees.');
   };
 
@@ -933,6 +947,7 @@ const GeofencingSettings = ({ user, isOwner, isAdmin, notifySuccess, notifyError
       )}
 
       {/* Employee Assignment - Inline after geofence creation */}
+      {console.log('[GeofencingSettings] Render check - showEmployeeAssignment:', showEmployeeAssignment, 'newlyCreatedGeofence:', newlyCreatedGeofence)}
       {showEmployeeAssignment && newlyCreatedGeofence && (
         <InlineEmployeeAssignment
           geofence={newlyCreatedGeofence}
