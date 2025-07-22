@@ -18,7 +18,7 @@ import SecuritySettings from './sections/SecuritySettings';
 import Integrations from './sections/Integrations';
 import BankConnections from './sections/BankConnections';
 import PayrollSettings from './sections/PayrollSettings';
-import GeofencingSettings from './sections/GeofencingSettings';
+import GeofencingSettings from './sections/GeofencingSettingsSimple';
 // import WhatsAppSettings from './sections/WhatsAppSettings'; // REMOVED - WhatsApp is in Integrations
 
 // Import icons
