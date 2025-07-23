@@ -5,6 +5,7 @@ Inherits from base settings but overrides for staging environment
 
 from .settings import *
 import os
+import dj_database_url
 
 # Override environment
 ENVIRONMENT = 'staging'
