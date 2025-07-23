@@ -75,8 +75,8 @@ RUN echo "=== Build Environment Debug ===" && \
     echo "=== End Debug ==="
 
 # Run the optimized production build
-# Standard instance has 2GB RAM, let Node.js manage memory automatically
-# ENV NODE_OPTIONS="--max-old-space-size=6144"  # Removed - let Node use available memory
+# Set Node.js memory limit to prevent build failures
+ENV NODE_OPTIONS="--max-old-space-size=4096"
 RUN --mount=type=cache,id=nextjs,target=/app/.next/cache \
     sh scripts/render-build.sh
 
