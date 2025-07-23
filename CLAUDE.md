@@ -31,9 +31,10 @@
 - **Auth0 Domain**: dev-cbyy63jovi6zrcos.us.auth0.com
 - **Client ID**: 9i7GSU4bgh6hFtMXnQACwiRxTudpuOSF
 - **IMPORTANT**: Do NOT use @auth0/nextjs-auth0 SDK
-- **Frontend Service**: dott-front (Render Docker, branch: Dott_Main_Dev_Deploy)
+- **Frontend Service**: dott-front (Render Docker, branch: main)
 - **Backend Service**: dott-api (api.dottapps.com, oregon region)
 - **Domains**: dottapps.com, www.dottapps.com
+- **Branch Structure**: staging → main (production)
 
 ### [2.0.0] - 2025-06-18 - CURRENT - Session Management V2
 - **Architecture**: Server-side sessions only (banking standard)
@@ -453,6 +454,17 @@
 - TEST edge cases thoroughly
 
 ---
+
+### [42.0.0] - 2025-07-23 - CURRENT - Branch Structure Standardization
+- **Purpose**: Switched from Dott_Main_Dev_Deploy to industry-standard main branch
+- **Production Branch**: main (was Dott_Main_Dev_Deploy)
+- **Staging Branch**: staging
+- **Deployment Flow**: staging → main
+- **Deployment Scripts**:
+  - `./deploy-to-staging.sh` - Deploy current branch to staging
+  - `./deploy-to-production.sh` - Merge staging to main and deploy
+- **Render Services**: Both configured to auto-deploy from respective branches
+- **Benefits**: Cleaner workflow, industry standard, easier for new developers
 
 ## Quick Reference
 

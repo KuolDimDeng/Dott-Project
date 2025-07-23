@@ -181,7 +181,8 @@
       "Bash(then echo -n \"$lang: \")",
       "Bash(do echo \"=== Checking $lang ===\")",
       "Bash(do grep -q \"\"\"$key\"\":\" $lang/common.json)",
-      "Bash(./scripts/setup-local-dev.sh:*)"
+      "Bash(./scripts/setup-local-dev.sh:*)",
+      "Bash(git branch:*)"
     ],
     "deny": []
   }

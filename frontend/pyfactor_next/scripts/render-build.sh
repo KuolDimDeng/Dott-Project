@@ -24,8 +24,15 @@ done
 # No need to re-export them, they're already available
 
 # Run the build
-echo "🔨 Running pnpm build:render..."
-echo "📋 NODE_OPTIONS: ${NODE_OPTIONS}"
-pnpm run build:render
+# Check if this is staging environment
+if [ "$RENDER_SERVICE_NAME" = "dott-staging" ] || [ "$ENVIRONMENT" = "staging" ]; then
+    echo "🔨 Running optimized staging build (no linting)..."
+    echo "📋 Memory: Using Node.js default memory management (Standard instance: 2GB)"
+    pnpm run build:staging
+else
+    echo "🔨 Running pnpm build:render..."
+    echo "📋 Memory: Using Node.js default memory management"
+    pnpm run build:render
+fi
 
 echo "✅ Build completed!"
