@@ -35,7 +35,8 @@ export async function POST(request) {
     });
     
     // Step 1: Authenticate with Auth0
-    const baseUrl = 'http://localhost:3000'; // Use local URL for API routes
+    // In production/staging, Next.js API routes are relative to the current domain
+    const baseUrl = ''; // Empty string for relative URLs
     console.log('[ConsolidatedLogin] Auth endpoint:', `${baseUrl}/api/auth/authenticate`);
     
     const authResponse = await fetch(`${baseUrl}/api/auth/authenticate`, {
