@@ -1,0 +1,49 @@
+{
+  "backToHome": "Zurück zur Startseite",
+  "hero": {
+    "title": "Dott Business Blog",
+    "subtitle": "Lernen Sie, wie Sie die Finanzen Ihres Unternehmens mit Dott verwalten. Erhalten Sie Tipps, Einblicke und Strategien, um Ihr Unternehmen zu wachsen."
+  },
+  "newsletter": {
+    "title": "Melden Sie sich für unseren Newsletter an für Produktupdates und neue Blog-Beiträge!",
+    "placeholder": "Ihre E-Mail-Adresse",
+    "button": "Abonnieren"
+  },
+  "categories": {
+    "all": "Alle Artikel",
+    "accounting": "Buchhaltung und Steuern",
+    "business": "Geschäft"
+  },
+  "search": {
+    "placeholder": "Artikel suchen..."
+  },
+  "featured": "Empfohlen",
+  "readTime": "{{minutes}} Min. Lesezeit",
+  "noArticles": "Keine Artikel gefunden, die Ihren Kriterien entsprechen.",
+  "articles": {
+    "profitLoss": {
+      "title": "Gewinn und Verlust verstehen: Ein unterhaltsamer Leitfaden für Unternehmer",
+      "excerpt": "Entdecken Sie, wie Sie Ihre GuV-Rechnung lesen und verstehen, ohne einzuschlafen. Wir versprechen, es interessant zu machen!"
+    },
+    "expenses": {
+      "title": "Geschäftsausgaben wie ein Profi verfolgen: 5 einfache Schritte",
+      "excerpt": "Lernen Sie, jeden Cent zu verfolgen, ohne den Verstand zu verlieren. Entdecken Sie außerdem, welche Ausgaben Ihnen Steuern sparen können!"
+    },
+    "taxDeductions": {
+      "title": "Versteckte Steuerabzüge, die jedes kleine Unternehmen kennen sollte",
+      "excerpt": "Hören Sie auf, Geld auf dem Tisch liegen zu lassen! Entdecken Sie legitime Steuerabzüge, die die meisten Unternehmer verpassen."
+    },
+    "inventory": {
+      "title": "Transformieren Sie Ihre Lagerverwaltung mit Barcode-Scanning",
+      "excerpt": "Verabschieden Sie sich vom manuellen Zählen! Erfahren Sie, wie Barcode-Scanning Ihre Lagerverwaltung revolutionieren kann."
+    },
+    "mobile": {
+      "title": "Führen Sie Ihr gesamtes Unternehmen von Ihrem Telefon aus: Die mobile Revolution",
+      "excerpt": "Entdecken Sie, wie Sie Rechnungen verwalten, Inventar verfolgen und Zahlungen abwickeln - alles von Ihrem Smartphone aus!"
+    },
+    "customerRelationships": {
+      "title": "Dauerhafte Kundenbeziehungen aufbauen: CRM leicht gemacht",
+      "excerpt": "Lernen Sie, wie Sie Kunden ohne komplizierte Software oder teure Tools zurückbringen."
+    }
+  }
+}

@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: dott-front
+    runtime: docker
+    dockerfilePath: ./frontend/pyfactor_next/Dockerfile
+    dockerContext: .
+    envVars:
+      - key: NODE_ENV
+        value: production
+    buildCommand: |
+      echo "Build handled by Dockerfile"
+    # Enable Docker layer caching
+    docker:
+      buildCachePaths:
+        - /app/.next/cache
+        - /pnpm/store
+        - /app/node_modules/.cache

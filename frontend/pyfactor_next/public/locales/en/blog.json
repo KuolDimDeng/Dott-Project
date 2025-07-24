@@ -1,0 +1,49 @@
+{
+  "backToHome": "Back to Home",
+  "hero": {
+    "title": "Dott Business Blog",
+    "subtitle": "Learn about managing your business finances with Dott. Get tips, insights, and strategies to grow your business."
+  },
+  "newsletter": {
+    "title": "Sign up for our newsletter for product updates and new blog posts!",
+    "placeholder": "Your email address",
+    "button": "Subscribe"
+  },
+  "categories": {
+    "all": "All Articles",
+    "accounting": "Accounting & Taxes",
+    "business": "Business"
+  },
+  "search": {
+    "placeholder": "Search articles..."
+  },
+  "featured": "Featured",
+  "readTime": "{{minutes}} min read",
+  "noArticles": "No articles found matching your criteria.",
+  "articles": {
+    "profitLoss": {
+      "title": "Understanding Profit & Loss: A Fun Guide for Business Owners",
+      "excerpt": "Discover how to read and understand your P&L statement without falling asleep. We promise to make it interesting!"
+    },
+    "expenses": {
+      "title": "Track Business Expenses Like a Pro: 5 Simple Steps",
+      "excerpt": "Learn how to track every penny without losing your mind. Plus, discover which expenses can save you money at tax time!"
+    },
+    "taxDeductions": {
+      "title": "Hidden Tax Deductions Every Small Business Should Know",
+      "excerpt": "Stop leaving money on the table! Discover legitimate tax deductions that most business owners miss."
+    },
+    "inventory": {
+      "title": "Transform Your Inventory Management with Barcode Scanning",
+      "excerpt": "Say goodbye to manual counting! Learn how barcode scanning can revolutionize your inventory management."
+    },
+    "mobile": {
+      "title": "Run Your Entire Business from Your Phone: The Mobile Revolution",
+      "excerpt": "Discover how to manage invoices, track inventory, and handle payments - all from your smartphone!"
+    },
+    "customerRelationships": {
+      "title": "Building Customer Relationships That Last: CRM Made Simple",
+      "excerpt": "Learn how to keep customers coming back without complicated software or expensive tools."
+    }
+  }
+}

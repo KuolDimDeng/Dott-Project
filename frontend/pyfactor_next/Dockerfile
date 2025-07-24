@@ -19,9 +19,19 @@ WORKDIR /app
 # Copy package files only (for better caching)
 COPY package.json pnpm-lock.yaml ./
 
+# Install dependencies with better caching
+# Use pnpm fetch to download packages to store first
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm fetch --prod
+
+# Install production dependencies only first (smaller layer)
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm install --prod --frozen-lockfile --prefer-offline
+
 # Install ALL dependencies (including devDependencies for building)
-# Using cache mount for pnpm store
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+# This creates a separate layer that changes less frequently
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm install --frozen-lockfile --prefer-offline
 
 # ========================================
 # Stage 3: Build the application
@@ -77,8 +87,11 @@ RUN echo "=== Build Environment Debug ===" && \
 # Run the optimized production build
 # Set Node.js memory limit to prevent build failures
 ENV NODE_OPTIONS="--max-old-space-size=4096"
+
+# Use build cache mount and output cache mount for better caching
 RUN --mount=type=cache,id=nextjs,target=/app/.next/cache \
-    sh scripts/render-build.sh
+    --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm run build:render
 
 # ========================================
 # Stage 4: Production runner

@@ -1,0 +1,49 @@
+{
+  "backToHome": "Retour à l'Accueil",
+  "hero": {
+    "title": "Blog d'Entreprise Dott",
+    "subtitle": "Apprenez à gérer les finances de votre entreprise avec Dott. Obtenez des conseils, des idées et des stratégies pour développer votre entreprise."
+  },
+  "newsletter": {
+    "title": "Inscrivez-vous à notre newsletter pour les mises à jour de produits et les nouveaux articles de blog!",
+    "placeholder": "Votre adresse e-mail",
+    "button": "S'abonner"
+  },
+  "categories": {
+    "all": "Tous les Articles",
+    "accounting": "Comptabilité et Impôts",
+    "business": "Entreprise"
+  },
+  "search": {
+    "placeholder": "Rechercher des articles..."
+  },
+  "featured": "En Vedette",
+  "readTime": "{{minutes}} min de lecture",
+  "noArticles": "Aucun article trouvé correspondant à vos critères.",
+  "articles": {
+    "profitLoss": {
+      "title": "Comprendre les Profits et Pertes: Un Guide Amusant pour les Entrepreneurs",
+      "excerpt": "Découvrez comment lire et comprendre votre compte de résultat sans vous endormir. Nous promettons de le rendre intéressant!"
+    },
+    "expenses": {
+      "title": "Suivez les Dépenses de Votre Entreprise Comme un Pro: 5 Étapes Simples",
+      "excerpt": "Apprenez à suivre chaque centime sans perdre la tête. De plus, découvrez quelles dépenses peuvent vous faire économiser de l'argent sur les impôts!"
+    },
+    "taxDeductions": {
+      "title": "Déductions Fiscales Cachées que Toute Petite Entreprise Devrait Connaître",
+      "excerpt": "Arrêtez de laisser de l'argent sur la table! Découvrez les déductions fiscales légitimes que la plupart des entrepreneurs manquent."
+    },
+    "inventory": {
+      "title": "Transformez Votre Gestion des Stocks avec le Scan de Codes-Barres",
+      "excerpt": "Dites adieu au comptage manuel! Apprenez comment le scan de codes-barres peut révolutionner votre gestion des stocks."
+    },
+    "mobile": {
+      "title": "Gérez Toute Votre Entreprise depuis Votre Téléphone: La Révolution Mobile",
+      "excerpt": "Découvrez comment gérer les factures, suivre l'inventaire et gérer les paiements - tout depuis votre smartphone!"
+    },
+    "customerRelationships": {
+      "title": "Construire des Relations Clients Durables: Le CRM Simplifié",
+      "excerpt": "Apprenez à fidéliser vos clients sans logiciel compliqué ni outils coûteux."
+    }
+  }
+}
