@@ -87,7 +87,7 @@ export async function POST(request) {
 
     // Call the backend export endpoint directly
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
-    const exportUrl = `${apiUrl}/api/data-export/export/`;
+    const exportUrl = `${apiUrl}/api/data_export/export/`;
     
     console.log('[export-data] Calling backend export endpoint:', exportUrl);
     console.log('[export-data] Request payload:', {
@@ -100,11 +100,15 @@ export async function POST(request) {
     const sessionToken = session.token || session.sid;
     
     try {
+      // Get all cookies to forward to backend
+      const cookieHeader = request.headers.get('cookie') || '';
+      
       const backendResponse = await fetch(exportUrl, {
         method: 'POST',
         headers: {
-          'Cookie': `session_token=${sessionToken}`,
-          'Content-Type': 'application/json'
+          'Cookie': cookieHeader, // Forward all cookies including csrftoken and sessionid
+          'Content-Type': 'application/json',
+          'Accept': 'text/csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         },
         body: JSON.stringify({
           dataTypes,

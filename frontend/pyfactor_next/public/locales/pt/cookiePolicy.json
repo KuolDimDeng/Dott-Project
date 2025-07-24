@@ -1,0 +1,93 @@
+{
+  "cookiePolicy": {
+    "title": "Política de Cookies",
+    "backToHome": "Voltar ao Início",
+    "effectiveDate": "Efetiva a partir de: {{date}}",
+    "introduction": "Esta Política de Cookies explica como a Dott LLC ("nós", "nos", ou "nosso") usa cookies e tecnologias similares para reconhecê-lo quando você visita nosso site em www.dottapps.com. Ela explica o que são essas tecnologias e por que as usamos, bem como seus direitos de controlar nosso uso delas.",
+    "companyName": "Dott LLC",
+    "email": "E-mail",
+    "website": "Site",
+    "address": {
+      "street": "800 N King Street",
+      "suite": "Suite 304 #2797",
+      "city": "Wilmington, DE 19801",
+      "country": "Estados Unidos"
+    },
+    "sections": {
+      "whatAreCookies": {
+        "title": "O Que São Cookies",
+        "content": "Cookies são pequenos arquivos de dados que são colocados em seu computador ou dispositivo móvel quando você visita um site. Os cookies são amplamente usados por proprietários de sites para fazer seus sites funcionarem, ou funcionarem com mais eficiência, bem como para fornecer informações de relatório."
+      },
+      "howWeUseCookies": {
+        "title": "Como Usamos Cookies",
+        "content": "Usamos cookies por várias razões. Alguns cookies são necessários por razões técnicas para que nosso site funcione, e nos referimos a estes como cookies "essenciais" ou "estritamente necessários". Outros cookies nos permitem rastrear e direcionar os interesses de nossos usuários para aprimorar a experiência em nosso site.",
+        "categories": {
+          "essential": {
+            "title": "Cookies Essenciais",
+            "description": "Estes cookies são estritamente necessários para fornecer a você os serviços disponíveis através do nosso site e para usar alguns de seus recursos."
+          },
+          "functional": {
+            "title": "Cookies Funcionais",
+            "description": "Estes cookies permitem funcionalidade aprimorada e personalização, como vídeos e chats ao vivo."
+          },
+          "analytics": {
+            "title": "Cookies de Análise",
+            "description": "Estes cookies nos ajudam a entender como nosso site está sendo usado ou quão eficazes são nossas campanhas de marketing."
+          },
+          "marketing": {
+            "title": "Cookies de Marketing",
+            "description": "Estes cookies são usados para tornar as mensagens publicitárias mais relevantes para você."
+          }
+        }
+      },
+      "specificCookies": {
+        "title": "Cookies Específicos que Usamos",
+        "content": "O seguinte descreve os tipos específicos de cookies que usamos em nosso site:",
+        "types": {
+          "session": {
+            "title": "Cookies de Sessão",
+            "description": "Estes são cookies temporários que expiram quando você fecha seu navegador."
+          },
+          "persistent": {
+            "title": "Cookies Persistentes",
+            "description": "Estes permanecem em seu dispositivo por um período de tempo definido especificado no cookie."
+          },
+          "thirdParty": {
+            "title": "Cookies de Terceiros",
+            "description": "Estes são definidos por um domínio diferente daquele que você está visitando."
+          }
+        }
+      },
+      "cookieDuration": {
+        "title": "Duração dos Cookies",
+        "content": "Os cookies podem permanecer em seu computador ou dispositivo móvel por diferentes períodos de tempo. Alguns cookies são 'cookies de sessão', o que significa que existem apenas enquanto seu navegador está aberto e são excluídos automaticamente quando você fecha seu navegador. Outros cookies são 'cookies persistentes', o que significa que sobrevivem após o fechamento do navegador."
+      },
+      "managingCookies": {
+        "title": "Gerenciando Cookies",
+        "content": "Você tem o direito de decidir se aceita ou rejeita cookies. Você pode exercer suas preferências de cookies usando os seguintes métodos:",
+        "options": {
+          "browserSettings": {
+            "title": "Configurações do Navegador",
+            "description": "Você pode definir ou alterar os controles do seu navegador da web para aceitar ou recusar cookies."
+          },
+          "preferenceTool": {
+            "title": "Ferramenta de Preferências de Cookies",
+            "description": "Você pode gerenciar suas preferências de cookies através de nossa ferramenta de consentimento de cookies."
+          },
+          "impact": {
+            "title": "Impacto de Desabilitar Cookies",
+            "description": "Se você optar por rejeitar cookies, ainda poderá usar nosso site, embora seu acesso a algumas funcionalidades e áreas possa ser restrito."
+          }
+        }
+      },
+      "updates": {
+        "title": "Atualizações desta Política de Cookies",
+        "content": "Podemos atualizar esta Política de Cookies de tempos em tempos para refletir mudanças nos cookies que usamos ou por outras razões operacionais, legais ou regulatórias. Portanto, revisite esta Política de Cookies regularmente para se manter informado sobre nosso uso de cookies e tecnologias relacionadas."
+      },
+      "contactUs": {
+        "title": "Entre em Contato",
+        "content": "Se você tiver alguma dúvida sobre nosso uso de cookies ou outras tecnologias, entre em contato conosco em:"
+      }
+    }
+  }
+}

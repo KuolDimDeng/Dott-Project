@@ -1,0 +1,93 @@
+{
+  "cookiePolicy": {
+    "title": "Manufar Kukis",
+    "backToHome": "Komawa Gida",
+    "effectiveDate": "Yana aiki daga: {{date}}",
+    "introduction": "Wannan Manufar Kukis tana bayyana yadda Dott LLC ("mu", "namu", ko "mu") ke amfani da kukis da fasaha makamanta don gane ku lokacin da kuka ziyarci gidan yanar gizonmu a www.dottapps.com. Yana bayyana menene waɗannan fasahohi da dalilin da ya sa muke amfani da su, da kuma haƙƙin ku na sarrafa amfaninmu da su.",
+    "companyName": "Dott LLC",
+    "email": "Imel",
+    "website": "Gidan yanar gizo",
+    "address": {
+      "street": "800 N King Street",
+      "suite": "Suite 304 #2797",
+      "city": "Wilmington, DE 19801",
+      "country": "Amurka"
+    },
+    "sections": {
+      "whatAreCookies": {
+        "title": "Menene Kukis",
+        "content": "Kukis ƙananan fayilolin bayanai ne waɗanda ake sanyawa a kan kwamfutarku ko na'urar hannu lokacin da kuka ziyarci gidan yanar gizo. Ana amfani da kukis sosai daga masu gidajen yanar gizo don sanya gidajen yanar gizonsu su yi aiki, ko su yi aiki da inganci, da kuma samar da bayanan rahoto."
+      },
+      "howWeUseCookies": {
+        "title": "Yadda Muke Amfani da Kukis",
+        "content": "Muna amfani da kukis saboda dalilai da dama. Wasu kukis suna da mahimmanci saboda dalilai na fasaha don gidan yanar gizonmu ya yi aiki, kuma muna kiran waɗannan kukis "masu mahimmanci" ko "masu mahimmanci sosai". Sauran kukis suna ba mu damar bin diddigin da kuma kai hari kan abubuwan sha'awar masu amfani da mu don inganta ƙwarewar a gidan yanar gizonmu.",
+        "categories": {
+          "essential": {
+            "title": "Kukis Masu Mahimmanci",
+            "description": "Waɗannan kukis suna da mahimmanci sosai don samar muku da ayyukan da ake samu ta hanyar gidan yanar gizonmu da kuma amfani da wasu fasalulluka."
+          },
+          "functional": {
+            "title": "Kukis na Aiki",
+            "description": "Waɗannan kukis suna ba da damar ingantaccen aiki da keɓancewa, kamar bidiyo da tattaunawa kai tsaye."
+          },
+          "analytics": {
+            "title": "Kukis na Nazari",
+            "description": "Waɗannan kukis suna taimaka mana mu fahimci yadda ake amfani da gidan yanar gizonmu ko yadda yaƙin tallanmu ke da tasiri."
+          },
+          "marketing": {
+            "title": "Kukis na Talla",
+            "description": "Ana amfani da waɗannan kukis don sanya saƙonnin talla su fi dacewa da ku."
+          }
+        }
+      },
+      "specificCookies": {
+        "title": "Takamaiman Kukis da Muke Amfani",
+        "content": "Mai zuwa yana bayyana takamaiman nau'ikan kukis da muke amfani da su a gidan yanar gizonmu:",
+        "types": {
+          "session": {
+            "title": "Kukis na Zama",
+            "description": "Waɗannan kukis ne na ɗan lokaci waɗanda ke ƙarewa lokacin da kuka rufe mai binciken ku."
+          },
+          "persistent": {
+            "title": "Kukis Masu Dawwama",
+            "description": "Waɗannan suna kasancewa akan na'urarku na ƙayyadadden lokaci da aka bayyana a cikin kukis."
+          },
+          "thirdParty": {
+            "title": "Kukis na Ɓangare na Uku",
+            "description": "Waɗannan ana saita su ta wani yanki ban da wanda kuke ziyarta."
+          }
+        }
+      },
+      "cookieDuration": {
+        "title": "Tsawon Kukis",
+        "content": "Kukis na iya kasancewa akan kwamfutarku ko na'urar hannu na lokuta daban-daban. Wasu kukis 'kukis na zama' ne, ma'ana suna wanzuwa ne kawai yayin da mai binciken ku ke buɗe kuma ana goge su ta atomatik da zarar kun rufe mai binciken ku. Sauran kukis 'kukis masu dawwama' ne, ma'ana suna wanzuwa bayan rufe mai binciken ku."
+      },
+      "managingCookies": {
+        "title": "Sarrafa Kukis",
+        "content": "Kuna da hakkin yanke shawara ko za ku karɓa ko ƙi kukis. Kuna iya aiwatar da zaɓin kukis ɗinku ta amfani da hanyoyin masu zuwa:",
+        "options": {
+          "browserSettings": {
+            "title": "Saitunan Mai Bincike",
+            "description": "Kuna iya saita ko canza sarrafa mai binciken gidan yanar gizon ku don karɓa ko ƙi kukis."
+          },
+          "preferenceTool": {
+            "title": "Kayan Aikin Zaɓi na Kukis",
+            "description": "Kuna iya sarrafa zaɓin kukis ɗinku ta hanyar kayan aikin yardar kukis ɗinmu."
+          },
+          "impact": {
+            "title": "Tasirin Kashe Kukis",
+            "description": "Idan kun zaɓi ƙin kukis, har yanzu kuna iya amfani da gidan yanar gizonmu ko da yake samun damar ku zuwa wasu ayyuka da wurare na iya zama iyakance."
+          }
+        }
+      },
+      "updates": {
+        "title": "Sabuntawar Wannan Manufar Kukis",
+        "content": "Za mu iya sabunta wannan Manufar Kukis daga lokaci zuwa lokaci don nuna canje-canje ga kukis da muke amfani da su ko saboda wasu dalilai na aiki, doka ko ƙa'idodi. Don haka da fatan za a sake ziyartar wannan Manufar Kukis akai-akai don sanin amfaninmu da kukis da fasaha masu alaƙa."
+      },
+      "contactUs": {
+        "title": "Tuntuɓe Mu",
+        "content": "Idan kuna da wasu tambayoyi game da amfaninmu da kukis ko wasu fasaha, da fatan za a tuntuɓe mu a:"
+      }
+    }
+  }
+}

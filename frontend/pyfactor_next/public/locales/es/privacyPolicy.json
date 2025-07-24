@@ -1,0 +1,232 @@
+{
+  "title": "Política de Privacidad",
+  "effectiveDate": "Vigente a partir de: {{date}}",
+  "introduction": "En Dott LLC, valoramos su confianza y respetamos su privacidad. Existimos para proporcionar a las empresas herramientas integrales de gestión financiera. Esta Política de Privacidad explica, en un lenguaje claro y sencillo, qué información recopilamos, cómo la usamos y las opciones que tiene con respecto a su información personal, para que pueda sentirse seguro al usar nuestra plataforma.",
+  "navigation": {
+    "backToDashboard": "Volver al Panel",
+    "backToHome": "Volver al Inicio"
+  },
+  "sections": {
+    "scope": {
+      "title": "A. Alcance",
+      "content": "Proteger su información personal es importante para nosotros. Esta política de privacidad se aplica a nuestros productos y servicios ofrecidos bajo la marca Dott, nuestros sitios web y nuestras aplicaciones móviles que incorporan esta política de privacidad. Nuestros productos y servicios son ofrecidos por Dott LLC. Esta política cubre cómo recopilamos, usamos, almacenamos, procesamos y compartimos su información en conexión con nuestra plataforma de gestión financiera, incluyendo contabilidad, nómina, procesamiento de pagos, facturación y otros servicios."
+    },
+    "personalInfo": {
+      "title": "B. Información Personal",
+      "content": "Como parte de la prestación de nuestros servicios, podemos recopilar información personal sobre usted, su negocio, sus empleados y sus clientes. 'Información Personal' son datos que pueden usarse para identificar a una persona individualmente. Esta política describe nuestra recopilación, protección, uso, retención, divulgación y otro procesamiento de Información Personal y sus derechos relacionados con estas actividades.",
+      "businessInfo": {
+        "title": "B.1 Información Comercial",
+        "content": "Esto incluye el nombre de su empresa, dirección, números de identificación fiscal, tipo de industria, tipo de entidad comercial y otra información necesaria para proporcionar nuestros servicios."
+      },
+      "individualInfo": {
+        "title": "B.2 Información Individual",
+        "content": "Esto incluye información sobre usted como propietario de un negocio, sus empleados, contratistas y sus clientes, según sea necesario para proporcionar nuestros servicios."
+      }
+    },
+    "categories": {
+      "title": "C. Categorías de Información Personal Recopilada",
+      "content": "La información que podemos recopilar incluye, pero no se limita a:",
+      "identification": {
+        "title": "C.1 Información de Identificación",
+        "content": "Información de contacto (nombre, dirección de correo electrónico, número de teléfono, dirección postal), Números de Identificación Gubernamentales (EIN, SSN, IDs fiscales), Fecha de nacimiento, identificación fotográfica y documentación comercial."
+      },
+      "financial": {
+        "title": "C.2 Información Financiera",
+        "content": "Detalles de cuentas bancarias, información de tarjetas de pago, historial de transacciones, saldos de cuentas, registros de pago, historial crediticio, estados financieros e información de nómina."
+      },
+      "employee": {
+        "title": "C.3 Información de Empleados",
+        "content": "Para los servicios de nómina, recopilamos información sobre sus empleados incluyendo sus nombres, detalles de contacto, información salarial, información de retención de impuestos, detalles bancarios para depósito directo y otros datos relacionados con el empleo."
+      },
+      "technical": {
+        "title": "C.4 Información Técnica",
+        "content": "Información del dispositivo (dirección IP, tipo de dispositivo, sistema operativo), Información del navegador, Datos de geolocalización, Datos de uso, Información de inicio de sesión y Datos de interacción de la aplicación."
+      },
+      "customer": {
+        "title": "C.5 Información del Cliente",
+        "content": "Cuando usa nuestras funciones de facturación o procesamiento de pagos, podemos recopilar información sobre sus clientes necesaria para procesar estas transacciones."
+      },
+      "tax": {
+        "title": "C.6 Información Fiscal",
+        "content": "Cuando usa nuestras funciones fiscales, recopilamos la ubicación de su negocio, las tasas de impuestos que ingresa, las preferencias de configuración fiscal y el historial de cálculo de impuestos. También podemos procesar consultas relacionadas con impuestos cuando usa nuestras funciones de sugerencias fiscales impulsadas por IA. Esta información se usa únicamente para proporcionar servicios de cálculo de impuestos y no se usa para la presentación o reporte de impuestos en su nombre."
+      }
+    },
+    "collection": {
+      "title": "D. Cómo Recopilamos Su Información",
+      "content": "Recopilamos información de varias fuentes:",
+      "direct": {
+        "title": "D.1 Recopilación Directa",
+        "content": "Información que proporciona cuando se registra para nuestros servicios, configura su cuenta, conecta sus cuentas financieras, procesa pagos o se comunica con nosotros."
+      },
+      "automated": {
+        "title": "D.2 Recopilación Automatizada",
+        "content": "Información recopilada automáticamente a través de cookies, web beacons y tecnologías similares cuando usa nuestros servicios."
+      },
+      "thirdParty": {
+        "title": "D.3 Fuentes de Terceros",
+        "content": "Información que recibimos de proveedores de servicios de terceros, socios comerciales, servicios de verificación de identidad, bureaus de crédito y otras fuentes disponibles públicamente."
+      },
+      "financial": {
+        "title": "D.4 Instituciones Financieras",
+        "content": "Cuando conecta sus cuentas bancarias u otros servicios financieros a Dott, recopilamos información de estas instituciones financieras con su autorización."
+      }
+    },
+    "usage": {
+      "title": "E. Cómo Usamos Su Información",
+      "content": "Usamos su información para los siguientes propósitos:",
+      "services": {
+        "title": "E.1 Proporcionar y Mejorar Nuestros Servicios",
+        "content": "Para entregar los servicios de gestión financiera que solicita, procesar transacciones, facilitar pagos, gestionar facturas, procesar nóminas, proporcionar soporte técnico y mejorar nuestra plataforma."
+      },
+      "security": {
+        "title": "E.2 Autenticación y Seguridad",
+        "content": "Para verificar su identidad, asegurar su cuenta, prevenir fraudes y asegurar la seguridad de nuestra plataforma."
+      },
+      "communications": {
+        "title": "E.3 Comunicaciones",
+        "content": "Para comunicarnos con usted sobre su cuenta, proporcionar soporte al cliente, enviar actualizaciones del servicio y, con su consentimiento, enviar comunicaciones de marketing."
+      },
+      "compliance": {
+        "title": "E.4 Cumplimiento Legal",
+        "content": "Para cumplir con nuestras obligaciones legales, incluyendo regulaciones anti-lavado de dinero, requisitos de reporte fiscal y otras regulaciones de servicios financieros."
+      },
+      "analytics": {
+        "title": "E.5 Análisis y Mejoras",
+        "content": "Para analizar patrones de uso, solucionar problemas técnicos y desarrollar nuevas características y servicios."
+      }
+    },
+    "sharing": {
+      "title": "F. Compartir y Divulgación de Información",
+      "content": "Podemos compartir su información con las siguientes categorías de destinatarios:",
+      "providers": {
+        "title": "F.1 Proveedores de Servicios",
+        "content": "Proveedores de servicios de terceros que nos ayudan a entregar nuestros servicios, incluyendo procesadores de pagos (Stripe, Flutterwave, DLocal, Wise, PayPal), proveedores de hosting, servicios de soporte al cliente y proveedores de análisis."
+      },
+      "partners": {
+        "title": "F.2 Socios Financieros",
+        "content": "Bancos e instituciones financieras necesarias para procesar transacciones, facilitar pagos y proporcionar servicios de factoraje de facturas."
+      },
+      "authorities": {
+        "title": "F.3 Autoridades Legales y Regulatorias",
+        "content": "Autoridades gubernamentales, fuerzas del orden y otros terceros cuando sea requerido por ley, para cumplir con procesos legales o para proteger nuestros derechos."
+      },
+      "transfers": {
+        "title": "F.4 Transferencias Comerciales",
+        "content": "En conexión con cualquier fusión, adquisición o venta de activos de la empresa, su información puede ser transferida como un activo comercial."
+      },
+      "consent": {
+        "title": "F.5 Con Su Consentimiento",
+        "content": "Podemos compartir su información con otros terceros cuando haya dado su consentimiento para hacerlo."
+      }
+    },
+    "rights": {
+      "title": "G. Sus Opciones y Derechos",
+      "content": "Dependiendo de su jurisdicción, puede tener los siguientes derechos con respecto a su información personal:",
+      "access": {
+        "title": "G.1 Acceso y Portabilidad",
+        "content": "Puede solicitar acceso a su información personal y recibir una copia en un formato estructurado y de uso común."
+      },
+      "correction": {
+        "title": "G.2 Corrección",
+        "content": "Puede solicitar que corrijamos información personal inexacta o incompleta."
+      },
+      "deletion": {
+        "title": "G.3 Eliminación",
+        "content": "Puede solicitar que eliminemos su información personal, sujeto a ciertas excepciones."
+      },
+      "objection": {
+        "title": "G.4 Objeción y Restricción",
+        "content": "Puede objetar o solicitar restricción del procesamiento de su información personal."
+      },
+      "withdraw": {
+        "title": "G.5 Retirar Consentimiento",
+        "content": "Donde dependemos de su consentimiento para procesar su información personal, puede retirar su consentimiento en cualquier momento."
+      },
+      "exercise": {
+        "title": "G.6 Cómo Ejercer Sus Derechos",
+        "content": "Para ejercer sus derechos, póngase en contacto con nosotros en support@dottapps.com Podemos necesitar verificar su identidad antes de cumplir con su solicitud."
+      }
+    },
+    "security": {
+      "title": "H. Seguridad de Datos",
+      "content": "Implementamos medidas técnicas y organizacionales apropiadas para proteger su información personal:",
+      "measures": {
+        "title": "H.1 Medidas de Seguridad",
+        "content": "Usamos medidas de seguridad estándar de la industria incluyendo encriptación, controles de acceso, firewalls y evaluaciones de seguridad regulares."
+      },
+      "payment": {
+        "title": "H.2 Información de Pago",
+        "content": "La información de pago se procesa en cumplimiento con el Estándar de Seguridad de Datos de la Industria de Tarjetas de Pago (PCI DSS)."
+      },
+      "access": {
+        "title": "H.3 Acceso de Empleados",
+        "content": "Restringimos el acceso de empleados a información personal a aquellos que lo necesitan para realizar sus funciones laborales."
+      },
+      "breach": {
+        "title": "H.4 Procedimientos de Violación de Datos",
+        "content": "Tenemos procedimientos establecidos para responder a violaciones sospechosas de seguridad de datos y le notificaremos a usted y a los reguladores aplicables de violaciones según lo requiera la ley."
+      },
+      "tax": {
+        "title": "H.5 Seguridad de Datos Fiscales",
+        "content": "Las tasas y configuraciones fiscales que ingresa están encriptadas y almacenadas de forma segura. Las sugerencias fiscales impulsadas por IA se procesan sin almacenar sus consultas específicas. No compartimos sus datos de configuración fiscal con terceros excepto según sea necesario para proporcionar nuestros servicios o según lo requiera la ley. Usted sigue siendo responsable de la precisión de toda la información fiscal ingresada en nuestro sistema."
+      }
+    },
+    "retention": {
+      "title": "I. Retención de Datos",
+      "content": "Retenemos su información personal durante el tiempo necesario para proporcionar nuestros servicios y para propósitos comerciales legítimos, como mantener registros comerciales, cumplir con obligaciones legales, resolver disputas y hacer cumplir nuestros acuerdos. Cuando ya no necesitemos su información personal, la eliminaremos de forma segura o la anonimizaremos."
+    },
+    "transfers": {
+      "title": "J. Transferencias Internacionales de Datos",
+      "content": "Su información puede ser transferida y procesada en países distintos al país donde vive, incluyendo Estados Unidos, Ruanda y otros países donde Dott LLC o sus proveedores de servicios operan. Estos países pueden tener leyes de protección de datos diferentes a las leyes de su país. Implementamos salvaguardas apropiadas para proteger su información cuando se transfiere internacionalmente, como cláusulas contractuales estándar aprobadas por las autoridades de protección de datos relevantes."
+    },
+    "children": {
+      "title": "K. Privacidad de Menores",
+      "content": "Nuestros servicios no están dirigidos a menores de 18 años. No recopilamos intencionalmente información personal de menores. Si es padre o tutor y cree que su hijo nos ha proporcionado información personal, póngase en contacto con nosotros para que podamos eliminar la información."
+    },
+    "cookies": {
+      "title": "L. Cookies y Tecnologías Similares",
+      "content": "Usamos cookies y tecnologías similares para recopilar información sobre cómo interactúa con nuestros servicios, recordar sus preferencias y optimizar su experiencia. Puede gestionar sus preferencias de cookies a través de la configuración de su navegador.",
+      "types": {
+        "title": "L.1 Tipos de Cookies que Usamos",
+        "content": "Cookies esenciales (necesarias para la funcionalidad de nuestros servicios), Cookies analíticas (para entender cómo los usuarios interactúan con nuestros servicios) y Cookies de marketing (para entregar anuncios relevantes)."
+      },
+      "choices": {
+        "title": "L.2 Sus Opciones de Cookies",
+        "content": "La mayoría de navegadores web le permiten controlar las cookies a través de su configuración. Sin embargo, si rechaza ciertas cookies, es posible que no pueda usar todas las características de nuestros servicios."
+      }
+    },
+    "ai": {
+      "title": "M. IA y Procesamiento Automatizado",
+      "content": "Usamos inteligencia artificial y sistemas automatizados para mejorar nuestros servicios y proporcionar características como sugerencias de tasas fiscales, perspectivas financieras y detección de fraudes.",
+      "features": {
+        "title": "M.1 Características Impulsadas por IA",
+        "content": "Nuestras características de IA analizan su ubicación y tipo de negocio para sugerir tasas fiscales y proporcionar otras perspectivas comerciales. Estas sugerencias se generan basándose en información disponible públicamente y reglas fiscales generales."
+      },
+      "advice": {
+        "title": "M.2 Sin Asesoramiento Profesional",
+        "content": "Las sugerencias generadas por IA, incluyendo recomendaciones de tasas fiscales, se proporcionan solo con fines informativos y no constituyen asesoramiento fiscal, legal o financiero profesional. Debe verificar independientemente todas las sugerencias antes de usarlas."
+      },
+      "review": {
+        "title": "M.3 Revisión Humana",
+        "content": "Las decisiones automatizadas significativas que pueden tener efectos legales o similarmente significativos en usted están sujetas a revisión humana bajo solicitud."
+      }
+    },
+    "changes": {
+      "title": "N. Cambios a Esta Política de Privacidad",
+      "content": "Podemos actualizar esta política de privacidad de vez en cuando para reflejar cambios en nuestras prácticas o requisitos legales. Le notificaremos de cualquier cambio material publicando la nueva versión en nuestro sitio web y actualizando la fecha efectiva. Le alentamos a revisar nuestra política de privacidad periódicamente."
+    },
+    "contact": {
+      "title": "O. Contáctenos",
+      "content": "Si tiene alguna pregunta sobre esta Política de Privacidad o nuestras prácticas de datos, o si desea ejercer sus derechos con respecto a su información personal, póngase en contacto con nosotros en:"
+    }
+  },
+  "contactInfo": {
+    "company": "Dott LLC",
+    "address": "800 N King Street",
+    "suite": "Suite 304 #2797",
+    "city": "Wilmington, DE 19801",
+    "country": "Estados Unidos",
+    "email": "Correo electrónico: support@dottapps.com",
+    "website": "Sitio web: www.dottapps.com"
+  }
+}

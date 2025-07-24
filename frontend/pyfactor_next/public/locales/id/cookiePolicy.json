@@ -1,0 +1,93 @@
+{
+  "cookiePolicy": {
+    "title": "Kebijakan Cookie",
+    "backToHome": "Kembali ke Beranda",
+    "effectiveDate": "Berlaku sejak: {{date}}",
+    "introduction": "Kebijakan Cookie ini menjelaskan bagaimana Dott LLC ("kami", "kita", atau "milik kami") menggunakan cookie dan teknologi serupa untuk mengenali Anda saat mengunjungi situs web kami di www.dottapps.com. Ini menjelaskan apa teknologi ini dan mengapa kami menggunakannya, serta hak Anda untuk mengontrol penggunaan kami terhadapnya.",
+    "companyName": "Dott LLC",
+    "email": "Email",
+    "website": "Situs web",
+    "address": {
+      "street": "800 N King Street",
+      "suite": "Suite 304 #2797",
+      "city": "Wilmington, DE 19801",
+      "country": "Amerika Serikat"
+    },
+    "sections": {
+      "whatAreCookies": {
+        "title": "Apa Itu Cookie",
+        "content": "Cookie adalah file data kecil yang ditempatkan di komputer atau perangkat seluler Anda saat mengunjungi situs web. Cookie digunakan secara luas oleh pemilik situs web untuk membuat situs web mereka berfungsi, atau berfungsi lebih efisien, serta untuk menyediakan informasi pelaporan."
+      },
+      "howWeUseCookies": {
+        "title": "Bagaimana Kami Menggunakan Cookie",
+        "content": "Kami menggunakan cookie untuk beberapa alasan. Beberapa cookie diperlukan karena alasan teknis agar situs web kami dapat beroperasi, dan kami menyebutnya sebagai cookie "penting" atau "sangat diperlukan". Cookie lain memungkinkan kami untuk melacak dan menargetkan minat pengguna kami untuk meningkatkan pengalaman di situs web kami.",
+        "categories": {
+          "essential": {
+            "title": "Cookie Penting",
+            "description": "Cookie ini sangat diperlukan untuk menyediakan layanan yang tersedia melalui situs web kami dan untuk menggunakan beberapa fiturnya."
+          },
+          "functional": {
+            "title": "Cookie Fungsional",
+            "description": "Cookie ini memungkinkan fungsionalitas yang ditingkatkan dan personalisasi, seperti video dan obrolan langsung."
+          },
+          "analytics": {
+            "title": "Cookie Analitik",
+            "description": "Cookie ini membantu kami memahami bagaimana situs web kami digunakan atau seberapa efektif kampanye pemasaran kami."
+          },
+          "marketing": {
+            "title": "Cookie Pemasaran",
+            "description": "Cookie ini digunakan untuk membuat pesan iklan lebih relevan bagi Anda."
+          }
+        }
+      },
+      "specificCookies": {
+        "title": "Cookie Spesifik yang Kami Gunakan",
+        "content": "Berikut ini menjelaskan jenis cookie spesifik yang kami gunakan di situs web kami:",
+        "types": {
+          "session": {
+            "title": "Cookie Sesi",
+            "description": "Ini adalah cookie sementara yang kedaluwarsa saat Anda menutup browser."
+          },
+          "persistent": {
+            "title": "Cookie Persisten",
+            "description": "Ini tetap ada di perangkat Anda untuk jangka waktu yang ditentukan dalam cookie."
+          },
+          "thirdParty": {
+            "title": "Cookie Pihak Ketiga",
+            "description": "Ini ditetapkan oleh domain selain yang Anda kunjungi."
+          }
+        }
+      },
+      "cookieDuration": {
+        "title": "Durasi Cookie",
+        "content": "Cookie dapat tetap berada di komputer atau perangkat seluler Anda untuk periode waktu yang berbeda. Beberapa cookie adalah 'cookie sesi', artinya mereka hanya ada saat browser Anda terbuka dan dihapus secara otomatis setelah Anda menutup browser. Cookie lain adalah 'cookie persisten', artinya mereka bertahan setelah browser Anda ditutup."
+      },
+      "managingCookies": {
+        "title": "Mengelola Cookie",
+        "content": "Anda memiliki hak untuk memutuskan apakah akan menerima atau menolak cookie. Anda dapat menggunakan preferensi cookie Anda dengan menggunakan metode berikut:",
+        "options": {
+          "browserSettings": {
+            "title": "Pengaturan Browser",
+            "description": "Anda dapat mengatur atau mengubah kontrol browser web Anda untuk menerima atau menolak cookie."
+          },
+          "preferenceTool": {
+            "title": "Alat Preferensi Cookie",
+            "description": "Anda dapat mengelola preferensi cookie Anda melalui alat persetujuan cookie kami."
+          },
+          "impact": {
+            "title": "Dampak Menonaktifkan Cookie",
+            "description": "Jika Anda memilih untuk menolak cookie, Anda masih dapat menggunakan situs web kami meskipun akses Anda ke beberapa fungsionalitas dan area mungkin dibatasi."
+          }
+        }
+      },
+      "updates": {
+        "title": "Pembaruan Kebijakan Cookie Ini",
+        "content": "Kami dapat memperbarui Kebijakan Cookie ini dari waktu ke waktu untuk mencerminkan perubahan pada cookie yang kami gunakan atau untuk alasan operasional, hukum, atau peraturan lainnya. Oleh karena itu, harap kunjungi kembali Kebijakan Cookie ini secara teratur untuk tetap mendapat informasi tentang penggunaan cookie dan teknologi terkait kami."
+      },
+      "contactUs": {
+        "title": "Hubungi Kami",
+        "content": "Jika Anda memiliki pertanyaan tentang penggunaan cookie atau teknologi lain kami, silakan hubungi kami di:"
+      }
+    }
+  }
+}

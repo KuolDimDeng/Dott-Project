@@ -1,0 +1,93 @@
+{
+  "cookiePolicy": {
+    "title": "Cookie政策",
+    "backToHome": "返回首页",
+    "effectiveDate": "生效日期：{{date}}",
+    "introduction": "本Cookie政策说明了Dott LLC（"我们"、"我们的"）在您访问我们的网站www.dottapps.com时如何使用Cookie和类似技术来识别您。它解释了这些技术是什么，我们为什么使用它们，以及您控制我们使用它们的权利。",
+    "companyName": "Dott LLC",
+    "email": "电子邮件",
+    "website": "网站",
+    "address": {
+      "street": "800 N King Street",
+      "suite": "Suite 304 #2797",
+      "city": "Wilmington, DE 19801",
+      "country": "美国"
+    },
+    "sections": {
+      "whatAreCookies": {
+        "title": "什么是Cookie",
+        "content": "Cookie是当您访问网站时放置在您的计算机或移动设备上的小型数据文件。网站所有者广泛使用Cookie来使其网站正常运行或更有效地运行，以及提供报告信息。"
+      },
+      "howWeUseCookies": {
+        "title": "我们如何使用Cookie",
+        "content": "我们出于多种原因使用Cookie。出于技术原因，某些Cookie是我们网站运行所必需的，我们将这些称为"必要"或"严格必要"的Cookie。其他Cookie使我们能够跟踪和定位用户的兴趣，以增强我们网站上的体验。",
+        "categories": {
+          "essential": {
+            "title": "必要Cookie",
+            "description": "这些Cookie是向您提供通过我们网站提供的服务并使用其某些功能所必需的。"
+          },
+          "functional": {
+            "title": "功能性Cookie",
+            "description": "这些Cookie启用增强功能和个性化，例如视频和实时聊天。"
+          },
+          "analytics": {
+            "title": "分析Cookie",
+            "description": "这些Cookie帮助我们了解我们的网站如何被使用或我们的营销活动有多有效。"
+          },
+          "marketing": {
+            "title": "营销Cookie",
+            "description": "这些Cookie用于使广告信息与您更相关。"
+          }
+        }
+      },
+      "specificCookies": {
+        "title": "我们使用的特定Cookie",
+        "content": "以下描述了我们在网站上使用的特定类型的Cookie：",
+        "types": {
+          "session": {
+            "title": "会话Cookie",
+            "description": "这些是临时Cookie，当您关闭浏览器时会过期。"
+          },
+          "persistent": {
+            "title": "持久Cookie",
+            "description": "这些会在Cookie中指定的设定时间内保留在您的设备上。"
+          },
+          "thirdParty": {
+            "title": "第三方Cookie",
+            "description": "这些由您正在访问的域以外的域设置。"
+          }
+        }
+      },
+      "cookieDuration": {
+        "title": "Cookie持续时间",
+        "content": "Cookie可以在您的计算机或移动设备上保留不同的时间段。一些Cookie是"会话Cookie"，这意味着它们仅在您的浏览器打开时存在，并在您关闭浏览器后自动删除。其他Cookie是"持久Cookie"，这意味着它们在浏览器关闭后仍然存在。"
+      },
+      "managingCookies": {
+        "title": "管理Cookie",
+        "content": "您有权决定是否接受或拒绝Cookie。您可以使用以下方法行使您的Cookie偏好：",
+        "options": {
+          "browserSettings": {
+            "title": "浏览器设置",
+            "description": "您可以设置或修改您的网络浏览器控件以接受或拒绝Cookie。"
+          },
+          "preferenceTool": {
+            "title": "Cookie偏好工具",
+            "description": "您可以通过我们的Cookie同意工具管理您的Cookie偏好。"
+          },
+          "impact": {
+            "title": "禁用Cookie的影响",
+            "description": "如果您选择拒绝Cookie，您仍然可以使用我们的网站，尽管您对某些功能和区域的访问可能会受到限制。"
+          }
+        }
+      },
+      "updates": {
+        "title": "本Cookie政策的更新",
+        "content": "我们可能会不时更新本Cookie政策，以反映我们使用的Cookie的变化或出于其他运营、法律或监管原因。因此，请定期重新访问本Cookie政策，以了解我们使用Cookie和相关技术的情况。"
+      },
+      "contactUs": {
+        "title": "联系我们",
+        "content": "如果您对我们使用Cookie或其他技术有任何疑问，请通过以下方式联系我们："
+      }
+    }
+  }
+}

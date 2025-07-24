@@ -1,0 +1,93 @@
+{
+  "cookiePolicy": {
+    "title": "Çerez Politikası",
+    "backToHome": "Ana Sayfaya Dön",
+    "effectiveDate": "Yürürlük tarihi: {{date}}",
+    "introduction": "Bu Çerez Politikası, Dott LLC'nin ("biz", "bize" veya "bizim") www.dottapps.com adresindeki web sitemizi ziyaret ettiğinizde sizi tanımak için çerezleri ve benzer teknolojileri nasıl kullandığını açıklar. Bu teknolojilerin ne olduğunu ve neden kullandığımızı, ayrıca bunları kullanmamızı kontrol etme haklarınızı açıklar.",
+    "companyName": "Dott LLC",
+    "email": "E-posta",
+    "website": "Web sitesi",
+    "address": {
+      "street": "800 N King Street",
+      "suite": "Suite 304 #2797",
+      "city": "Wilmington, DE 19801",
+      "country": "Amerika Birleşik Devletleri"
+    },
+    "sections": {
+      "whatAreCookies": {
+        "title": "Çerezler Nedir",
+        "content": "Çerezler, bir web sitesini ziyaret ettiğinizde bilgisayarınıza veya mobil cihazınıza yerleştirilen küçük veri dosyalarıdır. Çerezler, web sitesi sahipleri tarafından web sitelerinin çalışmasını veya daha verimli çalışmasını sağlamak ve raporlama bilgileri sağlamak için yaygın olarak kullanılır."
+      },
+      "howWeUseCookies": {
+        "title": "Çerezleri Nasıl Kullanıyoruz",
+        "content": "Çerezleri çeşitli nedenlerle kullanıyoruz. Bazı çerezler, web sitemizin çalışması için teknik nedenlerle gereklidir ve bunları "temel" veya "kesinlikle gerekli" çerezler olarak adlandırıyoruz. Diğer çerezler, web sitemizdeki deneyimi geliştirmek için kullanıcılarımızın ilgi alanlarını takip etmemizi ve hedeflememizi sağlar.",
+        "categories": {
+          "essential": {
+            "title": "Temel Çerezler",
+            "description": "Bu çerezler, web sitemiz aracılığıyla sunulan hizmetleri size sağlamak ve bazı özelliklerini kullanmak için kesinlikle gereklidir."
+          },
+          "functional": {
+            "title": "İşlevsel Çerezler",
+            "description": "Bu çerezler, videolar ve canlı sohbetler gibi gelişmiş işlevsellik ve kişiselleştirmeyi sağlar."
+          },
+          "analytics": {
+            "title": "Analitik Çerezler",
+            "description": "Bu çerezler, web sitemizin nasıl kullanıldığını veya pazarlama kampanyalarımızın ne kadar etkili olduğunu anlamamıza yardımcı olur."
+          },
+          "marketing": {
+            "title": "Pazarlama Çerezleri",
+            "description": "Bu çerezler, reklam mesajlarını sizin için daha alakalı hale getirmek için kullanılır."
+          }
+        }
+      },
+      "specificCookies": {
+        "title": "Kullandığımız Belirli Çerezler",
+        "content": "Aşağıda web sitemizde kullandığımız belirli çerez türleri açıklanmaktadır:",
+        "types": {
+          "session": {
+            "title": "Oturum Çerezleri",
+            "description": "Bunlar, tarayıcınızı kapattığınızda süresi dolan geçici çerezlerdir."
+          },
+          "persistent": {
+            "title": "Kalıcı Çerezler",
+            "description": "Bunlar, çerezde belirtilen belirli bir süre boyunca cihazınızda kalır."
+          },
+          "thirdParty": {
+            "title": "Üçüncü Taraf Çerezleri",
+            "description": "Bunlar, ziyaret ettiğinizden farklı bir alan adı tarafından ayarlanır."
+          }
+        }
+      },
+      "cookieDuration": {
+        "title": "Çerez Süresi",
+        "content": "Çerezler, bilgisayarınızda veya mobil cihazınızda farklı süreler boyunca kalabilir. Bazı çerezler 'oturum çerezleri'dir, yani yalnızca tarayıcınız açıkken var olur ve tarayıcınızı kapattığınızda otomatik olarak silinir. Diğer çerezler 'kalıcı çerezler'dir, yani tarayıcınız kapatıldıktan sonra da varlığını sürdürür."
+      },
+      "managingCookies": {
+        "title": "Çerezleri Yönetme",
+        "content": "Çerezleri kabul edip etmemeye karar verme hakkına sahipsiniz. Çerez tercihlerinizi aşağıdaki yöntemleri kullanarak uygulayabilirsiniz:",
+        "options": {
+          "browserSettings": {
+            "title": "Tarayıcı Ayarları",
+            "description": "Çerezleri kabul etmek veya reddetmek için web tarayıcı kontrollerinizi ayarlayabilir veya değiştirebilirsiniz."
+          },
+          "preferenceTool": {
+            "title": "Çerez Tercih Aracı",
+            "description": "Çerez onay aracımız aracılığıyla çerez tercihlerinizi yönetebilirsiniz."
+          },
+          "impact": {
+            "title": "Çerezleri Devre Dışı Bırakmanın Etkisi",
+            "description": "Çerezleri reddetmeyi seçerseniz, bazı işlevlere ve alanlara erişiminiz kısıtlanabilir olsa da web sitemizi kullanmaya devam edebilirsiniz."
+          }
+        }
+      },
+      "updates": {
+        "title": "Bu Çerez Politikasının Güncellemeleri",
+        "content": "Kullandığımız çerezlerdeki değişiklikleri yansıtmak veya diğer işletme, yasal veya düzenleyici nedenlerle bu Çerez Politikasını zaman zaman güncelleyebiliriz. Bu nedenle, çerezleri ve ilgili teknolojileri kullanımımız hakkında bilgi sahibi olmak için lütfen bu Çerez Politikasını düzenli olarak tekrar ziyaret edin."
+      },
+      "contactUs": {
+        "title": "Bize Ulaşın",
+        "content": "Çerezleri veya diğer teknolojileri kullanımımızla ilgili sorularınız varsa, lütfen bizimle iletişime geçin:"
+      }
+    }
+  }
+}

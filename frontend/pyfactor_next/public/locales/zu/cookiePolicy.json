@@ -1,0 +1,93 @@
+{
+  "cookiePolicy": {
+    "title": "Inqubomgomo Yamakhukhi",
+    "backToHome": "Buyela Ekhaya",
+    "effectiveDate": "Isebenza kusukela: {{date}}",
+    "introduction": "Le Nqubomgomo Yamakhukhi ichaza ukuthi i-Dott LLC ("thina", "wethu", noma "yethu") isebenzisa kanjani amakhukhi nobuchwepheshe obufanayo ukukuqonda lapho uvakashela iwebhusayithi yethu ku-www.dottapps.com. Ichaza ukuthi yini lobu buchwepheshe nokuthi kungani sibusebenzisa, kanye namalungelo akho okulawula ukusetshenziswa kwethu kwawo.",
+    "companyName": "Dott LLC",
+    "email": "I-imeyili",
+    "website": "Iwebhusayithi",
+    "address": {
+      "street": "800 N King Street",
+      "suite": "Suite 304 #2797",
+      "city": "Wilmington, DE 19801",
+      "country": "I-United States"
+    },
+    "sections": {
+      "whatAreCookies": {
+        "title": "Ayini Amakhukhi",
+        "content": "Amakhukhi amafayela amancane edatha abekwa kukhompyutha yakho noma idivayisi yeselula lapho uvakashela iwebhusayithi. Amakhukhi asetshenziswa kabanzi ngabanikazi bamawebhusayithi ukwenza amawebhusayithi abo asebenze, noma asebenze ngempumelelo eyengeziwe, kanye nokuhlinzeka ngolwazi lokubika."
+      },
+      "howWeUseCookies": {
+        "title": "Sisebenzisa Kanjani Amakhukhi",
+        "content": "Sisebenzisa amakhukhi ngezizathu eziningana. Amanye amakhukhi adingeka ngezizathu zobuchwepheshe ukuze iwebhusayithi yethu isebenze, futhi sibhekisela kulawa ngokuthi amakhukhi "abalulekile" noma "adingeka kakhulu". Amanye amakhukhi asivumela ukuthi silandelele futhi siqondise izintshisekelo zabasebenzisi bethu ukuthuthukisa umuzwa kuwebhusayithi yethu.",
+        "categories": {
+          "essential": {
+            "title": "Amakhukhi Abalulekile",
+            "description": "Lawa makhukhi adingeka kakhulu ukukuhlinzeka ngezinsizakalo ezitholakala ngewebhusayithi yethu nokusebenzisa ezinye zezici zayo."
+          },
+          "functional": {
+            "title": "Amakhukhi Asebenzayo",
+            "description": "Lawa makhukhi anika amandla ukusebenza okuthuthukisiwe nokwenza kube ngokwakho, njengamavidiyo nezingxoxo ezibukhoma."
+          },
+          "analytics": {
+            "title": "Amakhukhi Okuhlaziya",
+            "description": "Lawa makhukhi asisiza ukuqonda ukuthi iwebhusayithi yethu isetshenziswa kanjani noma ukuthi imikhankaso yethu yokumaketha isebenza kangakanani."
+          },
+          "marketing": {
+            "title": "Amakhukhi Okumaketha",
+            "description": "Lawa makhukhi asetshenziswa ukwenza imilayezo yokukhangisa ifaneleke kakhulu kuwe."
+          }
+        }
+      },
+      "specificCookies": {
+        "title": "Amakhukhi Athile Esiwasebenzisayo",
+        "content": "Okulandelayo kuchaza izinhlobo ezithile zamakhukhi esizisebenzisa kuwebhusayithi yethu:",
+        "types": {
+          "session": {
+            "title": "Amakhukhi Esikhathi",
+            "description": "Lawa amakhukhi esikhashana aphela lapho uvala isiphequluli sakho."
+          },
+          "persistent": {
+            "title": "Amakhukhi Ahlala Isikhathi Eside",
+            "description": "Lawa ahlala kudivayisi yakho isikhathi esithile esicaciswe kukhukhi."
+          },
+          "thirdParty": {
+            "title": "Amakhukhi Abathathu",
+            "description": "Lawa abekwa ngesizinda esingeyona leso osivakashelayo."
+          }
+        }
+      },
+      "cookieDuration": {
+        "title": "Isikhathi Samakhukhi",
+        "content": "Amakhukhi angahlala kukhompyutha yakho noma idivayisi yeselula izikhathi ezahlukene. Amanye amakhukhi 'amakhukhi esikhathi', okusho ukuthi akhona kuphela ngenkathi isiphequluli sakho sivuliwe futhi asuswa ngokuzenzakalelayo uma uvala isiphequluli sakho. Amanye amakhukhi 'amakhukhi ahlala isikhathi eside', okusho ukuthi ahlala ngemuva kokuvala isiphequluli sakho."
+      },
+      "managingCookies": {
+        "title": "Ukuphatha Amakhukhi",
+        "content": "Unelungelo lokunquma ukuthi uzowamukelawoamakhukhi noma uwalandule. Ungasebenzisa okuthandayo kwamakhukhi ngokusebenzisa izindlela ezilandelayo:",
+        "options": {
+          "browserSettings": {
+            "title": "Izilungiselelo Zesiphequluli",
+            "description": "Ungasetha noma ushintshe izilawuli zesiphequluli sakho sewebhu ukwamukela noma ukwenqaba amakhukhi."
+          },
+          "preferenceTool": {
+            "title": "Ithuluzi Lokukhetha Amakhukhi",
+            "description": "Ungaphatha okuthandayo kwamakhukhi akho ngethuluzi lethu lemvume yamakhukhi."
+          },
+          "impact": {
+            "title": "Umthelela Wokukhubaza Amakhukhi",
+            "description": "Uma ukhetha ukwenqaba amakhukhi, ungasasebenzisa iwebhusayithi yethu nakuba ukufinyelela kwakho kokunye ukusebenza nezindawo kungase kukhawulelwe."
+          }
+        }
+      },
+      "updates": {
+        "title": "Izibuyekezo Zale Nqubomgomo Yamakhukhi",
+        "content": "Singase sibuyekeze le Nqubomgomo Yamakhukhi ngezikhathi ezithile ukuze sibonise izinguquko kumakhukhi esiwasebenzisayo noma ngezinye izizathu zokusebenza, ezomthetho noma zokulawula. Ngakho-ke sicela uphinde uvakashele le Nqubomgomo Yamakhukhi njalo ukuze uhlale wazi ngokusetshenziswa kwethu kwamakhukhi nobuchwepheshe obuhlobene."
+      },
+      "contactUs": {
+        "title": "Xhumana Nathi",
+        "content": "Uma unemibuzo mayelana nokusetshenziswa kwethu kwamakhukhi noma obunye ubuchwepheshe, sicela uxhumane nathi ku:"
+      }
+    }
+  }
+}

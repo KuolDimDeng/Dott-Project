@@ -1,12 +1,15 @@
 'use client';
 
-
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { useTranslation } from 'react-i18next';
+import { I18nextProvider } from 'react-i18next';
+import i18nInstance from '@/i18n';
 
-const TermsOfUse = () => {
+const TermsOfUseContent = () => {
   const router = useRouter();
+  const { t } = useTranslation('termsOfService');
   const [fromDashboard, setFromDashboard] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   
@@ -90,7 +93,7 @@ const TermsOfUse = () => {
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
-          {fromDashboard ? 'Back to Dashboard' : 'Back to Home'}
+          {fromDashboard ? t('navigation.backToDashboard') : t('navigation.backToHome')}
         </button>
         
         <div 
@@ -109,148 +112,112 @@ const TermsOfUse = () => {
       
       <div className="mt-4 mb-12 bg-white rounded-lg shadow-lg p-6 sm:p-10">
         <h1 className={`text-center font-bold ${isMobile ? 'text-2xl' : 'text-3xl'} mb-3`}>
-          Terms of Use
+          {t('title')}
         </h1>
 
         <p className="text-center text-gray-600 mb-6">
-          Effective as of: {new Date().toLocaleDateString()}
+          {t('effectiveDate', { date: new Date().toLocaleDateString() })}
         </p>
 
         <hr className="my-6 border-t border-gray-200" />
 
         <SectionContent>
-          Welcome to Dott, a service provided by Dott LLC. This Terms of Use Agreement
-          ("Agreement") governs your use of the Dott website, mobile applications, and all related services
-          offered by Dott LLC. By accessing or using our service, you acknowledge that you have read,
-          understood, and agree to be bound by these terms.
+          {t('introduction')}
         </SectionContent>
 
-        <SectionTitle>1. Acceptance of Terms</SectionTitle>
+        <SectionTitle>{t('sections.acceptance.title')}</SectionTitle>
         <SectionContent>
-          By registering for and/or using Dott in any manner, including but not limited to visiting or
-          browsing the website or downloading the application, you agree to be bound by this Agreement,
-          all applicable laws and regulations, and agree that you are responsible for compliance with
-          any applicable local laws. If you do not agree with any of these terms, you are prohibited from
-          using or accessing Dott. The materials contained in Dott are protected by applicable copyright
-          and trademark law.
+          {t('sections.acceptance.content')}
         </SectionContent>
 
-        <SectionTitle>2. Description of Service</SectionTitle>
+        <SectionTitle>{t('sections.service.title')}</SectionTitle>
         <SectionContent>
-          Dott is a comprehensive financial management platform that provides businesses with tools for
-          accounting, payroll, payment processing, invoicing, and financial insights. Our services include
-          subscription-based access to our software, payment processing capabilities, payroll services,
-          and invoice factoring in select regions. The specific features available to you may depend on your
-          subscription level, geographical location, and applicable laws and regulations.
+          {t('sections.service.content')}
         </SectionContent>
 
-        <SectionTitle>3. User Accounts</SectionTitle>
+        <SectionTitle>{t('sections.accounts.title')}</SectionTitle>
         <SectionContent>
-          To access most features of Dott, you must register for an account. You agree to provide accurate,
-          current, and complete information during the registration process and to update such information
-          to keep it accurate, current, and complete. You are responsible for safeguarding your password
-          and for all activities that occur under your account. You agree to notify Dott LLC immediately of
-          any unauthorized use of your account. Dott LLC cannot and will not be liable for any loss or damage
-          arising from your failure to comply with the above requirements.
+          {t('sections.accounts.content')}
         </SectionContent>
 
-        <SectionTitle>4. Subscription and Payments</SectionTitle>
+        <SectionTitle>{t('sections.payments.title')}</SectionTitle>
         <SectionContent>
-          Dott offers various subscription plans and payment services. By subscribing to our services,
-          you agree to pay the applicable fees as they become due. Subscription fees are billed in advance on a
-          monthly or annual basis depending on your selected billing cycle. When you register for a paid service,
-          you must provide accurate and complete information for a valid payment method that you are authorized to use.
+          {t('sections.payments.content')}
         </SectionContent>
         
-        <SubsectionTitle>4.1 Recurring Billing</SubsectionTitle>
+        <SubsectionTitle>{t('sections.payments.recurring.title')}</SubsectionTitle>
         <SectionContent>
-          By subscribing to Dott services, you authorize us to charge the payment method you provide to us on a 
-          recurring basis. If we are unable to charge your payment method for any reason, we reserve the right to 
-          terminate or suspend your access to the paid services.
+          {t('sections.payments.recurring.content')}
         </SectionContent>
         
-        <SubsectionTitle>4.2 Payment Processing</SubsectionTitle>
+        <SubsectionTitle>{t('sections.payments.processing.title')}</SubsectionTitle>
         <SectionContent>
-          Dott uses third-party payment processors including Stripe, Flutterwave, DLocal, Wise, PayPal, and others 
-          to process transactions. Your use of these payment services is subject to the applicable 
-          payment processor's terms of service and privacy policy. Dott charges a transaction fee for payment 
-          processing services as outlined in our pricing page.
+          {t('sections.payments.processing.content')}
         </SectionContent>
         
-        <SubsectionTitle>4.3 Refunds</SubsectionTitle>
+        <SubsectionTitle>{t('sections.payments.refunds.title')}</SubsectionTitle>
         <SectionContent>
-          All fees are non-refundable unless otherwise specified or required by applicable law. If you believe 
-          you've been charged in error, please contact our customer support team.
+          {t('sections.payments.refunds.content')}
         </SectionContent>
 
-        <SectionTitle>5. User Conduct</SectionTitle>
+        <SectionTitle>{t('sections.conduct.title')}</SectionTitle>
         <SectionContent>
-          You agree to use Dott only for lawful purposes and in accordance with this Agreement. You agree not to use Dott:
+          {t('sections.conduct.content')}
         </SectionContent>
         <ul className="list-disc pl-8 mb-6">
           <li className="mb-2 text-gray-600">
-            In any way that violates any applicable federal, state, local, or international law or regulation.
+            {t('sections.conduct.violations.law')}
           </li>
           <li className="mb-2 text-gray-600">
-            To transmit any material that is unlawful, threatening, abusive, libelous, defamatory, obscene, or otherwise objectionable.
+            {t('sections.conduct.violations.material')}
           </li>
           <li className="mb-2 text-gray-600">
-            To impersonate or attempt to impersonate Dott LLC, a Dott LLC employee, another user, or any other person or entity.
+            {t('sections.conduct.violations.impersonation')}
           </li>
           <li className="mb-2 text-gray-600">
-            To engage in any activity that interferes with or disrupts the services (or the servers and networks connected to the services).
+            {t('sections.conduct.violations.interference')}
           </li>
           <li className="mb-2 text-gray-600">
-            To attempt to circumvent any security measures implemented by Dott LLC.
+            {t('sections.conduct.violations.security')}
           </li>
           <li className="mb-2 text-gray-600">
-            For money laundering, terrorist financing, or any other illegal financial activities.
+            {t('sections.conduct.violations.financial')}
           </li>
         </ul>
 
-        <SectionTitle>6. Payment and Financial Services</SectionTitle>
+        <SectionTitle>{t('sections.financial.title')}</SectionTitle>
         <SectionContent>
-          Dott enables users to process payments, manage payroll, and access financial services through various third-party 
-          providers. When using these services, you agree to comply with all applicable laws and regulations, including 
-          those related to financial transactions, anti-money laundering requirements, and data privacy.
+          {t('sections.financial.content')}
         </SectionContent>
         
-        <SubsectionTitle>6.1 Payment Processing</SubsectionTitle>
+        <SubsectionTitle>{t('sections.financial.processing.title')}</SubsectionTitle>
         <SectionContent>
-          Use of our payment processing features is subject to the terms of service of our payment partners. You are responsible 
-          for ensuring all payment information provided is accurate and that you are authorized to use the payment methods you provide.
+          {t('sections.financial.processing.content')}
         </SectionContent>
         
-        <SubsectionTitle>6.2 Invoice Factoring</SubsectionTitle>
+        <SubsectionTitle>{t('sections.financial.factoring.title')}</SubsectionTitle>
         <SectionContent>
-          Where available, Dott offers invoice factoring services subject to additional terms and eligibility requirements. These services 
-          are currently only available in the United States and Canada. By using our invoice factoring services, you authorize Dott LLC to 
-          verify your business information, credit history, and other relevant details.
+          {t('sections.financial.factoring.content')}
         </SectionContent>
         
-        <SubsectionTitle>6.3 International Transactions</SubsectionTitle>
+        <SubsectionTitle>{t('sections.financial.international.title')}</SubsectionTitle>
         <SectionContent>
-          For international transactions, you acknowledge that currency conversion rates and additional fees may apply. Dott LLC is not 
-          responsible for any fees charged by your financial institution or any third-party payment processors.
+          {t('sections.financial.international.content')}
         </SectionContent>
 
-        <SectionTitle>7. Data and Content</SectionTitle>
+        <SectionTitle>{t('sections.data.title')}</SectionTitle>
         <SectionContent>
-          You retain all rights to your data uploaded to Dott. By using our services, you grant Dott LLC a non-exclusive, worldwide, 
-          royalty-free license to use, process, and display your data solely for the purpose of providing and improving our services. 
-          We will maintain appropriate administrative, physical, and technical safeguards to protect your data.
+          {t('sections.data.content')}
         </SectionContent>
         
-        <SubsectionTitle>7.1 Data Processing</SubsectionTitle>
+        <SubsectionTitle>{t('sections.data.processing.title')}</SubsectionTitle>
         <SectionContent>
-          As part of providing our services, Dott processes financial and personal data in accordance with our Privacy Policy. 
-          You acknowledge that Dott may use third-party service providers to process data on our behalf.
+          {t('sections.data.processing.content')}
         </SectionContent>
         
-        <SubsectionTitle>7.2 Data Security</SubsectionTitle>
+        <SubsectionTitle>{t('sections.data.security.title')}</SubsectionTitle>
         <SectionContent>
-          You are responsible for maintaining the confidentiality of your account information and for restricting access to your 
-          computer or device. You agree to accept responsibility for all activities that occur under your account.
+          {t('sections.data.security.content')}
         </SectionContent>
 
         <SectionTitle>8. Intellectual Property</SectionTitle>
@@ -404,29 +371,37 @@ const TermsOfUse = () => {
           to the minimum extent necessary so that this Agreement will otherwise remain in full force and effect and enforceable.
         </SectionContent>
 
-        <SectionTitle>21. Contact Information</SectionTitle>
+        <SectionTitle>{t('sections.contact.title')}</SectionTitle>
         <SectionContent>
-          If you have any questions about this Agreement, please contact us at:
+          {t('sections.contact.content')}
         </SectionContent>
         
         <div className="pl-4 border-l-4 border-blue-700 mt-4 text-gray-700 italic">
           <address className="not-italic text-sm">
-            Dott LLC
+            {t('contactInfo.company')}
             <br />
-            800 N King Street
+            {t('contactInfo.address')}
             <br />
-            Suite 304 #2797
+            {t('contactInfo.suite')}
             <br />
-            Wilmington, DE 19801
+            {t('contactInfo.city')}
             <br />
-            United States
+            {t('contactInfo.country')}
             <br />
             <br />
-            Email: support@dottapps.com
+            {t('contactInfo.email')}
           </address>
         </div>
       </div>
     </div>
+  );
+};
+
+const TermsOfUse = () => {
+  return (
+    <I18nextProvider i18n={i18nInstance}>
+      <TermsOfUseContent />
+    </I18nextProvider>
   );
 };
 
