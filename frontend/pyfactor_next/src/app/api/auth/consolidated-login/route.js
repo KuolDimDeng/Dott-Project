@@ -41,7 +41,6 @@ export async function POST(request) {
     console.log('[ConsolidatedLogin] Auth endpoint:', authUrl);
     
     // When running in a server-side Next.js API route, we need the full URL
-    const host = request.headers.get('host');
     const protocol = request.headers.get('x-forwarded-proto') || 'https';
     const fullAuthUrl = `${protocol}://${host}${authUrl}`;
     console.log('[ConsolidatedLogin] Full auth URL:', fullAuthUrl);
@@ -139,7 +138,6 @@ export async function POST(request) {
     
     // Step 3: Call consolidated backend endpoint only if no existing session
     // Determine API URL based on environment
-    const host = request.headers.get('host');
     const API_URL = host && host.includes('staging') ? 'https://dott-api-staging.onrender.com' : 'https://api.dottapps.com';
     console.log('[ConsolidatedLogin] No existing backend session, creating new one...');
     console.log('[ConsolidatedLogin] Using API URL:', API_URL);
