@@ -29,13 +29,15 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
     name: '',
     description: '',  // Add description field (optional but good to include)
     location_type: 'OFFICE',  // Changed from geofence_type to location_type (backend field name)
+    shape_type: 'CIRCLE',  // Add shape_type field (required by backend)
     center_latitude: null,
     center_longitude: null,
     radius_meters: 100,  // Changed from radius to radius_meters (backend field name)
     require_for_clock_in: true,  // Changed from enforce_clock_in (backend field name)
     require_for_clock_out: false,  // Changed from enforce_clock_out (backend field name)
     auto_clock_out_on_exit: false,  // Changed from auto_clock_out (backend field name)
-    alert_on_unexpected_exit: false
+    alert_on_unexpected_exit: false,
+    is_active: true  // Explicitly set is_active
   });
 
   // Load Google Maps script
@@ -565,13 +567,32 @@ const GeofencingSettings = () => {
             Set up location-based zones for employee time tracking
           </p>
         </div>
-        <button
-          onClick={() => setShowCreateForm(true)}
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-        >
-          <PlusCircleIcon className="h-5 w-5 mr-2" />
-          Add Geofence
-        </button>
+        <div className="flex space-x-4">
+          <button
+            onClick={() => setShowCreateForm(true)}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+          >
+            <PlusCircleIcon className="h-5 w-5 mr-2" />
+            Add Geofence
+          </button>
+          <button
+            onClick={async () => {
+              console.log('[DEBUG] Testing geofence API...');
+              try {
+                const response = await api.get('/api/hr/geofences/debug_list');
+                console.log('[DEBUG] Debug list response:', response);
+                console.log('[DEBUG] Debug list data:', response.data);
+                toast.info(`Found ${response.data?.total_geofences_in_db || 0} total geofences`);
+              } catch (error) {
+                console.error('[DEBUG] Debug list error:', error);
+                toast.error('Debug endpoint error');
+              }
+            }}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+          >
+            Debug API
+          </button>
+        </div>
       </div>
 
       {/* Create Form */}
