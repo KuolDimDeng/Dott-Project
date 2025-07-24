@@ -10130,3 +10130,20 @@ backend/docker-compose.local.yml
 backend/test-backend-locally.sh
 backend/test-local-venv.sh
 backend/local-test.sh
+
+# Deployment and backup files
+*.zip
+*_backup/
+*_backup_*/
+
+# ElasticBeanstalk
+.elasticbeanstalk/app_versions/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Large files
+*.log
+*.bak

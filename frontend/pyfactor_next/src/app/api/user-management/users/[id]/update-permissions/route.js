@@ -30,6 +30,7 @@ export async function POST(request, { params }) {
     
     // Get request body
     const data = await request.json();
+    logger.info('[UserManagement] Raw request data received:', JSON.stringify(data, null, 2));
     
     // Convert permissions if needed
     let processedData = { ...data };
@@ -43,7 +44,8 @@ export async function POST(request, { params }) {
     const apiUrl = `${backendUrl}/auth/rbac/users/${id}/update_permissions/`;
     
     logger.info('[UserManagement] Making request to:', apiUrl);
-    logger.info('[UserManagement] Request data:', processedData);
+    logger.info('[UserManagement] Processed request data:', JSON.stringify(processedData, null, 2));
+    logger.info('[UserManagement] Page permissions array:', JSON.stringify(processedData.page_permissions, null, 2));
     
     // Forward request to Django backend with the update_permissions action
     const response = await fetch(apiUrl, {
@@ -82,9 +84,19 @@ export async function POST(request, { params }) {
     }
     
     if (!response.ok) {
-      logger.error('[UserManagement] Backend error:', responseData);
+      logger.error('[UserManagement] Backend error status:', response.status);
+      logger.error('[UserManagement] Backend error data:', JSON.stringify(responseData, null, 2));
+      
+      // Add more context for debugging
       return NextResponse.json(
-        responseData,
+        {
+          ...responseData,
+          debug: {
+            requestUrl: apiUrl,
+            requestData: processedData,
+            status: response.status
+          }
+        },
         { status: response.status }
       );
     }

@@ -698,6 +698,11 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
     try {
       setLoading(true);
       
+      // Debug logging
+      console.log('[UserManagement] Saving permissions for user:', userId);
+      console.log('[UserManagement] Current user data:', users.find(u => u.id === userId));
+      console.log('[UserManagement] Editing permissions:', editingPermissions[userId]);
+      
       // Convert permissions to backend format
       const permissions = editingPermissions[userId] || {};
       const pagePermissions = [];
@@ -713,6 +718,9 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
           });
         }
       });
+      
+      console.log('[UserManagement] Formatted page permissions:', pagePermissions);
+      console.log('[UserManagement] Making request to:', `/api/user-management/users/${userId}/update-permissions`);
       
       const response = await fetch(`/api/user-management/users/${userId}/update-permissions`, {
         method: 'POST',
