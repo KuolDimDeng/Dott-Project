@@ -243,11 +243,29 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
       // Safely access error properties
       let errorMessage = 'Failed to create geofence';
       if (error && error.response && error.response.data) {
-        errorMessage = error.response.data.detail || error.response.data.error || errorMessage;
+        // Check if detail is an object with more specific error info
+        if (error.response.data.detail && typeof error.response.data.detail === 'object') {
+          // Extract the actual error message from nested detail
+          if (error.response.data.detail.detail) {
+            errorMessage = error.response.data.detail.detail;
+          } else if (error.response.data.detail.error) {
+            errorMessage = error.response.data.detail.error;
+          } else {
+            errorMessage = JSON.stringify(error.response.data.detail);
+          }
+        } else {
+          errorMessage = error.response.data.detail || error.response.data.error || errorMessage;
+        }
       } else if (error && error.message) {
         errorMessage = error.message;
       }
       toast.error(errorMessage);
+      
+      // Refresh the list in case it was actually created despite the error
+      if (onGeofenceCreated) {
+        console.log('[GeofenceSetup] Refreshing list after error...');
+        onGeofenceCreated(null);
+      }
     } finally {
       setSaving(false);
     }

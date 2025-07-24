@@ -46,7 +46,7 @@ async function handleRequest(request, method) {
       subPath = parts[1] ? parts[1].replace(/^\/+/, '') : '';
     }
     
-    const backendUrl = `${BACKEND_URL}/api/hr/geofences/${subPath}${searchParams ? `?${searchParams}` : ''}`;
+    const backendUrl = `${BACKEND_URL}/api/hr/geofences${subPath ? `/${subPath}` : '/'}${searchParams ? `?${searchParams}` : ''}`;
     
     console.log(`[Geofences API] Original pathname:`, pathname);
     console.log(`[Geofences API] Extracted subPath:`, JSON.stringify(subPath));
@@ -60,6 +60,8 @@ async function handleRequest(request, method) {
     });
 
     console.log(`[Geofences API] Backend response status:`, response.status);
+    console.log(`[Geofences API] Response ok:`, response.ok);
+    console.log(`[Geofences API] Response status text:`, response.statusText);
     
     if (!response.ok) {
       const errorText = await response.text();

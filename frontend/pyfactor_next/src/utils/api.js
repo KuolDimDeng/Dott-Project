@@ -130,7 +130,16 @@ export async function post(url, data) {
     method: 'POST',
     body: JSON.stringify(data),
   });
-  return response.json();
+  const responseData = await response.json();
+  
+  // If response is not ok and data contains error, throw it
+  if (!response.ok && responseData) {
+    const error = new Error(responseData.error || responseData.detail || 'Request failed');
+    error.response = { data: responseData, status: response.status };
+    throw error;
+  }
+  
+  return responseData;
 }
 
 /**
@@ -144,7 +153,16 @@ export async function put(url, data) {
     method: 'PUT',
     body: JSON.stringify(data),
   });
-  return response.json();
+  const responseData = await response.json();
+  
+  // If response is not ok and data contains error, throw it
+  if (!response.ok && responseData) {
+    const error = new Error(responseData.error || responseData.detail || 'Request failed');
+    error.response = { data: responseData, status: response.status };
+    throw error;
+  }
+  
+  return responseData;
 }
 
 /**
@@ -156,7 +174,16 @@ export async function del(url) {
   const response = await fetchWithAuth(url, {
     method: 'DELETE',
   });
-  return response.json();
+  const responseData = await response.json();
+  
+  // If response is not ok and data contains error, throw it
+  if (!response.ok && responseData) {
+    const error = new Error(responseData.error || responseData.detail || 'Request failed');
+    error.response = { data: responseData, status: response.status };
+    throw error;
+  }
+  
+  return responseData;
 }
 
 // Export as a namespace for ease of use
