@@ -724,6 +724,10 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
       console.log('[UserManagement] Formatted page permissions:', pagePermissions);
       console.log('[UserManagement] Making request to:', `/api/user-management/users/${userId}/update-permissions`);
       
+      // Find the user to get their UUID
+      const targetUser = users.find(u => u.id === userId);
+      console.log('[UserManagement] Target user for permissions update:', targetUser);
+      
       const response = await fetch(`/api/user-management/users/${userId}/update-permissions`, {
         method: 'POST',
         headers: {
@@ -731,6 +735,7 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
         },
         credentials: 'include',
         body: JSON.stringify({
+          user_id: targetUser?.user_id || targetUser?.id || userId, // Temporary: include user_id until backend deploys
           page_permissions: pagePermissions
         })
       });
