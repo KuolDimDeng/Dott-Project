@@ -1491,40 +1491,69 @@ class GeofenceViewSet(viewsets.ModelViewSet):
         logger.info(f"[GeofenceViewSet] === LIST REQUEST START ===")
         logger.info(f"[GeofenceViewSet] User: {request.user.email}")
         logger.info(f"[GeofenceViewSet] Business ID: {request.user.business_id}")
+        logger.info(f"[GeofenceViewSet] Request path: {request.path}")
         
-        # Debug: Check all geofences in database
-        all_geofences = Geofence.objects.all()
-        logger.info(f"[GeofenceViewSet] Total geofences in DB: {all_geofences.count()}")
-        for g in all_geofences[:5]:  # Log first 5
-            logger.info(f"[GeofenceViewSet] Geofence: ID={g.id}, Name={g.name}, Business={g.business_id}, Active={g.is_active}")
-        
-        # Debug: Check filtered geofences
-        filtered_geofences = self.get_queryset()
-        logger.info(f"[GeofenceViewSet] Filtered geofences for business {request.user.business_id}: {filtered_geofences.count()}")
-        
-        response = super().list(request, *args, **kwargs)
-        
-        logger.info(f"[GeofenceViewSet] Response status: {response.status_code}")
-        logger.info(f"[GeofenceViewSet] Response data: {response.data}")
-        logger.info(f"[GeofenceViewSet] === LIST REQUEST END ===")
-        
-        return response
+        try:
+            # Debug: Check all geofences in database
+            all_geofences = Geofence.objects.all()
+            logger.info(f"[GeofenceViewSet] Total geofences in DB: {all_geofences.count()}")
+            
+            # Log ALL geofences to see what's in DB
+            for i, g in enumerate(all_geofences):
+                logger.info(f"[GeofenceViewSet] Geofence [{i}]: ID={g.id}, Name={g.name}, Business={g.business_id}, Active={g.is_active}, Created={g.created_at}")
+            
+            # Debug: Check filtered geofences
+            filtered_geofences = self.get_queryset()
+            logger.info(f"[GeofenceViewSet] Filtered geofences for business {request.user.business_id}: {filtered_geofences.count()}")
+            
+            # Log filtered results
+            for i, g in enumerate(filtered_geofences):
+                logger.info(f"[GeofenceViewSet] Filtered [{i}]: ID={g.id}, Name={g.name}")
+            
+            response = super().list(request, *args, **kwargs)
+            
+            logger.info(f"[GeofenceViewSet] Response status: {response.status_code}")
+            logger.info(f"[GeofenceViewSet] Response data: {response.data}")
+            
+            # If it's paginated, check the results
+            if isinstance(response.data, dict) and 'results' in response.data:
+                logger.info(f"[GeofenceViewSet] Paginated results count: {len(response.data['results'])}")
+            
+            return response
+            
+        except Exception as e:
+            logger.error(f"[GeofenceViewSet] Error in list: {str(e)}")
+            logger.error(f"[GeofenceViewSet] Error type: {type(e)}")
+            import traceback
+            logger.error(f"[GeofenceViewSet] Traceback: {traceback.format_exc()}")
+            return Response(
+                {'error': str(e), 'type': str(type(e))},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        finally:
+            logger.info(f"[GeofenceViewSet] === LIST REQUEST END ===")
     
     def create(self, request, *args, **kwargs):
         logger.info(f"[GeofenceViewSet] === CREATE REQUEST START ===")
         logger.info(f"[GeofenceViewSet] User: {request.user.email}")
         logger.info(f"[GeofenceViewSet] Business ID: {request.user.business_id}")
         logger.info(f"[GeofenceViewSet] Request data: {request.data}")
-        logger.info(f"[GeofenceViewSet] Request headers: {dict(request.headers)}")
+        logger.info(f"[GeofenceViewSet] Request method: {request.method}")
+        logger.info(f"[GeofenceViewSet] Request path: {request.path}")
         
         try:
             # Create a mutable copy of request data
             data = request.data.copy() if hasattr(request.data, 'copy') else dict(request.data)
             logger.info(f"[GeofenceViewSet] Data copy created: {data}")
             
+            # Log each field
+            logger.info(f"[GeofenceViewSet] Field values:")
+            for field, value in data.items():
+                logger.info(f"  - {field}: {value} (type: {type(value)})")
+            
             # Get the serializer
             serializer = self.get_serializer(data=data)
-            logger.info(f"[GeofenceViewSet] Serializer created")
+            logger.info(f"[GeofenceViewSet] Serializer created with class: {serializer.__class__.__name__}")
             
             # Validate
             is_valid = serializer.is_valid()
@@ -1532,13 +1561,28 @@ class GeofenceViewSet(viewsets.ModelViewSet):
             
             if not is_valid:
                 logger.error(f"[GeofenceViewSet] Validation errors: {serializer.errors}")
+                # Log each error in detail
+                for field, errors in serializer.errors.items():
+                    logger.error(f"[GeofenceViewSet] Field '{field}' errors: {errors}")
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
                 
+            logger.info(f"[GeofenceViewSet] Validated data: {serializer.validated_data}")
+            
             # Perform create
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
             
             logger.info(f"[GeofenceViewSet] Create successful, returning data: {serializer.data}")
+            
+            # Verify it was saved
+            created_id = serializer.data.get('id')
+            if created_id:
+                try:
+                    verify = Geofence.objects.get(id=created_id)
+                    logger.info(f"[GeofenceViewSet] Verified geofence exists: ID={verify.id}, Name={verify.name}, Business={verify.business_id}")
+                except Geofence.DoesNotExist:
+                    logger.error(f"[GeofenceViewSet] ERROR: Geofence with ID {created_id} not found after creation!")
+                    
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
             
         except Exception as e:
@@ -1602,17 +1646,41 @@ class GeofenceViewSet(viewsets.ModelViewSet):
         """Debug endpoint to check all geofences"""
         try:
             logger.info(f"[GeofenceViewSet] debug_list called by {request.user.email}")
+            logger.info(f"[GeofenceViewSet] debug_list user business_id: {request.user.business_id}")
             
-            all_geofences = Geofence.objects.all().values('id', 'name', 'business_id', 'is_active', 'created_at')
-            user_geofences = Geofence.objects.filter(business_id=request.user.business_id).values('id', 'name', 'business_id', 'is_active', 'created_at')
+            # Get all geofences with more details
+            all_geofences = Geofence.objects.all().values(
+                'id', 'name', 'business_id', 'is_active', 'created_at',
+                'center_latitude', 'center_longitude', 'radius_meters'
+            )
             
-            return Response({
+            # Get user's geofences
+            user_geofences = Geofence.objects.filter(
+                business_id=request.user.business_id
+            ).values(
+                'id', 'name', 'business_id', 'is_active', 'created_at',
+                'center_latitude', 'center_longitude', 'radius_meters'
+            )
+            
+            # Also check with is_active filter
+            active_user_geofences = Geofence.objects.filter(
+                business_id=request.user.business_id,
+                is_active=True
+            ).values('id', 'name')
+            
+            result = {
                 'user_business_id': str(request.user.business_id),
                 'total_geofences_in_db': Geofence.objects.count(),
                 'user_geofences_count': user_geofences.count(),
-                'all_geofences': list(all_geofences[:10]),  # First 10
-                'user_geofences': list(user_geofences)
-            })
+                'active_user_geofences_count': active_user_geofences.count(),
+                'all_geofences': list(all_geofences),
+                'user_geofences': list(user_geofences),
+                'active_user_geofences': list(active_user_geofences)
+            }
+            
+            logger.info(f"[GeofenceViewSet] debug_list result: {result}")
+            
+            return Response(result)
         except Exception as e:
             logger.error(f"[GeofenceViewSet] Error in debug_list: {str(e)}")
             import traceback

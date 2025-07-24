@@ -56,7 +56,30 @@ export async function POST(request, { params }) {
       credentials: 'include',
     });
 
-    const responseData = await response.json();
+    // Check if response is JSON or HTML
+    const contentType = response.headers.get('content-type');
+    let responseData;
+    
+    if (contentType && contentType.includes('application/json')) {
+      responseData = await response.json();
+    } else {
+      // If not JSON, it's likely an HTML error page
+      const responseText = await response.text();
+      logger.error('[UserManagement] Non-JSON response received:');
+      logger.error('[UserManagement] Response status:', response.status);
+      logger.error('[UserManagement] Content-Type:', contentType);
+      logger.error('[UserManagement] Response text (first 500 chars):', responseText.substring(0, 500));
+      
+      return NextResponse.json(
+        { 
+          error: 'Invalid response from backend', 
+          details: 'Backend returned HTML instead of JSON. The endpoint may not exist or there may be an authentication issue.',
+          status: response.status,
+          contentType: contentType
+        },
+        { status: response.status || 500 }
+      );
+    }
     
     if (!response.ok) {
       logger.error('[UserManagement] Backend error:', responseData);

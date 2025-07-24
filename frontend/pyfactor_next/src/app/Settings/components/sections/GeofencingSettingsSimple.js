@@ -209,10 +209,18 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
     try {
       console.log('[GeofenceSetup] Saving geofence:', geofenceData);
       const response = await api.post('/api/hr/geofences', geofenceData);
+      console.log('[GeofenceSetup] POST response status:', response?.status);
+      console.log('[GeofenceSetup] POST response headers:', response?.headers);
       console.log('[GeofenceSetup] Geofence created - Full response:', response);
       console.log('[GeofenceSetup] Geofence created - Response data:', response.data);
       console.log('[GeofenceSetup] Geofence created - Response data type:', typeof response.data);
       console.log('[GeofenceSetup] Geofence created - Response data keys:', Object.keys(response.data || {}));
+      
+      // Check if response is an error wrapped in data
+      if (response.data && response.data.error) {
+        console.error('[GeofenceSetup] Server returned error in data:', response.data);
+        throw new Error(response.data.error || 'Server error');
+      }
       
       toast.success('Geofence created successfully');
       
