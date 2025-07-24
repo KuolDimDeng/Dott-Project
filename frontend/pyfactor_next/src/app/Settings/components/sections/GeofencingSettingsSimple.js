@@ -231,8 +231,6 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
         throw new Error(response.data.error || 'Server error');
       }
       
-      toast.success('Geofence created successfully');
-      
       // Clear the map circle
       if (geofence) {
         geofence.setMap(null);
@@ -244,6 +242,7 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
         onGeofenceCreated(response.data);
       } else {
         console.warn('[GeofenceSetup] No onGeofenceCreated callback provided');
+        toast.success('Geofence created successfully');
       }
     } catch (error) {
       console.error('[GeofenceSetup] Error creating geofence:', error);
@@ -578,10 +577,20 @@ const GeofencingSettings = () => {
     };
   }, [hasAcceptedCompliance]);
 
-  const handleGeofenceCreated = (newGeofence) => {
+  const handleGeofenceCreated = async (newGeofence) => {
     console.log('[GeofencingSettings] Geofence created:', newGeofence);
     setShowCreateForm(false);
-    loadGeofences();
+    
+    // Add a small delay before refreshing to ensure backend has processed the creation
+    if (newGeofence) {
+      toast.success('Geofence created! Refreshing list...');
+      setTimeout(() => {
+        loadGeofences();
+      }, 1000);
+    } else {
+      // This is called on error - immediate refresh to check if it was created anyway
+      loadGeofences();
+    }
   };
 
   console.log('[GeofencingSettings] 🎨 Rendering component, hasAcceptedCompliance:', hasAcceptedCompliance);
