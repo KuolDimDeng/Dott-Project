@@ -1,0 +1,49 @@
+{
+  "backToHome": "Quay lại Trang chủ",
+  "hero": {
+    "title": "Blog Kinh doanh Dott",
+    "subtitle": "Tìm hiểu cách quản lý tài chính doanh nghiệp của bạn với Dott. Nhận mẹo, thông tin chi tiết và chiến lược để phát triển doanh nghiệp của bạn."
+  },
+  "newsletter": {
+    "title": "Đăng ký nhận bản tin để cập nhật sản phẩm và bài viết mới trên blog!",
+    "placeholder": "Địa chỉ email của bạn",
+    "button": "Đăng ký"
+  },
+  "categories": {
+    "all": "Tất cả bài viết",
+    "accounting": "Kế toán & Thuế",
+    "business": "Kinh doanh"
+  },
+  "search": {
+    "placeholder": "Tìm kiếm bài viết..."
+  },
+  "featured": "Nổi bật",
+  "readTime": "{{minutes}} phút đọc",
+  "noArticles": "Không tìm thấy bài viết nào phù hợp với tiêu chí của bạn.",
+  "articles": {
+    "profitLoss": {
+      "title": "Hiểu về Lãi & Lỗ: Hướng dẫn Thú vị cho Chủ doanh nghiệp",
+      "excerpt": "Khám phá cách đọc và hiểu báo cáo L&L của bạn mà không buồn ngủ. Chúng tôi hứa sẽ làm cho nó thú vị!"
+    },
+    "expenses": {
+      "title": "Theo dõi Chi phí Kinh doanh Như Một Chuyên gia: 5 Bước Đơn giản",
+      "excerpt": "Tìm hiểu cách theo dõi từng xu mà không mất trí. Thêm vào đó, khám phá những chi phí nào có thể tiết kiệm tiền thuế cho bạn!"
+    },
+    "taxDeductions": {
+      "title": "Các Khoản Khấu trừ Thuế Ẩn Mà Mọi Doanh nghiệp Nhỏ Nên Biết",
+      "excerpt": "Dừng để tiền trên bàn! Khám phá các khoản khấu trừ thuế hợp pháp mà hầu hết chủ doanh nghiệp bỏ lỡ."
+    },
+    "inventory": {
+      "title": "Biến đổi Quản lý Tồn kho của Bạn với Quét Mã vạch",
+      "excerpt": "Nói lời tạm biệt với việc đếm thủ công! Tìm hiểu cách quét mã vạch có thể cách mạng hóa quản lý tồn kho của bạn."
+    },
+    "mobile": {
+      "title": "Vận hành Toàn bộ Doanh nghiệp từ Điện thoại: Cuộc Cách mạng Di động",
+      "excerpt": "Khám phá cách quản lý hóa đơn, theo dõi tồn kho và xử lý thanh toán - tất cả từ điện thoại thông minh của bạn!"
+    },
+    "customerRelationships": {
+      "title": "Xây dựng Mối quan hệ Khách hàng Bền vững: CRM Trở nên Đơn giản",
+      "excerpt": "Tìm hiểu cách giữ khách hàng quay lại mà không cần phần mềm phức tạp hoặc công cụ đắt tiền."
+    }
+  }
+}

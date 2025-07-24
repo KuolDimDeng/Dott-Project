@@ -1,0 +1,49 @@
+{
+  "backToHome": "Ana Sayfaya Dön",
+  "hero": {
+    "title": "Dott İş Bloğu",
+    "subtitle": "Dott ile işletmenizin finanslarını yönetmeyi öğrenin. İşletmenizi büyütmek için ipuçları, görüşler ve stratejiler edinin."
+  },
+  "newsletter": {
+    "title": "Ürün güncellemeleri ve yeni blog yazıları için bültenimize kaydolun!",
+    "placeholder": "E-posta adresiniz",
+    "button": "Abone Ol"
+  },
+  "categories": {
+    "all": "Tüm Makaleler",
+    "accounting": "Muhasebe ve Vergiler",
+    "business": "İş"
+  },
+  "search": {
+    "placeholder": "Makale ara..."
+  },
+  "featured": "Öne Çıkan",
+  "readTime": "{{minutes}} dk okuma",
+  "noArticles": "Kriterlerinize uyan makale bulunamadı.",
+  "articles": {
+    "profitLoss": {
+      "title": "Kâr ve Zararı Anlamak: İşletme Sahipleri için Eğlenceli Bir Rehber",
+      "excerpt": "Uyumadan K&Z tablonuzu nasıl okuyup anlayacağınızı keşfedin. İlginç hale getireceğimize söz veriyoruz!"
+    },
+    "expenses": {
+      "title": "İş Giderlerinizi Bir Profesyonel Gibi Takip Edin: 5 Basit Adım",
+      "excerpt": "Aklınızı kaybetmeden her kuruşu nasıl takip edeceğinizi öğrenin. Ayrıca, vergi zamanında size para kazandırabilecek giderleri keşfedin!"
+    },
+    "taxDeductions": {
+      "title": "Her Küçük İşletmenin Bilmesi Gereken Gizli Vergi İndirimleri",
+      "excerpt": "Masada para bırakmayı bırakın! Çoğu işletme sahibinin kaçırdığı meşru vergi indirimlerini keşfedin."
+    },
+    "inventory": {
+      "title": "Barkod Tarama ile Envanter Yönetiminizi Dönüştürün",
+      "excerpt": "Manuel saymaya veda edin! Barkod taramanın envanter yönetiminizde nasıl devrim yaratabileceğini öğrenin."
+    },
+    "mobile": {
+      "title": "Tüm İşletmenizi Telefonunuzdan Yönetin: Mobil Devrim",
+      "excerpt": "Faturaları yönetmeyi, envanteri takip etmeyi ve ödemeleri işlemeyi - hepsini akıllı telefonunuzdan nasıl yapacağınızı keşfedin!"
+    },
+    "customerRelationships": {
+      "title": "Kalıcı Müşteri İlişkileri Kurma: Basitleştirilmiş CRM",
+      "excerpt": "Karmaşık yazılım veya pahalı araçlar olmadan müşterilerin geri gelmesini nasıl sağlayacağınızı öğrenin."
+    }
+  }
+}
