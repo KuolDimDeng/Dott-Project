@@ -53,6 +53,7 @@ export async function POST(request, { params }) {
       headers: {
         'Content-Type': 'application/json',
         'Cookie': request.headers.get('cookie') || '',
+        'X-CSRFToken': request.headers.get('x-csrftoken') || '',
       },
       body: JSON.stringify(processedData),
       credentials: 'include',
