@@ -466,6 +466,15 @@
 - **Render Services**: Both configured to auto-deploy from respective branches
 - **Benefits**: Cleaner workflow, industry standard, easier for new developers
 
+### [43.0.0] - 2025-07-24 - CURRENT - Staging Environment Suspension
+- **Purpose**: Temporarily suspend staging to focus on customer acquisition
+- **Status**: Staging services suspended in Render (saving $57/month)
+- **Development**: All work on main branch, deploy directly to production
+- **Rationale**: 0 users - infrastructure optimization is premature
+- **Reactivation Criteria**: 10+ paying customers or $1000+ MRR
+- **Documentation**: See STAGING_SUSPENSION_NOTICE.md
+- **Memory Fix**: NODE_OPTIONS set to 4GB in package.json and Dockerfile
+
 ## Quick Reference
 
 ### Fix Onboarding Issues
