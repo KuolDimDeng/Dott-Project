@@ -27,6 +27,7 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
   const mapRef = useRef(null);
   const [geofenceData, setGeofenceData] = useState({
     name: '',
+    description: '',  // Add description field (optional but good to include)
     location_type: 'OFFICE',  // Changed from geofence_type to location_type (backend field name)
     center_latitude: null,
     center_longitude: null,
