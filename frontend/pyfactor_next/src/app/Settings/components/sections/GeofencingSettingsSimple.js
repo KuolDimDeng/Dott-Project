@@ -210,6 +210,7 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
     setSaving(true);
     try {
       console.log('[GeofenceSetup] Saving geofence:', geofenceData);
+      console.log('[GeofenceSetup] Geofence data being sent:', JSON.stringify(geofenceData, null, 2));
       const response = await api.post('/api/hr/geofences', geofenceData);
       console.log('[GeofenceSetup] POST response status:', response?.status);
       console.log('[GeofenceSetup] POST response headers:', response?.headers);
@@ -217,6 +218,12 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
       console.log('[GeofenceSetup] Geofence created - Response data:', response.data);
       console.log('[GeofenceSetup] Geofence created - Response data type:', typeof response.data);
       console.log('[GeofenceSetup] Geofence created - Response data keys:', Object.keys(response.data || {}));
+      console.log('[GeofenceSetup] Created geofence details:', {
+        id: response?.id,
+        name: response?.name,
+        business_id: response?.business_id,
+        is_active: response?.is_active
+      });
       
       // Check if response is an error wrapped in data
       if (response.data && response.data.error) {
@@ -481,23 +488,49 @@ const GeofencingSettings = () => {
     try {
       setLoading(true);
       console.log('[GeofencingSettings] 📡 Making API request to /api/hr/geofences');
-      const response = await api.get('/api/hr/geofences');
+      
+      // Add a timestamp to avoid caching
+      const timestamp = new Date().getTime();
+      const response = await api.get(`/api/hr/geofences?t=${timestamp}`);
+      
       console.log('[GeofencingSettings] ✅ API Response:', response);
       console.log('[GeofencingSettings] Response type:', typeof response);
       console.log('[GeofencingSettings] Response keys:', Object.keys(response || {}));
+      console.log('[GeofencingSettings] Full response data:', JSON.stringify(response, null, 2));
       
       // Handle different response formats
       let geofenceData = [];
       if (response && response.results) {
+        console.log('[GeofencingSettings] Found paginated response with results');
         geofenceData = response.results;
       } else if (Array.isArray(response)) {
+        console.log('[GeofencingSettings] Response is array');
         geofenceData = response;
       } else if (response && response.data) {
+        console.log('[GeofencingSettings] Found data property in response');
         geofenceData = response.data;
+      } else {
+        console.log('[GeofencingSettings] ⚠️ Unexpected response format, treating as empty array');
       }
       
       console.log('[GeofencingSettings] 📍 Processed geofences:', geofenceData);
       console.log('[GeofencingSettings] 📍 Geofences count:', geofenceData.length);
+      
+      // Log each geofence for debugging
+      if (geofenceData.length > 0) {
+        geofenceData.forEach((g, index) => {
+          console.log(`[GeofencingSettings] Geofence ${index}:`, {
+            id: g.id,
+            name: g.name,
+            business_id: g.business_id,
+            is_active: g.is_active,
+            location_type: g.location_type,
+            center: `${g.center_latitude}, ${g.center_longitude}`,
+            radius: g.radius_meters
+          });
+        });
+      }
+      
       setGeofences(geofenceData);
     } catch (error) {
       console.error('[GeofencingSettings] ❌ Error loading geofences:', error);
@@ -599,8 +632,32 @@ const GeofencingSettings = () => {
               try {
                 const response = await api.get('/api/hr/geofences/debug_list');
                 console.log('[DEBUG] Debug list response:', response);
-                console.log('[DEBUG] Debug list data:', response.data);
-                alert(`Found ${response.data?.total_geofences_in_db || 0} total geofences in database`);
+                console.log('[DEBUG] Debug list data:', JSON.stringify(response, null, 2));
+                
+                // Get session info to check business_id
+                const session = await api.get('/api/auth/session-v2');
+                console.log('[DEBUG] Current session:', session);
+                
+                const debugInfo = `
+Debug Information:
+=================
+Total Geofences in DB: ${response.total_geofences_in_db || 0}
+User Business ID: ${response.user_business_id || 'N/A'}
+User Geofences Count: ${response.user_geofences_count || 0}
+Active User Geofences: ${response.active_user_geofences_count || 0}
+
+Session Business ID: ${session?.user?.business_id || 'N/A'}
+Session User: ${session?.user?.email || 'N/A'}
+
+All Geofences:
+${JSON.stringify(response.all_geofences || [], null, 2)}
+
+User Geofences:
+${JSON.stringify(response.user_geofences || [], null, 2)}
+                `;
+                
+                console.log('[DEBUG] Full debug info:', debugInfo);
+                alert(debugInfo);
               } catch (error) {
                 console.error('[DEBUG] Debug list error:', error);
                 toast.error('Debug endpoint error');
