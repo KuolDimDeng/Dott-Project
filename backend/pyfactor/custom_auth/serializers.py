@@ -313,7 +313,6 @@ class UserInvitationSerializer(serializers.ModelSerializer):
 
 class UpdateUserPermissionsSerializer(serializers.Serializer):
     """Serializer for updating user permissions"""
-    user_id = serializers.UUIDField()
     role = serializers.ChoiceField(choices=['ADMIN', 'USER'], required=False)
     page_permissions = serializers.ListField(
         child=serializers.DictField(),

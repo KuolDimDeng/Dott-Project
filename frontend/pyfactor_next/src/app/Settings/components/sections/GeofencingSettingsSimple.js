@@ -582,7 +582,7 @@ const GeofencingSettings = () => {
                 const response = await api.get('/api/hr/geofences/debug_list');
                 console.log('[DEBUG] Debug list response:', response);
                 console.log('[DEBUG] Debug list data:', response.data);
-                toast.info(`Found ${response.data?.total_geofences_in_db || 0} total geofences`);
+                alert(`Found ${response.data?.total_geofences_in_db || 0} total geofences in database`);
               } catch (error) {
                 console.error('[DEBUG] Debug list error:', error);
                 toast.error('Debug endpoint error');

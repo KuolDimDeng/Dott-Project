@@ -85,7 +85,12 @@ class UserManagementViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def update_permissions(self, request, pk=None):
         """Update user role and permissions"""
+        logger.info(f"[RBAC] update_permissions called for pk={pk}")
+        logger.info(f"[RBAC] Request data: {request.data}")
+        logger.info(f"[RBAC] Request user: {request.user.email if request.user else 'None'}")
+        
         user = self.get_object()
+        logger.info(f"[RBAC] Target user: {user.email}")
         
         # Prevent changing owner role
         if user.role == 'OWNER':
@@ -102,7 +107,12 @@ class UserManagementViewSet(viewsets.ModelViewSet):
             )
         
         serializer = UpdateUserPermissionsSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        if not serializer.is_valid():
+            logger.error(f"[RBAC] Serializer validation failed: {serializer.errors}")
+            return Response(
+                {"error": "Invalid data", "details": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
         with transaction.atomic():
             # Update role if provided
