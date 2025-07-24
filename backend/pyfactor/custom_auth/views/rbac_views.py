@@ -37,6 +37,11 @@ class UserManagementViewSet(viewsets.ModelViewSet):
     serializer_class = UserListSerializer
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdmin]
     
+    @action(detail=False, methods=['get'])
+    def test(self, request):
+        """Test endpoint to verify the API is working"""
+        return Response({"message": "RBAC API is working", "user": request.user.email if request.user else None})
+    
     def get_queryset(self):
         """Get users for the current tenant only"""
         logger.info(f"[UserManagement] Getting users for tenant: {self.request.user.tenant}")
