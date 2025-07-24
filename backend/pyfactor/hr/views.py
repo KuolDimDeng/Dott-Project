@@ -1515,14 +1515,44 @@ class GeofenceViewSet(viewsets.ModelViewSet):
         logger.info(f"[GeofenceViewSet] User: {request.user.email}")
         logger.info(f"[GeofenceViewSet] Business ID: {request.user.business_id}")
         logger.info(f"[GeofenceViewSet] Request data: {request.data}")
+        logger.info(f"[GeofenceViewSet] Request headers: {dict(request.headers)}")
         
-        response = super().create(request, *args, **kwargs)
-        
-        logger.info(f"[GeofenceViewSet] Response status: {response.status_code}")
-        logger.info(f"[GeofenceViewSet] Response data: {response.data}")
-        logger.info(f"[GeofenceViewSet] === CREATE REQUEST END ===")
-        
-        return response
+        try:
+            # Create a mutable copy of request data
+            data = request.data.copy() if hasattr(request.data, 'copy') else dict(request.data)
+            logger.info(f"[GeofenceViewSet] Data copy created: {data}")
+            
+            # Get the serializer
+            serializer = self.get_serializer(data=data)
+            logger.info(f"[GeofenceViewSet] Serializer created")
+            
+            # Validate
+            is_valid = serializer.is_valid()
+            logger.info(f"[GeofenceViewSet] Serializer is_valid: {is_valid}")
+            
+            if not is_valid:
+                logger.error(f"[GeofenceViewSet] Validation errors: {serializer.errors}")
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                
+            # Perform create
+            self.perform_create(serializer)
+            headers = self.get_success_headers(serializer.data)
+            
+            logger.info(f"[GeofenceViewSet] Create successful, returning data: {serializer.data}")
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+            
+        except Exception as e:
+            logger.error(f"[GeofenceViewSet] Error in create: {str(e)}")
+            logger.error(f"[GeofenceViewSet] Error type: {type(e)}")
+            import traceback
+            logger.error(f"[GeofenceViewSet] Traceback: {traceback.format_exc()}")
+            
+            return Response(
+                {'error': str(e), 'type': str(type(e))},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        finally:
+            logger.info(f"[GeofenceViewSet] === CREATE REQUEST END ===")
     
     def get_queryset(self):
         # Filter by business_id for multi-tenant isolation

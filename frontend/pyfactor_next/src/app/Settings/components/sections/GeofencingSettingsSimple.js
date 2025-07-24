@@ -30,7 +30,7 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
     location_type: 'OFFICE',  // Changed from geofence_type to location_type (backend field name)
     center_latitude: null,
     center_longitude: null,
-    radius: 100,
+    radius_meters: 100,  // Changed from radius to radius_meters (backend field name)
     require_for_clock_in: true,  // Changed from enforce_clock_in (backend field name)
     require_for_clock_out: false,  // Changed from enforce_clock_out (backend field name)
     auto_clock_out_on_exit: false,  // Changed from auto_clock_out (backend field name)
@@ -287,10 +287,10 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
         <div className="mt-1 flex items-center space-x-2">
           <input
             type="number"
-            value={geofenceData.radius}
+            value={geofenceData.radius_meters}
             onChange={(e) => {
               const newRadius = parseInt(e.target.value) || 100;
-              setGeofenceData(prev => ({ ...prev, radius: newRadius }));
+              setGeofenceData(prev => ({ ...prev, radius_meters: newRadius }));
               if (geofence) {
                 geofence.setRadius(newRadius);
               }
