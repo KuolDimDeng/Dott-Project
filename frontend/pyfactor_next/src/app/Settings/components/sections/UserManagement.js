@@ -695,6 +695,8 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
   
   // Save inline edited permissions
   const saveInlinePermissions = async (userId) => {
+    console.log('[UserManagement] saveInlinePermissions called with userId:', userId);
+    
     try {
       setLoading(true);
       
@@ -777,6 +779,8 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
       await fetchUsers();
       
     } catch (error) {
+      console.error('[UserManagement] Caught error in saveInlinePermissions:', error);
+      console.error('[UserManagement] Error stack:', error.stack);
       logger.error('[UserManagement] Error updating user permissions:', error);
       notifyError(error.message || 'Failed to update user permissions');
     } finally {
@@ -1663,7 +1667,10 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
                       {editingUserId === userItem.id ? (
                         <>
                           <button
-                            onClick={() => saveInlinePermissions(userItem.id)}
+                            onClick={() => {
+                              console.log('[UserManagement] Save button clicked for user:', userItem.id);
+                              saveInlinePermissions(userItem.id);
+                            }}
                             className="text-green-600 hover:text-green-900"
                             title="Save Changes"
                             disabled={loading}
@@ -1780,7 +1787,10 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
                           Cancel
                         </button>
                         <button
-                          onClick={() => saveInlinePermissions(userItem.id)}
+                          onClick={() => {
+                            console.log('[UserManagement] Save Changes button clicked for user:', userItem.id);
+                            saveInlinePermissions(userItem.id);
+                          }}
                           disabled={loading}
                           className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
                         >
