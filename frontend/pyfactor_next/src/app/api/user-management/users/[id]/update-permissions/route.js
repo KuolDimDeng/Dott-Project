@@ -40,7 +40,7 @@ export async function POST(request, { params }) {
     
     // Get backend URL from environment
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
-    const apiUrl = `${backendUrl}/auth/rbac/direct-users/${id}/update-permissions/`;
+    const apiUrl = `${backendUrl}/auth/rbac/users/${id}/update_permissions/`;
     
     logger.info('[UserManagement] Making request to:', apiUrl);
     logger.info('[UserManagement] Request data:', processedData);

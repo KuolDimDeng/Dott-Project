@@ -725,12 +725,34 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
         })
       });
 
+      // Check content type before parsing
+      const contentType = response.headers.get('content-type');
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to update user permissions');
+        let errorMessage = 'Failed to update user permissions';
+        
+        if (contentType && contentType.includes('application/json')) {
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.details || errorData.message || errorMessage;
+          } catch (e) {
+            console.error('[UserManagement] Failed to parse error response:', e);
+          }
+        } else {
+          // If HTML response, likely a backend error
+          const textResponse = await response.text();
+          console.error('[UserManagement] Non-JSON error response:', textResponse.substring(0, 500));
+          errorMessage = 'Backend error: The permissions endpoint may not be available';
+        }
+        
+        throw new Error(errorMessage);
       }
 
-      const result = await response.json();
+      // Only parse JSON if content type is correct
+      let result = {};
+      if (contentType && contentType.includes('application/json')) {
+        result = await response.json();
+      }
       
       // Update local state with the updated permissions
       setUsers(users.map(u => 
