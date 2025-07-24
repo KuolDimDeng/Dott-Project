@@ -21,7 +21,7 @@ export async function GET() {
   // Test DNS resolution
   const domains = [
     'api.dottapps.com',
-    'dott-api-y26w.onrender.com',
+    'api.dottapps.com',
     'dottapps.com'
   ];
 
@@ -53,7 +53,7 @@ export async function GET() {
   // Test actual connectivity
   const endpoints = [
     { name: 'api.dottapps.com/health', url: 'https://api.dottapps.com/health/' },
-    { name: 'dott-api-y26w.onrender.com/health', url: 'https://dott-api-y26w.onrender.com/health/' },
+    { name: 'api.dottapps.com/health', url: 'https://api.dottapps.com/health/' },
     { name: 'api.dottapps.com/api/sessions/cloudflare/create', url: 'https://api.dottapps.com/api/sessions/cloudflare/create/' }
   ];
 

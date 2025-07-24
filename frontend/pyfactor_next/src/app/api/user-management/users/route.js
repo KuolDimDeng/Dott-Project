@@ -49,7 +49,7 @@ export async function GET(request) {
     logger.info('[UserManagement] Using session cookie:', sessionCookie.name, 'with value:', sessionCookie.value.substring(0, 8) + '...');
     
     // Try direct backend call first
-    const backendUrl = process.env.BACKEND_URL || 'https://dott-api-y26w.onrender.com';
+    const backendUrl = process.env.BACKEND_URL || 'https://api.dottapps.com';
     const testUrl = `${backendUrl}/auth/rbac/users/`;
     
     logger.info('[UserManagement] Making direct backend call to:', testUrl);
@@ -380,7 +380,7 @@ async function fetchLocalUsers(tenantId, currentUser, request, unlinkedOnly = fa
     logger.info('[UserManagement] ========== FETCH LOCAL USERS START ==========');
     
     // Fetch users from backend RBAC API
-    const backendUrl = process.env.BACKEND_URL || 'https://dott-api-y26w.onrender.com';
+    const backendUrl = process.env.BACKEND_URL || 'https://api.dottapps.com';
     logger.info('[UserManagement] Backend URL:', backendUrl);
     logger.info('[UserManagement] Tenant ID:', tenantId);
     logger.info('[UserManagement] Unlinked only:', unlinkedOnly);

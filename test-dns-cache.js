@@ -116,7 +116,7 @@ async function testDNS() {
   console.log('\n7. Quick Test URLs:');
   console.log('=====================================');
   console.log(`Direct health check: ${API_URL}/health/`);
-  console.log(`Render URL: https://dott-api-y26w.onrender.com/health/`);
+  console.log(`Render URL: https://api.dottapps.com/health/`);
   console.log('Cloudflare trace: https://www.cloudflare.com/cdn-cgi/trace');
 }
 

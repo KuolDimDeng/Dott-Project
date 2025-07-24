@@ -24,7 +24,7 @@ export async function getSession() {
     }
 
     // Validate session with backend directly (same pattern as session-v2)
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://dott-api-y26w.onrender.com';
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
     const sessionUrl = `${API_URL}/api/sessions/validate/${sessionId.value}/`;
     
     console.log('[sessionHelper] Validating session with backend:', sessionUrl);

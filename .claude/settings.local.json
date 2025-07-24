@@ -183,7 +183,8 @@
       "Bash(do grep -q \"\"\"$key\"\":\" $lang/common.json)",
       "Bash(./scripts/setup-local-dev.sh:*)",
       "Bash(git branch:*)",
-      "Bash(git merge:*)"
+      "Bash(git merge:*)",
+      "Bash(./update-backend-urls.sh:*)"
     ],
     "deny": []
   }

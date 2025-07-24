@@ -8,7 +8,7 @@ if (!sessionToken) {
   process.exit(1);
 }
 
-const API_URL = 'https://dott-api-y26w.onrender.com';
+const API_URL = 'https://api.dottapps.com';
 
 async function testSessionValidation() {
   console.log('Testing session validation for:', sessionToken);

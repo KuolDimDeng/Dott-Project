@@ -20,7 +20,7 @@ export async function GET(request, { params }) {
     const { id } = params;
 
     // Forward to Django backend
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://dott-api-y26w.onrender.com';
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
     const response = await fetch(`${API_URL}/api/hr/employees/${id}/`, {
       headers: {
         'Authorization': `Session ${sidCookie.value}`,

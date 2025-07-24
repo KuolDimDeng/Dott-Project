@@ -20,7 +20,7 @@ export async function POST(request) {
     const body = await request.json();
 
     // Forward to Django backend
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://dott-api-y26w.onrender.com';
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
     const response = await fetch(`${API_URL}/api/hr/employee-geofences/`, {
       method: 'POST',
       headers: {
@@ -70,7 +70,7 @@ export async function GET(request) {
     }
 
     // Forward to Django backend
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://dott-api-y26w.onrender.com';
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
     const response = await fetch(`${API_URL}/api/hr/employee-geofences/?${queryParams}`, {
       headers: {
         'Authorization': `Session ${sidCookie.value}`,
