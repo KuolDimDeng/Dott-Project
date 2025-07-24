@@ -36,10 +36,16 @@ export async function POST(request) {
     
     // Step 1: Authenticate with Auth0
     // In production/staging, Next.js API routes are relative to the current domain
-    const baseUrl = ''; // Empty string for relative URLs
-    console.log('[ConsolidatedLogin] Auth endpoint:', `${baseUrl}/api/auth/authenticate`);
+    const authUrl = '/api/auth/authenticate';
+    console.log('[ConsolidatedLogin] Auth endpoint:', authUrl);
     
-    const authResponse = await fetch(`${baseUrl}/api/auth/authenticate`, {
+    // When running in a server-side Next.js API route, we need the full URL
+    const host = request.headers.get('host');
+    const protocol = request.headers.get('x-forwarded-proto') || 'https';
+    const fullAuthUrl = `${protocol}://${host}${authUrl}`;
+    console.log('[ConsolidatedLogin] Full auth URL:', fullAuthUrl);
+    
+    const authResponse = await fetch(fullAuthUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
