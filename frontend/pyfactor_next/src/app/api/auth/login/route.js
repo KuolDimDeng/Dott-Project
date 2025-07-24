@@ -84,7 +84,15 @@ export async function GET(request) {
     // IMPORTANT: Force custom domain for embedded login to work properly
     auth0Domain = 'auth.dottapps.com'; // Force custom domain - required for email/password
     clientId = process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || process.env.AUTH0_CLIENT_ID;
-    baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.AUTH0_BASE_URL || 'https://dottapps.com';
+    
+    // Determine base URL based on the request host
+    const host = request.headers.get('host');
+    if (host && host.includes('staging')) {
+      baseUrl = `https://${host}`;
+    } else {
+      baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.AUTH0_BASE_URL || `https://${host || 'dottapps.com'}`;
+    }
+    
     audience = process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || process.env.AUTH0_AUDIENCE || 'https://api.dottapps.com';
     
     console.log('[Auth Login Route] Using Auth0 domain:', auth0Domain);

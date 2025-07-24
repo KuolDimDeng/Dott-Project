@@ -19,6 +19,7 @@ export async function OPTIONS(request) {
 export async function POST(request) {
   try {
     const { email, password } = await request.json();
+    const host = request.headers.get('host');
     
     if (!email || !password) {
       return NextResponse.json({ 
@@ -40,7 +41,6 @@ export async function POST(request) {
     console.log('[ConsolidatedLogin] Auth endpoint:', authUrl);
     
     // When running in a server-side Next.js API route, we need the full URL
-    const host = request.headers.get('host');
     const protocol = request.headers.get('x-forwarded-proto') || 'https';
     const fullAuthUrl = `${protocol}://${host}${authUrl}`;
     console.log('[ConsolidatedLogin] Full auth URL:', fullAuthUrl);
@@ -91,13 +91,13 @@ export async function POST(request) {
       console.log('[ConsolidatedLogin] 🔴 SKIPPING consolidated-auth to avoid duplicate session creation');
       
       // Fetch the existing session details using public endpoint
-      const API_URL = 'https://api.dottapps.com';
+      const API_URL = host && host.includes('staging') ? 'https://dott-api-staging.onrender.com' : 'https://api.dottapps.com';
       console.log('[ConsolidatedLogin] Fetching existing session from public endpoint:', `${API_URL}/api/sessions/public/${authData.backend_session_id}/`);
       const sessionResponse = await fetch(`${API_URL}/api/sessions/public/${authData.backend_session_id}/`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Origin': 'https://dottapps.com',
+          'Origin': host && host.includes('staging') ? `https://${host}` : 'https://dottapps.com',
         }
       });
       
@@ -137,8 +137,10 @@ export async function POST(request) {
     }
     
     // Step 3: Call consolidated backend endpoint only if no existing session
-    const API_URL = 'https://api.dottapps.com';
+    // Determine API URL based on environment
+    const API_URL = host && host.includes('staging') ? 'https://dott-api-staging.onrender.com' : 'https://api.dottapps.com';
     console.log('[ConsolidatedLogin] No existing backend session, creating new one...');
+    console.log('[ConsolidatedLogin] Using API URL:', API_URL);
     console.log('[ConsolidatedLogin] Calling backend consolidated-auth at:', `${API_URL}/api/sessions/consolidated-auth/`);
     
     // Use the access token from auth data directly
@@ -150,7 +152,7 @@ export async function POST(request) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Origin': 'https://dottapps.com',
+        'Origin': host && host.includes('staging') ? `https://${host}` : 'https://dottapps.com',
       },
       body: JSON.stringify({
         auth0_sub: authData.user.sub,

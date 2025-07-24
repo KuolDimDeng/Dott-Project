@@ -59,14 +59,19 @@ export async function POST(request) {
     });
     
     // Create redirect response with proper base URL
-    // In production, always use the production domain to avoid container addresses
+    // Check if we're on staging or production based on the actual host
     let baseUrl;
-    if (isProduction) {
-      // Always use production domain in production to avoid 0.0.0.0:10000 issues
-      baseUrl = 'https://dottapps.com';
+    const host = request.headers.get('host');
+    
+    if (host && host.includes('staging')) {
+      // Staging environment
+      baseUrl = `https://${host}`;
+    } else if (isProduction) {
+      // Production environment - but check the actual host to be sure
+      baseUrl = host ? `https://${host}` : 'https://dottapps.com';
     } else {
-      // In development, use environment variable or extract from request
-      baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `https://${request.headers.get('host')}`;
+      // Development environment
+      baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `https://${host}`;
     }
     
     const absoluteUrl = redirectUrl.startsWith('http') ? redirectUrl : `${baseUrl}${redirectUrl}`;
