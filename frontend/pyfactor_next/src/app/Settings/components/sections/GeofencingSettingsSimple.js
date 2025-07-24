@@ -465,7 +465,7 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
   );
 };
 
-// Main GeofencingSettings component
+// Main GeofencingSettings component - Updated 2025-07-25
 const GeofencingSettings = () => {
   console.log('[GeofencingSettings] === COMPONENT MOUNT START ===');
   const [geofences, setGeofences] = useState([]);
