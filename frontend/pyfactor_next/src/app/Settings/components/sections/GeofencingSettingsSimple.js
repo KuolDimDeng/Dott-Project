@@ -145,7 +145,7 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
 
     const newGeofence = new window.google.maps.Circle({
       center: center,
-      radius: geofenceData.radius,
+      radius: geofenceData.radius_meters,
       fillColor: '#2563eb',
       fillOpacity: 0.35,
       strokeColor: '#1d4ed8',
@@ -397,7 +397,7 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
         </div>
         {geofenceData.center_latitude && geofenceData.center_longitude && (
           <p className="text-xs text-gray-600 mt-1">
-            Location: {geofenceData.center_latitude.toFixed(6)}, {geofenceData.center_longitude.toFixed(6)} • Radius: {geofenceData.radius}m
+            Location: {geofenceData.center_latitude.toFixed(6)}, {geofenceData.center_longitude.toFixed(6)} • Radius: {geofenceData.radius_meters}m
           </p>
         )}
       </div>
@@ -590,7 +590,7 @@ const GeofencingSettings = () => {
                     <div>
                       <p className="text-sm font-medium text-gray-900">{geofence.name}</p>
                       <p className="text-sm text-gray-500">
-                        {geofence.location_type} • Radius: {geofence.radius}m
+                        {geofence.location_type} • Radius: {geofence.radius_meters}m
                       </p>
                     </div>
                   </div>
