@@ -1,18 +1,20 @@
 # Multi-stage build with advanced caching
 FROM node:18-alpine AS base
+# Add cache bust to force fresh builds when needed
+ARG CACHEBUST=1
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 RUN npm install -g pnpm@8.10.0
 
 # Dependencies stage with cache mount
 FROM base AS deps
-# Mount pnpm store as cache
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm config set store-dir /pnpm/store
+# Configure pnpm store directory
+RUN pnpm config set store-dir /pnpm/store
 # Copy only package files for better caching
 COPY frontend/pyfactor_next/package.json frontend/pyfactor_next/pnpm-lock.yaml ./
 COPY frontend/pyfactor_next/.npmrc* ./
-# Install dependencies with cache
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --prefer-offline
+# Install dependencies
+RUN pnpm install --frozen-lockfile
 
 # Build stage with optimizations
 FROM base AS builder
