@@ -28,7 +28,7 @@
     "analytics": "Аналитика",
     "smartInsights": "Умная Аналитика",
     "dottStatus": "Статус Dott",
-    "jobs": "Jobs"
+    "jobs": "Работы"
   },
   "subMenu": {
     "dashboard": "Панель управления",
@@ -85,11 +85,11 @@
     "journalEntries": "Журнальные записи",
     "generalLedger": "Главная книга",
     "trialBalance": "Пробный баланс",
-    "jobsList": "All Jobs",
-    "jobCosting": "Job Costing",
-    "jobMaterials": "Materials Usage",
-    "jobLabor": "Labor Tracking",
-    "jobProfitability": "Profitability Analysis"
+    "jobsList": "Все Работы",
+    "jobCosting": "Калькуляция Работ",
+    "jobMaterials": "Использование Материалов",
+    "jobLabor": "Учёт Рабочего Времени",
+    "jobProfitability": "Анализ Прибыльности"
   },
   "actions": {
     "viewAll": "Просмотреть все",

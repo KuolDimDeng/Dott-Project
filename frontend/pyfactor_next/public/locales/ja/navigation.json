@@ -28,7 +28,7 @@
     "analytics": "分析",
     "smartInsights": "スマートインサイト",
     "dottStatus": "Dottステータス",
-    "jobs": "Jobs"
+    "jobs": "ジョブ"
   },
   "subMenu": {
     "dashboard": "ダッシュボード",
@@ -85,11 +85,11 @@
     "journalEntries": "仕訳帳",
     "generalLedger": "総勘定元帳",
     "trialBalance": "試算表",
-    "jobsList": "All Jobs",
-    "jobCosting": "Job Costing",
-    "jobMaterials": "Materials Usage",
-    "jobLabor": "Labor Tracking",
-    "jobProfitability": "Profitability Analysis"
+    "jobsList": "すべてのジョブ",
+    "jobCosting": "ジョブ原価計算",
+    "jobMaterials": "資材使用量",
+    "jobLabor": "労働時間追跡",
+    "jobProfitability": "収益性分析"
   },
   "actions": {
     "viewAll": "すべて表示",

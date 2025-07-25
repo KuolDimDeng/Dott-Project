@@ -28,7 +28,7 @@
     "analytics": "ትንተና",
     "smartInsights": "ብልህ ግንዛቤዎች",
     "dottStatus": "የDott ሁኔታ",
-    "jobs": "Jobs"
+    "jobs": "ስራዎች"
   },
   "subMenu": {
     "dashboard": "ዳሽቦርድ",
@@ -85,11 +85,11 @@
     "journalEntries": "የመጽሔት ግቤቶች",
     "generalLedger": "ዋና መዝገብ",
     "trialBalance": "የሙከራ ሚዛን",
-    "jobsList": "All Jobs",
-    "jobCosting": "Job Costing",
-    "jobMaterials": "Materials Usage",
-    "jobLabor": "Labor Tracking",
-    "jobProfitability": "Profitability Analysis"
+    "jobsList": "ሁሉም ስራዎች",
+    "jobCosting": "የስራ ወጪ ግምት",
+    "jobMaterials": "የዕዳ አጠቃቀም",
+    "jobLabor": "የሰራተኛ ክትትል",
+    "jobProfitability": "የትርፍ ትንተና"
   },
   "actions": {
     "viewAll": "ሁሉንም ይመልከቱ",

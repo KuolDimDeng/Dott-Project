@@ -28,7 +28,7 @@
     "analytics": "Analitik",
     "smartInsights": "Wawasan Cerdas",
     "dottStatus": "Status Dott",
-    "jobs": "Jobs"
+    "jobs": "Pekerjaan"
   },
   "subMenu": {
     "dashboard": "Dasbor",
@@ -85,11 +85,11 @@
     "journalEntries": "Entri Jurnal",
     "generalLedger": "Buku Besar",
     "trialBalance": "Neraca Saldo",
-    "jobsList": "All Jobs",
-    "jobCosting": "Job Costing",
-    "jobMaterials": "Materials Usage",
-    "jobLabor": "Labor Tracking",
-    "jobProfitability": "Profitability Analysis"
+    "jobsList": "Semua Pekerjaan",
+    "jobCosting": "Biaya Pekerjaan",
+    "jobMaterials": "Penggunaan Material",
+    "jobLabor": "Pelacakan Tenaga Kerja",
+    "jobProfitability": "Analisis Profitabilitas"
   },
   "actions": {
     "viewAll": "Lihat Semua",

@@ -28,7 +28,7 @@
     "analytics": "분석",
     "smartInsights": "스마트 인사이트",
     "dottStatus": "Dott 상태",
-    "jobs": "Jobs"
+    "jobs": "작업"
   },
   "subMenu": {
     "dashboard": "대시보드",
@@ -85,11 +85,11 @@
     "journalEntries": "분개장",
     "generalLedger": "총계정원장",
     "trialBalance": "시산표",
-    "jobsList": "All Jobs",
-    "jobCosting": "Job Costing",
-    "jobMaterials": "Materials Usage",
-    "jobLabor": "Labor Tracking",
-    "jobProfitability": "Profitability Analysis"
+    "jobsList": "모든 작업",
+    "jobCosting": "작업 원가계산",
+    "jobMaterials": "자재 사용량",
+    "jobLabor": "노동 시간 추적",
+    "jobProfitability": "수익성 분석"
   },
   "actions": {
     "viewAll": "모두 보기",

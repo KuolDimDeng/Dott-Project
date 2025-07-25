@@ -28,7 +28,7 @@
     "analytics": "विश्लेषण",
     "smartInsights": "स्मार्ट अंतर्दृष्टि",
     "dottStatus": "Dott स्थिति",
-    "jobs": "Jobs"
+    "jobs": "कार्य"
   },
   "subMenu": {
     "dashboard": "डैशबोर्ड",
@@ -85,11 +85,11 @@
     "journalEntries": "जर्नल प्रविष्टियां",
     "generalLedger": "सामान्य खाता बही",
     "trialBalance": "परीक्षण संतुलन",
-    "jobsList": "All Jobs",
-    "jobCosting": "Job Costing",
-    "jobMaterials": "Materials Usage",
-    "jobLabor": "Labor Tracking",
-    "jobProfitability": "Profitability Analysis"
+    "jobsList": "सभी कार्य",
+    "jobCosting": "कार्य लागत निर्धारण",
+    "jobMaterials": "सामग्री उपयोग",
+    "jobLabor": "श्रम ट्रैकिंग",
+    "jobProfitability": "लाभप्रदता विश्लेषण"
   },
   "actions": {
     "viewAll": "सभी देखें",

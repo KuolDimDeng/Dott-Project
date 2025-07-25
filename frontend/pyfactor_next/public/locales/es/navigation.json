@@ -28,7 +28,7 @@
     "analytics": "Análisis",
     "smartInsights": "Perspectivas Inteligentes",
     "dottStatus": "Estado de Dott",
-    "jobs": "Jobs"
+    "jobs": "Trabajos"
   },
   "subMenu": {
     "dashboard": "Panel de Control",
@@ -85,11 +85,11 @@
     "journalEntries": "Asientos Contables",
     "generalLedger": "Libro Mayor",
     "trialBalance": "Balance de Comprobación",
-    "jobsList": "All Jobs",
-    "jobCosting": "Job Costing",
-    "jobMaterials": "Materials Usage",
-    "jobLabor": "Labor Tracking",
-    "jobProfitability": "Profitability Analysis"
+    "jobsList": "Todos los Trabajos",
+    "jobCosting": "Costeo de Trabajos",
+    "jobMaterials": "Uso de Materiales",
+    "jobLabor": "Seguimiento de Mano de Obra",
+    "jobProfitability": "Análisis de Rentabilidad"
   },
   "actions": {
     "viewAll": "Ver Todo",

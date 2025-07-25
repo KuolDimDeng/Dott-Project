@@ -28,7 +28,7 @@
     "analytics": "Analytik",
     "smartInsights": "Intelligente Einblicke",
     "dottStatus": "Dott Status",
-    "jobs": "Jobs"
+    "jobs": "Aufträge"
   },
   "subMenu": {
     "dashboard": "Dashboard",
@@ -85,11 +85,11 @@
     "journalEntries": "Buchungseinträge",
     "generalLedger": "Hauptbuch",
     "trialBalance": "Probebilanz",
-    "jobsList": "All Jobs",
-    "jobCosting": "Job Costing",
-    "jobMaterials": "Materials Usage",
-    "jobLabor": "Labor Tracking",
-    "jobProfitability": "Profitability Analysis"
+    "jobsList": "Alle Aufträge",
+    "jobCosting": "Auftragskalkulation",
+    "jobMaterials": "Materialverbrauch",
+    "jobLabor": "Arbeitszeitverfolgung",
+    "jobProfitability": "Rentabilitätsanalyse"
   },
   "actions": {
     "viewAll": "Alle anzeigen",

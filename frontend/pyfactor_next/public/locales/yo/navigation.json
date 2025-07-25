@@ -28,7 +28,7 @@
     "analytics": "Itupalẹ",
     "smartInsights": "Oye Ọlọgbọn",
     "dottStatus": "Ipo Dott",
-    "jobs": "Jobs"
+    "jobs": "Iṣẹ"
   },
   "subMenu": {
     "dashboard": "Dasibodu",
@@ -85,11 +85,11 @@
     "journalEntries": "Àkọsílẹ̀ Ìwé",
     "generalLedger": "Ìwé Àkọọ́lẹ̀ Gbogbogbò",
     "trialBalance": "Ìdánwò Ìwọ̀ntúnwọ̀nsì",
-    "jobsList": "All Jobs",
-    "jobCosting": "Job Costing",
-    "jobMaterials": "Materials Usage",
-    "jobLabor": "Labor Tracking",
-    "jobProfitability": "Profitability Analysis"
+    "jobsList": "Gbogbo Iṣẹ",
+    "jobCosting": "Idiyele Iṣẹ",
+    "jobMaterials": "Lilo Ohun Elo",
+    "jobLabor": "ItỌpinpin Iṣẹ",
+    "jobProfitability": "Itupalẹ̀ Ere"
   },
   "actions": {
     "viewAll": "Wo Gbogbo Rẹ̀",

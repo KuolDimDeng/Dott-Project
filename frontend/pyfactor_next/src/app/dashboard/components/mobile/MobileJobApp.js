@@ -19,14 +19,11 @@ import {
 
 const MobileJobApp = () => {
   const [jobs, setJobs] = useState([]);
-  const [currentJob, setCurrentJob] = useState(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [activeTimer, setActiveTimer] = useState(null);
   const [currentLocation, setCurrentLocation] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Mobile-specific states
-  const [checkedInJobs, setCheckedInJobs] = useState(new Set());
+  // Mobile-specific states  
   const [jobPhotos, setJobPhotos] = useState({});
   const [jobNotes, setJobNotes] = useState({});
   const [offlineQueue, setOfflineQueue] = useState([]);
@@ -154,74 +151,9 @@ const MobileJobApp = () => {
     }
   };
 
-  const handleCheckIn = async (job) => {
-    try {
-      // Update job status to in_progress
-      await jobService.updateJob(job.id, { 
-        status: 'in_progress',
-        start_date: new Date().toISOString().split('T')[0]
-      });
-      
-      // Add location if available
-      if (currentLocation) {
-        await jobService.addJobLabor(job.id, {
-          employee: job.assigned_to?.id,
-          work_date: new Date().toISOString().split('T')[0],
-          hours: 0,
-          hourly_rate: job.labor_rate || 50,
-          work_description: 'Checked in to job site',
-          location_lat: currentLocation.latitude,
-          location_lng: currentLocation.longitude
-        });
-      }
-      
-      setCheckedInJobs(prev => new Set(prev).add(job.id));
-      setCurrentJob(job);
-      
-      // Start timer
-      setActiveTimer({
-        jobId: job.id,
-        startTime: Date.now(),
-        totalTime: 0
-      });
-      
-    } catch (error) {
-      logger.error('Error checking in:', error);
-      alert('Failed to check in. Please try again.');
-    }
-  };
-
-  const handleCheckOut = async (job) => {
-    if (activeTimer && activeTimer.jobId === job.id) {
-      const totalHours = (Date.now() - activeTimer.startTime + activeTimer.totalTime) / (1000 * 60 * 60);
-      
-      try {
-        // Log the hours worked
-        await jobService.addJobLabor(job.id, {
-          employee: job.assigned_to?.id,
-          work_date: new Date().toISOString().split('T')[0],
-          hours: totalHours.toFixed(2),
-          hourly_rate: job.labor_rate || 50,
-          work_description: jobNotes[job.id] || 'Work completed',
-          is_billable: true
-        });
-        
-        setCheckedInJobs(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(job.id);
-          return newSet;
-        });
-        
-        setActiveTimer(null);
-        setCurrentJob(null);
-        
-        alert(`Checked out successfully! Time worked: ${totalHours.toFixed(2)} hours`);
-        
-      } catch (error) {
-        logger.error('Error checking out:', error);
-        alert('Failed to check out. Please try again.');
-      }
-    }
+  const handleTimesheetNavigation = () => {
+    // Navigate to existing timesheet system
+    window.location.href = '/mobile/timesheet';
   };
 
   const handlePhotoCapture = async (jobId) => {
@@ -303,18 +235,6 @@ const MobileJobApp = () => {
       for (const action of offlineQueue) {
         try {
           switch (action.type) {
-            case 'check_in':
-              await jobService.updateJob(action.jobId, {
-                status: 'in_progress',
-                start_date: action.data.start_date
-              });
-              if (action.data.location) {
-                await jobService.addJobLabor(action.jobId, action.data.labor);
-              }
-              break;
-            case 'check_out':
-              await jobService.addJobLabor(action.jobId, action.data.labor);
-              break;
             case 'status_update':
               await jobService.updateJob(action.jobId, { status: action.data.status });
               break;
@@ -479,74 +399,7 @@ const MobileJobApp = () => {
     handleMaterialTracking(jobId);
   };
 
-  // ========== ENHANCED OFFLINE ACTIONS ==========
-
-  const handleOfflineCheckIn = (job) => {
-    if (!isOnline) {
-      queueOfflineAction({
-        type: 'check_in',
-        jobId: job.id,
-        data: {
-          start_date: new Date().toISOString().split('T')[0],
-          location: currentLocation,
-          labor: {
-            employee: job.assigned_to?.id,
-            work_date: new Date().toISOString().split('T')[0],
-            hours: 0,
-            hourly_rate: job.labor_rate || 50,
-            work_description: 'Checked in to job site (offline)',
-            location_lat: currentLocation?.latitude,
-            location_lng: currentLocation?.longitude
-          }
-        }
-      });
-      
-      setCheckedInJobs(prev => new Set(prev).add(job.id));
-      setCurrentJob(job);
-      setActiveTimer({
-        jobId: job.id,
-        startTime: Date.now(),
-        totalTime: 0
-      });
-      alert('Checked in offline. Will sync when connection is restored.');
-    } else {
-      handleCheckIn(job);
-    }
-  };
-
-  const handleOfflineCheckOut = (job) => {
-    if (activeTimer && activeTimer.jobId === job.id) {
-      const totalHours = (Date.now() - activeTimer.startTime + activeTimer.totalTime) / (1000 * 60 * 60);
-      
-      if (!isOnline) {
-        queueOfflineAction({
-          type: 'check_out',
-          jobId: job.id,
-          data: {
-            labor: {
-              employee: job.assigned_to?.id,
-              work_date: new Date().toISOString().split('T')[0],
-              hours: totalHours.toFixed(2),
-              hourly_rate: job.labor_rate || 50,
-              work_description: jobNotes[job.id] || 'Work completed (offline)',
-              is_billable: true
-            }
-          }
-        });
-        
-        setCheckedInJobs(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(job.id);
-          return newSet;
-        });
-        setActiveTimer(null);
-        setCurrentJob(null);
-        alert(`Checked out offline! Time worked: ${totalHours.toFixed(2)} hours. Will sync when connection is restored.`);
-      } else {
-        handleCheckOut(job);
-      }
-    }
-  };
+  // ========== JOB STATUS MANAGEMENT ==========
 
   const handleStatusUpdate = async (jobId, newStatus) => {
     try {
@@ -570,11 +423,6 @@ const MobileJobApp = () => {
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
 
-  const formatTime = (milliseconds) => {
-    const hours = Math.floor(milliseconds / (1000 * 60 * 60));
-    const minutes = Math.floor((milliseconds % (1000 * 60 * 60)) / (1000 * 60));
-    return `${hours}:${minutes.toString().padStart(2, '0')}`;
-  };
 
   if (loading) {
     return (
@@ -615,16 +463,16 @@ const MobileJobApp = () => {
           </div>
         </div>
         
-        {activeTimer && (
-          <div className="mt-2 bg-blue-700 rounded-lg p-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm">Working on Job</span>
-              <span className="text-lg font-mono">
-                {formatTime(Date.now() - activeTimer.startTime + activeTimer.totalTime)}
-              </span>
-            </div>
-          </div>
-        )}
+        {/* Timesheet Integration */}
+        <div className="mt-2 bg-blue-700 rounded-lg p-3">
+          <button
+            onClick={handleTimesheetNavigation}
+            className="w-full flex items-center justify-between text-left"
+          >
+            <span className="text-sm">Time Tracking</span>
+            <span className="text-sm">Use Timesheet →</span>
+          </button>
+        </div>
       </div>
 
       {/* Jobs List */}
@@ -691,90 +539,78 @@ const MobileJobApp = () => {
 
               {/* Action Buttons */}
               <div className="p-4 border-t border-gray-100">
-                {!checkedInJobs.has(job.id) ? (
-                  <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-2">
+                  {/* Notes Input */}
+                  <textarea
+                    placeholder="Add work notes..."
+                    value={jobNotes[job.id] || ''}
+                    onChange={(e) => setJobNotes(prev => ({ ...prev, [job.id]: e.target.value }))}
+                    className="w-full p-2 border border-gray-300 rounded text-sm"
+                    rows="2"
+                  />
+                  
+                  <div className="grid grid-cols-2 gap-2 mb-2">
                     <button
-                      onClick={() => handleOfflineCheckIn(job)}
-                      className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                      onClick={() => handlePhotoCapture(job.id)}
+                      className="flex items-center justify-center gap-1 px-3 py-2 bg-gray-600 text-white rounded text-sm"
                     >
-                      <PlayIcon className="h-4 w-4" />
-                      Check In
+                      <CameraIcon className="h-4 w-4" />
+                      Photo
                     </button>
                     <button
+                      onClick={() => handleSignatureCapture(job.id)}
+                      className="flex items-center justify-center gap-1 px-3 py-2 bg-purple-600 text-white rounded text-sm"
+                    >
+                      <span className="text-sm">✍️</span>
+                      Signature
+                    </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-2 mb-2">
+                    <button
+                      onClick={() => voiceRecording?.jobId === job.id ? stopVoiceRecording() : startVoiceRecording(job.id)}
+                      className={`flex items-center justify-center gap-1 px-3 py-2 rounded text-sm ${
+                        voiceRecording?.jobId === job.id 
+                          ? 'bg-red-600 text-white animate-pulse' 
+                          : 'bg-indigo-600 text-white'
+                      }`}
+                    >
+                      <span className="text-sm">🎤</span>
+                      {voiceRecording?.jobId === job.id ? 'Stop' : 'Voice'}
+                    </button>
+                    <button
+                      onClick={() => handleMaterialTracking(job.id)}
+                      className="flex items-center justify-center gap-1 px-3 py-2 bg-orange-600 text-white rounded text-sm"
+                    >
+                      <span className="text-sm">📦</span>
+                      Material
+                    </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
                       onClick={() => window.open(`tel:${job.customer?.phone}`, '_self')}
-                      className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                      className="flex items-center justify-center gap-1 px-3 py-2 bg-blue-600 text-white rounded text-sm"
                     >
                       <PhoneIcon className="h-4 w-4" />
                       Call
                     </button>
+                    <button
+                      onClick={handleTimesheetNavigation}
+                      className="flex items-center justify-center gap-1 px-3 py-2 bg-indigo-600 text-white rounded text-sm"
+                    >
+                      <ClockIcon className="h-4 w-4" />
+                      Time
+                    </button>
+                    <button
+                      onClick={() => handleStatusUpdate(job.id, 'completed')}
+                      className="flex items-center justify-center gap-1 px-3 py-2 bg-green-600 text-white rounded text-sm"
+                    >
+                      <CheckCircleIcon className="h-4 w-4" />
+                      Complete
+                    </button>
                   </div>
-                ) : (
-                  <div className="space-y-2">
-                    {/* Notes Input */}
-                    <textarea
-                      placeholder="Add work notes..."
-                      value={jobNotes[job.id] || ''}
-                      onChange={(e) => setJobNotes(prev => ({ ...prev, [job.id]: e.target.value }))}
-                      className="w-full p-2 border border-gray-300 rounded text-sm"
-                      rows="2"
-                    />
-                    
-                    <div className="grid grid-cols-2 gap-2 mb-2">
-                      <button
-                        onClick={() => handlePhotoCapture(job.id)}
-                        className="flex items-center justify-center gap-1 px-3 py-2 bg-gray-600 text-white rounded text-sm"
-                      >
-                        <CameraIcon className="h-4 w-4" />
-                        Photo
-                      </button>
-                      <button
-                        onClick={() => handleSignatureCapture(job.id)}
-                        className="flex items-center justify-center gap-1 px-3 py-2 bg-purple-600 text-white rounded text-sm"
-                      >
-                        <span className="text-sm">✍️</span>
-                        Signature
-                      </button>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-2 mb-2">
-                      <button
-                        onClick={() => voiceRecording?.jobId === job.id ? stopVoiceRecording() : startVoiceRecording(job.id)}
-                        className={`flex items-center justify-center gap-1 px-3 py-2 rounded text-sm ${
-                          voiceRecording?.jobId === job.id 
-                            ? 'bg-red-600 text-white animate-pulse' 
-                            : 'bg-indigo-600 text-white'
-                        }`}
-                      >
-                        <span className="text-sm">🎤</span>
-                        {voiceRecording?.jobId === job.id ? 'Stop' : 'Voice'}
-                      </button>
-                      <button
-                        onClick={() => handleMaterialTracking(job.id)}
-                        className="flex items-center justify-center gap-1 px-3 py-2 bg-orange-600 text-white rounded text-sm"
-                      >
-                        <span className="text-sm">📦</span>
-                        Material
-                      </button>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        onClick={() => handleStatusUpdate(job.id, 'completed')}
-                        className="flex items-center justify-center gap-1 px-3 py-2 bg-green-600 text-white rounded text-sm"
-                      >
-                        <CheckCircleIcon className="h-4 w-4" />
-                        Complete
-                      </button>
-                      <button
-                        onClick={() => handleOfflineCheckOut(job)}
-                        className="flex items-center justify-center gap-1 px-3 py-2 bg-red-600 text-white rounded text-sm"
-                      >
-                        <StopIcon className="h-4 w-4" />
-                        Check Out
-                      </button>
-                    </div>
-                  </div>
-                )}
+                </div>
               </div>
             </div>
           ))
