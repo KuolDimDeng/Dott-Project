@@ -147,6 +147,11 @@ const NavIcons = {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
     </svg>
   ),
+  Jobs: (props) => (
+    <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+    </svg>
+  ),
   WhatsAppBusiness: (props) => (
     <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -784,6 +789,87 @@ const MainListItems = ({
       ],
     },
     */
+    {
+      icon: <NavIcons.Jobs className="w-5 h-5" />,
+      label: t('mainMenu.jobs'),
+      subItems: [
+        { 
+          label: t('subMenu.jobsList'), 
+          onClick: (value) => {
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'jobs-list', 
+              navigationKey,
+              originalItem: 'All Jobs'
+            };
+            
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+          }, 
+          value: 'jobs-list' 
+        },
+        { 
+          label: t('subMenu.jobCosting'), 
+          onClick: (value) => {
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'job-costing', 
+              navigationKey,
+              originalItem: 'Job Costing'
+            };
+            
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+          }, 
+          value: 'job-costing' 
+        },
+        { 
+          label: t('subMenu.jobMaterials'), 
+          onClick: (value) => {
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'job-materials', 
+              navigationKey,
+              originalItem: 'Materials Usage'
+            };
+            
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+          }, 
+          value: 'job-materials' 
+        },
+        { 
+          label: t('subMenu.jobLabor'), 
+          onClick: (value) => {
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'job-labor', 
+              navigationKey,
+              originalItem: 'Labor Tracking'
+            };
+            
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+          }, 
+          value: 'job-labor' 
+        },
+        { 
+          label: t('subMenu.jobProfitability'), 
+          onClick: (value) => {
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'job-profitability', 
+              navigationKey,
+              originalItem: 'Profitability Analysis'
+            };
+            
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+          }, 
+          value: 'job-profitability' 
+        },
+      ],
+    },
     {
       icon: <NavIcons.Payments className="w-5 h-5" />,
       label: t('mainMenu.payments'),

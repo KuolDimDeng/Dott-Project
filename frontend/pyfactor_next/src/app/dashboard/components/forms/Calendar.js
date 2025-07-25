@@ -31,6 +31,7 @@ import { useTranslation } from 'react-i18next';
 // Event type configurations
 const getEventTypes = (t) => ({
   appointment: { color: '#3B82F6', icon: ClockIcon, label: t('eventTypes.appointment') },
+  job: { color: '#059669', icon: BuildingOfficeIcon, label: 'Job/Project' },
   tax: { color: '#DC2626', icon: DocumentTextIcon, label: t('eventTypes.tax') },
   payroll: { color: '#10B981', icon: CurrencyDollarIcon, label: t('eventTypes.payroll') },
   birthday: { color: '#F59E0B', icon: CakeIcon, label: t('eventTypes.birthday') },

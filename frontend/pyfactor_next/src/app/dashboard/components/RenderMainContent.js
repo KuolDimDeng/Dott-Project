@@ -252,8 +252,9 @@ const InventoryReports = enhancedLazy(() => import('./forms/InventoryReports.js'
 const LocationsManagement = enhancedLazy(() => import('./forms/LocationsManagement.js'), 'Locations Management');
 const StockAdjustmentsManagement = enhancedLazy(() => import('./forms/StockAdjustmentsManagement.js'), 'Stock Adjustments Management');
 const SuppliersManagement = enhancedLazy(() => import('./forms/SuppliersManagement.js'), 'Suppliers Management');
-const ProductManagement = enhancedLazy(() => import('./forms/inventory/ProductManagement.js'), 'Product Management');
+const ProductManagement = enhancedLazy(() => import('./forms/ProductManagement.js'), 'Product Management');
 const SuppliesManagement = enhancedLazy(() => import('./forms/inventory/SuppliesManagement.js'), 'Supplies Management');
+const JobManagement = enhancedLazy(() => import('./jobs/JobManagement.js'), 'Job Management');
 const MainDashboard = enhancedLazy(() => import('./dashboards/MainDashboard'), 'Main Dashboard');
 const BankTransactions = enhancedLazy(() => import('./forms/BankTransactionPage'), 'Bank Transactions');
 const HRDashboard = enhancedLazy(() => import('./forms/HRDashboard.js'), 'HR Dashboard');
@@ -1723,6 +1724,62 @@ const RenderMainContent = React.memo(function RenderMainContent({
         );
       }
       
+      // Jobs views
+      if (view === 'jobs-list') {
+        console.log('[RenderMainContent] Rendering jobs-list view');
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup componentKey={`${componentKey}-jobs-list`}>
+              <JobManagement />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
+      }
+      
+      if (view === 'job-costing') {
+        console.log('[RenderMainContent] Rendering job-costing view');
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup componentKey={`${componentKey}-job-costing`}>
+              <JobManagement />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
+      }
+      
+      if (view === 'job-materials') {
+        console.log('[RenderMainContent] Rendering job-materials view');
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup componentKey={`${componentKey}-job-materials`}>
+              <JobManagement />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
+      }
+      
+      if (view === 'job-labor') {
+        console.log('[RenderMainContent] Rendering job-labor view');
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup componentKey={`${componentKey}-job-labor`}>
+              <JobManagement />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
+      }
+      
+      if (view === 'job-profitability') {
+        console.log('[RenderMainContent] Rendering job-profitability view');
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup componentKey={`${componentKey}-job-profitability`}>
+              <JobManagement />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
+      }
+
       if (view === 'inventory-reports') {
         console.log('[RenderMainContent] Rendering inventory-reports view');
         return (

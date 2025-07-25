@@ -1,6 +1,8 @@
 from django.db import models
 from django.core.validators import MinValueValidator
 from django.utils import timezone
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
 from decimal import Decimal
 from custom_auth.models import TenantAwareModel, TenantManager
 from crm.models import Customer
@@ -104,6 +106,77 @@ class Job(TenantAwareModel):
             
         profit = total_billable - total_cost
         return (profit / total_billable) * 100
+    
+    def create_calendar_event(self):
+        """Create a calendar event for this job when scheduled"""
+        if not self.scheduled_date:
+            return None
+            
+        try:
+            from events.models import Event
+            
+            # Avoid circular imports
+            event_title = f"Job: {self.name} ({self.job_number})"
+            event_description = f"Customer: {self.customer.name}\n"
+            if self.description:
+                event_description += f"Description: {self.description}\n"
+            if self.assigned_to:
+                event_description += f"Assigned to: {self.assigned_to.user.get_full_name()}\n"
+            event_description += f"Quoted Amount: ${self.quoted_amount}"
+            
+            # Set start time to 9 AM on scheduled date
+            start_datetime = timezone.datetime.combine(
+                self.scheduled_date, 
+                timezone.datetime.min.time().replace(hour=9)
+            )
+            if timezone.is_naive(start_datetime):
+                start_datetime = timezone.make_aware(start_datetime)
+            
+            # Set end time to 5 PM on same day (8-hour default)
+            end_datetime = start_datetime.replace(hour=17)
+            
+            # Check if event already exists
+            existing_event = self.calendar_events.first()
+            if existing_event:
+                # Update existing event
+                existing_event.title = event_title
+                existing_event.description = event_description
+                existing_event.start_datetime = start_datetime
+                existing_event.end_datetime = end_datetime
+                existing_event.save()
+                return existing_event
+            else:
+                # Create new event
+                event = Event.objects.create(
+                    title=event_title,
+                    description=event_description,
+                    start_datetime=start_datetime,
+                    end_datetime=end_datetime,
+                    event_type='job',
+                    job=self,
+                    created_by=self.created_by,
+                    tenant_id=self.tenant_id,
+                    all_day=True,
+                    reminder_minutes=60  # 1 hour before
+                )
+                return event
+                
+        except Exception as e:
+            # Log error but don't fail job creation
+            print(f"Error creating calendar event for job {self.job_number}: {e}")
+            return None
+    
+    def update_calendar_event(self):
+        """Update calendar event when job details change"""
+        if self.scheduled_date:
+            return self.create_calendar_event()  # This handles both create and update
+        else:
+            # If scheduled_date is removed, delete calendar events
+            self.delete_calendar_events()
+    
+    def delete_calendar_events(self):
+        """Delete all calendar events for this job"""
+        self.calendar_events.all().delete()
 
 
 class JobMaterial(TenantAwareModel):
@@ -271,3 +344,25 @@ class JobInvoice(TenantAwareModel):
             models.Index(fields=['tenant_id', 'job']),
             models.Index(fields=['tenant_id', 'invoice']),
         ]
+
+
+# Django signals for automatic calendar integration
+@receiver(post_save, sender=Job)
+def job_saved_handler(sender, instance, created, **kwargs):
+    """
+    Automatically create/update calendar events when a job is saved
+    """
+    if instance.scheduled_date:
+        # Job has a scheduled date, create/update calendar event
+        instance.update_calendar_event()
+    else:
+        # Job doesn't have a scheduled date, remove any calendar events
+        instance.delete_calendar_events()
+
+
+@receiver(post_delete, sender=Job)
+def job_deleted_handler(sender, instance, **kwargs):
+    """
+    Automatically delete calendar events when a job is deleted
+    """
+    instance.delete_calendar_events()

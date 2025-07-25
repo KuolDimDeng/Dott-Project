@@ -17,6 +17,7 @@ class Event(TenantAwareModel):
     EVENT_TYPE_CHOICES = [
         ('meeting', 'Meeting'),
         ('appointment', 'Appointment'),
+        ('job', 'Job/Project'),
         ('task', 'Task'),
         ('reminder', 'Reminder'),
         ('deadline', 'Deadline'),
@@ -37,6 +38,16 @@ class Event(TenantAwareModel):
         default=0, 
         validators=[MinValueValidator(0)],
         help_text="Number of minutes before the event to send a reminder (0 = no reminder)"
+    )
+    
+    # Link to job if this is a job-related event
+    job = models.ForeignKey(
+        'jobs.Job',
+        on_delete=models.CASCADE,
+        related_name='calendar_events',
+        null=True,
+        blank=True,
+        help_text="Link to job if this is a job-scheduled event"
     )
     
     # User who created the event
