@@ -15,6 +15,7 @@ from .serializers import (
 from custom_auth.views.rbac_views import IsOwnerOrAdmin
 from hr.models import Employee
 from hr.serializers import EmployeeSerializer
+from hr.utils import get_employee_for_user, user_has_employee_profile
 import logging
 
 logger = logging.getLogger(__name__)
@@ -60,7 +61,7 @@ class TimesheetViewSet(viewsets.ModelViewSet):
         
         # For supervisors, show timesheets they need to approve
         if self.request.query_params.get('for_approval') == 'true':
-            employee = getattr(user, 'employee', None)
+            employee = get_employee_for_user(user)
             if employee:
                 queryset = queryset.filter(
                     Q(supervisor=employee) | Q(employee__supervisor=employee),
@@ -75,7 +76,7 @@ class TimesheetViewSet(viewsets.ModelViewSet):
         employee_id = request.query_params.get('employee_id')
         if not employee_id:
             # Default to current user's employee
-            employee = getattr(request.user, 'employee', None)
+            employee = get_employee_for_user(request.user)
             if not employee:
                 return Response(
                     {'error': 'No employee record found for user'},
@@ -95,7 +96,7 @@ class TimesheetViewSet(viewsets.ModelViewSet):
             defaults={
                 'business_id': request.user.business_id,
                 'week_ending': week_end,
-                'supervisor_id': request.user.employee.supervisor_id if hasattr(request.user, 'employee') else None
+                'supervisor_id': get_employee_for_user(request.user).supervisor_id if user_has_employee_profile(request.user) else None
             }
         )
         
@@ -134,7 +135,7 @@ class TimesheetViewSet(viewsets.ModelViewSet):
         
         if serializer.is_valid():
             # Check if user can approve
-            employee = getattr(request.user, 'employee', None)
+            employee = get_employee_for_user(request.user)
             if not employee:
                 return Response(
                     {'error': 'No employee record found'},
@@ -160,7 +161,7 @@ class TimesheetViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def pending_approvals(self, request):
         """Get timesheets pending approval for current supervisor"""
-        employee = getattr(request.user, 'employee', None)
+        employee = get_employee_for_user(request.user)
         if not employee:
             return Response({'timesheets': []})
         
@@ -401,7 +402,7 @@ class TimesheetViewSet(viewsets.ModelViewSet):
                 # Approve the timesheet
                 timesheet.status = 'approved'
                 timesheet.approved_at = timezone.now()
-                timesheet.approved_by = getattr(user, 'employee', None)
+                timesheet.approved_by = user  # Now uses User instead of Employee
                 timesheet.save()
                 
                 approved_count += 1
@@ -582,7 +583,7 @@ class ClockEntryViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def current_status(self, request):
         """Get current clock status for employee"""
-        employee = getattr(request.user, 'employee', None)
+        employee = get_employee_for_user(request.user)
         if not employee:
             return Response({'error': 'No employee record found'}, status=status.HTTP_404_NOT_FOUND)
         
@@ -642,7 +643,7 @@ class ClockEntryViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        employee = getattr(request.user, 'employee', None)
+        employee = get_employee_for_user(request.user)
         if not employee:
             return Response(
                 {'error': 'No employee record found'},
@@ -757,7 +758,7 @@ class TimeOffRequestViewSet(viewsets.ModelViewSet):
         
         # For supervisors, show requests they need to approve
         if self.request.query_params.get('for_approval') == 'true':
-            employee = getattr(user, 'employee', None)
+            employee = get_employee_for_user(user)
             if employee:
                 if user.role in ['OWNER', 'ADMIN']:
                     queryset = queryset.filter(status='pending')
@@ -771,7 +772,7 @@ class TimeOffRequestViewSet(viewsets.ModelViewSet):
     
     def perform_create(self, serializer):
         """Set employee when creating request"""
-        employee = getattr(self.request.user, 'employee', None)
+        employee = get_employee_for_user(self.request.user)
         if employee:
             serializer.save(employee=employee)
         else:
@@ -785,7 +786,7 @@ class TimeOffRequestViewSet(viewsets.ModelViewSet):
         
         if serializer.is_valid():
             # Check if user can review
-            employee = getattr(request.user, 'employee', None)
+            employee = get_employee_for_user(request.user)
             if not employee:
                 return Response(
                     {'error': 'No employee record found'},
@@ -811,7 +812,7 @@ class TimeOffRequestViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def pending_approvals(self, request):
         """Get time off requests pending approval"""
-        employee = getattr(request.user, 'employee', None)
+        employee = get_employee_for_user(request.user)
         if not employee:
             return Response({'requests': []})
         

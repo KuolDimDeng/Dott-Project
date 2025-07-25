@@ -40,8 +40,21 @@ class Employee(models.Model):
         related_name='employee_profile'
     )
     
-    # Business association
-    business_id = models.UUIDField(db_index=True)
+    # Business association - DEPRECATED: Use user.business_id instead
+    # Keeping for backward compatibility during migration
+    _business_id = models.UUIDField(db_index=True, db_column='business_id', null=True, blank=True)
+    
+    @property
+    def business_id(self):
+        """Get business_id from user relationship if available, otherwise from direct field"""
+        if self.user and self.user.business_id:
+            return self.user.business_id
+        return self._business_id
+    
+    @business_id.setter
+    def business_id(self, value):
+        """Set business_id - will be deprecated"""
+        self._business_id = value
     
     # Tenant ID for Row Level Security (RLS)
     # This should match business_id for proper tenant isolation
@@ -173,6 +186,17 @@ class Employee(models.Model):
             unique_suffix = str(uuid.uuid4())[:4].upper()
             self.employee_number = f"EMP-{today}-{unique_suffix}"
             logger.info(f'🏷️ [Employee Model] Generated employee_number: {self.employee_number}')
+        
+        # Ensure business_id consistency
+        if self.user and self.user.business_id:
+            self.tenant_id = self.user.business_id
+            # Also update the deprecated field for backward compatibility
+            if not self._business_id:
+                self._business_id = self.user.business_id
+                logger.info(f'🏢 [Employee Model] Set business_id from user: {self._business_id}')
+        elif self._business_id:
+            # If only _business_id is set, use it for tenant_id
+            self.tenant_id = self._business_id
         
         # Ensure tenant_id matches business_id for RLS
         if self.business_id and not self.tenant_id:
@@ -1257,7 +1281,7 @@ class EmployeeGeofence(TenantAwareModel):
     # Assignment details
     assigned_at = models.DateTimeField(auto_now_add=True)
     assigned_by = models.ForeignKey(
-        'Employee',
+        'custom_auth.User',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,

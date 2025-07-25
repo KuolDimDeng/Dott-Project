@@ -475,22 +475,43 @@
 - **Documentation**: See STAGING_SUSPENSION_NOTICE.md
 - **Memory Fix**: NODE_OPTIONS set to 4GB in package.json and Dockerfile
 
-### [44.0.0] - 2025-07-25 - CURRENT - User-Employee Relationship Architecture
-- **Purpose**: Document the separation between User (authentication) and Employee (HR data)
-- **Architecture**:
-  - User: Core authentication model (email, password, role)
+### [44.0.0] - 2025-07-25 - CURRENT - User-Employee Architecture Standardization
+- **Purpose**: Standardize User-Employee relationship following industry best practices
+- **Problem**: Geofence creation failed because created_by required Employee, but business owners don't have Employee records
+- **Architecture Pattern**:
+  - User model: Core authentication and authorization (all users have this)
   - UserProfile: Extended user data (address, phone, preferences)
-  - Employee: HR-specific data (optional OneToOneField to User)
-- **Key Design Decisions**:
-  - Not all Users are Employees (e.g., business owners, admins)
-  - Employee records only for actual employees needing HR tracking
-  - Clear separation between authentication and HR concerns
+  - Employee model: Optional HR-specific data (only employees have this)
+  - Business owners, admins, and external users only have User records
+- **Key Changes**:
+  - All audit fields (created_by, approved_by, etc.) now use User ForeignKey instead of Employee
+  - Employee.business_id is now a property that gets value from User relation
+  - Created UserRole enum with existing OWNER, ADMIN, USER values
+  - Added comprehensive helper functions in hr/utils.py
 - **Helper Functions** (in `/backend/pyfactor/hr/utils.py`):
-  - `get_employee_for_user(user)` - Get employee or None
-  - `create_employee_for_user(user, **kwargs)` - Create employee if needed
-  - `user_has_employee_profile(user)` - Check if user has employee
+  - `get_employee_for_user(user)` - Get Employee or None
+  - `create_employee_for_user(user, **kwargs)` - Create Employee if needed
+  - `user_has_employee_profile(user)` - Check if user has Employee
+  - `get_user_display_name(user)` - Get name regardless of Employee status
   - `is_user_employee(user)` - Check if user is employee (not owner)
-  - `get_user_display_name(user)` - Get name regardless of employee status
+  - `get_user_role_display(user)` - Get human-readable role
+- **Models Updated**:
+  - Geofence.created_by: Employee → User
+  - EmployeeGeofence.assigned_by: Employee → User
+  - Timesheet.approved_by: Employee → User
+  - ClockEntry.adjusted_by: Employee → User
+  - TimeOffRequest.reviewed_by: Employee → User
+  - BonusPayment.approved_by: UUIDField → User
+- **Migrations Created**:
+  - hr/migrations/0003_change_geofence_created_by_to_user.py
+  - timesheets/migrations/0002_change_audit_fields_to_user.py
+  - payroll/migrations/0002_change_bonuspayment_approved_by_to_user.py
+- **Views Updated**: All views now use helper functions instead of direct user.employee access
+- **Benefits**:
+  - Business owners can now create geofences without Employee records
+  - Cleaner separation between authentication (User) and HR data (Employee)
+  - More flexible for future user types (customers, vendors, contractors)
+  - Consistent audit trail using User model
 - **Best Practices**:
   - Use User for audit fields (created_by, modified_by)
   - Use Employee only for HR-specific relationships

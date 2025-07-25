@@ -360,7 +360,7 @@ class BonusPayment(TenantAwareModel):
     
     # Approval
     is_approved = models.BooleanField(default=False)
-    approved_by = models.UUIDField(null=True, blank=True)
+    approved_by = models.ForeignKey('custom_auth.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_bonuses')
     approved_at = models.DateTimeField(null=True, blank=True)
     
     # Payment tracking

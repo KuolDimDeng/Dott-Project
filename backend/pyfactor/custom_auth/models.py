@@ -83,6 +83,17 @@ class UserManager(BaseUserManager):
         return self._create_user(email, password, **extra_fields)
 
 
+class UserRole(models.TextChoices):
+    """User role choices - maintaining existing OWNER, ADMIN, USER structure"""
+    OWNER = 'OWNER', 'Business Owner'
+    ADMIN = 'ADMIN', 'Administrator'
+    USER = 'USER', 'User'
+    # Future roles can be added here:
+    # CUSTOMER = 'CUSTOMER', 'Customer'
+    # VENDOR = 'VENDOR', 'Vendor'
+    # ACCOUNTANT = 'ACCOUNTANT', 'Accountant'
+
+
 class User(AbstractUser):
     """Custom user model using email as the unique identifier."""
     
@@ -103,13 +114,9 @@ class User(AbstractUser):
     phone_number = models.CharField(max_length=20, null=True, blank=True)
     business_id = models.UUIDField(null=True, blank=True)
     
-    # Role field with choices
-    ROLE_CHOICES = [
-        ('OWNER', 'Owner'),
-        ('ADMIN', 'Admin'),
-        ('USER', 'User'),
-    ]
-    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='OWNER')
+    # Role field with choices - using enum
+    ROLE_CHOICES = UserRole.choices  # Keep for backward compatibility
+    role = models.CharField(max_length=10, choices=UserRole.choices, default=UserRole.OWNER)
     
     # Onboarding status - single source of truth
     onboarding_completed = models.BooleanField(default=False, help_text='Whether user has completed onboarding')
@@ -272,7 +279,7 @@ class UserInvitation(models.Model):
     email = models.EmailField()
     invited_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_invitations')
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE)
-    role = models.CharField(max_length=10, choices=User.ROLE_CHOICES, default='USER')
+    role = models.CharField(max_length=10, choices=UserRole.choices, default=UserRole.USER)
     invitation_token = models.CharField(max_length=255, unique=True)
     status = models.CharField(max_length=20, choices=[
         ('pending', 'Pending'),
