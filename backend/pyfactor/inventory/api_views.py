@@ -507,6 +507,7 @@ def product_by_code(request, code):
             )
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def check_location_migration_status(request):
     """
     Check if the location structured address migration has been applied
