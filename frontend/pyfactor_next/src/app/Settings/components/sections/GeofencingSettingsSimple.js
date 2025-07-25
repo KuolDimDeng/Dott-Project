@@ -163,8 +163,8 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
     
     setGeofenceData(prev => ({
       ...prev,
-      center_latitude: center.lat,
-      center_longitude: center.lng
+      center_latitude: parseFloat(center.lat.toFixed(7)),
+      center_longitude: parseFloat(center.lng.toFixed(7))
     }));
 
     // Listen for radius changes
@@ -177,8 +177,8 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
       const newCenter = newGeofence.getCenter();
       setGeofenceData(prev => ({
         ...prev,
-        center_latitude: newCenter.lat(),
-        center_longitude: newCenter.lng()
+        center_latitude: parseFloat(newCenter.lat().toFixed(7)),
+        center_longitude: parseFloat(newCenter.lng().toFixed(7))
       }));
     });
   };
