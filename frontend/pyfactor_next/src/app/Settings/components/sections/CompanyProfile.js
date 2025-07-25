@@ -21,6 +21,7 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
   const [companyData, setCompanyData] = useState({
     businessName: '',
     businessType: '',
+    legalStructure: '',
     email: '',
     phone: '',
     website: '',
@@ -57,6 +58,7 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
       let businessData = {
         businessName: '',
         businessType: '',
+        legalStructure: '',
         email: '',
         phone: '',
         website: '',
@@ -71,7 +73,8 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
         registrationNumber: '',
         yearEstablished: '',
         industry: '',
-        description: ''
+        description: '',
+        displayLegalStructure: true
       };
 
       // Check multiple sources for business data
@@ -79,6 +82,7 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
         businessData = {
           businessName: profileData.businessName || profileData.tenant?.businessName || profileData.business_name || '',
           businessType: profileData.businessType || profileData.tenant?.businessType || profileData.business_type || '',
+          legalStructure: profileData.legalStructure || profileData.tenant?.legalStructure || profileData.legal_structure || '',
           email: profileData.email || profileData.tenant?.email || user?.email || '',
           phone: profileData.phone || profileData.tenant?.phone || profileData.phone_number || '',
           website: profileData.website || profileData.tenant?.website || '',
@@ -93,14 +97,15 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
           registrationNumber: profileData.registrationNumber || profileData.tenant?.registrationNumber || '',
           yearEstablished: profileData.yearEstablished || profileData.tenant?.yearEstablished || '',
           industry: profileData.industry || profileData.tenant?.industry || '',
-          description: profileData.description || profileData.tenant?.description || ''
+          description: profileData.description || profileData.tenant?.description || '',
+          displayLegalStructure: profileData.displayLegalStructure !== undefined ? profileData.displayLegalStructure : true
         };
       }
 
       // Always try to fetch complete business data from dedicated business API
       try {
-        console.log('[CompanyProfile] Fetching business data from /api/user/business');
-        const businessResponse = await fetch('/api/user/business');
+        console.log('[CompanyProfile] Fetching business data from /api/tenant/business-info');
+        const businessResponse = await fetch('/api/tenant/business-info');
         if (businessResponse.ok) {
           const businessApiData = await businessResponse.json();
           console.log('[CompanyProfile] Business API data received:', businessApiData);
@@ -109,16 +114,18 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
             // Use business API data as the primary source
             businessData = {
               businessName: businessApiData.businessName || businessData.businessName,
-              businessType: businessApiData.businessType || businessData.businessType,
+              businessType: businessApiData.businessType || businessApiData.business_type || businessData.businessType,
+              legalStructure: businessApiData.legalStructure || businessApiData.legal_structure || businessData.legalStructure,
               email: businessApiData.email || businessData.email,
-              phone: businessApiData.phone || businessData.phone,
+              phone: businessApiData.phone || businessApiData.phoneNumber || businessApiData.phone_number || businessData.phone,
               website: businessApiData.website || businessData.website,
               address: businessApiData.address || businessData.address,
               taxId: businessApiData.taxId || businessData.taxId,
               registrationNumber: businessApiData.registrationNumber || businessData.registrationNumber,
               yearEstablished: businessApiData.yearEstablished || businessData.yearEstablished,
               industry: businessApiData.industry || businessData.industry,
-              description: businessApiData.description || businessData.description
+              description: businessApiData.description || businessData.description,
+              displayLegalStructure: businessApiData.displayLegalStructure !== undefined ? businessApiData.displayLegalStructure : businessData.displayLegalStructure
             };
             console.log('[CompanyProfile] Updated business data from API:', businessData);
           }
@@ -137,6 +144,7 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
                 ...businessData,
                 businessName: userData.businessName || userData.business_name || businessData.businessName,
                 businessType: userData.businessType || userData.business_type || businessData.businessType,
+                legalStructure: userData.legalStructure || userData.legal_structure || businessData.legalStructure,
                 email: userData.email || businessData.email,
                 phone: userData.phone || userData.phone_number || businessData.phone,
                 website: userData.website || businessData.website,
@@ -145,7 +153,8 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
                 taxId: userData.taxId || businessData.taxId,
                 registrationNumber: userData.registrationNumber || businessData.registrationNumber,
                 yearEstablished: userData.yearEstablished || businessData.yearEstablished,
-                address: userData.address || businessData.address
+                address: userData.address || businessData.address,
+                displayLegalStructure: userData.displayLegalStructure !== undefined ? userData.displayLegalStructure : businessData.displayLegalStructure
               };
               console.log('[CompanyProfile] Updated business data from profile API:', businessData);
             }
@@ -162,9 +171,13 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
       if (user) {
         console.log('[CompanyProfile] Checking user object for business data:', user);
         businessData.businessName = businessData.businessName || user.businessName || user.business_name || user['custom:businessname'] || '';
-        businessData.businessType = businessData.businessType || user.businessType || user.business_type || user['custom:businesstype'] || '';
+        businessData.businessType = businessData.businessType || user.business_type || user['custom:businesstype'] || '';
+        businessData.legalStructure = businessData.legalStructure || user.legalStructure || user.legal_structure || '';
         businessData.email = businessData.email || user.email || '';
         businessData.phone = businessData.phone || user.phone_number || user.phoneNumber || '';
+        if (user.displayLegalStructure !== undefined) {
+          businessData.displayLegalStructure = user.displayLegalStructure;
+        }
       }
       
       // Additional fallback: try to get user session data directly from session context
@@ -180,8 +193,10 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
               ...businessData,
               businessName: businessData.businessName || sessionUser.businessName || sessionUser.business_name || '',
               businessType: businessData.businessType || sessionUser.businessType || sessionUser.business_type || '',
+              legalStructure: businessData.legalStructure || sessionUser.legalStructure || sessionUser.legal_structure || '',
               email: businessData.email || sessionUser.email || '',
-              phone: businessData.phone || sessionUser.phone_number || sessionUser.phoneNumber || ''
+              phone: businessData.phone || sessionUser.phone_number || sessionUser.phoneNumber || '',
+              displayLegalStructure: sessionUser.displayLegalStructure !== undefined ? sessionUser.displayLegalStructure : businessData.displayLegalStructure
             };
             console.log('[CompanyProfile] Updated business data from session:', businessData);
           }
@@ -233,7 +248,9 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
         },
         body: JSON.stringify({
           ...companyData,
-          businessName: undefined
+          businessName: undefined,
+          legalStructure: companyData.legalStructure,
+          displayLegalStructure: companyData.displayLegalStructure
         })
       });
 
@@ -260,8 +277,22 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
   ];
 
   const businessTypes = [
-    'Sole Proprietorship', 'Partnership', 'LLC', 'Corporation', 
-    'S-Corporation', 'Non-Profit', 'Other'
+    'Retail', 'E-commerce', 'Professional Services', 'Healthcare',
+    'Technology', 'Manufacturing', 'Food & Beverage', 'Education',
+    'Construction', 'Real Estate', 'Transportation', 'Finance',
+    'Entertainment', 'Non-Profit', 'Other'
+  ];
+
+  const legalStructures = [
+    'Sole Proprietorship',
+    'General Partnership (GP)',
+    'Limited Partnership (LP)',
+    'Limited Liability Company (LLC)',
+    'Corporation (Inc., Corp.)',
+    'Limited Company (Ltd.)',
+    'S-Corporation',
+    'Non-Profit Organization (NPO)',
+    'Other'
   ];
 
   return (
@@ -316,7 +347,7 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Business Type
-                <FieldTooltip content="Legal structure of your business" />
+                <FieldTooltip content="Type of business you operate" />
               </label>
               {editMode ? (
                 <select
@@ -331,10 +362,56 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
                 </select>
               ) : (
                 <div className="flex items-center p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                  <IdentificationIcon className="h-5 w-5 text-gray-400 mr-3" />
+                  <BuildingOfficeIcon className="h-5 w-5 text-gray-400 mr-3" />
                   <span className="text-gray-900">{companyData.businessType || 'Not specified'}</span>
                 </div>
               )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Legal Structure
+                <FieldTooltip content="Legal structure of your business" />
+              </label>
+              {editMode ? (
+                <select
+                  value={companyData.legalStructure}
+                  onChange={(e) => setCompanyData({ ...companyData, legalStructure: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">Select legal structure</option>
+                  {legalStructures.map(structure => (
+                    <option key={structure} value={structure}>{structure}</option>
+                  ))}
+                </select>
+              ) : (
+                <div className="flex items-center p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                  <IdentificationIcon className="h-5 w-5 text-gray-400 mr-3" />
+                  <span className="text-gray-900">{companyData.legalStructure || 'Not specified'}</span>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  checked={companyData.displayLegalStructure}
+                  onChange={(e) => setCompanyData({ ...companyData, displayLegalStructure: e.target.checked })}
+                  disabled={!editMode}
+                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  Display legal structure in header
+                  <FieldTooltip content="Show your legal structure (LLC, Corp, Ltd) after your business name in the navigation bar" />
+                </span>
+              </label>
+              <p className="mt-1 ml-7 text-xs text-gray-500">
+                {companyData.displayLegalStructure ? 
+                  `Will display as: ${companyData.businessName}${companyData.legalStructure && ['LLC', 'Limited Liability Company (LLC)', 'Corporation (Inc., Corp.)', 'Limited Company (Ltd.)'].some(suffix => companyData.legalStructure.includes(suffix)) ? ', ' + companyData.legalStructure.match(/\((.*?)\)/)?.[1] || companyData.legalStructure : ''}` :
+                  'Legal structure will not be shown in header'
+                }
+              </p>
             </div>
 
             <div>

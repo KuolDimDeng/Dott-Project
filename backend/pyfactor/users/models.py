@@ -357,6 +357,9 @@ class UserProfile(models.Model):
     # WhatsApp Business preference - defaults based on country
     show_whatsapp_commerce = models.BooleanField(null=True, blank=True, help_text='Whether to show WhatsApp Commerce in menu (null = use country default)')
     
+    # Legal structure display preference
+    display_legal_structure = models.BooleanField(default=True, help_text='Whether to show legal structure (LLC, Corp, Ltd) after business name in header')
+    
     created_at = models.DateTimeField(auto_now_add=True)
     modified_at = models.DateTimeField(auto_now=True)
     # Add updated_at field to match database schema

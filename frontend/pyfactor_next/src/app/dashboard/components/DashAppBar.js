@@ -144,9 +144,27 @@ const DashAppBar = ({
         name: session.user?.name,
         businessName: session.user?.businessName,
         business_name: session.user?.business_name,
+        legal_structure: session.user?.legal_structure,
+        legalStructure: session.user?.legalStructure,
+        display_legal_structure: session.user?.display_legal_structure,
+        displayLegalStructure: session.user?.displayLegalStructure,
         tenantId: session.user?.tenantId,
         allUserKeys: session.user ? Object.keys(session.user) : 'no user'
       });
+      
+      // Set legal structure and display preference from session
+      if (session.user?.legal_structure) {
+        setLegalStructure(session.user.legal_structure);
+      }
+      if (session.user?.legalStructure) {
+        setLegalStructure(session.user.legalStructure);
+      }
+      if (session.user?.display_legal_structure !== undefined) {
+        setDisplayLegalStructure(session.user.display_legal_structure);
+      }
+      if (session.user?.displayLegalStructure !== undefined) {
+        setDisplayLegalStructure(session.user.displayLegalStructure);
+      }
     }
   }, [session, sessionLoading]);
   
@@ -189,6 +207,8 @@ const DashAppBar = ({
   const [showSubscriptionPopup, setShowSubscriptionPopup] = useState(false);
   const [businessName, setBusinessName] = useState(null);
   const [fetchedBusinessName, setFetchedBusinessName] = useState(null);
+  const [legalStructure, setLegalStructure] = useState(null);
+  const [displayLegalStructure, setDisplayLegalStructure] = useState(true);
   const [isDesktop, setIsDesktop] = useState(true);
   const [showNotifications, setShowNotifications] = useState(false);
   
@@ -1235,6 +1255,11 @@ const DashAppBar = ({
               logger.debug('[DashAppBar] Found business name from business info API:', businessInfo.businessName);
               setBusinessName(businessInfo.businessName);
               setFetchedBusinessName(businessInfo.businessName);
+              
+              // Also set legal structure from business info
+              if (businessInfo.legalStructure) {
+                setLegalStructure(businessInfo.legalStructure);
+              }
               return;
             }
           }
@@ -1273,6 +1298,29 @@ const DashAppBar = ({
       fetchBusinessNameData();
     }
   }, [auth0Loading, getAuth0BusinessName, businessName, fetchedBusinessName, tenantId]);
+  
+  // Helper function to get legal structure suffix
+  const getLegalStructureSuffix = () => {
+    if (!displayLegalStructure || !legalStructure) return '';
+    
+    // Extract suffix from legal structure
+    if (legalStructure.includes('LLC') || legalStructure.includes('Limited Liability Company')) {
+      return ', LLC';
+    } else if (legalStructure.includes('Inc.') || legalStructure.includes('Corp.') || legalStructure.includes('Corporation')) {
+      return ', Corp';
+    } else if (legalStructure.includes('Ltd.') || legalStructure.includes('Limited Company')) {
+      return ', Ltd';
+    }
+    
+    // Don't show suffix for Sole Proprietorship, Partnership, etc.
+    return '';
+  };
+  
+  // Get the display business name with optional legal structure
+  const getDisplayBusinessName = () => {
+    const baseName = businessName || fetchedBusinessName || auth0BusinessName || profileData?.businessName || profileData?.business_name || tCommon('common.loading', 'Loading...');
+    return baseName + getLegalStructureSuffix();
+  };
 
   return (
     <>
@@ -1327,7 +1375,7 @@ const DashAppBar = ({
               <div className="flex items-center">
                 {/* Business name - make it visible on all screen sizes and add fallback display */}
                 <div className="text-white flex items-center mr-3">
-                  <span className="font-semibold">{businessName || fetchedBusinessName || auth0BusinessName || profileData?.businessName || profileData?.business_name || tCommon('common.loading', 'Loading...')}</span>
+                  <span className="font-semibold">{getDisplayBusinessName()}</span>
                   <span className="mx-2 h-4 w-px bg-white/30"></span>
                 </div>
                 
@@ -1343,7 +1391,7 @@ const DashAppBar = ({
                 >
                   {/* Display business name on mobile inside the subscription button */}
                   <span className="whitespace-nowrap text-xs md:hidden mr-1">
-                    {(businessName || fetchedBusinessName || auth0BusinessName) ? `${businessName || fetchedBusinessName || auth0BusinessName}:` : ''}
+                    {(businessName || fetchedBusinessName || auth0BusinessName) ? `${getDisplayBusinessName()}:` : ''}
                   </span>
                   <span className="whitespace-nowrap text-xs inline-block">
                     {displayLabel}

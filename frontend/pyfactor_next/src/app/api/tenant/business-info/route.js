@@ -176,3 +176,58 @@ export async function GET(request) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+/**
+ * PUT /api/tenant/business-info
+ * Updates business information for the authenticated user's tenant
+ */
+export async function PUT(request) {
+  try {
+    console.log('[Business Info API] Updating business information');
+    
+    // Get session ID from cookie
+    const cookieStore = cookies();
+    const sessionId = cookieStore.get('sid');
+    
+    if (!sessionId) {
+      console.log('[Business Info API] No session found');
+      return NextResponse.json({ error: 'No session found' }, { status: 401 });
+    }
+    
+    // Get request body
+    const body = await request.json();
+    console.log('[Business Info API] Update request body:', body);
+    
+    // Backend API URL
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://api.dottapps.com';
+    
+    // Forward the update request to backend - using users/me PATCH for preferences
+    const updateResponse = await fetch(`${apiBaseUrl}/api/users/me/`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Session ${sessionId.value}`,
+        'Cookie': `session_token=${sessionId.value}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        display_legal_structure: body.displayLegalStructure
+      })
+    });
+    
+    if (!updateResponse.ok) {
+      const errorText = await updateResponse.text();
+      console.error('[Business Info API] Backend update failed:', errorText);
+      return NextResponse.json({ error: 'Failed to update business information' }, { status: updateResponse.status });
+    }
+    
+    const result = await updateResponse.json();
+    console.log('[Business Info API] Update successful:', result);
+    
+    return NextResponse.json(result);
+    
+  } catch (error) {
+    console.error('[Business Info API] Error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

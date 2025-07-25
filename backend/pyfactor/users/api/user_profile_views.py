@@ -146,6 +146,7 @@ class UserProfileMeView(APIView):
                 'occupation': profile.occupation,
                 'show_whatsapp_commerce': profile.get_whatsapp_commerce_preference(),
                 'whatsapp_commerce_explicit': profile.show_whatsapp_commerce,  # Explicit user setting (null if using default)
+                'display_legal_structure': profile.display_legal_structure,
                 'request_id': request_id
             }
             
@@ -155,6 +156,7 @@ class UserProfileMeView(APIView):
                 response_data.update({
                     'business_name': business.name,
                     'business_type': business.business_type,
+                    'legal_structure': getattr(business, 'legal_structure', ''),
                 })
             
             logger.info(f"[UserProfileMeView] Returning profile data with subscription_plan: {subscription_plan}")
@@ -195,6 +197,9 @@ class UserProfileMeView(APIView):
                     'request_id': request_id
                 }, status=status.HTTP_404_NOT_FOUND)
             
+            # Track if any updates were made
+            updated = False
+            
             # Update WhatsApp commerce preference if provided
             if 'show_whatsapp_commerce' in request.data:
                 whatsapp_preference = request.data['show_whatsapp_commerce']
@@ -210,8 +215,27 @@ class UserProfileMeView(APIView):
                         'request_id': request_id
                     }, status=status.HTTP_400_BAD_REQUEST)
                 
-                profile.save()
+                updated = True
                 logger.info(f"[UserProfileMeView] Updated WhatsApp preference to: {profile.show_whatsapp_commerce}")
+            
+            # Update legal structure display preference if provided
+            if 'display_legal_structure' in request.data:
+                display_preference = request.data['display_legal_structure']
+                
+                if isinstance(display_preference, bool):
+                    profile.display_legal_structure = display_preference
+                else:
+                    return Response({
+                        'error': 'display_legal_structure must be a boolean',
+                        'request_id': request_id
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                
+                updated = True
+                logger.info(f"[UserProfileMeView] Updated legal structure display preference to: {profile.display_legal_structure}")
+            
+            # Save profile if any updates were made
+            if updated:
+                profile.save()
             
             # Return updated profile data (reuse the GET logic)
             return self.get(request)
