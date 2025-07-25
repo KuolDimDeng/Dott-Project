@@ -199,9 +199,9 @@ export async function POST(request) {
       console.log(`📡 [export-data] Backend responded in ${backendTime}ms`);
       
       // Log response details
-      const responseHeaders = {};
+      const backendResponseHeaders = {};
       backendResponse.headers.forEach((value, key) => {
-        responseHeaders[key] = value;
+        backendResponseHeaders[key] = value;
       });
       
       console.log('📡 [export-data] Backend response:', {
@@ -211,7 +211,7 @@ export async function POST(request) {
         contentType: backendResponse.headers.get('content-type'),
         contentLength: backendResponse.headers.get('content-length'),
         contentDisposition: backendResponse.headers.get('content-disposition'),
-        headers: responseHeaders
+        headers: backendResponseHeaders
       });
       
       if (!backendResponse.ok) {
