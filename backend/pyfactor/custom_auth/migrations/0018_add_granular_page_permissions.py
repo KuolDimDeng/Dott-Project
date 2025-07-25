@@ -229,7 +229,7 @@ def reverse_add_granular_page_permissions(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('custom_auth', '0017_alter_user_business_alter_user_tenant'),
+        ('custom_auth', '0017_merge'),
     ]
 
     operations = [

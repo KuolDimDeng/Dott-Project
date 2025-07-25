@@ -8,7 +8,7 @@ import uuid
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('custom_auth', '0017_merge'),
+        ('custom_auth', '0018_add_granular_page_permissions'),
     ]
 
     operations = [
