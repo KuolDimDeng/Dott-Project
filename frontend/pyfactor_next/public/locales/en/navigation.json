@@ -28,7 +28,7 @@
     "analytics": "Analytics",
     "smartInsights": "Smart Insights",
     "dottStatus": "Dott Status",
-    "jobs": "Jobs & Projects"
+    "jobs": "Jobs"
   },
   "subMenu": {
     "dashboard": "Dashboard",
@@ -38,12 +38,12 @@
     "purchases": "Purchases",
     "customers": "Customers",
     "vendors": "Vendors",
-    "catalog": "Product",
-    "service": "Service",
+    "catalog": "Products",
+    "service": "Services",
     "orders": "Orders",
     "productsPricing": "Products & Pricing",
     "suppliesMaterials": "Supplies & Materials",
-    "warehouseTracker": "Warehouse",
+    "warehouseTracker": "Stock Adjustments",
     "expiryDates": "Expiry Dates",
     "availabilityMonitor": "Availability Monitor",
     "lowStockAlerts": "Low Stock Alerts",

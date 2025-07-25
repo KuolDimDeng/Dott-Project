@@ -27,7 +27,8 @@
     "inviteBusinessOwner": "የንግድ ባለቤት ጋብዝ",
     "analytics": "ትንተና",
     "smartInsights": "ብልህ ግንዛቤዎች",
-    "dottStatus": "የDott ሁኔታ"
+    "dottStatus": "የDott ሁኔታ",
+    "jobs": "Jobs"
   },
   "subMenu": {
     "dashboard": "ዳሽቦርድ",
@@ -83,7 +84,12 @@
     "chartOfAccounts": "የሂሳብ ሰንጠረዥ",
     "journalEntries": "የመጽሔት ግቤቶች",
     "generalLedger": "ዋና መዝገብ",
-    "trialBalance": "የሙከራ ሚዛን"
+    "trialBalance": "የሙከራ ሚዛን",
+    "jobsList": "All Jobs",
+    "jobCosting": "Job Costing",
+    "jobMaterials": "Materials Usage",
+    "jobLabor": "Labor Tracking",
+    "jobProfitability": "Profitability Analysis"
   },
   "actions": {
     "viewAll": "ሁሉንም ይመልከቱ",

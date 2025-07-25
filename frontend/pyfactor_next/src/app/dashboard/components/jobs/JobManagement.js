@@ -40,7 +40,9 @@ const JobManagement = () => {
       }
       
       const jobsData = await jobService.getJobs(filterParams);
-      setJobs(jobsData);
+      // Handle both array and object response formats
+      const jobsList = Array.isArray(jobsData) ? jobsData : (jobsData?.results || jobsData?.data || []);
+      setJobs(jobsList);
       setError(null);
     } catch (err) {
       logger.error('Error fetching jobs:', err);

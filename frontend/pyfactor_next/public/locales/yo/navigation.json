@@ -27,7 +27,8 @@
     "inviteBusinessOwner": "Pe Olówó Iṣẹ́",
     "analytics": "Itupalẹ",
     "smartInsights": "Oye Ọlọgbọn",
-    "dottStatus": "Ipo Dott"
+    "dottStatus": "Ipo Dott",
+    "jobs": "Jobs"
   },
   "subMenu": {
     "dashboard": "Dasibodu",
@@ -83,7 +84,12 @@
     "chartOfAccounts": "Àtẹ Àkáǹtì",
     "journalEntries": "Àkọsílẹ̀ Ìwé",
     "generalLedger": "Ìwé Àkọọ́lẹ̀ Gbogbogbò",
-    "trialBalance": "Ìdánwò Ìwọ̀ntúnwọ̀nsì"
+    "trialBalance": "Ìdánwò Ìwọ̀ntúnwọ̀nsì",
+    "jobsList": "All Jobs",
+    "jobCosting": "Job Costing",
+    "jobMaterials": "Materials Usage",
+    "jobLabor": "Labor Tracking",
+    "jobProfitability": "Profitability Analysis"
   },
   "actions": {
     "viewAll": "Wo Gbogbo Rẹ̀",

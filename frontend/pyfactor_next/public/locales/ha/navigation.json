@@ -27,7 +27,8 @@
     "inviteBusinessOwner": "Gayyaci Mai Kasuwanci",
     "analytics": "Bincike",
     "smartInsights": "Basirar Wayo",
-    "dottStatus": "Matsayin Dott"
+    "dottStatus": "Matsayin Dott",
+    "jobs": "Jobs"
   },
   "subMenu": {
     "dashboard": "Dashboard",
@@ -83,7 +84,12 @@
     "chartOfAccounts": "Tsarin Asusu",
     "journalEntries": "Shigarwar Jarida",
     "generalLedger": "Babban Littafi",
-    "trialBalance": "Ma'auni na Gwaji"
+    "trialBalance": "Ma'auni na Gwaji",
+    "jobsList": "All Jobs",
+    "jobCosting": "Job Costing",
+    "jobMaterials": "Materials Usage",
+    "jobLabor": "Labor Tracking",
+    "jobProfitability": "Profitability Analysis"
   },
   "actions": {
     "viewAll": "Duba Duka",

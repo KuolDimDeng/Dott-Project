@@ -27,7 +27,8 @@
     "inviteBusinessOwner": "사업주 초대",
     "analytics": "분석",
     "smartInsights": "스마트 인사이트",
-    "dottStatus": "Dott 상태"
+    "dottStatus": "Dott 상태",
+    "jobs": "Jobs"
   },
   "subMenu": {
     "dashboard": "대시보드",
@@ -83,7 +84,12 @@
     "chartOfAccounts": "계정과목표",
     "journalEntries": "분개장",
     "generalLedger": "총계정원장",
-    "trialBalance": "시산표"
+    "trialBalance": "시산표",
+    "jobsList": "All Jobs",
+    "jobCosting": "Job Costing",
+    "jobMaterials": "Materials Usage",
+    "jobLabor": "Labor Tracking",
+    "jobProfitability": "Profitability Analysis"
   },
   "actions": {
     "viewAll": "모두 보기",

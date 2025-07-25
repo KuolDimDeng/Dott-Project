@@ -27,7 +27,8 @@
     "inviteBusinessOwner": "Undang Pemilik Bisnis",
     "analytics": "Analitik",
     "smartInsights": "Wawasan Cerdas",
-    "dottStatus": "Status Dott"
+    "dottStatus": "Status Dott",
+    "jobs": "Jobs"
   },
   "subMenu": {
     "dashboard": "Dasbor",
@@ -83,7 +84,12 @@
     "chartOfAccounts": "Bagan Akun",
     "journalEntries": "Entri Jurnal",
     "generalLedger": "Buku Besar",
-    "trialBalance": "Neraca Saldo"
+    "trialBalance": "Neraca Saldo",
+    "jobsList": "All Jobs",
+    "jobCosting": "Job Costing",
+    "jobMaterials": "Materials Usage",
+    "jobLabor": "Labor Tracking",
+    "jobProfitability": "Profitability Analysis"
   },
   "actions": {
     "viewAll": "Lihat Semua",
