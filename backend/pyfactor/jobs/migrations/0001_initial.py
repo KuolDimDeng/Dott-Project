@@ -14,7 +14,7 @@ class Migration(migrations.Migration):
     dependencies = [
         ('crm', '0001_initial'),
         ('hr', '0001_initial'),
-        ('inventory', '0006_add_inventory_type_and_supply_fields'),
+        ('inventory', '0009_add_inventory_type_and_supply_fields'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
         ('events', '0001_initial'),
     ]
