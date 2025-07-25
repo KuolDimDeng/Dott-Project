@@ -749,9 +749,30 @@ const UserManagement = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
         if (contentType && contentType.includes('application/json')) {
           try {
             const errorData = await response.json();
-            errorMessage = errorData.details || errorData.message || errorMessage;
+            console.log('[UserManagement] Parsed error data:', errorData);
+            
+            // Handle different error response formats
+            if (typeof errorData === 'string') {
+              errorMessage = errorData;
+            } else if (errorData.error) {
+              errorMessage = errorData.error;
+            } else if (errorData.details) {
+              // Handle validation errors
+              if (Array.isArray(errorData.details)) {
+                errorMessage = errorData.details.join(', ');
+              } else if (typeof errorData.details === 'object') {
+                errorMessage = JSON.stringify(errorData.details);
+              } else {
+                errorMessage = errorData.details;
+              }
+            } else if (errorData.message) {
+              errorMessage = errorData.message;
+            } else {
+              errorMessage = JSON.stringify(errorData);
+            }
           } catch (e) {
             console.error('[UserManagement] Failed to parse error response:', e);
+            errorMessage = 'Failed to parse error response';
           }
         } else {
           // If HTML response, likely a backend error

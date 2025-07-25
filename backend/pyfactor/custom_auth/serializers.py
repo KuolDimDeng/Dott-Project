@@ -3,6 +3,7 @@ import uuid
 from allauth.account.adapter import get_adapter
 from dj_rest_auth.registration.serializers import RegisterSerializer
 from rest_framework import serializers
+from django.db import models
 from .models import User, Tenant, PagePermission, UserPageAccess, UserInvitation, RoleTemplate
 from users.models import Subscription
 
@@ -327,21 +328,34 @@ class UpdateUserPermissionsSerializer(serializers.Serializer):
                     "Each permission must have page_id, can_read, can_write, can_edit, and can_delete"
                 )
             
-            # Validate that page_id is a valid UUID
+            # Validate and resolve page_id (could be UUID or string path)
             page_id = perm.get('page_id')
             if page_id:
+                # Try UUID first
                 try:
                     uuid.UUID(str(page_id))
+                    # If it's a valid UUID, check if the page exists
+                    if not PagePermission.objects.filter(id=page_id, is_active=True).exists():
+                        raise serializers.ValidationError(
+                            f"Page with id '{page_id}' does not exist or is not active"
+                        )
                 except (ValueError, TypeError):
-                    raise serializers.ValidationError(
-                        f"Invalid page_id '{page_id}': must be a valid UUID"
-                    )
-                
-                # Validate that the page exists
-                if not PagePermission.objects.filter(id=page_id, is_active=True).exists():
-                    raise serializers.ValidationError(
-                        f"Page with id '{page_id}' does not exist or is not active"
-                    )
+                    # If not a UUID, try to find by path or name
+                    page = PagePermission.objects.filter(
+                        models.Q(path__icontains=str(page_id)) | 
+                        models.Q(name__iexact=str(page_id)) |
+                        models.Q(path__endswith=f"/{page_id}") |
+                        models.Q(path=f"/dashboard/{page_id}"),
+                        is_active=True
+                    ).first()
+                    
+                    if page:
+                        # Replace string with actual UUID
+                        perm['page_id'] = str(page.id)
+                    else:
+                        raise serializers.ValidationError(
+                            f"Page with identifier '{page_id}' not found. Must be a valid UUID or page path."
+                        )
         return value
 
 
