@@ -217,8 +217,17 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
       try {
         const debugResponse = await api.post('/api/hr/geofences/debug_create', geofenceData);
         console.log('[GeofenceSetup] Debug validation response:', debugResponse);
+        
+        if (debugResponse && debugResponse.status === 'invalid') {
+          console.error('[GeofenceSetup] Validation failed:', debugResponse.errors);
+          toast.error('Validation failed. Check console for details.');
+          setSaving(false);
+          return;
+        }
       } catch (debugError) {
         console.error('[GeofenceSetup] Debug validation failed:', debugError);
+        console.error('[GeofenceSetup] Debug error response:', debugError.response);
+        console.error('[GeofenceSetup] Debug error data:', debugError.response?.data);
       }
       
       const response = await api.post('/api/hr/geofences', geofenceData);
