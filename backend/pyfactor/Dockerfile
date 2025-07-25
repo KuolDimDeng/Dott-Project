@@ -47,6 +47,8 @@ RUN echo '#!/bin/bash' > /app/start.sh && \
     echo '    echo "DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE" ' >> /app/start.sh && \
     echo '    echo "Testing Django configuration..." ' >> /app/start.sh && \
     echo '    python -c "import django; django.setup(); print(\"Django setup successful\")" || (echo "ERROR: Django setup failed!"; exit 1)' >> /app/start.sh && \
+    echo '    echo "Running database migrations..." ' >> /app/start.sh && \
+    echo '    python manage.py migrate --noinput || echo "Migration failed but continuing..."' >> /app/start.sh && \
     echo '    echo "Collecting static files..." ' >> /app/start.sh && \
     echo '    python manage.py collectstatic --noinput --verbosity 0' >> /app/start.sh && \
     echo '    echo "Starting Gunicorn server..." ' >> /app/start.sh && \
