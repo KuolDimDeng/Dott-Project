@@ -3,7 +3,7 @@
 
 import { appCache } from '@/utils/appCache';
 import { logger } from '@/utils/logger';
-import { fetchData } from './apiService';
+import { fetchData, putData } from './apiService';
 import { inventoryCache } from '@/utils/enhancedCache';
 import { checkAndFixTenantId } from '@/utils/fixTenantId';
 import { axiosInstance } from '@/lib/axiosConfig';
@@ -815,13 +815,17 @@ export const updateProduct = async (id, productData) => {
   try {
     logger.info(`Updating product ${id}:`, productData);
     
-    const response = await fetchData(`/api/inventory/products/${id}/`, {
+    // Get tenant headers to ensure proper tenant context
+    const tenantHeaders = getTenantHeaders();
+    
+    const response = await putData(`/api/inventory/products/${id}/`, productData, {
+      headers: tenantHeaders,
       invalidateCache: [
         '/api/inventory/products/',
         '/api/inventory/ultra/products/',
         `/api/inventory/products/${id}/`
       ]
-    }, productData);
+    });
     
     return response;
   } catch (error) {
@@ -844,13 +848,18 @@ export const deleteProduct = async (id) => {
   try {
     logger.info(`Deleting product ${id}`);
     
-    await fetchData(`/api/inventory/products/${id}/`, {
-      invalidateCache: [
-        '/api/inventory/products/',
-        '/api/inventory/ultra/products/',
-        `/api/inventory/products/${id}/`
-      ]
+    // Get tenant headers to ensure proper tenant context
+    const tenantHeaders = getTenantHeaders();
+    
+    await axiosInstance.delete(`/api/inventory/products/${id}/`, {
+      headers: tenantHeaders
     });
+    
+    // Invalidate cache after successful deletion
+    if (inventoryCache) {
+      inventoryCache.invalidateStartingWith('/api/inventory/products/');
+      inventoryCache.invalidateStartingWith('/api/inventory/ultra/products/');
+    }
     
     return true;
   } catch (error) {

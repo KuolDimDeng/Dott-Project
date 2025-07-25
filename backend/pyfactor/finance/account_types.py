@@ -24,6 +24,14 @@ ACCOUNT_TYPES = {
     'Payroll Tax Expense': 23,
     'Miscellaneous Expense': 24,
     'Sales Tax Payable': 25,
+    # Job Costing Accounts
+    'Work in Progress': 26,
+    'Direct Labor Cost': 27,
+    'Direct Materials Cost': 28,
+    'Job Materials Inventory': 29,
+    'Subcontractor Costs': 30,
+    'Job Overhead': 31,
+    # Main Categories
     'Current Asset': 1000,
     'Current Liability': 2000,
     'Equity': 3000,

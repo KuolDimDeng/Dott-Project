@@ -94,7 +94,6 @@ const AnalysisPage = enhancedLazy(() => import('./forms/AnalysisPage.js'), 'Anal
 const InvoiceDetails = enhancedLazy(() => import('./forms/InvoiceDetails.js'), 'Invoice Details');
 const CustomerDetails = enhancedLazy(() => import('./forms/CustomerDetails.js'), 'Customer Details');
 const RenderForm = enhancedLazy(() => import('./RenderForm.js').then(m => ({ default: m.default || m })), 'Render Form');
-const ProductManagement = enhancedLazy(() => import('./forms/ProductManagement.js'), 'Product Management');
 const CreateProductManagement = enhancedLazy(() => import('./forms/CreateProductManagement.js'), 'Create Product Management');
 const SalesProductManagement = enhancedLazy(() => import('./forms/SalesProductManagement.js'), 'Sales Product Management');
 const ServiceManagement = enhancedLazy(() => import('./forms/ServiceManagement.js'), 'Service Management');
