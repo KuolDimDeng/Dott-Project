@@ -40,21 +40,9 @@ class Employee(models.Model):
         related_name='employee_profile'
     )
     
-    # Business association - DEPRECATED: Use user.business_id instead
-    # Keeping for backward compatibility during migration
-    _business_id = models.UUIDField(db_index=True, db_column='business_id', null=True, blank=True)
-    
-    @property
-    def business_id(self):
-        """Get business_id from user relationship if available, otherwise from direct field"""
-        if self.user and self.user.business_id:
-            return self.user.business_id
-        return self._business_id
-    
-    @business_id.setter
-    def business_id(self, value):
-        """Set business_id - will be deprecated"""
-        self._business_id = value
+    # Business association - synced from User on save
+    business_id = models.UUIDField(db_index=True, null=True, blank=True,
+                                   help_text="Business ID - automatically synced from User")
     
     # Tenant ID for Row Level Security (RLS)
     # This should match business_id for proper tenant isolation
@@ -187,16 +175,14 @@ class Employee(models.Model):
             self.employee_number = f"EMP-{today}-{unique_suffix}"
             logger.info(f'🏷️ [Employee Model] Generated employee_number: {self.employee_number}')
         
-        # Ensure business_id consistency
+        # Sync business_id from User if available
         if self.user and self.user.business_id:
+            self.business_id = self.user.business_id
             self.tenant_id = self.user.business_id
-            # Also update the deprecated field for backward compatibility
-            if not self._business_id:
-                self._business_id = self.user.business_id
-                logger.info(f'🏢 [Employee Model] Set business_id from user: {self._business_id}')
-        elif self._business_id:
-            # If only _business_id is set, use it for tenant_id
-            self.tenant_id = self._business_id
+            logger.info(f'🏢 [Employee Model] Synced business_id from user: {self.business_id}')
+        elif self.business_id:
+            # If only business_id is set, use it for tenant_id
+            self.tenant_id = self.business_id
         
         # Ensure tenant_id matches business_id for RLS
         if self.business_id and not self.tenant_id:
