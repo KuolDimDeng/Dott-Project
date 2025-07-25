@@ -515,9 +515,9 @@ const GeofencingSettings = () => {
       setLoading(true);
       console.log('[GeofencingSettings] 📡 Making API request to /api/hr/geofences');
       
-      // Add a timestamp to avoid caching
+      // Add a timestamp to avoid caching and force refresh
       const timestamp = new Date().getTime();
-      const response = await api.get(`/api/hr/geofences?t=${timestamp}`);
+      const response = await api.get(`/api/hr/geofences?t=${timestamp}&_=${Math.random()}`);
       
       console.log('[GeofencingSettings] ✅ API Response:', response);
       console.log('[GeofencingSettings] Response type:', typeof response);
@@ -606,16 +606,30 @@ const GeofencingSettings = () => {
 
   const handleGeofenceCreated = async (newGeofence) => {
     console.log('[GeofencingSettings] Geofence created:', newGeofence);
+    console.log('[GeofencingSettings] New geofence details:', {
+      id: newGeofence?.id,
+      name: newGeofence?.name,
+      is_active: newGeofence?.is_active,
+      business_id: newGeofence?.business_id
+    });
     setShowCreateForm(false);
     
     // Add a small delay before refreshing to ensure backend has processed the creation
     if (newGeofence) {
       toast.success('Geofence created! Refreshing list...');
-      setTimeout(() => {
-        loadGeofences();
-      }, 1000);
+      
+      // Force immediate refresh, then another after delay
+      console.log('[GeofencingSettings] Doing immediate refresh...');
+      await loadGeofences();
+      
+      // Also do a delayed refresh in case of any propagation delay
+      setTimeout(async () => {
+        console.log('[GeofencingSettings] Doing delayed refresh...');
+        await loadGeofences();
+      }, 2000);
     } else {
       // This is called on error - immediate refresh to check if it was created anyway
+      console.log('[GeofencingSettings] Error case - refreshing to check if created anyway...');
       loadGeofences();
     }
   };
