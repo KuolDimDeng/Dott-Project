@@ -1730,7 +1730,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
         return (
           <ContentWrapperWithKey>
             <SuspenseWithCleanup componentKey={`${componentKey}-jobs-list`}>
-              <JobManagement />
+              <JobManagement view="jobs-list" />
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>
         );
@@ -1741,7 +1741,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
         return (
           <ContentWrapperWithKey>
             <SuspenseWithCleanup componentKey={`${componentKey}-job-costing`}>
-              <JobManagement />
+              <JobManagement view="job-costing" />
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>
         );
@@ -1752,7 +1752,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
         return (
           <ContentWrapperWithKey>
             <SuspenseWithCleanup componentKey={`${componentKey}-job-materials`}>
-              <JobManagement />
+              <JobManagement view="job-materials" />
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>
         );
@@ -1763,7 +1763,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
         return (
           <ContentWrapperWithKey>
             <SuspenseWithCleanup componentKey={`${componentKey}-job-labor`}>
-              <JobManagement />
+              <JobManagement view="job-labor" />
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>
         );
@@ -1774,7 +1774,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
         return (
           <ContentWrapperWithKey>
             <SuspenseWithCleanup componentKey={`${componentKey}-job-profitability`}>
-              <JobManagement />
+              <JobManagement view="job-profitability" />
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>
         );

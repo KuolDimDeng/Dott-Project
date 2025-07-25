@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { jobService } from '@/services/jobService';
 import { logger } from '@/utils/logger';
 import { 
@@ -6,14 +6,25 @@ import {
   PlusIcon,
   EyeIcon,
   PencilIcon,
-  TrashIcon,
+  XCircleIcon,
   ClockIcon,
   CurrencyDollarIcon,
   UserIcon,
-  CalendarIcon
+  CalendarIcon,
+  WrenchIcon,
+  CubeIcon,
+  UserGroupIcon,
+  ChartBarIcon,
+  CheckCircleIcon
 } from '@heroicons/react/24/outline';
+import JobForm from './JobForm';
+import JobDetails from './JobDetails';
+import JobCosting from './JobCosting';
+import JobMaterials from './JobMaterials';
+import JobLabor from './JobLabor';
+import JobProfitability from './JobProfitability';
 
-const JobManagement = () => {
+const JobManagement = ({ view = 'jobs-list' }) => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -67,17 +78,19 @@ const JobManagement = () => {
     // TODO: Open job details modal
   };
 
-  const handleDeleteJob = async (jobId) => {
-    if (!confirm('Are you sure you want to delete this job?')) {
+  const handleCloseJob = async (job) => {
+    const action = job.status === 'closed' ? 'reopen' : 'close';
+    if (!confirm(`Are you sure you want to ${action} this job?`)) {
       return;
     }
 
     try {
-      await jobService.deleteJob(jobId);
+      const newStatus = job.status === 'closed' ? 'completed' : 'closed';
+      await jobService.updateJob(job.id, { ...job, status: newStatus });
       fetchJobs(); // Refresh the list
     } catch (err) {
-      logger.error('Error deleting job:', err);
-      alert('Failed to delete job');
+      logger.error(`Error ${action}ing job:`, err);
+      alert(`Failed to ${action} job`);
     }
   };
 
@@ -89,7 +102,8 @@ const JobManagement = () => {
       completed: { color: 'bg-green-100 text-green-800', label: 'Completed' },
       invoiced: { color: 'bg-purple-100 text-purple-800', label: 'Invoiced' },
       paid: { color: 'bg-green-100 text-green-800', label: 'Paid' },
-      cancelled: { color: 'bg-red-100 text-red-800', label: 'Cancelled' }
+      cancelled: { color: 'bg-red-100 text-red-800', label: 'Cancelled' },
+      closed: { color: 'bg-gray-100 text-gray-800', label: 'Closed' }
     };
 
     const config = statusConfig[status] || statusConfig.quote;
@@ -121,6 +135,24 @@ const JobManagement = () => {
     );
   }
 
+  // Handle different views
+  if (view === 'job-costing') {
+    return <JobCosting jobs={jobs} />;
+  }
+  
+  if (view === 'job-materials') {
+    return <JobMaterials jobs={jobs} />;
+  }
+  
+  if (view === 'job-labor') {
+    return <JobLabor jobs={jobs} />;
+  }
+  
+  if (view === 'job-profitability') {
+    return <JobProfitability jobs={jobs} />;
+  }
+
+  // Default view: jobs-list
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
       <div className="p-6">
@@ -168,6 +200,7 @@ const JobManagement = () => {
             <option value="invoiced">Invoiced</option>
             <option value="paid">Paid</option>
             <option value="cancelled">Cancelled</option>
+            <option value="closed">Closed</option>
           </select>
         </div>
 
@@ -292,11 +325,19 @@ const JobManagement = () => {
                           <PencilIcon className="h-4 w-4" />
                         </button>
                         <button
-                          onClick={() => handleDeleteJob(job.id)}
-                          className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-200 rounded-r-lg hover:bg-red-50 hover:text-red-700"
-                          title="Delete job"
+                          onClick={() => handleCloseJob(job)}
+                          className={`px-3 py-2 text-sm font-medium bg-white border border-gray-200 rounded-r-lg ${
+                            job.status === 'closed' 
+                              ? 'text-green-600 hover:bg-green-50 hover:text-green-700' 
+                              : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+                          }`}
+                          title={job.status === 'closed' ? 'Reopen job' : 'Close job'}
                         >
-                          <TrashIcon className="h-4 w-4" />
+                          {job.status === 'closed' ? (
+                            <CheckCircleIcon className="h-4 w-4" />
+                          ) : (
+                            <XCircleIcon className="h-4 w-4" />
+                          )}
                         </button>
                       </div>
                     </td>
@@ -308,39 +349,31 @@ const JobManagement = () => {
         )}
       </div>
 
-      {/* Job Form Modal - TODO: Implement JobForm component */}
+      {/* Job Form Modal */}
       {showJobForm && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-medium text-gray-900">
-                  {selectedJob ? 'Edit Job' : 'Create New Job'}
-                </h3>
-                <button
-                  onClick={() => setShowJobForm(false)}
-                  className="text-gray-400 hover:text-gray-500"
-                >
-                  <span className="sr-only">Close</span>
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              
-              {/* Placeholder for JobForm component */}
-              <div className="text-center py-8">
-                <p className="text-gray-500">JobForm component will be implemented here</p>
-                <button
-                  onClick={() => setShowJobForm(false)}
-                  className="mt-4 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <JobForm
+          job={selectedJob}
+          onClose={() => {
+            setShowJobForm(false);
+            setSelectedJob(null);
+          }}
+          onSave={() => {
+            setShowJobForm(false);
+            setSelectedJob(null);
+            fetchJobs();
+          }}
+        />
+      )}
+      
+      {/* Job Details Modal */}
+      {selectedJob && !showJobForm && (
+        <JobDetails
+          job={selectedJob}
+          onClose={() => setSelectedJob(null)}
+          onEdit={() => {
+            setShowJobForm(true);
+          }}
+        />
       )}
     </div>
   );

@@ -130,6 +130,9 @@ urlpatterns = [
     # Leads API routes  
     path('api/leads/', include('leads.urls')),
     
+    # Jobs API routes
+    path('', include('jobs.urls')),
+    
     # Main app routes
     path('', include('users.urls')),
     

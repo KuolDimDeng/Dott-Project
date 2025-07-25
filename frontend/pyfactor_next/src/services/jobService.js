@@ -32,6 +32,15 @@ class JobService {
   }
 
   /**
+   * Get all jobs (alias for mobile compatibility)
+   * @param {Object} filters - Filter parameters
+   * @returns {Promise<Array>} List of jobs
+   */
+  async getAllJobs(filters = {}) {
+    return this.getJobs(filters);
+  }
+
+  /**
    * Get job by ID
    * @param {string} jobId - Job ID
    * @returns {Promise<Object>} Job details
