@@ -51,6 +51,9 @@ urlpatterns = [
     path('ultra/services/stats/', service_api_views.service_stats, name='service-stats'),
     path('ultra/services/code/<str:code>/', service_api_views.service_by_code, name='service-by-code'),
     
+    # Migration status endpoint
+    path('check/location-migration/', api_views.check_location_migration_status, name='check-location-migration'),
+    
     # Existing function-based views
     path('products/create/', views.create_product, name='create-product'),
     path('products/create', views.create_product, name='create-product-no-slash'),  # Add URL pattern without trailing slash
