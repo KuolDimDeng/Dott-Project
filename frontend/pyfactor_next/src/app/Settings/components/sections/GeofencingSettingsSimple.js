@@ -211,19 +211,41 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
     try {
       console.log('[GeofenceSetup] Saving geofence:', geofenceData);
       console.log('[GeofenceSetup] Geofence data being sent:', JSON.stringify(geofenceData, null, 2));
+      
+      // First test with debug endpoint
+      console.log('[GeofenceSetup] Testing with debug_create endpoint first...');
+      try {
+        const debugResponse = await api.post('/api/hr/geofences/debug_create', geofenceData);
+        console.log('[GeofenceSetup] Debug validation response:', debugResponse);
+      } catch (debugError) {
+        console.error('[GeofenceSetup] Debug validation failed:', debugError);
+      }
+      
       const response = await api.post('/api/hr/geofences', geofenceData);
-      console.log('[GeofenceSetup] POST response status:', response?.status);
-      console.log('[GeofenceSetup] POST response headers:', response?.headers);
-      console.log('[GeofenceSetup] Geofence created - Full response:', response);
-      console.log('[GeofenceSetup] Geofence created - Response data:', response.data);
-      console.log('[GeofenceSetup] Geofence created - Response data type:', typeof response.data);
-      console.log('[GeofenceSetup] Geofence created - Response data keys:', Object.keys(response.data || {}));
-      console.log('[GeofenceSetup] Created geofence details:', {
-        id: response?.id,
-        name: response?.name,
-        business_id: response?.business_id,
-        is_active: response?.is_active
-      });
+      console.log('[GeofenceSetup] POST response:', response);
+      console.log('[GeofenceSetup] Response type:', typeof response);
+      
+      // Handle different response structures
+      let responseData = response;
+      if (response && response.data) {
+        responseData = response.data;
+      }
+      
+      console.log('[GeofenceSetup] Response data:', responseData);
+      console.log('[GeofenceSetup] Response data type:', typeof responseData);
+      console.log('[GeofenceSetup] Response data keys:', Object.keys(responseData || {}));
+      
+      // Check if it's actually a geofence object
+      if (responseData && responseData.id) {
+        console.log('[GeofenceSetup] Created geofence details:', {
+          id: responseData.id,
+          name: responseData.name,
+          business_id: responseData.business_id,
+          is_active: responseData.is_active
+        });
+      } else {
+        console.error('[GeofenceSetup] Response does not contain expected geofence data');
+      }
       
       // Check if response is an error wrapped in data
       if (response.data && response.data.error) {
@@ -238,8 +260,8 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
       
       // Call the callback if provided
       if (onGeofenceCreated) {
-        console.log('[GeofenceSetup] Calling onGeofenceCreated with:', response.data);
-        onGeofenceCreated(response.data);
+        console.log('[GeofenceSetup] Calling onGeofenceCreated with:', responseData);
+        onGeofenceCreated(responseData);
       } else {
         console.warn('[GeofenceSetup] No onGeofenceCreated callback provided');
         toast.success('Geofence created successfully');

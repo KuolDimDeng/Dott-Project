@@ -1651,7 +1651,8 @@ class GeofenceViewSet(viewsets.ModelViewSet):
         import time
         from django.db import transaction
         
-        logger.info(f"[GeofenceViewSet] test_create_and_list called")
+        logger.info(f"[GeofenceViewSet] test_create_and_list called by {request.user.email}")
+        logger.info(f"[GeofenceViewSet] User business_id: {request.user.business_id}")
         
         test_name = f"Test Geofence {int(time.time())}"
         
@@ -1706,6 +1707,30 @@ class GeofenceViewSet(viewsets.ModelViewSet):
             import traceback
             logger.error(f"[GeofenceViewSet] Traceback: {traceback.format_exc()}")
             return Response({'error': str(e)}, status=500)
+    
+    @action(detail=False, methods=['post']) 
+    def debug_create(self, request):
+        """Debug endpoint to test creation flow"""
+        logger.info(f"[GeofenceViewSet] debug_create called")
+        logger.info(f"[GeofenceViewSet] Request data: {request.data}")
+        logger.info(f"[GeofenceViewSet] User: {request.user.email}")
+        logger.info(f"[GeofenceViewSet] Business ID: {request.user.business_id}")
+        
+        # Just validate the data without saving
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            logger.info(f"[GeofenceViewSet] Data is valid: {serializer.validated_data}")
+            return Response({
+                'status': 'valid',
+                'validated_data': serializer.validated_data,
+                'user_business_id': str(request.user.business_id)
+            })
+        else:
+            logger.error(f"[GeofenceViewSet] Validation errors: {serializer.errors}")
+            return Response({
+                'status': 'invalid',
+                'errors': serializer.errors
+            }, status=400)
     
     @action(detail=False, methods=['get'])
     def debug_list(self, request):
