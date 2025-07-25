@@ -736,6 +736,26 @@ const GeofencingSettings = () => {
           </button>
           <button
             onClick={async () => {
+              console.log('[DEBUG] Testing simple endpoint...');
+              try {
+                const testResponse = await api.post('/api/hr/test-geofence/', {
+                  test: 'data',
+                  name: 'Test Geofence Simple'
+                });
+                console.log('[DEBUG] Simple test response:', testResponse);
+                alert(`Simple Test Results:\n${JSON.stringify(testResponse, null, 2)}`);
+              } catch (error) {
+                console.error('[DEBUG] Simple test error:', error);
+                console.error('[DEBUG] Error response:', error.response);
+                alert(`Simple Test Error: ${error.message}`);
+              }
+            }}
+            className="inline-flex items-center px-4 py-2 border border-green-300 text-sm font-medium rounded-md text-green-700 bg-white hover:bg-green-50"
+          >
+            Test Simple
+          </button>
+          <button
+            onClick={async () => {
               console.log('[DEBUG] Testing create and list...');
               try {
                 const testResponse = await api.post('/api/hr/geofences/test_create_and_list', {});

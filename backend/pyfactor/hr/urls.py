@@ -6,7 +6,7 @@ from .views import (
     TimesheetViewSet, TimesheetEntryViewSet, TimesheetSettingViewSet, TimeOffRequestViewSet,
     TimeOffBalanceViewSet, BenefitsViewSet, LocationLogViewSet, EmployeeLocationConsentViewSet,
     LocationCheckInViewSet, clock_in_with_location, clock_out_with_location,
-    GeofenceViewSet, EmployeeGeofenceViewSet, GeofenceEventViewSet
+    GeofenceViewSet, EmployeeGeofenceViewSet, GeofenceEventViewSet, test_geofence_creation
 )
 from rest_framework.routers import DefaultRouter
 
@@ -65,6 +65,9 @@ urlpatterns = [
     # Location tracking endpoints
     path('clock-in-location/', clock_in_with_location, name='clock-in-location'),
     path('clock-out-location/', clock_out_with_location, name='clock-out-location'),
+    
+    # Test endpoints
+    path('test-geofence/', test_geofence_creation, name='test-geofence-creation'),
     
     # Include router URLs
     path('', include(router.urls)),

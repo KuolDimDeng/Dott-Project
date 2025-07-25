@@ -6,6 +6,7 @@ from rest_framework.decorators import api_view, permission_classes, throttle_cla
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from decimal import Decimal
+from django.views.decorators.csrf import csrf_exempt
 from .models import Employee, Role, EmployeeRole, AccessPermission, PreboardingForm, PerformanceReview, PerformanceMetric, PerformanceRating, PerformanceGoal, FeedbackRecord, PerformanceSetting, Timesheet, TimesheetEntry, TimeOffRequest, TimeOffBalance, Benefits, TimesheetSetting, LocationLog, EmployeeLocationConsent, LocationCheckIn, Geofence, EmployeeGeofence, GeofenceEvent
 from .serializers import (
     EmployeeSerializer, 
@@ -1330,6 +1331,31 @@ class LocationCheckInViewSet(viewsets.ModelViewSet):
         
         serializer = LocationCheckInSerializer(active_checkins, many=True)
         return Response(serializer.data)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def test_geofence_creation(request):
+    """Simple test endpoint for geofence creation"""
+    logger.info(f"[test_geofence_creation] Called by {request.user.email}")
+    logger.info(f"[test_geofence_creation] Request data: {request.data}")
+    logger.info(f"[test_geofence_creation] Request headers: {request.headers}")
+    
+    try:
+        # Just return success for now
+        return Response({
+            'status': 'success',
+            'message': 'Test endpoint working',
+            'user': request.user.email,
+            'business_id': str(request.user.business_id),
+            'data_received': request.data
+        })
+    except Exception as e:
+        logger.error(f"[test_geofence_creation] Error: {str(e)}")
+        return Response({
+            'status': 'error',
+            'message': str(e)
+        }, status=400)
 
 
 @api_view(['POST'])
