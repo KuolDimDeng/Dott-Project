@@ -225,6 +225,8 @@ export async function GET(request) {
       if (responseContentType && responseContentType.includes('application/json')) {
         sessionData = await response.json();
         console.log('[Session-V2] Full backend response:', JSON.stringify(sessionData, null, 2));
+    console.log('[Session-V2] DEBUG - User permissions from backend:', JSON.stringify(sessionData.permissions || sessionData.user?.permissions || [], null, 2));
+    console.log('[Session-V2] DEBUG - Page permissions from backend:', JSON.stringify(sessionData.page_permissions || sessionData.user?.page_permissions || [], null, 2));
       } else {
         const responseText = await response.text();
         logger.error('[Session-V2] Non-JSON response from backend:', {
@@ -338,7 +340,14 @@ export async function GET(request) {
         country: userData.country || sessionData.country || 'US',
         // Additional metadata
         sessionSource: 'backend-direct',
-        permissions: sessionData.permissions || []
+        permissions: sessionData.permissions || userData.permissions || [],
+        page_permissions: sessionData.page_permissions || userData.page_permissions || [],
+        // DEBUG - Log what we're returning
+        _debug_permissions: {
+          from_sessionData: sessionData.permissions || [],
+          from_userData: userData.permissions || [],
+          from_page_permissions: sessionData.page_permissions || userData.page_permissions || []
+        }
       }
     });
     

@@ -17,6 +17,8 @@ export function usePermissions() {
   console.log('🔍 [usePermissions] User type:', typeof user);
   console.log('🔍 [usePermissions] User keys:', user ? Object.keys(user) : 'null user');
   console.log('🔍 [usePermissions] User role:', user?.role);
+  console.log('🔍 [usePermissions] User permissions:', user?.permissions);
+  console.log('🔍 [usePermissions] User page_permissions:', user?.page_permissions);
   console.log('🔍 [usePermissions] === PERMISSIONS DEBUG END ===');
   
   // Original debug logging
@@ -39,8 +41,12 @@ export function usePermissions() {
     }
     
     // Check user page permissions (from session)
+    console.log(`🔍 [usePermissions] Checking access to path: ${path}`);
+    console.log('🔍 [usePermissions] Available page_permissions:', user.page_permissions);
+    
     if (user.page_permissions && Array.isArray(user.page_permissions)) {
-      const permission = user.page_permissions.find(p => p.path === path);
+      const permission = user.page_permissions.find(p => p.path === path || p.page_id === path);
+      console.log('🔍 [usePermissions] Found permission:', permission);
       return permission?.can_read || false;
     }
     

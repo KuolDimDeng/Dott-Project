@@ -42,15 +42,23 @@ export async function POST(request) {
     const apiUrl = `${backendUrl}/auth/rbac/users/${user_id}/update_permissions/`;
     
     logger.info('[PagePrivileges] Making request to:', apiUrl);
+    logger.info('[PagePrivileges] DEBUG - Backend data being sent:', JSON.stringify(backendData, null, 2));
     
     // Transform page_access array to page_permissions format expected by backend
     const page_permissions = (page_access || []).map(pageId => ({
       page_id: pageId,
+      pageId: pageId, // Backend checks both snake_case and camelCase
       can_read: true,
+      canRead: true,
       can_write: true,
+      canWrite: true,
       can_edit: true,
-      can_delete: true
+      canEdit: true,
+      can_delete: true,
+      canDelete: true
     }));
+    
+    logger.info('[PagePrivileges] DEBUG - Transformed permissions:', JSON.stringify(page_permissions, null, 2));
     
     // Prepare data for backend API
     const backendData = {
@@ -114,6 +122,7 @@ export async function POST(request) {
     
     logger.info('[PagePrivileges] Successfully updated page privileges');
     logger.info('[PagePrivileges] Response data:', JSON.stringify(responseData, null, 2));
+    logger.info('[PagePrivileges] DEBUG - Full flow completed successfully');
     
     return NextResponse.json({
       success: true,

@@ -75,6 +75,7 @@ export async function POST(request) {
       email: userData.email,
       role: userData.role || 'USER',
       page_permissions: convertedPermissions,
+      permissions: convertedPermissions, // Also send as 'permissions' for compatibility
       send_password_reset: true, // Always send password reset email for new users
       onboarding_completed: true, // Skip onboarding for invited users
       create_employee: userData.create_employee || false,
@@ -82,6 +83,8 @@ export async function POST(request) {
       employee_id: userData.employee_id || null,
       employee_data: userData.employee_data || null
     };
+    
+    logger.info('[UserManagement] DEBUG - Converted permissions:', JSON.stringify(convertedPermissions, null, 2));
     
     logger.info('[UserManagement] Sending create user request to backend', {
       email: backendData.email,
@@ -93,7 +96,8 @@ export async function POST(request) {
     // Call backend API to create user - using direct-users endpoint
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
     logger.info('[UserManagement] Making backend request to:', `${backendUrl}/auth/rbac/direct-users/create/`);
-    logger.info('[UserManagement] Request data:', backendData);
+    logger.info('[UserManagement] Request data:', JSON.stringify(backendData, null, 2));
+    logger.info('[UserManagement] DEBUG - Page permissions being sent:', JSON.stringify(backendData.page_permissions, null, 2));
     
     const response = await fetch(`${backendUrl}/auth/rbac/direct-users/create/`, {
       method: 'POST',

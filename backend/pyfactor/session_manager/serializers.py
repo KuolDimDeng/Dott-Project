@@ -57,6 +57,7 @@ class SessionSerializer(serializers.ModelSerializer):
         logger.info(f"🚨 [ROLE_TRACKING] SessionSerializer - user {obj.user.email} role: {user_role}")
         
         # Get page permissions for the user
+        logger.info(f"[SessionSerializer] DEBUG - Loading permissions for user {obj.user.email} with role {user_role}")
         page_permissions = []
         if user_role == 'OWNER':
             # Owners have access to all pages
@@ -93,7 +94,9 @@ class SessionSerializer(serializers.ModelSerializer):
                 user=obj.user,
                 tenant=obj.user.tenant
             ).select_related('page')
+            logger.info(f"[SessionSerializer] DEBUG - Found {user_access.count()} UserPageAccess records for user {obj.user.email}")
             for access in user_access:
+                logger.info(f"[SessionSerializer] DEBUG - Adding permission for page: {access.page.name} (path: {access.page.path})")
                 page_permissions.append({
                     'path': access.page.path,
                     'name': access.page.name,
@@ -103,6 +106,8 @@ class SessionSerializer(serializers.ModelSerializer):
                     'can_edit': access.can_edit,
                     'can_delete': access.can_delete
                 })
+        
+        logger.info(f"[SessionSerializer] DEBUG - Total permissions loaded: {len(page_permissions)}")
         
         user_data = {
             'id': obj.user.id,

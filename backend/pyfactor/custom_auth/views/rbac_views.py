@@ -747,26 +747,37 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
                     logger.warning(f"[DirectUserCreation] Permissions is not a list: {type(permissions)}")
                     permissions = []
                 
-                for perm in permissions:
+                logger.info(f"[DirectUserCreation] DEBUG - Processing {len(permissions)} permissions")
+                
+                for i, perm in enumerate(permissions):
                     # Skip if perm is not a dict
                     if not isinstance(perm, dict):
                         logger.warning(f"[DirectUserCreation] Skipping non-dict permission: {perm}")
                         continue
-                        
-                    page_id = perm.get('pageId')
+                    
+                    logger.info(f"[DirectUserCreation] DEBUG - Permission {i}: {perm}")
+                    
+                    # Check both camelCase and snake_case
+                    page_id = perm.get('pageId') or perm.get('page_id')
                     if page_id:
                         try:
                             page = PagePermission.objects.get(id=page_id)
-                            UserPageAccess.objects.create(
+                            logger.info(f"[DirectUserCreation] DEBUG - Found page: {page.name} (id: {page.id})")
+                            
+                            # Create page access with both formats
+                            access = UserPageAccess.objects.create(
                                 user=user,
                                 page=page,
-                                can_read=perm.get('canRead', True),
-                                can_write=perm.get('canWrite', False),
-                                can_edit=perm.get('canEdit', False),
-                                can_delete=perm.get('canDelete', False)
+                                can_read=perm.get('canRead', True) or perm.get('can_read', True),
+                                can_write=perm.get('canWrite', False) or perm.get('can_write', False),
+                                can_edit=perm.get('canEdit', False) or perm.get('can_edit', False),
+                                can_delete=perm.get('canDelete', False) or perm.get('can_delete', False)
                             )
+                            logger.info(f"[DirectUserCreation] DEBUG - Created UserPageAccess: {access.id} for page {page.name}")
                         except PagePermission.DoesNotExist:
                             logger.warning(f"Page permission {page_id} not found")
+                    else:
+                        logger.warning(f"[DirectUserCreation] No page_id found in permission: {perm}")
             except Exception as perm_error:
                 logger.error(f"[DirectUserCreation] Error processing permissions: {str(perm_error)}")
                 # Don't fail user creation just because of permissions
