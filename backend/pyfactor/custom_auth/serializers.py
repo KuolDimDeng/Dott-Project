@@ -326,6 +326,22 @@ class UpdateUserPermissionsSerializer(serializers.Serializer):
                 raise serializers.ValidationError(
                     "Each permission must have page_id, can_read, can_write, can_edit, and can_delete"
                 )
+            
+            # Validate that page_id is a valid UUID
+            page_id = perm.get('page_id')
+            if page_id:
+                try:
+                    uuid.UUID(str(page_id))
+                except (ValueError, TypeError):
+                    raise serializers.ValidationError(
+                        f"Invalid page_id '{page_id}': must be a valid UUID"
+                    )
+                
+                # Validate that the page exists
+                if not PagePermission.objects.filter(id=page_id, is_active=True).exists():
+                    raise serializers.ValidationError(
+                        f"Page with id '{page_id}' does not exist or is not active"
+                    )
         return value
 
 
