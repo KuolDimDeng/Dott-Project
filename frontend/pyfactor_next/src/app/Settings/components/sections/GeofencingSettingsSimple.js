@@ -24,6 +24,8 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
   const [map, setMap] = useState(null);
   const [geofence, setGeofence] = useState(null);
   const [mapError, setMapError] = useState(null);
+  const [businessLocations, setBusinessLocations] = useState([]);
+  const [locationMarkers, setLocationMarkers] = useState([]);
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const [geofenceData, setGeofenceData] = useState({
@@ -40,6 +42,27 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
     alert_on_unexpected_exit: false,
     is_active: true  // Explicitly set is_active
   });
+
+  // Fetch business locations
+  const fetchBusinessLocations = async () => {
+    try {
+      console.log('[GoogleMaps] Fetching business locations...');
+      const response = await api.get('/api/inventory/locations');
+      const locations = response.results || response.data || response || [];
+      
+      // Filter locations that have coordinates
+      const locationsWithCoords = locations.filter(loc => 
+        loc.latitude && loc.longitude && loc.is_active
+      );
+      
+      console.log('[GoogleMaps] Found', locationsWithCoords.length, 'locations with coordinates');
+      setBusinessLocations(locationsWithCoords);
+      return locationsWithCoords;
+    } catch (error) {
+      console.error('[GoogleMaps] Error fetching locations:', error);
+      return [];
+    }
+  };
 
   // Load Google Maps script
   const loadGoogleMapsScript = () => {
@@ -100,7 +123,6 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
 
         mapRef.current = googleMap;
         setMap(googleMap);
-        setLoading(false);
         
         console.log('[GoogleMaps] Initialized successfully');
         
@@ -122,6 +144,12 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
           });
         }
         
+        // Fetch and display business locations
+        const locations = await fetchBusinessLocations();
+        displayLocationMarkers(googleMap, locations);
+        
+        setLoading(false);
+        
       } catch (error) {
         console.error('[GoogleMaps] Init error:', error);
         setMapError(error.message);
@@ -136,6 +164,114 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
       clearTimeout(timeoutId);
     };
   }, [isVisible]);
+
+  const displayLocationMarkers = (googleMap, locations) => {
+    // Clear existing markers
+    locationMarkers.forEach(marker => marker.setMap(null));
+    const newMarkers = [];
+    
+    locations.forEach(location => {
+      const marker = new window.google.maps.Marker({
+        position: {
+          lat: parseFloat(location.latitude),
+          lng: parseFloat(location.longitude)
+        },
+        map: googleMap,
+        title: location.name,
+        icon: {
+          url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+          scaledSize: new window.google.maps.Size(40, 40)
+        }
+      });
+      
+      // Create info window
+      const infoWindow = new window.google.maps.InfoWindow({
+        content: `
+          <div style="padding: 8px;">
+            <h3 style="margin: 0 0 8px 0; font-weight: 600;">${location.name}</h3>
+            <p style="margin: 0; color: #666; font-size: 14px;">
+              ${location.street_address || ''}<br/>
+              ${location.city ? location.city + ', ' : ''}${location.state_province || ''} ${location.postal_code || ''}
+            </p>
+            <button 
+              style="margin-top: 8px; padding: 4px 12px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer;"
+              onclick="window.createGeofenceAtLocation(${location.latitude}, ${location.longitude}, '${location.name}')"
+            >
+              Create Geofence Here
+            </button>
+          </div>
+        `
+      });
+      
+      marker.addListener('click', () => {
+        infoWindow.open(googleMap, marker);
+      });
+      
+      newMarkers.push(marker);
+    });
+    
+    setLocationMarkers(newMarkers);
+  };
+
+  // Make function available globally for info window buttons
+  useEffect(() => {
+    window.createGeofenceAtLocation = (lat, lng, name) => {
+      if (map && window.google) {
+        const center = { lat: parseFloat(lat), lng: parseFloat(lng) };
+        
+        // Remove existing geofence if any
+        if (geofence) {
+          geofence.setMap(null);
+        }
+        
+        // Create new geofence
+        const newGeofence = new window.google.maps.Circle({
+          center: center,
+          radius: geofenceData.radius_meters,
+          fillColor: '#2563eb',
+          fillOpacity: 0.35,
+          strokeColor: '#1d4ed8',
+          strokeOpacity: 0.8,
+          strokeWeight: 2,
+          editable: true,
+          draggable: true
+        });
+        
+        newGeofence.setMap(map);
+        setGeofence(newGeofence);
+        
+        // Pre-fill the name based on location
+        setGeofenceData(prev => ({
+          ...prev,
+          name: `${name} - Geofence`,
+          center_latitude: parseFloat(lat.toFixed(7)),
+          center_longitude: parseFloat(lng.toFixed(7))
+        }));
+        
+        // Listen for changes
+        window.google.maps.event.addListener(newGeofence, 'radius_changed', () => {
+          setGeofenceData(prev => ({ ...prev, radius_meters: Math.round(newGeofence.getRadius()) }));
+        });
+        
+        window.google.maps.event.addListener(newGeofence, 'center_changed', () => {
+          const newCenter = newGeofence.getCenter();
+          setGeofenceData(prev => ({
+            ...prev,
+            center_latitude: parseFloat(newCenter.lat().toFixed(7)),
+            center_longitude: parseFloat(newCenter.lng().toFixed(7))
+          }));
+        });
+        
+        // Center map on the location
+        map.setCenter(center);
+        map.setZoom(16);
+      }
+    };
+    
+    return () => {
+      delete window.createGeofenceAtLocation;
+    };
+  }, [map, geofence, geofenceData.radius_meters]);
 
   const handleMapClick = (event, googleMap) => {
     if (geofence) {
@@ -445,6 +581,28 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
           <FieldTooltip content="Send alerts when employees leave the geofence during work hours" />
         </label>
       </div>
+
+      {/* Business Locations */}
+      {businessLocations.length > 0 && (
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Business Locations
+          </label>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <p className="text-sm text-blue-700 mb-2">
+              <strong>{businessLocations.length} location{businessLocations.length > 1 ? 's' : ''}</strong> found. 
+              Click a blue marker on the map to create a geofence at that location.
+            </p>
+            <div className="space-y-1">
+              {businessLocations.map((loc, idx) => (
+                <div key={loc.id} className="text-xs text-blue-600">
+                  • {loc.name} - {loc.city}, {loc.state_province}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Map */}
       <div className="space-y-2">

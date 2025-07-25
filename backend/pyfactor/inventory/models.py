@@ -79,7 +79,22 @@ class Location(AuditMixin, TenantAwareModel):
     """
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
+    
+    # Legacy single address field - kept for backwards compatibility
     address = models.TextField(blank=True, null=True)
+    
+    # Structured address fields
+    street_address = models.CharField(max_length=255, blank=True, null=True)
+    street_address_2 = models.CharField(max_length=255, blank=True, null=True)
+    city = models.CharField(max_length=100, blank=True, null=True)
+    state_province = models.CharField(max_length=100, blank=True, null=True)
+    postal_code = models.CharField(max_length=20, blank=True, null=True)
+    country = models.CharField(max_length=2, blank=True, null=True)  # ISO 2-letter code
+    
+    # Geolocation fields for map integration
+    latitude = models.DecimalField(max_digits=10, decimal_places=7, blank=True, null=True)
+    longitude = models.DecimalField(max_digits=11, decimal_places=7, blank=True, null=True)
+    
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
@@ -91,6 +106,30 @@ class Location(AuditMixin, TenantAwareModel):
 
     def __str__(self):
         return self.name
+    
+    @property
+    def full_address(self):
+        """Return formatted full address"""
+        parts = []
+        if self.street_address:
+            parts.append(self.street_address)
+        if self.street_address_2:
+            parts.append(self.street_address_2)
+        if self.city:
+            parts.append(self.city)
+        if self.state_province:
+            parts.append(self.state_province)
+        if self.postal_code:
+            parts.append(self.postal_code)
+        if self.country:
+            parts.append(self.country)
+        return ', '.join(filter(None, parts))
+    
+    def save(self, *args, **kwargs):
+        # Auto-populate the legacy address field from structured fields
+        if not self.address and any([self.street_address, self.city, self.state_province]):
+            self.address = self.full_address
+        super().save(*args, **kwargs)
     
     class Meta:
         db_table = 'inventory_location'
