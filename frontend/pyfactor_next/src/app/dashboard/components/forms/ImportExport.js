@@ -412,36 +412,37 @@ const ImportExport = () => {
     }
   }, [importSource]);
 
-  // Check if user has admin/owner role - but only after session is loaded and limits are checked
-  if (!sessionLoading && !checkingLimits && session?.user) {
+  // Loading state
+  if (sessionLoading || checkingLimits) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <StandardSpinner size="large" />
+        <span className="ml-3 text-gray-600">Loading...</span>
+      </div>
+    );
+  }
+
+  // Check if user has admin/owner role 
+  if (session?.user) {
     const userRole = session.user.role;
     if (userRole !== 'OWNER' && userRole !== 'ADMIN') {
       return (
         <div className="max-w-4xl mx-auto p-6">
           <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-            <h2 className="text-xl font-semibold text-red-900 mb-2">{t('importExport.accessRestricted.title', 'Access Restricted')}</h2>
+            <h2 className="text-xl font-semibold text-red-900 mb-2">Access Restricted</h2>
             <p className="text-red-700">
-              {t('importExport.accessRestricted.message', 'Import/Export functionality is only available to Admin and Owner users.')}
+              Import/Export functionality is only available to Admin and Owner users.
             </p>
             <button
               onClick={() => router.push('/dashboard')}
               className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
             >
-              {t('importExport.accessRestricted.returnButton', 'Return to Dashboard')}
+              Return to Dashboard
             </button>
           </div>
         </div>
       );
     }
-  }
-
-  if (sessionLoading || checkingLimits) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <StandardSpinner size="large" />
-        <span className="ml-3 text-gray-600">{t('importExport.loading', 'Loading...')}</span>
-      </div>
-    );
   }
 
   if (!mode) {

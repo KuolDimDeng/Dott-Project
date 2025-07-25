@@ -2029,7 +2029,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
               break;
             case 'import-export':
               componentName = 'ImportExport';
-              AnalyticsComponent = lazy(() => import('./forms/ImportExport.js').catch(err => {
+              AnalyticsComponent = lazy(() => import('./forms/ImportExportMinimal.js').catch(err => {
                 console.error('[RenderMainContent] Error loading ImportExport:', err);
                 return { default: () => <div className="p-4">Error loading Import/Export</div> };
               }));
