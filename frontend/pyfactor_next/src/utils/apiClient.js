@@ -627,7 +627,21 @@ export const locationApi = {
       throw new Error(error || `HTTP ${response.status}`);
     }
     
-    return response.json();
+    // Handle empty responses or non-JSON responses
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      // If not JSON, return the data as-is (backend should have updated successfully)
+      return data;
+    }
+    
+    // Parse JSON response
+    try {
+      return await response.json();
+    } catch (error) {
+      logger.warn('[LocationApi] Response not valid JSON, returning request data:', error);
+      // If JSON parsing fails but request was successful, return the data we sent
+      return data;
+    }
   },
   
   async delete(id, params = {}) {
