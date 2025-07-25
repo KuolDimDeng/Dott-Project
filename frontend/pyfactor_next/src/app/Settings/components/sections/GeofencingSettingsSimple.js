@@ -15,6 +15,7 @@ import api from '@/utils/api';
 import StandardSpinner from '@/components/ui/StandardSpinner';
 import FieldTooltip from '@/components/ui/FieldTooltip';
 import { GOOGLE_MAPS_CONFIG } from '@/config/maps';
+import EmployeeAssignmentModal from './EmployeeAssignmentModal';
 
 // Google Maps Integration - Simplified Version
 const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => {
@@ -875,6 +876,20 @@ ${JSON.stringify(response.user_geofences || [], null, 2)}
           </p>
         </div>
       )}
+
+      {/* Employee Assignment Modal */}
+      <EmployeeAssignmentModal
+        isOpen={showAssignModal}
+        onClose={() => {
+          setShowAssignModal(false);
+          setSelectedGeofence(null);
+        }}
+        geofence={selectedGeofence}
+        onAssignmentComplete={() => {
+          // Optionally refresh the geofences list
+          loadGeofences();
+        }}
+      />
     </div>
   );
 };
