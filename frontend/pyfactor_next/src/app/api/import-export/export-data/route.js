@@ -59,7 +59,8 @@ async function getSessionFromCookies() {
         debugLog('SESSION', 'Session validated successfully', {
           hasUser: !!sessionData.user,
           userEmail: sessionData.user?.email,
-          userRole: sessionData.user?.role
+          userRole: sessionData.user?.role,
+          tenantId: sessionData.user?.tenant_id
         });
         return sessionData;
       }
@@ -67,24 +68,6 @@ async function getSessionFromCookies() {
       debugLog('SESSION', 'Backend validation error', {
         error: error.message
       });
-    }
-    
-    // If backend validation fails, try to parse session from cookie
-    // This is a fallback for development/testing
-    debugLog('SESSION', 'Falling back to cookie parsing');
-    
-    try {
-      // For development, we might have session data in a cookie
-      const devSessionCookie = cookieStore.get('dev_session');
-      if (devSessionCookie) {
-        const sessionData = JSON.parse(devSessionCookie.value);
-        debugLog('SESSION', 'Using dev session data', {
-          hasUser: !!sessionData.user
-        });
-        return sessionData;
-      }
-    } catch (e) {
-      debugLog('SESSION', 'Dev session parse error', { error: e.message });
     }
     
     return null;
@@ -97,116 +80,257 @@ async function getSessionFromCookies() {
   }
 }
 
-// Mock data generators for testing
-function generateMockData(dataType, count = 10) {
-  debugLog('MOCK', `Generating mock data for ${dataType}`, { count });
+// Fetch real data from backend API
+async function fetchRealData(dataType, session, dateRange, customDateRange) {
+  debugLog('FETCH', `Fetching real data for ${dataType}`, { 
+    hasSession: !!session,
+    tenantId: session?.user?.tenant_id,
+    dateRange 
+  });
   
-  const mockGenerators = {
-    products: () => ({
-      id: Math.random().toString(36).substr(2, 9),
-      name: `Product ${Math.floor(Math.random() * 1000)}`,
-      sku: `SKU-${Math.floor(Math.random() * 10000)}`,
-      price: (Math.random() * 100).toFixed(2),
-      cost: (Math.random() * 50).toFixed(2),
-      quantity: Math.floor(Math.random() * 100),
-      category: ['Electronics', 'Clothing', 'Food', 'Books'][Math.floor(Math.random() * 4)],
-      created_at: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString()
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+  const cookieStore = cookies();
+  const sidCookie = cookieStore.get('sid');
+  const sessionId = sidCookie?.value || session?.sid;
+  
+  // Map data types to API endpoints
+  const endpointMap = {
+    'products': '/api/products/',
+    'customers': '/api/crm/customers/',
+    'invoices': '/api/invoices/',
+    'bills': '/api/bills/',
+    'chart-of-accounts': '/api/accounting/accounts/',
+    'tax-rates': '/api/taxes/rates/',
+    'vendors': '/api/purchases/vendors/',
+    'employees': '/api/hr/employees/'
+  };
+  
+  const endpoint = endpointMap[dataType];
+  if (!endpoint) {
+    debugLog('FETCH', `No endpoint mapping for data type: ${dataType}`);
+    return [];
+  }
+  
+  try {
+    // Build query parameters
+    const params = new URLSearchParams();
+    
+    // Add date range filtering
+    if (dateRange && dateRange !== 'all') {
+      const now = new Date();
+      let startDate;
+      
+      switch (dateRange) {
+        case 'thisMonth':
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+          break;
+        case 'lastMonth':
+          startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+          break;
+        case 'thisQuarter':
+          const quarter = Math.floor(now.getMonth() / 3);
+          startDate = new Date(now.getFullYear(), quarter * 3, 1);
+          break;
+        case 'thisYear':
+          startDate = new Date(now.getFullYear(), 0, 1);
+          break;
+        case 'custom':
+          if (customDateRange?.start) {
+            startDate = new Date(customDateRange.start);
+          }
+          break;
+      }
+      
+      if (startDate) {
+        params.append('created_at__gte', startDate.toISOString());
+        
+        if (dateRange === 'custom' && customDateRange?.end) {
+          params.append('created_at__lte', new Date(customDateRange.end).toISOString());
+        }
+      }
+    }
+    
+    // Build the full URL
+    const url = `${API_URL}${endpoint}${params.toString() ? '?' + params.toString() : ''}`;
+    debugLog('FETCH', `Calling backend API: ${url}`);
+    
+    // Make the API call with session cookie
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Cookie': `sid=${sessionId}`,
+        'X-Tenant-ID': session?.user?.tenant_id || ''
+      },
+      credentials: 'include'
+    });
+    
+    debugLog('FETCH', `Backend response for ${dataType}`, {
+      status: response.status,
+      ok: response.ok,
+      contentType: response.headers.get('content-type')
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      debugLog('FETCH', `Error fetching ${dataType}`, {
+        status: response.status,
+        error: errorText.substring(0, 200)
+      });
+      return [];
+    }
+    
+    const data = await response.json();
+    debugLog('FETCH', `Data received for ${dataType}`, {
+      isArray: Array.isArray(data),
+      count: Array.isArray(data) ? data.length : data.results?.length || data.count || 0,
+      hasResults: !!data.results,
+      hasData: !!data.data
+    });
+    
+    // Handle different response formats
+    if (Array.isArray(data)) {
+      return data;
+    } else if (data.results && Array.isArray(data.results)) {
+      return data.results;
+    } else if (data.data && Array.isArray(data.data)) {
+      return data.data;
+    } else {
+      debugLog('FETCH', `Unexpected data format for ${dataType}`, {
+        keys: Object.keys(data)
+      });
+      return [];
+    }
+    
+  } catch (error) {
+    debugLog('FETCH', `Error fetching ${dataType}`, {
+      error: error.message,
+      stack: error.stack
+    });
+    return [];
+  }
+}
+
+// Format data for export (clean up backend fields)
+function formatDataForExport(data, dataType) {
+  debugLog('FORMAT', `Formatting ${data.length} records for ${dataType}`);
+  
+  // Define field mappings for each data type
+  const fieldMappings = {
+    products: (item) => ({
+      'Product ID': item.id || item.product_id || '',
+      'Name': item.name || item.product_name || '',
+      'SKU': item.sku || item.product_sku || '',
+      'Category': item.category || item.product_category || '',
+      'Price': item.price || item.selling_price || 0,
+      'Cost': item.cost || item.purchase_price || 0,
+      'Stock': item.quantity || item.stock_quantity || 0,
+      'Status': item.is_active ? 'Active' : 'Inactive',
+      'Created Date': item.created_at ? new Date(item.created_at).toLocaleDateString() : '',
+      'Modified Date': item.updated_at ? new Date(item.updated_at).toLocaleDateString() : ''
     }),
     
-    customers: () => ({
-      id: Math.random().toString(36).substr(2, 9),
-      name: `Customer ${Math.floor(Math.random() * 1000)}`,
-      email: `customer${Math.floor(Math.random() * 1000)}@example.com`,
-      phone: `+1${Math.floor(Math.random() * 9000000000 + 1000000000)}`,
-      address: `${Math.floor(Math.random() * 999)} Main St`,
-      city: ['New York', 'Los Angeles', 'Chicago', 'Houston'][Math.floor(Math.random() * 4)],
-      total_purchases: (Math.random() * 5000).toFixed(2),
-      created_at: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString()
+    customers: (item) => ({
+      'Customer ID': item.id || item.customer_id || '',
+      'Name': item.name || item.customer_name || item.full_name || '',
+      'Email': item.email || item.customer_email || '',
+      'Phone': item.phone || item.phone_number || '',
+      'Company': item.company || item.company_name || '',
+      'Address': item.address || item.street_address || '',
+      'City': item.city || '',
+      'State': item.state || item.province || '',
+      'Country': item.country || '',
+      'Total Purchases': item.total_purchases || item.lifetime_value || 0,
+      'Status': item.is_active ? 'Active' : 'Inactive',
+      'Created Date': item.created_at ? new Date(item.created_at).toLocaleDateString() : ''
     }),
     
-    invoices: () => ({
-      id: Math.random().toString(36).substr(2, 9),
-      invoice_number: `INV-${Math.floor(Math.random() * 100000)}`,
-      customer_name: `Customer ${Math.floor(Math.random() * 1000)}`,
-      date: new Date(Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      due_date: new Date(Date.now() + Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      amount: (Math.random() * 1000).toFixed(2),
-      status: ['paid', 'pending', 'overdue'][Math.floor(Math.random() * 3)],
-      items: Math.floor(Math.random() * 5) + 1
+    invoices: (item) => ({
+      'Invoice Number': item.invoice_number || item.number || '',
+      'Date': item.date || item.invoice_date ? new Date(item.date || item.invoice_date).toLocaleDateString() : '',
+      'Due Date': item.due_date ? new Date(item.due_date).toLocaleDateString() : '',
+      'Customer': item.customer_name || item.customer?.name || '',
+      'Subtotal': item.subtotal || 0,
+      'Tax': item.tax_amount || item.tax || 0,
+      'Total': item.total || item.amount || 0,
+      'Status': item.status || 'pending',
+      'Payment Status': item.payment_status || (item.is_paid ? 'paid' : 'unpaid'),
+      'Created Date': item.created_at ? new Date(item.created_at).toLocaleDateString() : ''
     }),
     
-    employees: () => ({
-      id: Math.random().toString(36).substr(2, 9),
-      employee_id: `EMP-${Math.floor(Math.random() * 10000)}`,
-      name: `Employee ${Math.floor(Math.random() * 1000)}`,
-      email: `employee${Math.floor(Math.random() * 1000)}@company.com`,
-      department: ['Sales', 'Marketing', 'IT', 'HR', 'Finance'][Math.floor(Math.random() * 5)],
-      position: ['Manager', 'Senior', 'Junior', 'Intern'][Math.floor(Math.random() * 4)],
-      salary: Math.floor(Math.random() * 50000 + 30000),
-      hire_date: new Date(Date.now() - Math.random() * 5 * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    employees: (item) => ({
+      'Employee ID': item.employee_id || item.id || '',
+      'First Name': item.first_name || '',
+      'Last Name': item.last_name || '',
+      'Full Name': item.full_name || `${item.first_name || ''} ${item.last_name || ''}`.trim(),
+      'Email': item.email || item.work_email || '',
+      'Phone': item.phone || item.phone_number || '',
+      'Department': item.department || '',
+      'Position': item.position || item.job_title || '',
+      'Hire Date': item.hire_date ? new Date(item.hire_date).toLocaleDateString() : '',
+      'Status': item.is_active ? 'Active' : 'Inactive',
+      'Pay Rate': item.pay_rate || item.hourly_rate || item.salary || 0,
+      'Pay Type': item.pay_type || (item.hourly_rate ? 'Hourly' : 'Salary')
     }),
     
-    vendors: () => ({
-      id: Math.random().toString(36).substr(2, 9),
-      vendor_id: `VEN-${Math.floor(Math.random() * 10000)}`,
-      name: `Vendor ${Math.floor(Math.random() * 1000)}`,
-      contact_person: `Contact ${Math.floor(Math.random() * 100)}`,
-      email: `vendor${Math.floor(Math.random() * 1000)}@supplier.com`,
-      phone: `+1${Math.floor(Math.random() * 9000000000 + 1000000000)}`,
-      total_purchases: (Math.random() * 10000).toFixed(2),
-      payment_terms: ['Net 30', 'Net 60', 'Due on receipt'][Math.floor(Math.random() * 3)]
+    vendors: (item) => ({
+      'Vendor ID': item.id || item.vendor_id || '',
+      'Company Name': item.company_name || item.name || '',
+      'Contact Person': item.contact_person || item.contact_name || '',
+      'Email': item.email || item.contact_email || '',
+      'Phone': item.phone || item.phone_number || '',
+      'Address': item.address || item.street_address || '',
+      'City': item.city || '',
+      'State': item.state || item.province || '',
+      'Country': item.country || '',
+      'Payment Terms': item.payment_terms || '',
+      'Tax ID': item.tax_id || item.ein || '',
+      'Status': item.is_active ? 'Active' : 'Inactive',
+      'Created Date': item.created_at ? new Date(item.created_at).toLocaleDateString() : ''
+    }),
+    
+    bills: (item) => ({
+      'Bill Number': item.bill_number || item.number || '',
+      'Date': item.bill_date || item.date ? new Date(item.bill_date || item.date).toLocaleDateString() : '',
+      'Due Date': item.due_date ? new Date(item.due_date).toLocaleDateString() : '',
+      'Vendor': item.vendor_name || item.vendor?.name || '',
+      'Description': item.description || '',
+      'Amount': item.amount || item.total || 0,
+      'Tax': item.tax_amount || 0,
+      'Total': item.total_amount || item.total || 0,
+      'Status': item.status || 'pending',
+      'Payment Status': item.payment_status || (item.is_paid ? 'paid' : 'unpaid'),
+      'Created Date': item.created_at ? new Date(item.created_at).toLocaleDateString() : ''
+    }),
+    
+    'tax-rates': (item) => ({
+      'Tax Rate ID': item.id || '',
+      'Name': item.name || item.tax_name || '',
+      'Rate': item.rate || item.tax_rate || 0,
+      'Type': item.tax_type || 'sales',
+      'Country': item.country || '',
+      'State': item.state || item.province || '',
+      'Description': item.description || '',
+      'Status': item.is_active ? 'Active' : 'Inactive',
+      'Created Date': item.created_at ? new Date(item.created_at).toLocaleDateString() : ''
+    }),
+    
+    'chart-of-accounts': (item) => ({
+      'Account Code': item.code || item.account_code || '',
+      'Account Name': item.name || item.account_name || '',
+      'Account Type': item.account_type || item.type || '',
+      'Category': item.category || '',
+      'Balance': item.balance || item.current_balance || 0,
+      'Currency': item.currency || 'USD',
+      'Description': item.description || '',
+      'Status': item.is_active ? 'Active' : 'Inactive',
+      'Created Date': item.created_at ? new Date(item.created_at).toLocaleDateString() : ''
     })
   };
   
-  const generator = mockGenerators[dataType] || mockGenerators.products;
-  return Array.from({ length: count }, generator);
-}
-
-// Apply date range filter
-function applyDateFilter(data, dateRange, customDateRange, dateField = 'created_at') {
-  debugLog('FILTER', 'Applying date filter', { dateRange, customDateRange, dateField });
-  
-  if (dateRange === 'all') return data;
-  
-  const now = new Date();
-  let startDate;
-  
-  switch (dateRange) {
-    case 'thisMonth':
-      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-      break;
-    case 'lastMonth':
-      startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      break;
-    case 'thisQuarter':
-      const quarter = Math.floor(now.getMonth() / 3);
-      startDate = new Date(now.getFullYear(), quarter * 3, 1);
-      break;
-    case 'thisYear':
-      startDate = new Date(now.getFullYear(), 0, 1);
-      break;
-    case 'custom':
-      if (customDateRange?.start) {
-        startDate = new Date(customDateRange.start);
-      }
-      break;
-  }
-  
-  if (!startDate) return data;
-  
-  const endDate = dateRange === 'custom' && customDateRange?.end 
-    ? new Date(customDateRange.end) 
-    : now;
-    
-  debugLog('FILTER', 'Date range', { 
-    startDate: startDate.toISOString(), 
-    endDate: endDate.toISOString() 
-  });
-  
-  return data.filter(item => {
-    const itemDate = new Date(item[dateField] || item.date || item.created_at || item.hire_date);
-    return itemDate >= startDate && itemDate <= endDate;
-  });
+  const formatter = fieldMappings[dataType] || ((item) => item);
+  return data.map(formatter);
 }
 
 // Export data in different formats
@@ -290,7 +414,7 @@ async function exportData(data, format, dataTypes, options = {}) {
             
             records.forEach(record => {
               allRecords.push({
-                _type: dataType,
+                '_Data Type': dataType,
                 ...record
               });
             });
@@ -385,42 +509,46 @@ export async function POST(request) {
       );
     }
     
-    // Step 3: Check session (but don't fail if missing for now)
+    // Step 3: Check session
     debugLog('MAIN', 'Step 3: Checking session');
     const session = await getSessionFromCookies();
     
     if (!session) {
-      debugLog('MAIN', 'No valid session found - continuing with mock data');
-      // For now, we'll continue with mock data even without a session
-      // In production, you'd want to return a 401 here
-    } else {
-      debugLog('MAIN', 'Session found', {
-        userEmail: session.user?.email,
-        userRole: session.user?.role,
-        tenantId: session.user?.tenant_id
-      });
+      debugLog('MAIN', 'No valid session found');
+      return NextResponse.json(
+        { error: 'Authentication required. Please sign in and try again.' },
+        { status: 401 }
+      );
     }
     
-    // Step 4: Fetch data for each type
-    debugLog('MAIN', 'Step 4: Fetching data for export');
+    debugLog('MAIN', 'Session found', {
+      userEmail: session.user?.email,
+      userRole: session.user?.role,
+      tenantId: session.user?.tenant_id
+    });
+    
+    // Step 4: Fetch real data for each type
+    debugLog('MAIN', 'Step 4: Fetching real data for export');
     const exportData = {};
     
     for (const dataType of dataTypes) {
       debugLog('MAIN', `Fetching data for ${dataType}`);
       
       try {
-        // In a real implementation, you would fetch from the backend API
-        // For now, we'll use mock data to test the export functionality
-        let data = generateMockData(dataType, 50);
+        // Fetch real data from backend
+        const rawData = await fetchRealData(dataType, session, dateRange, customDateRange);
         
-        // Apply date filter
-        data = applyDateFilter(data, dateRange, customDateRange);
+        // Format data for export
+        const formattedData = formatDataForExport(rawData, dataType);
         
-        debugLog('MAIN', `Data fetched for ${dataType}`, {
-          recordCount: data.length
+        debugLog('MAIN', `Data fetched and formatted for ${dataType}`, {
+          rawCount: rawData.length,
+          formattedCount: formattedData.length
         });
         
-        exportData[dataType] = data;
+        if (formattedData.length > 0) {
+          exportData[dataType] = formattedData;
+        }
       } catch (error) {
         debugLog('MAIN', `Error fetching ${dataType}`, {
           error: error.message
@@ -435,7 +563,7 @@ export async function POST(request) {
     
     if (totalRecords === 0) {
       return NextResponse.json(
-        { error: 'No data found for the specified criteria' },
+        { error: 'No data found for the specified criteria. Please ensure you have data in the selected categories.' },
         { status: 404 }
       );
     }
