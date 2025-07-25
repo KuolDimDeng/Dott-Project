@@ -302,7 +302,25 @@
     "features": {
       "label": "主な機能："
     },
-    "learnMore": "詳細を見る"
+    "learnMore": "詳細を見る",
+    "jobs": {
+      "title": "包括的な作業管理",
+      "description": "見積もりから完了までのエンドツーエンドの作業原価計算。リアルタイムの収益性分析で材料、労働、経費を追跡します。モバイルファーストデザインのサービス事業、請負業者、現場作業に最適です。",
+      "imageAlt": "作業管理と原価計算のインターフェース",
+      "features": {
+        "jobCosting": "リアルタイムの作業原価計算",
+        "mobileFieldApp": "モバイルフィールドアプリ",
+        "materialTracking": "材料追跡",
+        "timeTracking": "自動時間追跡",
+        "photoCapture": "写真撮影",
+        "digitalSignatures": "デジタル署名",
+        "profitabilityAnalysis": "収益性分析",
+        "offlineSupport": "オフラインサポート"
+      }
+    },
+    "jobCosting": "リアルタイムの作業原価計算",
+    "mobileFieldApp": "フィールドワーカー向けモバイルアプリ",
+    "materialLaborTracking": "材料と労働の追跡"
   },
   "contact": {
     "eyebrow": "お問い合わせ",
@@ -447,7 +465,8 @@
       "mobileMoney": "モバイルマネー決済",
       "cardPayments": "世界中でのカード決済",
       "languages": "20以上の言語に対応",
-      "mobilePhone": "モバイルアプリ付属"
+      "mobilePhone": "モバイルアプリ付属",
+      "jobManagement": "作業管理と原価計算"
     }
   },
   "heroTitle": "オールインワンビジネスソフトウェア",
@@ -867,7 +886,9 @@
     "global": "輸入/輸出管理",
     "global.description": "国際貿易文書とコンプライアンスの取り扱い",
     "security": "エンタープライズセキュリティ",
-    "security.description": "銀行グレードセキュリティと地域コンプライアンス"
+    "security.description": "銀行グレードセキュリティと地域コンプライアンス",
+    "jobs": "作業管理と原価計算",
+    "jobs.description": "リアルタイムの原価計算、モバイルフィールドアプリ、収益性分析を備えたエンドツーエンドのプロジェクト追跡"
   },
   "trust": {
     "soc2Title": "SOC2準拠",

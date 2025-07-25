@@ -302,7 +302,25 @@
     "features": {
       "label": "Ana özellikler:"
     },
-    "learnMore": "Daha fazla öğren"
+    "learnMore": "Daha fazla öğren",
+    "jobs": {
+      "title": "Kapsamlı İş Yönetimi",
+      "description": "Tekliften tamamlanmaya kadar uçtan uca iş maliyetlendirmesi. Gerçek zamanlı kârlılık analiziyle malzemeleri, işçiliği ve giderleri takip edin. Mobil öncelikli tasarımla hizmet işletmeleri, müteahhitler ve saha operasyonları için mükemmel.",
+      "imageAlt": "İş yönetimi ve maliyetlendirme arayüzü",
+      "features": {
+        "jobCosting": "Gerçek zamanlı iş maliyetlendirmesi",
+        "mobileFieldApp": "Mobil saha uygulaması",
+        "materialTracking": "Malzeme takibi",
+        "timeTracking": "Otomatik zaman takibi",
+        "photoCapture": "Fotoğraf çekimi",
+        "digitalSignatures": "Dijital imzalar",
+        "profitabilityAnalysis": "Kârlılık analizi",
+        "offlineSupport": "Çevrimdışı destek"
+      }
+    },
+    "jobCosting": "Gerçek zamanlı iş maliyetlendirmesi",
+    "mobileFieldApp": "Saha çalışanları için mobil uygulama",
+    "materialLaborTracking": "Malzeme ve işçilik takibi"
   },
   "contact": {
     "eyebrow": "Bizimle İletişime Geçin",
@@ -678,7 +696,8 @@
       "mobileMoney": "Mobil para ödemeleri",
       "cardPayments": "Dünya çapında kart ödemeleri",
       "languages": "20'den fazla dil desteklenir",
-      "mobilePhone": "Mobil telefon uygulaması dahil"
+      "mobilePhone": "Mobil telefon uygulaması dahil",
+      "jobManagement": "İş yönetimi ve maliyetlendirme"
     }
   },
   "heroTitle": "Hepsi Bir Arada İşletme Yazılımı",
@@ -1098,7 +1117,9 @@
     "global": "İthalat/İhracat Yönetimi",
     "global.description": "Uluslararası ticaret belgelerini ve uyumunu yönetin",
     "security": "Kurumsal Güvenlik",
-    "security.description": "Bölgesel uyumla banka düzeyi güvenlik"
+    "security.description": "Bölgesel uyumla banka düzeyi güvenlik",
+    "jobs": "İş Yönetimi ve Maliyetlendirme",
+    "jobs.description": "Gerçek zamanlı maliyetlendirme, mobil saha uygulaması ve kârlılık analiziyle uçtan uca proje takibi"
   },
   "trust": {
     "soc2Title": "SOC2 Uyumlu",

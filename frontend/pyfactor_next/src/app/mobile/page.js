@@ -21,7 +21,8 @@ import {
   ClockIcon,
   ChatBubbleLeftRightIcon,
   BanknotesIcon,
-  ArrowPathIcon
+  ArrowPathIcon,
+  ClipboardDocumentCheckIcon
 } from '@heroicons/react/24/outline';
 import { getWhatsAppBusinessVisibility } from '@/utils/whatsappCountryDetection';
 
@@ -156,6 +157,13 @@ export default function MobilePage() {
 
   const baseQuickActions = [
     {
+      title: 'Jobs',
+      description: 'Manage field work',
+      icon: ClipboardDocumentCheckIcon,
+      href: '/dashboard/jobs/mobile',
+      color: 'bg-blue-600'
+    },
+    {
       title: 'Quick Sale',
       description: 'Process sales instantly',
       icon: CurrencyDollarIcon,
@@ -189,13 +197,6 @@ export default function MobilePage() {
       icon: DocumentTextIcon,
       href: '/invoices/new',
       color: 'bg-purple-500'
-    },
-    {
-      title: 'Dashboard',
-      description: 'View metrics',
-      icon: ChartBarIcon,
-      href: session?.tenantId ? `/${session.tenantId}/dashboard` : '/dashboard',
-      color: 'bg-orange-500'
     }
   ];
 
@@ -433,6 +434,13 @@ export default function MobilePage() {
             <span className="text-xs mt-1">Home</span>
           </button>
           <button 
+            onClick={() => router.push('/dashboard/jobs/mobile')}
+            className="flex flex-col items-center py-2 text-gray-600 hover:text-blue-600"
+          >
+            <ClipboardDocumentCheckIcon className="w-6 h-6" />
+            <span className="text-xs mt-1">Jobs</span>
+          </button>
+          <button 
             onClick={() => router.push('/pos')}
             className="flex flex-col items-center py-2 text-gray-600 hover:text-blue-600"
           >
@@ -446,11 +454,10 @@ export default function MobilePage() {
             <CameraIcon className="w-6 h-6" />
             <span className="text-xs mt-1">Scan</span>
           </button>
-          <button className="flex flex-col items-center py-2 text-gray-600 hover:text-blue-600">
-            <DocumentTextIcon className="w-6 h-6" />
-            <span className="text-xs mt-1">Invoices</span>
-          </button>
-          <button className="flex flex-col items-center py-2 text-gray-600 hover:text-blue-600">
+          <button 
+            onClick={() => router.push('/mobile/more')}
+            className="flex flex-col items-center py-2 text-gray-600 hover:text-blue-600"
+          >
             <UserGroupIcon className="w-6 h-6" />
             <span className="text-xs mt-1">More</span>
           </button>

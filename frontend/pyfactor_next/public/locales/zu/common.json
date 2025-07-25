@@ -371,7 +371,8 @@
       "mobileMoney": "Izinkokhelo zemali yeselula",
       "cardPayments": "Izinkokhelo zamakhadi emhlabeni jikelele",
       "languages": "Izilimi ezingaphezu kuka-20 ziyasekelwa",
-      "mobilePhone": "Uhlelo lokusebenza lweselula lufakiwe"
+      "mobilePhone": "Uhlelo lokusebenza lweselula lufakiwe",
+      "jobManagement": "Ukuphathwa kwemisebenzi & izindleko"
     }
   },
   "featuresTitle": "Izici Zebhizinisi Lomhlaba Jikelele",
@@ -450,7 +451,9 @@
     "global": "Ukulawula Ukungenisa/Ukuthumela Ngaphandle",
     "global.description": "Phatha imibhalo yohwebo yamazwe ngamazwe nokuthobela",
     "security": "Ukuphepha Kwenkampani",
-    "security.description": "Ukuphepha kwezinga lebhange nokuthobela kwesifunda"
+    "security.description": "Ukuphepha kwezinga lebhange nokuthobela kwesifunda",
+    "jobs": "Ukuphathwa Kwemisebenzi Nokubala Izindleko",
+    "jobs.description": "Ukulandelela iphrojekthi kusuka ekuqaleni kuze kube sekugcineni ngokubala izindleko zesikhathi sangempela, uhlelo lokusebenza lwenkundla yeselula nokuhlaziya inzuzo"
   },
   "highlights": {
     "bluetooth": "Ukuhlanganiswa kwesikena se-Bluetooth",
@@ -479,7 +482,25 @@
     "tradeCompliance": "Ukuthobela kwezohwebo",
     "soc2Compliant": "Kuhambisana ne-SOC2",
     "dataEncryption": "Ukubethela idatha",
-    "gdprReady": "Ilungele i-GDPR"
+    "gdprReady": "Ilungele i-GDPR",
+    "jobs": {
+      "title": "Ukuphathwa Kwemisebenzi Okuphelele",
+      "description": "Ukubala izindleko zomsebenzi kusuka ekuqaleni kuze kube sekugcineni kusuka esilinganisweni kuze kube sekuphothulweni. Landelela izinto zokusebenza, abasebenzi nezindleko ngokuhlaziya inzuzo yesikhathi sangempela. Kulungele amabhizinisi ezinsiza, osonkontileka kanye nokusebenza kwenkundla nokuklama kokuqala kweselula.",
+      "imageAlt": "Isikhombimsebenzisi sokuphatha umsebenzi nokubala izindleko",
+      "features": {
+        "jobCosting": "Ukubala izindleko zomsebenzi zesikhathi sangempela",
+        "mobileFieldApp": "Uhlelo lokusebenza lwenkundla yeselula",
+        "materialTracking": "Ukulandelela izinto zokusebenza",
+        "timeTracking": "Ukulandelela isikhathi ngokuzenzakalelayo",
+        "photoCapture": "Ukuthatha isithombe",
+        "digitalSignatures": "Amasignesha edijithali",
+        "profitabilityAnalysis": "Ukuhlaziya inzuzo",
+        "offlineSupport": "Ukusekela ngaphandle kwe-inthanethi"
+      }
+    },
+    "jobCosting": "Ukubala izindleko zomsebenzi zesikhathi sangempela",
+    "mobileFieldApp": "Uhlelo lokusebenza lweselula labasebenzi benkundla",
+    "materialLaborTracking": "Ukulandelela izinto zokusebenza nabasebenzi"
   },
   "faq_a_does_dott_support_mobile_money_payments": "Yebo! Sixhasa ukuxhuma nezinkundla zemali yeselula ezidumile njenge-M-Pesa, i-MTN Mobile Money, i-Airtel Money, nabanye e-Africa nase-Asia. Lokhu kuvumela ibhizinisi lakho ukwamukela nokuphatha kalula izindlela zokukhokha zasendaweni.",
   "faq_q_how_does_the_barcode_and_inventory_scanner_feature_work": "Isici seskena se-barcode nesempahla sisebenza kanjani?",

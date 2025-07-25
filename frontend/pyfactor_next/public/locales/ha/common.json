@@ -511,7 +511,8 @@
       "mobileMoney": "Biyan kuɗi ta wayar hannu",
       "cardPayments": "Biyan kuɗi ta katu a duniya",
       "languages": "Harsuna sama da 20 ana goyon baya",
-      "mobilePhone": "An haɗa app na wayar hannu"
+      "mobilePhone": "An haɗa app na wayar hannu",
+      "jobManagement": "Gudanar da ayyuka & ƙididdige farashi"
     }
   },
   "heroTitle": "Software Kasuwanci Duk-a-Daya",
@@ -582,7 +583,25 @@
     "tradeCompliance": "Bin ka'idojin ciniki",
     "soc2Compliant": "Ya cika SOC2",
     "dataEncryption": "Ɓoye bayanai",
-    "gdprReady": "Shirye don GDPR"
+    "gdprReady": "Shirye don GDPR",
+    "jobs": {
+      "title": "Cikakken Gudanar da Ayyuka",
+      "description": "Ƙididdigar farashin aiki daga farko zuwa ƙarshe daga farashi zuwa kammalawa. Bi diddigin kayayyaki, aiki da kashe kuɗi tare da nazarin riba na ainihin lokaci. Cikakke don kasuwancin sabis, 'yan kwangila da ayyukan filin tare da ƙirar wayar hannu ta farko.",
+      "imageAlt": "Gudanar da ayyuka da tsarin ƙididdige farashi",
+      "features": {
+        "jobCosting": "Ƙididdigar farashin aiki na ainihin lokaci",
+        "mobileFieldApp": "Aikace-aikacen filin wayar hannu",
+        "materialTracking": "Bin diddigin kayayyaki",
+        "timeTracking": "Bin diddigin lokaci ta atomatik",
+        "photoCapture": "Ɗaukar hoto",
+        "digitalSignatures": "Sa hannun dijital",
+        "profitabilityAnalysis": "Nazarin riba",
+        "offlineSupport": "Tallafin rashin layi"
+      }
+    },
+    "jobCosting": "Ƙididdigar farashin aiki na ainihin lokaci",
+    "mobileFieldApp": "Aikace-aikacen wayar hannu don ma'aikatan filin",
+    "materialLaborTracking": "Bin diddigin kayayyaki da aiki"
   },
   "faq": {
     "eyebrow": "FAQ",
@@ -946,7 +965,9 @@
     "global": "Sarrafa Shigo da Fitar",
     "global.description": "Sarrafa takardun kasuwanci na ƙasashen waje da cika dokoki",
     "security": "Tsaron Kamfani",
-    "security.description": "Tsaro mai matsayin banki da cika dokoki na yanki"
+    "security.description": "Tsaro mai matsayin banki da cika dokoki na yanki",
+    "jobs": "Gudanar da Ayyuka & Ƙididdigar Farashi",
+    "jobs.description": "Bin diddigin aikin farko zuwa ƙarshe tare da ƙididdige farashi na ainihin lokaci, aikace-aikacen filin wayar hannu da nazarin riba"
   },
   "blog": {
     "hero": {

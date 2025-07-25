@@ -302,7 +302,25 @@
     "features": {
       "label": "Vipengele muhimu:"
     },
-    "learnMore": "Jifunze zaidi"
+    "learnMore": "Jifunze zaidi",
+    "jobs": {
+      "title": "Usimamizi Kamili wa Kazi",
+      "description": "Ukadiriaji wa gharama za kazi kutoka nukuu hadi kukamilika. Fuatilia vifaa, kazi na matumizi kwa uchanganuzi wa faida ya wakati halisi. Kamili kwa biashara za huduma, makandarasi na shughuli za uwandani zenye muundo wa simu ya kwanza.",
+      "imageAlt": "Kiolesura cha usimamizi wa kazi na ukadiriaji wa gharama",
+      "features": {
+        "jobCosting": "Ukadiriaji wa gharama za kazi wakati halisi",
+        "mobileFieldApp": "Programu ya simu ya uwandani",
+        "materialTracking": "Ufuatiliaji wa vifaa",
+        "timeTracking": "Ufuatiliaji wa muda kiotomatiki",
+        "photoCapture": "Kupiga picha",
+        "digitalSignatures": "Saini za kidijitali",
+        "profitabilityAnalysis": "Uchanganuzi wa faida",
+        "offlineSupport": "Usaidizi nje ya mtandao"
+      }
+    },
+    "jobCosting": "Ukadiriaji wa gharama za kazi wakati halisi",
+    "mobileFieldApp": "Programu ya simu kwa wafanyakazi wa uwandani",
+    "materialLaborTracking": "Ufuatiliaji wa vifaa na kazi"
   },
   "contact": {
     "eyebrow": "Wasiliana Nasi",
@@ -678,7 +696,8 @@
       "mobileMoney": "Malipo ya pesa za simu",
       "cardPayments": "Malipo ya kadi duniani kote",
       "languages": "Zaidi ya lugha 20 zinazotumika",
-      "mobilePhone": "Programu ya simu ya mkononi imejumuishwa"
+      "mobilePhone": "Programu ya simu ya mkononi imejumuishwa",
+      "jobManagement": "Usimamizi wa kazi na gharama"
     }
   },
   "heroTitle": "Programu ya Biashara Yote-katika-Moja",
@@ -1098,7 +1117,9 @@
     "global": "Usimamizi wa Kuagiza/Kuuza",
     "global.description": "Shughulikia hati za biashara ya kimataifa na kufuata sheria",
     "security": "Usalama wa Kampuni",
-    "security.description": "Usalama wa kiwango cha benki na kufuata sheria za kikanda"
+    "security.description": "Usalama wa kiwango cha benki na kufuata sheria za kikanda",
+    "jobs": "Usimamizi wa Kazi na Ukadiriaji wa Gharama",
+    "jobs.description": "Ufuatiliaji wa mradi kutoka mwanzo hadi mwisho na ukadiriaji wa gharama wa wakati halisi, programu ya simu ya uwandani na uchanganuzi wa faida"
   },
   "trust": {
     "soc2Title": "Inafuata SOC2",

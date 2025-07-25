@@ -613,7 +613,8 @@
       "mobileMoney": "Pagos con dinero móvil (M-Pesa)",
       "cardPayments": "Acepta pagos con tarjeta en todo el mundo",
       "languages": "Más de 20 idiomas soportados",
-      "mobilePhone": "Aplicación móvil incluida"
+      "mobilePhone": "Aplicación móvil incluida",
+      "jobManagement": "Gestión y costeo de trabajos"
     }
   },
   "builtForYou": {
@@ -743,7 +744,25 @@
     "tradeCompliance": "Cumplimiento comercial",
     "soc2Compliant": "Cumple SOC2",
     "dataEncryption": "Encriptación de datos",
-    "gdprReady": "Listo para GDPR"
+    "gdprReady": "Listo para GDPR",
+    "jobs": {
+      "title": "Gestión Integral de Trabajos",
+      "description": "Costeo de trabajos de principio a fin desde la cotización hasta la finalización. Rastrea materiales, mano de obra y gastos con análisis de rentabilidad en tiempo real. Perfecto para empresas de servicios, contratistas y operaciones de campo con diseño móvil primero.",
+      "imageAlt": "Interfaz de gestión y costeo de trabajos",
+      "features": {
+        "jobCosting": "Costeo de trabajos en tiempo real",
+        "mobileFieldApp": "Aplicación móvil de campo",
+        "materialTracking": "Seguimiento de materiales",
+        "timeTracking": "Seguimiento automático de tiempo",
+        "photoCapture": "Captura de fotos",
+        "digitalSignatures": "Firmas digitales",
+        "profitabilityAnalysis": "Análisis de rentabilidad",
+        "offlineSupport": "Soporte sin conexión"
+      }
+    },
+    "jobCosting": "Costeo de trabajos en tiempo real",
+    "mobileFieldApp": "Aplicación móvil para trabajadores de campo",
+    "materialLaborTracking": "Seguimiento de materiales y mano de obra"
   },
   "faq": {
     "eyebrow": "FAQ",
@@ -1102,7 +1121,9 @@
     "global": "Gestión de Importación/Exportación",
     "global.description": "Maneja documentación de comercio internacional y cumplimiento",
     "security": "Seguridad Empresarial",
-    "security.description": "Seguridad de grado bancario con cumplimiento regional"
+    "security.description": "Seguridad de grado bancario con cumplimiento regional",
+    "jobs": "Gestión y Costeo de Trabajos",
+    "jobs.description": "Seguimiento de proyectos de principio a fin con costeo en tiempo real, aplicación móvil de campo y análisis de rentabilidad"
   },
   "trust": {
     "soc2Title": "Cumple SOC2",

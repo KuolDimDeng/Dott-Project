@@ -542,7 +542,17 @@ const MobileJobApp = () => {
       {/* Mobile Header */}
       <div className="bg-blue-600 text-white p-4 sticky top-0 z-10">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold">Field Jobs</h1>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => window.location.href = '/mobile'}
+              className="p-2 -ml-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <h1 className="text-xl font-bold">Field Jobs</h1>
+          </div>
           <div className="flex items-center gap-2">
             {isOnline ? (
               <WifiIcon className="h-5 w-5 text-green-300" />

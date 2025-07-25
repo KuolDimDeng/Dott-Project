@@ -613,7 +613,8 @@
       "mobileMoney": "Mobile-Money-Zahlungen",
       "cardPayments": "Kartenzahlungen weltweit",
       "languages": "Über 20 Sprachen unterstützt",
-      "mobilePhone": "Mobile App inklusive"
+      "mobilePhone": "Mobile App inklusive",
+      "jobManagement": "Auftragsmanagement & Kalkulation"
     }
   },
   "heroTitle": "All-in-One Business-Software",
@@ -749,7 +750,25 @@
     "tradeCompliance": "Handels-Compliance",
     "soc2Compliant": "SOC2-konform",
     "dataEncryption": "Datenverschlüsselung",
-    "gdprReady": "DSGVO-bereit"
+    "gdprReady": "DSGVO-bereit",
+    "jobs": {
+      "title": "Umfassendes Auftragsmanagement",
+      "description": "End-to-End-Auftragskalkulation vom Angebot bis zur Fertigstellung. Verfolgen Sie Materialien, Arbeitskosten und Ausgaben mit Echtzeit-Rentabilitätsanalyse. Perfekt für Dienstleistungsunternehmen, Auftragnehmer und Außendienstoperationen mit Mobile-First-Design.",
+      "imageAlt": "Schnittstelle für Auftragsmanagement und Kalkulation",
+      "features": {
+        "jobCosting": "Echtzeit-Auftragskalkulation",
+        "mobileFieldApp": "Mobile Außendienst-App",
+        "materialTracking": "Materialverfolgung",
+        "timeTracking": "Automatische Zeiterfassung",
+        "photoCapture": "Fotoaufnahme",
+        "digitalSignatures": "Digitale Signaturen",
+        "profitabilityAnalysis": "Rentabilitätsanalyse",
+        "offlineSupport": "Offline-Unterstützung"
+      }
+    },
+    "jobCosting": "Echtzeit-Auftragskalkulation",
+    "mobileFieldApp": "Mobile App für Außendienstmitarbeiter",
+    "materialLaborTracking": "Material- und Arbeitsverfolgung"
   },
   "faq": {
     "eyebrow": "FAQ",
@@ -1108,7 +1127,9 @@
     "global": "Import/Export-Management",
     "global.description": "Bearbeiten Sie internationale Handelsdokumentation und Compliance",
     "security": "Unternehmenssicherheit",
-    "security.description": "Bank-Standard-Sicherheit mit regionaler Compliance"
+    "security.description": "Bank-Standard-Sicherheit mit regionaler Compliance",
+    "jobs": "Auftragsmanagement & Kalkulation",
+    "jobs.description": "End-to-End-Projektverfolgung mit Echtzeit-Kalkulation, mobiler Außendienst-App und Rentabilitätsanalyse"
   },
   "trust": {
     "soc2Title": "SOC2-konform",

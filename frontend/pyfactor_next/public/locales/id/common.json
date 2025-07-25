@@ -212,7 +212,25 @@
     "features": {
       "label": "Fitur utama:"
     },
-    "learnMore": "Pelajari lebih lanjut"
+    "learnMore": "Pelajari lebih lanjut",
+    "jobs": {
+      "title": "Manajemen Pekerjaan Komprehensif",
+      "description": "Perhitungan biaya pekerjaan end-to-end dari penawaran hingga penyelesaian. Lacak bahan, tenaga kerja, dan pengeluaran dengan analisis profitabilitas real-time. Sempurna untuk bisnis layanan, kontraktor, dan operasi lapangan dengan desain mobile-first.",
+      "imageAlt": "Antarmuka manajemen pekerjaan dan perhitungan biaya",
+      "features": {
+        "jobCosting": "Perhitungan biaya pekerjaan real-time",
+        "mobileFieldApp": "Aplikasi lapangan mobile",
+        "materialTracking": "Pelacakan material",
+        "timeTracking": "Pelacakan waktu otomatis",
+        "photoCapture": "Pengambilan foto",
+        "digitalSignatures": "Tanda tangan digital",
+        "profitabilityAnalysis": "Analisis profitabilitas",
+        "offlineSupport": "Dukungan offline"
+      }
+    },
+    "jobCosting": "Perhitungan biaya pekerjaan real-time",
+    "mobileFieldApp": "Aplikasi mobile untuk pekerja lapangan",
+    "materialLaborTracking": "Pelacakan material dan tenaga kerja"
   },
   "contact": {
     "eyebrow": "Kontak",
@@ -575,7 +593,8 @@
       "mobileMoney": "Pembayaran mobile money",
       "cardPayments": "Pembayaran kartu global",
       "languages": "Mendukung lebih dari 20 bahasa",
-      "mobilePhone": "Aplikasi ponsel termasuk"
+      "mobilePhone": "Aplikasi ponsel termasuk",
+      "jobManagement": "Manajemen pekerjaan & biaya"
     }
   },
   "heroTitle": "Perangkat Lunak Bisnis All-in-One",
@@ -981,7 +1000,9 @@
     "global": "Manajemen Impor/Ekspor",
     "global.description": "Tangani dokumentasi perdagangan internasional dan kepatuhan",
     "security": "Keamanan Enterprise",
-    "security.description": "Keamanan tingkat bank dengan kepatuhan regional"
+    "security.description": "Keamanan tingkat bank dengan kepatuhan regional",
+    "jobs": "Manajemen Pekerjaan & Perhitungan Biaya",
+    "jobs.description": "Pelacakan proyek end-to-end dengan perhitungan biaya real-time, aplikasi lapangan mobile, dan analisis profitabilitas"
   },
   "trust": {
     "soc2Title": "Sesuai SOC2",

@@ -212,7 +212,25 @@
     "features": {
       "label": "Tính năng chính:"
     },
-    "learnMore": "Tìm hiểu thêm"
+    "learnMore": "Tìm hiểu thêm",
+    "jobs": {
+      "title": "Quản lý Công việc Toàn diện",
+      "description": "Tính chi phí công việc từ đầu đến cuối từ báo giá đến hoàn thành. Theo dõi vật liệu, lao động và chi phí với phân tích lợi nhuận thời gian thực. Hoàn hảo cho doanh nghiệp dịch vụ, nhà thầu và hoạt động thực địa với thiết kế ưu tiên di động.",
+      "imageAlt": "Giao diện quản lý công việc và tính chi phí",
+      "features": {
+        "jobCosting": "Tính chi phí công việc thời gian thực",
+        "mobileFieldApp": "Ứng dụng di động thực địa",
+        "materialTracking": "Theo dõi vật liệu",
+        "timeTracking": "Theo dõi thời gian tự động",
+        "photoCapture": "Chụp ảnh",
+        "digitalSignatures": "Chữ ký số",
+        "profitabilityAnalysis": "Phân tích lợi nhuận",
+        "offlineSupport": "Hỗ trợ ngoại tuyến"
+      }
+    },
+    "jobCosting": "Tính chi phí công việc thời gian thực",
+    "mobileFieldApp": "Ứng dụng di động cho nhân viên thực địa",
+    "materialLaborTracking": "Theo dõi vật liệu và lao động"
   },
   "contact": {
     "eyebrow": "Liên hệ",
@@ -575,7 +593,8 @@
       "mobileMoney": "Thanh toán tiền di động",
       "cardPayments": "Thanh toán thẻ toàn cầu",
       "languages": "Hỗ trợ hơn 20 ngôn ngữ",
-      "mobilePhone": "Ứng dụng điện thoại di động đi kèm"
+      "mobilePhone": "Ứng dụng điện thoại di động đi kèm",
+      "jobManagement": "Quản lý công việc & chi phí"
     }
   },
   "heroTitle": "Phần mềm kinh doanh tất cả trong một",
@@ -981,7 +1000,9 @@
     "global": "Quản lý xuất/nhập khẩu",
     "global.description": "Xử lý tài liệu thương mại quốc tế và tuân thủ",
     "security": "Bảo mật doanh nghiệp",
-    "security.description": "Bảo mật cấp ngân hàng với tuân thủ khu vực"
+    "security.description": "Bảo mật cấp ngân hàng với tuân thủ khu vực",
+    "jobs": "Quản lý Công việc & Tính Chi phí",
+    "jobs.description": "Theo dõi dự án từ đầu đến cuối với tính chi phí thời gian thực, ứng dụng di động thực địa và phân tích lợi nhuận"
   },
   "trust": {
     "soc2Title": "Tuân thủ SOC2",

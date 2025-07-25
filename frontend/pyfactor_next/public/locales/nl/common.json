@@ -212,7 +212,25 @@
     "features": {
       "label": "Belangrijkste functies:"
     },
-    "learnMore": "Meer informatie"
+    "learnMore": "Meer informatie",
+    "jobs": {
+      "title": "Uitgebreid Opdrachtenbeher",
+      "description": "End-to-end opdrachtkostenberekening van offerte tot voltooiing. Volg materialen, arbeid en uitgaven met realtime winstgevendheidsanalyse. Perfect voor dienstverlenende bedrijven, aannemers en veldoperaties met mobile-first ontwerp.",
+      "imageAlt": "Interface voor opdrachtbeheer en kostenberekening",
+      "features": {
+        "jobCosting": "Realtime opdrachtkostenberekening",
+        "mobileFieldApp": "Mobiele veld-app",
+        "materialTracking": "Materiaaltracking",
+        "timeTracking": "Automatische tijdregistratie",
+        "photoCapture": "Foto vastleggen",
+        "digitalSignatures": "Digitale handtekeningen",
+        "profitabilityAnalysis": "Winstgevendheidsanalyse",
+        "offlineSupport": "Offline ondersteuning"
+      }
+    },
+    "jobCosting": "Realtime opdrachtkostenberekening",
+    "mobileFieldApp": "Mobiele app voor veldmedewerkers",
+    "materialLaborTracking": "Materiaal- en arbeidstracking"
   },
   "contact": {
     "eyebrow": "Contact",
@@ -575,7 +593,8 @@
       "mobileMoney": "Mobiele geld betalingen",
       "cardPayments": "Wereldwijde kaartbetalingen",
       "languages": "Meer dan 20 talen ondersteund",
-      "mobilePhone": "Mobiele app inbegrepen"
+      "mobilePhone": "Mobiele app inbegrepen",
+      "jobManagement": "Opdrachtbeheer & kostenberekening"
     }
   },
   "heroTitle": "All-in-one bedrijfssoftware",
@@ -981,7 +1000,9 @@
     "global": "Import/export beheer",
     "global.description": "Behandel internationale handelsdocumentatie en compliance",
     "security": "Enterprise beveiliging",
-    "security.description": "Beveiliging op bankniveau met regionale compliance"
+    "security.description": "Beveiliging op bankniveau met regionale compliance",
+    "jobs": "Opdrachtbeheer & Kostenberekening",
+    "jobs.description": "End-to-end projecttracking met realtime kostenberekening, mobiele veld-app en winstgevendheidsanalyse"
   },
   "trust": {
     "soc2Title": "SOC2 conform",

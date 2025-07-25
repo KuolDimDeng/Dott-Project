@@ -613,7 +613,8 @@
       "mobileMoney": "Pagamentos com dinheiro móvel",
       "cardPayments": "Pagamentos com cartão em todo o mundo",
       "languages": "Mais de 20 idiomas suportados",
-      "mobilePhone": "Aplicativo móvel incluído"
+      "mobilePhone": "Aplicativo móvel incluído",
+      "jobManagement": "Gestão e custeio de trabalhos"
     }
   },
   "heroTitle": "Software empresarial tudo-em-um",
@@ -749,7 +750,25 @@
     "tradeCompliance": "Conformidade comercial",
     "soc2Compliant": "Conforme SOC2",
     "dataEncryption": "Criptografia de dados",
-    "gdprReady": "Pronto para GDPR"
+    "gdprReady": "Pronto para GDPR",
+    "jobs": {
+      "title": "Gestão Completa de Trabalhos",
+      "description": "Custeio de trabalhos de ponta a ponta, desde o orçamento até a conclusão. Acompanhe materiais, mão de obra e despesas com análise de lucratividade em tempo real. Perfeito para empresas de serviços, empreiteiros e operações de campo com design mobile-first.",
+      "imageAlt": "Interface de gestão e custeio de trabalhos",
+      "features": {
+        "jobCosting": "Custeio de trabalhos em tempo real",
+        "mobileFieldApp": "Aplicativo móvel de campo",
+        "materialTracking": "Rastreamento de materiais",
+        "timeTracking": "Rastreamento automático de tempo",
+        "photoCapture": "Captura de fotos",
+        "digitalSignatures": "Assinaturas digitais",
+        "profitabilityAnalysis": "Análise de lucratividade",
+        "offlineSupport": "Suporte offline"
+      }
+    },
+    "jobCosting": "Custeio de trabalhos em tempo real",
+    "mobileFieldApp": "Aplicativo móvel para trabalhadores de campo",
+    "materialLaborTracking": "Rastreamento de materiais e mão de obra"
   },
   "faq": {
     "eyebrow": "FAQ",
@@ -1108,7 +1127,9 @@
     "global": "Gestão de Importação/Exportação",
     "global.description": "Gerencie documentação de comércio internacional e conformidade",
     "security": "Segurança Empresarial",
-    "security.description": "Segurança de nível bancário com conformidade regional"
+    "security.description": "Segurança de nível bancário com conformidade regional",
+    "jobs": "Gestão e Custeio de Trabalhos",
+    "jobs.description": "Acompanhamento de projetos de ponta a ponta com custeio em tempo real, aplicativo móvel de campo e análise de lucratividade"
   },
   "trust": {
     "soc2Title": "Conforme SOC2",

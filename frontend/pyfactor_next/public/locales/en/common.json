@@ -619,7 +619,8 @@
       "mobileMoney": "Mobile money payments (M-Pesa)",
       "cardPayments": "Accept card payments worldwide",
       "languages": "20+ languages supported",
-      "mobilePhone": "Mobile phone app included"
+      "mobilePhone": "Mobile phone app included",
+      "jobManagement": "Job management & costing"
     }
   },
   "builtForYou": {
@@ -749,7 +750,25 @@
     "tradeCompliance": "Trade compliance",
     "soc2Compliant": "SOC2 compliant",
     "dataEncryption": "Data encryption",
-    "gdprReady": "GDPR ready"
+    "gdprReady": "GDPR ready",
+    "jobs": {
+      "title": "Comprehensive Job Management",
+      "description": "End-to-end job costing from quote to completion. Track materials, labor, and expenses with real-time profitability analysis. Perfect for service businesses, contractors, and field operations with mobile-first design.",
+      "imageAlt": "Job management and costing interface",
+      "features": {
+        "jobCosting": "Real-time job costing",
+        "mobileFieldApp": "Mobile field app",
+        "materialTracking": "Material tracking",
+        "timeTracking": "Auto time tracking",
+        "photoCapture": "Photo capture",
+        "digitalSignatures": "Digital signatures",
+        "profitabilityAnalysis": "Profitability analysis",
+        "offlineSupport": "Offline support"
+      }
+    },
+    "jobCosting": "Real-time job costing",
+    "mobileFieldApp": "Mobile field worker app",
+    "materialLaborTracking": "Material & labor tracking"
   },
   "heroSlideshow": {
     "slides": {
@@ -1152,7 +1171,9 @@
     "global": "Import/Export Management",
     "global.description": "Handle international trade documentation and compliance",
     "security": "Enterprise Security",
-    "security.description": "Bank-grade security with regional compliance"
+    "security.description": "Bank-grade security with regional compliance",
+    "jobs": "Job Management & Costing",
+    "jobs.description": "End-to-end project tracking with real-time costing, mobile field app, and profitability analysis"
   },
   "trust": {
     "soc2Title": "SOC2 Compliant",

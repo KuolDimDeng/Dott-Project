@@ -359,7 +359,8 @@
       "mobileMoney": "모바일 머니 결제",
       "cardPayments": "전 세계 카드 결제",
       "languages": "20개 이상의 언어 지원",
-      "mobilePhone": "모바일 앱 포함"
+      "mobilePhone": "모바일 앱 포함",
+      "jobManagement": "작업 관리 및 원가 계산"
     }
   },
   "heroTitle": "올인원 비즈니스 소프트웨어",
@@ -680,7 +681,9 @@
     "global": "수입/수출 관리",
     "global.description": "국제 무역 문서 및 규정 준수 처리",
     "security": "엔터프라이즈 보안",
-    "security.description": "지역 규정 준수와 함께 은행 수준의 보안"
+    "security.description": "지역 규정 준수와 함께 은행 수준의 보안",
+    "jobs": "작업 관리 및 원가 계산",
+    "jobs.description": "실시간 원가 계산, 모바일 현장 앱 및 수익성 분석을 통한 전체 프로젝트 추적"
   },
   "highlights": {
     "bluetooth": "블루투스 스캐너 통합",
@@ -709,7 +712,25 @@
     "tradeCompliance": "무역 규정 준수",
     "soc2Compliant": "SOC2 규정 준수",
     "dataEncryption": "데이터 암호화",
-    "gdprReady": "GDPR 준비"
+    "gdprReady": "GDPR 준비",
+    "jobs": {
+      "title": "포괄적인 작업 관리",
+      "description": "견적부터 완료까지 전체 작업 원가 계산. 실시간 수익성 분석으로 자재, 노동력 및 비용을 추적합니다. 모바일 우선 디자인으로 서비스 비즈니스, 계약업체 및 현장 운영에 완벽합니다.",
+      "imageAlt": "작업 관리 및 원가 계산 인터페이스",
+      "features": {
+        "jobCosting": "실시간 작업 원가 계산",
+        "mobileFieldApp": "모바일 현장 앱",
+        "materialTracking": "자재 추적",
+        "timeTracking": "자동 시간 추적",
+        "photoCapture": "사진 캡처",
+        "digitalSignatures": "디지털 서명",
+        "profitabilityAnalysis": "수익성 분석",
+        "offlineSupport": "오프라인 지원"
+      }
+    },
+    "jobCosting": "실시간 작업 원가 계산",
+    "mobileFieldApp": "현장 작업자를 위한 모바일 앱",
+    "materialLaborTracking": "자재 및 노동력 추적"
   },
   "trust": {
     "soc2Title": "SOC2 준수",

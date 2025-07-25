@@ -614,7 +614,8 @@
       "mobileMoney": "移动支付",
       "cardPayments": "全球卡支付",
       "languages": "支持20多种语言",
-      "mobilePhone": "包含手机应用程序"
+      "mobilePhone": "包含手机应用程序",
+      "jobManagement": "作业管理与成本核算"
     }
   },
   "heroTitle": "一体化商业软件",
@@ -750,7 +751,25 @@
     "tradeCompliance": "贸易合规",
     "soc2Compliant": "符合SOC2标准",
     "dataEncryption": "数据加密",
-    "gdprReady": "符合GDPR"
+    "gdprReady": "符合GDPR",
+    "jobs": {
+      "title": "综合作业管理",
+      "description": "从报价到完成的端到端作业成本核算。通过实时盈利能力分析跟踪材料、人工和费用。非常适合服务企业、承包商和现场操作，采用移动优先设计。",
+      "imageAlt": "作业管理和成本核算界面",
+      "features": {
+        "jobCosting": "实时作业成本核算",
+        "mobileFieldApp": "移动现场应用",
+        "materialTracking": "材料跟踪",
+        "timeTracking": "自动时间跟踪",
+        "photoCapture": "照片拍摄",
+        "digitalSignatures": "数字签名",
+        "profitabilityAnalysis": "盈利能力分析",
+        "offlineSupport": "离线支持"
+      }
+    },
+    "jobCosting": "实时作业成本核算",
+    "mobileFieldApp": "现场工作人员移动应用",
+    "materialLaborTracking": "材料和人工跟踪"
   },
   "faq": {
     "eyebrow": "常见问题",
@@ -1109,7 +1128,9 @@
     "global": "进出口管理",
     "global.description": "处理国际贸易文档和合规",
     "security": "企业安全",
-    "security.description": "银行级安全和地区合规"
+    "security.description": "银行级安全和地区合规",
+    "jobs": "作业管理与成本核算",
+    "jobs.description": "端到端项目跟踪，具有实时成本核算、移动现场应用和盈利能力分析"
   },
   "trust": {
     "soc2Title": "SOC2合规",

@@ -613,7 +613,8 @@
       "mobileMoney": "Paiements par argent mobile",
       "cardPayments": "Paiements par carte dans le monde entier",
       "languages": "Plus de 20 langues prises en charge",
-      "mobilePhone": "Application mobile incluse"
+      "mobilePhone": "Application mobile incluse",
+      "jobManagement": "Gestion et coût des chantiers"
     }
   },
   "heroTitle": "Logiciel d'entreprise tout-en-un",
@@ -749,7 +750,25 @@
     "tradeCompliance": "Conformité commerciale",
     "soc2Compliant": "Conforme SOC2",
     "dataEncryption": "Chiffrement des données",
-    "gdprReady": "Conforme RGPD"
+    "gdprReady": "Conforme RGPD",
+    "jobs": {
+      "title": "Gestion Complète des Chantiers",
+      "description": "Calcul des coûts des chantiers de bout en bout, du devis à l'achèvement. Suivez les matériaux, la main-d'œuvre et les dépenses avec une analyse de rentabilité en temps réel. Parfait pour les entreprises de services, les entrepreneurs et les opérations sur le terrain avec une conception mobile-first.",
+      "imageAlt": "Interface de gestion et de calcul des coûts des chantiers",
+      "features": {
+        "jobCosting": "Calcul des coûts en temps réel",
+        "mobileFieldApp": "Application mobile de terrain",
+        "materialTracking": "Suivi des matériaux",
+        "timeTracking": "Suivi automatique du temps",
+        "photoCapture": "Capture de photos",
+        "digitalSignatures": "Signatures numériques",
+        "profitabilityAnalysis": "Analyse de rentabilité",
+        "offlineSupport": "Support hors ligne"
+      }
+    },
+    "jobCosting": "Calcul des coûts en temps réel",
+    "mobileFieldApp": "Application mobile pour travailleurs de terrain",
+    "materialLaborTracking": "Suivi des matériaux et de la main-d'œuvre"
   },
   "faq": {
     "eyebrow": "FAQ",
@@ -1108,7 +1127,9 @@
     "global": "Gestion Import/Export",
     "global.description": "Gérez la documentation commerciale internationale et la conformité",
     "security": "Sécurité d'Entreprise",
-    "security.description": "Sécurité de niveau bancaire avec conformité régionale"
+    "security.description": "Sécurité de niveau bancaire avec conformité régionale",
+    "jobs": "Gestion et Calcul des Coûts des Chantiers",
+    "jobs.description": "Suivi de projet de bout en bout avec calcul des coûts en temps réel, application mobile de terrain et analyse de rentabilité"
   },
   "trust": {
     "soc2Title": "Conforme SOC2",
