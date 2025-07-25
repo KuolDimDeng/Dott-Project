@@ -230,7 +230,7 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
         console.error('[GeofenceSetup] Debug error data:', debugError.response?.data);
       }
       
-      const response = await api.post('/api/hr/geofences', geofenceData);
+      const response = await api.post('/api/hr/geofences/', geofenceData);
       console.log('[GeofenceSetup] POST response:', response);
       console.log('[GeofenceSetup] Response type:', typeof response);
       
