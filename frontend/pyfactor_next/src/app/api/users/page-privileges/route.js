@@ -62,6 +62,7 @@ export async function GET(request) {
       logger.error('[PagePrivileges] Non-JSON response received:');
       logger.error('[PagePrivileges] Response status:', response.status);
       logger.error('[PagePrivileges] Content-Type:', contentType);
+      logger.error('[PagePrivileges] Response text (first 1000 chars):', responseText.substring(0, 1000));
       
       return NextResponse.json(
         { 
@@ -87,10 +88,16 @@ export async function GET(request) {
     logger.info('[PagePrivileges] Successfully fetched page privileges');
     
     // Transform the data to match what the frontend expects
+    // Extract page IDs from page_permissions and determine can_manage_users from role
+    const page_access = responseData.page_permissions ? 
+      responseData.page_permissions.map(perm => perm.page_id) : [];
+    
+    const can_manage_users = responseData.role === 'ADMIN' || responseData.role === 'OWNER';
+    
     const transformedData = [{
       user_id: user_id,
-      page_access: responseData.page_access || [],
-      can_manage_users: responseData.can_manage_users || false
+      page_access: page_access,
+      can_manage_users: can_manage_users
     }];
     
     return NextResponse.json(transformedData);

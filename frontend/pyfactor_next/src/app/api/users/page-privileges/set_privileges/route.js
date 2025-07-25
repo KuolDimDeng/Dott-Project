@@ -43,10 +43,19 @@ export async function POST(request) {
     
     logger.info('[PagePrivileges] Making request to:', apiUrl);
     
+    // Transform page_access array to page_permissions format expected by backend
+    const page_permissions = (page_access || []).map(pageId => ({
+      page_id: pageId,
+      can_read: true,
+      can_write: true,
+      can_edit: true,
+      can_delete: true
+    }));
+    
     // Prepare data for backend API
     const backendData = {
-      page_access: page_access || [],
-      can_manage_users: can_manage_users || false
+      page_permissions: page_permissions,
+      role: can_manage_users ? 'ADMIN' : 'USER'
     };
     
     // Forward request to Django backend
@@ -73,7 +82,7 @@ export async function POST(request) {
       logger.error('[PagePrivileges] Non-JSON response received:');
       logger.error('[PagePrivileges] Response status:', response.status);
       logger.error('[PagePrivileges] Content-Type:', contentType);
-      logger.error('[PagePrivileges] Response text (first 500 chars):', responseText.substring(0, 500));
+      logger.error('[PagePrivileges] Response text (first 1000 chars):', responseText.substring(0, 1000));
       
       return NextResponse.json(
         { 
@@ -104,6 +113,7 @@ export async function POST(request) {
     }
     
     logger.info('[PagePrivileges] Successfully updated page privileges');
+    logger.info('[PagePrivileges] Response data:', JSON.stringify(responseData, null, 2));
     
     return NextResponse.json({
       success: true,
