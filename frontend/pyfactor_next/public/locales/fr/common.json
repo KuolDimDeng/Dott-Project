@@ -1,5 +1,86 @@
 {
-  "about": "À propos",
+  "about": {
+    "backToHome": "Retour à l'Accueil",
+    "hero": {
+      "title": "Donner aux entreprises les moyens de",
+      "subtitle": "prospérer mondialement",
+      "description": "Nous construisons le système d'exploitation pour les petites entreprises modernes, rendant les outils de niveau entreprise accessibles à tous."
+    },
+    "story": {
+      "title": "Notre Histoire",
+      "paragraph1": "Dott est né d'une simple observation : les petites entreprises se noyaient dans la complexité. Plusieurs outils, des données déconnectées et des processus conçus pour les entreprises freinaient les entrepreneurs du monde entier.",
+      "paragraph2": "Fondée en 2023, nous avons entrepris de construire quelque chose de différent. Une plateforme qui comprend les défis uniques des petites entreprises, en particulier sur les marchés émergents où les solutions traditionnelles échouent.",
+      "paragraph3": "Aujourd'hui, nous sommes fiers de servir des entreprises dans le monde entier. Mais nous ne faisons que commencer."
+    },
+    "timeline": {
+      "beginning": {
+        "title": "Le Début",
+        "description": "Identification du besoin d'outils de gestion d'entreprise unifiés pour les PME"
+      },
+      "launch": {
+        "title": "Lancement du Produit",
+        "description": "Lancement de la plateforme principale avec gestion financière et des stocks"
+      },
+      "expansion": {
+        "title": "Expansion Mondiale",
+        "description": "Extension à plus de 25 pays avec des fonctionnalités localisées"
+      },
+      "ai": {
+        "title": "Intégration IA",
+        "description": "Introduction d'insights intelligents et d'automatisation"
+      }
+    },
+    "mission": {
+      "title": "Notre Mission",
+      "description": "Démocratiser la gestion d'entreprise en fournissant aux petites entreprises des outils puissants et abordables qui simplifient les opérations et permettent la croissance, quel que soit l'emplacement ou l'expertise technique."
+    },
+    "vision": {
+      "title": "Notre Vision",
+      "description": "Un monde où chaque petite entreprise a accès à la même qualité d'outils de gestion que les entreprises Fortune 500, permettant à un million d'entreprises de prospérer d'ici 2030."
+    },
+    "journey": {
+      "title": "Notre Parcours"
+    },
+    "values": {
+      "title": "Nos Valeurs",
+      "subtitle": "Les principes qui guident chaque décision que nous prenons",
+      "simplicity": {
+        "title": "La Simplicité d'Abord",
+        "description": "Les opérations commerciales complexes simplifiées grâce à un design intuitif"
+      },
+      "innovation": {
+        "title": "Innovation Continue",
+        "description": "Évolution avec les besoins changeants des entreprises modernes"
+      },
+      "success": {
+        "title": "Succès Client",
+        "description": "Votre croissance est notre succès - nous gagnons quand vous gagnez"
+      },
+      "empowerment": {
+        "title": "Autonomisation Mondiale",
+        "description": "Briser les barrières pour les entreprises du monde entier"
+      }
+    },
+    "differentiators": {
+      "title": "Ce qui Rend Dott Différent",
+      "unified": {
+        "title": "Plateforme Unifiée",
+        "description": "Tous vos outils d'entreprise en un seul endroit"
+      },
+      "global": {
+        "title": "Global, mais Local",
+        "description": "Normes internationales avec conformité locale"
+      },
+      "security": {
+        "title": "Sécurité d'Entreprise",
+        "description": "Protection de niveau bancaire pour vos données"
+      },
+      "insights": {
+        "title": "Insights Intelligents",
+        "description": "Analyses alimentées par IA pour de meilleures décisions"
+      }
+    }
+  },
   "features": {
     "eyebrow": "Solution d'Entreprise Complète",
     "heading": "Tout ce dont Vous Avez Besoin pour Grandir Globalement",
@@ -207,8 +288,297 @@
   "socialImpact": "Notre Impact Social",
   "getInTouch": "Contactez Notre Équipe",
   "termsOfUse": "Conditions d'Utilisation",
-  "privacyPolicy": "Politique de Confidentialité",
-  "cookiePolicy": "Politique de Cookies",
+  "privacyPolicy": {
+    "title": "Politique de Confidentialité",
+    "effectiveDate": "En vigueur à compter du : {{date}}",
+    "introduction": "Chez Dott LLC, nous valorisons votre confiance et respectons votre vie privée. Nous existons pour fournir aux entreprises des outils complets de gestion financière. Cette Politique de Confidentialité explique, dans un langage clair et simple, quelles informations nous collectons, comment nous les utilisons et les choix que vous avez concernant vos informations personnelles, afin que vous puissiez utiliser notre plateforme en toute confiance.",
+    "navigation": {
+      "backToDashboard": "Retour au Tableau de Bord",
+      "backToHome": "Retour à l'Accueil"
+    },
+    "sections": {
+      "scope": {
+        "title": "A. Portée",
+        "content": "Protéger vos informations personnelles est important pour nous. Cette politique de confidentialité s'applique à nos produits et services offerts sous la marque Dott, nos sites web et nos applications mobiles qui incorporent cette politique de confidentialité. Nos produits et services sont offerts par Dott LLC. Cette politique couvre comment nous collectons, utilisons, stockons, traitons et partageons vos informations en relation avec notre plateforme de gestion financière, incluant la comptabilité, la paie, le traitement des paiements, la facturation et autres services."
+      },
+      "personalInfo": {
+        "title": "B. Informations Personnelles",
+        "content": "Dans le cadre de la fourniture de nos services, nous pouvons collecter des informations personnelles vous concernant, votre entreprise, vos employés et vos clients. Les 'Informations Personnelles' sont des données qui peuvent être utilisées pour identifier une personne individuellement. Cette politique décrit notre collecte, protection, utilisation, rétention, divulgation et autre traitement des Informations Personnelles et vos droits liés à ces activités.",
+        "businessInfo": {
+          "title": "B.1 Informations Commerciales",
+          "content": "Cela inclut le nom de votre entreprise, adresse, numéros d'identification fiscale, type d'industrie, type d'entité commerciale et autres informations nécessaires pour fournir nos services."
+        },
+        "individualInfo": {
+          "title": "B.2 Informations Individuelles",
+          "content": "Cela inclut des informations vous concernant en tant que propriétaire d'entreprise, vos employés, contractants et vos clients, selon les besoins pour fournir nos services."
+        }
+      },
+      "categories": {
+        "title": "C. Catégories d'Informations Personnelles Collectées",
+        "content": "Les informations que nous pouvons collecter incluent, mais ne se limitent pas à :",
+        "identification": {
+          "title": "C.1 Informations d'Identification",
+          "content": "Informations de contact (nom, adresse e-mail, numéro de téléphone, adresse postale), Numéros d'Identification Gouvernementaux (EIN, SSN, IDs fiscaux), Date de naissance, identification photographique et documentation commerciale."
+        },
+        "financial": {
+          "title": "C.2 Informations Financières",
+          "content": "Détails des comptes bancaires, informations des cartes de paiement, historique des transactions, soldes des comptes, registres de paiement, historique de crédit, états financiers et informations de paie."
+        },
+        "employee": {
+          "title": "C.3 Informations des Employés",
+          "content": "Pour les services de paie, nous collectons des informations sur vos employés incluant leurs noms, détails de contact, informations salariales, informations de retenue fiscale, détails bancaires pour dépôt direct et autres données liées à l'emploi."
+        },
+        "technical": {
+          "title": "C.4 Informations Techniques",
+          "content": "Informations sur l'appareil (adresse IP, type d'appareil, système d'exploitation), Informations sur le navigateur, Données de géolocalisation, Données d'utilisation, Informations de connexion et Données d'interaction de l'application."
+        },
+        "customer": {
+          "title": "C.5 Informations Client",
+          "content": "Lorsque vous utilisez nos fonctionnalités de facturation ou de traitement des paiements, nous pouvons collecter des informations sur vos clients nécessaires pour traiter ces transactions."
+        },
+        "tax": {
+          "title": "C.6 Informations Fiscales",
+          "content": "Lorsque vous utilisez nos fonctionnalités fiscales, nous collectons l'emplacement de votre entreprise, les taux d'imposition que vous saisissez, les préférences de paramètres fiscaux et l'historique des calculs fiscaux. Nous pouvons également traiter des requêtes liées aux impôts lorsque vous utilisez nos fonctionnalités de suggestions fiscales alimentées par l'IA. Ces informations sont utilisées uniquement pour fournir des services de calcul fiscal et ne sont pas utilisées pour la déclaration ou le reporting fiscal en votre nom."
+        }
+      },
+      "collection": {
+        "title": "D. Comment Nous Collectons Vos Informations",
+        "content": "Nous collectons des informations de diverses sources :",
+        "direct": {
+          "title": "D.1 Collecte Directe",
+          "content": "Informations que vous fournissez lorsque vous vous inscrivez à nos services, configurez votre compte, connectez vos comptes financiers, traitez des paiements ou communiquez avec nous."
+        },
+        "automated": {
+          "title": "D.2 Collecte Automatisée",
+          "content": "Informations collectées automatiquement via des cookies, balises web et technologies similaires lorsque vous utilisez nos services."
+        },
+        "thirdParty": {
+          "title": "D.3 Sources Tierces",
+          "content": "Informations que nous recevons de fournisseurs de services tiers, partenaires commerciaux, services de vérification d'identité, bureaux de crédit et autres sources publiquement disponibles."
+        },
+        "financial": {
+          "title": "D.4 Institutions Financières",
+          "content": "Lorsque vous connectez vos comptes bancaires ou autres services financiers à Dott, nous collectons des informations de ces institutions financières avec votre autorisation."
+        }
+      },
+      "usage": {
+        "title": "E. Comment Nous Utilisons Vos Informations",
+        "content": "Nous utilisons vos informations aux fins suivantes :",
+        "services": {
+          "title": "E.1 Fournir et Améliorer Nos Services",
+          "content": "Pour fournir les services de gestion financière que vous demandez, traiter les transactions, faciliter les paiements, gérer les factures, traiter la paie, fournir un support technique et améliorer notre plateforme."
+        },
+        "security": {
+          "title": "E.2 Authentification et Sécurité",
+          "content": "Pour vérifier votre identité, sécuriser votre compte, prévenir la fraude et assurer la sécurité de notre plateforme."
+        },
+        "communications": {
+          "title": "E.3 Communications",
+          "content": "Pour communiquer avec vous concernant votre compte, fournir un support client, envoyer des mises à jour de service et, avec votre consentement, envoyer des communications marketing."
+        },
+        "compliance": {
+          "title": "E.4 Conformité Légale",
+          "content": "Pour respecter nos obligations légales, incluant les réglementations anti-blanchiment d'argent, les exigences de déclaration fiscale et autres réglementations des services financiers."
+        },
+        "analytics": {
+          "title": "E.5 Analyses et Améliorations",
+          "content": "Pour analyser les modèles d'utilisation, résoudre les problèmes techniques et développer de nouvelles fonctionnalités et services."
+        }
+      },
+      "sharing": {
+        "title": "F. Partage et Divulgation d'Informations",
+        "content": "Nous pouvons partager vos informations avec les catégories de destinataires suivantes :",
+        "providers": {
+          "title": "F.1 Fournisseurs de Services",
+          "content": "Fournisseurs de services tiers qui nous aident à livrer nos services, incluant les processeurs de paiement (Stripe, Flutterwave, DLocal, Wise, PayPal), fournisseurs d'hébergement, services de support client et fournisseurs d'analyses."
+        },
+        "partners": {
+          "title": "F.2 Partenaires Financiers",
+          "content": "Banques et institutions financières nécessaires pour traiter les transactions, faciliter les paiements et fournir des services d'affacturage de factures."
+        },
+        "authorities": {
+          "title": "F.3 Autorités Légales et Réglementaires",
+          "content": "Autorités gouvernementales, forces de l'ordre et autres tiers lorsque requis par la loi, pour se conformer aux processus légaux ou pour protéger nos droits."
+        },
+        "transfers": {
+          "title": "F.4 Transferts Commerciaux",
+          "content": "En relation avec toute fusion, acquisition ou vente d'actifs de l'entreprise, vos informations peuvent être transférées comme un actif commercial."
+        },
+        "consent": {
+          "title": "F.5 Avec Votre Consentement",
+          "content": "Nous pouvons partager vos informations avec d'autres tiers lorsque vous avez donné votre consentement pour le faire."
+        }
+      },
+      "rights": {
+        "title": "G. Vos Choix et Droits",
+        "content": "Selon votre juridiction, vous pouvez avoir les droits suivants concernant vos informations personnelles :",
+        "access": {
+          "title": "G.1 Accès et Portabilité",
+          "content": "Vous pouvez demander l'accès à vos informations personnelles et recevoir une copie dans un format structuré et couramment utilisé."
+        },
+        "correction": {
+          "title": "G.2 Correction",
+          "content": "Vous pouvez demander que nous corrigions des informations personnelles inexactes ou incomplètes."
+        },
+        "deletion": {
+          "title": "G.3 Suppression",
+          "content": "Vous pouvez demander que nous supprimions vos informations personnelles, sous réserve de certaines exceptions."
+        },
+        "objection": {
+          "title": "G.4 Objection et Restriction",
+          "content": "Vous pouvez vous opposer ou demander la restriction du traitement de vos informations personnelles."
+        },
+        "withdraw": {
+          "title": "G.5 Retirer le Consentement",
+          "content": "Lorsque nous nous appuyons sur votre consentement pour traiter vos informations personnelles, vous pouvez retirer votre consentement à tout moment."
+        },
+        "exercise": {
+          "title": "G.6 Comment Exercer Vos Droits",
+          "content": "Pour exercer vos droits, veuillez nous contacter à support@dottapps.com Nous pouvons avoir besoin de vérifier votre identité avant de satisfaire votre demande."
+        }
+      },
+      "security": {
+        "title": "H. Sécurité des Données",
+        "content": "Nous mettons en œuvre des mesures techniques et organisationnelles appropriées pour protéger vos informations personnelles :",
+        "measures": {
+          "title": "H.1 Mesures de Sécurité",
+          "content": "Nous utilisons des mesures de sécurité standard de l'industrie incluant le chiffrement, les contrôles d'accès, les pare-feu et des évaluations de sécurité régulières."
+        },
+        "payment": {
+          "title": "H.2 Informations de Paiement",
+          "content": "Les informations de paiement sont traitées en conformité avec la Norme de Sécurité des Données de l'Industrie des Cartes de Paiement (PCI DSS)."
+        },
+        "access": {
+          "title": "H.3 Accès des Employés",
+          "content": "Nous restreignons l'accès des employés aux informations personnelles à ceux qui en ont besoin pour accomplir leurs fonctions professionnelles."
+        },
+        "breach": {
+          "title": "H.4 Procédures de Violation de Données",
+          "content": "Nous avons des procédures en place pour répondre aux violations suspectes de sécurité des données et vous notifierons ainsi que les régulateurs applicables des violations comme requis par la loi."
+        },
+        "tax": {
+          "title": "H.5 Sécurité des Données Fiscales",
+          "content": "Les taux et paramètres fiscaux que vous saisissez sont chiffrés et stockés de manière sécurisée. Les suggestions fiscales alimentées par l'IA sont traitées sans stocker vos requêtes spécifiques. Nous ne partageons pas vos données de configuration fiscale avec des tiers sauf si nécessaire pour fournir nos services ou comme requis par la loi. Vous restez responsable de l'exactitude de toutes les informations fiscales saisies dans notre système."
+        }
+      },
+      "retention": {
+        "title": "I. Rétention des Données",
+        "content": "Nous conservons vos informations personnelles aussi longtemps que nécessaire pour fournir nos services et à des fins commerciales légitimes, telles que maintenir des registres commerciaux, respecter les obligations légales, résoudre les litiges et faire respecter nos accords. Lorsque nous n'avons plus besoin de vos informations personnelles, nous les supprimerons de manière sécurisée ou les anonymiserons."
+      },
+      "transfers": {
+        "title": "J. Transferts Internationaux de Données",
+        "content": "Vos informations peuvent être transférées et traitées dans des pays autres que le pays où vous vivez, incluant les États-Unis, le Rwanda et d'autres pays où Dott LLC ou ses fournisseurs de services opèrent. Ces pays peuvent avoir des lois de protection des données différentes des lois de votre pays. Nous mettons en œuvre des garanties appropriées pour protéger vos informations lors de transferts internationaux, telles que des clauses contractuelles standard approuvées par les autorités de protection des données pertinentes."
+      },
+      "children": {
+        "title": "K. Confidentialité des Enfants",
+        "content": "Nos services ne s'adressent pas aux enfants de moins de 18 ans. Nous ne collectons pas sciemment d'informations personnelles d'enfants. Si vous êtes parent ou tuteur et croyez que votre enfant nous a fourni des informations personnelles, veuillez nous contacter afin que nous puissions supprimer les informations."
+      },
+      "cookies": {
+        "title": "L. Cookies et Technologies Similaires",
+        "content": "Nous utilisons des cookies et technologies similaires pour collecter des informations sur la façon dont vous interagissez avec nos services, nous souvenir de vos préférences et optimiser votre expérience. Vous pouvez gérer vos préférences de cookies via les paramètres de votre navigateur.",
+        "types": {
+          "title": "L.1 Types de Cookies que Nous Utilisons",
+          "content": "Cookies essentiels (nécessaires pour la fonctionnalité de nos services), Cookies analytiques (pour comprendre comment les utilisateurs interagissent avec nos services) et Cookies marketing (pour fournir des publicités pertinentes)."
+        },
+        "choices": {
+          "title": "L.2 Vos Choix de Cookies",
+          "content": "La plupart des navigateurs web vous permettent de contrôler les cookies via leurs paramètres. Cependant, si vous rejetez certains cookies, vous pourriez ne pas pouvoir utiliser toutes les fonctionnalités de nos services."
+        }
+      },
+      "ai": {
+        "title": "M. IA et Traitement Automatisé",
+        "content": "Nous utilisons l'intelligence artificielle et des systèmes automatisés pour améliorer nos services et fournir des fonctionnalités comme les suggestions de taux fiscaux, les insights financiers et la détection de fraude.",
+        "features": {
+          "title": "M.1 Fonctionnalités Alimentées par l'IA",
+          "content": "Nos fonctionnalités IA analysent votre emplacement et type d'entreprise pour suggérer des taux fiscaux et fournir d'autres insights commerciaux. Ces suggestions sont générées basées sur des informations publiquement disponibles et des règles fiscales générales."
+        },
+        "advice": {
+          "title": "M.2 Pas de Conseil Professionnel",
+          "content": "Les suggestions générées par l'IA, incluant les recommandations de taux fiscaux, sont fournies à des fins informatives seulement et ne constituent pas des conseils fiscaux, légaux ou financiers professionnels. Vous devriez vérifier indépendamment toutes les suggestions avant de les utiliser."
+        },
+        "review": {
+          "title": "M.3 Révision Humaine",
+          "content": "Les décisions automatisées significatives qui peuvent avoir des effets légaux ou similairement significatifs sur vous sont sujettes à révision humaine sur demande."
+        }
+      },
+      "changes": {
+        "title": "N. Modifications de Cette Politique de Confidentialité",
+        "content": "Nous pouvons mettre à jour cette politique de confidentialité de temps à autre pour refléter des changements dans nos pratiques ou exigences légales. Nous vous notifierons de tout changement matériel en publiant la nouvelle version sur notre site web et en mettant à jour la date d'entrée en vigueur. Nous vous encourageons à réviser notre politique de confidentialité périodiquement."
+      },
+      "contact": {
+        "title": "O. Nous Contacter",
+        "content": "Si vous avez des questions sur cette Politique de Confidentialité ou nos pratiques de données, ou si vous souhaitez exercer vos droits concernant vos informations personnelles, veuillez nous contacter à :"
+      }
+    },
+    "contactInfo": {
+      "company": "Dott LLC",
+      "address": "800 N King Street",
+      "suite": "Suite 304 #2797",
+      "city": "Wilmington, DE 19801",
+      "country": "États-Unis",
+      "email": "E-mail : support@dottapps.com",
+      "website": "Site web : www.dottapps.com"
+    }
+  },
+  "cookiePolicy": {
+    "title": "Cookie Policy",
+    "effectiveDate": "Effective as of: {{date}}",
+    "navigation": {
+      "backToHome": "Back to Home"
+    },
+    "introduction": "This Cookie Policy explains how Dott LLC uses cookies and similar technologies to recognize you when you visit our website and use our services. It explains what these technologies are and why we use them, as well as your rights to control our use of them.",
+    "sections": {
+      "whatAreCookies": {
+        "title": "What are cookies?",
+        "content": "Cookies are small data files that are placed on your computer or mobile device when you visit a website. Cookies are widely used by website owners in order to make their websites work, or to work more efficiently, as well as to provide reporting information."
+      },
+      "howWeUseCookies": {
+        "title": "How we use cookies",
+        "content": "We use cookies for several reasons. Some cookies are required for technical reasons in order for our website to operate, and we refer to these as \"essential\" or \"strictly necessary\" cookies. Other cookies enable us to track and target the interests of our users to enhance the experience on our website."
+      },
+      "typesOfCookies": {
+        "title": "Types of cookies we use",
+        "content": "The specific types of first and third party cookies served through our website and the purposes they perform are described below:",
+        "essential": {
+          "title": "Essential cookies",
+          "content": "These cookies are strictly necessary to provide you with services available through our website and to use some of its features, such as access to secure areas."
+        },
+        "functional": {
+          "title": "Functional cookies",
+          "content": "These cookies enable the website to provide enhanced functionality and personalization. They may be set by us or by third party providers whose services we have added to our pages."
+        },
+        "analytics": {
+          "title": "Analytics cookies",
+          "content": "These cookies allow us to count visits and traffic sources, so we can measure and improve the performance of our site. They help us know which pages are the most and least popular and see how visitors move around the site."
+        },
+        "marketing": {
+          "title": "Marketing cookies",
+          "content": "These cookies may be set through our site by our advertising partners. They may be used by those companies to build a profile of your interests and show you relevant adverts on other sites."
+        }
+      },
+      "managingCookies": {
+        "title": "Managing cookies",
+        "content": "Most web browsers allow you to control cookies through their settings preferences. However, if you limit the ability of websites to set cookies, you may worsen your overall user experience, since it will no longer be personalized to you. It may also stop you from saving customized settings like login information."
+      },
+      "thirdPartyCookies": {
+        "title": "Third-party cookies",
+        "content": "In addition to our own cookies, we may also use various third-party cookies to report usage statistics of our service and deliver advertisements on and through our service."
+      },
+      "changes": {
+        "title": "Changes to this Cookie Policy",
+        "content": "We may update this Cookie Policy from time to time in order to reflect changes to the cookies we use or for other operational, legal or regulatory reasons. Please therefore revisit this Cookie Policy regularly to stay informed about our use of cookies and related technologies."
+      },
+      "contact": {
+        "title": "Contact us",
+        "content": "If you have any questions about our use of cookies or other technologies, please contact us."
+      }
+    },
+    "contactInfo": {
+      "company": "Dott LLC",
+      "email": "Email: support@dottapps.com",
+      "website": "Website: www.dottapps.com"
+    }
+  },
   "simplicity": "Simplicité",
   "innovation": "Innovation",
   "empowerment": "Autonomisation",
@@ -750,88 +1120,6 @@
     "uptimeTitle": "99.9% de Disponibilité",
     "uptimeDesc": "Toujours disponible"
   },
-  "about": {
-    "backToHome": "Retour à l'Accueil",
-    "hero": {
-      "title": "Donner aux entreprises les moyens de",
-      "subtitle": "prospérer mondialement",
-      "description": "Nous construisons le système d'exploitation pour les petites entreprises modernes, rendant les outils de niveau entreprise accessibles à tous."
-    },
-    "story": {
-      "title": "Notre Histoire",
-      "paragraph1": "Dott est né d'une simple observation : les petites entreprises se noyaient dans la complexité. Plusieurs outils, des données déconnectées et des processus conçus pour les entreprises freinaient les entrepreneurs du monde entier.",
-      "paragraph2": "Fondée en 2023, nous avons entrepris de construire quelque chose de différent. Une plateforme qui comprend les défis uniques des petites entreprises, en particulier sur les marchés émergents où les solutions traditionnelles échouent.",
-      "paragraph3": "Aujourd'hui, nous sommes fiers de servir des entreprises dans le monde entier. Mais nous ne faisons que commencer."
-    },
-    "timeline": {
-      "beginning": {
-        "title": "Le Début",
-        "description": "Identification du besoin d'outils de gestion d'entreprise unifiés pour les PME"
-      },
-      "launch": {
-        "title": "Lancement du Produit",
-        "description": "Lancement de la plateforme principale avec gestion financière et des stocks"
-      },
-      "expansion": {
-        "title": "Expansion Mondiale",
-        "description": "Extension à plus de 25 pays avec des fonctionnalités localisées"
-      },
-      "ai": {
-        "title": "Intégration IA",
-        "description": "Introduction d'insights intelligents et d'automatisation"
-      }
-    },
-    "mission": {
-      "title": "Notre Mission",
-      "description": "Démocratiser la gestion d'entreprise en fournissant aux petites entreprises des outils puissants et abordables qui simplifient les opérations et permettent la croissance, quel que soit l'emplacement ou l'expertise technique."
-    },
-    "vision": {
-      "title": "Notre Vision",
-      "description": "Un monde où chaque petite entreprise a accès à la même qualité d'outils de gestion que les entreprises Fortune 500, permettant à un million d'entreprises de prospérer d'ici 2030."
-    },
-    "journey": {
-      "title": "Notre Parcours"
-    },
-    "values": {
-      "title": "Nos Valeurs",
-      "subtitle": "Les principes qui guident chaque décision que nous prenons",
-      "simplicity": {
-        "title": "La Simplicité d'Abord",
-        "description": "Les opérations commerciales complexes simplifiées grâce à un design intuitif"
-      },
-      "innovation": {
-        "title": "Innovation Continue",
-        "description": "Évolution avec les besoins changeants des entreprises modernes"
-      },
-      "success": {
-        "title": "Succès Client",
-        "description": "Votre croissance est notre succès - nous gagnons quand vous gagnez"
-      },
-      "empowerment": {
-        "title": "Autonomisation Mondiale",
-        "description": "Briser les barrières pour les entreprises du monde entier"
-      }
-    },
-    "differentiators": {
-      "title": "Ce qui Rend Dott Différent",
-      "unified": {
-        "title": "Plateforme Unifiée",
-        "description": "Tous vos outils d'entreprise en un seul endroit"
-      },
-      "global": {
-        "title": "Global, mais Local",
-        "description": "Normes internationales avec conformité locale"
-      },
-      "security": {
-        "title": "Sécurité d'Entreprise",
-        "description": "Protection de niveau bancaire pour vos données"
-      },
-      "insights": {
-        "title": "Insights Intelligents",
-        "description": "Analyses alimentées par IA pour de meilleures décisions"
-      }
-    }
-  },
   "blog": {
     "hero": {
       "title": "Blog d'Entreprise Dott",
@@ -969,7 +1257,6 @@
         "content": "Accédez à toute votre entreprise depuis votre smartphone ou tablette. Notre application mobile est conçue pour vous donner un contrôle total que vous soyez au bureau, sur le terrain ou en voyage. Avec des capacités hors ligne, vous pouvez continuer à travailler même sans connexion internet."
       },
       "features": {
-        "heading": "Fonctionnalités Mobiles Clés",
         "1": "Suivi des ventes et de l'inventaire en temps réel",
         "2": "Créer et envoyer des factures instantanément",
         "3": "Accepter les paiements sur place",
@@ -977,7 +1264,8 @@
         "5": "Gérer les employés et les feuilles de temps",
         "6": "Scanner les codes-barres avec votre caméra",
         "7": "Fonctionne hors ligne avec synchronisation automatique",
-        "8": "Notifications push pour les événements importants"
+        "8": "Notifications push pour les événements importants",
+        "heading": "Fonctionnalités Mobiles Clés"
       },
       "benefits": {
         "heading": "Avantages pour Votre Entreprise",
@@ -1000,7 +1288,6 @@
         "content": "Transformez n'importe quel appareil en système de point de vente puissant. Notre PDV est conçu pour la vitesse et la simplicité, vous permettant de traiter les ventes rapidement tout en maintenant un suivi précis de l'inventaire. Le scanner de codes-barres intégré rend le checkout ultra rapide."
       },
       "features": {
-        "heading": "Fonctionnalités PDV Avancées",
         "1": "Scan de codes-barres avec caméra ou scanner Bluetooth",
         "2": "Support pour tous les types de paiement y compris l'argent mobile",
         "3": "Mises à jour automatiques de l'inventaire à chaque vente",
@@ -1008,7 +1295,8 @@
         "5": "Paiements fractionnés et paiements partiels",
         "6": "Gestion des retours et échanges",
         "7": "Mode hors ligne avec gestion de file d'attente",
-        "8": "Suivi d'inventaire multi-emplacements"
+        "8": "Suivi d'inventaire multi-emplacements",
+        "heading": "Fonctionnalités PDV Avancées"
       },
       "barcode": {
         "heading": "Système de Codes-Barres Puissant",
@@ -1031,7 +1319,6 @@
         "content": "Notre IA analyse vos données d'entreprise pour fournir des insights et recommandations actionnables. Obtenez des analyses prédictives, prévisions de demande et alertes intelligentes qui vous aident à prendre de meilleures décisions d'entreprise."
       },
       "features": {
-        "heading": "Fonctionnalités Alimentées par l'IA",
         "1": "Prévision de la demande basée sur les données historiques",
         "2": "Recommandations d'optimisation d'inventaire",
         "3": "Analyse des produits les plus vendus",
@@ -1039,7 +1326,8 @@
         "5": "Suggestions d'optimisation des prix",
         "6": "Détection des tendances saisonnières",
         "7": "Prédictions de flux de trésorerie",
-        "8": "Rapports financiers automatisés"
+        "8": "Rapports financiers automatisés",
+        "heading": "Fonctionnalités Alimentées par l'IA"
       },
       "benefits": {
         "heading": "Comment l'IA Aide Votre Entreprise",
@@ -1062,7 +1350,6 @@
         "content": "Assurez un suivi précis du temps avec pointage GPS d'entrée/sortie. Créez des limites virtuelles autour des sites de travail et recevez des notifications instantanées quand les employés entrent ou sortent des zones désignées."
       },
       "features": {
-        "heading": "Fonctionnalités de Gestion de Localisation",
         "1": "Pointage GPS d'entrée/sortie avec vérification de localisation",
         "2": "Créer des zones de géorepérage illimitées",
         "3": "Localisation temps réel des employés pendant les heures de travail",
@@ -1070,7 +1357,8 @@
         "5": "Suivi kilométrique pour les chauffeurs-livreurs",
         "6": "Vérification de visite de site pour les équipes terrain",
         "7": "Axé sur la confidentialité avec consentement des employés",
-        "8": "Historique détaillé de localisation et rapports"
+        "8": "Historique détaillé de localisation et rapports",
+        "heading": "Fonctionnalités de Gestion de Localisation"
       },
       "compliance": {
         "heading": "Confidentialité et Conformité",
@@ -1093,14 +1381,13 @@
         "content": "Brisez les barrières de paiement et atteignez les clients partout. L'argent mobile est la méthode de paiement préférée pour des milliards de personnes mondialement, surtout sur les marchés émergents. Avec Dott, vous pouvez accepter les paiements des utilisateurs M-Pesa aujourd'hui, avec beaucoup d'autres fournisseurs d'argent mobile bientôt disponibles."
       },
       "current": {
-        "heading": "Actuellement Disponible",
         "1": "M-Pesa (Kenya) - Plus de 30 millions d'utilisateurs actifs",
         "2": "Cartes de crédit et débit (Visa, Mastercard, Amex)",
         "3": "Virements bancaires et paiements ACH",
-        "4": "Paiements en espèces (suivis dans le système)"
+        "4": "Paiements en espèces (suivis dans le système)",
+        "heading": "Actuellement Disponible"
       },
       "coming": {
-        "heading": "Bientôt Disponible",
         "1": "MTN Mobile Money - 180+ millions d'utilisateurs à travers l'Afrique",
         "2": "Airtel Money - 125+ millions d'utilisateurs en Afrique et Asie",
         "3": "Orange Money - 70+ millions d'utilisateurs en Afrique et Moyen-Orient",
@@ -1108,7 +1395,8 @@
         "5": "Paytm (Inde) - 350+ millions d'utilisateurs",
         "6": "Pix (Brésil) - 140+ millions d'utilisateurs",
         "7": "Mercado Pago - 80+ millions d'utilisateurs en Amérique Latine",
-        "8": "bKash (Bangladesh), OVO (Indonésie), et plus"
+        "8": "bKash (Bangladesh), OVO (Indonésie), et plus",
+        "heading": "Bientôt Disponible"
       },
       "benefits": {
         "heading": "Pourquoi l'Argent Mobile Compte",
@@ -1131,7 +1419,6 @@
         "content": "Connectez-vous avec vos clients sur la plateforme de messagerie la plus populaire au monde. Créez des catalogues de produits époustouflants, automatisez la livraison de factures et reçus, fournissez un support client instantané et transformez les conversations en ventes. Avec plus de 2 milliards d'utilisateurs mondialement, WhatsApp Business est essentiel pour l'engagement client moderne."
       },
       "features": {
-        "heading": "Fonctionnalités Clés WhatsApp Business",
         "1": "Catalogue professionnel avec photos et descriptions de produits",
         "2": "Livraison automatisée de factures et reçus aux clients",
         "3": "Support client instantané et chat en direct",
@@ -1139,7 +1426,8 @@
         "5": "Gestion de commandes directement via WhatsApp",
         "6": "Confirmations de paiement et notifications de transaction",
         "7": "Réponses rapides et réponses automatisées",
-        "8": "Synchronisation des données client avec vos contacts d'entreprise"
+        "8": "Synchronisation des données client avec vos contacts d'entreprise",
+        "heading": "Fonctionnalités Clés WhatsApp Business"
       },
       "benefits": {
         "heading": "Avantages pour Votre Entreprise",
@@ -1239,6 +1527,97 @@
     "amazon": {
       "name": "Amazon Seller",
       "description": "Gérez votre activité Amazon"
+    }
+  },
+  "termsOfService": {
+    "title": "Conditions d'Utilisation",
+    "effectiveDate": "En vigueur à compter du : {{date}}",
+    "introduction": "Bienvenue sur Dott, un service fourni par Dott LLC. Ce Contrat de Conditions d'Utilisation (\"Contrat\") régit votre utilisation du site web Dott, des applications mobiles et de tous les services connexes offerts par Dott LLC. En accédant ou en utilisant notre service, vous reconnaissez avoir lu, compris et accepté d'être lié par ces conditions.",
+    "navigation": {
+      "backToDashboard": "Retour au Tableau de Bord",
+      "backToHome": "Retour à l'Accueil"
+    },
+    "sections": {
+      "acceptance": {
+        "title": "1. Acceptation des Conditions",
+        "content": "En vous inscrivant et/ou en utilisant Dott de quelque manière que ce soit, y compris mais sans s'y limiter à visiter ou naviguer sur le site web ou télécharger l'application, vous acceptez d'être lié par ce Contrat, toutes les lois et réglementations applicables, et acceptez d'être responsable de la conformité à toute loi locale applicable. Si vous n'êtes pas d'accord avec l'une de ces conditions, vous êtes interdit d'utiliser ou d'accéder à Dott. Les matériaux contenus dans Dott sont protégés par les lois applicables sur les droits d'auteur et les marques de commerce."
+      },
+      "service": {
+        "title": "2. Description du Service",
+        "content": "Dott est une plateforme complète de gestion financière qui fournit aux entreprises des outils pour la comptabilité, la paie, le traitement des paiements, la facturation et les insights financiers. Nos services incluent l'accès par abonnement à notre logiciel, les capacités de traitement des paiements, les services de paie et l'affacturage de factures dans certaines régions. Les fonctionnalités spécifiques disponibles pour vous peuvent dépendre de votre niveau d'abonnement, de votre emplacement géographique et des lois et réglementations applicables."
+      },
+      "accounts": {
+        "title": "3. Comptes Utilisateur",
+        "content": "Pour accéder à la plupart des fonctionnalités de Dott, vous devez vous inscrire pour un compte. Vous acceptez de fournir des informations précises, actuelles et complètes pendant le processus d'inscription et de mettre à jour ces informations pour les maintenir précises, actuelles et complètes. Vous êtes responsable de protéger votre mot de passe et de toutes les activités qui se produisent sous votre compte. Vous acceptez de notifier Dott LLC immédiatement de toute utilisation non autorisée de votre compte. Dott LLC ne peut pas et ne sera pas responsable de toute perte ou dommage résultant de votre échec à respecter les exigences ci-dessus."
+      },
+      "payments": {
+        "title": "4. Abonnement et Paiements",
+        "content": "Dott offre divers plans d'abonnement et services de paiement. En vous abonnant à nos services, vous acceptez de payer les frais applicables lorsqu'ils deviennent dus. Les frais d'abonnement sont facturés à l'avance sur une base mensuelle ou annuelle selon votre cycle de facturation sélectionné. Lorsque vous vous inscrivez à un service payant, vous devez fournir des informations précises et complètes pour une méthode de paiement valide que vous êtes autorisé à utiliser.",
+        "recurring": {
+          "title": "4.1 Facturation Récurrente",
+          "content": "En vous abonnant aux services Dott, vous nous autorisez à facturer la méthode de paiement que vous nous fournissez de manière récurrente. Si nous ne pouvons pas facturer votre méthode de paiement pour quelque raison que ce soit, nous nous réservons le droit de résilier ou suspendre votre accès aux services payants."
+        },
+        "processing": {
+          "title": "4.2 Traitement des Paiements",
+          "content": "Dott utilise des processeurs de paiement tiers incluant Stripe, Flutterwave, DLocal, Wise, PayPal et d'autres pour traiter les transactions. Votre utilisation de ces services de paiement est soumise aux conditions de service et à la politique de confidentialité du processeur de paiement applicable. Dott facture des frais de transaction pour les services de traitement des paiements comme décrit sur notre page de tarification."
+        },
+        "refunds": {
+          "title": "4.3 Remboursements",
+          "content": "Tous les frais ne sont pas remboursables sauf indication contraire ou si requis par la loi applicable. Si vous croyez avoir été facturé par erreur, veuillez contacter notre équipe de support client."
+        }
+      },
+      "conduct": {
+        "title": "5. Conduite Utilisateur",
+        "content": "Vous acceptez d'utiliser Dott uniquement à des fins légales et conformément à ce Contrat. Vous acceptez de ne pas utiliser Dott :",
+        "violations": {
+          "law": "De toute manière qui viole toute loi ou réglementation fédérale, étatique, locale ou internationale applicable.",
+          "material": "Pour transmettre tout matériel qui est illégal, menaçant, abusif, diffamatoire, obscène ou autrement répréhensible.",
+          "impersonation": "Pour usurper l'identité ou tenter d'usurper l'identité de Dott LLC, d'un employé de Dott LLC, d'un autre utilisateur ou de toute autre personne ou entité.",
+          "interference": "Pour s'engager dans toute activité qui interfère avec ou perturbe les services (ou les serveurs et réseaux connectés aux services).",
+          "security": "Pour tenter de contourner toute mesure de sécurité mise en œuvre par Dott LLC.",
+          "financial": "Pour le blanchiment d'argent, le financement du terrorisme ou toute autre activité financière illégale."
+        }
+      },
+      "financial": {
+        "title": "6. Services de Paiement et Financiers",
+        "content": "Dott permet aux utilisateurs de traiter les paiements, gérer la paie et accéder aux services financiers via divers fournisseurs tiers. En utilisant ces services, vous acceptez de vous conformer à toutes les lois et réglementations applicables, y compris celles liées aux transactions financières, aux exigences anti-blanchiment d'argent et à la confidentialité des données.",
+        "processing": {
+          "title": "6.1 Traitement des Paiements",
+          "content": "L'utilisation de nos fonctionnalités de traitement des paiements est soumise aux conditions de service de nos partenaires de paiement. Vous êtes responsable de vous assurer que toutes les informations de paiement fournies sont précises et que vous êtes autorisé à utiliser les méthodes de paiement que vous fournissez."
+        },
+        "factoring": {
+          "title": "6.2 Affacturage de Factures",
+          "content": "Où disponible, Dott offre des services d'affacturage de factures soumis à des conditions supplémentaires et des exigences d'éligibilité. Ces services ne sont actuellement disponibles qu'aux États-Unis et au Canada. En utilisant nos services d'affacturage de factures, vous autorisez Dott LLC à vérifier vos informations commerciales, votre historique de crédit et d'autres détails pertinents."
+        },
+        "international": {
+          "title": "6.3 Transactions Internationales",
+          "content": "Pour les transactions internationales, vous reconnaissez que des taux de conversion de devises et des frais supplémentaires peuvent s'appliquer. Dott LLC n'est pas responsable des frais facturés par votre institution financière ou tout processeur de paiement tiers."
+        }
+      },
+      "data": {
+        "title": "7. Données et Contenu",
+        "content": "Vous conservez tous les droits sur vos données téléchargées sur Dott. En utilisant nos services, vous accordez à Dott LLC une licence non exclusive, mondiale et libre de redevances pour utiliser, traiter et afficher vos données uniquement dans le but de fournir et d'améliorer nos services. Nous maintiendrons des garanties administratives, physiques et techniques appropriées pour protéger vos données.",
+        "processing": {
+          "title": "7.1 Traitement des Données",
+          "content": "Dans le cadre de la fourniture de nos services, Dott traite les données financières et personnelles conformément à notre Politique de Confidentialité. Vous reconnaissez que Dott peut utiliser des fournisseurs de services tiers pour traiter les données en notre nom."
+        },
+        "security": {
+          "title": "7.2 Sécurité des Données",
+          "content": "Vous êtes responsable de maintenir la confidentialité des informations de votre compte et de restreindre l'accès à votre ordinateur ou appareil. Vous acceptez d'accepter la responsabilité de toutes les activités qui se produisent sous votre compte."
+        }
+      },
+      "contact": {
+        "title": "21. Informations de Contact",
+        "content": "Si vous avez des questions sur ce Contrat, veuillez nous contacter à :"
+      }
+    },
+    "contactInfo": {
+      "company": "Dott LLC",
+      "address": "800 N King Street",
+      "suite": "Suite 304 #2797",
+      "city": "Wilmington, DE 19801",
+      "country": "États-Unis",
+      "email": "E-mail : support@dottapps.com"
     }
   }
 }

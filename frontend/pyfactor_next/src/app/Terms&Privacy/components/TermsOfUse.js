@@ -9,7 +9,7 @@ import i18nInstance from '@/i18n';
 
 const TermsOfUseContent = () => {
   const router = useRouter();
-  const { t } = useTranslation('termsOfService');
+  const { t } = useTranslation();
   const [fromDashboard, setFromDashboard] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   
@@ -93,7 +93,7 @@ const TermsOfUseContent = () => {
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
-          {fromDashboard ? t('navigation.backToDashboard') : t('navigation.backToHome')}
+          {fromDashboard ? t('termsOfService.navigation.backToDashboard') : t('termsOfService.navigation.backToHome')}
         </button>
         
         <div 
@@ -112,112 +112,112 @@ const TermsOfUseContent = () => {
       
       <div className="mt-4 mb-12 bg-white rounded-lg shadow-lg p-6 sm:p-10">
         <h1 className={`text-center font-bold ${isMobile ? 'text-2xl' : 'text-3xl'} mb-3`}>
-          {t('title')}
+          {t('termsOfService.title')}
         </h1>
 
         <p className="text-center text-gray-600 mb-6">
-          {t('effectiveDate', { date: new Date().toLocaleDateString() })}
+          {t('termsOfService.effectiveDate', { date: new Date().toLocaleDateString() })}
         </p>
 
         <hr className="my-6 border-t border-gray-200" />
 
         <SectionContent>
-          {t('introduction')}
+          {t('termsOfService.introduction')}
         </SectionContent>
 
-        <SectionTitle>{t('sections.acceptance.title')}</SectionTitle>
+        <SectionTitle>{t('termsOfService.sections.acceptance.title')}</SectionTitle>
         <SectionContent>
-          {t('sections.acceptance.content')}
+          {t('termsOfService.sections.acceptance.content')}
         </SectionContent>
 
-        <SectionTitle>{t('sections.service.title')}</SectionTitle>
+        <SectionTitle>{t('termsOfService.sections.service.title')}</SectionTitle>
         <SectionContent>
-          {t('sections.service.content')}
+          {t('termsOfService.sections.service.content')}
         </SectionContent>
 
-        <SectionTitle>{t('sections.accounts.title')}</SectionTitle>
+        <SectionTitle>{t('termsOfService.sections.accounts.title')}</SectionTitle>
         <SectionContent>
-          {t('sections.accounts.content')}
+          {t('termsOfService.sections.accounts.content')}
         </SectionContent>
 
-        <SectionTitle>{t('sections.payments.title')}</SectionTitle>
+        <SectionTitle>{t('termsOfService.sections.payments.title')}</SectionTitle>
         <SectionContent>
-          {t('sections.payments.content')}
+          {t('termsOfService.sections.payments.content')}
         </SectionContent>
         
-        <SubsectionTitle>{t('sections.payments.recurring.title')}</SubsectionTitle>
+        <SubsectionTitle>{t('termsOfService.sections.payments.recurring.title')}</SubsectionTitle>
         <SectionContent>
-          {t('sections.payments.recurring.content')}
+          {t('termsOfService.sections.payments.recurring.content')}
         </SectionContent>
         
-        <SubsectionTitle>{t('sections.payments.processing.title')}</SubsectionTitle>
+        <SubsectionTitle>{t('termsOfService.sections.payments.processing.title')}</SubsectionTitle>
         <SectionContent>
-          {t('sections.payments.processing.content')}
+          {t('termsOfService.sections.payments.processing.content')}
         </SectionContent>
         
-        <SubsectionTitle>{t('sections.payments.refunds.title')}</SubsectionTitle>
+        <SubsectionTitle>{t('termsOfService.sections.payments.refunds.title')}</SubsectionTitle>
         <SectionContent>
-          {t('sections.payments.refunds.content')}
+          {t('termsOfService.sections.payments.refunds.content')}
         </SectionContent>
 
-        <SectionTitle>{t('sections.conduct.title')}</SectionTitle>
+        <SectionTitle>{t('termsOfService.sections.conduct.title')}</SectionTitle>
         <SectionContent>
-          {t('sections.conduct.content')}
+          {t('termsOfService.sections.conduct.content')}
         </SectionContent>
         <ul className="list-disc pl-8 mb-6">
           <li className="mb-2 text-gray-600">
-            {t('sections.conduct.violations.law')}
+            {t('termsOfService.sections.conduct.violations.law')}
           </li>
           <li className="mb-2 text-gray-600">
-            {t('sections.conduct.violations.material')}
+            {t('termsOfService.sections.conduct.violations.material')}
           </li>
           <li className="mb-2 text-gray-600">
-            {t('sections.conduct.violations.impersonation')}
+            {t('termsOfService.sections.conduct.violations.impersonation')}
           </li>
           <li className="mb-2 text-gray-600">
-            {t('sections.conduct.violations.interference')}
+            {t('termsOfService.sections.conduct.violations.interference')}
           </li>
           <li className="mb-2 text-gray-600">
-            {t('sections.conduct.violations.security')}
+            {t('termsOfService.sections.conduct.violations.security')}
           </li>
           <li className="mb-2 text-gray-600">
-            {t('sections.conduct.violations.financial')}
+            {t('termsOfService.sections.conduct.violations.financial')}
           </li>
         </ul>
 
-        <SectionTitle>{t('sections.financial.title')}</SectionTitle>
+        <SectionTitle>{t('termsOfService.sections.financial.title')}</SectionTitle>
         <SectionContent>
-          {t('sections.financial.content')}
+          {t('termsOfService.sections.financial.content')}
         </SectionContent>
         
-        <SubsectionTitle>{t('sections.financial.processing.title')}</SubsectionTitle>
+        <SubsectionTitle>{t('termsOfService.sections.financial.processing.title')}</SubsectionTitle>
         <SectionContent>
-          {t('sections.financial.processing.content')}
+          {t('termsOfService.sections.financial.processing.content')}
         </SectionContent>
         
-        <SubsectionTitle>{t('sections.financial.factoring.title')}</SubsectionTitle>
+        <SubsectionTitle>{t('termsOfService.sections.financial.factoring.title')}</SubsectionTitle>
         <SectionContent>
-          {t('sections.financial.factoring.content')}
+          {t('termsOfService.sections.financial.factoring.content')}
         </SectionContent>
         
-        <SubsectionTitle>{t('sections.financial.international.title')}</SubsectionTitle>
+        <SubsectionTitle>{t('termsOfService.sections.financial.international.title')}</SubsectionTitle>
         <SectionContent>
-          {t('sections.financial.international.content')}
+          {t('termsOfService.sections.financial.international.content')}
         </SectionContent>
 
-        <SectionTitle>{t('sections.data.title')}</SectionTitle>
+        <SectionTitle>{t('termsOfService.sections.data.title')}</SectionTitle>
         <SectionContent>
-          {t('sections.data.content')}
+          {t('termsOfService.sections.data.content')}
         </SectionContent>
         
-        <SubsectionTitle>{t('sections.data.processing.title')}</SubsectionTitle>
+        <SubsectionTitle>{t('termsOfService.sections.data.processing.title')}</SubsectionTitle>
         <SectionContent>
-          {t('sections.data.processing.content')}
+          {t('termsOfService.sections.data.processing.content')}
         </SectionContent>
         
-        <SubsectionTitle>{t('sections.data.security.title')}</SubsectionTitle>
+        <SubsectionTitle>{t('termsOfService.sections.data.security.title')}</SubsectionTitle>
         <SectionContent>
-          {t('sections.data.security.content')}
+          {t('termsOfService.sections.data.security.content')}
         </SectionContent>
 
         <SectionTitle>8. Intellectual Property</SectionTitle>
@@ -371,25 +371,25 @@ const TermsOfUseContent = () => {
           to the minimum extent necessary so that this Agreement will otherwise remain in full force and effect and enforceable.
         </SectionContent>
 
-        <SectionTitle>{t('sections.contact.title')}</SectionTitle>
+        <SectionTitle>{t('termsOfService.sections.contact.title')}</SectionTitle>
         <SectionContent>
-          {t('sections.contact.content')}
+          {t('termsOfService.sections.contact.content')}
         </SectionContent>
         
         <div className="pl-4 border-l-4 border-blue-700 mt-4 text-gray-700 italic">
           <address className="not-italic text-sm">
-            {t('contactInfo.company')}
+            {t('termsOfService.contactInfo.company')}
             <br />
-            {t('contactInfo.address')}
+            {t('termsOfService.contactInfo.address')}
             <br />
-            {t('contactInfo.suite')}
+            {t('termsOfService.contactInfo.suite')}
             <br />
-            {t('contactInfo.city')}
+            {t('termsOfService.contactInfo.city')}
             <br />
-            {t('contactInfo.country')}
+            {t('termsOfService.contactInfo.country')}
             <br />
             <br />
-            {t('contactInfo.email')}
+            {t('termsOfService.contactInfo.email')}
           </address>
         </div>
       </div>

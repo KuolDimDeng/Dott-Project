@@ -9,7 +9,7 @@ import i18nInstance from '@/i18n';
 
 const PrivacyPolicyContent = () => {
   const router = useRouter();
-  const { t } = useTranslation('privacyPolicy');
+  const { t } = useTranslation();
   const [fromDashboard, setFromDashboard] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -81,234 +81,234 @@ const PrivacyPolicyContent = () => {
 
   const privacySections = [
     {
-      title: t('sections.scope.title'),
-      content: t('sections.scope.content'),
+      title: t('privacyPolicy.sections.scope.title'),
+      content: t('privacyPolicy.sections.scope.content'),
     },
     {
-      title: t('sections.personalInfo.title'),
-      content: t('sections.personalInfo.content'),
+      title: t('privacyPolicy.sections.personalInfo.title'),
+      content: t('privacyPolicy.sections.personalInfo.content'),
       subsections: [
         {
-          title: t('sections.personalInfo.businessInfo.title'),
-          content: t('sections.personalInfo.businessInfo.content')
+          title: t('privacyPolicy.sections.personalInfo.businessInfo.title'),
+          content: t('privacyPolicy.sections.personalInfo.businessInfo.content')
         },
         {
-          title: t('sections.personalInfo.individualInfo.title'),
-          content: t('sections.personalInfo.individualInfo.content')
+          title: t('privacyPolicy.sections.personalInfo.individualInfo.title'),
+          content: t('privacyPolicy.sections.personalInfo.individualInfo.content')
         }
       ]
     },
     {
-      title: t('sections.categories.title'),
-      content: t('sections.categories.content'),
+      title: t('privacyPolicy.sections.categories.title'),
+      content: t('privacyPolicy.sections.categories.content'),
       subsections: [
         {
-          title: t('sections.categories.identification.title'),
-          content: t('sections.categories.identification.content')
+          title: t('privacyPolicy.sections.categories.identification.title'),
+          content: t('privacyPolicy.sections.categories.identification.content')
         },
         {
-          title: t('sections.categories.financial.title'),
-          content: t('sections.categories.financial.content')
+          title: t('privacyPolicy.sections.categories.financial.title'),
+          content: t('privacyPolicy.sections.categories.financial.content')
         },
         {
-          title: t('sections.categories.employee.title'),
-          content: t('sections.categories.employee.content')
+          title: t('privacyPolicy.sections.categories.employee.title'),
+          content: t('privacyPolicy.sections.categories.employee.content')
         },
         {
-          title: t('sections.categories.technical.title'),
-          content: t('sections.categories.technical.content')
+          title: t('privacyPolicy.sections.categories.technical.title'),
+          content: t('privacyPolicy.sections.categories.technical.content')
         },
         {
-          title: t('sections.categories.customer.title'),
-          content: t('sections.categories.customer.content')
+          title: t('privacyPolicy.sections.categories.customer.title'),
+          content: t('privacyPolicy.sections.categories.customer.content')
         },
         {
-          title: t('sections.categories.tax.title'),
-          content: t('sections.categories.tax.content')
+          title: t('privacyPolicy.sections.categories.tax.title'),
+          content: t('privacyPolicy.sections.categories.tax.content')
         }
       ]
     },
     {
-      title: t('sections.collection.title'),
-      content: t('sections.collection.content'),
+      title: t('privacyPolicy.sections.collection.title'),
+      content: t('privacyPolicy.sections.collection.content'),
       subsections: [
         {
-          title: t('sections.collection.direct.title'),
-          content: t('sections.collection.direct.content')
+          title: t('privacyPolicy.sections.collection.direct.title'),
+          content: t('privacyPolicy.sections.collection.direct.content')
         },
         {
-          title: t('sections.collection.automated.title'),
-          content: t('sections.collection.automated.content')
+          title: t('privacyPolicy.sections.collection.automated.title'),
+          content: t('privacyPolicy.sections.collection.automated.content')
         },
         {
-          title: t('sections.collection.thirdParty.title'),
-          content: t('sections.collection.thirdParty.content')
+          title: t('privacyPolicy.sections.collection.thirdParty.title'),
+          content: t('privacyPolicy.sections.collection.thirdParty.content')
         },
         {
-          title: t('sections.collection.financial.title'),
-          content: t('sections.collection.financial.content')
+          title: t('privacyPolicy.sections.collection.financial.title'),
+          content: t('privacyPolicy.sections.collection.financial.content')
         }
       ]
     },
     {
-      title: t('sections.usage.title'),
-      content: t('sections.usage.content'),
+      title: t('privacyPolicy.sections.usage.title'),
+      content: t('privacyPolicy.sections.usage.content'),
       subsections: [
         {
-          title: t('sections.usage.services.title'),
-          content: t('sections.usage.services.content')
+          title: t('privacyPolicy.sections.usage.services.title'),
+          content: t('privacyPolicy.sections.usage.services.content')
         },
         {
-          title: t('sections.usage.security.title'),
-          content: t('sections.usage.security.content')
+          title: t('privacyPolicy.sections.usage.security.title'),
+          content: t('privacyPolicy.sections.usage.security.content')
         },
         {
-          title: t('sections.usage.communications.title'),
-          content: t('sections.usage.communications.content')
+          title: t('privacyPolicy.sections.usage.communications.title'),
+          content: t('privacyPolicy.sections.usage.communications.content')
         },
         {
-          title: t('sections.usage.compliance.title'),
-          content: t('sections.usage.compliance.content')
+          title: t('privacyPolicy.sections.usage.compliance.title'),
+          content: t('privacyPolicy.sections.usage.compliance.content')
         },
         {
-          title: t('sections.usage.analytics.title'),
-          content: t('sections.usage.analytics.content')
+          title: t('privacyPolicy.sections.usage.analytics.title'),
+          content: t('privacyPolicy.sections.usage.analytics.content')
         }
       ]
     },
     {
-      title: t('sections.sharing.title'),
-      content: t('sections.sharing.content'),
+      title: t('privacyPolicy.sections.sharing.title'),
+      content: t('privacyPolicy.sections.sharing.content'),
       subsections: [
         {
-          title: t('sections.sharing.providers.title'),
-          content: t('sections.sharing.providers.content')
+          title: t('privacyPolicy.sections.sharing.providers.title'),
+          content: t('privacyPolicy.sections.sharing.providers.content')
         },
         {
-          title: t('sections.sharing.partners.title'),
-          content: t('sections.sharing.partners.content')
+          title: t('privacyPolicy.sections.sharing.partners.title'),
+          content: t('privacyPolicy.sections.sharing.partners.content')
         },
         {
-          title: t('sections.sharing.authorities.title'),
-          content: t('sections.sharing.authorities.content')
+          title: t('privacyPolicy.sections.sharing.authorities.title'),
+          content: t('privacyPolicy.sections.sharing.authorities.content')
         },
         {
-          title: t('sections.sharing.transfers.title'),
-          content: t('sections.sharing.transfers.content')
+          title: t('privacyPolicy.sections.sharing.transfers.title'),
+          content: t('privacyPolicy.sections.sharing.transfers.content')
         },
         {
-          title: t('sections.sharing.consent.title'),
-          content: t('sections.sharing.consent.content')
+          title: t('privacyPolicy.sections.sharing.consent.title'),
+          content: t('privacyPolicy.sections.sharing.consent.content')
         }
       ]
     },
     {
-      title: t('sections.rights.title'),
-      content: t('sections.rights.content'),
+      title: t('privacyPolicy.sections.rights.title'),
+      content: t('privacyPolicy.sections.rights.content'),
       subsections: [
         {
-          title: t('sections.rights.access.title'),
-          content: t('sections.rights.access.content')
+          title: t('privacyPolicy.sections.rights.access.title'),
+          content: t('privacyPolicy.sections.rights.access.content')
         },
         {
-          title: t('sections.rights.correction.title'),
-          content: t('sections.rights.correction.content')
+          title: t('privacyPolicy.sections.rights.correction.title'),
+          content: t('privacyPolicy.sections.rights.correction.content')
         },
         {
-          title: t('sections.rights.deletion.title'),
-          content: t('sections.rights.deletion.content')
+          title: t('privacyPolicy.sections.rights.deletion.title'),
+          content: t('privacyPolicy.sections.rights.deletion.content')
         },
         {
-          title: t('sections.rights.objection.title'),
-          content: t('sections.rights.objection.content')
+          title: t('privacyPolicy.sections.rights.objection.title'),
+          content: t('privacyPolicy.sections.rights.objection.content')
         },
         {
-          title: t('sections.rights.withdraw.title'),
-          content: t('sections.rights.withdraw.content')
+          title: t('privacyPolicy.sections.rights.withdraw.title'),
+          content: t('privacyPolicy.sections.rights.withdraw.content')
         },
         {
-          title: t('sections.rights.exercise.title'),
-          content: t('sections.rights.exercise.content')
+          title: t('privacyPolicy.sections.rights.exercise.title'),
+          content: t('privacyPolicy.sections.rights.exercise.content')
         }
       ]
     },
     {
-      title: t('sections.security.title'),
-      content: t('sections.security.content'),
+      title: t('privacyPolicy.sections.security.title'),
+      content: t('privacyPolicy.sections.security.content'),
       subsections: [
         {
-          title: t('sections.security.measures.title'),
-          content: t('sections.security.measures.content')
+          title: t('privacyPolicy.sections.security.measures.title'),
+          content: t('privacyPolicy.sections.security.measures.content')
         },
         {
-          title: t('sections.security.payment.title'),
-          content: t('sections.security.payment.content')
+          title: t('privacyPolicy.sections.security.payment.title'),
+          content: t('privacyPolicy.sections.security.payment.content')
         },
         {
-          title: t('sections.security.access.title'),
-          content: t('sections.security.access.content')
+          title: t('privacyPolicy.sections.security.access.title'),
+          content: t('privacyPolicy.sections.security.access.content')
         },
         {
-          title: t('sections.security.breach.title'),
-          content: t('sections.security.breach.content')
+          title: t('privacyPolicy.sections.security.breach.title'),
+          content: t('privacyPolicy.sections.security.breach.content')
         },
         {
-          title: t('sections.security.tax.title'),
-          content: t('sections.security.tax.content')
+          title: t('privacyPolicy.sections.security.tax.title'),
+          content: t('privacyPolicy.sections.security.tax.content')
         }
       ]
     },
     {
-      title: t('sections.retention.title'),
-      content: t('sections.retention.content')
+      title: t('privacyPolicy.sections.retention.title'),
+      content: t('privacyPolicy.sections.retention.content')
     },
     {
-      title: t('sections.transfers.title'),
-      content: t('sections.transfers.content')
+      title: t('privacyPolicy.sections.transfers.title'),
+      content: t('privacyPolicy.sections.transfers.content')
     },
     {
-      title: t('sections.children.title'),
-      content: t('sections.children.content')
+      title: t('privacyPolicy.sections.children.title'),
+      content: t('privacyPolicy.sections.children.content')
     },
     {
-      title: t('sections.cookies.title'),
-      content: t('sections.cookies.content'),
+      title: t('privacyPolicy.sections.cookies.title'),
+      content: t('privacyPolicy.sections.cookies.content'),
       subsections: [
         {
-          title: t('sections.cookies.types.title'),
-          content: t('sections.cookies.types.content')
+          title: t('privacyPolicy.sections.cookies.types.title'),
+          content: t('privacyPolicy.sections.cookies.types.content')
         },
         {
-          title: t('sections.cookies.choices.title'),
-          content: t('sections.cookies.choices.content')
+          title: t('privacyPolicy.sections.cookies.choices.title'),
+          content: t('privacyPolicy.sections.cookies.choices.content')
         }
       ]
     },
     {
-      title: t('sections.ai.title'),
-      content: t('sections.ai.content'),
+      title: t('privacyPolicy.sections.ai.title'),
+      content: t('privacyPolicy.sections.ai.content'),
       subsections: [
         {
-          title: t('sections.ai.features.title'),
-          content: t('sections.ai.features.content')
+          title: t('privacyPolicy.sections.ai.features.title'),
+          content: t('privacyPolicy.sections.ai.features.content')
         },
         {
-          title: t('sections.ai.advice.title'),
-          content: t('sections.ai.advice.content')
+          title: t('privacyPolicy.sections.ai.advice.title'),
+          content: t('privacyPolicy.sections.ai.advice.content')
         },
         {
-          title: t('sections.ai.review.title'),
-          content: t('sections.ai.review.content')
+          title: t('privacyPolicy.sections.ai.review.title'),
+          content: t('privacyPolicy.sections.ai.review.content')
         }
       ]
     },
     {
-      title: t('sections.changes.title'),
-      content: t('sections.changes.content')
+      title: t('privacyPolicy.sections.changes.title'),
+      content: t('privacyPolicy.sections.changes.content')
     },
     {
-      title: t('sections.contact.title'),
-      content: t('sections.contact.content')
+      title: t('privacyPolicy.sections.contact.title'),
+      content: t('privacyPolicy.sections.contact.content')
     },
   ];
 
@@ -322,7 +322,7 @@ const PrivacyPolicyContent = () => {
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
-          {fromDashboard ? t('navigation.backToDashboard') : t('navigation.backToHome')}
+          {fromDashboard ? t('privacyPolicy.navigation.backToDashboard') : t('privacyPolicy.navigation.backToHome')}
         </button>
         
         <div 
@@ -341,17 +341,17 @@ const PrivacyPolicyContent = () => {
       
       <div className="mt-4 mb-12 bg-white rounded-lg shadow-lg p-6 sm:p-10">
         <h1 className={`text-center font-bold ${isMobile ? 'text-2xl' : 'text-3xl'} mb-2`}>
-          {t('title')}
+          {t('privacyPolicy.title')}
         </h1>
 
         <p className="text-center text-gray-600 mb-8">
-          {t('effectiveDate', { date: new Date().toLocaleDateString() })}
+          {t('privacyPolicy.effectiveDate', { date: new Date().toLocaleDateString() })}
         </p>
 
         <hr className="mb-8 border-t border-gray-200" />
 
         <p className="mb-6 leading-relaxed text-gray-600">
-          {t('introduction')}
+          {t('privacyPolicy.introduction')}
         </p>
 
         <ul className="space-y-6">
@@ -374,19 +374,19 @@ const PrivacyPolicyContent = () => {
 
         <div className="bg-gray-50 p-6 rounded-md border border-gray-200 mt-8">
           <address className="not-italic text-sm">
-            <strong>{t('contactInfo.company')}</strong>
+            <strong>{t('privacyPolicy.contactInfo.company')}</strong>
             <br />
-            {t('contactInfo.address')}
+            {t('privacyPolicy.contactInfo.address')}
             <br />
-            {t('contactInfo.suite')}
+            {t('privacyPolicy.contactInfo.suite')}
             <br />
-            {t('contactInfo.city')}
+            {t('privacyPolicy.contactInfo.city')}
             <br />
-            {t('contactInfo.country')}            
+            {t('privacyPolicy.contactInfo.country')}            
             <br />
-            {t('contactInfo.email')}
+            {t('privacyPolicy.contactInfo.email')}
             <br />
-            {t('contactInfo.website')}
+            {t('privacyPolicy.contactInfo.website')}
           </address>
         </div>
       </div>
