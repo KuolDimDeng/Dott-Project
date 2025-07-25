@@ -274,10 +274,40 @@ class GeofenceSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ['id', 'created_at', 'updated_at', 'business_id']
     
+    def validate(self, data):
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"[GeofenceSerializer] validate() called with data: {data}")
+        logger.info(f"[GeofenceSerializer] Data keys: {data.keys()}")
+        logger.info(f"[GeofenceSerializer] is_active in data: {'is_active' in data}")
+        if 'is_active' in data:
+            logger.info(f"[GeofenceSerializer] is_active value: {data['is_active']}")
+        
+        return data
+    
     def create(self, validated_data):
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"[GeofenceSerializer] create() called with validated_data: {validated_data}")
+        logger.info(f"[GeofenceSerializer] User: {self.context['request'].user.email}")
+        logger.info(f"[GeofenceSerializer] User business_id: {self.context['request'].user.business_id}")
+        
         # Set business_id from request context
         validated_data['business_id'] = self.context['request'].user.business_id
-        return super().create(validated_data)
+        
+        logger.info(f"[GeofenceSerializer] After setting business_id: {validated_data}")
+        
+        # Call parent create
+        instance = super().create(validated_data)
+        
+        logger.info(f"[GeofenceSerializer] Created instance: ID={instance.id}, Name={instance.name}")
+        logger.info(f"[GeofenceSerializer] Instance business_id: {instance.business_id}")
+        logger.info(f"[GeofenceSerializer] Instance is_active: {instance.is_active}")
+        logger.info(f"[GeofenceSerializer] Instance created_by: {instance.created_by}")
+        
+        return instance
 
 
 class EmployeeGeofenceSerializer(serializers.ModelSerializer):

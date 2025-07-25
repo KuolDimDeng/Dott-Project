@@ -1240,6 +1240,24 @@ class Geofence(TenantAwareModel):
     def __str__(self):
         return f"{self.name} ({self.radius_meters}m radius)"
     
+    def save(self, *args, **kwargs):
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"[Geofence Model] save() called for geofence: {self.name}")
+        logger.info(f"[Geofence Model] ID: {self.id}")
+        logger.info(f"[Geofence Model] business_id: {self.business_id}")
+        logger.info(f"[Geofence Model] is_active: {self.is_active}")
+        logger.info(f"[Geofence Model] created_by: {self.created_by}")
+        logger.info(f"[Geofence Model] New record: {self._state.adding}")
+        
+        # Call parent save
+        super().save(*args, **kwargs)
+        
+        logger.info(f"[Geofence Model] After save - ID: {self.id}")
+        logger.info(f"[Geofence Model] After save - business_id: {self.business_id}")
+        logger.info(f"[Geofence Model] After save - is_active: {self.is_active}")
+    
     class Meta:
         verbose_name = "Geofence"
         verbose_name_plural = "Geofences"

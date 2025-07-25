@@ -5,6 +5,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
+from decimal import Decimal
 from .models import Employee, Role, EmployeeRole, AccessPermission, PreboardingForm, PerformanceReview, PerformanceMetric, PerformanceRating, PerformanceGoal, FeedbackRecord, PerformanceSetting, Timesheet, TimesheetEntry, TimeOffRequest, TimeOffBalance, Benefits, TimesheetSetting, LocationLog, EmployeeLocationConsent, LocationCheckIn, Geofence, EmployeeGeofence, GeofenceEvent
 from .serializers import (
     EmployeeSerializer, 
@@ -1644,6 +1645,68 @@ class GeofenceViewSet(viewsets.ModelViewSet):
         logger.info(f"[GeofenceViewSet] Created geofence is_active: {instance.is_active}")
         logger.info(f"[GeofenceViewSet] Created by: {instance.created_by if instance.created_by else 'None'}")
         
+    @action(detail=False, methods=['post'])
+    def test_create_and_list(self, request):
+        """Test endpoint to create a geofence and immediately list it"""
+        import time
+        from django.db import transaction
+        
+        logger.info(f"[GeofenceViewSet] test_create_and_list called")
+        
+        test_name = f"Test Geofence {int(time.time())}"
+        
+        try:
+            # Create a test geofence
+            with transaction.atomic():
+                geofence = Geofence.objects.create(
+                    name=test_name,
+                    business_id=request.user.business_id,
+                    created_by=request.user,
+                    location_type='OFFICE',
+                    shape_type='CIRCLE',
+                    center_latitude=Decimal('40.7128'),
+                    center_longitude=Decimal('-74.0060'),
+                    radius_meters=100,
+                    is_active=True
+                )
+                logger.info(f"[GeofenceViewSet] Created test geofence: {geofence.id}")
+            
+            # Immediately query for it
+            found_by_id = Geofence.objects.filter(id=geofence.id).exists()
+            found_by_name = Geofence.objects.filter(name=test_name).exists()
+            found_by_business = Geofence.objects.filter(business_id=request.user.business_id, name=test_name).exists()
+            found_by_active = Geofence.objects.filter(business_id=request.user.business_id, is_active=True, name=test_name).exists()
+            
+            # Try the exact query used in get_queryset
+            queryset_result = self.get_queryset().filter(name=test_name).exists()
+            
+            result = {
+                'created_geofence': {
+                    'id': str(geofence.id),
+                    'name': geofence.name,
+                    'business_id': str(geofence.business_id),
+                    'is_active': geofence.is_active
+                },
+                'found_by_id': found_by_id,
+                'found_by_name': found_by_name,
+                'found_by_business': found_by_business,
+                'found_by_active': found_by_active,
+                'found_in_viewset_queryset': queryset_result,
+                'total_count_after_create': Geofence.objects.count(),
+                'business_count_after_create': Geofence.objects.filter(business_id=request.user.business_id).count(),
+                'active_business_count': Geofence.objects.filter(business_id=request.user.business_id, is_active=True).count()
+            }
+            
+            logger.info(f"[GeofenceViewSet] Test results: {result}")
+            
+            return Response(result)
+            
+        except Exception as e:
+            logger.error(f"[GeofenceViewSet] Error in test_create_and_list: {str(e)}")
+            import traceback
+            logger.error(f"[GeofenceViewSet] Traceback: {traceback.format_exc()}")
+            return Response({'error': str(e)}, status=500)
+    
     @action(detail=False, methods=['get'])
     def debug_list(self, request):
         """Debug endpoint to check all geofences"""
@@ -1671,11 +1734,35 @@ class GeofenceViewSet(viewsets.ModelViewSet):
                 is_active=True
             ).values('id', 'name')
             
+            # Check for any database issues
+            from django.db import connection
+            cursor = connection.cursor()
+            cursor.execute("SELECT COUNT(*) FROM hr_geofence")
+            raw_count = cursor.fetchone()[0]
+            
+            # Check specific geofence by name if provided
+            geofence_name = request.query_params.get('name', None)
+            specific_geofence = None
+            if geofence_name:
+                try:
+                    specific_geofence = Geofence.objects.get(name=geofence_name)
+                    logger.info(f"[GeofenceViewSet] Found geofence with name '{geofence_name}': {specific_geofence.id}")
+                except Geofence.DoesNotExist:
+                    logger.info(f"[GeofenceViewSet] No geofence found with name '{geofence_name}'")
+            
             result = {
                 'user_business_id': str(request.user.business_id),
                 'total_geofences_in_db': Geofence.objects.count(),
+                'raw_table_count': raw_count,
                 'user_geofences_count': user_geofences.count(),
                 'active_user_geofences_count': active_user_geofences.count(),
+                'specific_geofence': {
+                    'id': str(specific_geofence.id),
+                    'name': specific_geofence.name,
+                    'business_id': str(specific_geofence.business_id),
+                    'is_active': specific_geofence.is_active,
+                    'created_by': specific_geofence.created_by.email if specific_geofence.created_by else None
+                } if specific_geofence else None,
                 'all_geofences': list(all_geofences),
                 'user_geofences': list(user_geofences),
                 'active_user_geofences': list(active_user_geofences)

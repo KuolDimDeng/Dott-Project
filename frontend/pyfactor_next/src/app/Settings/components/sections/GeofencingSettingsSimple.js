@@ -705,6 +705,24 @@ const GeofencingSettings = () => {
           </button>
           <button
             onClick={async () => {
+              console.log('[DEBUG] Testing create and list...');
+              try {
+                const testResponse = await api.post('/api/hr/geofences/test_create_and_list', {});
+                console.log('[DEBUG] Test create and list response:', testResponse);
+                alert(`Test Results:\n${JSON.stringify(testResponse, null, 2)}`);
+                // Refresh the list after test
+                await loadGeofences();
+              } catch (error) {
+                console.error('[DEBUG] Test error:', error);
+                alert(`Test Error: ${error.message}`);
+              }
+            }}
+            className="inline-flex items-center px-4 py-2 border border-purple-300 text-sm font-medium rounded-md text-purple-700 bg-white hover:bg-purple-50"
+          >
+            Test Create & List
+          </button>
+          <button
+            onClick={async () => {
               console.log('[DEBUG] Testing geofence API...');
               try {
                 const response = await api.get('/api/hr/geofences/debug_list');
