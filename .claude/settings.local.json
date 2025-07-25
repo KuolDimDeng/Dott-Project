@@ -187,7 +187,8 @@
       "Bash(./update-backend-urls.sh:*)",
       "Bash(./scripts/pre-deploy-cleanup.sh:*)",
       "Bash(sudo rm:*)",
-      "Bash(do cp:*)"
+      "Bash(do cp:*)",
+      "Bash(npx next build:*)"
     ],
     "deny": []
   }

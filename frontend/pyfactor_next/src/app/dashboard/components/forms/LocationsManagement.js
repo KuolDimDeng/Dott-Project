@@ -6,7 +6,7 @@ import { toast } from 'react-hot-toast';
 import { locationApi } from '@/utils/apiClient';
 import { logger } from '@/utils/logger';
 import { MapPinIcon } from '@heroicons/react/24/outline';
-import { useSession } from '@/hooks/useSession';
+import { useSession } from '@/hooks/useSession-v2';
 
 // Tooltip component for field help
 const FieldTooltip = ({ text, position = 'top' }) => {
