@@ -65,23 +65,37 @@ async function handleRequest(request, method) {
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`[Geofences API] Backend error:`, errorText);
+      console.error(`[Geofences API] ❌ Backend error response:`, errorText);
       console.error(`[Geofences API] Backend status:`, response.status);
       console.error(`[Geofences API] Backend URL was:`, backendUrl);
+      console.error(`[Geofences API] Request body was:`, JSON.stringify(body, null, 2));
+      console.error(`[Geofences API] Request headers:`, JSON.stringify(headers, null, 2));
       
       // Try to parse error as JSON
       let errorData;
       try {
         errorData = JSON.parse(errorText);
+        console.error(`[Geofences API] Parsed error data:`, JSON.stringify(errorData, null, 2));
       } catch (e) {
+        console.error(`[Geofences API] Could not parse error as JSON, raw text:`, errorText);
         errorData = { detail: errorText };
+      }
+      
+      // Log specific validation errors if present
+      if (errorData && typeof errorData === 'object') {
+        Object.keys(errorData).forEach(field => {
+          if (field !== 'detail' && field !== 'error' && Array.isArray(errorData[field])) {
+            console.error(`[Geofences API] Validation error for field '${field}':`, errorData[field]);
+          }
+        });
       }
       
       return NextResponse.json(
         { 
           error: 'Failed to process geofence request',
           detail: errorData,
-          status: response.status 
+          status: response.status,
+          requestBody: body // Include what was sent for debugging
         },
         { status: response.status }
       );

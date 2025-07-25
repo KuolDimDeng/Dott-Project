@@ -72,6 +72,8 @@ const ExportPage = () => {
     console.log('[ExportPage] === handleExport called ===');
     console.log('[ExportPage] Data types:', dataTypes);
     console.log('[ExportPage] Selected format:', selectedFormat);
+    console.log('[ExportPage] Current URL:', window.location.href);
+    console.log('[ExportPage] Current pathname:', window.location.pathname);
     
     // Log current cookies
     if (typeof document !== 'undefined') {
@@ -79,7 +81,30 @@ const ExportPage = () => {
       const cookies = document.cookie.split(';').map(c => c.trim());
       const hasSid = cookies.some(c => c.startsWith('sid='));
       const hasSessionToken = cookies.some(c => c.startsWith('session_token='));
-      console.log('[ExportPage] Cookie check:', { hasSid, hasSessionToken });
+      console.log('[ExportPage] Cookie check:', { hasSid, hasSessionToken, totalCookies: cookies.length });
+      
+      // Test session endpoint before export
+      console.log('[ExportPage] Testing session endpoint...');
+      try {
+        const sessionTest = await fetch('/api/auth/session-v2', {
+          method: 'GET',
+          credentials: 'include'
+        });
+        console.log('[ExportPage] Session test result:', {
+          status: sessionTest.status,
+          ok: sessionTest.ok,
+          statusText: sessionTest.statusText
+        });
+        if (!sessionTest.ok) {
+          console.error('[ExportPage] Session test failed - aborting export');
+          alert('Session validation failed. Please refresh the page and try again.');
+          return;
+        }
+      } catch (sessionError) {
+        console.error('[ExportPage] Session test error:', sessionError);
+        alert('Unable to validate session. Please refresh the page and try again.');
+        return;
+      }
     }
     
     if (dataTypes.length === 0) {
@@ -132,21 +157,35 @@ const ExportPage = () => {
         const errorText = await response.text();
         console.error('[ExportPage] Export failed:', {
           status: response.status,
-          errorText: errorText.substring(0, 500)
+          statusText: response.statusText,
+          contentType: response.headers.get('content-type'),
+          errorText: errorText.substring(0, 1000)
         });
         
-        if (response.status === 401) {
-          console.error('[ExportPage] 401 Unauthorized - Redirecting to sign-in');
-          // Check if error contains redirect URL
-          if (errorText.includes('window.location')) {
-            console.error('[ExportPage] Redirect detected in response');
-          }
-          alert('Your session has expired. Please sign in again.');
-          window.location.href = '/sign-in';
+        // Check if response is HTML (likely a redirect page)
+        if (errorText.includes('<!DOCTYPE html>') || errorText.includes('<html>')) {
+          console.error('[ExportPage] Received HTML response instead of file - likely authentication redirect');
+          alert('Session expired or authentication failed. Please refresh the page and try again.');
           return;
         }
         
-        throw new Error('Export failed');
+        if (response.status === 401) {
+          console.error('[ExportPage] 401 Unauthorized');
+          alert('Your session has expired. Please refresh the page and try again.');
+          return;
+        }
+        
+        // Show specific error message
+        let errorMessage = 'Export failed';
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } catch (parseError) {
+          errorMessage = `Export failed (${response.status}): ${errorText.substring(0, 100)}`;
+        }
+        
+        alert(errorMessage);
+        return;
       }
 
       // Handle the response - it should be a file blob

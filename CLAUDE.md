@@ -475,6 +475,27 @@
 - **Documentation**: See STAGING_SUSPENSION_NOTICE.md
 - **Memory Fix**: NODE_OPTIONS set to 4GB in package.json and Dockerfile
 
+### [44.0.0] - 2025-07-25 - CURRENT - User-Employee Relationship Architecture
+- **Purpose**: Document the separation between User (authentication) and Employee (HR data)
+- **Architecture**:
+  - User: Core authentication model (email, password, role)
+  - UserProfile: Extended user data (address, phone, preferences)
+  - Employee: HR-specific data (optional OneToOneField to User)
+- **Key Design Decisions**:
+  - Not all Users are Employees (e.g., business owners, admins)
+  - Employee records only for actual employees needing HR tracking
+  - Clear separation between authentication and HR concerns
+- **Helper Functions** (in `/backend/pyfactor/hr/utils.py`):
+  - `get_employee_for_user(user)` - Get employee or None
+  - `create_employee_for_user(user, **kwargs)` - Create employee if needed
+  - `user_has_employee_profile(user)` - Check if user has employee
+  - `is_user_employee(user)` - Check if user is employee (not owner)
+  - `get_user_display_name(user)` - Get name regardless of employee status
+- **Best Practices**:
+  - Use User for audit fields (created_by, modified_by)
+  - Use Employee only for HR-specific relationships
+  - Always handle cases where User has no Employee gracefully
+
 ## Quick Reference
 
 ### Fix Onboarding Issues

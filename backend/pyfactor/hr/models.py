@@ -1220,7 +1220,7 @@ class Geofence(TenantAwareModel):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(
-        'Employee',
+        'custom_auth.User',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,

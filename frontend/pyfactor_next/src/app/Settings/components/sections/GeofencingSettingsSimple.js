@@ -246,11 +246,19 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
       }
     } catch (error) {
       console.error('[GeofenceSetup] Error creating geofence:', error);
+      console.error('[GeofenceSetup] Full error object:', JSON.stringify(error, null, 2));
+      console.error('[GeofenceSetup] Error response:', error.response);
+      console.error('[GeofenceSetup] Error response data:', error.response?.data);
+      console.error('[GeofenceSetup] Error response status:', error.response?.status);
+      
       // Safely access error properties
       let errorMessage = 'Failed to create geofence';
       if (error && error.response && error.response.data) {
+        console.error('[GeofenceSetup] Backend error response data:', JSON.stringify(error.response.data, null, 2));
+        
         // Check if detail is an object with more specific error info
         if (error.response.data.detail && typeof error.response.data.detail === 'object') {
+          console.error('[GeofenceSetup] Detail object:', error.response.data.detail);
           // Extract the actual error message from nested detail
           if (error.response.data.detail.detail) {
             errorMessage = error.response.data.detail.detail;
@@ -262,9 +270,28 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
         } else {
           errorMessage = error.response.data.detail || error.response.data.error || errorMessage;
         }
+        
+        // Check for field-specific validation errors
+        const fieldErrors = [];
+        Object.keys(error.response.data).forEach(field => {
+          if (field !== 'detail' && field !== 'error' && field !== 'status') {
+            const fieldError = error.response.data[field];
+            if (Array.isArray(fieldError)) {
+              fieldErrors.push(`${field}: ${fieldError.join(', ')}`);
+            } else if (typeof fieldError === 'string') {
+              fieldErrors.push(`${field}: ${fieldError}`);
+            }
+          }
+        });
+        
+        if (fieldErrors.length > 0) {
+          errorMessage = `Validation errors: ${fieldErrors.join('; ')}`;
+        }
       } else if (error && error.message) {
         errorMessage = error.message;
       }
+      
+      console.error('[GeofenceSetup] Final error message:', errorMessage);
       toast.error(errorMessage);
       
       // Refresh the list in case it was actually created despite the error

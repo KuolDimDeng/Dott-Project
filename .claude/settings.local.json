@@ -186,7 +186,8 @@
       "Bash(git merge:*)",
       "Bash(./update-backend-urls.sh:*)",
       "Bash(./scripts/pre-deploy-cleanup.sh:*)",
-      "Bash(sudo rm:*)"
+      "Bash(sudo rm:*)",
+      "Bash(do cp:*)"
     ],
     "deny": []
   }

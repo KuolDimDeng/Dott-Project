@@ -125,7 +125,7 @@ urlpatterns = [
     path('api/whatsapp-business/', include('whatsapp_business.urls')),
     
     # Data Export API routes
-    path('api/data-export/', include('data_export.urls')),
+    path('api/data_export/', include('data_export.urls')),
     
     # Leads API routes  
     path('api/leads/', include('leads.urls')),

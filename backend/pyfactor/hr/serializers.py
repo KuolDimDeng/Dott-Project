@@ -260,8 +260,14 @@ class TimesheetEntryWithLocationSerializer(TimesheetEntrySerializer):
 
 class GeofenceSerializer(serializers.ModelSerializer):
     """Serializer for Geofence model"""
-    created_by_name = serializers.CharField(source='created_by.get_full_name', read_only=True)
+    created_by_name = serializers.SerializerMethodField(read_only=True)
     assigned_employees_count = serializers.IntegerField(read_only=True)
+    
+    def get_created_by_name(self, obj):
+        """Get the name of the user who created the geofence"""
+        if obj.created_by:
+            return obj.created_by.get_full_name() or obj.created_by.email
+        return None
     
     class Meta:
         model = Geofence

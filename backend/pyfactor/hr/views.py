@@ -1632,28 +1632,11 @@ class GeofenceViewSet(viewsets.ModelViewSet):
         logger.info(f"[GeofenceViewSet] Request user business_id: {self.request.user.business_id}")
         logger.info(f"[GeofenceViewSet] Request user email: {self.request.user.email}")
         
-        # Get the Employee instance for the user (if exists)
-        created_by_employee = None
-        try:
-            from hr.models import Employee
-            created_by_employee = Employee.objects.get(
-                user=self.request.user,
-                business_id=self.request.user.business_id
-            )
-            logger.info(f"[GeofenceViewSet] Found employee for user: {created_by_employee}")
-        except Employee.DoesNotExist:
-            logger.warning(f"[GeofenceViewSet] No employee record found for user {self.request.user.email}")
-        except Exception as e:
-            logger.error(f"[GeofenceViewSet] Error getting employee: {str(e)}")
-        
-        # Save with optional created_by
-        save_kwargs = {
-            'business_id': self.request.user.business_id
-        }
-        if created_by_employee:
-            save_kwargs['created_by'] = created_by_employee
-            
-        instance = serializer.save(**save_kwargs)
+        # Save with the current user as created_by
+        instance = serializer.save(
+            business_id=self.request.user.business_id,
+            created_by=self.request.user
+        )
         
         logger.info(f"[GeofenceViewSet] Created geofence ID: {instance.id}")
         logger.info(f"[GeofenceViewSet] Created geofence business_id: {instance.business_id}")

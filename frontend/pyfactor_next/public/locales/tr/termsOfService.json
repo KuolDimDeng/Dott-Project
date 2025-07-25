@@ -1,0 +1,91 @@
+{
+  "title": "Terms of Use",
+  "effectiveDate": "Effective as of: {{date}}",
+  "introduction": "Welcome to Dott, a service provided by Dott LLC. This Terms of Use Agreement (\"Agreement\") governs your use of the Dott website, mobile applications, and all related services offered by Dott LLC. By accessing or using our service, you acknowledge that you have read, understood, and agree to be bound by these terms.",
+  "navigation": {
+    "backToDashboard": "Back to Dashboard",
+    "backToHome": "Back to Home"
+  },
+  "sections": {
+    "acceptance": {
+      "title": "1. Acceptance of Terms",
+      "content": "By registering for and/or using Dott in any manner, including but not limited to visiting or browsing the website or downloading the application, you agree to be bound by this Agreement, all applicable laws and regulations, and agree that you are responsible for compliance with any applicable local laws. If you do not agree with any of these terms, you are prohibited from using or accessing Dott. The materials contained in Dott are protected by applicable copyright and trademark law."
+    },
+    "service": {
+      "title": "2. Description of Service",
+      "content": "Dott is a comprehensive financial management platform that provides businesses with tools for accounting, payroll, payment processing, invoicing, and financial insights. Our services include subscription-based access to our software, payment processing capabilities, payroll services, and invoice factoring in select regions. The specific features available to you may depend on your subscription level, geographical location, and applicable laws and regulations."
+    },
+    "accounts": {
+      "title": "3. User Accounts",
+      "content": "To access most features of Dott, you must register for an account. You agree to provide accurate, current, and complete information during the registration process and to update such information to keep it accurate, current, and complete. You are responsible for safeguarding your password and for all activities that occur under your account. You agree to notify Dott LLC immediately of any unauthorized use of your account. Dott LLC cannot and will not be liable for any loss or damage arising from your failure to comply with the above requirements."
+    },
+    "payments": {
+      "title": "4. Subscription and Payments",
+      "content": "Dott offers various subscription plans and payment services. By subscribing to our services, you agree to pay the applicable fees as they become due. Subscription fees are billed in advance on a monthly or annual basis depending on your selected billing cycle. When you register for a paid service, you must provide accurate and complete information for a valid payment method that you are authorized to use.",
+      "recurring": {
+        "title": "4.1 Recurring Billing",
+        "content": "By subscribing to Dott services, you authorize us to charge the payment method you provide to us on a recurring basis. If we are unable to charge your payment method for any reason, we reserve the right to terminate or suspend your access to the paid services."
+      },
+      "processing": {
+        "title": "4.2 Payment Processing",
+        "content": "Dott uses third-party payment processors including Stripe, Flutterwave, DLocal, Wise, PayPal, and others to process transactions. Your use of these payment services is subject to the applicable payment processor's terms of service and privacy policy. Dott charges a transaction fee for payment processing services as outlined in our pricing page."
+      },
+      "refunds": {
+        "title": "4.3 Refunds",
+        "content": "All fees are non-refundable unless otherwise specified or required by applicable law. If you believe you've been charged in error, please contact our customer support team."
+      }
+    },
+    "conduct": {
+      "title": "5. User Conduct",
+      "content": "You agree to use Dott only for lawful purposes and in accordance with this Agreement. You agree not to use Dott:",
+      "violations": {
+        "law": "In any way that violates any applicable federal, state, local, or international law or regulation.",
+        "material": "To transmit any material that is unlawful, threatening, abusive, libelous, defamatory, obscene, or otherwise objectionable.",
+        "impersonation": "To impersonate or attempt to impersonate Dott LLC, a Dott LLC employee, another user, or any other person or entity.",
+        "interference": "To engage in any activity that interferes with or disrupts the services (or the servers and networks connected to the services).",
+        "security": "To attempt to circumvent any security measures implemented by Dott LLC.",
+        "financial": "For money laundering, terrorist financing, or any other illegal financial activities."
+      }
+    },
+    "financial": {
+      "title": "6. Payment and Financial Services",
+      "content": "Dott enables users to process payments, manage payroll, and access financial services through various third-party providers. When using these services, you agree to comply with all applicable laws and regulations, including those related to financial transactions, anti-money laundering requirements, and data privacy.",
+      "processing": {
+        "title": "6.1 Payment Processing",
+        "content": "Use of our payment processing features is subject to the terms of service of our payment partners. You are responsible for ensuring all payment information provided is accurate and that you are authorized to use the payment methods you provide."
+      },
+      "factoring": {
+        "title": "6.2 Invoice Factoring",
+        "content": "Where available, Dott offers invoice factoring services subject to additional terms and eligibility requirements. These services are currently only available in the United States and Canada. By using our invoice factoring services, you authorize Dott LLC to verify your business information, credit history, and other relevant details."
+      },
+      "international": {
+        "title": "6.3 International Transactions",
+        "content": "For international transactions, you acknowledge that currency conversion rates and additional fees may apply. Dott LLC is not responsible for any fees charged by your financial institution or any third-party payment processors."
+      }
+    },
+    "data": {
+      "title": "7. Data and Content",
+      "content": "You retain all rights to your data uploaded to Dott. By using our services, you grant Dott LLC a non-exclusive, worldwide, royalty-free license to use, process, and display your data solely for the purpose of providing and improving our services. We will maintain appropriate administrative, physical, and technical safeguards to protect your data.",
+      "processing": {
+        "title": "7.1 Data Processing",
+        "content": "As part of providing our services, Dott processes financial and personal data in accordance with our Privacy Policy. You acknowledge that Dott may use third-party service providers to process data on our behalf."
+      },
+      "security": {
+        "title": "7.2 Data Security",
+        "content": "You are responsible for maintaining the confidentiality of your account information and for restricting access to your computer or device. You agree to accept responsibility for all activities that occur under your account."
+      }
+    },
+    "contact": {
+      "title": "21. Contact Information",
+      "content": "If you have any questions about this Agreement, please contact us at:"
+    }
+  },
+  "contactInfo": {
+    "company": "Dott LLC",
+    "address": "800 N King Street",
+    "suite": "Suite 304 #2797",
+    "city": "Wilmington, DE 19801",
+    "country": "United States",
+    "email": "Email: support@dottapps.com"
+  }
+}
