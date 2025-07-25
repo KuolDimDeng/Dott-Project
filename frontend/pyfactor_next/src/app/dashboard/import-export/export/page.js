@@ -8,14 +8,17 @@ import {
   TableCellsIcon,
   DocumentTextIcon,
   ChartBarIcon,
-  CalendarIcon
+  CalendarIcon,
+  ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import StandardSpinner from '@/components/ui/StandardSpinner';
 import { captureEvent } from '@/lib/posthog';
+import { useSession } from '@/hooks/useSession-v2';
 
 const ExportPage = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { session, loading: sessionLoading } = useSession();
   const [selectedFormat, setSelectedFormat] = useState('excel');
   const [dateRange, setDateRange] = useState('all');
   const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
@@ -27,9 +30,52 @@ const ExportPage = () => {
   });
   const [exporting, setExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
+  const [exportError, setExportError] = useState(null);
+  const [sessionCheckResult, setSessionCheckResult] = useState(null);
 
   // Get selected data types from URL params
   const dataTypes = searchParams.get('types')?.split(',') || [];
+
+  // Debug logging on component mount
+  useEffect(() => {
+    console.log('🚀 [ExportPage] === Component Mounted ===');
+    console.log('🚀 [ExportPage] Initial state:', {
+      dataTypes,
+      selectedFormat,
+      dateRange,
+      pathname: window.location.pathname,
+      search: window.location.search,
+      searchParams: Object.fromEntries(searchParams.entries())
+    });
+
+    // Check session state
+    console.log('🚀 [ExportPage] Session state:', {
+      loading: sessionLoading,
+      hasSession: !!session,
+      authenticated: session?.authenticated,
+      hasUser: !!session?.user,
+      userEmail: session?.user?.email,
+      userRole: session?.user?.role
+    });
+
+    // Check cookies
+    if (typeof document !== 'undefined') {
+      const cookies = document.cookie.split(';').map(c => c.trim());
+      const sidCookie = cookies.find(c => c.startsWith('sid='));
+      const sessionTokenCookie = cookies.find(c => c.startsWith('session_token='));
+      console.log('🚀 [ExportPage] Cookie status:', {
+        hasSid: !!sidCookie,
+        hasSessionToken: !!sessionTokenCookie,
+        sidValue: sidCookie ? sidCookie.substring(0, 20) + '...' : 'not found',
+        sessionTokenValue: sessionTokenCookie ? sessionTokenCookie.substring(0, 30) + '...' : 'not found',
+        totalCookies: cookies.length
+      });
+    }
+
+    return () => {
+      console.log('🚀 [ExportPage] === Component Unmounting ===');
+    };
+  }, []);
 
   const exportFormats = [
     {
@@ -68,66 +114,155 @@ const ExportPage = () => {
     { id: 'custom', label: 'Custom Range' }
   ];
 
+  // Session validation check
+  useEffect(() => {
+    const checkSession = async () => {
+      if (!sessionLoading && !session) {
+        console.log('❌ [ExportPage] No session available after loading');
+        setSessionCheckResult('no_session');
+        return;
+      }
+
+      if (!sessionLoading && session) {
+        console.log('✅ [ExportPage] Session loaded successfully');
+        setSessionCheckResult('session_valid');
+        
+        // Perform additional validation
+        try {
+          console.log('🔍 [ExportPage] Performing session validation check...');
+          const response = await fetch('/api/auth/session-v2', {
+            method: 'GET',
+            credentials: 'include'
+          });
+          
+          console.log('🔍 [ExportPage] Session validation response:', {
+            status: response.status,
+            ok: response.ok,
+            contentType: response.headers.get('content-type')
+          });
+          
+          if (!response.ok) {
+            console.error('❌ [ExportPage] Session validation failed');
+            setSessionCheckResult('session_invalid');
+          }
+        } catch (error) {
+          console.error('❌ [ExportPage] Session validation error:', error);
+          setSessionCheckResult('session_error');
+        }
+      }
+    };
+
+    checkSession();
+  }, [session, sessionLoading]);
+
   const handleExport = async () => {
-    console.log('[ExportPage] === handleExport called ===');
-    console.log('[ExportPage] Data types:', dataTypes);
-    console.log('[ExportPage] Selected format:', selectedFormat);
-    console.log('[ExportPage] Current URL:', window.location.href);
-    console.log('[ExportPage] Current pathname:', window.location.pathname);
+    console.log('📤 [ExportPage] === handleExport START ===');
+    console.log('📤 [ExportPage] Export parameters:', {
+      dataTypes,
+      selectedFormat,
+      dateRange,
+      customDateRange,
+      includeOptions,
+      timestamp: new Date().toISOString()
+    });
     
-    // Log current cookies
+    // Clear any previous errors
+    setExportError(null);
+    
+    // Session check
+    console.log('📤 [ExportPage] Session check:', {
+      hasSession: !!session,
+      sessionCheckResult,
+      authenticated: session?.authenticated,
+      userEmail: session?.user?.email
+    });
+    
+    if (!session || sessionCheckResult === 'no_session') {
+      const error = 'No active session. Please sign in and try again.';
+      console.error('❌ [ExportPage]', error);
+      setExportError(error);
+      return;
+    }
+    
+    // Log current cookies for debugging
     if (typeof document !== 'undefined') {
-      console.log('[ExportPage] Current cookies:', document.cookie);
       const cookies = document.cookie.split(';').map(c => c.trim());
-      const hasSid = cookies.some(c => c.startsWith('sid='));
-      const hasSessionToken = cookies.some(c => c.startsWith('session_token='));
-      console.log('[ExportPage] Cookie check:', { hasSid, hasSessionToken, totalCookies: cookies.length });
+      const sidCookie = cookies.find(c => c.startsWith('sid='));
+      const sessionTokenCookie = cookies.find(c => c.startsWith('session_token='));
+      console.log('🍪 [ExportPage] Cookie status before export:', {
+        hasSid: !!sidCookie,
+        hasSessionToken: !!sessionTokenCookie,
+        sidLength: sidCookie ? sidCookie.length : 0,
+        sessionTokenLength: sessionTokenCookie ? sessionTokenCookie.length : 0
+      });
       
-      // Test session endpoint before export
-      console.log('[ExportPage] Testing session endpoint...');
+      // Pre-flight session check
+      console.log('🔍 [ExportPage] Performing pre-flight session check...');
       try {
-        const sessionTest = await fetch('/api/auth/session-v2', {
+        const preFlightResponse = await fetch('/api/auth/session-v2', {
           method: 'GET',
-          credentials: 'include'
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache'
+          }
         });
-        console.log('[ExportPage] Session test result:', {
-          status: sessionTest.status,
-          ok: sessionTest.ok,
-          statusText: sessionTest.statusText
+        
+        console.log('🔍 [ExportPage] Pre-flight response:', {
+          status: preFlightResponse.status,
+          ok: preFlightResponse.ok,
+          statusText: preFlightResponse.statusText,
+          headers: Object.fromEntries(preFlightResponse.headers.entries())
         });
-        if (!sessionTest.ok) {
-          console.error('[ExportPage] Session test failed - aborting export');
-          alert('Session validation failed. Please refresh the page and try again.');
+        
+        if (!preFlightResponse.ok) {
+          const errorText = await preFlightResponse.text();
+          console.error('❌ [ExportPage] Pre-flight check failed:', errorText.substring(0, 200));
+          setExportError('Session validation failed. Please refresh the page and try again.');
           return;
         }
-      } catch (sessionError) {
-        console.error('[ExportPage] Session test error:', sessionError);
-        alert('Unable to validate session. Please refresh the page and try again.');
+        
+        const sessionData = await preFlightResponse.json();
+        console.log('✅ [ExportPage] Pre-flight session data:', {
+          hasUser: !!sessionData.user,
+          userEmail: sessionData.user?.email,
+          authenticated: sessionData.authenticated
+        });
+      } catch (preFlightError) {
+        console.error('❌ [ExportPage] Pre-flight error:', preFlightError);
+        setExportError('Unable to validate session. Please refresh the page and try again.');
         return;
       }
     }
     
+    // Validate inputs
     if (dataTypes.length === 0) {
-      alert('No data types selected');
+      const error = 'No data types selected';
+      console.error('❌ [ExportPage]', error);
+      setExportError(error);
       return;
     }
 
     setExporting(true);
-    setExportProgress(0);
+    setExportProgress(10);
     
-    console.log('[ExportPage] Capturing export_started event');
-    captureEvent('export_started', {
-      dataTypes,
-      format: selectedFormat,
-      dateRange,
-      options: includeOptions
-    });
+    console.log('📊 [ExportPage] Capturing analytics event');
+    try {
+      captureEvent('export_started', {
+        dataTypes,
+        format: selectedFormat,
+        dateRange,
+        options: includeOptions
+      });
+    } catch (analyticsError) {
+      console.warn('⚠️ [ExportPage] Analytics error:', analyticsError);
+    }
 
     try {
-      console.log('[ExportPage] Starting export process...');
+      console.log('🚀 [ExportPage] Starting export API call...');
+      setExportProgress(20);
 
-      // In production, this would call an API endpoint to generate the export
-      console.log('[ExportPage] Calling /api/import-export/export-data');
+      // Prepare request body
       const requestBody = {
         dataTypes,
         format: selectedFormat,
@@ -135,101 +270,227 @@ const ExportPage = () => {
         customDateRange: dateRange === 'custom' ? customDateRange : null,
         options: includeOptions
       };
-      console.log('[ExportPage] Request body:', requestBody);
+      console.log('📦 [ExportPage] Request body:', JSON.stringify(requestBody, null, 2));
+      
+      // Make the export API call
+      console.log('📡 [ExportPage] Making POST request to /api/import-export/export-data');
+      const startTime = Date.now();
       
       const response = await fetch('/api/import-export/export-data', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, text/csv, application/pdf',
+          'Cache-Control': 'no-cache'
         },
         credentials: 'include',
         body: JSON.stringify(requestBody)
       });
-
-      console.log('[ExportPage] Export response:', {
+      
+      const responseTime = Date.now() - startTime;
+      console.log(`📡 [ExportPage] Response received in ${responseTime}ms`);
+      
+      setExportProgress(50);
+      
+      // Log response details
+      const responseHeaders = {};
+      response.headers.forEach((value, key) => {
+        responseHeaders[key] = value;
+      });
+      
+      console.log('📡 [ExportPage] Response details:', {
         status: response.status,
         ok: response.ok,
         statusText: response.statusText,
-        headers: Object.fromEntries(response.headers.entries())
+        contentType: response.headers.get('content-type'),
+        contentLength: response.headers.get('content-length'),
+        contentDisposition: response.headers.get('content-disposition'),
+        headers: responseHeaders
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('[ExportPage] Export failed:', {
+        console.error('❌ [ExportPage] Export request failed');
+        setExportProgress(0);
+        
+        let errorText = '';
+        let errorData = null;
+        
+        try {
+          // Get response body
+          const contentType = response.headers.get('content-type');
+          console.log('❌ [ExportPage] Error response content-type:', contentType);
+          
+          if (contentType && contentType.includes('application/json')) {
+            errorData = await response.json();
+            errorText = JSON.stringify(errorData);
+            console.error('❌ [ExportPage] JSON error response:', errorData);
+          } else {
+            errorText = await response.text();
+            console.error('❌ [ExportPage] Text error response:', errorText.substring(0, 500));
+          }
+        } catch (bodyError) {
+          console.error('❌ [ExportPage] Failed to read error response body:', bodyError);
+          errorText = 'Unable to read error response';
+        }
+        
+        // Analyze error type
+        let errorMessage = 'Export failed';
+        let errorType = 'unknown';
+        
+        if (errorText.includes('<!DOCTYPE html>') || errorText.includes('<html>')) {
+          errorType = 'html_response';
+          errorMessage = 'Authentication error. Please sign in again.';
+          console.error('❌ [ExportPage] Received HTML instead of data - authentication issue');
+        } else if (response.status === 401) {
+          errorType = 'unauthorized';
+          errorMessage = 'Your session has expired. Please refresh the page and sign in again.';
+          console.error('❌ [ExportPage] 401 Unauthorized - session expired');
+        } else if (response.status === 403) {
+          errorType = 'forbidden';
+          errorMessage = 'You do not have permission to export data.';
+          console.error('❌ [ExportPage] 403 Forbidden - insufficient permissions');
+        } else if (response.status === 500) {
+          errorType = 'server_error';
+          errorMessage = 'Server error occurred. Please try again later.';
+          console.error('❌ [ExportPage] 500 Server Error');
+        } else if (errorData?.error) {
+          errorMessage = errorData.error;
+        } else if (errorData?.message) {
+          errorMessage = errorData.message;
+        } else if (errorData?.detail) {
+          errorMessage = errorData.detail;
+        }
+        
+        console.error('❌ [ExportPage] Error summary:', {
           status: response.status,
           statusText: response.statusText,
-          contentType: response.headers.get('content-type'),
-          errorText: errorText.substring(0, 1000)
+          errorType,
+          errorMessage,
+          errorText: errorText.substring(0, 200)
         });
         
-        // Check if response is HTML (likely a redirect page)
-        if (errorText.includes('<!DOCTYPE html>') || errorText.includes('<html>')) {
-          console.error('[ExportPage] Received HTML response instead of file - likely authentication redirect');
-          alert('Session expired or authentication failed. Please refresh the page and try again.');
-          return;
-        }
-        
-        if (response.status === 401) {
-          console.error('[ExportPage] 401 Unauthorized');
-          alert('Your session has expired. Please refresh the page and try again.');
-          return;
-        }
-        
-        // Show specific error message
-        let errorMessage = 'Export failed';
-        try {
-          const errorData = JSON.parse(errorText);
-          errorMessage = errorData.error || errorData.message || errorMessage;
-        } catch (parseError) {
-          errorMessage = `Export failed (${response.status}): ${errorText.substring(0, 100)}`;
-        }
-        
-        alert(errorMessage);
+        setExportError(errorMessage);
         return;
       }
 
-      // Handle the response - it should be a file blob
-      const blob = await response.blob();
+      // Success - handle the file download
+      console.log('✅ [ExportPage] Export successful, processing response...');
+      setExportProgress(70);
       
-      // Create download link
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
+      let blob;
+      try {
+        blob = await response.blob();
+        console.log('✅ [ExportPage] Blob created:', {
+          size: blob.size,
+          type: blob.type,
+          sizeKB: (blob.size / 1024).toFixed(2),
+          sizeMB: (blob.size / (1024 * 1024)).toFixed(2)
+        });
+      } catch (blobError) {
+        console.error('❌ [ExportPage] Failed to create blob:', blobError);
+        setExportError('Failed to process export file');
+        return;
+      }
       
-      // Set filename
-      const timestamp = new Date().toISOString().split('T')[0];
-      const filename = `dott_export_${dataTypes.join('_')}_${timestamp}.${selectedFormat === 'excel' ? 'xlsx' : selectedFormat}`;
-      a.download = filename;
+      setExportProgress(80);
       
-      // Trigger download
-      document.body.appendChild(a);
-      a.click();
+      // Extract filename from Content-Disposition header or generate one
+      let filename = '';
+      const contentDisposition = response.headers.get('content-disposition');
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="?(.+?)"?(?:;|$)/);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+          console.log('📄 [ExportPage] Filename from header:', filename);
+        }
+      }
       
-      // Cleanup
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      captureEvent('export_completed', {
-        filename,
-        dataTypes,
-        format: selectedFormat
-      });
-
-      // Show success message
-      alert('Export complete! Your download should start automatically.');
+      if (!filename) {
+        const timestamp = new Date().toISOString().split('T')[0];
+        const extension = selectedFormat === 'excel' ? 'xlsx' : selectedFormat;
+        filename = `dott_export_${dataTypes.join('_')}_${timestamp}.${extension}`;
+        console.log('📄 [ExportPage] Generated filename:', filename);
+      }
       
-      // Reset and go back after a short delay
-      setTimeout(() => {
-        router.push('/dashboard/import-export');
-      }, 2000);
+      setExportProgress(90);
+      
+      // Create download link and trigger download
+      try {
+        console.log('💾 [ExportPage] Creating download link...');
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.style.display = 'none';
+        
+        console.log('💾 [ExportPage] Triggering download...');
+        document.body.appendChild(a);
+        a.click();
+        
+        // Cleanup
+        setTimeout(() => {
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+          console.log('🧹 [ExportPage] Cleanup completed');
+        }, 100);
+        
+        setExportProgress(100);
+        
+        // Track success
+        console.log('📊 [ExportPage] Tracking export success');
+        try {
+          captureEvent('export_completed', {
+            filename,
+            dataTypes,
+            format: selectedFormat,
+            fileSize: blob.size,
+            exportTime: Date.now() - startTime
+          });
+        } catch (trackError) {
+          console.warn('⚠️ [ExportPage] Failed to track success:', trackError);
+        }
+        
+        // Show success message
+        console.log('✅ [ExportPage] Export completed successfully!');
+        
+        // Navigate back after a short delay
+        setTimeout(() => {
+          console.log('🔙 [ExportPage] Navigating back to import-export page');
+          router.push('/dashboard/import-export');
+        }, 2000);
+        
+      } catch (downloadError) {
+        console.error('❌ [ExportPage] Download error:', downloadError);
+        setExportError('Failed to download file. Please try again.');
+      }
 
     } catch (error) {
-      console.error('Export error:', error);
-      captureEvent('export_error', { error: error.message });
-      alert('Export failed. Please try again.');
+      console.error('❌ [ExportPage] Unexpected export error:', error);
+      console.error('❌ [ExportPage] Error details:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      });
+      
+      // Track error
+      try {
+        captureEvent('export_error', { 
+          error: error.message,
+          errorType: error.name,
+          dataTypes,
+          format: selectedFormat
+        });
+      } catch (trackError) {
+        console.warn('⚠️ [ExportPage] Failed to track error:', trackError);
+      }
+      
+      setExportError(`Export failed: ${error.message}`);
     } finally {
       setExporting(false);
-      setExportProgress(0);
+      if (exportProgress !== 100) {
+        setExportProgress(0);
+      }
+      console.log('📤 [ExportPage] === handleExport END ===');
     }
   };
 
@@ -239,6 +500,39 @@ const ExportPage = () => {
       [option]: !prev[option]
     }));
   };
+
+  // Show loading state while session is loading
+  if (sessionLoading) {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <div className="flex items-center justify-center py-12">
+          <StandardSpinner size="large" />
+          <span className="ml-3 text-gray-600">Loading session...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error if no session
+  if (!session || sessionCheckResult === 'no_session') {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+          <ExclamationTriangleIcon className="h-12 w-12 text-red-600 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-red-900 mb-2">Session Required</h2>
+          <p className="text-red-700 mb-4">
+            You must be signed in to export data. Please sign in and try again.
+          </p>
+          <button
+            onClick={() => router.push('/auth/signin')}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+          >
+            Sign In
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (dataTypes.length === 0) {
     return (
@@ -417,6 +711,19 @@ const ExportPage = () => {
         </div>
       )}
 
+      {/* Error Message */}
+      {exportError && (
+        <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex">
+            <ExclamationTriangleIcon className="h-5 w-5 text-red-600 mt-0.5" />
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">Export Error</h3>
+              <p className="mt-1 text-sm text-red-700">{exportError}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Export Button */}
       <div className="flex items-center justify-between">
         <button
@@ -448,6 +755,21 @@ const ExportPage = () => {
           )}
         </button>
       </div>
+
+      {/* Success Message */}
+      {exportProgress === 100 && (
+        <div className="mt-6 bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="flex">
+            <svg className="h-5 w-5 text-green-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-green-800">Export Successful!</h3>
+              <p className="mt-1 text-sm text-green-700">Your download should start automatically. Redirecting...</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Export Tips */}
       <div className="mt-8 bg-gray-50 rounded-lg p-4">
