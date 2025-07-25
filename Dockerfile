@@ -12,7 +12,6 @@ FROM base AS deps
 RUN pnpm config set store-dir /pnpm/store
 # Copy only package files for better caching
 COPY frontend/pyfactor_next/package.json frontend/pyfactor_next/pnpm-lock.yaml ./
-COPY frontend/pyfactor_next/.npmrc* ./
 # Install dependencies
 RUN pnpm install --frozen-lockfile
 

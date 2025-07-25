@@ -761,7 +761,43 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
                     page_id = perm.get('pageId') or perm.get('page_id')
                     if page_id:
                         try:
-                            page = PagePermission.objects.get(id=page_id)
+                            # First try as UUID
+                            import uuid
+                            try:
+                                uuid.UUID(str(page_id))
+                                page = PagePermission.objects.get(id=page_id)
+                            except (ValueError, TypeError):
+                                # Not a UUID, try to find by path patterns
+                                page = None
+                                
+                                # Try different path patterns
+                                path_patterns = [
+                                    f"/dashboard/{page_id}",
+                                    f"/dashboard/{page_id.replace('-', '/')}",  # Convert sales-products to sales/products
+                                    f"/dashboard/products/{page_id}",
+                                    f"/dashboard/services/{page_id}",
+                                    f"/dashboard/customers/{page_id}",
+                                    f"/dashboard/vendors/{page_id}",
+                                ]
+                                
+                                for pattern in path_patterns:
+                                    page = PagePermission.objects.filter(path=pattern, is_active=True).first()
+                                    if page:
+                                        break
+                                
+                                # If still not found, try flexible matching
+                                if not page:
+                                    from django.db.models import Q
+                                    page = PagePermission.objects.filter(
+                                        Q(path__icontains=str(page_id)) | 
+                                        Q(name__iexact=str(page_id)) |
+                                        Q(path__endswith=f"/{page_id}"),
+                                        is_active=True
+                                    ).first()
+                                
+                                if not page:
+                                    raise PagePermission.DoesNotExist(f"No page found for identifier: {page_id}")
+                            
                             logger.info(f"[DirectUserCreation] DEBUG - Found page: {page.name} (id: {page.id})")
                             
                             # Create page access with both formats
@@ -771,7 +807,9 @@ class DirectUserCreationViewSet(viewsets.ViewSet):
                                 can_read=perm.get('canRead', True) or perm.get('can_read', True),
                                 can_write=perm.get('canWrite', False) or perm.get('can_write', False),
                                 can_edit=perm.get('canEdit', False) or perm.get('can_edit', False),
-                                can_delete=perm.get('canDelete', False) or perm.get('can_delete', False)
+                                can_delete=perm.get('canDelete', False) or perm.get('can_delete', False),
+                                tenant=request.user.tenant,
+                                granted_by=request.user
                             )
                             logger.info(f"[DirectUserCreation] DEBUG - Created UserPageAccess: {access.id} for page {page.name}")
                         except PagePermission.DoesNotExist:

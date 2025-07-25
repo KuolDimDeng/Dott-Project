@@ -341,13 +341,32 @@ class UpdateUserPermissionsSerializer(serializers.Serializer):
                         )
                 except (ValueError, TypeError):
                     # If not a UUID, try to find by path or name
-                    page = PagePermission.objects.filter(
-                        models.Q(path__icontains=str(page_id)) | 
-                        models.Q(name__iexact=str(page_id)) |
-                        models.Q(path__endswith=f"/{page_id}") |
-                        models.Q(path=f"/dashboard/{page_id}"),
-                        is_active=True
-                    ).first()
+                    # First try exact path match with common prefixes
+                    page = None
+                    
+                    # Try different path patterns
+                    path_patterns = [
+                        f"/dashboard/{page_id}",
+                        f"/dashboard/{page_id.replace('-', '/')}",  # Convert sales-products to sales/products
+                        f"/dashboard/products/{page_id}",
+                        f"/dashboard/services/{page_id}",
+                        f"/dashboard/customers/{page_id}",
+                        f"/dashboard/vendors/{page_id}",
+                    ]
+                    
+                    for pattern in path_patterns:
+                        page = PagePermission.objects.filter(path=pattern, is_active=True).first()
+                        if page:
+                            break
+                    
+                    # If still not found, try more flexible matching
+                    if not page:
+                        page = PagePermission.objects.filter(
+                            models.Q(path__icontains=str(page_id)) | 
+                            models.Q(name__iexact=str(page_id)) |
+                            models.Q(path__endswith=f"/{page_id}"),
+                            is_active=True
+                        ).first()
                     
                     if page:
                         # Replace string with actual UUID
