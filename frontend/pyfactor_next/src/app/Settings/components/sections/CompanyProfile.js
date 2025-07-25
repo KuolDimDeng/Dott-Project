@@ -35,7 +35,8 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
     registrationNumber: '',
     yearEstablished: '',
     industry: '',
-    description: ''
+    description: '',
+    displayLegalStructure: true // Default to true
   });
 
   const [editMode, setEditMode] = useState(false);

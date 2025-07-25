@@ -127,6 +127,7 @@ export const legalStructures = [
   'Limited Partnership (LP)',
   'Limited Liability Company (LLC)',
   'Corporation (Inc., Corp.)',
+  'Limited Company (Ltd.)',
   'Non-Profit Organization (NPO)',
   'Joint Venture (JV)',
   'Holding Company',
