@@ -253,6 +253,8 @@ const InventoryReports = enhancedLazy(() => import('./forms/InventoryReports.js'
 const LocationsManagement = enhancedLazy(() => import('./forms/LocationsManagement.js'), 'Locations Management');
 const StockAdjustmentsManagement = enhancedLazy(() => import('./forms/StockAdjustmentsManagement.js'), 'Stock Adjustments Management');
 const SuppliersManagement = enhancedLazy(() => import('./forms/SuppliersManagement.js'), 'Suppliers Management');
+const ProductManagement = enhancedLazy(() => import('./forms/inventory/ProductManagement.js'), 'Product Management');
+const SuppliesManagement = enhancedLazy(() => import('./forms/inventory/SuppliesManagement.js'), 'Supplies Management');
 const MainDashboard = enhancedLazy(() => import('./dashboards/MainDashboard'), 'Main Dashboard');
 const BankTransactions = enhancedLazy(() => import('./forms/BankTransactionPage'), 'Bank Transactions');
 const HRDashboard = enhancedLazy(() => import('./forms/HRDashboard.js'), 'HR Dashboard');
@@ -1684,6 +1686,28 @@ const RenderMainContent = React.memo(function RenderMainContent({
           <ContentWrapperWithKey>
             <SuspenseWithCleanup componentKey={`${componentKey}-inventory-stock-adjustments`}>
               <StockAdjustmentsManagement />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
+      }
+      
+      if (view === 'inventory-products') {
+        console.log('[RenderMainContent] Rendering inventory-products view');
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup componentKey={`${componentKey}-inventory-products`}>
+              <ProductManagement inventoryType="product" />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
+      }
+      
+      if (view === 'inventory-supplies') {
+        console.log('[RenderMainContent] Rendering inventory-supplies view');
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup componentKey={`${componentKey}-inventory-supplies`}>
+              <SuppliesManagement />
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>
         );

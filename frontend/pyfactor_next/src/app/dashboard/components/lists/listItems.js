@@ -714,6 +714,17 @@ const MainListItems = ({
       label: t('mainMenu.inventory'),
       subItems: [
         { label: t('subMenu.dashboard'), onClick: handleInventoryClick, value: 'inventorydashboard', path: '/dashboard/inventory' },
+        { label: t('subMenu.catalog'), onClick: handleInventoryClick, value: 'products', path: '/dashboard/inventory' },
+        { 
+          label: t('subMenu.suppliesMaterials'), 
+          onClick: (value) => {
+            if (typeof handleInventoryClick === 'function') {
+              handleInventoryClick('supplies');
+            }
+          }, 
+          value: 'supplies',
+          path: '/dashboard/inventory' 
+        },
         { 
           label: t('subMenu.warehouseTracker'), 
           path: '/dashboard/inventory',

@@ -41,6 +41,7 @@
     "service": "Service",
     "orders": "Orders",
     "productsPricing": "Products & Pricing",
+    "suppliesMaterials": "Supplies & Materials",
     "warehouseTracker": "Warehouse",
     "expiryDates": "Expiry Dates",
     "availabilityMonitor": "Availability Monitor",

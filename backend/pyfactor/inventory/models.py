@@ -242,13 +242,24 @@ class Product(AuditMixin, TenantAwareModel):
     Product model for inventory items.
     This model is tenant-aware and will be filtered by the current tenant.
     """
+    INVENTORY_TYPE_CHOICES = [
+        ('product', 'Product for Sale'),
+        ('supply', 'Supply/Material'),
+    ]
+    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
     sku = models.CharField(max_length=50, blank=True, null=True)
+    inventory_type = models.CharField(max_length=20, choices=INVENTORY_TYPE_CHOICES, default='product', db_index=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     cost = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     quantity = models.IntegerField(default=0)
+    
+    # Supply-specific fields
+    markup_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0, help_text='Default markup % when billing to customers')
+    is_billable = models.BooleanField(default=True, help_text='Can this supply be billed to customers?')
+    
     supplier = models.ForeignKey('Supplier', on_delete=models.SET_NULL, null=True, blank=True, related_name='products')
     location = models.ForeignKey('Location', on_delete=models.SET_NULL, null=True, blank=True, related_name='products')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -270,8 +281,9 @@ class Product(AuditMixin, TenantAwareModel):
             # Count existing products for this tenant to generate sequence
             count = Product.objects.filter(tenant_id=self.tenant_id).count() + 1
             
-            # Generate SKU in format: PROD-YYYY-NNNN
-            self.sku = f"PROD-{year}-{count:04d}"
+            # Generate SKU based on inventory type
+            prefix = "SUPP" if self.inventory_type == 'supply' else "PROD"
+            self.sku = f"{prefix}-{year}-{count:04d}"
             
             # Ensure uniqueness (in case of race conditions)
             original_sku = self.sku

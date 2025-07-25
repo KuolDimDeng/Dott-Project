@@ -718,6 +718,13 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
         console.log('[DashboardContent] Setting view to inventory-suppliers');
         newView = 'inventory-suppliers';
         break;
+      case 'products':
+        newView = 'inventory-products';
+        break;
+      case 'supplies':
+        console.log('[DashboardContent] Setting view to inventory-supplies');
+        newView = 'inventory-supplies';
+        break;
       case 'transactions':
         newView = 'inventory-transactions';
         break;
