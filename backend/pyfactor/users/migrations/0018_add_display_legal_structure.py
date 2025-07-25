@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0017_userprofile_show_whatsapp_commerce'),
+        ('users', '0017_add_whatsapp_preference_sql'),
     ]
 
     operations = [
