@@ -145,7 +145,9 @@ class ProductViewSet(viewsets.ModelViewSet):
     
     def create(self, request, *args, **kwargs):
         """Override create method to add logging and handle pricing model"""
-        logger.info(f"[ProductViewSet] Creating product with data: {request.data}")
+        logger.info(f"[ProductViewSet] === PRODUCT CREATION START ===")
+        logger.info(f"[ProductViewSet] Request data: {request.data}")
+        logger.info(f"[ProductViewSet] Tenant ID: {getattr(request, 'tenant_id', 'Not set')}")
         
         try:
             # Log specific pricing model fields
