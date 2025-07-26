@@ -357,6 +357,7 @@ const MainListItems = ({
   const [whatsappPreferenceChanged, setWhatsappPreferenceChanged] = useState(0);
   const [whatsappEnabled, setWhatsappEnabled] = useState(null);
   const [businessFeatures, setBusinessFeatures] = useState(['jobs', 'pos']); // Default to all features
+  const [menuVisibility, setMenuVisibility] = useState({}); // Store menu visibility from database
   
   // Debug logging for permissions hook
   useEffect(() => {
@@ -400,6 +401,33 @@ const MainListItems = ({
     // Only fetch if user is loaded
     if (user?.id) {
       fetchBusinessFeatures();
+    }
+  }, [user?.id]);
+  
+  // Fetch menu visibility settings
+  useEffect(() => {
+    const fetchMenuVisibility = async () => {
+      try {
+        const response = await fetch('/api/settings/menu-visibility');
+        if (response.ok) {
+          const data = await response.json();
+          // Convert menu settings to a simple visibility map
+          const visibilityMap = {};
+          data.menu_settings?.forEach(menu => {
+            visibilityMap[menu.key] = menu.is_visible;
+            menu.submenus?.forEach(sub => {
+              visibilityMap[sub.key] = sub.is_visible;
+            });
+          });
+          setMenuVisibility(visibilityMap);
+        }
+      } catch (error) {
+        console.error('[MainListItems] Error fetching menu visibility:', error);
+      }
+    };
+    
+    if (user?.id) {
+      fetchMenuVisibility();
     }
   }, [user?.id]);
   
@@ -548,11 +576,13 @@ const MainListItems = ({
       icon: <NavIcons.Dashboard className="w-5 h-5" />,
       label: t('mainMenu.dashboard'),
       onClick: handleMainDashboardClick,
+      menuKey: 'dashboard',
     },
     {
       icon: <NavIcons.Calendar className="w-5 h-5" />,
       label: t('mainMenu.calendar'),
       onClick: handleCalendarClick,
+      menuKey: 'calendar',
     },
     /* Billing menu item - This will be used in future versions of the application
     {
@@ -2336,6 +2366,16 @@ const MainListItems = ({
 
   // Function to check if user can see menu item
   const canSeeMenuItem = (item) => {
+    // First check database menu visibility if we have a menuKey
+    if (item.menuKey && Object.keys(menuVisibility).length > 0) {
+      // If menu visibility is explicitly set in database, use that
+      if (menuVisibility.hasOwnProperty(item.menuKey)) {
+        if (!menuVisibility[item.menuKey]) {
+          return false; // Menu is disabled in settings
+        }
+      }
+    }
+    
     // Debug logging for important menus
     if (item.label === 'Sales' || item.label === 'HR') {
       console.log(`🚨 [ROLE_TRACKING] canSeeMenuItem ${item.label}:`, {
@@ -2344,7 +2384,8 @@ const MainListItems = ({
         isLoading: isLoading,
         isOwnerOrAdmin: isOwnerOrAdmin(),
         requiresAdmin: item.requiresAdmin,
-        subItemsCount: item.subItems?.length
+        subItemsCount: item.subItems?.length,
+        menuVisibility: menuVisibility[item.menuKey],
       });
     }
     

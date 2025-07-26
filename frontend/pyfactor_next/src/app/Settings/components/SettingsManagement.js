@@ -19,6 +19,7 @@ import Integrations from './sections/Integrations';
 import BankConnections from './sections/BankConnections';
 import PayrollSettings from './sections/PayrollSettings';
 import GeofencingSettings from './sections/GeofencingSettingsSimple';
+import MainMenuSettings from './sections/MainMenuSettings';
 // import WhatsAppSettings from './sections/WhatsAppSettings'; // REMOVED - WhatsApp is in Integrations
 
 // Import icons
@@ -31,7 +32,8 @@ import {
   BanknotesIcon,
   CurrencyDollarIcon,
   MapPinIcon,
-  ChatBubbleLeftRightIcon
+  ChatBubbleLeftRightIcon,
+  Squares2X2Icon
 } from '@heroicons/react/24/outline';
 
 const SettingsManagement = () => {
@@ -50,7 +52,7 @@ const SettingsManagement = () => {
   const settingsSections = [
     {
       id: 'company-profile',
-      title: 'Company Profile', // Changed from General Settings
+      title: 'Business', // Changed from Company Profile
       icon: BuildingOfficeIcon,
       description: t('general.businessInfo'),
       component: CompanyProfile,
@@ -58,15 +60,23 @@ const SettingsManagement = () => {
     },
     {
       id: 'user-management',
-      title: t('tabs.userManagement'),
+      title: 'Users', // Changed from User Management
       icon: UserGroupIcon,
       description: t('userManagement.title'),
       component: UserManagement,
       requiredRole: 'admin' // Admin and Owner can access
     },
     {
+      id: 'main-menu',
+      title: 'Main Menu',
+      icon: Squares2X2Icon,
+      description: 'Customize which menu items are visible',
+      component: MainMenuSettings,
+      requiredRole: 'admin' // Admin and Owner can configure
+    },
+    {
       id: 'bank-connections',
-      title: t('tabs.bankConnections'),
+      title: 'Banking', // Changed from Bank Connections
       icon: BanknotesIcon,
       description: t('bankConnections.title'),
       component: BankConnections,

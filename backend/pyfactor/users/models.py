@@ -604,3 +604,28 @@ class BusinessSettings(models.Model):
     
     def __str__(self):
         return f"Settings for tenant {self.tenant_id}"
+
+
+class MenuVisibilitySettings(models.Model):
+    """
+    Store which menu items are visible for each business
+    This acts as the master control for menu visibility
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name='menu_visibility_settings')
+    menu_item = models.CharField(max_length=100, help_text="Menu item identifier (e.g., jobs, pos, sales)")
+    is_visible = models.BooleanField(default=True, help_text="Whether this menu item is visible")
+    parent_menu = models.CharField(max_length=100, null=True, blank=True, help_text="Parent menu identifier if this is a submenu")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'users_menu_visibility_settings'
+        unique_together = ['business', 'menu_item']
+        indexes = [
+            models.Index(fields=['business', 'is_visible']),
+        ]
+    
+    def __str__(self):
+        return f"{self.menu_item} visibility for {self.business.name}"
