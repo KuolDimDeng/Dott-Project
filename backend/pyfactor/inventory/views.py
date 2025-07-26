@@ -143,6 +143,29 @@ class ProductViewSet(viewsets.ModelViewSet):
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticated]
     
+    def create(self, request, *args, **kwargs):
+        """Override create method to add logging and handle pricing model"""
+        logger.info(f"[ProductViewSet] Creating product with data: {request.data}")
+        
+        try:
+            # Log specific pricing model fields
+            logger.info(f"[ProductViewSet] Pricing model: {request.data.get('pricing_model', 'Not provided')}")
+            logger.info(f"[ProductViewSet] Weight: {request.data.get('weight', 'Not provided')}")
+            logger.info(f"[ProductViewSet] Weight unit: {request.data.get('weight_unit', 'Not provided')}")
+            logger.info(f"[ProductViewSet] Daily rate: {request.data.get('daily_rate', 'Not provided')}")
+            logger.info(f"[ProductViewSet] Entry date: {request.data.get('entry_date', 'Not provided')}")
+            
+            response = super().create(request, *args, **kwargs)
+            logger.info(f"[ProductViewSet] Product created successfully: {response.data.get('id', 'Unknown ID')}")
+            return response
+            
+        except Exception as e:
+            logger.error(f"[ProductViewSet] Error creating product: {str(e)}", exc_info=True)
+            return Response(
+                {"error": str(e), "details": "Failed to create product with pricing model"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
     def get_queryset(self):
         """
         Get queryset with proper tenant context and optimized queries
