@@ -11,7 +11,7 @@ import uuid
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('inventory', '0002_auto_20250101_0000'),  # Update this to your latest migration
+        ('inventory', '0002_supplier_created_at_supplier_is_active_and_more'),  # Update this to your latest migration
         ('custom_auth', '0001_initial'),
     ]
 

@@ -467,7 +467,12 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
     forRent: false,
     search: '',
     supplier_id: '',  // Add supplier_id field
-    location_id: ''   // Add location_id field
+    location_id: '',   // Add location_id field
+    pricing_model: 'direct',  // Default pricing model
+    weight: '',
+    weight_unit: 'kg',
+    daily_rate: '',
+    entry_date: new Date().toISOString().split('T')[0]  // Default to today
   });
 
   // Initialize tenantId from session
@@ -1151,7 +1156,12 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
         for_rent: productData.forRent,
         supplier_id: productData.supplier_id || null,  // Add supplier_id to the API data
         location_id: productData.location_id || null,  // Add location_id to the API data
-        tenant_id: secureTenantId  // Use secure tenant ID explicitly
+        tenant_id: secureTenantId,  // Use secure tenant ID explicitly
+        pricing_model: productData.pricing_model,
+        weight: productData.pricing_model !== 'direct' && productData.weight ? parseFloat(productData.weight) : null,
+        weight_unit: productData.weight_unit || 'kg',
+        daily_rate: productData.pricing_model !== 'direct' && productData.daily_rate ? parseFloat(productData.daily_rate) : null,
+        entry_date: productData.pricing_model !== 'direct' && productData.entry_date ? productData.entry_date : null
       };
       
       console.log('Creating product with data:', apiData);
@@ -1190,7 +1200,12 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
         forRent: false,
         search: '',
         supplier_id: '',  // Add supplier_id field
-        location_id: ''   // Add location_id field
+        location_id: '',   // Add location_id field
+        pricing_model: 'direct',  // Reset to default
+        weight: '',
+        weight_unit: 'kg',
+        daily_rate: '',
+        entry_date: new Date().toISOString().split('T')[0]
       });
       
       setShowForm(false);
@@ -1575,6 +1590,144 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
             </label>
           </div>
           
+          {/* Pricing Model Section */}
+          <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <h3 className="text-md font-medium text-black mb-4">Pricing Model</h3>
+            
+            <div className="mb-4">
+              <label htmlFor="pricing_model" className="block text-sm font-medium text-black mb-1">
+                <span className="flex items-center">
+                  How is this product priced? *
+                  <FieldTooltip text="Select how customers will be charged for this product. Direct pricing charges a fixed amount, while time/weight based pricing calculates the cost based on duration and/or weight." />
+                </span>
+              </label>
+              <select
+                id="pricing_model"
+                name="pricing_model"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                value={productData.pricing_model || 'direct'}
+                onChange={(e) => setProductData({...productData, pricing_model: e.target.value})}
+              >
+                <option value="direct">Direct (One-time price)</option>
+                <option value="time_weight">Time & Weight (Price × Days × Weight)</option>
+                <option value="time_only">Time Only (Price × Days)</option>
+                <option value="weight_only">Weight Only (Price × Weight)</option>
+              </select>
+            </div>
+            
+            {/* Conditional fields based on pricing model */}
+            {productData.pricing_model !== 'direct' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                {/* Weight fields - shown for time_weight and weight_only */}
+                {(productData.pricing_model === 'time_weight' || productData.pricing_model === 'weight_only') && (
+                  <>
+                    <div>
+                      <label htmlFor="weight" className="block text-sm font-medium text-black mb-1">
+                        <span className="flex items-center">
+                          Weight *
+                          <FieldTooltip text="Enter the weight of the item. This will be used to calculate the price based on weight." />
+                        </span>
+                      </label>
+                      <input
+                        id="weight"
+                        name="weight"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        value={productData.weight || ''}
+                        onChange={(e) => setProductData({...productData, weight: e.target.value})}
+                        required={productData.pricing_model === 'time_weight' || productData.pricing_model === 'weight_only'}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="weight_unit" className="block text-sm font-medium text-black mb-1">
+                        <span className="flex items-center">
+                          Weight Unit *
+                          <FieldTooltip text="Select the unit of measurement for the weight." />
+                        </span>
+                      </label>
+                      <select
+                        id="weight_unit"
+                        name="weight_unit"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        value={productData.weight_unit || 'kg'}
+                        onChange={(e) => setProductData({...productData, weight_unit: e.target.value})}
+                      >
+                        <option value="kg">Kilograms (kg)</option>
+                        <option value="lbs">Pounds (lbs)</option>
+                        <option value="g">Grams (g)</option>
+                        <option value="oz">Ounces (oz)</option>
+                        <option value="mt">Metric Tons (mt)</option>
+                      </select>
+                    </div>
+                  </>
+                )}
+                
+                {/* Time-based fields - shown for time_weight and time_only */}
+                {(productData.pricing_model === 'time_weight' || productData.pricing_model === 'time_only') && (
+                  <>
+                    <div>
+                      <label htmlFor="daily_rate" className="block text-sm font-medium text-black mb-1">
+                        <span className="flex items-center">
+                          Daily Rate *
+                          <FieldTooltip text="Enter the rate charged per day. This will be multiplied by the number of days to calculate the time-based portion of the price." />
+                        </span>
+                      </label>
+                      <input
+                        id="daily_rate"
+                        name="daily_rate"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        value={productData.daily_rate || ''}
+                        onChange={(e) => setProductData({...productData, daily_rate: e.target.value})}
+                        required={productData.pricing_model === 'time_weight' || productData.pricing_model === 'time_only'}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="entry_date" className="block text-sm font-medium text-black mb-1">
+                        <span className="flex items-center">
+                          Entry Date
+                          <FieldTooltip text="The date when the item entered storage. This is used to calculate the number of days for pricing. Defaults to today if not specified." />
+                        </span>
+                      </label>
+                      <input
+                        id="entry_date"
+                        name="entry_date"
+                        type="date"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        value={productData.entry_date || new Date().toISOString().split('T')[0]}
+                        onChange={(e) => setProductData({...productData, entry_date: e.target.value})}
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+            
+            {/* Price calculation preview for non-direct pricing */}
+            {productData.pricing_model !== 'direct' && (
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <p className="text-sm text-blue-800">
+                  <svg className="inline w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                  <strong>Pricing Formula:</strong> 
+                  {productData.pricing_model === 'time_weight' && ' Price = Daily Rate × Days × Weight'}
+                  {productData.pricing_model === 'time_only' && ' Price = Daily Rate × Days'}
+                  {productData.pricing_model === 'weight_only' && ' Price × Weight'}
+                </p>
+                <p className="text-xs text-blue-700 mt-1">
+                  The final price will be calculated automatically at checkout based on the current date.
+                </p>
+              </div>
+            )}
+          </div>
+          
           <div className="flex justify-end space-x-3">
             <button
               type="button"
@@ -1665,6 +1818,57 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
             </div>
           </div>
         </div>
+        
+        {/* Pricing Model Information */}
+        {selectedProduct.pricing_model && selectedProduct.pricing_model !== 'direct' && (
+          <div className="border border-gray-200 rounded-lg p-4 mb-6">
+            <h3 className="font-medium text-black mb-2">Pricing Model</h3>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="text-sm text-gray-500">Model:</div>
+              <div className="text-sm text-black">{selectedProduct.pricing_model_display || selectedProduct.pricing_model}</div>
+              
+              {selectedProduct.calculated_price !== undefined && (
+                <>
+                  <div className="text-sm text-gray-500">Current Price:</div>
+                  <div className="text-sm text-black font-medium">${parseFloat(selectedProduct.calculated_price || 0).toFixed(2)}</div>
+                </>
+              )}
+              
+              {selectedProduct.weight && (
+                <>
+                  <div className="text-sm text-gray-500">Weight:</div>
+                  <div className="text-sm text-black">{selectedProduct.weight} {selectedProduct.weight_unit || 'kg'}</div>
+                </>
+              )}
+              
+              {selectedProduct.daily_rate && (
+                <>
+                  <div className="text-sm text-gray-500">Daily Rate:</div>
+                  <div className="text-sm text-black">${parseFloat(selectedProduct.daily_rate || 0).toFixed(2)}</div>
+                </>
+              )}
+              
+              {selectedProduct.entry_date && (
+                <>
+                  <div className="text-sm text-gray-500">Entry Date:</div>
+                  <div className="text-sm text-black">{new Date(selectedProduct.entry_date).toLocaleDateString()}</div>
+                </>
+              )}
+            </div>
+            
+            {selectedProduct.price_breakdown && (
+              <div className="mt-3 p-3 bg-gray-50 rounded-md">
+                <p className="text-xs text-gray-600">
+                  <strong>Breakdown:</strong>
+                  {selectedProduct.price_breakdown.days && ` ${selectedProduct.price_breakdown.days} days`}
+                  {selectedProduct.price_breakdown.weight && ` × ${selectedProduct.price_breakdown.weight} ${selectedProduct.price_breakdown.weight_unit}`}
+                  {selectedProduct.price_breakdown.daily_rate && ` × $${selectedProduct.price_breakdown.daily_rate}`}
+                  {` = $${selectedProduct.price_breakdown.total}`}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
         
         <div className="border border-gray-200 rounded-lg p-4 mb-6">
           <h3 className="font-medium text-black mb-2">Product Status</h3>

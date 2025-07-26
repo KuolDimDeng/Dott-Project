@@ -253,6 +253,13 @@ class Product(AuditMixin, TenantAwareModel):
         ('service', 'Service (no physical item)'),
     ]
     
+    PRICING_MODEL_CHOICES = [
+        ('direct', 'Direct (One-time price)'),
+        ('time_weight', 'Time & Weight (Price × Days × Weight)'),
+        ('time_only', 'Time Only (Price × Days)'),
+        ('weight_only', 'Weight Only (Price × Weight)'),
+    ]
+    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
@@ -263,6 +270,20 @@ class Product(AuditMixin, TenantAwareModel):
     price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     cost = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     quantity = models.IntegerField(default=0)
+    
+    # Pricing model fields
+    pricing_model = models.CharField(max_length=20, choices=PRICING_MODEL_CHOICES, default='direct', 
+                                   help_text='How this product is priced')
+    
+    # For time/weight based pricing
+    weight = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True,
+                                help_text='Weight of the item (for weight-based pricing)')
+    weight_unit = models.CharField(max_length=10, default='kg', blank=True,
+                                 help_text='Unit of weight (kg, lbs, etc.)')
+    daily_rate = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True,
+                                   help_text='Rate per day (for time-based pricing)')
+    entry_date = models.DateTimeField(blank=True, null=True,
+                                    help_text='When item entered storage (for time calculations)')
     
     # Supply-specific fields
     markup_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0, help_text='Default markup % when billing to customers')
@@ -304,7 +325,65 @@ class Product(AuditMixin, TenantAwareModel):
                 self.sku = f"{original_sku}-{counter}"
                 counter += 1
         
+        # If this is the first product for this tenant, save the pricing model as default
+        if not self.pk and not Product.objects.filter(tenant_id=self.tenant_id).exists():
+            from users.models import BusinessSettings
+            BusinessSettings.objects.update_or_create(
+                tenant_id=self.tenant_id,
+                defaults={'default_pricing_model': self.pricing_model}
+            )
+        
+        # Auto-set entry_date for time-based pricing if not provided
+        if self.pricing_model in ['time_weight', 'time_only'] and not self.entry_date:
+            self.entry_date = timezone.now()
+        
         super().save(*args, **kwargs)
+    
+    def calculate_price(self, checkout_date=None):
+        """Calculate the price based on the pricing model"""
+        if self.pricing_model == 'direct':
+            return self.price or 0
+        
+        checkout_date = checkout_date or timezone.now()
+        
+        if self.pricing_model == 'time_weight':
+            if not self.entry_date or not self.weight or not self.daily_rate:
+                return 0
+            days = (checkout_date - self.entry_date).days + 1  # Include current day
+            return self.daily_rate * days * self.weight
+        
+        elif self.pricing_model == 'time_only':
+            if not self.entry_date or not self.daily_rate:
+                return 0
+            days = (checkout_date - self.entry_date).days + 1
+            return self.daily_rate * days
+        
+        elif self.pricing_model == 'weight_only':
+            if not self.weight or not self.price:
+                return 0
+            return self.price * self.weight
+        
+        return 0
+    
+    def get_price_breakdown(self, checkout_date=None):
+        """Get a detailed breakdown of price calculation"""
+        if self.pricing_model == 'direct':
+            return {'price': self.price, 'breakdown': 'Direct pricing'}
+        
+        checkout_date = checkout_date or timezone.now()
+        breakdown = {}
+        
+        if self.pricing_model in ['time_weight', 'time_only']:
+            days = (checkout_date - self.entry_date).days + 1 if self.entry_date else 0
+            breakdown['days'] = days
+            breakdown['daily_rate'] = self.daily_rate
+        
+        if self.pricing_model in ['time_weight', 'weight_only']:
+            breakdown['weight'] = self.weight
+            breakdown['weight_unit'] = self.weight_unit
+        
+        breakdown['total'] = self.calculate_price(checkout_date)
+        return breakdown
     
     def __str__(self):
         return self.name
@@ -314,6 +393,7 @@ class Product(AuditMixin, TenantAwareModel):
         indexes = [
             models.Index(fields=['tenant_id', 'name']),
             models.Index(fields=['tenant_id', 'sku']),
+            models.Index(fields=['pricing_model']),
         ]
 
 class Service(Item):

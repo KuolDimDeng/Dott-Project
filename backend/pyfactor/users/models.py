@@ -561,3 +561,46 @@ class UserMenuPrivilege(models.Model):
     
     def __str__(self):
         return f"Menu privileges for {self.business_member}"
+
+
+class BusinessSettings(models.Model):
+    """
+    Business settings and preferences
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    tenant_id = models.UUIDField(unique=True)
+    
+    # Pricing model defaults
+    default_pricing_model = models.CharField(
+        max_length=20,
+        choices=[
+            ('direct', 'Direct (One-time price)'),
+            ('time_weight', 'Time & Weight (Price × Days × Weight)'),
+            ('time_only', 'Time Only (Price × Days)'),
+            ('weight_only', 'Weight Only (Price × Weight)'),
+        ],
+        default='direct',
+        help_text='Default pricing model for new products'
+    )
+    
+    # Default rates for time/weight pricing
+    default_daily_rate = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0,
+        help_text='Default rate per day for time-based pricing'
+    )
+    default_weight_unit = models.CharField(
+        max_length=10, default='kg',
+        help_text='Default weight unit (kg, lbs, etc.)'
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'users_business_settings'
+        indexes = [
+            models.Index(fields=['tenant_id']),
+        ]
+    
+    def __str__(self):
+        return f"Settings for tenant {self.tenant_id}"

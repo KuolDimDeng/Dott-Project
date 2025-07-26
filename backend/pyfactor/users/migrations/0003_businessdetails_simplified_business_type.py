@@ -5,7 +5,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0002_auto_20250715_0000'),  # Update this to your latest migration
+        ('users', '0002_remove_userprofile_schema_name_and_more'),  # Update this to your latest migration
     ]
 
     operations = [

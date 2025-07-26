@@ -64,12 +64,25 @@ class ProductSerializer(serializers.ModelSerializer):
     location_name = serializers.ReadOnlyField(source='location.name', allow_null=True)
     # Display material type label
     material_type_display = serializers.CharField(source='get_material_type_display', read_only=True)
+    # Display pricing model label
+    pricing_model_display = serializers.CharField(source='get_pricing_model_display', read_only=True)
+    # Calculate current price based on pricing model
+    calculated_price = serializers.SerializerMethodField()
+    price_breakdown = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = '__all__'
         # SKU is auto-generated if not provided, but can be overridden
         read_only_fields = ('id', 'created_at', 'updated_at')
+    
+    def get_calculated_price(self, obj):
+        """Calculate the current price based on pricing model"""
+        return obj.calculate_price()
+    
+    def get_price_breakdown(self, obj):
+        """Get price calculation breakdown"""
+        return obj.get_price_breakdown()
 
 class ServiceSerializer(serializers.ModelSerializer):
     type_fields = ServiceTypeFieldsSerializer(read_only=True)
