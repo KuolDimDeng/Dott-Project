@@ -884,7 +884,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     console.log('[DashboardContent] handleMenuItemClick called with option:', option);
     handleCloseCreateMenu();
     
-    // Handle Product, Service, Estimate, and Sales inline like their Sales menu counterparts
+    // Handle Product, Service, Estimate, Job, Customer, and Sales inline like their Sales menu counterparts
     if (option === 'Product') {
       console.log('[DashboardContent] Redirecting to Products management');
       handleSalesClick('products');
@@ -894,6 +894,12 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     } else if (option === 'Estimate') {
       console.log('[DashboardContent] Redirecting to Estimates management');
       handleSalesClick('estimates');
+    } else if (option === 'Job') {
+      console.log('[DashboardContent] Redirecting to Jobs management');
+      handleSalesClick('jobs');
+    } else if (option === 'Customer') {
+      console.log('[DashboardContent] Redirecting to Customers management');
+      handleSalesClick('customers');
     } else if (option === 'Sales') {
       console.log('[DashboardContent] Opening POS System');
       setShowPOSSystem(true);

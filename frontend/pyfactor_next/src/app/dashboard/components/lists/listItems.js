@@ -243,7 +243,7 @@ const getCreateOptions = (t) => [
     value: 'Product'
   },
   {
-    label: t('subMenu.catalog'),
+    label: t('subMenu.services'),
     icon: <NavIcons.Receipt className="w-4 h-4" />,
     onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
       if (typeof handleShowCreateOptions === 'function') {
@@ -251,6 +251,16 @@ const getCreateOptions = (t) => [
       }
     },
     value: 'Service'
+  },
+  {
+    label: t('subMenu.jobs'),
+    icon: <NavIcons.Work className="w-4 h-4" />,
+    onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
+      if (typeof handleShowCreateOptions === 'function') {
+        handleShowCreateOptions('Job');
+      }
+    },
+    value: 'Job'
   },
   {
     label: t('subMenu.invoices'),
