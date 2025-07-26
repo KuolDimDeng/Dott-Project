@@ -6,6 +6,35 @@ import { useSessionContext } from '@/contexts/SessionContext';
 import { useNotification } from '@/context/NotificationContext';
 import { logger } from '@/utils/logger';
 
+// Debug component to show inactivity timer
+function InactivityTimer({ lastActivityRef }) {
+  const [timeInactive, setTimeInactive] = useState(0);
+  
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const inactive = Date.now() - lastActivityRef.current;
+      setTimeInactive(inactive);
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [lastActivityRef]);
+  
+  const minutes = Math.floor(timeInactive / 1000 / 60);
+  const seconds = Math.floor((timeInactive / 1000) % 60);
+  const willTimeout = timeInactive >= (15 * 60 * 1000);
+  
+  return (
+    <div style={{ 
+      marginTop: '4px', 
+      color: willTimeout ? '#ff6b6b' : '#4ecdc4',
+      fontWeight: willTimeout ? 'bold' : 'normal'
+    }}>
+      Inactive: {minutes}m {seconds}s
+      {willTimeout && ' ⚠️'}
+    </div>
+  );
+}
+
 const SessionTimeoutContext = createContext();
 
 export const useSessionTimeout = () => {
@@ -72,6 +101,13 @@ export function SessionTimeoutProvider({ children }) {
     
     lastActivityRef.current = now;
     
+    // Store in localStorage to survive page reloads
+    try {
+      localStorage.setItem('sessionTimeoutLastActivity', now.toString());
+    } catch (e) {
+      // Ignore localStorage errors
+    }
+    
     // If warning is showing and user becomes active, cancel the timeout
     if (isWarningVisible) {
       console.log('🔐 [SessionTimeout] User active during warning, canceling timeout');
@@ -91,7 +127,7 @@ export function SessionTimeoutProvider({ children }) {
       await logout();
       
       // Clear any sensitive data from localStorage
-      const keysToRemove = ['draft_invoice', 'draft_quote', 'temp_data'];
+      const keysToRemove = ['draft_invoice', 'draft_quote', 'temp_data', 'sessionTimeoutLastActivity'];
       keysToRemove.forEach(key => localStorage.removeItem(key));
       
       // Notify user
@@ -166,6 +202,28 @@ export function SessionTimeoutProvider({ children }) {
     }
     
     console.log('🔐 [SessionTimeout] Setting up activity listeners');
+    
+    // Check if we have a stored last activity time (survives page reloads)
+    const storedLastActivity = localStorage.getItem('sessionTimeoutLastActivity');
+    if (storedLastActivity) {
+      const storedTime = parseInt(storedLastActivity, 10);
+      const timeSinceStored = Date.now() - storedTime;
+      console.log('🔐 [SessionTimeout] Found stored activity time:', {
+        storedTime: new Date(storedTime).toISOString(),
+        timeSinceStored: Math.round(timeSinceStored / 1000) + 's'
+      });
+      
+      // If the stored time is reasonable (within last 30 minutes), use it
+      if (timeSinceStored < 30 * 60 * 1000) {
+        lastActivityRef.current = storedTime;
+        
+        // Check if we should show warning immediately after reload
+        if (timeSinceStored >= INACTIVITY_TIMEOUT) {
+          console.log('🔐 [SessionTimeout] Inactivity timeout already reached before reload, showing warning immediately');
+          startWarningCountdown();
+        }
+      }
+    }
     
     // Events to track
     const events = [
@@ -253,9 +311,11 @@ export function SessionTimeoutProvider({ children }) {
           borderRadius: '4px',
           fontSize: '12px',
           zIndex: 9999,
-          fontFamily: 'monospace'
+          fontFamily: 'monospace',
+          minWidth: '200px'
         }}>
-          🔐 Session Timeout Active
+          <div>🔐 Session Timeout Active</div>
+          <InactivityTimer lastActivityRef={lastActivityRef} />
         </div>
       )}
     </SessionTimeoutContext.Provider>
