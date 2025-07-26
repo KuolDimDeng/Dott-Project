@@ -60,7 +60,9 @@ ENV NEXT_PUBLIC_POSTHOG_HOST=$NEXT_PUBLIC_POSTHOG_HOST
 
 # Build with cache mount for Next.js cache
 RUN --mount=type=cache,id=nextjs,target=/app/.next/cache \
-    pnpm run build:render
+    NODE_OPTIONS="--max-old-space-size=4096" \
+    NEXT_TELEMETRY_DISABLED=1 \
+    pnpm next build
 
 # Production stage - minimal size
 FROM node:18-alpine AS runner
