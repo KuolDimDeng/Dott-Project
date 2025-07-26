@@ -165,6 +165,7 @@ export default function ClientLayout({ children }) {
           <ThemeProvider>
             <NotificationProvider>
               <SessionTimeoutProvider>
+                {console.log('🔐 [DashboardClientLayout] SessionTimeoutProvider wrapped')}
                 <DynamicComponents>
                   <ClientDataSync />
                   {children}

@@ -10,6 +10,14 @@ export default function SessionTimeoutModal() {
   const { logout } = useSessionContext();
   const [audioPlayed, setAudioPlayed] = useState(false);
 
+  // Debug logging
+  console.log('🔐 [SessionTimeoutModal] Component state', {
+    isWarningVisible,
+    timeRemaining: timeRemaining / 1000 + 's',
+    showFinalCountdown,
+    modalWillRender: isWarningVisible
+  });
+
   // Format time for display
   const formatTime = (milliseconds) => {
     const totalSeconds = Math.ceil(milliseconds / 1000);

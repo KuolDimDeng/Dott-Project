@@ -36,15 +36,13 @@ export function SessionTimeoutProvider({ children }) {
   const countdownIntervalRef = useRef(null);
   const checkIntervalRef = useRef(null);
 
-  // Update last activity timestamp
-  const updateActivity = useCallback(() => {
-    lastActivityRef.current = Date.now();
-    
-    // If warning is showing and user becomes active, cancel the timeout
-    if (isWarningVisible) {
-      cancelTimeout();
-    }
-  }, [isWarningVisible]);
+  // Debug logging
+  console.log('🔐 [SessionTimeout] Provider initialized', {
+    sessionExists: !!session,
+    inactivityTimeout: INACTIVITY_TIMEOUT / 1000 / 60 + ' minutes',
+    warningDuration: WARNING_DURATION / 1000 + ' seconds',
+    checkInterval: CHECK_INTERVAL / 1000 + ' seconds'
+  });
 
   // Cancel timeout and reset state
   const cancelTimeout = useCallback(() => {
@@ -62,6 +60,24 @@ export function SessionTimeoutProvider({ children }) {
       countdownIntervalRef.current = null;
     }
   }, []);
+
+  // Update last activity timestamp
+  const updateActivity = useCallback(() => {
+    const now = Date.now();
+    const timeSinceLastActivity = now - lastActivityRef.current;
+    console.log('🔐 [SessionTimeout] Activity detected', {
+      timeSinceLastActivity: Math.round(timeSinceLastActivity / 1000) + 's',
+      isWarningVisible
+    });
+    
+    lastActivityRef.current = now;
+    
+    // If warning is showing and user becomes active, cancel the timeout
+    if (isWarningVisible) {
+      console.log('🔐 [SessionTimeout] User active during warning, canceling timeout');
+      cancelTimeout();
+    }
+  }, [isWarningVisible, cancelTimeout]);
 
   // Handle session timeout
   const handleTimeout = useCallback(async () => {
@@ -118,21 +134,38 @@ export function SessionTimeoutProvider({ children }) {
 
   // Check for inactivity
   const checkInactivity = useCallback(() => {
-    if (!session) return;
+    if (!session) {
+      console.log('🔐 [SessionTimeout] No session, skipping inactivity check');
+      return;
+    }
     
     const now = Date.now();
     const timeSinceLastActivity = now - lastActivityRef.current;
+    const minutesInactive = Math.floor(timeSinceLastActivity / 1000 / 60);
+    const secondsInactive = Math.floor((timeSinceLastActivity / 1000) % 60);
+    
+    console.log('🔐 [SessionTimeout] Checking inactivity', {
+      timeSinceLastActivity: `${minutesInactive}m ${secondsInactive}s`,
+      inactivityThreshold: INACTIVITY_TIMEOUT / 1000 / 60 + ' minutes',
+      isWarningVisible,
+      willShowWarning: timeSinceLastActivity >= INACTIVITY_TIMEOUT && !isWarningVisible
+    });
     
     // Start warning if inactive for too long
     if (timeSinceLastActivity >= INACTIVITY_TIMEOUT && !isWarningVisible) {
-      logger.info('[SessionTimeout] Inactivity detected, showing warning');
+      logger.info('[SessionTimeout] Inactivity timeout reached, showing warning');
       startWarningCountdown();
     }
   }, [session, isWarningVisible, startWarningCountdown]);
 
   // Set up activity listeners
   useEffect(() => {
-    if (!session) return;
+    if (!session) {
+      console.log('🔐 [SessionTimeout] No session, not setting up listeners');
+      return;
+    }
+    
+    console.log('🔐 [SessionTimeout] Setting up activity listeners');
     
     // Events to track
     const events = [
@@ -160,6 +193,7 @@ export function SessionTimeoutProvider({ children }) {
     events.forEach(event => {
       document.addEventListener(event, throttledUpdateActivity);
     });
+    console.log('🔐 [SessionTimeout] Added event listeners for:', events);
     
     // Also track API activity by intercepting fetch
     const originalFetch = window.fetch;
@@ -167,9 +201,11 @@ export function SessionTimeoutProvider({ children }) {
       updateActivity();
       return originalFetch.apply(this, args);
     };
+    console.log('🔐 [SessionTimeout] Intercepted fetch for activity tracking');
     
     // Start checking for inactivity
     checkIntervalRef.current = setInterval(checkInactivity, CHECK_INTERVAL);
+    console.log('🔐 [SessionTimeout] Started inactivity check interval');
     
     // Cleanup
     return () => {
@@ -205,6 +241,23 @@ export function SessionTimeoutProvider({ children }) {
   return (
     <SessionTimeoutContext.Provider value={value}>
       {children}
+      {/* Debug indicator - remove in production */}
+      {session && (
+        <div style={{
+          position: 'fixed',
+          bottom: 10,
+          right: 10,
+          background: 'rgba(0, 0, 0, 0.8)',
+          color: 'white',
+          padding: '8px 12px',
+          borderRadius: '4px',
+          fontSize: '12px',
+          zIndex: 9999,
+          fontFamily: 'monospace'
+        }}>
+          🔐 Session Timeout Active
+        </div>
+      )}
     </SessionTimeoutContext.Provider>
   );
 }
