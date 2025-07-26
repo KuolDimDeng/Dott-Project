@@ -192,7 +192,9 @@
       "Bash(do if [[ ! \"$file\" =~ \"/en/\" ]])",
       "Bash(then sed -i '' 's/\"\"Jobs & Projects\"\"/\"\"Jobs\"\"/g' \"$file\")",
       "Bash(do if [ \"$file\" != \"public/locales/en/navigation.json\" ])",
-      "Bash(then sed -i '' 's/\"\"Product\"\"/\"\"Products\"\"/g' \"$file\")"
+      "Bash(then sed -i '' 's/\"\"Product\"\"/\"\"Products\"\"/g' \"$file\")",
+      "Bash(timeout 30 npm run dev:*)",
+      "Bash(timeout 30 pnpm run dev:*)"
     ],
     "deny": []
   }
