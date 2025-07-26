@@ -25,6 +25,7 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [generatingNumber, setGeneratingNumber] = useState(false);
 
   useEffect(() => {
     fetchCustomers();
@@ -45,7 +46,7 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
   const fetchCustomers = async () => {
     try {
       const customersData = await jobService.getAvailableCustomers();
-      setCustomers(customersData);
+      setCustomers(Array.isArray(customersData) ? customersData : []);
     } catch (err) {
       logger.error('Error fetching customers:', err);
     }
@@ -53,10 +54,15 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
 
   const generateJobNumber = async () => {
     try {
+      setGeneratingNumber(true);
       const jobNumber = await jobService.generateJobNumber();
       setFormData(prev => ({ ...prev, job_number: jobNumber }));
     } catch (err) {
       logger.error('Error generating job number:', err);
+      // Show error to user
+      setError('Failed to generate job number. Please try again.');
+    } finally {
+      setGeneratingNumber(false);
     }
   };
 
@@ -132,16 +138,18 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
             {/* Job Number and Customer */}
             <div>
               <label htmlFor="job_number" className="block text-sm font-medium text-gray-700">
-                Job Number *
+                Job Number * {!job && <span className="text-xs text-gray-500">(Auto-generated)</span>}
               </label>
               <input
                 type="text"
                 id="job_number"
                 name="job_number"
-                value={formData.job_number}
+                value={generatingNumber ? 'Generating...' : formData.job_number}
                 onChange={handleChange}
                 required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                readOnly={!job} // Read-only for new jobs (auto-generated)
+                className={`mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${!job ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                title={!job ? 'Job number is automatically generated' : 'Job number'}
               />
             </div>
 
@@ -338,16 +346,18 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
             {/* Job Number */}
             <div>
               <label htmlFor="job_number" className="block text-sm font-medium text-gray-700">
-                Job Number *
+                Job Number * {!job && <span className="text-xs text-gray-500">(Auto-generated)</span>}
               </label>
               <input
                 type="text"
                 id="job_number"
                 name="job_number"
-                value={formData.job_number}
+                value={generatingNumber ? 'Generating...' : formData.job_number}
                 onChange={handleChange}
                 required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                readOnly={!job} // Read-only for new jobs (auto-generated)
+                className={`mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ${!job ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                title={!job ? 'Job number is automatically generated' : 'Job number'}
               />
             </div>
 

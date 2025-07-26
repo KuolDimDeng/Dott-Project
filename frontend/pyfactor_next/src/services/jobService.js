@@ -24,7 +24,14 @@ class JobService {
         useCache: true,
         cacheTTL: 5 * 60 * 1000 // 5 minutes
       });
-      return response || [];
+      
+      // Handle paginated response
+      if (response && typeof response === 'object' && 'results' in response) {
+        return Array.isArray(response.results) ? response.results : [];
+      }
+      
+      // Handle direct array response
+      return Array.isArray(response) ? response : [];
     } catch (error) {
       logger.error('Error fetching jobs:', error);
       throw error;
@@ -122,7 +129,13 @@ class JobService {
   async getJobMaterials(jobId) {
     try {
       const response = await fetchData(`${this.baseUrl}/${jobId}/materials/`);
-      return response || [];
+      
+      // Handle paginated response
+      if (response && typeof response === 'object' && 'results' in response) {
+        return Array.isArray(response.results) ? response.results : [];
+      }
+      
+      return Array.isArray(response) ? response : [];
     } catch (error) {
       logger.error(`Error fetching materials for job ${jobId}:`, error);
       throw error;
@@ -199,7 +212,13 @@ class JobService {
   async getJobLabor(jobId) {
     try {
       const response = await fetchData(`${this.baseUrl}/${jobId}/labor/`);
-      return response || [];
+      
+      // Handle paginated response
+      if (response && typeof response === 'object' && 'results' in response) {
+        return Array.isArray(response.results) ? response.results : [];
+      }
+      
+      return Array.isArray(response) ? response : [];
     } catch (error) {
       logger.error(`Error fetching labor for job ${jobId}:`, error);
       throw error;
@@ -276,7 +295,13 @@ class JobService {
   async getJobExpenses(jobId) {
     try {
       const response = await fetchData(`${this.baseUrl}/${jobId}/expenses/`);
-      return response || [];
+      
+      // Handle paginated response
+      if (response && typeof response === 'object' && 'results' in response) {
+        return Array.isArray(response.results) ? response.results : [];
+      }
+      
+      return Array.isArray(response) ? response : [];
     } catch (error) {
       logger.error(`Error fetching expenses for job ${jobId}:`, error);
       throw error;
@@ -466,7 +491,14 @@ class JobService {
         useCache: true,
         cacheTTL: 10 * 60 * 1000
       });
-      return response || [];
+      
+      // Handle paginated response
+      if (response && typeof response === 'object' && 'results' in response) {
+        return Array.isArray(response.results) ? response.results : [];
+      }
+      
+      // Handle direct array response
+      return Array.isArray(response) ? response : [];
     } catch (error) {
       logger.error('Error fetching available customers:', error);
       return [];

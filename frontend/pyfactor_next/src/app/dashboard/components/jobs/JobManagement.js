@@ -244,7 +244,7 @@ const JobManagement = ({ view = 'jobs-list' }) => {
         )}
 
         {/* Jobs List */}
-        {jobs.length === 0 ? (
+        {!Array.isArray(jobs) || jobs.length === 0 ? (
           <div className="text-center py-12">
             <BriefcaseIcon className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-2 text-sm font-medium text-gray-900">No jobs found</h3>
@@ -285,7 +285,7 @@ const JobManagement = ({ view = 'jobs-list' }) => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {Array.isArray(jobs) && jobs.map((job) => (
+                {Array.isArray(jobs) && jobs.length > 0 && jobs.map((job) => (
                   <tr key={job.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>

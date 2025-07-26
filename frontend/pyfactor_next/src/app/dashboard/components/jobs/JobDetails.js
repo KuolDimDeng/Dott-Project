@@ -41,9 +41,9 @@ const JobDetails = ({ job, onClose, onEdit }) => {
         jobService.getJobCosting(job.id)
       ]);
       
-      setMaterials(materialsData);
-      setLabor(laborData);
-      setExpenses(expensesData);
+      setMaterials(Array.isArray(materialsData) ? materialsData : []);
+      setLabor(Array.isArray(laborData) ? laborData : []);
+      setExpenses(Array.isArray(expensesData) ? expensesData : []);
       setCosting(costingData);
     } catch (err) {
       logger.error('Error fetching job details:', err);
