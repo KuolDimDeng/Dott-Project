@@ -66,6 +66,8 @@ const ImportExport = () => {
 
     setExporting(true);
     
+    console.log('Starting export with data types:', selectedDataTypes);
+    
     try {
       const response = await fetch('/api/import-export/export-data', {
         method: 'POST',
@@ -80,9 +82,22 @@ const ImportExport = () => {
           options: { headers: true, formatting: true }
         })
       });
+      
+      console.log('Export response:', { 
+        status: response.status, 
+        ok: response.ok,
+        headers: Object.fromEntries(response.headers.entries())
+      });
 
       if (!response.ok) {
-        throw new Error(`Export failed: ${response.statusText}`);
+        let errorMessage = 'Export failed';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || `Export failed: ${response.statusText}`;
+        } catch (e) {
+          errorMessage = `Export failed: ${response.status} ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
 
       // Create download

@@ -529,7 +529,7 @@ export async function POST(request) {
     
     // Step 4: Fetch real data for each type
     debugLog('MAIN', 'Step 4: Fetching real data for export');
-    const exportData = {};
+    const collectedData = {};
     
     for (const dataType of dataTypes) {
       debugLog('MAIN', `Fetching data for ${dataType}`);
@@ -547,7 +547,7 @@ export async function POST(request) {
         });
         
         if (formattedData.length > 0) {
-          exportData[dataType] = formattedData;
+          collectedData[dataType] = formattedData;
         }
       } catch (error) {
         debugLog('MAIN', `Error fetching ${dataType}`, {
@@ -558,7 +558,7 @@ export async function POST(request) {
     }
     
     // Check if we have any data to export
-    const totalRecords = Object.values(exportData).reduce((sum, data) => sum + (data?.length || 0), 0);
+    const totalRecords = Object.values(collectedData).reduce((sum, data) => sum + (data?.length || 0), 0);
     debugLog('MAIN', 'Total records to export', { totalRecords });
     
     if (totalRecords === 0) {
@@ -570,7 +570,7 @@ export async function POST(request) {
     
     // Step 5: Generate export file
     debugLog('MAIN', 'Step 5: Generating export file');
-    const exportResult = await exportData(exportData, format, dataTypes, options);
+    const exportResult = await exportData(collectedData, format, dataTypes, options);
     
     // Step 6: Create response
     debugLog('MAIN', 'Step 6: Creating response');
