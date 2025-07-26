@@ -16,7 +16,6 @@ const ImportExport = () => {
   const { session, loading: sessionLoading } = useSession();
   const [mode, setMode] = useState(null);
   const [selectedDataTypes, setSelectedDataTypes] = useState([]);
-  const [exporting, setExporting] = useState(false);
 
   // Show loading spinner while session loads
   if (sessionLoading) {
@@ -58,66 +57,15 @@ const ImportExport = () => {
     { id: 'bills', label: 'Bills & Expenses', description: 'Purchase bills and expense records' }
   ];
 
-  const handleExport = async () => {
+  const handleExport = () => {
     if (selectedDataTypes.length === 0) {
       alert('Please select at least one data type to export');
       return;
     }
-
-    setExporting(true);
     
-    console.log('Starting export with data types:', selectedDataTypes);
-    
-    try {
-      const response = await fetch('/api/import-export/export-data', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          dataTypes: selectedDataTypes,
-          format: 'excel',
-          dateRange: 'all',
-          options: { headers: true, formatting: true }
-        })
-      });
-      
-      console.log('Export response:', { 
-        status: response.status, 
-        ok: response.ok,
-        headers: Object.fromEntries(response.headers.entries())
-      });
-
-      if (!response.ok) {
-        let errorMessage = 'Export failed';
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.error || errorData.message || `Export failed: ${response.statusText}`;
-        } catch (e) {
-          errorMessage = `Export failed: ${response.status} ${response.statusText}`;
-        }
-        throw new Error(errorMessage);
-      }
-
-      // Create download
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `dott_export_${selectedDataTypes.join('_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      alert('Export completed successfully!');
-    } catch (error) {
-      console.error('Export error:', error);
-      alert(`Export failed: ${error.message}`);
-    } finally {
-      setExporting(false);
-    }
+    // Navigate to the enhanced export page with selected data types
+    const dataTypesParam = selectedDataTypes.join(',');
+    router.push(`/dashboard/import-export/export?types=${encodeURIComponent(dataTypesParam)}`);
   };
 
   const toggleDataType = (dataTypeId) => {
@@ -169,24 +117,15 @@ const ImportExport = () => {
           </button>
           <button
             onClick={handleExport}
-            disabled={exporting || selectedDataTypes.length === 0}
+            disabled={selectedDataTypes.length === 0}
             className={`px-6 py-2 rounded-lg font-medium transition-colors flex items-center ${
-              exporting || selectedDataTypes.length === 0
+              selectedDataTypes.length === 0
                 ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
                 : 'bg-green-600 text-white hover:bg-green-700'
             }`}
           >
-            {exporting ? (
-              <>
-                <StandardSpinner size="small" className="mr-2" />
-                Exporting...
-              </>
-            ) : (
-              <>
-                <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
-                Export Data
-              </>
-            )}
+            <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
+            Export Data
           </button>
         </div>
       </div>
@@ -235,9 +174,9 @@ const ImportExport = () => {
             Export your data to Excel, CSV, or other formats for backup or migration.
           </p>
           <ul className="text-sm text-gray-500 space-y-1">
-            <li>• Multiple export formats</li>
+            <li>• Excel, CSV, PDF & QuickBooks formats</li>
             <li>• Customizable date ranges</li>
-            <li>• Clean formatted output</li>
+            <li>• Excel formatting options</li>
             <li>• Secure tenant isolation</li>
           </ul>
         </div>
