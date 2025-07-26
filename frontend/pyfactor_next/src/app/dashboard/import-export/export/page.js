@@ -13,7 +13,7 @@ import {
   CheckIcon
 } from '@heroicons/react/24/outline';
 import StandardSpinner from '@/components/ui/StandardSpinner';
-import { captureEvent } from '@/lib/posthog';
+// Remove PostHog import to prevent crashes
 import { useSession } from '@/hooks/useSession-v2';
 
 const ExportPage = () => {
@@ -81,8 +81,8 @@ const ExportPage = () => {
     setExportProgress(10);
 
     try {
-      // Track export start
-      captureEvent('export_started', {
+      // Log export start
+      console.log('Export started:', {
         dataTypes,
         format: selectedFormat,
         dateRange,
@@ -166,8 +166,8 @@ const ExportPage = () => {
       setExportProgress(100);
       setExportSuccess(true);
       
-      // Track success
-      captureEvent('export_completed', {
+      // Log success
+      console.log('Export completed:', {
         filename,
         dataTypes,
         format: selectedFormat,
@@ -183,8 +183,8 @@ const ExportPage = () => {
       console.error('Export error:', error);
       setExportError(error.message);
       
-      // Track error
-      captureEvent('export_error', { 
+      // Log error
+      console.log('Export error:', { 
         error: error.message,
         dataTypes,
         format: selectedFormat
