@@ -15,6 +15,8 @@ import {
 } from '@heroicons/react/24/outline';
 
 const JobLabor = ({ jobs = [] }) => {
+  // Ensure jobs is always an array
+  const jobsList = Array.isArray(jobs) ? jobs : [];
   const [selectedJob, setSelectedJob] = useState(null);
   const [laborEntries, setLaborEntries] = useState([]);
   const [employees, setEmployees] = useState([]);
@@ -181,7 +183,7 @@ const JobLabor = ({ jobs = [] }) => {
     return laborEntries.reduce((sum, entry) => sum + (parseFloat(entry.hours) || 0), 0);
   };
 
-  const filteredJobs = jobs.filter(job => 
+  const filteredJobs = jobsList.filter(job => 
     job.job_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
     job.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     job.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -197,12 +199,12 @@ const JobLabor = ({ jobs = [] }) => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center mb-4">
+      <div className="bg-white bg-gray-800 rounded-lg shadow p-6">
+        <h2 className="text-2xl font-bold text-gray-900 text-white flex items-center mb-4">
           <UserGroupIcon className="h-8 w-8 text-blue-600 mr-3" />
           Labor Tracking
         </h2>
-        <p className="text-gray-600 dark:text-gray-400">
+        <p className="text-gray-600 text-gray-400">
           Track employee hours and labor costs for each job
         </p>
       </div>

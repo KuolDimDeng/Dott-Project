@@ -13,6 +13,8 @@ import {
 } from '@heroicons/react/24/outline';
 
 const JobMaterials = ({ jobs = [] }) => {
+  // Ensure jobs is always an array
+  const jobsList = Array.isArray(jobs) ? jobs : [];
   const [selectedJob, setSelectedJob] = useState(null);
   const [materials, setMaterials] = useState([]);
   const [availableSupplies, setAvailableSupplies] = useState([]);
@@ -163,7 +165,7 @@ const JobMaterials = ({ jobs = [] }) => {
     return materials.reduce((sum, material) => sum + (parseFloat(material.total_cost) || 0), 0);
   };
 
-  const filteredJobs = jobs.filter(job => 
+  const filteredJobs = jobsList.filter(job => 
     job.job_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
     job.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     job.customer?.name?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -172,12 +174,12 @@ const JobMaterials = ({ jobs = [] }) => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center mb-4">
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-2xl font-bold text-gray-900 flex items-center mb-4">
           <CubeIcon className="h-8 w-8 text-blue-600 mr-3" />
           Materials Management
         </h2>
-        <p className="text-gray-600 dark:text-gray-400">
+        <p className="text-gray-600">
           Track materials used in each job and monitor inventory consumption
         </p>
       </div>

@@ -162,15 +162,15 @@ const BillOfMaterialsManagement = ({ productId = null }) => {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+    <div className="bg-white rounded-lg shadow">
       <div className="p-6">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+            <h2 className="text-2xl font-bold text-gray-900 flex items-center">
               <CubeIcon className="h-8 w-8 text-blue-600 mr-3" />
               Bill of Materials
             </h2>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">
+            <p className="text-gray-600 mt-1">
               Define materials required for products and services
             </p>
           </div>

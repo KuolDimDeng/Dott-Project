@@ -15,6 +15,8 @@ import {
 } from '@heroicons/react/24/outline';
 
 const JobProfitability = ({ jobs = [] }) => {
+  // Ensure jobs is always an array
+  const jobsList = Array.isArray(jobs) ? jobs : [];
   const [profitabilityData, setProfitabilityData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [dateRange, setDateRange] = useState({
@@ -75,7 +77,7 @@ const JobProfitability = ({ jobs = [] }) => {
     let profitableJobs = 0;
     let unprofitableJobs = 0;
 
-    const filteredJobs = jobs.filter(job => {
+    const filteredJobs = jobsList.filter(job => {
       const jobDate = new Date(job.created_at);
       const startDate = new Date(dateRange.start);
       const endDate = new Date(dateRange.end);
@@ -155,12 +157,12 @@ const JobProfitability = ({ jobs = [] }) => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center mb-4">
+      <div className="bg-white bg-gray-800 rounded-lg shadow p-6">
+        <h2 className="text-2xl font-bold text-gray-900 text-white flex items-center mb-4">
           <ChartBarIcon className="h-8 w-8 text-blue-600 mr-3" />
           Profitability Analysis
         </h2>
-        <p className="text-gray-600 dark:text-gray-400">
+        <p className="text-gray-600 text-gray-400">
           Analyze job profitability trends and identify opportunities for improvement
         </p>
       </div>

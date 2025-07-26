@@ -12,6 +12,8 @@ import {
 } from '@heroicons/react/24/outline';
 
 const JobCosting = ({ jobs = [] }) => {
+  // Ensure jobs is always an array
+  const jobsList = Array.isArray(jobs) ? jobs : [];
   const [selectedJob, setSelectedJob] = useState(null);
   const [costingData, setCostingData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -87,12 +89,12 @@ const JobCosting = ({ jobs = [] }) => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center mb-4">
+      <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-2xl font-bold text-gray-900 flex items-center mb-4">
           <ChartBarIcon className="h-8 w-8 text-blue-600 mr-3" />
           Job Costing Analysis
         </h2>
-        <p className="text-gray-600 dark:text-gray-400">
+        <p className="text-gray-600">
           Track costs, profits, and margins for all your jobs
         </p>
       </div>
@@ -156,11 +158,11 @@ const JobCosting = ({ jobs = [] }) => {
             <h3 className="text-lg font-medium text-gray-900">Select a Job</h3>
           </div>
           <div className="max-h-96 overflow-y-auto">
-            {jobs.length === 0 ? (
+            {jobsList.length === 0 ? (
               <p className="p-6 text-gray-500 text-center">No jobs available</p>
             ) : (
               <ul className="divide-y divide-gray-200">
-                {jobs.map((job) => (
+                {jobsList.map((job) => (
                   <li
                     key={job.id}
                     onClick={() => setSelectedJob(job)}
@@ -285,7 +287,7 @@ const JobCosting = ({ jobs = [] }) => {
               </div>
             ) : (
               <div className="text-center py-12">
-                <ChartBarIcon className="mx-auto h-12 w-12 text-gray-400" />
+                <ChartBarIcon className="mx-auto h-12 w-12 " />
                 <p className="mt-2 text-sm text-gray-500">
                   Select a job to view costing details
                 </p>

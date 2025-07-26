@@ -35,6 +35,11 @@ const JobManagement = ({ view = 'jobs-list' }) => {
     status: 'all',
     search: ''
   });
+  
+  // Log component mount and view
+  useEffect(() => {
+    logger.debug('[JobManagement] Component mounted with view:', view);
+  }, [view]);
 
   useEffect(() => {
     fetchJobs();
@@ -52,6 +57,14 @@ const JobManagement = ({ view = 'jobs-list' }) => {
       }
       
       const jobsData = await jobService.getJobs(filterParams);
+      logger.debug('[JobManagement] Raw jobs data:', { 
+        type: typeof jobsData, 
+        isArray: Array.isArray(jobsData),
+        hasResults: jobsData?.results !== undefined,
+        hasData: jobsData?.data !== undefined,
+        keys: jobsData ? Object.keys(jobsData) : []
+      });
+      
       // Handle both array and object response formats
       const jobsList = Array.isArray(jobsData) ? jobsData : (jobsData?.results || jobsData?.data || []);
       // Ensure jobs is always an array
@@ -156,16 +169,16 @@ const JobManagement = ({ view = 'jobs-list' }) => {
 
   // Default view: jobs-list
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+    <div className="bg-white rounded-lg shadow">
       <div className="p-6">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+            <h2 className="text-2xl font-bold text-gray-900 flex items-center">
               <BriefcaseIcon className="h-8 w-8 text-blue-600 mr-3" />
               Jobs & Projects
             </h2>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">
+            <p className="text-gray-600 mt-1">
               Manage jobs, track materials, labor costs, and profitability
             </p>
           </div>
