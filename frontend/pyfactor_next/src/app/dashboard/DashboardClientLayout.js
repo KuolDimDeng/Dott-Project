@@ -17,6 +17,8 @@ import { loadStripeScript } from '@/utils/stripeUtils';
 import { storeNormalizedRole } from '@/utils/userRoleUtils';
 import { I18nextProvider } from 'react-i18next';
 import i18nInstance from '@/i18n';
+import { SessionTimeoutProvider } from '@/providers/SessionTimeoutProvider';
+import SessionTimeoutModal from '@/components/SessionTimeoutModal';
 
 // Use a more direct approach for dynamic imports
 const KeyboardFixerLoader = dynamic(
@@ -162,10 +164,13 @@ export default function ClientLayout({ children }) {
         <SessionProvider>
           <ThemeProvider>
             <NotificationProvider>
-              <DynamicComponents>
-                <ClientDataSync />
-                {children}
-              </DynamicComponents>
+              <SessionTimeoutProvider>
+                <DynamicComponents>
+                  <ClientDataSync />
+                  {children}
+                  <SessionTimeoutModal />
+                </DynamicComponents>
+              </SessionTimeoutProvider>
             </NotificationProvider>
           </ThemeProvider>
         </SessionProvider>

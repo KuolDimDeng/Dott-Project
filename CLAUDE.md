@@ -731,6 +731,38 @@ NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSyCC7KgQRztJDsoaQa94zMO7F4Pa-4R73E0
   - `/frontend/pyfactor_next/src/app/dashboard/components/lists/listItems.js` - Menu filtering
 - **Migration**: Run `python manage.py migrate users` to add simplified_business_type field
 
+### [46.0.0] - 2025-07-26 - CURRENT - Session Timeout Security Feature
+- **Purpose**: Automatically sign out users after 15 minutes of inactivity for security
+- **Industry Standards**: 
+  - Banking: 5-10 minutes
+  - Healthcare: 10-15 minutes
+  - Business Apps: 15-30 minutes (we use 15 minutes)
+- **User Experience**:
+  - After 14 minutes of inactivity: 60-second warning modal appears
+  - Modal shows countdown timer "You'll be signed out in 00:59"
+  - At 10 seconds: Final countdown with pulsing red animation
+  - User can click "Back to Dott" to stay signed in
+  - On timeout: Session cleared, redirected to signin with message
+- **Activity Tracking**:
+  - Mouse movements, keyboard input, clicks, scrolls, touch events
+  - API calls automatically reset the timer
+  - Throttled to prevent performance issues
+- **Implementation**:
+  - `SessionTimeoutProvider`: Context for activity tracking and countdown
+  - `SessionTimeoutModal`: Warning modal with countdown display
+  - Integrated in DashboardClientLayout for all dashboard pages
+  - Auto-clears sensitive data from localStorage on timeout
+- **Security Features**:
+  - Clears all session cookies and tokens
+  - Removes cached API responses
+  - Logs timeout event for audit trail
+  - Shows reason on signin page after redirect
+- **Key Files**:
+  - `/src/providers/SessionTimeoutProvider.js` - Activity tracking logic
+  - `/src/components/SessionTimeoutModal.js` - Warning UI component
+  - `/src/app/dashboard/DashboardClientLayout.js` - Integration point
+  - `/src/components/auth/EmailPasswordSignIn.js` - Timeout message display
+
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
 NEVER create files unless they're absolutely necessary for achieving your goal.

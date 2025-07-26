@@ -96,6 +96,13 @@ export default function EmailPasswordSignIn() {
     
     const errorParam = searchParams.get('error');
     const emailParam = searchParams.get('email');
+    const reasonParam = searchParams.get('reason');
+    
+    // Check for timeout reason
+    if (reasonParam === 'timeout') {
+      setError('Your session expired due to inactivity. Please sign in again.');
+      setErrorType('error');
+    }
     
     if (errorParam === 'email_not_verified' && emailParam) {
       setError(t('signin.errors.emailNotVerified'));
