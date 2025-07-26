@@ -46,6 +46,41 @@ export default function InlineTimesheetManager() {
   
   const fetchEmployeeData = async () => {
     console.log('🔧 [InlineTimesheetManager] Fetching employee data for:', session?.user?.email);
+    
+    // First check if session has employee data already
+    if (session?.employee) {
+      console.log('🔧 [InlineTimesheetManager] Using employee data from session:', session.employee);
+      setEmployeeData(session.employee);
+      
+      // Calculate hourly rate from session data
+      if (session.employee.hourly_rate) {
+        setHourlyRate(session.employee.hourly_rate);
+      } else if (session.employee.salary) {
+        const hourlyRate = session.employee.salary / 2080; // 52 weeks * 40 hours
+        setHourlyRate(hourlyRate);
+      }
+      
+      // Auto-populate for salaried employees
+      if (session.employee.salary > 0) {
+        const autoEntries = {};
+        for (let i = 0; i < 5; i++) { // Monday to Friday
+          const date = format(addDays(weekStart, i), 'yyyy-MM-dd');
+          autoEntries[date] = {
+            regular: 8,
+            overtime: 0,
+            sick: 0,
+            vacation: 0,
+            holiday: 0,
+            unpaid: 0
+          };
+        }
+        setTimeEntries(prev => ({ ...autoEntries, ...prev }));
+        console.log('🔧 [InlineTimesheetManager] Auto-populated hours for salaried employee');
+      }
+      return;
+    }
+    
+    // Fallback to API call if no session employee data
     try {
       // Get all employees and find the one matching current user's email
       const response = await fetch('/api/hr/v2/employees/', {
@@ -62,14 +97,22 @@ export default function InlineTimesheetManager() {
         
         // Handle both data.data and data.results response formats
         const employees = data.data || data.results || data;
+        
+        // Find employee matching current user - be more specific with matching
         const userEmployee = employees.find(emp => {
-          return emp.email === session?.user?.email || 
-                 emp.linked_user_account === session?.user?.id ||
-                 emp.linked_user_account === session?.user?.email;
+          // Primary match: email AND tenant match
+          const emailMatch = emp.email?.toLowerCase() === session?.user?.email?.toLowerCase();
+          const tenantMatch = !session?.user?.tenantId || 
+                            String(emp.business_id) === String(session?.user?.tenantId);
+          
+          console.log(`🔧 [InlineTimesheetManager] Checking employee ${emp.email}: emailMatch=${emailMatch}, tenantMatch=${tenantMatch}`);
+          
+          return emailMatch && tenantMatch;
         });
         
         if (!userEmployee) {
           console.log('🔧 [InlineTimesheetManager] No employee record found for user:', session?.user?.email);
+          console.log('🔧 [InlineTimesheetManager] Available employees:', employees.map(e => ({ email: e.email, business_id: e.business_id })));
           return;
         }
         

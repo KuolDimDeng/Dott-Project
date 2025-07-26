@@ -161,6 +161,11 @@ class User(AbstractUser):
     
     def __str__(self):
         return self.email
+    
+    @property
+    def tenant_id(self):
+        """Return tenant ID for compatibility with code expecting tenant_id"""
+        return self.tenant.id if self.tenant else None
 
 
 class AccountDeletionLog(models.Model):
