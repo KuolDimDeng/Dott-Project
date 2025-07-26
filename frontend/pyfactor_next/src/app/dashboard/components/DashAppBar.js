@@ -1635,11 +1635,18 @@ const DashAppBar = ({
                   <button 
                     className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 flex items-center"
                     onClick={() => {
+                      console.log('[DashAppBar] Create menu item clicked:', option.label);
                       // If the option has its own onClick handler, call it
                       if (typeof option.onClick === 'function') {
+                        console.log('[DashAppBar] Calling option.onClick with params:', {
+                          handleCloseCreateMenu: typeof handleCloseCreateMenu,
+                          handleShowCreateMenu: typeof handleShowCreateMenu,
+                          handleShowCreateOptions: typeof handleShowCreateOptions
+                        });
                         // Pass the required parameters for Create New menu items
                         option.onClick(false, handleCloseCreateMenu, handleShowCreateMenu, handleShowCreateOptions || handleMenuItemClick);
                       } else {
+                        console.log('[DashAppBar] Using default handleMenuItemClick');
                         // Otherwise use the default handleMenuItemClick
                         handleMenuItemClick(option.value || option.label);
                       }

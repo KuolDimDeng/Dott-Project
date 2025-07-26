@@ -191,15 +191,20 @@ const getCreateOptions = (t) => [
       </svg>
     ),
     onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu) => {
-      console.log('Create New button clicked');
+      console.log('[Create New] Button clicked with params:', {
+        isIconOnly,
+        handleDrawerClose: typeof handleDrawerClose,
+        handleShowCreateMenu: typeof handleShowCreateMenu
+      });
       if (isIconOnly) {
         handleDrawerClose();
       }
       // Use handleShowCreateMenu instead of showing a local dropdown
       if (typeof handleShowCreateMenu === 'function') {
+        console.log('[Create New] Calling handleShowCreateMenu');
         handleShowCreateMenu();
       } else {
-        console.error('handleShowCreateMenu is not a function');
+        console.error('[Create New] handleShowCreateMenu is not a function:', handleShowCreateMenu);
       }
     }
   },
