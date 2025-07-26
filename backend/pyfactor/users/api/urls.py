@@ -3,6 +3,7 @@ Users API URL Configuration
 """
 from django.urls import path
 from .user_profile_views import UserProfileMeView
+from .business_features_views import BusinessFeaturesView
 
 # Import these views only if the files exist
 try:
@@ -14,6 +15,7 @@ except ImportError:
 
 urlpatterns = [
     path('me/', UserProfileMeView.as_view(), name='user-profile-me'),
+    path('business-features/', BusinessFeaturesView.as_view(), name='business-features'),
 ]
 
 # Only add new endpoints if the views are available

@@ -356,6 +356,7 @@ const MainListItems = ({
   const [tooltipVisible, setTooltipVisible] = useState(null);
   const [whatsappPreferenceChanged, setWhatsappPreferenceChanged] = useState(0);
   const [whatsappEnabled, setWhatsappEnabled] = useState(null);
+  const [businessFeatures, setBusinessFeatures] = useState(['jobs', 'pos']); // Default to all features
   
   // Debug logging for permissions hook
   useEffect(() => {
@@ -378,6 +379,29 @@ const MainListItems = ({
       setWhatsappEnabled(userData.show_whatsapp_commerce);
     }
   }, [user?.show_whatsapp_commerce, userData?.show_whatsapp_commerce]);
+  
+  // Fetch business features based on business type
+  useEffect(() => {
+    const fetchBusinessFeatures = async () => {
+      try {
+        const response = await fetch('/api/users/business-features');
+        if (response.ok) {
+          const data = await response.json();
+          console.log('[MainListItems] Business features:', data);
+          setBusinessFeatures(data.features || ['jobs', 'pos']);
+        }
+      } catch (error) {
+        console.error('[MainListItems] Error fetching business features:', error);
+        // Default to showing all features on error
+        setBusinessFeatures(['jobs', 'pos']);
+      }
+    };
+    
+    // Only fetch if user is loaded
+    if (user?.id) {
+      fetchBusinessFeatures();
+    }
+  }, [user?.id]);
   
 
   // Check if we're on mobile/small screens
@@ -2197,8 +2221,21 @@ const MainListItems = ({
     },
   ];
 
-  // Use menuItems directly (Settings is in the user dropdown menu)
-  const finalMenuItems = menuItems;
+  // Filter menu items based on business features
+  const filterMenuItemsByFeatures = (items) => {
+    return items.filter(item => {
+      // Filter Jobs menu based on features
+      if (item.label === t('mainMenu.jobs')) {
+        return businessFeatures.includes('jobs');
+      }
+      
+      // All other menu items are shown
+      return true;
+    });
+  };
+  
+  // Use filtered menuItems
+  const finalMenuItems = filterMenuItemsByFeatures(menuItems);
 
   // Create a Tailwind CSS based collapsible menu component to replace MUI Collapse
   const CollapsibleMenu = ({ isOpen, children }) => (

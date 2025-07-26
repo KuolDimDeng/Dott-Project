@@ -708,6 +708,29 @@ NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSyCC7KgQRztJDsoaQa94zMO7F4Pa-4R73E0
   4. Render auto-deploys to production
 - **Next Steps**: Fix Django migration dependencies for full backend functionality
 
+### [45.0.0] - 2025-07-26 - CURRENT - Business Type-Based Feature Access (Jobs/POS)
+- **Purpose**: Show Jobs or POS features based on business type selected during onboarding
+- **Problem**: All users see all features regardless of their business type
+- **Solution**: Simplified business types with feature-based menu filtering
+- **Business Categories**:
+  - SERVICE: Home Services, Construction, Cleaning, etc. → Shows Jobs only
+  - RETAIL: Retail Store, Restaurant, Grocery, etc. → Shows POS only
+  - MIXED: Salon/Spa, Medical, Fitness, etc. → Shows both Jobs and POS
+  - OTHER: Logistics, Finance, Real Estate, etc. → Shows both Jobs and POS
+- **Implementation**:
+  - Backend: `simplified_business_type` field in BusinessDetails model
+  - API: `/api/users/business-features/` returns enabled features array
+  - Frontend: SimplifiedBusinessInfoForm.jsx for onboarding
+  - Menu: Dynamic filtering in listItems.js based on features
+- **Legacy Users**: All users onboarded before 2025-07-26 see both features
+- **Key Files**:
+  - `/backend/pyfactor/users/business_categories.py` - Feature configuration
+  - `/backend/pyfactor/users/api/business_features_views.py` - API endpoint
+  - `/frontend/pyfactor_next/src/components/Onboarding/SimplifiedBusinessInfoForm.jsx` - Form
+  - `/frontend/pyfactor_next/src/app/utils/simplifiedBusinessData.js` - Frontend config
+  - `/frontend/pyfactor_next/src/app/dashboard/components/lists/listItems.js` - Menu filtering
+- **Migration**: Run `python manage.py migrate users` to add simplified_business_type field
+
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
 NEVER create files unless they're absolutely necessary for achieving your goal.

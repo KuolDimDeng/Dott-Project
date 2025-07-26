@@ -21,6 +21,7 @@ from users.choices import (
     SUBSCRIPTION_TYPES,
     BILLING_CYCLES
 )
+from users.business_categories import SIMPLIFIED_BUSINESS_TYPES
 
 
 # Business model moved from business app to users app
@@ -183,6 +184,17 @@ class BusinessDetails(models.Model):
     )
     date_founded = models.DateField(null=True, blank=True)
     country = CountryField(default='US')
+    
+    # Simplified business type for feature access (added 2025-07-26)
+    # Only applies to new users onboarding after this date
+    simplified_business_type = models.CharField(
+        max_length=50,
+        choices=SIMPLIFIED_BUSINESS_TYPES,
+        null=True,
+        blank=True,
+        help_text="Simplified business category for feature access (Jobs/POS)"
+    )
+    
     # Additional fields
     
     class Meta:
