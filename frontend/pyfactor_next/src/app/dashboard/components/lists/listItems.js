@@ -156,6 +156,26 @@ const NavIcons = {
     <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
     </svg>
+  ),
+  Receipt: (props) => (
+    <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+  ),
+  Work: (props) => (
+    <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+    </svg>
+  ),
+  Description: (props) => (
+    <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+  ),
+  Cart: (props) => (
+    <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+    </svg>
   )
 };
 
@@ -219,6 +239,9 @@ const getCreateOptions = (t) => [
     onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
       if (typeof handleShowCreateOptions === 'function') {
         handleShowCreateOptions('Transaction');
+      } else {
+        console.warn('[Create New] handleShowCreateOptions not available, closing menu');
+        if (handleShowCreateMenu) handleShowCreateMenu(); // Close the menu
       }
     }
   },
@@ -233,6 +256,9 @@ const getCreateOptions = (t) => [
     onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
       if (typeof handleShowCreateOptions === 'function') {
         handleShowCreateOptions('Sales');
+      } else {
+        console.warn('[Create New] handleShowCreateOptions not available for POS');
+        if (handleShowCreateMenu) handleShowCreateMenu();
       }
     },
     value: 'Sales'
@@ -243,6 +269,9 @@ const getCreateOptions = (t) => [
     onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
       if (typeof handleShowCreateOptions === 'function') {
         handleShowCreateOptions('Product');
+      } else {
+        console.warn('[Create New] handleShowCreateOptions not available for Product');
+        if (handleShowCreateMenu) handleShowCreateMenu();
       }
     },
     value: 'Product'
@@ -253,6 +282,9 @@ const getCreateOptions = (t) => [
     onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
       if (typeof handleShowCreateOptions === 'function') {
         handleShowCreateOptions('Service');
+      } else {
+        console.warn('[Create New] handleShowCreateOptions not available for Service');
+        if (handleShowCreateMenu) handleShowCreateMenu();
       }
     },
     value: 'Service'
@@ -263,6 +295,9 @@ const getCreateOptions = (t) => [
     onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
       if (typeof handleShowCreateOptions === 'function') {
         handleShowCreateOptions('Job');
+      } else {
+        console.warn('[Create New] handleShowCreateOptions not available for Job');
+        if (handleShowCreateMenu) handleShowCreateMenu();
       }
     },
     value: 'Job'
@@ -273,6 +308,9 @@ const getCreateOptions = (t) => [
     onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
       if (typeof handleShowCreateOptions === 'function') {
         handleShowCreateOptions('Invoice');
+      } else {
+        console.warn('[Create New] handleShowCreateOptions not available for Invoice');
+        if (handleShowCreateMenu) handleShowCreateMenu();
       }
     },
     value: 'Invoice'
@@ -283,6 +321,9 @@ const getCreateOptions = (t) => [
     onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
       if (typeof handleShowCreateOptions === 'function') {
         handleShowCreateOptions('Bill');
+      } else {
+        console.warn('[Create New] handleShowCreateOptions not available for Bill');
+        if (handleShowCreateMenu) handleShowCreateMenu();
       }
     },
     value: 'Bill'
@@ -293,6 +334,9 @@ const getCreateOptions = (t) => [
     onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
       if (typeof handleShowCreateOptions === 'function') {
         handleShowCreateOptions('Estimate');
+      } else {
+        console.warn('[Create New] handleShowCreateOptions not available for Estimate');
+        if (handleShowCreateMenu) handleShowCreateMenu();
       }
     },
     value: 'Estimate'
@@ -303,6 +347,9 @@ const getCreateOptions = (t) => [
     onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
       if (typeof handleShowCreateOptions === 'function') {
         handleShowCreateOptions('Customer');
+      } else {
+        console.warn('[Create New] handleShowCreateOptions not available for Customer');
+        if (handleShowCreateMenu) handleShowCreateMenu();
       }
     },
     value: 'Customer'
@@ -313,6 +360,9 @@ const getCreateOptions = (t) => [
     onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
       if (typeof handleShowCreateOptions === 'function') {
         handleShowCreateOptions('Vendor');
+      } else {
+        console.warn('[Create New] handleShowCreateOptions not available for Vendor');
+        if (handleShowCreateMenu) handleShowCreateMenu();
       }
     },
     value: 'Vendor'
