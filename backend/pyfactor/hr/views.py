@@ -1834,47 +1834,88 @@ class GeofenceViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def assign_employees(self, request, pk=None):
         """Assign multiple employees to a geofence"""
-        geofence = self.get_object()
-        employee_ids = request.data.get('employee_ids', [])
+        logger.info(f"🎯 [assign_employees] === START ===")
+        logger.info(f"🎯 [assign_employees] User: {request.user.email}")
+        logger.info(f"🎯 [assign_employees] Business ID: {request.user.business_id}")
+        logger.info(f"🎯 [assign_employees] Geofence ID: {pk}")
+        logger.info(f"🎯 [assign_employees] Request data: {request.data}")
         
-        if not employee_ids:
+        geofence = self.get_object()
+        logger.info(f"🎯 [assign_employees] Geofence found: {geofence.name} (ID: {geofence.id})")
+        
+        employee_ids = request.data.get('employee_ids', [])
+        logger.info(f"🎯 [assign_employees] Employee IDs to assign: {employee_ids}")
+        
+        if not isinstance(employee_ids, list):
+            logger.error(f"🎯 [assign_employees] employee_ids is not a list: {type(employee_ids)}")
             return Response(
-                {'error': 'No employee IDs provided'},
+                {'error': 'employee_ids must be a list'},
                 status=status.HTTP_400_BAD_REQUEST
             )
+        
+        # First, remove all existing assignments for this geofence
+        existing = EmployeeGeofence.objects.filter(
+            geofence=geofence,
+            business_id=request.user.business_id
+        )
+        existing_count = existing.count()
+        logger.info(f"🎯 [assign_employees] Removing {existing_count} existing assignments")
+        existing.delete()
         
         created = []
         errors = []
         
+        # Now create new assignments
         for employee_id in employee_ids:
             try:
+                logger.info(f"🎯 [assign_employees] Processing employee ID: {employee_id}")
+                
                 employee = Employee.objects.get(
                     id=employee_id,
                     business_id=request.user.business_id
                 )
+                logger.info(f"🎯 [assign_employees] Found employee: {employee.first_name} {employee.last_name}")
                 
-                employee_geofence, was_created = EmployeeGeofence.objects.get_or_create(
+                employee_geofence = EmployeeGeofence.objects.create(
                     employee=employee,
                     geofence=geofence,
-                    defaults={
-                        'business_id': request.user.business_id,
-                        'assigned_by': request.user
-                    }
+                    business_id=request.user.business_id,
+                    assigned_by=request.user
                 )
                 
-                if was_created:
-                    created.append(EmployeeGeofenceSerializer(employee_geofence).data)
+                logger.info(f"🎯 [assign_employees] Created assignment: {employee_geofence.id}")
+                created.append(EmployeeGeofenceSerializer(employee_geofence).data)
                 
             except Employee.DoesNotExist:
-                errors.append(f"Employee {employee_id} not found")
+                error_msg = f"Employee {employee_id} not found"
+                logger.error(f"🎯 [assign_employees] {error_msg}")
+                errors.append(error_msg)
             except Exception as e:
-                errors.append(f"Error assigning employee {employee_id}: {str(e)}")
+                error_msg = f"Error assigning employee {employee_id}: {str(e)}"
+                logger.error(f"🎯 [assign_employees] {error_msg}")
+                logger.error(f"🎯 [assign_employees] Exception type: {type(e)}")
+                import traceback
+                logger.error(f"🎯 [assign_employees] Traceback: {traceback.format_exc()}")
+                errors.append(error_msg)
         
-        return Response({
+        # Verify assignments were saved
+        final_count = EmployeeGeofence.objects.filter(
+            geofence=geofence,
+            business_id=request.user.business_id
+        ).count()
+        logger.info(f"🎯 [assign_employees] Final assignment count: {final_count}")
+        
+        result = {
             'created': created,
             'errors': errors,
-            'total_assigned': len(created)
-        })
+            'total_assigned': len(created),
+            'final_count': final_count
+        }
+        
+        logger.info(f"🎯 [assign_employees] Result: {result}")
+        logger.info(f"🎯 [assign_employees] === END ===")
+        
+        return Response(result)
     
     @action(detail=True, methods=['get'])
     def events(self, request, pk=None):
@@ -1982,6 +2023,11 @@ class EmployeeGeofenceViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
+        logger.info(f"🎯 [EmployeeGeofenceViewSet] get_queryset called")
+        logger.info(f"🎯 [EmployeeGeofenceViewSet] User: {self.request.user.email}")
+        logger.info(f"🎯 [EmployeeGeofenceViewSet] Business ID: {self.request.user.business_id}")
+        logger.info(f"🎯 [EmployeeGeofenceViewSet] Query params: {self.request.query_params}")
+        
         # Filter by business_id for multi-tenant isolation
         queryset = self.queryset.filter(
             business_id=self.request.user.business_id
@@ -1990,11 +2036,20 @@ class EmployeeGeofenceViewSet(viewsets.ModelViewSet):
         # Optional filters
         employee_id = self.request.query_params.get('employee_id')
         if employee_id:
+            logger.info(f"🎯 [EmployeeGeofenceViewSet] Filtering by employee_id: {employee_id}")
             queryset = queryset.filter(employee_id=employee_id)
         
         geofence_id = self.request.query_params.get('geofence_id')
         if geofence_id:
+            logger.info(f"🎯 [EmployeeGeofenceViewSet] Filtering by geofence_id: {geofence_id}")
             queryset = queryset.filter(geofence_id=geofence_id)
+            
+        count = queryset.count()
+        logger.info(f"🎯 [EmployeeGeofenceViewSet] Returning {count} assignments")
+        
+        # Log first few results for debugging
+        for i, assignment in enumerate(queryset[:3]):
+            logger.info(f"🎯 [EmployeeGeofenceViewSet] Assignment {i}: Employee={assignment.employee.id}, Geofence={assignment.geofence.id}")
         
         return queryset
     

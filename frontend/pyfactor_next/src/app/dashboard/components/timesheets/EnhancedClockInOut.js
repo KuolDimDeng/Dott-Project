@@ -288,16 +288,29 @@ export default function EnhancedClockInOut() {
     if (!locationData) return;
     
     try {
+      console.log('🎯 [ClockInOut] === GEOFENCE CHECK START ===');
+      console.log('🎯 [ClockInOut] Location data:', locationData);
+      
       // Get employee ID from session/user context
       const userResponse = await api.get('/api/users/me/');
+      console.log('🎯 [ClockInOut] User response:', userResponse.data);
+      
       const employeeId = userResponse.data.employee?.id;
+      console.log('🎯 [ClockInOut] Employee ID:', employeeId);
       
       if (!employeeId) {
-        console.error('[ClockInOut] No employee ID found for user');
+        console.error('🎯 [ClockInOut] No employee ID found - user might not be an employee');
+        // Check if user has any assigned geofences via different endpoint
         return;
       }
       
       // Use correct endpoint with GET method and query params
+      console.log('🎯 [ClockInOut] Calling check_location with params:', {
+        latitude: locationData.latitude,
+        longitude: locationData.longitude,
+        employee_id: employeeId
+      });
+      
       const response = await api.get('/api/hr/geofences/check_location/', {
         params: {
           latitude: locationData.latitude,
@@ -306,25 +319,36 @@ export default function EnhancedClockInOut() {
         }
       });
       
-      console.log('[ClockInOut] Geofence check response:', response.data);
+      console.log('🎯 [ClockInOut] Geofence check response:', response.data);
+      console.log('🎯 [ClockInOut] Number of geofences:', response.data.geofences?.length || 0);
       
       // Update geofence status based on response
       if (response.data.geofences && response.data.geofences.length > 0) {
         const insideAnyGeofence = response.data.geofences.some(g => g.is_inside);
+        console.log('🎯 [ClockInOut] Inside any geofence:', insideAnyGeofence);
+        
+        response.data.geofences.forEach((g, i) => {
+          console.log(`🎯 [ClockInOut] Geofence ${i}: ${g.geofence.name} - Inside: ${g.is_inside}, Distance: ${g.distance}m`);
+        });
+        
         setGeofenceStatus({
           status: insideAnyGeofence ? 'inside' : 'outside',
           can_clock_in: response.data.can_clock_in,
           geofences: response.data.geofences
         });
       } else {
+        console.log('🎯 [ClockInOut] No geofences assigned to employee');
         setGeofenceStatus({
           status: 'no_geofences',
           can_clock_in: true, // Allow clock in if no geofences assigned
           geofences: []
         });
       }
+      console.log('🎯 [ClockInOut] === GEOFENCE CHECK END ===');
     } catch (error) {
-      console.error('[ClockInOut] Error checking geofence status:', error);
+      console.error('🎯 [ClockInOut] === GEOFENCE CHECK ERROR ===');
+      console.error('🎯 [ClockInOut] Error:', error);
+      console.error('🎯 [ClockInOut] Error response:', error.response);
       setGeofenceStatus(null);
     }
   };
@@ -370,14 +394,25 @@ export default function EnhancedClockInOut() {
   };
 
   const handleClockAction = async (action) => {
+    console.log('🎯 [ClockInOut] === CLOCK ACTION START ===');
+    console.log('🎯 [ClockInOut] Action:', action);
+    console.log('🎯 [ClockInOut] Location consent:', locationConsent);
+    console.log('🎯 [ClockInOut] Current location:', location);
+    console.log('🎯 [ClockInOut] Geofence status:', geofenceStatus);
+    
     // Check location consent first
     if (!locationConsent) {
+      console.log('🎯 [ClockInOut] No location consent - showing modal');
       setShowConsentModal(true);
       return;
     }
 
     // Check geofence requirements
-    if (!canPerformAction(action)) {
+    const canPerform = canPerformAction(action);
+    console.log('🎯 [ClockInOut] Can perform action:', canPerform);
+    
+    if (!canPerform) {
+      console.log('🎯 [ClockInOut] Action blocked by geofence requirements');
       toast.error(
         action === 'clock_in' 
           ? 'You must be at a designated work location to clock in'
@@ -398,6 +433,8 @@ export default function EnhancedClockInOut() {
         })
       };
 
+      console.log('🎯 [ClockInOut] Clock action data:', data);
+
       let response;
       switch (action) {
         case 'clock_in':
@@ -416,13 +453,17 @@ export default function EnhancedClockInOut() {
           throw new Error('Invalid action');
       }
 
+      console.log('🎯 [ClockInOut] Clock action response:', response);
       setClockStatus(response);
       
       // Log geofence event for any inside geofences
       if (location && geofenceStatus && geofenceStatus.geofences) {
         const insideGeofences = geofenceStatus.geofences.filter(g => g.is_inside);
+        console.log('🎯 [ClockInOut] Inside geofences for event logging:', insideGeofences.length);
+        
         for (const gf of insideGeofences) {
           try {
+            console.log(`🎯 [ClockInOut] Logging event for geofence: ${gf.geofence.name}`);
             await api.post('/api/hr/geofence-events/log_event/', {
               event_type: action,
               latitude: location.latitude,
@@ -430,7 +471,7 @@ export default function EnhancedClockInOut() {
               geofence_id: gf.geofence.id
             });
           } catch (error) {
-            console.error('[ClockInOut] Error logging geofence event:', error);
+            console.error('🎯 [ClockInOut] Error logging geofence event:', error);
           }
         }
       }
@@ -442,11 +483,16 @@ export default function EnhancedClockInOut() {
         'Break ended'
       );
       
+      console.log('🎯 [ClockInOut] === CLOCK ACTION SUCCESS ===');
+      
     } catch (error) {
+      console.error('🎯 [ClockInOut] === CLOCK ACTION ERROR ===');
+      console.error('🎯 [ClockInOut] Error:', error);
       logger.error(`Error with ${action}:`, error);
       toast.error(`Failed to ${action.replace('_', ' ')}`);
     } finally {
       setClocking(false);
+      console.log('🎯 [ClockInOut] === CLOCK ACTION END ===');
     }
   };
 

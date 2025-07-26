@@ -15,10 +15,8 @@ import { UserProfileProvider } from '@/contexts/UserProfileContext';
 // import { fetchUserAttributes } from '@/config/amplifyUnified'; // No longer using Cognito
 import useEnsureTenant from '@/hooks/useEnsureTenant';
 import { getFallbackTenantId, storeReliableTenantId } from '@/utils/tenantFallback';
-import { useSession } from '@/hooks/useSession-v2';
 import { SessionTimeoutProvider } from '@/providers/SessionTimeoutProvider';
 import SessionTimeoutModal from '@/components/SessionTimeoutModal';
-import { SessionProvider } from '@/contexts/SessionContext';
 
 // Import needed for recovery
 // import { signIn } from '@/config/amplifyUnified'; // Removed - no longer using Cognito
@@ -122,15 +120,8 @@ export default function TenantDashboard() {
   
   console.log('🎯 [TenantDashboard] State initialized');
   
-  // Use session hook for better localStorage sync
-  console.log('🎯 [TenantDashboard] About to call useSession hook...');
-  try {
-    const { session: sessionData, user: sessionUser } = useSession();
-    console.log('🎯 [TenantDashboard] useSession successful:', { hasSessionData: !!sessionData, hasUser: !!sessionUser });
-  } catch (sessionError) {
-    console.error('🚨 [TenantDashboard] ERROR in useSession:', sessionError);
-    console.error('Stack:', sessionError?.stack);
-  }
+  // Note: useSession hook is now handled by SessionProvider wrapper
+  // Removed direct useSession call to prevent circular dependency
 
   // Initialize dashboard
   useEffect(() => {
@@ -539,38 +530,6 @@ export default function TenantDashboard() {
     return (
       <SessionInitializer>
         <Suspense fallback={<DashboardLoader message="Loading dashboard content..." />}>
-          <SessionProvider>
-            <SessionTimeoutProvider>
-              <NotificationProvider>
-                <UserProfileProvider tenantId={effectiveTenantId}>
-                  <DashboardProvider>
-                    <DashboardContent
-                      newAccount={dashboardParams.newAccount}
-                      plan={dashboardParams.plan}
-                      mockData={dashboardParams.mockData}
-                      setupStatus={dashboardParams.setupStatus}
-                      userAttributes={userAttributes}
-                      tenantId={effectiveTenantId}
-                      fromSignIn={fromSignIn}
-                      fromSubscription={fromSubscription}
-                    />
-                  </DashboardProvider>
-                </UserProfileProvider>
-              </NotificationProvider>
-              <SessionTimeoutModal />
-            </SessionTimeoutProvider>
-          </SessionProvider>
-        </Suspense>
-      </SessionInitializer>
-    );
-  }
-  
-  console.log('🎯 [TenantDashboard] Rendering dashboard without SessionInitializer');
-  return (
-    <>
-      <DebugGlobals />
-      <Suspense fallback={<DashboardLoader message="Loading dashboard content..." />}>
-        <SessionProvider>
           <SessionTimeoutProvider>
             <NotificationProvider>
               <UserProfileProvider tenantId={effectiveTenantId}>
@@ -590,7 +549,35 @@ export default function TenantDashboard() {
             </NotificationProvider>
             <SessionTimeoutModal />
           </SessionTimeoutProvider>
-        </SessionProvider>
+        </Suspense>
+      </SessionInitializer>
+    );
+  }
+  
+  console.log('🎯 [TenantDashboard] Rendering dashboard without SessionInitializer');
+  return (
+    <>
+      <DebugGlobals />
+      <Suspense fallback={<DashboardLoader message="Loading dashboard content..." />}>
+        <SessionTimeoutProvider>
+          <NotificationProvider>
+            <UserProfileProvider tenantId={effectiveTenantId}>
+              <DashboardProvider>
+                <DashboardContent
+                  newAccount={dashboardParams.newAccount}
+                  plan={dashboardParams.plan}
+                  mockData={dashboardParams.mockData}
+                  setupStatus={dashboardParams.setupStatus}
+                  userAttributes={userAttributes}
+                  tenantId={effectiveTenantId}
+                  fromSignIn={fromSignIn}
+                  fromSubscription={fromSubscription}
+                />
+              </DashboardProvider>
+            </UserProfileProvider>
+          </NotificationProvider>
+          <SessionTimeoutModal />
+        </SessionTimeoutProvider>
       </Suspense>
     </>
   );

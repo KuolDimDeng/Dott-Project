@@ -88,6 +88,10 @@ export default function MobileTimesheetPage() {
   
   // Load employee geofences
   const loadEmployeeGeofences = async () => {
+    console.log('🎯 [MobileTimesheet] === LOADING GEOFENCES START ===');
+    console.log('🎯 [MobileTimesheet] Employee ID:', session?.employee?.id);
+    console.log('🎯 [MobileTimesheet] Tenant ID:', session?.tenantId);
+    
     try {
       const response = await fetch(`/api/hr/employee-geofences/?employee_id=${session.employee.id}`, {
         headers: {
@@ -95,8 +99,11 @@ export default function MobileTimesheetPage() {
         },
       });
       
+      console.log('🎯 [MobileTimesheet] Geofences response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('🎯 [MobileTimesheet] Geofences data:', data);
         const activeGeofences = data
           .filter(eg => eg.is_active && eg.geofence?.is_active)
           .map(eg => eg.geofence);
@@ -190,6 +197,11 @@ export default function MobileTimesheetPage() {
   };
 
   const handleClockInOut = async () => {
+    console.log('🎯 [MobileTimesheet] === CLOCK IN/OUT START ===');
+    console.log('🎯 [MobileTimesheet] Session:', session);
+    console.log('🎯 [MobileTimesheet] Employee ID:', session?.employee?.id);
+    console.log('🎯 [MobileTimesheet] Tenant ID:', session?.tenantId);
+    
     if (!session?.employee?.id || !session?.tenantId) return;
     
     const today = format(new Date(), 'yyyy-MM-dd');
@@ -197,8 +209,13 @@ export default function MobileTimesheetPage() {
     const currentHours = todayEntry?.regular_hours || 0;
     const isClockingOut = currentHours > 0;
     
+    console.log('🎯 [MobileTimesheet] Is clocking out:', isClockingOut);
+    console.log('🎯 [MobileTimesheet] Location enabled:', locationEnabled);
+    console.log('🎯 [MobileTimesheet] Employee geofences:', employeeGeofences);
+    
     // Check if location consent is needed
     if (!locationEnabled && !isClockingOut) {
+      console.log('🎯 [MobileTimesheet] No location consent - showing modal');
       setShowLocationConsent(true);
       return;
     }
@@ -212,7 +229,10 @@ export default function MobileTimesheetPage() {
     if (locationEnabled) {
       setIsCapturingLocation(true);
       try {
+        console.log('🎯 [MobileTimesheet] Capturing location...');
         const location = await captureLocation();
+        console.log('🎯 [MobileTimesheet] Location captured:', location);
+        
         const address = await reverseGeocode(location.latitude, location.longitude);
         const deviceInfo = getDeviceInfo();
         
@@ -222,12 +242,15 @@ export default function MobileTimesheetPage() {
           ...deviceInfo,
         };
         
+        console.log('🎯 [MobileTimesheet] Location data:', locationData);
+        
         if (!isClockingOut) {
           setLastClockInLocation(locationData);
         }
         
         // Check geofences if we have them
         if (employeeGeofences.length > 0) {
+          console.log('🎯 [MobileTimesheet] Checking geofences:', employeeGeofences.length);
           const checkResults = [];
           let insideAnyGeofence = false;
           
