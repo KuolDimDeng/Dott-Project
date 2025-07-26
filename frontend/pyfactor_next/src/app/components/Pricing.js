@@ -223,19 +223,19 @@ export default function Pricing() {
       description: t('pricing.plans.professional.description', 'For growing businesses that need more'),
       price: { 
         monthly: hasDiscount && userCountry !== 'US' ? 
-          (dynamicPricing?.professional?.monthly?.formatted || '$7.50') :
-          '$15',
+          (dynamicPricing?.professional?.monthly?.formatted || '$17.50') :
+          '$35',
         '6month': hasDiscount && userCountry !== 'US' ? 
-          (dynamicPricing?.professional?.sixMonth?.formatted || '$37.50') :
-          '$75',
+          (dynamicPricing?.professional?.sixMonth?.formatted || '$87.50') :
+          '$175',
         annual: hasDiscount && userCountry !== 'US' ? 
           (dynamicPricing?.professional?.annual?.formatted ? 
-            `${dynamicPricing.professional.annual.formatted.split('/')[0]}` : '$72') :
-          '$144'
+            `${dynamicPricing.professional.annual.formatted.split('/')[0]}` : '$168') :
+          '$336'
       },
       savings: {
-        '6month': hasDiscount && userCountry !== 'US' ? '$7.50' : '$15',
-        annual: hasDiscount && userCountry !== 'US' ? '$18' : '$36'
+        '6month': hasDiscount && userCountry !== 'US' ? '$17.50' : '$35',
+        annual: hasDiscount && userCountry !== 'US' ? '$42' : '$84'
       },
       features: [
         t('pricing.plans.professional.features.0', 'Up to 5 users'),
@@ -254,19 +254,19 @@ export default function Pricing() {
       description: t('pricing.plans.enterprise.description', 'Unlimited scale for large organizations'),
       price: { 
         monthly: hasDiscount && userCountry !== 'US' ? 
-          (dynamicPricing?.enterprise?.monthly?.formatted || '$22.50') :
-          '$45',
+          (dynamicPricing?.enterprise?.monthly?.formatted || '$47.50') :
+          '$95',
         '6month': hasDiscount && userCountry !== 'US' ? 
-          (dynamicPricing?.enterprise?.sixMonth?.formatted || '$112.50') :
-          '$225',
+          (dynamicPricing?.enterprise?.sixMonth?.formatted || '$237.50') :
+          '$475',
         annual: hasDiscount && userCountry !== 'US' ? 
           (dynamicPricing?.enterprise?.annual?.formatted ? 
-            `${dynamicPricing.enterprise.annual.formatted.split('/')[0]}` : '$216') :
-          '$432'
+            `${dynamicPricing.enterprise.annual.formatted.split('/')[0]}` : '$456') :
+          '$912'
       },
       savings: {
-        '6month': hasDiscount && userCountry !== 'US' ? '$22.50' : '$45',
-        annual: hasDiscount && userCountry !== 'US' ? '$54' : '$108'
+        '6month': hasDiscount && userCountry !== 'US' ? '$47.50' : '$95',
+        annual: hasDiscount && userCountry !== 'US' ? '$114' : '$228'
       },
       features: [
         t('pricing.plans.enterprise.features.0', 'Unlimited users'),

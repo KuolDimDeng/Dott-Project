@@ -486,22 +486,43 @@ class JobService {
    */
   async getAvailableCustomers() {
     try {
-      const response = await fetchData('/api/crm/customers/', {
+      // Use the same endpoint as the Customers page
+      const response = await fetchData('/api/customers/', {
         params: { is_active: true },
         useCache: true,
         cacheTTL: 10 * 60 * 1000
       });
       
-      // Handle paginated response
-      if (response && typeof response === 'object' && 'results' in response) {
+      // Handle different response formats
+      if (Array.isArray(response)) {
+        return response;
+      } else if (response && typeof response === 'object' && 'results' in response) {
         return Array.isArray(response.results) ? response.results : [];
+      } else if (response && typeof response === 'object' && 'data' in response) {
+        return Array.isArray(response.data) ? response.data : [];
       }
       
-      // Handle direct array response
-      return Array.isArray(response) ? response : [];
+      // If response is a single object, wrap it in an array
+      return response ? [response] : [];
     } catch (error) {
       logger.error('Error fetching available customers:', error);
-      return [];
+      // Try the CRM endpoint as fallback
+      try {
+        const crmResponse = await fetchData('/api/crm/customers/', {
+          params: { is_active: true },
+          useCache: true,
+          cacheTTL: 10 * 60 * 1000
+        });
+        
+        if (crmResponse && typeof crmResponse === 'object' && 'results' in crmResponse) {
+          return Array.isArray(crmResponse.results) ? crmResponse.results : [];
+        }
+        
+        return Array.isArray(crmResponse) ? crmResponse : [];
+      } catch (crmError) {
+        logger.error('Error fetching CRM customers as fallback:', crmError);
+        return [];
+      }
     }
   }
 

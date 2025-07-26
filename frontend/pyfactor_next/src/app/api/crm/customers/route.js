@@ -17,9 +17,14 @@ export async function GET(request) {
       return NextResponse.json({ error: 'No session found' }, { status: 401 });
     }
     
-    // Forward request to Django backend
+    // Get query parameters from the request
+    const { searchParams } = new URL(request.url);
+    const queryString = searchParams.toString();
+    
+    // Forward request to Django backend with query parameters
     // Backend will determine tenant from the session
-    const response = await fetch(`${API_URL}/api/crm/customers/`, {
+    const url = `${API_URL}/api/crm/customers/${queryString ? `?${queryString}` : ''}`;
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Authorization': `Session ${sidCookie.value}`,

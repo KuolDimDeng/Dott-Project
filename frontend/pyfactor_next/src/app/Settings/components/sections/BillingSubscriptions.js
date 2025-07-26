@@ -43,7 +43,7 @@ const BillingSubscriptions = ({ user, profileData, isOwner, notifySuccess, notif
     {
       id: 'professional',
       name: 'Professional',
-      price: 15,
+      price: 35,
       priceId: process.env.NEXT_PUBLIC_STRIPE_PROFESSIONAL_PRICE_ID,
       yearlyPriceId: process.env.NEXT_PUBLIC_STRIPE_PROFESSIONAL_YEARLY_PRICE_ID,
       features: [
@@ -61,7 +61,7 @@ const BillingSubscriptions = ({ user, profileData, isOwner, notifySuccess, notif
     {
       id: 'enterprise',
       name: 'Enterprise',
-      price: 45,
+      price: 95,
       priceId: process.env.NEXT_PUBLIC_STRIPE_ENTERPRISE_PRICE_ID,
       yearlyPriceId: process.env.NEXT_PUBLIC_STRIPE_ENTERPRISE_YEARLY_PRICE_ID,
       features: [

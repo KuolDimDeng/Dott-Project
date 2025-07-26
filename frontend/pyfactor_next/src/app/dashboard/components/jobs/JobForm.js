@@ -168,7 +168,9 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
                 <option value="">Select a customer</option>
                 {customers.map((customer) => (
                   <option key={customer.id} value={customer.id}>
-                    {customer.name}
+                    {customer.customerName || customer.business_name || customer.name || 
+                     `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 
+                     customer.email || 'Unknown Customer'}
                   </option>
                 ))}
               </select>
@@ -377,7 +379,9 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
                 <option value="">Select a customer</option>
                 {customers.map((customer) => (
                   <option key={customer.id} value={customer.id}>
-                    {customer.name}
+                    {customer.customerName || customer.business_name || customer.name || 
+                     `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 
+                     customer.email || 'Unknown Customer'}
                   </option>
                 ))}
               </select>
