@@ -15,7 +15,7 @@ import api from '@/utils/api';
 import StandardSpinner from '@/components/ui/StandardSpinner';
 import FieldTooltip from '@/components/ui/FieldTooltip';
 import { GOOGLE_MAPS_CONFIG } from '@/config/maps';
-import EmployeeAssignmentModal from './EmployeeAssignmentModal';
+import InlineEmployeeAssignment from './InlineEmployeeAssignment';
 
 // Google Maps Integration - Simplified Version
 const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => {
@@ -682,15 +682,14 @@ const GoogleMapsGeofenceSetup = ({ onGeofenceCreated, onCancel, isVisible }) => 
   );
 };
 
-// Main GeofencingSettings component - Updated 2025-07-25
+// Main GeofencingSettings component - Updated 2025-07-26
 const GeofencingSettings = () => {
   console.log('[GeofencingSettings] === COMPONENT MOUNT START ===');
   const [geofences, setGeofences] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [hasAcceptedCompliance, setHasAcceptedCompliance] = useState(true); // Set to true for now to bypass compliance
-  const [selectedGeofence, setSelectedGeofence] = useState(null);
-  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [expandedGeofenceId, setExpandedGeofenceId] = useState(null);
   
   console.log('[GeofencingSettings] State initialized:', {
     hasAcceptedCompliance,
@@ -990,10 +989,11 @@ ${JSON.stringify(response.user_geofences || [], null, 2)}
           <StandardSpinner size="medium" />
         </div>
       ) : geofences.length > 0 ? (
-        <div className="bg-white shadow overflow-hidden sm:rounded-md">
-          <ul className="divide-y divide-gray-200">
-            {geofences.map((geofence) => (
-              <li key={geofence.id} className="px-6 py-4">
+        <div className="space-y-4">
+          {geofences.map((geofence) => (
+            <div key={geofence.id} className="bg-white shadow overflow-hidden sm:rounded-md">
+              {/* Geofence Header */}
+              <div className="px-6 py-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
                     <MapPinIcon className="h-10 w-10 text-gray-400 mr-4" />
@@ -1010,20 +1010,29 @@ ${JSON.stringify(response.user_geofences || [], null, 2)}
                         Active
                       </span>
                     )}
-                    <button
-                      onClick={() => {
-                        setSelectedGeofence(geofence);
-                        setShowAssignModal(true);
-                      }}
-                      className="text-blue-600 hover:text-blue-800"
-                    >
-                      Assign Employees
-                    </button>
                   </div>
                 </div>
-              </li>
-            ))}
-          </ul>
+              </div>
+              
+              {/* Inline Employee Assignment */}
+              <div className="px-6 pb-4">
+                <InlineEmployeeAssignment
+                  geofence={geofence}
+                  onAssignmentComplete={(assignedIds) => {
+                    console.log('🎯 [GeofencingSettings] Assignment complete for geofence:', geofence.id);
+                    console.log('🎯 [GeofencingSettings] Assigned employee IDs:', assignedIds);
+                    // Optionally refresh the geofences list
+                    loadGeofences();
+                  }}
+                  isExpanded={expandedGeofenceId === geofence.id}
+                  onToggleExpand={() => {
+                    console.log('🎯 [GeofencingSettings] Toggling expansion for:', geofence.id);
+                    setExpandedGeofenceId(expandedGeofenceId === geofence.id ? null : geofence.id);
+                  }}
+                />
+              </div>
+            </div>
+          ))}
         </div>
       ) : (
         <div className="text-center py-8 bg-gray-50 rounded-lg">
@@ -1035,19 +1044,6 @@ ${JSON.stringify(response.user_geofences || [], null, 2)}
         </div>
       )}
 
-      {/* Employee Assignment Modal */}
-      <EmployeeAssignmentModal
-        isOpen={showAssignModal}
-        onClose={() => {
-          setShowAssignModal(false);
-          setSelectedGeofence(null);
-        }}
-        geofence={selectedGeofence}
-        onAssignmentComplete={() => {
-          // Optionally refresh the geofences list
-          loadGeofences();
-        }}
-      />
     </div>
   );
 };
