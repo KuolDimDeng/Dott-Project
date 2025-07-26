@@ -1657,11 +1657,10 @@ const DashAppBar = ({
                         if (typeof option.onClick === 'function') {
                           console.log('[DashAppBar] Calling option.onClick with params:', {
                             handleCloseCreateMenu: typeof handleCloseCreateMenu,
-                            handleShowCreateMenu: typeof handleShowCreateMenu,
                             handleShowCreateOptions: typeof handleShowCreateOptions
                           });
                           // Pass the required parameters for Create New menu items
-                          option.onClick(false, handleCloseCreateMenu, handleShowCreateMenu, handleShowCreateOptions || handleMenuItemClick);
+                          option.onClick(false, handleCloseCreateMenu, handleCloseCreateMenu, handleShowCreateOptions || handleMenuItemClick);
                         } else {
                           console.log('[DashAppBar] Using default handleMenuItemClick');
                           // Otherwise use the default handleMenuItemClick

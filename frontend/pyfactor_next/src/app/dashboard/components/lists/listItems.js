@@ -265,7 +265,7 @@ const getCreateOptions = (t) => [
   },
   {
     label: t('subMenu.catalog'),
-    icon: <NavIcons.Inventory className="w-4 h-4" />,
+    icon: (props) => <NavIcons.Inventory className={props.className || "w-4 h-4"} />,
     onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
       if (typeof handleShowCreateOptions === 'function') {
         handleShowCreateOptions('Product');
@@ -278,7 +278,7 @@ const getCreateOptions = (t) => [
   },
   {
     label: t('subMenu.services'),
-    icon: <NavIcons.Receipt className="w-4 h-4" />,
+    icon: (props) => <NavIcons.Receipt className={props.className || "w-4 h-4"} />,
     onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
       if (typeof handleShowCreateOptions === 'function') {
         handleShowCreateOptions('Service');
@@ -291,7 +291,7 @@ const getCreateOptions = (t) => [
   },
   {
     label: t('subMenu.jobs'),
-    icon: <NavIcons.Work className="w-4 h-4" />,
+    icon: (props) => <NavIcons.Work className={props.className || "w-4 h-4"} />,
     onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
       if (typeof handleShowCreateOptions === 'function') {
         handleShowCreateOptions('Job');
@@ -304,7 +304,7 @@ const getCreateOptions = (t) => [
   },
   {
     label: t('subMenu.invoices'),
-    icon: <NavIcons.Description className="w-4 h-4" />,
+    icon: (props) => <NavIcons.Description className={props.className || "w-4 h-4"} />,
     onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
       if (typeof handleShowCreateOptions === 'function') {
         handleShowCreateOptions('Invoice');
@@ -317,7 +317,7 @@ const getCreateOptions = (t) => [
   },
   {
     label: t('subMenu.billsExpenses'),
-    icon: <NavIcons.Cart className="w-4 h-4" />,
+    icon: (props) => <NavIcons.Cart className={props.className || "w-4 h-4"} />,
     onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
       if (typeof handleShowCreateOptions === 'function') {
         handleShowCreateOptions('Bill');
@@ -330,7 +330,7 @@ const getCreateOptions = (t) => [
   },
   {
     label: t('subMenu.quotes'),
-    icon: <NavIcons.Reports className="w-4 h-4" />,
+    icon: (props) => <NavIcons.Reports className={props.className || "w-4 h-4"} />,
     onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
       if (typeof handleShowCreateOptions === 'function') {
         handleShowCreateOptions('Estimate');
@@ -343,7 +343,7 @@ const getCreateOptions = (t) => [
   },
   {
     label: t('subMenu.customers'),
-    icon: <NavIcons.People className="w-4 h-4" />,
+    icon: (props) => <NavIcons.People className={props.className || "w-4 h-4"} />,
     onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
       if (typeof handleShowCreateOptions === 'function') {
         handleShowCreateOptions('Customer');
@@ -356,7 +356,7 @@ const getCreateOptions = (t) => [
   },
   {
     label: t('subMenu.vendors'),
-    icon: <NavIcons.Contacts className="w-4 h-4" />,
+    icon: (props) => <NavIcons.Contacts className={props.className || "w-4 h-4"} />,
     onClick: (isIconOnly, handleDrawerClose, handleShowCreateMenu, handleShowCreateOptions) => {
       if (typeof handleShowCreateOptions === 'function') {
         handleShowCreateOptions('Vendor');
