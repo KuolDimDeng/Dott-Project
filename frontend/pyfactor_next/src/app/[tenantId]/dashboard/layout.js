@@ -4,6 +4,10 @@ import { useParams } from 'next/navigation';
 import { logger } from '@/utils/logger';
 import Script from 'next/script';
 import { useEffect } from 'react';
+import { SessionProvider } from '@/contexts/SessionContext';
+import { NotificationProvider } from '@/context/NotificationContext';
+import { SessionTimeoutProvider } from '@/providers/SessionTimeoutProvider';
+import SessionTimeoutModal from '@/components/SessionTimeoutModal';
 
 /**
  * Layout for tenant-specific dashboard route

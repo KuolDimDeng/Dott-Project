@@ -16,6 +16,8 @@ import { UserProfileProvider } from '@/contexts/UserProfileContext';
 import useEnsureTenant from '@/hooks/useEnsureTenant';
 import { getFallbackTenantId, storeReliableTenantId } from '@/utils/tenantFallback';
 import { useSession } from '@/hooks/useSession-v2';
+import { SessionTimeoutProvider } from '@/providers/SessionTimeoutProvider';
+import SessionTimeoutModal from '@/components/SessionTimeoutModal';
 
 // Import needed for recovery
 // import { signIn } from '@/config/amplifyUnified'; // Removed - no longer using Cognito
@@ -536,6 +538,36 @@ export default function TenantDashboard() {
     return (
       <SessionInitializer>
         <Suspense fallback={<DashboardLoader message="Loading dashboard content..." />}>
+          <SessionTimeoutProvider>
+            <NotificationProvider>
+              <UserProfileProvider tenantId={effectiveTenantId}>
+                <DashboardProvider>
+                  <DashboardContent
+                    newAccount={dashboardParams.newAccount}
+                    plan={dashboardParams.plan}
+                    mockData={dashboardParams.mockData}
+                    setupStatus={dashboardParams.setupStatus}
+                    userAttributes={userAttributes}
+                    tenantId={effectiveTenantId}
+                    fromSignIn={fromSignIn}
+                    fromSubscription={fromSubscription}
+                  />
+                </DashboardProvider>
+              </UserProfileProvider>
+            </NotificationProvider>
+            <SessionTimeoutModal />
+          </SessionTimeoutProvider>
+        </Suspense>
+      </SessionInitializer>
+    );
+  }
+  
+  console.log('🎯 [TenantDashboard] Rendering dashboard without SessionInitializer');
+  return (
+    <>
+      <DebugGlobals />
+      <Suspense fallback={<DashboardLoader message="Loading dashboard content..." />}>
+        <SessionTimeoutProvider>
           <NotificationProvider>
             <UserProfileProvider tenantId={effectiveTenantId}>
               <DashboardProvider>
@@ -552,32 +584,8 @@ export default function TenantDashboard() {
               </DashboardProvider>
             </UserProfileProvider>
           </NotificationProvider>
-        </Suspense>
-      </SessionInitializer>
-    );
-  }
-  
-  console.log('🎯 [TenantDashboard] Rendering dashboard without SessionInitializer');
-  return (
-    <>
-      <DebugGlobals />
-      <Suspense fallback={<DashboardLoader message="Loading dashboard content..." />}>
-        <NotificationProvider>
-          <UserProfileProvider tenantId={effectiveTenantId}>
-            <DashboardProvider>
-              <DashboardContent
-                newAccount={dashboardParams.newAccount}
-                plan={dashboardParams.plan}
-                mockData={dashboardParams.mockData}
-                setupStatus={dashboardParams.setupStatus}
-                userAttributes={userAttributes}
-                tenantId={effectiveTenantId}
-                fromSignIn={fromSignIn}
-                fromSubscription={fromSubscription}
-              />
-            </DashboardProvider>
-          </UserProfileProvider>
-        </NotificationProvider>
+          <SessionTimeoutModal />
+        </SessionTimeoutProvider>
       </Suspense>
     </>
   );
