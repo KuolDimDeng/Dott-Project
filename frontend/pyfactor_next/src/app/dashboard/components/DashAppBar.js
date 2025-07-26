@@ -1630,11 +1630,22 @@ const DashAppBar = ({
               </button>
             </div>
             <ul className="space-y-1">
-              {getCreateOptions(t) && getCreateOptions(t).filter(option => option && option.label !== 'Create New').map((option, index) => {
-                if (!option) {
-                  console.error('[DashAppBar] Invalid option in getCreateOptions:', option);
-                  return null;
-                }
+              {(() => {
+                try {
+                  if (!t || typeof t !== 'function') {
+                    console.error('[DashAppBar] Translation function t is not available');
+                    return null;
+                  }
+                  const options = getCreateOptions(t);
+                  if (!options || !Array.isArray(options)) {
+                    console.error('[DashAppBar] getCreateOptions returned invalid value:', options);
+                    return null;
+                  }
+                  return options.filter(option => option && option.label && option.label !== 'Create New').map((option, index) => {
+                    if (!option) {
+                      console.error('[DashAppBar] Invalid option in getCreateOptions:', option);
+                      return null;
+                    }
                 
                 return (
                   <li key={index}>
@@ -1660,15 +1671,28 @@ const DashAppBar = ({
                     >
                       <span className="mr-2 text-primary-main">
                         {option.icon && typeof option.icon === 'function' 
-                          ? option.icon({ className: "w-5 h-5" })
-                          : option.icon || null
+                          ? (() => {
+                              try {
+                                const IconComponent = option.icon({ className: "w-5 h-5" });
+                                return IconComponent || null;
+                              } catch (iconError) {
+                                console.error('[DashAppBar] Error rendering icon for:', option.label, iconError);
+                                return null;
+                              }
+                            })()
+                          : null
                         }
                       </span>
                       <span>{option.label || ''}</span>
                     </button>
                   </li>
-                );
-              })}
+                  );
+                  });
+                } catch (error) {
+                  console.error('[DashAppBar] Error rendering create options:', error);
+                  return null;
+                }
+              })()}
             </ul>
           </div>
         </>
