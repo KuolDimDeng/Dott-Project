@@ -519,9 +519,9 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
       id: 'professional',
       name: 'Professional',
       price: {
-        monthly: 15,
-        sixMonth: 75,
-        yearly: 144,
+        monthly: 35,
+        sixMonth: 175,  // 35 * 5 months (saving 1 month ~17%)
+        yearly: 336,    // 35 * 9.6 months (saving 2.4 months = 20% off)
       },
       features: [
         'Up to 3 users',
@@ -536,9 +536,9 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
       id: 'enterprise',
       name: 'Enterprise',
       price: {
-        monthly: 45,
-        sixMonth: 225,
-        yearly: 432,
+        monthly: 95,
+        sixMonth: 475,  // 95 * 5 months (saving 1 month ~17%)
+        yearly: 912,    // 95 * 9.6 months (saving 2.4 months = 20% off)
       },
       features: [
         'Unlimited users',

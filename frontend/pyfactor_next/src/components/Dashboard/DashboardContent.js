@@ -1338,6 +1338,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     handleLogout: handleSignOut,
     handleCloseCreateMenu,
     handleMenuItemClick,
+    handleShowCreateOptions,
     setShowForm,
     setFormOption,
     tenantId: effectiveTenantId,
@@ -1347,6 +1348,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     setShowMyAccount, setShowHelpCenter, memoizedUserData, userAttributes, setUserData, drawerOpen, handleDrawerToggle,
     resetAllStates, setShowHome, setShowCreateMenu, showCreateMenu, handleClick, handleClose,
     handleUserProfileClick, handleSettingsClick, handleHelpClick, handlePrivacyClick, handleTermsClick, handleCookieClick,
+    handleShowCreateOptions,
     handleSignOut, handleCloseCreateMenu, handleMenuItemClick, setShowForm, setFormOption, effectiveTenantId, handleHomeClick
   ]);
   

@@ -56,7 +56,7 @@ export default function Highlights() {
       description: t('highlights.mobilemoney.description', 'Accept payments from anywhere in the world. M-Pesa integration is live in Kenya, with MTN Mobile Money, Airtel Money, Orange Money, GCash, Paytm, Pix, and Mercado Pago coming soon. Reach billions of customers who prefer mobile money over traditional banking.'),
       image: '/static/images/mobile-money-screenshot.jpg',
       imageAlt: t('highlights.mobilemoney.imageAlt', 'Mobile money payment options'),
-      reverse: false,
+      reverse: true,
     },
     {
       key: 'whatsapp',
@@ -64,7 +64,7 @@ export default function Highlights() {
       description: t('highlights.whatsapp.description', 'Transform customer communication with WhatsApp Business integration. Create and manage your product catalog, automatically send invoices and receipts, provide instant customer support, and reach customers on their preferred messaging platform.'),
       image: '/static/images/whatsapp-business-screenshot.jpg',
       imageAlt: t('highlights.whatsapp.imageAlt', 'WhatsApp Business integration interface'),
-      reverse: true,
+      reverse: false,
     },
     {
       key: 'languages',
@@ -72,7 +72,7 @@ export default function Highlights() {
       description: t('highlights.languages.description', 'Reach customers and manage your business in your preferred language. From English to Swahili, Spanish to Mandarin, we support over 20 languages to make Dott accessible to businesses worldwide.'),
       image: '/static/images/languages-screenshot.jpg',
       imageAlt: t('highlights.languages.imageAlt', 'Multi-language interface demonstration'),
-      reverse: false,
+      reverse: true,
     },
   ];
 

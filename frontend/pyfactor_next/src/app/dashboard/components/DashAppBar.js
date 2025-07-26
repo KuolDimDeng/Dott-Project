@@ -103,6 +103,7 @@ const DashAppBar = ({
   showCreateMenu,
   handleMenuItemClick,
   handleCloseCreateMenu,
+  handleShowCreateOptions,
   setUserData, // Add setUserData to the component props
 }) => {
   // Reduced logging for production - only log once per mount
@@ -1633,7 +1634,16 @@ const DashAppBar = ({
                 <li key={index}>
                   <button 
                     className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 flex items-center"
-                    onClick={() => handleMenuItemClick(option.value || option.label)}
+                    onClick={() => {
+                      // If the option has its own onClick handler, call it
+                      if (typeof option.onClick === 'function') {
+                        // Pass the required parameters for Create New menu items
+                        option.onClick(false, handleCloseCreateMenu, handleShowCreateMenu, handleShowCreateOptions || handleMenuItemClick);
+                      } else {
+                        // Otherwise use the default handleMenuItemClick
+                        handleMenuItemClick(option.value || option.label);
+                      }
+                    }}
                   >
                     <span className="mr-2 text-primary-main">
                       {typeof option.icon === 'function' 
