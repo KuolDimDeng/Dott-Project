@@ -89,7 +89,9 @@
     "jobCosting": "Chi phí Công việc",
     "jobMaterials": "Sử dụng Vật liệu",
     "jobLabor": "Theo dõi Lao động",
-    "jobProfitability": "Phân tích Lợi nhuận"
+    "jobProfitability": "Phân tích Lợi nhuận",
+    "services": "Dịch vụ",
+    "jobs": "Công việc"
   },
   "actions": {
     "viewAll": "Xem Tất Cả",

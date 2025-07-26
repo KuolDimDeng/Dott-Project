@@ -89,7 +89,9 @@
     "jobCosting": "작업 원가계산",
     "jobMaterials": "자재 사용량",
     "jobLabor": "노동 시간 추적",
-    "jobProfitability": "수익성 분석"
+    "jobProfitability": "수익성 분석",
+    "services": "서비스",
+    "jobs": "작업"
   },
   "actions": {
     "viewAll": "모두 보기",

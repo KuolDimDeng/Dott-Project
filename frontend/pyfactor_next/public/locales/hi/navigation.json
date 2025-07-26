@@ -89,7 +89,9 @@
     "jobCosting": "कार्य लागत निर्धारण",
     "jobMaterials": "सामग्री उपयोग",
     "jobLabor": "श्रम ट्रैकिंग",
-    "jobProfitability": "लाभप्रदता विश्लेषण"
+    "jobProfitability": "लाभप्रदता विश्लेषण",
+    "services": "सेवाएं",
+    "jobs": "नौकरियां"
   },
   "actions": {
     "viewAll": "सभी देखें",

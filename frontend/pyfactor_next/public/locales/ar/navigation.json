@@ -89,7 +89,9 @@
     "jobCosting": "تكلفة الوظائف",
     "jobMaterials": "استخدام المواد",
     "jobLabor": "تتبع العمالة",
-    "jobProfitability": "تحليل الربحية"
+    "jobProfitability": "تحليل الربحية",
+    "services": "الخدمات",
+    "jobs": "الوظائف"
   },
   "actions": {
     "viewAll": "عرض الكل",

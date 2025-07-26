@@ -89,7 +89,9 @@
     "jobCosting": "ジョブ原価計算",
     "jobMaterials": "資材使用量",
     "jobLabor": "労働時間追跡",
-    "jobProfitability": "収益性分析"
+    "jobProfitability": "収益性分析",
+    "services": "サービス",
+    "jobs": "ジョブ"
   },
   "actions": {
     "viewAll": "すべて表示",

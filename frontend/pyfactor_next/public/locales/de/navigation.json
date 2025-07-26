@@ -89,7 +89,9 @@
     "jobCosting": "Auftragskalkulation",
     "jobMaterials": "Materialverbrauch",
     "jobLabor": "Arbeitszeitverfolgung",
-    "jobProfitability": "Rentabilitätsanalyse"
+    "jobProfitability": "Rentabilitätsanalyse",
+    "services": "Dienstleistungen",
+    "jobs": "Aufträge"
   },
   "actions": {
     "viewAll": "Alle anzeigen",

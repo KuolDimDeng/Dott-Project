@@ -89,7 +89,9 @@
     "jobCosting": "Калькуляция Работ",
     "jobMaterials": "Использование Материалов",
     "jobLabor": "Учёт Рабочего Времени",
-    "jobProfitability": "Анализ Прибыльности"
+    "jobProfitability": "Анализ Прибыльности",
+    "services": "Услуги",
+    "jobs": "Работы"
   },
   "actions": {
     "viewAll": "Просмотреть все",

@@ -89,7 +89,9 @@
     "jobCosting": "工作成本核算",
     "jobMaterials": "材料使用情凵",
     "jobLabor": "劳动时间跟踪",
-    "jobProfitability": "盈利能力分析"
+    "jobProfitability": "盈利能力分析",
+    "services": "服务",
+    "jobs": "工作"
   },
   "actions": {
     "viewAll": "查看全部",

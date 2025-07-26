@@ -89,7 +89,9 @@
     "jobCosting": "Bei ya Kazi",
     "jobMaterials": "Matumizi ya Vifaa",
     "jobLabor": "Ufuatiliaji wa Kazi",
-    "jobProfitability": "Uchambuzi wa Faida"
+    "jobProfitability": "Uchambuzi wa Faida",
+    "services": "Huduma",
+    "jobs": "Kazi"
   },
   "actions": {
     "viewAll": "Tazama Zote",

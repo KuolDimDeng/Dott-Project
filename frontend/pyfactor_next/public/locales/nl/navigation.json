@@ -89,7 +89,9 @@
     "jobCosting": "Opdrachtkosten",
     "jobMaterials": "Materiaalgebruik",
     "jobLabor": "Arbeidsregistratie",
-    "jobProfitability": "Winstgevendheidsanalyse"
+    "jobProfitability": "Winstgevendheidsanalyse",
+    "services": "Diensten",
+    "jobs": "Opdrachten"
   },
   "actions": {
     "viewAll": "Alles Bekijken",

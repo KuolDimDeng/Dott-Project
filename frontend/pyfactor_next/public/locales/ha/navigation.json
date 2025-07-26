@@ -89,7 +89,9 @@
     "jobCosting": "Farashin Aiki",
     "jobMaterials": "Amfani da Kayan Aiki",
     "jobLabor": "Bin Diddigin Aiki",
-    "jobProfitability": "Binciken Riba"
+    "jobProfitability": "Binciken Riba",
+    "services": "Ayyuka",
+    "jobs": "Ayyuka"
   },
   "actions": {
     "viewAll": "Duba Duka",

@@ -89,7 +89,9 @@
     "jobCosting": "Biaya Pekerjaan",
     "jobMaterials": "Penggunaan Material",
     "jobLabor": "Pelacakan Tenaga Kerja",
-    "jobProfitability": "Analisis Profitabilitas"
+    "jobProfitability": "Analisis Profitabilitas",
+    "services": "Layanan",
+    "jobs": "Pekerjaan"
   },
   "actions": {
     "viewAll": "Lihat Semua",

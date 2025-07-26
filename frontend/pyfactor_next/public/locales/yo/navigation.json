@@ -89,7 +89,9 @@
     "jobCosting": "Idiyele Iṣẹ",
     "jobMaterials": "Lilo Ohun Elo",
     "jobLabor": "ItỌpinpin Iṣẹ",
-    "jobProfitability": "Itupalẹ̀ Ere"
+    "jobProfitability": "Itupalẹ̀ Ere",
+    "services": "Awọn iṣẹ",
+    "jobs": "Awọn iṣẹ"
   },
   "actions": {
     "viewAll": "Wo Gbogbo Rẹ̀",

@@ -89,7 +89,9 @@
     "jobCosting": "İş Maliyetlendirme",
     "jobMaterials": "Malzeme Kullanımı",
     "jobLabor": "İşçilik Takibi",
-    "jobProfitability": "Karlılık Analizi"
+    "jobProfitability": "Karlılık Analizi",
+    "services": "Hizmetler",
+    "jobs": "İşler"
   },
   "actions": {
     "viewAll": "Tümünü Görüntüle",

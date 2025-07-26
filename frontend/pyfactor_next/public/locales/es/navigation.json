@@ -89,7 +89,9 @@
     "jobCosting": "Costeo de Trabajos",
     "jobMaterials": "Uso de Materiales",
     "jobLabor": "Seguimiento de Mano de Obra",
-    "jobProfitability": "Análisis de Rentabilidad"
+    "jobProfitability": "Análisis de Rentabilidad",
+    "services": "Servicios",
+    "jobs": "Trabajos"
   },
   "actions": {
     "viewAll": "Ver Todo",

@@ -89,7 +89,9 @@
     "jobCosting": "የስራ ወጪ ግምት",
     "jobMaterials": "የዕዳ አጠቃቀም",
     "jobLabor": "የሰራተኛ ክትትል",
-    "jobProfitability": "የትርፍ ትንተና"
+    "jobProfitability": "የትርፍ ትንተና",
+    "services": "አገልግሎቶች",
+    "jobs": "ስራዎች"
   },
   "actions": {
     "viewAll": "ሁሉንም ይመልከቱ",

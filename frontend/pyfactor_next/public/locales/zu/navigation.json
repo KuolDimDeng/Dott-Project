@@ -89,7 +89,9 @@
     "jobCosting": "Izindleko Zomsebenzi",
     "jobMaterials": "Ukusetshenziswa Kwezinto",
     "jobLabor": "Ukulandelela Umsebenzi",
-    "jobProfitability": "Ukuhlaziya Inzuzo"
+    "jobProfitability": "Ukuhlaziya Inzuzo",
+    "services": "Izinsiza",
+    "jobs": "Imisebenzi"
   },
   "actions": {
     "viewAll": "Buka Konke",
