@@ -30,6 +30,7 @@ const JobManagement = ({ view = 'jobs-list' }) => {
   const [error, setError] = useState(null);
   const [selectedJob, setSelectedJob] = useState(null);
   const [showJobForm, setShowJobForm] = useState(false);
+  const [showAddJobForm, setShowAddJobForm] = useState(false);
   const [filters, setFilters] = useState({
     status: 'all',
     search: ''
@@ -53,19 +54,20 @@ const JobManagement = ({ view = 'jobs-list' }) => {
       const jobsData = await jobService.getJobs(filterParams);
       // Handle both array and object response formats
       const jobsList = Array.isArray(jobsData) ? jobsData : (jobsData?.results || jobsData?.data || []);
-      setJobs(jobsList);
+      // Ensure jobs is always an array
+      setJobs(Array.isArray(jobsList) ? jobsList : []);
       setError(null);
     } catch (err) {
       logger.error('Error fetching jobs:', err);
       setError('Failed to load jobs');
+      setJobs([]); // Ensure jobs is always an array even on error
     } finally {
       setLoading(false);
     }
   };
 
   const handleCreateJob = () => {
-    setSelectedJob(null);
-    setShowJobForm(true);
+    setShowAddJobForm(true);
   };
 
   const handleEditJob = (job) => {
@@ -167,13 +169,15 @@ const JobManagement = ({ view = 'jobs-list' }) => {
               Manage jobs, track materials, labor costs, and profitability
             </p>
           </div>
-          <button
-            onClick={handleCreateJob}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
-          >
-            <PlusIcon className="h-5 w-5" />
-            New Job
-          </button>
+          {!showAddJobForm && (
+            <button
+              onClick={handleCreateJob}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
+            >
+              <PlusIcon className="h-5 w-5" />
+              New Job
+            </button>
+          )}
         </div>
 
         {/* Filters */}
@@ -203,6 +207,21 @@ const JobManagement = ({ view = 'jobs-list' }) => {
             <option value="closed">Closed</option>
           </select>
         </div>
+
+        {/* Inline Add Job Form */}
+        {showAddJobForm && (
+          <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+            <JobForm
+              job={null}
+              inline={true}
+              onClose={() => setShowAddJobForm(false)}
+              onSave={() => {
+                setShowAddJobForm(false);
+                fetchJobs();
+              }}
+            />
+          </div>
+        )}
 
         {/* Error Message */}
         {error && (
@@ -253,7 +272,7 @@ const JobManagement = ({ view = 'jobs-list' }) => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {jobs.map((job) => (
+                {Array.isArray(jobs) && jobs.map((job) => (
                   <tr key={job.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
@@ -349,8 +368,8 @@ const JobManagement = ({ view = 'jobs-list' }) => {
         )}
       </div>
 
-      {/* Job Form Modal */}
-      {showJobForm && (
+      {/* Edit Job Form Modal */}
+      {showJobForm && selectedJob && (
         <JobForm
           job={selectedJob}
           onClose={() => {
