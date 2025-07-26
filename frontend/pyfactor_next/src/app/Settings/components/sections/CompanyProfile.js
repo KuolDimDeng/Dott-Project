@@ -299,9 +299,9 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
     <div className="p-6">
       <div className="mb-6 flex justify-between items-center">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Company Profile</h2>
+          <h2 className="text-xl font-semibold text-gray-900">Business Profile</h2>
           <p className="text-sm text-gray-500 mt-1">
-            View and manage your company information
+            View and manage your business information
           </p>
         </div>
         {canEdit && !editMode && (

@@ -183,7 +183,20 @@ class MenuVisibilityView(APIView):
         """Get current menu visibility settings"""
         try:
             user = request.user
-            business = user.business
+            # Get the business through BusinessMembership
+            from users.models import BusinessMembership
+            membership = BusinessMembership.objects.filter(
+                user=user,
+                is_active=True
+            ).select_related('business').first()
+            
+            if not membership:
+                return Response(
+                    {'error': 'No active business membership found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            business = membership.business
             
             # Get all visibility settings for this business
             visibility_settings = MenuVisibilitySettings.objects.filter(
@@ -264,7 +277,20 @@ class MenuVisibilityView(APIView):
         """Update menu visibility settings"""
         try:
             user = request.user
-            business = user.business
+            # Get the business through BusinessMembership
+            from users.models import BusinessMembership
+            membership = BusinessMembership.objects.filter(
+                user=user,
+                is_active=True
+            ).select_related('business').first()
+            
+            if not membership:
+                return Response(
+                    {'error': 'No active business membership found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            business = membership.business
             
             # Check if user is owner or admin
             if user.role not in ['OWNER', 'ADMIN']:
@@ -308,7 +334,20 @@ class UserMenuAccessView(APIView):
         """Get menu items accessible to the current user"""
         try:
             user = request.user
-            business = user.business
+            # Get the business through BusinessMembership
+            from users.models import BusinessMembership
+            membership = BusinessMembership.objects.filter(
+                user=user,
+                is_active=True
+            ).select_related('business').first()
+            
+            if not membership:
+                return Response(
+                    {'error': 'No active business membership found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            business = membership.business
             
             # Get menu visibility settings
             visibility_settings = MenuVisibilitySettings.objects.filter(
