@@ -771,6 +771,17 @@ const MainListItems = ({
           }, 
           value: 'reports' 
         },
+        { 
+          label: t('subMenu.billOfMaterials'), 
+          onClick: (value) => {
+            // Call the inventory click handler with the appropriate value
+            if (typeof handleInventoryClick === 'function') {
+              handleInventoryClick('inventory-bill-of-materials');
+            }
+          }, 
+          value: 'inventory-bill-of-materials',
+          path: '/dashboard/inventory'
+        },
       ],
     },
     /* Transport menu item - This will be used in future versions of the application

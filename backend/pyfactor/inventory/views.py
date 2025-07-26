@@ -6,12 +6,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from .models import (
     InventoryItem, Category, Supplier, Location, InventoryTransaction,
-    Product, Service, Department, CustomChargePlan
+    Product, Service, Department, CustomChargePlan, BillOfMaterials, ServiceMaterials
 )
 from .serializers import (
     InventoryItemSerializer, CategorySerializer, SupplierSerializer,
     LocationSerializer, InventoryTransactionSerializer, ProductSerializer,
-    ServiceSerializer, DepartmentSerializer, CustomChargePlanSerializer
+    ServiceSerializer, DepartmentSerializer, CustomChargePlanSerializer,
+    BillOfMaterialsSerializer, ServiceMaterialsSerializer
 )
 import json
 from django.views.decorators.csrf import csrf_exempt
@@ -656,3 +657,63 @@ def print_barcode(request, product_id):
         return HttpResponse(barcode_image, content_type='image/png')
     except Product.DoesNotExist:
         return Response({"error": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
+class BillOfMaterialsViewSet(viewsets.ModelViewSet):
+    serializer_class = BillOfMaterialsSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        queryset = BillOfMaterials.objects.all()
+        product_id = self.request.query_params.get('product', None)
+        if product_id:
+            queryset = queryset.filter(product_id=product_id)
+        return queryset
+    
+    def create(self, request, *args, **kwargs):
+        """Track analytics when BOM is created"""
+        response = super().create(request, *args, **kwargs)
+        
+        if response.status_code == status.HTTP_201_CREATED:
+            user_id = str(request.user.id) if request.user.is_authenticated else 'anonymous'
+            track_event(
+                user_id=user_id,
+                event_name='bill_of_materials_created',
+                properties={
+                    'product_id': response.data.get('product'),
+                    'material_id': response.data.get('material'),
+                    'quantity': response.data.get('quantity_required')
+                }
+            )
+        
+        return response
+
+
+class ServiceMaterialsViewSet(viewsets.ModelViewSet):
+    serializer_class = ServiceMaterialsSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        queryset = ServiceMaterials.objects.all()
+        service_id = self.request.query_params.get('service', None)
+        if service_id:
+            queryset = queryset.filter(service_id=service_id)
+        return queryset
+    
+    def create(self, request, *args, **kwargs):
+        """Track analytics when service materials are created"""
+        response = super().create(request, *args, **kwargs)
+        
+        if response.status_code == status.HTTP_201_CREATED:
+            user_id = str(request.user.id) if request.user.is_authenticated else 'anonymous'
+            track_event(
+                user_id=user_id,
+                event_name='service_materials_created',
+                properties={
+                    'service_id': response.data.get('service'),
+                    'material_id': response.data.get('material'),
+                    'quantity': response.data.get('quantity_required')
+                }
+            )
+        
+        return response

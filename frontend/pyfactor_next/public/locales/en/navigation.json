@@ -93,7 +93,8 @@
     "jobCosting": "Job Costing",
     "jobMaterials": "Materials Usage",
     "jobLabor": "Labor Tracking",
-    "jobProfitability": "Profitability Analysis"
+    "jobProfitability": "Profitability Analysis",
+    "billOfMaterials": "Bill of Materials"
   },
   "actions": {
     "viewAll": "View All",

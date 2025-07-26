@@ -247,11 +247,19 @@ class Product(AuditMixin, TenantAwareModel):
         ('supply', 'Supply/Material'),
     ]
     
+    MATERIAL_TYPE_CHOICES = [
+        ('consumable', 'Consumable (depletes with use)'),
+        ('reusable', 'Reusable/Tool (doesn\'t deplete)'),
+        ('service', 'Service (no physical item)'),
+    ]
+    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
     sku = models.CharField(max_length=50, blank=True, null=True)
     inventory_type = models.CharField(max_length=20, choices=INVENTORY_TYPE_CHOICES, default='product', db_index=True)
+    material_type = models.CharField(max_length=20, choices=MATERIAL_TYPE_CHOICES, default='consumable', 
+                                   help_text='Consumables deplete when used, reusables/tools do not')
     price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     cost = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     quantity = models.IntegerField(default=0)
@@ -259,6 +267,10 @@ class Product(AuditMixin, TenantAwareModel):
     # Supply-specific fields
     markup_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0, help_text='Default markup % when billing to customers')
     is_billable = models.BooleanField(default=True, help_text='Can this supply be billed to customers?')
+    
+    # For reusable items/tools
+    reorder_level = models.IntegerField(default=0, help_text='Minimum quantity before reorder alert')
+    unit = models.CharField(max_length=50, default='units', help_text='Unit of measurement (units, lbs, kg, etc.)')
     
     supplier = models.ForeignKey('Supplier', on_delete=models.SET_NULL, null=True, blank=True, related_name='products')
     location = models.ForeignKey('Location', on_delete=models.SET_NULL, null=True, blank=True, related_name='products')
@@ -456,6 +468,75 @@ class ServiceTypeFields(models.Model):
         verbose_name = "Service Type Field"
         verbose_name_plural = "Service Type Fields"
         app_label = 'inventory'
+
+class BillOfMaterials(TenantAwareModel):
+    """Links products/services to their required materials"""
+    product = models.ForeignKey('Product', on_delete=models.CASCADE, 
+                              related_name='bill_of_materials',
+                              limit_choices_to={'inventory_type': 'product'})
+    material = models.ForeignKey('Product', on_delete=models.CASCADE, 
+                               related_name='used_in_products',
+                               limit_choices_to={'inventory_type': 'supply'})
+    quantity_required = models.DecimalField(max_digits=10, decimal_places=2, 
+                                          validators=[MinValueValidator(Decimal('0.01'))],
+                                          help_text='Quantity of material needed per unit of product')
+    notes = models.TextField(blank=True, null=True, 
+                           help_text='Special instructions for using this material')
+    is_optional = models.BooleanField(default=False, 
+                                    help_text='Is this material optional for the product?')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    # Add tenant-aware manager
+    objects = TenantManager()
+    
+    class Meta:
+        db_table = 'inventory_billofmaterials'
+        unique_together = ['tenant_id', 'product', 'material']
+        indexes = [
+            models.Index(fields=['tenant_id', 'product']),
+            models.Index(fields=['tenant_id', 'material']),
+        ]
+        verbose_name = 'Bill of Materials'
+        verbose_name_plural = 'Bills of Materials'
+    
+    def __str__(self):
+        return f"{self.product.name} requires {self.quantity_required} {self.material.unit} of {self.material.name}"
+
+
+class ServiceMaterials(TenantAwareModel):
+    """Links services to their required materials"""
+    service = models.ForeignKey('Service', on_delete=models.CASCADE, 
+                              related_name='service_materials')
+    material = models.ForeignKey('Product', on_delete=models.CASCADE, 
+                               related_name='used_in_services',
+                               limit_choices_to={'inventory_type': 'supply'})
+    quantity_required = models.DecimalField(max_digits=10, decimal_places=2, 
+                                          validators=[MinValueValidator(Decimal('0.01'))],
+                                          help_text='Typical quantity of material needed per service')
+    notes = models.TextField(blank=True, null=True, 
+                           help_text='Special instructions for using this material')
+    is_optional = models.BooleanField(default=False, 
+                                    help_text='Is this material optional for the service?')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    # Add tenant-aware manager
+    objects = TenantManager()
+    
+    class Meta:
+        db_table = 'inventory_servicematerials'
+        unique_together = ['tenant_id', 'service', 'material']
+        indexes = [
+            models.Index(fields=['tenant_id', 'service']),
+            models.Index(fields=['tenant_id', 'material']),
+        ]
+        verbose_name = 'Service Materials'
+        verbose_name_plural = 'Service Materials'
+    
+    def __str__(self):
+        return f"{self.service.name} requires {self.quantity_required} {self.material.unit} of {self.material.name}"
+
 
 class Department(models.Model):
     dept_code = models.CharField(max_length=20)

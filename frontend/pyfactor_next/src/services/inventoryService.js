@@ -49,57 +49,149 @@ const CACHE_CONFIG = {
   STATS_TTL: 5 * 60 * 1000,      // 5 minutes for stats
 };
 
-// Mock data for offline/demo mode
+// Mock data for offline/demo mode - Construction/Service Materials
 const MOCK_PRODUCTS = [
+  // Consumable Materials
   {
     id: '1',
-    name: 'Sample Product 1',
-    product_code: 'SP001',
-    description: 'This is a sample product for development',
-    stock_quantity: 25,
-    reorder_level: 5,
-    price: 19.99,
-    is_for_sale: true
+    name: '2" Wood Screws',
+    sku: 'SCREW-2IN-100',
+    description: 'Box of 100 wood screws, 2 inch length',
+    quantity: 500,
+    reorder_level: 100,
+    unit_price: 12.99,
+    inventory_type: 'supply',
+    material_type: 'consumable',
+    unit: 'box',
+    markup_percentage: 50,
+    is_billable: true
   },
   {
     id: '2',
-    name: 'Sample Product 2',
-    product_code: 'SP002',
-    description: 'Another sample product for testing',
-    stock_quantity: 10,
-    reorder_level: 3,
-    price: 29.99,
-    is_for_sale: true
+    name: 'Drywall Nails',
+    sku: 'NAIL-DW-500',
+    description: '1.25" drywall nails, box of 500',
+    quantity: 1000,
+    reorder_level: 200,
+    unit_price: 8.99,
+    inventory_type: 'supply',
+    material_type: 'consumable',
+    unit: 'box',
+    markup_percentage: 50,
+    is_billable: true
   },
   {
     id: '3',
-    name: 'Office Supplies',
-    product_code: 'OS003',
-    description: 'Various office supplies including pens, paper, and staplers',
-    stock_quantity: 150,
-    reorder_level: 30,
-    price: 12.50,
-    is_for_sale: true
+    name: 'Painter\'s Tape',
+    sku: 'TAPE-PAINT-60',
+    description: 'Blue painter\'s tape, 2" x 60 yards',
+    quantity: 50,
+    reorder_level: 10,
+    unit_price: 5.99,
+    inventory_type: 'supply',
+    material_type: 'consumable',
+    unit: 'roll',
+    markup_percentage: 40,
+    is_billable: true
   },
   {
     id: '4',
-    name: 'Desk Chair',
-    product_code: 'DC004',
-    description: 'Ergonomic office chair with adjustable height',
-    stock_quantity: 8,
-    reorder_level: 2,
-    price: 199.99,
-    is_for_sale: true
+    name: 'Wood Glue',
+    sku: 'GLUE-WOOD-16',
+    description: 'Professional wood glue, 16 oz bottle',
+    quantity: 20,
+    reorder_level: 5,
+    unit_price: 7.49,
+    inventory_type: 'supply',
+    material_type: 'consumable',
+    unit: 'bottle',
+    markup_percentage: 45,
+    is_billable: true
   },
   {
     id: '5',
-    name: 'Laptop Stand',
-    product_code: 'LS005',
-    description: 'Adjustable laptop stand for better ergonomics',
-    stock_quantity: 15,
+    name: 'Sandpaper Assortment',
+    sku: 'SAND-ASST-25',
+    description: 'Mixed grit sandpaper, pack of 25 sheets',
+    quantity: 30,
+    reorder_level: 10,
+    unit_price: 9.99,
+    inventory_type: 'supply',
+    material_type: 'consumable',
+    unit: 'pack',
+    markup_percentage: 40,
+    is_billable: true
+  },
+  // Reusable Tools
+  {
+    id: '6',
+    name: 'Claw Hammer',
+    sku: 'TOOL-HAM-16',
+    description: '16oz professional claw hammer with fiberglass handle',
+    quantity: 5,
+    reorder_level: 2,
+    unit_price: 24.99,
+    inventory_type: 'supply',
+    material_type: 'reusable',
+    unit: 'each',
+    markup_percentage: 0,
+    is_billable: false
+  },
+  {
+    id: '7',
+    name: 'Cordless Drill',
+    sku: 'TOOL-DRILL-20V',
+    description: '20V cordless drill with battery and charger',
+    quantity: 3,
+    reorder_level: 1,
+    unit_price: 89.99,
+    inventory_type: 'supply',
+    material_type: 'reusable',
+    unit: 'each',
+    markup_percentage: 0,
+    is_billable: false
+  },
+  {
+    id: '8',
+    name: 'Circular Saw',
+    sku: 'TOOL-SAW-7.25',
+    description: '7.25" circular saw, 15 amp motor',
+    quantity: 2,
+    reorder_level: 1,
+    unit_price: 119.99,
+    inventory_type: 'supply',
+    material_type: 'reusable',
+    unit: 'each',
+    markup_percentage: 0,
+    is_billable: false
+  },
+  {
+    id: '9',
+    name: 'Level',
+    sku: 'TOOL-LEVEL-48',
+    description: '48" professional level with aluminum frame',
+    quantity: 4,
+    reorder_level: 1,
+    unit_price: 45.99,
+    inventory_type: 'supply',
+    material_type: 'reusable',
+    unit: 'each',
+    markup_percentage: 0,
+    is_billable: false
+  },
+  {
+    id: '10',
+    name: 'Paint',
+    sku: 'PAINT-INT-GAL',
+    description: 'Interior latex paint, white, 1 gallon',
+    quantity: 25,
     reorder_level: 5,
-    price: 49.99,
-    is_for_sale: true
+    unit_price: 28.99,
+    inventory_type: 'supply',
+    material_type: 'consumable',
+    unit: 'gallon',
+    markup_percentage: 35,
+    is_billable: true
   }
 ];
 
@@ -869,6 +961,78 @@ export const deleteProduct = async (id) => {
 };
 
 /**
+ * Get bill of materials for a product
+ * @param {string} productId - Product ID to get BOM for
+ * @returns {Promise<Array>} Bill of materials list
+ */
+export const getBillOfMaterials = async (productId) => {
+  try {
+    logger.info(`Fetching bill of materials for product ${productId}`);
+    
+    const params = productId ? { product: productId } : {};
+    const response = await fetchData('/api/inventory/bill-of-materials/', {
+      params,
+      headers: getTenantHeaders()
+    });
+    
+    return response;
+  } catch (error) {
+    logger.error('Error fetching bill of materials:', error);
+    throw error;
+  }
+};
+
+/**
+ * Create a new bill of materials entry
+ * @param {Object} bomData - Bill of materials data
+ * @returns {Promise<Object>} Created BOM object
+ */
+export const createBillOfMaterials = async (bomData) => {
+  try {
+    logger.info('Creating bill of materials entry:', bomData);
+    
+    const response = await axiosInstance.post('/api/inventory/bill-of-materials/', bomData, {
+      headers: getTenantHeaders()
+    });
+    
+    // Invalidate cache
+    if (inventoryCache) {
+      inventoryCache.invalidateStartingWith('/api/inventory/bill-of-materials/');
+    }
+    
+    return response.data;
+  } catch (error) {
+    logger.error('Error creating bill of materials:', error);
+    throw error;
+  }
+};
+
+/**
+ * Delete a bill of materials entry
+ * @param {string} bomId - BOM ID to delete
+ * @returns {Promise<void>}
+ */
+export const deleteBillOfMaterials = async (bomId) => {
+  try {
+    logger.info(`Deleting bill of materials entry ${bomId}`);
+    
+    await axiosInstance.delete(`/api/inventory/bill-of-materials/${bomId}/`, {
+      headers: getTenantHeaders()
+    });
+    
+    // Invalidate cache
+    if (inventoryCache) {
+      inventoryCache.invalidateStartingWith('/api/inventory/bill-of-materials/');
+    }
+    
+    return true;
+  } catch (error) {
+    logger.error('Error deleting bill of materials:', error);
+    throw error;
+  }
+};
+
+/**
  * Prefetch essential inventory data
  * This can be called during app initialization
  */
@@ -1327,6 +1491,9 @@ export const inventoryService = {
   createProduct,
   updateProduct,
   deleteProduct,
+  getBillOfMaterials,
+  createBillOfMaterials,
+  deleteBillOfMaterials,
   prefetchEssentialData,
   clearInventoryCache,
   storeProductsOffline,

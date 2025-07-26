@@ -254,6 +254,7 @@ const StockAdjustmentsManagement = enhancedLazy(() => import('./forms/StockAdjus
 const SuppliersManagement = enhancedLazy(() => import('./forms/SuppliersManagement.js'), 'Suppliers Management');
 const ProductManagement = enhancedLazy(() => import('./forms/ProductManagement.js'), 'Product Management');
 const SuppliesManagement = enhancedLazy(() => import('./forms/inventory/SuppliesManagement.js'), 'Supplies Management');
+const BillOfMaterialsManagement = enhancedLazy(() => import('./forms/inventory/BillOfMaterialsManagement.js'), 'Bill of Materials Management');
 const JobManagement = enhancedLazy(() => import('./jobs/JobManagement.js'), 'Job Management');
 const MainDashboard = enhancedLazy(() => import('./dashboards/MainDashboard'), 'Main Dashboard');
 const BankTransactions = enhancedLazy(() => import('./forms/BankTransactionPage'), 'Bank Transactions');
@@ -1708,6 +1709,17 @@ const RenderMainContent = React.memo(function RenderMainContent({
           <ContentWrapperWithKey>
             <SuspenseWithCleanup componentKey={`${componentKey}-inventory-supplies`}>
               <SuppliesManagement />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
+      }
+      
+      if (view === 'inventory-bill-of-materials') {
+        console.log('[RenderMainContent] Rendering inventory-bill-of-materials view');
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup componentKey={`${componentKey}-inventory-bill-of-materials`}>
+              <BillOfMaterialsManagement />
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>
         );

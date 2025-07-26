@@ -17,6 +17,8 @@ router.register(r'products', views.ProductViewSet, basename='product')
 router.register(r'services', views.ServiceViewSet, basename='service')
 router.register(r'departments', views.DepartmentViewSet)
 router.register(r'charge-plans', views.CustomChargePlanViewSet)
+router.register(r'bill-of-materials', views.BillOfMaterialsViewSet, basename='bill-of-materials')
+router.register(r'service-materials', views.ServiceMaterialsViewSet, basename='service-materials')
 
 # Create routers for optimized views
 optimized_router = DefaultRouter()

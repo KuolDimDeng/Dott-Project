@@ -25,6 +25,8 @@ const SuppliesManagement = () => {
       reorder_level: 0,
       unit_price: 0,
       inventory_type: 'supply',
+      material_type: 'consumable',
+      unit: 'units',
       markup_percentage: 0,
       is_billable: true,
     },
@@ -100,6 +102,8 @@ const SuppliesManagement = () => {
         reorder_level: 0,
         unit_price: 0,
         inventory_type: 'supply',
+        material_type: 'consumable',
+        unit: 'units',
         markup_percentage: 0,
         is_billable: true,
       }
@@ -245,6 +249,9 @@ const SuppliesManagement = () => {
                     Supply Details
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Type
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Stock
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -277,9 +284,18 @@ const SuppliesManagement = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        supply.material_type === 'reusable' 
+                          ? 'bg-blue-100 text-blue-800' 
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {supply.material_type === 'reusable' ? 'Tool/Reusable' : 'Consumable'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm">
                         <div className="font-medium text-gray-900">
-                          {supply.quantity} units
+                          {supply.quantity} {supply.unit || 'units'}
                         </div>
                         {supply.quantity <= supply.reorder_level && (
                           <div className="text-red-600 text-xs mt-1">
@@ -370,6 +386,21 @@ const SuppliesManagement = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700">
+                      Material Type *
+                    </label>
+                    <select
+                      value={currentSupply.material_type}
+                      onChange={(e) => handleFieldChange('material_type', e.target.value)}
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      required
+                    >
+                      <option value="consumable">Consumable (depletes with use)</option>
+                      <option value="reusable">Tool/Reusable (doesn't deplete)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
                       SKU
                     </label>
                     <input
@@ -380,7 +411,9 @@ const SuppliesManagement = () => {
                       placeholder="Auto-generated if empty"
                     />
                   </div>
+                </div>
 
+                <div className="grid grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700">
                       Current Stock
@@ -391,6 +424,33 @@ const SuppliesManagement = () => {
                       onChange={(e) => handleFieldChange('quantity', parseInt(e.target.value) || 0)}
                       className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                       min="0"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Unit
+                    </label>
+                    <input
+                      type="text"
+                      value={currentSupply.unit}
+                      onChange={(e) => handleFieldChange('unit', e.target.value)}
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      placeholder="e.g., units, lbs, kg"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Reorder Level
+                    </label>
+                    <input
+                      type="number"
+                      value={currentSupply.reorder_level}
+                      onChange={(e) => handleFieldChange('reorder_level', parseInt(e.target.value) || 0)}
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      min="0"
+                      placeholder="Min quantity alert"
                     />
                   </div>
                 </div>
@@ -407,33 +467,18 @@ const SuppliesManagement = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Unit Cost ($)
-                    </label>
-                    <input
-                      type="number"
-                      value={currentSupply.unit_price}
-                      onChange={(e) => handleFieldChange('unit_price', parseFloat(e.target.value) || 0)}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                      min="0"
-                      step="0.01"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Reorder Level
-                    </label>
-                    <input
-                      type="number"
-                      value={currentSupply.reorder_level}
-                      onChange={(e) => handleFieldChange('reorder_level', parseInt(e.target.value) || 0)}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                      min="0"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Unit Cost ($)
+                  </label>
+                  <input
+                    type="number"
+                    value={currentSupply.unit_price}
+                    onChange={(e) => handleFieldChange('unit_price', parseFloat(e.target.value) || 0)}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    min="0"
+                    step="0.01"
+                  />
                 </div>
 
                 <div className="border-t pt-4">

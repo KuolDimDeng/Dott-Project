@@ -2,7 +2,7 @@ from rest_framework import serializers
 from .models import (
     InventoryItem, Category, Supplier, Location, InventoryTransaction,
     Product, Service, ProductTypeFields, ServiceTypeFields, Department,
-    CustomChargePlan
+    CustomChargePlan, BillOfMaterials, ServiceMaterials
 )
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -62,6 +62,8 @@ class ProductSerializer(serializers.ModelSerializer):
     # Add supplier and location names for display
     supplier_name = serializers.ReadOnlyField(source='supplier.name', allow_null=True)
     location_name = serializers.ReadOnlyField(source='location.name', allow_null=True)
+    # Display material type label
+    material_type_display = serializers.CharField(source='get_material_type_display', read_only=True)
 
     class Meta:
         model = Product
@@ -76,3 +78,29 @@ class ServiceSerializer(serializers.ModelSerializer):
         model = Service
         fields = '__all__'
         read_only_fields = ('service_code',)
+
+
+class BillOfMaterialsSerializer(serializers.ModelSerializer):
+    product_name = serializers.ReadOnlyField(source='product.name')
+    material_name = serializers.ReadOnlyField(source='material.name')
+    material_unit = serializers.ReadOnlyField(source='material.unit')
+    material_type = serializers.ReadOnlyField(source='material.material_type')
+    material_sku = serializers.ReadOnlyField(source='material.sku')
+    
+    class Meta:
+        model = BillOfMaterials
+        fields = '__all__'
+        read_only_fields = ('id', 'created_at', 'updated_at')
+
+
+class ServiceMaterialsSerializer(serializers.ModelSerializer):
+    service_name = serializers.ReadOnlyField(source='service.name')
+    material_name = serializers.ReadOnlyField(source='material.name')
+    material_unit = serializers.ReadOnlyField(source='material.unit')
+    material_type = serializers.ReadOnlyField(source='material.material_type')
+    material_sku = serializers.ReadOnlyField(source='material.sku')
+    
+    class Meta:
+        model = ServiceMaterials
+        fields = '__all__'
+        read_only_fields = ('id', 'created_at', 'updated_at')

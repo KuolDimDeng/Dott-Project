@@ -1,7 +1,7 @@
 from django.db import models
 from django.core.validators import MinValueValidator
 from django.utils import timezone
-from django.db.models.signals import post_save, post_delete
+from django.db.models.signals import post_save, post_delete, pre_delete
 from django.dispatch import receiver
 from decimal import Decimal
 from custom_auth.models import TenantAwareModel, TenantManager
@@ -220,7 +220,33 @@ class JobMaterial(TenantAwareModel):
         # Auto-calculate unit_price based on markup if not set
         if self.unit_price == 0 and self.markup_percentage > 0:
             self.unit_price = self.unit_cost * (1 + self.markup_percentage / 100)
+        
+        # Track if this is a new material usage
+        is_new = self.pk is None
+        old_quantity = None
+        
+        if not is_new:
+            # Get the old quantity to calculate the difference
+            old_instance = JobMaterial.objects.get(pk=self.pk)
+            old_quantity = old_instance.quantity
+        
         super().save(*args, **kwargs)
+        
+        # After saving, update inventory for consumable materials
+        if self.supply.material_type == 'consumable':
+            if is_new:
+                # New material usage - deplete inventory
+                self.supply.quantity -= int(self.quantity)
+                if self.supply.quantity < 0:
+                    self.supply.quantity = 0
+                self.supply.save(update_fields=['quantity'])
+            elif old_quantity and old_quantity != self.quantity:
+                # Quantity changed - adjust inventory
+                quantity_diff = self.quantity - old_quantity
+                self.supply.quantity -= int(quantity_diff)
+                if self.supply.quantity < 0:
+                    self.supply.quantity = 0
+                self.supply.save(update_fields=['quantity'])
     
     def get_total_cost(self):
         return self.quantity * self.unit_cost
@@ -366,3 +392,14 @@ def job_deleted_handler(sender, instance, **kwargs):
     Automatically delete calendar events when a job is deleted
     """
     instance.delete_calendar_events()
+
+
+@receiver(pre_delete, sender=JobMaterial)
+def job_material_delete_handler(sender, instance, **kwargs):
+    """
+    Restore inventory when a material usage is deleted (only for consumables)
+    """
+    if instance.supply.material_type == 'consumable':
+        # Restore the quantity to inventory
+        instance.supply.quantity += int(instance.quantity)
+        instance.supply.save(update_fields=['quantity'])
