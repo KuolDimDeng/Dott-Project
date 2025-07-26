@@ -1,6 +1,6 @@
 # ========================================
 # Stage 1: Base image with pnpm
-# Cache bust: 2025-07-24-v3-permission-fix
+# Cache bust: 2025-07-26-v4-fast-build
 # ========================================
 FROM node:18-alpine AS base
 # Install system dependencies
@@ -24,14 +24,9 @@ COPY package.json pnpm-lock.yaml ./
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
     pnpm fetch --prod
 
-# Install production dependencies only first (smaller layer)
+# Install production dependencies only
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
     pnpm install --prod --frozen-lockfile --prefer-offline
-
-# Install ALL dependencies (including devDependencies for building)
-# This creates a separate layer that changes less frequently
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
-    pnpm install --frozen-lockfile --prefer-offline
 
 # ========================================
 # Stage 3: Build the application
@@ -39,8 +34,13 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
 FROM base AS builder
 WORKDIR /app
 
-# Copy installed dependencies
+# Copy production dependencies
 COPY --from=deps /app/node_modules ./node_modules
+COPY package.json pnpm-lock.yaml ./
+
+# Install ALL dependencies (including dev) for build
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm install --frozen-lockfile --prefer-offline
 
 # Copy source code
 COPY . .
@@ -48,6 +48,7 @@ COPY . .
 # Set build-time environment variables
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+ENV NEXT_PRIVATE_STANDALONE=true
 
 # Copy all environment variables that start with NEXT_PUBLIC_ from build environment
 # This allows Render to pass them without explicitly declaring each one
@@ -89,9 +90,12 @@ RUN echo "=== Build Environment Debug ===" && \
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 
 # Use build cache mount and output cache mount for better caching
+# Run optimized build
 RUN --mount=type=cache,id=nextjs,target=/app/.next/cache \
     --mount=type=cache,id=pnpm,target=/pnpm/store \
-    pnpm run build:render
+    NODE_OPTIONS="--max-old-space-size=4096" \
+    NEXT_TELEMETRY_DISABLED=1 \
+    pnpm next build
 
 # ========================================
 # Stage 4: Production runner
@@ -131,5 +135,5 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Start the application
-CMD ["node", "server.js"]
+# Start the application with reduced memory for faster startup
+CMD ["node", "--max-old-space-size=512", "server.js"]

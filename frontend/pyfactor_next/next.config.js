@@ -121,6 +121,7 @@ const nextConfig = {
   // Basic settings
   reactStrictMode: true,
   trailingSlash: false,
+  swcMinify: true, // Use SWC for faster minification
   
   // Enable standalone output for Docker
   output: 'standalone',
@@ -133,12 +134,35 @@ const nextConfig = {
       allowedOrigins: ['dottapps.com', 'www.dottapps.com']
     },
     
-    // Enable module/chunk optimizations
-    optimizePackageImports: ['lodash', 'date-fns', '@heroicons/react', 'react-icons', '@stripe/stripe-js'],
+    // Enable module/chunk optimizations - expanded list
+    optimizePackageImports: [
+      'lodash',
+      'date-fns',
+      '@heroicons/react',
+      '@phosphor-icons/react',
+      'lucide-react',
+      '@stripe/stripe-js',
+      'recharts',
+      'chart.js',
+      '@fullcalendar/core',
+      '@fullcalendar/react',
+      '@fullcalendar/daygrid',
+      '@fullcalendar/timegrid',
+      '@emotion/react',
+      '@emotion/styled',
+      'react-hook-form',
+      '@tanstack/react-query',
+      'react-i18next',
+      'i18next'
+    ],
     
     // Reduce memory usage during build
     workerThreads: false,
     cpus: 2, // Limit CPU usage for Render
+    
+    // Enable parallel compilation for faster builds
+    parallelServerCompiles: true,
+    parallelServerBuildTraces: true,
   },
   
   // Environment variables (minimal set)
@@ -245,6 +269,14 @@ const nextConfig = {
       // Enable aggressive code splitting
       config.optimization.usedExports = true;
       config.optimization.sideEffects = false;
+      
+      // Remove unused webpack plugins that slow down builds
+      config.plugins = config.plugins.filter(
+        plugin => {
+          const name = plugin.constructor.name;
+          return !['ForkTsCheckerWebpackPlugin', 'ESLintWebpackPlugin'].includes(name);
+        }
+      );
     }
     
     // Handle stubs (removed chart.js stubs to enable Smart Insights charts)
@@ -264,12 +296,11 @@ const nextConfig = {
       tls: false,
     };
 
-    // Exclude heavy dependencies (removed canvas to enable Smart Insights charts)
+    // Exclude heavy dependencies
     config.externals = [
       ...(config.externals || []),
-      'puppeteer',
-      'puppeteer-core',
-      'chrome-aws-lambda',
+      'canvas',
+      'jsdom',
     ];
 
     // SVG support

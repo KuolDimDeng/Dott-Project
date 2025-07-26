@@ -194,7 +194,10 @@
       "Bash(do if [ \"$file\" != \"public/locales/en/navigation.json\" ])",
       "Bash(then sed -i '' 's/\"\"Product\"\"/\"\"Products\"\"/g' \"$file\")",
       "Bash(timeout 30 npm run dev:*)",
-      "Bash(timeout 30 pnpm run dev:*)"
+      "Bash(timeout 30 pnpm run dev:*)",
+      "Bash(./scripts/fast-build-cleanup.sh:*)",
+      "Bash(time pnpm next build:*)",
+      "Bash(pnpm next:*)"
     ],
     "deny": []
   }
