@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { countries } from 'countries-list';
 import { businessTypes, legalStructures } from '@/app/utils/businessData';
+import { ALL_BUSINESS_TYPES } from '@/app/utils/simplifiedBusinessData';
 import { logger } from '@/utils/logger';
 
 /**
@@ -32,11 +33,11 @@ export default function BusinessInfoFormV2({ initialData = {}, onSubmit, submitt
     })).sort((a, b) => a.label.localeCompare(b.label));
   }, []);
   
-  // Format businessTypes for dropdown
+  // Format businessTypes for dropdown - use simplified list
   const businessTypeOptions = useMemo(() => {
-    return businessTypes.map(type => ({
-      value: type,
-      label: type
+    return ALL_BUSINESS_TYPES.map(type => ({
+      value: type.value,
+      label: type.label
     }));
   }, []);
   

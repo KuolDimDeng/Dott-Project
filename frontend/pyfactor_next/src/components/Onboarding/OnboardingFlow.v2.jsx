@@ -9,7 +9,6 @@ import { apiClient } from '@/utils/apiClient.v2';
 import { errorHandler } from '@/utils/errorHandler.v2';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import BusinessInfoFormV2 from './BusinessInfoForm.v2';
-import SimplifiedBusinessInfoForm from './SimplifiedBusinessInfoForm';
 import SubscriptionSelectionFormV2 from './SubscriptionSelectionForm.v2';
 import { captureEvent } from '@/lib/posthog';
 import { usePostHog } from 'posthog-js/react';
@@ -564,10 +563,8 @@ function OnboardingProgress({ currentState }) {
 
 // Business info step component
 function BusinessInfoStep({ data, onSubmit, submitting, error }) {
-  // Use simplified form for all new users (keeping it simple)
-  // Existing users already have their business type set
   return (
-    <SimplifiedBusinessInfoForm
+    <BusinessInfoFormV2
       initialData={data}
       onSubmit={onSubmit}
       submitting={submitting}

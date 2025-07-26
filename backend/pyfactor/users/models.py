@@ -197,6 +197,14 @@ class BusinessDetails(models.Model):
     
     # Additional fields
     
+    def save(self, *args, **kwargs):
+        """Override save to automatically set simplified_business_type based on business_type"""
+        if self.business_type and not self.simplified_business_type:
+            # Import here to avoid circular import
+            from .business_categories import get_simplified_business_type
+            self.simplified_business_type = get_simplified_business_type(self.business_type)
+        super().save(*args, **kwargs)
+    
     class Meta:
         db_table = 'users_business_details'
 

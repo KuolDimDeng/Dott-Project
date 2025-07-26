@@ -109,3 +109,9 @@ def get_category_for_business_type(business_type):
             return category
     
     return 'OTHER'
+
+def get_simplified_business_type(business_type):
+    """Get the simplified business type value for the given business type"""
+    # For the simplified types, they map directly to themselves
+    # This is used when saving BusinessDetails
+    return business_type if business_type in [choice[0] for choice in SIMPLIFIED_BUSINESS_TYPES] else 'OTHER'
