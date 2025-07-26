@@ -127,6 +127,30 @@ class UserProfileMeView(APIView):
                         'can_delete': access.can_delete
                     })
             
+            # Get employee data if user has an employee record
+            employee_data = None
+            try:
+                from hr.models import Employee
+                employee = Employee.objects.filter(user=request.user).first()
+                if employee:
+                    employee_data = {
+                        'id': str(employee.id),
+                        'employee_number': employee.employee_number,
+                        'first_name': employee.first_name,
+                        'last_name': employee.last_name,
+                        'job_title': employee.job_title,
+                        'department': employee.department,
+                        'hire_date': employee.hire_date.isoformat() if employee.hire_date else None,
+                        'employee_type': employee.employee_type,
+                        'can_approve_timesheets': employee.can_approve_timesheets,
+                        'exempt_status': employee.exempt_status,
+                        'hourly_rate': float(employee.hourly_rate) if employee.hourly_rate else 0,
+                        'salary': float(employee.salary) if employee.salary else 0,
+                    }
+                    logger.info(f"[UserProfileMeView] Found employee record for user: {employee.id}")
+            except Exception as e:
+                logger.warning(f"[UserProfileMeView] Could not get employee data: {str(e)}")
+            
             # Build response data
             response_data = {
                 'id': request.user.id,
@@ -147,6 +171,7 @@ class UserProfileMeView(APIView):
                 'show_whatsapp_commerce': profile.get_whatsapp_commerce_preference(),
                 'whatsapp_commerce_explicit': profile.show_whatsapp_commerce,  # Explicit user setting (null if using default)
                 'display_legal_structure': profile.display_legal_structure,
+                'employee': employee_data,  # Add employee data
                 'request_id': request_id
             }
             

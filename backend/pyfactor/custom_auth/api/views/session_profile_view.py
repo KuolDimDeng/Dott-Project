@@ -120,6 +120,30 @@ class SessionUserProfileView(APIView):
                     user_subscription = session.subscription_plan
                     logger.info(f"🔥 [SESSION_USER_PROFILE] Subscription from session: {user_subscription}")
             
+            # Get employee data if user has an employee record
+            employee_data = None
+            try:
+                from hr.models import Employee
+                employee = Employee.objects.filter(user=user).first()
+                if employee:
+                    employee_data = {
+                        'id': str(employee.id),
+                        'employee_number': employee.employee_number,
+                        'first_name': employee.first_name,
+                        'last_name': employee.last_name,
+                        'job_title': employee.job_title,
+                        'department': employee.department,
+                        'hire_date': employee.hire_date.isoformat() if employee.hire_date else None,
+                        'employee_type': employee.employee_type,
+                        'can_approve_timesheets': employee.can_approve_timesheets,
+                        'exempt_status': employee.exempt_status,
+                        'hourly_rate': float(employee.hourly_rate) if employee.hourly_rate else 0,
+                        'salary': float(employee.salary) if employee.salary else 0,
+                    }
+                    logger.info(f"🔥 [SESSION_USER_PROFILE] Found employee record: {employee.id}")
+            except Exception as e:
+                logger.warning(f"🔥 [SESSION_USER_PROFILE] Error getting employee data: {str(e)}")
+            
             response_data = {
                 'id': user.pk,
                 'email': user.email,
@@ -133,6 +157,7 @@ class SessionUserProfileView(APIView):
                 'onboarding_completed': onboarding_completed,
                 'current_onboarding_step': current_step,
                 'subscription_plan': user_subscription,
+                'employee': employee_data,  # Add employee data
                 'created_at': user.date_joined.isoformat() if hasattr(user, 'date_joined') else None,
                 'updated_at': user.modified_at.isoformat() if hasattr(user, 'modified_at') else None
             }
