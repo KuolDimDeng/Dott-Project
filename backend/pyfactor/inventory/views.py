@@ -157,12 +157,45 @@ class ProductViewSet(viewsets.ModelViewSet):
             logger.info(f"[ProductViewSet] Daily rate: {request.data.get('daily_rate', 'Not provided')}")
             logger.info(f"[ProductViewSet] Entry date: {request.data.get('entry_date', 'Not provided')}")
             
+            # Check if the pricing model columns exist in the database
+            from django.db import connection
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'inventory_product' 
+                    AND column_name = 'pricing_model'
+                """)
+                if not cursor.fetchone():
+                    logger.error("[ProductViewSet] pricing_model column does not exist in database!")
+                    return Response(
+                        {
+                            "error": "Database schema not up to date", 
+                            "details": "Pricing model fields are not available. Please run migrations.",
+                            "migrations_needed": ["inventory.0011_add_pricing_model_fields"]
+                        },
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                    )
+            
             response = super().create(request, *args, **kwargs)
             logger.info(f"[ProductViewSet] Product created successfully: {response.data.get('id', 'Unknown ID')}")
             return response
             
         except Exception as e:
             logger.error(f"[ProductViewSet] Error creating product: {str(e)}", exc_info=True)
+            
+            # Check if it's a database column error
+            error_str = str(e).lower()
+            if 'column' in error_str and ('pricing_model' in error_str or 'weight' in error_str or 'daily_rate' in error_str):
+                return Response(
+                    {
+                        "error": "Database schema error", 
+                        "details": "Pricing model fields are missing. Migrations need to be applied.",
+                        "specific_error": str(e)
+                    },
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+            
             return Response(
                 {"error": str(e), "details": "Failed to create product with pricing model"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR

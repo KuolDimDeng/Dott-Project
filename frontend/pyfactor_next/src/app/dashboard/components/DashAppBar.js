@@ -1630,38 +1630,45 @@ const DashAppBar = ({
               </button>
             </div>
             <ul className="space-y-1">
-              {getCreateOptions(t).filter(option => option.label !== 'Create New').map((option, index) => (
-                <li key={index}>
-                  <button 
-                    className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 flex items-center"
-                    onClick={() => {
-                      console.log('[DashAppBar] Create menu item clicked:', option.label);
-                      // If the option has its own onClick handler, call it
-                      if (typeof option.onClick === 'function') {
-                        console.log('[DashAppBar] Calling option.onClick with params:', {
-                          handleCloseCreateMenu: typeof handleCloseCreateMenu,
-                          handleShowCreateMenu: typeof handleShowCreateMenu,
-                          handleShowCreateOptions: typeof handleShowCreateOptions
-                        });
-                        // Pass the required parameters for Create New menu items
-                        option.onClick(false, handleCloseCreateMenu, handleShowCreateMenu, handleShowCreateOptions || handleMenuItemClick);
-                      } else {
-                        console.log('[DashAppBar] Using default handleMenuItemClick');
-                        // Otherwise use the default handleMenuItemClick
-                        handleMenuItemClick(option.value || option.label);
-                      }
-                    }}
-                  >
-                    <span className="mr-2 text-primary-main">
-                      {typeof option.icon === 'function' 
-                        ? option.icon({ className: "w-5 h-5" })
-                        : option.icon
-                      }
-                    </span>
-                    <span>{option.label}</span>
-                  </button>
-                </li>
-              ))}
+              {getCreateOptions(t) && getCreateOptions(t).filter(option => option && option.label !== 'Create New').map((option, index) => {
+                if (!option) {
+                  console.error('[DashAppBar] Invalid option in getCreateOptions:', option);
+                  return null;
+                }
+                
+                return (
+                  <li key={index}>
+                    <button 
+                      className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 flex items-center"
+                      onClick={() => {
+                        console.log('[DashAppBar] Create menu item clicked:', option.label);
+                        // If the option has its own onClick handler, call it
+                        if (typeof option.onClick === 'function') {
+                          console.log('[DashAppBar] Calling option.onClick with params:', {
+                            handleCloseCreateMenu: typeof handleCloseCreateMenu,
+                            handleShowCreateMenu: typeof handleShowCreateMenu,
+                            handleShowCreateOptions: typeof handleShowCreateOptions
+                          });
+                          // Pass the required parameters for Create New menu items
+                          option.onClick(false, handleCloseCreateMenu, handleShowCreateMenu, handleShowCreateOptions || handleMenuItemClick);
+                        } else {
+                          console.log('[DashAppBar] Using default handleMenuItemClick');
+                          // Otherwise use the default handleMenuItemClick
+                          handleMenuItemClick(option.value || option.label);
+                        }
+                      }}
+                    >
+                      <span className="mr-2 text-primary-main">
+                        {option.icon && typeof option.icon === 'function' 
+                          ? option.icon({ className: "w-5 h-5" })
+                          : option.icon || null
+                        }
+                      </span>
+                      <span>{option.label || ''}</span>
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         </>
