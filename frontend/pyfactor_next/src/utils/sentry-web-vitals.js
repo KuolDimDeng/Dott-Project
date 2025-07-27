@@ -22,7 +22,7 @@ export function initWebVitals() {
     });
 
     // Send as custom measurement
-    const transaction = Sentry.getCurrentHub().getScope()?.getTransaction();
+    const transaction = Sentry.getCurrentScope()?.getTransaction();
     if (transaction) {
       transaction.setMeasurement('lcp', lastEntry.renderTime || lastEntry.loadTime, 'millisecond');
     }
@@ -49,7 +49,7 @@ export function initWebVitals() {
         },
       });
 
-      const transaction = Sentry.getCurrentHub().getScope()?.getTransaction();
+      const transaction = Sentry.getCurrentScope()?.getTransaction();
       if (transaction) {
         transaction.setMeasurement('fid', entry.processingStart - entry.startTime, 'millisecond');
       }
@@ -85,7 +85,7 @@ export function initWebVitals() {
       },
     });
 
-    const transaction = Sentry.getCurrentHub().getScope()?.getTransaction();
+    const transaction = Sentry.getCurrentScope()?.getTransaction();
     if (transaction) {
       transaction.setMeasurement('cls', clsValue, 'none');
     }
@@ -112,7 +112,7 @@ export function initWebVitals() {
         },
       });
 
-      const transaction = Sentry.getCurrentHub().getScope()?.getTransaction();
+      const transaction = Sentry.getCurrentScope()?.getTransaction();
       if (transaction) {
         transaction.setMeasurement('fcp', fcpEntry.startTime, 'millisecond');
       }
@@ -144,7 +144,7 @@ export function initWebVitals() {
           },
         });
 
-        const transaction = Sentry.getCurrentHub().getScope()?.getTransaction();
+        const transaction = Sentry.getCurrentScope()?.getTransaction();
         if (transaction) {
           transaction.setMeasurement('ttfb', ttfb, 'millisecond');
         }
@@ -177,7 +177,7 @@ export function initWebVitals() {
       }
 
       // Track specific asset types
-      const transaction = Sentry.getCurrentHub().getScope()?.getTransaction();
+      const transaction = Sentry.getCurrentScope()?.getTransaction();
       if (transaction) {
         if (entry.initiatorType === 'script') {
           transaction.setMeasurement('resource.script.duration', entry.duration, 'millisecond');
@@ -236,7 +236,7 @@ export function trackInteraction(action, target, data = {}) {
 
 // Track network requests
 export function trackNetworkRequest(url, method, duration, status, size) {
-  const transaction = Sentry.getCurrentHub().getScope()?.getTransaction();
+  const transaction = Sentry.getCurrentScope()?.getTransaction();
   if (transaction) {
     const span = transaction.startChild({
       op: 'http.client',
@@ -299,7 +299,7 @@ export function instrumentFetch() {
 
 // Custom measurement helper
 export function measureCustomMetric(name, value, unit = 'none') {
-  const transaction = Sentry.getCurrentHub().getScope()?.getTransaction();
+  const transaction = Sentry.getCurrentScope()?.getTransaction();
   if (transaction) {
     transaction.setMeasurement(name, value, unit);
   }

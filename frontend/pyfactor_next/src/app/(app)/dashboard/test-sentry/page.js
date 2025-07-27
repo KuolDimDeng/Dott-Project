@@ -262,36 +262,42 @@ export default function TestSentryPage() {
     trackInteraction('click', 'test-transaction-button');
     setLoading(true);
 
-    const transaction = Sentry.startTransaction({
-      name: 'test-custom-transaction',
-      op: 'test',
-      tags: {
-        page: 'test-sentry',
+    await Sentry.startSpan(
+      {
+        name: 'test-custom-transaction',
+        op: 'test',
+        attributes: {
+          page: 'test-sentry',
+        },
       },
-    });
+      async (span) => {
+        // Add custom attributes
+        span.setAttribute('test.duration', 1500);
+        span.setAttribute('test.score', 98.5);
+        
+        // Simulate work with nested spans
+        await Sentry.startSpan(
+          {
+            op: 'db.query',
+            name: 'SELECT * FROM users',
+          },
+          async () => {
+            await new Promise(resolve => setTimeout(resolve, 300));
+          }
+        );
 
-    Sentry.getCurrentHub().configureScope((scope) => scope.setSpan(transaction));
+        await Sentry.startSpan(
+          {
+            op: 'http.client',
+            name: 'GET /api/data',
+          },
+          async () => {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        );
+      }
+    );
 
-    // Add custom measurements
-    transaction.setMeasurement('test.duration', 1500, 'millisecond');
-    transaction.setMeasurement('test.score', 98.5, 'percent');
-    
-    // Simulate work with spans
-    const dbSpan = transaction.startChild({
-      op: 'db.query',
-      description: 'SELECT * FROM users',
-    });
-    await new Promise(resolve => setTimeout(resolve, 300));
-    dbSpan.finish();
-
-    const httpSpan = transaction.startChild({
-      op: 'http.client',
-      description: 'GET /api/data',
-    });
-    await new Promise(resolve => setTimeout(resolve, 500));
-    httpSpan.finish();
-
-    transaction.finish();
     setLoading(false);
     setResult('Custom transaction sent! Check Performance tab.');
   };

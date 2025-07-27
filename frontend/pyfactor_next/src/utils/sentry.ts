@@ -49,9 +49,15 @@ export const logger = {
 
 // Performance monitoring helpers
 export const startTransaction = (name: string, op: string = 'navigation') => {
-  return Sentry.startTransaction({
+  return Sentry.startSpan({
     name,
     op,
+  }, () => {
+    // Return a transaction-like object for compatibility
+    return {
+      setStatus: (status: string) => {},
+      finish: () => {},
+    };
   });
 };
 
@@ -60,18 +66,21 @@ export const measurePerformance = async <T>(
   operation: () => Promise<T>,
   context?: Record<string, any>
 ): Promise<T> => {
-  const transaction = startTransaction(name, 'function');
-  
-  try {
-    const result = await operation();
-    transaction.setStatus('ok');
-    return result;
-  } catch (error) {
-    transaction.setStatus('internal_error');
-    throw error;
-  } finally {
-    transaction.finish();
-  }
+  return Sentry.startSpan(
+    {
+      name,
+      op: 'function',
+    },
+    async () => {
+      try {
+        const result = await operation();
+        return result;
+      } catch (error) {
+        Sentry.captureException(error);
+        throw error;
+      }
+    }
+  );
 };
 
 // User identification
