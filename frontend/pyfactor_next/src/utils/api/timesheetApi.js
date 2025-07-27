@@ -1,4 +1,4 @@
-import apiClient from './apiClient';
+import { apiClient } from '../apiClient';
 
 // Use direct fetch instead of apiClient to avoid old authentication issues
 const makeRequest = async (endpoint, options = {}) => {
