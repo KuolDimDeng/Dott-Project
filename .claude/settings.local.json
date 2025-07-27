@@ -197,7 +197,8 @@
       "Bash(timeout 30 pnpm run dev:*)",
       "Bash(./scripts/fast-build-cleanup.sh:*)",
       "Bash(time pnpm next build:*)",
-      "Bash(pnpm next:*)"
+      "Bash(pnpm next:*)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=4096\" NEXT_TELEMETRY_DISABLED=1 pnpm next build)"
     ],
     "deny": []
   }
