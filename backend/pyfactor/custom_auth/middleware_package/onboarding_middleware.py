@@ -23,6 +23,7 @@ class OnboardingMiddleware(MiddlewareMixin):
         '/api/auth0/',
         '/api/crm/',  # Allow CRM access before onboarding completion
         '/api/inventory/',  # Allow inventory access - same as CRM
+        '/api/jobs/',  # Allow jobs access - same as CRM and inventory
         '/admin/',
         '/health/',
         '/static/',

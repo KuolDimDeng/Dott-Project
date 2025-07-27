@@ -103,8 +103,26 @@ const VehicleForm = ({ vehicle, onClose, onSave, inline = false }) => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to save vehicle');
+        let errorMessage = 'Failed to save vehicle';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (jsonError) {
+          // If response body is empty or not JSON, use status text
+          errorMessage = `${response.status} ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
+      }
+
+      // Successfully saved - check if response has content
+      let responseData = null;
+      try {
+        const text = await response.text();
+        if (text) {
+          responseData = JSON.parse(text);
+        }
+      } catch (jsonError) {
+        logger.warn('Vehicle save response not JSON, but operation successful');
       }
 
       onSave();
