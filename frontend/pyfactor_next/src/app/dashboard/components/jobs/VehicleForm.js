@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { logger } from '@/utils/logger';
 
-const VehicleForm = ({ vehicle, onClose, onSave }) => {
+const VehicleForm = ({ vehicle, onClose, onSave, inline = false }) => {
   const [formData, setFormData] = useState({
     registration_number: '',
     vehicle_type: 'van',
@@ -143,6 +143,150 @@ const VehicleForm = ({ vehicle, onClose, onSave }) => {
     { value: 'inactive', label: 'Inactive' },
     { value: 'retired', label: 'Retired' }
   ];
+
+  if (inline) {
+    return (
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h3 className="text-lg font-medium text-gray-900">
+            {vehicle ? 'Edit Vehicle' : 'Add New Vehicle'}
+          </h3>
+        </div>
+        <form onSubmit={handleSubmit} className="p-6">
+          {error && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-red-600">{error}</p>
+            </div>
+          )}
+
+          <div className="space-y-6">
+            {/* Basic Information */}
+            <div>
+              <h4 className="text-md font-medium text-gray-900 mb-4">Basic Information</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label htmlFor="registration_number" className="block text-sm font-medium text-gray-700">
+                    Registration Number *
+                  </label>
+                  <input
+                    type="text"
+                    id="registration_number"
+                    name="registration_number"
+                    value={formData.registration_number}
+                    onChange={handleChange}
+                    required
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="vehicle_type" className="block text-sm font-medium text-gray-700">
+                    Vehicle Type *
+                  </label>
+                  <select
+                    id="vehicle_type"
+                    name="vehicle_type"
+                    value={formData.vehicle_type}
+                    onChange={handleChange}
+                    required
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    {vehicleTypes.map(type => (
+                      <option key={type.value} value={type.value}>{type.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="status" className="block text-sm font-medium text-gray-700">
+                    Status
+                  </label>
+                  <select
+                    id="status"
+                    name="status"
+                    value={formData.status}
+                    onChange={handleChange}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    {statusOptions.map(option => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="make" className="block text-sm font-medium text-gray-700">
+                    Make *
+                  </label>
+                  <input
+                    type="text"
+                    id="make"
+                    name="make"
+                    value={formData.make}
+                    onChange={handleChange}
+                    required
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="e.g., Ford, Toyota"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="model" className="block text-sm font-medium text-gray-700">
+                    Model *
+                  </label>
+                  <input
+                    type="text"
+                    id="model"
+                    name="model"
+                    value={formData.model}
+                    onChange={handleChange}
+                    required
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="e.g., Transit, Camry"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="year" className="block text-sm font-medium text-gray-700">
+                    Year *
+                  </label>
+                  <input
+                    type="number"
+                    id="year"
+                    name="year"
+                    value={formData.year}
+                    onChange={handleChange}
+                    required
+                    min="1900"
+                    max={new Date().getFullYear() + 1}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end space-x-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+              >
+                {loading ? 'Saving...' : (vehicle ? 'Update Vehicle' : 'Add Vehicle')}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50 p-4">

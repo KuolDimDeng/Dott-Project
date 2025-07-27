@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { jobService } from '@/services/jobService';
 import { logger } from '@/utils/logger';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import SearchableCheckList from './SearchableCheckList';
 
 const JobForm = ({ job, onClose, onSave, inline = false }) => {
   const [formData, setFormData] = useState({
@@ -17,7 +18,12 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
     start_date: '',
     completion_date: '',
     quoted_amount: '',
-    location: '',
+    // Address fields
+    job_street: '',
+    job_city: '',
+    job_state: '',
+    job_zip: '',
+    job_country: 'USA',
     notes: '',
     is_active: true,
     assigned_employees: [], // Multiple employees
@@ -47,6 +53,12 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
         start_date: job.start_date?.split('T')[0] || '',
         completion_date: job.completion_date?.split('T')[0] || '',
         quoted_amount: job.quoted_amount || '',
+        // Parse location back into fields
+        job_street: job.job_street || '',
+        job_city: job.job_city || '',
+        job_state: job.job_state || '',
+        job_zip: job.job_zip || '',
+        job_country: job.job_country || 'USA',
         assigned_employees: job.assigned_employees || [],
         lead_employee_id: job.lead_employee_id || '',
         materials: job.materials || [],
@@ -132,21 +144,6 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
     }));
   };
 
-  const handleEmployeeSelection = (e) => {
-    const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
-    setFormData(prev => ({
-      ...prev,
-      assigned_employees: selectedOptions
-    }));
-  };
-
-  const handleMaterialSelection = (e) => {
-    const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
-    setFormData(prev => ({
-      ...prev,
-      materials: selectedOptions
-    }));
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -338,20 +335,67 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
               />
             </div>
 
-            {/* Location */}
+            {/* Job Address Fields */}
             <div className="lg:col-span-3">
-              <label htmlFor="location" className="block text-sm font-medium text-gray-700">
-                Job Location
-              </label>
-              <input
-                type="text"
-                id="location"
-                name="location"
-                value={formData.location}
-                onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="e.g., 123 Main St, Anytown, USA"
-              />
+              <h4 className="text-sm font-medium text-gray-900 mb-3">Job Location</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="lg:col-span-2">
+                  <label htmlFor="job_street" className="block text-sm font-medium text-gray-700">
+                    Street Address
+                  </label>
+                  <input
+                    type="text"
+                    id="job_street"
+                    name="job_street"
+                    value={formData.job_street}
+                    onChange={handleChange}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    placeholder="123 Main St"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="job_city" className="block text-sm font-medium text-gray-700">
+                    City
+                  </label>
+                  <input
+                    type="text"
+                    id="job_city"
+                    name="job_city"
+                    value={formData.job_city}
+                    onChange={handleChange}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    placeholder="Anytown"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="job_state" className="block text-sm font-medium text-gray-700">
+                    State/Province
+                  </label>
+                  <input
+                    type="text"
+                    id="job_state"
+                    name="job_state"
+                    value={formData.job_state}
+                    onChange={handleChange}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    placeholder="CA"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="job_zip" className="block text-sm font-medium text-gray-700">
+                    ZIP/Postal Code
+                  </label>
+                  <input
+                    type="text"
+                    id="job_zip"
+                    name="job_zip"
+                    value={formData.job_zip}
+                    onChange={handleChange}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    placeholder="90210"
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Description */}
@@ -370,97 +414,67 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
               />
             </div>
 
-            {/* Employee Assignment */}
+            {/* Employee Assignment with Lead Selection */}
             <div className="lg:col-span-2">
-              <label htmlFor="assigned_employees" className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Assigned Employees
               </label>
-              <select
-                id="assigned_employees"
-                name="assigned_employees"
-                multiple
-                value={formData.assigned_employees}
-                onChange={handleEmployeeSelection}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                size="4"
-              >
-                {employees.map((employee) => (
-                  <option key={employee.id} value={employee.id}>
-                    {employee.user?.first_name || ''} {employee.user?.last_name || ''} {employee.user?.email ? `(${employee.user.email})` : ''}
-                  </option>
-                ))}
-              </select>
-              <p className="mt-1 text-xs text-gray-500">Hold Ctrl/Cmd to select multiple employees</p>
+              <SearchableCheckList
+                items={employees}
+                selectedItems={formData.assigned_employees}
+                onSelectionChange={(selected) => {
+                  setFormData(prev => ({ ...prev, assigned_employees: selected }));
+                  // If lead is no longer in selected, clear it
+                  if (!selected.includes(formData.lead_employee_id)) {
+                    setFormData(prev => ({ ...prev, lead_employee_id: '' }));
+                  }
+                }}
+                searchPlaceholder="Search employees..."
+                displayKey={(emp) => `${emp.user?.first_name || ''} ${emp.user?.last_name || ''} ${emp.user?.email ? `(${emp.user.email})` : ''}`}
+                valueKey="id"
+                maxHeight="200px"
+                leadSelection={true}
+                leadValue={formData.lead_employee_id}
+                onLeadChange={(leadId) => setFormData(prev => ({ ...prev, lead_employee_id: leadId }))}
+              />
             </div>
 
-            {/* Lead Employee */}
+            {/* Vehicle Assignment */}
             <div>
-              <label htmlFor="lead_employee_id" className="block text-sm font-medium text-gray-700">
-                Lead Employee
+              <label htmlFor="vehicle_id" className="block text-sm font-medium text-gray-700">
+                Assigned Vehicle
               </label>
               <select
-                id="lead_employee_id"
-                name="lead_employee_id"
-                value={formData.lead_employee_id}
+                id="vehicle_id"
+                name="vehicle_id"
+                value={formData.vehicle_id}
                 onChange={handleChange}
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               >
-                <option value="">Select lead employee</option>
-                {employees
-                  .filter(emp => formData.assigned_employees.includes(emp.id))
-                  .map((employee) => (
-                    <option key={employee.id} value={employee.id}>
-                      {employee.user?.first_name || ''} {employee.user?.last_name || ''}
-                    </option>
-                  ))}
+                <option value="">No vehicle assigned</option>
+                {vehicles.map((vehicle) => (
+                  <option key={vehicle.id} value={vehicle.id}>
+                    {vehicle.make} {vehicle.model} - {vehicle.registration_number}
+                  </option>
+                ))}
               </select>
             </div>
 
             {/* Materials/Supplies */}
-            <div className="lg:col-span-2">
-              <label htmlFor="materials" className="block text-sm font-medium text-gray-700">
+            <div className="lg:col-span-3">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Materials/Supplies
               </label>
-              <select
-                id="materials"
-                name="materials"
-                multiple
-                value={formData.materials}
-                onChange={handleMaterialSelection}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                size="4"
-              >
-                {supplies.map((supply) => (
-                  <option key={supply.id} value={supply.id}>
-                    {supply.name} - ${supply.unit_price} ({supply.quantity_on_hand} available)
-                  </option>
-                ))}
-              </select>
-              <p className="mt-1 text-xs text-gray-500">Hold Ctrl/Cmd to select multiple materials</p>
+              <SearchableCheckList
+                items={supplies}
+                selectedItems={formData.materials}
+                onSelectionChange={(selected) => setFormData(prev => ({ ...prev, materials: selected }))}
+                searchPlaceholder="Search materials..."
+                displayKey={(supply) => `${supply.name} - $${supply.unit_price} (${supply.quantity_on_hand} available)`}
+                valueKey="id"
+                maxHeight="200px"
+              />
             </div>
-
-            {/* Vehicle Assignment (if available) */}
-            {vehicles.length > 0 && (
-              <div>
-                <label htmlFor="vehicle_id" className="block text-sm font-medium text-gray-700">
-                  Assigned Vehicle
-                </label>
-                <select
-                  id="vehicle_id"
-                  name="vehicle_id"
-                  value={formData.vehicle_id}
-                  onChange={handleChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                >
-                  <option value="">No vehicle assigned</option>
-                  {vehicles.map((vehicle) => (
-                    <option key={vehicle.id} value={vehicle.id}>
-                      {vehicle.make} {vehicle.model} - {vehicle.registration_number}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
           </div>
 
           {/* Actions */}
@@ -689,20 +703,67 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
               />
             </div>
 
-            {/* Location */}
+            {/* Job Address Fields */}
             <div className="md:col-span-2">
-              <label htmlFor="location" className="block text-sm font-medium text-gray-700">
-                Job Location
-              </label>
-              <input
-                type="text"
-                id="location"
-                name="location"
-                value={formData.location}
-                onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                placeholder="e.g., 123 Main St, Anytown, USA"
-              />
+              <h4 className="text-sm font-medium text-gray-900 mb-3">Job Location</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="md:col-span-2">
+                  <label htmlFor="job_street" className="block text-sm font-medium text-gray-700">
+                    Street Address
+                  </label>
+                  <input
+                    type="text"
+                    id="job_street"
+                    name="job_street"
+                    value={formData.job_street}
+                    onChange={handleChange}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="123 Main St"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="job_city" className="block text-sm font-medium text-gray-700">
+                    City
+                  </label>
+                  <input
+                    type="text"
+                    id="job_city"
+                    name="job_city"
+                    value={formData.job_city}
+                    onChange={handleChange}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Anytown"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="job_state" className="block text-sm font-medium text-gray-700">
+                    State/Province
+                  </label>
+                  <input
+                    type="text"
+                    id="job_state"
+                    name="job_state"
+                    value={formData.job_state}
+                    onChange={handleChange}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="CA"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="job_zip" className="block text-sm font-medium text-gray-700">
+                    ZIP/Postal Code
+                  </label>
+                  <input
+                    type="text"
+                    id="job_zip"
+                    name="job_zip"
+                    value={formData.job_zip}
+                    onChange={handleChange}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="90210"
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Notes */}
@@ -721,97 +782,67 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
               />
             </div>
 
-            {/* Employee Assignment */}
+            {/* Employee Assignment with Lead Selection */}
             <div className="md:col-span-2">
-              <label htmlFor="assigned_employees" className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Assigned Employees
               </label>
-              <select
-                id="assigned_employees"
-                name="assigned_employees"
-                multiple
-                value={formData.assigned_employees}
-                onChange={handleEmployeeSelection}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                size="4"
-              >
-                {employees.map((employee) => (
-                  <option key={employee.id} value={employee.id}>
-                    {employee.user?.first_name || ''} {employee.user?.last_name || ''} {employee.user?.email ? `(${employee.user.email})` : ''}
-                  </option>
-                ))}
-              </select>
-              <p className="mt-1 text-xs text-gray-500">Hold Ctrl/Cmd to select multiple employees</p>
-            </div>
-
-            {/* Lead Employee */}
-            <div>
-              <label htmlFor="lead_employee_id" className="block text-sm font-medium text-gray-700">
-                Lead Employee
-              </label>
-              <select
-                id="lead_employee_id"
-                name="lead_employee_id"
-                value={formData.lead_employee_id}
-                onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">Select lead employee</option>
-                {employees
-                  .filter(emp => formData.assigned_employees.includes(emp.id))
-                  .map((employee) => (
-                    <option key={employee.id} value={employee.id}>
-                      {employee.user?.first_name || ''} {employee.user?.last_name || ''}
-                    </option>
-                  ))}
-              </select>
+              <SearchableCheckList
+                items={employees}
+                selectedItems={formData.assigned_employees}
+                onSelectionChange={(selected) => {
+                  setFormData(prev => ({ ...prev, assigned_employees: selected }));
+                  // If lead is no longer in selected, clear it
+                  if (!selected.includes(formData.lead_employee_id)) {
+                    setFormData(prev => ({ ...prev, lead_employee_id: '' }));
+                  }
+                }}
+                searchPlaceholder="Search employees..."
+                displayKey={(emp) => `${emp.user?.first_name || ''} ${emp.user?.last_name || ''} ${emp.user?.email ? `(${emp.user.email})` : ''}`}
+                valueKey="id"
+                maxHeight="200px"
+                leadSelection={true}
+                leadValue={formData.lead_employee_id}
+                onLeadChange={(leadId) => setFormData(prev => ({ ...prev, lead_employee_id: leadId }))}
+              />
             </div>
 
             {/* Materials/Supplies */}
             <div className="md:col-span-2">
-              <label htmlFor="materials" className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Materials/Supplies
               </label>
+              <SearchableCheckList
+                items={supplies}
+                selectedItems={formData.materials}
+                onSelectionChange={(selected) => setFormData(prev => ({ ...prev, materials: selected }))}
+                searchPlaceholder="Search materials..."
+                displayKey={(supply) => `${supply.name} - $${supply.unit_price} (${supply.quantity_on_hand} available)`}
+                valueKey="id"
+                maxHeight="200px"
+              />
+            </div>
+
+            {/* Vehicle Assignment */}
+            <div>
+              <label htmlFor="vehicle_id" className="block text-sm font-medium text-gray-700">
+                Assigned Vehicle
+              </label>
               <select
-                id="materials"
-                name="materials"
-                multiple
-                value={formData.materials}
-                onChange={handleMaterialSelection}
+                id="vehicle_id"
+                name="vehicle_id"
+                value={formData.vehicle_id}
+                onChange={handleChange}
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                size="4"
               >
-                {supplies.map((supply) => (
-                  <option key={supply.id} value={supply.id}>
-                    {supply.name} - ${supply.unit_price} ({supply.quantity_on_hand} available)
+                <option value="">No vehicle assigned</option>
+                {vehicles.map((vehicle) => (
+                  <option key={vehicle.id} value={vehicle.id}>
+                    {vehicle.make} {vehicle.model} - {vehicle.registration_number}
                   </option>
                 ))}
               </select>
-              <p className="mt-1 text-xs text-gray-500">Hold Ctrl/Cmd to select multiple materials</p>
             </div>
-
-            {/* Vehicle Assignment (if available) */}
-            {vehicles.length > 0 && (
-              <div>
-                <label htmlFor="vehicle_id" className="block text-sm font-medium text-gray-700">
-                  Assigned Vehicle
-                </label>
-                <select
-                  id="vehicle_id"
-                  name="vehicle_id"
-                  value={formData.vehicle_id}
-                  onChange={handleChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">No vehicle assigned</option>
-                  {vehicles.map((vehicle) => (
-                    <option key={vehicle.id} value={vehicle.id}>
-                      {vehicle.make} {vehicle.model} - {vehicle.registration_number}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
           </div>
         </form>
 

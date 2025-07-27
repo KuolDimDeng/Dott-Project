@@ -45,6 +45,7 @@ class JobSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'job_number', 'name', 'description', 'customer', 'customer_name',
             'status', 'quote_date', 'scheduled_date', 'start_date', 'completion_date',
+            'job_street', 'job_city', 'job_state', 'job_zip', 'job_country',
             'quoted_amount', 'labor_rate', 'lead_employee', 'lead_employee_name',
             'assigned_employees', 'vehicle', 'vehicle_info',
             'total_cost', 'profit_margin', 'created_at', 'updated_at'

@@ -127,6 +127,13 @@ class Job(TenantAwareModel):
     start_date = models.DateField(null=True, blank=True)
     completion_date = models.DateField(null=True, blank=True)
     
+    # Location fields
+    job_street = models.CharField(max_length=255, blank=True)
+    job_city = models.CharField(max_length=100, blank=True)
+    job_state = models.CharField(max_length=50, blank=True)
+    job_zip = models.CharField(max_length=20, blank=True)
+    job_country = models.CharField(max_length=100, default='USA', blank=True)
+    
     # Financial fields
     quoted_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     labor_rate = models.DecimalField(max_digits=6, decimal_places=2, default=0, 
