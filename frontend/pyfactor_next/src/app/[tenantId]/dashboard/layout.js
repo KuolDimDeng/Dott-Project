@@ -78,13 +78,15 @@ export default function TenantDashboardLayout({ children }) {
 
   return (
     <SessionProvider>
-      <SessionTimeoutProvider>
-        <div className="h-full min-h-screen bg-gray-50">
-          {/* Re-rendering issues fixed directly in components - script removed to prevent MIME type errors */}
-          {children}
-          <SessionTimeoutModal />
-        </div>
-      </SessionTimeoutProvider>
+      <NotificationProvider>
+        <SessionTimeoutProvider>
+          <div className="h-full min-h-screen bg-gray-50">
+            {/* Re-rendering issues fixed directly in components - script removed to prevent MIME type errors */}
+            {children}
+            <SessionTimeoutModal />
+          </div>
+        </SessionTimeoutProvider>
+      </NotificationProvider>
     </SessionProvider>
   );
 } 
