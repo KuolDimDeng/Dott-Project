@@ -172,12 +172,12 @@ const nextConfig = {
       'zustand'
     ],
     
-    // Reduce memory usage during build
-    workerThreads: false,
-    cpus: 1, // Single CPU to reduce memory usage
+    // Enable parallel processing with 4GB memory
+    workerThreads: true,
+    cpus: 4, // Use multiple CPUs for faster builds
     
-    // Memory optimization flags
-    webpackBuildWorker: false, // Disable worker threads
+    // Enable build workers for speed
+    webpackBuildWorker: true,
   },
   
   // Environment variables (minimal set)

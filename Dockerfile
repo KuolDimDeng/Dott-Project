@@ -28,8 +28,8 @@ COPY frontend/pyfactor_next/ .
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV BUILD_STANDALONE=true
-# Limit memory usage during build
-ENV NODE_OPTIONS="--max-old-space-size=3072"
+# Use 3.5GB for build (leaving 0.5GB for system)
+ENV NODE_OPTIONS="--max-old-space-size=3584"
 
 # Build arguments
 ARG NEXT_PUBLIC_API_URL=https://api.dottapps.com
@@ -63,9 +63,9 @@ ENV NEXT_PUBLIC_POSTHOG_HOST=$NEXT_PUBLIC_POSTHOG_HOST
 RUN --mount=type=cache,id=nextjs,target=/app/.next/cache \
     --mount=type=cache,id=webpack,target=/app/node_modules/.cache \
     rm -rf .next/cache/webpack && \
-    NODE_OPTIONS="--max-old-space-size=3072 --optimize-for-size --gc-interval=100" \
+    NODE_OPTIONS="--max-old-space-size=3584" \
     NEXT_TELEMETRY_DISABLED=1 \
-    pnpm run build:render-memory
+    pnpm run build:render
 
 # Production stage - minimal size
 FROM node:18-alpine AS runner
