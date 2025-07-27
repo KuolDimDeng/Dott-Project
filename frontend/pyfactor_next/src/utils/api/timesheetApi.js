@@ -1,3 +1,5 @@
+import apiClient from './apiClient';
+
 // Use direct fetch instead of apiClient to avoid old authentication issues
 const makeRequest = async (endpoint, options = {}) => {
   const response = await fetch(endpoint, {
@@ -130,13 +132,83 @@ const timesheetApi = {
   },
 
   getCurrentClockStatus: async () => {
-    const response = await apiClient.get('/api/timesheets/clock-entries/current_status/');
-    return response.data;
+    try {
+      return await makeRequest('/api/hr/timesheets/current-status/', {
+        method: 'GET'
+      });
+    } catch (error) {
+      console.error('[timesheetApi] Get clock status error:', error.message);
+      throw error;
+    }
   },
 
   clockInOut: async (data) => {
-    const response = await apiClient.post('/api/timesheets/clock-entries/clock/', data);
-    return response.data;
+    try {
+      return await makeRequest('/api/hr/timesheets/clock/', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      });
+    } catch (error) {
+      console.error('[timesheetApi] Clock in/out error:', error.message);
+      throw error;
+    }
+  },
+
+  // Individual clock actions
+  clockIn: async (data) => {
+    try {
+      const clockData = { action: 'clock_in', ...data };
+      console.log('[timesheetApi] Clock in data:', clockData);
+      return await makeRequest('/api/hr/timesheets/clock/', {
+        method: 'POST',
+        body: JSON.stringify(clockData)
+      });
+    } catch (error) {
+      console.error('[timesheetApi] Clock in error:', error.message);
+      throw error;
+    }
+  },
+
+  clockOut: async (data) => {
+    try {
+      const clockData = { action: 'clock_out', ...data };
+      console.log('[timesheetApi] Clock out data:', clockData);
+      return await makeRequest('/api/hr/timesheets/clock/', {
+        method: 'POST',
+        body: JSON.stringify(clockData)
+      });
+    } catch (error) {
+      console.error('[timesheetApi] Clock out error:', error.message);
+      throw error;
+    }
+  },
+
+  startBreak: async (data) => {
+    try {
+      const clockData = { action: 'start_break', ...data };
+      console.log('[timesheetApi] Start break data:', clockData);
+      return await makeRequest('/api/hr/timesheets/clock/', {
+        method: 'POST',
+        body: JSON.stringify(clockData)
+      });
+    } catch (error) {
+      console.error('[timesheetApi] Start break error:', error.message);
+      throw error;
+    }
+  },
+
+  endBreak: async (data) => {
+    try {
+      const clockData = { action: 'end_break', ...data };
+      console.log('[timesheetApi] End break data:', clockData);
+      return await makeRequest('/api/hr/timesheets/clock/', {
+        method: 'POST',
+        body: JSON.stringify(clockData)
+      });
+    } catch (error) {
+      console.error('[timesheetApi] End break error:', error.message);
+      throw error;
+    }
   },
 
   // Time Off Requests
