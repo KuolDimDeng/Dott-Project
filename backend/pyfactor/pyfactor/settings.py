@@ -888,6 +888,7 @@ TENANT_APPS = (
     'whatsapp_business.apps.WhatsappBusinessConfig',
     'data_export',
     'jobs.apps.JobsConfig',
+    'communications.apps.CommunicationsConfig',
 )
 
 INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in SHARED_APPS]
