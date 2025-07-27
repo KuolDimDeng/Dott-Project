@@ -77,9 +77,14 @@ export default function TenantDashboardLayout({ children }) {
   }, []);
 
   return (
-    <div className="h-full min-h-screen bg-gray-50">
-      {/* Re-rendering issues fixed directly in components - script removed to prevent MIME type errors */}
-      {children}
-    </div>
+    <SessionProvider>
+      <SessionTimeoutProvider>
+        <div className="h-full min-h-screen bg-gray-50">
+          {/* Re-rendering issues fixed directly in components - script removed to prevent MIME type errors */}
+          {children}
+          <SessionTimeoutModal />
+        </div>
+      </SessionTimeoutProvider>
+    </SessionProvider>
   );
 } 
