@@ -13,49 +13,64 @@ async function getAuthHeaders() {
     // First try to get backend session token
     const session = await sessionManagerEnhanced.getSession();
     
+    // Build headers object
+    const headers = {
+      'Content-Type': 'application/json'
+    };
+    
+    // Add authentication
     if (session?.sessionToken) {
       logger.debug('[API] Using backend session token for auth');
-      return {
-        'Authorization': `Session ${session.sessionToken}`,
-        'Content-Type': 'application/json'
-      };
-    }
-    
-    // Fallback to legacy Auth0/cookie-based approach
-    let idToken = null;
-    let accessToken = null;
-    
-    // Try to get session data from the session API (legacy)
-    if (session?.authenticated && session?.user) {
-      // Check if we have tokens stored in session data
-      const response = await fetch('/api/auth/access-token');
-      if (response.ok) {
-        const tokenData = await response.json();
-        accessToken = tokenData.access_token;
-        idToken = tokenData.id_token || accessToken;
-      }
-    }
-    
-    // If no token from session, try AppCache
-    if (!idToken && typeof window !== 'undefined') {
-      idToken = getCacheValue('idToken');
-      accessToken = getCacheValue('accessToken');
+      headers['Authorization'] = `Session ${session.sessionToken}`;
+    } else {
+      // Fallback to legacy Auth0/cookie-based approach
+      let idToken = null;
+      let accessToken = null;
       
-      if (idToken) {
-        logger.debug('[API] Using cached auth tokens');
+      // Try to get session data from the session API (legacy)
+      if (session?.authenticated && session?.user) {
+        // Check if we have tokens stored in session data
+        const response = await fetch('/api/auth/access-token');
+        if (response.ok) {
+          const tokenData = await response.json();
+          accessToken = tokenData.access_token;
+          idToken = tokenData.id_token || accessToken;
+        }
+      }
+      
+      // If no token from session, try AppCache
+      if (!idToken && typeof window !== 'undefined') {
+        idToken = getCacheValue('idToken');
+        accessToken = getCacheValue('accessToken');
+        
+        if (idToken) {
+          logger.debug('[API] Using cached auth tokens');
+        }
+      }
+      
+      // If we have a token, use Bearer auth (legacy)
+      if (idToken || accessToken) {
+        headers['Authorization'] = `Bearer ${idToken || accessToken}`;
+      } else {
+        // No authentication available
+        throw new Error('No valid authentication token available');
       }
     }
     
-    // If we have a token, use Bearer auth (legacy)
-    if (idToken || accessToken) {
-      return {
-        'Authorization': `Bearer ${idToken || accessToken}`,
-        'Content-Type': 'application/json'
-      };
+    // Add tenant ID header if available
+    if (session?.user?.tenantId) {
+      headers['X-Tenant-ID'] = session.user.tenantId;
+      logger.debug('[API] Added tenant ID header:', session.user.tenantId);
+    } else if (typeof window !== 'undefined') {
+      // Fallback to localStorage
+      const tenantId = localStorage.getItem('tenantId');
+      if (tenantId) {
+        headers['X-Tenant-ID'] = tenantId;
+        logger.debug('[API] Added tenant ID header from localStorage:', tenantId);
+      }
     }
     
-    // No authentication available
-    throw new Error('No valid authentication token available');
+    return headers;
   } catch (error) {
     logger.error('[API] Failed to get auth headers:', error);
     throw error;
