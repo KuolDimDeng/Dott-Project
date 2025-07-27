@@ -174,7 +174,10 @@ const nextConfig = {
     
     // Reduce memory usage during build
     workerThreads: false,
-    cpus: 2, // Limit CPU usage for Render
+    cpus: 1, // Single CPU to reduce memory usage
+    
+    // Memory optimization flags
+    webpackBuildWorker: false, // Disable worker threads
   },
   
   // Environment variables (minimal set)
@@ -319,6 +322,12 @@ const nextConfig = {
       
       // Minimize main bundle
       config.optimization.minimize = true;
+      
+      // Memory optimizations for builds
+      config.optimization.realContentHash = false;
+      config.optimization.runtimeChunk = 'single';
+      config.optimization.providedExports = false;
+      config.optimization.innerGraph = false;
       
       // Disable source maps for faster builds
       config.devtool = false;
