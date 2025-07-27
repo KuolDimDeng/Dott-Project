@@ -199,7 +199,8 @@
       "Bash(time pnpm next build:*)",
       "Bash(pnpm next:*)",
       "Bash(NODE_OPTIONS=\"--max-old-space-size=4096\" NEXT_TELEMETRY_DISABLED=1 pnpm next build)",
-      "Bash(NODE_OPTIONS=\"--max-old-space-size=4096\" pnpm run build:render-fast)"
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=4096\" pnpm run build:render-fast)",
+      "Bash(NODE_ENV=production NODE_OPTIONS=\"--max-old-space-size=4096\" NEXT_TELEMETRY_DISABLED=1 pnpm next build)"
     ],
     "deny": []
   }

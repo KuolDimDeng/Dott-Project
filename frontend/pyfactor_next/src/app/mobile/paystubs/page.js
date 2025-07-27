@@ -7,7 +7,7 @@ import Link from 'next/link';
 import {
   ChevronLeftIcon,
   DocumentTextIcon,
-  DownloadIcon,
+  ArrowDownTrayIcon,
   CalendarIcon,
   CurrencyDollarIcon,
   ArrowPathIcon
@@ -212,7 +212,7 @@ export default function MobilePayStubsPage() {
                     className="p-2 text-blue-600"
                     disabled={downloading}
                   >
-                    <DownloadIcon className="w-5 h-5" />
+                    <ArrowDownTrayIcon className="w-5 h-5" />
                   </button>
                 </div>
                 

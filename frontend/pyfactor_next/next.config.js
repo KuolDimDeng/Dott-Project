@@ -146,9 +146,9 @@ const nextConfig = {
     optimizePackageImports: [
       'lodash',
       'date-fns',
-      '@heroicons/react',
-      '@phosphor-icons/react',
-      'lucide-react',
+      // '@heroicons/react', // Removed - causes import errors
+      // '@phosphor-icons/react', // Removed - causes import errors  
+      // 'lucide-react', // Removed - causes import errors
       '@stripe/stripe-js',
       'recharts',
       'chart.js',

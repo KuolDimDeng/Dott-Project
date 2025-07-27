@@ -8,7 +8,7 @@ import {
   ChartBarIcon,
   ArrowUpIcon,
   ArrowDownIcon,
-  RefreshIcon,
+  ArrowPathIcon,
   EyeIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
@@ -73,7 +73,7 @@ export default function DashboardOverview({ data, onRefresh }) {
           onClick={onRefresh}
           className="flex items-center px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
         >
-          <RefreshIcon className="h-4 w-4 mr-2" />
+          <ArrowPathIcon className="h-4 w-4 mr-2" />
           Refresh
         </button>
       </div>
