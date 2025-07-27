@@ -2,7 +2,7 @@
 
 
 import React, { Suspense, lazy, useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import ErrorBoundary from './ErrorBoundary';
+import ErrorBoundary from '@/components/ErrorBoundary';
 // Remove the direct imports and replace with lazy loading
 // import { TransportDashboard, VehicleManagement } from './transport';
 
