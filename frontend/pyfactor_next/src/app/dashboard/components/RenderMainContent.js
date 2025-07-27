@@ -263,7 +263,7 @@ const SuppliersManagement = enhancedLazy(() => import('./forms/SuppliersManageme
 const ProductManagement = enhancedLazy(() => import('./forms/ProductManagement.js'), 'Product Management');
 const SuppliesManagement = enhancedLazy(() => import('./forms/inventory/SuppliesManagement.js'), 'Supplies Management');
 const BillOfMaterialsManagement = enhancedLazy(() => import('./forms/inventory/BillOfMaterialsManagement.js'), 'Bill of Materials Management');
-const JobManagement = enhancedLazy(() => import('./jobs/JobManagement.js'), 'Job Management');
+// JobManagement removed due to MUI dependencies
 // JobDashboard and JobReportsManagement removed due to MUI dependencies
 const MainDashboard = enhancedLazy(() => import('./dashboards/MainDashboard'), 'Main Dashboard');
 const BankTransactions = enhancedLazy(() => import('./forms/BankTransactionPage'), 'Bank Transactions');
@@ -1750,9 +1750,10 @@ const RenderMainContent = React.memo(function RenderMainContent({
         console.log('[RenderMainContent] Rendering jobs-list view');
         return (
           <ContentWrapperWithKey>
-            <SuspenseWithCleanup componentKey={`${componentKey}-jobs-list`}>
-              <JobManagement view="jobs-list" />
-            </SuspenseWithCleanup>
+            <div className="p-4">
+              <h1 className="text-xl font-semibold mb-2">Jobs List</h1>
+              <p>Jobs List is temporarily unavailable due to component upgrade.</p>
+            </div>
           </ContentWrapperWithKey>
         );
       }
@@ -1761,9 +1762,10 @@ const RenderMainContent = React.memo(function RenderMainContent({
         console.log('[RenderMainContent] Rendering job-costing view');
         return (
           <ContentWrapperWithKey>
-            <SuspenseWithCleanup componentKey={`${componentKey}-job-costing`}>
-              <JobManagement view="job-costing" />
-            </SuspenseWithCleanup>
+            <div className="p-4">
+              <h1 className="text-xl font-semibold mb-2">Job Costing</h1>
+              <p>Job Costing is temporarily unavailable due to component upgrade.</p>
+            </div>
           </ContentWrapperWithKey>
         );
       }
@@ -1772,9 +1774,10 @@ const RenderMainContent = React.memo(function RenderMainContent({
         console.log('[RenderMainContent] Rendering job-materials view');
         return (
           <ContentWrapperWithKey>
-            <SuspenseWithCleanup componentKey={`${componentKey}-job-materials`}>
-              <JobManagement view="job-materials" />
-            </SuspenseWithCleanup>
+            <div className="p-4">
+              <h1 className="text-xl font-semibold mb-2">Job Materials</h1>
+              <p>Job Materials is temporarily unavailable due to component upgrade.</p>
+            </div>
           </ContentWrapperWithKey>
         );
       }
@@ -1783,9 +1786,10 @@ const RenderMainContent = React.memo(function RenderMainContent({
         console.log('[RenderMainContent] Rendering job-labor view');
         return (
           <ContentWrapperWithKey>
-            <SuspenseWithCleanup componentKey={`${componentKey}-job-labor`}>
-              <JobManagement view="job-labor" />
-            </SuspenseWithCleanup>
+            <div className="p-4">
+              <h1 className="text-xl font-semibold mb-2">Job Labor</h1>
+              <p>Job Labor is temporarily unavailable due to component upgrade.</p>
+            </div>
           </ContentWrapperWithKey>
         );
       }
@@ -1794,9 +1798,10 @@ const RenderMainContent = React.memo(function RenderMainContent({
         console.log('[RenderMainContent] Rendering job-profitability view');
         return (
           <ContentWrapperWithKey>
-            <SuspenseWithCleanup componentKey={`${componentKey}-job-profitability`}>
-              <JobManagement view="job-profitability" />
-            </SuspenseWithCleanup>
+            <div className="p-4">
+              <h1 className="text-xl font-semibold mb-2">Job Profitability</h1>
+              <p>Job Profitability is temporarily unavailable due to component upgrade.</p>
+            </div>
           </ContentWrapperWithKey>
         );
       }
@@ -2142,29 +2147,59 @@ const RenderMainContent = React.memo(function RenderMainContent({
             );
           case 'jobs-list':
           case 'job-list':
-            componentName = 'JobManagement';
-            JobComponent = JobManagement;
-            break;
+            return (
+              <ContentWrapperWithKey>
+                <div className="p-4">
+                  <h1 className="text-xl font-semibold mb-2">Jobs List</h1>
+                  <p>Jobs List is temporarily unavailable due to component upgrade.</p>
+                </div>
+              </ContentWrapperWithKey>
+            );
           case 'job-costing':
-            componentName = 'JobManagement';
-            JobComponent = () => <JobManagement view="job-costing" />;
-            break;
+            return (
+              <ContentWrapperWithKey>
+                <div className="p-4">
+                  <h1 className="text-xl font-semibold mb-2">Job Costing</h1>
+                  <p>Job Costing is temporarily unavailable due to component upgrade.</p>
+                </div>
+              </ContentWrapperWithKey>
+            );
           case 'job-materials':
-            componentName = 'JobManagement';
-            JobComponent = () => <JobManagement view="job-materials" />;
-            break;
+            return (
+              <ContentWrapperWithKey>
+                <div className="p-4">
+                  <h1 className="text-xl font-semibold mb-2">Job Materials</h1>
+                  <p>Job Materials is temporarily unavailable due to component upgrade.</p>
+                </div>
+              </ContentWrapperWithKey>
+            );
           case 'job-labor':
-            componentName = 'JobManagement';
-            JobComponent = () => <JobManagement view="job-labor" />;
-            break;
+            return (
+              <ContentWrapperWithKey>
+                <div className="p-4">
+                  <h1 className="text-xl font-semibold mb-2">Job Labor</h1>
+                  <p>Job Labor is temporarily unavailable due to component upgrade.</p>
+                </div>
+              </ContentWrapperWithKey>
+            );
           case 'job-profitability':
-            componentName = 'JobManagement';
-            JobComponent = () => <JobManagement view="job-profitability" />;
-            break;
+            return (
+              <ContentWrapperWithKey>
+                <div className="p-4">
+                  <h1 className="text-xl font-semibold mb-2">Job Profitability</h1>
+                  <p>Job Profitability is temporarily unavailable due to component upgrade.</p>
+                </div>
+              </ContentWrapperWithKey>
+            );
           case 'vehicles':
-            componentName = 'JobManagement';
-            JobComponent = () => <JobManagement view="vehicles" />;
-            break;
+            return (
+              <ContentWrapperWithKey>
+                <div className="p-4">
+                  <h1 className="text-xl font-semibold mb-2">Vehicles</h1>
+                  <p>Vehicles is temporarily unavailable due to component upgrade.</p>
+                </div>
+              </ContentWrapperWithKey>
+            );
           case 'jobs-reports':
             return (
               <ContentWrapperWithKey>
