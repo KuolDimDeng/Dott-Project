@@ -5,7 +5,7 @@
  * for error tracking, performance monitoring, and structured logging.
  */
 
-import * as Sentry from '@sentry/nextjs';
+
 import { logger } from '@/utils/logger';
 
 // ============================================================================

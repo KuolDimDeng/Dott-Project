@@ -1,4 +1,4 @@
-import * as Sentry from '@sentry/nextjs';
+
 
 // Custom logger with Sentry integration
 export const logger = {

@@ -1,6 +1,6 @@
 import React from 'react';
-import * as Sentry from '@sentry/nextjs';
-import { ErrorBoundary } from '@sentry/nextjs';
+
+
 
 // Fallback component for errors
 const ErrorFallback = ({ error, resetError }) => {

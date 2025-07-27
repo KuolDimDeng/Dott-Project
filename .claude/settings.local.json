@@ -201,7 +201,11 @@
       "Bash(NODE_OPTIONS=\"--max-old-space-size=4096\" NEXT_TELEMETRY_DISABLED=1 pnpm next build)",
       "Bash(NODE_OPTIONS=\"--max-old-space-size=4096\" pnpm run build:render-fast)",
       "Bash(NODE_ENV=production NODE_OPTIONS=\"--max-old-space-size=4096\" NEXT_TELEMETRY_DISABLED=1 pnpm next build)",
-      "Bash(./scripts/memory-optimized-build.sh:*)"
+      "Bash(./scripts/memory-optimized-build.sh:*)",
+      "Bash(NODE_ENV=production NODE_OPTIONS=\"--max-old-space-size=3584 --max-semi-space-size=128\" NEXT_TELEMETRY_DISABLED=1 pnpm build)",
+      "Bash(NODE_ENV=production NODE_OPTIONS=\"--max-old-space-size=3584\" NEXT_TELEMETRY_DISABLED=1 pnpm build)",
+      "Bash(pnpm why:*)",
+      "Bash(do [ -f \"$f\" ])"
     ],
     "deny": []
   }

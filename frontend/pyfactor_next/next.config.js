@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const path = require('path');
-const { withSentryConfig } = require('@sentry/nextjs');
+// const { withSentryConfig } = require('@sentry/nextjs');
 const withPWA = require('next-pwa')({
   dest: 'public',
   disable: process.env.NODE_ENV === 'development',
@@ -128,10 +128,8 @@ const nextConfig = {
   
   // Compiler optimizations for faster builds
   compiler: {
-    // Remove console logs in production
-    removeConsole: process.env.NODE_ENV === 'production' ? {
-      exclude: ['error', 'warn'],
-    } : false,
+    // Remove console logs in production - but keep more for debugging
+    removeConsole: false, // Temporarily disabled
   },
   
   // Optimize for Render's infrastructure
@@ -142,35 +140,8 @@ const nextConfig = {
       allowedOrigins: ['dottapps.com', 'www.dottapps.com']
     },
     
-    // Enable module/chunk optimizations - expanded list
-    optimizePackageImports: [
-      'lodash',
-      'date-fns',
-      // '@heroicons/react', // Removed - causes import errors
-      // '@phosphor-icons/react', // Removed - causes import errors  
-      // 'lucide-react', // Removed - causes import errors
-      '@stripe/stripe-js',
-      'recharts',
-      'chart.js',
-      '@fullcalendar/core',
-      '@fullcalendar/react',
-      '@fullcalendar/daygrid',
-      '@fullcalendar/timegrid',
-      '@emotion/react',
-      '@emotion/styled',
-      'react-hook-form',
-      '@tanstack/react-query',
-      'react-i18next',
-      'i18next',
-      '@sentry/nextjs',
-      'react-chartjs-2',
-      'react-table',
-      'react-datepicker',
-      'react-select-country-list',
-      'formik',
-      'yup',
-      'zustand'
-    ],
+    // Disable optimizePackageImports to avoid module resolution issues
+    optimizePackageImports: [],
     
     // Enable parallel processing with 4GB memory
     workerThreads: true,
@@ -215,8 +186,8 @@ const nextConfig = {
   // Page extensions
   pageExtensions: ['js', 'jsx'],
   
-  // Transpile problematic modules
-  transpilePackages: ['react-smooth', 'recharts', 'react-transition-group'],
+  // Don't transpile these modules - causes issues
+  // transpilePackages: [],
   
   // Ignore errors during build
   eslint: {
@@ -228,6 +199,13 @@ const nextConfig = {
   
   // Optimized webpack config for Render
   webpack: (config, { isServer, dev, webpack }) => {
+    // Fix lodash-es import issues
+    config.plugins.push(
+      new webpack.NormalModuleReplacementPlugin(
+        /^lodash-es$/,
+        'lodash'
+      )
+    );
     // Fix "self is not defined" error for server-side builds
     if (isServer) {
       // Provide polyfill for 'self' global
@@ -246,122 +224,58 @@ const nextConfig = {
       );
     }
     
-    // Production optimizations
+    // Production optimizations - simplified to avoid runtime errors
     if (!dev) {
-      // Enable module concatenation
-      config.optimization.concatenateModules = true;
-      
-      // Optimize chunk splitting for faster builds and smaller bundles
-      config.optimization.splitChunks = {
-        chunks: 'all',
-        maxAsyncRequests: 30,
-        maxInitialRequests: 30,
-        minSize: 20000,
-        maxSize: 244000,
-        cacheGroups: {
-          default: false,
-          vendors: false,
-          // React framework
-          framework: {
-            name: 'framework',
-            chunks: 'all',
-            test: /[\\/]node_modules[\\/](react|react-dom|scheduler|prop-types|next)[\\/]/,
-            priority: 50,
-            enforce: true,
-          },
-          // Common vendor libraries
-          vendor: {
-            name: 'vendor',
-            test: /[\\/]node_modules[\\/]/,
-            chunks: 'initial',
-            priority: 20,
-          },
-          // Async-loaded heavy libraries
-          charts: {
-            name: 'charts',
-            test: /[\\/]node_modules[\\/](recharts|chart\.js|react-chartjs)[\\/]/,
-            chunks: 'async',
-            priority: 30,
-            reuseExistingChunk: true,
-          },
-          calendar: {
-            name: 'calendar',
-            test: /[\\/]node_modules[\\/](@fullcalendar)[\\/]/,
-            chunks: 'async',
-            priority: 30,
-            reuseExistingChunk: true,
-          },
-          maps: {
-            name: 'maps',
-            test: /[\\/]node_modules[\\/](leaflet|react-leaflet)[\\/]/,
-            chunks: 'async',
-            priority: 30,
-            reuseExistingChunk: true,
-          },
-          excel: {
-            name: 'excel',
-            test: /[\\/]node_modules[\\/](xlsx|exceljs)[\\/]/,
-            chunks: 'async',
-            priority: 30,
-            reuseExistingChunk: true,
-          },
-          pdf: {
-            name: 'pdf',
-            test: /[\\/]node_modules[\\/](jspdf|pdf-lib|@react-pdf)[\\/]/,
-            chunks: 'async',
-            priority: 30,
-            reuseExistingChunk: true,
-          },
-          // Common chunks
-          commons: {
-            name: 'commons',
-            minChunks: 2,
-            chunks: 'initial',
-            priority: 10,
-            reuseExistingChunk: true,
+      // Basic optimization only
+      config.optimization = {
+        ...config.optimization,
+        minimize: true,
+        splitChunks: {
+          chunks: 'all',
+          cacheGroups: {
+            default: {
+              minChunks: 2,
+              priority: -20,
+              reuseExistingChunk: true,
+            },
+            vendors: {
+              test: /[\\/]node_modules[\\/]/,
+              priority: -10,
+            },
           },
         },
       };
       
-      // Minimize main bundle
-      config.optimization.minimize = true;
-      
-      // Memory optimizations for builds
-      config.optimization.realContentHash = false;
-      config.optimization.runtimeChunk = 'single';
-      config.optimization.providedExports = false;
-      config.optimization.innerGraph = false;
-      
       // Disable source maps for faster builds
       config.devtool = false;
-      
-      // Use faster hashing algorithm
-      config.output.hashFunction = 'xxhash64';
-      
-      // Optimize module IDs
-      config.optimization.moduleIds = 'deterministic';
-      config.optimization.chunkIds = 'deterministic';
-      
-      // Enable aggressive code splitting
-      config.optimization.usedExports = true;
-      config.optimization.sideEffects = false;
-      
-      // Remove unused webpack plugins that slow down builds
-      config.plugins = config.plugins.filter(
-        plugin => {
-          const name = plugin.constructor.name;
-          return !['ForkTsCheckerWebpackPlugin', 'ESLintWebpackPlugin'].includes(name);
-        }
-      );
     }
     
     // Handle stubs and module resolution fixes
     config.resolve.alias = {
       ...config.resolve.alias,
       'react-datepicker': path.resolve(__dirname, 'src/utils/stubs/datepicker-stub.js'),
-      // Fix for react-smooth and lodash-es module resolution
+    };
+    
+    // Fix module resolution for problematic packages
+    config.module.rules.push({
+      test: /\.m?js$/,
+      resolve: {
+        fullySpecified: false,
+      },
+      include: /node_modules/,
+      type: 'javascript/auto',
+    });
+    
+    // Replace lodash-es imports with lodash
+    config.resolve.alias = {
+      ...config.resolve.alias,
       'lodash-es': 'lodash',
-      'react-transition-group': path.resolve(__dirname, 'node_modules/react-transition-group'),
+    };
+    
+    // Handle ESM modules properly
+    config.resolve.extensionAlias = {
+      '.js': ['.js', '.ts', '.tsx'],
+      '.mjs': ['.mjs', '.mts'],
     };
 
     // Node.js polyfills
@@ -627,9 +541,7 @@ console.log('[Build] Sentry configuration:');
 console.log('[Build] - DSN from env:', process.env.NEXT_PUBLIC_SENTRY_DSN ? 'Yes' : 'No (using fallback)');
 console.log('[Build] - Sentry enabled:', enableSentry);
 
-// Export with PWA and optionally Sentry
+// Export with PWA
 const configWithPWA = withPWA(nextConfig);
 
-module.exports = enableSentry 
-  ? withSentryConfig(configWithPWA, sentryWebpackPluginOptions)
-  : configWithPWA;
+module.exports = configWithPWA;

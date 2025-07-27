@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import * as Sentry from '@sentry/nextjs';
+
 
 export async function GET(request) {
   // Test API error for Sentry

@@ -20,7 +20,7 @@ import Drawer from '@/app/dashboard/components/Drawer';
 import { logger } from '@/utils/logger';
 import ErrorBoundary from '../../app/dashboard/components/ErrorBoundary';
 import { useRouter } from 'next/navigation';
-import * as Sentry from '@sentry/nextjs';
+
 // import { getCurrentUser, fetchUserAttributes  } from '@/config/amplifyUnified'; // Removed - no longer using Cognito
 import renderForm from '../../app/dashboard/components/RenderForm';
 import dynamic from 'next/dynamic';

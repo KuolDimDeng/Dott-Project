@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '../sessionHelper';
-import * as Sentry from '@sentry/nextjs';
+
 import { logger } from '@/utils/logger';
 
 // Import limits by subscription plan

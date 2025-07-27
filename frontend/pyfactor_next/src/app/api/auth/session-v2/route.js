@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { generateCSRFToken } from '@/utils/csrf';
-import * as Sentry from '@sentry/nextjs';
+// 
 import { logger } from '@/utils/logger';
 import { safeJsonParse } from '@/utils/responseParser';
 
@@ -15,10 +15,8 @@ import { safeJsonParse } from '@/utils/responseParser';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
 
 export async function GET(request) {
-  return await Sentry.startSpan(
-    { name: 'GET /api/auth/session-v2', op: 'http.server' },
-    async () => {
-      try {
+  // Sentry disabled
+  try {
     const cookieStore = cookies();
     
     // CRITICAL: Log Cloudflare headers to debug interference
@@ -357,16 +355,15 @@ export async function GET(request) {
           stack: error.stack,
           name: error.name
         });
-        Sentry.captureException(error, {
-          tags: { endpoint: 'session-v2-get' }
-        });
+        // Sentry disabled
+        // Sentry.captureException(error, {
+        //   tags: { endpoint: 'session-v2-get' }
+        // });
         return NextResponse.json({ 
           authenticated: false,
           error: error.message
         }, { status: 500 });
       }
-    }
-  );
 }
 
 export async function POST(request) {

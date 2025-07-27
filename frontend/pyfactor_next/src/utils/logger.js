@@ -3,7 +3,7 @@
  * This logger provides basic logging functionality with level filtering
  * Enhanced with Sentry integration for error tracking
  */
-import * as Sentry from '@sentry/nextjs';
+
 
 // Log levels with numerical values for comparison
 const LOG_LEVELS = {

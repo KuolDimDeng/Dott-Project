@@ -1,4 +1,4 @@
-import * as Sentry from '@sentry/nextjs';
+
 
 // Custom Web Vitals instrumentation
 export function initWebVitals() {

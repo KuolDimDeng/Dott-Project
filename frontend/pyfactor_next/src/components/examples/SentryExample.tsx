@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import * as Sentry from '@sentry/nextjs';
-import { ErrorBoundary } from '@sentry/nextjs';
+
+
 import { logger, trackEvent } from '@/utils/sentry';
 
 // Component that might throw an error

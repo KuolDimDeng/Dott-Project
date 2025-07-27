@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import * as Sentry from '@sentry/nextjs';
+
 
 class DashboardErrorBoundary extends React.Component {
   constructor(props) {
