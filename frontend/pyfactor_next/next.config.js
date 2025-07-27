@@ -215,6 +215,9 @@ const nextConfig = {
   // Page extensions
   pageExtensions: ['js', 'jsx'],
   
+  // Transpile problematic modules
+  transpilePackages: ['react-smooth', 'recharts', 'react-transition-group'],
+  
   // Ignore errors during build
   eslint: {
     ignoreDuringBuilds: true,
@@ -352,10 +355,13 @@ const nextConfig = {
       );
     }
     
-    // Handle stubs (removed chart.js stubs to enable Smart Insights charts)
+    // Handle stubs and module resolution fixes
     config.resolve.alias = {
       ...config.resolve.alias,
       'react-datepicker': path.resolve(__dirname, 'src/utils/stubs/datepicker-stub.js'),
+      // Fix for react-smooth and lodash-es module resolution
+      'lodash-es': 'lodash',
+      'react-transition-group': path.resolve(__dirname, 'node_modules/react-transition-group'),
     };
 
     // Node.js polyfills
