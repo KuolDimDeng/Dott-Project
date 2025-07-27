@@ -4,9 +4,22 @@ from .models import (
     Job, JobMaterial, JobLabor, JobExpense, Vehicle, JobAssignment,
     JobDocument, JobStatusHistory, JobCommunication, JobInvoice
 )
-from crm.serializers import CustomerSerializer
-from hr.serializers import EmployeeSerializer
-from inventory.serializers import ProductSerializer
+
+# Import related serializers with error handling
+try:
+    from crm.serializers import CustomerSerializer
+except ImportError:
+    CustomerSerializer = None
+
+try:
+    from hr.serializers import EmployeeSerializer
+except ImportError:
+    EmployeeSerializer = None
+
+try:
+    from inventory.serializers import ProductSerializer
+except ImportError:
+    ProductSerializer = None
 
 class VehicleSerializer(serializers.ModelSerializer):
     """Serializer for Vehicle model"""
@@ -95,13 +108,20 @@ class JobSerializer(serializers.ModelSerializer):
 
 class JobDetailSerializer(JobSerializer):
     """Detailed serializer for Job with related objects"""
-    customer = CustomerSerializer(read_only=True)
-    lead_employee = EmployeeSerializer(read_only=True)
-    assigned_employees = EmployeeSerializer(many=True, read_only=True)
     vehicle = VehicleSerializer(read_only=True)
     materials_count = serializers.SerializerMethodField()
     labor_entries_count = serializers.SerializerMethodField()
     expenses_count = serializers.SerializerMethodField()
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Add related serializers only if available
+        if CustomerSerializer:
+            self.fields['customer'] = CustomerSerializer(read_only=True)
+        if EmployeeSerializer:
+            self.fields['lead_employee'] = EmployeeSerializer(read_only=True)
+            self.fields['assigned_employees'] = EmployeeSerializer(many=True, read_only=True)
     
     class Meta(JobSerializer.Meta):
         fields = JobSerializer.Meta.fields + [
