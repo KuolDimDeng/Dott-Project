@@ -1015,9 +1015,9 @@ class JobViewSet(viewsets.ModelViewSet):
             
             # Get bank details from settings or database
             bank_details = {
-                'bank_name': settings.COMPANY_BANK_NAME,
-                'account_name': settings.COMPANY_ACCOUNT_NAME,
-                'account_number': settings.COMPANY_ACCOUNT_NUMBER,
+                'bank_name': getattr(settings, 'COMPANY_BANK_NAME', 'Your Company Bank'),
+                'account_name': getattr(settings, 'COMPANY_ACCOUNT_NAME', 'Your Company Name'),
+                'account_number': getattr(settings, 'COMPANY_ACCOUNT_NUMBER', 'Contact support for account details'),
                 'routing_number': getattr(settings, 'COMPANY_ROUTING_NUMBER', ''),
                 'swift_code': getattr(settings, 'COMPANY_SWIFT_CODE', ''),
                 'currency': 'USD',
