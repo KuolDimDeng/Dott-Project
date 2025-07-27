@@ -207,7 +207,9 @@
       "Bash(pnpm why:*)",
       "Bash(do [ -f \"$f\" ])",
       "Bash(NODE_ENV=production NODE_OPTIONS=\"--max-old-space-size=3584\" NEXT_TELEMETRY_DISABLED=1 pnpm run build:render)",
-      "Bash(git check-ignore:*)"
+      "Bash(git check-ignore:*)",
+      "Bash(render logs:*)",
+      "Bash(npm install:*)"
     ],
     "deny": []
   }

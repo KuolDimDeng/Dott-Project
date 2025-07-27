@@ -30,26 +30,44 @@ export default function LocationConsent({
   }, [employeeId]);
 
   const checkConsentStatus = async () => {
-    if (!employeeId) return;
+    console.log('🎯 [LocationConsent] checkConsentStatus called', { employeeId, tenantId });
+    if (!employeeId) {
+      console.log('🎯 [LocationConsent] No employeeId, returning early');
+      return;
+    }
 
     try {
+      console.log('🎯 [LocationConsent] Fetching consent status from API...');
       const response = await fetch(`/api/hr/location-consents/check/${employeeId}/`, {
         headers: {
           'X-Tenant-ID': tenantId,
         },
       });
 
+      console.log('🎯 [LocationConsent] API response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('🎯 [LocationConsent] API response data:', data);
         setConsentStatus(data);
         
         // Show consent dialog if not consented or showAlways is true
-        if (!data.has_consented || showAlways) {
+        const shouldShowConsent = !data.has_consented || showAlways;
+        console.log('🎯 [LocationConsent] Should show consent:', shouldShowConsent, { has_consented: data.has_consented, showAlways });
+        
+        if (shouldShowConsent) {
+          console.log('🎯 [LocationConsent] Setting showConsent to true');
           setShowConsent(true);
+        } else {
+          console.log('🎯 [LocationConsent] User has already consented, hiding modal');
+          setShowConsent(false);
         }
+      } else {
+        console.log('🎯 [LocationConsent] API response not ok, status:', response.status);
       }
     } catch (error) {
-      console.error('Error checking consent status:', error);
+      console.error('🎯 [LocationConsent] Error checking consent status:', error);
+      console.log('🎯 [LocationConsent] Setting showConsent to true due to error');
       setShowConsent(true); // Show consent on error
     }
   };

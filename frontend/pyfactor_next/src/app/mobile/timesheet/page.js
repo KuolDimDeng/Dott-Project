@@ -367,7 +367,9 @@ export default function MobileTimesheetPage() {
     // Check if location consent is needed
     if (!locationEnabled && !isClockingOut) {
       console.log('🎯 [MobileTimesheet] No location consent - showing modal');
+      console.log('🎯 [MobileTimesheet] Current showLocationConsent state:', showLocationConsent);
       setShowLocationConsent(true);
+      console.log('🎯 [MobileTimesheet] Called setShowLocationConsent(true)');
       return;
     }
     
@@ -862,6 +864,7 @@ export default function MobileTimesheetPage() {
       </div>
       
       {/* Location Consent Dialog */}
+      {console.log('🎯 [MobileTimesheet] Rendering consent modal check:', { showLocationConsent, employeeId: employeeData?.id, tenantId: session?.user?.tenant_id || session?.user?.tenantId || session?.user?.business_id })}
       {showLocationConsent && (
         <LocationConsent
           onAccept={() => handleLocationConsent(true)}
