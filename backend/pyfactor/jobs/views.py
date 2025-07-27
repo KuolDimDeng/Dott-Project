@@ -41,11 +41,37 @@ class JobViewSet(viewsets.ModelViewSet):
             return JobDetailSerializer
         return JobSerializer
     
+    def create(self, request, *args, **kwargs):
+        """Create a new job with detailed logging"""
+        logger.info(f"📋 [JobViewSet] === CREATE START ===")
+        logger.info(f"📋 [JobViewSet] User: {getattr(request.user, 'email', 'Unknown')}")
+        logger.info(f"📋 [JobViewSet] Request data: {request.data}")
+        
+        try:
+            response = super().create(request, *args, **kwargs)
+            logger.info(f"📋 [JobViewSet] Job created successfully: {response.data}")
+            return response
+        except Exception as e:
+            logger.error(f"📋 [JobViewSet] Error creating job: {str(e)}")
+            import traceback
+            logger.error(f"📋 [JobViewSet] Traceback: {traceback.format_exc()}")
+            return Response(
+                {'error': f'Failed to create job: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
     def perform_create(self, serializer):
         """Set created_by when creating a job"""
-        serializer.save(
-            created_by=self.request.user
-        )
+        logger.info(f"📋 [JobViewSet] perform_create called")
+        logger.info(f"📋 [JobViewSet] Validated data: {serializer.validated_data}")
+        try:
+            serializer.save(
+                created_by=self.request.user
+            )
+            logger.info(f"📋 [JobViewSet] Job saved successfully")
+        except Exception as e:
+            logger.error(f"📋 [JobViewSet] Error in perform_create: {str(e)}")
+            raise
     
     def list(self, request, *args, **kwargs):
         """List jobs with optional filtering"""
@@ -350,13 +376,44 @@ class VehicleViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """Filter vehicles by tenant"""
-        return Vehicle.objects.select_related('assigned_to__user').order_by('registration_number')
+        logger.info(f"🚗 [VehicleViewSet] get_queryset called by user: {getattr(self.request.user, 'email', 'Unknown')}")
+        queryset = Vehicle.objects.select_related('assigned_to__user').order_by('registration_number')
+        logger.info(f"🚗 [VehicleViewSet] Found {queryset.count()} vehicles")
+        return queryset
+    
+    def create(self, request, *args, **kwargs):
+        """Create a new vehicle with detailed logging"""
+        logger.info(f"🚗 [VehicleViewSet] === CREATE START ===")
+        logger.info(f"🚗 [VehicleViewSet] User: {getattr(request.user, 'email', 'Unknown')}")
+        logger.info(f"🚗 [VehicleViewSet] Request data: {request.data}")
+        logger.info(f"🚗 [VehicleViewSet] Request headers: {dict(request.headers)}")
+        
+        try:
+            response = super().create(request, *args, **kwargs)
+            logger.info(f"🚗 [VehicleViewSet] Vehicle created successfully: {response.data}")
+            return response
+        except Exception as e:
+            logger.error(f"🚗 [VehicleViewSet] Error creating vehicle: {str(e)}")
+            logger.error(f"🚗 [VehicleViewSet] Exception type: {type(e).__name__}")
+            import traceback
+            logger.error(f"🚗 [VehicleViewSet] Traceback: {traceback.format_exc()}")
+            return Response(
+                {'error': f'Failed to create vehicle: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
     
     def perform_create(self, serializer):
         """Set created_by when creating a vehicle"""
-        serializer.save(
-            created_by=self.request.user
-        )
+        logger.info(f"🚗 [VehicleViewSet] perform_create called")
+        logger.info(f"🚗 [VehicleViewSet] Validated data: {serializer.validated_data}")
+        try:
+            serializer.save(
+                created_by=self.request.user
+            )
+            logger.info(f"🚗 [VehicleViewSet] Vehicle saved successfully")
+        except Exception as e:
+            logger.error(f"🚗 [VehicleViewSet] Error in perform_create: {str(e)}")
+            raise
     
     @action(detail=False, methods=['get'])
     def available(self, request):
@@ -408,4 +465,74 @@ class VehicleViewSet(viewsets.ModelViewSet):
             return Response(
                 {'error': 'New mileage must be greater than current mileage'},
                 status=status.HTTP_400_BAD_REQUEST
+            )
+
+
+# Additional API endpoints for Job form data
+class JobDataViewSet(viewsets.ViewSet):
+    """ViewSet for providing job form data (customers, employees, supplies)"""
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    
+    @action(detail=False, methods=['get'])
+    def customers(self, request):
+        """Get available customers for job assignment"""
+        logger.info(f"👥 [JobDataViewSet] Fetching customers for user: {getattr(request.user, 'email', 'Unknown')}")
+        try:
+            from crm.models import Customer
+            from crm.serializers import CustomerSerializer
+            
+            customers = Customer.objects.filter(is_active=True).order_by('name')
+            logger.info(f"👥 [JobDataViewSet] Found {customers.count()} customers")
+            
+            serializer = CustomerSerializer(customers, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            logger.error(f"👥 [JobDataViewSet] Error fetching customers: {str(e)}")
+            return Response(
+                {'error': f'Failed to fetch customers: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=False, methods=['get'])
+    def employees(self, request):
+        """Get available employees for job assignment"""
+        logger.info(f"👷 [JobDataViewSet] Fetching employees for user: {getattr(request.user, 'email', 'Unknown')}")
+        try:
+            from hr.models import Employee
+            from hr.serializers import EmployeeSerializer
+            
+            employees = Employee.objects.filter(active=True).select_related('user').order_by('user__first_name', 'user__last_name')
+            logger.info(f"👷 [JobDataViewSet] Found {employees.count()} employees")
+            
+            serializer = EmployeeSerializer(employees, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            logger.error(f"👷 [JobDataViewSet] Error fetching employees: {str(e)}")
+            return Response(
+                {'error': f'Failed to fetch employees: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=False, methods=['get'])
+    def supplies(self, request):
+        """Get available supplies for job materials"""
+        logger.info(f"📦 [JobDataViewSet] Fetching supplies for user: {getattr(request.user, 'email', 'Unknown')}")
+        try:
+            from inventory.models import Product
+            from inventory.serializers import ProductSerializer
+            
+            supplies = Product.objects.filter(
+                inventory_type='supply',
+                is_active=True
+            ).order_by('name')
+            logger.info(f"📦 [JobDataViewSet] Found {supplies.count()} supplies")
+            
+            serializer = ProductSerializer(supplies, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            logger.error(f"📦 [JobDataViewSet] Error fetching supplies: {str(e)}")
+            return Response(
+                {'error': f'Failed to fetch supplies: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

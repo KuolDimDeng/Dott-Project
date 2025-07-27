@@ -80,8 +80,8 @@ const VehicleForm = ({ vehicle, onClose, onSave, inline = false }) => {
 
     try {
       const url = vehicle 
-        ? `/api/vehicles/${vehicle.id}/` 
-        : '/api/vehicles/';
+        ? `/api/jobs/vehicles/${vehicle.id}/` 
+        : '/api/jobs/vehicles/';
       
       const method = vehicle ? 'PUT' : 'POST';
       

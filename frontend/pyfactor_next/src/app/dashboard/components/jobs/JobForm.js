@@ -71,53 +71,114 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
 
   const fetchCustomers = async () => {
     try {
-      logger.info('[JobForm] Fetching customers...');
-      const customersData = await jobService.getAvailableCustomers();
-      logger.info('[JobForm] Customers received:', customersData);
+      logger.info('[JobForm] 👥 === FETCHING CUSTOMERS START ===');
+      
+      // Try the new job data endpoint first
+      let customersData;
+      try {
+        const response = await fetch('/api/jobs/data/customers/', {
+          headers: { 'Content-Type': 'application/json' }
+        });
+        logger.info('[JobForm] 👥 Job data API response status:', response.status);
+        
+        if (response.ok) {
+          customersData = await response.json();
+          logger.info('[JobForm] 👥 Customers from job data API:', customersData);
+        } else {
+          throw new Error(`Job data API failed with status ${response.status}`);
+        }
+      } catch (apiError) {
+        logger.warn('[JobForm] 👥 Job data API failed, trying fallback:', apiError);
+        customersData = await jobService.getAvailableCustomers();
+      }
+      
+      logger.info('[JobForm] 👥 Final customers data:', customersData);
       setCustomers(Array.isArray(customersData) ? customersData : []);
     } catch (err) {
-      logger.error('Error fetching customers:', err);
+      logger.error('[JobForm] 👥 Error fetching customers:', err);
       setError('Failed to load customers. Please try again.');
     }
   };
 
   const fetchEmployees = async () => {
     try {
-      logger.info('[JobForm] Fetching employees...');
-      const employeesData = await jobService.getAvailableEmployees();
-      logger.info('[JobForm] Employees received:', employeesData);
+      logger.info('[JobForm] 👷 === FETCHING EMPLOYEES START ===');
+      
+      // Try the new job data endpoint first
+      let employeesData;
+      try {
+        const response = await fetch('/api/jobs/data/employees/', {
+          headers: { 'Content-Type': 'application/json' }
+        });
+        logger.info('[JobForm] 👷 Job data API response status:', response.status);
+        
+        if (response.ok) {
+          employeesData = await response.json();
+          logger.info('[JobForm] 👷 Employees from job data API:', employeesData);
+        } else {
+          throw new Error(`Job data API failed with status ${response.status}`);
+        }
+      } catch (apiError) {
+        logger.warn('[JobForm] 👷 Job data API failed, trying fallback:', apiError);
+        employeesData = await jobService.getAvailableEmployees();
+      }
+      
+      logger.info('[JobForm] 👷 Final employees data:', employeesData);
       setEmployees(Array.isArray(employeesData) ? employeesData : []);
     } catch (err) {
-      logger.error('Error fetching employees:', err);
+      logger.error('[JobForm] 👷 Error fetching employees:', err);
     }
   };
 
   const fetchSupplies = async () => {
     try {
-      logger.info('[JobForm] Fetching supplies...');
-      const suppliesData = await jobService.getAvailableSupplies();
-      logger.info('[JobForm] Supplies received:', suppliesData);
+      logger.info('[JobForm] 📦 === FETCHING SUPPLIES START ===');
+      
+      // Try the new job data endpoint first
+      let suppliesData;
+      try {
+        const response = await fetch('/api/jobs/data/supplies/', {
+          headers: { 'Content-Type': 'application/json' }
+        });
+        logger.info('[JobForm] 📦 Job data API response status:', response.status);
+        
+        if (response.ok) {
+          suppliesData = await response.json();
+          logger.info('[JobForm] 📦 Supplies from job data API:', suppliesData);
+        } else {
+          throw new Error(`Job data API failed with status ${response.status}`);
+        }
+      } catch (apiError) {
+        logger.warn('[JobForm] 📦 Job data API failed, trying fallback:', apiError);
+        suppliesData = await jobService.getAvailableSupplies();
+      }
+      
+      logger.info('[JobForm] 📦 Final supplies data:', suppliesData);
       setSupplies(Array.isArray(suppliesData) ? suppliesData : []);
     } catch (err) {
-      logger.error('Error fetching supplies:', err);
+      logger.error('[JobForm] 📦 Error fetching supplies:', err);
     }
   };
 
   const fetchVehicles = async () => {
     try {
-      logger.info('[JobForm] Fetching vehicles...');
-      // Check if vehicles endpoint exists
-      const response = await fetch('/api/vehicles/', {
+      logger.info('[JobForm] 🚗 === FETCHING VEHICLES START ===');
+      const response = await fetch('/api/jobs/vehicles/', {
         headers: {
           'Content-Type': 'application/json',
         },
       });
+      logger.info('[JobForm] 🚗 Vehicle API response status:', response.status);
+      
       if (response.ok) {
         const vehiclesData = await response.json();
+        logger.info('[JobForm] 🚗 Vehicles received:', vehiclesData);
         setVehicles(Array.isArray(vehiclesData) ? vehiclesData : []);
+      } else {
+        logger.error('[JobForm] 🚗 Vehicle API failed with status:', response.status);
       }
     } catch (err) {
-      logger.info('Vehicles feature not available');
+      logger.error('[JobForm] 🚗 Vehicle fetch error:', err);
       // Vehicles feature is optional
     }
   };
