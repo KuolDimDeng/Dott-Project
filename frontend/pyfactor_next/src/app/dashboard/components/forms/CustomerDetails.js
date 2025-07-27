@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import InvoiceDetails from './InvoiceDetails';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import { 
   TextField, 
   Button, 

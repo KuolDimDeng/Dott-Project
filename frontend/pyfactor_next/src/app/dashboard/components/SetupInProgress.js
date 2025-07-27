@@ -1,5 +1,5 @@
 import React from 'react';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import { useSetupStatus } from '@/hooks/useSetupStatus';
 import { logger } from '@/utils/logger';
 
