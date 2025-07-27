@@ -139,16 +139,6 @@ const nextConfig = {
       bodySizeLimit: '2mb',
       allowedOrigins: ['dottapps.com', 'www.dottapps.com']
     },
-    
-    // Disable optimizePackageImports to avoid module resolution issues
-    optimizePackageImports: [],
-    
-    // Enable parallel processing with 4GB memory
-    workerThreads: true,
-    cpus: 4, // Use multiple CPUs for faster builds
-    
-    // Enable build workers for speed
-    webpackBuildWorker: true,
   },
   
   // Environment variables (minimal set)
@@ -197,118 +187,6 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   
-  // Optimized webpack config for Render
-  webpack: (config, { isServer, dev, webpack }) => {
-    // Fix lodash-es import issues
-    config.plugins.push(
-      new webpack.NormalModuleReplacementPlugin(
-        /^lodash-es$/,
-        'lodash'
-      )
-    );
-    // Fix "self is not defined" error for server-side builds
-    if (isServer) {
-      // Provide polyfill for 'self' global
-      config.resolve.alias = {
-        ...config.resolve.alias,
-        self: path.resolve(__dirname, 'src/utils/webpack-self-polyfill.js'),
-      };
-      
-      // Also inject polyfill at the beginning of server bundles
-      config.plugins.push(
-        new webpack.BannerPlugin({
-          banner: 'if (typeof self === "undefined") { global.self = global; }',
-          raw: true,
-          entryOnly: false,
-        })
-      );
-    }
-    
-    // Production optimizations - simplified to avoid runtime errors
-    if (!dev) {
-      // Basic optimization only
-      config.optimization = {
-        ...config.optimization,
-        minimize: true,
-        splitChunks: {
-          chunks: 'all',
-          cacheGroups: {
-            default: {
-              minChunks: 2,
-              priority: -20,
-              reuseExistingChunk: true,
-            },
-            vendors: {
-              test: /[\\/]node_modules[\\/]/,
-              priority: -10,
-            },
-          },
-        },
-      };
-      
-      // Disable source maps for faster builds
-      config.devtool = false;
-    }
-    
-    // Handle stubs and module resolution fixes
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      'react-datepicker': path.resolve(__dirname, 'src/utils/stubs/datepicker-stub.js'),
-    };
-    
-    // Fix module resolution for problematic packages
-    config.module.rules.push({
-      test: /\.m?js$/,
-      resolve: {
-        fullySpecified: false,
-      },
-      include: /node_modules/,
-      type: 'javascript/auto',
-    });
-    
-    // Replace lodash-es imports with lodash
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      'lodash-es': 'lodash',
-    };
-    
-    // Handle ESM modules properly
-    config.resolve.extensionAlias = {
-      '.js': ['.js', '.ts', '.tsx'],
-      '.mjs': ['.mjs', '.mts'],
-    };
-
-    // Node.js polyfills
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      fs: false,
-      path: false,
-      os: false,
-      crypto: false,
-      net: false,
-      tls: false,
-    };
-    
-    // Additional fix for self is not defined
-    if (!isServer) {
-      config.resolve.fallback.self = false;
-    }
-
-    // Exclude heavy dependencies
-    config.externals = [
-      ...(config.externals || []),
-      'canvas',
-      'jsdom',
-    ];
-
-    // SVG support
-    config.module.rules.push({
-      test: /\.svg$/,
-      use: ['@svgr/webpack'],
-    });
-
-    return config;
-  },
   
   // Disable image optimization for Render
   images: {
@@ -541,7 +419,5 @@ console.log('[Build] Sentry configuration:');
 console.log('[Build] - DSN from env:', process.env.NEXT_PUBLIC_SENTRY_DSN ? 'Yes' : 'No (using fallback)');
 console.log('[Build] - Sentry enabled:', enableSentry);
 
-// Export with PWA
-const configWithPWA = withPWA(nextConfig);
-
-module.exports = configWithPWA;
+// Export without PWA for now to fix the build
+module.exports = nextConfig;
