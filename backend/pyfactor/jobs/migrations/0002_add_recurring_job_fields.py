@@ -9,7 +9,7 @@ import uuid
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('jobs', '0002_initial'),  # Update this to match your latest migration
+        ('jobs', '0001_initial'),
     ]
 
     operations = [
