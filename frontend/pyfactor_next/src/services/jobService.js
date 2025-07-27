@@ -468,12 +468,22 @@ class JobService {
    */
   async getAvailableEmployees() {
     try {
-      const response = await fetchData('/api/hr/employees/', {
+      const response = await fetchData('/api/hr/v2/employees', {
         params: { is_active: true },
         useCache: true,
         cacheTTL: 10 * 60 * 1000
       });
-      return response || [];
+      
+      // Handle different response formats
+      if (Array.isArray(response)) {
+        return response;
+      } else if (response && typeof response === 'object' && 'results' in response) {
+        return Array.isArray(response.results) ? response.results : [];
+      } else if (response && typeof response === 'object' && 'data' in response) {
+        return Array.isArray(response.data) ? response.data : [];
+      }
+      
+      return [];
     } catch (error) {
       logger.error('Error fetching available employees:', error);
       return [];

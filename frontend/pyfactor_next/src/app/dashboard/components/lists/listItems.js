@@ -998,6 +998,21 @@ const MainListItems = ({
           }, 
           value: 'job-profitability' 
         },
+        { 
+          label: 'Vehicles', 
+          onClick: (value) => {
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'vehicles', 
+              navigationKey,
+              originalItem: 'Vehicles'
+            };
+            
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+          }, 
+          value: 'vehicles' 
+        },
       ],
     },
     {

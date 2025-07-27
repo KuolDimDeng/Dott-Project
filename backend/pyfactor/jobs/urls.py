@@ -5,6 +5,7 @@ from . import views
 # Create the main router
 router = DefaultRouter()
 router.register(r'jobs', views.JobViewSet, basename='job')
+router.register(r'vehicles', views.VehicleViewSet, basename='vehicle')
 
 # For now, we'll use regular URL patterns for nested resources
 urlpatterns = [

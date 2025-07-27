@@ -165,7 +165,7 @@ const SettingsManagement = () => {
         {/* Tab Navigation - Responsive Grid */}
         <div className="bg-white shadow-sm rounded-lg mb-6">
           <div className="border-b border-gray-200">
-            <nav className="-mb-px flex overflow-x-auto scrollbar-hide" aria-label="Settings tabs">
+            <nav className="-mb-px flex flex-wrap" aria-label="Settings tabs">
               {availableSections.map((section) => {
                 const Icon = section.icon;
                 const isActive = activeSection === section.id;
@@ -175,8 +175,8 @@ const SettingsManagement = () => {
                     key={section.id}
                     onClick={() => setActiveSection(section.id)}
                     className={`
-                      group flex items-center whitespace-nowrap gap-2 py-4 px-4 border-b-2 font-medium text-sm
-                      transition-all duration-200 flex-shrink-0
+                      group flex items-center whitespace-nowrap gap-2 py-4 px-3 sm:px-4 border-b-2 font-medium text-sm
+                      transition-all duration-200 flex-grow sm:flex-grow-0
                       ${isActive 
                         ? 'border-blue-500 text-blue-600' 
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -190,7 +190,7 @@ const SettingsManagement = () => {
                           : 'text-gray-400 group-hover:text-gray-500'
                       }`} 
                     />
-                    <span className="text-center">{section.title}</span>
+                    <span className="text-center text-xs sm:text-sm">{section.title}</span>
                   </button>
                 );
               })}

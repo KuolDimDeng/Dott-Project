@@ -36,6 +36,14 @@ const ErrorFallback = ({ error, componentName, retry }) => (
 // Check component availability in a safer way without using direct imports
 console.log('[RenderMainContent] Preparing to load components');
 
+// Import VehicleManagement
+const VehicleManagement = lazy(() => 
+  import('./jobs/VehicleManagement').catch(err => {
+    console.error('[RenderMainContent] Error loading VehicleManagement:', err);
+    return { default: () => <ErrorFallback error={err} componentName="VehicleManagement" /> };
+  })
+);
+
 // Enhanced lazy load with retry
 const enhancedLazy = (importFn, componentName) => {
   console.error(`[RenderMainContent] enhancedLazy called for ${componentName}`);
@@ -1787,6 +1795,17 @@ const RenderMainContent = React.memo(function RenderMainContent({
           <ContentWrapperWithKey>
             <SuspenseWithCleanup componentKey={`${componentKey}-job-profitability`}>
               <JobManagement view="job-profitability" />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
+      }
+      
+      if (view === 'vehicles') {
+        console.log('[RenderMainContent] Rendering vehicles view');
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup componentKey={`${componentKey}-vehicles`}>
+              <VehicleManagement />
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>
         );

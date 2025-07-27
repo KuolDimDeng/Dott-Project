@@ -19,16 +19,26 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
     quoted_amount: '',
     location: '',
     notes: '',
-    is_active: true
+    is_active: true,
+    assigned_employees: [], // Multiple employees
+    lead_employee_id: '', // Lead employee
+    materials: [], // Selected materials/supplies
+    vehicle_id: '' // Assigned vehicle
   });
 
   const [customers, setCustomers] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [supplies, setSupplies] = useState([]);
+  const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [generatingNumber, setGeneratingNumber] = useState(false);
 
   useEffect(() => {
     fetchCustomers();
+    fetchEmployees();
+    fetchSupplies();
+    fetchVehicles();
     if (job) {
       setFormData({
         ...job,
@@ -36,7 +46,11 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
         scheduled_date: job.scheduled_date?.split('T')[0] || '',
         start_date: job.start_date?.split('T')[0] || '',
         completion_date: job.completion_date?.split('T')[0] || '',
-        quoted_amount: job.quoted_amount || ''
+        quoted_amount: job.quoted_amount || '',
+        assigned_employees: job.assigned_employees || [],
+        lead_employee_id: job.lead_employee_id || '',
+        materials: job.materials || [],
+        vehicle_id: job.vehicle_id || ''
       });
     } else {
       generateJobNumber();
@@ -52,6 +66,47 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
     } catch (err) {
       logger.error('Error fetching customers:', err);
       setError('Failed to load customers. Please try again.');
+    }
+  };
+
+  const fetchEmployees = async () => {
+    try {
+      logger.info('[JobForm] Fetching employees...');
+      const employeesData = await jobService.getAvailableEmployees();
+      logger.info('[JobForm] Employees received:', employeesData);
+      setEmployees(Array.isArray(employeesData) ? employeesData : []);
+    } catch (err) {
+      logger.error('Error fetching employees:', err);
+    }
+  };
+
+  const fetchSupplies = async () => {
+    try {
+      logger.info('[JobForm] Fetching supplies...');
+      const suppliesData = await jobService.getAvailableSupplies();
+      logger.info('[JobForm] Supplies received:', suppliesData);
+      setSupplies(Array.isArray(suppliesData) ? suppliesData : []);
+    } catch (err) {
+      logger.error('Error fetching supplies:', err);
+    }
+  };
+
+  const fetchVehicles = async () => {
+    try {
+      logger.info('[JobForm] Fetching vehicles...');
+      // Check if vehicles endpoint exists
+      const response = await fetch('/api/vehicles/', {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      if (response.ok) {
+        const vehiclesData = await response.json();
+        setVehicles(Array.isArray(vehiclesData) ? vehiclesData : []);
+      }
+    } catch (err) {
+      logger.info('Vehicles feature not available');
+      // Vehicles feature is optional
     }
   };
 
@@ -74,6 +129,22 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  const handleEmployeeSelection = (e) => {
+    const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
+    setFormData(prev => ({
+      ...prev,
+      assigned_employees: selectedOptions
+    }));
+  };
+
+  const handleMaterialSelection = (e) => {
+    const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
+    setFormData(prev => ({
+      ...prev,
+      materials: selectedOptions
     }));
   };
 
@@ -171,7 +242,7 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
                 <option value="">Select a customer</option>
                 {customers.map((customer) => (
                   <option key={customer.id} value={customer.id}>
-                    {customer.customerName || customer.business_name || customer.name || 
+                    {customer.customerName || customer.customer_name || customer.business_name || customer.name || 
                      `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 
                      customer.email || 'Unknown Customer'}
                   </option>
@@ -298,6 +369,98 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
                 placeholder="Detailed description of the work to be performed..."
               />
             </div>
+
+            {/* Employee Assignment */}
+            <div className="lg:col-span-2">
+              <label htmlFor="assigned_employees" className="block text-sm font-medium text-gray-700">
+                Assigned Employees
+              </label>
+              <select
+                id="assigned_employees"
+                name="assigned_employees"
+                multiple
+                value={formData.assigned_employees}
+                onChange={handleEmployeeSelection}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                size="4"
+              >
+                {employees.map((employee) => (
+                  <option key={employee.id} value={employee.id}>
+                    {employee.user?.first_name || ''} {employee.user?.last_name || ''} {employee.user?.email ? `(${employee.user.email})` : ''}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-gray-500">Hold Ctrl/Cmd to select multiple employees</p>
+            </div>
+
+            {/* Lead Employee */}
+            <div>
+              <label htmlFor="lead_employee_id" className="block text-sm font-medium text-gray-700">
+                Lead Employee
+              </label>
+              <select
+                id="lead_employee_id"
+                name="lead_employee_id"
+                value={formData.lead_employee_id}
+                onChange={handleChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              >
+                <option value="">Select lead employee</option>
+                {employees
+                  .filter(emp => formData.assigned_employees.includes(emp.id))
+                  .map((employee) => (
+                    <option key={employee.id} value={employee.id}>
+                      {employee.user?.first_name || ''} {employee.user?.last_name || ''}
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            {/* Materials/Supplies */}
+            <div className="lg:col-span-2">
+              <label htmlFor="materials" className="block text-sm font-medium text-gray-700">
+                Materials/Supplies
+              </label>
+              <select
+                id="materials"
+                name="materials"
+                multiple
+                value={formData.materials}
+                onChange={handleMaterialSelection}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                size="4"
+              >
+                {supplies.map((supply) => (
+                  <option key={supply.id} value={supply.id}>
+                    {supply.name} - ${supply.unit_price} ({supply.quantity_on_hand} available)
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-gray-500">Hold Ctrl/Cmd to select multiple materials</p>
+            </div>
+
+            {/* Vehicle Assignment (if available) */}
+            {vehicles.length > 0 && (
+              <div>
+                <label htmlFor="vehicle_id" className="block text-sm font-medium text-gray-700">
+                  Assigned Vehicle
+                </label>
+                <select
+                  id="vehicle_id"
+                  name="vehicle_id"
+                  value={formData.vehicle_id}
+                  onChange={handleChange}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                >
+                  <option value="">No vehicle assigned</option>
+                  {vehicles.map((vehicle) => (
+                    <option key={vehicle.id} value={vehicle.id}>
+                      {vehicle.make} {vehicle.model} - {vehicle.registration_number}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           {/* Actions */}
@@ -382,7 +545,7 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
                 <option value="">Select a customer</option>
                 {customers.map((customer) => (
                   <option key={customer.id} value={customer.id}>
-                    {customer.customerName || customer.business_name || customer.name || 
+                    {customer.customerName || customer.customer_name || customer.business_name || customer.name || 
                      `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 
                      customer.email || 'Unknown Customer'}
                   </option>
@@ -557,6 +720,98 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
                 placeholder="Additional notes or special instructions..."
               />
             </div>
+
+            {/* Employee Assignment */}
+            <div className="md:col-span-2">
+              <label htmlFor="assigned_employees" className="block text-sm font-medium text-gray-700">
+                Assigned Employees
+              </label>
+              <select
+                id="assigned_employees"
+                name="assigned_employees"
+                multiple
+                value={formData.assigned_employees}
+                onChange={handleEmployeeSelection}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                size="4"
+              >
+                {employees.map((employee) => (
+                  <option key={employee.id} value={employee.id}>
+                    {employee.user?.first_name || ''} {employee.user?.last_name || ''} {employee.user?.email ? `(${employee.user.email})` : ''}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-gray-500">Hold Ctrl/Cmd to select multiple employees</p>
+            </div>
+
+            {/* Lead Employee */}
+            <div>
+              <label htmlFor="lead_employee_id" className="block text-sm font-medium text-gray-700">
+                Lead Employee
+              </label>
+              <select
+                id="lead_employee_id"
+                name="lead_employee_id"
+                value={formData.lead_employee_id}
+                onChange={handleChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Select lead employee</option>
+                {employees
+                  .filter(emp => formData.assigned_employees.includes(emp.id))
+                  .map((employee) => (
+                    <option key={employee.id} value={employee.id}>
+                      {employee.user?.first_name || ''} {employee.user?.last_name || ''}
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            {/* Materials/Supplies */}
+            <div className="md:col-span-2">
+              <label htmlFor="materials" className="block text-sm font-medium text-gray-700">
+                Materials/Supplies
+              </label>
+              <select
+                id="materials"
+                name="materials"
+                multiple
+                value={formData.materials}
+                onChange={handleMaterialSelection}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                size="4"
+              >
+                {supplies.map((supply) => (
+                  <option key={supply.id} value={supply.id}>
+                    {supply.name} - ${supply.unit_price} ({supply.quantity_on_hand} available)
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-gray-500">Hold Ctrl/Cmd to select multiple materials</p>
+            </div>
+
+            {/* Vehicle Assignment (if available) */}
+            {vehicles.length > 0 && (
+              <div>
+                <label htmlFor="vehicle_id" className="block text-sm font-medium text-gray-700">
+                  Assigned Vehicle
+                </label>
+                <select
+                  id="vehicle_id"
+                  name="vehicle_id"
+                  value={formData.vehicle_id}
+                  onChange={handleChange}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">No vehicle assigned</option>
+                  {vehicles.map((vehicle) => (
+                    <option key={vehicle.id} value={vehicle.id}>
+                      {vehicle.make} {vehicle.model} - {vehicle.registration_number}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
         </form>
 

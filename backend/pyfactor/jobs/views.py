@@ -9,10 +9,11 @@ from django.shortcuts import get_object_or_404
 from decimal import Decimal
 import logging
 
-from .models import Job, JobMaterial, JobLabor, JobExpense
+from .models import Job, JobMaterial, JobLabor, JobExpense, Vehicle, JobAssignment
 from .serializers import (
     JobSerializer, JobDetailSerializer, JobMaterialSerializer, 
-    JobLaborSerializer, JobExpenseSerializer, JobCostingSerializer
+    JobLaborSerializer, JobExpenseSerializer, JobCostingSerializer,
+    VehicleSerializer
 )
 
 logger = logging.getLogger(__name__)
@@ -27,7 +28,8 @@ class JobViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """Filter jobs by tenant"""
-        return Job.objects.select_related('customer', 'assigned_to__user').prefetch_related(
+        return Job.objects.select_related('customer', 'lead_employee__user', 'vehicle').prefetch_related(
+            'assigned_employees__user',
             'materials__supply',
             'labor_entries__employee__user',
             'expenses'
@@ -338,3 +340,72 @@ class JobExpenseViewSet(viewsets.ModelViewSet):
             job=job,
             added_by=self.request.user
         )
+
+
+class VehicleViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing vehicles"""
+    serializer_class = VehicleSerializer
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        """Filter vehicles by tenant"""
+        return Vehicle.objects.select_related('assigned_to__user').order_by('registration_number')
+    
+    def perform_create(self, serializer):
+        """Set created_by when creating a vehicle"""
+        serializer.save(
+            created_by=self.request.user
+        )
+    
+    @action(detail=False, methods=['get'])
+    def available(self, request):
+        """Get available vehicles"""
+        available_vehicles = self.get_queryset().filter(
+            status='active',
+            is_available=True
+        )
+        serializer = self.get_serializer(available_vehicles, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'])
+    def assign(self, request, pk=None):
+        """Assign vehicle to an employee"""
+        vehicle = self.get_object()
+        employee_id = request.data.get('employee_id')
+        
+        if employee_id:
+            from hr.models import Employee
+            try:
+                employee = Employee.objects.get(id=employee_id)
+                vehicle.assigned_to = employee
+                vehicle.is_available = False
+                vehicle.save()
+                return Response({'status': 'Vehicle assigned successfully'})
+            except Employee.DoesNotExist:
+                return Response(
+                    {'error': 'Employee not found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+        else:
+            # Unassign vehicle
+            vehicle.assigned_to = None
+            vehicle.is_available = True
+            vehicle.save()
+            return Response({'status': 'Vehicle unassigned successfully'})
+    
+    @action(detail=True, methods=['post'])
+    def update_mileage(self, request, pk=None):
+        """Update vehicle mileage"""
+        vehicle = self.get_object()
+        new_mileage = request.data.get('mileage')
+        
+        if new_mileage and int(new_mileage) > vehicle.mileage:
+            vehicle.mileage = int(new_mileage)
+            vehicle.save()
+            return Response({'status': 'Mileage updated successfully'})
+        else:
+            return Response(
+                {'error': 'New mileage must be greater than current mileage'},
+                status=status.HTTP_400_BAD_REQUEST
+            )

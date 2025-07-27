@@ -11,6 +11,97 @@ from inventory.models import Product
 from users.models import User
 from finance.models import Account, FinanceTransaction
 
+
+class Vehicle(TenantAwareModel):
+    """Track vehicles/equipment for job assignments"""
+    
+    VEHICLE_TYPE_CHOICES = [
+        ('car', 'Car'),
+        ('van', 'Van'),
+        ('truck', 'Truck'),
+        ('pickup', 'Pickup Truck'),
+        ('suv', 'SUV'),
+        ('trailer', 'Trailer'),
+        ('equipment', 'Heavy Equipment'),
+        ('other', 'Other'),
+    ]
+    
+    FUEL_TYPE_CHOICES = [
+        ('gasoline', 'Gasoline'),
+        ('diesel', 'Diesel'),
+        ('electric', 'Electric'),
+        ('hybrid', 'Hybrid'),
+        ('natural_gas', 'Natural Gas'),
+        ('other', 'Other'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('active', 'Active'),
+        ('maintenance', 'Under Maintenance'),
+        ('repair', 'Under Repair'),
+        ('inactive', 'Inactive'),
+        ('retired', 'Retired'),
+    ]
+    
+    # Basic Information
+    registration_number = models.CharField(max_length=50, unique=True)
+    vehicle_type = models.CharField(max_length=20, choices=VEHICLE_TYPE_CHOICES, default='van')
+    make = models.CharField(max_length=50)
+    model = models.CharField(max_length=50)
+    year = models.IntegerField()
+    color = models.CharField(max_length=30, blank=True)
+    
+    # Technical Details
+    vin = models.CharField(max_length=17, blank=True, verbose_name='VIN Number')
+    fuel_type = models.CharField(max_length=20, choices=FUEL_TYPE_CHOICES, default='gasoline')
+    mileage = models.IntegerField(default=0, help_text='Current mileage/odometer reading')
+    license_plate = models.CharField(max_length=20, blank=True)
+    
+    # Status and Assignment
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
+    is_available = models.BooleanField(default=True)
+    assigned_to = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True,
+                                  related_name='assigned_vehicles')
+    
+    # Financial Information
+    purchase_date = models.DateField(null=True, blank=True)
+    purchase_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    insurance_policy = models.CharField(max_length=100, blank=True)
+    insurance_expiry = models.DateField(null=True, blank=True)
+    
+    # Maintenance
+    last_service_date = models.DateField(null=True, blank=True)
+    next_service_date = models.DateField(null=True, blank=True)
+    service_interval_miles = models.IntegerField(default=5000, help_text='Service interval in miles')
+    
+    # Additional Information
+    notes = models.TextField(blank=True)
+    photo = models.URLField(blank=True, help_text='URL to vehicle photo')
+    
+    # Tracking
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='vehicles_created')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    objects = TenantManager()
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['tenant_id', 'status']),
+            models.Index(fields=['tenant_id', 'is_available']),
+            models.Index(fields=['tenant_id', 'registration_number']),
+        ]
+        
+    def __str__(self):
+        return f"{self.make} {self.model} ({self.registration_number})"
+    
+    def check_service_due(self):
+        """Check if service is due based on date or mileage"""
+        if self.next_service_date and timezone.now().date() >= self.next_service_date:
+            return True
+        # You could also check mileage-based service intervals here
+        return False
+
 class Job(TenantAwareModel):
     """Track individual jobs/projects with materials and labor costs"""
     
@@ -43,8 +134,12 @@ class Job(TenantAwareModel):
     
     # Tracking
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='jobs_created')
-    assigned_to = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True, 
-                                  related_name='assigned_jobs')
+    lead_employee = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True, 
+                                     related_name='lead_jobs', help_text='Primary employee responsible for this job')
+    assigned_employees = models.ManyToManyField(Employee, blank=True, related_name='assigned_jobs',
+                                              help_text='All employees assigned to this job')
+    vehicle = models.ForeignKey(Vehicle, on_delete=models.SET_NULL, null=True, blank=True,
+                              related_name='jobs', help_text='Vehicle assigned to this job')
     
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
@@ -120,8 +215,10 @@ class Job(TenantAwareModel):
             event_description = f"Customer: {self.customer.name}\n"
             if self.description:
                 event_description += f"Description: {self.description}\n"
-            if self.assigned_to:
-                event_description += f"Assigned to: {self.assigned_to.user.get_full_name()}\n"
+            if self.lead_employee:
+                event_description += f"Lead: {self.lead_employee.user.get_full_name()}\n"
+            if self.vehicle:
+                event_description += f"Vehicle: {self.vehicle}\n"
             event_description += f"Quoted Amount: ${self.quoted_amount}"
             
             # Set start time to 9 AM on scheduled date
@@ -253,6 +350,34 @@ class JobMaterial(TenantAwareModel):
     
     def get_total_price(self):
         return self.quantity * self.unit_price
+
+
+class JobAssignment(TenantAwareModel):
+    """Track employee assignments to jobs"""
+    
+    job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name='job_assignments')
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
+    is_lead = models.BooleanField(default=False)
+    
+    # Assignment details
+    assigned_date = models.DateTimeField(auto_now_add=True)
+    assigned_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    
+    # Status
+    is_active = models.BooleanField(default=True)
+    
+    objects = TenantManager()
+    
+    class Meta:
+        unique_together = ['tenant_id', 'job', 'employee']
+        indexes = [
+            models.Index(fields=['tenant_id', 'job']),
+            models.Index(fields=['tenant_id', 'employee']),
+        ]
+        
+    def __str__(self):
+        lead_text = ' (Lead)' if self.is_lead else ''
+        return f"{self.employee.user.get_full_name()}{lead_text} - {self.job.name}"
 
 
 class JobLabor(TenantAwareModel):
