@@ -103,7 +103,13 @@ const InlineEmployeeAssignment = ({ geofence, onAssignmentComplete, isExpanded, 
   };
 
   const handleEmployeeToggle = (employeeId) => {
+    console.log('🎯 [InlineEmployeeAssignment] ========================================');
+    console.log('🎯 [InlineEmployeeAssignment] EMPLOYEE CHECKBOX CLICKED!');
     console.log('🎯 [InlineEmployeeAssignment] Toggling employee:', employeeId);
+    console.log('🎯 [InlineEmployeeAssignment] Current assigned IDs:', assignedEmployeeIds);
+    console.log('🎯 [InlineEmployeeAssignment] Has changes before toggle:', hasChanges);
+    console.log('🎯 [InlineEmployeeAssignment] ========================================');
+    
     setAssignedEmployeeIds(prev => {
       const newIds = prev.includes(employeeId)
         ? prev.filter(id => id !== employeeId)
@@ -280,6 +286,13 @@ const InlineEmployeeAssignment = ({ geofence, onAssignmentComplete, isExpanded, 
                     <span className="text-sm text-gray-600">
                       {assignedEmployeeIds.length} of {employees.length} employees selected
                     </span>
+                    {console.log('🎯 [InlineEmployeeAssignment] Save button visibility check:', {
+                      hasChanges,
+                      assignedEmployeeIds,
+                      originalAssignedIds,
+                      saving,
+                      buttonShouldShow: hasChanges
+                    })}
                     {hasChanges && (
                       <button
                         onClick={() => {
