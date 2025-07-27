@@ -6,6 +6,7 @@ const withPWA = require('next-pwa')({
   disable: process.env.NODE_ENV === 'development',
   register: true,
   skipWaiting: true,
+  buildExcludes: [/middleware-manifest\.json$/],
   runtimeCaching: [
     {
       urlPattern: /^https:\/\/api\.dottapps\.com\/api\/.*/i,
@@ -223,7 +224,8 @@ const nextConfig = {
   },
   
   // Optimized webpack config for Render
-  webpack: (config, { isServer, dev }) => {
+  webpack: (config, { isServer, dev, webpack }) => {
+    
     // Production optimizations
     if (!dev) {
       // Enable module concatenation
