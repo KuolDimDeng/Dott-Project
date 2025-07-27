@@ -29,6 +29,7 @@ import {
   getGeofenceStatus
 } from '@/utils/locationServices';
 import toast from 'react-hot-toast';
+import timesheetApi from '@/utils/api/timesheetApi';
 
 export default function MobileTimesheetPage() {
   const { session, loading } = useSession();
@@ -39,6 +40,8 @@ export default function MobileTimesheetPage() {
   const [isClockingIn, setIsClockingIn] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [weekDays, setWeekDays] = useState([]);
+  const [employeeData, setEmployeeData] = useState(null);
+  const [loadingEmployee, setLoadingEmployee] = useState(true);
   
   // Location tracking states
   const [showLocationConsent, setShowLocationConsent] = useState(false);
@@ -77,25 +80,73 @@ export default function MobileTimesheetPage() {
     }
   }, [session, loading, router]);
 
-  // Load timesheet data
+  // Fetch employee data for the current user
+  const fetchEmployeeData = async () => {
+    console.log('🎯 [MobileTimesheet] === FETCHING EMPLOYEE DATA ===');
+    console.log('🎯 [MobileTimesheet] User email:', session?.user?.email);
+    
+    if (!session?.user?.email) return;
+    
+    setLoadingEmployee(true);
+    try {
+      // First try to get employee by user email
+      const response = await fetch('/api/hr/v2/employees/me');
+      
+      console.log('🎯 [MobileTimesheet] Employee API response status:', response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('🎯 [MobileTimesheet] Employee data:', data);
+        setEmployeeData(data.data || data);
+      } else {
+        console.error('🎯 [MobileTimesheet] Failed to fetch employee data');
+      }
+    } catch (error) {
+      console.error('🎯 [MobileTimesheet] Error fetching employee:', error);
+    } finally {
+      setLoadingEmployee(false);
+    }
+  };
+
+  // Load employee data on session change
   useEffect(() => {
-    if (session?.employee?.id && session?.tenantId) {
+    console.log('🎯 [MobileTimesheet] === SESSION CHECK ===');
+    console.log('🎯 [MobileTimesheet] Full session:', session);
+    console.log('🎯 [MobileTimesheet] User:', session?.user);
+    
+    // Check if user is authenticated
+    if (session?.user?.email) {
+      fetchEmployeeData();
+    }
+  }, [session]);
+  
+  // Load timesheet data when employee is loaded
+  useEffect(() => {
+    console.log('🎯 [MobileTimesheet] === EMPLOYEE DATA LOADED ===');
+    console.log('🎯 [MobileTimesheet] Employee:', employeeData);
+    console.log('🎯 [MobileTimesheet] Tenant ID:', session?.user?.tenant_id || session?.user?.tenantId);
+    
+    if (employeeData?.id && session?.user) {
       loadTimesheetData();
       checkLocationPermissions();
       loadEmployeeGeofences();
     }
-  }, [session]);
+  }, [employeeData, session]);
   
   // Load employee geofences
   const loadEmployeeGeofences = async () => {
     console.log('🎯 [MobileTimesheet] === LOADING GEOFENCES START ===');
-    console.log('🎯 [MobileTimesheet] Employee ID:', session?.employee?.id);
-    console.log('🎯 [MobileTimesheet] Tenant ID:', session?.tenantId);
+    console.log('🎯 [MobileTimesheet] Employee ID:', employeeData?.id);
+    console.log('🎯 [MobileTimesheet] Tenant ID:', session?.user?.tenant_id || session?.user?.tenantId);
+    
+    const tenantId = session?.user?.tenant_id || session?.user?.tenantId || session?.user?.business_id;
+    
+    if (!employeeData?.id || !tenantId) return;
     
     try {
-      const response = await fetch(`/api/hr/employee-geofences/?employee_id=${session.employee.id}`, {
+      const response = await fetch(`/api/hr/employee-geofences/?employee_id=${employeeData.id}`, {
         headers: {
-          'X-Tenant-ID': session.tenantId,
+          'X-Tenant-ID': tenantId,
         },
       });
       
@@ -117,12 +168,16 @@ export default function MobileTimesheetPage() {
   // Check location permissions and consent
   const checkLocationPermissions = async () => {
     const availability = await checkLocationAvailability();
+    const tenantId = session?.user?.tenant_id || session?.user?.tenantId || session?.user?.business_id;
+    
+    if (!employeeData?.id || !tenantId) return;
+    
     if (availability.supported && availability.permission === 'granted') {
       // Check if user has given consent in our system
       try {
-        const response = await fetch(`/api/hr/location-consents/check/${session.employee.id}/`, {
+        const response = await fetch(`/api/hr/location-consents/check/${employeeData.id}/`, {
           headers: {
-            'X-Tenant-ID': session.tenantId,
+            'X-Tenant-ID': tenantId,
           },
         });
         
@@ -148,15 +203,19 @@ export default function MobileTimesheetPage() {
   }, []);
 
   const loadTimesheetData = async () => {
+    const tenantId = session?.user?.tenant_id || session?.user?.tenantId || session?.user?.business_id;
+    
+    if (!employeeData?.id || !tenantId) return;
+    
     setLoadingTimesheet(true);
     try {
       // Get current timesheet
       const currentDate = format(new Date(), 'yyyy-MM-dd');
       const weekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
       
-      const response = await fetch(`/api/hr/timesheets/?employee=${session.employee.id}&week_start=${weekStart}`, {
+      const response = await fetch(`/api/hr/timesheets/?employee=${employeeData.id}&week_start=${weekStart}`, {
         headers: {
-          'X-Tenant-ID': session.tenantId,
+          'X-Tenant-ID': tenantId,
         },
       });
 
@@ -199,10 +258,22 @@ export default function MobileTimesheetPage() {
   const handleClockInOut = async () => {
     console.log('🎯 [MobileTimesheet] === CLOCK IN/OUT START ===');
     console.log('🎯 [MobileTimesheet] Session:', session);
-    console.log('🎯 [MobileTimesheet] Employee ID:', session?.employee?.id);
-    console.log('🎯 [MobileTimesheet] Tenant ID:', session?.tenantId);
+    console.log('🎯 [MobileTimesheet] User email:', session?.user?.email);
+    console.log('🎯 [MobileTimesheet] Employee ID:', employeeData?.id);
+    console.log('🎯 [MobileTimesheet] Business ID:', session?.user?.business_id);
+    console.log('🎯 [MobileTimesheet] Tenant ID:', session?.user?.tenant_id || session?.user?.tenantId);
     
-    if (!session?.employee?.id || !session?.tenantId) return;
+    const tenantId = session?.user?.tenant_id || session?.user?.tenantId || session?.user?.business_id;
+    const userEmail = session?.user?.email;
+    
+    if (!userEmail || !tenantId || !employeeData?.id) {
+      console.error('🎯 [MobileTimesheet] Missing required data');
+      console.error('🎯 [MobileTimesheet] User email:', userEmail);
+      console.error('🎯 [MobileTimesheet] Tenant ID:', tenantId);
+      console.error('🎯 [MobileTimesheet] Employee:', employeeData);
+      toast.error('Employee profile not found. Please contact support.');
+      return;
+    }
     
     const today = format(new Date(), 'yyyy-MM-dd');
     const todayEntry = timesheetEntries[today];
@@ -311,63 +382,30 @@ export default function MobileTimesheetPage() {
     }
     
     try {
-      if (!currentTimesheet) {
-        // Create new timesheet for this week
-        const weekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
-        const createResponse = await fetch('/api/hr/timesheets/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Tenant-ID': session.tenantId,
-          },
-          body: JSON.stringify({
-            employee: session.employee.id,
-            week_start: weekStart,
-            status: 'DRAFT',
-          }),
-        });
-        
-        if (createResponse.ok) {
-          const newTimesheet = await createResponse.json();
-          setCurrentTimesheet(newTimesheet);
-        }
-      }
+      // Use the clock API directly
+      console.log('🎯 [MobileTimesheet] Calling clock API...');
       
+      const clockData = {
+        location_enabled: !!locationData,
+        ...(locationData && {
+          latitude: locationData.latitude,
+          longitude: locationData.longitude,
+          location_accuracy: locationData.accuracy
+        })
+      };
+      
+      let result;
       if (isClockingOut) {
-        // Clock out
-        const newHours = Math.min(currentHours + 0.5, 8); // Add 30 minutes, max 8 hours
-        await updateTimesheetEntry(today, newHours);
-        
-        // Save clock out location
-        if (locationData) {
-          await saveLocationLog({
-            ...locationData,
-            location_type: 'CLOCK_OUT',
-            timesheet_entry: todayEntry?.id,
-          });
-        }
-        
-        // Cancel any pending random checks
-        if (randomCheckTimeoutRef.current) {
-          clearTimeout(randomCheckTimeoutRef.current);
-          randomCheckTimeoutRef.current = null;
-        }
+        console.log('🎯 [MobileTimesheet] Clocking out...');
+        result = await timesheetApi.clockOut(clockData);
       } else {
-        // Clock in
-        await updateTimesheetEntry(today, 0.5);
-        
-        // Save clock in location
-        if (locationData) {
-          await saveLocationLog({
-            ...locationData,
-            location_type: 'CLOCK_IN',
-          });
-          
-          // Schedule a random location check
-          scheduleRandomCheck();
-        }
+        console.log('🎯 [MobileTimesheet] Clocking in...');
+        result = await timesheetApi.clockIn(clockData);
       }
       
+      console.log('🎯 [MobileTimesheet] Clock API result:', result);
+      
+      // Success! Refresh the timesheet data
       await loadTimesheetData();
       toast.success(isClockingOut ? 'Clocked out successfully' : 'Clocked in successfully');
     } catch (error) {
@@ -521,10 +559,15 @@ export default function MobileTimesheetPage() {
     return { status: 'completed', text: `Completed (${hours}h)`, color: 'text-blue-600' };
   };
 
-  if (loading || loadingTimesheet) {
+  if (loading || loadingEmployee || loadingTimesheet) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="mt-4 text-gray-600">
+            {loading ? 'Loading session...' : loadingEmployee ? 'Loading employee profile...' : 'Loading timesheet...'}
+          </p>
+        </div>
       </div>
     );
   }
