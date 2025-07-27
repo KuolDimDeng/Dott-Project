@@ -175,9 +175,6 @@ const nextConfig = {
     // Reduce memory usage during build
     workerThreads: false,
     cpus: 2, // Limit CPU usage for Render
-    
-    // Enable incremental cache for faster rebuilds
-    isrMemoryCacheSize: 100, // MB
   },
   
   // Environment variables (minimal set)
