@@ -125,6 +125,14 @@ const nextConfig = {
   // Enable standalone output for Docker
   output: 'standalone',
   
+  // Compiler optimizations for faster builds
+  compiler: {
+    // Remove console logs in production
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error', 'warn'],
+    } : false,
+  },
+  
   // Optimize for Render's infrastructure
   experimental: {
     // Server actions configuration (Next.js 15 format)
@@ -152,12 +160,23 @@ const nextConfig = {
       'react-hook-form',
       '@tanstack/react-query',
       'react-i18next',
-      'i18next'
+      'i18next',
+      '@sentry/nextjs',
+      'react-chartjs-2',
+      'react-table',
+      'react-datepicker',
+      'react-select-country-list',
+      'formik',
+      'yup',
+      'zustand'
     ],
     
     // Reduce memory usage during build
     workerThreads: false,
     cpus: 2, // Limit CPU usage for Render
+    
+    // Enable incremental cache for faster rebuilds
+    isrMemoryCacheSize: 100, // MB
   },
   
   // Environment variables (minimal set)
@@ -210,40 +229,74 @@ const nextConfig = {
       // Enable module concatenation
       config.optimization.concatenateModules = true;
       
-      // Optimize chunk splitting
+      // Optimize chunk splitting for faster builds and smaller bundles
       config.optimization.splitChunks = {
         chunks: 'all',
+        maxAsyncRequests: 30,
+        maxInitialRequests: 30,
+        minSize: 20000,
+        maxSize: 244000,
         cacheGroups: {
           default: false,
           vendors: false,
+          // React framework
           framework: {
             name: 'framework',
             chunks: 'all',
-            test: /[\\/]node_modules[\\/](react|react-dom|scheduler|prop-types|use-subscription)[\\/]/,
-            priority: 40,
+            test: /[\\/]node_modules[\\/](react|react-dom|scheduler|prop-types|next)[\\/]/,
+            priority: 50,
             enforce: true,
           },
-          lib: {
-            test(module) {
-              return module.size() > 160000 &&
-                /node_modules[/\\]/.test(module.identifier());
-            },
-            name(module) {
-              const hash = require('crypto')
-                .createHash('sha1')
-                .update(module.identifier())
-                .digest('hex')
-                .substring(0, 8);
-              return `lib-${hash}`;
-            },
+          // Common vendor libraries
+          vendor: {
+            name: 'vendor',
+            test: /[\\/]node_modules[\\/]/,
+            chunks: 'initial',
+            priority: 20,
+          },
+          // Async-loaded heavy libraries
+          charts: {
+            name: 'charts',
+            test: /[\\/]node_modules[\\/](recharts|chart\.js|react-chartjs)[\\/]/,
+            chunks: 'async',
             priority: 30,
-            minChunks: 1,
             reuseExistingChunk: true,
           },
+          calendar: {
+            name: 'calendar',
+            test: /[\\/]node_modules[\\/](@fullcalendar)[\\/]/,
+            chunks: 'async',
+            priority: 30,
+            reuseExistingChunk: true,
+          },
+          maps: {
+            name: 'maps',
+            test: /[\\/]node_modules[\\/](leaflet|react-leaflet)[\\/]/,
+            chunks: 'async',
+            priority: 30,
+            reuseExistingChunk: true,
+          },
+          excel: {
+            name: 'excel',
+            test: /[\\/]node_modules[\\/](xlsx|exceljs)[\\/]/,
+            chunks: 'async',
+            priority: 30,
+            reuseExistingChunk: true,
+          },
+          pdf: {
+            name: 'pdf',
+            test: /[\\/]node_modules[\\/](jspdf|pdf-lib|@react-pdf)[\\/]/,
+            chunks: 'async',
+            priority: 30,
+            reuseExistingChunk: true,
+          },
+          // Common chunks
           commons: {
             name: 'commons',
             minChunks: 2,
-            priority: 20,
+            chunks: 'initial',
+            priority: 10,
+            reuseExistingChunk: true,
           },
         },
       };

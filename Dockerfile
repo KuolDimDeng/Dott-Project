@@ -58,11 +58,13 @@ ENV NEXT_PUBLIC_CRISP_WEBSITE_ID=$NEXT_PUBLIC_CRISP_WEBSITE_ID
 ENV NEXT_PUBLIC_POSTHOG_KEY=$NEXT_PUBLIC_POSTHOG_KEY
 ENV NEXT_PUBLIC_POSTHOG_HOST=$NEXT_PUBLIC_POSTHOG_HOST
 
-# Build with cache mount for Next.js cache
+# Build with cache mount for Next.js cache and optimizations
 RUN --mount=type=cache,id=nextjs,target=/app/.next/cache \
+    --mount=type=cache,id=webpack,target=/app/node_modules/.cache \
     NODE_OPTIONS="--max-old-space-size=4096" \
     NEXT_TELEMETRY_DISABLED=1 \
-    pnpm next build
+    NEXT_PRIVATE_BUILD_WORKER=true \
+    pnpm run build:render-fast
 
 # Production stage - minimal size
 FROM node:18-alpine AS runner
