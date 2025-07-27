@@ -7,7 +7,6 @@ from .models import (
 from crm.serializers import CustomerSerializer
 from hr.serializers import EmployeeSerializer
 from inventory.serializers import ProductSerializer
-from users.serializers import UserSerializer
 
 class VehicleSerializer(serializers.ModelSerializer):
     """Serializer for Vehicle model"""

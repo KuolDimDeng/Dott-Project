@@ -100,6 +100,10 @@ class Bill(models.Model):
     poso_number = models.CharField(max_length=50, blank=True, null=True)  # Add this line if it's missing
     notes = models.TextField(blank=True, null=True)
     is_paid = models.BooleanField(default=False)
+    
+    # Link to job (optional)
+    job = models.ForeignKey('jobs.Job', on_delete=models.SET_NULL, null=True, blank=True, 
+                           related_name='bills', help_text='Link this expense to a specific job')
 
 
 

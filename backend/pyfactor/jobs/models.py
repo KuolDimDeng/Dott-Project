@@ -646,6 +646,10 @@ class JobExpense(TenantAwareModel):
     vendor_name = models.CharField(max_length=200, blank=True)
     receipt_number = models.CharField(max_length=100, blank=True)
     
+    # Link to bill (optional)
+    bill = models.ForeignKey('purchases.Bill', on_delete=models.SET_NULL, null=True, blank=True,
+                            related_name='job_expenses', help_text='Link to bill/purchase record')
+    
     added_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     
     created_at = models.DateTimeField(auto_now_add=True)

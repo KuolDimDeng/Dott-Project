@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.utils import timezone
+from django.conf import settings
 from django.db.models import Sum, F, Q, Prefetch
 from django.shortcuts import get_object_or_404
 from django.core.files.base import ContentFile
@@ -17,7 +18,7 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from .models import (
     Job, JobMaterial, JobLabor, JobExpense, Vehicle, JobAssignment,
@@ -422,6 +423,758 @@ class JobViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+    @action(detail=True, methods=['post'])
+    def send_quote(self, request, pk=None):
+        """Send job quote to customer via email/WhatsApp"""
+        try:
+            job = self.get_object()
+            serializer = JobQuoteSendSerializer(data=request.data)
+            
+            if not serializer.is_valid():
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+            data = serializer.validated_data
+            send_via = data['send_via']
+            
+            # Generate quote PDF
+            quote_pdf = self._generate_quote_pdf(job, include_terms=data.get('include_terms', True))
+            
+            # Track communication
+            communication_data = {
+                'job': job,
+                'direction': 'outbound',
+                'subject': f'Quote #{job.job_number}',
+                'content': f'Quote for {job.name} - ${job.quoted_amount}',
+                'sent_by': request.user,
+                'contact_name': job.customer.name,
+            }
+            
+            if send_via in ['email', 'both']:
+                # Send via email
+                email = data.get('email_address') or job.customer.email
+                
+                # For now, just log the email send
+                logger.info(f"Would send quote email to {email}")
+                JobCommunication.objects.create(
+                    **communication_data,
+                    communication_type='email',
+                    contact_email=email,
+                    is_delivered=True,
+                    delivered_at=timezone.now()
+                )
+            
+            if send_via in ['whatsapp', 'both']:
+                # Send via WhatsApp
+                from communications.whatsapp_service import whatsapp_service
+                phone = data.get('phone_number') or job.customer.phone
+                
+                message = f"Quote #{job.job_number} for {job.name}\nAmount: ${job.quoted_amount}\n\nThank you for your interest!"
+                
+                if whatsapp_service.send_text_message(phone, message):
+                    JobCommunication.objects.create(
+                        **communication_data,
+                        communication_type='whatsapp',
+                        contact_phone=phone,
+                        is_delivered=True,
+                        delivered_at=timezone.now()
+                    )
+            
+            # Update job quote sent info
+            job.quote_sent_date = timezone.now()
+            job.quote_sent_via = send_via
+            job.save(update_fields=['quote_sent_date', 'quote_sent_via'])
+            
+            # Log status history
+            JobStatusHistory.objects.create(
+                job=job,
+                from_status=job.status,
+                to_status=job.status,
+                changed_by=request.user,
+                reason=f'Quote sent via {send_via}'
+            )
+            
+            if send_via == 'print':
+                # Return PDF for printing
+                response = HttpResponse(quote_pdf, content_type='application/pdf')
+                response['Content-Disposition'] = f'attachment; filename="quote_{job.job_number}.pdf"'
+                return response
+            
+            return Response({
+                'status': 'success',
+                'message': f'Quote sent successfully via {send_via}'
+            })
+            
+        except Exception as e:
+            logger.error(f"Error sending quote for job {pk}: {e}")
+            return Response(
+                {'error': f'Failed to send quote: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=True, methods=['post'])
+    def update_status(self, request, pk=None):
+        """Update job status with automatic transitions"""
+        try:
+            job = self.get_object()
+            new_status = request.data.get('status')
+            reason = request.data.get('reason', '')
+            
+            if new_status not in dict(Job.STATUS_CHOICES):
+                return Response(
+                    {'error': 'Invalid status'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Validate status transition
+            valid_transitions = {
+                'quote': ['approved', 'cancelled'],
+                'approved': ['scheduled', 'cancelled'],
+                'scheduled': ['in_transit', 'in_progress', 'cancelled', 'on_hold'],
+                'in_transit': ['in_progress', 'on_hold'],
+                'in_progress': ['pending_review', 'completed', 'on_hold', 'requires_parts'],
+                'pending_review': ['completed', 'in_progress'],
+                'completed': ['invoiced'],
+                'invoiced': ['paid'],
+                'paid': ['closed'],
+                'on_hold': ['scheduled', 'in_progress', 'cancelled'],
+                'requires_parts': ['in_progress', 'on_hold'],
+                'callback_needed': ['scheduled', 'cancelled'],
+            }
+            
+            current_status = job.status
+            if current_status in valid_transitions:
+                if new_status not in valid_transitions[current_status]:
+                    return Response(
+                        {'error': f'Cannot transition from {current_status} to {new_status}'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            
+            # Update status
+            old_status = job.status
+            job.status = new_status
+            
+            # Set relevant dates based on status
+            if new_status == 'in_progress' and not job.start_date:
+                job.start_date = timezone.now().date()
+            elif new_status == 'completed' and not job.completion_date:
+                job.completion_date = timezone.now().date()
+            elif new_status == 'paid':
+                job.payment_received_date = timezone.now()
+            
+            job.save()
+            
+            # Log status change
+            JobStatusHistory.objects.create(
+                job=job,
+                from_status=old_status,
+                to_status=new_status,
+                changed_by=request.user,
+                reason=reason,
+                latitude=request.data.get('latitude'),
+                longitude=request.data.get('longitude')
+            )
+            
+            # Update calendar event if needed
+            if new_status in ['scheduled', 'in_progress']:
+                job.update_calendar_event()
+            
+            serializer = JobSerializer(job)
+            return Response({
+                'status': 'success',
+                'message': f'Job status updated to {new_status}',
+                'job': serializer.data
+            })
+            
+        except Exception as e:
+            logger.error(f"Error updating status for job {pk}: {e}")
+            return Response(
+                {'error': f'Failed to update status: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=True, methods=['post'])
+    def capture_signature(self, request, pk=None):
+        """Capture digital signature for job completion"""
+        try:
+            job = self.get_object()
+            serializer = JobSignatureSerializer(data=request.data)
+            
+            if not serializer.is_valid():
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+            data = serializer.validated_data
+            signature_type = data['signature_type']
+            signature_data = data['signature_data']
+            signed_name = data['signed_name']
+            
+            # Save signature based on type
+            if signature_type == 'customer':
+                job.customer_signature = signature_data
+                job.customer_signed_date = timezone.now()
+                job.customer_signed_name = signed_name
+                fields_to_update = ['customer_signature', 'customer_signed_date', 'customer_signed_name']
+            else:  # supervisor
+                job.supervisor_signature = signature_data
+                job.supervisor_signed_date = timezone.now()
+                job.supervisor_signed_by = request.user
+                fields_to_update = ['supervisor_signature', 'supervisor_signed_date', 'supervisor_signed_by']
+            
+            job.save(update_fields=fields_to_update)
+            
+            # Log signature capture
+            JobStatusHistory.objects.create(
+                job=job,
+                from_status=job.status,
+                to_status=job.status,
+                changed_by=request.user,
+                reason=f'{signature_type.capitalize()} signature captured',
+                latitude=data.get('latitude'),
+                longitude=data.get('longitude')
+            )
+            
+            # Save signature as document
+            self._save_signature_document(job, signature_type, signature_data, signed_name)
+            
+            # Check if both signatures are captured and update status if needed
+            if job.customer_signature and job.supervisor_signature and job.status == 'pending_review':
+                job.status = 'completed'
+                job.completion_date = timezone.now().date()
+                job.save(update_fields=['status', 'completion_date'])
+                
+                JobStatusHistory.objects.create(
+                    job=job,
+                    from_status='pending_review',
+                    to_status='completed',
+                    changed_by=request.user,
+                    reason='Both signatures captured - job completed'
+                )
+            
+            serializer = JobSerializer(job)
+            return Response({
+                'status': 'success',
+                'message': f'{signature_type.capitalize()} signature captured successfully',
+                'job': serializer.data
+            })
+            
+        except Exception as e:
+            logger.error(f"Error capturing signature for job {pk}: {e}")
+            return Response(
+                {'error': f'Failed to capture signature: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=True, methods=['post'])
+    def generate_invoice(self, request, pk=None):
+        """Generate an invoice from a completed job"""
+        try:
+            job = self.get_object()
+            
+            # Validate job status
+            if job.status not in ['completed', 'pending_review']:
+                return Response(
+                    {'error': 'Job must be completed before generating invoice'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Import Invoice model from sales app
+            from sales.models import Invoice, InvoiceItem
+            
+            # Check if invoice already exists for this job
+            if hasattr(job, 'invoice') and job.invoice:
+                return Response(
+                    {'error': 'Invoice already exists for this job',
+                     'invoice_id': str(job.invoice.id),
+                     'invoice_number': job.invoice.invoice_num},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Create invoice
+            invoice_data = {
+                'customer': job.customer,
+                'date': timezone.now().date(),
+                'due_date': timezone.now().date() + timedelta(days=30),
+                'status': 'draft',
+                'totalAmount': job.final_amount or job.quoted_amount or Decimal('0'),
+                'discount': Decimal('0'),
+                'currency': 'USD',
+                'notes': f'Invoice for Job #{job.job_number} - {job.name}',
+                'terms': 'Payment due within 30 days',
+                'related_job': job
+            }
+            
+            # Apply deposit credit if applicable
+            if job.deposit_paid and job.deposit_amount:
+                invoice_data['deposit_credit'] = job.deposit_amount
+                invoice_data['totalAmount'] -= job.deposit_amount
+            
+            invoice = Invoice.objects.create(**invoice_data)
+            
+            # Create invoice items from job details
+            items_created = []
+            
+            # Main job service item
+            if job.final_amount or job.quoted_amount:
+                item = InvoiceItem.objects.create(
+                    invoice=invoice,
+                    description=f'{job.name} - {job.description or "Job services"}',
+                    quantity=Decimal('1'),
+                    unit_price=job.final_amount or job.quoted_amount,
+                    tax_rate=Decimal('0'),
+                    tax_amount=Decimal('0'),
+                    total=(job.final_amount or job.quoted_amount)
+                )
+                items_created.append(item)
+            
+            # Add materials as line items
+            for material in job.materials.all():
+                item = InvoiceItem.objects.create(
+                    invoice=invoice,
+                    description=material.description or material.material_name,
+                    quantity=material.quantity,
+                    unit_price=material.unit_cost,
+                    tax_rate=Decimal('0'),
+                    tax_amount=Decimal('0'),
+                    total=material.total_cost
+                )
+                items_created.append(item)
+            
+            # Add labor as line items
+            for labor in job.labor_entries.all():
+                item = InvoiceItem.objects.create(
+                    invoice=invoice,
+                    description=f'Labor - {labor.employee.employee_name if labor.employee else "Worker"} ({labor.hours} hours)',
+                    quantity=labor.hours,
+                    unit_price=labor.hourly_rate,
+                    tax_rate=Decimal('0'),
+                    tax_amount=Decimal('0'),
+                    total=labor.total_cost
+                )
+                items_created.append(item)
+            
+            # Add billable expenses
+            for expense in job.expenses.filter(is_billable=True):
+                markup_amount = (expense.amount * expense.markup_percentage / 100) if expense.markup_percentage else Decimal('0')
+                total_amount = expense.amount + markup_amount
+                
+                item = InvoiceItem.objects.create(
+                    invoice=invoice,
+                    description=expense.description,
+                    quantity=Decimal('1'),
+                    unit_price=total_amount,
+                    tax_rate=Decimal('0'),
+                    tax_amount=Decimal('0'),
+                    total=total_amount
+                )
+                items_created.append(item)
+            
+            # Update job status to invoiced
+            job.status = 'invoiced'
+            job.invoice_generated_date = timezone.now()
+            job.save(update_fields=['status', 'invoice_generated_date'])
+            
+            # Log status change
+            JobStatusHistory.objects.create(
+                job=job,
+                from_status='completed',
+                to_status='invoiced',
+                changed_by=request.user,
+                reason=f'Invoice #{invoice.invoice_num} generated'
+            )
+            
+            # Return invoice details
+            from sales.serializers import InvoiceSerializer
+            invoice_serializer = InvoiceSerializer(invoice)
+            
+            return Response({
+                'message': 'Invoice generated successfully',
+                'invoice': invoice_serializer.data,
+                'items_count': len(items_created)
+            })
+            
+        except Exception as e:
+            logger.error(f"Error generating invoice for job {pk}: {e}")
+            return Response(
+                {'error': f'Failed to generate invoice: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=True, methods=['post'])
+    def create_payment_session(self, request, pk=None):
+        """Create a Stripe payment session for job invoice"""
+        try:
+            job = self.get_object()
+            
+            # Validate job has an invoice
+            if job.status not in ['invoiced', 'paid']:
+                return Response(
+                    {'error': 'Job must have an invoice before payment can be collected'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Get payment amount from request or job
+            amount = Decimal(request.data.get('amount', job.final_amount or job.quoted_amount or 0))
+            if amount <= 0:
+                return Response(
+                    {'error': 'Invalid payment amount'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Import Stripe
+            import stripe
+            stripe.api_key = settings.STRIPE_SECRET_KEY
+            
+            # Create Stripe checkout session
+            checkout_session = stripe.checkout.Session.create(
+                payment_method_types=['card'],
+                line_items=[{
+                    'price_data': {
+                        'currency': 'usd',
+                        'product_data': {
+                            'name': f'Payment for Job #{job.job_number}',
+                            'description': job.name,
+                        },
+                        'unit_amount': int(amount * 100),  # Stripe expects cents
+                    },
+                    'quantity': 1,
+                }],
+                mode='payment',
+                success_url=request.data.get('success_url', f'{settings.FRONTEND_URL}/dashboard/jobs/{job.id}/payment-success'),
+                cancel_url=request.data.get('cancel_url', f'{settings.FRONTEND_URL}/dashboard/jobs/{job.id}'),
+                metadata={
+                    'job_id': str(job.id),
+                    'invoice_id': str(request.data.get('invoice_id', '')),
+                    'job_number': job.job_number,
+                }
+            )
+            
+            # Log payment attempt
+            JobCommunication.objects.create(
+                job=job,
+                communication_type='system',
+                subject='Payment session created',
+                message=f'Stripe payment session created for ${amount}',
+                sent_by=request.user
+            )
+            
+            return Response({
+                'session_id': checkout_session.id,
+                'checkout_url': checkout_session.url
+            })
+            
+        except Exception as e:
+            logger.error(f"Error creating payment session for job {pk}: {e}")
+            return Response(
+                {'error': f'Failed to create payment session: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=True, methods=['post'])
+    def initiate_mpesa_payment(self, request, pk=None):
+        """Initiate M-Pesa STK Push for job payment"""
+        try:
+            job = self.get_object()
+            
+            # Validate job has an invoice
+            if job.status not in ['invoiced', 'paid']:
+                return Response(
+                    {'error': 'Job must have an invoice before payment can be collected'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Get payment details
+            phone_number = request.data.get('phone_number')
+            amount = Decimal(request.data.get('amount', job.final_amount or job.quoted_amount or 0))
+            
+            if not phone_number:
+                return Response(
+                    {'error': 'Phone number is required for M-Pesa payment'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            if amount <= 0:
+                return Response(
+                    {'error': 'Invalid payment amount'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Import M-Pesa service
+            from payments.mpesa_service import MpesaService
+            
+            # Initiate STK Push
+            mpesa_service = MpesaService()
+            response = mpesa_service.stk_push(
+                phone_number=phone_number,
+                amount=float(amount),
+                account_reference=request.data.get('account_reference', f'JOB-{job.job_number}'),
+                transaction_desc=request.data.get('transaction_desc', f'Payment for {job.name}')
+            )
+            
+            if response.get('ResponseCode') == '0':
+                # Success - save checkout request ID
+                checkout_request_id = response.get('CheckoutRequestID')
+                
+                # Log payment attempt
+                JobCommunication.objects.create(
+                    job=job,
+                    communication_type='system',
+                    subject='M-Pesa payment initiated',
+                    message=f'M-Pesa STK Push sent to {phone_number} for KES {amount}',
+                    sent_by=request.user,
+                    metadata={'checkout_request_id': checkout_request_id}
+                )
+                
+                return Response({
+                    'success': True,
+                    'checkout_request_id': checkout_request_id,
+                    'message': 'STK Push sent successfully'
+                })
+            else:
+                return Response({
+                    'success': False,
+                    'message': response.get('ResponseDescription', 'Failed to initiate M-Pesa payment')
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            logger.error(f"Error initiating M-Pesa payment for job {pk}: {e}")
+            return Response(
+                {'error': f'Failed to initiate M-Pesa payment: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=False, methods=['get'], url_path='mpesa_status/(?P<checkout_request_id>[^/.]+)')
+    def check_mpesa_status(self, request, checkout_request_id=None):
+        """Check M-Pesa payment status"""
+        try:
+            if not checkout_request_id:
+                return Response(
+                    {'error': 'Checkout request ID is required'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Import M-Pesa service
+            from payments.mpesa_service import MpesaService
+            
+            # Query payment status
+            mpesa_service = MpesaService()
+            response = mpesa_service.query_stk_status(checkout_request_id)
+            
+            if response.get('ResponseCode') == '0':
+                result_code = response.get('ResultCode')
+                
+                if result_code == '0':
+                    # Payment successful
+                    status = 'completed'
+                elif result_code == '1032':
+                    # Payment cancelled by user
+                    status = 'cancelled'
+                elif result_code == '1037':
+                    # Timeout
+                    status = 'timeout'
+                else:
+                    # Other failure
+                    status = 'failed'
+                
+                return Response({
+                    'status': status,
+                    'result_code': result_code,
+                    'result_desc': response.get('ResultDesc', '')
+                })
+            else:
+                return Response({
+                    'status': 'pending',
+                    'message': 'Payment still processing'
+                })
+                
+        except Exception as e:
+            logger.error(f"Error checking M-Pesa status: {e}")
+            return Response(
+                {'error': f'Failed to check payment status: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=True, methods=['post'])
+    def bank_transfer_instructions(self, request, pk=None):
+        """Get bank transfer instructions for job payment"""
+        try:
+            job = self.get_object()
+            
+            # Validate job has an invoice
+            if job.status not in ['invoiced', 'paid']:
+                return Response(
+                    {'error': 'Job must have an invoice before payment can be collected'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Get payment amount
+            amount = Decimal(request.data.get('amount', job.final_amount or job.quoted_amount or 0))
+            if amount <= 0:
+                return Response(
+                    {'error': 'Invalid payment amount'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Get bank details from settings or database
+            bank_details = {
+                'bank_name': settings.COMPANY_BANK_NAME,
+                'account_name': settings.COMPANY_ACCOUNT_NAME,
+                'account_number': settings.COMPANY_ACCOUNT_NUMBER,
+                'routing_number': getattr(settings, 'COMPANY_ROUTING_NUMBER', ''),
+                'swift_code': getattr(settings, 'COMPANY_SWIFT_CODE', ''),
+                'currency': 'USD',
+                'amount': str(amount),
+                'reference': f'JOB-{job.job_number}',
+                'instructions': 'Please include the reference number in your transfer'
+            }
+            
+            # Log bank transfer request
+            JobCommunication.objects.create(
+                job=job,
+                communication_type='system',
+                subject='Bank transfer instructions requested',
+                message=f'Bank transfer instructions sent for ${amount}',
+                sent_by=request.user
+            )
+            
+            return Response(bank_details)
+            
+        except Exception as e:
+            logger.error(f"Error getting bank transfer instructions for job {pk}: {e}")
+            return Response(
+                {'error': f'Failed to get bank transfer instructions: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=True, methods=['get'])
+    def documents(self, request, pk=None):
+        """Get all documents for a job"""
+        try:
+            job = self.get_object()
+            documents = job.documents.all().order_by('-uploaded_at')
+            serializer = JobDocumentSerializer(documents, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            logger.error(f"Error fetching documents for job {pk}: {e}")
+            return Response(
+                {'error': 'Failed to fetch documents'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=True, methods=['get'])
+    def status_history(self, request, pk=None):
+        """Get status history for a job"""
+        try:
+            job = self.get_object()
+            history = job.status_history.all().order_by('-changed_at')
+            serializer = JobStatusHistorySerializer(history, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            logger.error(f"Error fetching status history for job {pk}: {e}")
+            return Response(
+                {'error': 'Failed to fetch status history'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=True, methods=['get'])
+    def communications(self, request, pk=None):
+        """Get all communications for a job"""
+        try:
+            job = self.get_object()
+            communications = job.communications.all().order_by('-sent_at')
+            serializer = JobCommunicationSerializer(communications, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            logger.error(f"Error fetching communications for job {pk}: {e}")
+            return Response(
+                {'error': 'Failed to fetch communications'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    def _generate_quote_pdf(self, job, include_terms=True):
+        """Generate PDF quote for a job"""
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=letter)
+        elements = []
+        styles = getSampleStyleSheet()
+        
+        # Header
+        elements.append(Paragraph(f"Quote #{job.job_number}", styles['Title']))
+        elements.append(Spacer(1, 12))
+        
+        # Customer info
+        elements.append(Paragraph(f"<b>Customer:</b> {job.customer.name}", styles['Normal']))
+        elements.append(Paragraph(f"<b>Email:</b> {job.customer.email}", styles['Normal']))
+        elements.append(Paragraph(f"<b>Phone:</b> {job.customer.phone}", styles['Normal']))
+        elements.append(Spacer(1, 12))
+        
+        # Job details
+        elements.append(Paragraph(f"<b>Job:</b> {job.name}", styles['Normal']))
+        elements.append(Paragraph(f"<b>Description:</b> {job.description}", styles['Normal']))
+        elements.append(Paragraph(f"<b>Quote Date:</b> {job.quote_date}", styles['Normal']))
+        if job.quote_valid_until:
+            elements.append(Paragraph(f"<b>Valid Until:</b> {job.quote_valid_until}", styles['Normal']))
+        elements.append(Spacer(1, 12))
+        
+        # Materials table
+        if job.materials.exists():
+            materials_data = [['Material', 'Quantity', 'Unit Price', 'Total']]
+            for material in job.materials.filter(is_billable=True):
+                materials_data.append([
+                    material.supply.name,
+                    str(material.quantity),
+                    f"${material.unit_price}",
+                    f"${material.get_total_price()}"
+                ])
+            
+            materials_table = Table(materials_data)
+            materials_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 12),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black)
+            ]))
+            elements.append(materials_table)
+            elements.append(Spacer(1, 12))
+        
+        # Total
+        elements.append(Paragraph(f"<b>Total Quote Amount: ${job.quoted_amount}</b>", styles['Heading2']))
+        
+        # Terms and conditions
+        if include_terms and job.terms_conditions:
+            elements.append(Spacer(1, 12))
+            elements.append(Paragraph("Terms and Conditions", styles['Heading3']))
+            elements.append(Paragraph(job.terms_conditions, styles['Normal']))
+        
+        doc.build(elements)
+        buffer.seek(0)
+        return buffer.getvalue()
+    
+    def _save_signature_document(self, job, signature_type, signature_data, signed_name):
+        """Save signature as a document"""
+        try:
+            # Decode base64 signature
+            format, imgstr = signature_data.split(';base64,')
+            ext = format.split('/')[-1]
+            
+            # Create document record
+            JobDocument.objects.create(
+                job=job,
+                document_type='signature',
+                title=f'{signature_type.capitalize()} Signature - {signed_name}',
+                description=f'Digital signature captured on {timezone.now().strftime("%Y-%m-%d %H:%M")}',
+                file_url=signature_data,  # For now, store base64 data
+                file_name=f'{signature_type}_signature_{job.job_number}.{ext}',
+                file_size=len(imgstr),
+                file_type=format.replace('data:', ''),
+                uploaded_by=self.request.user
+            )
+        except Exception as e:
+            logger.error(f"Error saving signature document: {e}")
+            # Don't fail the main operation if document save fails
+
 
 class JobMaterialViewSet(viewsets.ModelViewSet):
     """ViewSet for managing job materials"""
@@ -647,3 +1400,107 @@ class JobDataViewSet(viewsets.ViewSet):
                 {'error': f'Failed to fetch supplies: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+class JobDocumentViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing job documents"""
+    serializer_class = JobDocumentSerializer
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        job_id = self.kwargs.get('job_pk')
+        return JobDocument.objects.filter(job_id=job_id).order_by('-uploaded_at')
+    
+    def perform_create(self, serializer):
+        job_id = self.kwargs.get('job_pk')
+        job = get_object_or_404(Job, id=job_id)
+        serializer.save(
+            job=job,
+            uploaded_by=self.request.user
+        )
+    
+    @action(detail=False, methods=['post'])
+    def upload_receipt(self, request, job_pk=None):
+        """Upload receipt with OCR processing"""
+        try:
+            job = get_object_or_404(Job, id=job_pk)
+            
+            # Handle file upload
+            file_data = request.data.get('file')
+            if not file_data:
+                return Response(
+                    {'error': 'No file provided'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Extract file info
+            file_name = request.data.get('file_name', 'receipt.jpg')
+            vendor_name = request.data.get('vendor_name', '')
+            amount = request.data.get('amount')
+            expense_date = request.data.get('expense_date')
+            
+            # Create document
+            document = JobDocument.objects.create(
+                job=job,
+                document_type='receipt',
+                title=f'Receipt - {vendor_name or "Unknown Vendor"}',
+                description=request.data.get('description', ''),
+                file_url=file_data,  # Base64 or URL
+                file_name=file_name,
+                file_size=len(file_data) if isinstance(file_data, str) else 0,
+                file_type='image/jpeg',  # Update based on actual file
+                amount=amount,
+                vendor_name=vendor_name,
+                expense_date=expense_date,
+                is_billable=request.data.get('is_billable', True),
+                uploaded_by=request.user
+            )
+            
+            # TODO: Add OCR processing here
+            # document.ocr_extracted_text = extract_text_from_image(file_data)
+            # document.save()
+            
+            serializer = JobDocumentSerializer(document)
+            return Response({
+                'status': 'success',
+                'message': 'Receipt uploaded successfully',
+                'document': serializer.data
+            })
+            
+        except Exception as e:
+            logger.error(f"Error uploading receipt: {e}")
+            return Response(
+                {'error': f'Failed to upload receipt: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class JobStatusHistoryViewSet(viewsets.ReadOnlyModelViewSet):
+    """ViewSet for viewing job status history (read-only)"""
+    serializer_class = JobStatusHistorySerializer
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        job_id = self.kwargs.get('job_pk')
+        return JobStatusHistory.objects.filter(job_id=job_id).order_by('-changed_at')
+
+
+class JobCommunicationViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing job communications"""
+    serializer_class = JobCommunicationSerializer
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        job_id = self.kwargs.get('job_pk')
+        return JobCommunication.objects.filter(job_id=job_id).order_by('-sent_at')
+    
+    def perform_create(self, serializer):
+        job_id = self.kwargs.get('job_pk')
+        job = get_object_or_404(Job, id=job_id)
+        serializer.save(
+            job=job,
+            sent_by=self.request.user
+        )

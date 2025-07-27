@@ -264,6 +264,8 @@ const ProductManagement = enhancedLazy(() => import('./forms/ProductManagement.j
 const SuppliesManagement = enhancedLazy(() => import('./forms/inventory/SuppliesManagement.js'), 'Supplies Management');
 const BillOfMaterialsManagement = enhancedLazy(() => import('./forms/inventory/BillOfMaterialsManagement.js'), 'Bill of Materials Management');
 const JobManagement = enhancedLazy(() => import('./jobs/JobManagement.js'), 'Job Management');
+const JobDashboard = enhancedLazy(() => import('./jobs/JobDashboard.js'), 'Job Dashboard');
+const JobReportsManagement = enhancedLazy(() => import('./jobs/JobReportsManagement.js'), 'Job Reports Management');
 const MainDashboard = enhancedLazy(() => import('./dashboards/MainDashboard'), 'Main Dashboard');
 const BankTransactions = enhancedLazy(() => import('./forms/BankTransactionPage'), 'Bank Transactions');
 const HRDashboard = enhancedLazy(() => import('./forms/HRDashboard.js'), 'HR Dashboard');
@@ -2116,6 +2118,77 @@ const RenderMainContent = React.memo(function RenderMainContent({
             <ContentWrapperWithKey>
               <SuspenseWithCleanup componentKey={`analytics-legacy-${navigationKey || 'default'}`}>
                 <LegacyAnalyticsComponent onNavigate={handleSetView} />
+              </SuspenseWithCleanup>
+            </ContentWrapperWithKey>
+          );
+        }
+      }
+
+      // Handle Jobs views
+      if (view && (view.startsWith('jobs-') || view.startsWith('job-'))) {
+        console.log('[RenderMainContent] Rendering jobs view:', view);
+        
+        let JobComponent = null;
+        let componentName = '';
+        
+        switch(view) {
+          case 'jobs-dashboard':
+            componentName = 'JobDashboard';
+            JobComponent = JobDashboard;
+            break;
+          case 'jobs-list':
+          case 'job-list':
+            componentName = 'JobManagement';
+            JobComponent = JobManagement;
+            break;
+          case 'job-costing':
+            componentName = 'JobManagement';
+            JobComponent = () => <JobManagement view="job-costing" />;
+            break;
+          case 'job-materials':
+            componentName = 'JobManagement';
+            JobComponent = () => <JobManagement view="job-materials" />;
+            break;
+          case 'job-labor':
+            componentName = 'JobManagement';
+            JobComponent = () => <JobManagement view="job-labor" />;
+            break;
+          case 'job-profitability':
+            componentName = 'JobManagement';
+            JobComponent = () => <JobManagement view="job-profitability" />;
+            break;
+          case 'vehicles':
+            componentName = 'JobManagement';
+            JobComponent = () => <JobManagement view="vehicles" />;
+            break;
+          case 'jobs-reports':
+            componentName = 'JobReportsManagement';
+            JobComponent = JobReportsManagement;
+            break;
+          default:
+            console.warn('[RenderMainContent] Unknown jobs view:', view);
+            return (
+              <ContentWrapperWithKey>
+                <div className="p-4">
+                  <h1 className="text-xl font-semibold mb-2">Jobs Feature</h1>
+                  <p>This jobs feature is not yet implemented: {view}</p>
+                </div>
+              </ContentWrapperWithKey>
+            );
+        }
+        
+        if (JobComponent) {
+          return (
+            <ContentWrapperWithKey>
+              <SuspenseWithCleanup 
+                componentKey={`${componentKey}-${view}`}
+                fallback={
+                  <div className="flex justify-center items-center h-64">
+                    <StandardSpinner size="large" />
+                  </div>
+                }
+              >
+                <JobComponent />
               </SuspenseWithCleanup>
             </ContentWrapperWithKey>
           );

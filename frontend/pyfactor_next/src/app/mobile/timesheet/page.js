@@ -219,10 +219,24 @@ export default function MobileTimesheetPage() {
       if (response.ok) {
         const data = await response.json();
         console.log('🎯 [MobileTimesheet] Geofences data:', data);
-        const activeGeofences = data
-          .filter(eg => eg.is_active && eg.geofence?.is_active)
-          .map(eg => eg.geofence);
-        setEmployeeGeofences(activeGeofences);
+        
+        // Handle different response formats and ensure data is an array
+        let geofencesList = data;
+        if (data && typeof data === 'object' && 'results' in data) {
+          geofencesList = data.results;
+        } else if (data && typeof data === 'object' && 'data' in data) {
+          geofencesList = data.data;
+        }
+        
+        if (Array.isArray(geofencesList)) {
+          const activeGeofences = geofencesList
+            .filter(eg => eg.is_active && eg.geofence?.is_active)
+            .map(eg => eg.geofence);
+          setEmployeeGeofences(activeGeofences);
+        } else {
+          console.error('🎯 [MobileTimesheet] Geofences response is not an array:', geofencesList);
+          setEmployeeGeofences([]);
+        }
       }
     } catch (error) {
       console.error('Error loading geofences:', error);
@@ -299,10 +313,12 @@ export default function MobileTimesheetPage() {
   };
 
   const loadTimesheetEntries = async (timesheetId) => {
+    const tenantId = session?.user?.tenant_id || session?.user?.tenantId || session?.user?.business_id;
+    
     try {
       const response = await fetch(`/api/hr/timesheets/${timesheetId}/entries/`, {
         headers: {
-          'X-Tenant-ID': session.tenantId,
+          'X-Tenant-ID': tenantId,
         },
       });
 
@@ -425,7 +441,7 @@ export default function MobileTimesheetPage() {
           if (insideAnyGeofence) {
             const insideGeofence = checkResults.find(r => r.isInside);
             await logGeofenceEvent({
-              employee_id: session.employee.id,
+              employee_id: employeeData.id,
               geofence_id: insideGeofence.geofence.id,
               event_type: isClockingOut ? 'CLOCK_OUT' : 'CLOCK_IN',
               latitude: location.latitude,
@@ -482,15 +498,17 @@ export default function MobileTimesheetPage() {
   
   // Save location log to backend
   const saveLocationLog = async (locationData) => {
+    const tenantId = session?.user?.tenant_id || session?.user?.tenantId || session?.user?.business_id;
+    
     try {
       const response = await fetch('/api/hr/location-logs/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Tenant-ID': session.tenantId,
+          'X-Tenant-ID': tenantId,
         },
         body: JSON.stringify({
-          employee: session.employee.id,
+          employee: employeeData.id,
           ...locationData,
           captured_at: new Date().toISOString(),
         }),
@@ -506,12 +524,14 @@ export default function MobileTimesheetPage() {
   
   // Log geofence event
   const logGeofenceEvent = async (eventData) => {
+    const tenantId = session?.user?.tenant_id || session?.user?.tenantId || session?.user?.business_id;
+    
     try {
       const response = await fetch('/api/hr/geofence-events/log_event/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Tenant-ID': session.tenantId,
+          'X-Tenant-ID': tenantId,
         },
         body: JSON.stringify(eventData),
       });
@@ -585,6 +605,7 @@ export default function MobileTimesheetPage() {
   };
 
   const updateTimesheetEntry = async (date, hours) => {
+    const tenantId = session?.user?.tenant_id || session?.user?.tenantId || session?.user?.business_id;
     const entry = timesheetEntries[date];
     const method = entry ? 'PUT' : 'POST';
     const url = entry ? 
@@ -595,7 +616,7 @@ export default function MobileTimesheetPage() {
       method,
       headers: {
         'Content-Type': 'application/json',
-        'X-Tenant-ID': session.tenantId,
+        'X-Tenant-ID': tenantId,
       },
       body: JSON.stringify({
         timesheet: currentTimesheet.id,
@@ -846,8 +867,8 @@ export default function MobileTimesheetPage() {
           onAccept={() => handleLocationConsent(true)}
           onDecline={() => handleLocationConsent(false)}
           showAlways={false}
-          employeeId={session.employee?.id}
-          tenantId={session.tenantId}
+          employeeId={employeeData?.id}
+          tenantId={session?.user?.tenant_id || session?.user?.tenantId || session?.user?.business_id}
         />
       )}
     </div>

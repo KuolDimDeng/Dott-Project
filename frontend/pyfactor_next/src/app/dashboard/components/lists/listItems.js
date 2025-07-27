@@ -924,6 +924,21 @@ const MainListItems = ({
       label: t('mainMenu.jobs'),
       subItems: [
         { 
+          label: t('subMenu.dashboard'), 
+          onClick: (value) => {
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'jobs-dashboard', 
+              navigationKey,
+              originalItem: 'Dashboard'
+            };
+            
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+          }, 
+          value: 'jobs-dashboard' 
+        },
+        { 
           label: t('subMenu.jobsList'), 
           onClick: (value) => {
             const navigationKey = `nav-${Date.now()}`;
@@ -1012,6 +1027,21 @@ const MainListItems = ({
             window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
           }, 
           value: 'vehicles' 
+        },
+        { 
+          label: t('mainMenu.reports'), 
+          onClick: (value) => {
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'jobs-reports', 
+              navigationKey,
+              originalItem: 'Reports'
+            };
+            
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+          }, 
+          value: 'jobs-reports' 
         },
       ],
     },
