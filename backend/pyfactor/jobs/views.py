@@ -6,14 +6,28 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.utils import timezone
 from django.db.models import Sum, F, Q, Prefetch
 from django.shortcuts import get_object_or_404
+from django.core.files.base import ContentFile
+from django.http import HttpResponse
 from decimal import Decimal
 import logging
+import json
+import base64
+from io import BytesIO
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
+from datetime import datetime
 
-from .models import Job, JobMaterial, JobLabor, JobExpense, Vehicle, JobAssignment
+from .models import (
+    Job, JobMaterial, JobLabor, JobExpense, Vehicle, JobAssignment,
+    JobDocument, JobStatusHistory, JobCommunication
+)
 from .serializers import (
     JobSerializer, JobDetailSerializer, JobMaterialSerializer, 
     JobLaborSerializer, JobExpenseSerializer, JobCostingSerializer,
-    VehicleSerializer
+    VehicleSerializer, JobDocumentSerializer, JobStatusHistorySerializer,
+    JobCommunicationSerializer, JobQuoteSendSerializer, JobSignatureSerializer
 )
 
 logger = logging.getLogger(__name__)

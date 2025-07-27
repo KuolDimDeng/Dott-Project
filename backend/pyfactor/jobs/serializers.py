@@ -1,9 +1,13 @@
 from rest_framework import serializers
 from decimal import Decimal
-from .models import Job, JobMaterial, JobLabor, JobExpense, Vehicle, JobAssignment
+from .models import (
+    Job, JobMaterial, JobLabor, JobExpense, Vehicle, JobAssignment,
+    JobDocument, JobStatusHistory, JobCommunication, JobInvoice
+)
 from crm.serializers import CustomerSerializer
 from hr.serializers import EmployeeSerializer
 from inventory.serializers import ProductSerializer
+from users.serializers import UserSerializer
 
 class VehicleSerializer(serializers.ModelSerializer):
     """Serializer for Vehicle model"""
@@ -42,14 +46,20 @@ class JobSerializer(serializers.ModelSerializer):
     recurrence_pattern_display = serializers.CharField(source='get_recurrence_pattern_display', read_only=True)
     recurrence_day_of_week_display = serializers.CharField(source='get_recurrence_day_of_week_display', read_only=True)
     recurring_instances_count = serializers.SerializerMethodField()
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
     
     class Meta:
         model = Job
         fields = [
             'id', 'job_number', 'name', 'description', 'customer', 'customer_name',
-            'status', 'quote_date', 'scheduled_date', 'start_date', 'completion_date',
+            'status', 'status_display', 'quote_date', 'scheduled_date', 'start_date', 'completion_date',
             'job_street', 'job_city', 'job_state', 'job_zip', 'job_country',
-            'quoted_amount', 'labor_rate', 'lead_employee', 'lead_employee_name',
+            'quoted_amount', 'labor_rate', 'deposit_amount', 'deposit_paid', 'final_amount',
+            'quote_valid_until', 'quote_sent_date', 'quote_sent_via', 'quote_version',
+            'terms_conditions', 'customer_signature', 'customer_signed_date', 'customer_signed_name',
+            'supervisor_signature', 'supervisor_signed_date', 'supervisor_signed_by',
+            'last_customer_contact', 'internal_notes', 'invoice_id', 'invoice_sent_date',
+            'payment_received_date', 'lead_employee', 'lead_employee_name',
             'assigned_employees', 'vehicle', 'vehicle_info',
             'is_recurring', 'recurrence_pattern', 'recurrence_pattern_display',
             'recurrence_end_date', 'recurrence_day_of_week', 'recurrence_day_of_week_display',
@@ -178,3 +188,96 @@ class JobCostingSerializer(serializers.Serializer):
     material_count = serializers.IntegerField()
     labor_entries_count = serializers.IntegerField()
     expense_count = serializers.IntegerField()
+
+
+class JobDocumentSerializer(serializers.ModelSerializer):
+    """Serializer for JobDocument model"""
+    uploaded_by_name = serializers.CharField(source='uploaded_by.get_full_name', read_only=True)
+    document_type_display = serializers.CharField(source='get_document_type_display', read_only=True)
+    
+    class Meta:
+        model = JobDocument
+        fields = [
+            'id', 'job', 'document_type', 'document_type_display', 'title', 'description',
+            'file_url', 'file_name', 'file_size', 'file_type',
+            'amount', 'vendor_name', 'expense_date', 'is_billable',
+            'uploaded_by', 'uploaded_by_name', 'uploaded_at',
+            'ocr_extracted_text', 'ocr_confidence'
+        ]
+        read_only_fields = ['id', 'uploaded_at', 'uploaded_by_name', 'document_type_display']
+
+
+class JobStatusHistorySerializer(serializers.ModelSerializer):
+    """Serializer for JobStatusHistory model"""
+    changed_by_name = serializers.CharField(source='changed_by.get_full_name', read_only=True)
+    from_status_display = serializers.CharField(source='get_from_status_display', read_only=True)
+    to_status_display = serializers.CharField(source='get_to_status_display', read_only=True)
+    
+    class Meta:
+        model = JobStatusHistory
+        fields = [
+            'id', 'job', 'from_status', 'from_status_display', 
+            'to_status', 'to_status_display',
+            'changed_by', 'changed_by_name', 'changed_at',
+            'reason', 'latitude', 'longitude'
+        ]
+        read_only_fields = ['id', 'changed_at', 'changed_by_name']
+
+
+class JobCommunicationSerializer(serializers.ModelSerializer):
+    """Serializer for JobCommunication model"""
+    sent_by_name = serializers.CharField(source='sent_by.get_full_name', read_only=True)
+    communication_type_display = serializers.CharField(source='get_communication_type_display', read_only=True)
+    direction_display = serializers.CharField(source='get_direction_display', read_only=True)
+    
+    class Meta:
+        model = JobCommunication
+        fields = [
+            'id', 'job', 'communication_type', 'communication_type_display',
+            'direction', 'direction_display', 'subject', 'content',
+            'contact_name', 'contact_email', 'contact_phone',
+            'sent_by', 'sent_by_name', 'sent_at',
+            'is_delivered', 'delivered_at', 'is_read', 'read_at',
+            'has_attachments', 'attachment_urls'
+        ]
+        read_only_fields = ['id', 'sent_at', 'sent_by_name']
+
+
+class JobInvoiceSerializer(serializers.ModelSerializer):
+    """Serializer for JobInvoice model"""
+    invoice_number = serializers.CharField(source='invoice.invoice_number', read_only=True)
+    invoice_total = serializers.DecimalField(source='invoice.total_amount', read_only=True, max_digits=10, decimal_places=2)
+    
+    class Meta:
+        model = JobInvoice
+        fields = [
+            'id', 'job', 'invoice', 'invoice_number', 'invoice_total',
+            'includes_materials', 'includes_labor', 'includes_expenses',
+            'materials_percentage', 'labor_percentage', 'created_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'invoice_number', 'invoice_total']
+
+
+class JobQuoteSendSerializer(serializers.Serializer):
+    """Serializer for sending job quotes"""
+    send_via = serializers.ChoiceField(choices=['email', 'whatsapp', 'both', 'print'])
+    email_address = serializers.EmailField(required=False)
+    phone_number = serializers.CharField(required=False)
+    include_terms = serializers.BooleanField(default=True)
+    
+    def validate(self, data):
+        send_via = data.get('send_via')
+        if send_via in ['email', 'both'] and not data.get('email_address'):
+            raise serializers.ValidationError("Email address is required when sending via email")
+        if send_via in ['whatsapp', 'both'] and not data.get('phone_number'):
+            raise serializers.ValidationError("Phone number is required when sending via WhatsApp")
+        return data
+
+
+class JobSignatureSerializer(serializers.Serializer):
+    """Serializer for capturing job signatures"""
+    signature_type = serializers.ChoiceField(choices=['customer', 'supervisor'])
+    signature_data = serializers.CharField(help_text="Base64 encoded signature image")
+    signed_name = serializers.CharField(max_length=200)
+    latitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=False)
+    longitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=False)

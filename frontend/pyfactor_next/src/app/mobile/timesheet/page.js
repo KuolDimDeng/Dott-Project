@@ -85,50 +85,84 @@ export default function MobileTimesheetPage() {
     console.log('🎯 [MobileTimesheet] === FETCHING EMPLOYEE DATA ===');
     console.log('🎯 [MobileTimesheet] User email:', session?.user?.email);
     console.log('🎯 [MobileTimesheet] Full session:', session);
+    console.log('🎯 [MobileTimesheet] Tenant ID from session:', session?.user?.tenant_id || session?.user?.tenantId);
     
     if (!session?.user?.email) {
       console.log('🎯 [MobileTimesheet] No user email in session, skipping employee fetch');
       return;
     }
     
+    const tenantId = session?.user?.tenant_id || session?.user?.tenantId || session?.user?.business_id;
+    if (!tenantId) {
+      console.error('🎯 [MobileTimesheet] No tenant ID found in session');
+      return;
+    }
+    
     setLoadingEmployee(true);
     try {
-      // First try to get employee by user email
-      const response = await fetch('/api/hr/v2/employees/me', {
+      // Try to get all employees and filter by email
+      const response = await fetch('/api/hr/v2/employees/', {
         credentials: 'include',
+        headers: {
+          'X-Tenant-ID': tenantId,
+        },
       });
       
-      console.log('🎯 [MobileTimesheet] Employee API response status:', response.status);
-      console.log('🎯 [MobileTimesheet] Employee API response headers:', Object.fromEntries(response.headers));
+      console.log('🎯 [MobileTimesheet] Employees API response status:', response.status);
+      console.log('🎯 [MobileTimesheet] Employees API response headers:', Object.fromEntries(response.headers));
       
       if (response.ok) {
         const responseText = await response.text();
-        console.log('🎯 [MobileTimesheet] Raw employee response:', responseText);
+        console.log('🎯 [MobileTimesheet] Raw employees response:', responseText.substring(0, 500));
         
         try {
           const data = JSON.parse(responseText);
-          console.log('🎯 [MobileTimesheet] Parsed employee data:', data);
-          console.log('🎯 [MobileTimesheet] Employee data structure:', {
-            hasSuccess: 'success' in data,
-            hasData: 'data' in data,
+          console.log('🎯 [MobileTimesheet] Parsed employees data:', {
             dataType: typeof data,
-            dataKeys: Object.keys(data),
-            actualData: data.data || data
+            isArray: Array.isArray(data),
+            count: Array.isArray(data) ? data.length : 'N/A',
+            hasResults: data?.results ? data.results.length : 'N/A'
           });
           
-          // Handle the success/data wrapper
-          const employeeInfo = data.data || data;
-          console.log('🎯 [MobileTimesheet] Setting employee data:', employeeInfo);
-          setEmployeeData(employeeInfo);
+          // Handle different response formats
+          let employeesList = data;
+          if (data && typeof data === 'object' && 'results' in data) {
+            employeesList = data.results;
+          } else if (data && typeof data === 'object' && 'data' in data) {
+            employeesList = data.data;
+          }
+          
+          // Find employee by email
+          if (Array.isArray(employeesList)) {
+            console.log('🎯 [MobileTimesheet] Searching for employee with email:', session.user.email);
+            const currentUserEmployee = employeesList.find(emp => 
+              emp.email === session.user.email || 
+              emp.user?.email === session.user.email
+            );
+            
+            if (currentUserEmployee) {
+              console.log('🎯 [MobileTimesheet] Found employee:', currentUserEmployee);
+              setEmployeeData(currentUserEmployee);
+            } else {
+              console.error('🎯 [MobileTimesheet] No employee found with email:', session.user.email);
+              console.log('🎯 [MobileTimesheet] Available employees:', employeesList.map(e => ({
+                id: e.id,
+                email: e.email,
+                userEmail: e.user?.email
+              })));
+            }
+          } else {
+            console.error('🎯 [MobileTimesheet] Employees response is not an array:', employeesList);
+          }
         } catch (parseError) {
-          console.error('🎯 [MobileTimesheet] Failed to parse employee JSON:', parseError);
+          console.error('🎯 [MobileTimesheet] Failed to parse employees JSON:', parseError);
         }
       } else {
         const errorText = await response.text();
-        console.error('🎯 [MobileTimesheet] Failed to fetch employee data:', {
+        console.error('🎯 [MobileTimesheet] Failed to fetch employees data:', {
           status: response.status,
           statusText: response.statusText,
-          error: errorText
+          error: errorText.substring(0, 500)
         });
       }
     } catch (error) {

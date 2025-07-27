@@ -6,6 +6,14 @@ const BACKEND_URL = process.env.BACKEND_URL || 'https://api.dottapps.com';
 export async function GET(request) {
   console.log('[EmployeeMeAPI] === GET /api/hr/v2/employees/me START ===');
   
+  // Log all headers
+  console.log('[EmployeeMeAPI] Request headers:');
+  request.headers.forEach((value, key) => {
+    if (key.toLowerCase().includes('cookie') || key.toLowerCase().includes('auth')) {
+      console.log(`[EmployeeMeAPI]   ${key}: ${value.substring(0, 50)}...`);
+    }
+  });
+  
   try {
     const cookieStore = cookies();
     const sid = cookieStore.get('sid');
@@ -14,8 +22,13 @@ export async function GET(request) {
     console.log('[EmployeeMeAPI] Cookies:', {
       hasSid: !!sid,
       hasTenantId: !!tenantId,
+      sidValue: sid?.value ? sid.value.substring(0, 8) + '...' : 'none',
       tenantIdValue: tenantId?.value
     });
+    
+    // Also check for sessionToken cookie as fallback
+    const sessionToken = cookieStore.get('sessionToken');
+    console.log('[EmployeeMeAPI] SessionToken cookie:', sessionToken ? 'found' : 'not found');
     
     if (!sid) {
       console.error('[EmployeeMeAPI] No session cookie found');

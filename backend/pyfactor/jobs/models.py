@@ -110,12 +110,19 @@ class Job(TenantAwareModel):
     
     STATUS_CHOICES = [
         ('quote', 'Quote'),
+        ('approved', 'Approved'),
         ('scheduled', 'Scheduled'),
+        ('in_transit', 'In Transit'),
         ('in_progress', 'In Progress'),
+        ('pending_review', 'Pending Review'),
         ('completed', 'Completed'),
         ('invoiced', 'Invoiced'),
         ('paid', 'Paid'),
+        ('closed', 'Closed'),
         ('cancelled', 'Cancelled'),
+        ('on_hold', 'On Hold'),
+        ('requires_parts', 'Requires Parts'),
+        ('callback_needed', 'Callback Needed'),
     ]
     
     RECURRENCE_PATTERN_CHOICES = [
@@ -161,6 +168,46 @@ class Job(TenantAwareModel):
     quoted_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     labor_rate = models.DecimalField(max_digits=6, decimal_places=2, default=0, 
                                     help_text="Hourly labor rate for this job")
+    deposit_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0,
+                                       help_text="Deposit amount required")
+    deposit_paid = models.BooleanField(default=False)
+    final_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0,
+                                     help_text="Final invoiced amount (may differ from quote)")
+    
+    # Quote management
+    quote_valid_until = models.DateField(null=True, blank=True,
+                                       help_text="Quote expiration date")
+    quote_sent_date = models.DateTimeField(null=True, blank=True)
+    quote_sent_via = models.CharField(max_length=50, blank=True,
+                                    help_text="How quote was sent (email, whatsapp, etc)")
+    quote_version = models.IntegerField(default=1,
+                                      help_text="Quote revision number")
+    terms_conditions = models.TextField(blank=True,
+                                      help_text="Job-specific terms and conditions")
+    
+    # Signatures and approvals
+    customer_signature = models.TextField(blank=True,
+                                        help_text="Base64 encoded customer signature")
+    customer_signed_date = models.DateTimeField(null=True, blank=True)
+    customer_signed_name = models.CharField(max_length=200, blank=True)
+    
+    supervisor_signature = models.TextField(blank=True,
+                                          help_text="Base64 encoded supervisor signature")
+    supervisor_signed_date = models.DateTimeField(null=True, blank=True)
+    supervisor_signed_by = models.ForeignKey(User, on_delete=models.SET_NULL, 
+                                           null=True, blank=True,
+                                           related_name='supervised_jobs')
+    
+    # Communication tracking
+    last_customer_contact = models.DateTimeField(null=True, blank=True)
+    internal_notes = models.TextField(blank=True,
+                                    help_text="Internal notes not visible to customer")
+    
+    # Invoice reference
+    invoice_id = models.CharField(max_length=50, blank=True,
+                                help_text="Reference to invoice if created")
+    invoice_sent_date = models.DateTimeField(null=True, blank=True)
+    payment_received_date = models.DateTimeField(null=True, blank=True)
     
     # Recurring job fields
     is_recurring = models.BooleanField(default=False, help_text='Is this a recurring job?')
@@ -620,6 +667,152 @@ class JobExpense(TenantAwareModel):
         if not self.is_billable:
             return Decimal('0')
         return self.amount * (1 + self.markup_percentage / 100)
+
+
+class JobDocument(TenantAwareModel):
+    """Store documents related to a job"""
+    
+    DOCUMENT_TYPE_CHOICES = [
+        ('contract', 'Contract'),
+        ('receipt', 'Receipt'),
+        ('invoice', 'Vendor Invoice'),
+        ('photo_before', 'Before Photo'),
+        ('photo_progress', 'Progress Photo'),
+        ('photo_after', 'After Photo'),
+        ('permit', 'Permit/License'),
+        ('equipment_rental', 'Equipment Rental'),
+        ('completion_cert', 'Completion Certificate'),
+        ('signature', 'Signature Document'),
+        ('quote', 'Quote Document'),
+        ('change_order', 'Change Order'),
+        ('other', 'Other'),
+    ]
+    
+    job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name='documents')
+    document_type = models.CharField(max_length=20, choices=DOCUMENT_TYPE_CHOICES)
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    
+    # File storage
+    file_url = models.URLField(help_text="URL to document in cloud storage")
+    file_name = models.CharField(max_length=255)
+    file_size = models.IntegerField(help_text="File size in bytes")
+    file_type = models.CharField(max_length=50, help_text="MIME type")
+    
+    # For receipts/expenses
+    amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True,
+                               help_text="Amount for receipts/invoices")
+    vendor_name = models.CharField(max_length=200, blank=True)
+    expense_date = models.DateField(null=True, blank=True)
+    is_billable = models.BooleanField(default=True,
+                                    help_text="Can this expense be billed to customer")
+    
+    # Metadata
+    uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    
+    # OCR data (for future implementation)
+    ocr_extracted_text = models.TextField(blank=True,
+                                        help_text="Text extracted via OCR")
+    ocr_confidence = models.FloatField(null=True, blank=True,
+                                     help_text="OCR confidence score")
+    
+    objects = TenantManager()
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['tenant_id', 'job']),
+            models.Index(fields=['tenant_id', 'document_type']),
+            models.Index(fields=['tenant_id', 'uploaded_at']),
+        ]
+        ordering = ['-uploaded_at']
+        
+    def __str__(self):
+        return f"{self.title} - {self.get_document_type_display()}"
+
+
+class JobStatusHistory(TenantAwareModel):
+    """Track job status changes for audit trail"""
+    
+    job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name='status_history')
+    from_status = models.CharField(max_length=20, choices=Job.STATUS_CHOICES, blank=True)
+    to_status = models.CharField(max_length=20, choices=Job.STATUS_CHOICES)
+    changed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    changed_at = models.DateTimeField(auto_now_add=True)
+    reason = models.TextField(blank=True, help_text="Reason for status change")
+    
+    # Location data for mobile status changes
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    
+    objects = TenantManager()
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['tenant_id', 'job']),
+            models.Index(fields=['tenant_id', 'changed_at']),
+        ]
+        ordering = ['-changed_at']
+        
+    def __str__(self):
+        return f"{self.job.job_number}: {self.from_status or 'New'} → {self.to_status}"
+
+
+class JobCommunication(TenantAwareModel):
+    """Track all communications related to a job"""
+    
+    COMMUNICATION_TYPE_CHOICES = [
+        ('email', 'Email'),
+        ('whatsapp', 'WhatsApp'),
+        ('sms', 'SMS'),
+        ('phone', 'Phone Call'),
+        ('in_person', 'In Person'),
+        ('internal', 'Internal Note'),
+    ]
+    
+    DIRECTION_CHOICES = [
+        ('outbound', 'Sent to Customer'),
+        ('inbound', 'Received from Customer'),
+        ('internal', 'Internal'),
+    ]
+    
+    job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name='communications')
+    communication_type = models.CharField(max_length=20, choices=COMMUNICATION_TYPE_CHOICES)
+    direction = models.CharField(max_length=20, choices=DIRECTION_CHOICES)
+    
+    subject = models.CharField(max_length=200, blank=True)
+    content = models.TextField()
+    
+    # Contact details
+    contact_name = models.CharField(max_length=200, blank=True)
+    contact_email = models.EmailField(blank=True)
+    contact_phone = models.CharField(max_length=20, blank=True)
+    
+    # Tracking
+    sent_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='job_communications_sent')
+    sent_at = models.DateTimeField(auto_now_add=True)
+    
+    # Delivery status
+    is_delivered = models.BooleanField(default=False)
+    delivered_at = models.DateTimeField(null=True, blank=True)
+    is_read = models.BooleanField(default=False)
+    read_at = models.DateTimeField(null=True, blank=True)
+    
+    # Attachments
+    has_attachments = models.BooleanField(default=False)
+    attachment_urls = models.JSONField(default=list, blank=True)
+    
+    objects = TenantManager()
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['tenant_id', 'job']),
+            models.Index(fields=['tenant_id', 'sent_at']),
+        ]
+        ordering = ['-sent_at']
+        
+    def __str__(self):
+        return f"{self.get_communication_type_display()} - {self.subject or 'No subject'}"
 
 
 class JobInvoice(TenantAwareModel):
