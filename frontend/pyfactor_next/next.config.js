@@ -222,6 +222,23 @@ const nextConfig = {
   
   // Optimized webpack config for Render
   webpack: (config, { isServer, dev, webpack }) => {
+    // Fix "self is not defined" error for server-side builds
+    if (isServer) {
+      // Provide polyfill for 'self' global
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        self: path.resolve(__dirname, 'src/utils/webpack-self-polyfill.js'),
+      };
+      
+      // Also inject polyfill at the beginning of server bundles
+      config.plugins.push(
+        new webpack.BannerPlugin({
+          banner: 'if (typeof self === "undefined") { global.self = global; }',
+          raw: true,
+          entryOnly: false,
+        })
+      );
+    }
     
     // Production optimizations
     if (!dev) {
@@ -342,6 +359,11 @@ const nextConfig = {
       net: false,
       tls: false,
     };
+    
+    // Additional fix for self is not defined
+    if (!isServer) {
+      config.resolve.fallback.self = false;
+    }
 
     // Exclude heavy dependencies
     config.externals = [
