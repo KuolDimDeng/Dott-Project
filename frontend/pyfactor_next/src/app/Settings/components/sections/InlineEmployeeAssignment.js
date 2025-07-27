@@ -53,23 +53,47 @@ const InlineEmployeeAssignment = ({ geofence, onAssignmentComplete, isExpanded, 
   const fetchAssignedEmployees = async () => {
     try {
       console.log('🎯 [InlineEmployeeAssignment] Fetching assigned employees for geofence:', geofence.id);
-      const response = await api.get(`/api/hr/employee-geofences/?geofence_id=${geofence.id}`);
+      const apiUrl = `/api/hr/employee-geofences/?geofence_id=${geofence.id}`;
+      console.log('🎯 [InlineEmployeeAssignment] Fetch URL:', apiUrl);
+      
+      const response = await api.get(apiUrl);
       console.log('🎯 [InlineEmployeeAssignment] Raw response:', response);
+      console.log('🎯 [InlineEmployeeAssignment] Response type:', typeof response);
+      console.log('🎯 [InlineEmployeeAssignment] Response keys:', Object.keys(response || {}));
       
-      const assignments = response.data.results || response.data || [];
+      // Handle both paginated and non-paginated responses
+      let assignments = [];
+      if (response && typeof response === 'object') {
+        if (response.data) {
+          assignments = response.data.results || response.data || [];
+        } else if (response.results) {
+          assignments = response.results;
+        } else if (Array.isArray(response)) {
+          assignments = response;
+        }
+      }
+      
       console.log('🎯 [InlineEmployeeAssignment] Assignments found:', assignments);
+      console.log('🎯 [InlineEmployeeAssignment] Number of assignments:', assignments.length);
       
-      const assignedIds = assignments.map(item => {
-        console.log('🎯 [InlineEmployeeAssignment] Assignment item:', item);
-        return item.employee?.id || item.employee_id || item.employee;
+      const assignedIds = assignments.map((item, index) => {
+        console.log(`🎯 [InlineEmployeeAssignment] Assignment item [${index}]:`, item);
+        const id = item.employee?.id || item.employee_id || item.employee;
+        console.log(`🎯 [InlineEmployeeAssignment] Extracted ID [${index}]:`, id);
+        return id;
       }).filter(id => id);
       
       console.log('🎯 [InlineEmployeeAssignment] Assigned employee IDs:', assignedIds);
+      console.log('🎯 [InlineEmployeeAssignment] Number of assigned IDs:', assignedIds.length);
       setAssignedEmployeeIds(assignedIds);
       setOriginalAssignedIds(assignedIds);
     } catch (error) {
       console.error('🎯 [InlineEmployeeAssignment] Error fetching assignments:', error);
+      console.error('🎯 [InlineEmployeeAssignment] Error type:', error.constructor.name);
+      console.error('🎯 [InlineEmployeeAssignment] Error message:', error.message);
       console.error('🎯 [InlineEmployeeAssignment] Error response:', error.response);
+      console.error('🎯 [InlineEmployeeAssignment] Error response data:', error.response?.data);
+      console.error('🎯 [InlineEmployeeAssignment] Error response status:', error.response?.status);
       // Don't show error toast - might be empty which is fine
       setAssignedEmployeeIds([]);
       setOriginalAssignedIds([]);
@@ -95,20 +119,33 @@ const InlineEmployeeAssignment = ({ geofence, onAssignmentComplete, isExpanded, 
       console.log('🎯 [InlineEmployeeAssignment] === SAVE START ===');
       console.log('🎯 [InlineEmployeeAssignment] Geofence ID:', geofence.id);
       console.log('🎯 [InlineEmployeeAssignment] Employee IDs to assign:', assignedEmployeeIds);
+      console.log('🎯 [InlineEmployeeAssignment] Number of employees:', assignedEmployeeIds.length);
       
-      const response = await api.post(`/api/hr/geofences/${geofence.id}/assign_employees/`, {
+      // Log the API URL we're calling
+      const apiUrl = `/api/hr/geofences/${geofence.id}/assign_employees/`;
+      console.log('🎯 [InlineEmployeeAssignment] API URL:', apiUrl);
+      
+      // Log request payload
+      const payload = {
         employee_ids: assignedEmployeeIds
-      });
+      };
+      console.log('🎯 [InlineEmployeeAssignment] Request payload:', JSON.stringify(payload));
+      
+      const response = await api.post(apiUrl, payload);
       
       console.log('🎯 [InlineEmployeeAssignment] Save response:', response);
+      console.log('🎯 [InlineEmployeeAssignment] Response status:', response.status);
+      console.log('🎯 [InlineEmployeeAssignment] Response data:', JSON.stringify(response));
       
       // Update original IDs to match saved state
       setOriginalAssignedIds(assignedEmployeeIds);
       setHasChanges(false);
       
       toast.success(`Successfully assigned ${assignedEmployeeIds.length} employees to ${geofence.name}`);
+      console.log('🎯 [InlineEmployeeAssignment] Success toast shown');
       
       if (onAssignmentComplete) {
+        console.log('🎯 [InlineEmployeeAssignment] Calling onAssignmentComplete callback');
         onAssignmentComplete(assignedEmployeeIds);
       }
       
@@ -120,9 +157,14 @@ const InlineEmployeeAssignment = ({ geofence, onAssignmentComplete, isExpanded, 
       
     } catch (error) {
       console.error('🎯 [InlineEmployeeAssignment] === SAVE ERROR ===');
-      console.error('🎯 [InlineEmployeeAssignment] Error:', error);
+      console.error('🎯 [InlineEmployeeAssignment] Error type:', error.constructor.name);
+      console.error('🎯 [InlineEmployeeAssignment] Error message:', error.message);
+      console.error('🎯 [InlineEmployeeAssignment] Error stack:', error.stack);
       console.error('🎯 [InlineEmployeeAssignment] Error response:', error.response);
-      const errorMessage = error.response?.data?.error || 'Failed to assign employees';
+      console.error('🎯 [InlineEmployeeAssignment] Error response data:', error.response?.data);
+      console.error('🎯 [InlineEmployeeAssignment] Error response status:', error.response?.status);
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to assign employees';
+      console.error('🎯 [InlineEmployeeAssignment] Error message to show:', errorMessage);
       toast.error(errorMessage);
     } finally {
       setSaving(false);
