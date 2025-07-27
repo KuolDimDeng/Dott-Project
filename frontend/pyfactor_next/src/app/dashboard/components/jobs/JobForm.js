@@ -29,7 +29,14 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
     assigned_employees: [], // Multiple employees
     lead_employee_id: '', // Lead employee
     materials: [], // Selected materials/supplies
-    vehicle_id: '' // Assigned vehicle
+    vehicle_id: '', // Assigned vehicle
+    // Recurring job fields
+    is_recurring: false,
+    recurrence_pattern: '',
+    recurrence_end_date: '',
+    recurrence_day_of_week: '',
+    recurrence_day_of_month: '',
+    recurrence_skip_holidays: false
   });
 
   const [customers, setCustomers] = useState([]);
@@ -77,22 +84,63 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
       let customersData;
       try {
         const response = await fetch('/api/jobs/data/customers/', {
-          headers: { 'Content-Type': 'application/json' }
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
         });
-        logger.info('[JobForm] 👥 Job data API response status:', response.status);
+        logger.info('[JobForm] 👥 Job data API response:', {
+          status: response.status,
+          ok: response.ok,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers)
+        });
         
         if (response.ok) {
-          customersData = await response.json();
-          logger.info('[JobForm] 👥 Customers from job data API:', customersData);
+          const responseText = await response.text();
+          logger.info('[JobForm] 👥 Raw response:', responseText.substring(0, 200));
+          
+          try {
+            customersData = JSON.parse(responseText);
+            logger.info('[JobForm] 👥 Parsed customers data:', {
+              type: typeof customersData,
+              isArray: Array.isArray(customersData),
+              count: Array.isArray(customersData) ? customersData.length : 'N/A',
+              hasResults: customersData?.results ? customersData.results.length : 'N/A',
+              sample: Array.isArray(customersData) ? customersData[0] : customersData
+            });
+          } catch (parseError) {
+            logger.error('[JobForm] 👥 Failed to parse customers JSON:', parseError);
+            throw new Error(`Invalid JSON response: ${parseError.message}`);
+          }
         } else {
+          const errorText = await response.text();
+          logger.error('[JobForm] 👥 Job data API error response:', errorText);
           throw new Error(`Job data API failed with status ${response.status}`);
         }
       } catch (apiError) {
         logger.warn('[JobForm] 👥 Job data API failed, trying fallback:', apiError);
+        logger.warn('[JobForm] 👥 Error details:', {
+          message: apiError.message,
+          stack: apiError.stack
+        });
         customersData = await jobService.getAvailableCustomers();
+        logger.info('[JobForm] 👥 Fallback customers data:', {
+          type: typeof customersData,
+          isArray: Array.isArray(customersData),
+          count: Array.isArray(customersData) ? customersData.length : 'N/A'
+        });
       }
       
-      logger.info('[JobForm] 👥 Final customers data:', customersData);
+      // Handle different response formats
+      if (customersData && typeof customersData === 'object' && 'results' in customersData) {
+        customersData = customersData.results;
+      }
+      
+      logger.info('[JobForm] 👥 Final customers data:', {
+        type: typeof customersData,
+        isArray: Array.isArray(customersData),
+        count: Array.isArray(customersData) ? customersData.length : 0,
+        data: customersData
+      });
       setCustomers(Array.isArray(customersData) ? customersData : []);
     } catch (err) {
       logger.error('[JobForm] 👥 Error fetching customers:', err);
@@ -108,22 +156,63 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
       let employeesData;
       try {
         const response = await fetch('/api/jobs/data/employees/', {
-          headers: { 'Content-Type': 'application/json' }
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
         });
-        logger.info('[JobForm] 👷 Job data API response status:', response.status);
+        logger.info('[JobForm] 👷 Job data API response:', {
+          status: response.status,
+          ok: response.ok,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers)
+        });
         
         if (response.ok) {
-          employeesData = await response.json();
-          logger.info('[JobForm] 👷 Employees from job data API:', employeesData);
+          const responseText = await response.text();
+          logger.info('[JobForm] 👷 Raw response:', responseText.substring(0, 200));
+          
+          try {
+            employeesData = JSON.parse(responseText);
+            logger.info('[JobForm] 👷 Parsed employees data:', {
+              type: typeof employeesData,
+              isArray: Array.isArray(employeesData),
+              count: Array.isArray(employeesData) ? employeesData.length : 'N/A',
+              hasResults: employeesData?.results ? employeesData.results.length : 'N/A',
+              sample: Array.isArray(employeesData) ? employeesData[0] : employeesData
+            });
+          } catch (parseError) {
+            logger.error('[JobForm] 👷 Failed to parse employees JSON:', parseError);
+            throw new Error(`Invalid JSON response: ${parseError.message}`);
+          }
         } else {
+          const errorText = await response.text();
+          logger.error('[JobForm] 👷 Job data API error response:', errorText);
           throw new Error(`Job data API failed with status ${response.status}`);
         }
       } catch (apiError) {
         logger.warn('[JobForm] 👷 Job data API failed, trying fallback:', apiError);
+        logger.warn('[JobForm] 👷 Error details:', {
+          message: apiError.message,
+          stack: apiError.stack
+        });
         employeesData = await jobService.getAvailableEmployees();
+        logger.info('[JobForm] 👷 Fallback employees data:', {
+          type: typeof employeesData,
+          isArray: Array.isArray(employeesData),
+          count: Array.isArray(employeesData) ? employeesData.length : 'N/A'
+        });
       }
       
-      logger.info('[JobForm] 👷 Final employees data:', employeesData);
+      // Handle different response formats
+      if (employeesData && typeof employeesData === 'object' && 'results' in employeesData) {
+        employeesData = employeesData.results;
+      }
+      
+      logger.info('[JobForm] 👷 Final employees data:', {
+        type: typeof employeesData,
+        isArray: Array.isArray(employeesData),
+        count: Array.isArray(employeesData) ? employeesData.length : 0,
+        data: employeesData
+      });
       setEmployees(Array.isArray(employeesData) ? employeesData : []);
     } catch (err) {
       logger.error('[JobForm] 👷 Error fetching employees:', err);
@@ -138,22 +227,63 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
       let suppliesData;
       try {
         const response = await fetch('/api/jobs/data/supplies/', {
-          headers: { 'Content-Type': 'application/json' }
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
         });
-        logger.info('[JobForm] 📦 Job data API response status:', response.status);
+        logger.info('[JobForm] 📦 Job data API response:', {
+          status: response.status,
+          ok: response.ok,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers)
+        });
         
         if (response.ok) {
-          suppliesData = await response.json();
-          logger.info('[JobForm] 📦 Supplies from job data API:', suppliesData);
+          const responseText = await response.text();
+          logger.info('[JobForm] 📦 Raw response:', responseText.substring(0, 200));
+          
+          try {
+            suppliesData = JSON.parse(responseText);
+            logger.info('[JobForm] 📦 Parsed supplies data:', {
+              type: typeof suppliesData,
+              isArray: Array.isArray(suppliesData),
+              count: Array.isArray(suppliesData) ? suppliesData.length : 'N/A',
+              hasResults: suppliesData?.results ? suppliesData.results.length : 'N/A',
+              sample: Array.isArray(suppliesData) ? suppliesData[0] : suppliesData
+            });
+          } catch (parseError) {
+            logger.error('[JobForm] 📦 Failed to parse supplies JSON:', parseError);
+            throw new Error(`Invalid JSON response: ${parseError.message}`);
+          }
         } else {
+          const errorText = await response.text();
+          logger.error('[JobForm] 📦 Job data API error response:', errorText);
           throw new Error(`Job data API failed with status ${response.status}`);
         }
       } catch (apiError) {
         logger.warn('[JobForm] 📦 Job data API failed, trying fallback:', apiError);
+        logger.warn('[JobForm] 📦 Error details:', {
+          message: apiError.message,
+          stack: apiError.stack
+        });
         suppliesData = await jobService.getAvailableSupplies();
+        logger.info('[JobForm] 📦 Fallback supplies data:', {
+          type: typeof suppliesData,
+          isArray: Array.isArray(suppliesData),
+          count: Array.isArray(suppliesData) ? suppliesData.length : 'N/A'
+        });
       }
       
-      logger.info('[JobForm] 📦 Final supplies data:', suppliesData);
+      // Handle different response formats
+      if (suppliesData && typeof suppliesData === 'object' && 'results' in suppliesData) {
+        suppliesData = suppliesData.results;
+      }
+      
+      logger.info('[JobForm] 📦 Final supplies data:', {
+        type: typeof suppliesData,
+        isArray: Array.isArray(suppliesData),
+        count: Array.isArray(suppliesData) ? suppliesData.length : 0,
+        data: suppliesData
+      });
       setSupplies(Array.isArray(suppliesData) ? suppliesData : []);
     } catch (err) {
       logger.error('[JobForm] 📦 Error fetching supplies:', err);
@@ -167,15 +297,42 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
       });
-      logger.info('[JobForm] 🚗 Vehicle API response status:', response.status);
+      logger.info('[JobForm] 🚗 Vehicle API response:', {
+        status: response.status,
+        ok: response.ok,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers)
+      });
       
       if (response.ok) {
-        const vehiclesData = await response.json();
-        logger.info('[JobForm] 🚗 Vehicles received:', vehiclesData);
-        setVehicles(Array.isArray(vehiclesData) ? vehiclesData : []);
+        const responseText = await response.text();
+        logger.info('[JobForm] 🚗 Raw response:', responseText.substring(0, 200));
+        
+        try {
+          const vehiclesData = JSON.parse(responseText);
+          logger.info('[JobForm] 🚗 Parsed vehicles data:', {
+            type: typeof vehiclesData,
+            isArray: Array.isArray(vehiclesData),
+            count: Array.isArray(vehiclesData) ? vehiclesData.length : 'N/A',
+            hasResults: vehiclesData?.results ? vehiclesData.results.length : 'N/A',
+            sample: Array.isArray(vehiclesData) ? vehiclesData[0] : vehiclesData
+          });
+          
+          // Handle different response formats
+          let finalVehiclesData = vehiclesData;
+          if (vehiclesData && typeof vehiclesData === 'object' && 'results' in vehiclesData) {
+            finalVehiclesData = vehiclesData.results;
+          }
+          
+          setVehicles(Array.isArray(finalVehiclesData) ? finalVehiclesData : []);
+        } catch (parseError) {
+          logger.error('[JobForm] 🚗 Failed to parse vehicles JSON:', parseError);
+        }
       } else {
-        logger.error('[JobForm] 🚗 Vehicle API failed with status:', response.status);
+        const errorText = await response.text();
+        logger.error('[JobForm] 🚗 Vehicle API error response:', errorText);
       }
     } catch (err) {
       logger.error('[JobForm] 🚗 Vehicle fetch error:', err);
@@ -519,6 +676,124 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
                   </option>
                 ))}
               </select>
+            </div>
+
+            {/* Recurring Job Settings */}
+            <div className="lg:col-span-3 border-t pt-4">
+              <div className="flex items-center mb-4">
+                <input
+                  type="checkbox"
+                  id="is_recurring"
+                  name="is_recurring"
+                  checked={formData.is_recurring}
+                  onChange={(e) => setFormData(prev => ({ ...prev, is_recurring: e.target.checked }))}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="is_recurring" className="ml-2 text-sm font-medium text-gray-700">
+                  This is a recurring job
+                </label>
+              </div>
+
+              {formData.is_recurring && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label htmlFor="recurrence_pattern" className="block text-sm font-medium text-gray-700">
+                      Frequency *
+                    </label>
+                    <select
+                      id="recurrence_pattern"
+                      name="recurrence_pattern"
+                      value={formData.recurrence_pattern}
+                      onChange={handleChange}
+                      required={formData.is_recurring}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    >
+                      <option value="">Select frequency</option>
+                      <option value="daily">Daily</option>
+                      <option value="weekly">Weekly</option>
+                      <option value="biweekly">Bi-weekly (Every 2 weeks)</option>
+                      <option value="monthly">Monthly</option>
+                      <option value="quarterly">Quarterly (Every 3 months)</option>
+                      <option value="semiannually">Semi-annually (Every 6 months)</option>
+                      <option value="annually">Annually (Yearly)</option>
+                    </select>
+                  </div>
+
+                  {formData.recurrence_pattern === 'weekly' && (
+                    <div>
+                      <label htmlFor="recurrence_day_of_week" className="block text-sm font-medium text-gray-700">
+                        Day of Week *
+                      </label>
+                      <select
+                        id="recurrence_day_of_week"
+                        name="recurrence_day_of_week"
+                        value={formData.recurrence_day_of_week}
+                        onChange={handleChange}
+                        required={formData.is_recurring && formData.recurrence_pattern === 'weekly'}
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                      >
+                        <option value="">Select day</option>
+                        <option value="0">Monday</option>
+                        <option value="1">Tuesday</option>
+                        <option value="2">Wednesday</option>
+                        <option value="3">Thursday</option>
+                        <option value="4">Friday</option>
+                        <option value="5">Saturday</option>
+                        <option value="6">Sunday</option>
+                      </select>
+                    </div>
+                  )}
+
+                  {formData.recurrence_pattern === 'monthly' && (
+                    <div>
+                      <label htmlFor="recurrence_day_of_month" className="block text-sm font-medium text-gray-700">
+                        Day of Month *
+                      </label>
+                      <input
+                        type="number"
+                        id="recurrence_day_of_month"
+                        name="recurrence_day_of_month"
+                        value={formData.recurrence_day_of_month}
+                        onChange={handleChange}
+                        min="1"
+                        max="31"
+                        required={formData.is_recurring && formData.recurrence_pattern === 'monthly'}
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        placeholder="1-31"
+                      />
+                    </div>
+                  )}
+
+                  <div>
+                    <label htmlFor="recurrence_end_date" className="block text-sm font-medium text-gray-700">
+                      End Date (Optional)
+                    </label>
+                    <input
+                      type="date"
+                      id="recurrence_end_date"
+                      name="recurrence_end_date"
+                      value={formData.recurrence_end_date}
+                      onChange={handleChange}
+                      min={formData.scheduled_date || new Date().toISOString().split('T')[0]}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    />
+                  </div>
+
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="recurrence_skip_holidays"
+                      name="recurrence_skip_holidays"
+                      checked={formData.recurrence_skip_holidays}
+                      onChange={(e) => setFormData(prev => ({ ...prev, recurrence_skip_holidays: e.target.checked }))}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="recurrence_skip_holidays" className="ml-2 text-sm text-gray-700">
+                      Skip holidays
+                    </label>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Materials/Supplies */}
@@ -866,6 +1141,145 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
                 leadValue={formData.lead_employee_id}
                 onLeadChange={(leadId) => setFormData(prev => ({ ...prev, lead_employee_id: leadId }))}
               />
+            </div>
+
+            {/* Vehicle Assignment */}
+            <div className="md:col-span-2">
+              <label htmlFor="vehicle_id" className="block text-sm font-medium text-gray-700">
+                Assigned Vehicle
+              </label>
+              <select
+                id="vehicle_id"
+                name="vehicle_id"
+                value={formData.vehicle_id}
+                onChange={handleChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">No vehicle assigned</option>
+                {vehicles.map((vehicle) => (
+                  <option key={vehicle.id} value={vehicle.id}>
+                    {vehicle.make} {vehicle.model} - {vehicle.registration_number}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Recurring Job Settings */}
+            <div className="md:col-span-2 border-t pt-4">
+              <div className="flex items-center mb-4">
+                <input
+                  type="checkbox"
+                  id="is_recurring"
+                  name="is_recurring"
+                  checked={formData.is_recurring}
+                  onChange={(e) => setFormData(prev => ({ ...prev, is_recurring: e.target.checked }))}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="is_recurring" className="ml-2 text-sm font-medium text-gray-700">
+                  This is a recurring job
+                </label>
+              </div>
+
+              {formData.is_recurring && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="recurrence_pattern" className="block text-sm font-medium text-gray-700">
+                      Frequency *
+                    </label>
+                    <select
+                      id="recurrence_pattern"
+                      name="recurrence_pattern"
+                      value={formData.recurrence_pattern}
+                      onChange={handleChange}
+                      required={formData.is_recurring}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="">Select frequency</option>
+                      <option value="daily">Daily</option>
+                      <option value="weekly">Weekly</option>
+                      <option value="biweekly">Bi-weekly (Every 2 weeks)</option>
+                      <option value="monthly">Monthly</option>
+                      <option value="quarterly">Quarterly (Every 3 months)</option>
+                      <option value="semiannually">Semi-annually (Every 6 months)</option>
+                      <option value="annually">Annually (Yearly)</option>
+                    </select>
+                  </div>
+
+                  {formData.recurrence_pattern === 'weekly' && (
+                    <div>
+                      <label htmlFor="recurrence_day_of_week" className="block text-sm font-medium text-gray-700">
+                        Day of Week *
+                      </label>
+                      <select
+                        id="recurrence_day_of_week"
+                        name="recurrence_day_of_week"
+                        value={formData.recurrence_day_of_week}
+                        onChange={handleChange}
+                        required={formData.is_recurring && formData.recurrence_pattern === 'weekly'}
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="">Select day</option>
+                        <option value="0">Monday</option>
+                        <option value="1">Tuesday</option>
+                        <option value="2">Wednesday</option>
+                        <option value="3">Thursday</option>
+                        <option value="4">Friday</option>
+                        <option value="5">Saturday</option>
+                        <option value="6">Sunday</option>
+                      </select>
+                    </div>
+                  )}
+
+                  {formData.recurrence_pattern === 'monthly' && (
+                    <div>
+                      <label htmlFor="recurrence_day_of_month" className="block text-sm font-medium text-gray-700">
+                        Day of Month *
+                      </label>
+                      <input
+                        type="number"
+                        id="recurrence_day_of_month"
+                        name="recurrence_day_of_month"
+                        value={formData.recurrence_day_of_month}
+                        onChange={handleChange}
+                        min="1"
+                        max="31"
+                        required={formData.is_recurring && formData.recurrence_pattern === 'monthly'}
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="1-31"
+                      />
+                    </div>
+                  )}
+
+                  <div>
+                    <label htmlFor="recurrence_end_date" className="block text-sm font-medium text-gray-700">
+                      End Date (Optional)
+                    </label>
+                    <input
+                      type="date"
+                      id="recurrence_end_date"
+                      name="recurrence_end_date"
+                      value={formData.recurrence_end_date}
+                      onChange={handleChange}
+                      min={formData.scheduled_date || new Date().toISOString().split('T')[0]}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="recurrence_skip_holidays"
+                      name="recurrence_skip_holidays"
+                      checked={formData.recurrence_skip_holidays}
+                      onChange={(e) => setFormData(prev => ({ ...prev, recurrence_skip_holidays: e.target.checked }))}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="recurrence_skip_holidays" className="ml-2 text-sm text-gray-700">
+                      Skip holidays
+                    </label>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Materials/Supplies */}

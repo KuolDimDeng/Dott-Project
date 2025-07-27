@@ -1,9 +1,12 @@
 from django.db import models
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 from django.db.models.signals import post_save, post_delete, pre_delete
 from django.dispatch import receiver
 from decimal import Decimal
+import uuid
+from datetime import timedelta
+from dateutil.relativedelta import relativedelta
 from custom_auth.models import TenantAwareModel, TenantManager
 from crm.models import Customer
 from hr.models import Employee
@@ -115,6 +118,26 @@ class Job(TenantAwareModel):
         ('cancelled', 'Cancelled'),
     ]
     
+    RECURRENCE_PATTERN_CHOICES = [
+        ('daily', 'Daily'),
+        ('weekly', 'Weekly'),
+        ('biweekly', 'Bi-weekly'),
+        ('monthly', 'Monthly'),
+        ('quarterly', 'Quarterly'),
+        ('semiannually', 'Semi-annually'),
+        ('annually', 'Annually'),
+    ]
+    
+    DAY_OF_WEEK_CHOICES = [
+        (0, 'Monday'),
+        (1, 'Tuesday'),
+        (2, 'Wednesday'),
+        (3, 'Thursday'),
+        (4, 'Friday'),
+        (5, 'Saturday'),
+        (6, 'Sunday'),
+    ]
+    
     job_number = models.CharField(max_length=50, unique=True)
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
@@ -138,6 +161,29 @@ class Job(TenantAwareModel):
     quoted_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     labor_rate = models.DecimalField(max_digits=6, decimal_places=2, default=0, 
                                     help_text="Hourly labor rate for this job")
+    
+    # Recurring job fields
+    is_recurring = models.BooleanField(default=False, help_text='Is this a recurring job?')
+    recurrence_pattern = models.CharField(max_length=20, choices=RECURRENCE_PATTERN_CHOICES, 
+                                        blank=True, null=True, help_text='How often the job recurs')
+    recurrence_end_date = models.DateField(null=True, blank=True, 
+                                         help_text='Optional end date for recurring series')
+    recurrence_day_of_week = models.IntegerField(choices=DAY_OF_WEEK_CHOICES, null=True, blank=True,
+                                                help_text='For weekly jobs: which day of the week')
+    recurrence_day_of_month = models.IntegerField(null=True, blank=True,
+                                                 validators=[MinValueValidator(1), MaxValueValidator(31)],
+                                                 help_text='For monthly jobs: which day of the month (1-31)')
+    recurrence_skip_holidays = models.BooleanField(default=False, 
+                                                  help_text='Skip scheduled jobs on holidays')
+    
+    # Recurring job relationships
+    parent_job = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True,
+                                  related_name='recurring_instances', 
+                                  help_text='Original job this was created from')
+    job_series_id = models.UUIDField(null=True, blank=True, db_index=True,
+                                   help_text='Groups all jobs in a recurring series')
+    is_exception = models.BooleanField(default=False, 
+                                     help_text='This instance has been modified from the series')
     
     # Tracking
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='jobs_created')
@@ -281,6 +327,107 @@ class Job(TenantAwareModel):
     def delete_calendar_events(self):
         """Delete all calendar events for this job"""
         self.calendar_events.all().delete()
+    
+    def calculate_next_occurrence_date(self, from_date=None):
+        """Calculate the next occurrence date based on recurrence pattern"""
+        if not self.is_recurring or not self.recurrence_pattern:
+            return None
+            
+        base_date = from_date or self.scheduled_date or timezone.now().date()
+        
+        if self.recurrence_pattern == 'daily':
+            next_date = base_date + timedelta(days=1)
+        elif self.recurrence_pattern == 'weekly':
+            next_date = base_date + timedelta(weeks=1)
+        elif self.recurrence_pattern == 'biweekly':
+            next_date = base_date + timedelta(weeks=2)
+        elif self.recurrence_pattern == 'monthly':
+            next_date = base_date + relativedelta(months=1)
+        elif self.recurrence_pattern == 'quarterly':
+            next_date = base_date + relativedelta(months=3)
+        elif self.recurrence_pattern == 'semiannually':
+            next_date = base_date + relativedelta(months=6)
+        elif self.recurrence_pattern == 'annually':
+            next_date = base_date + relativedelta(years=1)
+        else:
+            return None
+            
+        # Check if we've exceeded the end date
+        if self.recurrence_end_date and next_date > self.recurrence_end_date:
+            return None
+            
+        return next_date
+    
+    def create_recurring_instances(self, count=12):
+        """Create future recurring job instances"""
+        if not self.is_recurring or not self.recurrence_pattern:
+            return []
+            
+        created_jobs = []
+        current_date = self.scheduled_date or timezone.now().date()
+        
+        # Generate a series ID if this is the first in the series
+        if not self.job_series_id:
+            self.job_series_id = uuid.uuid4()
+            self.save(update_fields=['job_series_id'])
+        
+        for i in range(count):
+            next_date = self.calculate_next_occurrence_date(current_date)
+            if not next_date:
+                break
+                
+            # Create the recurring instance
+            job_data = {
+                'tenant_id': self.tenant_id,
+                'job_number': f"{self.job_number}-R{i+1}",
+                'name': self.name,
+                'description': self.description,
+                'customer': self.customer,
+                'status': 'scheduled',
+                'scheduled_date': next_date,
+                'job_street': self.job_street,
+                'job_city': self.job_city,
+                'job_state': self.job_state,
+                'job_zip': self.job_zip,
+                'job_country': self.job_country,
+                'quoted_amount': self.quoted_amount,
+                'labor_rate': self.labor_rate,
+                'is_recurring': True,
+                'recurrence_pattern': self.recurrence_pattern,
+                'recurrence_end_date': self.recurrence_end_date,
+                'recurrence_day_of_week': self.recurrence_day_of_week,
+                'recurrence_day_of_month': self.recurrence_day_of_month,
+                'recurrence_skip_holidays': self.recurrence_skip_holidays,
+                'parent_job': self,
+                'job_series_id': self.job_series_id,
+                'lead_employee': self.lead_employee,
+                'vehicle': self.vehicle,
+                'created_by': self.created_by,
+            }
+            
+            new_job = Job.objects.create(**job_data)
+            
+            # Copy over the many-to-many relationships
+            new_job.assigned_employees.set(self.assigned_employees.all())
+            
+            # Copy materials
+            for material in self.materials.all():
+                JobMaterial.objects.create(
+                    tenant_id=self.tenant_id,
+                    job=new_job,
+                    supply=material.supply,
+                    quantity=material.quantity,
+                    unit_cost=material.unit_cost,
+                    unit_price=material.unit_price,
+                    markup_percentage=material.markup_percentage,
+                    is_billable=material.is_billable,
+                    added_by=self.created_by
+                )
+            
+            created_jobs.append(new_job)
+            current_date = next_date
+            
+        return created_jobs
 
 
 class JobMaterial(TenantAwareModel):

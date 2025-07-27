@@ -65,10 +65,36 @@ class JobViewSet(viewsets.ModelViewSet):
         logger.info(f"📋 [JobViewSet] perform_create called")
         logger.info(f"📋 [JobViewSet] Validated data: {serializer.validated_data}")
         try:
-            serializer.save(
-                created_by=self.request.user
-            )
+            # Save the job
+            job = serializer.save(created_by=self.request.user)
             logger.info(f"📋 [JobViewSet] Job saved successfully")
+            
+            # Handle many-to-many relationships
+            assigned_employees = self.request.data.get('assigned_employees', [])
+            if assigned_employees:
+                job.assigned_employees.set(assigned_employees)
+            
+            # Handle materials
+            materials = self.request.data.get('materials', [])
+            for material_data in materials:
+                JobMaterial.objects.create(
+                    job=job,
+                    supply_id=material_data.get('supply_id'),
+                    quantity=material_data.get('quantity', 1),
+                    unit_cost=material_data.get('unit_cost', 0),
+                    unit_price=material_data.get('unit_price', 0),
+                    markup_percentage=material_data.get('markup_percentage', 0),
+                    is_billable=material_data.get('is_billable', True),
+                    added_by=self.request.user
+                )
+            
+            # If this is a recurring job, create future instances
+            if job.is_recurring and job.recurrence_pattern:
+                logger.info(f"📋 [JobViewSet] Creating recurring instances for job {job.job_number}")
+                # Create 12 instances by default (3 months for weekly, 1 year for monthly)
+                recurring_jobs = job.create_recurring_instances(count=12)
+                logger.info(f"📋 [JobViewSet] Created {len(recurring_jobs)} recurring instances")
+                
         except Exception as e:
             logger.error(f"📋 [JobViewSet] Error in perform_create: {str(e)}")
             raise
@@ -243,6 +269,77 @@ class JobViewSet(viewsets.ModelViewSet):
             logger.error(f"Error getting job stats: {e}")
             return Response(
                 {'error': 'Failed to fetch job statistics'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=True, methods=['post'])
+    def create_recurring_instances(self, request, pk=None):
+        """Create recurring instances for a job"""
+        try:
+            job = self.get_object()
+            
+            # Check if job is set up for recurring
+            if not job.is_recurring or not job.recurrence_pattern:
+                return Response(
+                    {'error': 'Job is not configured as recurring'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Get count from request, default to 12
+            count = int(request.data.get('count', 12))
+            if count < 1 or count > 52:  # Max 1 year of weekly jobs
+                return Response(
+                    {'error': 'Count must be between 1 and 52'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Create recurring instances
+            created_jobs = job.create_recurring_instances(count=count)
+            
+            # Serialize the created jobs
+            serializer = JobSerializer(created_jobs, many=True)
+            
+            return Response({
+                'message': f'Created {len(created_jobs)} recurring instances',
+                'jobs': serializer.data
+            })
+            
+        except Exception as e:
+            logger.error(f"Error creating recurring instances for job {pk}: {e}")
+            return Response(
+                {'error': 'Failed to create recurring instances'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=True, methods=['get'])
+    def recurring_series(self, request, pk=None):
+        """Get all jobs in a recurring series"""
+        try:
+            job = self.get_object()
+            
+            if not job.job_series_id:
+                return Response(
+                    {'error': 'Job is not part of a recurring series'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Get all jobs in the series
+            series_jobs = Job.objects.filter(
+                job_series_id=job.job_series_id
+            ).order_by('scheduled_date')
+            
+            serializer = JobSerializer(series_jobs, many=True)
+            
+            return Response({
+                'series_id': str(job.job_series_id),
+                'count': series_jobs.count(),
+                'jobs': serializer.data
+            })
+            
+        except Exception as e:
+            logger.error(f"Error fetching recurring series for job {pk}: {e}")
+            return Response(
+                {'error': 'Failed to fetch recurring series'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     

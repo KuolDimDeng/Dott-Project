@@ -39,6 +39,9 @@ class JobSerializer(serializers.ModelSerializer):
     vehicle_info = serializers.SerializerMethodField()
     total_cost = serializers.SerializerMethodField()
     profit_margin = serializers.SerializerMethodField()
+    recurrence_pattern_display = serializers.CharField(source='get_recurrence_pattern_display', read_only=True)
+    recurrence_day_of_week_display = serializers.CharField(source='get_recurrence_day_of_week_display', read_only=True)
+    recurring_instances_count = serializers.SerializerMethodField()
     
     class Meta:
         model = Job
@@ -48,9 +51,14 @@ class JobSerializer(serializers.ModelSerializer):
             'job_street', 'job_city', 'job_state', 'job_zip', 'job_country',
             'quoted_amount', 'labor_rate', 'lead_employee', 'lead_employee_name',
             'assigned_employees', 'vehicle', 'vehicle_info',
+            'is_recurring', 'recurrence_pattern', 'recurrence_pattern_display',
+            'recurrence_end_date', 'recurrence_day_of_week', 'recurrence_day_of_week_display',
+            'recurrence_day_of_month', 'recurrence_skip_holidays',
+            'parent_job', 'job_series_id', 'is_exception', 'recurring_instances_count',
             'total_cost', 'profit_margin', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at', 'total_cost', 'profit_margin']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'total_cost', 'profit_margin', 
+                           'recurring_instances_count', 'job_series_id']
     
     def get_total_cost(self, obj):
         """Calculate total cost for the job"""
@@ -69,6 +77,12 @@ class JobSerializer(serializers.ModelSerializer):
                 'registration': obj.vehicle.registration_number
             }
         return None
+    
+    def get_recurring_instances_count(self, obj):
+        """Get count of recurring instances if this is a parent job"""
+        if obj.is_recurring and not obj.parent_job:
+            return obj.recurring_instances.count()
+        return 0
 
 class JobDetailSerializer(JobSerializer):
     """Detailed serializer for Job with related objects"""
