@@ -36,11 +36,11 @@ const ErrorFallback = ({ error, componentName, retry }) => (
 // Check component availability in a safer way without using direct imports
 console.log('[RenderMainContent] Preparing to load components');
 
-// Import VehicleManagement
-const VehicleManagement = lazy(() => 
+// Import JobVehicleManagement
+const JobVehicleManagement = lazy(() => 
   import('./jobs/VehicleManagement').catch(err => {
-    console.error('[RenderMainContent] Error loading VehicleManagement:', err);
-    return { default: () => <ErrorFallback error={err} componentName="VehicleManagement" /> };
+    console.error('[RenderMainContent] Error loading JobVehicleManagement:', err);
+    return { default: () => <ErrorFallback error={err} componentName="Job Vehicle Management" /> };
   })
 );
 
@@ -1805,7 +1805,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
         return (
           <ContentWrapperWithKey>
             <SuspenseWithCleanup componentKey={`${componentKey}-vehicles`}>
-              <VehicleManagement />
+              <JobVehicleManagement />
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>
         );
