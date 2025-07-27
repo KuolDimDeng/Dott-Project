@@ -331,6 +331,7 @@ export async function GET(request) {
         onboardingCompleted: sessionData.onboarding_completed || false,
         tenantId: sessionData.tenant_id || tenantData.id,
         tenant_id: sessionData.tenant_id || tenantData.id,
+        business_id: sessionData.business_id || sessionData.tenant_id || tenantData.id,
         // User role for RBAC - use backend role, don't override
         role: userData.role || sessionData.role || sessionData.user_role || 'USER',
         // WhatsApp Commerce preference

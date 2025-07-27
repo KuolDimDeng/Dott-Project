@@ -84,22 +84,52 @@ export default function MobileTimesheetPage() {
   const fetchEmployeeData = async () => {
     console.log('🎯 [MobileTimesheet] === FETCHING EMPLOYEE DATA ===');
     console.log('🎯 [MobileTimesheet] User email:', session?.user?.email);
+    console.log('🎯 [MobileTimesheet] Full session:', session);
     
-    if (!session?.user?.email) return;
+    if (!session?.user?.email) {
+      console.log('🎯 [MobileTimesheet] No user email in session, skipping employee fetch');
+      return;
+    }
     
     setLoadingEmployee(true);
     try {
       // First try to get employee by user email
-      const response = await fetch('/api/hr/v2/employees/me');
+      const response = await fetch('/api/hr/v2/employees/me', {
+        credentials: 'include',
+      });
       
       console.log('🎯 [MobileTimesheet] Employee API response status:', response.status);
+      console.log('🎯 [MobileTimesheet] Employee API response headers:', Object.fromEntries(response.headers));
       
       if (response.ok) {
-        const data = await response.json();
-        console.log('🎯 [MobileTimesheet] Employee data:', data);
-        setEmployeeData(data.data || data);
+        const responseText = await response.text();
+        console.log('🎯 [MobileTimesheet] Raw employee response:', responseText);
+        
+        try {
+          const data = JSON.parse(responseText);
+          console.log('🎯 [MobileTimesheet] Parsed employee data:', data);
+          console.log('🎯 [MobileTimesheet] Employee data structure:', {
+            hasSuccess: 'success' in data,
+            hasData: 'data' in data,
+            dataType: typeof data,
+            dataKeys: Object.keys(data),
+            actualData: data.data || data
+          });
+          
+          // Handle the success/data wrapper
+          const employeeInfo = data.data || data;
+          console.log('🎯 [MobileTimesheet] Setting employee data:', employeeInfo);
+          setEmployeeData(employeeInfo);
+        } catch (parseError) {
+          console.error('🎯 [MobileTimesheet] Failed to parse employee JSON:', parseError);
+        }
       } else {
-        console.error('🎯 [MobileTimesheet] Failed to fetch employee data');
+        const errorText = await response.text();
+        console.error('🎯 [MobileTimesheet] Failed to fetch employee data:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorText
+        });
       }
     } catch (error) {
       console.error('🎯 [MobileTimesheet] Error fetching employee:', error);
