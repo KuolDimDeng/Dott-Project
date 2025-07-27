@@ -1,121 +1,128 @@
 import { NextResponse } from 'next/server';
-import { logger } from '@/utils/serverLogger';
-import { cookies } from 'next/headers';
-import { decrypt } from '@/utils/sessionEncryption';
+import { logger } from '@/utils/logger';
+import { getSessionFromRequest } from '@/utils/auth';
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
 /**
  * Proxy API route for /api/customers to handle CORS and authentication
- * This provides mock customer data instead of connecting to the Django backend
  */
 export async function GET(request) {
-  const requestId = Math.random().toString(36).substring(2, 15);
-  logger.debug('[ProxyAPI] Handling customers proxy request', { requestId });
-
   try {
-    // Get tenant ID from request parameters
-    const { searchParams } = new URL(request.url);
-    const tenantIdParam = searchParams.get('tenant_id');
+    logger.info('[Customers API] GET request received');
     
-    // Extract the authorization header for Cognito token
-    const authHeader = request.headers.get('authorization');
-    
-    // Get tenant ID from Cognito session if available
-    let tenantIdFromCognito = null;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      try {
-        const cookieStore = cookies();
-        const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
-        let session = null;
-        if (sessionCookie) {
-          try {
-            const decrypted = decrypt(sessionCookie.value);
-            session = JSON.parse(decrypted);
-          } catch (e) {
-            logger.warn('[ProxyAPI] Failed to decrypt session cookie');
-          }
-        }
-        if (session?.user?.tenantId) {
-          tenantIdFromCognito = session.user.tenantId;
-          logger.debug('[ProxyAPI] Retrieved tenant ID from Cognito session', { 
-            tenantId: tenantIdFromCognito 
-          });
-        }
-      } catch (authError) {
-        logger.error('[ProxyAPI] Failed to get tenant ID from Cognito', { error: authError.message });
-      }
+    // Get session for authentication
+    const sessionResult = await getSessionFromRequest(request);
+    if (!sessionResult.success) {
+      logger.warn('[Customers API] Authentication failed:', sessionResult.error);
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
     }
-    
-    // Use the tenant ID from parameter or Cognito session, fall back to default
-    const tenantId = tenantIdParam || tenantIdFromCognito || '18609ed2-1a46-4d50-bc4e-483d6e3405ff';
-    
-    // Generate mock customers based on tenant ID
-    const mockCustomers = [
-      {
-        id: 1,
-        customer_name: 'Acme Corporation',
-        first_name: 'John',
-        last_name: 'Smith',
-        email: 'john.smith@acme.com',
-        phone: '555-123-4567',
-        street: '123 Main St',
-        city: 'Anytown',
-        state: 'CA',
-        postcode: '90210',
-        country: 'USA',
-        account_number: 'ACME001',
-        tenant_id: tenantId,
-        created_at: new Date().toISOString()
+
+    const { searchParams } = new URL(request.url);
+    const queryString = searchParams.toString();
+    const backendUrl = `${BACKEND_URL}/api/crm/customers/${queryString ? `?${queryString}` : ''}`;
+
+    logger.info('[Customers API] Forwarding to backend:', backendUrl);
+
+    const response = await fetch(backendUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${sessionResult.data.access_token}`,
+        'Content-Type': 'application/json',
+        'X-Tenant-ID': sessionResult.data.tenant_id,
       },
-      {
-        id: 2,
-        customer_name: 'Globex Industries',
-        first_name: 'Jane',
-        last_name: 'Doe',
-        email: 'jane.doe@globex.com',
-        phone: '555-987-6543',
-        street: '456 Oak Ave',
-        city: 'Somewhere',
-        state: 'NY',
-        postcode: '10001',
-        country: 'USA',
-        account_number: 'GLOBEX002',
-        tenant_id: tenantId,
-        created_at: new Date().toISOString()
-      },
-      {
-        id: 3,
-        customer_name: 'Soylent Corp',
-        first_name: 'David',
-        last_name: 'Johnson',
-        email: 'david.johnson@soylent.com',
-        phone: '555-456-7890',
-        street: '789 Pine St',
-        city: 'Otherplace',
-        state: 'TX',
-        postcode: '75001',
-        country: 'USA',
-        account_number: 'SOYLENT003',
-        tenant_id: tenantId,
-        created_at: new Date().toISOString()
-      }
-    ];
-    
-    logger.debug('[ProxyAPI] Returning mock customers', { 
-      requestId,
-      tenantId,
-      count: mockCustomers.length
     });
-      
-    return NextResponse.json(mockCustomers);
-    
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      logger.error('[Customers API] Backend error:', {
+        status: response.status,
+        data
+      });
+      return NextResponse.json(
+        { error: data.error || 'Failed to fetch customers' },
+        { status: response.status }
+      );
+    }
+
+    // Handle paginated response from backend
+    if (data && typeof data === 'object' && 'results' in data) {
+      logger.info('[Customers API] Successfully fetched customers:', data.results.length || 0);
+      return NextResponse.json(data.results);
+    }
+
+    logger.info('[Customers API] Successfully fetched customers:', data.length || 0);
+    return NextResponse.json(data);
   } catch (error) {
-    logger.error('[ProxyAPI] Customers proxy error', {
-      requestId,
+    logger.error('[Customers API] Error:', {
       error: error.message,
       stack: error.stack
     });
     
-    // Return empty array to avoid breaking the frontend
-    return NextResponse.json([]);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request) {
+  try {
+    logger.info('[Customers API] POST request received');
+    
+    // Get session for authentication
+    const sessionResult = await getSessionFromRequest(request);
+    if (!sessionResult.success) {
+      logger.warn('[Customers API] Authentication failed:', sessionResult.error);
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json();
+    const backendUrl = `${BACKEND_URL}/api/crm/customers/`;
+
+    logger.info('[Customers API] Forwarding to backend:', backendUrl);
+
+    const response = await fetch(backendUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${sessionResult.data.access_token}`,
+        'Content-Type': 'application/json',
+        'X-Tenant-ID': sessionResult.data.tenant_id,
+      },
+      body: JSON.stringify(body),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      logger.error('[Customers API] Backend error:', {
+        status: response.status,
+        data
+      });
+      return NextResponse.json(
+        { error: data.error || 'Failed to create customer' },
+        { status: response.status }
+      );
+    }
+
+    logger.info('[Customers API] Successfully created customer');
+    return NextResponse.json(data);
+  } catch (error) {
+    logger.error('[Customers API] Error:', {
+      error: error.message,
+      stack: error.stack
+    });
+    
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 } 

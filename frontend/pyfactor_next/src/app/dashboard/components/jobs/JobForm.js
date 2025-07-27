@@ -45,10 +45,13 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
 
   const fetchCustomers = async () => {
     try {
+      logger.info('[JobForm] Fetching customers...');
       const customersData = await jobService.getAvailableCustomers();
+      logger.info('[JobForm] Customers received:', customersData);
       setCustomers(Array.isArray(customersData) ? customersData : []);
     } catch (err) {
       logger.error('Error fetching customers:', err);
+      setError('Failed to load customers. Please try again.');
     }
   };
 
