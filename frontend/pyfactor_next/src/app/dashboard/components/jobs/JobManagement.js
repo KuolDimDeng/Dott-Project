@@ -26,6 +26,8 @@ import JobProfitability from './JobProfitability';
 import VehicleManagement from './VehicleManagement';
 
 const JobManagement = ({ view = 'jobs-list' }) => {
+  console.log('🟣 [JobManagement] Component rendering with view:', view);
+  
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -81,6 +83,8 @@ const JobManagement = ({ view = 'jobs-list' }) => {
   };
 
   const handleCreateJob = () => {
+    console.log('🔴 [JobManagement] Create Job button clicked!');
+    console.log('🔴 [JobManagement] Setting showAddJobForm to true');
     setShowAddJobForm(true);
   };
 
@@ -227,8 +231,10 @@ const JobManagement = ({ view = 'jobs-list' }) => {
         </div>
 
         {/* Inline Add Job Form */}
+        {console.log('🔵 [JobManagement] Rendering check - showAddJobForm:', showAddJobForm)}
         {showAddJobForm && (
           <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+            {console.log('🟢 [JobManagement] Rendering JobForm component')}
             <JobForm
               job={null}
               inline={true}
