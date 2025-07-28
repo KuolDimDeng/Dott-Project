@@ -8,7 +8,7 @@ export async function GET(request) {
   logger.info('[JobsVehicles] 🚗 === API CALL START ===');
 
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const sid = cookieStore.get('sid');
     
     logger.info('[JobsVehicles] 🚗 Cookie check:', { 
