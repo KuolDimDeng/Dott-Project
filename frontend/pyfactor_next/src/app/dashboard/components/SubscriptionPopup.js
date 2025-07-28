@@ -132,7 +132,9 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
   // Function to fetch exchange rate
   const fetchExchangeRate = async (countryCode) => {
     try {
-      const response = await fetch(`/api/exchange-rates?country=${countryCode}`);
+      const response = await fetch(`/api/exchange-rates?country=${countryCode}`, {
+        credentials: 'include'
+      });
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
@@ -230,6 +232,7 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
       const response = await fetch('/api/checkout/create-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // IMPORTANT: Include cookies with the request
         body: JSON.stringify(requestBody)
       });
       
@@ -437,6 +440,7 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
           const storeSubscriptionResponse = await fetch('/api/auth/store-subscription-info', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify({
               planId: 'free',
               interval: billingCycle,
@@ -466,6 +470,7 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
           const onboardingResponse = await fetch('/api/onboarding/complete-all', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify({
               subscription_plan: 'free',
               subscription_interval: billingCycle,
@@ -543,6 +548,7 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
             await fetch('/api/auth/store-subscription-info', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
               body: JSON.stringify({
                 planId: selectedPlan,
                 interval: billingCycle,
@@ -601,6 +607,7 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
           await fetch('/api/auth/store-subscription-info', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify({
               planId: selectedPlan,
               interval: billingCycle,
