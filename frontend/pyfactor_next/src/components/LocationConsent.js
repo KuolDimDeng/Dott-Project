@@ -64,6 +64,8 @@ export default function LocationConsent({
         }
       } else {
         console.log('🎯 [LocationConsent] API response not ok, status:', response.status);
+        console.log('🎯 [LocationConsent] Setting showConsent to true due to API error');
+        setShowConsent(true); // Show consent on API error
       }
     } catch (error) {
       console.error('🎯 [LocationConsent] Error checking consent status:', error);
