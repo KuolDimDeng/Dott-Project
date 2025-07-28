@@ -177,8 +177,8 @@ const Profile = ({ userData }) => {
       return;
     }
     
-    if (selectedTab === 1) {
-      console.log('[Profile] Pay tab selected, fetching employee data...');
+    if (selectedTab === 0 || selectedTab === 1) {
+      console.log(`[Profile] ${selectedTab === 0 ? 'Profile' : 'Pay'} tab selected, fetching employee data...`);
       fetchEmployeeProfileData();
     } else if (selectedTab === 6) {
       console.log('[Profile] Security tab selected, fetching data...');
