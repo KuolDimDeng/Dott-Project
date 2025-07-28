@@ -259,6 +259,17 @@ const Profile = ({ userData }) => {
         hasSessionUser: !!session?.user
       });
       
+      // First try the debug endpoint to see what's happening
+      try {
+        const debugResponse = await fetch('/api/hr/employee/profile/debug');
+        if (debugResponse.ok) {
+          const debugData = await debugResponse.json();
+          console.log('[Profile] Debug info:', debugData);
+        }
+      } catch (debugError) {
+        console.log('[Profile] Debug endpoint error:', debugError);
+      }
+      
       const response = await fetch('/api/hr/employee/profile');
       console.log('[Profile] Employee profile API response status:', response.status);
       console.log('[Profile] Response headers:', Object.fromEntries(response.headers.entries()));
@@ -287,8 +298,49 @@ const Profile = ({ userData }) => {
         
         // If 404, it means no employee record exists for this user
         if (response.status === 404) {
-          console.log('[Profile] No employee record found for user - this is expected for business owners');
-          // Don't show error for owners/admins
+          console.log('[Profile] No employee record found via profile API, trying employees list...');
+          
+          // Try fetching from employees list as fallback
+          try {
+            const userEmail = userData?.email || session?.user?.email;
+            const tenantId = userData?.tenant_id || userData?.business_id || session?.user?.tenant_id || session?.user?.business_id;
+            
+            console.log('[Profile] Fetching employees list with tenant ID:', tenantId);
+            const employeesResponse = await fetch('/api/hr/v2/employees/', {
+              headers: {
+                'X-Tenant-ID': tenantId,
+              },
+            });
+            
+            if (employeesResponse.ok) {
+              const employeesData = await employeesResponse.json();
+              const employees = employeesData.data || employeesData.results || [];
+              console.log('[Profile] Found employees:', employees.length);
+              
+              // Find employee by email
+              const userEmployee = employees.find(emp => 
+                emp.email?.toLowerCase() === userEmail?.toLowerCase()
+              );
+              
+              if (userEmployee) {
+                console.log('[Profile] Found employee via list:', {
+                  id: userEmployee.id,
+                  email: userEmployee.email,
+                  businessId: userEmployee.business_id
+                });
+                setEmployeeData(userEmployee);
+                setBankInfo(userEmployee.bank_info || {});
+                setTaxInfo(userEmployee.tax_info || {});
+                return; // Exit early since we found the employee
+              } else {
+                console.log('[Profile] No matching employee found in list for email:', userEmail);
+              }
+            }
+          } catch (fallbackError) {
+            console.error('[Profile] Error fetching employees list:', fallbackError);
+          }
+          
+          // Only show error for non-owners/admins
           if (userData?.role !== 'OWNER' && userData?.role !== 'ADMIN') {
             notifyError('No employee record found. Please contact your administrator.');
           }
@@ -682,9 +734,9 @@ const Profile = ({ userData }) => {
                   readOnly
                   title="Employee ID is system-generated and cannot be changed"
                 />
-                {!employeeData && user.role === 'OWNER' && (
+                {!employeeData && (
                   <p className="mt-1 text-xs text-gray-500">
-                    As a business owner, you don't have an employee record by default
+                    No employee record found
                   </p>
                 )}
               </div>
