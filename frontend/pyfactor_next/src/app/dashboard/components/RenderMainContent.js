@@ -260,6 +260,7 @@ const BillOfMaterialsManagement = enhancedLazy(() => import('./forms/inventory/B
 const JobManagement = enhancedLazy(() => import('./jobs/JobManagement.js'), 'Job Management');
 const JobDashboard = enhancedLazy(() => import('./jobs/JobDashboard.js'), 'Job Dashboard');
 const JobReportsManagement = enhancedLazy(() => import('./jobs/JobReportsManagement.js'), 'Job Reports Management');
+const POSSystem = enhancedLazy(() => import('./pos/POSSystem.js'), 'POS System');
 const MainDashboard = enhancedLazy(() => import('./dashboards/MainDashboard'), 'Main Dashboard');
 const BankTransactions = enhancedLazy(() => import('./forms/BankTransactionPage'), 'Bank Transactions');
 const HRDashboard = enhancedLazy(() => import('./forms/HRDashboard.js'), 'HR Dashboard');
@@ -2179,8 +2180,8 @@ const RenderMainContent = React.memo(function RenderMainContent({
         }
       }
 
-      // Additional case for createOptions - but skip Product, Service, and Estimate as they're handled by their respective management views
-      if (showCreateOptions && selectedOption !== 'Product' && selectedOption !== 'Service' && selectedOption !== 'Estimate') {
+      // Additional case for createOptions
+      if (showCreateOptions) {
         const createComponentKey = `create-${selectedOption}-${navigationKey || 'default'}`;
         return (
           <ContentWrapperWithKey>
@@ -2191,6 +2192,10 @@ const RenderMainContent = React.memo(function RenderMainContent({
               {selectedOption === 'Estimate' && <EstimateManagement newEstimate={true} />}
               {selectedOption === 'Customer' && <CustomerList mode="create" onCreateCustomer={handleCreateCustomer} />}
               {selectedOption === 'Vendor' && <VendorManagement newVendor={true} />}
+              {selectedOption === 'Sales' && <POSSystem />}
+              {selectedOption === 'Job' && <JobManagement />}
+              {selectedOption === 'Product' && <ProductManagement />}
+              {selectedOption === 'Service' && <ServiceManagement />}
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>
         );
