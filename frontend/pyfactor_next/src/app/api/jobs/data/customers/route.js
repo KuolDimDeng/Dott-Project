@@ -5,17 +5,34 @@ import { NextResponse } from 'next/server';
 const BACKEND_URL = process.env.BACKEND_URL || 'https://api.dottapps.com';
 
 export async function GET(request) {
+  console.log('[JobsDataCustomers] 👥 === API CALL START ===');
   logger.info('[JobsDataCustomers] 👥 === API CALL START ===');
 
   try {
+    // Log all headers
+    const headers = Object.fromEntries(request.headers.entries());
+    console.log('[JobsDataCustomers] 👥 Request headers:', headers);
+    
     const cookieStore = await cookies();
+    const allCookies = cookieStore.getAll();
+    console.log('[JobsDataCustomers] 👥 All cookies:', allCookies.map(c => ({ name: c.name, valueLength: c.value?.length })));
+    
     const sid = cookieStore.get('sid');
+    const sessionToken = cookieStore.get('sessionToken');
+    
+    console.log('[JobsDataCustomers] 👥 Cookie details:', { 
+      hasSid: !!sid,
+      sidValue: sid?.value?.substring(0, 8) + '...',
+      hasSessionToken: !!sessionToken,
+      sessionTokenValue: sessionToken?.value?.substring(0, 8) + '...'
+    });
     
     logger.info('[JobsDataCustomers] 👥 Cookie check:', { 
       hasSid: !!sid
     });
 
     if (!sid) {
+      console.error('[JobsDataCustomers] 👥 No session cookie found, all cookies:', allCookies);
       logger.error('[JobsDataCustomers] 👥 No session cookie found');
       return NextResponse.json(
         { error: 'Authentication required' },
@@ -23,41 +40,23 @@ export async function GET(request) {
       );
     }
 
-    // Get the session data from the backend to ensure we have the correct tenant ID
-    const sessionResponse = await fetch(`${BACKEND_URL}/api/sessions/verify/`, {
-      headers: {
-        'Authorization': `Session ${sid.value}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!sessionResponse.ok) {
-      logger.warn('[JobsDataCustomers] 👥 Session verification failed');
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
-    const sessionData = await sessionResponse.json();
-    logger.info('[JobsDataCustomers] 👥 Session data:', { user_id: sessionData.user_id, tenant_id: sessionData.tenant_id });
-
     const backendUrl = `${BACKEND_URL}/api/jobs/data/customers/`;
+    console.log('[JobsDataCustomers] 👥 Making request to:', backendUrl);
     logger.info('[JobsDataCustomers] 👥 Making request to:', backendUrl);
 
-    const headers = {
+    const requestHeaders = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
+      'Cookie': request.headers.get('cookie') || '',
       'Authorization': `Session ${sid.value}`,
       'X-Session-ID': sid.value,
-      'X-Tenant-ID': sessionData.tenant_id,
     };
     
-    logger.info('[JobsDataCustomers] 👥 Added tenant ID:', sessionData.tenant_id);
+    console.log('[JobsDataCustomers] 👥 Request headers being sent:', requestHeaders);
 
     const response = await fetch(backendUrl, {
       method: 'GET',
-      headers,
+      headers: requestHeaders,
       credentials: 'include',
     });
 

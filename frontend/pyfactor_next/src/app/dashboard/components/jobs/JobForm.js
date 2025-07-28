@@ -83,6 +83,7 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
   const fetchCustomers = async () => {
     try {
       console.log('[JobForm] 👥 === FETCHING CUSTOMERS START ===');
+      console.log('[JobForm] 👥 Document cookies:', document.cookie);
       logger.info('[JobForm] 👥 === FETCHING CUSTOMERS START ===');
       
       // Try the new job data endpoint first
