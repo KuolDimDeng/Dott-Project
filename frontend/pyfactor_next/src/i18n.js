@@ -209,6 +209,28 @@ import amDashboard from '../public/locales/am/dashboard.json';
 import zuDashboard from '../public/locales/zu/dashboard.json';
 import koDashboard from '../public/locales/ko/dashboard.json';
 
+// Import POS namespaces
+import enPos from '../public/locales/en/pos.json';
+import esPos from '../public/locales/es/pos.json';
+import frPos from '../public/locales/fr/pos.json';
+import ptPos from '../public/locales/pt/pos.json';
+import dePos from '../public/locales/de/pos.json';
+import zhPos from '../public/locales/zh/pos.json';
+import arPos from '../public/locales/ar/pos.json';
+import hiPos from '../public/locales/hi/pos.json';
+import ruPos from '../public/locales/ru/pos.json';
+import jaPos from '../public/locales/ja/pos.json';
+import swPos from '../public/locales/sw/pos.json';
+import trPos from '../public/locales/tr/pos.json';
+import idPos from '../public/locales/id/pos.json';
+import viPos from '../public/locales/vi/pos.json';
+import nlPos from '../public/locales/nl/pos.json';
+import haPos from '../public/locales/ha/pos.json';
+import yoPos from '../public/locales/yo/pos.json';
+import amPos from '../public/locales/am/pos.json';
+import zuPos from '../public/locales/zu/pos.json';
+import koPos from '../public/locales/ko/pos.json';
+
 const resources = {
   en: {
     common: enCommon,
@@ -219,7 +241,8 @@ const resources = {
     settings: enSettings,
     profile: enProfile,
     help: enHelp,
-    dashboard: enDashboard
+    dashboard: enDashboard,
+    pos: enPos
   },
   es: {
     common: esCommon,
@@ -230,7 +253,8 @@ const resources = {
     settings: esSettings,
     profile: esProfile,
     help: esHelp,
-    dashboard: esDashboard
+    dashboard: esDashboard,
+    pos: esPos
   },
   fr: {
     common: frCommon,
@@ -241,7 +265,8 @@ const resources = {
     settings: frSettings,
     profile: frProfile,
     help: frHelp,
-    dashboard: frDashboard
+    dashboard: frDashboard,
+    pos: frPos
   },
   pt: {
     common: ptCommon,
@@ -252,7 +277,8 @@ const resources = {
     settings: ptSettings,
     profile: ptProfile,
     help: ptHelp,
-    dashboard: ptDashboard
+    dashboard: ptDashboard,
+    pos: ptPos
   },
   de: {
     common: deCommon,
@@ -263,7 +289,8 @@ const resources = {
     settings: deSettings,
     profile: deProfile,
     help: deHelp,
-    dashboard: deDashboard
+    dashboard: deDashboard,
+    pos: dePos
   },
   zh: {
     common: zhCommon,
@@ -274,7 +301,8 @@ const resources = {
     settings: zhSettings,
     profile: zhProfile,
     help: zhHelp,
-    dashboard: zhDashboard
+    dashboard: zhDashboard,
+    pos: zhPos
   },
   ar: {
     common: arCommon,
@@ -285,7 +313,8 @@ const resources = {
     settings: arSettings,
     profile: arProfile,
     help: arHelp,
-    dashboard: arDashboard
+    dashboard: arDashboard,
+    pos: arPos
   },
   hi: {
     common: hiCommon,
@@ -296,7 +325,8 @@ const resources = {
     settings: hiSettings,
     profile: hiProfile,
     help: hiHelp,
-    dashboard: hiDashboard
+    dashboard: hiDashboard,
+    pos: hiPos
   },
   ru: {
     common: ruCommon,
@@ -307,7 +337,8 @@ const resources = {
     settings: ruSettings,
     profile: ruProfile,
     help: ruHelp,
-    dashboard: ruDashboard
+    dashboard: ruDashboard,
+    pos: ruPos
   },
   ja: {
     common: jaCommon,
@@ -318,7 +349,8 @@ const resources = {
     settings: jaSettings,
     profile: jaProfile,
     help: jaHelp,
-    dashboard: jaDashboard
+    dashboard: jaDashboard,
+    pos: jaPos
   },
   sw: {
     common: swCommon,
@@ -329,7 +361,8 @@ const resources = {
     settings: swSettings,
     profile: swProfile,
     help: swHelp,
-    dashboard: swDashboard
+    dashboard: swDashboard,
+    pos: swPos
   },
   tr: {
     common: trCommon,
@@ -340,7 +373,8 @@ const resources = {
     settings: trSettings,
     profile: trProfile,
     help: trHelp,
-    dashboard: trDashboard
+    dashboard: trDashboard,
+    pos: trPos
   },
   id: {
     common: idCommon,
@@ -351,7 +385,8 @@ const resources = {
     settings: idSettings,
     profile: idProfile,
     help: idHelp,
-    dashboard: idDashboard
+    dashboard: idDashboard,
+    pos: idPos
   },
   vi: {
     common: viCommon,
@@ -362,7 +397,8 @@ const resources = {
     settings: viSettings,
     profile: viProfile,
     help: viHelp,
-    dashboard: viDashboard
+    dashboard: viDashboard,
+    pos: viPos
   },
   nl: {
     common: nlCommon,
@@ -373,7 +409,8 @@ const resources = {
     settings: nlSettings,
     profile: nlProfile,
     help: nlHelp,
-    dashboard: nlDashboard
+    dashboard: nlDashboard,
+    pos: nlPos
   },
   ha: {
     common: haCommon,
@@ -384,7 +421,8 @@ const resources = {
     settings: haSettings,
     profile: haProfile,
     help: haHelp,
-    dashboard: haDashboard
+    dashboard: haDashboard,
+    pos: haPos
   },
   yo: {
     common: yoCommon,
@@ -395,7 +433,8 @@ const resources = {
     settings: yoSettings,
     profile: yoProfile,
     help: yoHelp,
-    dashboard: yoDashboard
+    dashboard: yoDashboard,
+    pos: yoPos
   },
   am: {
     common: amCommon,
@@ -406,7 +445,8 @@ const resources = {
     settings: amSettings,
     profile: amProfile,
     help: amHelp,
-    dashboard: amDashboard
+    dashboard: amDashboard,
+    pos: amPos
   },
   zu: {
     common: zuCommon,
@@ -417,7 +457,8 @@ const resources = {
     settings: zuSettings,
     profile: zuProfile,
     help: zuHelp,
-    dashboard: zuDashboard
+    dashboard: zuDashboard,
+    pos: zuPos
   },
   ko: {
     common: koCommon,
@@ -428,7 +469,8 @@ const resources = {
     settings: koSettings,
     profile: koProfile,
     help: koHelp,
-    dashboard: koDashboard
+    dashboard: koDashboard,
+    pos: koPos
   }
 };
 
@@ -484,7 +526,7 @@ if (typeof window !== 'undefined' && !i18nInstance.isInitialized) {
         resources,
         fallbackLng: i18nConfig.defaultLocale,
         supportedLngs: i18nConfig.locales,
-        ns: ['common', 'onboarding', 'auth', 'calendar', 'navigation', 'settings', 'profile', 'help', 'dashboard'],
+        ns: ['common', 'onboarding', 'auth', 'calendar', 'navigation', 'settings', 'profile', 'help', 'dashboard', 'pos'],
         defaultNS: 'common',
         detection: {
           order: ['querystring', 'localStorage', 'countryDetector', 'navigator', 'htmlTag'],
@@ -557,7 +599,7 @@ if (typeof window !== 'undefined' && !i18nInstance.isInitialized) {
         resources,
         fallbackLng: i18nConfig.defaultLocale,
         supportedLngs: i18nConfig.locales,
-        ns: ['common', 'onboarding', 'auth', 'calendar', 'navigation', 'settings', 'profile', 'help', 'dashboard'],
+        ns: ['common', 'onboarding', 'auth', 'calendar', 'navigation', 'settings', 'profile', 'help', 'dashboard', 'pos'],
         defaultNS: 'common',
         interpolation: {
           escapeValue: false,
