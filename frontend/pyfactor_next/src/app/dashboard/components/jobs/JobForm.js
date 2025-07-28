@@ -9,6 +9,7 @@ import MultiSelectDropdown from './MultiSelectDropdown';
 
 const JobForm = ({ job, onClose, onSave, inline = false }) => {
   console.log('🎯 [JobForm] Component rendering with props:', { job, inline });
+  console.log('🎯 [JobForm] DEBUG MODE: Enhanced logging enabled for customers and supplies');
   
   const [formData, setFormData] = useState({
     job_number: '',
