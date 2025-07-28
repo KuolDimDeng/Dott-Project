@@ -147,6 +147,7 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
         count: Array.isArray(customersData) ? customersData.length : 0,
         data: customersData
       });
+      console.log('[JobForm] 👥 Sample customer:', Array.isArray(customersData) && customersData.length > 0 ? customersData[0] : 'No customers');
       setCustomers(Array.isArray(customersData) ? customersData : []);
     } catch (err) {
       console.error('[JobForm] 👥 Error fetching customers:', err);
@@ -221,6 +222,7 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
         count: Array.isArray(employeesData) ? employeesData.length : 0,
         data: employeesData
       });
+      console.log('[JobForm] 👷 Sample employee:', Array.isArray(employeesData) && employeesData.length > 0 ? employeesData[0] : 'No employees');
       setEmployees(Array.isArray(employeesData) ? employeesData : []);
     } catch (err) {
       logger.error('[JobForm] 👷 Error fetching employees:', err);
@@ -293,6 +295,7 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
         count: Array.isArray(suppliesData) ? suppliesData.length : 0,
         data: suppliesData
       });
+      console.log('[JobForm] 📦 Sample supply:', Array.isArray(suppliesData) && suppliesData.length > 0 ? suppliesData[0] : 'No supplies');
       setSupplies(Array.isArray(suppliesData) ? suppliesData : []);
     } catch (err) {
       logger.error('[JobForm] 📦 Error fetching supplies:', err);
@@ -673,8 +676,11 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
                 }}
                 placeholder="Select employees..."
                 displayKey={(emp) => {
-                  const name = `${emp.user?.first_name || ''} ${emp.user?.last_name || ''}`.trim();
-                  return name || emp.user?.email || 'Unknown Employee';
+                  console.log('[JobForm] Employee object:', emp);
+                  // Try different possible structures
+                  const name = `${emp.first_name || emp.user?.first_name || ''} ${emp.last_name || emp.user?.last_name || ''}`.trim();
+                  const email = emp.email || emp.user?.email || '';
+                  return name || email || 'Unknown Employee';
                 }}
                 valueKey="id"
                 showCount={true}
@@ -1174,8 +1180,11 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
                 }}
                 placeholder="Select employees..."
                 displayKey={(emp) => {
-                  const name = `${emp.user?.first_name || ''} ${emp.user?.last_name || ''}`.trim();
-                  return name || emp.user?.email || 'Unknown Employee';
+                  console.log('[JobForm] Employee object:', emp);
+                  // Try different possible structures
+                  const name = `${emp.first_name || emp.user?.first_name || ''} ${emp.last_name || emp.user?.last_name || ''}`.trim();
+                  const email = emp.email || emp.user?.email || '';
+                  return name || email || 'Unknown Employee';
                 }}
                 valueKey="id"
                 showCount={true}
