@@ -884,22 +884,45 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     console.log('[DashboardContent] handleMenuItemClick called with option:', option);
     handleCloseCreateMenu();
     
-    // Handle Product, Service, Estimate, Job, Customer, and Sales inline like their Sales menu counterparts
+    // Generate a unique navigation key for smooth transitions
+    const navKey = `create-${option.toLowerCase()}-${Date.now()}`;
+    
+    // Handle navigation without full state reset for better UX
     if (option === 'Product') {
-      console.log('[DashboardContent] Redirecting to Products management');
-      handleSalesClick('products');
+      console.log('[DashboardContent] Navigating to Products management');
+      updateState({ 
+        view: 'sales-products',
+        showProductManagement: true,
+        navigationKey: navKey
+      });
     } else if (option === 'Service') {
-      console.log('[DashboardContent] Redirecting to Services management');
-      handleSalesClick('services');
+      console.log('[DashboardContent] Navigating to Services management');
+      updateState({ 
+        view: 'sales-services',
+        showServiceManagement: true,
+        navigationKey: navKey
+      });
     } else if (option === 'Estimate') {
-      console.log('[DashboardContent] Redirecting to Estimates management');
-      handleSalesClick('estimates');
+      console.log('[DashboardContent] Navigating to Estimates management');
+      updateState({ 
+        view: 'estimate-management',
+        showEstimateManagement: true,
+        navigationKey: navKey
+      });
     } else if (option === 'Job') {
-      console.log('[DashboardContent] Redirecting to Jobs management');
-      handleSalesClick('jobs');
+      console.log('[DashboardContent] Navigating to Jobs management');
+      updateState({ 
+        view: 'job-management',
+        showJobManagement: true,
+        navigationKey: navKey
+      });
     } else if (option === 'Customer') {
-      console.log('[DashboardContent] Redirecting to Customers management');
-      handleSalesClick('customers');
+      console.log('[DashboardContent] Navigating to Customers management');
+      updateState({ 
+        view: 'customers',
+        showCustomerList: true,
+        navigationKey: navKey
+      });
     } else if (option === 'Sales') {
       console.log('[DashboardContent] Opening POS System');
       setShowPOSSystem(true);
@@ -907,7 +930,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
       console.log('[DashboardContent] Showing create options for:', option);
       handleShowCreateOptions(option);
     }
-  }, [handleCloseCreateMenu, handleShowCreateOptions, handleSalesClick]);
+  }, [handleCloseCreateMenu, handleShowCreateOptions, updateState]);
 
   const handleUserProfileClick = useCallback(() => {
     console.log('[DashboardContent] User Profile clicked');

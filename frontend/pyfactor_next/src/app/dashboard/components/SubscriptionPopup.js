@@ -9,12 +9,13 @@ import { forceRedirect, storeRedirectDebugInfo, safeParseJson } from '@/utils/re
 import ErrorBoundary from '@/components/ErrorBoundary/ErrorBoundary';
 import { setCacheValue } from '@/utils/appCache';
 import { retryLoadScript } from '@/utils/networkMonitor';
+import { isDevelopingCountry as checkIsDevelopingCountry } from '@/services/countryDetectionService';
 
 const SubscriptionPopup = ({ open, onClose, isOpen }) => {
   // Use either open or isOpen prop for backward compatibility
   const showPopup = open !== undefined ? open : (isOpen !== undefined ? isOpen : false);
   
-  const { userData, updateUserAttributes } = useAuth();
+  const { userData } = useAuth();
   const { notifySuccess, notifyError } = useNotification();
   
   // Default to professional plan if user is on free plan
@@ -24,6 +25,9 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
   const [isRedirectingToStripe, setIsRedirectingToStripe] = useState(false);
   const [stripeLoaded, setStripeLoaded] = useState(false);
   const [loadAttempts, setLoadAttempts] = useState(0);
+  const [exchangeRate, setExchangeRate] = useState(null);
+  const [localCurrency, setLocalCurrency] = useState(null);
+  const [isDevelopingCountry, setIsDevelopingCountry] = useState(false);
   
   // IMPORTANT - Only load Stripe when the popup is actually shown
   useEffect(() => {
@@ -104,15 +108,48 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
     
   }, [showPopup, stripeLoaded, notifyError]); // Removed loadAttempts from dependencies
   
-  // Reset selected plan when popup opens
+  // Reset selected plan and fetch exchange rates when popup opens
   useEffect(() => {
     if (showPopup) {
       // If user is on free plan, default to professional; otherwise use their current plan
       setSelectedPlan((userData?.subscription_type === 'free' ? 'professional' : userData?.subscription_type) || 'professional');
       setIsSubmitting(false);
       setIsRedirectingToStripe(false);
+      
+      // Get user's country and check if it's a developing country
+      const userCountry = userData?.business_country || userData?.country || userData?.businessCountry;
+      if (userCountry) {
+        // Check if it's a developing country
+        const developing = checkIsDevelopingCountry(userCountry);
+        setIsDevelopingCountry(developing);
+        
+        // Fetch exchange rates for the user's country
+        fetchExchangeRate(userCountry);
+      }
     }
   }, [showPopup, userData]);
+  
+  // Function to fetch exchange rate
+  const fetchExchangeRate = async (countryCode) => {
+    try {
+      const response = await fetch(`/api/exchange-rates?country=${countryCode}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setExchangeRate(data.rate);
+          setLocalCurrency(data.format);
+          logger.debug('Exchange rate fetched:', { 
+            country: countryCode, 
+            rate: data.rate, 
+            currency: data.currency 
+          });
+        }
+      }
+    } catch (error) {
+      logger.error('Failed to fetch exchange rate:', error);
+      // Continue without local currency display
+    }
+  };
   
   // Get plan color using the utility function
   const getPlanColor = (planId) => {
@@ -125,6 +162,43 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
   
   const handleBillingCycleChange = (event) => {
     setBillingCycle(event.target.value);
+  };
+  
+  // Function to calculate price with discount
+  const calculateDiscountedPrice = (originalPrice) => {
+    if (isDevelopingCountry) {
+      return originalPrice * 0.5; // 50% discount
+    }
+    return originalPrice;
+  };
+  
+  // Function to format price with local currency
+  const formatPriceWithCurrency = (usdPrice) => {
+    const discountedPrice = calculateDiscountedPrice(usdPrice);
+    
+    // Always show USD price
+    let priceDisplay = `$${discountedPrice}`;
+    
+    // Add local currency if available
+    if (exchangeRate && localCurrency) {
+      const localPrice = discountedPrice * exchangeRate;
+      const formattedLocal = localCurrency.decimals === 0 
+        ? Math.round(localPrice).toLocaleString()
+        : localPrice.toFixed(localCurrency.decimals).toLocaleString();
+      
+      // Add local currency in green, smaller font
+      priceDisplay += ` `;
+      return (
+        <>
+          ${discountedPrice}
+          <span className="text-green-600 text-sm font-normal ml-1">
+            ({localCurrency.symbol}{formattedLocal})
+          </span>
+        </>
+      );
+    }
+    
+    return priceDisplay;
   };
 
   // Function to create a Stripe checkout session
@@ -318,6 +392,10 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
     setIsSubmitting(true);
     
     try {
+      // Check if user is from Kenya and should use M-Pesa
+      const userCountry = userData?.business_country || userData?.country || userData?.businessCountry;
+      const isKenyanUser = userCountry === 'KE';
+      
       // For free plan, handle directly (no Stripe)
       if (selectedPlan === 'free') {
         logger.info('Upgrading to free plan');
@@ -351,53 +429,25 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
           // Continue anyway, this is non-critical
         }
         
-        // Use our robust function to mark onboarding as complete
+        // Mark onboarding as complete via API
         try {
-          // Import the completeOnboarding function
-          const { completeOnboarding } = await import('@/utils/completeOnboarding');
+          const onboardingResponse = await fetch('/api/onboarding/complete-all', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              subscription_plan: 'free',
+              subscription_interval: billingCycle,
+              subscription_status: 'active'
+            })
+          });
           
-          // Call the function and wait for it to complete
-          const success = await completeOnboarding();
-          
-          if (success) {
+          if (onboardingResponse.ok) {
             logger.info('Successfully marked onboarding as complete');
           } else {
-            logger.warn('Failed to mark onboarding as complete via dedicated function');
-            
-            // Fallback: Try direct update as last resort - include ALL business and subscription data
-            try {
-              const { updateUserAttributes } = await import('@/config/amplifyUnified');
-              await updateUserAttributes({
-                userAttributes: {
-                  // Onboarding status
-                  'custom:onboarding': 'complete',
-                  'custom:setupdone': 'true',
-                  'custom:updated_at': new Date().toISOString(),
-                  
-                  // Subscription info
-                  'custom:subplan': 'free',
-                  'custom:subscriptioninterval': billingCycle,
-                  'custom:subscriptionstatus': 'active',
-                  
-                  // Business info - preserve existing data
-                  'custom:businessname': userData?.business_name || '',
-                  'custom:businesstype': userData?.business_type || '',
-                  'custom:businesscountry': userData?.business_country || '',
-                  'custom:legalstructure': userData?.legal_structure || '',
-                  'custom:businessid': userData?.business_id || '',
-                  
-                  // Timestamps
-                  'custom:onboardingCompletedAt': new Date().toISOString(),
-                  'custom:subscriptionUpdatedAt': new Date().toISOString()
-                }
-              });
-              logger.info('Successfully updated attributes via direct update');
-            } catch (directError) {
-              logger.error('All attempts to update Cognito attributes failed:', directError);
-            }
+            logger.warn('Failed to mark onboarding as complete:', await onboardingResponse.text());
           }
         } catch (completeError) {
-          logger.error('Error importing or calling completeOnboarding:', completeError);
+          logger.error('Error marking onboarding complete:', completeError);
         }
         
         notifySuccess('Successfully upgraded to Free plan');
@@ -405,8 +455,39 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
         return;
       }
       
-      // For paid plans, create a checkout session and redirect to Stripe
+      // For paid plans, handle payment based on country
       if (selectedPlan === 'professional' || selectedPlan === 'enterprise') {
+        // If user is from Kenya, redirect to payment page for M-Pesa option
+        if (isKenyanUser) {
+          logger.info('Kenyan user detected, redirecting to payment page for M-Pesa option');
+          
+          // Store selected plan info in sessionStorage for the payment page
+          try {
+            const subscriptionData = {
+              planId: selectedPlan,
+              interval: billingCycle,
+              timestamp: Date.now(),
+              country: userCountry,
+              paymentMethod: 'pending' // Will be selected on payment page
+            };
+            
+            sessionStorage.setItem('pendingSubscription', JSON.stringify(subscriptionData));
+            
+            // Store in AppCache as backup
+            setCacheValue('pendingSubscription', {
+              ...subscriptionData,
+              backup_created: new Date().toISOString()
+            });
+          } catch (e) {
+            logger.warn('Error storing subscription info:', e);
+          }
+          
+          // Redirect to the payment page where they can choose M-Pesa or Card
+          window.location.href = '/onboarding/payment';
+          return;
+        }
+        
+        // For non-Kenya users, proceed with Stripe
         setIsRedirectingToStripe(true);
         
         // Store selected plan info in sessionStorage for the payment page
@@ -425,19 +506,20 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
             backup_created: new Date().toISOString()
           });
           
-          // Update Cognito with subscription plan information (intent to pay)
+          // Store subscription intent in backend
           try {
-            await updateUserAttributes({
-              userAttributes: {
-                'custom:subplan': selectedPlan,
-                'custom:subscriptioninterval': billingCycle,
-                'custom:subscriptionstatus': 'pending_payment',
-                'custom:updated_at': new Date().toISOString()
-              }
+            await fetch('/api/auth/store-subscription-info', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                planId: selectedPlan,
+                interval: billingCycle,
+                status: 'pending_payment'
+              })
             });
-            logger.info('Updated Cognito with subscription intent information');
-          } catch (attributeError) {
-            logger.warn('Error updating Cognito with subscription intent:', attributeError);
+            logger.info('Stored subscription intent in backend');
+          } catch (storeError) {
+            logger.warn('Error storing subscription intent:', storeError);
             // Continue anyway, as we'll update after successful payment
           }
         } catch (e) {
@@ -463,16 +545,7 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
           setIsSubmitting(false);
         }
       } else {
-        // For downgrades or lateral changes, just update the attribute
-        await updateUserAttributes({
-          userAttributes: {
-            'custom:subscription_type': selectedPlan,
-            'custom:subscriptioninterval': billingCycle,
-            'custom:updated_at': new Date().toISOString()
-          }
-        });
-        
-        // Also update in the database
+        // For downgrades or lateral changes, update in the database
         try {
           await fetch('/api/auth/store-subscription-info', {
             method: 'POST',
@@ -487,7 +560,9 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
           logger.info('Successfully stored updated plan subscription info in database');
         } catch (dbError) {
           logger.warn('Failed to store updated subscription in database:', dbError);
-          // Non-critical error, continue
+          notifyError('Failed to update subscription. Please try again.');
+          setIsSubmitting(false);
+          return;
         }
         
         notifySuccess('Subscription updated successfully');
@@ -615,6 +690,22 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
                   
                   <div className="px-6 pb-4">
                     <p className="text-gray-600 mb-6">Select a premium plan to unlock advanced features and capabilities.</p>
+                    
+                    {/* Show discount message for developing countries */}
+                    {isDevelopingCountry && (
+                      <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex items-center">
+                          <CheckCircleIcon className="h-5 w-5 text-green-600 mr-2" />
+                          <p className="text-green-800 font-medium">
+                            50% regional discount applied to all plans
+                          </p>
+                        </div>
+                        <p className="text-green-700 text-sm mt-1">
+                          Prices shown include your discount and local currency conversion
+                        </p>
+                      </div>
+                    )}
+                    
                     <div className="flex items-center space-x-4 flex-wrap">
                       <label className="inline-flex items-center">
                         <input
@@ -694,18 +785,18 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
                               <h2 className="text-xl font-semibold mb-2">
                                 {plan.name}
                               </h2>
-                              <p className={`text-3xl font-bold mb-4 ${colorClasses.text}`}>
-                                ${plan.price[billingCycle]}
+                              <div className={`text-3xl font-bold mb-4 ${colorClasses.text}`}>
+                                {formatPriceWithCurrency(plan.price[billingCycle])}
                                 <span className="text-sm text-gray-500 font-normal ml-1">
                                   {billingCycle === 'monthly' ? '/month' : 
                                    billingCycle === 'sixMonth' ? '/6 months' : '/year'}
                                 </span>
-                              </p>
+                              </div>
                               {billingCycle !== 'monthly' && (
                                 <p className="text-sm text-gray-600 mb-2">
                                   ${billingCycle === 'sixMonth' ? 
-                                    Math.round((plan.price[billingCycle] / 6) * 100) / 100 : 
-                                    Math.round((plan.price[billingCycle] / 12) * 100) / 100}/month
+                                    Math.round((calculateDiscountedPrice(plan.price[billingCycle]) / 6) * 100) / 100 : 
+                                    Math.round((calculateDiscountedPrice(plan.price[billingCycle]) / 12) * 100) / 100}/month
                                 </p>
                               )}
                               

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { fetchAuthSession, getCurrentUser  } from '@/config/amplifyUnified';
+import { cookies } from 'next/headers';
 import { logger } from '@/utils/logger';
 import { isDevelopingCountry } from '@/services/countryDetectionService';
 
@@ -32,22 +32,41 @@ const PRICE_IDS = {
 
 export async function POST(request) {
   try {
-    // Get the current authenticated user
-    let user;
+    // Get the session cookie
+    const cookieStore = cookies();
+    const sessionCookie = cookieStore.get('sid') || cookieStore.get('session_token');
+    
+    if (!sessionCookie) {
+      logger.error('No session cookie found');
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    // Fetch user data from the session endpoint
+    let userData;
     try {
-      const session = await fetchAuthSession();
-      user = await getCurrentUser();
-      
-      if (!session || !user) {
+      const sessionResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/auth/session-v2/`, {
+        headers: {
+          'Cookie': `${sessionCookie.name}=${sessionCookie.value}`,
+        },
+      });
+
+      if (!sessionResponse.ok) {
+        logger.error('Failed to fetch session:', sessionResponse.status);
         return NextResponse.json(
           { error: 'Authentication required' },
           { status: 401 }
         );
       }
+
+      const sessionData = await sessionResponse.json();
+      userData = sessionData.user;
       
       logger.debug('User authenticated:', { 
-        username: user.username,
-        email: user.attributes?.email 
+        email: userData?.email,
+        business_name: userData?.business_name
       });
     } catch (authError) {
       logger.error('Failed to authenticate user:', authError);
@@ -71,11 +90,11 @@ export async function POST(request) {
     // Determine user's country for regional pricing
     let userCountry = country; // Use passed country first
     
-    // Try to get country from user attributes if not provided
-    if (!userCountry && user.attributes) {
-      userCountry = user.attributes['custom:businesscountry'] || 
-                   user.attributes['custom:country'] ||
-                   user.attributes.country;
+    // Try to get country from user data if not provided
+    if (!userCountry && userData) {
+      userCountry = userData.business_country || 
+                   userData.country ||
+                   userData.businessCountry;
     }
     
     // Check if user is eligible for developing country discount
@@ -149,9 +168,10 @@ export async function POST(request) {
       mode: 'subscription',
       success_url: `${appUrl}/dashboard?subscription_success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appUrl}/dashboard?subscription_cancelled=true`,
-      customer_email: user.attributes?.email,
+      customer_email: userData?.email,
       metadata: {
-        userId: user.username,
+        userId: userData?.id || userData?.email,
+        userEmail: userData?.email,
         planId: requestData.planId || 'professional',
         billingCycle: requestData.billingCycle || 'monthly',
         country: userCountry || 'unknown',
@@ -159,7 +179,7 @@ export async function POST(request) {
         discountPercentage: isEligibleForDiscount ? '50' : '0',
         timestamp: new Date().toISOString()
       },
-      client_reference_id: user.username,
+      client_reference_id: userData?.id || userData?.email,
       allow_promotion_codes: true
     });
 
