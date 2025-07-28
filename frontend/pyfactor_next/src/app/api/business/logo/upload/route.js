@@ -8,7 +8,15 @@ export async function POST(request) {
     const cookieStore = await cookies();
     const sessionId = cookieStore.get("sessionid")?.value;
     const sidCookie = cookieStore.get("sid")?.value;
+    
+    // Get all cookies for debugging
+    const allCookies = {};
+    const cookieArray = cookieStore.getAll();
+    for (const cookie of cookieArray) {
+      allCookies[cookie.name] = cookie.value;
+    }
 
+    console.log("[Logo Upload] All cookies:", allCookies);
     console.log("[Logo Upload] Session cookies:", { sessionId, sidCookie });
 
     // Check for either sessionid or sid cookie
@@ -21,18 +29,32 @@ export async function POST(request) {
     // Get the form data from the request
     const formData = await request.formData();
 
+    // Get CSRF token
+    const csrfToken = cookieStore.get('csrftoken')?.value;
+    
     // Build cookie header with all relevant cookies
-    const cookieHeader = sessionId 
+    let cookieHeader = sessionId 
       ? `sessionid=${sessionId}` 
       : `sid=${sidCookie}`;
+    
+    if (csrfToken) {
+      cookieHeader += `; csrftoken=${csrfToken}`;
+    }
 
     console.log("[Logo Upload] Using cookie header:", cookieHeader);
+    console.log("[Logo Upload] CSRF token:", csrfToken);
+
+    const headers = {
+      Cookie: cookieHeader,
+    };
+    
+    if (csrfToken) {
+      headers['X-CSRFToken'] = csrfToken;
+    }
 
     const response = await fetch(`${API_BASE_URL}/users/api/business/logo/upload/`, {
       method: "POST",
-      headers: {
-        Cookie: cookieHeader,
-      },
+      headers,
       body: formData, // Pass the FormData directly
     });
 

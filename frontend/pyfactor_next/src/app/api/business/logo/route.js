@@ -15,16 +15,29 @@ export async function GET() {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
+    // Get CSRF token
+    const csrfToken = cookieStore.get('csrftoken')?.value;
+    
     // Build cookie header
-    const cookieHeader = sessionId 
+    let cookieHeader = sessionId 
       ? `sessionid=${sessionId}` 
       : `sid=${sidCookie}`;
+    
+    if (csrfToken) {
+      cookieHeader += `; csrftoken=${csrfToken}`;
+    }
+
+    const headers = {
+      Cookie: cookieHeader,
+    };
+    
+    if (csrfToken) {
+      headers['X-CSRFToken'] = csrfToken;
+    }
 
     const response = await fetch(`${API_BASE_URL}/users/api/business/logo/`, {
       method: "GET",
-      headers: {
-        Cookie: cookieHeader,
-      },
+      headers,
     });
 
     if (!response.ok) {
@@ -54,16 +67,29 @@ export async function DELETE() {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
+    // Get CSRF token
+    const csrfToken = cookieStore.get('csrftoken')?.value;
+    
     // Build cookie header
-    const cookieHeader = sessionId 
+    let cookieHeader = sessionId 
       ? `sessionid=${sessionId}` 
       : `sid=${sidCookie}`;
+    
+    if (csrfToken) {
+      cookieHeader += `; csrftoken=${csrfToken}`;
+    }
+
+    const headers = {
+      Cookie: cookieHeader,
+    };
+    
+    if (csrfToken) {
+      headers['X-CSRFToken'] = csrfToken;
+    }
 
     const response = await fetch(`${API_BASE_URL}/users/api/business/logo/delete/`, {
       method: "DELETE",
-      headers: {
-        Cookie: cookieHeader,
-      },
+      headers,
     });
 
     if (!response.ok) {
