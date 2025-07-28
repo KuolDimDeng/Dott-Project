@@ -10,14 +10,34 @@ logger = logging.getLogger(__name__)
 resend.api_key = settings.RESEND_API_KEY
 
 
+def get_business_logo_url(tenant):
+    """Get the full URL for business logo"""
+    try:
+        if hasattr(tenant, 'business') and hasattr(tenant.business, 'details') and tenant.business.details and tenant.business.details.logo:
+            logo_url = tenant.business.details.logo.url
+            # Make sure it's a full URL
+            if not logo_url.startswith('http'):
+                base_url = settings.SITE_URL if hasattr(settings, 'SITE_URL') else 'https://api.dottapps.com'
+                logo_url = f"{base_url}{logo_url}"
+            return logo_url
+    except Exception as e:
+        logger.error(f"Error getting business logo: {str(e)}")
+    return None
+
+
 def send_quote_email(job, email_address, quote_pdf):
     """Send job quote via email using Resend"""
     try:
         subject = f"Quote #{job.job_number} - {job.name}"
         
+        # Get business logo
+        logo_url = get_business_logo_url(job.tenant) if hasattr(job, 'tenant') else None
+        logo_html = f'<img src="{logo_url}" alt="Business Logo" style="max-height: 60px; max-width: 200px; margin-bottom: 20px;">' if logo_url else ''
+        
         # Create email body
         html_content = f"""
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            {logo_html}
             <h2>Quote for {job.name}</h2>
             <p>Dear {job.customer.name},</p>
             
@@ -76,8 +96,13 @@ def send_invoice_email(job, invoice, email_address, invoice_pdf):
     try:
         subject = f"Invoice #{invoice.invoice_number} - {job.name}"
         
+        # Get business logo
+        logo_url = get_business_logo_url(job.tenant) if hasattr(job, 'tenant') else None
+        logo_html = f'<img src="{logo_url}" alt="Business Logo" style="max-height: 60px; max-width: 200px; margin-bottom: 20px;">' if logo_url else ''
+        
         html_content = f"""
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            {logo_html}
             <h2>Invoice for {job.name}</h2>
             <p>Dear {job.customer.name},</p>
             
@@ -141,8 +166,13 @@ def send_job_completion_notification(job, email_address):
     try:
         subject = f"Job Completed - {job.name}"
         
+        # Get business logo
+        logo_url = get_business_logo_url(job.tenant) if hasattr(job, 'tenant') else None
+        logo_html = f'<img src="{logo_url}" alt="Business Logo" style="max-height: 60px; max-width: 200px; margin-bottom: 20px;">' if logo_url else ''
+        
         html_content = f"""
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            {logo_html}
             <h2>Job Completed</h2>
             <p>Dear {job.customer.name},</p>
             

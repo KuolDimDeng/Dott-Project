@@ -42,7 +42,26 @@ const InvoiceForm = ({ mode = 'create' }) => {
   useEffect(() => {
     logger.info('[InvoiceForm] Component mounted');
     fetchUserProfile();
+    loadBusinessLogo();
   }, []);
+
+  const loadBusinessLogo = async () => {
+    try {
+      const response = await fetch('/api/business/logo');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.logo_url) {
+          // Convert backend URL to full URL if needed
+          const fullUrl = data.logo_url.startsWith('http') 
+            ? data.logo_url 
+            : `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}${data.logo_url}`;
+          setLogo(fullUrl);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading business logo:', error);
+    }
+  };
 
   useEffect(() => {
     if (userDatabase) {

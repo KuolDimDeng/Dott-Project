@@ -195,6 +195,15 @@ class BusinessDetails(models.Model):
         help_text="Simplified business category for feature access (Jobs/POS)"
     )
     
+    # Business Logo field
+    logo = models.ImageField(
+        upload_to='business_logos/',
+        null=True,
+        blank=True,
+        max_length=500,
+        help_text='Business logo (max 5MB, JPG/PNG/GIF/WebP)'
+    )
+    
     # Additional fields
     
     def save(self, *args, **kwargs):

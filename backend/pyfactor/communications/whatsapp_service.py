@@ -7,6 +7,29 @@ from typing import Optional, Dict, Any
 logger = logging.getLogger(__name__)
 
 
+def get_business_info_with_logo(tenant):
+    """Get business information including logo URL"""
+    try:
+        business_info = {
+            'name': tenant.business_name if hasattr(tenant, 'business_name') else 'Business',
+            'logo_url': None
+        }
+        
+        # Get logo URL
+        if hasattr(tenant, 'business') and hasattr(tenant.business, 'details') and tenant.business.details and tenant.business.details.logo:
+            logo_url = tenant.business.details.logo.url
+            # Make sure it's a full URL
+            if not logo_url.startswith('http'):
+                base_url = settings.SITE_URL if hasattr(settings, 'SITE_URL') else 'https://api.dottapps.com'
+                logo_url = f"{base_url}{logo_url}"
+            business_info['logo_url'] = logo_url
+            
+        return business_info
+    except Exception as e:
+        logger.error(f"Error getting business info: {str(e)}")
+        return {'name': 'Business', 'logo_url': None}
+
+
 class WhatsAppService:
     """Service for sending WhatsApp messages via Meta Business API"""
     
@@ -160,6 +183,84 @@ class WhatsAppService:
             if hasattr(e, 'response') and e.response is not None:
                 logger.error(f"Error response: {e.response.text}")
             return None
+    
+    def send_image_message(self, to_number: str, image_url: str, caption: str = None) -> Optional[Dict[str, Any]]:
+        """
+        Send an image message via WhatsApp
+        
+        Args:
+            to_number: Recipient's phone number with country code
+            image_url: URL of the image to send
+            caption: Optional caption for the image
+            
+        Returns:
+            Response data from WhatsApp API or None if failed
+        """
+        if not self.is_configured():
+            logger.warning("WhatsApp service not configured - missing access token")
+            return None
+            
+        cleaned_number = ''.join(c for c in to_number if c.isdigit() or c == '+').lstrip('+')
+        
+        url = f"{self.base_url}/{self.phone_number_id}/messages"
+        
+        headers = {
+            'Authorization': f'Bearer {self.access_token}',
+            'Content-Type': 'application/json'
+        }
+        
+        data = {
+            'messaging_product': 'whatsapp',
+            'to': cleaned_number,
+            'type': 'image',
+            'image': {
+                'link': image_url
+            }
+        }
+        
+        if caption:
+            data['image']['caption'] = caption
+        
+        try:
+            response = requests.post(url, json=data, headers=headers)
+            response.raise_for_status()
+            
+            result = response.json()
+            logger.info(f"WhatsApp image message sent to {to_number}")
+            return result
+            
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Failed to send WhatsApp image message to {to_number}: {str(e)}")
+            if hasattr(e, 'response') and e.response is not None:
+                logger.error(f"Error response: {e.response.text}")
+            return None
+    
+    def send_business_message_with_branding(self, to_number: str, message: str, tenant=None) -> Optional[Dict[str, Any]]:
+        """
+        Send a text message with business branding (logo URL in message)
+        
+        Args:
+            to_number: Recipient's phone number with country code
+            message: Text message to send
+            tenant: Tenant object to get business info from
+            
+        Returns:
+            Response data from WhatsApp API or None if failed
+        """
+        # Get business info if tenant provided
+        if tenant:
+            business_info = get_business_info_with_logo(tenant)
+            
+            # Add business name to message
+            branded_message = f"📧 From {business_info['name']}\n\n{message}"
+            
+            # Add logo URL as footer if available
+            if business_info['logo_url']:
+                branded_message += f"\n\n🔗 View our logo: {business_info['logo_url']}"
+        else:
+            branded_message = message
+            
+        return self.send_text_message(to_number, branded_message)
 
 
 # Singleton instance

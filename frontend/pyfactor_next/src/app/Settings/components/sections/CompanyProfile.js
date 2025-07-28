@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   BuildingOfficeIcon,
   PhoneIcon,
@@ -11,13 +11,19 @@ import {
   CalendarIcon,
   ExclamationTriangleIcon,
   CheckCircleIcon,
-  PencilIcon
+  PencilIcon,
+  PhotoIcon,
+  TrashIcon,
+  ArrowUpTrayIcon
 } from '@heroicons/react/24/outline';
 import { FieldTooltip } from '@/components/ui/FieldTooltip';
 import { logger } from '@/utils/logger';
 
 const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, notifyError }) => {
   const [loading, setLoading] = useState(false);
+  const [logoUrl, setLogoUrl] = useState(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const fileInputRef = useRef(null);
   const [companyData, setCompanyData] = useState({
     businessName: '',
     businessType: '',
@@ -45,7 +51,26 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
 
   useEffect(() => {
     loadCompanyData();
+    loadBusinessLogo();
   }, [profileData, user]);
+
+  const loadBusinessLogo = async () => {
+    try {
+      const response = await fetch('/api/business/logo');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.logo_url) {
+          // Convert backend URL to full URL if needed
+          const fullUrl = data.logo_url.startsWith('http') 
+            ? data.logo_url 
+            : `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}${data.logo_url}`;
+          setLogoUrl(fullUrl);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading business logo:', error);
+    }
+  };
 
   const loadCompanyData = async () => {
     try {
@@ -235,6 +260,80 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
     return Object.keys(newErrors).length === 0;
   };
 
+  const handleLogoUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      notifyError('Invalid file type. Please upload a JPG, PNG, GIF, or WebP image.');
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      notifyError('File size exceeds 5MB limit.');
+      return;
+    }
+
+    setUploadingLogo(true);
+    const formData = new FormData();
+    formData.append('logo', file);
+
+    try {
+      const response = await fetch('/api/business/logo/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        notifySuccess('Logo uploaded successfully');
+        await loadBusinessLogo(); // Reload the logo
+      } else {
+        notifyError(data.error || 'Failed to upload logo');
+      }
+    } catch (error) {
+      console.error('Error uploading logo:', error);
+      notifyError('Failed to upload logo');
+    } finally {
+      setUploadingLogo(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleLogoDelete = async () => {
+    if (!confirm('Are you sure you want to delete the business logo?')) {
+      return;
+    }
+
+    setUploadingLogo(true);
+    try {
+      const response = await fetch('/api/business/logo', {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        notifySuccess('Logo deleted successfully');
+        setLogoUrl(null);
+      } else {
+        notifyError(data.error || 'Failed to delete logo');
+      }
+    } catch (error) {
+      console.error('Error deleting logo:', error);
+      notifyError('Failed to delete logo');
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!validateForm()) return;
     
@@ -329,6 +428,61 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
                 Your business name "{companyData.businessName}" is permanently set and cannot be modified. 
                 Contact support if you need assistance.
               </p>
+            </div>
+          </div>
+
+          {/* Business Logo Section */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Business Logo</h3>
+            <div className="flex items-start space-x-6">
+              <div className="flex-shrink-0">
+                {logoUrl ? (
+                  <img 
+                    src={logoUrl} 
+                    alt="Business logo" 
+                    className="h-24 w-24 rounded-lg object-contain bg-gray-50 border border-gray-200"
+                  />
+                ) : (
+                  <div className="h-24 w-24 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center">
+                    <PhotoIcon className="h-12 w-12 text-gray-400" />
+                  </div>
+                )}
+              </div>
+              <div className="flex-1">
+                <p className="text-sm text-gray-600 mb-3">
+                  Upload your business logo. Maximum file size: 5MB. Supported formats: JPG, PNG, GIF, WebP.
+                </p>
+                <div className="flex items-center space-x-3">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                    onChange={handleLogoUpload}
+                    className="hidden"
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingLogo || !canEdit}
+                    className="flex items-center px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <ArrowUpTrayIcon className="h-4 w-4 mr-2" />
+                    {uploadingLogo ? 'Uploading...' : 'Upload Logo'}
+                  </button>
+                  {logoUrl && (
+                    <button
+                      onClick={handleLogoDelete}
+                      disabled={uploadingLogo || !canEdit}
+                      className="flex items-center px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <TrashIcon className="h-4 w-4 mr-2" />
+                      Delete
+                    </button>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  This logo will be displayed in your dashboard, invoices, emails, and WhatsApp messages.
+                </p>
+              </div>
             </div>
           </div>
 

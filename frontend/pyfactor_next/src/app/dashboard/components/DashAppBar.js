@@ -192,12 +192,38 @@ const DashAppBar = ({
     userData: null,
     profileData: null
   });
+
+  // Load business logo
+  useEffect(() => {
+    const loadBusinessLogo = async () => {
+      try {
+        const response = await fetch('/api/business/logo');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.logo_url && isMounted.current) {
+            // Convert backend URL to full URL if needed
+            const fullUrl = data.logo_url.startsWith('http') 
+              ? data.logo_url 
+              : `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}${data.logo_url}`;
+            setBusinessLogoUrl(fullUrl);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading business logo:', error);
+      }
+    };
+
+    if (session?.authenticated) {
+      loadBusinessLogo();
+    }
+  }, [session?.authenticated]);
   
   // Create refs for the dropdown menu and button
   const userMenuRef = useRef(null);
   const profileButtonRef = useRef(null);
   
   // Track mounted state to prevent state updates after unmount
+  const [businessLogoUrl, setBusinessLogoUrl] = useState(null);
   const isMounted = useRef(true);
 
   // Initialize profile data with prop if available or null
@@ -1377,6 +1403,13 @@ const DashAppBar = ({
                 {/* Business name - make it visible on all screen sizes and add fallback display */}
                 <div className="text-white flex items-center mr-3">
                   <span className="font-semibold">{getDisplayBusinessName()}</span>
+                  {businessLogoUrl && (
+                    <img 
+                      src={businessLogoUrl} 
+                      alt="Business logo" 
+                      className="h-6 w-6 ml-2 rounded object-contain bg-white/10 p-0.5"
+                    />
+                  )}
                   <span className="mx-2 h-4 w-px bg-white/30"></span>
                 </div>
                 
@@ -1391,8 +1424,20 @@ const DashAppBar = ({
                   }`}
                 >
                   {/* Display business name on mobile inside the subscription button */}
-                  <span className="whitespace-nowrap text-xs md:hidden mr-1">
-                    {(businessName || fetchedBusinessName || auth0BusinessName) ? `${getDisplayBusinessName()}:` : ''}
+                  <span className="whitespace-nowrap text-xs md:hidden mr-1 flex items-center">
+                    {(businessName || fetchedBusinessName || auth0BusinessName) ? (
+                      <>
+                        {getDisplayBusinessName()}
+                        {businessLogoUrl && (
+                          <img 
+                            src={businessLogoUrl} 
+                            alt="Business logo" 
+                            className="h-4 w-4 ml-1 rounded object-contain bg-white/10 p-0.5 inline-block"
+                          />
+                        )}
+                        :
+                      </>
+                    ) : ''}
                   </span>
                   <span className="whitespace-nowrap text-xs inline-block">
                     {displayLabel}

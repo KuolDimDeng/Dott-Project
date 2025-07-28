@@ -23,6 +23,7 @@ from .api.checkout.mobile_money_checkout import create_mobile_money_checkout, ve
 from .api.payment_methods import get_payment_methods, check_mobile_money_support
 from .api.subscription_views import subscription_status
 from .api.subscription_status_views import subscription_status as grace_period_status, retry_payment
+from .api.business_logo_views import upload_business_logo, delete_business_logo, get_business_logo
 from rest_framework_simplejwt.views import TokenRefreshView
 
 # Create a router for the menu privileges API
@@ -54,6 +55,10 @@ urlpatterns = [
     path('api/checkout/mobile-money/', create_mobile_money_checkout, name='create_mobile_money_checkout'),
     path('api/checkout/mobile-money/verify/', verify_mobile_money_payment, name='verify_mobile_money_payment'),
     path('api/subscription/pricing/', get_subscription_pricing, name='get_subscription_pricing'),
+    # Business logo endpoints
+    path('api/business/logo/upload/', upload_business_logo, name='upload_business_logo'),
+    path('api/business/logo/delete/', delete_business_logo, name='delete_business_logo'),
+    path('api/business/logo/', get_business_logo, name='get_business_logo'),
     # Include the router URLs
     path('api/', include(router.urls)),
 ]
