@@ -422,6 +422,7 @@ function EmployeeManagement({ onNavigate }) {
         position: emp.job_title,
         employmentType: emp.employment_type,
         compensationType: emp.compensation_type,
+        wagePerHour: emp.wage_per_hour, // Map wage_per_hour to wagePerHour
         zipCode: emp.zip_code,
         emergencyContact: emp.emergency_contact,
         emergencyPhone: emp.emergency_phone,
