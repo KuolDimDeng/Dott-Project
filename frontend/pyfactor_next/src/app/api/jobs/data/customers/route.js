@@ -5,6 +5,10 @@ const BACKEND_URL = process.env.BACKEND_URL || 'https://api.dottapps.com';
 
 export async function GET(request) {
   logger.info('[JobsDataCustomers] 👥 === API CALL START ===');
+  
+  // Log all cookies for debugging
+  const cookieHeader = request.headers.get('cookie');
+  logger.info('[JobsDataCustomers] 👥 Cookie header:', cookieHeader ? cookieHeader.substring(0, 100) + '...' : 'none');
 
   try {
     const backendUrl = `${BACKEND_URL}/api/jobs/data/customers/`;
@@ -16,7 +20,7 @@ export async function GET(request) {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Cookie': request.headers.get('cookie') || '',
+        'Cookie': cookieHeader || '',
       },
       credentials: 'include',
     });
