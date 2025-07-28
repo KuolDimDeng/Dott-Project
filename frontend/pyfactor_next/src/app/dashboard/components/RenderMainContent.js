@@ -1796,17 +1796,6 @@ const RenderMainContent = React.memo(function RenderMainContent({
         );
       }
       
-      if (view === 'vehicles') {
-        console.log('[RenderMainContent] Rendering vehicles view');
-        return (
-          <ContentWrapperWithKey>
-            <div className="p-4">
-              <h1 className="text-xl font-semibold mb-2">Vehicles</h1>
-              <p>Vehicle management is temporarily unavailable due to component upgrade.</p>
-            </div>
-          </ContentWrapperWithKey>
-        );
-      }
 
       if (view === 'inventory-reports') {
         console.log('[RenderMainContent] Rendering inventory-reports view');

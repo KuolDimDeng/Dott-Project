@@ -23,6 +23,7 @@ import JobCosting from './JobCosting';
 import JobMaterials from './JobMaterials';
 import JobLabor from './JobLabor';
 import JobProfitability from './JobProfitability';
+import VehicleManagement from './VehicleManagement';
 
 const JobManagement = ({ view = 'jobs-list' }) => {
   const [jobs, setJobs] = useState([]);
@@ -165,6 +166,10 @@ const JobManagement = ({ view = 'jobs-list' }) => {
   
   if (view === 'job-profitability') {
     return <JobProfitability jobs={jobs} />;
+  }
+  
+  if (view === 'vehicles') {
+    return <VehicleManagement />;
   }
 
   // Default view: jobs-list
