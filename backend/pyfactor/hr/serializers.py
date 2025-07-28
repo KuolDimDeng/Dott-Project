@@ -24,8 +24,9 @@ class EmployeeSerializer(serializers.ModelSerializer):
     """
     Serializer for Employee model with sensitive information excluded
     """
-    # Make tenant_id optional to handle missing column gracefully
+    # Make tenant_id and business_id optional to handle missing column gracefully
     tenant_id = serializers.UUIDField(read_only=True, required=False)
+    business_id = serializers.UUIDField(read_only=True, required=False)
     supervisor_name = serializers.SerializerMethodField()
     
     class Meta:
@@ -37,9 +38,9 @@ class EmployeeSerializer(serializers.ModelSerializer):
             'street', 'city', 'state', 'zip_code', 'country', 'compensation_type',
             'emergency_contact_name', 'emergency_contact_phone',
             'direct_deposit', 'vacation_time', 'vacation_days_per_year', 'supervisor', 'supervisor_name', 'user',
-            'security_number_type', 'ssn_last_four', 'created_at', 'updated_at', 'tenant_id'
+            'security_number_type', 'ssn_last_four', 'created_at', 'updated_at', 'tenant_id', 'business_id'
         ]
-        read_only_fields = ['id', 'employee_number', 'created_at', 'updated_at', 'ssn_last_four', 'tenant_id']
+        read_only_fields = ['id', 'employee_number', 'created_at', 'updated_at', 'ssn_last_four', 'tenant_id', 'business_id']
         
     def to_representation(self, instance):
         """Override to handle missing tenant_id column gracefully"""
