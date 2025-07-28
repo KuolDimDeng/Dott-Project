@@ -116,19 +116,13 @@ export default function InlineTimesheetManager() {
           
           // Get tenant ID from various possible locations
           const userTenantId = session?.user?.tenant_id || session?.user?.business_id || session?.user?.tenantId;
-          
-          // Backend might not be returning business_id, so check both business_id and tenant_id
-          const empBusinessId = emp.business_id || emp.tenant_id || emp.tenantId;
           const tenantMatch = !userTenantId || 
-                            !empBusinessId ||  // If employee has no business_id, match by email only
-                            String(empBusinessId) === String(userTenantId);
+                            String(emp.business_id) === String(userTenantId);
           
           console.log(`🔧 [InlineTimesheetManager] Checking employee ${emp.email}:`);
           console.log(`🔧 [InlineTimesheetManager]   - emailMatch=${emailMatch}`);
           console.log(`🔧 [InlineTimesheetManager]   - userTenantId=${userTenantId}`);
           console.log(`🔧 [InlineTimesheetManager]   - emp.business_id=${emp.business_id}`);
-          console.log(`🔧 [InlineTimesheetManager]   - emp.tenant_id=${emp.tenant_id}`);
-          console.log(`🔧 [InlineTimesheetManager]   - empBusinessId=${empBusinessId}`);
           console.log(`🔧 [InlineTimesheetManager]   - tenantMatch=${tenantMatch}`);
           
           return emailMatch && tenantMatch;
