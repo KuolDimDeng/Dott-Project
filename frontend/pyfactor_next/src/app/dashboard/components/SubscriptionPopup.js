@@ -204,53 +204,85 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
   // Function to create a Stripe checkout session
   const createStripeCheckoutSession = async (planId, billingCycleOption) => {
     try {
+      console.log('🔍 [createStripeCheckoutSession] Starting...');
+      console.log('🔍 [createStripeCheckoutSession] Input params:', { planId, billingCycleOption });
+      
       // Get the Stripe price ID based on the selected plan and billing cycle
       const priceId = getPriceIdForPlan(planId, billingCycleOption);
+      console.log('🔍 [createStripeCheckoutSession] Price ID:', priceId);
       
       logger.debug('Creating checkout session with:', { planId, billingCycle: billingCycleOption, priceId });
       
       // Get user's country for regional pricing
       const userCountry = userData?.business_country || userData?.country || null;
+      console.log('🔍 [createStripeCheckoutSession] User country:', userCountry);
+      
+      const requestBody = { 
+        priceId,
+        planId,
+        billingCycle: billingCycleOption,
+        country: userCountry
+      };
+      console.log('🔍 [createStripeCheckoutSession] Request body:', requestBody);
       
       // Call API to create a Stripe checkout session
+      console.log('🔍 [createStripeCheckoutSession] Making API call to /api/checkout/create-session');
       const response = await fetch('/api/checkout/create-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          priceId,
-          planId,
-          billingCycle: billingCycleOption,
-          country: userCountry
-        })
+        body: JSON.stringify(requestBody)
       });
       
+      console.log('🔍 [createStripeCheckoutSession] API response status:', response.status);
+      console.log('🔍 [createStripeCheckoutSession] API response ok:', response.ok);
+      
       if (!response.ok) {
-        // Safely parse error response
-        const errorData = await safeParseJson(response, {
-          context: 'StripeCheckout_Error',
-          defaultValue: { error: `HTTP error ${response.status}` },
-          throwOnHtml: true
-        });
+        console.error('🚨 [createStripeCheckoutSession] API response not ok, parsing error...');
         
+        // Try to get the response text first
+        const responseText = await response.text();
+        console.error('🚨 [createStripeCheckoutSession] Raw error response:', responseText);
+        
+        // Try to parse as JSON
+        let errorData;
+        try {
+          errorData = JSON.parse(responseText);
+        } catch (parseError) {
+          console.error('🚨 [createStripeCheckoutSession] Failed to parse error response as JSON:', parseError);
+          errorData = { error: `HTTP error ${response.status}: ${responseText}` };
+        }
+        
+        console.error('🚨 [createStripeCheckoutSession] Parsed error data:', errorData);
         throw new Error(errorData.error || 'Failed to create checkout session');
       }
       
       // Safely parse success response
-      const sessionData = await safeParseJson(response, {
-        context: 'StripeCheckout_Success',
-        defaultValue: {},
-        throwOnHtml: true
-      });
+      console.log('🔍 [createStripeCheckoutSession] Parsing success response...');
+      const responseText = await response.text();
+      console.log('🔍 [createStripeCheckoutSession] Raw success response:', responseText);
+      
+      let sessionData;
+      try {
+        sessionData = JSON.parse(responseText);
+        console.log('🔍 [createStripeCheckoutSession] Parsed session data:', sessionData);
+      } catch (parseError) {
+        console.error('🚨 [createStripeCheckoutSession] Failed to parse success response:', parseError);
+        throw new Error('Invalid response format from server');
+      }
       
       const { sessionId } = sessionData;
+      console.log('🔍 [createStripeCheckoutSession] Extracted session ID:', sessionId);
       
       if (!sessionId) {
+        console.error('🚨 [createStripeCheckoutSession] No session ID in response');
         throw new Error('No session ID returned from server');
       }
       
       logger.debug('Checkout session created:', { sessionId });
+      console.log('🔍 [createStripeCheckoutSession] Success! Returning session ID:', sessionId);
       return sessionId;
     } catch (error) {
+      console.error('🚨 [createStripeCheckoutSession] Error caught:', error);
       logger.error('Error creating Stripe checkout session:', error);
       throw error;
     }
@@ -527,20 +559,39 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
         }
         
         try {
+          console.log('🔍 [SubscriptionPopup] Starting checkout process...');
+          console.log('🔍 [SubscriptionPopup] Selected plan:', selectedPlan);
+          console.log('🔍 [SubscriptionPopup] Billing cycle:', billingCycle);
+          console.log('🔍 [SubscriptionPopup] User data:', {
+            email: userData?.email,
+            country: userData?.business_country || userData?.country,
+            isDeveloping: isDevelopingCountry
+          });
+          
           // Create a checkout session
+          console.log('🔍 [SubscriptionPopup] Creating Stripe checkout session...');
           const sessionId = await createStripeCheckoutSession(selectedPlan, billingCycle);
+          console.log('🔍 [SubscriptionPopup] Checkout session created successfully:', sessionId);
           
           // Redirect to Stripe checkout
+          console.log('🔍 [SubscriptionPopup] Redirecting to Stripe checkout...');
           await redirectToStripeCheckout(sessionId);
           
           // If we get here, something went wrong with the redirect
+          console.error('🚨 [SubscriptionPopup] Redirect didn\'t navigate away as expected');
           logger.error('Redirect didn\'t navigate away as expected');
           setIsRedirectingToStripe(false);
           setIsSubmitting(false);
           notifyError('Failed to redirect to checkout. Please try again.');
         } catch (error) {
+          console.error('🚨 [SubscriptionPopup] Checkout process failed:', error);
+          console.error('🚨 [SubscriptionPopup] Error details:', {
+            message: error.message,
+            stack: error.stack,
+            name: error.name
+          });
           logger.error('Failed to start checkout process:', error);
-          notifyError('Failed to start checkout process. Please try again.');
+          notifyError(`Failed to start checkout process: ${error.message}`);
           setIsRedirectingToStripe(false);
           setIsSubmitting(false);
         }

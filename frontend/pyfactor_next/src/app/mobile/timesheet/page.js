@@ -53,6 +53,10 @@ export default function MobileTimesheetPage() {
   const [employeeGeofences, setEmployeeGeofences] = useState([]);
   const [geofenceCheckResult, setGeofenceCheckResult] = useState(null);
   const [showGeofenceWarning, setShowGeofenceWarning] = useState(false);
+  
+  // Clock status states
+  const [clockStatus, setClockStatus] = useState(null);
+  const [clockInTime, setClockInTime] = useState(null);
   const [lastClockInLocation, setLastClockInLocation] = useState(null);
   const randomCheckTimeoutRef = useRef(null);
 
@@ -192,6 +196,7 @@ export default function MobileTimesheetPage() {
     
     if (employeeData?.id && session?.user) {
       loadTimesheetData();
+      fetchClockStatus();
       checkLocationPermissions();
       loadEmployeeGeofences();
     }
@@ -280,6 +285,22 @@ export default function MobileTimesheetPage() {
     };
   }, []);
 
+  const fetchClockStatus = async () => {
+    try {
+      const result = await timesheetApi.getCurrentClockStatus();
+      console.log('🕐 [Mobile Timesheet] Clock status:', result);
+      
+      setClockStatus(result);
+      if (result.is_clocked_in && result.last_clock_in) {
+        setClockInTime(new Date(result.last_clock_in));
+      } else {
+        setClockInTime(null);
+      }
+    } catch (error) {
+      console.error('Error fetching clock status:', error);
+    }
+  };
+
   const loadTimesheetData = async () => {
     const tenantId = session?.user?.tenant_id || session?.user?.tenantId || session?.user?.business_id;
     
@@ -358,7 +379,8 @@ export default function MobileTimesheetPage() {
     const today = format(new Date(), 'yyyy-MM-dd');
     const todayEntry = timesheetEntries[today];
     const currentHours = todayEntry?.regular_hours || 0;
-    const isClockingOut = currentHours > 0;
+    // Check actual clock status first, then fall back to timesheet hours
+    const isClockingOut = clockStatus?.is_clocked_in || currentHours > 0;
     
     console.log('🎯 [MobileTimesheet] Is clocking out:', isClockingOut);
     console.log('🎯 [MobileTimesheet] Location enabled:', locationEnabled);
@@ -487,8 +509,9 @@ export default function MobileTimesheetPage() {
       
       console.log('🎯 [MobileTimesheet] Clock API result:', result);
       
-      // Success! Refresh the timesheet data
+      // Success! Refresh the timesheet data and clock status
       await loadTimesheetData();
+      await fetchClockStatus();
       
       // Clear the location consent modal state
       setShowLocationConsent(false);
@@ -678,13 +701,26 @@ export default function MobileTimesheetPage() {
   };
 
   const getTodayStatus = () => {
+    // First check actual clock status
+    if (clockStatus?.is_clocked_in) {
+      // Calculate hours since clock in
+      const hoursWorked = clockInTime ? ((new Date() - clockInTime) / 1000 / 60 / 60).toFixed(1) : 0;
+      return { 
+        status: 'clocked_in', 
+        text: `Clocked In (${hoursWorked}h)`, 
+        color: 'text-green-600',
+        isActuallyClocked: true 
+      };
+    }
+    
+    // Fall back to timesheet hours if not clocked in
     const today = format(new Date(), 'yyyy-MM-dd');
     const todayEntry = timesheetEntries[today];
     const hours = todayEntry?.regular_hours || 0;
     
-    if (hours === 0) return { status: 'not_started', text: 'Not Clocked In', color: 'text-gray-500' };
-    if (hours < 8) return { status: 'clocked_in', text: `Clocked In (${hours}h)`, color: 'text-green-600' };
-    return { status: 'completed', text: `Completed (${hours}h)`, color: 'text-blue-600' };
+    if (hours === 0) return { status: 'not_started', text: 'Not Clocked In', color: 'text-gray-500', isActuallyClocked: false };
+    if (hours < 8) return { status: 'in_progress', text: `In Progress (${hours}h)`, color: 'text-blue-600', isActuallyClocked: false };
+    return { status: 'completed', text: `Completed (${hours}h)`, color: 'text-blue-600', isActuallyClocked: false };
   };
 
   if (loading || loadingEmployee || loadingTimesheet) {
@@ -736,6 +772,24 @@ export default function MobileTimesheetPage() {
           <div className={`text-sm font-medium mt-2 ${todayStatus.color}`}>
             {todayStatus.text}
           </div>
+          
+          {/* Live timer when clocked in */}
+          {clockStatus?.is_clocked_in && clockInTime && (
+            <div className="mt-3">
+              <div className="text-2xl font-bold text-green-600">
+                {(() => {
+                  const elapsed = (currentTime - clockInTime) / 1000;
+                  const hours = Math.floor(elapsed / 3600);
+                  const minutes = Math.floor((elapsed % 3600) / 60);
+                  const seconds = Math.floor(elapsed % 60);
+                  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                })()}
+              </div>
+              <div className="text-xs text-gray-500 mt-1">
+                Time worked today
+              </div>
+            </div>
+          )}
           
           {/* Location indicator */}
           {locationEnabled && todayStatus.status === 'clocked_in' && (
@@ -789,11 +843,9 @@ export default function MobileTimesheetPage() {
           onClick={handleClockInOut}
           disabled={isClockingIn || isCapturingLocation}
           className={`w-full py-4 rounded-xl font-semibold text-lg flex items-center justify-center space-x-2 transition-colors ${
-            todayStatus.status === 'not_started' || todayStatus.status === 'clocked_in'
-              ? todayStatus.status === 'not_started'
-                ? 'bg-green-600 hover:bg-green-700 text-white'
-                : 'bg-red-600 hover:bg-red-700 text-white'
-              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            clockStatus?.is_clocked_in
+              ? 'bg-red-600 hover:bg-red-700 text-white'
+              : 'bg-green-600 hover:bg-green-700 text-white'
           }`}
         >
           {isClockingIn || isCapturingLocation ? (
@@ -805,13 +857,13 @@ export default function MobileTimesheetPage() {
             </div>
           ) : (
             <>
-              {todayStatus.status === 'not_started' ? (
-                <PlayIcon className="w-6 h-6" />
-              ) : (
+              {clockStatus?.is_clocked_in ? (
                 <StopIcon className="w-6 h-6" />
+              ) : (
+                <PlayIcon className="w-6 h-6" />
               )}
               <span>
-                {todayStatus.status === 'not_started' ? 'Clock In' : 'Clock Out'}
+                {clockStatus?.is_clocked_in ? 'Clock Out' : 'Clock In'}
               </span>
               {locationEnabled && (
                 <MapPinIcon className="w-4 h-4" />

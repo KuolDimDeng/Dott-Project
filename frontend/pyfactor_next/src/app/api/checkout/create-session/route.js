@@ -31,10 +31,14 @@ const PRICE_IDS = {
 };
 
 export async function POST(request) {
+  console.log('🔍 [create-session] === API ROUTE CALLED ===');
+  
   try {
     // Get the session cookie
+    console.log('🔍 [create-session] Getting session cookie...');
     const cookieStore = cookies();
     const sessionCookie = cookieStore.get('sid') || cookieStore.get('session_token');
+    console.log('🔍 [create-session] Session cookie:', sessionCookie ? { name: sessionCookie.name, exists: true } : 'not found');
     
     if (!sessionCookie) {
       logger.error('No session cookie found');
@@ -77,7 +81,10 @@ export async function POST(request) {
     }
 
     // Parse request body
+    console.log('🔍 [create-session] Parsing request body...');
     const requestData = await request.json();
+    console.log('🔍 [create-session] Raw request data:', requestData);
+    
     const { 
       planId = 'professional', 
       billingCycle = 'monthly',
@@ -85,6 +92,7 @@ export async function POST(request) {
       country = null // Allow country to be passed from frontend
     } = requestData;
     
+    console.log('🔍 [create-session] Parsed request data:', { planId, billingCycle, priceId, country });
     logger.debug('Checkout request data:', { planId, billingCycle, priceId, country });
     
     // Determine user's country for regional pricing
@@ -157,6 +165,7 @@ export async function POST(request) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://localhost:3000';
     
     // Create Stripe checkout session
+    console.log('🔍 [create-session] Creating Stripe session with price ID:', finalPriceId);
     const stripeSession = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
@@ -183,6 +192,8 @@ export async function POST(request) {
       allow_promotion_codes: true
     });
 
+    console.log('🔍 [create-session] Stripe session created successfully:', stripeSession.id);
+    
     logger.debug('Stripe checkout session created:', {
       sessionId: stripeSession.id,
       userId: userData?.email || userData?.id,
@@ -190,10 +201,13 @@ export async function POST(request) {
       timestamp: new Date().toISOString()
     });
 
-    return NextResponse.json({ 
+    const responseData = { 
       sessionId: stripeSession.id,
       success: true
-    });
+    };
+    
+    console.log('🔍 [create-session] Returning response:', responseData);
+    return NextResponse.json(responseData);
   } catch (error) {
     logger.error('Failed to create checkout session:', error);
     
