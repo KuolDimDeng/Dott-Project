@@ -3,6 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from custom_auth.authentication import SessionTokenAuthentication, Auth0JWTAuthentication
 from django.utils import timezone
 from django.conf import settings
 from django.db.models import Sum, F, Q, Prefetch
@@ -38,7 +39,7 @@ class JobViewSet(viewsets.ModelViewSet):
     ViewSet for managing jobs with full CRUD operations
     """
     serializer_class = JobSerializer
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
@@ -1179,7 +1180,7 @@ class JobViewSet(viewsets.ModelViewSet):
 class JobMaterialViewSet(viewsets.ModelViewSet):
     """ViewSet for managing job materials"""
     serializer_class = JobMaterialSerializer
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
@@ -1198,7 +1199,7 @@ class JobMaterialViewSet(viewsets.ModelViewSet):
 class JobLaborViewSet(viewsets.ModelViewSet):
     """ViewSet for managing job labor entries"""
     serializer_class = JobLaborSerializer
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
@@ -1216,7 +1217,7 @@ class JobLaborViewSet(viewsets.ModelViewSet):
 class JobExpenseViewSet(viewsets.ModelViewSet):
     """ViewSet for managing job expenses"""
     serializer_class = JobExpenseSerializer
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
@@ -1235,7 +1236,7 @@ class JobExpenseViewSet(viewsets.ModelViewSet):
 class VehicleViewSet(viewsets.ModelViewSet):
     """ViewSet for managing vehicles"""
     serializer_class = VehicleSerializer
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
@@ -1335,7 +1336,7 @@ class VehicleViewSet(viewsets.ModelViewSet):
 # Additional API endpoints for Job form data
 class JobDataViewSet(viewsets.ViewSet):
     """ViewSet for providing job form data (customers, employees, supplies)"""
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
     permission_classes = [IsAuthenticated]
     
     @action(detail=False, methods=['get'])
@@ -1405,7 +1406,7 @@ class JobDataViewSet(viewsets.ViewSet):
 class JobDocumentViewSet(viewsets.ModelViewSet):
     """ViewSet for managing job documents"""
     serializer_class = JobDocumentSerializer
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
@@ -1479,7 +1480,7 @@ class JobDocumentViewSet(viewsets.ModelViewSet):
 class JobStatusHistoryViewSet(viewsets.ReadOnlyModelViewSet):
     """ViewSet for viewing job status history (read-only)"""
     serializer_class = JobStatusHistorySerializer
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
@@ -1490,7 +1491,7 @@ class JobStatusHistoryViewSet(viewsets.ReadOnlyModelViewSet):
 class JobCommunicationViewSet(viewsets.ModelViewSet):
     """ViewSet for managing job communications"""
     serializer_class = JobCommunicationSerializer
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
