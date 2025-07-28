@@ -2190,9 +2190,9 @@ const RenderMainContent = React.memo(function RenderMainContent({
               {selectedOption === 'Invoice' && <InvoiceManagement newInvoice={true} mode="create" />}
               {selectedOption === 'Bill' && <BillManagement newBill={true} />}
               {selectedOption === 'Estimate' && <EstimateManagement newEstimate={true} />}
-              {selectedOption === 'Customer' && <CustomerList mode="create" onCreateCustomer={handleCreateCustomer} />}
+              {selectedOption === 'Customer' && <CustomerManagement />}
               {selectedOption === 'Vendor' && <VendorManagement newVendor={true} />}
-              {selectedOption === 'Sales' && <POSSystem />}
+              {selectedOption === 'Sales' && <POSSystem isOpen={true} onClose={() => handleSetView(null)} onSaleCompleted={() => {}} />}
               {selectedOption === 'Job' && <JobManagement />}
               {selectedOption === 'Product' && <ProductManagement />}
               {selectedOption === 'Service' && <ServiceManagement />}
