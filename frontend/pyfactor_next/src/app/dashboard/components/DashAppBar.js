@@ -1356,7 +1356,7 @@ const DashAppBar = ({
             </button>
             
             {/* Logo */}
-            <div className="cursor-pointer">
+            <div className="cursor-pointer flex items-center">
               <Image 
                 src="/static/images/PyfactorDashboard.png"
                 alt="Pyfactor Dashboard Logo"

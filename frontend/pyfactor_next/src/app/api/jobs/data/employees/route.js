@@ -8,13 +8,11 @@ export async function GET(request) {
   logger.info('[JobsDataEmployees] 👷 === API CALL START ===');
 
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const sid = cookieStore.get('sid');
-    const tenantId = cookieStore.get('tenantId');
     
     logger.info('[JobsDataEmployees] 👷 Cookie check:', { 
-      hasSid: !!sid, 
-      hasTenantId: !!tenantId 
+      hasSid: !!sid
     });
 
     if (!sid) {
@@ -25,6 +23,25 @@ export async function GET(request) {
       );
     }
 
+    // Get the session data from the backend to ensure we have the correct tenant ID
+    const sessionResponse = await fetch(`${BACKEND_URL}/api/sessions/verify/`, {
+      headers: {
+        'Authorization': `Session ${sid.value}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!sessionResponse.ok) {
+      logger.warn('[JobsDataEmployees] 👷 Session verification failed');
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    const sessionData = await sessionResponse.json();
+    logger.info('[JobsDataEmployees] 👷 Session data:', { user_id: sessionData.user_id, tenant_id: sessionData.tenant_id });
+
     const backendUrl = `${BACKEND_URL}/api/jobs/data/employees/`;
     logger.info('[JobsDataEmployees] 👷 Making request to:', backendUrl);
 
@@ -33,13 +50,10 @@ export async function GET(request) {
       'Accept': 'application/json',
       'Authorization': `Session ${sid.value}`,
       'X-Session-ID': sid.value,
+      'X-Tenant-ID': sessionData.tenant_id,
     };
     
-    // Add tenant ID if available
-    if (tenantId) {
-      headers['X-Tenant-ID'] = tenantId.value;
-      logger.info('[JobsDataEmployees] 👷 Added tenant ID:', tenantId.value);
-    }
+    logger.info('[JobsDataEmployees] 👷 Added tenant ID:', sessionData.tenant_id);
 
     const response = await fetch(backendUrl, {
       method: 'GET',
