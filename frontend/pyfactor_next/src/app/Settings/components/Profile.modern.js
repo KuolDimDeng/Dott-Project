@@ -344,8 +344,8 @@ const Profile = ({ userData }) => {
         });
         
         // If 404, it means no employee record exists for this user
-        if (response.status === 404) {
-          console.log('[Profile] No employee record found via profile API, trying employees list...');
+        if (response.status === 404 || response.status === 500) {
+          console.log('[Profile] Employee profile API failed with status:', response.status, '- trying employees list...');
           
           // Try fetching from employees list as fallback
           try {
@@ -374,7 +374,8 @@ const Profile = ({ userData }) => {
                 console.log('[Profile] Found employee via list:', {
                   id: userEmployee.id,
                   email: userEmployee.email,
-                  businessId: userEmployee.business_id
+                  businessId: userEmployee.business_id,
+                  ssnLast4: userEmployee.ssn_last_four
                 });
                 setEmployeeData(userEmployee);
                 setBankInfo(userEmployee.bank_info || {});
@@ -389,7 +390,7 @@ const Profile = ({ userData }) => {
           }
           
           // Only show error for non-owners/admins
-          if (userData?.role !== 'OWNER' && userData?.role !== 'ADMIN') {
+          if (userData?.role !== 'OWNER' && userData?.role !== 'ADMIN' && response.status === 404) {
             notifyError('No employee record found. Please contact your administrator.');
           }
         }
@@ -1096,15 +1097,15 @@ const Profile = ({ userData }) => {
           )}
           
           <div className="mt-4">
-            {employeeData?.ssn_last_4 ? (
+            {(employeeData?.ssn_last_4 || employeeData?.ssn_last_four) ? (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <span className="text-sm text-gray-600">SSN:</span>
                     <span className="font-mono text-sm">
                       {showFullSSN 
-                        ? `XXX-XX-${employeeData.ssn_last_4}`
-                        : `•••-••-${employeeData.ssn_last_4}`}
+                        ? `XXX-XX-${employeeData.ssn_last_4 || employeeData.ssn_last_four}`
+                        : `•••-••-${employeeData.ssn_last_4 || employeeData.ssn_last_four}`}
                     </span>
                     <CheckBadgeIcon className="w-5 h-5 text-green-500" />
                   </div>
