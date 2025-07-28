@@ -209,6 +209,15 @@ export async function POST(request) {
     console.log('🔍 [create-session] Returning response:', responseData);
     return NextResponse.json(responseData);
   } catch (error) {
+    console.error('🚨 [create-session] Error occurred:', error);
+    console.error('🚨 [create-session] Error details:', {
+      message: error.message,
+      type: error.type,
+      code: error.code,
+      statusCode: error.statusCode,
+      stack: error.stack
+    });
+    
     logger.error('Failed to create checkout session:', error);
     
     // Check if it's a Stripe API error
@@ -216,8 +225,11 @@ export async function POST(request) {
       'Invalid payment configuration. Please contact support.' : 
       (error.message || 'Failed to create checkout session');
     
+    const errorResponse = { error: errorMessage, success: false };
+    console.error('🚨 [create-session] Returning error response:', errorResponse);
+    
     return NextResponse.json(
-      { error: errorMessage, success: false },
+      errorResponse,
       { status: error.statusCode || 500 }
     );
   }
