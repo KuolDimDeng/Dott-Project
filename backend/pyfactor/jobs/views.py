@@ -3,7 +3,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from custom_auth.authentication import SessionTokenAuthentication, Auth0JWTAuthentication
+from core.authentication.session_token_auth import SessionTokenAuthentication
+from custom_auth.auth0_authentication import Auth0JWTAuthentication
 from django.utils import timezone
 from django.conf import settings
 from django.db.models import Sum, F, Q, Prefetch
