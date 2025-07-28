@@ -1,41 +1,39 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+const BACKEND_URL = process.env.BACKEND_API_URL || 'https://api.dottapps.com';
 
-export async function GET() {
+export async function GET(request) {
   try {
     const cookieStore = await cookies();
-    const sessionId = cookieStore.get("sessionid")?.value;
-    const sidCookie = cookieStore.get("sid")?.value;
+    const sidCookie = cookieStore.get("sid");
 
-    // Check for either sessionid or sid cookie
-    const authCookie = sessionId || sidCookie;
-    if (!authCookie) {
+    // Check for session cookie (following HR API pattern)
+    if (!sidCookie) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
     // Get CSRF token
     const csrfToken = cookieStore.get('csrftoken')?.value;
     
-    // Build cookie header
-    let cookieHeader = sessionId 
-      ? `sessionid=${sessionId}` 
-      : `sid=${sidCookie}`;
+    // Get tenant ID from headers (following HR API pattern)
+    const tenantId = request.headers.get('X-Tenant-ID');
     
-    if (csrfToken) {
-      cookieHeader += `; csrftoken=${csrfToken}`;
-    }
-
+    // Build headers following working HR API pattern
     const headers = {
-      Cookie: cookieHeader,
+      'Authorization': `Session ${sidCookie.value}`,
+      'Cookie': `session_token=${sidCookie.value}`,
     };
+    
+    if (tenantId) {
+      headers['X-Tenant-ID'] = tenantId;
+    }
     
     if (csrfToken) {
       headers['X-CSRFToken'] = csrfToken;
     }
 
-    const response = await fetch(`${API_BASE_URL}/users/api/business/logo/`, {
+    const response = await fetch(`${BACKEND_URL}/users/api/business/logo/`, {
       method: "GET",
       headers,
     });
@@ -55,39 +53,37 @@ export async function GET() {
   }
 }
 
-export async function DELETE() {
+export async function DELETE(request) {
   try {
     const cookieStore = await cookies();
-    const sessionId = cookieStore.get("sessionid")?.value;
-    const sidCookie = cookieStore.get("sid")?.value;
+    const sidCookie = cookieStore.get("sid");
 
-    // Check for either sessionid or sid cookie
-    const authCookie = sessionId || sidCookie;
-    if (!authCookie) {
+    // Check for session cookie (following HR API pattern)
+    if (!sidCookie) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
     // Get CSRF token
     const csrfToken = cookieStore.get('csrftoken')?.value;
     
-    // Build cookie header
-    let cookieHeader = sessionId 
-      ? `sessionid=${sessionId}` 
-      : `sid=${sidCookie}`;
+    // Get tenant ID from headers (following HR API pattern)
+    const tenantId = request.headers.get('X-Tenant-ID');
     
-    if (csrfToken) {
-      cookieHeader += `; csrftoken=${csrfToken}`;
-    }
-
+    // Build headers following working HR API pattern
     const headers = {
-      Cookie: cookieHeader,
+      'Authorization': `Session ${sidCookie.value}`,
+      'Cookie': `session_token=${sidCookie.value}`,
     };
+    
+    if (tenantId) {
+      headers['X-Tenant-ID'] = tenantId;
+    }
     
     if (csrfToken) {
       headers['X-CSRFToken'] = csrfToken;
     }
 
-    const response = await fetch(`${API_BASE_URL}/users/api/business/logo/delete/`, {
+    const response = await fetch(`${BACKEND_URL}/users/api/business/logo/delete/`, {
       method: "DELETE",
       headers,
     });

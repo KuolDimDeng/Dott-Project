@@ -441,6 +441,19 @@ function EmployeeManagement({ onNavigate }) {
         status: emp.active ? 'active' : 'inactive'
       }));
 
+      // Debug: Log wage mapping for support@dottapps.com
+      const supportEmployee = mappedEmployees.find(emp => emp.email === 'support@dottapps.com');
+      if (supportEmployee) {
+        logger.info('💰 [EmployeeManagement] === SUPPORT EMPLOYEE WAGE DEBUG ===');
+        logger.info('💰 [EmployeeManagement] Support employee raw data:', {
+          wage_per_hour: supportEmployee.wage_per_hour,
+          wagePerHour: supportEmployee.wagePerHour,
+          salary: supportEmployee.salary,
+          compensation_type: supportEmployee.compensation_type,
+          compensationType: supportEmployee.compensationType
+        });
+      }
+
       setEmployees(mappedEmployees);
       setStats(statsData);
     } catch (error) {
@@ -641,11 +654,14 @@ function EmployeeManagement({ onNavigate }) {
   };
 
   const handleEdit = (employee) => {
-    logger.info('📝 [EmployeeManagement] Editing employee:', {
-      id: employee.id,
-      name: `${employee.firstName} ${employee.lastName}`,
-      phone: employee.phone,
-      phoneCountryCode: employee.phoneCountryCode || employee.phone_country_code
+    logger.info('📝 [EmployeeManagement] === EDIT EMPLOYEE DEBUG START ===');
+    logger.info('📝 [EmployeeManagement] Raw employee object:', employee);
+    logger.info('📝 [EmployeeManagement] Employee wage fields:', {
+      wagePerHour: employee.wagePerHour,
+      wage_per_hour: employee.wage_per_hour,
+      salary: employee.salary,
+      compensationType: employee.compensationType,
+      compensation_type: employee.compensation_type
     });
     
     // Parse international phone number if it exists
@@ -694,6 +710,16 @@ function EmployeeManagement({ onNavigate }) {
       vacationTime: employee.vacationTime ? 'yes' : 'no',
       vacationDaysPerYear: employee.vacationDaysPerYear || ''
     });
+    
+    logger.info('📝 [EmployeeManagement] Form data set with values:', {
+      compensationType: employee.compensationType || 'SALARY',
+      salary: employee.salary || '',
+      wagePerHour: employee.wagePerHour || employee.wage_per_hour || '',
+      originalWagePerHour: employee.wagePerHour,
+      originalWage_per_hour: employee.wage_per_hour
+    });
+    logger.info('📝 [EmployeeManagement] === EDIT EMPLOYEE DEBUG END ===');
+    
     setActiveTab('create');
   };
 
@@ -829,10 +855,23 @@ function EmployeeManagement({ onNavigate }) {
         is_supervisor: formData.isSupervisor || false,
         employment_type: formData.employmentType,
         compensation_type: formData.compensationType,
-        wage_per_hour: formData.compensationType === 'HOURLY' ? 
-          (parseFloat(formData.wagePerHour) || 0) : 
-          // Calculate hourly rate for salaried employees (industry standard)
-          Math.min(9999.99, Math.round((parseFloat(formData.salary) / 2080) * 100) / 100), // 52 weeks × 40 hours, rounded and capped at DB limit
+        wage_per_hour: (() => {
+          logger.info('💰 [EmployeeManagement] === WAGE CALCULATION DEBUG ===');
+          logger.info('💰 [EmployeeManagement] Form compensation type:', formData.compensationType);
+          logger.info('💰 [EmployeeManagement] Form wagePerHour value:', formData.wagePerHour);
+          logger.info('💰 [EmployeeManagement] Form salary value:', formData.salary);
+          
+          if (formData.compensationType === 'HOURLY') {
+            const hourlyWage = parseFloat(formData.wagePerHour) || 0;
+            logger.info('💰 [EmployeeManagement] Using HOURLY wage:', hourlyWage);
+            return hourlyWage;
+          } else {
+            // Calculate hourly rate for salaried employees (industry standard)
+            const calculatedRate = Math.min(9999.99, Math.round((parseFloat(formData.salary) / 2080) * 100) / 100);
+            logger.info('💰 [EmployeeManagement] Using calculated SALARY rate:', calculatedRate);
+            return calculatedRate;
+          }
+        })(),
         hire_date: formData.hireDate,
         zip_code: formData.zipCode,
         emergency_contact_name: formData.emergencyContact,
