@@ -51,10 +51,18 @@ export async function POST(request) {
     // Fetch user data from the session endpoint
     let userData;
     try {
-      const sessionResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/auth/session-v2/`, {
+      console.log('🔍 [create-session] Validating session with backend...');
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+      const sessionUrl = `${API_URL}/api/sessions/validate/${sessionCookie.value}/`;
+      console.log('🔍 [create-session] Session validation URL:', sessionUrl);
+      
+      const sessionResponse = await fetch(sessionUrl, {
+        method: 'GET',
         headers: {
-          'Cookie': `${sessionCookie.name}=${sessionCookie.value}`,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
         },
+        cache: 'no-store'
       });
 
       if (!sessionResponse.ok) {
@@ -66,7 +74,20 @@ export async function POST(request) {
       }
 
       const sessionData = await sessionResponse.json();
-      userData = sessionData.user;
+      console.log('🔍 [create-session] Session data received:', {
+        hasUser: !!sessionData.user,
+        hasTenant: !!sessionData.tenant,
+        keys: Object.keys(sessionData)
+      });
+      
+      // Extract user data (similar to sessionHelper.js)
+      userData = sessionData.user || sessionData;
+      
+      // Add business name and country from tenant data if available
+      if (sessionData.tenant) {
+        userData.business_name = userData.business_name || sessionData.tenant.name;
+        userData.business_country = userData.business_country || userData.country || sessionData.tenant.country;
+      }
       
       logger.debug('User authenticated:', { 
         email: userData?.email,
