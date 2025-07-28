@@ -5,6 +5,7 @@ import { jobService } from '@/services/jobService';
 import { logger } from '@/utils/logger';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import SearchableCheckList from './SearchableCheckList';
+import MultiSelectDropdown from './MultiSelectDropdown';
 
 const JobForm = ({ job, onClose, onSave, inline = false }) => {
   const [formData, setFormData] = useState({
@@ -455,13 +456,28 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               >
                 <option value="">Select a customer</option>
-                {customers.map((customer) => (
-                  <option key={customer.id} value={customer.id}>
-                    {customer.customerName || customer.customer_name || customer.business_name || customer.name || 
-                     `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 
-                     customer.email || 'Unknown Customer'}
-                  </option>
-                ))}
+                {customers.map((customer) => {
+                  // Format: {customer_id} - {business_name or "first_name last_name"}
+                  let displayName = '';
+                  if (customer.business_name) {
+                    displayName = customer.business_name;
+                  } else if (customer.first_name || customer.last_name) {
+                    displayName = `${customer.first_name || ''} ${customer.last_name || ''}`.trim();
+                  } else if (customer.email) {
+                    displayName = customer.email;
+                  } else {
+                    displayName = 'Unknown Customer';
+                  }
+                  
+                  // Get short ID (first 8 chars of UUID)
+                  const shortId = customer.id ? customer.id.substring(0, 8) : 'N/A';
+                  
+                  return (
+                    <option key={customer.id} value={customer.id}>
+                      {shortId} - {displayName}
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
@@ -632,12 +648,12 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
               />
             </div>
 
-            {/* Employee Assignment with Lead Selection */}
+            {/* Employee Assignment */}
             <div className="lg:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Assigned Employees
               </label>
-              <SearchableCheckList
+              <MultiSelectDropdown
                 items={employees}
                 selectedItems={formData.assigned_employees}
                 onSelectionChange={(selected) => {
@@ -647,13 +663,13 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
                     setFormData(prev => ({ ...prev, lead_employee_id: '' }));
                   }
                 }}
-                searchPlaceholder="Search employees..."
-                displayKey={(emp) => `${emp.user?.first_name || ''} ${emp.user?.last_name || ''} ${emp.user?.email ? `(${emp.user.email})` : ''}`}
+                placeholder="Select employees..."
+                displayKey={(emp) => {
+                  const name = `${emp.user?.first_name || ''} ${emp.user?.last_name || ''}`.trim();
+                  return name || emp.user?.email || 'Unknown Employee';
+                }}
                 valueKey="id"
-                maxHeight="200px"
-                leadSelection={true}
-                leadValue={formData.lead_employee_id}
-                onLeadChange={(leadId) => setFormData(prev => ({ ...prev, lead_employee_id: leadId }))}
+                showCount={true}
               />
             </div>
 
@@ -801,14 +817,14 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Materials/Supplies
               </label>
-              <SearchableCheckList
+              <MultiSelectDropdown
                 items={supplies}
                 selectedItems={formData.materials}
                 onSelectionChange={(selected) => setFormData(prev => ({ ...prev, materials: selected }))}
-                searchPlaceholder="Search materials..."
-                displayKey={(supply) => `${supply.name} - $${supply.unit_price} (${supply.quantity_on_hand} available)`}
+                placeholder="Select materials..."
+                displayKey={(supply) => `${supply.name} - $${supply.unit_price || '0.00'} (${supply.quantity_on_hand || 0} available)`}
                 valueKey="id"
-                maxHeight="200px"
+                showCount={true}
               />
             </div>
           </div>
@@ -893,13 +909,28 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">Select a customer</option>
-                {customers.map((customer) => (
-                  <option key={customer.id} value={customer.id}>
-                    {customer.customerName || customer.customer_name || customer.business_name || customer.name || 
-                     `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 
-                     customer.email || 'Unknown Customer'}
-                  </option>
-                ))}
+                {customers.map((customer) => {
+                  // Format: {customer_id} - {business_name or "first_name last_name"}
+                  let displayName = '';
+                  if (customer.business_name) {
+                    displayName = customer.business_name;
+                  } else if (customer.first_name || customer.last_name) {
+                    displayName = `${customer.first_name || ''} ${customer.last_name || ''}`.trim();
+                  } else if (customer.email) {
+                    displayName = customer.email;
+                  } else {
+                    displayName = 'Unknown Customer';
+                  }
+                  
+                  // Get short ID (first 8 chars of UUID)
+                  const shortId = customer.id ? customer.id.substring(0, 8) : 'N/A';
+                  
+                  return (
+                    <option key={customer.id} value={customer.id}>
+                      {shortId} - {displayName}
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
@@ -1118,12 +1149,12 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
               />
             </div>
 
-            {/* Employee Assignment with Lead Selection */}
+            {/* Employee Assignment */}
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Assigned Employees
               </label>
-              <SearchableCheckList
+              <MultiSelectDropdown
                 items={employees}
                 selectedItems={formData.assigned_employees}
                 onSelectionChange={(selected) => {
@@ -1133,13 +1164,13 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
                     setFormData(prev => ({ ...prev, lead_employee_id: '' }));
                   }
                 }}
-                searchPlaceholder="Search employees..."
-                displayKey={(emp) => `${emp.user?.first_name || ''} ${emp.user?.last_name || ''} ${emp.user?.email ? `(${emp.user.email})` : ''}`}
+                placeholder="Select employees..."
+                displayKey={(emp) => {
+                  const name = `${emp.user?.first_name || ''} ${emp.user?.last_name || ''}`.trim();
+                  return name || emp.user?.email || 'Unknown Employee';
+                }}
                 valueKey="id"
-                maxHeight="200px"
-                leadSelection={true}
-                leadValue={formData.lead_employee_id}
-                onLeadChange={(leadId) => setFormData(prev => ({ ...prev, lead_employee_id: leadId }))}
+                showCount={true}
               />
             </div>
 
@@ -1287,14 +1318,14 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Materials/Supplies
               </label>
-              <SearchableCheckList
+              <MultiSelectDropdown
                 items={supplies}
                 selectedItems={formData.materials}
                 onSelectionChange={(selected) => setFormData(prev => ({ ...prev, materials: selected }))}
-                searchPlaceholder="Search materials..."
-                displayKey={(supply) => `${supply.name} - $${supply.unit_price} (${supply.quantity_on_hand} available)`}
+                placeholder="Select materials..."
+                displayKey={(supply) => `${supply.name} - $${supply.unit_price || '0.00'} (${supply.quantity_on_hand || 0} available)`}
                 valueKey="id"
-                maxHeight="200px"
+                showCount={true}
               />
             </div>
 

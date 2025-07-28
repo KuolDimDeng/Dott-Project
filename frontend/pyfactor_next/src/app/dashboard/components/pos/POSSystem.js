@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import { toast } from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 import { 
   ShoppingCartIcon, 
   XMarkIcon, 
@@ -38,7 +39,7 @@ if (typeof window !== 'undefined') {
   });
 }
 
-const QRScanner = ({ isActive, onScan, onError }) => {
+const QRScanner = ({ isActive, onScan, onError, t }) => {
   const videoRef = useRef(null);
   const qrScannerRef = useRef(null);
   const [hasPermission, setHasPermission] = useState(false);
@@ -89,7 +90,7 @@ const QRScanner = ({ isActive, onScan, onError }) => {
       
     } catch (error) {
       console.error('Camera access denied:', error);
-      onError('Camera access denied. Please allow camera permissions and ensure you are using HTTPS.');
+      onError(t('allowCameraAccess'));
       setHasPermission(false);
     } finally {
       setIsLoading(false);
@@ -120,7 +121,7 @@ const QRScanner = ({ isActive, onScan, onError }) => {
         <div className="flex items-center justify-center h-64 bg-gray-100 rounded-lg">
           <div className="text-center">
             <CameraIcon className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-            <p className="text-sm text-gray-600">Camera access required for scanning</p>
+            <p className="text-sm text-gray-600">{t('allowCameraAccess')}</p>
           </div>
         </div>
       )}
@@ -214,6 +215,8 @@ class POSErrorBoundary extends React.Component {
 }
 
 const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
+  const { t } = useTranslation('pos');
+  
   // Debug props
   console.log('[POSSystem] Rendering with props:', { isOpen, onClose: !!onClose, onSaleCompleted: !!onSaleCompleted });
   console.log('[POSSystem] Version: 2025-01-11 v4 - Fixed duplicate events with memoization');
@@ -751,7 +754,7 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
   // Process sale
   const handleProcessSale = async () => {
     if (cartItems.length === 0) {
-      toast.error('Please add items to cart');
+      toast.error(t('emptyCart'));
       return;
     }
 
@@ -808,10 +811,10 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
 
       // Show success details
       if (result.inventory_updated) {
-        toast.success('Inventory updated automatically');
+        toast.success(t('inventoryUpdated'));
       }
       if (result.accounting_entries_created) {
-        toast.success('Accounting entries recorded');
+        toast.success(t('accountingEntriesCreated'));
       }
       
       // Notify parent
@@ -824,7 +827,7 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
       
     } catch (error) {
       safeLogger.error('[POS] Error processing sale:', error);
-      toast.error(`Failed to process sale: ${error.message}`);
+      toast.error(`${t('error')}: ${error.message}`);
     } finally {
       setIsProcessing(false);
     }
@@ -888,7 +891,7 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                 <div className="flex items-center justify-between p-6 border-b border-gray-200">
                   <Dialog.Title className="text-2xl font-bold text-gray-900 flex items-center">
                     <ShoppingCartIcon className="h-8 w-8 text-blue-600 mr-3" />
-                    Point of Sale System
+                    {t('title')}
                   </Dialog.Title>
                   <button
                     onClick={onClose}
@@ -908,8 +911,8 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center justify-between mb-2">
                             <label className="text-sm font-medium text-gray-700">
-                              Product Search / Barcode Scanner
-                              <FieldTooltip text="Type product name or scan barcode with USB scanner" />
+                              {t('searchProducts')}
+                              <FieldTooltip text={t('searchProducts')} />
                             </label>
                             {/* Scanner Status Indicator */}
                             <div className={`flex items-center px-3 py-1 rounded-full text-xs font-medium ${
@@ -987,8 +990,8 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                               </svg>
                               <div>
-                                <p className="text-sm font-medium text-green-800">Scanner Connected ✓</p>
-                                <p className="text-xs text-green-700">Your barcode scanner is ready. Scan any product or type to search.</p>
+                                <p className="text-sm font-medium text-green-800">{t('scannerDetection')} ✓</p>
+                                <p className="text-xs text-green-700">{t('scannerDetectionMessage')}</p>
                               </div>
                             </div>
                           </div>
@@ -1001,8 +1004,8 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                               </svg>
                               <div>
-                                <p className="text-sm font-medium text-blue-800">Scanner Detection</p>
-                                <p className="text-xs text-blue-700">Connect a USB barcode scanner and scan a product to enable automatic detection.</p>
+                                <p className="text-sm font-medium text-blue-800">{t('scannerDetection')}</p>
+                                <p className="text-xs text-blue-700">{t('scannerDetectionMessage')}</p>
                               </div>
                             </div>
                           </div>
@@ -1017,7 +1020,7 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                           <div className="flex items-center">
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-                            <span className="text-sm text-blue-700">Loading products from database...</span>
+                            <span className="text-sm text-blue-700">{t('loadingProducts')}</span>
                           </div>
                         </div>
                       )}
@@ -1025,13 +1028,13 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                       {/* Products Error State */}
                       {productsError && (
                         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                          <h4 className="text-sm font-medium text-red-900 mb-1">Error Loading Products</h4>
+                          <h4 className="text-sm font-medium text-red-900 mb-1">{t('errorLoadingProducts')}</h4>
                           <p className="text-xs text-red-700">{productsError}</p>
                           <button
                             onClick={() => window.location.reload()}
                             className="mt-2 px-3 py-1 bg-red-600 text-white text-xs rounded-md hover:bg-red-700 transition-colors"
                           >
-                            Reload
+                            {t('reload')}
                           </button>
                         </div>
                       )}
@@ -1045,7 +1048,7 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                                 try {
                                   // Check if it's JSON being processed
                                   if (productSearchTerm.trim().startsWith('{') && productSearchTerm.includes('"id"')) {
-                                    return 'Processing QR Code...';
+                                    return t('processingQRCode');
                                   }
                                   
                                   const searchTerm = String(productSearchTerm || '').toLowerCase();
@@ -1056,10 +1059,10 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                                     const barcode = String(product.barcode || '');
                                     return name.includes(searchTerm) || sku.includes(searchTerm) || barcode.includes(searchTerm);
                                   });
-                                  return filtered.length > 0 ? 'Search Results:' : 'No products found';
+                                  return filtered.length > 0 ? t('searchResults') : t('noProductsFound');
                                 } catch (error) {
                                   console.error('[POSSystem] Filter error:', error);
-                                  return 'No products found';
+                                  return t('noProductsFound');
                                 }
                               })()}
                             </h3>
@@ -1070,7 +1073,7 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                                 }}
                                 className="text-xs text-gray-500 hover:text-gray-700"
                               >
-                                Clear search
+                                {t('clearSearch')}
                               </button>
                             )}
                           </div>
@@ -1082,7 +1085,7 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                                   return (
                                     <div className="p-4 text-center">
                                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                                      <p className="text-sm text-gray-500 mt-2">Processing QR code data...</p>
+                                      <p className="text-sm text-gray-500 mt-2">{t('processingQRCode')}</p>
                                     </div>
                                   );
                                 }
@@ -1101,18 +1104,18 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                                   onClick={() => {
                                     addToCart(product);
                                     setProductSearchTerm('');
-                                    toast.success(`Added ${product.name} to cart`);
+                                    toast.success(t('productAdded'));
                                   }}
                                   className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors group"
                                 >
                                   <div className="flex justify-between items-center">
                                     <div>
                                       <p className="font-medium text-gray-900 group-hover:text-blue-600">{product.name}</p>
-                                      <p className="text-sm text-gray-500">SKU: {product.sku}</p>
+                                      <p className="text-sm text-gray-500">{t('sku')}: {product.sku}</p>
                                     </div>
                                     <div className="text-right">
                                       <p className="font-medium text-gray-900">${product.price}</p>
-                                      <p className="text-sm text-gray-500">Stock: {product.stock}</p>
+                                      <p className="text-sm text-gray-500">{t('stock')}: {product.stock}</p>
                                     </div>
                                   </div>
                                 </div>
@@ -1132,13 +1135,13 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                   <div className="w-1/2 p-6 flex flex-col">
                     {/* Cart Items */}
                     <div className="flex-1 overflow-y-auto space-y-4">
-                      <h3 className="text-lg font-medium text-gray-900">Shopping Cart ({cartItems.length} items)</h3>
+                      <h3 className="text-lg font-medium text-gray-900">{t('title')} ({cartItems.length})</h3>
                       
                       {cartItems.length === 0 ? (
                         <div className="text-center py-12">
                           <ShoppingCartIcon className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                          <p className="text-gray-500">Cart is empty</p>
-                          <p className="text-sm text-gray-400">Scan or search for products to add them</p>
+                          <p className="text-gray-500">{t('emptyCart')}</p>
+                          <p className="text-sm text-gray-400">{t('searchProducts')}</p>
                         </div>
                       ) : (
                         <div className="space-y-3">
@@ -1184,15 +1187,15 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                         {/* Customer Selection */}
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Customer
-                            <FieldTooltip text="Select customer for this sale (optional)" />
+                            {t('customer')}
+                            <FieldTooltip text={t('selectCustomer')} />
                           </label>
                           <select
                             value={selectedCustomer}
                             onChange={(e) => setSelectedCustomer(e.target.value)}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                           >
-                            <option value="">Walk-in Customer</option>
+                            <option value="">{t('walkInCustomer')}</option>
                             {mockCustomers.map(customer => (
                               <option key={customer.id} value={customer.id}>
                                 {customer.name}
@@ -1205,8 +1208,8 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Discount
-                              <FieldTooltip text="Apply discount to subtotal" />
+                              {t('discount')}
+                              <FieldTooltip text={t('applyDiscount')} />
                             </label>
                             <div className="flex">
                               <input
@@ -1230,8 +1233,8 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
 
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Tax Rate (%)
-                              <FieldTooltip text="Tax rate applied to discounted subtotal" />
+                              {t('taxRate')}
+                              <FieldTooltip text={t('taxRateTooltip')} />
                             </label>
                             <input
                               type="number"
@@ -1248,43 +1251,43 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                         {/* Payment Method */}
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Payment Method
-                            <FieldTooltip text="How customer is paying for this purchase" />
+                            {t('paymentMethod')}
+                            <FieldTooltip text={t('paymentMethodTooltip')} />
                           </label>
                           <select
                             value={paymentMethod}
                             onChange={(e) => setPaymentMethod(e.target.value)}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                           >
-                            <option value="cash">Cash</option>
-                            <option value="credit_card">Credit Card</option>
-                            <option value="debit_card">Debit Card</option>
-                            <option value="mobile_money">Mobile Money</option>
-                            <option value="bank_transfer">Bank Transfer</option>
-                            <option value="check">Check</option>
+                            <option value="cash">{t('cash')}</option>
+                            <option value="credit_card">{t('creditCard')}</option>
+                            <option value="debit_card">{t('debitCard')}</option>
+                            <option value="mobile_money">{t('mobilePayment')}</option>
+                            <option value="bank_transfer">{t('other')}</option>
+                            <option value="check">{t('other')}</option>
                           </select>
                         </div>
 
                         {/* Totals */}
                         <div className="bg-gray-50 p-4 rounded-lg space-y-2">
                           <div className="flex justify-between text-sm">
-                            <span>Subtotal:</span>
+                            <span>{t('subtotal')}:</span>
                             <span>${totals?.subtotal || '0.00'}</span>
                           </div>
                           {parseFloat(totals?.discountAmount || 0) > 0 && (
                             <div className="flex justify-between text-sm text-red-600">
-                              <span>Discount:</span>
+                              <span>{t('discount')}:</span>
                               <span>-${totals?.discountAmount || '0.00'}</span>
                             </div>
                           )}
                           {parseFloat(totals?.taxAmount || 0) > 0 && (
                             <div className="flex justify-between text-sm">
-                              <span>Tax:</span>
+                              <span>{t('tax')}:</span>
                               <span>${totals?.taxAmount || '0.00'}</span>
                             </div>
                           )}
                           <div className="flex justify-between text-lg font-bold border-t border-gray-200 pt-2">
-                            <span>Total:</span>
+                            <span>{t('total')}:</span>
                             <span>${totals?.total || '0.00'}</span>
                           </div>
                         </div>
@@ -1301,12 +1304,12 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                               </svg>
-                              Processing Sale...
+                              {t('processing')}...
                             </>
                           ) : (
                             <>
                               <CreditCardIcon className="h-5 w-5 mr-2" />
-                              Process Sale - ${totals?.total || '0.00'}
+                              {t('processSale')} - ${totals?.total || '0.00'}
                             </>
                           )}
                         </button>

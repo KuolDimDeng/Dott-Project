@@ -311,7 +311,24 @@ const JobManagement = ({ view = 'jobs-list' }) => {
                       <div className="flex items-center">
                         <UserIcon className="h-4 w-4 text-gray-400 mr-2" />
                         <span className="text-sm text-gray-900">
-                          {job.customer?.name || 'N/A'}
+                          {(() => {
+                            if (!job.customer) return 'N/A';
+                            
+                            let displayName = '';
+                            if (job.customer.business_name) {
+                              displayName = job.customer.business_name;
+                            } else if (job.customer.first_name || job.customer.last_name) {
+                              displayName = `${job.customer.first_name || ''} ${job.customer.last_name || ''}`.trim();
+                            } else if (job.customer.email) {
+                              displayName = job.customer.email;
+                            } else if (job.customer.name) {
+                              displayName = job.customer.name;
+                            } else {
+                              displayName = 'Unknown Customer';
+                            }
+                            
+                            return displayName;
+                          })()}
                         </span>
                       </div>
                     </td>

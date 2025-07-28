@@ -1346,7 +1346,7 @@ class JobDataViewSet(viewsets.ViewSet):
             from crm.models import Customer
             from crm.serializers import CustomerSerializer
             
-            customers = Customer.objects.filter(is_active=True).order_by('name')
+            customers = Customer.objects.all().order_by('business_name', 'first_name', 'last_name')
             logger.info(f"👥 [JobDataViewSet] Found {customers.count()} customers")
             
             serializer = CustomerSerializer(customers, many=True)

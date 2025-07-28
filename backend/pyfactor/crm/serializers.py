@@ -5,10 +5,23 @@ from .models import (
 )
 
 class CustomerSerializer(serializers.ModelSerializer):
+    name = serializers.SerializerMethodField()
+    
     class Meta:
         model = Customer
         fields = '__all__'
         read_only_fields = ('id', 'account_number', 'created_at', 'updated_at')
+    
+    def get_name(self, obj):
+        # Return business name if available, otherwise combine first and last name
+        if obj.business_name:
+            return obj.business_name
+        elif obj.first_name or obj.last_name:
+            return f"{obj.first_name or ''} {obj.last_name or ''}".strip()
+        elif obj.email:
+            return obj.email
+        else:
+            return f"Customer #{obj.account_number}"
 
 class ContactSerializer(serializers.ModelSerializer):
     customer_name = serializers.SerializerMethodField()
