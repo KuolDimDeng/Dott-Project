@@ -1,7 +1,7 @@
 # Multi-stage build with advanced caching
 FROM node:18-alpine AS base
 # Add cache bust to force fresh builds when needed
-ARG CACHEBUST=1
+ARG CACHEBUST=2025-07-28-v1
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 RUN npm install -g pnpm@8.10.0
