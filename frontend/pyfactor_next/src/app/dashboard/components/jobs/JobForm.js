@@ -8,6 +8,8 @@ import SearchableCheckList from './SearchableCheckList';
 import MultiSelectDropdown from './MultiSelectDropdown';
 
 const JobForm = ({ job, onClose, onSave, inline = false }) => {
+  console.log('🎯 [JobForm] Component rendering with props:', { job, inline });
+  
   const [formData, setFormData] = useState({
     job_number: '',
     name: '',
@@ -49,6 +51,7 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
   const [generatingNumber, setGeneratingNumber] = useState(false);
 
   useEffect(() => {
+    console.log('🚀 [JobForm] Component mounted/updated, fetching data...');
     fetchCustomers();
     fetchEmployees();
     fetchSupplies();
@@ -79,6 +82,7 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
 
   const fetchCustomers = async () => {
     try {
+      console.log('[JobForm] 👥 === FETCHING CUSTOMERS START ===');
       logger.info('[JobForm] 👥 === FETCHING CUSTOMERS START ===');
       
       // Try the new job data endpoint first
@@ -144,6 +148,7 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
       });
       setCustomers(Array.isArray(customersData) ? customersData : []);
     } catch (err) {
+      console.error('[JobForm] 👥 Error fetching customers:', err);
       logger.error('[JobForm] 👥 Error fetching customers:', err);
       setError('Failed to load customers. Please try again.');
     }
@@ -151,6 +156,7 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
 
   const fetchEmployees = async () => {
     try {
+      console.log('[JobForm] 👷 === FETCHING EMPLOYEES START ===');
       logger.info('[JobForm] 👷 === FETCHING EMPLOYEES START ===');
       
       // Try the new job data endpoint first
@@ -222,6 +228,7 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
 
   const fetchSupplies = async () => {
     try {
+      console.log('[JobForm] 📦 === FETCHING SUPPLIES START ===');
       logger.info('[JobForm] 📦 === FETCHING SUPPLIES START ===');
       
       // Try the new job data endpoint first
