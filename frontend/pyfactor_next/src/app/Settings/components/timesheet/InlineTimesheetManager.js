@@ -27,6 +27,7 @@ export default function InlineTimesheetManager() {
   const [activeSection, setActiveSection] = useState('entry'); // 'entry', 'submit', 'history', 'supervisor'
   const [employeeData, setEmployeeData] = useState(null);
   const [hourlyRate, setHourlyRate] = useState(0);
+  const [noEmployeeRecord, setNoEmployeeRecord] = useState(false);
   
   const weekStart = startOfWeek(currentWeek, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(currentWeek, { weekStartsOn: 1 });
@@ -102,17 +103,38 @@ export default function InlineTimesheetManager() {
         const userEmployee = employees.find(emp => {
           // Primary match: email AND tenant match
           const emailMatch = emp.email?.toLowerCase() === session?.user?.email?.toLowerCase();
-          const tenantMatch = !session?.user?.tenantId || 
-                            String(emp.business_id) === String(session?.user?.tenantId);
           
-          console.log(`🔧 [InlineTimesheetManager] Checking employee ${emp.email}: emailMatch=${emailMatch}, tenantMatch=${tenantMatch}`);
+          // Get tenant ID from various possible locations
+          const userTenantId = session?.user?.tenant_id || session?.user?.business_id || session?.user?.tenantId;
+          const tenantMatch = !userTenantId || 
+                            String(emp.business_id) === String(userTenantId);
+          
+          console.log(`🔧 [InlineTimesheetManager] Checking employee ${emp.email}:`);
+          console.log(`🔧 [InlineTimesheetManager]   - emailMatch=${emailMatch}`);
+          console.log(`🔧 [InlineTimesheetManager]   - userTenantId=${userTenantId}`);
+          console.log(`🔧 [InlineTimesheetManager]   - emp.business_id=${emp.business_id}`);
+          console.log(`🔧 [InlineTimesheetManager]   - tenantMatch=${tenantMatch}`);
           
           return emailMatch && tenantMatch;
         });
         
         if (!userEmployee) {
           console.log('🔧 [InlineTimesheetManager] No employee record found for user:', session?.user?.email);
+          console.log('🔧 [InlineTimesheetManager] User details:', {
+            email: session?.user?.email,
+            role: session?.user?.role,
+            tenant_id: session?.user?.tenant_id,
+            business_id: session?.user?.business_id
+          });
           console.log('🔧 [InlineTimesheetManager] Available employees:', employees.map(e => ({ email: e.email, business_id: e.business_id })));
+          
+          // If user is an OWNER or ADMIN, they might not have an employee record
+          if (session?.user?.role === 'OWNER' || session?.user?.role === 'ADMIN') {
+            setNoEmployeeRecord(true);
+            setLoading(false);
+            return;
+          }
+          
           return;
         }
         
@@ -164,7 +186,7 @@ export default function InlineTimesheetManager() {
         `/api/hr/timesheets?employee_id=${employeeData.id}&period_start=${format(weekStart, 'yyyy-MM-dd')}`,
         {
           headers: {
-            'X-Tenant-ID': session?.user?.tenantId || session?.user?.tenant_id,
+            'X-Tenant-ID': session?.user?.tenant_id || session?.user?.business_id || session?.user?.tenantId,
           },
         }
       );
@@ -240,7 +262,7 @@ export default function InlineTimesheetManager() {
         `/api/hr/timesheets?employee_id=${employeeData.id}&limit=5`,
         {
           headers: {
-            'X-Tenant-ID': session?.user?.tenantId || session?.user?.tenant_id,
+            'X-Tenant-ID': session?.user?.tenant_id || session?.user?.business_id || session?.user?.tenantId,
           },
         }
       );
@@ -403,6 +425,25 @@ export default function InlineTimesheetManager() {
     return (
       <div className="flex justify-center items-center py-12">
         <StandardSpinner size="large" />
+      </div>
+    );
+  }
+  
+  if (noEmployeeRecord) {
+    return (
+      <div className="text-center py-12">
+        <div className="text-gray-500 mb-4">
+          <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        </div>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">No Employee Record Found</h3>
+        <p className="text-gray-500">
+          As a business owner, you don't have an employee timesheet record.
+        </p>
+        <p className="text-gray-500 mt-2">
+          To track your own time, you'll need to create an employee record for yourself in the HR section.
+        </p>
       </div>
     );
   }
