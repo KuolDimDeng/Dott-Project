@@ -109,45 +109,83 @@ const Profile = ({ userData }) => {
 
   // Use session data to set profile data
   useEffect(() => {
-    if (session?.user && !sessionLoading) {
-      const sessionUser = session.user;
-      setProfileData(sessionUser);
-      setProfilePhoto(sessionUser.picture || sessionUser.profilePhoto || sessionUser.profile_photo);
-      
-      // Initialize edited data with current values
-      const firstName = sessionUser.first_name || sessionUser.firstName || sessionUser.given_name || '';
-      const lastName = sessionUser.last_name || sessionUser.lastName || sessionUser.family_name || '';
-      const fullName = sessionUser.name || `${firstName} ${lastName}`.trim() || '';
-      
-      setEditedData({
-        firstName: firstName,
-        lastName: lastName,
-        email: sessionUser.email || '',
-        phone_number: sessionUser.phone_number || ''
-      });
-      
-      setLoading(false);
-    } else if (!sessionLoading) {
-      // If no session user data, fetch from API as fallback
-      fetchProfileData();
+    console.log('[Profile] Session useEffect triggered:', {
+      hasSession: !!session,
+      hasSessionUser: !!session?.user,
+      sessionLoading,
+      hasUserData: !!userData
+    });
+    
+    if (!sessionLoading) {
+      if (session?.user) {
+        const sessionUser = session.user;
+        setProfileData(sessionUser);
+        setProfilePhoto(sessionUser.picture || sessionUser.profilePhoto || sessionUser.profile_photo);
+        
+        // Initialize edited data with current values
+        const firstName = sessionUser.first_name || sessionUser.firstName || sessionUser.given_name || '';
+        const lastName = sessionUser.last_name || sessionUser.lastName || sessionUser.family_name || '';
+        const fullName = sessionUser.name || `${firstName} ${lastName}`.trim() || '';
+        
+        setEditedData({
+          firstName: firstName,
+          lastName: lastName,
+          email: sessionUser.email || '',
+          phone_number: sessionUser.phone_number || ''
+        });
+        
+        setLoading(false);
+      } else if (userData) {
+        // Use userData if session is not available
+        console.log('[Profile] Using userData instead of session');
+        setProfileData(userData);
+        setProfilePhoto(userData.picture || userData.profilePhoto || userData.profile_photo);
+        
+        const firstName = userData.first_name || userData.firstName || userData.given_name || '';
+        const lastName = userData.last_name || userData.lastName || userData.family_name || '';
+        
+        setEditedData({
+          firstName: firstName,
+          lastName: lastName,
+          email: userData.email || '',
+          phone_number: userData.phone_number || ''
+        });
+        
+        setLoading(false);
+      } else {
+        // If no session or userData, try fetching from API
+        fetchProfileData();
+      }
     }
-  }, [session, sessionLoading]);
+  }, [session, sessionLoading, userData]);
   
   // Fetch data when tabs change
   useEffect(() => {
-    console.log('[Profile] Selected tab changed to:', selectedTab);
-    console.log('[Profile] useEffect triggered, selectedTab:', selectedTab);
+    console.log('[Profile] useEffect for selectedTab triggered');
+    console.log('[Profile] Current state:', {
+      selectedTab,
+      loading,
+      sessionLoading,
+      hasUserData: !!userData,
+      hasSession: !!session,
+      hasProfileData: !!profileData
+    });
+    
+    // Don't fetch if still loading initial data
+    if (loading || sessionLoading) {
+      console.log('[Profile] Still loading initial data, skipping fetch');
+      return;
+    }
     
     if (selectedTab === 1) {
       console.log('[Profile] Pay tab selected, fetching employee data...');
-      console.log('[Profile] Fetching employee data for Pay/Tax tab');
       fetchEmployeeProfileData();
     } else if (selectedTab === 6) {
       console.log('[Profile] Security tab selected, fetching data...');
       fetchLoginSessions();
       fetchMFASettings();
     }
-  }, [selectedTab]);
+  }, [selectedTab, loading, sessionLoading]);
 
   const fetchProfileData = async () => {
     try {
@@ -252,11 +290,20 @@ const Profile = ({ userData }) => {
     try {
       setLoadingEmployeeData(true);
       console.log('[Profile] === EMPLOYEE PROFILE FETCH START ===');
+      console.log('[Profile] Current state:', {
+        selectedTab,
+        hasUserData: !!userData,
+        hasSession: !!session,
+        hasSessionUser: !!session?.user,
+        sessionLoading
+      });
       console.log('[Profile] User info:', {
         email: userData?.email || session?.user?.email,
         role: userData?.role || session?.user?.role,
         hasUserData: !!userData,
-        hasSessionUser: !!session?.user
+        hasSessionUser: !!session?.user,
+        tenantId: userData?.tenantId || userData?.tenant_id,
+        businessId: userData?.businessId || userData?.business_id
       });
       
       // First try the debug endpoint to see what's happening
@@ -303,9 +350,10 @@ const Profile = ({ userData }) => {
           // Try fetching from employees list as fallback
           try {
             const userEmail = userData?.email || session?.user?.email;
-            const tenantId = userData?.tenant_id || userData?.business_id || session?.user?.tenant_id || session?.user?.business_id;
+            const tenantId = userData?.tenant_id || userData?.tenantId || userData?.business_id || userData?.businessId || 
+                           session?.user?.tenant_id || session?.user?.tenantId || session?.user?.business_id || session?.user?.businessId;
             
-            console.log('[Profile] Fetching employees list with tenant ID:', tenantId);
+            console.log('[Profile] Fetching employees list with tenant ID:', tenantId, 'for email:', userEmail);
             const employeesResponse = await fetch('/api/hr/v2/employees/', {
               headers: {
                 'X-Tenant-ID': tenantId,
