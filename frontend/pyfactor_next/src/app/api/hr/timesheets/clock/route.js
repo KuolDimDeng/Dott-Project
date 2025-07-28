@@ -16,13 +16,18 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    logger.info('[Clock API] Request body:', body);
+    logger.info('[Clock API] Request body:', JSON.stringify(body, null, 2));
+    
+    // Get tenant ID from request headers
+    const tenantId = request.headers.get('X-Tenant-ID');
+    logger.info('[Clock API] Tenant ID:', tenantId);
 
     // Forward to Django backend
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
     const backendUrl = `${API_URL}/api/timesheets/clock-entries/clock/`;
     
     logger.info('[Clock API] Forwarding to backend:', backendUrl);
+    logger.info('[Clock API] Session ID:', sidCookie.value);
 
     const response = await fetch(backendUrl, {
       method: 'POST',
@@ -30,6 +35,7 @@ export async function POST(request) {
         'Authorization': `Session ${sidCookie.value}`,
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        'X-Tenant-ID': tenantId || '',
       },
       body: JSON.stringify(body),
     });

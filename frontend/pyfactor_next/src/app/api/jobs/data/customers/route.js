@@ -8,7 +8,7 @@ export async function GET(request) {
   logger.info('[JobsDataCustomers] 👥 === API CALL START ===');
 
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sid = cookieStore.get('sid');
     
     logger.info('[JobsDataCustomers] 👥 Cookie check:', { 

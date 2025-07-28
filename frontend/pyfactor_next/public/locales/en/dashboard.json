@@ -128,5 +128,140 @@
     "defaultUser": "A Dott User",
     "emailMessage": "{{senderName}} has invited you to join Dott: Global Business Platform!\n\nHello,\n\nI wanted to personally recommend Dott, a business management platform that has transformed how I run my operations.\n\nDott brings together everything you need in one place:\n• Sales and customer management\n• Inventory tracking and control\n• Professional invoicing and payments\n• Financial reporting and analytics\n• Team collaboration tools\n• AI Business insights and analytics\n• Geofencing and location tracking\n• Real-time business intelligence\n\nSince implementing Dott, I've reduced administrative work by hours each week while gaining real-time insights into my business performance. The platform delivers enterprise-grade capabilities at a fraction of traditional software costs.\n\nI believe Dott would be particularly valuable for your business operations and growth goals.\n\nGet started for free forever today: https://dottapps.com\n\nBest regards,\n{{userName}}",
     "whatsappMessage": "🚀 *{{senderName}} has invited you to join Dott: Global Business Platform!*\n\nHello! I wanted to personally recommend Dott, a business management platform that has transformed how I run my operations.\n\nDott brings together everything you need:\n• Sales and customer management\n• Inventory tracking and control\n• Professional invoicing and payments\n• Financial reporting and analytics\n• Team collaboration tools\n• AI Business insights and analytics\n• Geofencing and location tracking\n• Real-time business intelligence\n\nSince implementing Dott, I've reduced administrative work by hours each week while gaining real-time insights into my business performance.\n\nGet started for free forever today: https://dottapps.com\n\nBest regards,\n{{userName}}"
+  },
+  "home": {
+    "greeting": {
+      "morning": "Good morning",
+      "afternoon": "Good afternoon", 
+      "evening": "Good evening"
+    },
+    "subscriptionBanner": {
+      "active": "Your {{planName}} is active",
+      "activeDescription": "You have access to all the features included in your plan.",
+      "expired": "Your {{previousPlan}} subscription has expired",
+      "expiredDescription": "Your account has been downgraded to the Free plan. You now have limited access to features.",
+      "renewButton": "Renew Subscription",
+      "viewDetailsButton": "View Plan Details"
+    },
+    "gettingStarted": {
+      "title": "Getting Started",
+      "progress": "{{completed}} of {{total}} completed",
+      "description": "Complete these steps to get the most out of your account:",
+      "loading": "Loading your progress...",
+      "congratulations": "Congratulations! You've completed all setup steps.",
+      "steps": {
+        "profile": {
+          "title": "Complete your business profile",
+          "description": "Add your business details and logo"
+        },
+        "customer": {
+          "titleEmpty": "Add your first customer",
+          "titleWithCount": "{{count}} customers added",
+          "descriptionEmpty": "Start building your customer base",
+          "descriptionWithCount": "Manage your customers"
+        },
+        "product": {
+          "titleEmpty": "Create your first product", 
+          "titleWithCount": "{{count}} products created",
+          "descriptionEmpty": "Add products to your inventory",
+          "descriptionWithCount": "Manage your products"
+        },
+        "service": {
+          "titleEmpty": "Create your first service",
+          "titleWithCount": "{{count}} services created", 
+          "descriptionEmpty": "Define services you offer",
+          "descriptionWithCount": "Manage your services"
+        },
+        "supplier": {
+          "titleEmpty": "Add your first supplier",
+          "titleWithCount": "{{count}} suppliers added",
+          "descriptionEmpty": "Track your supply chain",
+          "descriptionWithCount": "Manage your suppliers"
+        },
+        "invoice": {
+          "titleEmpty": "Create your first invoice",
+          "titleWithCount": "{{count}} invoices created",
+          "descriptionEmpty": "Start billing your customers",
+          "descriptionWithCount": "Manage your invoices"
+        }
+      }
+    },
+    "recentUpdates": {
+      "title": "Recent Updates",
+      "noUpdates": "No recent updates to display.",
+      "description": "Updates about your account activity will appear here.",
+      "activities": {
+        "salesToday": "${{amount}} in sales today",
+        "unpaidInvoices": "{{count}} unpaid invoice{{plural}} pending",
+        "overdueInvoices": "{{count}} overdue invoice{{plural}} need attention",
+        "newCustomers": "{{count}} new customer{{plural}} this month"
+      }
+    },
+    "quickStats": {
+      "title": "Quick Stats",
+      "customers": "Customers",
+      "products": "Products", 
+      "services": "Services",
+      "invoices": "Invoices"
+    },
+    "planDetails": {
+      "title": "Your Subscription Details",
+      "perMonth": "per month",
+      "active": "Active",
+      "currentPlan": "Current Plan",
+      "featuresIncluded": "Features Included",
+      "limitations": "Limitations on Free Plan",
+      "upgradePrompt": "Upgrade now to unlock all features and remove limitations!",
+      "upgradeButton": "Upgrade Here",
+      "upgradeToEnterprise": "Upgrade to Enterprise",
+      "close": "Close"
+    },
+    "plans": {
+      "free": {
+        "name": "Free Plan",
+        "description": "Basic features for small businesses just getting started",
+        "features": [
+          "Basic invoicing",
+          "Up to 5 clients",
+          "Basic reporting",
+          "Email support",
+          "2GB storage"
+        ],
+        "limitations": [
+          "Limited to 5 invoices per month",
+          "No custom branding",
+          "Basic reporting only",
+          "No API access",
+          "Single user only"
+        ]
+      },
+      "professional": {
+        "name": "Professional Plan",
+        "description": "Advanced features for growing businesses",
+        "features": [
+          "Unlimited invoicing",
+          "Unlimited clients",
+          "Advanced reporting",
+          "Priority support",
+          "Custom branding",
+          "15GB storage",
+          "Up to 3 users"
+        ]
+      },
+      "enterprise": {
+        "name": "Enterprise Plan",
+        "description": "Full suite of tools for established businesses",
+        "features": [
+          "Everything in Professional",
+          "Unlimited storage",
+          "Unlimited users",
+          "Dedicated account manager",
+          "Advanced API access",
+          "Custom roles & permissions",
+          "Advanced security features",
+          "Preferential transaction rates"
+        ]
+      }
+    }
   }
 }

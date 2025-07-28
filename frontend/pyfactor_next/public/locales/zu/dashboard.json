@@ -131,5 +131,140 @@
     "whatsappTemplate": {
       "message": "Sawubona 👋\n\nU-{{name}} ukumemile ukuba uzame i-Dott, ithuluzi elibanzi lokwenza kube lula ukusebenza kwebhizinisi.\n\n✓ Ukwenza ama-invoyisi ngokuzenzakalelayo\n✓ Ukuhlela ama-aphoyintimenti\n✓ Ukuphatha isitoko\n✓ Ukuphatha amaholo\n✓ Ukuhlaziya ibhizinisi\n\nQala isivivinyo samahhala: {{link}}"
     }
+  },
+  "home": {
+    "greeting": {
+      "morning": "Sawubona ekuseni",
+      "afternoon": "Sawubona ntambama",
+      "evening": "Sawubona kusihlwa"
+    },
+    "subscriptionBanner": {
+      "active": "I-{{planName}} yakho iyasebenza",
+      "activeDescription": "Unokufinyelela kuzo zonke izici ezifakwe ohlelweni lwakho.",
+      "expired": "Ukubhalisa kwakho kwe-{{previousPlan}} kuphelelwe yisikhathi",
+      "expiredDescription": "I-akhawunti yakho yehliswe iye kuhlelo lwamahhala. Manje unokufinyelela okulinganiselwe kuzici.",
+      "renewButton": "Vuselela Ukubhalisa",
+      "viewDetailsButton": "Buka Imininingwane Yohlelo"
+    },
+    "gettingStarted": {
+      "title": "Ukuqala",
+      "progress": "{{completed}} kwengu-{{total}} kuqediwe",
+      "description": "Qedela lezi zinyathelo ukuze uthole okungcono kakhulu ku-akhawunti yakho:",
+      "loading": "Ilayisha inqubekela phambili yakho...",
+      "congratulations": "Halala! Uqede zonke izinyathelo zokusetha.",
+      "steps": {
+        "profile": {
+          "title": "Qedela iphrofayela yebhizinisi lakho",
+          "description": "Faka imininingwane yebhizinisi lakho nelogo"
+        },
+        "customer": {
+          "titleEmpty": "Faka ikhasimende lakho lokuqala",
+          "titleWithCount": "Amakhasimende angu-{{count}} afakiwe",
+          "descriptionEmpty": "Qala ukwakha isisekelo samakhasimende akho",
+          "descriptionWithCount": "Phatha amakhasimende akho"
+        },
+        "product": {
+          "titleEmpty": "Dala umkhiqizo wakho wokuqala",
+          "titleWithCount": "Imikhiqizo engu-{{count}} idalwe",
+          "descriptionEmpty": "Faka imikhiqizo ohlwini lwakho lwempahla",
+          "descriptionWithCount": "Phatha imikhiqizo yakho"
+        },
+        "service": {
+          "titleEmpty": "Dala isevisi yakho yokuqala",
+          "titleWithCount": "Amasevisi angu-{{count}} adalwe",
+          "descriptionEmpty": "Chaza amasevisi owanikezayo",
+          "descriptionWithCount": "Phatha amasevisi akho"
+        },
+        "supplier": {
+          "titleEmpty": "Faka umphakeli wakho wokuqala",
+          "titleWithCount": "Abaphakeli abangu-{{count}} bafakiwe",
+          "descriptionEmpty": "Landelela uchungechunge lokuhlinzeka kwakho",
+          "descriptionWithCount": "Phatha abaphakeli bakho"
+        },
+        "invoice": {
+          "titleEmpty": "Dala i-invoyisi yakho yokuqala",
+          "titleWithCount": "Ama-invoyisi angu-{{count}} adalwe",
+          "descriptionEmpty": "Qala ukukhokhisa amakhasimende akho",
+          "descriptionWithCount": "Phatha ama-invoyisi akho"
+        }
+      }
+    },
+    "recentUpdates": {
+      "title": "Izibuyekezo Zakamuva",
+      "noUpdates": "Azikho izibuyekezo zakamuva ezizoboniswa.",
+      "description": "Izibuyekezo mayelana nomsebenzi we-akhawunti yakho zizovela lapha.",
+      "activities": {
+        "salesToday": "${{amount}} ekuthengisweni namuhla",
+        "unpaidInvoices": "{{count}} ama-invoyisi angakhokhelwanga{{plural}} alindile",
+        "overdueInvoices": "{{count}} ama-invoyisi asedlulile{{plural}} adinga ukunakwa",
+        "newCustomers": "{{count}} amakhasimende amasha{{plural}} kule nyanga"
+      }
+    },
+    "quickStats": {
+      "title": "Izibalo Ezisheshayo",
+      "customers": "Amakhasimende",
+      "products": "Imikhiqizo",
+      "services": "Amasevisi",
+      "invoices": "Ama-invoyisi"
+    },
+    "planDetails": {
+      "title": "Imininingwane Yokubhalisa Kwakho",
+      "perMonth": "ngenyanga",
+      "active": "Iyasebenza",
+      "currentPlan": "Uhlelo Lwamanje",
+      "featuresIncluded": "Izici Ezifakiwe",
+      "limitations": "Imikhawulo Ohlelweni Lwamahhala",
+      "upgradePrompt": "Thuthukisa manje ukuvula zonke izici nokususa imikhawulo!",
+      "upgradeButton": "Thuthukisa Lapha",
+      "upgradeToEnterprise": "Thuthukisa uye ku-Enterprise",
+      "close": "Vala"
+    },
+    "plans": {
+      "free": {
+        "name": "Uhlelo Lwamahhala",
+        "description": "Izici eziyisisekelo zamabhizinisi amancane asanda kuqala",
+        "features": [
+          "Ama-invoyisi ayisisekelo",
+          "Kuze kufike kumakhasimende ama-5",
+          "Imibiko eyisisekelo",
+          "Ukusekela nge-imeyili",
+          "Isitoreji esingu-2GB"
+        ],
+        "limitations": [
+          "Kulinganiselwe kuma-invoyisi ama-5 ngenyanga",
+          "Ayikho i-branding yangokwezifiso",
+          "Imibiko eyisisekelo kuphela",
+          "Akunakho ukufinyelela kwe-API",
+          "Umsebenzisi oyedwa kuphela"
+        ]
+      },
+      "professional": {
+        "name": "Uhlelo Lochwepheshe",
+        "description": "Izici ezithuthukile zamabhizinisi akhulayo",
+        "features": [
+          "Ama-invoyisi angenamkhawulo",
+          "Amakhasimende angenamkhawulo",
+          "Imibiko ethuthukile",
+          "Ukusekela okubalulekile",
+          "I-branding yangokwezifiso",
+          "Isitoreji esingu-15GB",
+          "Kuze kufike kubasebenzisi aba-3"
+        ]
+      },
+      "enterprise": {
+        "name": "Uhlelo Lwe-Enterprise",
+        "description": "Iqoqo eliphelele lamathuluzi amabhizinisi asunguliwe",
+        "features": [
+          "Konke okuku-Professional",
+          "Isitoreji esingenamkhawulo",
+          "Abasebenzisi abangenamkhawulo",
+          "Umphathi we-akhawunti ozinikele",
+          "Ukufinyelela kwe-API okuthuthukile",
+          "Izindima nezimvume ezingokwezifiso",
+          "Izici zokuphepha ezithuthukile",
+          "Amanani okuthengiselana athandwayo"
+        ]
+      }
+    }
   }
 }

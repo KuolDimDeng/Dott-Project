@@ -131,5 +131,140 @@
     "whatsappTemplate": {
       "message": "안녕하세요 👋\n\n{{name}}님이 비즈니스 운영을 간소화하는 올인원 도구인 Dott를 사용해보도록 초대했습니다.\n\n✓ 자동화된 송장 발행\n✓ 예약 일정 관리\n✓ 재고 관리\n✓ 급여 처리\n✓ 비즈니스 분석\n\n무료 체험 시작: {{link}}"
     }
+  },
+  "home": {
+    "greeting": {
+      "morning": "좋은 아침입니다",
+      "afternoon": "안녕하세요",
+      "evening": "좋은 저녁입니다"
+    },
+    "subscriptionBanner": {
+      "active": "{{planName}}이(가) 활성화되어 있습니다",
+      "activeDescription": "플랜에 포함된 모든 기능에 액세스할 수 있습니다.",
+      "expired": "{{previousPlan}} 구독이 만료되었습니다",
+      "expiredDescription": "계정이 무료 플랜으로 다운그레이드되었습니다. 이제 기능에 대한 액세스가 제한됩니다.",
+      "renewButton": "구독 갱신",
+      "viewDetailsButton": "플랜 세부정보 보기"
+    },
+    "gettingStarted": {
+      "title": "시작하기",
+      "progress": "{{total}}개 중 {{completed}}개 완료",
+      "description": "계정을 최대한 활용하려면 다음 단계를 완료하세요:",
+      "loading": "진행 상황을 불러오는 중...",
+      "congratulations": "축하합니다! 모든 설정 단계를 완료했습니다.",
+      "steps": {
+        "profile": {
+          "title": "비즈니스 프로필 완성하기",
+          "description": "비즈니스 세부정보와 로고 추가"
+        },
+        "customer": {
+          "titleEmpty": "첫 번째 고객 추가",
+          "titleWithCount": "{{count}}명의 고객 추가됨",
+          "descriptionEmpty": "고객 기반 구축 시작",
+          "descriptionWithCount": "고객 관리"
+        },
+        "product": {
+          "titleEmpty": "첫 번째 제품 만들기",
+          "titleWithCount": "{{count}}개의 제품 생성됨",
+          "descriptionEmpty": "재고에 제품 추가",
+          "descriptionWithCount": "제품 관리"
+        },
+        "service": {
+          "titleEmpty": "첫 번째 서비스 만들기",
+          "titleWithCount": "{{count}}개의 서비스 생성됨",
+          "descriptionEmpty": "제공하는 서비스 정의",
+          "descriptionWithCount": "서비스 관리"
+        },
+        "supplier": {
+          "titleEmpty": "첫 번째 공급업체 추가",
+          "titleWithCount": "{{count}}개의 공급업체 추가됨",
+          "descriptionEmpty": "공급망 추적",
+          "descriptionWithCount": "공급업체 관리"
+        },
+        "invoice": {
+          "titleEmpty": "첫 번째 송장 만들기",
+          "titleWithCount": "{{count}}개의 송장 생성됨",
+          "descriptionEmpty": "고객에게 청구 시작",
+          "descriptionWithCount": "송장 관리"
+        }
+      }
+    },
+    "recentUpdates": {
+      "title": "최근 업데이트",
+      "noUpdates": "표시할 최근 업데이트가 없습니다.",
+      "description": "계정 활동에 대한 업데이트가 여기에 표시됩니다.",
+      "activities": {
+        "salesToday": "오늘 매출 ${{amount}}",
+        "unpaidInvoices": "{{count}}개의 미지급 송장{{plural}} 대기 중",
+        "overdueInvoices": "{{count}}개의 연체 송장{{plural}}에 주의가 필요합니다",
+        "newCustomers": "이번 달 {{count}}명의 신규 고객{{plural}}"
+      }
+    },
+    "quickStats": {
+      "title": "빠른 통계",
+      "customers": "고객",
+      "products": "제품",
+      "services": "서비스",
+      "invoices": "송장"
+    },
+    "planDetails": {
+      "title": "구독 세부정보",
+      "perMonth": "월",
+      "active": "활성",
+      "currentPlan": "현재 플랜",
+      "featuresIncluded": "포함된 기능",
+      "limitations": "무료 플랜 제한사항",
+      "upgradePrompt": "지금 업그레이드하여 모든 기능을 잠금 해제하고 제한을 제거하세요!",
+      "upgradeButton": "여기서 업그레이드",
+      "upgradeToEnterprise": "엔터프라이즈로 업그레이드",
+      "close": "닫기"
+    },
+    "plans": {
+      "free": {
+        "name": "무료 플랜",
+        "description": "이제 막 시작하는 소규모 비즈니스를 위한 기본 기능",
+        "features": [
+          "기본 송장 발행",
+          "최대 5명의 클라이언트",
+          "기본 보고서",
+          "이메일 지원",
+          "2GB 저장공간"
+        ],
+        "limitations": [
+          "월 5개 송장으로 제한",
+          "맞춤 브랜딩 없음",
+          "기본 보고서만",
+          "API 액세스 없음",
+          "단일 사용자만"
+        ]
+      },
+      "professional": {
+        "name": "프로페셔널 플랜",
+        "description": "성장하는 비즈니스를 위한 고급 기능",
+        "features": [
+          "무제한 송장 발행",
+          "무제한 클라이언트",
+          "고급 보고서",
+          "우선 지원",
+          "맞춤 브랜딩",
+          "15GB 저장공간",
+          "최대 3명의 사용자"
+        ]
+      },
+      "enterprise": {
+        "name": "엔터프라이즈 플랜",
+        "description": "확립된 비즈니스를 위한 완전한 도구 모음",
+        "features": [
+          "프로페셔널의 모든 기능",
+          "무제한 저장공간",
+          "무제한 사용자",
+          "전담 계정 관리자",
+          "고급 API 액세스",
+          "맞춤 역할 및 권한",
+          "고급 보안 기능",
+          "우대 거래 요율"
+        ]
+      }
+    }
   }
 }

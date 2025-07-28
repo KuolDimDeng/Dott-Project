@@ -5,6 +5,7 @@ import { getSubscriptionPlanColor } from '@/utils/userAttributes';
 import SubscriptionPopup from './SubscriptionPopup';
 import { customerApi, productApi, supplierApi } from '@/utils/apiClient';
 import StandardSpinner from '@/components/ui/StandardSpinner';
+import { useTranslation } from 'react-i18next';
 import { 
   CheckCircleIcon, 
   UserPlusIcon, 
@@ -26,6 +27,7 @@ import { CheckCircleIcon as CheckCircleIconSolid } from '@heroicons/react/24/sol
  * An improved dashboard home page with real data and better UX
  */
 function Home({ userData, onNavigate }) {
+  const { t } = useTranslation('dashboard');
   const [planDetailsOpen, setPlanDetailsOpen] = useState(false);
   const [showSubscriptionPopup, setShowSubscriptionPopup] = useState(false);
   const [checklistData, setChecklistData] = useState({
@@ -150,7 +152,7 @@ function Home({ userData, onNavigate }) {
           activities.push({
             id: 'sales-today',
             type: 'sales',
-            message: `$${dashboardMetrics.metrics.sales.today.toFixed(2)} in sales today`,
+            message: t('home.recentUpdates.activities.salesToday', { amount: dashboardMetrics.metrics.sales.today.toFixed(2) }),
             timestamp: new Date(),
             icon: 'chart'
           });
@@ -161,7 +163,10 @@ function Home({ userData, onNavigate }) {
           activities.push({
             id: 'unpaid-invoices',
             type: 'warning',
-            message: `${dashboardMetrics.metrics.invoices.unpaid} unpaid invoice${dashboardMetrics.metrics.invoices.unpaid > 1 ? 's' : ''} pending`,
+            message: t('home.recentUpdates.activities.unpaidInvoices', { 
+              count: dashboardMetrics.metrics.invoices.unpaid,
+              plural: dashboardMetrics.metrics.invoices.unpaid > 1 ? 's' : ''
+            }),
             timestamp: new Date(),
             icon: 'alert'
           });
@@ -171,7 +176,10 @@ function Home({ userData, onNavigate }) {
           activities.push({
             id: 'overdue-invoices',
             type: 'error',
-            message: `${dashboardMetrics.metrics.invoices.overdue} overdue invoice${dashboardMetrics.metrics.invoices.overdue > 1 ? 's' : ''} need attention`,
+            message: t('home.recentUpdates.activities.overdueInvoices', { 
+              count: dashboardMetrics.metrics.invoices.overdue,
+              plural: dashboardMetrics.metrics.invoices.overdue > 1 ? 's' : ''
+            }),
             timestamp: new Date(),
             icon: 'alert'
           });
@@ -182,7 +190,10 @@ function Home({ userData, onNavigate }) {
           activities.push({
             id: 'new-customers',
             type: 'success',
-            message: `${customerStats.new_this_month} new customer${customerStats.new_this_month > 1 ? 's' : ''} this month`,
+            message: t('home.recentUpdates.activities.newCustomers', { 
+              count: customerStats.new_this_month,
+              plural: customerStats.new_this_month > 1 ? 's' : ''
+            }),
             timestamp: new Date(),
             icon: 'user'
           });
@@ -247,54 +258,25 @@ function Home({ userData, onNavigate }) {
   const PLANS = [
     {
       id: 'free',
-      name: 'Free Plan',
+      name: t('home.plans.free.name'),
       price: '0',
-      description: 'Basic features for small businesses just getting started',
-      features: [
-        'Basic invoicing',
-        'Up to 5 clients',
-        'Basic reporting',
-        'Email support',
-        '2GB storage',
-      ],
-      limitations: [
-        'Limited to 5 invoices per month',
-        'No custom branding',
-        'Basic reporting only',
-        'No API access',
-        'Single user only',
-      ]
+      description: t('home.plans.free.description'),
+      features: t('home.plans.free.features', { returnObjects: true }),
+      limitations: t('home.plans.free.limitations', { returnObjects: true })
     },
     {
       id: 'professional',
-      name: 'Professional Plan',
+      name: t('home.plans.professional.name'),
       price: '15',
-      description: 'Advanced features for growing businesses',
-      features: [
-        'Unlimited invoicing',
-        'Unlimited clients',
-        'Advanced reporting',
-        'Priority support',
-        'Custom branding',
-        '15GB storage',
-        'Up to 3 users',
-      ]
+      description: t('home.plans.professional.description'),
+      features: t('home.plans.professional.features', { returnObjects: true })
     },
     {
       id: 'enterprise',
-      name: 'Enterprise Plan',
+      name: t('home.plans.enterprise.name'),
       price: '45',
-      description: 'Full suite of tools for established businesses',
-      features: [
-        'Everything in Professional',
-        'Unlimited storage',
-        'Unlimited users',
-        'Dedicated account manager',
-        'Advanced API access',
-        'Custom roles & permissions',
-        'Advanced security features',
-        'Preferential transaction rates',
-      ]
+      description: t('home.plans.enterprise.description'),
+      features: t('home.plans.enterprise.features', { returnObjects: true })
     },
   ];
 
@@ -318,7 +300,8 @@ function Home({ userData, onNavigate }) {
   // Function to get personalized greeting
   const getGreeting = () => {
     const hour = new Date().getHours();
-    let greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+    let greetingKey = hour < 12 ? 'home.greeting.morning' : hour < 18 ? 'home.greeting.afternoon' : 'home.greeting.evening';
+    let greeting = t(greetingKey);
     
     if (userData?.given_name) {
       return `${greeting}, ${userData?.given_name}!`;
@@ -337,51 +320,71 @@ function Home({ userData, onNavigate }) {
   const checklistItems = [
     {
       id: 'profile',
-      title: 'Complete your business profile',
+      title: t('home.gettingStarted.steps.profile.title'),
       completed: checklistData.profileComplete,
       action: navigateToProfile,
       icon: BuildingOfficeIcon,
-      description: 'Add your business details and logo'
+      description: t('home.gettingStarted.steps.profile.description')
     },
     {
       id: 'customer',
-      title: checklistData.hasCustomers ? `${stats.customers} customers added` : 'Add your first customer',
+      title: checklistData.hasCustomers 
+        ? t('home.gettingStarted.steps.customer.titleWithCount', { count: stats.customers })
+        : t('home.gettingStarted.steps.customer.titleEmpty'),
       completed: checklistData.hasCustomers,
       action: navigateToCreateCustomer,
       icon: UserPlusIcon,
-      description: checklistData.hasCustomers ? 'Manage your customers' : 'Start building your customer base'
+      description: checklistData.hasCustomers 
+        ? t('home.gettingStarted.steps.customer.descriptionWithCount')
+        : t('home.gettingStarted.steps.customer.descriptionEmpty')
     },
     {
       id: 'product',
-      title: checklistData.hasProducts ? `${stats.products} products created` : 'Create your first product',
+      title: checklistData.hasProducts 
+        ? t('home.gettingStarted.steps.product.titleWithCount', { count: stats.products })
+        : t('home.gettingStarted.steps.product.titleEmpty'),
       completed: checklistData.hasProducts,
       action: navigateToCreateProduct,
       icon: CubeIcon,
-      description: checklistData.hasProducts ? 'Manage your products' : 'Add products to your inventory'
+      description: checklistData.hasProducts 
+        ? t('home.gettingStarted.steps.product.descriptionWithCount')
+        : t('home.gettingStarted.steps.product.descriptionEmpty')
     },
     {
       id: 'service',
-      title: checklistData.hasServices ? `${stats.services} services created` : 'Create your first service',
+      title: checklistData.hasServices 
+        ? t('home.gettingStarted.steps.service.titleWithCount', { count: stats.services })
+        : t('home.gettingStarted.steps.service.titleEmpty'),
       completed: checklistData.hasServices,
       action: navigateToCreateService,
       icon: WrenchIcon,
-      description: checklistData.hasServices ? 'Manage your services' : 'Define services you offer'
+      description: checklistData.hasServices 
+        ? t('home.gettingStarted.steps.service.descriptionWithCount')
+        : t('home.gettingStarted.steps.service.descriptionEmpty')
     },
     {
       id: 'supplier',
-      title: checklistData.hasSuppliers ? `${stats.suppliers} suppliers added` : 'Add your first supplier',
+      title: checklistData.hasSuppliers 
+        ? t('home.gettingStarted.steps.supplier.titleWithCount', { count: stats.suppliers })
+        : t('home.gettingStarted.steps.supplier.titleEmpty'),
       completed: checklistData.hasSuppliers,
       action: navigateToCreateSupplier,
       icon: TruckIcon,
-      description: checklistData.hasSuppliers ? 'Manage your suppliers' : 'Track your supply chain'
+      description: checklistData.hasSuppliers 
+        ? t('home.gettingStarted.steps.supplier.descriptionWithCount')
+        : t('home.gettingStarted.steps.supplier.descriptionEmpty')
     },
     {
       id: 'invoice',
-      title: checklistData.hasInvoices ? `${stats.invoices} invoices created` : 'Create your first invoice',
+      title: checklistData.hasInvoices 
+        ? t('home.gettingStarted.steps.invoice.titleWithCount', { count: stats.invoices })
+        : t('home.gettingStarted.steps.invoice.titleEmpty'),
       completed: checklistData.hasInvoices,
       action: navigateToCreateInvoice,
       icon: DocumentTextIcon,
-      description: checklistData.hasInvoices ? 'Manage your invoices' : 'Start billing your customers'
+      description: checklistData.hasInvoices 
+        ? t('home.gettingStarted.steps.invoice.descriptionWithCount')
+        : t('home.gettingStarted.steps.invoice.descriptionEmpty')
     }
   ];
 
@@ -431,23 +434,23 @@ function Home({ userData, onNavigate }) {
               <ExclamationCircleIcon className="h-6 w-6 text-red-400 mr-3 flex-shrink-0" />
               <div className="flex-1">
                 <h2 className="text-lg font-semibold mb-1 text-red-800">
-                  Your {userData?.previous_plan || 'previous'} subscription has expired
+                  {t('home.subscriptionBanner.expired', { previousPlan: userData?.previous_plan || 'previous' })}
                 </h2>
                 <p className="mb-3 text-red-700">
-                  Your account has been downgraded to the Free plan. You now have limited access to features.
+                  {t('home.subscriptionBanner.expiredDescription')}
                 </p>
                 <div className="flex gap-2">
                   <button 
                     className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
                     onClick={handleUpgradeDialogOpen}
                   >
-                    Renew Subscription
+                    {t('home.subscriptionBanner.renewButton')}
                   </button>
                   <button 
                     className="px-4 py-2 border border-red-600 text-red-600 rounded-md hover:bg-red-50 transition-colors"
                     onClick={handlePlanDetailsOpen}
                   >
-                    View Plan Details
+                    {t('home.subscriptionBanner.viewDetailsButton')}
                   </button>
                 </div>
               </div>
@@ -461,17 +464,17 @@ function Home({ userData, onNavigate }) {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-semibold mb-1 text-blue-900">
-                  Your {currentPlan.name} is active
+                  {t('home.subscriptionBanner.active', { planName: currentPlan.name })}
                 </h2>
                 <p className="text-blue-700">
-                  You have access to all the features included in your plan.
+                  {t('home.subscriptionBanner.activeDescription')}
                 </p>
               </div>
               <button 
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                 onClick={handlePlanDetailsOpen}
               >
-                View Plan Details
+                {t('home.subscriptionBanner.viewDetailsButton')}
               </button>
             </div>
           </div>
@@ -483,10 +486,10 @@ function Home({ userData, onNavigate }) {
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold text-gray-900">
-                  Getting Started
+                  {t('home.gettingStarted.title')}
                 </h2>
                 <span className="text-sm text-gray-500">
-                  {completedItems} of {checklistItems.length} completed
+                  {t('home.gettingStarted.progress', { completed: completedItems, total: checklistItems.length })}
                 </span>
               </div>
               
@@ -495,7 +498,7 @@ function Home({ userData, onNavigate }) {
                 <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                   <div className="flex items-center">
                     <ClockIcon className="h-5 w-5 text-blue-500 mr-2 animate-pulse" />
-                    <p className="text-sm text-blue-800">Loading your progress...</p>
+                    <p className="text-sm text-blue-800">{t('home.gettingStarted.loading')}</p>
                   </div>
                 </div>
               )}
@@ -509,7 +512,7 @@ function Home({ userData, onNavigate }) {
               </div>
               
               <p className="text-sm text-gray-600 mb-4">
-                Complete these steps to get the most out of your account:
+                {t('home.gettingStarted.description')}
               </p>
               
               <div className="space-y-3">
@@ -549,7 +552,7 @@ function Home({ userData, onNavigate }) {
                 <div className="mt-4 p-4 bg-green-100 rounded-lg">
                   <p className="text-green-800 font-medium flex items-center">
                     <CheckCircleIconSolid className="h-5 w-5 mr-2" />
-                    Congratulations! You've completed all setup steps.
+                    {t('home.gettingStarted.congratulations')}
                   </p>
                 </div>
               )}
@@ -561,7 +564,7 @@ function Home({ userData, onNavigate }) {
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold text-gray-900">
-                  Recent Updates
+                  {t('home.recentUpdates.title')}
                 </h2>
                 <CalendarIcon className="h-5 w-5 text-gray-400" />
               </div>
@@ -595,10 +598,10 @@ function Home({ userData, onNavigate }) {
                 <div className="text-center py-8">
                   <ClockIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" />
                   <p className="text-sm text-gray-600 mb-2">
-                    No recent updates to display.
+                    {t('home.recentUpdates.noUpdates')}
                   </p>
                   <p className="text-sm text-gray-500">
-                    Updates about your account activity will appear here.
+                    {t('home.recentUpdates.description')}
                   </p>
                 </div>
               )}
@@ -606,23 +609,23 @@ function Home({ userData, onNavigate }) {
               {/* Quick Stats */}
               {!loading && (
                 <div className="mt-6 pt-6 border-t border-gray-200">
-                  <h3 className="text-sm font-medium text-gray-700 mb-3">Quick Stats</h3>
+                  <h3 className="text-sm font-medium text-gray-700 mb-3">{t('home.quickStats.title')}</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="text-center">
                       <p className="text-2xl font-bold text-gray-900">{stats.customers}</p>
-                      <p className="text-sm text-gray-600">Customers</p>
+                      <p className="text-sm text-gray-600">{t('home.quickStats.customers')}</p>
                     </div>
                     <div className="text-center">
                       <p className="text-2xl font-bold text-gray-900">{stats.products}</p>
-                      <p className="text-sm text-gray-600">Products</p>
+                      <p className="text-sm text-gray-600">{t('home.quickStats.products')}</p>
                     </div>
                     <div className="text-center">
                       <p className="text-2xl font-bold text-gray-900">{stats.services}</p>
-                      <p className="text-sm text-gray-600">Services</p>
+                      <p className="text-sm text-gray-600">{t('home.quickStats.services')}</p>
                     </div>
                     <div className="text-center">
                       <p className="text-2xl font-bold text-gray-900">{stats.invoices}</p>
-                      <p className="text-sm text-gray-600">Invoices</p>
+                      <p className="text-sm text-gray-600">{t('home.quickStats.invoices')}</p>
                     </div>
                   </div>
                 </div>
@@ -637,7 +640,7 @@ function Home({ userData, onNavigate }) {
             <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
               <div className="p-6 space-y-4">
                 <div className="flex justify-between items-center">
-                  <h2 className="text-xl font-bold">Your Subscription Details</h2>
+                  <h2 className="text-xl font-bold">{t('home.planDetails.title')}</h2>
                   <button 
                     onClick={handlePlanDetailsClose}
                     className="text-gray-500 hover:text-gray-700"
@@ -657,7 +660,7 @@ function Home({ userData, onNavigate }) {
                       ${currentPlan.price}
                     </span>
                     <span className="text-sm text-gray-500">
-                      per month
+                      {t('home.planDetails.perMonth')}
                     </span>
                   </div>
                   <p className="mb-3">
@@ -669,13 +672,13 @@ function Home({ userData, onNavigate }) {
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
-                      Active
+                      {t('home.planDetails.active')}
                     </span>
                     <span className="px-3 py-1 rounded-full text-sm border border-blue-500 text-blue-700 bg-blue-50 flex items-center">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                       </svg>
-                      Current Plan
+                      {t('home.planDetails.currentPlan')}
                     </span>
                   </div>
                 </div>
@@ -684,7 +687,7 @@ function Home({ userData, onNavigate }) {
 
                 <div>
                   <h4 className="text-lg font-medium mb-2">
-                    Features Included
+                    {t('home.planDetails.featuresIncluded')}
                   </h4>
                   <ul className="space-y-2">
                     {currentPlan.features.map((feature) => (
@@ -704,7 +707,7 @@ function Home({ userData, onNavigate }) {
                     
                     <div>
                       <h4 className="text-lg font-medium mb-2">
-                        Limitations on Free Plan
+                        {t('home.planDetails.limitations')}
                       </h4>
                       <ul className="space-y-2">
                         {currentPlan.limitations.map((limitation) => (
@@ -720,13 +723,13 @@ function Home({ userData, onNavigate }) {
                     
                     <div className="mt-4 mb-1">
                       <p className="mb-3">
-                        Upgrade now to unlock all features and remove limitations!
+                        {t('home.planDetails.upgradePrompt')}
                       </p>
                       <button 
                         className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                         onClick={handleUpgradeDialogOpen}
                       >
-                        Upgrade Here
+                        {t('home.planDetails.upgradeButton')}
                       </button>
                     </div>
                   </>
@@ -741,7 +744,7 @@ function Home({ userData, onNavigate }) {
                         className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                         onClick={handleUpgradeDialogOpen}
                       >
-                        Upgrade to Enterprise
+                        {t('home.planDetails.upgradeToEnterprise')}
                       </button>
                     </div>
                   </>
@@ -752,7 +755,7 @@ function Home({ userData, onNavigate }) {
                   className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded"
                   onClick={handlePlanDetailsClose}
                 >
-                  Close
+                  {t('home.planDetails.close')}
                 </button>
               </div>
             </div>

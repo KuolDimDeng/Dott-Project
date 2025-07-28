@@ -131,5 +131,140 @@
     "whatsappTemplate": {
       "message": "Pẹlẹ o 👋\n\n{{name}} ti pe ọ lati gbiyanju Dott, ohun elo gbogbo-ninu-ọkan lati mu awọn iṣẹ iṣowo rọrun.\n\n✓ Ṣiṣe awọn ikọṣilẹ adaṣe\n✓ Ṣiṣeto ipade\n✓ Iṣakoso ija-ọja\n✓ Ṣiṣẹ sisanwo oṣu\n✓ Awọn itupalẹ iṣowo\n\nBẹrẹ idanwo ọfẹ: {{link}}"
     }
+  },
+  "home": {
+    "greeting": {
+      "morning": "E kaaro",
+      "afternoon": "E kaasan",
+      "evening": "E kaale"
+    },
+    "subscriptionBanner": {
+      "active": "{{planName}} rẹ n ṣiṣẹ",
+      "activeDescription": "O ni iwọle si gbogbo awọn ẹya ti o wa ninu ero rẹ.",
+      "expired": "Alabapin {{previousPlan}} rẹ ti pari",
+      "expiredDescription": "A ti dinku akọọlẹ rẹ si ero ọfẹ. Nisisiyi o ni iwọle to lopin si awọn ẹya.",
+      "renewButton": "Sọ Alabapin Di Otun",
+      "viewDetailsButton": "Wo Awọn Alaye Ero"
+    },
+    "gettingStarted": {
+      "title": "Bibẹrẹ",
+      "progress": "{{completed}} ninu {{total}} ti pari",
+      "description": "Pari awọn igbesẹ wọnyi lati gba ohun ti o dara julọ lati inu akọọlẹ rẹ:",
+      "loading": "N gbe ilọsiwaju rẹ jade...",
+      "congratulations": "O ku oriire! O ti pari gbogbo awọn igbesẹ atunto.",
+      "steps": {
+        "profile": {
+          "title": "Pari profaili iṣowo rẹ",
+          "description": "Fi awọn alaye iṣowo rẹ ati aami iṣowo kun"
+        },
+        "customer": {
+          "titleEmpty": "Fi alabara akọkọ rẹ kun",
+          "titleWithCount": "Awọn alabara {{count}} ti a fi kun",
+          "descriptionEmpty": "Bẹrẹ si kọ ipilẹ alabara rẹ",
+          "descriptionWithCount": "Ṣakoso awọn alabara rẹ"
+        },
+        "product": {
+          "titleEmpty": "Ṣẹda ọja akọkọ rẹ",
+          "titleWithCount": "Awọn ọja {{count}} ti a ṣẹda",
+          "descriptionEmpty": "Fi awọn ọja kun si oja rẹ",
+          "descriptionWithCount": "Ṣakoso awọn ọja rẹ"
+        },
+        "service": {
+          "titleEmpty": "Ṣẹda iṣẹ akọkọ rẹ",
+          "titleWithCount": "Awọn iṣẹ {{count}} ti a ṣẹda",
+          "descriptionEmpty": "Ṣalaye awọn iṣẹ ti o n pese",
+          "descriptionWithCount": "Ṣakoso awọn iṣẹ rẹ"
+        },
+        "supplier": {
+          "titleEmpty": "Fi olupese akọkọ rẹ kun",
+          "titleWithCount": "Awọn olupese {{count}} ti a fi kun",
+          "descriptionEmpty": "Tọpinpin ẹwọn ipese rẹ",
+          "descriptionWithCount": "Ṣakoso awọn olupese rẹ"
+        },
+        "invoice": {
+          "titleEmpty": "Ṣẹda iwe-owo akọkọ rẹ",
+          "titleWithCount": "Awọn iwe-owo {{count}} ti a ṣẹda",
+          "descriptionEmpty": "Bẹrẹ si gba owo lọwọ awọn alabara rẹ",
+          "descriptionWithCount": "Ṣakoso awọn iwe-owo rẹ"
+        }
+      }
+    },
+    "recentUpdates": {
+      "title": "Awọn Imudojuiwọn Aipẹ",
+      "noUpdates": "Ko si awọn imudojuiwọn aipẹ lati fi han.",
+      "description": "Awọn imudojuiwọn nipa iṣẹ akọọlẹ rẹ yoo han nibi.",
+      "activities": {
+        "salesToday": "${{amount}} ni tita loni",
+        "unpaidInvoices": "{{count}} iwe-owo ti ko sanwo{{plural}} n duro",
+        "overdueInvoices": "{{count}} iwe-owo ti o ti pẹ{{plural}} nilo akiyesi",
+        "newCustomers": "{{count}} alabara tuntun{{plural}} oṣu yii"
+      }
+    },
+    "quickStats": {
+      "title": "Awọn Iṣiro Iyara",
+      "customers": "Awọn Alabara",
+      "products": "Awọn Ọja",
+      "services": "Awọn Iṣẹ",
+      "invoices": "Awọn Iwe-owo"
+    },
+    "planDetails": {
+      "title": "Awọn Alaye Alabapin Rẹ",
+      "perMonth": "ni oṣu kan",
+      "active": "Nṣiṣẹ",
+      "currentPlan": "Ero Lọwọlọwọ",
+      "featuresIncluded": "Awọn Ẹya Ti A Pọ Mọ",
+      "limitations": "Awọn Idiwọn lori Ero Ọfẹ",
+      "upgradePrompt": "Ṣe igbega ni bayi lati ṣi gbogbo awọn ẹya ati yọ awọn idiwọn kuro!",
+      "upgradeButton": "Ṣe Igbega Nibi",
+      "upgradeToEnterprise": "Ṣe igbega si Enterprise",
+      "close": "Ti"
+    },
+    "plans": {
+      "free": {
+        "name": "Ero Ọfẹ",
+        "description": "Awọn ẹya ipilẹ fun awọn iṣowo kekere ti o ṣẹṣẹ bẹrẹ",
+        "features": [
+          "Ifiweranṣẹ ipilẹ",
+          "Titi di awọn alabara 5",
+          "Iroyin ipilẹ",
+          "Atilẹyin imeeli",
+          "Ibi ipamọ 2GB"
+        ],
+        "limitations": [
+          "Opin si awọn iwe-owo 5 ni oṣu kan",
+          "Ko si ami iyasọtọ aṣa",
+          "Iroyin ipilẹ nikan",
+          "Ko si iwọle API",
+          "Olumulo kan ṣoṣo"
+        ]
+      },
+      "professional": {
+        "name": "Ero Alamọdaju",
+        "description": "Awọn ẹya ilọsiwaju fun awọn iṣowo ti n dagba",
+        "features": [
+          "Ifiweranṣẹ ailopin",
+          "Awọn alabara ailopin",
+          "Iroyin ilọsiwaju",
+          "Atilẹyin pataki",
+          "Ami iyasọtọ aṣa",
+          "Ibi ipamọ 15GB",
+          "Titi di awọn olumulo 3"
+        ]
+      },
+      "enterprise": {
+        "name": "Ero Ile-iṣẹ",
+        "description": "Apapọ ohun elo pipe fun awọn iṣowo ti o ti fi idi mulẹ",
+        "features": [
+          "Ohun gbogbo ni Alamọdaju",
+          "Ibi ipamọ ailopin",
+          "Awọn olumulo ailopin",
+          "Alakoso akọọlẹ ti a ya sọtọ",
+          "Iwọle API ilọsiwaju",
+          "Awọn ipa ati awọn igbanilaaye aṣa",
+          "Awọn ẹya aabo ilọsiwaju",
+          "Awọn oṣuwọn iṣowo ayanfẹ"
+        ]
+      }
+    }
   }
 }

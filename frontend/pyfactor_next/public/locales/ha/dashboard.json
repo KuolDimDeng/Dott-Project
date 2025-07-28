@@ -131,5 +131,140 @@
     "whatsappTemplate": {
       "message": "Sannu 👋\n\n{{name}} ya gayyace ku don gwada Dott, kayan aiki cikakke don sauƙaƙe ayyukan kasuwanci.\n\n✓ Yin lissafin kuɗi ta atomatik\n✓ Tsara jadawalin alƙawari\n✓ Gudanar da kayayyaki\n✓ Sarrafa biyan albashi\n✓ Binciken kasuwanci\n\nFara gwajin kyauta: {{link}}"
     }
+  },
+  "home": {
+    "greeting": {
+      "morning": "Ina kwana",
+      "afternoon": "Ina wuni",
+      "evening": "Ina yini"
+    },
+    "subscriptionBanner": {
+      "active": "Tsarin {{planName}} ku yana aiki",
+      "activeDescription": "Kuna da damar yin amfani da duk abubuwan da ke cikin tsarin ku.",
+      "expired": "Tsarin {{previousPlan}} ku ya ƙare",
+      "expiredDescription": "An rage asusun ku zuwa tsarin kyauta. Yanzu kuna da iyakacin damar yin amfani da abubuwa.",
+      "renewButton": "Sabunta Biyan Kuɗi",
+      "viewDetailsButton": "Duba Cikakken Bayani"
+    },
+    "gettingStarted": {
+      "title": "Farawa",
+      "progress": "An kammala {{completed}} daga {{total}}",
+      "description": "Kammala waɗannan matakan don samun mafi kyau daga asusunku:",
+      "loading": "Ana loda ci gaban ku...",
+      "congratulations": "Taya murna! Kun kammala duk matakan saitawa.",
+      "steps": {
+        "profile": {
+          "title": "Kammala bayanan kasuwancin ku",
+          "description": "Ƙara bayanan kasuwancin ku da tambarin ku"
+        },
+        "customer": {
+          "titleEmpty": "Ƙara abokin ciniki na farko",
+          "titleWithCount": "An ƙara abokan ciniki {{count}}",
+          "descriptionEmpty": "Fara gina tushen abokan ciniki",
+          "descriptionWithCount": "Sarrafa abokan cinikin ku"
+        },
+        "product": {
+          "titleEmpty": "Ƙirƙiri samfurin ku na farko",
+          "titleWithCount": "An ƙirƙiri samfurori {{count}}",
+          "descriptionEmpty": "Ƙara samfurori zuwa cikin kayayyaki",
+          "descriptionWithCount": "Sarrafa samfuran ku"
+        },
+        "service": {
+          "titleEmpty": "Ƙirƙiri sabis ɗin ku na farko",
+          "titleWithCount": "An ƙirƙiri sabis {{count}}",
+          "descriptionEmpty": "Bayyana ayyukan da kuke bayarwa",
+          "descriptionWithCount": "Sarrafa ayyukan ku"
+        },
+        "supplier": {
+          "titleEmpty": "Ƙara mai samar da kayayyaki na farko",
+          "titleWithCount": "An ƙara masu samar da kayayyaki {{count}}",
+          "descriptionEmpty": "Bi sawun sarkar samar da kayayyaki",
+          "descriptionWithCount": "Sarrafa masu samar da kayayyaki"
+        },
+        "invoice": {
+          "titleEmpty": "Ƙirƙiri daftarin kuɗin ku na farko",
+          "titleWithCount": "An ƙirƙiri takardar kuɗi {{count}}",
+          "descriptionEmpty": "Fara aika bil ga abokan cinikin ku",
+          "descriptionWithCount": "Sarrafa takardun kuɗin ku"
+        }
+      }
+    },
+    "recentUpdates": {
+      "title": "Sabuntawa na Kwanan nan",
+      "noUpdates": "Babu sabuntawar kwanan nan da za a nuna.",
+      "description": "Sabuntawa game da ayyukan asusunku za su bayyana a nan.",
+      "activities": {
+        "salesToday": "${{amount}} a tallace-tallace yau",
+        "unpaidInvoices": "Takardar kuɗi {{count}} da ba a biya ba{{plural}} a jira",
+        "overdueInvoices": "Takardar kuɗi {{count}} da ta wuce lokaci{{plural}} suna buƙatar kulawa",
+        "newCustomers": "Sabon abokin ciniki {{count}}{{plural}} a wannan watan"
+      }
+    },
+    "quickStats": {
+      "title": "Ƙididdiga mai sauri",
+      "customers": "Abokan ciniki",
+      "products": "Samfurori",
+      "services": "Ayyuka",
+      "invoices": "Takardun kuɗi"
+    },
+    "planDetails": {
+      "title": "Cikakken Bayani na Biyan Kuɗi",
+      "perMonth": "a kowane wata",
+      "active": "Yana aiki",
+      "currentPlan": "Tsarin Yanzu",
+      "featuresIncluded": "Abubuwan da aka haɗa",
+      "limitations": "Iyakoki akan Tsarin Kyauta",
+      "upgradePrompt": "Haɓaka yanzu don buɗe duk abubuwan da kuma cire iyakoki!",
+      "upgradeButton": "Haɓaka Anan",
+      "upgradeToEnterprise": "Haɓaka zuwa Babban Kasuwanci",
+      "close": "Rufe"
+    },
+    "plans": {
+      "free": {
+        "name": "Tsarin Kyauta",
+        "description": "Abubuwan asali don ƙananan kasuwanci da suka fara",
+        "features": [
+          "Lissafin kuɗi na asali",
+          "Har zuwa abokan ciniki 5",
+          "Rahotanni na asali",
+          "Tallafin imel",
+          "Ajiyar 2GB"
+        ],
+        "limitations": [
+          "Iyakance zuwa takardun kuɗi 5 a kowane wata",
+          "Babu alamar kasuwanci ta musamman",
+          "Rahotanni na asali kawai",
+          "Babu damar shiga API",
+          "Mai amfani ɗaya kawai"
+        ]
+      },
+      "professional": {
+        "name": "Tsarin Ƙwararru",
+        "description": "Abubuwa masu zurfi don kasuwancin da ke girma",
+        "features": [
+          "Lissafin kuɗi mara iyaka",
+          "Abokan ciniki marasa iyaka",
+          "Rahotanni masu zurfi",
+          "Tallafin fifiko",
+          "Alamar kasuwanci ta musamman",
+          "Ajiyar 15GB",
+          "Har zuwa masu amfani 3"
+        ]
+      },
+      "enterprise": {
+        "name": "Tsarin Babban Kasuwanci",
+        "description": "Cikakken kayan aiki don ƙwararrun kasuwanci",
+        "features": [
+          "Duk abin da ke cikin Ƙwararru",
+          "Ajiya mara iyaka",
+          "Masu amfani marasa iyaka",
+          "Mai sarrafa asusu na musamman",
+          "Damar shiga API mai zurfi",
+          "Matsayi da izini na musamman",
+          "Abubuwan tsaro masu zurfi",
+          "Farashin ciniki mai dacewa"
+        ]
+      }
+    }
   }
 }

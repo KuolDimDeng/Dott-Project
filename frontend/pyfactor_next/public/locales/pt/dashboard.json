@@ -131,5 +131,140 @@
     "whatsappTemplate": {
       "message": "Olá 👋\n\n{{name}} convidou você para experimentar o Dott, uma ferramenta completa para simplificar as operações comerciais.\n\n✓ Faturamento automatizado\n✓ Agendamento de compromissos\n✓ Gestão de estoque\n✓ Processamento de folha de pagamento\n✓ Análises de negócios\n\nComece seu teste gratuito: {{link}}"
     }
+  },
+  "home": {
+    "greeting": {
+      "morning": "Bom dia",
+      "afternoon": "Boa tarde",
+      "evening": "Boa noite"
+    },
+    "subscriptionBanner": {
+      "active": "Seu {{planName}} está ativo",
+      "activeDescription": "Você tem acesso a todos os recursos incluídos em seu plano.",
+      "expired": "Sua assinatura {{previousPlan}} expirou",
+      "expiredDescription": "Sua conta foi rebaixada para o plano gratuito. Agora você tem acesso limitado aos recursos.",
+      "renewButton": "Renovar assinatura",
+      "viewDetailsButton": "Ver detalhes do plano"
+    },
+    "gettingStarted": {
+      "title": "Primeiros passos",
+      "progress": "{{completed}} de {{total}} concluídos",
+      "description": "Complete estas etapas para aproveitar ao máximo sua conta:",
+      "loading": "Carregando seu progresso...",
+      "congratulations": "Parabéns! Você concluiu todas as etapas de configuração.",
+      "steps": {
+        "profile": {
+          "title": "Complete seu perfil empresarial",
+          "description": "Adicione os detalhes da sua empresa e logotipo"
+        },
+        "customer": {
+          "titleEmpty": "Adicione seu primeiro cliente",
+          "titleWithCount": "{{count}} clientes adicionados",
+          "descriptionEmpty": "Comece a construir sua base de clientes",
+          "descriptionWithCount": "Gerencie seus clientes"
+        },
+        "product": {
+          "titleEmpty": "Crie seu primeiro produto",
+          "titleWithCount": "{{count}} produtos criados",
+          "descriptionEmpty": "Adicione produtos ao seu inventário",
+          "descriptionWithCount": "Gerencie seus produtos"
+        },
+        "service": {
+          "titleEmpty": "Crie seu primeiro serviço",
+          "titleWithCount": "{{count}} serviços criados",
+          "descriptionEmpty": "Defina os serviços que você oferece",
+          "descriptionWithCount": "Gerencie seus serviços"
+        },
+        "supplier": {
+          "titleEmpty": "Adicione seu primeiro fornecedor",
+          "titleWithCount": "{{count}} fornecedores adicionados",
+          "descriptionEmpty": "Acompanhe sua cadeia de suprimentos",
+          "descriptionWithCount": "Gerencie seus fornecedores"
+        },
+        "invoice": {
+          "titleEmpty": "Crie sua primeira fatura",
+          "titleWithCount": "{{count}} faturas criadas",
+          "descriptionEmpty": "Comece a faturar seus clientes",
+          "descriptionWithCount": "Gerencie suas faturas"
+        }
+      }
+    },
+    "recentUpdates": {
+      "title": "Atualizações recentes",
+      "noUpdates": "Nenhuma atualização recente para exibir.",
+      "description": "As atualizações sobre a atividade da sua conta aparecerão aqui.",
+      "activities": {
+        "salesToday": "${{amount}} em vendas hoje",
+        "unpaidInvoices": "{{count}} fatura{{plural}} não paga{{plural}} pendente{{plural}}",
+        "overdueInvoices": "{{count}} fatura{{plural}} vencida{{plural}} precisa{{plural}} de atenção",
+        "newCustomers": "{{count}} novo{{plural}} cliente{{plural}} este mês"
+      }
+    },
+    "quickStats": {
+      "title": "Estatísticas rápidas",
+      "customers": "Clientes",
+      "products": "Produtos",
+      "services": "Serviços",
+      "invoices": "Faturas"
+    },
+    "planDetails": {
+      "title": "Detalhes da sua assinatura",
+      "perMonth": "por mês",
+      "active": "Ativo",
+      "currentPlan": "Plano atual",
+      "featuresIncluded": "Recursos incluídos",
+      "limitations": "Limitações no plano gratuito",
+      "upgradePrompt": "Atualize agora para desbloquear todos os recursos e remover limitações!",
+      "upgradeButton": "Atualizar aqui",
+      "upgradeToEnterprise": "Atualizar para Enterprise",
+      "close": "Fechar"
+    },
+    "plans": {
+      "free": {
+        "name": "Plano gratuito",
+        "description": "Recursos básicos para pequenas empresas que estão começando",
+        "features": [
+          "Faturamento básico",
+          "Até 5 clientes",
+          "Relatórios básicos",
+          "Suporte por e-mail",
+          "2GB de armazenamento"
+        ],
+        "limitations": [
+          "Limitado a 5 faturas por mês",
+          "Sem marca personalizada",
+          "Apenas relatórios básicos",
+          "Sem acesso à API",
+          "Apenas usuário único"
+        ]
+      },
+      "professional": {
+        "name": "Plano Profissional",
+        "description": "Recursos avançados para empresas em crescimento",
+        "features": [
+          "Faturamento ilimitado",
+          "Clientes ilimitados",
+          "Relatórios avançados",
+          "Suporte prioritário",
+          "Marca personalizada",
+          "15GB de armazenamento",
+          "Até 3 usuários"
+        ]
+      },
+      "enterprise": {
+        "name": "Plano Enterprise",
+        "description": "Conjunto completo de ferramentas para empresas estabelecidas",
+        "features": [
+          "Tudo em Profissional",
+          "Armazenamento ilimitado",
+          "Usuários ilimitados",
+          "Gerente de conta dedicado",
+          "Acesso avançado à API",
+          "Funções e permissões personalizadas",
+          "Recursos de segurança avançados",
+          "Taxas de transação preferenciais"
+        ]
+      }
+    }
   }
 }

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
 import { cookies } from 'next/headers';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.dottapps.com';
 
 export async function GET(request, { params }) {
   try {
@@ -10,7 +10,7 @@ export async function GET(request, { params }) {
     logger.info('[Jobs API] GET job by id:', id);
     
     // Get session data from cookies
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionId = cookieStore.get('sid')?.value;
     
     if (!sessionId) {
@@ -21,31 +21,13 @@ export async function GET(request, { params }) {
       );
     }
 
-    // Get the session data from the backend
-    const sessionResponse = await fetch(`${BACKEND_URL}/api/sessions/verify/`, {
-      headers: {
-        'Authorization': `Session ${sessionId}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!sessionResponse.ok) {
-      logger.warn('[Jobs API] Session verification failed');
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
-    const sessionData = await sessionResponse.json();
-    logger.info('[Jobs API] Session data:', { user_id: sessionData.user_id, tenant_id: sessionData.tenant_id });
+    // We don't need to verify session with backend - just forward the request
 
     const response = await fetch(`${BACKEND_URL}/api/jobs/${id}/`, {
       method: 'GET',
       headers: {
         'Authorization': `Session ${sessionId}`,
         'Content-Type': 'application/json',
-        'X-Tenant-ID': sessionData.tenant_id,
       },
     });
 
@@ -80,7 +62,7 @@ export async function PUT(request, { params }) {
     logger.info('[Jobs API] PUT job by id:', id);
     
     // Get session data from cookies
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionId = cookieStore.get('sid')?.value;
     
     if (!sessionId) {
@@ -91,24 +73,7 @@ export async function PUT(request, { params }) {
       );
     }
 
-    // Get the session data from the backend
-    const sessionResponse = await fetch(`${BACKEND_URL}/api/sessions/verify/`, {
-      headers: {
-        'Authorization': `Session ${sessionId}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!sessionResponse.ok) {
-      logger.warn('[Jobs API] Session verification failed');
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
-    const sessionData = await sessionResponse.json();
-    logger.info('[Jobs API] Session data:', { user_id: sessionData.user_id, tenant_id: sessionData.tenant_id });
+    // We don't need to verify session with backend - just forward the request
 
     const body = await request.json();
     logger.info('[Jobs API] Updating job with data:', body);
@@ -118,7 +83,6 @@ export async function PUT(request, { params }) {
       headers: {
         'Authorization': `Session ${sessionId}`,
         'Content-Type': 'application/json',
-        'X-Tenant-ID': sessionData.tenant_id,
       },
       body: JSON.stringify(body),
     });
@@ -154,7 +118,7 @@ export async function DELETE(request, { params }) {
     logger.info('[Jobs API] DELETE job by id:', id);
     
     // Get session data from cookies
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sessionId = cookieStore.get('sid')?.value;
     
     if (!sessionId) {
@@ -165,31 +129,13 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    // Get the session data from the backend
-    const sessionResponse = await fetch(`${BACKEND_URL}/api/sessions/verify/`, {
-      headers: {
-        'Authorization': `Session ${sessionId}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!sessionResponse.ok) {
-      logger.warn('[Jobs API] Session verification failed');
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
-    const sessionData = await sessionResponse.json();
-    logger.info('[Jobs API] Session data:', { user_id: sessionData.user_id, tenant_id: sessionData.tenant_id });
+    // We don't need to verify session with backend - just forward the request
 
     const response = await fetch(`${BACKEND_URL}/api/jobs/${id}/`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Session ${sessionId}`,
         'Content-Type': 'application/json',
-        'X-Tenant-ID': sessionData.tenant_id,
       },
     });
 

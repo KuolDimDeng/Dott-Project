@@ -131,5 +131,140 @@
     "whatsappTemplate": {
       "message": "Habari 👋\n\n{{name}} amekualika kujaribu Dott, zana kamili ya kurahisisha shughuli za biashara.\n\n✓ Kutoa ankara kiotomatiki\n✓ Ratiba za miadi\n✓ Udhibiti wa hisa\n✓ Uchakataji wa mishahara\n✓ Uchambuzi wa biashara\n\nAnza jaribio la bure: {{link}}"
     }
+  },
+  "home": {
+    "greeting": {
+      "morning": "Habari ya asubuhi",
+      "afternoon": "Habari ya mchana",
+      "evening": "Habari ya jioni"
+    },
+    "subscriptionBanner": {
+      "active": "{{planName}} yako iko hai",
+      "activeDescription": "Una ufikiaji wa vipengele vyote vilivyojumuishwa katika mpango wako.",
+      "expired": "Usajili wako wa {{previousPlan}} umekwisha",
+      "expiredDescription": "Akaunti yako imeshushwa hadi mpango wa bure. Sasa una ufikiaji mdogo wa vipengele.",
+      "renewButton": "Fufua Usajili",
+      "viewDetailsButton": "Tazama Maelezo ya Mpango"
+    },
+    "gettingStarted": {
+      "title": "Kuanza",
+      "progress": "{{completed}} kati ya {{total}} zimekamilika",
+      "description": "Kamilisha hatua hizi ili kupata zaidi kutoka kwa akaunti yako:",
+      "loading": "Inapakia maendeleo yako...",
+      "congratulations": "Hongera! Umekamilisha hatua zote za usanidi.",
+      "steps": {
+        "profile": {
+          "title": "Kamilisha wasifu wa biashara yako",
+          "description": "Ongeza maelezo ya biashara yako na nembo"
+        },
+        "customer": {
+          "titleEmpty": "Ongeza mteja wako wa kwanza",
+          "titleWithCount": "Wateja {{count}} wameongezwa",
+          "descriptionEmpty": "Anza kujenga msingi wa wateja wako",
+          "descriptionWithCount": "Simamia wateja wako"
+        },
+        "product": {
+          "titleEmpty": "Unda bidhaa yako ya kwanza",
+          "titleWithCount": "Bidhaa {{count}} zimeundwa",
+          "descriptionEmpty": "Ongeza bidhaa kwenye hesabu yako",
+          "descriptionWithCount": "Simamia bidhaa zako"
+        },
+        "service": {
+          "titleEmpty": "Unda huduma yako ya kwanza",
+          "titleWithCount": "Huduma {{count}} zimeundwa",
+          "descriptionEmpty": "Fafanua huduma unazotoa",
+          "descriptionWithCount": "Simamia huduma zako"
+        },
+        "supplier": {
+          "titleEmpty": "Ongeza msambazaji wako wa kwanza",
+          "titleWithCount": "Wasambazaji {{count}} wameongezwa",
+          "descriptionEmpty": "Fuatilia mnyororo wako wa ugavi",
+          "descriptionWithCount": "Simamia wasambazaji wako"
+        },
+        "invoice": {
+          "titleEmpty": "Unda ankara yako ya kwanza",
+          "titleWithCount": "Ankara {{count}} zimeundwa",
+          "descriptionEmpty": "Anza kutoza wateja wako",
+          "descriptionWithCount": "Simamia ankara zako"
+        }
+      }
+    },
+    "recentUpdates": {
+      "title": "Masasisho ya Hivi Karibuni",
+      "noUpdates": "Hakuna masasisho ya hivi karibuni ya kuonyesha.",
+      "description": "Masasisho kuhusu shughuli za akaunti yako yataonekana hapa.",
+      "activities": {
+        "salesToday": "${{amount}} katika mauzo leo",
+        "unpaidInvoices": "Ankara {{count}} ambazo hazijalipwa{{plural}} zinasubiri",
+        "overdueInvoices": "Ankara {{count}} zilizochelewa{{plural}} zinahitaji uangalifu",
+        "newCustomers": "Wateja wapya {{count}}{{plural}} mwezi huu"
+      }
+    },
+    "quickStats": {
+      "title": "Takwimu za Haraka",
+      "customers": "Wateja",
+      "products": "Bidhaa",
+      "services": "Huduma",
+      "invoices": "Ankara"
+    },
+    "planDetails": {
+      "title": "Maelezo ya Usajili Wako",
+      "perMonth": "kwa mwezi",
+      "active": "Hai",
+      "currentPlan": "Mpango wa Sasa",
+      "featuresIncluded": "Vipengele Vilivyojumuishwa",
+      "limitations": "Vikwazo kwenye Mpango wa Bure",
+      "upgradePrompt": "Boresha sasa ili kufungua vipengele vyote na kuondoa vikwazo!",
+      "upgradeButton": "Boresha Hapa",
+      "upgradeToEnterprise": "Boresha hadi Enterprise",
+      "close": "Funga"
+    },
+    "plans": {
+      "free": {
+        "name": "Mpango wa Bure",
+        "description": "Vipengele vya msingi kwa biashara ndogo zinazoanza",
+        "features": [
+          "Kutoa ankara za msingi",
+          "Hadi wateja 5",
+          "Ripoti za msingi",
+          "Msaada wa barua pepe",
+          "Hifadhi ya 2GB"
+        ],
+        "limitations": [
+          "Imepunguzwa hadi ankara 5 kwa mwezi",
+          "Hakuna chapa maalum",
+          "Ripoti za msingi tu",
+          "Hakuna ufikiaji wa API",
+          "Mtumiaji mmoja tu"
+        ]
+      },
+      "professional": {
+        "name": "Mpango wa Kitaalamu",
+        "description": "Vipengele vya hali ya juu kwa biashara zinazokua",
+        "features": [
+          "Kutoa ankara bila kikomo",
+          "Wateja wasio na kikomo",
+          "Ripoti za hali ya juu",
+          "Msaada wa kipaumbele",
+          "Chapa maalum",
+          "Hifadhi ya 15GB",
+          "Hadi watumiaji 3"
+        ]
+      },
+      "enterprise": {
+        "name": "Mpango wa Enterprise",
+        "description": "Mkusanyiko kamili wa zana kwa biashara zilizojikita",
+        "features": [
+          "Kila kitu katika Kitaalamu",
+          "Hifadhi isiyo na kikomo",
+          "Watumiaji wasio na kikomo",
+          "Meneja wa akaunti aliyejitolea",
+          "Ufikiaji wa API wa hali ya juu",
+          "Majukumu na ruhusa maalum",
+          "Vipengele vya usalama vya hali ya juu",
+          "Viwango vya muamala vya upendeleo"
+        ]
+      }
+    }
   }
 }

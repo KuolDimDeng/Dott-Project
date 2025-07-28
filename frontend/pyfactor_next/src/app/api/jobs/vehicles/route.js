@@ -8,7 +8,7 @@ export async function GET(request) {
   logger.info('[JobsVehicles] 🚗 === API CALL START ===');
 
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sid = cookieStore.get('sid');
     
     logger.info('[JobsVehicles] 🚗 Cookie check:', { 
@@ -129,7 +129,7 @@ export async function POST(request) {
   logger.info('[JobsVehicles] 🚗 === CREATE VEHICLE START ===');
 
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sid = cookieStore.get('sid');
     
     logger.info('[JobsVehicles] 🚗 Cookie check:', { 

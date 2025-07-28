@@ -131,5 +131,140 @@
     "whatsappTemplate": {
       "message": "Halo 👋\n\n{{name}} mengundang Anda untuk mencoba Dott, alat lengkap untuk menyederhanakan operasi bisnis.\n\n✓ Penagihan otomatis\n✓ Penjadwalan janji temu\n✓ Manajemen inventori\n✓ Pemrosesan gaji\n✓ Analisis bisnis\n\nMulai uji coba gratis: {{link}}"
     }
+  },
+  "home": {
+    "greeting": {
+      "morning": "Selamat pagi",
+      "afternoon": "Selamat siang",
+      "evening": "Selamat malam"
+    },
+    "subscriptionBanner": {
+      "active": "{{planName}} Anda aktif",
+      "activeDescription": "Anda memiliki akses ke semua fitur yang termasuk dalam paket Anda.",
+      "expired": "Langganan {{previousPlan}} Anda telah kedaluwarsa",
+      "expiredDescription": "Akun Anda telah diturunkan ke paket gratis. Sekarang Anda memiliki akses terbatas ke fitur.",
+      "renewButton": "Perbarui Langganan",
+      "viewDetailsButton": "Lihat Detail Paket"
+    },
+    "gettingStarted": {
+      "title": "Memulai",
+      "progress": "{{completed}} dari {{total}} selesai",
+      "description": "Selesaikan langkah-langkah ini untuk mendapatkan hasil maksimal dari akun Anda:",
+      "loading": "Memuat kemajuan Anda...",
+      "congratulations": "Selamat! Anda telah menyelesaikan semua langkah pengaturan.",
+      "steps": {
+        "profile": {
+          "title": "Lengkapi profil bisnis Anda",
+          "description": "Tambahkan detail bisnis dan logo Anda"
+        },
+        "customer": {
+          "titleEmpty": "Tambahkan pelanggan pertama Anda",
+          "titleWithCount": "{{count}} pelanggan ditambahkan",
+          "descriptionEmpty": "Mulai membangun basis pelanggan Anda",
+          "descriptionWithCount": "Kelola pelanggan Anda"
+        },
+        "product": {
+          "titleEmpty": "Buat produk pertama Anda",
+          "titleWithCount": "{{count}} produk dibuat",
+          "descriptionEmpty": "Tambahkan produk ke inventaris Anda",
+          "descriptionWithCount": "Kelola produk Anda"
+        },
+        "service": {
+          "titleEmpty": "Buat layanan pertama Anda",
+          "titleWithCount": "{{count}} layanan dibuat",
+          "descriptionEmpty": "Tentukan layanan yang Anda tawarkan",
+          "descriptionWithCount": "Kelola layanan Anda"
+        },
+        "supplier": {
+          "titleEmpty": "Tambahkan pemasok pertama Anda",
+          "titleWithCount": "{{count}} pemasok ditambahkan",
+          "descriptionEmpty": "Lacak rantai pasokan Anda",
+          "descriptionWithCount": "Kelola pemasok Anda"
+        },
+        "invoice": {
+          "titleEmpty": "Buat faktur pertama Anda",
+          "titleWithCount": "{{count}} faktur dibuat",
+          "descriptionEmpty": "Mulai menagih pelanggan Anda",
+          "descriptionWithCount": "Kelola faktur Anda"
+        }
+      }
+    },
+    "recentUpdates": {
+      "title": "Pembaruan Terbaru",
+      "noUpdates": "Tidak ada pembaruan terbaru untuk ditampilkan.",
+      "description": "Pembaruan tentang aktivitas akun Anda akan muncul di sini.",
+      "activities": {
+        "salesToday": "${{amount}} dalam penjualan hari ini",
+        "unpaidInvoices": "{{count}} faktur belum dibayar{{plural}} tertunda",
+        "overdueInvoices": "{{count}} faktur jatuh tempo{{plural}} memerlukan perhatian",
+        "newCustomers": "{{count}} pelanggan baru{{plural}} bulan ini"
+      }
+    },
+    "quickStats": {
+      "title": "Statistik Cepat",
+      "customers": "Pelanggan",
+      "products": "Produk",
+      "services": "Layanan",
+      "invoices": "Faktur"
+    },
+    "planDetails": {
+      "title": "Detail Langganan Anda",
+      "perMonth": "per bulan",
+      "active": "Aktif",
+      "currentPlan": "Paket Saat Ini",
+      "featuresIncluded": "Fitur Termasuk",
+      "limitations": "Batasan pada Paket Gratis",
+      "upgradePrompt": "Tingkatkan sekarang untuk membuka semua fitur dan menghapus batasan!",
+      "upgradeButton": "Tingkatkan Di Sini",
+      "upgradeToEnterprise": "Tingkatkan ke Enterprise",
+      "close": "Tutup"
+    },
+    "plans": {
+      "free": {
+        "name": "Paket Gratis",
+        "description": "Fitur dasar untuk bisnis kecil yang baru memulai",
+        "features": [
+          "Faktur dasar",
+          "Hingga 5 klien",
+          "Laporan dasar",
+          "Dukungan email",
+          "Penyimpanan 2GB"
+        ],
+        "limitations": [
+          "Terbatas hingga 5 faktur per bulan",
+          "Tidak ada branding kustom",
+          "Hanya laporan dasar",
+          "Tidak ada akses API",
+          "Hanya pengguna tunggal"
+        ]
+      },
+      "professional": {
+        "name": "Paket Profesional",
+        "description": "Fitur lanjutan untuk bisnis yang berkembang",
+        "features": [
+          "Faktur tak terbatas",
+          "Klien tak terbatas",
+          "Laporan lanjutan",
+          "Dukungan prioritas",
+          "Branding kustom",
+          "Penyimpanan 15GB",
+          "Hingga 3 pengguna"
+        ]
+      },
+      "enterprise": {
+        "name": "Paket Enterprise",
+        "description": "Suite lengkap alat untuk bisnis mapan",
+        "features": [
+          "Semua yang ada di Profesional",
+          "Penyimpanan tak terbatas",
+          "Pengguna tak terbatas",
+          "Manajer akun khusus",
+          "Akses API lanjutan",
+          "Peran & izin kustom",
+          "Fitur keamanan lanjutan",
+          "Tarif transaksi preferensial"
+        ]
+      }
+    }
   }
 }

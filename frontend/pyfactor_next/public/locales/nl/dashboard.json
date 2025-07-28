@@ -131,5 +131,140 @@
     "whatsappTemplate": {
       "message": "Hallo 👋\n\n{{name}} heeft u uitgenodigd om Dott te proberen, een alles-in-één tool om bedrijfsactiviteiten te vereenvoudigen.\n\n✓ Geautomatiseerde facturering\n✓ Afspraken plannen\n✓ Voorraadbeheer\n✓ Salarisverwerking\n✓ Bedrijfsanalyses\n\nStart gratis proefperiode: {{link}}"
     }
+  },
+  "home": {
+    "greeting": {
+      "morning": "Goedemorgen",
+      "afternoon": "Goedemiddag",
+      "evening": "Goedenavond"
+    },
+    "subscriptionBanner": {
+      "active": "Uw {{planName}} is actief",
+      "activeDescription": "U heeft toegang tot alle functies die in uw plan zijn opgenomen.",
+      "expired": "Uw {{previousPlan}} abonnement is verlopen",
+      "expiredDescription": "Uw account is gedegradeerd naar het gratis plan. U heeft nu beperkte toegang tot functies.",
+      "renewButton": "Abonnement vernieuwen",
+      "viewDetailsButton": "Plandetails bekijken"
+    },
+    "gettingStarted": {
+      "title": "Aan de slag",
+      "progress": "{{completed}} van {{total}} voltooid",
+      "description": "Voltooi deze stappen om het meeste uit uw account te halen:",
+      "loading": "Uw voortgang laden...",
+      "congratulations": "Gefeliciteerd! U heeft alle installatiestappen voltooid.",
+      "steps": {
+        "profile": {
+          "title": "Voltooi uw bedrijfsprofiel",
+          "description": "Voeg uw bedrijfsgegevens en logo toe"
+        },
+        "customer": {
+          "titleEmpty": "Voeg uw eerste klant toe",
+          "titleWithCount": "{{count}} klanten toegevoegd",
+          "descriptionEmpty": "Begin met het opbouwen van uw klantenbestand",
+          "descriptionWithCount": "Beheer uw klanten"
+        },
+        "product": {
+          "titleEmpty": "Maak uw eerste product",
+          "titleWithCount": "{{count}} producten gemaakt",
+          "descriptionEmpty": "Voeg producten toe aan uw voorraad",
+          "descriptionWithCount": "Beheer uw producten"
+        },
+        "service": {
+          "titleEmpty": "Maak uw eerste dienst",
+          "titleWithCount": "{{count}} diensten gemaakt",
+          "descriptionEmpty": "Definieer diensten die u aanbiedt",
+          "descriptionWithCount": "Beheer uw diensten"
+        },
+        "supplier": {
+          "titleEmpty": "Voeg uw eerste leverancier toe",
+          "titleWithCount": "{{count}} leveranciers toegevoegd",
+          "descriptionEmpty": "Volg uw toeleveringsketen",
+          "descriptionWithCount": "Beheer uw leveranciers"
+        },
+        "invoice": {
+          "titleEmpty": "Maak uw eerste factuur",
+          "titleWithCount": "{{count}} facturen gemaakt",
+          "descriptionEmpty": "Begin met factureren aan uw klanten",
+          "descriptionWithCount": "Beheer uw facturen"
+        }
+      }
+    },
+    "recentUpdates": {
+      "title": "Recente updates",
+      "noUpdates": "Geen recente updates om weer te geven.",
+      "description": "Updates over uw accountactiviteit verschijnen hier.",
+      "activities": {
+        "salesToday": "${{amount}} aan verkopen vandaag",
+        "unpaidInvoices": "{{count}} onbetaalde factuur{{plural}} in afwachting",
+        "overdueInvoices": "{{count}} achterstallige factuur{{plural}} hebben aandacht nodig",
+        "newCustomers": "{{count}} nieuwe klant{{plural}} deze maand"
+      }
+    },
+    "quickStats": {
+      "title": "Snelle statistieken",
+      "customers": "Klanten",
+      "products": "Producten",
+      "services": "Diensten",
+      "invoices": "Facturen"
+    },
+    "planDetails": {
+      "title": "Uw abonnementsdetails",
+      "perMonth": "per maand",
+      "active": "Actief",
+      "currentPlan": "Huidig plan",
+      "featuresIncluded": "Inbegrepen functies",
+      "limitations": "Beperkingen op gratis plan",
+      "upgradePrompt": "Upgrade nu om alle functies te ontgrendelen en beperkingen te verwijderen!",
+      "upgradeButton": "Upgrade hier",
+      "upgradeToEnterprise": "Upgrade naar Enterprise",
+      "close": "Sluiten"
+    },
+    "plans": {
+      "free": {
+        "name": "Gratis plan",
+        "description": "Basisfuncties voor kleine bedrijven die net beginnen",
+        "features": [
+          "Basis facturering",
+          "Tot 5 klanten",
+          "Basis rapportage",
+          "E-mail ondersteuning",
+          "2GB opslag"
+        ],
+        "limitations": [
+          "Beperkt tot 5 facturen per maand",
+          "Geen aangepaste branding",
+          "Alleen basis rapportage",
+          "Geen API-toegang",
+          "Alleen enkele gebruiker"
+        ]
+      },
+      "professional": {
+        "name": "Professioneel plan",
+        "description": "Geavanceerde functies voor groeiende bedrijven",
+        "features": [
+          "Onbeperkt factureren",
+          "Onbeperkte klanten",
+          "Geavanceerde rapportage",
+          "Prioriteitsondersteuning",
+          "Aangepaste branding",
+          "15GB opslag",
+          "Tot 3 gebruikers"
+        ]
+      },
+      "enterprise": {
+        "name": "Enterprise plan",
+        "description": "Volledige suite van tools voor gevestigde bedrijven",
+        "features": [
+          "Alles in Professioneel",
+          "Onbeperkte opslag",
+          "Onbeperkte gebruikers",
+          "Toegewijde accountmanager",
+          "Geavanceerde API-toegang",
+          "Aangepaste rollen en machtigingen",
+          "Geavanceerde beveiligingsfuncties",
+          "Preferentiële transactietarieven"
+        ]
+      }
+    }
   }
 }
