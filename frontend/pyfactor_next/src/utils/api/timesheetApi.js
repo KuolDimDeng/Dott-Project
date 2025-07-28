@@ -157,7 +157,7 @@ const timesheetApi = {
   // Individual clock actions
   clockIn: async (data) => {
     try {
-      const clockData = { action: 'clock_in', ...data };
+      const clockData = { entry_type: 'clock_in', ...data };
       console.log('[timesheetApi] Clock in data:', clockData);
       return await makeRequest('/api/hr/timesheets/clock/', {
         method: 'POST',
@@ -171,7 +171,7 @@ const timesheetApi = {
 
   clockOut: async (data) => {
     try {
-      const clockData = { action: 'clock_out', ...data };
+      const clockData = { entry_type: 'clock_out', ...data };
       console.log('[timesheetApi] Clock out data:', clockData);
       return await makeRequest('/api/hr/timesheets/clock/', {
         method: 'POST',
@@ -185,7 +185,7 @@ const timesheetApi = {
 
   startBreak: async (data) => {
     try {
-      const clockData = { action: 'start_break', ...data };
+      const clockData = { entry_type: 'break_start', ...data };
       console.log('[timesheetApi] Start break data:', clockData);
       return await makeRequest('/api/hr/timesheets/clock/', {
         method: 'POST',
@@ -199,7 +199,7 @@ const timesheetApi = {
 
   endBreak: async (data) => {
     try {
-      const clockData = { action: 'end_break', ...data };
+      const clockData = { entry_type: 'break_end', ...data };
       console.log('[timesheetApi] End break data:', clockData);
       return await makeRequest('/api/hr/timesheets/clock/', {
         method: 'POST',

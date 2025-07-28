@@ -18,6 +18,28 @@ export const captureLocation = () => {
       return;
     }
 
+    // Check if we're in a secure context (HTTPS)
+    if (!window.isSecureContext) {
+      console.warn('[LocationServices] Geolocation requires HTTPS');
+      reject(new Error('Geolocation requires a secure connection (HTTPS)'));
+      return;
+    }
+
+    // Request permission first if needed
+    if (navigator.permissions && navigator.permissions.query) {
+      navigator.permissions.query({ name: 'geolocation' })
+        .then((permissionStatus) => {
+          console.log('[LocationServices] Geolocation permission status:', permissionStatus.state);
+          if (permissionStatus.state === 'denied') {
+            reject(new Error('Location permission denied. Please enable location access in your browser settings.'));
+            return;
+          }
+        })
+        .catch((err) => {
+          console.warn('[LocationServices] Could not query permissions:', err);
+        });
+    }
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
         resolve({
@@ -32,10 +54,11 @@ export const captureLocation = () => {
         });
       },
       (error) => {
+        console.error('[LocationServices] Geolocation error:', error);
         let errorMessage = 'Unable to get location';
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            errorMessage = 'Location permission denied';
+            errorMessage = 'Location permission denied. Please enable location access for this site.';
             break;
           case error.POSITION_UNAVAILABLE:
             errorMessage = 'Location information unavailable';

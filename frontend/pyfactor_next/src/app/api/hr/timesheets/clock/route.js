@@ -43,9 +43,25 @@ export async function POST(request) {
     logger.info('[Clock API] Backend response status:', response.status);
 
     if (!response.ok) {
-      const error = await response.text();
-      logger.error('[Clock API] Backend error:', { status: response.status, error });
-      return NextResponse.json({ error: 'Clock action failed' }, { status: response.status });
+      const errorText = await response.text();
+      logger.error('[Clock API] Backend error:', { 
+        status: response.status, 
+        statusText: response.statusText,
+        error: errorText,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+      
+      // Try to parse the error as JSON if possible
+      let errorMessage = 'Clock action failed';
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.error || errorJson.detail || errorMessage;
+      } catch (e) {
+        // If not JSON, use the text
+        errorMessage = errorText || errorMessage;
+      }
+      
+      return NextResponse.json({ error: errorMessage }, { status: response.status });
     }
 
     const data = await response.json();
