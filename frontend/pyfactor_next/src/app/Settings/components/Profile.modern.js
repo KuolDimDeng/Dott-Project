@@ -251,23 +251,47 @@ const Profile = ({ userData }) => {
   const fetchEmployeeProfileData = async () => {
     try {
       setLoadingEmployeeData(true);
-      console.log('[Profile] Fetching employee profile data...');
+      console.log('[Profile] === EMPLOYEE PROFILE FETCH START ===');
+      console.log('[Profile] User info:', {
+        email: userData?.email || session?.user?.email,
+        role: userData?.role || session?.user?.role,
+        hasUserData: !!userData,
+        hasSessionUser: !!session?.user
+      });
+      
       const response = await fetch('/api/hr/employee/profile');
-      console.log('[Profile] Response status:', response.status);
+      console.log('[Profile] Employee profile API response status:', response.status);
+      console.log('[Profile] Response headers:', Object.fromEntries(response.headers.entries()));
       
       if (response.ok) {
         const data = await response.json();
-        console.log('[Profile] Employee profile data fetched:', data);
+        console.log('[Profile] Employee profile data fetched:', {
+          hasData: !!data,
+          employeeId: data?.id || data?.employee_id,
+          email: data?.email,
+          firstName: data?.first_name,
+          lastName: data?.last_name,
+          role: data?.role
+        });
         setEmployeeData(data);
         setBankInfo(data.bank_info || {});
         setTaxInfo(data.tax_info || {});
       } else {
         const errorText = await response.text();
-        console.error('[Profile] Failed to fetch employee profile:', response.status, errorText);
+        console.error('[Profile] Failed to fetch employee profile:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorBody: errorText,
+          userRole: userData?.role || session?.user?.role
+        });
         
         // If 404, it means no employee record exists for this user
         if (response.status === 404) {
-          notifyError('No employee record found. Please contact your administrator.');
+          console.log('[Profile] No employee record found for user - this is expected for business owners');
+          // Don't show error for owners/admins
+          if (userData?.role !== 'OWNER' && userData?.role !== 'ADMIN') {
+            notifyError('No employee record found. Please contact your administrator.');
+          }
         }
       }
     } catch (error) {
@@ -275,6 +299,7 @@ const Profile = ({ userData }) => {
       notifyError('Failed to load employee information');
     } finally {
       setLoadingEmployeeData(false);
+      console.log('[Profile] === EMPLOYEE PROFILE FETCH END ===');
     }
   };
 
@@ -643,6 +668,26 @@ const Profile = ({ userData }) => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                 readOnly={!editMode}
               />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Employee ID
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={employeeData?.id || employeeData?.employee_id || 'N/A'}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed"
+                  readOnly
+                  title="Employee ID is system-generated and cannot be changed"
+                />
+                {!employeeData && user.role === 'OWNER' && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    As a business owner, you don't have an employee record by default
+                  </p>
+                )}
+              </div>
             </div>
           </div>
           

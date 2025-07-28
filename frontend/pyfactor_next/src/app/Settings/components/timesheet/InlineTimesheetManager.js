@@ -46,7 +46,17 @@ export default function InlineTimesheetManager() {
   }, [currentWeek, employeeData]);
   
   const fetchEmployeeData = async () => {
-    console.log('🔧 [InlineTimesheetManager] Fetching employee data for:', session?.user?.email);
+    console.log('🔧 [InlineTimesheetManager] === EMPLOYEE FETCH START ===');
+    console.log('🔧 [InlineTimesheetManager] Session data:', {
+      hasSession: !!session,
+      hasUser: !!session?.user,
+      userEmail: session?.user?.email,
+      userRole: session?.user?.role,
+      userTenantId: session?.user?.tenant_id,
+      userBusinessId: session?.user?.business_id,
+      userTenantIdAlt: session?.user?.tenantId,
+      hasEmployee: !!session?.employee
+    });
     
     // First check if session has employee data already
     if (session?.employee) {
@@ -138,7 +148,16 @@ export default function InlineTimesheetManager() {
           return;
         }
         
-        console.log('🔧 [InlineTimesheetManager] Found employee record:', userEmployee);
+        console.log('🔧 [InlineTimesheetManager] === EMPLOYEE FOUND ===');
+        console.log('🔧 [InlineTimesheetManager] Employee record:', {
+          id: userEmployee.id,
+          email: userEmployee.email,
+          firstName: userEmployee.first_name,
+          lastName: userEmployee.last_name,
+          businessId: userEmployee.business_id,
+          compensationType: userEmployee.compensation_type,
+          isSupervisor: userEmployee.is_supervisor
+        });
         setEmployeeData(userEmployee);
         
         // Calculate hourly rate
