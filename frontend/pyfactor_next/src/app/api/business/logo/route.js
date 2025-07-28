@@ -7,15 +7,23 @@ export async function GET() {
   try {
     const cookieStore = await cookies();
     const sessionId = cookieStore.get("sessionid")?.value;
+    const sidCookie = cookieStore.get("sid")?.value;
 
-    if (!sessionId) {
+    // Check for either sessionid or sid cookie
+    const authCookie = sessionId || sidCookie;
+    if (!authCookie) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
+
+    // Build cookie header
+    const cookieHeader = sessionId 
+      ? `sessionid=${sessionId}` 
+      : `sid=${sidCookie}`;
 
     const response = await fetch(`${API_BASE_URL}/users/api/business/logo/`, {
       method: "GET",
       headers: {
-        Cookie: `sessionid=${sessionId}`,
+        Cookie: cookieHeader,
       },
     });
 
@@ -38,15 +46,23 @@ export async function DELETE() {
   try {
     const cookieStore = await cookies();
     const sessionId = cookieStore.get("sessionid")?.value;
+    const sidCookie = cookieStore.get("sid")?.value;
 
-    if (!sessionId) {
+    // Check for either sessionid or sid cookie
+    const authCookie = sessionId || sidCookie;
+    if (!authCookie) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
+
+    // Build cookie header
+    const cookieHeader = sessionId 
+      ? `sessionid=${sessionId}` 
+      : `sid=${sidCookie}`;
 
     const response = await fetch(`${API_BASE_URL}/users/api/business/logo/delete/`, {
       method: "DELETE",
       headers: {
-        Cookie: `sessionid=${sessionId}`,
+        Cookie: cookieHeader,
       },
     });
 

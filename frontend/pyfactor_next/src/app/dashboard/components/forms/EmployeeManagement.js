@@ -685,7 +685,7 @@ function EmployeeManagement({ onNavigate }) {
       emergencyContact: employee.emergencyContact || '',
       emergencyPhone: employee.emergencyPhone || '',
       securityNumberType: employee.securityNumberType || 'SSN',
-      securityNumber: '', // Never populate - security best practice
+      securityNumber: '', // Never populate - security best practice (stored in Stripe)
       country: employee.country || 'US',
       
       // Payroll and Benefits
@@ -750,7 +750,8 @@ function EmployeeManagement({ onNavigate }) {
     if (!formData.email.trim()) errors.email = 'Email is required';
     if (!formData.position.trim()) errors.position = 'Position is required';
     if (!formData.department.trim()) errors.department = 'Department is required';
-    if (!formData.securityNumber.trim()) {
+    // Only require security number for new employees, not when editing
+    if (!selectedEmployee && !formData.securityNumber.trim()) {
       const securityInfo = getSecurityNumberInfo(formData.country);
       errors.securityNumber = `${securityInfo.label} is required for payroll processing`;
     }
