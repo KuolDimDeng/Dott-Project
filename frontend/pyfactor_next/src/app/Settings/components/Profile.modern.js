@@ -375,7 +375,10 @@ const Profile = ({ userData }) => {
                   id: userEmployee.id,
                   email: userEmployee.email,
                   businessId: userEmployee.business_id,
-                  ssnLast4: userEmployee.ssn_last_four
+                  ssnLast4: userEmployee.ssn_last_four,
+                  ssnLastFour: userEmployee.ssn_last_4,
+                  employeeNumber: userEmployee.employee_number,
+                  allFields: Object.keys(userEmployee)
                 });
                 setEmployeeData(userEmployee);
                 setBankInfo(userEmployee.bank_info || {});
@@ -778,7 +781,7 @@ const Profile = ({ userData }) => {
               <div className="relative">
                 <input
                   type="text"
-                  value={employeeData?.id || employeeData?.employee_id || 'N/A'}
+                  value={employeeData?.employee_number || 'N/A'}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed"
                   readOnly
                   title="Employee ID is system-generated and cannot be changed"
