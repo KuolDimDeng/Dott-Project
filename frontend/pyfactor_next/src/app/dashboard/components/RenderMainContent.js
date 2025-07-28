@@ -258,7 +258,8 @@ const ProductManagement = enhancedLazy(() => import('./forms/ProductManagement.j
 const SuppliesManagement = enhancedLazy(() => import('./forms/inventory/SuppliesManagement.js'), 'Supplies Management');
 const BillOfMaterialsManagement = enhancedLazy(() => import('./forms/inventory/BillOfMaterialsManagement.js'), 'Bill of Materials Management');
 const JobManagement = enhancedLazy(() => import('./jobs/JobManagement.js'), 'Job Management');
-// JobDashboard and JobReportsManagement removed due to MUI dependencies
+const JobDashboard = enhancedLazy(() => import('./jobs/JobDashboard.js'), 'Job Dashboard');
+const JobReportsManagement = enhancedLazy(() => import('./jobs/JobReportsManagement.js'), 'Job Reports Management');
 const MainDashboard = enhancedLazy(() => import('./dashboards/MainDashboard'), 'Main Dashboard');
 const BankTransactions = enhancedLazy(() => import('./forms/BankTransactionPage'), 'Bank Transactions');
 const HRDashboard = enhancedLazy(() => import('./forms/HRDashboard.js'), 'HR Dashboard');
@@ -2127,14 +2128,9 @@ const RenderMainContent = React.memo(function RenderMainContent({
         
         switch(view) {
           case 'jobs-dashboard':
-            return (
-              <ContentWrapperWithKey>
-                <div className="p-4">
-                  <h1 className="text-xl font-semibold mb-2">Jobs Dashboard</h1>
-                  <p>Jobs Dashboard is temporarily unavailable due to component upgrade.</p>
-                </div>
-              </ContentWrapperWithKey>
-            );
+            componentName = 'JobDashboard';
+            JobComponent = JobDashboard;
+            break;
           case 'jobs-list':
           case 'job-list':
             componentName = 'JobManagement';
@@ -2161,14 +2157,9 @@ const RenderMainContent = React.memo(function RenderMainContent({
             JobComponent = () => <JobManagement view="vehicles" />;
             break;
           case 'jobs-reports':
-            return (
-              <ContentWrapperWithKey>
-                <div className="p-4">
-                  <h1 className="text-xl font-semibold mb-2">Jobs Reports</h1>
-                  <p>Jobs Reports is temporarily unavailable due to component upgrade.</p>
-                </div>
-              </ContentWrapperWithKey>
-            );
+            componentName = 'JobReportsManagement';
+            JobComponent = JobReportsManagement;
+            break;
           default:
             console.warn('[RenderMainContent] Unknown jobs view:', view);
             return (
