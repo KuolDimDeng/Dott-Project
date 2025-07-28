@@ -1,13 +1,12 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { logger } from '@/utils/logger';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'https://api.dottapps.com';
 
-export async function GET(request) {
+export async function GET(request, { params }) {
   try {
-    logger.info('[Vehicles API] GET request received');
-    
+    const { id } = params;
     const cookieStore = cookies();
     const sidCookie = cookieStore.get('sid');
 
@@ -15,11 +14,8 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url);
-    const queryString = searchParams.toString();
-    const backendUrl = `${BACKEND_URL}/api/jobs/vehicles/${queryString ? `?${queryString}` : ''}`;
-
-    logger.info('[Vehicles API] Forwarding to backend:', backendUrl);
+    const backendUrl = `${BACKEND_URL}/api/jobs/${id}/expenses/`;
+    logger.info('[Jobs Expenses API] Fetching expenses:', { jobId: id, backendUrl });
 
     const response = await fetch(backendUrl, {
       method: 'GET',
@@ -27,23 +23,24 @@ export async function GET(request) {
         'Cookie': `sid=${sidCookie.value}`,
         'Content-Type': 'application/json',
         'Accept': 'application/json'
-      },
+      }
     });
 
     const responseText = await response.text();
-    logger.info('[Vehicles API] Backend response:', {
+    logger.info('[Jobs Expenses API] Backend response:', {
       status: response.status,
       statusText: response.statusText,
+      headers: Object.fromEntries(response.headers),
       bodyPreview: responseText.substring(0, 200)
     });
 
     if (!response.ok) {
-      logger.error('[Vehicles API] Backend error:', {
+      logger.error('[Jobs Expenses API] Backend error:', {
         status: response.status,
         body: responseText
       });
       return NextResponse.json(
-        { error: responseText || 'Failed to fetch vehicles' },
+        { error: responseText || 'Failed to fetch expenses' },
         { status: response.status }
       );
     }
@@ -52,29 +49,23 @@ export async function GET(request) {
     try {
       data = JSON.parse(responseText);
     } catch (parseError) {
-      logger.error('[Vehicles API] JSON parse error:', parseError);
+      logger.error('[Jobs Expenses API] JSON parse error:', parseError);
       return NextResponse.json({ error: 'Invalid response format' }, { status: 500 });
     }
 
-    logger.info('[Vehicles API] Successfully fetched vehicles:', data.length || 'N/A');
     return NextResponse.json(data);
   } catch (error) {
-    logger.error('[Vehicles API] Error:', {
-      error: error.message,
-      stack: error.stack
-    });
-    
+    logger.error('[Jobs Expenses API] Server error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error.message },
       { status: 500 }
     );
   }
 }
 
-export async function POST(request) {
+export async function POST(request, { params }) {
   try {
-    logger.info('[Vehicles API] POST request received');
-    
+    const { id } = params;
     const cookieStore = cookies();
     const sidCookie = cookieStore.get('sid');
 
@@ -83,9 +74,8 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const backendUrl = `${BACKEND_URL}/api/jobs/vehicles/`;
-
-    logger.info('[Vehicles API] Forwarding to backend:', backendUrl);
+    const backendUrl = `${BACKEND_URL}/api/jobs/${id}/expenses/`;
+    logger.info('[Jobs Expenses API] Creating expense:', { jobId: id, body });
 
     const response = await fetch(backendUrl, {
       method: 'POST',
@@ -94,45 +84,28 @@ export async function POST(request) {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(body)
     });
 
     const responseText = await response.text();
-    logger.info('[Vehicles API] Backend response:', {
+    logger.info('[Jobs Expenses API] Backend response:', {
       status: response.status,
-      statusText: response.statusText,
       bodyPreview: responseText.substring(0, 200)
     });
 
     if (!response.ok) {
-      logger.error('[Vehicles API] Backend error:', {
-        status: response.status,
-        body: responseText
-      });
       return NextResponse.json(
-        { error: responseText || 'Failed to create vehicle' },
+        { error: responseText || 'Failed to create expense' },
         { status: response.status }
       );
     }
 
-    let data;
-    try {
-      data = JSON.parse(responseText);
-    } catch (parseError) {
-      logger.error('[Vehicles API] JSON parse error:', parseError);
-      return NextResponse.json({ error: 'Invalid response format' }, { status: 500 });
-    }
-
-    logger.info('[Vehicles API] Successfully created vehicle');
+    const data = JSON.parse(responseText);
     return NextResponse.json(data);
   } catch (error) {
-    logger.error('[Vehicles API] Error:', {
-      error: error.message,
-      stack: error.stack
-    });
-    
+    logger.error('[Jobs Expenses API] Server error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error.message },
       { status: 500 }
     );
   }
