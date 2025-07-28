@@ -148,6 +148,17 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
         data: customersData
       });
       console.log('[JobForm] 👥 Sample customer:', Array.isArray(customersData) && customersData.length > 0 ? customersData[0] : 'No customers');
+      
+      // Debug customer structure like employees
+      if (Array.isArray(customersData) && customersData.length > 0) {
+        const sampleCustomer = customersData[0];
+        console.log('[JobForm] 👥 Customer object structure:', sampleCustomer);
+        console.log('[JobForm] 👥 Customer keys:', Object.keys(sampleCustomer));
+        console.log('[JobForm] 👥 Customer has name field:', 'name' in sampleCustomer);
+        console.log('[JobForm] 👥 Customer business_name:', sampleCustomer.business_name);
+        console.log('[JobForm] 👥 Customer first_name:', sampleCustomer.first_name);
+        console.log('[JobForm] 👥 Customer last_name:', sampleCustomer.last_name);
+      }
       setCustomers(Array.isArray(customersData) ? customersData : []);
     } catch (err) {
       console.error('[JobForm] 👥 Error fetching customers:', err);
@@ -296,6 +307,16 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
         data: suppliesData
       });
       console.log('[JobForm] 📦 Sample supply:', Array.isArray(suppliesData) && suppliesData.length > 0 ? suppliesData[0] : 'No supplies');
+      
+      // Debug supply structure like employees
+      if (Array.isArray(suppliesData) && suppliesData.length > 0) {
+        const sampleSupply = suppliesData[0];
+        console.log('[JobForm] 📦 Supply object structure:', sampleSupply);
+        console.log('[JobForm] 📦 Supply keys:', Object.keys(sampleSupply));
+        console.log('[JobForm] 📦 Supply name:', sampleSupply.name);
+        console.log('[JobForm] 📦 Supply unit_price:', sampleSupply.unit_price);
+        console.log('[JobForm] 📦 Supply quantity_on_hand:', sampleSupply.quantity_on_hand);
+      }
       setSupplies(Array.isArray(suppliesData) ? suppliesData : []);
     } catch (err) {
       logger.error('[JobForm] 📦 Error fetching supplies:', err);
