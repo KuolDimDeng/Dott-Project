@@ -25,11 +25,7 @@ const JobDashboard = () => {
         const tenantId = session.user.tenant_id || session.user.tenantId || session.user.business_id;
         
         // Fetch jobs data
-        const response = await fetch('/api/jobs/', {
-          headers: {
-            'X-Tenant-ID': tenantId,
-          },
-        });
+        const response = await fetch('/api/jobs/');
 
         if (response.ok) {
           const data = await response.json();

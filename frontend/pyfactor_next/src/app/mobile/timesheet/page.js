@@ -489,12 +489,53 @@ export default function MobileTimesheetPage() {
       
       // Success! Refresh the timesheet data
       await loadTimesheetData();
-      toast.success(isClockingOut ? 'Clocked out successfully' : 'Clocked in successfully');
+      
+      // Clear the location consent modal state
+      setShowLocationConsent(false);
+      
+      // Show success message
+      toast.success(
+        isClockingOut 
+          ? '✅ Clocked out successfully!' 
+          : '✅ Clocked in successfully!',
+        {
+          duration: 4000,
+          style: {
+            background: '#10B981',
+            color: 'white',
+            fontSize: '16px',
+            fontWeight: '600',
+          },
+        }
+      );
+      
+      // If location was captured, show location info
+      if (locationData) {
+        setTimeout(() => {
+          toast.success(
+            `📍 Location recorded: ${locationData.address || 'GPS coordinates captured'}`,
+            {
+              duration: 3000,
+              style: {
+                background: '#3B82F6',
+                color: 'white',
+              },
+            }
+          );
+        }, 500);
+      }
     } catch (error) {
       console.error('Error clocking in/out:', error);
-      toast.error('Failed to clock ' + (isClockingOut ? 'out' : 'in'));
+      toast.error('Failed to clock ' + (isClockingOut ? 'out' : 'in'), {
+        duration: 4000,
+        style: {
+          background: '#EF4444',
+          color: 'white',
+        },
+      });
     } finally {
       setIsClockingIn(false);
+      setShowLocationConsent(false); // Ensure modal is closed
     }
   };
   

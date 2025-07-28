@@ -48,11 +48,7 @@ const JobReportsManagement = () => {
       if (filters.endDate) params.append('end_date', filters.endDate);
       if (filters.status) params.append('status', filters.status);
 
-      const response = await fetch(`/api/jobs/?${params.toString()}`, {
-        headers: {
-          'X-Tenant-ID': tenantId,
-        },
-      });
+      const response = await fetch(`/api/jobs/?${params.toString()}`);
 
       if (response.ok) {
         const data = await response.json();
