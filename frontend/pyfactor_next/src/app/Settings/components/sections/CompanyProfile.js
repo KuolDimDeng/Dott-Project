@@ -282,22 +282,28 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
     formData.append('logo', file);
 
     try {
+      console.log('[CompanyProfile] Uploading logo, file:', file.name, 'size:', file.size);
+      
       const response = await fetch('/api/business/logo/upload', {
         method: 'POST',
         body: formData,
       });
 
+      console.log('[CompanyProfile] Upload response status:', response.status);
+      
       const data = await response.json();
+      console.log('[CompanyProfile] Upload response data:', data);
       
       if (response.ok && data.success) {
         notifySuccess('Logo uploaded successfully');
         await loadBusinessLogo(); // Reload the logo
       } else {
+        console.error('[CompanyProfile] Upload failed:', data);
         notifyError(data.error || 'Failed to upload logo');
       }
     } catch (error) {
-      console.error('Error uploading logo:', error);
-      notifyError('Failed to upload logo');
+      console.error('[CompanyProfile] Error uploading logo:', error);
+      notifyError('Failed to upload logo: ' + error.message);
     } finally {
       setUploadingLogo(false);
       // Reset file input

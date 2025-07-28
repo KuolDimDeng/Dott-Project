@@ -77,26 +77,40 @@ def resize_image_if_needed(file, max_width=800, max_height=800):
 def upload_business_logo(request):
     """Upload business logo"""
     try:
+        logger.info(f"[upload_business_logo] Request from user: {request.user}")
+        logger.info(f"[upload_business_logo] Request FILES: {list(request.FILES.keys())}")
+        logger.info(f"[upload_business_logo] Request META headers: {request.META.get('CONTENT_TYPE', 'No content type')}")
+        
         # Get user's business
         user_profile = UserProfile.objects.get(user=request.user)
         business = user_profile.business
         
+        logger.info(f"[upload_business_logo] User profile found: {user_profile}")
+        logger.info(f"[upload_business_logo] Business found: {business}")
+        
         if not business:
+            logger.error(f"[upload_business_logo] No business found for user {request.user}")
             return Response({'error': 'No business found for user'}, status=404)
         
         # Check if logo file is provided
         if 'logo' not in request.FILES:
+            logger.error(f"[upload_business_logo] No logo file in request.FILES")
             return Response({'error': 'No logo file provided'}, status=400)
         
         logo_file = request.FILES['logo']
+        logger.info(f"[upload_business_logo] Logo file received: {logo_file.name}, size: {logo_file.size}")
         
         # Validate the image
         is_valid, error_message = validate_image_file(logo_file)
         if not is_valid:
+            logger.error(f"[upload_business_logo] Validation failed: {error_message}")
             return Response({'error': error_message}, status=400)
+        
+        logger.info(f"[upload_business_logo] File validation passed")
         
         # Resize if needed
         logo_file = resize_image_if_needed(logo_file)
+        logger.info(f"[upload_business_logo] File resize completed")
         
         # Get or create BusinessDetails
         business_details, created = BusinessDetails.objects.get_or_create(
