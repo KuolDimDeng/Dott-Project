@@ -43,7 +43,7 @@ export async function GET(request, { params }) {
     logger.info(`[HR v2 Proxy] GET /api/hr/v2/employees/${employeeId}`);
 
     // Get session from cookies - await is required in Next.js 15
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const sessionId = cookieStore.get('sid');
     
     if (!sessionId) {
@@ -92,7 +92,7 @@ export async function PUT(request, { params }) {
     logger.info(`[HR v2 Proxy] PUT /api/hr/v2/employees/${employeeId}`);
 
     // Get session from cookies - await is required in Next.js 15
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const sessionId = cookieStore.get('sid');
     
     if (!sessionId) {
@@ -104,9 +104,11 @@ export async function PUT(request, { params }) {
 
     // Get request body
     const body = await request.json();
+    logger.info(`[HR v2 Proxy] PUT request body:`, JSON.stringify(body, null, 2));
 
     // Get tenant ID from headers
     const tenantId = request.headers.get('X-Tenant-ID');
+    logger.info(`[HR v2 Proxy] Tenant ID: ${tenantId}`);
     
     // Build headers for backend request
     const headers = {
@@ -126,7 +128,8 @@ export async function PUT(request, { params }) {
       body: JSON.stringify(body),
     });
 
-    logger.info(`[HR v2 Proxy] Backend response: ${response.status}`);
+    logger.info(`[HR v2 Proxy] Backend PUT response: ${response.status}`);
+    logger.info(`[HR v2 Proxy] Backend PUT response data:`, JSON.stringify(data, null, 2));
     
     return NextResponse.json(data, { status: response.status });
     
@@ -145,7 +148,7 @@ export async function DELETE(request, { params }) {
     logger.info(`[HR v2 Proxy] DELETE /api/hr/v2/employees/${employeeId}`);
 
     // Get session from cookies - await is required in Next.js 15
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const sessionId = cookieStore.get('sid');
     
     if (!sessionId) {

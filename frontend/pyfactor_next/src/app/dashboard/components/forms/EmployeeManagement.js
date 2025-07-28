@@ -27,7 +27,7 @@ import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 import { DEPARTMENTS, POSITIONS, EMPLOYMENT_TYPES } from '@/utils/employeeConstants';
 import { getAllCountries, getSSNInfoByCountry } from '@/utils/countrySSNMapping';
 import PhoneInput from '@/components/ui/PhoneInput';
-import { getInternationalPhoneNumber, validatePhoneNumber } from '@/utils/countryPhoneCodes';
+import { getInternationalPhoneNumber, validatePhoneNumber, parseInternationalPhoneNumber } from '@/utils/countryPhoneCodes';
 
 // Tooltip component for field help
 const FieldTooltip = ({ text, position = 'top' }) => {
@@ -642,16 +642,28 @@ function EmployeeManagement({ onNavigate }) {
   const handleEdit = (employee) => {
     logger.info('📝 [EmployeeManagement] Editing employee:', {
       id: employee.id,
-      name: `${employee.firstName} ${employee.lastName}`
+      name: `${employee.firstName} ${employee.lastName}`,
+      phone: employee.phone,
+      phoneCountryCode: employee.phoneCountryCode || employee.phone_country_code
     });
+    
+    // Parse international phone number if it exists
+    let phoneData = { phoneNumber: '', countryCode: 'US' };
+    if (employee.phone) {
+      phoneData = parseInternationalPhoneNumber(employee.phone);
+      logger.info('📱 [EmployeeManagement] Parsed phone number:', {
+        original: employee.phone,
+        parsed: phoneData
+      });
+    }
     
     setSelectedEmployee(employee);
     setFormData({
       firstName: employee.firstName || '',
       lastName: employee.lastName || '',
       email: employee.email || '',
-      phone: employee.phone || '',
-      phoneCountryCode: employee.phoneCountryCode || employee.phone_country_code || 'US',
+      phone: phoneData.phoneNumber,
+      phoneCountryCode: phoneData.countryCode,
       dateOfBirth: employee.dateOfBirth || '',
       position: employee.position || '',
       department: employee.department || '',
@@ -870,11 +882,14 @@ function EmployeeManagement({ onNavigate }) {
         // Add active field based on status for backend compatibility
         backendData.active = backendData.status === 'active';
         
+        logger.info('📤 [EmployeeManagement] Sending update request with data:', JSON.stringify(backendData, null, 2));
         const result = await hrApi.employees.update(selectedEmployee.id, backendData);
         logger.info('✅ [EmployeeManagement] Employee updated successfully:', {
           id: result?.id,
           active: result?.active,
-          status: result?.status
+          status: result?.status,
+          phone_number: result?.phone_number,
+          response: JSON.stringify(result, null, 2)
         });
         toast.success('Employee updated successfully');
       } else {
@@ -900,12 +915,26 @@ function EmployeeManagement({ onNavigate }) {
       setSelectedEmployee(null);
       setActiveTab('list');
     } catch (error) {
-      logger.error('❌ [EmployeeManagement] Error saving employee:', error);
+      logger.error('❌ [EmployeeManagement] Error saving employee:', {
+        error: error,
+        message: error.message,
+        response: error.response,
+        responseData: error.response?.data,
+        responseStatus: error.response?.status,
+        stack: error.stack
+      });
       
       // Parse error message for user-friendly display
       let userMessage = 'Failed to save employee. Please try again.';
       
-      if (error.message) {
+      // Check for API response errors
+      if (error.response?.data?.detail) {
+        userMessage = error.response.data.detail;
+      } else if (error.response?.data?.error) {
+        userMessage = error.response.data.error;
+      } else if (error.response?.data?.message) {
+        userMessage = error.response.data.message;
+      } else if (error.message) {
         // Check for common error patterns
         if (error.message.includes('does not exist')) {
           userMessage = 'There was a database configuration issue. Please contact support.';
