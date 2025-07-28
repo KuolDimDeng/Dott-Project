@@ -52,10 +52,16 @@ const ImportExport = () => {
   }
 
   const dataTypes = [
-    { id: 'customers', label: 'Customers', description: 'Customer database with contact information' },
-    { id: 'products', label: 'Products', description: 'Product catalog with prices and inventory' },
-    { id: 'invoices', label: 'Invoices', description: 'Sales invoices and payment history' },
-    { id: 'bills', label: 'Bills & Expenses', description: 'Purchase bills and expense records' }
+    { id: 'customers', label: 'Customers', description: 'Customer database with contact information (Excel only)' },
+    { id: 'products', label: 'Products', description: 'Product catalog with prices and inventory (Excel only)' },
+    { id: 'invoices', label: 'Invoices', description: 'Sales invoices and payment history (Excel only)' },
+    { id: 'bills', label: 'Bills & Expenses', description: 'Purchase bills and expense records (Excel only)' },
+    { id: 'jobs', label: 'Jobs', description: 'Job records and project information (Excel only)' },
+    { id: 'services', label: 'Services', description: 'Service catalog and pricing (Excel only)' },
+    { id: 'orders', label: 'Orders', description: 'Order history and details (Excel only)' },
+    { id: 'estimates', label: 'Estimates', description: 'Estimate records and proposals (Excel only)' },
+    { id: 'employees', label: 'Employees', description: 'Employee database and information (Excel only)' },
+    { id: 'vendors', label: 'Vendors', description: 'Vendor contact and payment information (Excel only)' }
   ];
 
   const handleExport = async () => {

@@ -185,7 +185,7 @@ export async function POST(request) {
 
     logger.debug('Stripe checkout session created:', {
       sessionId: stripeSession.id,
-      userId: user.username,
+      userId: userData?.email || userData?.id,
       priceId: finalPriceId,
       timestamp: new Date().toISOString()
     });
