@@ -1348,8 +1348,20 @@ class JobDataViewSet(viewsets.ViewSet):
             from crm.models import Customer
             from crm.serializers import CustomerSerializer
             
+            # Debug tenant context
+            from core.tenant_context import get_current_tenant
+            current_tenant = get_current_tenant()
+            logger.info(f"👥 [JobDataViewSet] Current tenant: {current_tenant}")
+            logger.info(f"👥 [JobDataViewSet] User tenant_id: {getattr(request.user, 'tenant_id', 'None')}")
+            logger.info(f"👥 [JobDataViewSet] User business_id: {getattr(request.user, 'business_id', 'None')}")
+            
             customers = Customer.objects.all().order_by('business_name', 'first_name', 'last_name')
             logger.info(f"👥 [JobDataViewSet] Found {customers.count()} customers")
+            
+            # Debug first few customers
+            if customers.exists():
+                for i, customer in enumerate(customers[:3]):
+                    logger.info(f"👥 [JobDataViewSet] Customer {i}: {customer.business_name or customer.first_name} - tenant_id: {customer.tenant_id}")
             
             serializer = CustomerSerializer(customers, many=True)
             return Response(serializer.data)
@@ -1388,11 +1400,22 @@ class JobDataViewSet(viewsets.ViewSet):
             from inventory.models import Product
             from inventory.serializers import ProductSerializer
             
+            # Debug tenant context
+            from core.tenant_context import get_current_tenant
+            current_tenant = get_current_tenant()
+            logger.info(f"📦 [JobDataViewSet] Current tenant: {current_tenant}")
+            logger.info(f"📦 [JobDataViewSet] User tenant_id: {getattr(request.user, 'tenant_id', 'None')}")
+            
             supplies = Product.objects.filter(
                 inventory_type='supply',
                 is_active=True
             ).order_by('name')
             logger.info(f"📦 [JobDataViewSet] Found {supplies.count()} supplies")
+            
+            # Debug first few supplies
+            if supplies.exists():
+                for i, supply in enumerate(supplies[:3]):
+                    logger.info(f"📦 [JobDataViewSet] Supply {i}: {supply.name} - tenant_id: {supply.tenant_id}")
             
             serializer = ProductSerializer(supplies, many=True)
             return Response(serializer.data)
