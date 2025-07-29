@@ -1371,9 +1371,21 @@ class JobDataViewSet(viewsets.ViewSet):
             current_tenant = get_current_tenant_id()
             logger.info(f"👥 [JobDataViewSet] Current tenant context: {current_tenant}")
             
+            # Try direct query without tenant filtering to debug
+            try:
+                # Query with all_objects to bypass tenant filtering
+                all_customers = Customer.all_objects.all()
+                logger.info(f"👥 [JobDataViewSet] Total customers in database (all tenants): {all_customers.count()}")
+                
+                # Log tenant_id for each customer
+                for idx, customer in enumerate(all_customers[:5]):
+                    logger.info(f"👥 [JobDataViewSet] Customer {idx}: {customer.business_name or customer.first_name} - tenant_id: {customer.tenant_id}")
+            except Exception as e:
+                logger.error(f"👥 [JobDataViewSet] Error querying all_objects: {e}")
+            
             # Query customers - the tenant filtering should happen automatically via TenantManager
             customers = Customer.objects.all().order_by('business_name', 'first_name', 'last_name')
-            logger.info(f"👥 [JobDataViewSet] Found {customers.count()} customers")
+            logger.info(f"👥 [JobDataViewSet] Found {customers.count()} customers (tenant-filtered)")
             
             # Debug first few customers if any
             if customers.exists():
@@ -1425,12 +1437,24 @@ class JobDataViewSet(viewsets.ViewSet):
             current_tenant = get_current_tenant_id()
             logger.info(f"📦 [JobDataViewSet] Current tenant context: {current_tenant}")
             
+            # Try direct query without tenant filtering to debug
+            try:
+                # Query with all_objects to bypass tenant filtering
+                all_supplies = Product.all_objects.filter(inventory_type='supply', is_active=True)
+                logger.info(f"📦 [JobDataViewSet] Total supplies in database (all tenants): {all_supplies.count()}")
+                
+                # Log tenant_id for each supply
+                for idx, supply in enumerate(all_supplies[:5]):
+                    logger.info(f"📦 [JobDataViewSet] Supply {idx}: {supply.name} - tenant_id: {supply.tenant_id}")
+            except Exception as e:
+                logger.error(f"📦 [JobDataViewSet] Error querying all_objects: {e}")
+            
             # Query supplies - the tenant filtering should happen automatically
             supplies = Product.objects.filter(
                 inventory_type='supply',
                 is_active=True
             ).order_by('name')
-            logger.info(f"📦 [JobDataViewSet] Found {supplies.count()} supplies")
+            logger.info(f"📦 [JobDataViewSet] Found {supplies.count()} supplies (tenant-filtered)")
             
             # Debug first few supplies if any
             if supplies.exists():
