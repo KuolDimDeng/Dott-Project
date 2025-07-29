@@ -106,62 +106,96 @@ const CurrencyPreferences = () => {
       currencyCode = pendingCurrency?.code;
     }
     
+    console.log('🚀 [CurrencyPreferences] === UPDATE CURRENCY START ===');
+    console.log('🚀 [CurrencyPreferences] Currency code to update:', currencyCode);
+    console.log('🚀 [CurrencyPreferences] Current preferences:', preferences);
+    
     setLoading(true);
     try {
+      const requestBody = {
+        currency_code: currencyCode,
+      };
+      
+      console.log('🚀 [CurrencyPreferences] Request body:', requestBody);
+      console.log('🚀 [CurrencyPreferences] Making PUT request to /api/currency/preferences');
+      
       const response = await fetch('/api/currency/preferences', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          currency_code: currencyCode,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
+      console.log('🚀 [CurrencyPreferences] Response status:', response.status);
+      console.log('🚀 [CurrencyPreferences] Response headers:', response.headers);
+      
       const data = await response.json();
+      console.log('🚀 [CurrencyPreferences] Response data:', data);
       
       if (data.success) {
+        console.log('🚀 [CurrencyPreferences] Update successful!');
         setPreferences(data.preferences);
         notifySuccess(`Currency updated to ${data.preferences.currency_name}`);
         setShowConfirmModal(false);
         setPendingCurrency(null);
         setExchangeRateInfo(null);
       } else {
+        console.error('🚀 [CurrencyPreferences] Update failed:', data.error);
         notifyError(data.error || 'Failed to update currency');
       }
     } catch (error) {
-      console.error('Error updating currency:', error);
+      console.error('🚀 [CurrencyPreferences] Network error:', error);
+      console.error('🚀 [CurrencyPreferences] Error details:', {
+        message: error.message,
+        stack: error.stack,
+        type: error.constructor.name
+      });
       notifyError('Failed to update currency preferences');
     }
     setLoading(false);
+    console.log('🚀 [CurrencyPreferences] === UPDATE CURRENCY END ===');
   };
 
   const handleToggleChange = async (field, value) => {
+    console.log('🎯 [CurrencyPreferences] === TOGGLE CHANGE START ===');
+    console.log('🎯 [CurrencyPreferences] Field:', field, 'Value:', value);
+    
     setLoading(true);
     try {
+      const requestBody = {
+        [field]: value,
+      };
+      
+      console.log('🎯 [CurrencyPreferences] Request body:', requestBody);
+      console.log('🎯 [CurrencyPreferences] Making PUT request to /api/currency/preferences');
+      
       const response = await fetch('/api/currency/preferences', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          [field]: value,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
+      console.log('🎯 [CurrencyPreferences] Response status:', response.status);
       const data = await response.json();
+      console.log('🎯 [CurrencyPreferences] Response data:', data);
       
       if (data.success) {
+        console.log('🎯 [CurrencyPreferences] Toggle update successful!');
         setPreferences(data.preferences);
         notifySuccess('Display preferences updated');
       } else {
+        console.error('🎯 [CurrencyPreferences] Toggle update failed:', data.error);
         notifyError(data.error || 'Failed to update preferences');
       }
     } catch (error) {
-      console.error('Error updating preferences:', error);
+      console.error('🎯 [CurrencyPreferences] Network error:', error);
       notifyError('Failed to update display preferences');
     }
     setLoading(false);
+    console.log('🎯 [CurrencyPreferences] === TOGGLE CHANGE END ===');
   };
 
   const ConfirmationModal = () => {

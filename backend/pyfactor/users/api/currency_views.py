@@ -39,9 +39,17 @@ def get_currency_list_view(request):
 @permission_classes([IsAuthenticated])
 def get_currency_preferences(request):
     """Get or update business currency preferences"""
+    logger.info(f"[Currency API] ========== REQUEST START ==========")
     logger.info(f"[Currency API] Request method: {request.method}")
+    logger.info(f"[Currency API] Request path: {request.path}")
+    logger.info(f"[Currency API] Request headers: {dict(request.headers)}")
+    logger.info(f"[Currency API] Request cookies: {request.COOKIES}")
     logger.info(f"[Currency API] User: {request.user}")
     logger.info(f"[Currency API] User authenticated: {request.user.is_authenticated}")
+    
+    if request.method == 'PUT':
+        logger.info(f"[Currency API] Request data: {request.data}")
+        logger.info(f"[Currency API] Request body: {request.body}")
     
     try:
         user = request.user
@@ -113,7 +121,10 @@ def get_currency_preferences(request):
         
         # Handle PUT request for updates
         if request.method == 'PUT':
-            logger.info(f"[Currency API] PUT request data: {request.data}")
+            logger.info(f"[Currency API] ========== PROCESSING PUT REQUEST ==========")
+            logger.info(f"[Currency API] Raw request data: {request.data}")
+            logger.info(f"[Currency API] Data type: {type(request.data)}")
+            logger.info(f"[Currency API] Data keys: {list(request.data.keys()) if hasattr(request.data, 'keys') else 'N/A'}")
             
             # Check if user is owner or admin
             # The User model has a role field directly
@@ -167,7 +178,7 @@ def get_currency_preferences(request):
         currency_info = get_currency_info(business_details.preferred_currency_code)
         logger.info(f"[Currency API] Preparing response with currency: {business_details.preferred_currency_code}")
         
-        return Response({
+        response_data = {
             'success': True,
             'preferences': {
                 'currency_code': business_details.preferred_currency_code,
@@ -179,9 +190,14 @@ def get_currency_preferences(request):
                 'show_usd_on_reports': business_details.show_usd_on_reports,
                 'last_updated': business_details.currency_updated_at
             }
-        })
+        }
+        
+        logger.info(f"[Currency API] ========== RESPONSE SUCCESS ==========")
+        logger.info(f"[Currency API] Response data: {response_data}")
+        return Response(response_data)
         
     except AttributeError as e:
+        logger.error(f"[Currency API] ========== ATTRIBUTE ERROR ==========")
         logger.error(f"[Currency API] AttributeError: {str(e)}", exc_info=True)
         logger.error(f"[Currency API] User object type: {type(request.user)}")
         logger.error(f"[Currency API] User attributes: {[attr for attr in dir(request.user) if not attr.startswith('_')]}")
@@ -196,17 +212,24 @@ def get_currency_preferences(request):
         except Exception as debug_e:
             logger.error(f"[Currency API] Debug error: {debug_e}")
         
-        return Response({
+        error_response = {
             'success': False,
             'error': f'Profile access error: {str(e)}'
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        }
+        logger.error(f"[Currency API] Error response: {error_response}")
+        return Response(error_response, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
     except Exception as e:
+        logger.error(f"[Currency API] ========== UNEXPECTED ERROR ==========")
         logger.error(f"[Currency API] Unexpected error: {str(e)}", exc_info=True)
         logger.error(f"[Currency API] Error type: {type(e).__name__}")
-        return Response({
+        
+        error_response = {
             'success': False,
             'error': f'Server error: {str(e)}'
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        }
+        logger.error(f"[Currency API] Error response: {error_response}")
+        return Response(error_response, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['PUT'])
