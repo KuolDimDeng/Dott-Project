@@ -8,7 +8,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.utils import timezone
 from django.db import transaction
-from users.models import Business, BusinessDetails
+from users.models import Business, BusinessDetails, UserProfile
 from currency.currency_data import get_currency_list, get_currency_info
 from currency.exchange_rate_service import exchange_rate_service
 from decimal import Decimal
@@ -46,24 +46,37 @@ def get_currency_preferences(request):
     try:
         user = request.user
         logger.info(f"[Currency API] User ID: {user.id}, Email: {user.email}")
-        logger.info(f"[Currency API] Checking for user.profile...")
+        logger.info(f"[Currency API] User type: {type(user)}")
+        logger.info(f"[Currency API] User class: {user.__class__.__name__}")
         
-        # Check if user has profile
-        if not hasattr(user, 'profile'):
-            logger.error(f"[Currency API] User {user.email} has no profile")
-            return Response({
-                'success': False,
-                'error': 'User profile not found'
-            }, status=status.HTTP_400_BAD_REQUEST)
+        # Try different ways to get the business
+        business = None
+        business_id = None
         
-        # Check if profile has business
-        profile = user.profile
-        logger.info(f"[Currency API] Profile found: {profile}")
-        logger.info(f"[Currency API] Profile business_id: {getattr(profile, 'business_id', None)}")
+        # Method 1: Check if user has business_id directly
+        if hasattr(user, 'business_id') and user.business_id:
+            business_id = user.business_id
+            logger.info(f"[Currency API] Found business_id on user: {business_id}")
         
-        # Use business_id to get business
-        if not profile.business_id:
-            logger.error(f"[Currency API] Profile has no business_id")
+        # Method 2: Check if user has tenant_id (might be the same as business_id)
+        elif hasattr(user, 'tenant_id') and user.tenant_id:
+            business_id = user.tenant_id
+            logger.info(f"[Currency API] Using tenant_id as business_id: {business_id}")
+        
+        # Method 3: Try to get profile
+        else:
+            try:
+                profile = UserProfile.objects.filter(user=user).first()
+                if profile and profile.business_id:
+                    business_id = profile.business_id
+                    logger.info(f"[Currency API] Found business_id via UserProfile query: {business_id}")
+                else:
+                    logger.error(f"[Currency API] No profile found for user {user.email}")
+            except Exception as e:
+                logger.error(f"[Currency API] Error getting profile: {e}")
+        
+        if not business_id:
+            logger.error(f"[Currency API] No business_id found for user {user.email}")
             return Response({
                 'success': False,
                 'error': 'No business associated with user'
@@ -71,10 +84,10 @@ def get_currency_preferences(request):
         
         # Get business using the business_id
         try:
-            business = Business.objects.get(id=profile.business_id)
+            business = Business.objects.get(id=business_id)
             logger.info(f"[Currency API] Business found: {business.name} (ID: {business.id})")
         except Business.DoesNotExist:
-            logger.error(f"[Currency API] Business with ID {profile.business_id} not found")
+            logger.error(f"[Currency API] Business with ID {business_id} not found")
             return Response({
                 'success': False,
                 'error': 'Business not found'
@@ -202,14 +215,25 @@ def update_currency_preferences(request):
     """Update business currency preferences"""
     try:
         user = request.user
-        # Get business using business_id from profile
-        if not hasattr(user, 'profile') or not user.profile.business_id:
+        # Get business_id using the same approach as above
+        business_id = None
+        
+        if hasattr(user, 'business_id') and user.business_id:
+            business_id = user.business_id
+        elif hasattr(user, 'tenant_id') and user.tenant_id:
+            business_id = user.tenant_id
+        else:
+            profile = UserProfile.objects.filter(user=user).first()
+            if profile and profile.business_id:
+                business_id = profile.business_id
+        
+        if not business_id:
             return Response({
                 'success': False,
                 'error': 'No business associated with user'
             }, status=status.HTTP_400_BAD_REQUEST)
         
-        business = Business.objects.get(id=user.profile.business_id)
+        business = Business.objects.get(id=business_id)
         
         if not business:
             return Response({

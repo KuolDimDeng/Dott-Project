@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { CurrencyDollarIcon } from '@heroicons/react/24/outline';
 import { getCurrencyInfo } from '@/utils/currencyFormatter';
 
 const CurrencyIndicator = () => {
@@ -38,7 +37,6 @@ const CurrencyIndicator = () => {
   if (loading) {
     return (
       <div className="flex items-center text-white/70 text-base">
-        <CurrencyDollarIcon className="h-6 w-6 mr-2" />
         <span>...</span>
       </div>
     );
@@ -49,7 +47,6 @@ const CurrencyIndicator = () => {
       className="flex items-center text-white/90 text-base hover:text-white cursor-default"
       title={`Business Currency: ${currencyData.name}`}
     >
-      <CurrencyDollarIcon className="h-6 w-6 mr-2" />
       <span className="font-medium">{currencyData.code}</span>
     </div>
   );
