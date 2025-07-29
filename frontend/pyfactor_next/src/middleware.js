@@ -7,6 +7,34 @@ export async function middleware(request) {
   const url = new URL(request.url);
   const pathname = url.pathname;
   const userAgent = request.headers.get('user-agent') || '';
+  const hostname = request.headers.get('host') || '';
+  
+  // Subdomain routing logic
+  const isAppSubdomain = hostname.startsWith('app.');
+  const isProduction = process.env.NODE_ENV === 'production';
+  
+  // Define paths that should be on app subdomain
+  const appPaths = ['/dashboard', '/settings', '/hr', '/sales', '/inventory', '/pos', '/jobs'];
+  const isAppPath = appPaths.some(path => pathname.startsWith(path)) || pathname.includes('/dashboard');
+  
+  // Define paths that should be on marketing domain
+  const marketingPaths = ['/', '/signin', '/signup', '/pricing', '/features', '/about', '/contact'];
+  const isMarketingPath = marketingPaths.some(path => pathname === path || pathname.startsWith('/auth'));
+  
+  // Redirect logic for production only
+  if (isProduction) {
+    // If on marketing domain but accessing app path, redirect to app subdomain
+    if (!isAppSubdomain && isAppPath) {
+      const appUrl = `https://app.dottapps.com${pathname}${url.search}`;
+      return NextResponse.redirect(appUrl);
+    }
+    
+    // If on app subdomain but accessing marketing path, redirect to marketing domain
+    if (isAppSubdomain && isMarketingPath && pathname !== '/auth/callback') {
+      const marketingUrl = `https://dottapps.com${pathname}${url.search}`;
+      return NextResponse.redirect(marketingUrl);
+    }
+  }
   
   // Mobile detection
   const isMobile = /iPhone|iPad|iPod|Android|webOS|BlackBerry|Windows Phone/i.test(userAgent);

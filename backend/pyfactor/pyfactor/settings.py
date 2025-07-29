@@ -335,6 +335,7 @@ CORS_ALLOWED_ORIGINS = [
     # Production - Dott domains
     'https://dottapps.com',
     'https://www.dottapps.com',
+    'https://app.dottapps.com',
     'https://api.dottapps.com',
     # Sentry domains for error tracking
     'https://sentry.io',
@@ -456,6 +457,7 @@ CSRF_TRUSTED_ORIGINS = [
     # Production - Dott domains
     "https://dottapps.com",
     "https://www.dottapps.com",
+    "https://app.dottapps.com",
     "https://api.dottapps.com",
     # Cloudflare domains
     "https://*.dottapps.com",
@@ -602,9 +604,14 @@ CSRF_COOKIE_SAMESITE = 'Lax'  # Keep CSRF as Lax for security
 
 # SESSION_ENGINE removed - using custom session_manager app
 
-# Let cookies default to current domain for better compatibility
-SESSION_COOKIE_DOMAIN = None
-CSRF_COOKIE_DOMAIN = None
+# Configure cookies for cross-subdomain access in production
+if os.getenv('ENVIRONMENT') == 'production':
+    SESSION_COOKIE_DOMAIN = '.dottapps.com'
+    CSRF_COOKIE_DOMAIN = '.dottapps.com'
+else:
+    # Let cookies default to current domain for development
+    SESSION_COOKIE_DOMAIN = None
+    CSRF_COOKIE_DOMAIN = None
 
 FILE_UPLOAD_HANDLERS = [
     'django.core.files.uploadhandler.MemoryFileUploadHandler',
@@ -797,7 +804,7 @@ SESSION_COOKIE_NAME = 'session_token'
 SESSION_COOKIE_AGE = SESSION_TTL
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'  # Changed back to Lax for better compatibility
-SESSION_COOKIE_DOMAIN = None  # Let it default to current domain for better compatibility
+# SESSION_COOKIE_DOMAIN is set above based on environment
 
 # Check if we're running in ASGI mode
 IS_ASGI = any(arg in sys.argv for arg in ['daphne', '--async', 'runserver --async'])
