@@ -14,7 +14,7 @@ const SuppliesManagement = () => {
       message: '',
       severity: 'info',
     },
-    dialogOpen: false,
+    showAddForm: false,
     deleteDialogOpen: false,
     itemToDelete: null,
     currentSupply: {
@@ -53,10 +53,12 @@ const SuppliesManagement = () => {
   };
 
   const fetchSupplies = async () => {
+    console.log('🎯 [SuppliesManagement] === FETCH MATERIALS START ===');
     setState(prev => ({ ...prev, isLoading: true, error: null }));
     
     try {
       // Fetch materials (supplies)
+      console.log('Calling materialsService.getMaterials...');
       const response = await materialsService.getMaterials({
         is_active: true
       }, {
@@ -64,7 +66,10 @@ const SuppliesManagement = () => {
         notify: false
       });
       
+      console.log('Materials response:', response);
       const supplies = Array.isArray(response) ? response : (response.results || []);
+      console.log('Processed supplies:', supplies);
+      console.log('Number of supplies:', supplies.length);
       
       setState(prev => ({
         ...prev,
@@ -73,6 +78,8 @@ const SuppliesManagement = () => {
         error: null
       }));
     } catch (error) {
+      console.error('❌ [SuppliesManagement] Fetch failed:', error);
+      console.error('Error details:', error.response?.data || error.message);
       logger.error('Error fetching supplies:', error);
       
       setState(prev => ({
@@ -83,6 +90,8 @@ const SuppliesManagement = () => {
       }));
       showSnackbar('Failed to load supplies and materials', 'error');
     }
+    
+    console.log('🎯 [SuppliesManagement] === FETCH MATERIALS END ===');
   };
 
   useEffect(() => {
@@ -92,7 +101,7 @@ const SuppliesManagement = () => {
   const handleAddSupply = () => {
     setState(prev => ({
       ...prev,
-      dialogOpen: true,
+      showAddForm: true,
       currentSupply: {
         name: '',
         sku: '',
@@ -111,7 +120,7 @@ const SuppliesManagement = () => {
   const handleEditSupply = (supply) => {
     setState(prev => ({
       ...prev,
-      dialogOpen: true,
+      showAddForm: true,
       currentSupply: { ...supply }
     }));
   };
@@ -145,21 +154,48 @@ const SuppliesManagement = () => {
   const handleSave = async () => {
     const { currentSupply } = state;
     
+    console.log('🎯 [SuppliesManagement] === SAVE MATERIAL START ===');
+    console.log('Material data:', currentSupply);
+    
     try {
+      let response;
       if (currentSupply.id) {
-        await materialsService.updateMaterial(currentSupply.id, currentSupply);
+        console.log('Updating existing material with ID:', currentSupply.id);
+        response = await materialsService.updateMaterial(currentSupply.id, currentSupply);
+        console.log('Update response:', response);
         showSnackbar('Supply updated successfully', 'success');
       } else {
-        await materialsService.createMaterial(currentSupply);
+        console.log('Creating new material');
+        response = await materialsService.createMaterial(currentSupply);
+        console.log('Create response:', response);
         showSnackbar('Supply created successfully', 'success');
       }
       
-      setState(prev => ({ ...prev, dialogOpen: false }));
+      setState(prev => ({ 
+        ...prev, 
+        showAddForm: false,
+        currentSupply: {
+          name: '',
+          sku: '',
+          description: '',
+          quantity_in_stock: 0,
+          reorder_level: 0,
+          unit_cost: 0,
+          material_type: 'consumable',
+          unit: 'unit',
+          markup_percentage: 0,
+          is_billable: true,
+        }
+      }));
       fetchSupplies();
     } catch (error) {
+      console.error('❌ [SuppliesManagement] Save failed:', error);
+      console.error('Error details:', error.response?.data || error.message);
       logger.error('Error saving supply:', error);
-      showSnackbar('Failed to save supply', 'error');
+      showSnackbar('Failed to save supply: ' + (error.response?.data?.detail || error.message), 'error');
     }
+    
+    console.log('🎯 [SuppliesManagement] === SAVE MATERIAL END ===');
   };
 
   const handleFieldChange = (field, value) => {
@@ -200,7 +236,7 @@ const SuppliesManagement = () => {
     return colorMap[type] || 'bg-gray-100 text-gray-800';
   };
 
-  const { supplies, isLoading, error, dialogOpen, deleteDialogOpen, currentSupply } = state;
+  const { supplies, isLoading, error, showAddForm, deleteDialogOpen, currentSupply } = state;
 
   if (isLoading) {
     return (
@@ -247,7 +283,195 @@ const SuppliesManagement = () => {
           </div>
         )}
 
-        {supplies.length === 0 ? (
+        {/* Inline Add/Edit Form */}
+        {showAddForm && (
+          <div className="mb-6 p-6 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-medium text-gray-900">
+                {currentSupply.id ? 'Edit Supply' : 'Add New Supply'}
+              </h3>
+              <button
+                onClick={() => setState(prev => ({ ...prev, showAddForm: false }))}
+                className="text-gray-400 hover:text-gray-500"
+              >
+                <CloseIcon className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Supply Name *
+                </label>
+                <input
+                  type="text"
+                  value={currentSupply.name}
+                  onChange={(e) => handleFieldChange('name', e.target.value)}
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Material Type *
+                  </label>
+                  <select
+                    value={currentSupply.material_type}
+                    onChange={(e) => handleFieldChange('material_type', e.target.value)}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    required
+                  >
+                    <option value="raw_material">Raw Material</option>
+                    <option value="consumable">Consumable Supply</option>
+                    <option value="tool">Tool/Equipment</option>
+                    <option value="part">Part/Component</option>
+                    <option value="packaging">Packaging Material</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    SKU
+                  </label>
+                  <input
+                    type="text"
+                    value={currentSupply.sku}
+                    onChange={(e) => handleFieldChange('sku', e.target.value)}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    placeholder="Auto-generated if empty"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Current Stock
+                  </label>
+                  <input
+                    type="number"
+                    value={currentSupply.quantity_in_stock}
+                    onChange={(e) => handleFieldChange('quantity_in_stock', parseInt(e.target.value) || 0)}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    min="0"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Unit
+                  </label>
+                  <input
+                    type="text"
+                    value={currentSupply.unit}
+                    onChange={(e) => handleFieldChange('unit', e.target.value)}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    placeholder="e.g., units, lbs, kg"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Reorder Level
+                  </label>
+                  <input
+                    type="number"
+                    value={currentSupply.reorder_level}
+                    onChange={(e) => handleFieldChange('reorder_level', parseInt(e.target.value) || 0)}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    min="0"
+                    placeholder="Min quantity alert"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Description
+                </label>
+                <textarea
+                  value={currentSupply.description}
+                  onChange={(e) => handleFieldChange('description', e.target.value)}
+                  rows={3}
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Unit Cost ($)
+                </label>
+                <input
+                  type="number"
+                  value={currentSupply.unit_cost}
+                  onChange={(e) => handleFieldChange('unit_cost', parseFloat(e.target.value) || 0)}
+                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+
+              <div className="border-t pt-4">
+                <h4 className="text-sm font-medium text-gray-900 mb-3">Billing Settings</h4>
+                
+                <div className="flex items-center mb-3">
+                  <input
+                    type="checkbox"
+                    id="is_billable"
+                    checked={currentSupply.is_billable}
+                    onChange={(e) => handleFieldChange('is_billable', e.target.checked)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="is_billable" className="ml-2 block text-sm text-gray-700">
+                    This supply can be billed to customers
+                  </label>
+                </div>
+
+                {currentSupply.is_billable && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Default Markup Percentage (%)
+                    </label>
+                    <div className="mt-1 flex items-center gap-3">
+                      <input
+                        type="number"
+                        value={currentSupply.markup_percentage}
+                        onChange={(e) => handleFieldChange('markup_percentage', parseFloat(e.target.value) || 0)}
+                        className="block w-32 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                        min="0"
+                        step="1"
+                      />
+                      <span className="text-sm text-gray-500">
+                        Selling price: ${calculateSellingPrice(currentSupply.unit_cost, currentSupply.markup_percentage).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => setState(prev => ({ ...prev, showAddForm: false }))}
+                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={!currentSupply.name}
+                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {currentSupply.id ? 'Update Supply' : 'Add Supply'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {supplies.length === 0 && !showAddForm ? (
           <div className="text-center py-12">
             <WrenchScrewdriverIcon className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-2 text-sm font-medium text-gray-900">No supplies found</h3>
@@ -369,198 +593,6 @@ const SuppliesManagement = () => {
           </div>
         )}
       </div>
-
-      {/* Add/Edit Dialog */}
-      {dialogOpen && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-medium text-gray-900">
-                  {currentSupply.id ? 'Edit Supply' : 'Add New Supply'}
-                </h3>
-                <button
-                  onClick={() => setState(prev => ({ ...prev, dialogOpen: false }))}
-                  className="text-gray-400 hover:text-gray-500"
-                >
-                  <CloseIcon className="h-6 w-6" />
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Supply Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={currentSupply.name}
-                    onChange={(e) => handleFieldChange('name', e.target.value)}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                    required
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Material Type *
-                    </label>
-                    <select
-                      value={currentSupply.material_type}
-                      onChange={(e) => handleFieldChange('material_type', e.target.value)}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                      required
-                    >
-                      <option value="raw_material">Raw Material</option>
-                      <option value="consumable">Consumable Supply</option>
-                      <option value="tool">Tool/Equipment</option>
-                      <option value="part">Part/Component</option>
-                      <option value="packaging">Packaging Material</option>
-                      <option value="other">Other</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      SKU
-                    </label>
-                    <input
-                      type="text"
-                      value={currentSupply.sku}
-                      onChange={(e) => handleFieldChange('sku', e.target.value)}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                      placeholder="Auto-generated if empty"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Current Stock
-                    </label>
-                    <input
-                      type="number"
-                      value={currentSupply.quantity_in_stock}
-                      onChange={(e) => handleFieldChange('quantity_in_stock', parseInt(e.target.value) || 0)}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                      min="0"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Unit
-                    </label>
-                    <input
-                      type="text"
-                      value={currentSupply.unit}
-                      onChange={(e) => handleFieldChange('unit', e.target.value)}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                      placeholder="e.g., units, lbs, kg"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Reorder Level
-                    </label>
-                    <input
-                      type="number"
-                      value={currentSupply.reorder_level}
-                      onChange={(e) => handleFieldChange('reorder_level', parseInt(e.target.value) || 0)}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                      min="0"
-                      placeholder="Min quantity alert"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Description
-                  </label>
-                  <textarea
-                    value={currentSupply.description}
-                    onChange={(e) => handleFieldChange('description', e.target.value)}
-                    rows={3}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Unit Cost ($)
-                  </label>
-                  <input
-                    type="number"
-                    value={currentSupply.unit_cost}
-                    onChange={(e) => handleFieldChange('unit_cost', parseFloat(e.target.value) || 0)}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                    min="0"
-                    step="0.01"
-                  />
-                </div>
-
-                <div className="border-t pt-4">
-                  <h4 className="text-sm font-medium text-gray-900 mb-3">Billing Settings</h4>
-                  
-                  <div className="flex items-center mb-3">
-                    <input
-                      type="checkbox"
-                      id="is_billable"
-                      checked={currentSupply.is_billable}
-                      onChange={(e) => handleFieldChange('is_billable', e.target.checked)}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor="is_billable" className="ml-2 block text-sm text-gray-700">
-                      This supply can be billed to customers
-                    </label>
-                  </div>
-
-                  {currentSupply.is_billable && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">
-                        Default Markup Percentage (%)
-                      </label>
-                      <div className="mt-1 flex items-center gap-3">
-                        <input
-                          type="number"
-                          value={currentSupply.markup_percentage}
-                          onChange={(e) => handleFieldChange('markup_percentage', parseFloat(e.target.value) || 0)}
-                          className="block w-32 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                          min="0"
-                          step="1"
-                        />
-                        <span className="text-sm text-gray-500">
-                          Selling price: ${calculateSellingPrice(currentSupply.unit_cost, currentSupply.markup_percentage).toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="mt-6 flex justify-end gap-3">
-                <button
-                  onClick={() => setState(prev => ({ ...prev, dialogOpen: false }))}
-                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSave}
-                  disabled={!currentSupply.name}
-                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {currentSupply.id ? 'Update Supply' : 'Add Supply'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Delete Confirmation Dialog */}
       {deleteDialogOpen && (
