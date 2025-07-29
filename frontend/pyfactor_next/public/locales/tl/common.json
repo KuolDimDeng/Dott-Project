@@ -31,37 +31,37 @@
   "navSignIn": "MAG-SIGN IN",
   "getStarted": "Magsimula",
   "pricing": {
-    "eyebrow": "Simple at Transparent na Presyo",
-    "heading": "Piliin ang Tamang Plano para sa Iyong Negosyo",
-    "subheading": "Walang nakatagong bayad. Walang credit card na kailangan para sa Basic plan. Magkansela anumang oras.",
+    "eyebrow": "Simple, Transparent na Presyo",
+    "heading": "Pumili ng Tamang Plan para sa Inyong Business",
+    "subheading": "Walang nakatagong bayad. Walang credit card na kailangan para sa Basic plan. Cancel anumang oras.",
     "billing": {
       "monthly": "Buwanang",
       "sixMonths": "6 na Buwan",
-      "annual": "Taunang",
-      "popular": "POPULAR",
-      "save20": "MAKATIPID 20%"
+      "annual": "Taunan",
+      "popular": "SIKAT",
+      "save20": "MAKATIPID NG 20%"
     },
     "period": {
       "month": "/buwan",
       "sixMonths": "/6 na buwan",
       "year": "/taon"
     },
-    "mostPopular": "PINAKAPOPULAR",
+    "mostPopular": "PINAKASIKAT",
     "plans": {
       "basic": {
         "name": "Basic",
         "description": "Perpekto para sa pagsisimula",
-        "cta": "Magsimula Nang Libre"
+        "cta": "Simulan Nang Libre"
       },
       "professional": {
         "name": "Professional",
-        "description": "Para sa lumalaking negosyo na nangangailangan ng higit pa",
+        "description": "Para sa lumalaking business na kailangan ng higit pa",
         "cta": "Kunin ang Professional"
       },
       "enterprise": {
         "name": "Enterprise",
-        "description": "Walang limitasyon para sa malalaking organisasyon",
-        "cta": "Magsimula ng Enterprise"
+        "description": "Walang limitasyon na scale para sa malalaking organisasyon",
+        "cta": "Simulan ang Enterprise"
       }
     }
   },
@@ -216,6 +216,42 @@
         "title": "Transport Operators",
         "description": "Para sa mga operator ng taxi, boda boda, at tuk-tuk. Subaybayan ang araw-araw na kita, gastos sa gasolina, at mga schedule ng maintenance."
       }
+    }
+  },
+  "integrations": {
+    "title": "Mga Integration",
+    "heading": "Kumonekta sa mga tools na mahal mo",
+    "subheading": "Walang problema na mag-integrate sa mga sikat na business tools at payment platforms",
+    "availableNow": "Available Na Ngayon",
+    "comingSoon": "Malapit Na",
+    "logoAlt": "{{name}} logo",
+    "whatsapp": {
+      "name": "WhatsApp Business",
+      "description": "Magpadala ng mga invoice at resibo direkta sa mga customer"
+    },
+    "mpesa": {
+      "name": "M-Pesa",
+      "description": "Tumanggap ng mobile money payments nang walang problema"
+    },
+    "stripe": {
+      "name": "Stripe",
+      "description": "Mag-process ng card payments sa buong mundo"
+    },
+    "shopify": {
+      "name": "Shopify",
+      "description": "I-sync ang inyong e-commerce inventory"
+    },
+    "woocommerce": {
+      "name": "WooCommerce",
+      "description": "Ikonekta ang inyong WordPress store"
+    },
+    "quickbooks": {
+      "name": "QuickBooks",
+      "description": "Mag-import at mag-export ng accounting data"
+    },
+    "amazon": {
+      "name": "Amazon Seller",
+      "description": "Pamahalaan ang inyong Amazon business"
     }
   }
 }

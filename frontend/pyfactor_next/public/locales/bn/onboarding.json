@@ -1,1 +1,261 @@
-{"businessInfo":{"title":"Business Information","subtitle":"Tell us about your business","nextButton":"Continue"},"subscription":{"title":"Choose Your Plan","subtitle":"Select the best plan for your business"},"payment":{"title":"Payment Details","subtitle":"Add your payment method"},"welcome":{"title":"Welcome to Dott!","subtitle":"Your account is ready"}}
+{
+  "businessInfo": {
+    "title": "ব্যবসায়িক তথ্য",
+    "subtitle": "আপনার ব্যবসা সম্পর্কে আমাদের বলুন",
+    "step": "ধাপ ১ এর ৩",
+    "businessNameLabel": "ব্যবসার নাম",
+    "businessNamePlaceholder": "আপনার ব্যবসার নাম লিখুন",
+    "businessTypeLabel": "ব্যবসার ধরন",
+    "businessTypePlaceholder": "আপনার ব্যবসার ধরন নির্বাচন করুন",
+    "industryLabel": "শিল্প",
+    "industryPlaceholder": "আপনার শিল্প নির্বাচন করুন",
+    "legalStructureLabel": "আইনি কাঠামো",
+    "legalStructurePlaceholder": "আইনি কাঠামো নির্বাচন করুন",
+    "countryLabel": "দেশ",
+    "countryPlaceholder": "আপনার দেশ নির্বাচন করুন",
+    "stateLabel": "রাজ্য/প্রদেশ",
+    "statePlaceholder": "আপনার রাজ্য নির্বাচন করুন",
+    "dateFoundedLabel": "প্রতিষ্ঠার তারিখ",
+    "addressLabel": "ব্যবসায়িক ঠিকানা",
+    "addressPlaceholder": "আপনার ব্যবসায়িক ঠিকানা লিখুন",
+    "phoneLabel": "ব্যবসায়িক ফোন",
+    "phonePlaceholder": "+880 123 456 789",
+    "emailLabel": "ব্যবসায়িক ইমেইল",
+    "emailPlaceholder": "business@example.com",
+    "websiteLabel": "ওয়েবসাইট (ঐচ্ছিক)",
+    "websitePlaceholder": "https://www.example.com",
+    "nextButton": "সাবস্ক্রিপশনে চালিয়ে যান",
+    "skipButton": "এখনই বাদ দিন",
+    "businessTypes": {
+      "retail": "খুচরা বিক্রয়",
+      "restaurant": "রেস্তোরাঁ",
+      "services": "সেবা",
+      "manufacturing": "উৎপাদন",
+      "technology": "প্রযুক্তি",
+      "healthcare": "স্বাস্থ্যসেবা",
+      "construction": "নির্মাণ",
+      "realestate": "স্থাবর সম্পত্তি",
+      "nonprofit": "অলাভজনক",
+      "other": "অন্যান্য"
+    },
+    "legalStructures": {
+      "sole_proprietorship": "একক মালিকানা",
+      "partnership": "অংশীদারিত্ব",
+      "llc": "লিমিটেড কোম্পানি",
+      "corporation": "কর্পোরেশন",
+      "nonprofit": "অলাভজনক",
+      "other": "অন্যান্য"
+    },
+    "errors": {
+      "businessNameRequired": "ব্যবসার নাম প্রয়োজন",
+      "businessNameTooShort": "ব্যবসার নাম কমপক্ষে ২টি অক্ষরের হতে হবে",
+      "businessTypeRequired": "দয়া করে একটি ব্যবসার ধরন নির্বাচন করুন",
+      "legalStructureRequired": "দয়া করে একটি আইনি কাঠামো নির্বাচন করুন",
+      "countryRequired": "দয়া করে একটি দেশ নির্বাচন করুন",
+      "emailInvalid": "দয়া করে একটি বৈধ ইমেইল ঠিকানা লিখুন",
+      "phoneInvalid": "দয়া করে একটি বৈধ ফোন নম্বর লিখুন",
+      "websiteInvalid": "দয়া করে একটি বৈধ ওয়েবসাইট URL লিখুন"
+    },
+    "saving": "সংরক্ষণ করা হচ্ছে..."
+  },
+  "subscription": {
+    "title": "আপনার পরিকল্পনা বেছে নিন",
+    "subtitle": "আপনার ব্যবসার চাহিদার সাথে সবচেয়ে ভালো মানানসই পরিকল্পনা নির্বাচন করুন",
+    "step": "ধাপ ২ এর ৩",
+    "billingCycle": {
+      "monthly": "মাসিক",
+      "sixMonth": "৬ মাস",
+      "yearly": "বার্ষিক",
+      "popular": "জনপ্রিয়",
+      "save": "{{percentage}}% সাশ্রয় করুন"
+    },
+    "plans": {
+      "free": {
+        "name": "বেসিক",
+        "description": "শুরুর জন্য ছোট ব্যবসার জন্য নিখুঁত",
+        "price": "বিনামূল্যে",
+        "features": [
+          "আয় এবং ব্যয় ট্র্যাকিং",
+          "ইনভয়েস তৈরি এবং অনুস্মারক",
+          "Stripe এবং PayPal পেমেন্ট",
+          "মোবাইল মানি (M-Pesa ইত্যাদি)",
+          "বেসিক ইনভেন্টরি ট্র্যাকিং",
+          "বারকোড স্ক্যানিং",
+          "৩GB স্টোরেজ সীমা",
+          "শুধুমাত্র ১ জন ব্যবহারকারী"
+        ],
+        "buttonText": "বিনামূল্যে শুরু করুন"
+      },
+      "basic": {
+        "name": "বেসিক",
+        "description": "শুরুর জন্য ছোট ব্যবসার জন্য নিখুঁত",
+        "price": "বিনামূল্যে",
+        "features": [
+          "আয় এবং ব্যয় ট্র্যাকিং",
+          "ইনভয়েস তৈরি এবং অনুস্মারক",
+          "Stripe এবং PayPal পেমেন্ট",
+          "মোবাইল মানি (M-Pesa ইত্যাদি)",
+          "বেসিক ইনভেন্টরি ট্র্যাকিং",
+          "বারকোড স্ক্যানিং",
+          "৩GB স্টোরেজ সীমা",
+          "শুধুমাত্র ১ জন ব্যবহারকারী"
+        ],
+        "buttonText": "বিনামূল্যে শুরু করুন"
+      },
+      "professional": {
+        "name": "প্রফেশনাল",
+        "description": "ক্রমবর্ধমান ব্যবসার প্রয়োজনীয় সবকিছু",
+        "price": "${{price}}/{{period}}",
+        "popularBadge": "সবচেয়ে জনপ্রিয়",
+        "features": [
+          "বেসিকের সবকিছু",
+          "৩ জন পর্যন্ত ব্যবহারকারী",
+          "সীমাহীন স্টোরেজ",
+          "অগ্রাধিকার সহায়তা",
+          "সকল বৈশিষ্ট্য অন্তর্ভুক্ত",
+          "৬ মাসে {{discount}}% ছাড়",
+          "বার্ষিক {{yearlyDiscount}}% ছাড়"
+        ],
+        "buttonText": "প্রফেশনাল বেছে নিন"
+      },
+      "enterprise": {
+        "name": "এন্টারপ্রাইজ",
+        "description": "উচ্চাভিলাষী সংস্থার জন্য সীমাহীন স্কেল",
+        "price": "${{price}}/{{period}}",
+        "premiumBadge": "প্রিমিয়াম",
+        "features": [
+          "প্রফেশনালের সবকিছু",
+          "সীমাহীন ব্যবহারকারী",
+          "কাস্টম অনবোর্ডিং",
+          "নিবেদিত সহায়তা",
+          "সকল বৈশিষ্ট্য অন্তর্ভুক্ত",
+          "৬ মাসে {{discount}}% ছাড়",
+          "বার্ষিক {{yearlyDiscount}}% ছাড়"
+        ],
+        "buttonText": "এন্টারপ্রাইজ বেছে নিন"
+      }
+    },
+    "regionalDiscount": {
+      "badge": "সব পরিকল্পনায় {{percentage}}% ছাড়!",
+      "description": "{{country}}-এর ব্যবসার জন্য বিশেষ মূল্য",
+      "percentOff": "{{percentage}}% ছাড়",
+      "yourRegion": "আপনার অঞ্চল"
+    },
+    "paymentMethods": {
+      "mpesa": {
+        "title": "M-Pesa পেমেন্ট উপলব্ধ!",
+        "description": "আপনার সাবস্ক্রিপশনের জন্য মোবাইল মানি দিয়ে সুবিধাজনকভাবে পেমেন্ট করুন",
+        "payInCurrency": "{{currency}}-তে পেমেন্ট করুন"
+      }
+    },
+    "savings": {
+      "sixMonth": "${{amount}} সাশ্রয় (${{monthly}}/মাস)",
+      "yearly": "বছরে ${{amount}} সাশ্রয়"
+    },
+    "backButton": "ব্যবসায়িক তথ্যে ফিরে যান",
+    "processing": "প্রক্রিয়াকরণ...",
+    "note": "* আঞ্চলিক মূল্য উপলব্ধ। আপনার অবস্থানের উপর ভিত্তি করে মূল্য স্বয়ংক্রিয়ভাবে সমন্বিত।"
+  },
+  "payment": {
+    "title": "আপনার সাবস্ক্রিপশন সম্পূর্ণ করুন",
+    "subtitle": "{{plan}} পরিকল্পনা • ${{price}}/{{period}}",
+    "step": "ধাপ ৩ এর ৩",
+    "discountBadge": "{{percentage}}% ছাড়",
+    "originalPrice": "মূল: ${{price}}/{{period}}",
+    "regionalDiscountBanner": {
+      "title": "{{percentage}}% আঞ্চলিক ছাড় প্রয়োগ করা হয়েছে!",
+      "subtitle": "{{country}}-এর ব্যবসার জন্য বিশেষ মূল্য"
+    },
+    "paymentMethod": {
+      "title": "পেমেন্ট পদ্ধতি নির্বাচন করুন",
+      "card": {
+        "name": "ক্রেডিট/ডেবিট কার্ড",
+        "description": "Visa, Mastercard, Amex"
+      },
+      "mpesa": {
+        "name": "M-Pesa",
+        "description": "মোবাইল মানি",
+        "payInCurrency": "{{currency}}-তে পেমেন্ট করুন"
+      },
+      "flutterwave": {
+        "name": "ব্যাংক ট্রান্সফার",
+        "description": "ব্যাংক ট্রান্সফারের মাধ্যমে পেমেন্ট করুন"
+      },
+      "mtn": {
+        "name": "MTN মোবাইল মানি",
+        "description": "মোবাইল মানি পেমেন্ট"
+      }
+    },
+    "cardPayment": {
+      "cardholderName": "কার্ডধারীর নাম",
+      "cardholderNamePlaceholder": "রহিম উদ্দিন",
+      "cardNumber": "কার্ড নম্বর",
+      "expiryDate": "মেয়াদ উত্তীর্ণের তারিখ",
+      "cvc": "CVC",
+      "postalCode": "পোস্টাল কোড",
+      "postalCodePlaceholder": "১২৩৪"
+    },
+    "mobilePayment": {
+      "phoneNumber": "{{provider}} ফোন নম্বর",
+      "phoneNumberPlaceholder": "০১৭১২৩৪৫৬৭৮",
+      "phoneNumberHint": "আপনার নিবন্ধিত {{provider}} ফোন নম্বর লিখুন",
+      "localPrice": "{{currency}}-তে মূল্য: {{symbol}} {{amount}}",
+      "exchangeRate": "বিনিময় হার: ১ USD = {{rate}} {{currency}}",
+      "instructions": {
+        "title": "{{provider}} পেমেন্ট কীভাবে কাজ করে:",
+        "steps": [
+          "নিচে \"{{provider}} দিয়ে পেমেন্ট করুন\" ক্লিক করুন",
+          "আপনার ফোনে একটি পেমেন্ট প্রম্পট পাবেন",
+          "পেমেন্ট সম্পূর্ণ করতে আপনার {{provider}} PIN লিখুন",
+          "পেমেন্ট নিশ্চিত হলে আপনাকে রিডাইরেক্ট করা হবে"
+        ]
+      }
+    },
+    "submitButton": {
+      "card": "${{price}}/{{period}} সাবস্ক্রাইব করুন",
+      "mobile": "{{provider}} দিয়ে পেমেন্ট - {{symbol}}{{amount}}",
+      "processing": "পেমেন্ট প্রক্রিয়াকরণ..."
+    },
+    "securityBadge": "Stripe দ্বারা সুরক্ষিত",
+    "cancelNote": "আপনি যেকোনো সময় আপনার ড্যাশবোর্ড থেকে বাতিল বা পরিকল্পনা পরিবর্তন করতে পারেন।",
+    "errors": {
+      "cardholderNameRequired": "দয়া করে কার্ডধারীর নাম লিখুন",
+      "postalCodeRequired": "দয়া করে আপনার পোস্টাল কোড লিখুন",
+      "phoneRequired": "দয়া করে আপনার {{provider}} ফোন নম্বর লিখুন",
+      "businessInfoMissing": "ব্যবসায়িক তথ্য অনুপস্থিত। দয়া করে প্রথমে ব্যবসায়িক সেটআপ ধাপ সম্পূর্ণ করুন।",
+      "paymentFailed": "পেমেন্ট ব্যর্থ হয়েছে। দয়া করে আবার চেষ্টা করুন।",
+      "cardDeclined": "আপনার কার্ড প্রত্যাখ্যান করা হয়েছে। দয়া করে অন্য কার্ড ব্যবহার করুন।",
+      "insufficientFunds": "অপর্যাপ্ত অর্থ। দয়া করে আপনার ব্যালেন্স চেক করুন।",
+      "networkError": "নেটওয়ার্ক ত্রুটি। দয়া করে আপনার সংযোগ চেক করুন।"
+    },
+    "success": {
+      "title": "পেমেন্ট সফল!",
+      "message": "আপনার ড্যাশবোর্ডে রিডাইরেক্ট করা হচ্ছে...",
+      "mpesaTitle": "M-Pesa পেমেন্ট শুরু করা হয়েছে!",
+      "mpesaMessage": "M-Pesa পেমেন্ট প্রম্পটের জন্য আপনার ফোন চেক করুন",
+      "mpesaHint": "পেমেন্ট সম্পূর্ণ করতে আপনার PIN লিখুন",
+      "redirecting": "আপনার ড্যাশবোর্ডে রিডাইরেক্ট করা হচ্ছে..."
+    }
+  },
+  "completion": {
+    "title": "Dott-এ স্বাগতম!",
+    "subtitle": "আপনার অ্যাকাউন্ট সব সেট আপ হয়ে গেছে",
+    "message": "আপনি আপনার ব্যবসার অর্থ ব্যবস্থাপনা শুরু করার জন্য প্রস্তুত",
+    "dashboardButton": "ড্যাশবোর্ডে যান",
+    "setupComplete": "সেটআপ সম্পূর্ণ"
+  },
+  "errors": {
+    "sessionExpired": "আপনার সেশন মেয়াদ উত্তীর্ণ হয়েছে। দয়া করে আবার সাইন ইন করুন।",
+    "networkError": "নেটওয়ার্ক ত্রুটি। দয়া করে আপনার সংযোগ চেক করুন।",
+    "genericError": "একটি ত্রুটি ঘটেছে। দয়া করে আবার চেষ্টা করুন।",
+    "requiredField": "এই ফিল্ডটি প্রয়োজনীয়"
+  },
+  "navigation": {
+    "back": "পিছনে",
+    "next": "পরবর্তী",
+    "skip": "বাদ দিন",
+    "cancel": "বাতিল",
+    "save": "সংরক্ষণ",
+    "continue": "চালিয়ে যান"
+  }
+}

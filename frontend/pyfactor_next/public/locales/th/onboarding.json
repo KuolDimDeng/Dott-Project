@@ -1,1 +1,261 @@
-{"businessInfo":{"title":"Business Information","subtitle":"Tell us about your business","nextButton":"Continue"},"subscription":{"title":"Choose Your Plan","subtitle":"Select the best plan for your business"},"payment":{"title":"Payment Details","subtitle":"Add your payment method"},"welcome":{"title":"Welcome to Dott!","subtitle":"Your account is ready"}}
+{
+  "businessInfo": {
+    "title": "ข้อมูลธุรกิจ",
+    "subtitle": "บอกเราเกี่ยวกับธุรกิจของคุณ",
+    "step": "ขั้นตอนที่ 1 จาก 3",
+    "businessNameLabel": "ชื่อธุรกิจ",
+    "businessNamePlaceholder": "ใส่ชื่อธุรกิจของคุณ",
+    "businessTypeLabel": "ประเภทธุรกิจ",
+    "businessTypePlaceholder": "เลือกประเภทธุรกิจของคุณ",
+    "industryLabel": "อุตสาหกรรม",
+    "industryPlaceholder": "เลือกอุตสาหกรรมของคุณ",
+    "legalStructureLabel": "โครงสร้างทางกฎหมาย",
+    "legalStructurePlaceholder": "เลือกโครงสร้างทางกฎหมาย",
+    "countryLabel": "ประเทศ",
+    "countryPlaceholder": "เลือกประเทศของคุณ",
+    "stateLabel": "รัฐ/จังหวัด",
+    "statePlaceholder": "เลือกรัฐของคุณ",
+    "dateFoundedLabel": "วันที่ก่อตั้ง",
+    "addressLabel": "ที่อยู่ธุรกิจ",
+    "addressPlaceholder": "ใส่ที่อยู่ธุรกิจของคุณ",
+    "phoneLabel": "โทรศัพท์ธุรกิจ",
+    "phonePlaceholder": "+66 123 456 789",
+    "emailLabel": "อีเมลธุรกิจ",
+    "emailPlaceholder": "business@example.com",
+    "websiteLabel": "เว็บไซต์ (ไม่บังคับ)",
+    "websitePlaceholder": "https://www.example.com",
+    "nextButton": "ดำเนินการต่อไปยังการสมัครสมาชิก",
+    "skipButton": "ข้ามไปก่อน",
+    "businessTypes": {
+      "retail": "ค้าปลีก",
+      "restaurant": "ร้านอาหาร",
+      "services": "บริการ",
+      "manufacturing": "การผลิต",
+      "technology": "เทคโนโลยี",
+      "healthcare": "การแพทย์",
+      "construction": "การก่อสร้าง",
+      "realestate": "อสังหาริมทรัพย์",
+      "nonprofit": "องค์กรไม่แสวงผลกำไร",
+      "other": "อื่นๆ"
+    },
+    "legalStructures": {
+      "sole_proprietorship": "เจ้าของเดียว",
+      "partnership": "ห้างหุ้นส่วน",
+      "llc": "บริษัทจำกัด",
+      "corporation": "บริษัทมหาชน",
+      "nonprofit": "องค์กรไม่แสวงผลกำไร",
+      "other": "อื่นๆ"
+    },
+    "errors": {
+      "businessNameRequired": "จำเป็นต้องใส่ชื่อธุรกิจ",
+      "businessNameTooShort": "ชื่อธุรกิจต้องมีอย่างน้อย 2 ตัวอักษร",
+      "businessTypeRequired": "กรุณาเลือกประเภทธุรกิจ",
+      "legalStructureRequired": "กรุณาเลือกโครงสร้างทางกฎหมาย",
+      "countryRequired": "กรุณาเลือกประเทศ",
+      "emailInvalid": "กรุณาใส่ที่อยู่อีเมลที่ถูกต้อง",
+      "phoneInvalid": "กรุณาใส่หมายเลขโทรศัพท์ที่ถูกต้อง",
+      "websiteInvalid": "กรุณาใส่ URL เว็บไซต์ที่ถูกต้อง"
+    },
+    "saving": "กำลังบันทึก..."
+  },
+  "subscription": {
+    "title": "เลือกแผนของคุณ",
+    "subtitle": "เลือกแผนที่เหมาะสมกับความต้องการของธุรกิจคุณ",
+    "step": "ขั้นตอนที่ 2 จาก 3",
+    "billingCycle": {
+      "monthly": "รายเดือน",
+      "sixMonth": "6 เดือน",
+      "yearly": "รายปี",
+      "popular": "ยอดนิยม",
+      "save": "ประหยัด {{percentage}}%"
+    },
+    "plans": {
+      "free": {
+        "name": "Basic",
+        "description": "เหมาะสำหรับธุรกิจเล็กที่เพิ่งเริ่มต้น",
+        "price": "ฟรี",
+        "features": [
+          "ติดตามรายได้และรายจ่าย",
+          "สร้างใบแจ้งหนี้และการแจ้งเตือน",
+          "การชำระเงิน Stripe และ PayPal",
+          "Mobile money (M-Pesa ฯลฯ)",
+          "การติดตามสินค้าคงคลังพื้นฐาน",
+          "การสแกนบาร์โค้ด",
+          "ขีดจำกัดพื้นที่เก็บข้อมูล 3GB",
+          "ผู้ใช้เพียง 1 คน"
+        ],
+        "buttonText": "เริ่มฟรี"
+      },
+      "basic": {
+        "name": "Basic",
+        "description": "เหมาะสำหรับธุรกิจเล็กที่เพิ่งเริ่มต้น",
+        "price": "ฟรี",
+        "features": [
+          "ติดตามรายได้และรายจ่าย",
+          "สร้างใบแจ้งหนี้และการแจ้งเตือน",
+          "การชำระเงิน Stripe และ PayPal",
+          "Mobile money (M-Pesa ฯลฯ)",
+          "การติดตามสินค้าคงคลังพื้นฐาน",
+          "การสแกนบาร์โค้ด",
+          "ขีดจำกัดพื้นที่เก็บข้อมูล 3GB",
+          "ผู้ใช้เพียง 1 คน"
+        ],
+        "buttonText": "เริ่มฟรี"
+      },
+      "professional": {
+        "name": "Professional",
+        "description": "ทุกสิ่งที่ธุรกิจที่กำลังเติบโตต้องการเพื่อความเจริญรุ่งเรือง",
+        "price": "${{price}}/{{period}}",
+        "popularBadge": "ยอดนิยมที่สุด",
+        "features": [
+          "ทุกอย่างใน Basic",
+          "ผู้ใช้ได้ถึง 3 คน",
+          "พื้นที่เก็บข้อมูลไม่จำกัด",
+          "การสนับสนุนลำดับความสำคัญ",
+          "คุณสมบัติทั้งหมดรวมอยู่ด้วย",
+          "ส่วนลด {{discount}}% สำหรับ 6 เดือน",
+          "ส่วนลด {{yearlyDiscount}}% สำหรับรายปี"
+        ],
+        "buttonText": "เลือก Professional"
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "description": "ขยายไร้ขีดจำกัดสำหรับองค์กรที่มีความทะเยอทะยาน",
+        "price": "${{price}}/{{period}}",
+        "premiumBadge": "พรีเมียม",
+        "features": [
+          "ทุกอย่างใน Professional",
+          "ผู้ใช้ไม่จำกัด",
+          "การปรับแต่งเฉพาะบุคคล",
+          "การสนับสนุนเฉพาะ",
+          "คุณสมบัติทั้งหมดรวมอยู่ด้วย",
+          "ส่วนลด {{discount}}% สำหรับ 6 เดือน",
+          "ส่วนลด {{yearlyDiscount}}% สำหรับรายปี"
+        ],
+        "buttonText": "เลือก Enterprise"
+      }
+    },
+    "regionalDiscount": {
+      "badge": "ส่วนลด {{percentage}}% สำหรับทุกแผน!",
+      "description": "ราคาพิเศษสำหรับธุรกิจใน {{country}}",
+      "percentOff": "ส่วนลด {{percentage}}%",
+      "yourRegion": "ภูมิภาคของคุณ"
+    },
+    "paymentMethods": {
+      "mpesa": {
+        "title": "การชำระเงิน M-Pesa ใช้ได้!",
+        "description": "จ่ายอย่างสะดวกด้วย mobile money สำหรับการสมัครสมาชิกของคุณ",
+        "payInCurrency": "จ่ายใน {{currency}}"
+      }
+    },
+    "savings": {
+      "sixMonth": "ประหยัด ${{amount}} (${{monthly}}/เดือน)",
+      "yearly": "ประหยัด ${{amount}} ต่อปี"
+    },
+    "backButton": "กลับไปที่ข้อมูลธุรกิจ",
+    "processing": "กำลังประมวลผล...",
+    "note": "* มีราคาตามภูมิภาค ราคาจะปรับโดยอัตโนมัติตามตำแหน่งของคุณ"
+  },
+  "payment": {
+    "title": "ทำการสมัครสมาชิกให้เสร็จสิ้น",
+    "subtitle": "แผน {{plan}} • ${{price}}/{{period}}",
+    "step": "ขั้นตอนที่ 3 จาก 3",
+    "discountBadge": "ส่วนลด {{percentage}}%",
+    "originalPrice": "ราคาเดิม: ${{price}}/{{period}}",
+    "regionalDiscountBanner": {
+      "title": "ส่วนลดตามภูมิภาค {{percentage}}% ถูกใช้แล้ว!",
+      "subtitle": "ราคาพิเศษสำหรับธุรกิจใน {{country}}"
+    },
+    "paymentMethod": {
+      "title": "เลือกวิธีการชำระเงิน",
+      "card": {
+        "name": "บัตรเครดิต/เดบิต",
+        "description": "Visa, Mastercard, Amex"
+      },
+      "mpesa": {
+        "name": "M-Pesa",
+        "description": "Mobile Money",
+        "payInCurrency": "จ่ายใน {{currency}}"
+      },
+      "flutterwave": {
+        "name": "การโอนเงินผ่านธนาคาร",
+        "description": "จ่ายผ่านการโอนเงินผ่านธนาคาร"
+      },
+      "mtn": {
+        "name": "MTN Mobile Money",
+        "description": "การชำระเงิน Mobile Money"
+      }
+    },
+    "cardPayment": {
+      "cardholderName": "ชื่อผู้ถือบัตร",
+      "cardholderNamePlaceholder": "สมชาย ใจดี",
+      "cardNumber": "หมายเลขบัตร",
+      "expiryDate": "วันหมดอายุ",
+      "cvc": "CVC",
+      "postalCode": "รหัสไปรษณีย์",
+      "postalCodePlaceholder": "12345"
+    },
+    "mobilePayment": {
+      "phoneNumber": "หมายเลขโทรศัพท์ {{provider}}",
+      "phoneNumberPlaceholder": "0812345678",
+      "phoneNumberHint": "ใส่หมายเลขโทรศัพท์ {{provider}} ที่ลงทะเบียนของคุณ",
+      "localPrice": "ราคาใน {{currency}}: {{symbol}} {{amount}}",
+      "exchangeRate": "อัตราแลกเปลี่ยน: 1 USD = {{rate}} {{currency}}",
+      "instructions": {
+        "title": "วิธีการชำระเงิน {{provider}}:",
+        "steps": [
+          "คลิก \"จ่ายด้วย {{provider}}\" ด้านล่าง",
+          "คุณจะได้รับการแจ้งเตือนการชำระเงินบนโทรศัพท์ของคุณ",
+          "ใส่ PIN {{provider}} ของคุณเพื่อทำการชำระเงินให้เสร็จสิ้น",
+          "คุณจะถูกเปลี่ยนเส้นทางเมื่อการชำระเงินได้รับการยืนยัน"
+        ]
+      }
+    },
+    "submitButton": {
+      "card": "สมัครสมาชิกสำหรับ ${{price}}/{{period}}",
+      "mobile": "จ่ายด้วย {{provider}} - {{symbol}}{{amount}}",
+      "processing": "กำลังประมวลผลการชำระเงิน..."
+    },
+    "securityBadge": "ปลอดภัยโดย Stripe",
+    "cancelNote": "คุณสามารถยกเลิกหรือเปลี่ยนแผนได้ทุกเมื่อจากแดชบอร์ด",
+    "errors": {
+      "cardholderNameRequired": "กรุณาใส่ชื่อผู้ถือบัตร",
+      "postalCodeRequired": "กรุณาใส่รหัสไปรษณีย์ของคุณ",
+      "phoneRequired": "กรุณาใส่หมายเลขโทรศัพท์ {{provider}} ของคุณ",
+      "businessInfoMissing": "ข้อมูลธุรกิจหายไป กรุณาทำขั้นตอนการตั้งค่าธุรกิจให้เสร็จก่อน",
+      "paymentFailed": "การชำระเงินล้มเหลว กรุณาลองใหม่อีกครั้ง",
+      "cardDeclined": "บัตรของคุณถูกปฏิเสธ กรุณาลองใช้บัตรอื่น",
+      "insufficientFunds": "เงินไม่เพียงพอ กรุณาตรวจสอบยอดเงินของคุณ",
+      "networkError": "ข้อผิดพลาดเครือข่าย กรุณาตรวจสอบการเชื่อมต่อของคุณ"
+    },
+    "success": {
+      "title": "การชำระเงินสำเร็จ!",
+      "message": "กำลังเปลี่ยนเส้นทางไปยังแดชบอร์ดของคุณ...",
+      "mpesaTitle": "การชำระเงิน M-Pesa เริ่มต้นแล้ว!",
+      "mpesaMessage": "ตรวจสอบโทรศัพท์ของคุณสำหรับการแจ้งเตือนการชำระเงิน M-Pesa",
+      "mpesaHint": "ใส่ PIN ของคุณเพื่อทำการชำระเงินให้เสร็จสิ้น",
+      "redirecting": "กำลังเปลี่ยนเส้นทางไปยังแดชบอร์ดของคุณ..."
+    }
+  },
+  "completion": {
+    "title": "ยินดีต้อนรับสู่ Dott!",
+    "subtitle": "บัญชีของคุณตั้งค่าเรียบร้อยแล้ว",
+    "message": "คุณพร้อมที่จะเริ่มจัดการการเงินของธุรกิจแล้ว",
+    "dashboardButton": "ไปที่แดชบอร์ด",
+    "setupComplete": "การตั้งค่าเสร็จสิ้น"
+  },
+  "errors": {
+    "sessionExpired": "เซสชันของคุณหมดอายุแล้ว กรุณาเข้าสู่ระบบใหม่",
+    "networkError": "ข้อผิดพลาดเครือข่าย กรุณาตรวจสอบการเชื่อมต่อของคุณ",
+    "genericError": "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง",
+    "requiredField": "ฟิลด์นี้จำเป็น"
+  },
+  "navigation": {
+    "back": "กลับ",
+    "next": "ถัดไป",
+    "skip": "ข้าม",
+    "cancel": "ยกเลิก",
+    "save": "บันทึก",
+    "continue": "ดำเนินการต่อ"
+  }
+}

@@ -31,9 +31,9 @@
   "navSignIn": "سائن ان",
   "getStarted": "شروع کریں",
   "pricing": {
-    "eyebrow": "آسان، شفاف قیمت",
-    "heading": "اپنے کاروبار کے لیے صحیح منصوبہ چنیں",
-    "subheading": "کوئی چھپی فیس نہیں۔ بیسک پلان کے لیے کریڈٹ کارڈ کی ضرورت نہیں۔ کسی بھی وقت منسوخ کریں۔",
+    "eyebrow": "سادہ، شفاف قیمتیں",
+    "heading": "اپنے کاروبار کے لیے صحیح پلان منتخب کریں",
+    "subheading": "کوئی چھپی ہوئی فیس نہیں۔ Basic پلان کے لیے کوئی کریڈٹ کارڈ درکار نہیں۔ کسی بھی وقت منسوخ کریں۔",
     "billing": {
       "monthly": "ماہانہ",
       "sixMonths": "6 ماہ",
@@ -46,22 +46,22 @@
       "sixMonths": "/6 ماہ",
       "year": "/سال"
     },
-    "mostPopular": "سب سے مقبول",
+    "mostPopular": "سب سے زیادہ مقبول",
     "plans": {
       "basic": {
-        "name": "بیسک",
-        "description": "شروع کرنے کے لیے بہترین",
+        "name": "Basic",
+        "description": "شروعات کے لیے بہترین",
         "cta": "مفت شروع کریں"
       },
       "professional": {
-        "name": "پروفیشنل",
+        "name": "Professional",
         "description": "بڑھتے ہوئے کاروبار کے لیے جن کو زیادہ کی ضرورت ہے",
-        "cta": "پروفیشنل حاصل کریں"
+        "cta": "Professional حاصل کریں"
       },
       "enterprise": {
-        "name": "انٹرپرائز",
+        "name": "Enterprise",
         "description": "بڑی تنظیموں کے لیے لامحدود پیمانہ",
-        "cta": "انٹرپرائز شروع کریں"
+        "cta": "Enterprise شروع کریں"
       }
     }
   },
@@ -216,6 +216,42 @@
         "title": "ٹرانسپورٹ آپریٹرز",
         "description": "ٹیکسی، بوڈا بوڈا اور ٹک ٹک آپریٹرز کے لیے۔ روزانہ کی آمدنی، ایندھن کی لاگت اور مینٹیننس شیڈول کا پتہ لگائیں۔"
       }
+    }
+  },
+  "integrations": {
+    "title": "انضمام",
+    "heading": "اپنے پسندیدہ ٹولز کے ساتھ جڑیں",
+    "subheading": "مقبول کاروباری ٹولز اور ادائیگی کے پلیٹ فارمز کے ساتھ آسانی سے ضم کریں",
+    "availableNow": "ابھی دستیاب",
+    "comingSoon": "جلد آرہا",
+    "logoAlt": "{{name}} لوگو",
+    "whatsapp": {
+      "name": "WhatsApp Business",
+      "description": "گاہکوں کو براہ راست انوائسز اور رسیدیں بھیجیں"
+    },
+    "mpesa": {
+      "name": "M-Pesa",
+      "description": "آسانی سے موبائل منی پیمنٹس قبول کریں"
+    },
+    "stripe": {
+      "name": "Stripe",
+      "description": "عالمی سطح پر کارڈ پیمنٹس پروسیس کریں"
+    },
+    "shopify": {
+      "name": "Shopify",
+      "description": "اپنے ای کامرس انوینٹری کو سنک کریں"
+    },
+    "woocommerce": {
+      "name": "WooCommerce",
+      "description": "اپنا WordPress اسٹور کنکٹ کریں"
+    },
+    "quickbooks": {
+      "name": "QuickBooks",
+      "description": "اکاؤنٹنگ ڈیٹا امپورٹ اور ایکسپورٹ کریں"
+    },
+    "amazon": {
+      "name": "Amazon Seller",
+      "description": "اپنا Amazon کاروبار منظم کریں"
     }
   }
 }

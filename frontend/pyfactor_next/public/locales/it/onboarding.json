@@ -1,44 +1,261 @@
 {
   "businessInfo": {
     "title": "Informazioni Aziendali",
-    "subtitle": "Parlaci della tua azienda",
+    "subtitle": "Raccontaci della tua azienda",
     "step": "Passo 1 di 3",
     "businessNameLabel": "Nome Azienda",
     "businessNamePlaceholder": "Inserisci il nome della tua azienda",
     "businessTypeLabel": "Tipo di Azienda",
     "businessTypePlaceholder": "Seleziona il tipo di azienda",
+    "industryLabel": "Settore",
+    "industryPlaceholder": "Seleziona il settore",
+    "legalStructureLabel": "Struttura Legale",
+    "legalStructurePlaceholder": "Seleziona struttura legale",
     "countryLabel": "Paese",
     "countryPlaceholder": "Seleziona il tuo paese",
+    "stateLabel": "Stato/Provincia",
+    "statePlaceholder": "Seleziona il tuo stato",
+    "dateFoundedLabel": "Data di Fondazione",
+    "addressLabel": "Indirizzo Aziendale",
+    "addressPlaceholder": "Inserisci l'indirizzo aziendale",
+    "phoneLabel": "Telefono Aziendale",
+    "phonePlaceholder": "+39 123 456 7890",
+    "emailLabel": "Email Aziendale",
+    "emailPlaceholder": "azienda@esempio.com",
+    "websiteLabel": "Sito Web (opzionale)",
+    "websitePlaceholder": "https://www.esempio.com",
     "nextButton": "Continua all'Abbonamento",
-    "skipButton": "Salta per ora"
+    "skipButton": "Salta per ora",
+    "businessTypes": {
+      "retail": "Commercio al Dettaglio",
+      "restaurant": "Ristorante",
+      "services": "Servizi",
+      "manufacturing": "Manifatturiero",
+      "technology": "Tecnologia",
+      "healthcare": "Sanitario",
+      "construction": "Edilizia",
+      "realestate": "Immobiliare",
+      "nonprofit": "No-Profit",
+      "other": "Altro"
+    },
+    "legalStructures": {
+      "sole_proprietorship": "Ditta Individuale",
+      "partnership": "Società di Persone",
+      "llc": "SRL",
+      "corporation": "SpA",
+      "nonprofit": "No-Profit",
+      "other": "Altro"
+    },
+    "errors": {
+      "businessNameRequired": "Il nome dell'azienda è obbligatorio",
+      "businessNameTooShort": "Il nome dell'azienda deve contenere almeno 2 caratteri",
+      "businessTypeRequired": "Seleziona un tipo di azienda",
+      "legalStructureRequired": "Seleziona una struttura legale",
+      "countryRequired": "Seleziona un paese",
+      "emailInvalid": "Inserisci un indirizzo email valido",
+      "phoneInvalid": "Inserisci un numero di telefono valido",
+      "websiteInvalid": "Inserisci un URL del sito web valido"
+    },
+    "saving": "Salvataggio..."
   },
   "subscription": {
     "title": "Scegli il Tuo Piano",
-    "subtitle": "Seleziona il piano migliore per la tua azienda",
+    "subtitle": "Seleziona il piano che meglio si adatta alle esigenze della tua azienda",
     "step": "Passo 2 di 3",
-    "currentPlan": "Piano Attuale",
-    "recommended": "Consigliato",
-    "selectButton": "Seleziona Piano",
-    "selectedButton": "Piano Selezionato",
-    "continueButton": "Continua al Pagamento",
-    "skipButton": "Inizia con il piano gratuito"
+    "billingCycle": {
+      "monthly": "Mensile",
+      "sixMonth": "6 Mesi",
+      "yearly": "Annuale",
+      "popular": "POPOLARE",
+      "save": "Risparmia {{percentage}}%"
+    },
+    "plans": {
+      "free": {
+        "name": "Basic",
+        "description": "Perfetto per piccole aziende che iniziano",
+        "price": "Gratis",
+        "features": [
+          "Monitoraggio entrate e spese",
+          "Creazione fatture e promemoria",
+          "Pagamenti Stripe e PayPal",
+          "Mobile money (M-Pesa, ecc.)",
+          "Monitoraggio inventario base",
+          "Scansione codici a barre",
+          "Limite di archiviazione 3GB",
+          "Solo 1 utente"
+        ],
+        "buttonText": "Inizia Gratis"
+      },
+      "basic": {
+        "name": "Basic",
+        "description": "Perfetto per piccole aziende che iniziano",
+        "price": "Gratis",
+        "features": [
+          "Monitoraggio entrate e spese",
+          "Creazione fatture e promemoria",
+          "Pagamenti Stripe e PayPal",
+          "Mobile money (M-Pesa, ecc.)",
+          "Monitoraggio inventario base",
+          "Scansione codici a barre",
+          "Limite di archiviazione 3GB",
+          "Solo 1 utente"
+        ],
+        "buttonText": "Inizia Gratis"
+      },
+      "professional": {
+        "name": "Professional",
+        "description": "Tutto ciò di cui le aziende in crescita hanno bisogno per prosperare",
+        "price": "${{price}}/{{period}}",
+        "popularBadge": "PIÙ POPOLARE",
+        "features": [
+          "Tutto in Basic",
+          "Fino a 3 utenti",
+          "Archiviazione illimitata",
+          "Supporto prioritario",
+          "Tutte le funzionalità incluse",
+          "{{discount}}% di sconto su 6 mesi",
+          "{{yearlyDiscount}}% di sconto annuale"
+        ],
+        "buttonText": "Scegli Professional"
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "description": "Scala illimitata per organizzazioni ambiziose",
+        "price": "${{price}}/{{period}}",
+        "premiumBadge": "PREMIUM",
+        "features": [
+          "Tutto in Professional",
+          "Utenti illimitati",
+          "Onboarding personalizzato",
+          "Supporto dedicato",
+          "Tutte le funzionalità incluse",
+          "{{discount}}% di sconto su 6 mesi",
+          "{{yearlyDiscount}}% di sconto annuale"
+        ],
+        "buttonText": "Scegli Enterprise"
+      }
+    },
+    "regionalDiscount": {
+      "badge": "{{percentage}}% di sconto su tutti i piani!",
+      "description": "Prezzi speciali per aziende in {{country}}",
+      "percentOff": "{{percentage}}% di sconto",
+      "yourRegion": "la tua regione"
+    },
+    "paymentMethods": {
+      "mpesa": {
+        "title": "Pagamento M-Pesa disponibile!",
+        "description": "Paga comodamente con mobile money per il tuo abbonamento",
+        "payInCurrency": "Paga in {{currency}}"
+      }
+    },
+    "savings": {
+      "sixMonth": "Risparmia ${{amount}} (${{monthly}}/mese)",
+      "yearly": "Risparmia ${{amount}} all'anno"
+    },
+    "backButton": "Torna alle Info Aziendali",
+    "processing": "Elaborazione...",
+    "note": "* Prezzi regionali disponibili. Prezzi automaticamente adeguati in base alla tua posizione."
   },
   "payment": {
-    "title": "Dettagli di Pagamento",
-    "subtitle": "Aggiungi il tuo metodo di pagamento",
+    "title": "Completa il Tuo Abbonamento",
+    "subtitle": "Piano {{plan}} • ${{price}}/{{period}}",
     "step": "Passo 3 di 3",
-    "cardNumberLabel": "Numero Carta",
-    "expiryLabel": "Scadenza",
-    "cvcLabel": "CVC",
-    "nameLabel": "Nome sulla Carta",
-    "completeButton": "Completa Registrazione",
-    "processingButton": "Elaborazione...",
-    "skipButton": "Salta per ora"
+    "discountBadge": "{{percentage}}% SCONTO",
+    "originalPrice": "Originale: ${{price}}/{{period}}",
+    "regionalDiscountBanner": {
+      "title": "{{percentage}}% di sconto regionale applicato!",
+      "subtitle": "Prezzi speciali per aziende in {{country}}"
+    },
+    "paymentMethod": {
+      "title": "Seleziona Metodo di Pagamento",
+      "card": {
+        "name": "Carta di Credito/Debito",
+        "description": "Visa, Mastercard, Amex"
+      },
+      "mpesa": {
+        "name": "M-Pesa",
+        "description": "Mobile Money",
+        "payInCurrency": "Paga in {{currency}}"
+      },
+      "flutterwave": {
+        "name": "Bonifico Bancario",
+        "description": "Paga tramite bonifico bancario"
+      },
+      "mtn": {
+        "name": "MTN Mobile Money",
+        "description": "Pagamento Mobile Money"
+      }
+    },
+    "cardPayment": {
+      "cardholderName": "Nome Intestatario",
+      "cardholderNamePlaceholder": "Mario Rossi",
+      "cardNumber": "Numero Carta",
+      "expiryDate": "Data di Scadenza",
+      "cvc": "CVC",
+      "postalCode": "Codice Postale",
+      "postalCodePlaceholder": "12345"
+    },
+    "mobilePayment": {
+      "phoneNumber": "Numero Telefono {{provider}}",
+      "phoneNumberPlaceholder": "123456789",
+      "phoneNumberHint": "Inserisci il tuo numero di telefono registrato {{provider}}",
+      "localPrice": "Prezzo in {{currency}}: {{symbol}} {{amount}}",
+      "exchangeRate": "Tasso di cambio: 1 USD = {{rate}} {{currency}}",
+      "instructions": {
+        "title": "Come funziona il pagamento {{provider}}:",
+        "steps": [
+          "Clicca \"Paga con {{provider}}\" qui sotto",
+          "Riceverai una richiesta di pagamento sul tuo telefono",
+          "Inserisci il tuo PIN {{provider}} per completare il pagamento",
+          "Sarai reindirizzato una volta confermato il pagamento"
+        ]
+      }
+    },
+    "submitButton": {
+      "card": "Abbonati per ${{price}}/{{period}}",
+      "mobile": "Paga con {{provider}} - {{symbol}}{{amount}}",
+      "processing": "Elaborazione Pagamento..."
+    },
+    "securityBadge": "Protetto da Stripe",
+    "cancelNote": "Puoi annullare o cambiare il tuo piano in qualsiasi momento dalla dashboard.",
+    "errors": {
+      "cardholderNameRequired": "Inserisci il nome dell'intestatario",
+      "postalCodeRequired": "Inserisci il tuo codice postale",
+      "phoneRequired": "Inserisci il tuo numero di telefono {{provider}}",
+      "businessInfoMissing": "Informazioni aziendali mancanti. Completa prima il passaggio di configurazione aziendale.",
+      "paymentFailed": "Pagamento fallito. Riprova.",
+      "cardDeclined": "La tua carta è stata rifiutata. Prova con una carta diversa.",
+      "insufficientFunds": "Fondi insufficienti. Controlla il tuo saldo.",
+      "networkError": "Errore di rete. Controlla la tua connessione."
+    },
+    "success": {
+      "title": "Pagamento Riuscito!",
+      "message": "Reindirizzamento alla tua dashboard...",
+      "mpesaTitle": "Pagamento M-Pesa Avviato!",
+      "mpesaMessage": "Controlla il tuo telefono per la richiesta di pagamento M-Pesa",
+      "mpesaHint": "Inserisci il tuo PIN per completare il pagamento",
+      "redirecting": "Reindirizzamento alla tua dashboard..."
+    }
   },
-  "welcome": {
+  "completion": {
     "title": "Benvenuto in Dott!",
-    "subtitle": "Il tuo account è pronto",
-    "message": "Sei pronto per iniziare a gestire la tua azienda con Dott.",
-    "dashboardButton": "Vai alla Dashboard"
+    "subtitle": "Il tuo account è tutto configurato",
+    "message": "Sei pronto per iniziare a gestire le finanze della tua azienda",
+    "dashboardButton": "Vai alla Dashboard",
+    "setupComplete": "Configurazione Completata"
+  },
+  "errors": {
+    "sessionExpired": "La tua sessione è scaduta. Accedi di nuovo.",
+    "networkError": "Errore di rete. Controlla la tua connessione.",
+    "genericError": "Si è verificato un errore. Riprova.",
+    "requiredField": "Questo campo è obbligatorio"
+  },
+  "navigation": {
+    "back": "Indietro",
+    "next": "Avanti",
+    "skip": "Salta",
+    "cancel": "Annulla",
+    "save": "Salva",
+    "continue": "Continua"
   }
 }

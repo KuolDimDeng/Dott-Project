@@ -217,5 +217,41 @@
         "description": "Per operatori di taxi, boda boda e tuk-tuk. Monitora guadagni giornalieri, costi carburante e programmi manutenzione."
       }
     }
+  },
+  "integrations": {
+    "title": "Integrazioni",
+    "heading": "Connettiti con gli strumenti che ami",
+    "subheading": "Integra senza problemi con popolari strumenti business e piattaforme di pagamento",
+    "availableNow": "Disponibile Ora",
+    "comingSoon": "Prossimamente",
+    "logoAlt": "Logo {{name}}",
+    "whatsapp": {
+      "name": "WhatsApp Business",
+      "description": "Invia fatture e ricevute direttamente ai clienti"
+    },
+    "mpesa": {
+      "name": "M-Pesa",
+      "description": "Accetta pagamenti mobile money senza problemi"
+    },
+    "stripe": {
+      "name": "Stripe",
+      "description": "Elabora pagamenti con carta globalmente"
+    },
+    "shopify": {
+      "name": "Shopify",
+      "description": "Sincronizza il tuo inventario e-commerce"
+    },
+    "woocommerce": {
+      "name": "WooCommerce",
+      "description": "Connetti il tuo negozio WordPress"
+    },
+    "quickbooks": {
+      "name": "QuickBooks",
+      "description": "Importa ed esporta dati contabili"
+    },
+    "amazon": {
+      "name": "Amazon Seller",
+      "description": "Gestisci il tuo business Amazon"
+    }
   }
 }

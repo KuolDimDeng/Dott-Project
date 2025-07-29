@@ -217,5 +217,41 @@
         "description": "Dla operatorów taksówek, boda boda i tuk-tuk. Śledź dzienne zarobki, koszty paliwa i harmonogramy konserwacji."
       }
     }
+  },
+  "integrations": {
+    "title": "Integracje",
+    "heading": "Połącz się z narzędziami, które kochasz",
+    "subheading": "Bezproblemowo integruj z popularnymi narzędziami biznesowymi i platformami płatności",
+    "availableNow": "Dostępne Teraz",
+    "comingSoon": "Wkrótce",
+    "logoAlt": "Logo {{name}}",
+    "whatsapp": {
+      "name": "WhatsApp Business",
+      "description": "Wysyłaj faktury i paragony bezpośrednio do klientów"
+    },
+    "mpesa": {
+      "name": "M-Pesa",
+      "description": "Akceptuj płatności mobilne bezproblemowo"
+    },
+    "stripe": {
+      "name": "Stripe",
+      "description": "Przetwarzaj płatności kartą globalnie"
+    },
+    "shopify": {
+      "name": "Shopify",
+      "description": "Synchronizuj swój inwentarz e-commerce"
+    },
+    "woocommerce": {
+      "name": "WooCommerce",
+      "description": "Połącz swój sklep WordPress"
+    },
+    "quickbooks": {
+      "name": "QuickBooks",
+      "description": "Importuj i eksportuj dane księgowe"
+    },
+    "amazon": {
+      "name": "Amazon Seller",
+      "description": "Zarządzaj swoim biznesem Amazon"
+    }
   }
 }

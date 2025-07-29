@@ -1,1 +1,261 @@
-{"businessInfo":{"title":"Business Information","subtitle":"Tell us about your business","nextButton":"Continue"},"subscription":{"title":"Choose Your Plan","subtitle":"Select the best plan for your business"},"payment":{"title":"Payment Details","subtitle":"Add your payment method"},"welcome":{"title":"Welcome to Dott!","subtitle":"Your account is ready"}}
+{
+  "businessInfo": {
+    "title": "کاروباری معلومات",
+    "subtitle": "اپنے کاروبار کے بارے میں بتائیں",
+    "step": "قدم 1 از 3",
+    "businessNameLabel": "کاروبار کا نام",
+    "businessNamePlaceholder": "اپنے کاروبار کا نام درج کریں",
+    "businessTypeLabel": "کاروبار کی قسم",
+    "businessTypePlaceholder": "اپنے کاروبار کی قسم منتخب کریں",
+    "industryLabel": "صنعت",
+    "industryPlaceholder": "اپنی صنعت منتخب کریں",
+    "legalStructureLabel": "قانونی ڈھانچہ",
+    "legalStructurePlaceholder": "قانونی ڈھانچہ منتخب کریں",
+    "countryLabel": "ملک",
+    "countryPlaceholder": "اپنا ملک منتخب کریں",
+    "stateLabel": "ریاست/صوبہ",
+    "statePlaceholder": "اپنی ریاست منتخب کریں",
+    "dateFoundedLabel": "قائم کرنے کی تاریخ",
+    "addressLabel": "کاروباری پتہ",
+    "addressPlaceholder": "اپنا کاروباری پتہ درج کریں",
+    "phoneLabel": "کاروباری فون",
+    "phonePlaceholder": "+92 123 456 789",
+    "emailLabel": "کاروباری ای میل",
+    "emailPlaceholder": "business@example.com",
+    "websiteLabel": "ویب سائٹ (اختیاری)",
+    "websitePlaceholder": "https://www.example.com",
+    "nextButton": "سبسکرپشن پر جاری رکھیں",
+    "skipButton": "ابھی چھوڑیں",
+    "businessTypes": {
+      "retail": "خردہ فروشی",
+      "restaurant": "ریسٹورنٹ",
+      "services": "خدمات",
+      "manufacturing": "مینوفیکچرنگ",
+      "technology": "ٹیکنالوجی",
+      "healthcare": "صحت کی دیکھ بھال",
+      "construction": "تعمیرات",
+      "realestate": "رئیل اسٹیٹ",
+      "nonprofit": "غیر منافع بخش",
+      "other": "دیگر"
+    },
+    "legalStructures": {
+      "sole_proprietorship": "واحد ملکیت",
+      "partnership": "شراکت",
+      "llc": "محدود کمپنی",
+      "corporation": "کارپوریشن",
+      "nonprofit": "غیر منافع بخش",
+      "other": "دیگر"
+    },
+    "errors": {
+      "businessNameRequired": "کاروبار کا نام ضروری ہے",
+      "businessNameTooShort": "کاروبار کا نام کم از کم 2 حروف کا ہونا چاہیے",
+      "businessTypeRequired": "براہ کرم کاروبار کی قسم منتخب کریں",
+      "legalStructureRequired": "براہ کرم قانونی ڈھانچہ منتخب کریں",
+      "countryRequired": "براہ کرم ملک منتخب کریں",
+      "emailInvalid": "براہ کرم درست ای میل ایڈریس درج کریں",
+      "phoneInvalid": "براہ کرم درست فون نمبر درج کریں",
+      "websiteInvalid": "براہ کرم درست ویب سائٹ URL درج کریں"
+    },
+    "saving": "محفوظ کر رہا ہے..."
+  },
+  "subscription": {
+    "title": "اپنا پلان منتخب کریں",
+    "subtitle": "وہ پلان منتخب کریں جو آپ کے کاروبار کی ضروریات کے لیے سب سے بہتر ہو",
+    "step": "قدم 2 از 3",
+    "billingCycle": {
+      "monthly": "ماہانہ",
+      "sixMonth": "6 ماہ",
+      "yearly": "سالانہ",
+      "popular": "مقبول",
+      "save": "{{percentage}}% بچائیں"
+    },
+    "plans": {
+      "free": {
+        "name": "بنیادی",
+        "description": "شروعات کرنے والے چھوٹے کاروبار کے لیے بہترین",
+        "price": "مفت",
+        "features": [
+          "آمدنی اور اخراجات کی ٹریکنگ",
+          "انوائس بنانا اور یاد دہانی",
+          "Stripe اور PayPal پیمنٹس",
+          "موبائل منی (M-Pesa وغیرہ)",
+          "بنیادی انوینٹری ٹریکنگ",
+          "بارکوڈ اسکیننگ",
+          "3GB اسٹوریج حد",
+          "صرف 1 صارف"
+        ],
+        "buttonText": "مفت شروع کریں"
+      },
+      "basic": {
+        "name": "بنیادی",
+        "description": "شروعات کرنے والے چھوٹے کاروبار کے لیے بہترین",
+        "price": "مفت",
+        "features": [
+          "آمدنی اور اخراجات کی ٹریکنگ",
+          "انوائس بنانا اور یاد دہانی",
+          "Stripe اور PayPal پیمنٹس",
+          "موبائل منی (M-Pesa وغیرہ)",
+          "بنیادی انوینٹری ٹریکنگ",
+          "بارکوڈ اسکیننگ",
+          "3GB اسٹوریج حد",
+          "صرف 1 صارف"
+        ],
+        "buttonText": "مفت شروع کریں"
+      },
+      "professional": {
+        "name": "پیشہ ور",
+        "description": "بڑھتے ہوئے کاروبار کو پھلنے پھولنے کے لیے درکار ہر چیز",
+        "price": "${{price}}/{{period}}",
+        "popularBadge": "سب سے زیادہ مقبول",
+        "features": [
+          "بنیادی میں سب کچھ",
+          "3 صارفین تک",
+          "لامحدود اسٹوریج",
+          "ترجیحی سپورٹ",
+          "تمام فیچرز شامل",
+          "6 ماہ پر {{discount}}% ڈسکاؤنٹ",
+          "سالانہ {{yearlyDiscount}}% ڈسکاؤنٹ"
+        ],
+        "buttonText": "پیشہ ور منتخب کریں"
+      },
+      "enterprise": {
+        "name": "انٹرپرائز",
+        "description": "پرامن تنظیموں کے لیے لامحدود پیمانہ",
+        "price": "${{price}}/{{period}}",
+        "premiumBadge": "پریمیم",
+        "features": [
+          "پیشہ ور میں سب کچھ",
+          "لامحدود صارفین",
+          "کسٹم آن بورڈنگ",
+          "مخصوص سپورٹ",
+          "تمام فیچرز شامل",
+          "6 ماہ پر {{discount}}% ڈسکاؤنٹ",
+          "سالانہ {{yearlyDiscount}}% ڈسکاؤنٹ"
+        ],
+        "buttonText": "انٹرپرائز منتخب کریں"
+      }
+    },
+    "regionalDiscount": {
+      "badge": "تمام پلانز پر {{percentage}}% ڈسکاؤنٹ!",
+      "description": "{{country}} میں کاروبار کے لیے خاص قیمت",
+      "percentOff": "{{percentage}}% ڈسکاؤنٹ",
+      "yourRegion": "آپ کا علاقہ"
+    },
+    "paymentMethods": {
+      "mpesa": {
+        "title": "M-Pesa پیمنٹ دستیاب!",
+        "description": "اپنی سبسکرپشن کے لیے موبائل منی سے آسانی سے ادائیگی کریں",
+        "payInCurrency": "{{currency}} میں ادائیگی کریں"
+      }
+    },
+    "savings": {
+      "sixMonth": "${{amount}} بچائیں (${{monthly}}/ماہ)",
+      "yearly": "سال میں ${{amount}} بچائیں"
+    },
+    "backButton": "کاروباری معلومات پر واپس",
+    "processing": "پروسیسنگ...",
+    "note": "* علاقائی قیمتیں دستیاب۔ آپ کے مقام کی بنیاد پر قیمتیں خودکار طور پر ایڈجسٹ ہو جاتی ہیں۔"
+  },
+  "payment": {
+    "title": "اپنی سبسکرپشن مکمل کریں",
+    "subtitle": "{{plan}} پلان • ${{price}}/{{period}}",
+    "step": "قدم 3 از 3",
+    "discountBadge": "{{percentage}}% ڈسکاؤنٹ",
+    "originalPrice": "اصل: ${{price}}/{{period}}",
+    "regionalDiscountBanner": {
+      "title": "{{percentage}}% علاقائی ڈسکاؤنٹ لاگو!",
+      "subtitle": "{{country}} میں کاروبار کے لیے خاص قیمت"
+    },
+    "paymentMethod": {
+      "title": "ادائیگی کا طریقہ منتخب کریں",
+      "card": {
+        "name": "کریڈٹ/ڈیبٹ کارڈ",
+        "description": "Visa، Mastercard، Amex"
+      },
+      "mpesa": {
+        "name": "M-Pesa",
+        "description": "موبائل منی",
+        "payInCurrency": "{{currency}} میں ادائیگی کریں"
+      },
+      "flutterwave": {
+        "name": "بینک ٹرانسفر",
+        "description": "بینک ٹرانسفر کے ذریعے ادائیگی کریں"
+      },
+      "mtn": {
+        "name": "MTN موبائل منی",
+        "description": "موبائل منی ادائیگی"
+      }
+    },
+    "cardPayment": {
+      "cardholderName": "کارڈ ہولڈر کا نام",
+      "cardholderNamePlaceholder": "احمد علی",
+      "cardNumber": "کارڈ نمبر",
+      "expiryDate": "ختم ہونے کی تاریخ",
+      "cvc": "CVC",
+      "postalCode": "پوسٹل کوڈ",
+      "postalCodePlaceholder": "12345"
+    },
+    "mobilePayment": {
+      "phoneNumber": "{{provider}} فون نمبر",
+      "phoneNumberPlaceholder": "03001234567",
+      "phoneNumberHint": "اپنا رجسٹرڈ {{provider}} فون نمبر درج کریں",
+      "localPrice": "{{currency}} میں قیمت: {{symbol}} {{amount}}",
+      "exchangeRate": "تبادلہ کی شرح: 1 USD = {{rate}} {{currency}}",
+      "instructions": {
+        "title": "{{provider}} پیمنٹ کیسے کام کرتا ہے:",
+        "steps": [
+          "نیچے \"{{provider}} سے ادائیگی کریں\" کلک کریں",
+          "آپ کو اپنے فون پر پیمنٹ پرامپٹ ملے گا",
+          "ادائیگی مکمل کرنے کے لیے اپنا {{provider}} PIN درج کریں",
+          "ادائیگی کنفرم ہونے پر آپ کو ری ڈائریکٹ کر دیا جائے گا"
+        ]
+      }
+    },
+    "submitButton": {
+      "card": "${{price}}/{{period}} کے لیے سبسکرائب کریں",
+      "mobile": "{{provider}} سے ادائیگی - {{symbol}}{{amount}}",
+      "processing": "پیمنٹ پروسیس ہو رہا ہے..."
+    },
+    "securityBadge": "Stripe کے ذریعے محفوظ",
+    "cancelNote": "آپ اپنے ڈیش بورڈ سے کسی بھی وقت منسوخ کر سکتے ہیں یا پلان تبدیل کر سکتے ہیں۔",
+    "errors": {
+      "cardholderNameRequired": "براہ کرم کارڈ ہولڈر کا نام درج کریں",
+      "postalCodeRequired": "براہ کرم اپنا پوسٹل کوڈ درج کریں",
+      "phoneRequired": "براہ کرم اپنا {{provider}} فون نمبر درج کریں",
+      "businessInfoMissing": "کاروباری معلومات غائب ہیں۔ براہ کرم پہلے کاروباری سیٹ اپ کا قدم مکمل کریں۔",
+      "paymentFailed": "ادائیگی ناکام۔ براہ کرم دوبارہ کوشش کریں۔",
+      "cardDeclined": "آپ کا کارڈ مسترد کر دیا گیا۔ براہ کرم مختلف کارڈ آزمائیں۔",
+      "insufficientFunds": "ناکافی فنڈز۔ براہ کرم اپنا بیلنس چیک کریں۔",
+      "networkError": "نیٹ ورک کی خرابی۔ براہ کرم اپنا کنکشن چیک کریں۔"
+    },
+    "success": {
+      "title": "ادائیگی کامیاب!",
+      "message": "آپ کے ڈیش بورڈ پر ری ڈائریکٹ کر رہا ہے...",
+      "mpesaTitle": "M-Pesa پیمنٹ شروع!",
+      "mpesaMessage": "M-Pesa پیمنٹ پرامپٹ کے لیے اپنا فون چیک کریں",
+      "mpesaHint": "ادائیگی مکمل کرنے کے لیے اپنا PIN درج کریں",
+      "redirecting": "آپ کے ڈیش بورڈ پر ری ڈائریکٹ کر رہا ہے..."
+    }
+  },
+  "completion": {
+    "title": "Dott میں خوش آمدید!",
+    "subtitle": "آپ کا اکاؤنٹ سب سیٹ اپ ہو گیا",
+    "message": "آپ اپنے کاروبار کی مالیات کا انتظام شروع کرنے کے لیے تیار ہیں",
+    "dashboardButton": "ڈیش بورڈ پر جائیں",
+    "setupComplete": "سیٹ اپ مکمل"
+  },
+  "errors": {
+    "sessionExpired": "آپ کا سیشن ختم ہو گیا ہے۔ براہ کرم دوبارہ سائن ان کریں۔",
+    "networkError": "نیٹ ورک کی خرابی۔ براہ کرم اپنا کنکشن چیک کریں۔",
+    "genericError": "ایک خرابی پیش آئی۔ براہ کرم دوبارہ کوشش کریں۔",
+    "requiredField": "یہ فیلڈ ضروری ہے"
+  },
+  "navigation": {
+    "back": "واپس",
+    "next": "اگلا",
+    "skip": "چھوڑیں",
+    "cancel": "منسوخ",
+    "save": "محفوظ کریں",
+    "continue": "جاری رکھیں"
+  }
+}

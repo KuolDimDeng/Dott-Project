@@ -1,1 +1,261 @@
-{"businessInfo":{"title":"Business Information","subtitle":"Tell us about your business","nextButton":"Continue"},"subscription":{"title":"Choose Your Plan","subtitle":"Select the best plan for your business"},"payment":{"title":"Payment Details","subtitle":"Add your payment method"},"welcome":{"title":"Welcome to Dott!","subtitle":"Your account is ready"}}
+{
+  "businessInfo": {
+    "title": "اطلاعات کسب‌وکار",
+    "subtitle": "در مورد کسب‌وکارتان به ما بگویید",
+    "step": "مرحله ۱ از ۳",
+    "businessNameLabel": "نام کسب‌وکار",
+    "businessNamePlaceholder": "نام کسب‌وکارتان را وارد کنید",
+    "businessTypeLabel": "نوع کسب‌وکار",
+    "businessTypePlaceholder": "نوع کسب‌وکارتان را انتخاب کنید",
+    "industryLabel": "صنعت",
+    "industryPlaceholder": "صنعت خود را انتخاب کنید",
+    "legalStructureLabel": "ساختار حقوقی",
+    "legalStructurePlaceholder": "ساختار حقوقی را انتخاب کنید",
+    "countryLabel": "کشور",
+    "countryPlaceholder": "کشورتان را انتخاب کنید",
+    "stateLabel": "ایالت/استان",
+    "statePlaceholder": "ایالت خود را انتخاب کنید",
+    "dateFoundedLabel": "تاریخ تأسیس",
+    "addressLabel": "آدرس کسب‌وکار",
+    "addressPlaceholder": "آدرس کسب‌وکارتان را وارد کنید",
+    "phoneLabel": "تلفن کسب‌وکار",
+    "phonePlaceholder": "+98 123 456 789",
+    "emailLabel": "ایمیل کسب‌وکار",
+    "emailPlaceholder": "business@example.com",
+    "websiteLabel": "وب‌سایت (اختیاری)",
+    "websitePlaceholder": "https://www.example.com",
+    "nextButton": "ادامه به اشتراک",
+    "skipButton": "فعلاً رد کن",
+    "businessTypes": {
+      "retail": "خرده‌فروشی",
+      "restaurant": "رستوران",
+      "services": "خدمات",
+      "manufacturing": "تولید",
+      "technology": "فناوری",
+      "healthcare": "مراقبت‌های بهداشتی",
+      "construction": "ساخت‌وساز",
+      "realestate": "املاک",
+      "nonprofit": "غیرانتفاعی",
+      "other": "سایر"
+    },
+    "legalStructures": {
+      "sole_proprietorship": "مالکیت انفرادی",
+      "partnership": "شراکت",
+      "llc": "شرکت محدود",
+      "corporation": "شرکت سهامی",
+      "nonprofit": "غیرانتفاعی",
+      "other": "سایر"
+    },
+    "errors": {
+      "businessNameRequired": "نام کسب‌وکار الزامی است",
+      "businessNameTooShort": "نام کسب‌وکار باید حداقل ۲ کاراکتر باشد",
+      "businessTypeRequired": "لطفاً نوع کسب‌وکار را انتخاب کنید",
+      "legalStructureRequired": "لطفاً ساختار حقوقی را انتخاب کنید",
+      "countryRequired": "لطفاً کشور را انتخاب کنید",
+      "emailInvalid": "لطفاً آدرس ایمیل معتبری وارد کنید",
+      "phoneInvalid": "لطفاً شماره تلفن معتبری وارد کنید",
+      "websiteInvalid": "لطفاً URL وب‌سایت معتبری وارد کنید"
+    },
+    "saving": "در حال ذخیره..."
+  },
+  "subscription": {
+    "title": "طرح خود را انتخاب کنید",
+    "subtitle": "طرحی را انتخاب کنید که بهترین مطابقت را با نیازهای کسب‌وکارتان دارد",
+    "step": "مرحله ۲ از ۳",
+    "billingCycle": {
+      "monthly": "ماهانه",
+      "sixMonth": "۶ ماهه",
+      "yearly": "سالانه",
+      "popular": "محبوب",
+      "save": "{{percentage}}% صرفه‌جویی"
+    },
+    "plans": {
+      "free": {
+        "name": "پایه",
+        "description": "عالی برای کسب‌وکارهای کوچک که تازه شروع می‌کنند",
+        "price": "رایگان",
+        "features": [
+          "ردیابی درآمد و هزینه",
+          "ایجاد فاکتور و یادآوری",
+          "پرداخت‌های Stripe و PayPal",
+          "پول موبایل (M-Pesa و غیره)",
+          "ردیابی موجودی پایه",
+          "اسکن بارکد",
+          "محدودیت ذخیره‌سازی ۳GB",
+          "فقط ۱ کاربر"
+        ],
+        "buttonText": "شروع رایگان"
+      },
+      "basic": {
+        "name": "پایه",
+        "description": "عالی برای کسب‌وکارهای کوچک که تازه شروع می‌کنند",
+        "price": "رایگان",
+        "features": [
+          "ردیابی درآمد و هزینه",
+          "ایجاد فاکتور و یادآوری",
+          "پرداخت‌های Stripe و PayPal",
+          "پول موبایل (M-Pesa و غیره)",
+          "ردیابی موجودی پایه",
+          "اسکن بارکد",
+          "محدودیت ذخیره‌سازی ۳GB",
+          "فقط ۱ کاربر"
+        ],
+        "buttonText": "شروع رایگان"
+      },
+      "professional": {
+        "name": "حرفه‌ای",
+        "description": "هر آنچه کسب‌وکارهای در حال رشد برای پیشرفت نیاز دارند",
+        "price": "${{price}}/{{period}}",
+        "popularBadge": "محبوب‌ترین",
+        "features": [
+          "همه چیز در پایه",
+          "تا ۳ کاربر",
+          "ذخیره‌سازی نامحدود",
+          "پشتیبانی اولویت‌دار",
+          "همه قابلیت‌ها شامل",
+          "{{discount}}% تخفیف ۶ ماهه",
+          "{{yearlyDiscount}}% تخفیف سالانه"
+        ],
+        "buttonText": "انتخاب حرفه‌ای"
+      },
+      "enterprise": {
+        "name": "سازمانی",
+        "description": "مقیاس نامحدود برای سازمان‌های جاه‌طلب",
+        "price": "${{price}}/{{period}}",
+        "premiumBadge": "پریمیم",
+        "features": [
+          "همه چیز در حرفه‌ای",
+          "کاربران نامحدود",
+          "راه‌اندازی سفارشی",
+          "پشتیبانی اختصاصی",
+          "همه قابلیت‌ها شامل",
+          "{{discount}}% تخفیف ۶ ماهه",
+          "{{yearlyDiscount}}% تخفیف سالانه"
+        ],
+        "buttonText": "انتخاب سازمانی"
+      }
+    },
+    "regionalDiscount": {
+      "badge": "{{percentage}}% تخفیف روی همه طرح‌ها!",
+      "description": "قیمت‌گذاری ویژه برای کسب‌وکارها در {{country}}",
+      "percentOff": "{{percentage}}% تخفیف",
+      "yourRegion": "منطقه شما"
+    },
+    "paymentMethods": {
+      "mpesa": {
+        "title": "پرداخت M-Pesa در دسترس!",
+        "description": "به راحتی با پول موبایل برای اشتراکتان پرداخت کنید",
+        "payInCurrency": "پرداخت در {{currency}}"
+      }
+    },
+    "savings": {
+      "sixMonth": "{{amount}}$ صرفه‌جویی ({{monthly}}$/ماه)",
+      "yearly": "سالانه {{amount}}$ صرفه‌جویی"
+    },
+    "backButton": "بازگشت به اطلاعات کسب‌وکار",
+    "processing": "در حال پردازش...",
+    "note": "*قیمت‌گذاری منطقه‌ای در دسترس. قیمت‌ها به طور خودکار بر اساس موقعیت شما تنظیم می‌شوند."
+  },
+  "payment": {
+    "title": "اشتراک خود را تکمیل کنید",
+    "subtitle": "طرح {{plan}} • ${{price}}/{{period}}",
+    "step": "مرحله ۳ از ۳",
+    "discountBadge": "{{percentage}}% تخفیف",
+    "originalPrice": "اصلی: ${{price}}/{{period}}",
+    "regionalDiscountBanner": {
+      "title": "{{percentage}}% تخفیف منطقه‌ای اعمال شد!",
+      "subtitle": "قیمت‌گذاری ویژه برای کسب‌وکارها در {{country}}"
+    },
+    "paymentMethod": {
+      "title": "روش پرداخت را انتخاب کنید",
+      "card": {
+        "name": "کارت اعتباری/نقدی",
+        "description": "Visa، Mastercard، Amex"
+      },
+      "mpesa": {
+        "name": "M-Pesa",
+        "description": "پول موبایل",
+        "payInCurrency": "پرداخت در {{currency}}"
+      },
+      "flutterwave": {
+        "name": "انتقال بانکی",
+        "description": "از طریق انتقال بانکی پرداخت کنید"
+      },
+      "mtn": {
+        "name": "MTN Mobile Money",
+        "description": "پرداخت پول موبایل"
+      }
+    },
+    "cardPayment": {
+      "cardholderName": "نام دارنده کارت",
+      "cardholderNamePlaceholder": "علی احمدی",
+      "cardNumber": "شماره کارت",
+      "expiryDate": "تاریخ انقضا",
+      "cvc": "CVC",
+      "postalCode": "کد پستی",
+      "postalCodePlaceholder": "12345"
+    },
+    "mobilePayment": {
+      "phoneNumber": "شماره تلفن {{provider}}",
+      "phoneNumberPlaceholder": "09123456789",
+      "phoneNumberHint": "شماره تلفن ثبت‌شده {{provider}} خود را وارد کنید",
+      "localPrice": "قیمت در {{currency}}: {{symbol}} {{amount}}",
+      "exchangeRate": "نرخ تبدیل: ۱ USD = {{rate}} {{currency}}",
+      "instructions": {
+        "title": "نحوه کار پرداخت {{provider}}:",
+        "steps": [
+          "روی \"پرداخت با {{provider}}\" در زیر کلیک کنید",
+          "درخواست پرداخت را روی تلفنتان دریافت خواهید کرد",
+          "PIN {{provider}} خود را برای تکمیل پرداخت وارد کنید",
+          "پس از تأیید پرداخت هدایت خواهید شد"
+        ]
+      }
+    },
+    "submitButton": {
+      "card": "اشتراک برای ${{price}}/{{period}}",
+      "mobile": "پرداخت با {{provider}} - {{symbol}}{{amount}}",
+      "processing": "در حال پردازش پرداخت..."
+    },
+    "securityBadge": "امنیت توسط Stripe",
+    "cancelNote": "می‌توانید هر زمان از داشبورد لغو کنید یا طرح را تغییر دهید.",
+    "errors": {
+      "cardholderNameRequired": "لطفاً نام دارنده کارت را وارد کنید",
+      "postalCodeRequired": "لطفاً کد پستی خود را وارد کنید",
+      "phoneRequired": "لطفاً شماره تلفن {{provider}} خود را وارد کنید",
+      "businessInfoMissing": "اطلاعات کسب‌وکار وجود ندارد. لطفاً ابتدا مرحله راه‌اندازی کسب‌وکار را تکمیل کنید.",
+      "paymentFailed": "پرداخت ناموفق. لطفاً دوباره تلاش کنید.",
+      "cardDeclined": "کارت شما رد شد. لطفاً کارت دیگری امتحان کنید.",
+      "insufficientFunds": "موجودی ناکافی. لطفاً موجودی خود را بررسی کنید.",
+      "networkError": "خطای شبکه. لطفاً اتصال خود را بررسی کنید."
+    },
+    "success": {
+      "title": "پرداخت موفق!",
+      "message": "هدایت به داشبورد شما...",
+      "mpesaTitle": "پرداخت M-Pesa آغاز شد!",
+      "mpesaMessage": "تلفن خود را برای درخواست پرداخت M-Pesa بررسی کنید",
+      "mpesaHint": "PIN خود را برای تکمیل پرداخت وارد کنید",
+      "redirecting": "هدایت به داشبورد شما..."
+    }
+  },
+  "completion": {
+    "title": "خوش آمدید به Dott!",
+    "subtitle": "حساب شما کاملاً راه‌اندازی شد",
+    "message": "آماده شروع مدیریت مالی کسب‌وکارتان هستید",
+    "dashboardButton": "برو به داشبورد",
+    "setupComplete": "راه‌اندازی کامل"
+  },
+  "errors": {
+    "sessionExpired": "جلسه شما منقضی شده. لطفاً دوباره وارد شوید.",
+    "networkError": "خطای شبکه. لطفاً اتصال خود را بررسی کنید.",
+    "genericError": "خطایی رخ داد. لطفاً دوباره تلاش کنید.",
+    "requiredField": "این فیلد الزامی است"
+  },
+  "navigation": {
+    "back": "برگشت",
+    "next": "بعدی",
+    "skip": "رد کردن",
+    "cancel": "لغو",
+    "save": "ذخیره",
+    "continue": "ادامه"
+  }
+}

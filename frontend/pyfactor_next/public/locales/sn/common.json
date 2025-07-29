@@ -31,22 +31,22 @@
   "navSignIn": "PINDA",
   "getStarted": "Tanga",
   "pricing": {
-    "eyebrow": "Mitengo Yakapusa, Yakajeka",
+    "eyebrow": "Mitengo Iri Nyore uye Yakajeka",
     "heading": "Sarudza Chirongwa Chakakodzera Bhizinesi Rako",
-    "subheading": "Hapana mari yakavanzwa. Hapana kadhi rechikwereti rinodiwa kuBasic plan. Dzima chero nguva.",
+    "subheading": "Hapana mitengo yakavanzika. Hapana kadhi rechikwereti rinodiwa kune Basic plan. Misa chero riini.",
     "billing": {
       "monthly": "Pamwedzi",
-      "sixMonths": "Mwedzi mitanhatu",
+      "sixMonths": "Mwedzi 6",
       "annual": "Pagore",
-      "popular": "INOZIVIKANWA",
-      "save20": "SEVHA 20%"
+      "popular": "YAKAKURUMBIRA",
+      "save20": "CHENGETEDZA 20%"
     },
     "period": {
       "month": "/mwedzi",
-      "sixMonths": "/mwedzi mitanhatu",
+      "sixMonths": "/mwedzi 6",
       "year": "/gore"
     },
-    "mostPopular": "INONYANYA KUFARIRWA",
+    "mostPopular": "YAKANYANYA KUKURUMBIRA",
     "plans": {
       "basic": {
         "name": "Basic",
@@ -55,12 +55,12 @@
       },
       "professional": {
         "name": "Professional",
-        "description": "Kumabhizinesi ari kukura anoda zvimwe",
-        "cta": "Wana Professional"
+        "description": "Kune mabhizinesi ari kukura anoda zvakawanda",
+        "cta": "Tora Professional"
       },
       "enterprise": {
         "name": "Enterprise",
-        "description": "Chiyero chisina muganhu kumasangano makuru",
+        "description": "Kusina muganhu kune masangano makuru",
         "cta": "Tanga Enterprise"
       }
     }
@@ -216,6 +216,42 @@
         "title": "Vashandisi veTransport",
         "description": "Kuvashandi vetaxi, boda boda, netuk-tuk. Tevera mari yezuva nezuva, mutengo wepeturu, nemagadzirirwo ekugadzirisa."
       }
+    }
+  },
+  "integrations": {
+    "title": "Kubatanidza",
+    "heading": "Batanidza nezvishandiso zvaunoda",
+    "subheading": "Batanidza zvisina dambudziko nezvishandiso zvebhizinesi zvinofarirwa nemaplatifomu ekubhadhara",
+    "availableNow": "Zviripo Zvino",
+    "comingSoon": "Zvichauya Uku",
+    "logoAlt": "{{name}} logo",
+    "whatsapp": {
+      "name": "WhatsApp Business",
+      "description": "Tumira mabhiri nezvikwereti zvakananga kuvatengi"
+    },
+    "mpesa": {
+      "name": "M-Pesa",
+      "description": "Gamuchira mubhadharo wemobile money zvisina dambudziko"
+    },
+    "stripe": {
+      "name": "Stripe",
+      "description": "Gadzirisa mubhadharo wemakadi pasi rose"
+    },
+    "shopify": {
+      "name": "Shopify",
+      "description": "Batidzirai inventory yenyu ye-commerce"
+    },
+    "woocommerce": {
+      "name": "WooCommerce",
+      "description": "Batanidza chitoro chenyu cheWordPress"
+    },
+    "quickbooks": {
+      "name": "QuickBooks",
+      "description": "Pinza uye budisa data yeaccounting"
+    },
+    "amazon": {
+      "name": "Amazon Seller",
+      "description": "Tonga bhizinesi renyu reAmazon"
     }
   }
 }

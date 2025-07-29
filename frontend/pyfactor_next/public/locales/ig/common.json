@@ -31,36 +31,36 @@
   "navSignIn": "BANYE",
   "getStarted": "Malite",
   "pricing": {
-    "eyebrow": "Ọnụahịa Dị Mfe, Doro Anya",
-    "heading": "Họrọ Atụmatụ Kwesịrị Azụmahịa Gị",
-    "subheading": "Enweghị ego zoro ezo. Achọghị kaadị kredit maka atụmatụ Basic. Kagbuo mgbe ọ bụla.",
+    "eyebrow": "Ọnụ ahịa dị mfe na nke doro anya",
+    "heading": "Họrọ atụmatụ kwesịrị ekwesị maka azụmahịa gị",
+    "subheading": "Enweghị ụgwọ zoro ezo. Achọghị kaadị kredit maka atụmatụ Basic. Kagbuo mgbe ọ bụla.",
     "billing": {
       "monthly": "Kwa ọnwa",
-      "sixMonths": "Ọnwa isii",
+      "sixMonths": "Ọnwa 6",
       "annual": "Kwa afọ",
-      "popular": "EWEPỤTARA",
+      "popular": "AMA AMA",
       "save20": "CHEKWAA 20%"
     },
     "period": {
       "month": "/ọnwa",
-      "sixMonths": "/ọnwa isii",
+      "sixMonths": "/ọnwa 6",
       "year": "/afọ"
     },
-    "mostPopular": "KACHA EWEPỤTA",
+    "mostPopular": "KACHA AMA AMA",
     "plans": {
       "basic": {
         "name": "Basic",
         "description": "Zuru oke maka mmalite",
-        "cta": "Malite N'efu"
+        "cta": "Malite n'efu"
       },
       "professional": {
         "name": "Professional",
-        "description": "Maka azụmahịa na-eto eto chọrọ karịa",
+        "description": "Maka azụmahịa na-eto eto nke chọrọ karịa",
         "cta": "Nweta Professional"
       },
       "enterprise": {
         "name": "Enterprise",
-        "description": "Oke na-enweghị njedebe maka nnukwu nzukọ",
+        "description": "Enweghị oke maka nnukwu nzukọ",
         "cta": "Malite Enterprise"
       }
     }
@@ -216,6 +216,42 @@
         "title": "Ndị Ọrụ Njem",
         "description": "Maka ndị ọrụ taksi, boda boda na tuk-tuk. Soro ego kwa ụbọchị, ọnụ ahịa mmanụ na usoro nlekọta."
       }
+    }
+  },
+  "integrations": {
+    "title": "Njikọta",
+    "heading": "Jikọọ na ngwaọrụ ndị ị hụrụ n'anya",
+    "subheading": "Jikọọ na ngwaọrụ azụmahịa a ma ama na ikpo okwu ịkwụ ụgwọ n'enweghị nsogbu",
+    "availableNow": "Dị ugbu a",
+    "comingSoon": "Na-abịa n'oge na-adịghị anya",
+    "logoAlt": "{{name}} logo",
+    "whatsapp": {
+      "name": "WhatsApp Business",
+      "description": "Zipụrụ akwụkwọ ụgwọ na akwụkwọ nnata ozugbo nye ndị ahịa"
+    },
+    "mpesa": {
+      "name": "M-Pesa",
+      "description": "Nabata ịkwụ ụgwọ mobile money n'enweghị nsogbu"
+    },
+    "stripe": {
+      "name": "Stripe",
+      "description": "Hazie ịkwụ ụgwọ kaadị n'ụwa niile"
+    },
+    "shopify": {
+      "name": "Shopify",
+      "description": "Jikọọ ngwa ahịa e-commerce gị"
+    },
+    "woocommerce": {
+      "name": "WooCommerce",
+      "description": "Jikọọ ụlọ ahịa WordPress gị"
+    },
+    "quickbooks": {
+      "name": "QuickBooks",
+      "description": "Bubata ma mepụta data akụkọ"
+    },
+    "amazon": {
+      "name": "Amazon Seller",
+      "description": "Jikwaa azụmahịa Amazon gị"
     }
   }
 }
