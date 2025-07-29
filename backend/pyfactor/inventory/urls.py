@@ -5,6 +5,7 @@ from . import api_views
 from . import service_api_views
 from .optimized_service_views import optimized_create_service
 from . import service_api_views
+from .views_materials import MaterialViewSet, MaterialTransactionViewSet
 
 # Create a router for standard views
 router = DefaultRouter()
@@ -19,6 +20,8 @@ router.register(r'departments', views.DepartmentViewSet)
 router.register(r'charge-plans', views.CustomChargePlanViewSet)
 router.register(r'bill-of-materials', views.BillOfMaterialsViewSet, basename='bill-of-materials')
 router.register(r'service-materials', views.ServiceMaterialsViewSet, basename='service-materials')
+router.register(r'materials', MaterialViewSet, basename='material')
+router.register(r'material-transactions', MaterialTransactionViewSet, basename='material-transaction')
 
 # Create routers for optimized views
 optimized_router = DefaultRouter()

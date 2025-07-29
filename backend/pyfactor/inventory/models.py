@@ -13,6 +13,7 @@ from barcode.writer import ImageWriter
 from .managers import OptimizedProductManager
 from custom_auth.models import TenantAwareModel, TenantManager
 from audit.mixins import AuditMixin
+from .models_materials import Material, MaterialTransaction
 
 class InventoryItem(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

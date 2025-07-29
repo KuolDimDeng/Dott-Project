@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { inventoryService } from '@/services/inventoryService';
+import { materialsService } from '@/services/materialsService';
 import { logger } from '@/utils/logger';
 import { EditIcon, DeleteIcon, AddIcon, RefreshIcon, CloseIcon } from '@/app/components/icons';
 import { WrenchScrewdriverIcon, CalculatorIcon, BanknotesIcon } from '@heroicons/react/24/outline';
@@ -21,12 +21,11 @@ const SuppliesManagement = () => {
       name: '',
       sku: '',
       description: '',
-      quantity: 0,
+      quantity_in_stock: 0,
       reorder_level: 0,
-      unit_price: 0,
-      inventory_type: 'supply',
+      unit_cost: 0,
       material_type: 'consumable',
-      unit: 'units',
+      unit: 'unit',
       markup_percentage: 0,
       is_billable: true,
     },
@@ -57,9 +56,9 @@ const SuppliesManagement = () => {
     setState(prev => ({ ...prev, isLoading: true, error: null }));
     
     try {
-      // Fetch products filtered by inventory_type='supply'
-      const response = await inventoryService.getProducts({
-        inventory_type: 'supply'
+      // Fetch materials (supplies)
+      const response = await materialsService.getMaterials({
+        is_active: true
       }, {
         timeout: 15000,
         notify: false
@@ -98,12 +97,11 @@ const SuppliesManagement = () => {
         name: '',
         sku: '',
         description: '',
-        quantity: 0,
+        quantity_in_stock: 0,
         reorder_level: 0,
-        unit_price: 0,
-        inventory_type: 'supply',
+        unit_cost: 0,
         material_type: 'consumable',
-        unit: 'units',
+        unit: 'unit',
         markup_percentage: 0,
         is_billable: true,
       }
@@ -130,7 +128,7 @@ const SuppliesManagement = () => {
     if (!state.itemToDelete) return;
 
     try {
-      await inventoryService.deleteProduct(state.itemToDelete.id);
+      await materialsService.deleteMaterial(state.itemToDelete.id);
       showSnackbar('Supply deleted successfully', 'success');
       setState(prev => ({
         ...prev,
@@ -149,10 +147,10 @@ const SuppliesManagement = () => {
     
     try {
       if (currentSupply.id) {
-        await inventoryService.updateProduct(currentSupply.id, currentSupply);
+        await materialsService.updateMaterial(currentSupply.id, currentSupply);
         showSnackbar('Supply updated successfully', 'success');
       } else {
-        await inventoryService.createProduct(currentSupply);
+        await materialsService.createMaterial(currentSupply);
         showSnackbar('Supply created successfully', 'success');
       }
       
@@ -176,6 +174,30 @@ const SuppliesManagement = () => {
 
   const calculateSellingPrice = (unitPrice, markupPercentage) => {
     return unitPrice * (1 + markupPercentage / 100);
+  };
+
+  const getMaterialTypeDisplay = (type) => {
+    const typeMap = {
+      'raw_material': 'Raw Material',
+      'consumable': 'Consumable',
+      'tool': 'Tool/Equipment',
+      'part': 'Part/Component',
+      'packaging': 'Packaging',
+      'other': 'Other'
+    };
+    return typeMap[type] || type;
+  };
+
+  const getMaterialTypeColor = (type) => {
+    const colorMap = {
+      'raw_material': 'bg-purple-100 text-purple-800',
+      'consumable': 'bg-yellow-100 text-yellow-800',
+      'tool': 'bg-blue-100 text-blue-800',
+      'part': 'bg-green-100 text-green-800',
+      'packaging': 'bg-gray-100 text-gray-800',
+      'other': 'bg-indigo-100 text-indigo-800'
+    };
+    return colorMap[type] || 'bg-gray-100 text-gray-800';
   };
 
   const { supplies, isLoading, error, dialogOpen, deleteDialogOpen, currentSupply } = state;
@@ -284,20 +306,16 @@ const SuppliesManagement = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        supply.material_type === 'reusable' 
-                          ? 'bg-blue-100 text-blue-800' 
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {supply.material_type === 'reusable' ? 'Tool/Reusable' : 'Consumable'}
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getMaterialTypeColor(supply.material_type)}`}>
+                        {getMaterialTypeDisplay(supply.material_type)}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm">
                         <div className="font-medium text-gray-900">
-                          {supply.quantity} {supply.unit || 'units'}
+                          {supply.quantity_in_stock} {supply.display_unit || supply.unit || 'units'}
                         </div>
-                        {supply.quantity <= supply.reorder_level && (
+                        {supply.quantity_in_stock <= supply.reorder_level && (
                           <div className="text-red-600 text-xs mt-1">
                             Low stock (reorder at {supply.reorder_level})
                           </div>
@@ -307,11 +325,11 @@ const SuppliesManagement = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm">
                         <div className="font-medium text-gray-900">
-                          Cost: ${parseFloat(supply.unit_price || 0).toFixed(2)}
+                          Cost: ${parseFloat(supply.unit_cost || 0).toFixed(2)}
                         </div>
                         {supply.is_billable && supply.markup_percentage > 0 && (
                           <div className="text-green-600 text-xs mt-1">
-                            Sell: ${calculateSellingPrice(supply.unit_price, supply.markup_percentage).toFixed(2)}
+                            Sell: ${calculateSellingPrice(supply.unit_cost, supply.markup_percentage).toFixed(2)}
                             <span className="text-gray-500 ml-1">
                               ({supply.markup_percentage}% markup)
                             </span>
@@ -394,8 +412,12 @@ const SuppliesManagement = () => {
                       className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                       required
                     >
-                      <option value="consumable">Consumable (depletes with use)</option>
-                      <option value="reusable">Tool/Reusable (doesn't deplete)</option>
+                      <option value="raw_material">Raw Material</option>
+                      <option value="consumable">Consumable Supply</option>
+                      <option value="tool">Tool/Equipment</option>
+                      <option value="part">Part/Component</option>
+                      <option value="packaging">Packaging Material</option>
+                      <option value="other">Other</option>
                     </select>
                   </div>
 
@@ -420,8 +442,8 @@ const SuppliesManagement = () => {
                     </label>
                     <input
                       type="number"
-                      value={currentSupply.quantity}
-                      onChange={(e) => handleFieldChange('quantity', parseInt(e.target.value) || 0)}
+                      value={currentSupply.quantity_in_stock}
+                      onChange={(e) => handleFieldChange('quantity_in_stock', parseInt(e.target.value) || 0)}
                       className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                       min="0"
                     />
@@ -473,8 +495,8 @@ const SuppliesManagement = () => {
                   </label>
                   <input
                     type="number"
-                    value={currentSupply.unit_price}
-                    onChange={(e) => handleFieldChange('unit_price', parseFloat(e.target.value) || 0)}
+                    value={currentSupply.unit_cost}
+                    onChange={(e) => handleFieldChange('unit_cost', parseFloat(e.target.value) || 0)}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                     min="0"
                     step="0.01"
@@ -512,7 +534,7 @@ const SuppliesManagement = () => {
                           step="1"
                         />
                         <span className="text-sm text-gray-500">
-                          Selling price: ${calculateSellingPrice(currentSupply.unit_price, currentSupply.markup_percentage).toFixed(2)}
+                          Selling price: ${calculateSellingPrice(currentSupply.unit_cost, currentSupply.markup_percentage).toFixed(2)}
                         </span>
                       </div>
                     </div>
