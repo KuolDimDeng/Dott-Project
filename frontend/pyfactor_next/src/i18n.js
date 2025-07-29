@@ -43,6 +43,30 @@ import faCommon from '../public/locales/fa/common.json';
 import snCommon from '../public/locales/sn/common.json';
 import igCommon from '../public/locales/ig/common.json';
 
+// Import auth namespaces for new languages
+import itAuth from '../public/locales/it/auth.json';
+import plAuth from '../public/locales/pl/auth.json';
+import thAuth from '../public/locales/th/auth.json';
+import bnAuth from '../public/locales/bn/auth.json';
+import urAuth from '../public/locales/ur/auth.json';
+import tlAuth from '../public/locales/tl/auth.json';
+import ukAuth from '../public/locales/uk/auth.json';
+import faAuth from '../public/locales/fa/auth.json';
+import snAuth from '../public/locales/sn/auth.json';
+import igAuth from '../public/locales/ig/auth.json';
+
+// Import onboarding namespaces for new languages
+import itOnboarding from '../public/locales/it/onboarding.json';
+import plOnboarding from '../public/locales/pl/onboarding.json';
+import thOnboarding from '../public/locales/th/onboarding.json';
+import bnOnboarding from '../public/locales/bn/onboarding.json';
+import urOnboarding from '../public/locales/ur/onboarding.json';
+import tlOnboarding from '../public/locales/tl/onboarding.json';
+import ukOnboarding from '../public/locales/uk/onboarding.json';
+import faOnboarding from '../public/locales/fa/onboarding.json';
+import snOnboarding from '../public/locales/sn/onboarding.json';
+import igOnboarding from '../public/locales/ig/onboarding.json';
+
 // Import onboarding namespaces
 import enOnboarding from '../public/locales/en/onboarding.json';
 import esOnboarding from '../public/locales/es/onboarding.json';
@@ -494,43 +518,133 @@ const resources = {
   },
   it: {
     common: itCommon,
-    navigation: itNavigation
+    navigation: itNavigation,
+    onboarding: itOnboarding,
+    auth: itAuth,
+    // Fallback to English for missing translations
+    calendar: enCalendar,
+    settings: enSettings,
+    profile: enProfile,
+    help: enHelp,
+    dashboard: enDashboard,
+    pos: enPos
   },
   pl: {
     common: plCommon,
-    navigation: plNavigation
+    navigation: plNavigation,
+    onboarding: plOnboarding,
+    auth: plAuth,
+    // Fallback to English for missing translations
+    calendar: enCalendar,
+    settings: enSettings,
+    profile: enProfile,
+    help: enHelp,
+    dashboard: enDashboard,
+    pos: enPos
   },
   th: {
     common: thCommon,
-    navigation: thNavigation
+    navigation: thNavigation,
+    onboarding: thOnboarding,
+    auth: thAuth,
+    // Fallback to English for missing translations
+    calendar: enCalendar,
+    settings: enSettings,
+    profile: enProfile,
+    help: enHelp,
+    dashboard: enDashboard,
+    pos: enPos
   },
   bn: {
     common: bnCommon,
-    navigation: bnNavigation
+    navigation: bnNavigation,
+    onboarding: bnOnboarding,
+    auth: bnAuth,
+    // Fallback to English for missing translations
+    calendar: enCalendar,
+    settings: enSettings,
+    profile: enProfile,
+    help: enHelp,
+    dashboard: enDashboard,
+    pos: enPos
   },
   ur: {
     common: urCommon,
-    navigation: urNavigation
+    navigation: urNavigation,
+    onboarding: urOnboarding,
+    auth: urAuth,
+    // Fallback to English for missing translations
+    calendar: enCalendar,
+    settings: enSettings,
+    profile: enProfile,
+    help: enHelp,
+    dashboard: enDashboard,
+    pos: enPos
   },
   tl: {
     common: tlCommon,
-    navigation: tlNavigation
+    navigation: tlNavigation,
+    onboarding: tlOnboarding,
+    auth: tlAuth,
+    // Fallback to English for missing translations
+    calendar: enCalendar,
+    settings: enSettings,
+    profile: enProfile,
+    help: enHelp,
+    dashboard: enDashboard,
+    pos: enPos
   },
   uk: {
     common: ukCommon,
-    navigation: ukNavigation
+    navigation: ukNavigation,
+    onboarding: ukOnboarding,
+    auth: ukAuth,
+    // Fallback to English for missing translations
+    calendar: enCalendar,
+    settings: enSettings,
+    profile: enProfile,
+    help: enHelp,
+    dashboard: enDashboard,
+    pos: enPos
   },
   fa: {
     common: faCommon,
-    navigation: faNavigation
+    navigation: faNavigation,
+    onboarding: faOnboarding,
+    auth: faAuth,
+    // Fallback to English for missing translations
+    calendar: enCalendar,
+    settings: enSettings,
+    profile: enProfile,
+    help: enHelp,
+    dashboard: enDashboard,
+    pos: enPos
   },
   sn: {
     common: snCommon,
-    navigation: snNavigation
+    navigation: snNavigation,
+    onboarding: snOnboarding,
+    auth: snAuth,
+    // Fallback to English for missing translations
+    calendar: enCalendar,
+    settings: enSettings,
+    profile: enProfile,
+    help: enHelp,
+    dashboard: enDashboard,
+    pos: enPos
   },
   ig: {
     common: igCommon,
-    navigation: igNavigation
+    navigation: igNavigation,
+    onboarding: igOnboarding,
+    auth: igAuth,
+    // Fallback to English for missing translations
+    calendar: enCalendar,
+    settings: enSettings,
+    profile: enProfile,
+    help: enHelp,
+    dashboard: enDashboard,
+    pos: enPos
   }
 };
 

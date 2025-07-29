@@ -155,6 +155,56 @@ export default function AppBar() {
         "code": "ko",
         "name": "Korean",
         "native": "한국어"
+    },
+    {
+        "code": "it",
+        "name": "Italian",
+        "native": "Italiano"
+    },
+    {
+        "code": "pl",
+        "name": "Polish",
+        "native": "Polski"
+    },
+    {
+        "code": "th",
+        "name": "Thai",
+        "native": "ไทย"
+    },
+    {
+        "code": "bn",
+        "name": "Bengali",
+        "native": "বাংলা"
+    },
+    {
+        "code": "ur",
+        "name": "Urdu",
+        "native": "اردو"
+    },
+    {
+        "code": "tl",
+        "name": "Tagalog",
+        "native": "Filipino"
+    },
+    {
+        "code": "uk",
+        "name": "Ukrainian",
+        "native": "Українська"
+    },
+    {
+        "code": "fa",
+        "name": "Persian",
+        "native": "فارسی"
+    },
+    {
+        "code": "sn",
+        "name": "Shona",
+        "native": "chiShona"
+    },
+    {
+        "code": "ig",
+        "name": "Igbo",
+        "native": "Igbo"
     }
 ];
 
@@ -301,7 +351,7 @@ export default function AppBar() {
 
               {/* Language Dropdown */}
               {isMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 ring-1 ring-black ring-opacity-5">
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 ring-1 ring-black ring-opacity-5 max-h-96 overflow-y-auto">
                   {supportedLanguages.map(language => (
                     <button
                       key={language.code}

@@ -1,0 +1,44 @@
+{
+  "businessInfo": {
+    "title": "Informazioni Aziendali",
+    "subtitle": "Parlaci della tua azienda",
+    "step": "Passo 1 di 3",
+    "businessNameLabel": "Nome Azienda",
+    "businessNamePlaceholder": "Inserisci il nome della tua azienda",
+    "businessTypeLabel": "Tipo di Azienda",
+    "businessTypePlaceholder": "Seleziona il tipo di azienda",
+    "countryLabel": "Paese",
+    "countryPlaceholder": "Seleziona il tuo paese",
+    "nextButton": "Continua all'Abbonamento",
+    "skipButton": "Salta per ora"
+  },
+  "subscription": {
+    "title": "Scegli il Tuo Piano",
+    "subtitle": "Seleziona il piano migliore per la tua azienda",
+    "step": "Passo 2 di 3",
+    "currentPlan": "Piano Attuale",
+    "recommended": "Consigliato",
+    "selectButton": "Seleziona Piano",
+    "selectedButton": "Piano Selezionato",
+    "continueButton": "Continua al Pagamento",
+    "skipButton": "Inizia con il piano gratuito"
+  },
+  "payment": {
+    "title": "Dettagli di Pagamento",
+    "subtitle": "Aggiungi il tuo metodo di pagamento",
+    "step": "Passo 3 di 3",
+    "cardNumberLabel": "Numero Carta",
+    "expiryLabel": "Scadenza",
+    "cvcLabel": "CVC",
+    "nameLabel": "Nome sulla Carta",
+    "completeButton": "Completa Registrazione",
+    "processingButton": "Elaborazione...",
+    "skipButton": "Salta per ora"
+  },
+  "welcome": {
+    "title": "Benvenuto in Dott!",
+    "subtitle": "Il tuo account è pronto",
+    "message": "Sei pronto per iniziare a gestire la tua azienda con Dott.",
+    "dashboardButton": "Vai alla Dashboard"
+  }
+}

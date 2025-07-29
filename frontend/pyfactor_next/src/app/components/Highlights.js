@@ -68,8 +68,8 @@ export default function Highlights() {
     },
     {
       key: 'languages',
-      title: t('highlights.languages.title', '20+ Languages Supported'),
-      description: t('highlights.languages.description', 'Reach customers and manage your business in your preferred language. From English to Swahili, Spanish to Mandarin, we support over 20 languages to make Dott accessible to businesses worldwide.'),
+      title: t('highlights.languages.title', '30+ Languages Supported'),
+      description: t('highlights.languages.description', 'Reach customers and manage your business in your preferred language. From English to Swahili, Spanish to Mandarin, we support over 30 languages to make Dott accessible to businesses worldwide.'),
       image: '/static/images/languages-screenshot.jpg',
       imageAlt: t('highlights.languages.imageAlt', 'Multi-language interface demonstration'),
       reverse: true,
@@ -304,11 +304,11 @@ export default function Highlights() {
                   )}
                   
                   {/* Show supported languages */}
-                  {highlight.title === t('highlights.languages.title', '20+ Languages Supported') && (
+                  {highlight.title === t('highlights.languages.title', '30+ Languages Supported') && (
                     <div className="mt-6">
                       <p className="text-sm font-medium text-gray-500 mb-3">{t('highlights.languages.availableIn', 'Available in:')}</p>
                       <div className="flex flex-wrap gap-2">
-                        {['English', 'Español', 'Français', 'Português', 'Deutsch', '中文', 'العربية', 'Kiswahili', 'हिन्दी', 'Русский', '日本語', 'Türkçe', 'Bahasa Indonesia', 'Tiếng Việt', 'Nederlands', 'Hausa', 'Yorùbá', 'አማርኛ', 'isiZulu', '한국어'].map((lang) => (
+                        {['English', 'Español', 'Français', 'Português', 'Deutsch', '中文', 'العربية', 'Kiswahili', 'हिन्दी', 'Русский', '日本語', 'Türkçe', 'Bahasa Indonesia', 'Tiếng Việt', 'Nederlands', 'Hausa', 'Yorùbá', 'አማርኛ', 'isiZulu', '한국어', 'Italiano', 'Polski', 'ไทย', 'বাংলা', 'اردو', 'Filipino', 'Українська', 'فارسی', 'chiShona', 'Igbo'].map((lang) => (
                           <span key={lang} className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium">
                             {lang}
                           </span>
