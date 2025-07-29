@@ -1347,13 +1347,31 @@ class JobDataViewSet(viewsets.ViewSet):
         try:
             from crm.models import Customer
             from crm.serializers import CustomerSerializer
+            from custom_auth.rls import get_current_tenant_id, set_tenant_context
             
             # Debug user context
             logger.info(f"👥 [JobDataViewSet] User tenant_id: {getattr(request.user, 'tenant_id', 'None')}")
             logger.info(f"👥 [JobDataViewSet] User business_id: {getattr(request.user, 'business_id', 'None')}")
             
+            # Check current tenant context
+            current_tenant = get_current_tenant_id()
+            logger.info(f"👥 [JobDataViewSet] Current tenant context: {current_tenant}")
+            
+            # If no tenant context, set it manually
+            if not current_tenant and hasattr(request.user, 'tenant_id'):
+                logger.info(f"👥 [JobDataViewSet] Setting tenant context manually to: {request.user.tenant_id}")
+                set_tenant_context(str(request.user.tenant_id))
+            
+            # Try querying with all_objects first to see all customers
+            all_customers = Customer.all_objects.all()
+            logger.info(f"👥 [JobDataViewSet] Total customers in DB (all tenants): {all_customers.count()}")
+            if all_customers.exists():
+                for i, customer in enumerate(all_customers[:3]):
+                    logger.info(f"👥 [JobDataViewSet] All customers {i}: {customer.business_name or customer.first_name} - tenant_id: {customer.tenant_id}")
+            
+            # Now try with tenant-aware manager
             customers = Customer.objects.all().order_by('business_name', 'first_name', 'last_name')
-            logger.info(f"👥 [JobDataViewSet] Found {customers.count()} customers")
+            logger.info(f"👥 [JobDataViewSet] Found {customers.count()} customers (tenant-filtered)")
             
             # Debug first few customers
             if customers.exists():
