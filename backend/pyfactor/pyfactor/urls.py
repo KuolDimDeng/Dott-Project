@@ -106,6 +106,9 @@ urlpatterns = [
     # Direct user profile routes for frontend compatibility
     path('api/user/', include('users.api.urls')),
     
+    # Currency API routes (direct access)
+    path('api/currency/', include('users.api.currency_urls')),
+    
     # Audit API routes
     path('api/audit/', include('audit.urls')),
     
