@@ -53,9 +53,13 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
 
   useEffect(() => {
     console.log('🚀 [JobForm] Component mounted/updated, fetching data...');
+    console.log('🚀 [JobForm] About to call fetchCustomers...');
     fetchCustomers();
+    console.log('🚀 [JobForm] About to call fetchEmployees...');
     fetchEmployees();
+    console.log('🚀 [JobForm] About to call fetchSupplies...');
     fetchSupplies();
+    console.log('🚀 [JobForm] About to call fetchVehicles...');
     fetchVehicles();
     if (job) {
       setFormData({
@@ -82,6 +86,7 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
   }, [job]);
 
   const fetchCustomers = async () => {
+    console.log('[JobForm] 👥 === FETCHCUSTOMERS FUNCTION CALLED ===');
     try {
       console.log('[JobForm] 👥 === FETCHING CUSTOMERS START ===');
       console.log('[JobForm] 👥 Document cookies:', document.cookie);
@@ -242,6 +247,7 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
   };
 
   const fetchSupplies = async () => {
+    console.log('[JobForm] 📦 === FETCHSUPPLIES FUNCTION CALLED ===');
     try {
       console.log('[JobForm] 📦 === FETCHING SUPPLIES START ===');
       logger.info('[JobForm] 📦 === FETCHING SUPPLIES START ===');
