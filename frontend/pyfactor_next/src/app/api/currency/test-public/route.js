@@ -7,11 +7,14 @@ export async function GET() {
     const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.dottapps.com';
     const backendUrl = `${BACKEND_URL}/api/currency/test-public/`;
     console.log('🌐 [Test Public Proxy] Backend URL:', backendUrl);
+    console.log('🌐 [Test Public Proxy] BACKEND_URL env:', process.env.BACKEND_URL);
+    console.log('🌐 [Test Public Proxy] NEXT_PUBLIC_BACKEND_URL env:', process.env.NEXT_PUBLIC_BACKEND_URL);
     
     const response = await fetch(backendUrl, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'User-Agent': 'Next.js Currency Test',
       },
     });
 
@@ -47,9 +50,21 @@ export async function GET() {
     return NextResponse.json(data);
   } catch (error) {
     console.error('🌐 [Test Public Proxy] === GET REQUEST ERROR ===');
-    console.error('🌐 [Test Public Proxy] Error:', error);
+    console.error('🌐 [Test Public Proxy] Error type:', error.constructor.name);
+    console.error('🌐 [Test Public Proxy] Error message:', error.message);
+    console.error('🌐 [Test Public Proxy] Error stack:', error.stack);
+    console.error('🌐 [Test Public Proxy] Full error object:', error);
+    
+    // Check if it's a network error
+    if (error.message.includes('fetch')) {
+      return NextResponse.json(
+        { success: false, error: 'Network error - cannot reach backend: ' + error.message },
+        { status: 502 }
+      );
+    }
+    
     return NextResponse.json(
-      { success: false, error: 'Internal server error: ' + error.message },
+      { success: false, error: 'Internal server error: ' + error.message, errorType: error.constructor.name },
       { status: 500 }
     );
   }
