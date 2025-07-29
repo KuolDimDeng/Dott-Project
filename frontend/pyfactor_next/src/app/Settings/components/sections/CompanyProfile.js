@@ -20,6 +20,15 @@ import { FieldTooltip } from '@/components/ui/FieldTooltip';
 import { logger } from '@/utils/logger';
 
 const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, notifyError }) => {
+  // Wrap notifyError to ensure it exists
+  const safeNotifyError = notifyError || ((msg) => {
+    console.error('[CompanyProfile] Error notification:', msg);
+    alert(msg);
+  });
+  
+  const safeNotifySuccess = notifySuccess || ((msg) => {
+    console.log('[CompanyProfile] Success notification:', msg);
+  });
   const [loading, setLoading] = useState(false);
   const [logoUrl, setLogoUrl] = useState(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -233,7 +242,7 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
       setCompanyData(businessData);
     } catch (error) {
       logger.error('[CompanyProfile] Error loading company data:', error);
-      notifyError('Failed to load company information');
+      safeNotifyError('Failed to load company information');
     } finally {
       setLoading(false);
     }
@@ -261,19 +270,30 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
   };
 
   const handleLogoUpload = async (event) => {
+    console.log('[CompanyProfile] handleLogoUpload called with event:', event);
+    console.log('[CompanyProfile] Event target:', event.target);
+    console.log('[CompanyProfile] Files:', event.target.files);
+    
     const file = event.target.files?.[0];
-    if (!file) return;
+    console.log('[CompanyProfile] Selected file:', file);
+    
+    if (!file) {
+      console.log('[CompanyProfile] No file selected, returning');
+      return;
+    }
 
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
-      notifyError('Invalid file type. Please upload a JPG, PNG, GIF, or WebP image.');
+      console.log('[CompanyProfile] Invalid file type:', file.type);
+      safeNotifyError('Invalid file type. Please upload a JPG, PNG, GIF, or WebP image.');
       return;
     }
 
     // Validate file size (5MB)
     if (file.size > 5 * 1024 * 1024) {
-      notifyError('File size exceeds 5MB limit.');
+      console.log('[CompanyProfile] File too large:', file.size);
+      safeNotifyError('File size exceeds 5MB limit.');
       return;
     }
 
@@ -311,11 +331,11 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
       }
       
       if (response.ok && data.success) {
-        notifySuccess('Logo uploaded successfully');
+        safeNotifySuccess('Logo uploaded successfully');
         await loadBusinessLogo(); // Reload the logo
       } else {
         console.error('[CompanyProfile] Upload failed with response:', data);
-        notifyError(data.error || 'Failed to upload logo');
+        safeNotifyError(data.error || 'Failed to upload logo');
       }
     } catch (error) {
       console.error('[CompanyProfile] Exception during logo upload:', error);
@@ -324,9 +344,9 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
       
       // Check if it's a network error
       if (error instanceof TypeError && error.message.includes('fetch')) {
-        notifyError('Network error: Unable to connect to server');
+        safeNotifyError('Network error: Unable to connect to server');
       } else {
-        notifyError('Failed to upload logo: ' + error.message);
+        safeNotifyError('Failed to upload logo: ' + error.message);
       }
     } finally {
       setUploadingLogo(false);
@@ -351,14 +371,14 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
       const data = await response.json();
       
       if (response.ok && data.success) {
-        notifySuccess('Logo deleted successfully');
+        safeNotifySuccess('Logo deleted successfully');
         setLogoUrl(null);
       } else {
-        notifyError(data.error || 'Failed to delete logo');
+        safeNotifyError(data.error || 'Failed to delete logo');
       }
     } catch (error) {
       console.error('Error deleting logo:', error);
-      notifyError('Failed to delete logo');
+      safeNotifyError('Failed to delete logo');
     } finally {
       setUploadingLogo(false);
     }
@@ -387,11 +407,11 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
         throw new Error('Failed to update company information');
       }
 
-      notifySuccess('Company information updated successfully');
+      safeNotifySuccess('Company information updated successfully');
       setEditMode(false);
     } catch (error) {
       logger.error('[CompanyProfile] Error saving company data:', error);
-      notifyError('Failed to update company information');
+      safeNotifyError('Failed to update company information');
     } finally {
       setLoading(false);
     }
@@ -491,7 +511,13 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
                     className="hidden"
                   />
                   <button
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => {
+                      console.log('[CompanyProfile] Upload button clicked');
+                      console.log('[CompanyProfile] fileInputRef.current:', fileInputRef.current);
+                      console.log('[CompanyProfile] uploadingLogo:', uploadingLogo);
+                      console.log('[CompanyProfile] canEdit:', canEdit);
+                      fileInputRef.current?.click();
+                    }}
                     disabled={uploadingLogo || !canEdit}
                     className="flex items-center px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
