@@ -21,8 +21,8 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const queryString = searchParams.toString();
     
-    // Forward the request to Django backend
-    const response = await fetch(`${BACKEND_URL}/api/inventory/materials/${queryString ? '?' + queryString : ''}`, {
+    // Forward the request to Django backend (no trailing slash)
+    const response = await fetch(`${BACKEND_URL}/api/inventory/materials${queryString ? '?' + queryString : ''}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -65,7 +65,10 @@ export async function POST(request) {
 
     const body = await request.json();
     
-    const response = await fetch(`${BACKEND_URL}/api/inventory/materials/`, {
+    console.log('🎯 [Materials API] POST body:', body);
+    
+    // Remove trailing slash to avoid Django redirect
+    const response = await fetch(`${BACKEND_URL}/api/inventory/materials`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -73,10 +76,15 @@ export async function POST(request) {
       },
       body: JSON.stringify(body),
     });
+    
+    console.log('🎯 [Materials API] Response status:', response.status);
+    console.log('🎯 [Materials API] Response headers:', response.headers);
 
     const data = await response.json();
+    console.log('🎯 [Materials API] Response data:', data);
     
     if (!response.ok) {
+      console.error('🎯 [Materials API] Error response:', data);
       return NextResponse.json(
         data,
         { status: response.status }

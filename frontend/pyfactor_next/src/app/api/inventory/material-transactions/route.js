@@ -21,7 +21,7 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const queryString = searchParams.toString();
     
-    const response = await fetch(`${BACKEND_URL}/api/inventory/material-transactions/${queryString ? '?' + queryString : ''}`, {
+    const response = await fetch(`${BACKEND_URL}/api/inventory/material-transactions${queryString ? '?' + queryString : ''}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

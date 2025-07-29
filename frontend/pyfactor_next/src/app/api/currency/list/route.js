@@ -4,13 +4,22 @@ import { cookies } from 'next/headers';
 export async function GET() {
   try {
     const cookieStore = await cookies();
-    const sessionId = cookieStore.get('session_id')?.value;
+    const sessionId = cookieStore.get('sid')?.value;
+    const sessionToken = cookieStore.get('session_token')?.value;
 
-    const response = await fetch(`${process.env.BACKEND_URL}/api/users/api/currency/list/`, {
+    const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.dottapps.com';
+    
+    // Try both session cookies
+    const cookieHeader = [];
+    if (sessionId) cookieHeader.push(`sid=${sessionId}`);
+    if (sessionToken) cookieHeader.push(`session_token=${sessionToken}`);
+    const cookieString = cookieHeader.join('; ');
+
+    const response = await fetch(`${BACKEND_URL}/api/currency/list/`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Cookie': sessionId ? `session_id=${sessionId}` : '',
+        'Cookie': cookieString,
       },
     });
 

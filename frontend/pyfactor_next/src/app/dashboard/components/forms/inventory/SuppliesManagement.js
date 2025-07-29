@@ -106,12 +106,12 @@ const SuppliesManagement = () => {
         name: '',
         sku: '',
         description: '',
-        quantity_in_stock: 0,
-        reorder_level: 0,
-        unit_cost: 0,
+        quantity_in_stock: '',
+        reorder_level: '',
+        unit_cost: '',
         material_type: 'consumable',
         unit: 'unit',
-        markup_percentage: 0,
+        markup_percentage: '',
         is_billable: true,
       }
     }));
@@ -157,16 +157,32 @@ const SuppliesManagement = () => {
     console.log('🎯 [SuppliesManagement] === SAVE MATERIAL START ===');
     console.log('Material data:', currentSupply);
     
+    if (!currentSupply.name.trim()) {
+      showSnackbar('Please enter a supply name', 'error');
+      return;
+    }
+    
     try {
+      // Convert empty strings to proper numeric values
+      const materialData = {
+        ...currentSupply,
+        quantity_in_stock: parseFloat(currentSupply.quantity_in_stock) || 0,
+        reorder_level: parseInt(currentSupply.reorder_level) || 0,
+        unit_cost: parseFloat(currentSupply.unit_cost) || 0,
+        markup_percentage: parseFloat(currentSupply.markup_percentage) || 0,
+      };
+      
+      console.log('🎯 [SuppliesManagement] Cleaned data:', materialData);
+      
       let response;
-      if (currentSupply.id) {
-        console.log('Updating existing material with ID:', currentSupply.id);
-        response = await materialsService.updateMaterial(currentSupply.id, currentSupply);
+      if (materialData.id) {
+        console.log('Updating existing material with ID:', materialData.id);
+        response = await materialsService.updateMaterial(materialData.id, materialData);
         console.log('Update response:', response);
         showSnackbar('Supply updated successfully', 'success');
       } else {
         console.log('Creating new material');
-        response = await materialsService.createMaterial(currentSupply);
+        response = await materialsService.createMaterial(materialData);
         console.log('Create response:', response);
         showSnackbar('Supply created successfully', 'success');
       }
@@ -178,12 +194,12 @@ const SuppliesManagement = () => {
           name: '',
           sku: '',
           description: '',
-          quantity_in_stock: 0,
-          reorder_level: 0,
-          unit_cost: 0,
+          quantity_in_stock: '',
+          reorder_level: '',
+          unit_cost: '',
           material_type: 'consumable',
           unit: 'unit',
-          markup_percentage: 0,
+          markup_percentage: '',
           is_billable: true,
         }
       }));
@@ -209,7 +225,9 @@ const SuppliesManagement = () => {
   };
 
   const calculateSellingPrice = (unitPrice, markupPercentage) => {
-    return unitPrice * (1 + markupPercentage / 100);
+    const price = parseFloat(unitPrice) || 0;
+    const markup = parseFloat(markupPercentage) || 0;
+    return price * (1 + markup / 100);
   };
 
   const getMaterialTypeDisplay = (type) => {
@@ -379,8 +397,11 @@ const SuppliesManagement = () => {
                   </label>
                   <input
                     type="number"
-                    value={currentSupply.reorder_level}
-                    onChange={(e) => handleFieldChange('reorder_level', parseInt(e.target.value) || 0)}
+                    value={currentSupply.reorder_level || ''}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      handleFieldChange('reorder_level', value === '' ? '' : parseInt(value) || 0);
+                    }}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                     min="0"
                     placeholder="Min quantity alert"
@@ -406,11 +427,15 @@ const SuppliesManagement = () => {
                 </label>
                 <input
                   type="number"
-                  value={currentSupply.unit_cost}
-                  onChange={(e) => handleFieldChange('unit_cost', parseFloat(e.target.value) || 0)}
+                  value={currentSupply.unit_cost || ''}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    handleFieldChange('unit_cost', value === '' ? '' : parseFloat(value) || 0);
+                  }}
                   className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   min="0"
                   step="0.01"
+                  placeholder="0.00"
                 />
               </div>
 
@@ -438,11 +463,15 @@ const SuppliesManagement = () => {
                     <div className="mt-1 flex items-center gap-3">
                       <input
                         type="number"
-                        value={currentSupply.markup_percentage}
-                        onChange={(e) => handleFieldChange('markup_percentage', parseFloat(e.target.value) || 0)}
+                        value={currentSupply.markup_percentage || ''}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          handleFieldChange('markup_percentage', value === '' ? '' : parseFloat(value) || 0);
+                        }}
                         className="block w-32 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                         min="0"
                         step="1"
+                        placeholder="0"
                       />
                       <span className="text-sm text-gray-500">
                         Selling price: ${calculateSellingPrice(currentSupply.unit_cost, currentSupply.markup_percentage).toFixed(2)}

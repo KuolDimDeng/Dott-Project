@@ -18,7 +18,7 @@ export async function GET(request, { params }) {
       );
     }
 
-    const response = await fetch(`${BACKEND_URL}/api/inventory/materials/${id}/`, {
+    const response = await fetch(`${BACKEND_URL}/api/inventory/materials/${id}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -62,7 +62,7 @@ export async function PUT(request, { params }) {
 
     const body = await request.json();
     
-    const response = await fetch(`${BACKEND_URL}/api/inventory/materials/${id}/`, {
+    const response = await fetch(`${BACKEND_URL}/api/inventory/materials/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -107,7 +107,7 @@ export async function PATCH(request, { params }) {
 
     const body = await request.json();
     
-    const response = await fetch(`${BACKEND_URL}/api/inventory/materials/${id}/`, {
+    const response = await fetch(`${BACKEND_URL}/api/inventory/materials/${id}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -150,7 +150,7 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    const response = await fetch(`${BACKEND_URL}/api/inventory/materials/${id}/`, {
+    const response = await fetch(`${BACKEND_URL}/api/inventory/materials/${id}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',

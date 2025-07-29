@@ -1,10 +1,9 @@
-import React, { useState, useEffect, Fragment } from 'react';
-import { Dialog, Transition } from '@headlessui/react';
+import React, { useState, useEffect } from 'react';
 
 const VehicleManagement = () => {
   const [vehicles, setVehicles] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [openDialog, setOpenDialog] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -84,7 +83,7 @@ const VehicleManagement = () => {
     }, 1000);
   }, []);
 
-  const handleOpenDialog = (vehicle = null) => {
+  const handleOpenForm = (vehicle = null) => {
     if (vehicle) {
       setEditingVehicle(vehicle);
       setFormData({
@@ -99,7 +98,7 @@ const VehicleManagement = () => {
         purchase_date: vehicle.purchase_date,
         purchase_price: vehicle.purchase_price,
         current_value: vehicle.current_value,
-        notes: vehicle.notes
+        notes: vehicle.notes || ''
       });
     } else {
       setEditingVehicle(null);
@@ -118,59 +117,74 @@ const VehicleManagement = () => {
         notes: ''
       });
     }
-    setOpenDialog(true);
+    setShowAddForm(true);
   };
 
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
+  const handleCloseForm = () => {
+    setShowAddForm(false);
+    setEditingVehicle(null);
+    setFormData({
+      name: '',
+      equipment_type: 'truck',
+      make: '',
+      model: '',
+      year: '',
+      vin: '',
+      license_plate: '',
+      status: 'active',
+      purchase_date: '',
+      purchase_price: '',
+      current_value: '',
+      notes: ''
+    });
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value
-    });
+    // Handle numeric fields properly
+    if (name === 'purchase_price' || name === 'current_value') {
+      // Remove any non-numeric characters except decimal point
+      const numericValue = value.replace(/[^\d.]/g, '');
+      setFormData(prev => ({
+        ...prev,
+        [name]: numericValue
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
-  const handleSubmit = () => {
-    if (editingVehicle) {
-      // Simulate updating vehicle
-      const updatedVehicles = vehicles.map(vehicle => 
-        vehicle.id === editingVehicle.id ? { ...vehicle, ...formData } : vehicle
-      );
-      setVehicles(updatedVehicles);
-    } else {
-      // Simulate adding new vehicle
-      const newVehicle = {
-        id: String(vehicles.length + 1),
-        ...formData,
-        maintenance_due: false,
-        compliance_issues: false
-      };
-      setVehicles([...vehicles, newVehicle]);
-    }
+  const handleSubmit = (e) => {
+    e.preventDefault();
     
-    handleCloseDialog();
+    // Create new vehicle object
+    const newVehicle = {
+      ...formData,
+      id: editingVehicle ? editingVehicle.id : Date.now().toString(),
+      year: parseInt(formData.year) || 0,
+      purchase_price: parseFloat(formData.purchase_price) || 0,
+      current_value: parseFloat(formData.current_value) || 0,
+      maintenance_due: false,
+      compliance_issues: false
+    };
+
+    if (editingVehicle) {
+      // Update existing vehicle
+      setVehicles(prev => prev.map(v => v.id === editingVehicle.id ? newVehicle : v));
+    } else {
+      // Add new vehicle
+      setVehicles(prev => [...prev, newVehicle]);
+    }
+
+    handleCloseForm();
   };
 
   const handleDelete = (id) => {
-    // Simulate deleting vehicle
-    setVehicles(vehicles.filter(vehicle => vehicle.id !== id));
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'active':
-        return 'success';
-      case 'maintenance':
-        return 'warning';
-      case 'out_of_service':
-        return 'error';
-      case 'retired':
-        return 'default';
-      default:
-        return 'default';
+    if (window.confirm('Are you sure you want to delete this vehicle?')) {
+      setVehicles(prev => prev.filter(v => v.id !== id));
     }
   };
 
@@ -182,8 +196,8 @@ const VehicleManagement = () => {
         return 'In Maintenance';
       case 'out_of_service':
         return 'Out of Service';
-      case 'retired':
-        return 'Retired';
+      case 'sold':
+        return 'Sold';
       default:
         return status;
     }
@@ -211,7 +225,7 @@ const VehicleManagement = () => {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-[50vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
       </div>
     );
   }
@@ -220,16 +234,228 @@ const VehicleManagement = () => {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Vehicle Management</h1>
-        <button 
-          className="flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md transition-colors"
-          onClick={() => handleOpenDialog()}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
-          </svg>
-          Add Vehicle
-        </button>
+        {!showAddForm && (
+          <button 
+            className="flex items-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors"
+            onClick={() => handleOpenForm()}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+            </svg>
+            Add Vehicle
+          </button>
+        )}
       </div>
+
+      {/* Inline Add/Edit Form */}
+      {showAddForm && (
+        <div className="mb-6 p-6 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-lg font-medium text-gray-900">
+              {editingVehicle ? 'Edit Vehicle' : 'Add New Vehicle'}
+            </h3>
+            <button
+              onClick={handleCloseForm}
+              className="text-gray-400 hover:text-gray-500"
+            >
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit}>
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+              <div className="md:col-span-6">
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                  Vehicle Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  id="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  required
+                />
+              </div>
+              <div className="md:col-span-6">
+                <label htmlFor="equipment_type" className="block text-sm font-medium text-gray-700">
+                  Vehicle Type
+                </label>
+                <select
+                  id="equipment_type"
+                  name="equipment_type"
+                  value={formData.equipment_type}
+                  onChange={handleChange}
+                  className="mt-1 block w-full rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                >
+                  <option value="truck">Truck</option>
+                  <option value="trailer">Trailer</option>
+                  <option value="van">Van</option>
+                  <option value="forklift">Forklift</option>
+                  <option value="container">Container</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div className="md:col-span-4">
+                <label htmlFor="make" className="block text-sm font-medium text-gray-700">
+                  Make
+                </label>
+                <input
+                  type="text"
+                  name="make"
+                  id="make"
+                  value={formData.make}
+                  onChange={handleChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                />
+              </div>
+              <div className="md:col-span-4">
+                <label htmlFor="model" className="block text-sm font-medium text-gray-700">
+                  Model
+                </label>
+                <input
+                  type="text"
+                  name="model"
+                  id="model"
+                  value={formData.model}
+                  onChange={handleChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                />
+              </div>
+              <div className="md:col-span-4">
+                <label htmlFor="year" className="block text-sm font-medium text-gray-700">
+                  Year
+                </label>
+                <input
+                  type="number"
+                  name="year"
+                  id="year"
+                  value={formData.year}
+                  onChange={handleChange}
+                  min="1900"
+                  max={new Date().getFullYear() + 1}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                />
+              </div>
+              <div className="md:col-span-6">
+                <label htmlFor="vin" className="block text-sm font-medium text-gray-700">
+                  VIN
+                </label>
+                <input
+                  type="text"
+                  name="vin"
+                  id="vin"
+                  value={formData.vin}
+                  onChange={handleChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                />
+              </div>
+              <div className="md:col-span-3">
+                <label htmlFor="license_plate" className="block text-sm font-medium text-gray-700">
+                  License Plate
+                </label>
+                <input
+                  type="text"
+                  name="license_plate"
+                  id="license_plate"
+                  value={formData.license_plate}
+                  onChange={handleChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                />
+              </div>
+              <div className="md:col-span-3">
+                <label htmlFor="status" className="block text-sm font-medium text-gray-700">
+                  Status
+                </label>
+                <select
+                  id="status"
+                  name="status"
+                  value={formData.status}
+                  onChange={handleChange}
+                  className="mt-1 block w-full rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                >
+                  <option value="active">Active</option>
+                  <option value="maintenance">In Maintenance</option>
+                  <option value="out_of_service">Out of Service</option>
+                  <option value="sold">Sold</option>
+                </select>
+              </div>
+              <div className="md:col-span-4">
+                <label htmlFor="purchase_date" className="block text-sm font-medium text-gray-700">
+                  Purchase Date
+                </label>
+                <input
+                  type="date"
+                  name="purchase_date"
+                  id="purchase_date"
+                  value={formData.purchase_date}
+                  onChange={handleChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                />
+              </div>
+              <div className="md:col-span-4">
+                <label htmlFor="purchase_price" className="block text-sm font-medium text-gray-700">
+                  Purchase Price ($)
+                </label>
+                <input
+                  type="text"
+                  name="purchase_price"
+                  id="purchase_price"
+                  value={formData.purchase_price}
+                  onChange={handleChange}
+                  placeholder="0.00"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                />
+              </div>
+              <div className="md:col-span-4">
+                <label htmlFor="current_value" className="block text-sm font-medium text-gray-700">
+                  Current Value ($)
+                </label>
+                <input
+                  type="text"
+                  name="current_value"
+                  id="current_value"
+                  value={formData.current_value}
+                  onChange={handleChange}
+                  placeholder="0.00"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                />
+              </div>
+              <div className="md:col-span-12">
+                <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
+                  Notes
+                </label>
+                <textarea
+                  name="notes"
+                  id="notes"
+                  rows={3}
+                  value={formData.notes}
+                  onChange={handleChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                />
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end space-x-3">
+              <button
+                type="button"
+                onClick={handleCloseForm}
+                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+              >
+                {editingVehicle ? 'Update Vehicle' : 'Add Vehicle'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       <div className="bg-white shadow rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
@@ -295,8 +521,8 @@ const VehicleManagement = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
                       <button 
-                        onClick={() => handleOpenDialog(vehicle)}
-                        className="text-indigo-600 hover:text-indigo-900"
+                        onClick={() => handleOpenForm(vehicle)}
+                        className="text-blue-600 hover:text-blue-900"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                           <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
@@ -318,225 +544,8 @@ const VehicleManagement = () => {
           </table>
         </div>
       </div>
-
-      {/* Add/Edit Vehicle Dialog */}
-      <Transition.Root show={openDialog} as={Fragment}>
-        <Dialog as="div" className="relative z-10" onClose={handleCloseDialog}>
-          <Transition.Child
-            as={Fragment}
-            enter="ease-out duration-300"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="ease-in duration-200"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
-          </Transition.Child>
-
-          <div className="fixed inset-0 z-10 overflow-y-auto">
-            <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
-              <Transition.Child
-                as={Fragment}
-                enter="ease-out duration-300"
-                enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                enterTo="opacity-100 translate-y-0 sm:scale-100"
-                leave="ease-in duration-200"
-                leaveFrom="opacity-100 translate-y-0 sm:scale-100"
-                leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-              >
-                <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 w-full max-w-4xl">
-                  <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                    <div className="sm:flex sm:items-start">
-                      <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
-                        <Dialog.Title as="h3" className="text-lg font-semibold leading-6 text-gray-900">
-                          {editingVehicle ? 'Edit Vehicle' : 'Add New Vehicle'}
-                        </Dialog.Title>
-                        <div className="mt-4 w-full">
-                          <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                            <div className="md:col-span-6">
-                              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                                Vehicle Name <span className="text-red-500">*</span>
-                              </label>
-                              <input
-                                type="text"
-                                name="name"
-                                id="name"
-                                value={formData.name}
-                                onChange={handleChange}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                required
-                              />
-                            </div>
-                            <div className="md:col-span-6">
-                              <label htmlFor="equipment_type" className="block text-sm font-medium text-gray-700">
-                                Vehicle Type
-                              </label>
-                              <select
-                                id="equipment_type"
-                                name="equipment_type"
-                                value={formData.equipment_type}
-                                onChange={handleChange}
-                                className="mt-1 block w-full rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
-                              >
-                                <option value="truck">Truck</option>
-                                <option value="trailer">Trailer</option>
-                                <option value="van">Van</option>
-                                <option value="forklift">Forklift</option>
-                                <option value="container">Container</option>
-                                <option value="other">Other</option>
-                              </select>
-                            </div>
-                            <div className="md:col-span-4">
-                              <label htmlFor="make" className="block text-sm font-medium text-gray-700">
-                                Make
-                              </label>
-                              <input
-                                type="text"
-                                name="make"
-                                id="make"
-                                value={formData.make}
-                                onChange={handleChange}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                              />
-                            </div>
-                            <div className="md:col-span-4">
-                              <label htmlFor="model" className="block text-sm font-medium text-gray-700">
-                                Model
-                              </label>
-                              <input
-                                type="text"
-                                name="model"
-                                id="model"
-                                value={formData.model}
-                                onChange={handleChange}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                              />
-                            </div>
-                            <div className="md:col-span-4">
-                              <label htmlFor="year" className="block text-sm font-medium text-gray-700">
-                                Year
-                              </label>
-                              <input
-                                type="number"
-                                name="year"
-                                id="year"
-                                value={formData.year}
-                                onChange={handleChange}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                              />
-                            </div>
-                            <div className="md:col-span-6">
-                              <label htmlFor="vin" className="block text-sm font-medium text-gray-700">
-                                VIN/Serial Number
-                              </label>
-                              <input
-                                type="text"
-                                name="vin"
-                                id="vin"
-                                value={formData.vin}
-                                onChange={handleChange}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                              />
-                            </div>
-                            <div className="md:col-span-6">
-                              <label htmlFor="license_plate" className="block text-sm font-medium text-gray-700">
-                                License Plate
-                              </label>
-                              <input
-                                type="text"
-                                name="license_plate"
-                                id="license_plate"
-                                value={formData.license_plate}
-                                onChange={handleChange}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                              />
-                            </div>
-                            <div className="md:col-span-4">
-                              <label htmlFor="status" className="block text-sm font-medium text-gray-700">
-                                Status
-                              </label>
-                              <select
-                                id="status"
-                                name="status"
-                                value={formData.status}
-                                onChange={handleChange}
-                                className="mt-1 block w-full rounded-md border border-gray-300 bg-white py-2 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
-                              >
-                                <option value="active">Active</option>
-                                <option value="maintenance">In Maintenance</option>
-                                <option value="out_of_service">Out of Service</option>
-                                <option value="retired">Retired</option>
-                              </select>
-                            </div>
-                            <div className="md:col-span-4">
-                              <label htmlFor="purchase_date" className="block text-sm font-medium text-gray-700">
-                                Purchase Date
-                              </label>
-                              <input
-                                type="date"
-                                name="purchase_date"
-                                id="purchase_date"
-                                value={formData.purchase_date}
-                                onChange={handleChange}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                              />
-                            </div>
-                            <div className="md:col-span-4">
-                              <label htmlFor="purchase_price" className="block text-sm font-medium text-gray-700">
-                                Purchase Price
-                              </label>
-                              <input
-                                type="number"
-                                name="purchase_price"
-                                id="purchase_price"
-                                value={formData.purchase_price}
-                                onChange={handleChange}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                              />
-                            </div>
-                            <div className="md:col-span-12">
-                              <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
-                                Notes
-                              </label>
-                              <textarea
-                                id="notes"
-                                name="notes"
-                                rows={3}
-                                value={formData.notes}
-                                onChange={handleChange}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-                    <button
-                      type="button"
-                      className="inline-flex w-full justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
-                      onClick={handleSubmit}
-                    >
-                      {editingVehicle ? 'Update' : 'Add'}
-                    </button>
-                    <button
-                      type="button"
-                      className="mt-3 inline-flex w-full justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:mt-0 sm:w-auto sm:text-sm"
-                      onClick={handleCloseDialog}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </Dialog.Panel>
-              </Transition.Child>
-            </div>
-          </div>
-        </Dialog>
-      </Transition.Root>
     </div>
   );
 };
 
-export default VehicleManagement; 
+export default VehicleManagement;

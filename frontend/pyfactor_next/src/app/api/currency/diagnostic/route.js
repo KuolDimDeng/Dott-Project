@@ -13,8 +13,11 @@ export async function GET() {
     console.log('🩺 [Currency Diagnostic] - sid:', sessionId ? `${sessionId.substring(0, 8)}...` : 'null');
     console.log('🩺 [Currency Diagnostic] - session_token:', sessionToken ? `${sessionToken.substring(0, 8)}...` : 'null');
 
-    const backendUrl = `${process.env.BACKEND_URL}/api/currency/diagnostic/`;
+    const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.dottapps.com';
+    const backendUrl = `${BACKEND_URL}/api/currency/diagnostic/`;
     console.log('🩺 [Currency Diagnostic] Backend URL:', backendUrl);
+    console.log('🩺 [Currency Diagnostic] BACKEND_URL env:', process.env.BACKEND_URL);
+    console.log('🩺 [Currency Diagnostic] NEXT_PUBLIC_BACKEND_URL env:', process.env.NEXT_PUBLIC_BACKEND_URL);
     
     // Try both session cookies
     const cookieHeader = [];

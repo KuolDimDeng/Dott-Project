@@ -13,7 +13,8 @@ export async function GET() {
     console.log('📡 [Currency Proxy] - sid:', sessionId ? `${sessionId.substring(0, 8)}...` : 'null');
     console.log('📡 [Currency Proxy] - session_token:', sessionToken ? `${sessionToken.substring(0, 8)}...` : 'null');
 
-    const backendUrl = `${process.env.BACKEND_URL}/api/currency/preferences/`;
+    const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.dottapps.com';
+    const backendUrl = `${BACKEND_URL}/api/currency/preferences/`;
     console.log('📡 [Currency Proxy] Backend URL:', backendUrl);
     
     // Try both session cookies
@@ -71,9 +72,11 @@ export async function PUT(request) {
     console.log('🚀 [Currency Proxy] - session_token:', sessionToken ? `${sessionToken.substring(0, 8)}...` : 'null');
     console.log('🚀 [Currency Proxy] Request body:', JSON.stringify(body, null, 2));
 
-    const backendUrl = `${process.env.BACKEND_URL}/api/currency/preferences/`;
+    const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.dottapps.com';
+    const backendUrl = `${BACKEND_URL}/api/currency/preferences/`;
     console.log('🚀 [Currency Proxy] Backend URL:', backendUrl);
     console.log('🚀 [Currency Proxy] BACKEND_URL env:', process.env.BACKEND_URL);
+    console.log('🚀 [Currency Proxy] Using fallback:', BACKEND_URL);
     
     // Try both session cookies
     const cookieHeader = [];

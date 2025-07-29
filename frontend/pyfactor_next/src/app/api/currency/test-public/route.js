@@ -4,7 +4,8 @@ export async function GET() {
   console.log('🌐 [Test Public Proxy] === GET REQUEST START ===');
   
   try {
-    const backendUrl = `${process.env.BACKEND_URL}/api/currency/test-public/`;
+    const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.dottapps.com';
+    const backendUrl = `${BACKEND_URL}/api/currency/test-public/`;
     console.log('🌐 [Test Public Proxy] Backend URL:', backendUrl);
     
     const response = await fetch(backendUrl, {
