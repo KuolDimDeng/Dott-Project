@@ -376,7 +376,7 @@ export const getProducts = async (options = {}, fetchOptions = {}) => {
     }
 
     // Try the ultra-optimized endpoint first for faster loading
-    let response = await fetchData('/api/inventory/ultra/products/', {
+    let response = await fetchData('/inventory/ultra/products/', {
       ...mergedOptions,
       headers: {
         ...(mergedOptions.headers || {}),
@@ -407,7 +407,7 @@ export const getProducts = async (options = {}, fetchOptions = {}) => {
 
     // If ultra endpoint failed or returned empty, try standard API endpoint
     logger.info('Ultra endpoint returned no data, trying standard endpoint');
-    response = await fetchData('/api/inventory/products/', {
+    response = await fetchData('/inventory/products/', {
       ...mergedOptions,
       headers: {
         ...(mergedOptions.headers || {}),
@@ -569,7 +569,7 @@ export const getProductStats = async (options = {}) => {
       }
     };
     
-    const response = await fetchData('/api/inventory/ultra/products/stats/', optionsWithHeaders);
+    const response = await fetchData('/inventory/ultra/products/stats/', optionsWithHeaders);
     
     if (response && typeof response === 'object') {
       logger.info('Successfully retrieved product stats');
@@ -627,7 +627,7 @@ export const getProductById = async (id, options = {}) => {
       }
     };
     
-    const response = await fetchData(`/api/inventory/products/${id}/`, optionsWithHeaders);
+    const response = await fetchData(`/inventory/products/${id}/`, optionsWithHeaders);
     
     if (response && typeof response === 'object') {
       logger.info(`Successfully retrieved product ${id}`);
@@ -680,7 +680,7 @@ export const getProductByCode = async (code, options = {}) => {
   };
   
   try {
-    return await fetchData(`/api/inventory/ultra/products/code/${code}/`, defaultOptions);
+    return await fetchData(`/inventory/ultra/products/code/${code}/`, defaultOptions);
   } catch (error) {
     logger.error(`Error fetching product by code ${code}:`, error);
     
@@ -910,12 +910,12 @@ export const updateProduct = async (id, productData) => {
     // Get tenant headers to ensure proper tenant context
     const tenantHeaders = getTenantHeaders();
     
-    const response = await putData(`/api/inventory/products/${id}/`, productData, {
+    const response = await putData(`/inventory/products/${id}/`, productData, {
       headers: tenantHeaders,
       invalidateCache: [
-        '/api/inventory/products/',
-        '/api/inventory/ultra/products/',
-        `/api/inventory/products/${id}/`
+        '/inventory/products/',
+        '/inventory/ultra/products/',
+        `/inventory/products/${id}/`
       ]
     });
     
@@ -943,14 +943,14 @@ export const deleteProduct = async (id) => {
     // Get tenant headers to ensure proper tenant context
     const tenantHeaders = getTenantHeaders();
     
-    await axiosInstance.delete(`/api/inventory/products/${id}/`, {
+    await axiosInstance.delete(`/inventory/products/${id}/`, {
       headers: tenantHeaders
     });
     
     // Invalidate cache after successful deletion
     if (inventoryCache) {
-      inventoryCache.invalidateStartingWith('/api/inventory/products/');
-      inventoryCache.invalidateStartingWith('/api/inventory/ultra/products/');
+      inventoryCache.invalidateStartingWith('/inventory/products/');
+      inventoryCache.invalidateStartingWith('/inventory/ultra/products/');
     }
     
     return true;
@@ -970,7 +970,7 @@ export const getBillOfMaterials = async (productId) => {
     logger.info(`Fetching bill of materials for product ${productId}`);
     
     const params = productId ? { product: productId } : {};
-    const response = await fetchData('/api/inventory/bill-of-materials/', {
+    const response = await fetchData('/inventory/bill-of-materials/', {
       params,
       headers: getTenantHeaders()
     });
@@ -991,13 +991,13 @@ export const createBillOfMaterials = async (bomData) => {
   try {
     logger.info('Creating bill of materials entry:', bomData);
     
-    const response = await axiosInstance.post('/api/inventory/bill-of-materials/', bomData, {
+    const response = await axiosInstance.post('/inventory/bill-of-materials/', bomData, {
       headers: getTenantHeaders()
     });
     
     // Invalidate cache
     if (inventoryCache) {
-      inventoryCache.invalidateStartingWith('/api/inventory/bill-of-materials/');
+      inventoryCache.invalidateStartingWith('/inventory/bill-of-materials/');
     }
     
     return response.data;
@@ -1016,13 +1016,13 @@ export const deleteBillOfMaterials = async (bomId) => {
   try {
     logger.info(`Deleting bill of materials entry ${bomId}`);
     
-    await axiosInstance.delete(`/api/inventory/bill-of-materials/${bomId}/`, {
+    await axiosInstance.delete(`/inventory/bill-of-materials/${bomId}/`, {
       headers: getTenantHeaders()
     });
     
     // Invalidate cache
     if (inventoryCache) {
-      inventoryCache.invalidateStartingWith('/api/inventory/bill-of-materials/');
+      inventoryCache.invalidateStartingWith('/inventory/bill-of-materials/');
     }
     
     return true;
@@ -1466,7 +1466,7 @@ export const printProductBarcode = async (productId) => {
       headers['X-Business-ID'] = correctTenantId;
     }
     
-    const response = await fetchData(`/api/inventory/products/${productId}/print-barcode/`, {
+    const response = await fetchData(`/inventory/products/${productId}/print-barcode/`, {
       responseType: 'blob',
       headers: headers
     });

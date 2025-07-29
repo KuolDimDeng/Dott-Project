@@ -14,6 +14,12 @@ This guide walks through migrating from `dottapps.com/{tenant_id}/dashboard` to 
    - **Proxy status**: Proxied (orange cloud ON)
    - **TTL**: Auto
 
+### ⚠️ CRITICAL: API Subdomain Configuration
+**IMPORTANT**: The `api.dottapps.com` subdomain MUST remain as "DNS only" (gray cloud) in Cloudflare.
+- DO NOT enable Cloudflare proxy (orange cloud) for api.dottapps.com
+- Render handles SSL directly for the API
+- Proxying the API will break authentication, file uploads, and WebSockets
+
 ### SSL/TLS Settings:
 1. Go to SSL/TLS → Overview
 2. Ensure "Full (strict)" is selected
