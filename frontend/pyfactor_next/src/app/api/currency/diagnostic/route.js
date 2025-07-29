@@ -39,7 +39,19 @@ export async function GET() {
     
     // Get response as text first to handle non-JSON responses
     const responseText = await response.text();
-    console.log('🩺 [Currency Diagnostic] Response text:', responseText);
+    console.log('🩺 [Currency Diagnostic] Response text length:', responseText.length);
+    console.log('🩺 [Currency Diagnostic] Response text (first 1000 chars):', responseText.substring(0, 1000));
+    console.log('🩺 [Currency Diagnostic] Response content type:', response.headers.get('content-type'));
+    console.log('🩺 [Currency Diagnostic] Response status text:', response.statusText);
+    
+    // Check if response is empty
+    if (!responseText || responseText.trim() === '') {
+      console.error('🩺 [Currency Diagnostic] Empty response from backend');
+      return NextResponse.json(
+        { success: false, error: 'Empty response from backend' },
+        { status: 502 }
+      );
+    }
     
     // Try to parse as JSON
     let data;
@@ -48,8 +60,18 @@ export async function GET() {
       console.log('🩺 [Currency Diagnostic] Backend response data:', JSON.stringify(data, null, 2));
     } catch (parseError) {
       console.error('🩺 [Currency Diagnostic] JSON parse error:', parseError);
+      console.error('🩺 [Currency Diagnostic] Invalid JSON response:', responseText);
+      
+      // Check if it's an HTML error page
+      if (responseText.includes('<!DOCTYPE') || responseText.includes('<html')) {
+        return NextResponse.json(
+          { success: false, error: 'Backend returned HTML error page instead of JSON', htmlPreview: responseText.substring(0, 200) },
+          { status: 502 }
+        );
+      }
+      
       return NextResponse.json(
-        { success: false, error: 'Backend returned non-JSON response', response: responseText.substring(0, 500) },
+        { success: false, error: 'Backend returned invalid JSON', response: responseText.substring(0, 500), parseError: parseError.message },
         { status: 502 }
       );
     }

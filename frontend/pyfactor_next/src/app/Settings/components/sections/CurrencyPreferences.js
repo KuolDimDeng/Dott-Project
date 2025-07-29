@@ -28,8 +28,24 @@ const CurrencyPreferences = () => {
     try {
       const response = await fetch('/api/currency/diagnostic');
       console.log('🩺 [CurrencyPreferences] Diagnostic response status:', response.status);
-      const data = await response.json();
-      console.log('🩺 [CurrencyPreferences] Diagnostic data:', JSON.stringify(data, null, 2));
+      console.log('🩺 [CurrencyPreferences] Diagnostic response headers:', response.headers);
+      console.log('🩺 [CurrencyPreferences] Diagnostic response ok:', response.ok);
+      
+      // Get response as text first
+      const responseText = await response.text();
+      console.log('🩺 [CurrencyPreferences] Raw response text length:', responseText.length);
+      console.log('🩺 [CurrencyPreferences] Raw response text (first 500 chars):', responseText.substring(0, 500));
+      
+      let data;
+      try {
+        data = JSON.parse(responseText);
+        console.log('🩺 [CurrencyPreferences] Diagnostic data:', JSON.stringify(data, null, 2));
+      } catch (parseError) {
+        console.error('🩺 [CurrencyPreferences] Failed to parse diagnostic response:', parseError);
+        console.error('🩺 [CurrencyPreferences] Raw response that failed to parse:', responseText);
+        notifyError('Diagnostic failed: Invalid response format');
+        return;
+      }
       
       if (data.success) {
         notifySuccess('Diagnostic complete - check console for details');
@@ -39,9 +55,25 @@ const CurrencyPreferences = () => {
           notifyError('WARNING: Currency fields are missing from BusinessDetails model!');
         }
       } else {
-        notifyError('Diagnostic failed: ' + (data.error || 'Unknown error'));
+        const errorMsg = data.error || 'Unknown error';
+        console.error('🩺 [CurrencyPreferences] Diagnostic failed:', errorMsg);
+        console.error('🩺 [CurrencyPreferences] Full error data:', data);
+        
+        if (data.htmlPreview) {
+          console.error('🩺 [CurrencyPreferences] HTML preview:', data.htmlPreview);
+          notifyError('Diagnostic failed: Backend returned HTML error page');
+        } else if (data.parseError) {
+          console.error('🩺 [CurrencyPreferences] Parse error:', data.parseError);
+          notifyError('Diagnostic failed: ' + errorMsg);
+        } else {
+          notifyError('Diagnostic failed: ' + errorMsg);
+        }
+        
         if (data.traceback) {
           console.error('🩺 [CurrencyPreferences] Traceback:', data.traceback);
+        }
+        if (data.response) {
+          console.error('🩺 [CurrencyPreferences] Raw response:', data.response);
         }
       }
     } catch (error) {
