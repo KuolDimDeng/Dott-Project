@@ -1,0 +1,86 @@
+{
+  "hero": {
+    "tagline": "MHINDURO DZAKANGWARA DZEKUTUNGAMIRA BHIZINESI",
+    "your": "Yako",
+    "title": "Puratifomu Yebhizinesi Repasi Rese",
+    "subtitle": "Mahara nekusingaperi kumasevhisi ekutanga",
+    "description": "Dott inobatsira varidzi vebhizinesi sewe kugadzira mainvoisi, kugamuchira mari pamhepo, kutungamira accounting nezvivakwa, pamwe nekuskena bhakodhi—zvese papuratifomu imwe chete.",
+    "button": "Tanga Mahara",
+    "trustedBy": "Inovimbwa nemabhizinesi anopfuura 10,000 pasi rose",
+    "benefit": {
+      "free": "Chirongwa chemahara nekusingaperi",
+      "invoicing": "Mainvoisi ehunyanzvi",
+      "pos": "Nzvimbo yekutengesa system",
+      "inventory": "Kutungamira zvivakwa",
+      "payroll": "Zvishandiso zvemuhoro neHR",
+      "tax": "Kutevedzera mutero",
+      "insights": "Mazano ane AI",
+      "mobileMoney": "Kubhadhara nemari yenhare (M-Pesa)",
+      "cardPayments": "Gamuchira kadhi pasi rose",
+      "languages": "Mitauro inopfuura makumi maviri",
+      "mobilePhone": "App yenhare yakabatanidzwa",
+      "jobManagement": "Kutungamira mabasa nemitengo"
+    }
+  },
+  "navFeatures": "Zvimiro",
+  "navPricing": "Mitengo",
+  "navAbout": "Nezvedu",
+  "navBlog": "Blog",
+  "navContact": "Bata",
+  "navStatus": "Mamiriro eSystem",
+  "navSignIn": "PINDA",
+  "getStarted": "Tanga",
+  "pricing": {
+    "eyebrow": "Mitengo Yakapusa, Yakajeka",
+    "heading": "Sarudza Chirongwa Chakakodzera Bhizinesi Rako",
+    "subheading": "Hapana mari yakavanzwa. Hapana kadhi rechikwereti rinodiwa kuBasic plan. Dzima chero nguva.",
+    "billing": {
+      "monthly": "Pamwedzi",
+      "sixMonths": "Mwedzi mitanhatu",
+      "annual": "Pagore",
+      "popular": "INOZIVIKANWA",
+      "save20": "SEVHA 20%"
+    },
+    "period": {
+      "month": "/mwedzi",
+      "sixMonths": "/mwedzi mitanhatu",
+      "year": "/gore"
+    },
+    "mostPopular": "INONYANYA KUFARIRWA",
+    "plans": {
+      "basic": {
+        "name": "Basic",
+        "description": "Yakanakira kutanga",
+        "cta": "Tanga Mahara"
+      },
+      "professional": {
+        "name": "Professional",
+        "description": "Kumabhizinesi ari kukura anoda zvimwe",
+        "cta": "Wana Professional"
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "description": "Chiyero chisina muganhu kumasangano makuru",
+        "cta": "Tanga Enterprise"
+      }
+    }
+  },
+  "features": {
+    "eyebrow": "Mhinduro Yebhizinesi Yakazara",
+    "heading": "Zvese Zvaunoda Kukura Pasi Rose",
+    "subheading": "Zvishandiso zvine simba zvakagadzirirwa mabhizinesi emazuva ano anoshanda kupfuura miganhu"
+  },
+  "footer": {
+    "product": "Chigadzirwa",
+    "company": "Kambani",
+    "support": "Rutsigiro",
+    "legal": "Zvemutemo",
+    "rights": "Kodzero dzese dzakachengetedzwa.",
+    "tagline": "Kuita kuti kutungamira bhizinesi kuve nyore uye kunoshanda kumakambani pasi rose."
+  },
+  "faq": {
+    "eyebrow": "FAQ",
+    "heading": "Mibvunzo Inowanzo bvunzwa",
+    "subheading": "Wana mhinduro kumibvunzo yakajairika nezve puratifomu yedu nemasevhisi."
+  }
+}

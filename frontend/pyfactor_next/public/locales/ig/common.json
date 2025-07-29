@@ -1,0 +1,86 @@
+{
+  "hero": {
+    "tagline": "NGWAỌRỤ NCHỊKWA AZỤMAHỊA NWERE ỌGỤ",
+    "your": "Gị",
+    "title": "Ikpo Okwu Azụmahịa Ụwa",
+    "subtitle": "N'efu ruo mgbe ebighị ebi maka njirimara ndị bụ isi",
+    "description": "Dott na-enyere ndị nwe azụmahịa dịka gị aka ịmepụta akwụkwọ nnata ego, ịnata ụgwọ n'ịntanetị, ijikwa ego na ngwaahịa, yana inyocha koodu—ihe niile n'otu ikpo okwu dị mfe.",
+    "button": "Malite N'efu",
+    "trustedBy": "Azụmahịa karịrị 10,000 n'ụwa niile tụkwasịrị anyị obi",
+    "benefit": {
+      "free": "Atụmatụ n'efu ruo mgbe ebighị ebi",
+      "invoicing": "Ịde akwụkwọ nnata ego ọkachamara",
+      "pos": "Sistemụ ebe ire ahịa",
+      "inventory": "Nchịkwa ngwaahịa",
+      "payroll": "Ngwaọrụ ụgwọ ọnwa na HR",
+      "tax": "Nrube isi ụtụ isi",
+      "insights": "Nghọta sitere na AI",
+      "mobileMoney": "Ịkwụ ụgwọ ego ekwentị (M-Pesa)",
+      "cardPayments": "Nabata ụgwọ kaadị n'ụwa niile",
+      "languages": "Nkwado asụsụ karịrị 20",
+      "mobilePhone": "Ngwa ekwentị gụnyere",
+      "jobManagement": "Nchịkwa ọrụ na ọnụ ahịa"
+    }
+  },
+  "navFeatures": "Atụmatụ",
+  "navPricing": "Ọnụahịa",
+  "navAbout": "Maka Anyị",
+  "navBlog": "Blog",
+  "navContact": "Kpọtụrụ Anyị",
+  "navStatus": "Ọnọdụ Sistemụ",
+  "navSignIn": "BANYE",
+  "getStarted": "Malite",
+  "pricing": {
+    "eyebrow": "Ọnụahịa Dị Mfe, Doro Anya",
+    "heading": "Họrọ Atụmatụ Kwesịrị Azụmahịa Gị",
+    "subheading": "Enweghị ego zoro ezo. Achọghị kaadị kredit maka atụmatụ Basic. Kagbuo mgbe ọ bụla.",
+    "billing": {
+      "monthly": "Kwa ọnwa",
+      "sixMonths": "Ọnwa isii",
+      "annual": "Kwa afọ",
+      "popular": "EWEPỤTARA",
+      "save20": "CHEKWAA 20%"
+    },
+    "period": {
+      "month": "/ọnwa",
+      "sixMonths": "/ọnwa isii",
+      "year": "/afọ"
+    },
+    "mostPopular": "KACHA EWEPỤTA",
+    "plans": {
+      "basic": {
+        "name": "Basic",
+        "description": "Zuru oke maka mmalite",
+        "cta": "Malite N'efu"
+      },
+      "professional": {
+        "name": "Professional",
+        "description": "Maka azụmahịa na-eto eto chọrọ karịa",
+        "cta": "Nweta Professional"
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "description": "Oke na-enweghị njedebe maka nnukwu nzukọ",
+        "cta": "Malite Enterprise"
+      }
+    }
+  },
+  "features": {
+    "eyebrow": "Ngwọta Azụmahịa Zuru Ezu",
+    "heading": "Ihe Niile Ị Chọrọ Ito N'ụwa Niile",
+    "subheading": "Ngwaọrụ dị ike emebere azụmahịa ọgbara ọhụrụ na-arụ ọrụ gafee oke"
+  },
+  "footer": {
+    "product": "Ngwaahịa",
+    "company": "Ụlọ ọrụ",
+    "support": "Nkwado",
+    "legal": "Iwu",
+    "rights": "Ikike niile echekwabara.",
+    "tagline": "Ime ka nchịkwa azụmahịa dị mfe ma dị irè maka ụlọ ọrụ n'ụwa niile."
+  },
+  "faq": {
+    "eyebrow": "FAQ",
+    "heading": "Ajụjụ Ndị A Na-ajụkarị",
+    "subheading": "Chọta azịza nye ajụjụ ndị a na-ajụkarị gbasara ikpo okwu anyị na ọrụ anyị."
+  }
+}

@@ -32,6 +32,16 @@ import yoCommon from '../public/locales/yo/common.json';
 import amCommon from '../public/locales/am/common.json';
 import zuCommon from '../public/locales/zu/common.json';
 import koCommon from '../public/locales/ko/common.json';
+import itCommon from '../public/locales/it/common.json';
+import plCommon from '../public/locales/pl/common.json';
+import thCommon from '../public/locales/th/common.json';
+import bnCommon from '../public/locales/bn/common.json';
+import urCommon from '../public/locales/ur/common.json';
+import tlCommon from '../public/locales/tl/common.json';
+import ukCommon from '../public/locales/uk/common.json';
+import faCommon from '../public/locales/fa/common.json';
+import snCommon from '../public/locales/sn/common.json';
+import igCommon from '../public/locales/ig/common.json';
 
 // Import onboarding namespaces
 import enOnboarding from '../public/locales/en/onboarding.json';
@@ -120,6 +130,16 @@ import yoNavigation from '../public/locales/yo/navigation.json';
 import amNavigation from '../public/locales/am/navigation.json';
 import zuNavigation from '../public/locales/zu/navigation.json';
 import koNavigation from '../public/locales/ko/navigation.json';
+import itNavigation from '../public/locales/it/navigation.json';
+import plNavigation from '../public/locales/pl/navigation.json';
+import thNavigation from '../public/locales/th/navigation.json';
+import bnNavigation from '../public/locales/bn/navigation.json';
+import urNavigation from '../public/locales/ur/navigation.json';
+import tlNavigation from '../public/locales/tl/navigation.json';
+import ukNavigation from '../public/locales/uk/navigation.json';
+import faNavigation from '../public/locales/fa/navigation.json';
+import snNavigation from '../public/locales/sn/navigation.json';
+import igNavigation from '../public/locales/ig/navigation.json';
 
 // Import settings namespaces
 import enSettings from '../public/locales/en/settings.json';
@@ -471,6 +491,46 @@ const resources = {
     help: koHelp,
     dashboard: koDashboard,
     pos: koPos
+  },
+  it: {
+    common: itCommon,
+    navigation: itNavigation
+  },
+  pl: {
+    common: plCommon,
+    navigation: plNavigation
+  },
+  th: {
+    common: thCommon,
+    navigation: thNavigation
+  },
+  bn: {
+    common: bnCommon,
+    navigation: bnNavigation
+  },
+  ur: {
+    common: urCommon,
+    navigation: urNavigation
+  },
+  tl: {
+    common: tlCommon,
+    navigation: tlNavigation
+  },
+  uk: {
+    common: ukCommon,
+    navigation: ukNavigation
+  },
+  fa: {
+    common: faCommon,
+    navigation: faNavigation
+  },
+  sn: {
+    common: snCommon,
+    navigation: snNavigation
+  },
+  ig: {
+    common: igCommon,
+    navigation: igNavigation
   }
 };
 

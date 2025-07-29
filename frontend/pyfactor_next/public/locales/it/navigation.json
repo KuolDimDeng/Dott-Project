@@ -1,0 +1,31 @@
+{
+  "_comment": "Navigation menu translations - Italian",
+  "mainMenu": {
+    "createNew": "Crea Nuovo",
+    "dashboard": "Dashboard",
+    "pos": "POS",
+    "sales": "Vendite",
+    "billing": "Fatturazione",
+    "crm": "CRM",
+    "inventory": "Inventario",
+    "transport": "Trasporto",
+    "payments": "Pagamenti",
+    "payroll": "Buste Paga",
+    "purchases": "Acquisti",
+    "hr": "Risorse Umane",
+    "marketing": "Marketing",
+    "taxes": "Tasse",
+    "banking": "Banca",
+    "accounting": "Contabilità",
+    "reports": "Report",
+    "whatsappBusiness": "WhatsApp Business",
+    "calendar": "Calendario",
+    "smartBusinessAI": "AI Business Intelligente",
+    "importExport": "Importa/Esporta",
+    "inviteBusinessOwner": "Invita un Imprenditore",
+    "analytics": "Analisi",
+    "smartInsights": "Approfondimenti Intelligenti",
+    "dottStatus": "Stato Dott",
+    "jobs": "Lavori"
+  }
+}

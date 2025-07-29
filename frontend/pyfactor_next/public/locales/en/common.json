@@ -618,7 +618,7 @@
       "insights": "AI-powered insights",
       "mobileMoney": "Mobile money payments (M-Pesa)",
       "cardPayments": "Accept card payments worldwide",
-      "languages": "20+ languages supported",
+      "languages": "30+ languages supported",
       "mobilePhone": "Mobile phone app included",
       "jobManagement": "Job management & costing"
     }
@@ -1472,11 +1472,11 @@
       }
     },
     "languages": {
-      "title": "20+ Languages Supported",
+      "title": "30+ Languages Supported",
       "subtitle": "Speak Your Customer's Language",
       "overview": {
         "heading": "True Global Accessibility",
-        "content": "Dott is available in over 20 languages, making it accessible to businesses worldwide. Every feature, button, and message is fully translated by native speakers to ensure clarity and cultural appropriateness."
+        "content": "Dott is available in over 30 languages, making it accessible to businesses worldwide. Every feature, button, and message is fully translated by native speakers to ensure clarity and cultural appropriateness."
       },
       "supported": {
         "heading": "Supported Languages"

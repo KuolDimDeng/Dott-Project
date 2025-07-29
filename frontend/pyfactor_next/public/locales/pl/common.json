@@ -1,0 +1,86 @@
+{
+  "hero": {
+    "tagline": "INTELIGENTNE ROZWIĄZANIA DO ZARZĄDZANIA BIZNESEM",
+    "your": "Twoja",
+    "title": "Globalna Platforma Biznesowa",
+    "subtitle": "Darmowa na zawsze dla podstawowych funkcji",
+    "description": "Dott pozwala przedsiębiorcom takim jak Ty tworzyć faktury, przyjmować płatności online, zarządzać księgowością i zapasami, ze skanowaniem kodów kreskowych—wszystko na jednej intuicyjnej platformie.",
+    "button": "Zacznij Za Darmo",
+    "trustedBy": "Zaufało nam ponad 10 000 firm na całym świecie",
+    "benefit": {
+      "free": "Plan darmowy na zawsze",
+      "invoicing": "Profesjonalne fakturowanie",
+      "pos": "System punktu sprzedaży",
+      "inventory": "Zarządzanie zapasami",
+      "payroll": "Narzędzia do płac i HR",
+      "tax": "Zgodność podatkowa",
+      "insights": "Wglądy oparte na AI",
+      "mobileMoney": "Płatności mobilne (M-Pesa)",
+      "cardPayments": "Akceptuj płatności kartą na całym świecie",
+      "languages": "Obsługa ponad 20 języków",
+      "mobilePhone": "Aplikacja mobilna w zestawie",
+      "jobManagement": "Zarządzanie zadaniami i kosztami"
+    }
+  },
+  "navFeatures": "Funkcje",
+  "navPricing": "Cennik",
+  "navAbout": "O Nas",
+  "navBlog": "Blog",
+  "navContact": "Kontakt",
+  "navStatus": "Status Systemu",
+  "navSignIn": "ZALOGUJ SIĘ",
+  "getStarted": "Rozpocznij",
+  "pricing": {
+    "eyebrow": "Proste, Przejrzyste Ceny",
+    "heading": "Wybierz Odpowiedni Plan dla Twojej Firmy",
+    "subheading": "Bez ukrytych opłat. Karta kredytowa nie jest wymagana dla planu Basic. Anuluj w dowolnym momencie.",
+    "billing": {
+      "monthly": "Miesięcznie",
+      "sixMonths": "6 Miesięcy",
+      "annual": "Rocznie",
+      "popular": "POPULARNE",
+      "save20": "OSZCZĘDŹ 20%"
+    },
+    "period": {
+      "month": "/miesiąc",
+      "sixMonths": "/6 miesięcy",
+      "year": "/rok"
+    },
+    "mostPopular": "NAJPOPULARNIEJSZY",
+    "plans": {
+      "basic": {
+        "name": "Basic",
+        "description": "Idealny na start",
+        "cta": "Zacznij Za Darmo"
+      },
+      "professional": {
+        "name": "Professional",
+        "description": "Dla rozwijających się firm, które potrzebują więcej",
+        "cta": "Wybierz Professional"
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "description": "Nieograniczona skala dla dużych organizacji",
+        "cta": "Zacznij Enterprise"
+      }
+    }
+  },
+  "features": {
+    "eyebrow": "Kompletne Rozwiązanie Biznesowe",
+    "heading": "Wszystko Czego Potrzebujesz do Globalnego Rozwoju",
+    "subheading": "Potężne narzędzia zaprojektowane dla nowoczesnych firm działających ponad granicami"
+  },
+  "footer": {
+    "product": "Produkt",
+    "company": "Firma",
+    "support": "Wsparcie",
+    "legal": "Prawne",
+    "rights": "Wszelkie prawa zastrzeżone.",
+    "tagline": "Sprawiamy, że zarządzanie biznesem jest proste i wydajne dla firm na całym świecie."
+  },
+  "faq": {
+    "eyebrow": "FAQ",
+    "heading": "Często zadawane pytania",
+    "subheading": "Znajdź odpowiedzi na najczęstsze pytania o naszą platformę i usługi."
+  }
+}

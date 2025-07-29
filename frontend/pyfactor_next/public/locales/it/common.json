@@ -1,0 +1,86 @@
+{
+  "hero": {
+    "tagline": "SOLUZIONI INTELLIGENTI PER LA GESTIONE AZIENDALE",
+    "your": "La Tua",
+    "title": "Piattaforma Aziendale Globale",
+    "subtitle": "Gratis per sempre per le funzionalità di base",
+    "description": "Dott permette a imprenditori come te di creare fatture, accettare pagamenti online, gestire la contabilità e l'inventario, con scansione di codici a barre—tutto in un'unica piattaforma intuitiva.",
+    "button": "Inizia Gratis",
+    "trustedBy": "Scelto da oltre 10.000 aziende in tutto il mondo",
+    "benefit": {
+      "free": "Piano gratuito per sempre",
+      "invoicing": "Fatturazione professionale",
+      "pos": "Sistema di punto vendita",
+      "inventory": "Gestione inventario",
+      "payroll": "Strumenti per buste paga e HR",
+      "tax": "Conformità fiscale",
+      "insights": "Approfondimenti basati su AI",
+      "mobileMoney": "Pagamenti mobile money (M-Pesa)",
+      "cardPayments": "Accetta pagamenti con carta in tutto il mondo",
+      "languages": "Supporto per oltre 20 lingue",
+      "mobilePhone": "App mobile inclusa",
+      "jobManagement": "Gestione lavori e costi"
+    }
+  },
+  "navFeatures": "Funzionalità",
+  "navPricing": "Prezzi",
+  "navAbout": "Chi Siamo",
+  "navBlog": "Blog",
+  "navContact": "Contatti",
+  "navStatus": "Stato del Sistema",
+  "navSignIn": "ACCEDI",
+  "getStarted": "Inizia",
+  "pricing": {
+    "eyebrow": "Prezzi Semplici e Trasparenti",
+    "heading": "Scegli il Piano Giusto per la Tua Azienda",
+    "subheading": "Nessun costo nascosto. Nessuna carta di credito richiesta per il piano Basic. Cancella quando vuoi.",
+    "billing": {
+      "monthly": "Mensile",
+      "sixMonths": "6 Mesi",
+      "annual": "Annuale",
+      "popular": "POPOLARE",
+      "save20": "RISPARMIA 20%"
+    },
+    "period": {
+      "month": "/mese",
+      "sixMonths": "/6 mesi",
+      "year": "/anno"
+    },
+    "mostPopular": "PIÙ POPOLARE",
+    "plans": {
+      "basic": {
+        "name": "Basic",
+        "description": "Perfetto per iniziare",
+        "cta": "Inizia Gratis"
+      },
+      "professional": {
+        "name": "Professional",
+        "description": "Per aziende in crescita che hanno bisogno di più",
+        "cta": "Ottieni Professional"
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "description": "Scala illimitata per grandi organizzazioni",
+        "cta": "Inizia Enterprise"
+      }
+    }
+  },
+  "features": {
+    "eyebrow": "Soluzione Aziendale Completa",
+    "heading": "Tutto Ciò di Cui Hai Bisogno per Crescere Globalmente",
+    "subheading": "Strumenti potenti progettati per aziende moderne che operano oltre i confini"
+  },
+  "footer": {
+    "product": "Prodotto",
+    "company": "Azienda",
+    "support": "Supporto",
+    "legal": "Legale",
+    "rights": "Tutti i diritti riservati.",
+    "tagline": "Rendere la gestione aziendale semplice ed efficiente per le aziende di tutto il mondo."
+  },
+  "faq": {
+    "eyebrow": "FAQ",
+    "heading": "Domande frequenti",
+    "subheading": "Trova risposte alle domande comuni sulla nostra piattaforma e servizi."
+  }
+}

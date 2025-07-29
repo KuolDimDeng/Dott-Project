@@ -1,0 +1,86 @@
+{
+  "hero": {
+    "tagline": "MATALINONG SOLUSYON SA PAMAMAHALA NG NEGOSYO",
+    "your": "Ang Iyong",
+    "title": "Pandaigdigang Platform ng Negosyo",
+    "subtitle": "Libre magpakailanman para sa mga pangunahing feature",
+    "description": "Pinapahintulutan ng Dott ang mga may-ari ng negosyo tulad mo na gumawa ng mga invoice, tumanggap ng online na pagbabayad, pamahalaan ang iyong accounting at imbentaryo, kasama ang barcode scanning—lahat sa isang intuitive na platform.",
+    "button": "Magsimula Nang Libre",
+    "trustedBy": "Pinagkakatiwalaan ng 10,000+ negosyo sa buong mundo",
+    "benefit": {
+      "free": "Libreng plano magpakailanman",
+      "invoicing": "Propesyonal na pag-invoice",
+      "pos": "Point of sale system",
+      "inventory": "Pamamahala ng imbentaryo",
+      "payroll": "Mga tool para sa payroll at HR",
+      "tax": "Pagsunod sa buwis",
+      "insights": "Mga insight na pinapatakbo ng AI",
+      "mobileMoney": "Mobile money payments (M-Pesa)",
+      "cardPayments": "Tumanggap ng card payments sa buong mundo",
+      "languages": "20+ suportadong wika",
+      "mobilePhone": "Kasama ang mobile phone app",
+      "jobManagement": "Pamamahala ng trabaho at gastos"
+    }
+  },
+  "navFeatures": "Mga Feature",
+  "navPricing": "Presyo",
+  "navAbout": "Tungkol Sa Amin",
+  "navBlog": "Blog",
+  "navContact": "Makipag-ugnayan",
+  "navStatus": "Status ng Sistema",
+  "navSignIn": "MAG-SIGN IN",
+  "getStarted": "Magsimula",
+  "pricing": {
+    "eyebrow": "Simple at Transparent na Presyo",
+    "heading": "Piliin ang Tamang Plano para sa Iyong Negosyo",
+    "subheading": "Walang nakatagong bayad. Walang credit card na kailangan para sa Basic plan. Magkansela anumang oras.",
+    "billing": {
+      "monthly": "Buwanang",
+      "sixMonths": "6 na Buwan",
+      "annual": "Taunang",
+      "popular": "POPULAR",
+      "save20": "MAKATIPID 20%"
+    },
+    "period": {
+      "month": "/buwan",
+      "sixMonths": "/6 na buwan",
+      "year": "/taon"
+    },
+    "mostPopular": "PINAKAPOPULAR",
+    "plans": {
+      "basic": {
+        "name": "Basic",
+        "description": "Perpekto para sa pagsisimula",
+        "cta": "Magsimula Nang Libre"
+      },
+      "professional": {
+        "name": "Professional",
+        "description": "Para sa lumalaking negosyo na nangangailangan ng higit pa",
+        "cta": "Kunin ang Professional"
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "description": "Walang limitasyon para sa malalaking organisasyon",
+        "cta": "Magsimula ng Enterprise"
+      }
+    }
+  },
+  "features": {
+    "eyebrow": "Kumpletong Solusyon sa Negosyo",
+    "heading": "Lahat ng Kailangan Mo para Lumago sa Pandaigdigang Antas",
+    "subheading": "Malalakas na tool na dinisenyo para sa mga modernong negosyong tumatakbo sa iba't ibang bansa"
+  },
+  "footer": {
+    "product": "Produkto",
+    "company": "Kumpanya",
+    "support": "Suporta",
+    "legal": "Legal",
+    "rights": "Lahat ng karapatan ay nakalaan.",
+    "tagline": "Ginagawang simple at epektibo ang pamamahala ng negosyo para sa mga kumpanya sa buong mundo."
+  },
+  "faq": {
+    "eyebrow": "FAQ",
+    "heading": "Mga Madalas Itanong",
+    "subheading": "Maghanap ng mga sagot sa karaniwang tanong tungkol sa aming platform at serbisyo."
+  }
+}

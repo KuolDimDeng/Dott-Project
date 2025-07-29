@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
 import { saveLanguagePreference, getLanguagePreference } from '@/utils/userPreferences';
 
-// Language data with native names (all 20 supported languages)
+// Language data with native names (all 30 supported languages)
 const languages = [
   { code: 'en', name: 'English', native: 'English' },
   { code: 'es', name: 'Spanish', native: 'Español' },
@@ -29,6 +29,16 @@ const languages = [
   { code: 'am', name: 'Amharic', native: 'አማርኛ' },
   { code: 'yo', name: 'Yoruba', native: 'Yorùbá' },
   { code: 'zu', name: 'Zulu', native: 'isiZulu' },
+  { code: 'it', name: 'Italian', native: 'Italiano' },
+  { code: 'pl', name: 'Polish', native: 'Polski' },
+  { code: 'th', name: 'Thai', native: 'ไทย' },
+  { code: 'bn', name: 'Bengali', native: 'বাংলা' },
+  { code: 'ur', name: 'Urdu', native: 'اردو' },
+  { code: 'tl', name: 'Tagalog', native: 'Filipino' },
+  { code: 'uk', name: 'Ukrainian', native: 'Українська' },
+  { code: 'fa', name: 'Persian', native: 'فارسی' },
+  { code: 'sn', name: 'Shona', native: 'chiShona' },
+  { code: 'ig', name: 'Igbo', native: 'Igbo' },
 ];
 
 export default function LanguageSelector() {
