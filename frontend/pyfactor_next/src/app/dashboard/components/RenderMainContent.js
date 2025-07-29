@@ -1797,6 +1797,38 @@ const RenderMainContent = React.memo(function RenderMainContent({
         );
       }
       
+      if (view === 'vehicles') {
+        console.log('[RenderMainContent] Rendering vehicles view');
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup componentKey={`${componentKey}-vehicles`}>
+              <VehicleManagement />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
+      }
+      
+      if (view === 'jobs-dashboard') {
+        console.log('[RenderMainContent] Rendering jobs-dashboard view');
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup componentKey={`${componentKey}-jobs-dashboard`}>
+              <JobManagement view="jobs-dashboard" />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
+      }
+      
+      if (view === 'jobs-reports') {
+        console.log('[RenderMainContent] Rendering jobs-reports view');
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup componentKey={`${componentKey}-jobs-reports`}>
+              <JobManagement view="jobs-reports" />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
+      }
 
       if (view === 'inventory-reports') {
         console.log('[RenderMainContent] Rendering inventory-reports view');
