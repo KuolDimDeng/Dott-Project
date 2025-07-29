@@ -13,7 +13,7 @@ export async function GET() {
     console.log('📡 [Currency Proxy] - sid:', sessionId ? `${sessionId.substring(0, 8)}...` : 'null');
     console.log('📡 [Currency Proxy] - session_token:', sessionToken ? `${sessionToken.substring(0, 8)}...` : 'null');
 
-    const backendUrl = `${process.env.BACKEND_URL}/api/users/api/currency/preferences/`;
+    const backendUrl = `${process.env.BACKEND_URL}/api/currency/preferences/`;
     console.log('📡 [Currency Proxy] Backend URL:', backendUrl);
     
     // Try both session cookies
@@ -71,7 +71,7 @@ export async function PUT(request) {
     console.log('🚀 [Currency Proxy] - session_token:', sessionToken ? `${sessionToken.substring(0, 8)}...` : 'null');
     console.log('🚀 [Currency Proxy] Request body:', JSON.stringify(body, null, 2));
 
-    const backendUrl = `${process.env.BACKEND_URL}/api/users/api/currency/preferences/`;
+    const backendUrl = `${process.env.BACKEND_URL}/api/currency/preferences/`;
     console.log('🚀 [Currency Proxy] Backend URL:', backendUrl);
     console.log('🚀 [Currency Proxy] BACKEND_URL env:', process.env.BACKEND_URL);
     

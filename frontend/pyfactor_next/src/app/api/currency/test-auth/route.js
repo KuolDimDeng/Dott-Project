@@ -13,7 +13,7 @@ export async function GET() {
     console.log('🧪 [Test Auth Proxy] - sid:', sessionId ? `${sessionId.substring(0, 8)}...` : 'null');
     console.log('🧪 [Test Auth Proxy] - session_token:', sessionToken ? `${sessionToken.substring(0, 8)}...` : 'null');
 
-    const backendUrl = `${process.env.BACKEND_URL}/api/users/api/currency/test-auth/`;
+    const backendUrl = `${process.env.BACKEND_URL}/api/currency/test-auth/`;
     console.log('🧪 [Test Auth Proxy] Backend URL:', backendUrl);
     
     // Try both session cookies

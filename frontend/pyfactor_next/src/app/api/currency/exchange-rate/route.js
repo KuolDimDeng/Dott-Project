@@ -7,7 +7,7 @@ export async function POST(request) {
     const sessionId = cookieStore.get('sid')?.value;
     const body = await request.json();
 
-    const response = await fetch(`${process.env.BACKEND_URL}/api/users/api/currency/exchange-rate/`, {
+    const response = await fetch(`${process.env.BACKEND_URL}/api/currency/exchange-rate/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
