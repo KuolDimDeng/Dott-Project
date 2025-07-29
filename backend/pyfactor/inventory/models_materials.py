@@ -365,7 +365,7 @@ class MaterialTransaction(models.Model):
     # Tracking
     created_at = models.DateTimeField(default=timezone.now)
     created_by = models.ForeignKey(
-        'users.User',
+        'custom_auth.User',
         on_delete=models.SET_NULL,
         null=True,
         related_name='material_transactions_created'
