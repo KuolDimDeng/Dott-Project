@@ -13,6 +13,7 @@ from django.core.files.base import ContentFile
 from django.http import HttpResponse
 from decimal import Decimal
 import logging
+import traceback
 import json
 import base64
 from io import BytesIO
@@ -1358,51 +1359,69 @@ class JobDataViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['get'])
     def customers(self, request):
         """Get available customers for job assignment"""
-        logger.info(f"👥 [JobDataViewSet] Fetching customers for user: {getattr(request.user, 'email', 'Unknown')}")
+        request_id = request.headers.get('X-Request-ID', 'no-id')
+        logger.info(f"👥 [JobDataViewSet] === CUSTOMERS ENDPOINT START [{request_id}] ===")
+        logger.info(f"👥 [JobDataViewSet] [{request_id}] Timestamp: {timezone.now().isoformat()}")
+        logger.info(f"👥 [JobDataViewSet] [{request_id}] Request user: {request.user}")
+        logger.info(f"👥 [JobDataViewSet] [{request_id}] User email: {getattr(request.user, 'email', 'Unknown')}")
+        logger.info(f"👥 [JobDataViewSet] [{request_id}] User authenticated: {request.user.is_authenticated}")
+        
         try:
             from crm.models import Customer
             from crm.serializers import CustomerSerializer
             from custom_auth.rls import get_current_tenant_id
             
             # Debug user and tenant context
-            logger.info(f"👥 [JobDataViewSet] User tenant_id: {getattr(request.user, 'tenant_id', 'None')}")
-            logger.info(f"👥 [JobDataViewSet] User business_id: {getattr(request.user, 'business_id', 'None')}")
+            logger.info(f"👥 [JobDataViewSet] [{request_id}] User tenant_id: {getattr(request.user, 'tenant_id', 'None')}")
+            logger.info(f"👥 [JobDataViewSet] [{request_id}] User business_id: {getattr(request.user, 'business_id', 'None')}")
             
             current_tenant = get_current_tenant_id()
-            logger.info(f"👥 [JobDataViewSet] Current tenant context: {current_tenant}")
+            logger.info(f"👥 [JobDataViewSet] [{request_id}] Current tenant context in DB: {current_tenant}")
             
             # Try direct query without tenant filtering to debug
             try:
                 # Query with all_objects to bypass tenant filtering
                 all_customers = Customer.all_objects.all()
-                logger.info(f"👥 [JobDataViewSet] Total customers in database (all tenants): {all_customers.count()}")
+                logger.info(f"👥 [JobDataViewSet] [{request_id}] Total customers in database (all tenants): {all_customers.count()}")
                 
                 # Log tenant_id for each customer
                 for idx, customer in enumerate(all_customers[:5]):
-                    logger.info(f"👥 [JobDataViewSet] Customer {idx}: {customer.business_name or customer.first_name} - tenant_id: {customer.tenant_id}")
+                    logger.info(f"👥 [JobDataViewSet] [{request_id}] Customer {idx}: {customer.business_name or customer.first_name} - tenant_id: {customer.tenant_id}")
             except Exception as e:
-                logger.error(f"👥 [JobDataViewSet] Error querying all_objects: {e}")
+                logger.error(f"👥 [JobDataViewSet] [{request_id}] Error querying all_objects: {e}")
             
             # TEMPORARY FIX: Query using all_objects to bypass tenant filtering
             # This matches how Employee model works (no tenant filtering)
+            logger.info(f"👥 [JobDataViewSet] [{request_id}] Starting customer query...")
             customers = Customer.all_objects.all().order_by('business_name', 'first_name', 'last_name')
             
             # Filter by user's business_id manually if needed
             if hasattr(request.user, 'business_id') and request.user.business_id:
                 customers = customers.filter(tenant_id=request.user.business_id)
-                logger.info(f"👥 [JobDataViewSet] Filtered by business_id: {request.user.business_id}")
+                logger.info(f"👥 [JobDataViewSet] [{request_id}] Filtered by business_id: {request.user.business_id}")
             
-            logger.info(f"👥 [JobDataViewSet] Found {customers.count()} customers")
+            logger.info(f"👥 [JobDataViewSet] [{request_id}] Found {customers.count()} customers")
             
             # Debug first few customers if any
             if customers.exists():
                 for i, customer in enumerate(customers[:3]):
-                    logger.info(f"👥 [JobDataViewSet] Customer {i}: {customer.business_name or customer.first_name} - tenant_id: {customer.tenant_id}")
+                    logger.info(f"👥 [JobDataViewSet] [{request_id}] Customer {i}: {customer.business_name or customer.first_name} - tenant_id: {customer.tenant_id}")
             
+            logger.info(f"👥 [JobDataViewSet] [{request_id}] Serializing customer data...")
             serializer = CustomerSerializer(customers, many=True)
-            return Response(serializer.data)
+            serialized_data = serializer.data
+            
+            logger.info(f"👥 [JobDataViewSet] [{request_id}] Serialized data type: {type(serialized_data)}")
+            logger.info(f"👥 [JobDataViewSet] [{request_id}] Serialized data count: {len(serialized_data)}")
+            if len(serialized_data) > 0:
+                logger.info(f"👥 [JobDataViewSet] [{request_id}] Sample serialized customer: {serialized_data[0]}")
+            
+            logger.info(f"👥 [JobDataViewSet] [{request_id}] === CUSTOMERS ENDPOINT END ===")
+            return Response(serialized_data)
         except Exception as e:
-            logger.error(f"👥 [JobDataViewSet] Error fetching customers: {str(e)}")
+            logger.error(f"👥 [JobDataViewSet] [{request_id}] Error fetching customers: {str(e)}")
+            logger.error(f"👥 [JobDataViewSet] [{request_id}] Error type: {type(e)}")
+            logger.error(f"👥 [JobDataViewSet] [{request_id}] Error traceback: {traceback.format_exc()}")
             return Response(
                 {'error': f'Failed to fetch customers: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -1431,33 +1450,40 @@ class JobDataViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['get'])
     def supplies(self, request):
         """Get available supplies for job materials"""
-        logger.info(f"📦 [JobDataViewSet] Fetching supplies for user: {getattr(request.user, 'email', 'Unknown')}")
+        request_id = request.headers.get('X-Request-ID', 'no-id')
+        logger.info(f"📦 [JobDataViewSet] === SUPPLIES ENDPOINT START [{request_id}] ===")
+        logger.info(f"📦 [JobDataViewSet] [{request_id}] Timestamp: {timezone.now().isoformat()}")
+        logger.info(f"📦 [JobDataViewSet] [{request_id}] Request user: {request.user}")
+        logger.info(f"📦 [JobDataViewSet] [{request_id}] User email: {getattr(request.user, 'email', 'Unknown')}")
+        logger.info(f"📦 [JobDataViewSet] [{request_id}] User authenticated: {request.user.is_authenticated}")
+        
         try:
             from inventory.models import Product
             from inventory.serializers import ProductSerializer
             from custom_auth.rls import get_current_tenant_id
             
             # Debug user and tenant context
-            logger.info(f"📦 [JobDataViewSet] User tenant_id: {getattr(request.user, 'tenant_id', 'None')}")
-            logger.info(f"📦 [JobDataViewSet] User business_id: {getattr(request.user, 'business_id', 'None')}")
+            logger.info(f"📦 [JobDataViewSet] [{request_id}] User tenant_id: {getattr(request.user, 'tenant_id', 'None')}")
+            logger.info(f"📦 [JobDataViewSet] [{request_id}] User business_id: {getattr(request.user, 'business_id', 'None')}")
             
             current_tenant = get_current_tenant_id()
-            logger.info(f"📦 [JobDataViewSet] Current tenant context: {current_tenant}")
+            logger.info(f"📦 [JobDataViewSet] [{request_id}] Current tenant context in DB: {current_tenant}")
             
             # Try direct query without tenant filtering to debug
             try:
                 # Query with all_objects to bypass tenant filtering
                 all_supplies = Product.all_objects.filter(inventory_type='supply', is_active=True)
-                logger.info(f"📦 [JobDataViewSet] Total supplies in database (all tenants): {all_supplies.count()}")
+                logger.info(f"📦 [JobDataViewSet] [{request_id}] Total supplies in database (all tenants): {all_supplies.count()}")
                 
                 # Log tenant_id for each supply
                 for idx, supply in enumerate(all_supplies[:5]):
-                    logger.info(f"📦 [JobDataViewSet] Supply {idx}: {supply.name} - tenant_id: {supply.tenant_id}")
+                    logger.info(f"📦 [JobDataViewSet] [{request_id}] Supply {idx}: {supply.name} - tenant_id: {supply.tenant_id}")
             except Exception as e:
-                logger.error(f"📦 [JobDataViewSet] Error querying all_objects: {e}")
+                logger.error(f"📦 [JobDataViewSet] [{request_id}] Error querying all_objects: {e}")
             
             # TEMPORARY FIX: Query using all_objects to bypass tenant filtering
             # This matches how Employee model works (no tenant filtering)
+            logger.info(f"📦 [JobDataViewSet] [{request_id}] Starting supplies query...")
             supplies = Product.all_objects.filter(
                 inventory_type='supply',
                 is_active=True
@@ -1466,19 +1492,30 @@ class JobDataViewSet(viewsets.ViewSet):
             # Filter by user's business_id manually if needed
             if hasattr(request.user, 'business_id') and request.user.business_id:
                 supplies = supplies.filter(tenant_id=request.user.business_id)
-                logger.info(f"📦 [JobDataViewSet] Filtered by business_id: {request.user.business_id}")
+                logger.info(f"📦 [JobDataViewSet] [{request_id}] Filtered by business_id: {request.user.business_id}")
             
-            logger.info(f"📦 [JobDataViewSet] Found {supplies.count()} supplies")
+            logger.info(f"📦 [JobDataViewSet] [{request_id}] Found {supplies.count()} supplies")
             
             # Debug first few supplies if any
             if supplies.exists():
                 for i, supply in enumerate(supplies[:3]):
-                    logger.info(f"📦 [JobDataViewSet] Supply {i}: {supply.name} - tenant_id: {supply.tenant_id}")
+                    logger.info(f"📦 [JobDataViewSet] [{request_id}] Supply {i}: {supply.name} - tenant_id: {supply.tenant_id}")
             
+            logger.info(f"📦 [JobDataViewSet] [{request_id}] Serializing supply data...")
             serializer = ProductSerializer(supplies, many=True)
-            return Response(serializer.data)
+            serialized_data = serializer.data
+            
+            logger.info(f"📦 [JobDataViewSet] [{request_id}] Serialized data type: {type(serialized_data)}")
+            logger.info(f"📦 [JobDataViewSet] [{request_id}] Serialized data count: {len(serialized_data)}")
+            if len(serialized_data) > 0:
+                logger.info(f"📦 [JobDataViewSet] [{request_id}] Sample serialized supply: {serialized_data[0]}")
+            
+            logger.info(f"📦 [JobDataViewSet] [{request_id}] === SUPPLIES ENDPOINT END ===")
+            return Response(serialized_data)
         except Exception as e:
-            logger.error(f"📦 [JobDataViewSet] Error fetching supplies: {str(e)}")
+            logger.error(f"📦 [JobDataViewSet] [{request_id}] Error fetching supplies: {str(e)}")
+            logger.error(f"📦 [JobDataViewSet] [{request_id}] Error type: {type(e)}")
+            logger.error(f"📦 [JobDataViewSet] [{request_id}] Error traceback: {traceback.format_exc()}")
             return Response(
                 {'error': f'Failed to fetch supplies: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
