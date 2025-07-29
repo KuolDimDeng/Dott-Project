@@ -40,6 +40,26 @@ const CurrencyPreferences = () => {
       notifyError('Auth test failed: ' + error.message);
     }
   };
+  
+  // Test public endpoint
+  const testPublic = async () => {
+    console.log('🌐 [CurrencyPreferences] Testing public endpoint...');
+    try {
+      // Direct call to backend, bypassing proxy
+      const response = await fetch('https://api.dottapps.com/api/currency/test-public/');
+      console.log('🌐 [CurrencyPreferences] Public test response status:', response.status);
+      const data = await response.json();
+      console.log('🌐 [CurrencyPreferences] Public test response data:', data);
+      if (data.success) {
+        notifySuccess('Public test passed: ' + data.message);
+      } else {
+        notifyError('Public test failed: ' + (data.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('🌐 [CurrencyPreferences] Public test error:', error);
+      notifyError('Public test failed: ' + error.message);
+    }
+  };
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingCurrency, setPendingCurrency] = useState(null);
 
@@ -289,12 +309,20 @@ const CurrencyPreferences = () => {
           <CurrencyDollarIcon className="h-6 w-6 text-blue-600 mr-3" />
           <h3 className="text-lg font-semibold">Currency Preferences</h3>
         </div>
-        <button
-          onClick={testAuth}
-          className="px-3 py-1 text-sm bg-gray-200 hover:bg-gray-300 rounded"
-        >
-          Test Auth
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={testAuth}
+            className="px-3 py-1 text-sm bg-gray-200 hover:bg-gray-300 rounded"
+          >
+            Test Auth
+          </button>
+          <button
+            onClick={testPublic}
+            className="px-3 py-1 text-sm bg-blue-200 hover:bg-blue-300 rounded"
+          >
+            Test Public
+          </button>
+        </div>
       </div>
 
       {/* Current Currency Display */}

@@ -17,41 +17,7 @@ import {
 import { toast } from 'react-hot-toast';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 
-const MOCK_CUSTOMERS = [
-  {
-    id: 'mock-id-1',
-    customerName: 'Acme Corporation',
-    first_name: 'John',
-    last_name: 'Doe',
-    email: 'john.doe@acme.com',
-    phone: '555-123-4567',
-    city: 'New York',
-    billingState: 'NY',
-    billingCountry: 'USA'
-  },
-  {
-    id: 'mock-id-2',
-    customerName: 'Tech Solutions Inc',
-    first_name: 'Jane',
-    last_name: 'Smith',
-    email: 'jane.smith@techsolutions.com',
-    phone: '555-987-6543',
-    city: 'San Francisco',
-    billingState: 'CA',
-    billingCountry: 'USA'
-  },
-  {
-    id: 'mock-id-3',
-    customerName: 'Global Enterprises',
-    first_name: 'Robert',
-    last_name: 'Johnson',
-    email: 'robert@globalenterprises.com',
-    phone: '555-456-7890',
-    city: 'Chicago',
-    billingState: 'IL',
-    billingCountry: 'USA'
-  }
-];
+// All mock data has been removed - the component will now show actual data or errors
 
 const CustomersManagement = () => {
   const [customers, setCustomers] = useState([]);

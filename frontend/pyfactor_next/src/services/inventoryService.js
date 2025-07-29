@@ -49,235 +49,10 @@ const CACHE_CONFIG = {
   STATS_TTL: 5 * 60 * 1000,      // 5 minutes for stats
 };
 
-// Mock data for offline/demo mode - Construction/Service Materials
-const MOCK_PRODUCTS = [
-  // Consumable Materials
-  {
-    id: '1',
-    name: '2" Wood Screws',
-    sku: 'SCREW-2IN-100',
-    description: 'Box of 100 wood screws, 2 inch length',
-    quantity: 500,
-    reorder_level: 100,
-    unit_price: 12.99,
-    inventory_type: 'supply',
-    material_type: 'consumable',
-    unit: 'box',
-    markup_percentage: 50,
-    is_billable: true
-  },
-  {
-    id: '2',
-    name: 'Drywall Nails',
-    sku: 'NAIL-DW-500',
-    description: '1.25" drywall nails, box of 500',
-    quantity: 1000,
-    reorder_level: 200,
-    unit_price: 8.99,
-    inventory_type: 'supply',
-    material_type: 'consumable',
-    unit: 'box',
-    markup_percentage: 50,
-    is_billable: true
-  },
-  {
-    id: '3',
-    name: 'Painter\'s Tape',
-    sku: 'TAPE-PAINT-60',
-    description: 'Blue painter\'s tape, 2" x 60 yards',
-    quantity: 50,
-    reorder_level: 10,
-    unit_price: 5.99,
-    inventory_type: 'supply',
-    material_type: 'consumable',
-    unit: 'roll',
-    markup_percentage: 40,
-    is_billable: true
-  },
-  {
-    id: '4',
-    name: 'Wood Glue',
-    sku: 'GLUE-WOOD-16',
-    description: 'Professional wood glue, 16 oz bottle',
-    quantity: 20,
-    reorder_level: 5,
-    unit_price: 7.49,
-    inventory_type: 'supply',
-    material_type: 'consumable',
-    unit: 'bottle',
-    markup_percentage: 45,
-    is_billable: true
-  },
-  {
-    id: '5',
-    name: 'Sandpaper Assortment',
-    sku: 'SAND-ASST-25',
-    description: 'Mixed grit sandpaper, pack of 25 sheets',
-    quantity: 30,
-    reorder_level: 10,
-    unit_price: 9.99,
-    inventory_type: 'supply',
-    material_type: 'consumable',
-    unit: 'pack',
-    markup_percentage: 40,
-    is_billable: true
-  },
-  // Reusable Tools
-  {
-    id: '6',
-    name: 'Claw Hammer',
-    sku: 'TOOL-HAM-16',
-    description: '16oz professional claw hammer with fiberglass handle',
-    quantity: 5,
-    reorder_level: 2,
-    unit_price: 24.99,
-    inventory_type: 'supply',
-    material_type: 'reusable',
-    unit: 'each',
-    markup_percentage: 0,
-    is_billable: false
-  },
-  {
-    id: '7',
-    name: 'Cordless Drill',
-    sku: 'TOOL-DRILL-20V',
-    description: '20V cordless drill with battery and charger',
-    quantity: 3,
-    reorder_level: 1,
-    unit_price: 89.99,
-    inventory_type: 'supply',
-    material_type: 'reusable',
-    unit: 'each',
-    markup_percentage: 0,
-    is_billable: false
-  },
-  {
-    id: '8',
-    name: 'Circular Saw',
-    sku: 'TOOL-SAW-7.25',
-    description: '7.25" circular saw, 15 amp motor',
-    quantity: 2,
-    reorder_level: 1,
-    unit_price: 119.99,
-    inventory_type: 'supply',
-    material_type: 'reusable',
-    unit: 'each',
-    markup_percentage: 0,
-    is_billable: false
-  },
-  {
-    id: '9',
-    name: 'Level',
-    sku: 'TOOL-LEVEL-48',
-    description: '48" professional level with aluminum frame',
-    quantity: 4,
-    reorder_level: 1,
-    unit_price: 45.99,
-    inventory_type: 'supply',
-    material_type: 'reusable',
-    unit: 'each',
-    markup_percentage: 0,
-    is_billable: false
-  },
-  {
-    id: '10',
-    name: 'Paint',
-    sku: 'PAINT-INT-GAL',
-    description: 'Interior latex paint, white, 1 gallon',
-    quantity: 25,
-    reorder_level: 5,
-    unit_price: 28.99,
-    inventory_type: 'supply',
-    material_type: 'consumable',
-    unit: 'gallon',
-    markup_percentage: 35,
-    is_billable: true
-  }
-];
+// All mock data has been removed - the service will now throw errors instead of returning mock data
 
-// Mock business and user data for development environment
-const MOCK_BUSINESS_INFO = {
-  businessName: "Development Business",
-  businessType: "Technology",
-  businessSubtypes: "software,consulting",
-  businessId: "dev-tenant-123",
-  country: "US",
-  businessState: "California",
-  legalStructure: "LLC",
-  dateFounded: "2022-01-15",
-  address: "123 Tech Blvd, San Francisco, CA 94105",
-  phoneNumber: "415-555-1234",
-  taxId: "12-3456789"
-};
 
-// Mock user data for development environment
-const MOCK_USER_INFO = {
-  userId: "dev-user-id",
-  email: "kuoldimdeng@outlook.com",
-  firstName: "Kuol",
-  lastName: "Deng",
-  fullName: "Kuol Deng",
-  role: "OWNER",
-  createdAt: new Date(Date.now() - 30*24*60*60*1000).toISOString(),
-  lastLogin: new Date().toISOString()
-};
 
-// Mock subscription data for development environment
-const MOCK_SUBSCRIPTION_INFO = {
-  plan: "PROFESSIONAL", // Options: FREE, BASIC, PROFESSIONAL, ENTERPRISE
-  interval: "MONTHLY", // Options: MONTHLY, ANNUAL
-  price: 49.99,
-  status: "ACTIVE",
-  features: [
-    "inventory_management",
-    "invoicing",
-    "customer_management",
-    "reporting",
-    "multi_user",
-    "advanced_analytics"
-  ],
-  startDate: new Date().toISOString(),
-  nextBillingDate: new Date(Date.now() + 30*24*60*60*1000).toISOString(),
-  paymentMethod: {
-    type: "credit_card",
-    last4: "4242",
-    expiry: "12/25"
-  }
-};
-
-/**
- * Get mock products for testing and fallback
- * @returns {Array} List of mock products
- */
-export const getMockProducts = () => {
-  return [...MOCK_PRODUCTS];
-};
-
-/**
- * Get business, user, and subscription data for development environment
- * This function combines all development values into a single object
- * @returns {Object} Combined development values
- */
-export const getDevelopmentValues = () => {
-  return {
-    business: { ...MOCK_BUSINESS_INFO },
-    user: { ...MOCK_USER_INFO },
-    subscription: { ...MOCK_SUBSCRIPTION_INFO },
-    products: [...MOCK_PRODUCTS],
-    // Include system information
-    system: {
-      environment: "development",
-      version: "1.0.0",
-      timestamp: new Date().toISOString(),
-      features: {
-        inventory: true,
-        accounting: true,
-        crm: true,
-        reports: true
-      }
-    }
-  };
-};
 
 /**
  * Get products with optional filtering
@@ -515,9 +290,9 @@ export const getProducts = async (options = {}, fetchOptions = {}) => {
       return offlineData;
     }
 
-    // Return empty array instead of mock data
-    logger.info('No data available, returning empty array');
-    return [];
+    // Throw error instead of returning mock data
+    logger.error('No data available from any source');
+    throw new Error('Unable to load inventory data. Please check your connection and try again.');
   } catch (error) {
     logger.error('Error fetching products:', error);
     
@@ -528,9 +303,9 @@ export const getProducts = async (options = {}, fetchOptions = {}) => {
       return offlineData;
     }
     
-    // Return empty array instead of mock data
-    logger.info('No offline data available after error, returning empty array');
-    return [];
+    // Re-throw the error instead of returning mock data
+    logger.error('No offline data available after error');
+    throw error;
   }
 };
 
@@ -587,8 +362,13 @@ export const getProductStats = async (options = {}) => {
       return generateStatsFromProducts(offlineProducts);
     }
     
-    // Fall back to mock stats
-    return generateStatsFromProducts(MOCK_PRODUCTS);
+    // Return empty stats if no data available
+    return {
+      total_products: 0,
+      low_stock_count: 0,
+      total_value: 0,
+      avg_price: 0
+    };
   }
 };
 
@@ -648,16 +428,9 @@ export const getProductById = async (id, options = {}) => {
       return offlineProduct;
     }
     
-    // Try to find in mock data
-    const mockProduct = MOCK_PRODUCTS.find(p => p.id === id);
-    
-    if (mockProduct) {
-      logger.info(`Using mock data for product ${id}`);
-    } else {
-      logger.error(`Product ${id} not found in any data source`);
-    }
-    
-    return mockProduct || null;
+    // Product not found in any data source
+    logger.error(`Product ${id} not found in any data source`);
+    throw new Error(`Product with ID ${id} not found`);
   }
 };
 
@@ -692,10 +465,8 @@ export const getProductByCode = async (code, options = {}) => {
       return offlineProduct;
     }
     
-    // Try to find in mock data
-    const mockProduct = MOCK_PRODUCTS.find(p => p.product_code === code);
-    
-    return mockProduct || null;
+    // Product not found
+    throw new Error(`Product with code ${code} not found`);
   }
 };
 
@@ -1498,7 +1269,6 @@ export const inventoryService = {
   clearInventoryCache,
   storeProductsOffline,
   getOfflineProducts,
-  getMockProducts,
   printProductBarcode
 };
 

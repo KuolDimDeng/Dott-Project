@@ -18,6 +18,17 @@ logger.setLevel(logging.DEBUG)
 
 
 @api_view(['GET'])
+def test_auth_public(request):
+    """Test endpoint without authentication to verify routing"""
+    logger.info("[TEST AUTH PUBLIC] === REQUEST RECEIVED ===")
+    return Response({
+        'success': True,
+        'message': 'Public test endpoint is working',
+        'timestamp': timezone.now().isoformat()
+    })
+
+
+@api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def test_auth(request):
     """Test endpoint to verify authentication is working"""
