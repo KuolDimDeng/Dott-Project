@@ -1348,10 +1348,7 @@ class JobDataViewSet(viewsets.ViewSet):
             from crm.models import Customer
             from crm.serializers import CustomerSerializer
             
-            # Debug tenant context
-            from core.tenant_context import get_current_tenant
-            current_tenant = get_current_tenant()
-            logger.info(f"👥 [JobDataViewSet] Current tenant: {current_tenant}")
+            # Debug user context
             logger.info(f"👥 [JobDataViewSet] User tenant_id: {getattr(request.user, 'tenant_id', 'None')}")
             logger.info(f"👥 [JobDataViewSet] User business_id: {getattr(request.user, 'business_id', 'None')}")
             
@@ -1400,10 +1397,7 @@ class JobDataViewSet(viewsets.ViewSet):
             from inventory.models import Product
             from inventory.serializers import ProductSerializer
             
-            # Debug tenant context
-            from core.tenant_context import get_current_tenant
-            current_tenant = get_current_tenant()
-            logger.info(f"📦 [JobDataViewSet] Current tenant: {current_tenant}")
+            # Debug user context
             logger.info(f"📦 [JobDataViewSet] User tenant_id: {getattr(request.user, 'tenant_id', 'None')}")
             
             supplies = Product.objects.filter(
