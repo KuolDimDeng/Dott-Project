@@ -45,6 +45,7 @@ import React, {
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import DashboardLanguageSelector from './LanguageSelector';
+import CurrencyIndicator from './CurrencyIndicator';
 import { getSubscriptionPlanColor } from '@/utils/userAttributes';
 import { useMemoryOptimizer } from '@/utils/memoryManager';
 import { getCreateOptions } from './lists/listItems';
@@ -1510,6 +1511,11 @@ const DashAppBar = ({
                 </svg>
               </button>
 
+
+              {/* Currency indicator */}
+              <div className="hidden sm:block mr-3">
+                <CurrencyIndicator />
+              </div>
 
               {/* Language selector */}
               <div className="hidden sm:block mr-2">

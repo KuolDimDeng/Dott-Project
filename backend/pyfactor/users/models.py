@@ -204,6 +204,37 @@ class BusinessDetails(models.Model):
         help_text='Business logo (max 5MB, JPG/PNG/GIF/WebP)'
     )
     
+    # Currency preferences
+    preferred_currency_code = models.CharField(
+        max_length=3,
+        default='USD',
+        help_text='3-letter ISO currency code (e.g., USD, EUR, KES)'
+    )
+    preferred_currency_name = models.CharField(
+        max_length=50,
+        default='US Dollar',
+        help_text='Full currency name'
+    )
+    currency_updated_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Last time currency was updated'
+    )
+    
+    # USD display toggles
+    show_usd_on_invoices = models.BooleanField(
+        default=True,
+        help_text='Show USD equivalent in parentheses on invoices'
+    )
+    show_usd_on_quotes = models.BooleanField(
+        default=True,
+        help_text='Show USD equivalent in parentheses on quotes'
+    )
+    show_usd_on_reports = models.BooleanField(
+        default=False,
+        help_text='Show USD equivalent in parentheses on reports'
+    )
+    
     # Additional fields
     
     def save(self, *args, **kwargs):

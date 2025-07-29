@@ -18,6 +18,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { FieldTooltip } from '@/components/ui/FieldTooltip';
 import { logger } from '@/utils/logger';
+import CurrencyPreferences from './CurrencyPreferences';
 
 const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, notifyError }) => {
   console.log('[CompanyProfile] === COMPONENT RENDERED v2 ===');
@@ -900,6 +901,11 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
                 </p>
               </div>
             )}
+          </div>
+
+          {/* Currency Preferences Section */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <CurrencyPreferences />
           </div>
 
           {editMode && (
