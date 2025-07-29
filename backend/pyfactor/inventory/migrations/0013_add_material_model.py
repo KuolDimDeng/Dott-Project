@@ -9,7 +9,7 @@ import uuid
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('inventory', '0011_auto_20240710_0000'),  # Update this to your latest migration
+        ('inventory', '0012_merge_20250727_2123'),
         ('custom_auth', '0001_initial'),
         ('jobs', '0001_initial'),
     ]
