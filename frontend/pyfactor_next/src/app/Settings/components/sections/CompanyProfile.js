@@ -20,6 +20,16 @@ import { FieldTooltip } from '@/components/ui/FieldTooltip';
 import { logger } from '@/utils/logger';
 
 const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, notifyError }) => {
+  console.log('[CompanyProfile] === COMPONENT RENDERED v2 ===');
+  console.log('[CompanyProfile] Props:', { 
+    hasUser: !!user, 
+    hasProfileData: !!profileData, 
+    isOwner, 
+    isAdmin, 
+    hasNotifySuccess: !!notifySuccess, 
+    hasNotifyError: !!notifyError 
+  });
+  
   // Wrap notifyError to ensure it exists
   const safeNotifyError = notifyError || ((msg) => {
     console.error('[CompanyProfile] Error notification:', msg);
@@ -346,7 +356,7 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
       if (error instanceof TypeError && error.message.includes('fetch')) {
         safeNotifyError('Network error: Unable to connect to server');
       } else {
-        safeNotifyError('Failed to upload logo: ' + error.message);
+        safeNotifyError('Failed to upload logo v2: ' + error.message);
       }
     } finally {
       setUploadingLogo(false);
