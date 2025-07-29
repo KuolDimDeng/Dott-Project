@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('inventory', '0011_auto_20240710_0000'),  # Update this to your latest migration
-        ('users', '0001_initial'),
+        ('custom_auth', '0001_initial'),
         ('jobs', '0001_initial'),
     ]
 
@@ -64,7 +64,7 @@ class Migration(migrations.Migration):
                 ('purchase_order', models.CharField(blank=True, help_text='Purchase order reference', max_length=100, null=True)),
                 ('created_at', models.DateTimeField(default=django.utils.timezone.now)),
                 ('notes', models.TextField(blank=True, null=True)),
-                ('created_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='material_transactions_created', to='users.user')),
+                ('created_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='material_transactions_created', to='custom_auth.user')),
                 ('job', models.ForeignKey(blank=True, help_text='Job this material was used for', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='material_transactions', to='jobs.job')),
                 ('material', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='transactions', to='inventory.material')),
             ],
