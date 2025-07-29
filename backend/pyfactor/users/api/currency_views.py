@@ -8,7 +8,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.utils import timezone
 from django.db import transaction
-from users.models import BusinessDetails
+from users.models import Business, BusinessDetails
 from currency.currency_data import get_currency_list, get_currency_info
 from currency.exchange_rate_service import exchange_rate_service
 from decimal import Decimal
@@ -56,8 +56,29 @@ def get_currency_preferences(request):
                 'error': 'User profile not found'
             }, status=status.HTTP_400_BAD_REQUEST)
         
-        business = user.profile.business
-        logger.info(f"[Currency API] Business: {business}")
+        # Check if profile has business
+        profile = user.profile
+        logger.info(f"[Currency API] Profile found: {profile}")
+        logger.info(f"[Currency API] Profile business_id: {getattr(profile, 'business_id', None)}")
+        
+        # Use business_id to get business
+        if not profile.business_id:
+            logger.error(f"[Currency API] Profile has no business_id")
+            return Response({
+                'success': False,
+                'error': 'No business associated with user'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Get business using the business_id
+        try:
+            business = Business.objects.get(id=profile.business_id)
+            logger.info(f"[Currency API] Business found: {business.name} (ID: {business.id})")
+        except Business.DoesNotExist:
+            logger.error(f"[Currency API] Business with ID {profile.business_id} not found")
+            return Response({
+                'success': False,
+                'error': 'Business not found'
+            }, status=status.HTTP_400_BAD_REQUEST)
         
         if not business:
             return Response({
@@ -147,11 +168,31 @@ def get_currency_preferences(request):
             }
         })
         
-    except Exception as e:
-        logger.error(f"Error handling currency preferences: {str(e)}", exc_info=True)
+    except AttributeError as e:
+        logger.error(f"[Currency API] AttributeError: {str(e)}", exc_info=True)
+        logger.error(f"[Currency API] User object type: {type(request.user)}")
+        logger.error(f"[Currency API] User attributes: {[attr for attr in dir(request.user) if not attr.startswith('_')]}")
+        
+        # Try to get more details about the user model
+        try:
+            logger.error(f"[Currency API] User model: {request.user.__class__.__name__}")
+            logger.error(f"[Currency API] User model module: {request.user.__class__.__module__}")
+            if hasattr(request.user, 'profile'):
+                logger.error(f"[Currency API] Profile type: {type(request.user.profile)}")
+                logger.error(f"[Currency API] Profile attrs: {[attr for attr in dir(request.user.profile) if not attr.startswith('_')]}")
+        except Exception as debug_e:
+            logger.error(f"[Currency API] Debug error: {debug_e}")
+        
         return Response({
             'success': False,
-            'error': 'Failed to handle currency preferences'
+            'error': f'Profile access error: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    except Exception as e:
+        logger.error(f"[Currency API] Unexpected error: {str(e)}", exc_info=True)
+        logger.error(f"[Currency API] Error type: {type(e).__name__}")
+        return Response({
+            'success': False,
+            'error': f'Server error: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -161,7 +202,14 @@ def update_currency_preferences(request):
     """Update business currency preferences"""
     try:
         user = request.user
-        business = user.profile.business
+        # Get business using business_id from profile
+        if not hasattr(user, 'profile') or not user.profile.business_id:
+            return Response({
+                'success': False,
+                'error': 'No business associated with user'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        business = Business.objects.get(id=user.profile.business_id)
         
         if not business:
             return Response({
