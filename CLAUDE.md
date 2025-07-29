@@ -579,6 +579,8 @@ STRIPE_EXPRESS_ACCOUNT_ID=acct_1RkYGFC77wwa4lUB
 WHATSAPP_ACCESS_TOKEN=<generate-from-meta-business-platform>
 WHATSAPP_PHONE_NUMBER_ID=676188225586230
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSyCC7KgQRztJDsoaQa94zMO7F4Pa-4R73E0
+CURRENCY_API_KEY=cur_live_jE7Pw20yFxMkRhfGR8cmwEFHP8HB2JCQOUEOg0lc
+WISE_API_KEY=<optional-for-better-rates>
 ```
 
 ### [36.0.0] - 2025-07-15 - CURRENT - WhatsApp Commerce Menu Settings
@@ -762,6 +764,41 @@ NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSyCC7KgQRztJDsoaQa94zMO7F4Pa-4R73E0
   - `/src/components/SessionTimeoutModal.js` - Warning UI component
   - `/src/app/dashboard/DashboardClientLayout.js` - Integration point
   - `/src/components/auth/EmailPasswordSignIn.js` - Timeout message display
+
+### [47.0.0] - 2025-07-29 - CURRENT - Multi-Currency Display with USD Settlement
+- **Purpose**: Display invoices/quotes in 170+ local currencies while settling payments in USD
+- **Problem Solved**: Global businesses need familiar currency display without complex multi-currency accounting
+- **Core Features**:
+  - 170+ currency support with proper symbols and formatting
+  - Real-time exchange rates via CurrencyAPI (Wise API ready)
+  - Smart caching: 4 hours normal, 1 hour for volatile currencies
+  - User-controlled USD display toggles per document type
+  - All payments process in USD with clear conversion display
+- **User Interface**:
+  - Settings → Business → Currency Preferences
+  - Currency indicator in dashboard (next to language selector)
+  - Confirmation modal for currency changes
+  - Toggle options for USD display on invoices/quotes/reports
+- **Technical Implementation**:
+  - Backend: Exchange rate service with dual API support
+  - Frontend: Currency-aware components for all financial displays
+  - Email: Multi-currency templates with conversion context
+  - Payment: Enhanced flow with mandatory confirmation for non-USD
+- **Key Components**:
+  - `/backend/pyfactor/currency/exchange_rate_service.py` - Rate fetching and caching
+  - `/backend/pyfactor/currency/currency_data.py` - 170+ currency database
+  - `/src/components/CurrencyAwareInvoicePreview.js` - Multi-currency invoices
+  - `/src/components/payments/CurrencyAwareInvoicePaymentModal.js` - Payment flow
+  - `/src/utils/currencyFormatter.js` - Frontend formatting utilities
+- **Environment Variables**:
+  - `CURRENCY_API_KEY` - Required for CurrencyAPI fallback
+  - `WISE_API_KEY` - Optional for primary rate source
+- **Best Practices**:
+  - Always show USD at payment time regardless of display settings
+  - Handle rate failures gracefully with cached values
+  - Clear exchange rate disclosure in all communications
+  - Audit trail for all currency conversions
+- **Documentation**: `/docs/MULTI_CURRENCY_FEATURE.md`
 
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
