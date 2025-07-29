@@ -22,6 +22,34 @@ const CurrencyPreferences = () => {
   });
   const [exchangeRateInfo, setExchangeRateInfo] = useState(null);
   
+  // Run diagnostic
+  const runDiagnostic = async () => {
+    console.log('🩺 [CurrencyPreferences] Running diagnostic...');
+    try {
+      const response = await fetch('/api/currency/diagnostic');
+      console.log('🩺 [CurrencyPreferences] Diagnostic response status:', response.status);
+      const data = await response.json();
+      console.log('🩺 [CurrencyPreferences] Diagnostic data:', JSON.stringify(data, null, 2));
+      
+      if (data.success) {
+        notifySuccess('Diagnostic complete - check console for details');
+        
+        // Check for missing currency fields
+        if (data.diagnostics?.business_details?.has_currency_fields === false) {
+          notifyError('WARNING: Currency fields are missing from BusinessDetails model!');
+        }
+      } else {
+        notifyError('Diagnostic failed: ' + (data.error || 'Unknown error'));
+        if (data.traceback) {
+          console.error('🩺 [CurrencyPreferences] Traceback:', data.traceback);
+        }
+      }
+    } catch (error) {
+      console.error('🩺 [CurrencyPreferences] Diagnostic error:', error);
+      notifyError('Diagnostic failed: ' + error.message);
+    }
+  };
+  
   // Test auth function
   const testAuth = async () => {
     console.log('🧪 [CurrencyPreferences] Testing authentication...');
@@ -322,6 +350,12 @@ const CurrencyPreferences = () => {
             className="px-3 py-1 text-sm bg-blue-200 hover:bg-blue-300 rounded"
           >
             Test Public
+          </button>
+          <button
+            onClick={runDiagnostic}
+            className="px-3 py-1 text-sm bg-green-200 hover:bg-green-300 rounded"
+          >
+            Run Diagnostic
           </button>
         </div>
       </div>

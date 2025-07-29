@@ -12,9 +12,95 @@ from users.models import Business, BusinessDetails, UserProfile
 from currency.currency_data import get_currency_list, get_currency_info
 from currency.exchange_rate_service import exchange_rate_service
 from decimal import Decimal
+import traceback
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def currency_diagnostic(request):
+    """Diagnostic endpoint to check currency system health"""
+    try:
+        user = request.user
+        diagnostics = {
+            'user_info': {
+                'email': user.email,
+                'id': str(user.id),
+                'has_business_id': hasattr(user, 'business_id'),
+                'business_id': str(user.business_id) if hasattr(user, 'business_id') and user.business_id else None,
+                'has_tenant_id': hasattr(user, 'tenant_id'),
+                'tenant_id': str(user.tenant_id) if hasattr(user, 'tenant_id') and user.tenant_id else None,
+                'role': user.role if hasattr(user, 'role') else 'No role attribute',
+            }
+        }
+        
+        # Check if we can get the business
+        business_id = None
+        if hasattr(user, 'business_id') and user.business_id:
+            business_id = user.business_id
+        elif hasattr(user, 'tenant_id') and user.tenant_id:
+            business_id = user.tenant_id
+        
+        if business_id:
+            try:
+                business = Business.objects.get(id=business_id)
+                diagnostics['business_info'] = {
+                    'found': True,
+                    'id': str(business.id),
+                    'name': business.name,
+                }
+                
+                # Check BusinessDetails
+                try:
+                    business_details = BusinessDetails.objects.get(business=business)
+                    diagnostics['business_details'] = {
+                        'exists': True,
+                        'fields': [f.name for f in BusinessDetails._meta.get_fields()],
+                        'has_currency_fields': all([
+                            hasattr(business_details, 'preferred_currency_code'),
+                            hasattr(business_details, 'preferred_currency_name'),
+                            hasattr(business_details, 'show_usd_on_invoices'),
+                            hasattr(business_details, 'show_usd_on_quotes'),
+                            hasattr(business_details, 'show_usd_on_reports'),
+                        ]),
+                        'current_values': {
+                            'preferred_currency_code': getattr(business_details, 'preferred_currency_code', 'MISSING'),
+                            'preferred_currency_name': getattr(business_details, 'preferred_currency_name', 'MISSING'),
+                            'show_usd_on_invoices': getattr(business_details, 'show_usd_on_invoices', 'MISSING'),
+                            'show_usd_on_quotes': getattr(business_details, 'show_usd_on_quotes', 'MISSING'),
+                            'show_usd_on_reports': getattr(business_details, 'show_usd_on_reports', 'MISSING'),
+                        }
+                    }
+                except BusinessDetails.DoesNotExist:
+                    diagnostics['business_details'] = {
+                        'exists': False,
+                        'fields': [f.name for f in BusinessDetails._meta.get_fields()],
+                    }
+            except Business.DoesNotExist:
+                diagnostics['business_info'] = {'found': False, 'id': str(business_id)}
+        else:
+            diagnostics['business_info'] = {'found': False, 'reason': 'No business_id on user'}
+        
+        # Test currency data
+        diagnostics['currency_system'] = {
+            'ssp_exists': bool(get_currency_info('SSP')),
+            'ssp_info': get_currency_info('SSP'),
+            'total_currencies': len(get_currency_list()),
+        }
+        
+        return Response({
+            'success': True,
+            'diagnostics': diagnostics
+        })
+        
+    except Exception as e:
+        return Response({
+            'success': False,
+            'error': str(e),
+            'traceback': traceback.format_exc()
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['GET'])
