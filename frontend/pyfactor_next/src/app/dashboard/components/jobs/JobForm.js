@@ -10,7 +10,7 @@ import MultiSelectDropdown from './MultiSelectDropdown';
 const JobForm = ({ job, onClose, onSave, inline = false }) => {
   console.log('🎯 [JobForm] Component rendering with props:', { job, inline });
   console.log('🎯 [JobForm] DEBUG MODE: Enhanced logging enabled for customers and supplies');
-  console.log('🎯 [JobForm] Version: 1.1 - With function call tracing');
+  console.log('🎯 [JobForm] Version: 1.2 - ' + new Date().toISOString());
   
   const [formData, setFormData] = useState({
     job_number: '',
@@ -55,13 +55,29 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
   useEffect(() => {
     console.log('🚀 [JobForm] Component mounted/updated, fetching data...');
     console.log('🚀 [JobForm] About to call fetchCustomers...');
-    fetchCustomers();
+    try {
+      fetchCustomers();
+    } catch (err) {
+      console.error('🚀 [JobForm] Error calling fetchCustomers:', err);
+    }
     console.log('🚀 [JobForm] About to call fetchEmployees...');
-    fetchEmployees();
+    try {
+      fetchEmployees();
+    } catch (err) {
+      console.error('🚀 [JobForm] Error calling fetchEmployees:', err);
+    }
     console.log('🚀 [JobForm] About to call fetchSupplies...');
-    fetchSupplies();
+    try {
+      fetchSupplies();
+    } catch (err) {
+      console.error('🚀 [JobForm] Error calling fetchSupplies:', err);
+    }
     console.log('🚀 [JobForm] About to call fetchVehicles...');
-    fetchVehicles();
+    try {
+      fetchVehicles();
+    } catch (err) {
+      console.error('🚀 [JobForm] Error calling fetchVehicles:', err);
+    }
     if (job) {
       setFormData({
         ...job,
@@ -445,6 +461,29 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
     { value: 'closed', label: 'Closed' }
   ];
 
+  // Test function to directly call API
+  const testCustomerAPI = async () => {
+    console.log('🧪 [TEST] Direct API test for customers...');
+    try {
+      const response = await fetch('/api/jobs/data/customers/', {
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+      console.log('🧪 [TEST] Response status:', response.status);
+      console.log('🧪 [TEST] Response ok:', response.ok);
+      const text = await response.text();
+      console.log('🧪 [TEST] Response text:', text.substring(0, 500));
+      try {
+        const json = JSON.parse(text);
+        console.log('🧪 [TEST] Parsed JSON:', json);
+      } catch (e) {
+        console.log('🧪 [TEST] Not JSON, HTML response');
+      }
+    } catch (err) {
+      console.error('🧪 [TEST] API call error:', err);
+    }
+  };
+
   if (inline) {
     // Inline form variant
     return (
@@ -453,12 +492,20 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
           <h3 className="text-lg font-medium text-gray-900">
             {job ? 'Edit Job' : 'Create New Job'}
           </h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-500"
-          >
-            <XMarkIcon className="h-6 w-6" />
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={testCustomerAPI}
+              className="px-3 py-1 bg-blue-500 text-white rounded text-sm"
+            >
+              Test Customer API
+            </button>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-500"
+            >
+              <XMarkIcon className="h-6 w-6" />
+            </button>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit}>
