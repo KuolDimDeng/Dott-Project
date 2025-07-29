@@ -1,7 +1,45 @@
 import { NextResponse } from 'next/server';
-import { proxyRequest } from '@/utils/proxyRequest';
+import { cookies } from 'next/headers';
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.dottapps.com';
 
 export async function GET(request) {
   console.log('🎯 [Materials API] GET /api/inventory/materials/low_stock - fetching low stock items');
-  return proxyRequest(request, 'inventory/materials/low_stock/');
+  
+  try {
+    const cookieStore = cookies();
+    const sidCookie = cookieStore.get('sid');
+    
+    if (!sidCookie?.value) {
+      return NextResponse.json(
+        { error: 'No session found' },
+        { status: 401 }
+      );
+    }
+
+    const response = await fetch(`${BACKEND_URL}/api/inventory/materials/low_stock/`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Session ${sidCookie.value}`,
+      },
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      return NextResponse.json(
+        data,
+        { status: response.status }
+      );
+    }
+
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error('Error fetching low stock materials:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
 }
