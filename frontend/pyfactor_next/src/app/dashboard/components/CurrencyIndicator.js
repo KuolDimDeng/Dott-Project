@@ -37,8 +37,8 @@ const CurrencyIndicator = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center text-white/70 text-sm">
-        <CurrencyDollarIcon className="h-5 w-5 mr-1.5" />
+      <div className="flex items-center text-white/70 text-base">
+        <CurrencyDollarIcon className="h-6 w-6 mr-2" />
         <span>...</span>
       </div>
     );
@@ -46,10 +46,10 @@ const CurrencyIndicator = () => {
 
   return (
     <div 
-      className="flex items-center text-white/90 text-sm hover:text-white cursor-default"
+      className="flex items-center text-white/90 text-base hover:text-white cursor-default"
       title={`Business Currency: ${currencyData.name}`}
     >
-      <CurrencyDollarIcon className="h-5 w-5 mr-1.5" />
+      <CurrencyDollarIcon className="h-6 w-6 mr-2" />
       <span className="font-medium">{currencyData.code}</span>
     </div>
   );

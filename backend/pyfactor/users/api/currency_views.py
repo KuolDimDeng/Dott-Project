@@ -39,9 +39,25 @@ def get_currency_list_view(request):
 @permission_classes([IsAuthenticated])
 def get_currency_preferences(request):
     """Get or update business currency preferences"""
+    logger.info(f"[Currency API] Request method: {request.method}")
+    logger.info(f"[Currency API] User: {request.user}")
+    logger.info(f"[Currency API] User authenticated: {request.user.is_authenticated}")
+    
     try:
         user = request.user
+        logger.info(f"[Currency API] User ID: {user.id}, Email: {user.email}")
+        logger.info(f"[Currency API] Checking for user.profile...")
+        
+        # Check if user has profile
+        if not hasattr(user, 'profile'):
+            logger.error(f"[Currency API] User {user.email} has no profile")
+            return Response({
+                'success': False,
+                'error': 'User profile not found'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
         business = user.profile.business
+        logger.info(f"[Currency API] Business: {business}")
         
         if not business:
             return Response({
@@ -63,9 +79,17 @@ def get_currency_preferences(request):
         
         # Handle PUT request for updates
         if request.method == 'PUT':
+            logger.info(f"[Currency API] PUT request data: {request.data}")
+            
             # Check if user is owner or admin
             # The User model has a role field directly
+            logger.info(f"[Currency API] Checking user role...")
+            logger.info(f"[Currency API] Has role attr: {hasattr(user, 'role')}")
+            if hasattr(user, 'role'):
+                logger.info(f"[Currency API] User role: {user.role}")
+            
             if hasattr(user, 'role') and user.role not in ['OWNER', 'ADMIN']:
+                logger.error(f"[Currency API] User {user.email} role {user.role} not authorized")
                 return Response({
                     'success': False,
                     'error': 'Only business owners and admins can update currency preferences'
@@ -73,9 +97,14 @@ def get_currency_preferences(request):
             
             # Update currency if provided
             currency_code = request.data.get('currency_code')
+            logger.info(f"[Currency API] Currency code to update: {currency_code}")
+            
             if currency_code:
                 currency_info = get_currency_info(currency_code)
+                logger.info(f"[Currency API] Currency info found: {currency_info}")
+                
                 if not currency_info:
+                    logger.error(f"[Currency API] Invalid currency code: {currency_code}")
                     return Response({
                         'success': False,
                         'error': 'Invalid currency code'
@@ -84,6 +113,7 @@ def get_currency_preferences(request):
                 business_details.preferred_currency_code = currency_code
                 business_details.preferred_currency_name = currency_info['name']
                 business_details.currency_updated_at = timezone.now()
+                logger.info(f"[Currency API] Updated currency to {currency_code}")
             
             # Update toggle preferences
             if 'show_usd_on_invoices' in request.data:
@@ -97,9 +127,11 @@ def get_currency_preferences(request):
             
             # Save changes
             business_details.save()
+            logger.info(f"[Currency API] Saved business details successfully")
         
         # Get currency info for response
         currency_info = get_currency_info(business_details.preferred_currency_code)
+        logger.info(f"[Currency API] Preparing response with currency: {business_details.preferred_currency_code}")
         
         return Response({
             'success': True,
@@ -211,10 +243,15 @@ def update_currency_preferences(request):
 @permission_classes([IsAuthenticated])
 def get_exchange_rate(request):
     """Get exchange rate for currency conversion"""
+    logger.info(f"[Exchange Rate API] Request data: {request.data}")
+    logger.info(f"[Exchange Rate API] User: {request.user.email if request.user.is_authenticated else 'Not authenticated'}")
+    
     try:
         from_currency = request.data.get('from_currency', 'USD')
         to_currency = request.data.get('to_currency', 'USD')
         amount = request.data.get('amount', 1)
+        
+        logger.info(f"[Exchange Rate API] Converting {amount} from {from_currency} to {to_currency}")
         
         # Convert amount to Decimal
         try:

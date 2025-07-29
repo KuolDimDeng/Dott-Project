@@ -38,8 +38,15 @@ export async function PUT(request) {
     const cookieStore = await cookies();
     const sessionId = cookieStore.get('sid')?.value;
     const body = await request.json();
+    
+    console.log('[Currency Proxy] PUT request received');
+    console.log('[Currency Proxy] Session ID:', sessionId);
+    console.log('[Currency Proxy] Request body:', body);
 
-    const response = await fetch(`${process.env.BACKEND_URL}/api/users/api/currency/preferences/`, {
+    const backendUrl = `${process.env.BACKEND_URL}/api/users/api/currency/preferences/`;
+    console.log('[Currency Proxy] Backend URL:', backendUrl);
+    
+    const response = await fetch(backendUrl, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -48,7 +55,9 @@ export async function PUT(request) {
       body: JSON.stringify(body),
     });
 
+    console.log('[Currency Proxy] Response status:', response.status);
     const data = await response.json();
+    console.log('[Currency Proxy] Response data:', data);
 
     if (!response.ok) {
       return NextResponse.json(
