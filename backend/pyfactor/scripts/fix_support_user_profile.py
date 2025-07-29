@@ -67,21 +67,42 @@ def fix_support_user_profile():
         
         return True
     
-    # Verify the business exists
-    print(f"\nChecking business {business_id}...")
-    try:
-        business_uuid = uuid.UUID(business_id)
-        business = Business.objects.get(id=business_uuid)
-        print(f"✓ Found business: {business.name}")
-        print(f"  - Business Type: {business.business_type}")
-        print(f"  - Owner ID: {business.owner_id}")
+    # First check if user owns any businesses
+    user_businesses = Business.objects.filter(owner_id=user.id)
+    if user_businesses.exists():
+        print(f"\n✓ User owns {user_businesses.count()} business(es):")
+        for idx, biz in enumerate(user_businesses):
+            print(f"  {idx+1}. {biz.name} (ID: {biz.id})")
         
-    except (ValueError, Business.DoesNotExist):
-        print(f"✗ ERROR: Business with ID {business_id} not found!")
-        response = input("Continue without business association? (y/N): ")
-        if response.lower() != 'y':
-            return False
-        business_uuid = None
+        if user_businesses.count() == 1:
+            business_uuid = user_businesses.first().id
+            print(f"\n✓ Using user's business: {user_businesses.first().name}")
+        else:
+            print("\nMultiple businesses found. Please select one:")
+            choice = input("Enter number (or press Enter to skip): ")
+            if choice.isdigit() and 1 <= int(choice) <= user_businesses.count():
+                business_uuid = list(user_businesses)[int(choice)-1].id
+            else:
+                business_uuid = None
+    else:
+        # Verify the business exists
+        print(f"\nUser doesn't own any businesses. Checking business {business_id}...")
+        try:
+            business_uuid = uuid.UUID(business_id)
+            business = Business.objects.get(id=business_uuid)
+            print(f"✓ Found business: {business.name}")
+            print(f"  - Business Type: {business.business_type}")
+            print(f"  - Owner ID: {business.owner_id}")
+            
+        except (ValueError, Business.DoesNotExist):
+            print(f"✗ ERROR: Business with ID {business_id} not found!")
+            print("\nOptions:")
+            print("1. Continue without business association")
+            print("2. Exit and create a business first")
+            response = input("Choose (1/2): ")
+            if response != '1':
+                return False
+            business_uuid = None
     
     # Create UserProfile
     print(f"\nCreating UserProfile...")
@@ -89,7 +110,7 @@ def fix_support_user_profile():
         try:
             profile = UserProfile.objects.create(
                 user=user,
-                business_id=business_uuid if business_id else None,
+                business_id=business_uuid,
                 occupation='',
                 street='',
                 city='',
