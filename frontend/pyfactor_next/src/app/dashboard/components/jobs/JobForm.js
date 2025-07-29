@@ -107,10 +107,12 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
           headers: Object.fromEntries(response.headers)
         });
         
+        const responseText = await response.text();
+        logger.info('[JobForm] 👥 Response status:', response.status);
+        logger.info('[JobForm] 👥 Response headers:', Object.fromEntries(response.headers));
+        logger.info('[JobForm] 👥 Raw response preview:', responseText.substring(0, 200));
+        
         if (response.ok) {
-          const responseText = await response.text();
-          logger.info('[JobForm] 👥 Raw response:', responseText.substring(0, 200));
-          
           try {
             customersData = JSON.parse(responseText);
             logger.info('[JobForm] 👥 Parsed customers data:', {
@@ -122,11 +124,11 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
             });
           } catch (parseError) {
             logger.error('[JobForm] 👥 Failed to parse customers JSON:', parseError);
+            logger.error('[JobForm] 👥 Response was HTML, not JSON. Full response:', responseText.substring(0, 500));
             throw new Error(`Invalid JSON response: ${parseError.message}`);
           }
         } else {
-          const errorText = await response.text();
-          logger.error('[JobForm] 👥 Job data API error response:', errorText);
+          logger.error('[JobForm] 👥 Job data API error response:', responseText.substring(0, 500));
           throw new Error(`Job data API failed with status ${response.status}`);
         }
       } catch (apiError) {
@@ -267,10 +269,12 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
           headers: Object.fromEntries(response.headers)
         });
         
+        const responseText = await response.text();
+        logger.info('[JobForm] 📦 Response status:', response.status);
+        logger.info('[JobForm] 📦 Response headers:', Object.fromEntries(response.headers));
+        logger.info('[JobForm] 📦 Raw response preview:', responseText.substring(0, 200));
+        
         if (response.ok) {
-          const responseText = await response.text();
-          logger.info('[JobForm] 📦 Raw response:', responseText.substring(0, 200));
-          
           try {
             suppliesData = JSON.parse(responseText);
             logger.info('[JobForm] 📦 Parsed supplies data:', {
@@ -282,11 +286,11 @@ const JobForm = ({ job, onClose, onSave, inline = false }) => {
             });
           } catch (parseError) {
             logger.error('[JobForm] 📦 Failed to parse supplies JSON:', parseError);
+            logger.error('[JobForm] 📦 Response was HTML, not JSON. Full response:', responseText.substring(0, 500));
             throw new Error(`Invalid JSON response: ${parseError.message}`);
           }
         } else {
-          const errorText = await response.text();
-          logger.error('[JobForm] 📦 Job data API error response:', errorText);
+          logger.error('[JobForm] 📦 Job data API error response:', responseText.substring(0, 500));
           throw new Error(`Job data API failed with status ${response.status}`);
         }
       } catch (apiError) {
