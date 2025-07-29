@@ -68,7 +68,22 @@
   "features": {
     "eyebrow": "راه‌حل کامل کسب‌وکار",
     "heading": "همه چیزهایی که برای رشد جهانی نیاز دارید",
-    "subheading": "ابزارهای قدرتمند طراحی شده برای کسب‌وکارهای مدرن که فراتر از مرزها فعالیت می‌کنند"
+    "subheading": "ابزارهای قدرتمند طراحی شده برای کسب‌وکارهای مدرن که فراتر از مرزها فعالیت می‌کنند",
+    "operations": {
+      "title": "مدیریت عملیات",
+      "description": "عملیات روزانه کسب و کار خود را ساده کنید"
+    },
+    "financial": {
+      "title": "مدیریت مالی",
+      "description": "کنترل کامل بر امور مالی کسب و کار شما"
+    },
+    "global": {
+      "title": "ابزارهای تجارت جهانی",
+      "description": "همه چیزهایی که برای فعالیت بین‌المللی نیاز دارید"
+    },
+    "trust": {
+      "title": "ساخته شده برای امنیت و انطباق"
+    }
   },
   "footer": {
     "product": "محصول",
@@ -82,5 +97,69 @@
     "eyebrow": "سوالات متداول",
     "heading": "پرسش‌های متداول",
     "subheading": "پاسخ سوالات رایج درباره پلتفرم و خدمات ما را پیدا کنید."
+  },
+  "feature": {
+    "inventory": "مدیریت پیشرفته موجودی",
+    "inventory.description": "ردیابی موجودی در زمان واقعی با اسکن بارکد و پشتیبانی از چند مکان",
+    "barcode": "بارکد و کد QR",
+    "barcode.description": "تولید و اسکن بارکد برای محصولات و اسناد",
+    "pos": "نقطه فروش",
+    "pos.description": "سیستم POS مدرن با قابلیت‌های آفلاین",
+    "invoicing": "صورتحساب چند ارزی",
+    "invoicing.description": "صورتحساب‌های حرفه‌ای در بیش از 50 ارز با تبدیل خودکار",
+    "tax": "انطباق مالیاتی منطقه‌ای",
+    "tax.description": "محاسبات مالیاتی خودکار برای بیش از 100 کشور",
+    "reporting": "تحلیل‌های مالی",
+    "reporting.description": "بینش‌های در زمان واقعی با توصیه‌های مبتنی بر هوش مصنوعی",
+    "payments": "درگاه‌های پرداخت منطقه‌ای",
+    "payments.description": "پذیرش پرداخت از طریق روش‌های محلی در هر کشور",
+    "global": "مدیریت واردات/صادرات",
+    "global.description": "مدیریت اسناد تجارت بین‌المللی و انطباق",
+    "security": "امنیت سازمانی",
+    "security.description": "امنیت در سطح بانکی با انطباق منطقه‌ای",
+    "jobs": "مدیریت کار و هزینه",
+    "jobs.description": "ردیابی پروژه از ابتدا تا انتها با هزینه‌های در زمان واقعی، اپلیکیشن موبایل و تحلیل سودآوری"
+  },
+  "trust": {
+    "soc2Title": "منطبق با SOC2",
+    "soc2Desc": "امنیت سازمانی",
+    "encryptionTitle": "رمزگذاری 256 بیتی",
+    "encryptionDesc": "امنیت در سطح بانکی",
+    "gdprTitle": "آماده GDPR",
+    "gdprDesc": "منطبق با حریم خصوصی",
+    "uptimeTitle": "99.9% آپتایم",
+    "uptimeDesc": "همیشه در دسترس"
+  },
+  "highlights": {
+    "bluetooth": "ادغام اسکنر بلوتوث",
+    "printBarcodes": "چاپ بارکدهای سفارشی",
+    "lowStock": "هشدارهای موجودی کم",
+    "customLabel": "چاپ برچسب سفارشی",
+    "mobileScanning": "اسکن موبایل",
+    "batchProcessing": "پردازش دسته‌ای",
+    "offlineMode": "حالت آفلاین",
+    "multiplePayments": "روش‌های پرداخت متعدد",
+    "receiptCustom": "سفارشی‌سازی رسید",
+    "recurringInvoices": "صورتحساب‌های تکراری",
+    "paymentReminders": "یادآوری‌های پرداخت",
+    "invoiceFactoring": "فاکتورینگ صورتحساب",
+    "vatGst": "پشتیبانی از VAT/GST",
+    "taxReports": "گزارش‌های مالیاتی",
+    "eFilingReady": "آماده برای ثبت الکترونیک",
+    "customDashboards": "داشبوردهای سفارشی",
+    "profitAnalysis": "تحلیل سود",
+    "cashFlowForecast": "پیش‌بینی جریان نقدی",
+    "mobileMoney": "پول موبایل",
+    "bankTransfers": "حوالات بانکی",
+    "digitalWallets": "کیف پول‌های دیجیتال",
+    "customsDocuments": "اسناد گمرکی",
+    "shippingIntegration": "ادغام حمل و نقل",
+    "tradeCompliance": "انطباق تجاری",
+    "soc2Compliant": "منطبق با SOC2",
+    "dataEncryption": "رمزگذاری داده‌ها",
+    "gdprReady": "آماده GDPR",
+    "jobCosting": "هزینه‌یابی کار در زمان واقعی",
+    "mobileFieldApp": "اپلیکیشن موبایل برای کارکنان میدانی",
+    "materialLaborTracking": "ردیابی مواد و کار"
   }
 }

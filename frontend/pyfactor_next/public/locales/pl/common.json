@@ -68,7 +68,86 @@
   "features": {
     "eyebrow": "Kompletne Rozwiązanie Biznesowe",
     "heading": "Wszystko Czego Potrzebujesz do Globalnego Rozwoju",
-    "subheading": "Potężne narzędzia zaprojektowane dla nowoczesnych firm działających ponad granicami"
+    "subheading": "Potężne narzędzia zaprojektowane dla nowoczesnych firm działających ponad granicami",
+    "operations": {
+      "title": "Zarządzanie Operacyjne",
+      "description": "Usprawnij codzienne operacje biznesowe"
+    },
+    "financial": {
+      "title": "Zarządzanie Finansowe",
+      "description": "Pełna kontrola nad finansami firmy"
+    },
+    "global": {
+      "title": "Globalne Narzędzia Biznesowe",
+      "description": "Wszystko czego potrzebujesz do działania międzynarodowego"
+    },
+    "trust": {
+      "title": "Stworzone dla Bezpieczeństwa i Zgodności"
+    }
+  },
+  "feature": {
+    "inventory": "Zaawansowane Zarządzanie Zapasami",
+    "inventory.description": "Śledzenie stanów magazynowych w czasie rzeczywistym ze skanowaniem kodów kreskowych i obsługą wielu lokalizacji",
+    "barcode": "Kody Kreskowe i QR",
+    "barcode.description": "Generuj i skanuj kody kreskowe dla produktów i dokumentów",
+    "pos": "Punkt Sprzedaży",
+    "pos.description": "Nowoczesny system POS z możliwościami offline",
+    "invoicing": "Fakturowanie Wielowalutowe",
+    "invoicing.description": "Profesjonalne faktury w ponad 50 walutach z automatyczną konwersją",
+    "tax": "Regionalna Zgodność Podatkowa",
+    "tax.description": "Automatyczne obliczenia podatkowe dla ponad 100 krajów",
+    "reporting": "Analityka Finansowa",
+    "reporting.description": "Wglądy w czasie rzeczywistym z rekomendacjami opartymi na AI",
+    "payments": "Regionalne Bramki Płatności",
+    "payments.description": "Akceptuj płatności przez lokalne metody w każdym kraju",
+    "global": "Zarządzanie Importem/Eksportem",
+    "global.description": "Obsługa dokumentacji i zgodności handlu międzynarodowego",
+    "security": "Bezpieczeństwo Korporacyjne",
+    "security.description": "Bezpieczeństwo na poziomie bankowym z regionalną zgodnością",
+    "jobs": "Zarządzanie Zadaniami i Kosztami",
+    "jobs.description": "Kompleksowe śledzenie projektów z kosztami w czasie rzeczywistym, aplikacją mobilną i analizą rentowności"
+  },
+  "trust": {
+    "soc2Title": "Zgodny z SOC2",
+    "soc2Desc": "Bezpieczeństwo korporacyjne",
+    "encryptionTitle": "Szyfrowanie 256-bitowe",
+    "encryptionDesc": "Bezpieczeństwo na poziomie bankowym",
+    "gdprTitle": "Gotowy na RODO",
+    "gdprDesc": "Zgodny z prywatnością",
+    "uptimeTitle": "99.9% Dostępności",
+    "uptimeDesc": "Zawsze dostępny"
+  },
+  "highlights": {
+    "bluetooth": "Integracja skanera Bluetooth",
+    "printBarcodes": "Drukuj niestandardowe kody kreskowe",
+    "lowStock": "Alerty niskich stanów",
+    "customLabel": "Drukowanie niestandardowych etykiet",
+    "mobileScanning": "Skanowanie mobilne",
+    "batchProcessing": "Przetwarzanie wsadowe",
+    "offlineMode": "Tryb offline",
+    "multiplePayments": "Wiele metod płatności",
+    "receiptCustom": "Personalizacja paragonów",
+    "recurringInvoices": "Faktury cykliczne",
+    "paymentReminders": "Przypomnienia o płatnościach",
+    "invoiceFactoring": "Faktoring faktur",
+    "vatGst": "Obsługa VAT/GST",
+    "taxReports": "Raporty podatkowe",
+    "eFilingReady": "Gotowy do e-deklaracji",
+    "customDashboards": "Niestandardowe pulpity",
+    "profitAnalysis": "Analiza zysków",
+    "cashFlowForecast": "Prognozowanie przepływów pieniężnych",
+    "mobileMoney": "Płatności mobilne",
+    "bankTransfers": "Przelewy bankowe",
+    "digitalWallets": "Portfele cyfrowe",
+    "customsDocuments": "Dokumenty celne",
+    "shippingIntegration": "Integracja wysyłki",
+    "tradeCompliance": "Zgodność handlowa",
+    "soc2Compliant": "Zgodny z SOC2",
+    "dataEncryption": "Szyfrowanie danych",
+    "gdprReady": "Gotowy na RODO",
+    "jobCosting": "Kosztorysowanie zadań w czasie rzeczywistym",
+    "mobileFieldApp": "Aplikacja mobilna dla pracowników terenowych",
+    "materialLaborTracking": "Śledzenie materiałów i pracy"
   },
   "footer": {
     "product": "Produkt",

@@ -68,7 +68,22 @@
   "features": {
     "eyebrow": "Ngwọta Azụmahịa Zuru Ezu",
     "heading": "Ihe Niile Ị Chọrọ Ito N'ụwa Niile",
-    "subheading": "Ngwaọrụ dị ike emebere azụmahịa ọgbara ọhụrụ na-arụ ọrụ gafee oke"
+    "subheading": "Ngwaọrụ dị ike emebere azụmahịa ọgbara ọhụrụ na-arụ ọrụ gafee oke",
+    "operations": {
+      "title": "Njikwa Ọrụ",
+      "description": "Mee ka ọrụ azụmahịa gị kwa ụbọchị dị mfe"
+    },
+    "financial": {
+      "title": "Njikwa Ego",
+      "description": "Njikwa zuru ezu nke ego azụmahịa gị"
+    },
+    "global": {
+      "title": "Ngwaọrụ Azụmahịa Ụwa",
+      "description": "Ihe niile ị chọrọ iji rụọ ọrụ n'ụwa niile"
+    },
+    "trust": {
+      "title": "Ewuru maka Nchekwa na Nrube isi"
+    }
   },
   "footer": {
     "product": "Ngwaahịa",
@@ -82,5 +97,69 @@
     "eyebrow": "FAQ",
     "heading": "Ajụjụ Ndị A Na-ajụkarị",
     "subheading": "Chọta azịza nye ajụjụ ndị a na-ajụkarị gbasara ikpo okwu anyị na ọrụ anyị."
+  },
+  "feature": {
+    "inventory": "Njikwa Ngwaahịa Dị Elu",
+    "inventory.description": "Nleba anya ngwaahịa n'oge ozugbo na nyocha barcode na nkwado ọtụtụ ebe",
+    "barcode": "Barcode na QR Code",
+    "barcode.description": "Mepụta ma nyochaa barcode maka ngwaahịa na akwụkwọ",
+    "pos": "Ebe Ire Ahịa",
+    "pos.description": "Sistemụ POS ọgbara ọhụrụ nwere ike ọrụ na-enweghị ịntanetị",
+    "invoicing": "Akwụkwọ ụgwọ Ego Dị Iche Iche",
+    "invoicing.description": "Akwụkwọ ụgwọ ọkachamara na ego karịrị 50 na mgbanwe akpaka",
+    "tax": "Nrube Isi Ụtụ Mpaghara",
+    "tax.description": "Mgbakọ ụtụ akpaka maka mba karịrị 100",
+    "reporting": "Nyocha Ego",
+    "reporting.description": "Nghọta n'oge ozugbo na ndụmọdụ AI",
+    "payments": "Ụzọ Ịkwụ Ụgwọ Mpaghara",
+    "payments.description": "Nabata ịkwụ ụgwọ site na ụzọ mpaghara na mba ọ bụla",
+    "global": "Njikwa Mbubata/Mbupu",
+    "global.description": "Jikwaa akwụkwọ azụmahịa mba ụwa na nrube isi",
+    "security": "Nchekwa Ụlọ Ọrụ",
+    "security.description": "Nchekwa ọkwa ụlọ akụ na nrube isi mpaghara",
+    "jobs": "Njikwa Ọrụ na Ọnụ Ahịa",
+    "jobs.description": "Nleba anya ọrụ site na mmalite ruo na njedebe na ọnụ ahịa n'oge ozugbo, ngwa mkpanaka, na nyocha uru"
+  },
+  "trust": {
+    "soc2Title": "SOC2 Kwadoro",
+    "soc2Desc": "Nchekwa ụlọ ọrụ",
+    "encryptionTitle": "256-bit Encryption",
+    "encryptionDesc": "Nchekwa ọkwa ụlọ akụ",
+    "gdprTitle": "GDPR Dị Njikere",
+    "gdprDesc": "Kwadoro nzuzo",
+    "uptimeTitle": "99.9% Uptime",
+    "uptimeDesc": "Mgbe niile dị"
+  },
+  "highlights": {
+    "bluetooth": "Njikọ nyocha Bluetooth",
+    "printBarcodes": "Bipụta barcode ahaziri",
+    "lowStock": "Ọkwa ngwaahịa dị ala",
+    "customLabel": "Mbipụta akara ahaziri",
+    "mobileScanning": "Nyocha mkpanaka",
+    "batchProcessing": "Nhazi ọtụtụ",
+    "offlineMode": "Ọnọdụ na-enweghị ịntanetị",
+    "multiplePayments": "Ụzọ ịkwụ ụgwọ dị iche iche",
+    "receiptCustom": "Nhazi akwụkwọ nnata",
+    "recurringInvoices": "Akwụkwọ ụgwọ na-emegharị",
+    "paymentReminders": "Ncheta ịkwụ ụgwọ",
+    "invoiceFactoring": "Ịre akwụkwọ ụgwọ",
+    "vatGst": "Nkwado VAT/GST",
+    "taxReports": "Akụkọ ụtụ",
+    "eFilingReady": "Dị njikere maka e-filing",
+    "customDashboards": "Dashboard ahaziri",
+    "profitAnalysis": "Nyocha uru",
+    "cashFlowForecast": "Amụma ego na-erute",
+    "mobileMoney": "Ego mkpanaka",
+    "bankTransfers": "Mbufe ụlọ akụ",
+    "digitalWallets": "Akpa ego dijitalụ",
+    "customsDocuments": "Akwụkwọ customs",
+    "shippingIntegration": "Njikọ mbupu",
+    "tradeCompliance": "Nrube isi azụmahịa",
+    "soc2Compliant": "SOC2 kwadoro",
+    "dataEncryption": "Nzuzo data",
+    "gdprReady": "GDPR dị njikere",
+    "jobCosting": "Ọnụ ahịa ọrụ n'oge ozugbo",
+    "mobileFieldApp": "Ngwa mkpanaka maka ndị ọrụ n'ọhịa",
+    "materialLaborTracking": "Nleba anya ihe na ọrụ"
   }
 }

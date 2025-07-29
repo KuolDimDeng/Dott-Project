@@ -68,7 +68,86 @@
   "features": {
     "eyebrow": "Soluzione Aziendale Completa",
     "heading": "Tutto Ciò di Cui Hai Bisogno per Crescere Globalmente",
-    "subheading": "Strumenti potenti progettati per aziende moderne che operano oltre i confini"
+    "subheading": "Strumenti potenti progettati per aziende moderne che operano oltre i confini",
+    "operations": {
+      "title": "Gestione Operativa",
+      "description": "Semplifica le operazioni aziendali quotidiane"
+    },
+    "financial": {
+      "title": "Gestione Finanziaria",
+      "description": "Controllo completo sulle finanze aziendali"
+    },
+    "global": {
+      "title": "Strumenti Aziendali Globali",
+      "description": "Tutto il necessario per operare a livello internazionale"
+    },
+    "trust": {
+      "title": "Costruito per Sicurezza e Conformità"
+    }
+  },
+  "feature": {
+    "inventory": "Gestione Inventario Avanzata",
+    "inventory.description": "Monitoraggio scorte in tempo reale con scansione codici a barre e supporto multi-sede",
+    "barcode": "Codice a Barre e QR",
+    "barcode.description": "Genera e scansiona codici a barre per prodotti e documenti",
+    "pos": "Punto Vendita",
+    "pos.description": "Sistema POS moderno con funzionalità offline",
+    "invoicing": "Fatturazione Multi-Valuta",
+    "invoicing.description": "Fatture professionali in oltre 50 valute con conversione automatica",
+    "tax": "Conformità Fiscale Regionale",
+    "tax.description": "Calcoli fiscali automatizzati per oltre 100 paesi",
+    "reporting": "Analisi Finanziarie",
+    "reporting.description": "Approfondimenti in tempo reale con raccomandazioni basate su AI",
+    "payments": "Gateway di Pagamento Regionali",
+    "payments.description": "Accetta pagamenti tramite metodi locali in ogni paese",
+    "global": "Gestione Import/Export",
+    "global.description": "Gestisci documentazione e conformità del commercio internazionale",
+    "security": "Sicurezza Aziendale",
+    "security.description": "Sicurezza di livello bancario con conformità regionale",
+    "jobs": "Gestione Lavori e Costi",
+    "jobs.description": "Monitoraggio progetti end-to-end con costi in tempo reale, app mobile e analisi redditività"
+  },
+  "trust": {
+    "soc2Title": "Conforme SOC2",
+    "soc2Desc": "Sicurezza aziendale",
+    "encryptionTitle": "Crittografia a 256 bit",
+    "encryptionDesc": "Sicurezza di livello bancario",
+    "gdprTitle": "Pronto per GDPR",
+    "gdprDesc": "Conforme alla privacy",
+    "uptimeTitle": "99.9% Uptime",
+    "uptimeDesc": "Sempre disponibile"
+  },
+  "highlights": {
+    "bluetooth": "Integrazione scanner Bluetooth",
+    "printBarcodes": "Stampa codici a barre personalizzati",
+    "lowStock": "Avvisi scorte basse",
+    "customLabel": "Stampa etichette personalizzate",
+    "mobileScanning": "Scansione mobile",
+    "batchProcessing": "Elaborazione batch",
+    "offlineMode": "Modalità offline",
+    "multiplePayments": "Metodi di pagamento multipli",
+    "receiptCustom": "Personalizzazione ricevute",
+    "recurringInvoices": "Fatture ricorrenti",
+    "paymentReminders": "Promemoria pagamenti",
+    "invoiceFactoring": "Factoring fatture",
+    "vatGst": "Supporto IVA/GST",
+    "taxReports": "Report fiscali",
+    "eFilingReady": "Pronto per e-filing",
+    "customDashboards": "Dashboard personalizzate",
+    "profitAnalysis": "Analisi profitti",
+    "cashFlowForecast": "Previsioni flusso di cassa",
+    "mobileMoney": "Mobile money",
+    "bankTransfers": "Bonifici bancari",
+    "digitalWallets": "Portafogli digitali",
+    "customsDocuments": "Documenti doganali",
+    "shippingIntegration": "Integrazione spedizioni",
+    "tradeCompliance": "Conformità commerciale",
+    "soc2Compliant": "Conforme SOC2",
+    "dataEncryption": "Crittografia dati",
+    "gdprReady": "Pronto per GDPR",
+    "jobCosting": "Costi lavori in tempo reale",
+    "mobileFieldApp": "App mobile per operatori",
+    "materialLaborTracking": "Monitoraggio materiali e manodopera"
   },
   "footer": {
     "product": "Prodotto",

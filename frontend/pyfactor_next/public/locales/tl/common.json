@@ -68,7 +68,22 @@
   "features": {
     "eyebrow": "Kumpletong Solusyon sa Negosyo",
     "heading": "Lahat ng Kailangan Mo para Lumago sa Pandaigdigang Antas",
-    "subheading": "Malalakas na tool na dinisenyo para sa mga modernong negosyong tumatakbo sa iba't ibang bansa"
+    "subheading": "Malalakas na tool na dinisenyo para sa mga modernong negosyong tumatakbo sa iba't ibang bansa",
+    "operations": {
+      "title": "Pamamahala ng Operasyon",
+      "description": "Pasimplehan ang iyong pang-araw-araw na operasyon sa negosyo"
+    },
+    "financial": {
+      "title": "Pamamahala ng Pananalapi",
+      "description": "Kumpletong kontrol sa pananalapi ng iyong negosyo"
+    },
+    "global": {
+      "title": "Pandaigdigang Kasangkapan sa Negosyo",
+      "description": "Lahat ng kailangan mo para mag-operate sa buong mundo"
+    },
+    "trust": {
+      "title": "Binuo para sa Seguridad at Pagsunod"
+    }
   },
   "footer": {
     "product": "Produkto",
@@ -82,5 +97,69 @@
     "eyebrow": "FAQ",
     "heading": "Mga Madalas Itanong",
     "subheading": "Maghanap ng mga sagot sa karaniwang tanong tungkol sa aming platform at serbisyo."
+  },
+  "feature": {
+    "inventory": "Advanced na Pamamahala ng Imbentaryo",
+    "inventory.description": "Real-time na pagsubaybay ng stock gamit ang barcode scanning at suporta sa maraming lokasyon",
+    "barcode": "Barcode at QR Code",
+    "barcode.description": "Gumawa at mag-scan ng mga barcode para sa mga produkto at dokumento",
+    "pos": "Point of Sale",
+    "pos.description": "Modernong POS system na may kakayahang offline",
+    "invoicing": "Multi-Currency na Pagsingil",
+    "invoicing.description": "Propesyonal na mga invoice sa mahigit 50 pera na may awtomatikong conversion",
+    "tax": "Rehiyonal na Pagsunod sa Buwis",
+    "tax.description": "Awtomatikong kalkulasyon ng buwis para sa mahigit 100 bansa",
+    "reporting": "Pagsusuri ng Pananalapi",
+    "reporting.description": "Real-time na insights na may AI-powered na rekomendasyon",
+    "payments": "Rehiyonal na Payment Gateways",
+    "payments.description": "Tumanggap ng bayad sa pamamagitan ng lokal na paraan sa bawat bansa",
+    "global": "Pamamahala ng Import/Export",
+    "global.description": "Hawakan ang dokumentasyon at pagsunod sa pandaigdigang kalakalan",
+    "security": "Enterprise Security",
+    "security.description": "Bank-grade na seguridad na may rehiyonal na pagsunod",
+    "jobs": "Pamamahala ng Trabaho at Gastos",
+    "jobs.description": "End-to-end na pagsubaybay ng proyekto na may real-time na gastos, mobile app, at pagsusuri ng kita"
+  },
+  "trust": {
+    "soc2Title": "SOC2 Compliant",
+    "soc2Desc": "Enterprise security",
+    "encryptionTitle": "256-bit Encryption",
+    "encryptionDesc": "Bank-level na seguridad",
+    "gdprTitle": "GDPR Ready",
+    "gdprDesc": "Sumusunod sa privacy",
+    "uptimeTitle": "99.9% Uptime",
+    "uptimeDesc": "Laging available"
+  },
+  "highlights": {
+    "bluetooth": "Bluetooth scanner integration",
+    "printBarcodes": "Mag-print ng custom na barcode",
+    "lowStock": "Mga alerto ng mababang stock",
+    "customLabel": "Custom na pag-print ng label",
+    "mobileScanning": "Mobile scanning",
+    "batchProcessing": "Batch processing",
+    "offlineMode": "Offline mode",
+    "multiplePayments": "Maraming paraan ng pagbabayad",
+    "receiptCustom": "Pag-customize ng resibo",
+    "recurringInvoices": "Mga paulit-ulit na invoice",
+    "paymentReminders": "Mga paalala sa pagbabayad",
+    "invoiceFactoring": "Invoice factoring",
+    "vatGst": "Suporta sa VAT/GST",
+    "taxReports": "Mga ulat ng buwis",
+    "eFilingReady": "Handa para sa e-filing",
+    "customDashboards": "Mga custom na dashboard",
+    "profitAnalysis": "Pagsusuri ng kita",
+    "cashFlowForecast": "Pagtataya ng cash flow",
+    "mobileMoney": "Mobile money",
+    "bankTransfers": "Mga bank transfer",
+    "digitalWallets": "Mga digital wallet",
+    "customsDocuments": "Mga dokumento ng customs",
+    "shippingIntegration": "Shipping integration",
+    "tradeCompliance": "Pagsunod sa kalakalan",
+    "soc2Compliant": "SOC2 compliant",
+    "dataEncryption": "Data encryption",
+    "gdprReady": "GDPR ready",
+    "jobCosting": "Real-time na gastos ng trabaho",
+    "mobileFieldApp": "Mobile app para sa field workers",
+    "materialLaborTracking": "Pagsubaybay ng materyales at paggawa"
   }
 }

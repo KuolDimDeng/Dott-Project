@@ -68,7 +68,22 @@
   "features": {
     "eyebrow": "Mhinduro Yebhizinesi Yakazara",
     "heading": "Zvese Zvaunoda Kukura Pasi Rose",
-    "subheading": "Zvishandiso zvine simba zvakagadzirirwa mabhizinesi emazuva ano anoshanda kupfuura miganhu"
+    "subheading": "Zvishandiso zvine simba zvakagadzirirwa mabhizinesi emazuva ano anoshanda kupfuura miganhu",
+    "operations": {
+      "title": "Kutonga Mabasa",
+      "description": "Rerutsa mabasa ako ezuva nezuva ebhizinesi"
+    },
+    "financial": {
+      "title": "Kutonga Mari",
+      "description": "Kutonga kuzere kwemari yebhizinesi rako"
+    },
+    "global": {
+      "title": "Zvishandiso Zvebhizinesi Repasi Rose",
+      "description": "Zvese zvaunoda kushanda pasi rose"
+    },
+    "trust": {
+      "title": "Yakavakirwa Kuchengetedzeka neKutevedzera"
+    }
   },
   "footer": {
     "product": "Chigadzirwa",
@@ -82,5 +97,69 @@
     "eyebrow": "FAQ",
     "heading": "Mibvunzo Inowanzo bvunzwa",
     "subheading": "Wana mhinduro kumibvunzo yakajairika nezve puratifomu yedu nemasevhisi."
+  },
+  "feature": {
+    "inventory": "Kutonga Kwakawanda Kwezvigadzirwa",
+    "inventory.description": "Kutevera stock munguva chaiyo nekuscan barcode uye kutsigira nzvimbo dzakawanda",
+    "barcode": "Barcode ne QR Code",
+    "barcode.description": "Gadzira uye scan mabharcode ezvigadzirwa nemagwaro",
+    "pos": "Nzvimbo Yekutengesa",
+    "pos.description": "POS system yemazuva ano ine kugona kusiri pamhepo",
+    "invoicing": "Mabhiri Emari Dzakasiyana",
+    "invoicing.description": "Mabhiri ehunyanzvi mumari dzinodarika makumi mashanu nekushandura otomatiki",
+    "tax": "Kutevedzera Mitero Yedunhu",
+    "tax.description": "Kuverenga mitero otomatiki kunyika dzinodarika zana",
+    "reporting": "Kuongorora Mari",
+    "reporting.description": "Ruzivo rwenguva chaiyo nemazano anobva kuAI",
+    "payments": "Nzira Dzekubhadhara Dzedunhu",
+    "payments.description": "Gamuchira mubhadharo kuburikidza nenzira dzemuno munyika yega yega",
+    "global": "Kutonga Kupinza/Kutumira Kunze",
+    "global.description": "Bata magwaro ekutengeserana kwepasi rose nekutevedzera",
+    "security": "Kuchengetedzeka Kwebhizinesi",
+    "security.description": "Kuchengetedzeka kwebhangi nekutevedzera kwedunhu",
+    "jobs": "Kutonga Mabasa neMutengo",
+    "jobs.description": "Kutevera purojekiti kubva kutanga kusvika kumagumo nemitengo yenguva chaiyo, app yemufoni, uye kuongorora purofiti"
+  },
+  "trust": {
+    "soc2Title": "Inotevedzera SOC2",
+    "soc2Desc": "Kuchengetedzeka kwebhizinesi",
+    "encryptionTitle": "256-bit Encryption",
+    "encryptionDesc": "Kuchengetedzeka kwebhangi",
+    "gdprTitle": "Yakagadzirira GDPR",
+    "gdprDesc": "Inotevedzera zvakavanzika",
+    "uptimeTitle": "99.9% Uptime",
+    "uptimeDesc": "Inogara iripo"
+  },
+  "highlights": {
+    "bluetooth": "Kubatanidza scanner yeBluetooth",
+    "printBarcodes": "Dhinda mabharcode akasarudzwa",
+    "lowStock": "Yambiro yestock yakaderera",
+    "customLabel": "Kudhinda mavara akasarudzwa",
+    "mobileScanning": "Kuscan nemufoni",
+    "batchProcessing": "Kugadzira kwakawanda",
+    "offlineMode": "Mode isiri pamhepo",
+    "multiplePayments": "Nzira dzekubhadhara dzakawanda",
+    "receiptCustom": "Kugadzirisa marisiti",
+    "recurringInvoices": "Mabhiri anodzokororwa",
+    "paymentReminders": "Zviyeuchidzo zvekubhadhara",
+    "invoiceFactoring": "Invoice factoring",
+    "vatGst": "Kutsigira VAT/GST",
+    "taxReports": "Mishumo yemitero",
+    "eFilingReady": "Yakagadzirira e-filing",
+    "customDashboards": "Madheshibhodhi akasarudzwa",
+    "profitAnalysis": "Kuongorora purofiti",
+    "cashFlowForecast": "Kufungidzira kuyerera kwemari",
+    "mobileMoney": "Mari yemufoni",
+    "bankTransfers": "Kuendesa kubhangi",
+    "digitalWallets": "Zvikwama zvedhijitari",
+    "customsDocuments": "Magwaro ecustoms",
+    "shippingIntegration": "Kubatanidza kutumira",
+    "tradeCompliance": "Kutevedzera kutengeserana",
+    "soc2Compliant": "Inotevedzera SOC2",
+    "dataEncryption": "Kuvhara data",
+    "gdprReady": "Yakagadzirira GDPR",
+    "jobCosting": "Mutengo webasa munguva chaiyo",
+    "mobileFieldApp": "App yemufoni yevashandi vemumunda",
+    "materialLaborTracking": "Kutevera zvinhu nebasa"
   }
 }

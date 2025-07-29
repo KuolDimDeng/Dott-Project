@@ -68,7 +68,22 @@
   "features": {
     "eyebrow": "مکمل کاروباری حل",
     "heading": "عالمی سطح پر بڑھنے کے لیے آپ کو جو کچھ چاہیے",
-    "subheading": "سرحدوں کے پار کام کرنے والے جدید کاروبار کے لیے ڈیزائن کیے گئے طاقتور ٹولز"
+    "subheading": "سرحدوں کے پار کام کرنے والے جدید کاروبار کے لیے ڈیزائن کیے گئے طاقتور ٹولز",
+    "operations": {
+      "title": "آپریشنل مینجمنٹ",
+      "description": "اپنے روزمرہ کے کاروباری عمل کو آسان بنائیں"
+    },
+    "financial": {
+      "title": "مالیاتی انتظام",
+      "description": "اپنے کاروباری مالیات پر مکمل کنٹرول"
+    },
+    "global": {
+      "title": "عالمی کاروباری ٹولز",
+      "description": "بین الاقوامی سطح پر کام کرنے کے لیے ضروری ہر چیز"
+    },
+    "trust": {
+      "title": "سیکیورٹی اور تعمیل کے لیے بنایا گیا"
+    }
   },
   "footer": {
     "product": "پروڈکٹ",
@@ -82,5 +97,69 @@
     "eyebrow": "اکثر پوچھے گئے سوالات",
     "heading": "اکثر پوچھے جانے والے سوالات",
     "subheading": "ہمارے پلیٹ فارم اور خدمات کے بارے میں عام سوالات کے جوابات تلاش کریں۔"
+  },
+  "feature": {
+    "inventory": "جدید انوینٹری مینجمنٹ",
+    "inventory.description": "بارکوڈ اسکیننگ اور ملٹی لوکیشن سپورٹ کے ساتھ ریئل ٹائم اسٹاک ٹریکنگ",
+    "barcode": "بارکوڈ اور QR کوڈ",
+    "barcode.description": "مصنوعات اور دستاویزات کے لیے بارکوڈ بنائیں اور اسکین کریں",
+    "pos": "پوائنٹ آف سیل",
+    "pos.description": "آف لائن صلاحیتوں کے ساتھ جدید POS سسٹم",
+    "invoicing": "ملٹی کرنسی انوائسنگ",
+    "invoicing.description": "خودکار تبدیلی کے ساتھ 50+ کرنسیوں میں پروفیشنل انوائسز",
+    "tax": "علاقائی ٹیکس تعمیل",
+    "tax.description": "100+ ممالک کے لیے خودکار ٹیکس کیلکولیشن",
+    "reporting": "مالیاتی تجزیات",
+    "reporting.description": "AI سے چلنے والی سفارشات کے ساتھ ریئل ٹائم بصیرت",
+    "payments": "علاقائی ادائیگی گیٹ ویز",
+    "payments.description": "ہر ملک میں مقامی طریقوں سے ادائیگیاں قبول کریں",
+    "global": "درآمد/برآمد کا انتظام",
+    "global.description": "بین الاقوامی تجارتی دستاویزات اور تعمیل کو سنبھالیں",
+    "security": "انٹرپرائز سیکیورٹی",
+    "security.description": "علاقائی تعمیل کے ساتھ بینک گریڈ سیکیورٹی",
+    "jobs": "جاب مینجمنٹ اور لاگت",
+    "jobs.description": "ریئل ٹائم لاگت، موبائل ایپ اور منافع کے تجزیے کے ساتھ اینڈ ٹو اینڈ پروجیکٹ ٹریکنگ"
+  },
+  "trust": {
+    "soc2Title": "SOC2 تعمیل شدہ",
+    "soc2Desc": "انٹرپرائز سیکیورٹی",
+    "encryptionTitle": "256-بٹ انکرپشن",
+    "encryptionDesc": "بینک لیول سیکیورٹی",
+    "gdprTitle": "GDPR تیار",
+    "gdprDesc": "رازداری تعمیل شدہ",
+    "uptimeTitle": "99.9% اپ ٹائم",
+    "uptimeDesc": "ہمیشہ دستیاب"
+  },
+  "highlights": {
+    "bluetooth": "بلوٹوتھ اسکینر انضمام",
+    "printBarcodes": "اپنی مرضی کے بارکوڈ پرنٹ کریں",
+    "lowStock": "کم اسٹاک الرٹس",
+    "customLabel": "اپنی مرضی کی لیبل پرنٹنگ",
+    "mobileScanning": "موبائل اسکیننگ",
+    "batchProcessing": "بیچ پروسیسنگ",
+    "offlineMode": "آف لائن موڈ",
+    "multiplePayments": "متعدد ادائیگی کے طریقے",
+    "receiptCustom": "رسید کی تخصیص",
+    "recurringInvoices": "بار بار آنے والی انوائسز",
+    "paymentReminders": "ادائیگی کی یاد دہانیاں",
+    "invoiceFactoring": "انوائس فیکٹرنگ",
+    "vatGst": "VAT/GST سپورٹ",
+    "taxReports": "ٹیکس رپورٹس",
+    "eFilingReady": "ای فائلنگ تیار",
+    "customDashboards": "اپنی مرضی کے ڈیش بورڈز",
+    "profitAnalysis": "منافع کا تجزیہ",
+    "cashFlowForecast": "کیش فلو کی پیشن گوئی",
+    "mobileMoney": "موبائل منی",
+    "bankTransfers": "بینک ٹرانسفرز",
+    "digitalWallets": "ڈیجیٹل والیٹس",
+    "customsDocuments": "کسٹمز دستاویزات",
+    "shippingIntegration": "شپنگ انضمام",
+    "tradeCompliance": "تجارتی تعمیل",
+    "soc2Compliant": "SOC2 تعمیل شدہ",
+    "dataEncryption": "ڈیٹا انکرپشن",
+    "gdprReady": "GDPR تیار",
+    "jobCosting": "ریئل ٹائم جاب لاگت",
+    "mobileFieldApp": "فیلڈ ورکرز کے لیے موبائل ایپ",
+    "materialLaborTracking": "میٹریل اور لیبر ٹریکنگ"
   }
 }
