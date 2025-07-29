@@ -161,5 +161,61 @@
     "jobCosting": "Real-time na gastos ng trabaho",
     "mobileFieldApp": "Mobile app para sa field workers",
     "materialLaborTracking": "Pagsubaybay ng materyales at paggawa"
+  },
+  "builtForYou": {
+    "title": "Ginawa Para Sa Iyo",
+    "heading": "Pamahalaan ang inyong negosyo tulad ng isang propesyonal!",
+    "subheading": "Ginawa para sa mga may-ari ng negosyo tulad ninyo",
+    "cta": "Sumali sa libu-libong may-ari ng negosyo sa buong mundo na nagtitiwala sa Dott upang pamahalaan ang kanilang negosyo",
+    "types": {
+      "freelancers": {
+        "title": "Freelancers",
+        "description": "Subaybayan ang mga proyekto, mag-invoice sa mga kliyente agad, at pamahalaan ang inyong pananalapi sa isang lugar. Makakuha ng bayad nang mas mabilis gamit ang propesyonal na mga invoice."
+      },
+      "contractors": {
+        "title": "Contractors",
+        "description": "Pamahalaan ang maraming proyekto, subaybayan ang gastos sa mga materyales at paggawa, at magpadala ng propesyonal na mga quote. Panatilihin ang malusog na cash flow."
+      },
+      "entrepreneurs": {
+        "title": "Entrepreneurs",
+        "description": "I-scale ang inyong startup gamit ang malakas na mga tools para sa inventory, benta, at financial tracking. Gumawa ng mga desisyon na batay sa datos."
+      },
+      "consultants": {
+        "title": "Consultants",
+        "description": "Mag-bill ayon sa oras o proyekto, subaybayan ang mga gastos, at pamahalaan ang maraming kliyente nang walang hirap. Kasama ang propesyonal na invoicing."
+      },
+      "retail": {
+        "title": "Mga May-ari ng Retail Shop",
+        "description": "Pamahalaan ang inventory gamit ang barcode scanning, subaybayan ang benta, at tumanggap ng maraming paraan ng pagbabayad kasama ang mobile money."
+      },
+      "streetVendors": {
+        "title": "Street Vendors",
+        "description": "Simpleng mobile-first na disenyo upang subaybayan ang araw-araw na benta, pamahalaan ang inventory, at tumanggap ng digital payments habang naglalakbay."
+      },
+      "marketStalls": {
+        "title": "Mga May-ari ng Market Stall",
+        "description": "Perpekto para sa mga abalang araw sa palengke. Mabilis na pagpasok ng benta, mga alerto sa inventory, at araw-araw na pagsubaybay ng kita sa inyong lokal na pera."
+      },
+      "mobileMoneyAgents": {
+        "title": "Mobile Money Agents",
+        "description": "Subaybayan ang mga transaksyon, pamahalaan ang mga float balance, at lumikha ng mga ulat para sa mga network operator. Ginawa para sa M-Pesa, MTN, at iba pa."
+      },
+      "restaurants": {
+        "title": "Mga May-ari ng Maliliit na Restaurant",
+        "description": "Pamahalaan ang mga order, subaybayan ang mga sangkap, kalkulahin ang gastos sa pagkain, at hawakan nang epektibo ang dine-in at takeaway."
+      },
+      "serviceProviders": {
+        "title": "Service Providers",
+        "description": "Para sa mga plumber, electrician, mechanic, at iba pa. Mag-schedule ng mga trabaho, subaybayan ang mga parts, at mag-invoice pagkatapos matapos."
+      },
+      "onlineSellers": {
+        "title": "Online Sellers",
+        "description": "I-sync ang inventory sa mga platform, pamahalaan ang mga order, at subaybayan ang shipping. Perpekto para sa mga social media sellers."
+      },
+      "transport": {
+        "title": "Transport Operators",
+        "description": "Para sa mga operator ng taxi, boda boda, at tuk-tuk. Subaybayan ang araw-araw na kita, gastos sa gasolina, at mga schedule ng maintenance."
+      }
+    }
   }
 }

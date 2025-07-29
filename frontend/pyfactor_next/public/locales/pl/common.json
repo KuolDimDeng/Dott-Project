@@ -161,5 +161,61 @@
     "eyebrow": "FAQ",
     "heading": "Często zadawane pytania",
     "subheading": "Znajdź odpowiedzi na najczęstsze pytania o naszą platformę i usługi."
+  },
+  "builtForYou": {
+    "title": "Stworzone dla Ciebie",
+    "heading": "Zarządzaj swoim biznesem jak profesjonalista!",
+    "subheading": "Stworzone dla właścicieli firm takich jak Ty",
+    "cta": "Dołącz do tysięcy właścicieli firm na całym świecie, którzy ufają Dott w zarządzaniu swoją działalnością",
+    "types": {
+      "freelancers": {
+        "title": "Freelancerzy",
+        "description": "Śledź projekty, wystawiaj faktury klientom natychmiast i zarządzaj finansami w jednym miejscu. Otrzymuj płatności szybciej dzięki profesjonalnym fakturom."
+      },
+      "contractors": {
+        "title": "Wykonawcy",
+        "description": "Zarządzaj wieloma projektami, śledź koszty materiałów i robocizny oraz wysyłaj profesjonalne oferty. Utrzymuj zdrowy przepływ gotówki."
+      },
+      "entrepreneurs": {
+        "title": "Przedsiębiorcy",
+        "description": "Skaluj swój startup potężnymi narzędziami do zapasów, sprzedaży i śledzenia finansów. Podejmuj decyzje oparte na danych."
+      },
+      "consultants": {
+        "title": "Konsultanci",
+        "description": "Rozliczaj za godziny lub projekt, śledź wydatki i zarządzaj wieloma klientami bez wysiłku. Profesjonalne fakturowanie w zestawie."
+      },
+      "retail": {
+        "title": "Właściciele Sklepów Detalicznych",
+        "description": "Zarządzaj zapasami ze skanowaniem kodów kreskowych, śledź sprzedaż i akceptuj wiele metod płatności w tym mobile money."
+      },
+      "streetVendors": {
+        "title": "Sprzedawcy Uliczni",
+        "description": "Prosty design mobile-first do śledzenia dziennej sprzedaży, zarządzania zapasami i akceptowania płatności cyfrowych w ruchu."
+      },
+      "marketStalls": {
+        "title": "Właściciele Straganów",
+        "description": "Idealny na ruchliwe dni targowe. Szybkie wprowadzanie sprzedaży, alerty zapasów i śledzenie dziennych zysków w lokalnej walucie."
+      },
+      "mobileMoneyAgents": {
+        "title": "Agenci Mobile Money",
+        "description": "Śledź transakcje, zarządzaj saldami float i generuj raporty dla operatorów sieci. Zbudowany dla M-Pesa, MTN i innych."
+      },
+      "restaurants": {
+        "title": "Właściciele Małych Restauracji",
+        "description": "Zarządzaj zamówieniami, śledź składniki, obliczaj koszty żywności i efektywnie obsługuj zarówno na miejscu jak i na wynos."
+      },
+      "serviceProviders": {
+        "title": "Usługodawcy",
+        "description": "Dla hydraulików, elektryków, mechaników i innych. Planuj prace, śledź części i wystawiaj faktury po ukończeniu."
+      },
+      "onlineSellers": {
+        "title": "Sprzedawcy Online",
+        "description": "Synchronizuj zapasy na platformach, zarządzaj zamówieniami i śledź wysyłki. Idealny dla sprzedawców w mediach społecznościowych."
+      },
+      "transport": {
+        "title": "Operatorzy Transportu",
+        "description": "Dla operatorów taksówek, boda boda i tuk-tuk. Śledź dzienne zarobki, koszty paliwa i harmonogramy konserwacji."
+      }
+    }
   }
 }

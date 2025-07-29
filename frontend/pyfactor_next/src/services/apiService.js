@@ -90,23 +90,8 @@ export const handleApiError = (error, options = {}) => {
   return null;
 };
 
-/**
- * Ensure endpoint has a trailing slash for Django
- * @param {string} endpoint - API endpoint
- * @returns {string} - Endpoint with trailing slash
- */
-const normalizeEndpoint = (endpoint) => {
-  // Don't add trailing slash to URLs with file extensions, download or print URLs
-  const skipTrailingSlash = endpoint.includes('.') || 
-                          endpoint.includes('download') || 
-                          endpoint.includes('print');
-  
-  if (skipTrailingSlash || endpoint.endsWith('/')) {
-    return endpoint;
-  }
-  
-  return `${endpoint}/`;
-};
+// Removed normalizeEndpoint function - Django APPEND_SLASH=True handles trailing slashes automatically
+// Adding trailing slashes causes unnecessary 308 redirects that can corrupt POST request bodies
 
 /**
  * Fetch data from an API endpoint with caching and tenant context
@@ -133,10 +118,7 @@ export const fetchData = async (endpoint, options = {}) => {
   } = options;
   
   try {
-    // Ensure endpoint ends with trailing slash for Django
-    const normalizedEndpoint = normalizeEndpoint(endpoint);
-    
-    logger.debug(`[ApiService] Fetching ${normalizedEndpoint}`, { 
+    logger.debug(`[ApiService] Fetching ${endpoint}`, { 
       useCache, 
       forceRefresh,
       tenantOverride: tenantOverride ? 'custom' : 'default'
@@ -144,12 +126,12 @@ export const fetchData = async (endpoint, options = {}) => {
     
     // Get data from cache first if allowed
     if (useCache && !forceRefresh) {
-      const cachedData = dataCache.get(normalizedEndpoint, params);
+      const cachedData = dataCache.get(endpoint, params);
       if (cachedData) {
-        logger.debug(`[ApiService] Cache hit for ${normalizedEndpoint}`);
+        logger.debug(`[ApiService] Cache hit for ${endpoint}`);
         return cachedData;
       }
-      logger.debug(`[ApiService] Cache miss for ${normalizedEndpoint}`);
+      logger.debug(`[ApiService] Cache miss for ${endpoint}`);
     }
     
     // Add tenant headers
@@ -158,7 +140,7 @@ export const fetchData = async (endpoint, options = {}) => {
       : getRequestTenantHeaders();
     
     // Make the request
-    const response = await axiosInstance.get(normalizedEndpoint, {
+    const response = await axiosInstance.get(endpoint, {
       params,
       headers: {
         ...tenantHeaders,
@@ -172,7 +154,7 @@ export const fetchData = async (endpoint, options = {}) => {
     
     // Store in cache if caching is enabled
     if (useCache && response.data) {
-      dataCache.set(normalizedEndpoint, params, response.data, cacheTTL);
+      dataCache.set(endpoint, params, response.data, cacheTTL);
     }
     
     return response.data;
@@ -217,10 +199,7 @@ export const postData = async (endpoint, data = {}, options = {}) => {
   } = options;
   
   try {
-    // Ensure endpoint ends with trailing slash for Django
-    const normalizedEndpoint = normalizeEndpoint(endpoint);
-    
-    logger.debug(`[ApiService] Posting to ${normalizedEndpoint}`);
+    logger.debug(`[ApiService] Posting to ${endpoint}`);
     
     // Add tenant headers
     const tenantHeaders = tenantOverride 
@@ -239,9 +218,9 @@ export const postData = async (endpoint, data = {}, options = {}) => {
     // Make the request with retry capability
     let response;
     if (enableRetry && maxRetries > 0) {
-      response = await retryRequest(() => axiosInstance.post(normalizedEndpoint, data, config), maxRetries);
+      response = await retryRequest(() => axiosInstance.post(endpoint, data, config), maxRetries);
     } else {
-      response = await axiosInstance.post(normalizedEndpoint, data, config);
+      response = await axiosInstance.post(endpoint, data, config);
     }
     
     // Extract and save tenant info from response headers if present
@@ -249,7 +228,7 @@ export const postData = async (endpoint, data = {}, options = {}) => {
     
     // Invalidate cache if requested
     if (invalidateCache) {
-      dataCache.invalidateStartingWith(normalizedEndpoint);
+      dataCache.invalidateStartingWith(endpoint);
     }
     
     return response.data;
@@ -293,10 +272,7 @@ export const putData = async (endpoint, data = {}, options = {}) => {
   } = options;
   
   try {
-    // Ensure endpoint ends with trailing slash for Django
-    const normalizedEndpoint = normalizeEndpoint(endpoint);
-    
-    logger.debug(`[ApiService] Putting to ${normalizedEndpoint}`);
+    logger.debug(`[ApiService] Putting to ${endpoint}`);
     
     // Add tenant headers
     const tenantHeaders = tenantOverride 
@@ -304,7 +280,7 @@ export const putData = async (endpoint, data = {}, options = {}) => {
       : getRequestTenantHeaders();
     
     // Make the request
-    const response = await axiosInstance.put(normalizedEndpoint, data, {
+    const response = await axiosInstance.put(endpoint, data, {
       headers: {
         ...tenantHeaders,
         ...headers
@@ -317,7 +293,7 @@ export const putData = async (endpoint, data = {}, options = {}) => {
     
     // Invalidate cache if requested
     if (invalidateCache) {
-      dataCache.invalidateStartingWith(normalizedEndpoint);
+      dataCache.invalidateStartingWith(endpoint);
     }
     
     return response.data;

@@ -47,7 +47,7 @@ export const getMaterials = async (options = {}, fetchOptions = {}) => {
     if (options.supplier) queryParams.append('supplier', options.supplier);
     if (options.ordering) queryParams.append('ordering', options.ordering);
 
-    const url = queryParams.toString() ? `/inventory/materials/?${queryParams.toString()}` : '/inventory/materials/';
+    const url = queryParams.toString() ? `/inventory/materials?${queryParams.toString()}` : '/inventory/materials';
     
     const response = await fetchData(url, {
       ...mergedOptions,
@@ -91,7 +91,7 @@ export const getMaterialStats = async (options = {}) => {
   };
   
   try {
-    const response = await fetchData('/inventory/materials/statistics/', {
+    const response = await fetchData('/inventory/materials/statistics', {
       ...defaultOptions,
       headers: {
         ...(defaultOptions.headers || {}),
@@ -119,7 +119,7 @@ export const getMaterialStats = async (options = {}) => {
  */
 export const getLowStockMaterials = async (options = {}) => {
   try {
-    const response = await fetchData('/inventory/materials/low_stock/', {
+    const response = await fetchData('/inventory/materials/low_stock', {
       ...options,
       headers: {
         ...(options.headers || {}),
@@ -153,7 +153,7 @@ export const getMaterialById = async (id, options = {}) => {
   };
   
   try {
-    const response = await fetchData(`/inventory/materials/${id}/`, {
+    const response = await fetchData(`/inventory/materials/${id}`, {
       ...defaultOptions,
       headers: {
         ...(defaultOptions.headers || {}),
@@ -183,7 +183,7 @@ export const createMaterial = async (materialData) => {
   try {
     logger.info('Creating material:', materialData);
     
-    const response = await postData('/inventory/materials/', materialData, {
+    const response = await postData('/inventory/materials', materialData, {
       headers: getTenantHeaders()
     });
     
@@ -210,7 +210,7 @@ export const updateMaterial = async (id, materialData) => {
   try {
     logger.info(`Updating material ${id}:`, materialData);
     
-    const response = await putData(`/inventory/materials/${id}/`, materialData, {
+    const response = await putData(`/inventory/materials/${id}`, materialData, {
       headers: getTenantHeaders()
     });
     
@@ -235,7 +235,7 @@ export const deleteMaterial = async (id) => {
   try {
     logger.info(`Deleting material ${id}`);
     
-    await deleteData(`/inventory/materials/${id}/`, {
+    await deleteData(`/inventory/materials/${id}`, {
       headers: getTenantHeaders()
     });
     
@@ -256,7 +256,7 @@ export const updateMaterialStock = async (id, stockData) => {
   try {
     logger.info(`Updating stock for material ${id}:`, stockData);
     
-    const response = await postData(`/inventory/materials/${id}/update_stock/`, stockData, {
+    const response = await postData(`/inventory/materials/${id}/update_stock`, stockData, {
       headers: getTenantHeaders()
     });
     
@@ -277,7 +277,7 @@ export const useMaterial = async (id, usageData) => {
   try {
     logger.info(`Using material ${id}:`, usageData);
     
-    const response = await postData(`/inventory/materials/${id}/use_material/`, usageData, {
+    const response = await postData(`/inventory/materials/${id}/use_material`, usageData, {
       headers: getTenantHeaders()
     });
     
@@ -304,8 +304,8 @@ export const getMaterialTransactions = async (options = {}) => {
     if (options.job) queryParams.append('job', options.job);
     
     const url = queryParams.toString() 
-      ? `/inventory/material-transactions/?${queryParams.toString()}` 
-      : '/inventory/material-transactions/';
+      ? `/inventory/material-transactions?${queryParams.toString()}` 
+      : '/inventory/material-transactions';
     
     const response = await fetchData(url, {
       headers: getTenantHeaders()
@@ -324,7 +324,7 @@ export const getMaterialTransactions = async (options = {}) => {
  */
 export const exportMaterialsToCSV = async () => {
   try {
-    const response = await fetchData('/inventory/materials/export/', {
+    const response = await fetchData('/inventory/materials/export', {
       responseType: 'blob',
       headers: getTenantHeaders()
     });

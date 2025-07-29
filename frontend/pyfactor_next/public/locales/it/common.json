@@ -161,5 +161,61 @@
     "eyebrow": "FAQ",
     "heading": "Domande frequenti",
     "subheading": "Trova risposte alle domande comuni sulla nostra piattaforma e servizi."
+  },
+  "builtForYou": {
+    "title": "Costruito per Te",
+    "heading": "Gestisci la tua azienda come un professionista!",
+    "subheading": "Costruito per imprenditori come te",
+    "cta": "Unisciti a migliaia di imprenditori in tutto il mondo che si fidano di Dott per gestire la loro attività",
+    "types": {
+      "freelancers": {
+        "title": "Freelancer",
+        "description": "Monitora i progetti, fattura i clienti istantaneamente e gestisci le tue finanze tutto in un posto. Ricevi pagamenti più velocemente con fatture professionali."
+      },
+      "contractors": {
+        "title": "Appaltatori",
+        "description": "Gestisci progetti multipli, monitora i costi di materiali e manodopera, e invia preventivi professionali. Mantieni sano il tuo flusso di cassa."
+      },
+      "entrepreneurs": {
+        "title": "Imprenditori",
+        "description": "Scala la tua startup con potenti strumenti per inventario, vendite e monitoraggio finanziario. Prendi decisioni basate sui dati."
+      },
+      "consultants": {
+        "title": "Consulenti",
+        "description": "Fattura a ore o per progetto, monitora le spese e gestisci clienti multipli senza sforzo. Fatturazione professionale inclusa."
+      },
+      "retail": {
+        "title": "Proprietari di Negozi",
+        "description": "Gestisci l'inventario con scansione codici a barre, monitora le vendite e accetta metodi di pagamento multipli incluso mobile money."
+      },
+      "streetVendors": {
+        "title": "Venditori Ambulanti",
+        "description": "Design mobile-first semplice per monitorare vendite giornaliere, gestire inventario e accettare pagamenti digitali in movimento."
+      },
+      "marketStalls": {
+        "title": "Proprietari di Bancarelle",
+        "description": "Perfetto per giornate di mercato intense. Inserimento vendite rapido, avvisi inventario e monitoraggio profitti giornalieri nella tua valuta locale."
+      },
+      "mobileMoneyAgents": {
+        "title": "Agenti Mobile Money",
+        "description": "Monitora transazioni, gestisci saldi float e genera report per operatori di rete. Costruito per M-Pesa, MTN e altro."
+      },
+      "restaurants": {
+        "title": "Proprietari di Piccoli Ristoranti",
+        "description": "Gestisci ordini, monitora ingredienti, calcola costi alimentari e gestisci sia servizio al tavolo che da asporto efficientemente."
+      },
+      "serviceProviders": {
+        "title": "Fornitori di Servizi",
+        "description": "Per idraulici, elettricisti, meccanici e altro. Programma lavori, monitora parti e fattura al completamento."
+      },
+      "onlineSellers": {
+        "title": "Venditori Online",
+        "description": "Sincronizza inventario su piattaforme, gestisci ordini e monitora spedizioni. Perfetto per venditori sui social media."
+      },
+      "transport": {
+        "title": "Operatori di Trasporto",
+        "description": "Per operatori di taxi, boda boda e tuk-tuk. Monitora guadagni giornalieri, costi carburante e programmi manutenzione."
+      }
+    }
   }
 }

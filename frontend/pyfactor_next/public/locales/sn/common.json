@@ -161,5 +161,61 @@
     "jobCosting": "Mutengo webasa munguva chaiyo",
     "mobileFieldApp": "App yemufoni yevashandi vemumunda",
     "materialLaborTracking": "Kutevera zvinhu nebasa"
+  },
+  "builtForYou": {
+    "title": "Yakagadzirirwa Iwe",
+    "heading": "Tongera bhizinesi rako semunyanzvi!",
+    "subheading": "Yakagadzirirwa varidzi vebhizinesi vakafanana newe",
+    "cta": "Bata mazuru evaridzi vebhizinesi pasi rose vanovimba naDott kutonga bhizinesi ravo",
+    "types": {
+      "freelancers": {
+        "title": "Freelancers",
+        "description": "Tevera mapurojekiti, tuma mabhiri kuvatengi nekukasika uye tonge mari yako munzvimbo imwe. Wana mari nekukasika nemabhiri ehunyanzvi."
+      },
+      "contractors": {
+        "title": "Contractors",
+        "description": "Tonga mapurojekiti akawanda, tevera mutengo wezvinhu nebasa uye tuma maquote ehunyanzvi. Chengetedza kuyerera kwemari kwako kwakanaka."
+      },
+      "entrepreneurs": {
+        "title": "Entrepreneurs",
+        "description": "Wedza startup yako nezvishandiso zvine simba zveinventory, kutengesa, nekutevera mari. Ita sarudzo dzinotsamira padata."
+      },
+      "consultants": {
+        "title": "Consultants",
+        "description": "Bhadharisa neawa kana purojekiti, tevera zvinoshandiswa uye tonga vatengi vakawanda zvisingaome. Kubhadhara kwehunyanzvi kwakabatanidzwa."
+      },
+      "retail": {
+        "title": "Varidzi veZvitoro",
+        "description": "Tonga inventory nekuscan barcode, tevera kutengesa uye gamuchira nzira dzekubhadhara dzakawanda kusanganisira mobile money."
+      },
+      "streetVendors": {
+        "title": "Vatengi veMumigwagwa",
+        "description": "Dhizaini iri nyore ye mobile-first kutevera kutengesa kwezuva nezuva, kutonga inventory uye kugamuchira mubhadharo wedhijitari munzira."
+      },
+      "marketStalls": {
+        "title": "Varidzi veZvitoro zveMisika",
+        "description": "Zvakanaka pamazuva akabatikana emisika. Kuisa kutengesa nekukasika, yambiro yeinventory, nekutevera purofiti yezuva rimwe nerimwe mumari yako yemuno."
+      },
+      "mobileMoneyAgents": {
+        "title": "Vamiririri veMobile Money",
+        "description": "Tevera kutengesa, tonga zviyero zvefloat uye gadzira mishumo yevashandi venetwork. Yakavakirwa M-Pesa, MTN, nezvimwe."
+      },
+      "restaurants": {
+        "title": "Varidzi veRestaurant Diki",
+        "description": "Tonga maoda, tevera zvidyiwa, verengera mutengo wechikafu uye bata zvese zvekudyira mukati nekubvisa zvichibudirira."
+      },
+      "serviceProviders": {
+        "title": "Vapan'i Vebasa",
+        "description": "Kuvanachiremba vemvura, magetsi, mota, nezvimwe. Rongovedza mabasa, tevera zvikamu uye bhadhara pakupera."
+      },
+      "onlineSellers": {
+        "title": "Vatengi veOnline",
+        "description": "Batanidza inventory kuburikidza nemapuratifomu, tonga maoda uye tevera kutumira. Zvakanaka kuvatengi vesocial media."
+      },
+      "transport": {
+        "title": "Vashandisi veTransport",
+        "description": "Kuvashandi vetaxi, boda boda, netuk-tuk. Tevera mari yezuva nezuva, mutengo wepeturu, nemagadzirirwo ekugadzirisa."
+      }
+    }
   }
 }

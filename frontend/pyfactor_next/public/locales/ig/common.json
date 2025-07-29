@@ -161,5 +161,61 @@
     "jobCosting": "Ọnụ ahịa ọrụ n'oge ozugbo",
     "mobileFieldApp": "Ngwa mkpanaka maka ndị ọrụ n'ọhịa",
     "materialLaborTracking": "Nleba anya ihe na ọrụ"
+  },
+  "builtForYou": {
+    "title": "Ewuru Maka Gị",
+    "heading": "Jikwaa azụmahịa gị dị ka onye ọkachamara!",
+    "subheading": "Ewuru maka ndị nwe azụmahịa dị ka gị",
+    "cta": "Sonye na ọtụtụ puku ndị nwe azụmahịa n'ụwa niile na-atụkwasị Dott obi iji jikwaa azụmahịa ha",
+    "types": {
+      "freelancers": {
+        "title": "Freelancers",
+        "description": "Soro ọrụ, nyefeere ndị ahịa akwụkwọ ụgwọ ozugbo ma jikwaa ego gị n'otu ebe. Nweta ego ngwa ngwa site na akwụkwọ ụgwọ ọkachamara."
+      },
+      "contractors": {
+        "title": "Ndị Ọrụ Nkwekọrịta",
+        "description": "Jikwaa ọtụtụ ọrụ, soro ọnụ ahịa ihe na ọrụ ma zitere ndị ahịa ọnụ ahịa ọkachamara. Debe ego gị ka ọ na-eru gị."
+      },
+      "entrepreneurs": {
+        "title": "Ndị Ọchụnta Ego",
+        "description": "Wee startup gị site na ngwaọrụ dị ike maka ngwa ahịa, ire ere na nleba anya ego. Me mkpebi dabere na data."
+      },
+      "consultants": {
+        "title": "Ndị Ndụmọdụ",
+        "description": "Kwụọ site na elekere ma ọ bụ ọrụ, soro mmefu ma jikwaa ọtụtụ ndị ahịa n'enweghị nsogbu. Akwụkwọ ụgwọ ọkachamara gụnyere."
+      },
+      "retail": {
+        "title": "Ndị Nwe Ụlọ Ahịa Nta",
+        "description": "Jikwaa ngwa ahịa site na nyocha barcode, soro ire ere ma nabata ụzọ ịkwụ ụgwọ dị iche iche gụnyere mobile money."
+      },
+      "streetVendors": {
+        "title": "Ndị Na-ere N'okporo Ụzọ",
+        "description": "Nhazi mobile-first dị mfe iji soro ire ere kwa ụbọchị, jikwaa ngwa ahịa ma nabata ịkwụ ụgwọ dijitalụ n'ije."
+      },
+      "marketStalls": {
+        "title": "Ndị Nwe Ụlọ Ahịa Ahịa",
+        "description": "Dị mma maka ụbọchị ahịa ndị na-achọkarị ihe. Ntinye ire ere ngwa ngwa, mkpọtụ ngwa ahịa na nleba anya uru kwa ụbọchị n'ego obodo gị."
+      },
+      "mobileMoneyAgents": {
+        "title": "Ndị Nnọchianya Mobile Money",
+        "description": "Soro azụmahịa, jikwaa nguzozi float ma mepụta akụkọ maka ndị ọrụ netwọk. Ewuru maka M-Pesa, MTN na ndị ọzọ."
+      },
+      "restaurants": {
+        "title": "Ndị Nwe Nri Nta",
+        "description": "Jikwaa ọda, soro ihe nri, gbakọọ ọnụ ahịa nri ma jikwaa ma iri nri n'ime na ibu n'ụzọ dị irè."
+      },
+      "serviceProviders": {
+        "title": "Ndị Na-enye Ọrụ",
+        "description": "Maka ndị ọrụ mmiri, ọkụ latrik, ndị rụrụ ụgbọala na ndị ọzọ. Hazie ọrụ, soro akụkụ ma nye akwụkwọ ụgwọ mgbe emechara."
+      },
+      "onlineSellers": {
+        "title": "Ndị Na-ere Online",
+        "description": "Jikọọ ngwa ahịa n'ofe ikpo okwu, jikwaa ọda ma soro mbupu. Dị mma maka ndị na-ere mgbasa ozi."
+      },
+      "transport": {
+        "title": "Ndị Ọrụ Njem",
+        "description": "Maka ndị ọrụ taksi, boda boda na tuk-tuk. Soro ego kwa ụbọchị, ọnụ ahịa mmanụ na usoro nlekọta."
+      }
+    }
   }
 }
