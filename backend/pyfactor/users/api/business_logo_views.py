@@ -83,14 +83,20 @@ def upload_business_logo(request):
         
         # Get user's business
         user_profile = UserProfile.objects.get(user=request.user)
-        business = user_profile.business
         
         logger.info(f"[upload_business_logo] User profile found: {user_profile}")
-        logger.info(f"[upload_business_logo] Business found: {business}")
+        logger.info(f"[upload_business_logo] Business ID: {user_profile.business_id}")
         
-        if not business:
-            logger.error(f"[upload_business_logo] No business found for user {request.user}")
-            return Response({'error': 'No business found for user'}, status=404)
+        # Get business_id - either from profile or user
+        business_id = user_profile.business_id
+        if not business_id and hasattr(request.user, 'business_id'):
+            business_id = request.user.business_id
+        if not business_id and hasattr(request.user, 'tenant_id'):
+            business_id = request.user.tenant_id
+            
+        if not business_id:
+            logger.error(f"[upload_business_logo] No business_id found for user {request.user}")
+            return Response({'error': 'No business associated with user'}, status=404)
         
         # Check if logo file is provided
         if 'logo' not in request.FILES:
@@ -112,9 +118,9 @@ def upload_business_logo(request):
         logo_file = resize_image_if_needed(logo_file)
         logger.info(f"[upload_business_logo] File resize completed")
         
-        # Get or create BusinessDetails
+        # Get or create BusinessDetails using business_id directly
         business_details, created = BusinessDetails.objects.get_or_create(
-            business=business,
+            business_id=business_id,
             defaults={
                 'legal_structure': 'SOLE_PROPRIETORSHIP',
                 'country': 'US'
@@ -129,7 +135,7 @@ def upload_business_logo(request):
         business_details.logo = logo_file
         business_details.save()
         
-        logger.info(f"Business logo uploaded successfully for business {business.id}")
+        logger.info(f"Business logo uploaded successfully for business_id {business_id}")
         
         return Response({
             'success': True,
@@ -150,20 +156,26 @@ def delete_business_logo(request):
     try:
         # Get user's business
         user_profile = UserProfile.objects.get(user=request.user)
-        business = user_profile.business
         
-        if not business:
-            return Response({'error': 'No business found for user'}, status=404)
+        # Get business_id - either from profile or user
+        business_id = user_profile.business_id
+        if not business_id and hasattr(request.user, 'business_id'):
+            business_id = request.user.business_id
+        if not business_id and hasattr(request.user, 'tenant_id'):
+            business_id = request.user.tenant_id
+            
+        if not business_id:
+            return Response({'error': 'No business associated with user'}, status=404)
         
         # Get BusinessDetails
         try:
-            business_details = BusinessDetails.objects.get(business=business)
+            business_details = BusinessDetails.objects.get(business_id=business_id)
             
             if business_details.logo:
                 business_details.logo.delete()
                 business_details.save()
                 
-                logger.info(f"Business logo deleted for business {business.id}")
+                logger.info(f"Business logo deleted for business_id {business_id}")
                 
                 return Response({
                     'success': True,
@@ -188,14 +200,20 @@ def get_business_logo(request):
     try:
         # Get user's business
         user_profile = UserProfile.objects.get(user=request.user)
-        business = user_profile.business
         
-        if not business:
-            return Response({'error': 'No business found for user'}, status=404)
+        # Get business_id - either from profile or user
+        business_id = user_profile.business_id
+        if not business_id and hasattr(request.user, 'business_id'):
+            business_id = request.user.business_id
+        if not business_id and hasattr(request.user, 'tenant_id'):
+            business_id = request.user.tenant_id
+            
+        if not business_id:
+            return Response({'error': 'No business associated with user'}, status=404)
         
         # Get BusinessDetails
         try:
-            business_details = BusinessDetails.objects.get(business=business)
+            business_details = BusinessDetails.objects.get(business_id=business_id)
             
             return Response({
                 'success': True,
