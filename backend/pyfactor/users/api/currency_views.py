@@ -14,6 +14,26 @@ from currency.exchange_rate_service import exchange_rate_service
 from decimal import Decimal
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def test_auth(request):
+    """Test endpoint to verify authentication is working"""
+    logger.info("[TEST AUTH] === REQUEST RECEIVED ===")
+    logger.info(f"[TEST AUTH] User: {request.user}")
+    logger.info(f"[TEST AUTH] User email: {getattr(request.user, 'email', 'No email')}")
+    logger.info(f"[TEST AUTH] User authenticated: {request.user.is_authenticated}")
+    logger.info(f"[TEST AUTH] Request headers: {dict(request.headers)}")
+    logger.info(f"[TEST AUTH] Request cookies: {request.COOKIES}")
+    
+    return Response({
+        'success': True,
+        'message': 'Authentication is working',
+        'user': str(request.user),
+        'authenticated': request.user.is_authenticated
+    })
 
 
 @api_view(['GET'])

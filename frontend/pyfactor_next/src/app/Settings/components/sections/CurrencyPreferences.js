@@ -21,6 +21,25 @@ const CurrencyPreferences = () => {
     show_usd_on_reports: false,
   });
   const [exchangeRateInfo, setExchangeRateInfo] = useState(null);
+  
+  // Test auth function
+  const testAuth = async () => {
+    console.log('🧪 [CurrencyPreferences] Testing authentication...');
+    try {
+      const response = await fetch('/api/currency/test-auth');
+      console.log('🧪 [CurrencyPreferences] Test auth response status:', response.status);
+      const data = await response.json();
+      console.log('🧪 [CurrencyPreferences] Test auth response data:', data);
+      if (data.success) {
+        notifySuccess('Auth test passed: ' + data.message);
+      } else {
+        notifyError('Auth test failed: ' + data.error);
+      }
+    } catch (error) {
+      console.error('🧪 [CurrencyPreferences] Auth test error:', error);
+      notifyError('Auth test failed: ' + error.message);
+    }
+  };
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingCurrency, setPendingCurrency] = useState(null);
 
@@ -265,9 +284,17 @@ const CurrencyPreferences = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center mb-6">
-        <CurrencyDollarIcon className="h-6 w-6 text-blue-600 mr-3" />
-        <h3 className="text-lg font-semibold">Currency Preferences</h3>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center">
+          <CurrencyDollarIcon className="h-6 w-6 text-blue-600 mr-3" />
+          <h3 className="text-lg font-semibold">Currency Preferences</h3>
+        </div>
+        <button
+          onClick={testAuth}
+          className="px-3 py-1 text-sm bg-gray-200 hover:bg-gray-300 rounded"
+        >
+          Test Auth
+        </button>
       </div>
 
       {/* Current Currency Display */}

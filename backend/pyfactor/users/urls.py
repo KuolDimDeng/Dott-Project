@@ -24,7 +24,7 @@ from .api.payment_methods import get_payment_methods, check_mobile_money_support
 from .api.subscription_views import subscription_status
 from .api.subscription_status_views import subscription_status as grace_period_status, retry_payment
 from .api.business_logo_views import upload_business_logo, delete_business_logo, get_business_logo
-from .api.currency_views import get_currency_list_view, get_currency_preferences, get_exchange_rate
+from .api.currency_views import get_currency_list_view, get_currency_preferences, get_exchange_rate, test_auth
 from rest_framework_simplejwt.views import TokenRefreshView
 
 # Create a router for the menu privileges API
@@ -64,6 +64,7 @@ urlpatterns = [
     path('api/currency/list/', get_currency_list_view, name='get_currency_list'),
     path('api/currency/preferences/', get_currency_preferences, name='get_currency_preferences'),
     path('api/currency/exchange-rate/', get_exchange_rate, name='get_exchange_rate'),
+    path('api/currency/test-auth/', test_auth, name='test_auth'),
     # Include the router URLs
     path('api/', include(router.urls)),
 ]
