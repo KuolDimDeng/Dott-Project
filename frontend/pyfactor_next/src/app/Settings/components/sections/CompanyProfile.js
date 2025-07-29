@@ -282,28 +282,52 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
     formData.append('logo', file);
 
     try {
-      console.log('[CompanyProfile] Uploading logo, file:', file.name, 'size:', file.size);
+      console.log('[CompanyProfile] Starting logo upload...');
+      console.log('[CompanyProfile] File details:', {
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        lastModified: file.lastModified
+      });
+      
+      console.log('[CompanyProfile] Making fetch request to /api/business/logo/upload');
       
       const response = await fetch('/api/business/logo/upload', {
         method: 'POST',
         body: formData,
       });
 
-      console.log('[CompanyProfile] Upload response status:', response.status);
+      console.log('[CompanyProfile] Upload response received, status:', response.status);
+      console.log('[CompanyProfile] Response headers:', Object.fromEntries(response.headers.entries()));
       
-      const data = await response.json();
-      console.log('[CompanyProfile] Upload response data:', data);
+      let data;
+      try {
+        data = await response.json();
+        console.log('[CompanyProfile] Upload response data:', data);
+      } catch (jsonError) {
+        console.error('[CompanyProfile] Failed to parse response as JSON:', jsonError);
+        // Don't try to read response body again after json() failed
+        throw new Error('Invalid response format from server');
+      }
       
       if (response.ok && data.success) {
         notifySuccess('Logo uploaded successfully');
         await loadBusinessLogo(); // Reload the logo
       } else {
-        console.error('[CompanyProfile] Upload failed:', data);
+        console.error('[CompanyProfile] Upload failed with response:', data);
         notifyError(data.error || 'Failed to upload logo');
       }
     } catch (error) {
-      console.error('[CompanyProfile] Error uploading logo:', error);
-      notifyError('Failed to upload logo: ' + error.message);
+      console.error('[CompanyProfile] Exception during logo upload:', error);
+      console.error('[CompanyProfile] Error stack:', error.stack);
+      console.error('[CompanyProfile] Error type:', error.constructor.name);
+      
+      // Check if it's a network error
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        notifyError('Network error: Unable to connect to server');
+      } else {
+        notifyError('Failed to upload logo: ' + error.message);
+      }
     } finally {
       setUploadingLogo(false);
       // Reset file input

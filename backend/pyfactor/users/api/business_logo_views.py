@@ -77,9 +77,12 @@ def resize_image_if_needed(file, max_width=800, max_height=800):
 def upload_business_logo(request):
     """Upload business logo"""
     try:
+        logger.info(f"[upload_business_logo] === LOGO UPLOAD REQUEST RECEIVED ===")
         logger.info(f"[upload_business_logo] Request from user: {request.user}")
         logger.info(f"[upload_business_logo] Request FILES: {list(request.FILES.keys())}")
         logger.info(f"[upload_business_logo] Request META headers: {request.META.get('CONTENT_TYPE', 'No content type')}")
+        logger.info(f"[upload_business_logo] Request method: {request.method}")
+        logger.info(f"[upload_business_logo] Content length: {request.META.get('CONTENT_LENGTH', 'Unknown')}")
         
         # Get user's business
         user_profile = UserProfile.objects.get(user=request.user)
