@@ -94,6 +94,8 @@ class EnhancedRowLevelSecurityMiddleware:
             # Don't use catch-all for onboarding - be specific about which endpoints need special handling
             '/api/users/close-account/',  # Close account needs Auth0 authentication
             '/api/payments/create-subscription/',  # Stripe subscription creation during onboarding
+            # Currency endpoints - require authentication but use user's tenant context
+            '/api/currency/',
         ]
         
         # Add custom public paths from settings if available
