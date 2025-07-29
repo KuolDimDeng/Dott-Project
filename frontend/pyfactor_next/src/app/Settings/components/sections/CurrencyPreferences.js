@@ -45,28 +45,16 @@ const CurrencyPreferences = () => {
   const testPublic = async () => {
     console.log('🌐 [CurrencyPreferences] Testing public endpoint...');
     try {
-      // Direct call to backend, bypassing proxy
-      const response = await fetch('https://api.dottapps.com/api/currency/test-public/');
+      // Use the frontend proxy route
+      const response = await fetch('/api/currency/test-public');
       console.log('🌐 [CurrencyPreferences] Public test response status:', response.status);
-      console.log('🌐 [CurrencyPreferences] Response headers:', response.headers);
+      const data = await response.json();
+      console.log('🌐 [CurrencyPreferences] Public test response data:', data);
       
-      // First, get the response as text to see what's being returned
-      const responseText = await response.text();
-      console.log('🌐 [CurrencyPreferences] Response text (first 500 chars):', responseText.substring(0, 500));
-      
-      // Try to parse as JSON
-      try {
-        const data = JSON.parse(responseText);
-        console.log('🌐 [CurrencyPreferences] Public test response data:', data);
-        if (data.success) {
-          notifySuccess('Public test passed: ' + data.message);
-        } else {
-          notifyError('Public test failed: ' + (data.error || 'Unknown error'));
-        }
-      } catch (parseError) {
-        console.error('🌐 [CurrencyPreferences] JSON parse error:', parseError);
-        console.error('🌐 [CurrencyPreferences] Full response text:', responseText);
-        notifyError('Public test failed: Response is not JSON (likely an error page)');
+      if (data.success) {
+        notifySuccess('Public test passed: ' + data.message);
+      } else {
+        notifyError('Public test failed: ' + (data.error || 'Unknown error'));
       }
     } catch (error) {
       console.error('🌐 [CurrencyPreferences] Public test error:', error);
