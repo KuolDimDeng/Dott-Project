@@ -145,16 +145,25 @@ def get_currency_preferences(request):
             }, status=status.HTTP_400_BAD_REQUEST)
         
         # Get or create business details
-        business_details, created = BusinessDetails.objects.get_or_create(
-            business=business,
-            defaults={
-                'preferred_currency_code': 'USD',
-                'preferred_currency_name': 'US Dollar',
-                'show_usd_on_invoices': True,
-                'show_usd_on_quotes': True,
-                'show_usd_on_reports': False,
-            }
-        )
+        try:
+            business_details, created = BusinessDetails.objects.get_or_create(
+                business=business,
+                defaults={
+                    'preferred_currency_code': 'USD',
+                    'preferred_currency_name': 'US Dollar',
+                    'show_usd_on_invoices': True,
+                    'show_usd_on_quotes': True,
+                    'show_usd_on_reports': False,
+                }
+            )
+            logger.info(f"[Currency API] BusinessDetails found/created: {business_details.id}, created: {created}")
+        except Exception as bd_error:
+            logger.error(f"[Currency API] BusinessDetails creation error: {str(bd_error)}", exc_info=True)
+            return Response({
+                'success': False,
+                'error': f'Business details error: {str(bd_error)}',
+                'error_type': type(bd_error).__name__
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         # Handle PUT request for updates
         if request.method == 'PUT':
@@ -182,20 +191,28 @@ def get_currency_preferences(request):
             logger.info(f"[Currency API] Currency code to update: {currency_code}")
             
             if currency_code:
-                currency_info = get_currency_info(currency_code)
-                logger.info(f"[Currency API] Currency info found: {currency_info}")
-                
-                if not currency_info:
-                    logger.error(f"[Currency API] Invalid currency code: {currency_code}")
+                try:
+                    currency_info = get_currency_info(currency_code)
+                    logger.info(f"[Currency API] Currency info found: {currency_info}")
+                    
+                    if not currency_info:
+                        logger.error(f"[Currency API] Invalid currency code: {currency_code}")
+                        return Response({
+                            'success': False,
+                            'error': f'Invalid currency code: {currency_code}'
+                        }, status=status.HTTP_400_BAD_REQUEST)
+                    
+                    business_details.preferred_currency_code = currency_code
+                    business_details.preferred_currency_name = currency_info['name']
+                    business_details.currency_updated_at = timezone.now()
+                    logger.info(f"[Currency API] Updated currency to {currency_code}")
+                except Exception as curr_error:
+                    logger.error(f"[Currency API] Currency validation error: {str(curr_error)}", exc_info=True)
                     return Response({
                         'success': False,
-                        'error': 'Invalid currency code'
-                    }, status=status.HTTP_400_BAD_REQUEST)
-                
-                business_details.preferred_currency_code = currency_code
-                business_details.preferred_currency_name = currency_info['name']
-                business_details.currency_updated_at = timezone.now()
-                logger.info(f"[Currency API] Updated currency to {currency_code}")
+                        'error': f'Currency validation error: {str(curr_error)}',
+                        'error_type': type(curr_error).__name__
+                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
             # Update toggle preferences
             if 'show_usd_on_invoices' in request.data:
@@ -208,8 +225,17 @@ def get_currency_preferences(request):
                 business_details.show_usd_on_reports = request.data['show_usd_on_reports']
             
             # Save changes
-            business_details.save()
-            logger.info(f"[Currency API] Saved business details successfully")
+            try:
+                with transaction.atomic():
+                    business_details.save()
+                    logger.info(f"[Currency API] Saved business details successfully")
+            except Exception as save_error:
+                logger.error(f"[Currency API] Database save error: {str(save_error)}", exc_info=True)
+                return Response({
+                    'success': False,
+                    'error': f'Database save error: {str(save_error)}',
+                    'error_type': type(save_error).__name__
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         # Get currency info for response
         currency_info = get_currency_info(business_details.preferred_currency_code)
@@ -251,7 +277,9 @@ def get_currency_preferences(request):
         
         error_response = {
             'success': False,
-            'error': f'Profile access error: {str(e)}'
+            'error': f'Profile access error: {str(e)}',
+            'error_type': type(e).__name__,
+            'debug_info': str(e) if hasattr(e, '__str__') else 'No debug info available'
         }
         logger.error(f"[Currency API] Error response: {error_response}")
         return Response(error_response, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -263,7 +291,9 @@ def get_currency_preferences(request):
         
         error_response = {
             'success': False,
-            'error': f'Server error: {str(e)}'
+            'error': f'Server error: {str(e)}',
+            'error_type': type(e).__name__,
+            'debug_info': str(e) if hasattr(e, '__str__') else 'No debug info available'
         }
         logger.error(f"[Currency API] Error response: {error_response}")
         return Response(error_response, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

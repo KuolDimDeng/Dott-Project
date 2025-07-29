@@ -117,7 +117,13 @@ export async function PUT(request) {
     if (!response.ok) {
       console.error('🚀 [Currency Proxy] Backend returned error:', data);
       return NextResponse.json(
-        { success: false, error: data.error || data.detail || 'Failed to update currency preferences' },
+        { 
+          success: false, 
+          error: data.error || data.detail || 'Failed to update currency preferences',
+          error_type: data.error_type || 'Unknown',
+          debug_info: data.debug_info || 'No debug info available',
+          backend_status: response.status
+        },
         { status: response.status }
       );
     }
