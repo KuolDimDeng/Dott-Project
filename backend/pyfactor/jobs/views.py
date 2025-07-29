@@ -1383,9 +1383,16 @@ class JobDataViewSet(viewsets.ViewSet):
             except Exception as e:
                 logger.error(f"👥 [JobDataViewSet] Error querying all_objects: {e}")
             
-            # Query customers - the tenant filtering should happen automatically via TenantManager
-            customers = Customer.objects.all().order_by('business_name', 'first_name', 'last_name')
-            logger.info(f"👥 [JobDataViewSet] Found {customers.count()} customers (tenant-filtered)")
+            # TEMPORARY FIX: Query using all_objects to bypass tenant filtering
+            # This matches how Employee model works (no tenant filtering)
+            customers = Customer.all_objects.all().order_by('business_name', 'first_name', 'last_name')
+            
+            # Filter by user's business_id manually if needed
+            if hasattr(request.user, 'business_id') and request.user.business_id:
+                customers = customers.filter(tenant_id=request.user.business_id)
+                logger.info(f"👥 [JobDataViewSet] Filtered by business_id: {request.user.business_id}")
+            
+            logger.info(f"👥 [JobDataViewSet] Found {customers.count()} customers")
             
             # Debug first few customers if any
             if customers.exists():
@@ -1449,12 +1456,19 @@ class JobDataViewSet(viewsets.ViewSet):
             except Exception as e:
                 logger.error(f"📦 [JobDataViewSet] Error querying all_objects: {e}")
             
-            # Query supplies - the tenant filtering should happen automatically
-            supplies = Product.objects.filter(
+            # TEMPORARY FIX: Query using all_objects to bypass tenant filtering
+            # This matches how Employee model works (no tenant filtering)
+            supplies = Product.all_objects.filter(
                 inventory_type='supply',
                 is_active=True
             ).order_by('name')
-            logger.info(f"📦 [JobDataViewSet] Found {supplies.count()} supplies (tenant-filtered)")
+            
+            # Filter by user's business_id manually if needed
+            if hasattr(request.user, 'business_id') and request.user.business_id:
+                supplies = supplies.filter(tenant_id=request.user.business_id)
+                logger.info(f"📦 [JobDataViewSet] Filtered by business_id: {request.user.business_id}")
+            
+            logger.info(f"📦 [JobDataViewSet] Found {supplies.count()} supplies")
             
             # Debug first few supplies if any
             if supplies.exists():
