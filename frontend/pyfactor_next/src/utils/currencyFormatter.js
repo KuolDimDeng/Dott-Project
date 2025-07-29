@@ -35,6 +35,26 @@ const CURRENCY_DATA = {
   'XAF': { name: 'Central African CFA Franc', symbol: 'FCFA', decimal_places: 0, symbol_position: 'after' },
   'XOF': { name: 'West African CFA Franc', symbol: 'CFA', decimal_places: 0, symbol_position: 'after' },
   'RWF': { name: 'Rwandan Franc', symbol: 'FRw', decimal_places: 0, symbol_position: 'before' },
+  'SSP': { name: 'South Sudanese Pound', symbol: 'SSP', decimal_places: 2, symbol_position: 'before' },
+  'BIF': { name: 'Burundian Franc', symbol: 'FBu', decimal_places: 0, symbol_position: 'before' },
+  'DJF': { name: 'Djiboutian Franc', symbol: 'Fdj', decimal_places: 0, symbol_position: 'before' },
+  'ERN': { name: 'Eritrean Nakfa', symbol: 'Nfk', decimal_places: 2, symbol_position: 'before' },
+  'SOS': { name: 'Somali Shilling', symbol: 'S', decimal_places: 0, symbol_position: 'before' },
+  'SDG': { name: 'Sudanese Pound', symbol: 'SDG', decimal_places: 2, symbol_position: 'before' },
+  'LYD': { name: 'Libyan Dinar', symbol: 'LD', decimal_places: 3, symbol_position: 'after' },
+  'MRU': { name: 'Mauritanian Ouguiya', symbol: 'UM', decimal_places: 1, symbol_position: 'after' },
+  'MGA': { name: 'Malagasy Ariary', symbol: 'Ar', decimal_places: 0, symbol_position: 'before' },
+  'KMF': { name: 'Comorian Franc', symbol: 'CF', decimal_places: 0, symbol_position: 'after' },
+  'SCR': { name: 'Seychellois Rupee', symbol: '₨', decimal_places: 2, symbol_position: 'before' },
+  'MUR': { name: 'Mauritian Rupee', symbol: '₨', decimal_places: 0, symbol_position: 'before' },
+  'LSL': { name: 'Lesotho Loti', symbol: 'L', decimal_places: 2, symbol_position: 'before' },
+  'SZL': { name: 'Swazi Lilangeni', symbol: 'E', decimal_places: 2, symbol_position: 'before' },
+  'NAD': { name: 'Namibian Dollar', symbol: 'N$', decimal_places: 2, symbol_position: 'before' },
+  'CVE': { name: 'Cape Verdean Escudo', symbol: '$', decimal_places: 0, symbol_position: 'after' },
+  'STN': { name: 'São Tomé and Príncipe Dobra', symbol: 'Db', decimal_places: 2, symbol_position: 'before' },
+  'GMD': { name: 'Gambian Dalasi', symbol: 'D', decimal_places: 2, symbol_position: 'before' },
+  'LRD': { name: 'Liberian Dollar', symbol: 'L$', decimal_places: 2, symbol_position: 'before' },
+  'SLL': { name: 'Sierra Leonean Leone', symbol: 'Le', decimal_places: 0, symbol_position: 'before' },
   
   // Asian Currencies
   'CNY': { name: 'Chinese Yuan', symbol: '¥', decimal_places: 2, symbol_position: 'before' },
@@ -50,6 +70,24 @@ const CURRENCY_DATA = {
   'BDT': { name: 'Bangladeshi Taka', symbol: '৳', decimal_places: 2, symbol_position: 'before' },
   'PKR': { name: 'Pakistani Rupee', symbol: '₨', decimal_places: 0, symbol_position: 'before' },
   'LKR': { name: 'Sri Lankan Rupee', symbol: 'Rs', decimal_places: 2, symbol_position: 'before' },
+  'TWD': { name: 'Taiwan Dollar', symbol: 'NT$', decimal_places: 0, symbol_position: 'before' },
+  'NPR': { name: 'Nepalese Rupee', symbol: '₨', decimal_places: 2, symbol_position: 'before' },
+  'AFN': { name: 'Afghan Afghani', symbol: '؋', decimal_places: 2, symbol_position: 'before' },
+  'MMK': { name: 'Myanmar Kyat', symbol: 'K', decimal_places: 0, symbol_position: 'before' },
+  'KHR': { name: 'Cambodian Riel', symbol: '៛', decimal_places: 0, symbol_position: 'after' },
+  'LAK': { name: 'Lao Kip', symbol: '₭', decimal_places: 0, symbol_position: 'before' },
+  'BND': { name: 'Brunei Dollar', symbol: 'B$', decimal_places: 2, symbol_position: 'before' },
+  'BTN': { name: 'Bhutanese Ngultrum', symbol: 'Nu.', decimal_places: 2, symbol_position: 'before' },
+  'MVR': { name: 'Maldivian Rufiyaa', symbol: 'Rf', decimal_places: 2, symbol_position: 'before' },
+  'MNT': { name: 'Mongolian Tugrik', symbol: '₮', decimal_places: 0, symbol_position: 'before' },
+  'KZT': { name: 'Kazakhstani Tenge', symbol: '₸', decimal_places: 2, symbol_position: 'before' },
+  'UZS': { name: 'Uzbekistani Som', symbol: "so'm", decimal_places: 0, symbol_position: 'after' },
+  'KGS': { name: 'Kyrgyzstani Som', symbol: 'с', decimal_places: 2, symbol_position: 'after' },
+  'TJS': { name: 'Tajikistani Somoni', symbol: 'SM', decimal_places: 2, symbol_position: 'before' },
+  'TMT': { name: 'Turkmenistan Manat', symbol: 'T', decimal_places: 2, symbol_position: 'before' },
+  'AZN': { name: 'Azerbaijani Manat', symbol: '₼', decimal_places: 2, symbol_position: 'before' },
+  'GEL': { name: 'Georgian Lari', symbol: '₾', decimal_places: 2, symbol_position: 'before' },
+  'AMD': { name: 'Armenian Dram', symbol: '֏', decimal_places: 0, symbol_position: 'before' },
   
   // Middle Eastern Currencies
   'AED': { name: 'UAE Dirham', symbol: 'د.إ', decimal_places: 2, symbol_position: 'after' },
@@ -62,6 +100,10 @@ const CURRENCY_DATA = {
   'ILS': { name: 'Israeli New Shekel', symbol: '₪', decimal_places: 2, symbol_position: 'before' },
   'TRY': { name: 'Turkish Lira', symbol: '₺', decimal_places: 2, symbol_position: 'before' },
   'LBP': { name: 'Lebanese Pound', symbol: 'LL', decimal_places: 0, symbol_position: 'after' },
+  'SYP': { name: 'Syrian Pound', symbol: '£S', decimal_places: 0, symbol_position: 'after' },
+  'IQD': { name: 'Iraqi Dinar', symbol: 'ع.د', decimal_places: 0, symbol_position: 'after' },
+  'IRR': { name: 'Iranian Rial', symbol: '﷼', decimal_places: 0, symbol_position: 'after' },
+  'YER': { name: 'Yemeni Rial', symbol: '﷼', decimal_places: 0, symbol_position: 'after' },
   
   // European Currencies (Non-Euro)
   'SEK': { name: 'Swedish Krona', symbol: 'kr', decimal_places: 2, symbol_position: 'after' },
@@ -76,6 +118,12 @@ const CURRENCY_DATA = {
   'RSD': { name: 'Serbian Dinar', symbol: 'дин', decimal_places: 0, symbol_position: 'after' },
   'UAH': { name: 'Ukrainian Hryvnia', symbol: '₴', decimal_places: 2, symbol_position: 'before' },
   'RUB': { name: 'Russian Ruble', symbol: '₽', decimal_places: 2, symbol_position: 'after' },
+  'ISK': { name: 'Icelandic Króna', symbol: 'kr', decimal_places: 0, symbol_position: 'after' },
+  'BAM': { name: 'Bosnia and Herzegovina Convertible Mark', symbol: 'KM', decimal_places: 2, symbol_position: 'after' },
+  'MKD': { name: 'Macedonian Denar', symbol: 'ден', decimal_places: 2, symbol_position: 'after' },
+  'ALL': { name: 'Albanian Lek', symbol: 'L', decimal_places: 0, symbol_position: 'after' },
+  'MDL': { name: 'Moldovan Leu', symbol: 'L', decimal_places: 2, symbol_position: 'after' },
+  'BYN': { name: 'Belarusian Ruble', symbol: 'Br', decimal_places: 2, symbol_position: 'after' },
   
   // Latin American Currencies
   'BRL': { name: 'Brazilian Real', symbol: 'R$', decimal_places: 2, symbol_position: 'before' },
@@ -98,8 +146,32 @@ const CURRENCY_DATA = {
   'BSD': { name: 'Bahamian Dollar', symbol: 'B$', decimal_places: 2, symbol_position: 'before' },
   'BBD': { name: 'Barbadian Dollar', symbol: 'Bds$', decimal_places: 2, symbol_position: 'before' },
   'BZD': { name: 'Belize Dollar', symbol: 'BZ$', decimal_places: 2, symbol_position: 'before' },
+  'PAB': { name: 'Panamanian Balboa', symbol: 'B/.', decimal_places: 2, symbol_position: 'before' },
+  'CUP': { name: 'Cuban Peso', symbol: '₱', decimal_places: 2, symbol_position: 'before' },
+  'HTG': { name: 'Haitian Gourde', symbol: 'G', decimal_places: 2, symbol_position: 'before' },
+  'GYD': { name: 'Guyanese Dollar', symbol: 'G$', decimal_places: 0, symbol_position: 'before' },
+  'SRD': { name: 'Surinamese Dollar', symbol: '$', decimal_places: 2, symbol_position: 'before' },
   
-  // Add more currencies as needed...
+  // Pacific Currencies
+  'FJD': { name: 'Fijian Dollar', symbol: 'FJ$', decimal_places: 2, symbol_position: 'before' },
+  'PGK': { name: 'Papua New Guinean Kina', symbol: 'K', decimal_places: 2, symbol_position: 'before' },
+  'SBD': { name: 'Solomon Islands Dollar', symbol: 'SI$', decimal_places: 2, symbol_position: 'before' },
+  'VUV': { name: 'Vanuatu Vatu', symbol: 'VT', decimal_places: 0, symbol_position: 'after' },
+  'WST': { name: 'Samoan Tala', symbol: 'WS$', decimal_places: 2, symbol_position: 'before' },
+  'TOP': { name: 'Tongan Paʻanga', symbol: 'T$', decimal_places: 2, symbol_position: 'before' },
+  'XPF': { name: 'CFP Franc', symbol: '₣', decimal_places: 0, symbol_position: 'after' },
+  
+  // Caribbean Currencies
+  'XCD': { name: 'East Caribbean Dollar', symbol: 'EC$', decimal_places: 2, symbol_position: 'before' },
+  'ANG': { name: 'Netherlands Antillean Guilder', symbol: 'ƒ', decimal_places: 2, symbol_position: 'before' },
+  'AWG': { name: 'Aruban Florin', symbol: 'ƒ', decimal_places: 2, symbol_position: 'before' },
+  'KYD': { name: 'Cayman Islands Dollar', symbol: 'CI$', decimal_places: 2, symbol_position: 'before' },
+  'BMD': { name: 'Bermudian Dollar', symbol: 'BD$', decimal_places: 2, symbol_position: 'before' },
+  
+  // Other Currencies
+  'GIP': { name: 'Gibraltar Pound', symbol: '£', decimal_places: 2, symbol_position: 'before' },
+  'FKP': { name: 'Falkland Islands Pound', symbol: '£', decimal_places: 2, symbol_position: 'before' },
+  'SHP': { name: 'Saint Helena Pound', symbol: '£', decimal_places: 2, symbol_position: 'before' }
 };
 
 /**

@@ -169,22 +169,22 @@ const CurrencyPreferences = () => {
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+        <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
           <div className="flex items-center mb-4">
             <ExclamationTriangleIcon className="h-6 w-6 text-yellow-500 mr-3" />
             <h3 className="text-lg font-semibold">Confirm Currency Change</h3>
           </div>
           
           <div className="mb-6">
-            <p className="text-gray-600 dark:text-gray-300 mb-4">
+            <p className="text-gray-600 mb-4">
               Change your business currency to <strong>{pendingCurrency.name}</strong>?
             </p>
             
-            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-4">
-              <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">
+            <div className="bg-blue-50 rounded-lg p-4 mb-4">
+              <h4 className="font-medium text-blue-900 mb-2">
                 What this means:
               </h4>
-              <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+              <ul className="text-sm text-blue-800 space-y-1">
                 <li>• All future invoices and quotes will display amounts in {pendingCurrency.name}</li>
                 <li>• Payments will still be processed in USD equivalent</li>
                 <li>• You can show USD amounts alongside local currency if desired</li>
@@ -192,7 +192,7 @@ const CurrencyPreferences = () => {
             </div>
 
             {exchangeRateInfo && (
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+              <div className="bg-gray-50 rounded-lg p-4">
                 <h4 className="font-medium mb-2">Current Exchange Rate:</h4>
                 <p className="text-sm">
                   {formatCurrency(100, pendingCurrency.code)} = {formatCurrency(exchangeRateInfo.converted_amount, 'USD')}
@@ -211,7 +211,7 @@ const CurrencyPreferences = () => {
                 setPendingCurrency(null);
                 setExchangeRateInfo(null);
               }}
-              className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
               disabled={loading}
             >
               Cancel
@@ -237,11 +237,11 @@ const CurrencyPreferences = () => {
       </div>
 
       {/* Current Currency Display */}
-      <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+      <div className="bg-blue-50 rounded-lg p-4">
         <div className="flex items-center justify-between">
           <div>
-            <h4 className="font-medium text-blue-900 dark:text-blue-100">Current Business Currency</h4>
-            <p className="text-blue-800 dark:text-blue-200">
+            <h4 className="font-medium text-blue-900">Current Business Currency</h4>
+            <p className="text-blue-800">
               {preferences.currency_name} ({preferences.currency_code})
             </p>
           </div>
@@ -253,14 +253,14 @@ const CurrencyPreferences = () => {
 
       {/* Currency Selection */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
           Business Currency
         </label>
         <select
           value={preferences.currency_code}
           onChange={(e) => handleCurrencyChange(e.target.value)}
           disabled={loading}
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         >
           {currencies.map((currency) => (
             <option key={currency.code} value={currency.code}>
@@ -268,21 +268,21 @@ const CurrencyPreferences = () => {
             </option>
           ))}
         </select>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+        <p className="text-xs text-gray-500 mt-1">
           Select the currency you want to display throughout your business documents
         </p>
       </div>
 
       {/* USD Display Options */}
       <div>
-        <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-4">USD Display Options</h4>
+        <h4 className="font-medium text-gray-900 mb-4">USD Display Options</h4>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <label className="font-medium text-gray-700 dark:text-gray-300">
+              <label className="font-medium text-gray-700">
                 Show USD on Invoices
               </label>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-sm text-gray-500">
                 Display USD equivalent in parentheses: {formatCurrency(100, preferences.currency_code)} (USD 75.84)
               </p>
             </div>
@@ -294,16 +294,16 @@ const CurrencyPreferences = () => {
                 disabled={loading || preferences.currency_code === 'USD'}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
           </div>
 
           <div className="flex items-center justify-between">
             <div>
-              <label className="font-medium text-gray-700 dark:text-gray-300">
+              <label className="font-medium text-gray-700">
                 Show USD on Quotes
               </label>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-sm text-gray-500">
                 Display USD equivalent on quotes and estimates
               </p>
             </div>
@@ -315,16 +315,16 @@ const CurrencyPreferences = () => {
                 disabled={loading || preferences.currency_code === 'USD'}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
           </div>
 
           <div className="flex items-center justify-between">
             <div>
-              <label className="font-medium text-gray-700 dark:text-gray-300">
+              <label className="font-medium text-gray-700">
                 Show USD on Reports
               </label>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-sm text-gray-500">
                 Display USD equivalent on financial reports and analytics
               </p>
             </div>
@@ -336,16 +336,16 @@ const CurrencyPreferences = () => {
                 disabled={loading || preferences.currency_code === 'USD'}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
           </div>
         </div>
 
         {preferences.currency_code === 'USD' && (
-          <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+          <div className="mt-4 p-3 bg-gray-50 rounded-lg">
             <div className="flex items-center">
               <InformationCircleIcon className="h-5 w-5 text-gray-500 mr-2" />
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-sm text-gray-600">
                 USD display options are disabled because your business currency is already USD.
               </p>
             </div>
@@ -354,14 +354,14 @@ const CurrencyPreferences = () => {
       </div>
 
       {/* Payment Processing Note */}
-      <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4">
+      <div className="bg-yellow-50 rounded-lg p-4">
         <div className="flex items-start">
-          <InformationCircleIcon className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mr-3 mt-0.5" />
+          <InformationCircleIcon className="h-5 w-5 text-yellow-600 mr-3 mt-0.5" />
           <div>
-            <h4 className="font-medium text-yellow-800 dark:text-yellow-200 mb-1">
+            <h4 className="font-medium text-yellow-800 mb-1">
               Payment Processing
             </h4>
-            <p className="text-sm text-yellow-700 dark:text-yellow-300">
+            <p className="text-sm text-yellow-700">
               All payments are processed in USD regardless of your display currency. 
               Customers will see the USD amount and exchange rate before completing payment.
             </p>

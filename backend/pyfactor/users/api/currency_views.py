@@ -101,7 +101,8 @@ def update_currency_preferences(request):
             }, status=status.HTTP_400_BAD_REQUEST)
         
         # Check if user is owner or admin
-        if user.role not in ['OWNER', 'ADMIN']:
+        # The User model has a role field directly
+        if hasattr(user, 'role') and user.role not in ['OWNER', 'ADMIN']:
             return Response({
                 'success': False,
                 'error': 'Only business owners and admins can update currency preferences'
