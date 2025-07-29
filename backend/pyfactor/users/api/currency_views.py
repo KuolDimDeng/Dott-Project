@@ -21,10 +21,16 @@ logger.setLevel(logging.DEBUG)
 def test_auth_public(request):
     """Test endpoint without authentication to verify routing"""
     logger.info("[TEST AUTH PUBLIC] === REQUEST RECEIVED ===")
+    logger.info(f"[TEST AUTH PUBLIC] Request method: {request.method}")
+    logger.info(f"[TEST AUTH PUBLIC] Request path: {request.path}")
+    logger.info(f"[TEST AUTH PUBLIC] Request headers: {dict(request.headers)}")
+    
     return Response({
         'success': True,
         'message': 'Public test endpoint is working',
-        'timestamp': timezone.now().isoformat()
+        'timestamp': timezone.now().isoformat(),
+        'method': request.method,
+        'path': request.path
     })
 
 

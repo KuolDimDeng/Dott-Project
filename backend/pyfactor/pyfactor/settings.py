@@ -752,7 +752,6 @@ MIDDLEWARE = [
 'django.middleware.security.SecurityMiddleware',
 'whitenoise.middleware.WhiteNoiseMiddleware',  # Add WhiteNoise for static files
 'pyfactor.middleware.cloudflare_middleware.CloudflareMiddleware',  # Cloudflare IP handling
-'custom_auth.cors.CorsMiddleware',
 'corsheaders.middleware.CorsMiddleware',
 'django.middleware.common.CommonMiddleware',
 'django.middleware.csrf.CsrfViewMiddleware',
