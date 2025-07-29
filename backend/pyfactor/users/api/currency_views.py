@@ -35,10 +35,10 @@ def get_currency_list_view(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-@api_view(['GET'])
+@api_view(['GET', 'PUT'])
 @permission_classes([IsAuthenticated])
 def get_currency_preferences(request):
-    """Get current business currency preferences"""
+    """Get or update business currency preferences"""
     try:
         user = request.user
         business = user.profile.business
@@ -61,7 +61,44 @@ def get_currency_preferences(request):
             }
         )
         
-        # Get currency info
+        # Handle PUT request for updates
+        if request.method == 'PUT':
+            # Check if user is owner or admin
+            # The User model has a role field directly
+            if hasattr(user, 'role') and user.role not in ['OWNER', 'ADMIN']:
+                return Response({
+                    'success': False,
+                    'error': 'Only business owners and admins can update currency preferences'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
+            # Update currency if provided
+            currency_code = request.data.get('currency_code')
+            if currency_code:
+                currency_info = get_currency_info(currency_code)
+                if not currency_info:
+                    return Response({
+                        'success': False,
+                        'error': 'Invalid currency code'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                
+                business_details.preferred_currency_code = currency_code
+                business_details.preferred_currency_name = currency_info['name']
+                business_details.currency_updated_at = timezone.now()
+            
+            # Update toggle preferences
+            if 'show_usd_on_invoices' in request.data:
+                business_details.show_usd_on_invoices = request.data['show_usd_on_invoices']
+            
+            if 'show_usd_on_quotes' in request.data:
+                business_details.show_usd_on_quotes = request.data['show_usd_on_quotes']
+            
+            if 'show_usd_on_reports' in request.data:
+                business_details.show_usd_on_reports = request.data['show_usd_on_reports']
+            
+            # Save changes
+            business_details.save()
+        
+        # Get currency info for response
         currency_info = get_currency_info(business_details.preferred_currency_code)
         
         return Response({
@@ -79,10 +116,10 @@ def get_currency_preferences(request):
         })
         
     except Exception as e:
-        logger.error(f"Error fetching currency preferences: {str(e)}", exc_info=True)
+        logger.error(f"Error handling currency preferences: {str(e)}", exc_info=True)
         return Response({
             'success': False,
-            'error': 'Failed to fetch currency preferences'
+            'error': 'Failed to handle currency preferences'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 

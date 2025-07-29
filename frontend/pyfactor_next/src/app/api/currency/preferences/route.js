@@ -4,13 +4,13 @@ import { cookies } from 'next/headers';
 export async function GET() {
   try {
     const cookieStore = await cookies();
-    const sessionId = cookieStore.get('session_id')?.value;
+    const sessionId = cookieStore.get('sid')?.value;
 
     const response = await fetch(`${process.env.BACKEND_URL}/api/users/api/currency/preferences/`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Cookie': sessionId ? `session_id=${sessionId}` : '',
+        'Cookie': sessionId ? `sid=${sessionId}` : '',
       },
     });
 
@@ -36,14 +36,14 @@ export async function GET() {
 export async function PUT(request) {
   try {
     const cookieStore = await cookies();
-    const sessionId = cookieStore.get('session_id')?.value;
+    const sessionId = cookieStore.get('sid')?.value;
     const body = await request.json();
 
-    const response = await fetch(`${process.env.BACKEND_URL}/api/users/api/currency/preferences/update/`, {
+    const response = await fetch(`${process.env.BACKEND_URL}/api/users/api/currency/preferences/`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Cookie': sessionId ? `session_id=${sessionId}` : '',
+        'Cookie': sessionId ? `sid=${sessionId}` : '',
       },
       body: JSON.stringify(body),
     });
