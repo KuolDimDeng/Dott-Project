@@ -515,9 +515,9 @@ export const getProducts = async (options = {}, fetchOptions = {}) => {
       return offlineData;
     }
 
-    // If all else fails, return mock data
-    logger.info('No data available, using mock data');
-    return getMockProducts();
+    // Return empty array instead of mock data
+    logger.info('No data available, returning empty array');
+    return [];
   } catch (error) {
     logger.error('Error fetching products:', error);
     
@@ -528,9 +528,9 @@ export const getProducts = async (options = {}, fetchOptions = {}) => {
       return offlineData;
     }
     
-    // If no offline data, use mock data as last resort
-    logger.info('No offline data available after error, using mock data');
-    return getMockProducts();
+    // Return empty array instead of mock data
+    logger.info('No offline data available after error, returning empty array');
+    return [];
   }
 };
 

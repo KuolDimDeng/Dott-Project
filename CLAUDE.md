@@ -765,7 +765,35 @@ WISE_API_KEY=<optional-for-better-rates>
   - `/src/app/dashboard/DashboardClientLayout.js` - Integration point
   - `/src/components/auth/EmailPasswordSignIn.js` - Timeout message display
 
-### [47.0.0] - 2025-07-29 - CURRENT - Multi-Currency Display with USD Settlement
+### [47.0.0] - 2025-07-29 - CURRENT - App Subdomain Architecture
+- **Purpose**: Implement industry-standard subdomain structure for better security and scalability
+- **Problem Solved**: Mixed content (marketing/app) on same domain causes security and caching issues
+- **Architecture**:
+  - Marketing Site: `dottapps.com`, `www.dottapps.com` (Cloudflare proxied)
+  - Application: `app.dottapps.com` (Cloudflare proxied)
+  - API: `api.dottapps.com` (DNS only - no Cloudflare proxy)
+  - Auth: `auth.dottapps.com` (Auth0 custom domain)
+- **Benefits**:
+  - Cookie isolation between marketing and app
+  - Independent deployment and scaling
+  - Better caching strategies per subdomain
+  - Professional SaaS structure
+- **Technical Details**:
+  - Cross-subdomain cookies: `domain=.dottapps.com`
+  - Automatic routing in middleware
+  - CORS configured for all subdomains
+  - Session persistence across subdomains
+- **Important Configuration**:
+  - `api.dottapps.com` MUST remain "DNS only" in Cloudflare
+  - Render handles SSL for API directly
+  - Cloudflare proxy would break API functionality
+- **Key Files**:
+  - `/src/middleware.js` - Subdomain routing logic
+  - `/src/config/domains.js` - Domain configuration
+  - `/backend/pyfactor/settings.py` - CORS and cookie settings
+  - `/SUBDOMAIN_MIGRATION_GUIDE.md` - Complete setup guide
+
+### [48.0.0] - 2025-07-29 - CURRENT - Multi-Currency Display with USD Settlement
 - **Purpose**: Display invoices/quotes in 170+ local currencies while settling payments in USD
 - **Problem Solved**: Global businesses need familiar currency display without complex multi-currency accounting
 - **Core Features**:

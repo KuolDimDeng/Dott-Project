@@ -297,12 +297,12 @@ const CustomersManagement = () => {
         return;
       }
       
-      // If we've exhausted retries, show a fallback message and use mock data
-      setError(`Unable to fetch customers from server. Showing example data instead.`);
+      // If we've exhausted retries, show a fallback message
+      setError(`Unable to fetch customers from server.`);
       
-      // Set mock data as fallback
-      setCustomers(MOCK_CUSTOMERS);
-      setTotalPages(1);
+      // Set empty array instead of mock data
+      setCustomers([]);
+      setTotalPages(0);
       setLoading(false);
     }
   };
