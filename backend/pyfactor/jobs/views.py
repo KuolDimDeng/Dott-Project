@@ -1340,6 +1340,21 @@ class JobDataViewSet(viewsets.ViewSet):
     authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
     permission_classes = [IsAuthenticated]
     
+    def initial(self, request, *args, **kwargs):
+        """Override initial to ensure tenant context is set"""
+        super().initial(request, *args, **kwargs)
+        
+        # Import here to avoid circular imports
+        from custom_auth.rls import set_tenant_context
+        
+        # Ensure tenant context is set for the request
+        if hasattr(request.user, 'tenant_id') and request.user.tenant_id:
+            logger.info(f"[JobDataViewSet] Setting tenant context in initial: {request.user.tenant_id}")
+            set_tenant_context(str(request.user.tenant_id))
+        elif hasattr(request.user, 'business_id') and request.user.business_id:
+            logger.info(f"[JobDataViewSet] Setting tenant context from business_id: {request.user.business_id}")
+            set_tenant_context(str(request.user.business_id))
+    
     @action(detail=False, methods=['get'])
     def customers(self, request):
         """Get available customers for job assignment"""
@@ -1347,33 +1362,20 @@ class JobDataViewSet(viewsets.ViewSet):
         try:
             from crm.models import Customer
             from crm.serializers import CustomerSerializer
-            from custom_auth.rls import get_current_tenant_id, set_tenant_context
+            from custom_auth.rls import get_current_tenant_id
             
-            # Debug user context
+            # Debug user and tenant context
             logger.info(f"👥 [JobDataViewSet] User tenant_id: {getattr(request.user, 'tenant_id', 'None')}")
             logger.info(f"👥 [JobDataViewSet] User business_id: {getattr(request.user, 'business_id', 'None')}")
             
-            # Check current tenant context
             current_tenant = get_current_tenant_id()
             logger.info(f"👥 [JobDataViewSet] Current tenant context: {current_tenant}")
             
-            # If no tenant context, set it manually
-            if not current_tenant and hasattr(request.user, 'tenant_id'):
-                logger.info(f"👥 [JobDataViewSet] Setting tenant context manually to: {request.user.tenant_id}")
-                set_tenant_context(str(request.user.tenant_id))
-            
-            # Try querying with all_objects first to see all customers
-            all_customers = Customer.all_objects.all()
-            logger.info(f"👥 [JobDataViewSet] Total customers in DB (all tenants): {all_customers.count()}")
-            if all_customers.exists():
-                for i, customer in enumerate(all_customers[:3]):
-                    logger.info(f"👥 [JobDataViewSet] All customers {i}: {customer.business_name or customer.first_name} - tenant_id: {customer.tenant_id}")
-            
-            # Now try with tenant-aware manager
+            # Query customers - the tenant filtering should happen automatically via TenantManager
             customers = Customer.objects.all().order_by('business_name', 'first_name', 'last_name')
-            logger.info(f"👥 [JobDataViewSet] Found {customers.count()} customers (tenant-filtered)")
+            logger.info(f"👥 [JobDataViewSet] Found {customers.count()} customers")
             
-            # Debug first few customers
+            # Debug first few customers if any
             if customers.exists():
                 for i, customer in enumerate(customers[:3]):
                     logger.info(f"👥 [JobDataViewSet] Customer {i}: {customer.business_name or customer.first_name} - tenant_id: {customer.tenant_id}")
@@ -1414,17 +1416,23 @@ class JobDataViewSet(viewsets.ViewSet):
         try:
             from inventory.models import Product
             from inventory.serializers import ProductSerializer
+            from custom_auth.rls import get_current_tenant_id
             
-            # Debug user context
+            # Debug user and tenant context
             logger.info(f"📦 [JobDataViewSet] User tenant_id: {getattr(request.user, 'tenant_id', 'None')}")
+            logger.info(f"📦 [JobDataViewSet] User business_id: {getattr(request.user, 'business_id', 'None')}")
             
+            current_tenant = get_current_tenant_id()
+            logger.info(f"📦 [JobDataViewSet] Current tenant context: {current_tenant}")
+            
+            # Query supplies - the tenant filtering should happen automatically
             supplies = Product.objects.filter(
                 inventory_type='supply',
                 is_active=True
             ).order_by('name')
             logger.info(f"📦 [JobDataViewSet] Found {supplies.count()} supplies")
             
-            # Debug first few supplies
+            # Debug first few supplies if any
             if supplies.exists():
                 for i, supply in enumerate(supplies[:3]):
                     logger.info(f"📦 [JobDataViewSet] Supply {i}: {supply.name} - tenant_id: {supply.tenant_id}")
