@@ -212,8 +212,24 @@ class ProductViewSet(viewsets.ModelViewSet):
         start_time = time.time()
         
         try:
-            # Use the TenantManager which automatically filters by tenant
-            queryset = Product.objects.all()
+            # Import here to avoid circular imports
+            from custom_auth.rls import set_tenant_context
+            
+            # Set tenant context if available
+            if hasattr(self.request.user, 'tenant_id') and self.request.user.tenant_id:
+                logger.info(f"[ProductViewSet] Setting tenant context from user.tenant_id: {self.request.user.tenant_id}")
+                set_tenant_context(str(self.request.user.tenant_id))
+            elif hasattr(self.request.user, 'business_id') and self.request.user.business_id:
+                logger.info(f"[ProductViewSet] Setting tenant context from user.business_id: {self.request.user.business_id}")
+                set_tenant_context(str(self.request.user.business_id))
+            
+            # Use all_objects to bypass manager filtering and apply manual filtering
+            queryset = Product.all_objects.all()
+            
+            # Filter by user's business_id manually
+            if hasattr(self.request.user, 'business_id') and self.request.user.business_id:
+                queryset = queryset.filter(tenant_id=self.request.user.business_id)
+                logger.info(f"[ProductViewSet] Filtered by business_id: {self.request.user.business_id}, count: {queryset.count()}")
             
             # Apply any filters from query parameters
             if self.request.query_params.get('is_for_sale'):
@@ -229,7 +245,7 @@ class ProductViewSet(viewsets.ModelViewSet):
                     pass
             
             logger.debug(f"Product queryset fetched in {time.time() - start_time:.4f}s")
-            return queryset
+            return queryset.order_by('name')
             
         except Exception as e:
             logger.error(f"Error getting product queryset: {str(e)}", exc_info=True)

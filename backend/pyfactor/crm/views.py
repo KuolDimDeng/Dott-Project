@@ -5,6 +5,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q, Count, Sum
 from django.utils import timezone
 from datetime import timedelta
+import logging
 
 from .models import (
     Customer, Contact, Lead, Opportunity, 
@@ -21,6 +22,8 @@ from .serializers import (
     CampaignMemberSerializer
 )
 
+logger = logging.getLogger(__name__)
+
 class CustomerViewSet(viewsets.ModelViewSet):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
@@ -28,6 +31,29 @@ class CustomerViewSet(viewsets.ModelViewSet):
     filterset_fields = ['billing_country', 'billing_state', 'city']
     search_fields = ['business_name', 'first_name', 'last_name', 'email', 'phone', 'account_number']
     ordering_fields = ['business_name', 'created_at', 'updated_at']
+    
+    def get_queryset(self):
+        """Override to ensure tenant context is properly set"""
+        # Import here to avoid circular imports
+        from custom_auth.rls import set_tenant_context
+        
+        # Set tenant context if available
+        if hasattr(self.request.user, 'tenant_id') and self.request.user.tenant_id:
+            logger.info(f"[CustomerViewSet] Setting tenant context from user.tenant_id: {self.request.user.tenant_id}")
+            set_tenant_context(str(self.request.user.tenant_id))
+        elif hasattr(self.request.user, 'business_id') and self.request.user.business_id:
+            logger.info(f"[CustomerViewSet] Setting tenant context from user.business_id: {self.request.user.business_id}")
+            set_tenant_context(str(self.request.user.business_id))
+        
+        # Use all_objects to bypass manager filtering and apply manual filtering
+        queryset = Customer.all_objects.all()
+        
+        # Filter by user's business_id manually
+        if hasattr(self.request.user, 'business_id') and self.request.user.business_id:
+            queryset = queryset.filter(tenant_id=self.request.user.business_id)
+            logger.info(f"[CustomerViewSet] Filtered by business_id: {self.request.user.business_id}, count: {queryset.count()}")
+        
+        return queryset.order_by('business_name', 'first_name', 'last_name')
     
     def get_serializer_class(self):
         if self.action == 'retrieve':
