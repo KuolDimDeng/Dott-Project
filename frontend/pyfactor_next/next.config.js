@@ -217,75 +217,13 @@ const nextConfig = {
         },
       };
       
-      // Enable minification with proper configuration
+      // Enable minification using SWC instead of Terser to avoid TDZ errors
       config.optimization.minimize = true;
       
-      // Add minimizer configuration to prevent TDZ errors
-      if (!config.optimization.minimizer) {
-        config.optimization.minimizer = [];
-      }
+      // Clear any existing minimizers to ensure we're using SWC
+      config.optimization.minimizer = [];
       
-      // Use webpack's built-in TerserPlugin with very conservative settings
-      const TerserPlugin = require('terser-webpack-plugin');
-      
-      // Override the default minimizer with our conservative configuration
-      config.optimization.minimizer = [
-        new TerserPlugin({
-          parallel: true,
-          terserOptions: {
-            parse: {
-              ecma: 8,
-            },
-            compress: {
-              ecma: 5,
-              warnings: false,
-              comparisons: false,
-              inline: 2,
-              
-              // Disable ALL transformations that can cause TDZ
-              arrows: false,
-              collapse_vars: false,
-              computed_props: false,
-              hoist_funs: false,
-              hoist_props: false,
-              hoist_vars: false,
-              keep_classnames: true,
-              keep_fargs: true,
-              keep_fnames: true,
-              keep_infinity: true,
-              loops: false,
-              negate_iife: false,
-              properties: false,
-              reduce_funcs: false,
-              reduce_vars: false,
-              side_effects: false,
-              switches: false,
-              toplevel: false,
-              typeofs: false,
-              unused: false,
-              
-              // Only safe optimizations
-              dead_code: true,
-              drop_debugger: true,
-              conditionals: true,
-              evaluate: true,
-              booleans: true,
-              sequences: true,
-            },
-            mangle: {
-              safari10: true,
-              keep_classnames: true,
-              keep_fnames: true,
-            },
-            output: {
-              ecma: 5,
-              comments: false,
-              ascii_only: true,
-              safari10: true,
-            },
-          },
-        }),
-      ];
+      // Let Next.js use its default SWC minifier which handles TDZ better
     }
     
     return config;

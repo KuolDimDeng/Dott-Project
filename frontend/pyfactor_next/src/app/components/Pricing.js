@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { getCurrentUserPricing } from '@/utils/currencyUtils';
 import { getCacheValue } from '@/utils/appCache';
 import { debugCacheState, forceRefreshCountryDetection } from '@/utils/cacheCleaner';
-import { getDevelopingCountryName } from '@/utils/developingCountries';
+import { getDevelopingCountryName, isDevelopingCountry } from '@/utils/developingCountries';
 import Link from 'next/link';
 
 // This will be moved inside the component to use translation keys
@@ -161,24 +161,27 @@ export default function Pricing() {
           console.log('💱 [Pricing] Country is US, no exchange rate needed');
         }
         
+        // Use centralized function to check if country should have discount
+        const shouldHaveDiscount = isDevelopingCountry(country);
+        
+        // Log detailed info for debugging
+        console.log(`💱 [Pricing] Country check for ${country}:`, {
+          isDevelopingCountry: shouldHaveDiscount,
+          cachedIsDeveloping: isDeveloping,
+          countryName: getDevelopingCountryName(country) || 'Not in list'
+        });
+        
         // Special check for USA - should NEVER have discount
-        if (country === 'US' && isDeveloping) {
-          console.warn('⚠️ WARNING: USA incorrectly marked as developing country! Forcing refresh...');
-          const refreshResult = await forceRefreshCountryDetection();
-          setDynamicPricing(await getCurrentUserPricing());
-          setUserCountry(refreshResult.country);
-          setHasDiscount(refreshResult.isDeveloping);
-          return;
+        if (country === 'US' && shouldHaveDiscount) {
+          console.error('⚠️ CRITICAL ERROR: USA incorrectly marked as developing country!');
+          setHasDiscount(false);
+        } else {
+          setHasDiscount(shouldHaveDiscount);
         }
-        
-        // Additional safety check for developed countries
-        const developedCountries = ['US', 'GB', 'CA', 'AU', 'NZ', 'IE', 'DE', 'FR', 'IT', 'ES', 'NL', 'BE', 'AT', 'PT', 'LU', 'MC', 'CH', 'NO', 'SE', 'DK', 'FI', 'IS', 'JP', 'KR', 'SG', 'HK', 'TW', 'IL', 'AE', 'QA', 'KW', 'BH', 'SA', 'OM', 'BN', 'CY', 'MT', 'SI', 'CZ', 'SK', 'EE', 'LV', 'LT', 'PL', 'HU', 'HR', 'GR'];
-        
-        const shouldHaveDiscount = !developedCountries.includes(country) && isDeveloping;
         
         setDynamicPricing(pricing);
         setUserCountry(country);
-        setHasDiscount(shouldHaveDiscount);
+        
         console.log(`💱 [Pricing] Final state - Country: ${country}, Has Discount: ${shouldHaveDiscount}, Exchange Rate:`, exchangeRate);
       } catch (error) {
         console.error('❌ Error loading dynamic pricing:', error);
@@ -224,20 +227,13 @@ export default function Pricing() {
       name: t('pricing.plans.professional.name', 'Professional'),
       description: t('pricing.plans.professional.description', 'For growing businesses that need more'),
       price: { 
-        monthly: hasDiscount && userCountry !== 'US' ? 
-          (dynamicPricing?.professional?.monthly?.formatted || '$17.50') :
-          '$35',
-        '6month': hasDiscount && userCountry !== 'US' ? 
-          (dynamicPricing?.professional?.sixMonth?.formatted || '$87.50') :
-          '$175',
-        annual: hasDiscount && userCountry !== 'US' ? 
-          (dynamicPricing?.professional?.annual?.formatted ? 
-            `${dynamicPricing.professional.annual.formatted.split('/')[0]}` : '$168') :
-          '$336'
+        monthly: hasDiscount ? '$17.50' : '$35',
+        '6month': hasDiscount ? '$87.50' : '$175',
+        annual: hasDiscount ? '$168' : '$336'
       },
       savings: {
-        '6month': hasDiscount && userCountry !== 'US' ? '$17.50' : '$35',
-        annual: hasDiscount && userCountry !== 'US' ? '$42' : '$84'
+        '6month': hasDiscount ? '$17.50' : '$35',
+        annual: hasDiscount ? '$42' : '$84'
       },
       features: [
         t('pricing.plans.professional.features.0', 'Up to 5 users'),
@@ -255,20 +251,13 @@ export default function Pricing() {
       name: t('pricing.plans.enterprise.name', 'Enterprise'),
       description: t('pricing.plans.enterprise.description', 'Unlimited scale for large organizations'),
       price: { 
-        monthly: hasDiscount && userCountry !== 'US' ? 
-          (dynamicPricing?.enterprise?.monthly?.formatted || '$47.50') :
-          '$95',
-        '6month': hasDiscount && userCountry !== 'US' ? 
-          (dynamicPricing?.enterprise?.sixMonth?.formatted || '$237.50') :
-          '$475',
-        annual: hasDiscount && userCountry !== 'US' ? 
-          (dynamicPricing?.enterprise?.annual?.formatted ? 
-            `${dynamicPricing.enterprise.annual.formatted.split('/')[0]}` : '$456') :
-          '$912'
+        monthly: hasDiscount ? '$47.50' : '$95',
+        '6month': hasDiscount ? '$237.50' : '$475',
+        annual: hasDiscount ? '$456' : '$912'
       },
       savings: {
-        '6month': hasDiscount && userCountry !== 'US' ? '$47.50' : '$95',
-        annual: hasDiscount && userCountry !== 'US' ? '$114' : '$228'
+        '6month': hasDiscount ? '$47.50' : '$95',
+        annual: hasDiscount ? '$114' : '$228'
       },
       features: [
         t('pricing.plans.enterprise.features.0', 'Unlimited users'),
