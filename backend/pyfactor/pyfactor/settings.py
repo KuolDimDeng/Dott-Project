@@ -352,7 +352,7 @@ CORS_ALLOW_CREDENTIALS = True
 # Set to False to use the allowed origins list instead
 CORS_ORIGIN_ALLOW_ALL = False
 
-APPEND_SLASH = True  # Enable automatic slash appending to fix URL routing issues
+APPEND_SLASH = False  # Disable automatic slash appending - causes POST to GET redirects in APIs
 
 CORS_ALLOW_METHODS = [
     'DELETE',
@@ -1174,7 +1174,7 @@ CACHE_CONTROL_MAX_AGE = {
 }
 
 # Cloudflare Page Rules compatibility
-APPEND_SLASH = True
+APPEND_SLASH = False  # Disabled - causes API POST to GET redirects
 PREPEND_WWW = False
 
 # Response headers for Cloudflare
