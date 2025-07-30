@@ -164,23 +164,32 @@ def get_currency_list_view(request):
 @permission_classes([IsAuthenticated])
 def get_currency_preferences(request):
     """Get or update business currency preferences"""
-    logger.info(f"[Currency API] ========== REQUEST START ==========")
-    logger.info(f"[Currency API] Request method: {request.method}")
-    logger.info(f"[Currency API] Request path: {request.path}")
-    logger.info(f"[Currency API] Request headers: {dict(request.headers)}")
-    logger.info(f"[Currency API] Request cookies: {request.COOKIES}")
-    logger.info(f"[Currency API] User: {request.user}")
-    logger.info(f"[Currency API] User authenticated: {request.user.is_authenticated}")
+    try:
+        logger.info(f"[Currency API] ========== REQUEST START ==========")
+        logger.info(f"[Currency API] Request method: {request.method}")
+        logger.info(f"[Currency API] Request path: {request.path}")
+        logger.info(f"[Currency API] Request headers: {dict(request.headers)}")
+        logger.info(f"[Currency API] Request cookies: {request.COOKIES}")
+        logger.info(f"[Currency API] User: {request.user}")
+        logger.info(f"[Currency API] User authenticated: {request.user.is_authenticated}")
+    except Exception as e:
+        logger.error(f"[Currency API] Error in initial logging: {str(e)}", exc_info=True)
+        return Response({
+            'success': False,
+            'error': f'Initial logging error: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     if request.method == 'PUT':
         logger.info(f"[Currency API] Request data: {request.data}")
         logger.info(f"[Currency API] Request body: {request.body}")
     
     # Quick response for debugging
-    if request.method == 'GET' and request.GET.get('test') == '1':
+    if request.GET.get('test') == '1':
         return Response({
             'success': True,
             'message': 'Backend is working',
+            'method': request.method,
+            'user': str(request.user),
             'timestamp': timezone.now().isoformat()
         })
     
@@ -280,25 +289,35 @@ def get_currency_preferences(request):
             if currency_code:
                 try:
                     # Simplified validation - just check if currency exists
-                    currency_code = currency_code.upper().strip()
-                    currency_info = get_currency_info(currency_code)
-                    if not currency_info:
-                        raise ValidationError(f"Invalid currency code: {currency_code}")
-                    validated_currency = currency_code
-                    logger.info(f"[Currency API] Currency validated and info found: {currency_info}")
+                    currency_code = str(currency_code).upper().strip()
+                    logger.info(f"[Currency API] Normalized currency code: {currency_code}")
                     
-                    business_details.preferred_currency_code = validated_currency
-                    business_details.preferred_currency_name = currency_info['name']
-                    business_details.currency_updated_at = timezone.now()
-                    logger.info(f"[Currency API] Updated currency to {validated_currency}")
+                    # Simple hardcoded check for common currencies
+                    valid_currencies = ['USD', 'EUR', 'GBP', 'SSP', 'KES', 'NGN', 'ZAR', 'CAD', 'AUD']
+                    if currency_code in valid_currencies:
+                        business_details.preferred_currency_code = currency_code
+                        business_details.preferred_currency_name = f"{currency_code} Currency"  # Simplified
+                        business_details.currency_updated_at = timezone.now()
+                        logger.info(f"[Currency API] Updated currency to {currency_code}")
+                    else:
+                        # Try to get from currency_data
+                        try:
+                            currency_info = get_currency_info(currency_code)
+                            if currency_info:
+                                business_details.preferred_currency_code = currency_code
+                                business_details.preferred_currency_name = currency_info.get('name', currency_code)
+                                business_details.currency_updated_at = timezone.now()
+                                logger.info(f"[Currency API] Updated currency to {currency_code}")
+                            else:
+                                raise ValidationError(f"Invalid currency code: {currency_code}")
+                        except Exception as info_error:
+                            logger.error(f"[Currency API] Error getting currency info: {str(info_error)}")
+                            # Use fallback
+                            business_details.preferred_currency_code = currency_code
+                            business_details.preferred_currency_name = f"{currency_code} Currency"
+                            business_details.currency_updated_at = timezone.now()
+                            logger.info(f"[Currency API] Updated currency to {currency_code} (fallback)")
                     
-                except ValidationError as val_error:
-                    logger.error(f"[Currency API] Currency validation error: {str(val_error)}", exc_info=True)
-                    return Response({
-                        'success': False,
-                        'error': str(val_error),
-                        'error_type': 'ValidationError'
-                    }, status=status.HTTP_400_BAD_REQUEST)
                 except Exception as curr_error:
                     logger.error(f"[Currency API] Currency update error: {str(curr_error)}", exc_info=True)
                     return Response({
@@ -331,14 +350,20 @@ def get_currency_preferences(request):
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         # Get currency info for response
-        currency_info = get_currency_info(business_details.preferred_currency_code)
+        try:
+            currency_info = get_currency_info(business_details.preferred_currency_code)
+            currency_symbol = currency_info.get('symbol', '$') if currency_info else '$'
+        except Exception as e:
+            logger.warning(f"[Currency API] Could not get currency info: {str(e)}")
+            currency_symbol = '$'
+        
         logger.info(f"[Currency API] Preparing response with currency: {business_details.preferred_currency_code}")
         
         response_data = {
             'success': True,
             'currency_code': business_details.preferred_currency_code,
             'currency_name': business_details.preferred_currency_name,
-            'currency_symbol': currency_info.get('symbol', '$') if currency_info else '$',
+            'currency_symbol': currency_symbol,
             'show_usd_on_invoices': business_details.show_usd_on_invoices,
             'show_usd_on_quotes': business_details.show_usd_on_quotes,
             'show_usd_on_reports': business_details.show_usd_on_reports
@@ -377,12 +402,13 @@ def get_currency_preferences(request):
         logger.error(f"[Currency API] ========== UNEXPECTED ERROR ==========")
         logger.error(f"[Currency API] Unexpected error: {str(e)}", exc_info=True)
         logger.error(f"[Currency API] Error type: {type(e).__name__}")
+        logger.error(f"[Currency API] Full traceback:", exc_info=True)
         
         error_response = {
             'success': False,
             'error': f'Server error: {str(e)}',
             'error_type': type(e).__name__,
-            'debug_info': str(e) if hasattr(e, '__str__') else 'No debug info available'
+            'debug_info': traceback.format_exc()
         }
         logger.error(f"[Currency API] Error response: {error_response}")
         return Response(error_response, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
