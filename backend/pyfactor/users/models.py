@@ -195,13 +195,20 @@ class BusinessDetails(models.Model):
         help_text="Simplified business category for feature access (Jobs/POS)"
     )
     
-    # Business Logo field
+    # Business Logo field - deprecated, use logo_data instead
     logo = models.ImageField(
         upload_to='business_logos/',
         null=True,
         blank=True,
         max_length=500,
-        help_text='Business logo (max 5MB, JPG/PNG/GIF/WebP)'
+        help_text='Business logo (max 5MB, JPG/PNG/GIF/WebP) - DEPRECATED'
+    )
+    
+    # Business Logo stored as base64 in database
+    logo_data = models.TextField(
+        null=True,
+        blank=True,
+        help_text='Business logo stored as base64 data URL (e.g., data:image/png;base64,...)'
     )
     
     # Currency preferences
