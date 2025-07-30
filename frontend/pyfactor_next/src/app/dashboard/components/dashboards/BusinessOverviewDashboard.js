@@ -3,7 +3,6 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { useTranslation } from 'react-i18next';
 import DashboardSkeleton from '@/components/loading/DashboardSkeleton';
-import { useSession } from '@/hooks/useSession-v2';
 import { loadChartJs } from '@/utils/dynamic-imports';
 
 // Lazy load chart components
@@ -22,13 +21,32 @@ const WidgetSkeleton = () => (
 
 export default function BusinessOverviewDashboard() {
   const { t } = useTranslation('dashboard');
-  const { session, user } = useSession();
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [chartLibLoaded, setChartLibLoaded] = useState(false);
+  const [session, setSession] = useState(null);
 
   console.log('🏠 [BusinessOverviewDashboard] Component mounted');
+
+  // Load session dynamically to avoid circular dependencies
+  useEffect(() => {
+    const loadSession = async () => {
+      try {
+        console.log('🏠 [BusinessOverviewDashboard] Loading session module...');
+        const sessionModule = await import('@/hooks/useSession-v2');
+        const { sessionManagerEnhanced } = await import('@/utils/sessionManager-v2-enhanced');
+        
+        const sessionData = await sessionManagerEnhanced.getSession();
+        console.log('🏠 [BusinessOverviewDashboard] Session loaded:', sessionData);
+        setSession(sessionData);
+      } catch (err) {
+        console.error('❌ [BusinessOverviewDashboard] Failed to load session:', err);
+      }
+    };
+    
+    loadSession();
+  }, []);
 
   // Load Chart.js library when component mounts
   useEffect(() => {

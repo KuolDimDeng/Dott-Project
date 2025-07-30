@@ -228,8 +228,66 @@ const nextConfig = {
       // Enable minification with proper configuration
       config.optimization.minimize = true;
       
-      // Use Next.js's default SWC minifier for better compatibility
-      // SWC is more reliable with modern JavaScript features and less prone to TDZ errors
+      // Add minimizer configuration to prevent TDZ errors
+      if (!config.optimization.minimizer) {
+        config.optimization.minimizer = [];
+      }
+      
+      // Configure the minimizer to prevent variable hoisting issues
+      const TerserPlugin = require('terser-webpack-plugin');
+      config.optimization.minimizer.push(
+        new TerserPlugin({
+          terserOptions: {
+            compress: {
+              // Disable ALL optimizations that can cause TDZ errors
+              arrows: false,
+              collapse_vars: false,
+              comparisons: false,
+              computed_props: false,
+              hoist_funs: false,
+              hoist_props: false,
+              hoist_vars: false,
+              inline: false,
+              loops: false,
+              negate_iife: false,
+              properties: false,
+              reduce_funcs: false,
+              reduce_vars: false,
+              switches: false,
+              toplevel: false,
+              typeofs: false,
+              booleans_as_integers: false,
+              if_return: false,
+              join_vars: false,
+              keep_classnames: true,
+              keep_fnames: true,
+              module: false,
+              passes: 1,
+              
+              // Keep these safe optimizations
+              booleans: true,
+              dead_code: true,
+              drop_console: false, // Keep console logs for debugging
+              drop_debugger: true,
+              evaluate: true,
+              sequences: true,
+              side_effects: true,
+              unused: true,
+            },
+            mangle: {
+              safari10: true,
+              // Don't mangle function names for better debugging
+              keep_fnames: true,
+            },
+            output: {
+              // Preserve formatting for better debugging
+              ascii_only: true,
+              comments: false,
+              safari10: true,
+            },
+          },
+        })
+      );
     }
     
     return config;
