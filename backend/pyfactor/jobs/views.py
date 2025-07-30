@@ -1458,8 +1458,8 @@ class JobDataViewSet(viewsets.ViewSet):
         logger.info(f"📦 [JobDataViewSet] [{request_id}] User authenticated: {request.user.is_authenticated}")
         
         try:
-            from inventory.models import Product
-            from inventory.serializers import ProductSerializer
+            from inventory.models_materials import Material
+            from inventory.serializers_materials import MaterialListSerializer
             from custom_auth.rls import get_current_tenant_id
             
             # Debug user and tenant context
@@ -1472,37 +1472,30 @@ class JobDataViewSet(viewsets.ViewSet):
             # Try direct query without tenant filtering to debug
             try:
                 # Query with all_objects to bypass tenant filtering
-                all_supplies = Product.all_objects.filter(inventory_type='supply', is_active=True)
-                logger.info(f"📦 [JobDataViewSet] [{request_id}] Total supplies in database (all tenants): {all_supplies.count()}")
+                all_supplies = Material.all_objects.filter(is_active=True)
+                logger.info(f"📦 [JobDataViewSet] [{request_id}] Total materials in database (all tenants): {all_supplies.count()}")
                 
                 # Log tenant_id for each supply
                 for idx, supply in enumerate(all_supplies[:5]):
-                    logger.info(f"📦 [JobDataViewSet] [{request_id}] Supply {idx}: {supply.name} - tenant_id: {supply.tenant_id}")
+                    logger.info(f"📦 [JobDataViewSet] [{request_id}] Material {idx}: {supply.name} - tenant_id: {supply.tenant_id}")
             except Exception as e:
                 logger.error(f"📦 [JobDataViewSet] [{request_id}] Error querying all_objects: {e}")
             
-            # TEMPORARY FIX: Query using all_objects to bypass tenant filtering
-            # This matches how Employee model works (no tenant filtering)
-            logger.info(f"📦 [JobDataViewSet] [{request_id}] Starting supplies query...")
-            supplies = Product.all_objects.filter(
-                inventory_type='supply',
+            # Query materials using tenant filtering
+            logger.info(f"📦 [JobDataViewSet] [{request_id}] Starting materials query...")
+            supplies = Material.objects.filter(
                 is_active=True
             ).order_by('name')
             
-            # Filter by user's business_id manually if needed
-            if hasattr(request.user, 'business_id') and request.user.business_id:
-                supplies = supplies.filter(tenant_id=request.user.business_id)
-                logger.info(f"📦 [JobDataViewSet] [{request_id}] Filtered by business_id: {request.user.business_id}")
-            
-            logger.info(f"📦 [JobDataViewSet] [{request_id}] Found {supplies.count()} supplies")
+            logger.info(f"📦 [JobDataViewSet] [{request_id}] Found {supplies.count()} materials")
             
             # Debug first few supplies if any
             if supplies.exists():
                 for i, supply in enumerate(supplies[:3]):
-                    logger.info(f"📦 [JobDataViewSet] [{request_id}] Supply {i}: {supply.name} - tenant_id: {supply.tenant_id}")
+                    logger.info(f"📦 [JobDataViewSet] [{request_id}] Material {i}: {supply.name} - SKU: {supply.sku} - tenant_id: {supply.tenant_id}")
             
-            logger.info(f"📦 [JobDataViewSet] [{request_id}] Serializing supply data...")
-            serializer = ProductSerializer(supplies, many=True)
+            logger.info(f"📦 [JobDataViewSet] [{request_id}] Serializing material data...")
+            serializer = MaterialListSerializer(supplies, many=True)
             serialized_data = serializer.data
             
             logger.info(f"📦 [JobDataViewSet] [{request_id}] Serialized data type: {type(serialized_data)}")
