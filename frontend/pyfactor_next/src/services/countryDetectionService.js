@@ -7,6 +7,7 @@
 
 import { getCacheValue, setCacheValue } from '@/utils/appCache';
 import { saveUserPreference, getUserPreference } from '@/utils/userPreferences';
+import { isDevelopingCountry as checkIsDevelopingCountry, getDevelopingCountryName } from '@/utils/developingCountries';
 
 // Cache TTL for country detection (24 hours)
 // Developed countries that should NEVER get discount
@@ -16,24 +17,8 @@ const DEVELOPED_COUNTRIES = [
   'SA', 'OM', 'BN', 'CY', 'MT', 'SI', 'CZ', 'SK', 'EE', 'LV', 'LT', 'PL', 'HU', 'HR', 'GR'
 ];
 
-// Developing countries eligible for 50% discount (explicit list)
-const DEVELOPING_COUNTRIES = [
-  'AF', 'AL', 'DZ', 'AO', 'AR', 'AM', 'AZ', 'BD', 'BY', 'BZ', 'BJ', 'BT', 'BO', 'BA', 'BW', 'BR', 
-  'BF', 'BI', 'KH', 'CM', 'CV', 'CF', 'TD', 'CN', 'CO', 'KM', 'CG', 'CD', 'CR', 'CI', 'CU', 'DJ', 
-  'DM', 'DO', 'EC', 'EG', 'SV', 'GQ', 'ER', 'ET', 'FJ', 'GA', 'GM', 'GE', 'GH', 'GD', 'GT', 'GN', 
-  'GW', 'GY', 'HT', 'HN', 'IN', 'ID', 'IR', 'IQ', 'JM', 'JO', 'KZ', 'KE', 'KI', 'KP', 'XK', 'KG', 
-  'LA', 'LB', 'LS', 'LR', 'LY', 'MK', 'MG', 'MW', 'MY', 'MV', 'ML', 'MH', 'MR', 'MU', 'MX', 'FM', 
-  'MD', 'MN', 'ME', 'MA', 'MZ', 'MM', 'NA', 'NR', 'NP', 'NI', 'NE', 'NG', 'PK', 'PW', 'PS', 'PA', 
-  'PG', 'PY', 'PE', 'PH', 'RW', 'WS', 'ST', 'SN', 'RS', 'SC', 'SL', 'SB', 'SO', 'ZA', 'SS', 'LK', 
-  'SD', 'SR', 'SZ', 'SY', 'TJ', 'TZ', 'TH', 'TL', 'TG', 'TO', 'TT', 'TN', 'TR', 'TM', 'TV', 'UG', 
-  'UA', 'UZ', 'VU', 'VE', 'VN', 'YE', 'ZM', 'ZW'
-];
-
 // Cache TTL for country detection (24 hours)
 const COUNTRY_CACHE_TTL = 24 * 60 * 60 * 1000;
-
-// Export the DEVELOPING_COUNTRIES list for use in other modules
-export { DEVELOPING_COUNTRIES };
 
 /**
  * Detect user's country using multiple methods
@@ -302,15 +287,16 @@ export function getLanguageForCountry(countryCode) {
  * @returns {boolean} True if eligible for discount
  */
 export function isDevelopingCountry(countryCode) {
-  // First check if it's explicitly a developed country
-  if (DEVELOPED_COUNTRIES.includes(countryCode)) {
-    console.log(`🏛️ ${countryCode} is a developed country - NO discount`);
-    return false;
+  // Use the centralized function from developingCountries.js
+  const isDeveloping = checkIsDevelopingCountry(countryCode);
+  const countryName = getDevelopingCountryName(countryCode);
+  
+  if (isDeveloping) {
+    console.log(`🌍 ${countryCode} (${countryName || 'Unknown'}) is a developing country - 50% discount applies`);
+  } else {
+    console.log(`🏛️ ${countryCode} is NOT a developing country - NO discount`);
   }
   
-  // Then check if it's in the developing countries list
-  const isDeveloping = DEVELOPING_COUNTRIES.includes(countryCode);
-  console.log(`🌍 ${countryCode} developing country status: ${isDeveloping}`);
   return isDeveloping;
 }
 
