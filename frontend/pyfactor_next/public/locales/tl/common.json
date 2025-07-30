@@ -17,7 +17,7 @@
       "insights": "Mga insight na pinapatakbo ng AI",
       "mobileMoney": "Mobile money payments (M-Pesa)",
       "cardPayments": "Tumanggap ng card payments sa buong mundo",
-      "languages": "20+ suportadong wika",
+      "languages": "30+ suportadong wika",
       "mobilePhone": "Kasama ang mobile phone app",
       "jobManagement": "Pamamahala ng trabaho at gastos"
     }
@@ -131,36 +131,83 @@
     "uptimeDesc": "Laging available"
   },
   "highlights": {
-    "bluetooth": "Bluetooth scanner integration",
-    "printBarcodes": "Mag-print ng custom na barcode",
-    "lowStock": "Mga alerto ng mababang stock",
-    "customLabel": "Custom na pag-print ng label",
-    "mobileScanning": "Mobile scanning",
-    "batchProcessing": "Batch processing",
-    "offlineMode": "Offline mode",
-    "multiplePayments": "Maraming paraan ng pagbabayad",
-    "receiptCustom": "Pag-customize ng resibo",
-    "recurringInvoices": "Mga paulit-ulit na invoice",
-    "paymentReminders": "Mga paalala sa pagbabayad",
-    "invoiceFactoring": "Invoice factoring",
-    "vatGst": "Suporta sa VAT/GST",
-    "taxReports": "Mga ulat ng buwis",
-    "eFilingReady": "Handa para sa e-filing",
-    "customDashboards": "Mga custom na dashboard",
-    "profitAnalysis": "Pagsusuri ng kita",
-    "cashFlowForecast": "Pagtataya ng cash flow",
-    "mobileMoney": "Mobile money",
-    "bankTransfers": "Mga bank transfer",
-    "digitalWallets": "Mga digital wallet",
-    "customsDocuments": "Mga dokumento ng customs",
-    "shippingIntegration": "Shipping integration",
-    "tradeCompliance": "Pagsunod sa kalakalan",
-    "soc2Compliant": "SOC2 compliant",
-    "dataEncryption": "Data encryption",
-    "gdprReady": "GDPR ready",
-    "jobCosting": "Real-time na gastos ng trabaho",
-    "mobileFieldApp": "Mobile app para sa field workers",
-    "materialLaborTracking": "Pagsubaybay ng materyales at paggawa"
+    "eyebrow": "Mga Pangunahing Benepisyo",
+    "heading": "Bakit pinipili ng mga negosyo ang Dott",
+    "subheading": "Mga advanced na feature na nagiging kaibahan namin sa kompetensya at tumutulong sa inyong business na lumago.",
+    "learnMore": "Matuto pa",
+    "features": {
+      "label": "Mga pangunahing feature:"
+    },
+    "mobile": {
+      "title": "Mobile Application",
+      "description": "I-access ang inyong business data kahit saan at kahit kailan gamit ang aming powerful na mobile app. Pamahalaan ang inventory, mag-process ng sales, at tingnan ang real-time reports habang naglalakbay.",
+      "imageAlt": "Screenshot ng mobile application"
+    },
+    "pos": {
+      "title": "POS at Barcode Scanning",
+      "description": "Gawing powerful na point-of-sale system ang kahit anong device. Mag-scan ng barcode nang mabilis, mag-process ng sales nang mabilis, i-track ang inventory sa real-time, at tanggapin ang lahat ng paraan ng pagbabayad kabilang ang cash, cards, at mobile money.",
+      "imageAlt": "POS system na may barcode scanning feature",
+      "features": {
+        "quickCheckout": "Mabilis na checkout",
+        "barcodeScanning": "Barcode scanning",
+        "allPaymentTypes": "Lahat ng uri ng pagbabayad",
+        "inventoryTracking": "Inventory tracking",
+        "offlineMode": "Offline mode",
+        "mobileReady": "Mobile ready"
+      }
+    },
+    "ai": {
+      "title": "AI-Powered na Insights",
+      "description": "Makakuha ng mga smart na rekomendasyon at predictive analytics batay sa inyong business data. Tumutulong ang aming AI na mag-forecast ng demand, i-optimize ang inventory, at i-identify ang mga opportunity para sa paglago.",
+      "imageAlt": "Screenshot ng AI analytics dashboard"
+    },
+    "jobs": {
+      "title": "Comprehensive na Job Management",
+      "description": "End-to-end na job costing mula sa quote hanggang completion. I-track ang materials, labor, at expenses na may real-time profitability analysis. Perfect para sa service businesses, contractors, at field operations na may mobile-first design.",
+      "imageAlt": "Job management at costing interface",
+      "features": {
+        "jobCosting": "Real-time na job costing",
+        "mobileFieldApp": "Mobile app para sa field workers",
+        "materialTracking": "Material tracking",
+        "timeTracking": "Automatic time tracking",
+        "photoCapture": "Photo capture",
+        "digitalSignatures": "Digital signatures",
+        "profitabilityAnalysis": "Profitability analysis",
+        "offlineSupport": "Offline support"
+      }
+    },
+    "geofencing": {
+      "title": "Geofencing at Location Tracking",
+      "description": "Siguruhin ang tumpak na time tracking gamit ang GPS-based na clock in/out. Perfect para sa field teams, delivery drivers, at remote workers. Mag-set up ng virtual boundaries para sa work sites at makakuha ng alerts kapag pumasok o lumabas ang mga empleyado sa designated areas.",
+      "imageAlt": "Geofencing at location tracking interface",
+      "features": {
+        "gpsClockInOut": "GPS clock in/out",
+        "virtualBoundaries": "Virtual boundaries",
+        "realTimeAlerts": "Real-time alerts",
+        "automatedTimesheets": "Automated timesheets",
+        "complianceReady": "Compliance ready",
+        "teamManagement": "Team management"
+      }
+    },
+    "mobilemoney": {
+      "title": "Mobile Money Payments",
+      "description": "Tanggapin ang mga bayad mula saanmang parte ng mundo. Live na ang M-Pesa integration sa Kenya, at paparating na ang MTN Mobile Money, Airtel Money, Orange Money, GCash, Paytm, Pix, at Mercado Pago. Maabot ang bilyun-bilyong customer na mas gusto ang mobile money kaysa traditional banking.",
+      "imageAlt": "Mobile money payment options",
+      "available": "Mga paraan ng pagbabayad:",
+      "live": "Available Na Ngayon:",
+      "coming": "Paparating Na:"
+    },
+    "whatsapp": {
+      "title": "WhatsApp Business",
+      "description": "I-transform ang customer communication gamit ang WhatsApp Business integration. Gumawa at pamahalaan ang inyong product catalog, automatic na magpadala ng invoices at receipts, magbigay ng instant customer support, at maabot ang mga customer sa kanilang preferred messaging platform.",
+      "imageAlt": "WhatsApp Business integration interface"
+    },
+    "languages": {
+      "title": "30+ na Suportadong Wika",
+      "description": "Maabot ang mga customer at pamahalaan ang inyong business sa inyong preferred na wika. Mula sa English hanggang Swahili, Spanish hanggang Mandarin, sinusuportahan namin ang mahigit 30 wika para gawing accessible ang Dott sa mga business worldwide.",
+      "imageAlt": "Multi-language interface demonstration",
+      "availableIn": "Available sa:"
+    }
   },
   "builtForYou": {
     "title": "Ginawa Para Sa Iyo",

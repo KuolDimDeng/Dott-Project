@@ -17,7 +17,7 @@
       "insights": "Nghọta sitere na AI",
       "mobileMoney": "Ịkwụ ụgwọ ego ekwentị (M-Pesa)",
       "cardPayments": "Nabata ụgwọ kaadị n'ụwa niile",
-      "languages": "Nkwado asụsụ karịrị 20",
+      "languages": "Nkwado asụsụ karịrị 30",
       "mobilePhone": "Ngwa ekwentị gụnyere",
       "jobManagement": "Nchịkwa ọrụ na ọnụ ahịa"
     }
@@ -131,36 +131,83 @@
     "uptimeDesc": "Mgbe niile dị"
   },
   "highlights": {
-    "bluetooth": "Njikọ nyocha Bluetooth",
-    "printBarcodes": "Bipụta barcode ahaziri",
-    "lowStock": "Ọkwa ngwaahịa dị ala",
-    "customLabel": "Mbipụta akara ahaziri",
-    "mobileScanning": "Nyocha mkpanaka",
-    "batchProcessing": "Nhazi ọtụtụ",
-    "offlineMode": "Ọnọdụ na-enweghị ịntanetị",
-    "multiplePayments": "Ụzọ ịkwụ ụgwọ dị iche iche",
-    "receiptCustom": "Nhazi akwụkwọ nnata",
-    "recurringInvoices": "Akwụkwọ ụgwọ na-emegharị",
-    "paymentReminders": "Ncheta ịkwụ ụgwọ",
-    "invoiceFactoring": "Ịre akwụkwọ ụgwọ",
-    "vatGst": "Nkwado VAT/GST",
-    "taxReports": "Akụkọ ụtụ",
-    "eFilingReady": "Dị njikere maka e-filing",
-    "customDashboards": "Dashboard ahaziri",
-    "profitAnalysis": "Nyocha uru",
-    "cashFlowForecast": "Amụma ego na-erute",
-    "mobileMoney": "Ego mkpanaka",
-    "bankTransfers": "Mbufe ụlọ akụ",
-    "digitalWallets": "Akpa ego dijitalụ",
-    "customsDocuments": "Akwụkwọ customs",
-    "shippingIntegration": "Njikọ mbupu",
-    "tradeCompliance": "Nrube isi azụmahịa",
-    "soc2Compliant": "SOC2 kwadoro",
-    "dataEncryption": "Nzuzo data",
-    "gdprReady": "GDPR dị njikere",
-    "jobCosting": "Ọnụ ahịa ọrụ n'oge ozugbo",
-    "mobileFieldApp": "Ngwa mkpanaka maka ndị ọrụ n'ọhịa",
-    "materialLaborTracking": "Nleba anya ihe na ọrụ"
+    "eyebrow": "Uru Ndi Isi",
+    "heading": "Gịnị mere ndị azụmahịa ji họrọ Dott",
+    "subheading": "Njirimara dị elu nke na-eme ka anyị dị iche n'etiti ndị asọmpi ma na-enyere azụmahịa gị aka ịbawanye.",
+    "learnMore": "Mụtakwuo",
+    "features": {
+      "label": "Njirimara isi:"
+    },
+    "mobile": {
+      "title": "Ngwa Mkpanaka",
+      "description": "Nweta data azụmahịa gị mgbe ọ bụla na ebe ọ bụla site na ngwa mkpanaka anyị dị ike. Jikwaa ngwongwo, hazie ahịa, ma hụ akụkọ oge dị ugbu a mgbe ị na-aga.",
+      "imageAlt": "Foto ngwa mkpanaka"
+    },
+    "pos": {
+      "title": "POS na Nyocha Barcode",
+      "description": "Gbanwee ngwaọrụ ọ bụla ka ọ bụrụ sistemụ ire ahịa dị ike. Nyochaa barcode ozugbo, hazie ahịa ngwa ngwa, soro ngwongwo n'oge dị ugbu a, ma nabata ụzọ ịkwụ ụgwọ niile gụnyere ego, kaadị, na ego mkpanaka.",
+      "imageAlt": "Sistemụ POS nwere njirimara nyocha barcode",
+      "features": {
+        "quickCheckout": "Nkwụghachi ngwa ngwa",
+        "barcodeScanning": "Nyocha barcode",
+        "allPaymentTypes": "Ụdị nkwụghachi niile",
+        "inventoryTracking": "Nsochi ngwongwo",
+        "offlineMode": "Ọnọdụ na-adịghị n'ịntanetị",
+        "mobileReady": "Njikere mkpanaka"
+      }
+    },
+    "ai": {
+      "title": "Nghọta AI",
+      "description": "Nweta ndụmọdụ amamihe na nyocha amụma dabere na data azụmahịa gị. AI anyị na-enyere gị aka ịkọ ihe achọrọ, meziwanye ngwongwo, ma chọpụta ohere maka uto.",
+      "imageAlt": "Foto dashboard nyocha AI"
+    },
+    "jobs": {
+      "title": "Njikwa Ọrụ Zuru Ezu",
+      "description": "Ọnụahịa ọrụ site na quote ruo n'ọgwụgwụ. Soro ihe, ọrụ, na mmefu ego na nyocha uru n'oge dị ugbu a. Dị mma maka azụmahịa ọrụ, ndị na-arụ ọrụ, na ọrụ ọhịa nwere nhazi mkpanaka mbụ.",
+      "imageAlt": "Njikwa ọrụ na interface ọnụahịa",
+      "features": {
+        "jobCosting": "Ọnụahịa ọrụ n'oge dị ugbu a",
+        "mobileFieldApp": "Ngwa mkpanaka maka ndị ọrụ ọhịa",
+        "materialTracking": "Nsochi ihe",
+        "timeTracking": "Nsochi oge akpaghị aka",
+        "photoCapture": "Njide foto",
+        "digitalSignatures": "Mbinye aka dijitalụ",
+        "profitabilityAnalysis": "Nyocha uru",
+        "offlineSupport": "Nkwado na-adịghị n'ịntanetị"
+      }
+    },
+    "geofencing": {
+      "title": "Geofencing na Nsochi Ebe",
+      "description": "Gbaa nsochi oge ziri ezi na GPS clock in/out. Dị mma maka ndị otu ọhịa, ndị ọkwọ ụgbọala nnyefe, na ndị ọrụ dị anya. Tọọ oke mpaghara maka saịtị ọrụ ma nweta mkpesa mgbe ndị ọrụ batara ma ọ bụ pụọ na mpaghara ahọpụtara.",
+      "imageAlt": "Geofencing na interface nsochi ebe",
+      "features": {
+        "gpsClockInOut": "GPS clock in/out",
+        "virtualBoundaries": "Oke mpaghara",
+        "realTimeAlerts": "Mkpesa oge dị ugbu a",
+        "automatedTimesheets": "Akwụkwọ oge akpaghị aka",
+        "complianceReady": "Njikere nrube isi",
+        "teamManagement": "Njikwa otu"
+      }
+    },
+    "mobilemoney": {
+      "title": "Nkwụghachi Ego Mkpanaka",
+      "description": "Nabata nkwụghachi site n'akụkụ ọ bụla nke ụwa. Njikọta M-Pesa na-arụ ọrụ na Kenya, na MTN Mobile Money, Airtel Money, Orange Money, GCash, Paytm, Pix, na Mercado Pago na-abịa. Ruo ọtụtụ ijeri ndị ahịa na-ahọrọ ego mkpanaka karịa ụlọ akụ omenala.",
+      "imageAlt": "Nhọrọ nkwụghachi ego mkpanaka",
+      "available": "Ụzọ ịkwụ ụgwọ:",
+      "live": "Dị Ugbu a:",
+      "coming": "Na-abịa:"
+    },
+    "whatsapp": {
+      "title": "WhatsApp Business",
+      "description": "Gbanwee nkwurịta okwu ndị ahịa site na njikọta WhatsApp Business. Mepụta ma jikwaa katalọgụ ngwaahịa gị, zigara akwụkwọ ụgwọ na akwụkwọ nnata na-enweghị onye, nye nkwado ndị ahịa ozugbo, ma ruo ndị ahịa n'usoro ozi ha kachasị masị.",
+      "imageAlt": "Interface njikọta WhatsApp Business"
+    },
+    "languages": {
+      "title": "Asụsụ 30+ A Na-akwado",
+      "description": "Ruo ndị ahịa ma jikwaa azụmahịa gị n'asụsụ ị hụrụ n'anya. Site na Bekee ruo Swahili, Spanish ruo Mandarin, anyị na-akwado asụsụ karịrị 30 iji mee ka Dott ruo azụmahịa niile n'ụwa.",
+      "imageAlt": "Ngosi interface asụsụ ọtụtụ",
+      "availableIn": "Dị na:"
+    }
   },
   "builtForYou": {
     "title": "Ewuru Maka Gị",

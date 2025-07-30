@@ -131,36 +131,83 @@
     "uptimeDesc": "Inogara iripo"
   },
   "highlights": {
-    "bluetooth": "Kubatanidza scanner yeBluetooth",
-    "printBarcodes": "Dhinda mabharcode akasarudzwa",
-    "lowStock": "Yambiro yestock yakaderera",
-    "customLabel": "Kudhinda mavara akasarudzwa",
-    "mobileScanning": "Kuscan nemufoni",
-    "batchProcessing": "Kugadzira kwakawanda",
-    "offlineMode": "Mode isiri pamhepo",
-    "multiplePayments": "Nzira dzekubhadhara dzakawanda",
-    "receiptCustom": "Kugadzirisa marisiti",
-    "recurringInvoices": "Mabhiri anodzokororwa",
-    "paymentReminders": "Zviyeuchidzo zvekubhadhara",
-    "invoiceFactoring": "Invoice factoring",
-    "vatGst": "Kutsigira VAT/GST",
-    "taxReports": "Mishumo yemitero",
-    "eFilingReady": "Yakagadzirira e-filing",
-    "customDashboards": "Madheshibhodhi akasarudzwa",
-    "profitAnalysis": "Kuongorora purofiti",
-    "cashFlowForecast": "Kufungidzira kuyerera kwemari",
-    "mobileMoney": "Mari yemufoni",
-    "bankTransfers": "Kuendesa kubhangi",
-    "digitalWallets": "Zvikwama zvedhijitari",
-    "customsDocuments": "Magwaro ecustoms",
-    "shippingIntegration": "Kubatanidza kutumira",
-    "tradeCompliance": "Kutevedzera kutengeserana",
-    "soc2Compliant": "Inotevedzera SOC2",
-    "dataEncryption": "Kuvhara data",
-    "gdprReady": "Yakagadzirira GDPR",
-    "jobCosting": "Mutengo webasa munguva chaiyo",
-    "mobileFieldApp": "App yemufoni yevashandi vemumunda",
-    "materialLaborTracking": "Kutevera zvinhu nebasa"
+    "eyebrow": "Zvakakosha",
+    "heading": "Nei mabhizinesi achisarudza Dott",
+    "subheading": "Advanced features inoita kuti tive vakasiyana nevamwe uye inobatsira bhizinesi rako kukura.",
+    "learnMore": "Dzidza zvimwe",
+    "features": {
+      "label": "Zvakakosha:"
+    },
+    "mobile": {
+      "title": "Mobile Application",
+      "description": "Wana data yebhizinesi rako chero nguva uye chero kupi neapp yedu ine simba. Manage inventory, process sales, uye uone real-time reports paunofamba.",
+      "imageAlt": "Screenshot ye mobile application"
+    },
+    "pos": {
+      "title": "POS ne Barcode Scanning",
+      "description": "Shandura chero device kuve powerful point-of-sale system. Scan barcode pakarepo, process sales nekukurumidza, track inventory mu real-time, uye gamuchira ese mazhinji ekubhadhara kusanganisira mari, makadhi, ne mobile money.",
+      "imageAlt": "POS system ine barcode scanning feature",
+      "features": {
+        "quickCheckout": "Quick checkout",
+        "barcodeScanning": "Barcode scanning",
+        "allPaymentTypes": "Ese marudzi ekubhadhara",
+        "inventoryTracking": "Inventory tracking",
+        "offlineMode": "Offline mode",
+        "mobileReady": "Mobile ready"
+      }
+    },
+    "ai": {
+      "title": "AI-Powered Insights",
+      "description": "Wana smart recommendations ne predictive analytics zvichibva ku data yebhizinesi rako. AI yedu inokubatsira kufunga demand, optimize inventory, uye identify mikana yekukura.",
+      "imageAlt": "Screenshot ye AI analytics dashboard"
+    },
+    "jobs": {
+      "title": "Comprehensive Job Management",
+      "description": "End-to-end job costing kubva ku quote kusvika pakupera. Track zvinhu, basa, ne maexpenses ine real-time profitability analysis. Yakanakira service businesses, contractors, ne field operations ine mobile-first design.",
+      "imageAlt": "Job management ne costing interface",
+      "features": {
+        "jobCosting": "Real-time job costing",
+        "mobileFieldApp": "Mobile app yevashandi vemu field",
+        "materialTracking": "Material tracking",
+        "timeTracking": "Automatic time tracking",
+        "photoCapture": "Photo capture",
+        "digitalSignatures": "Digital signatures",
+        "profitabilityAnalysis": "Profitability analysis",
+        "offlineSupport": "Offline support"
+      }
+    },
+    "geofencing": {
+      "title": "Geofencing ne Location Tracking",
+      "description": "Vimbisa accurate time tracking ne GPS-based clock in/out. Yakanakira field teams, delivery drivers, ne remote workers. Set virtual boundaries ye work sites uye wana alerts kana vashandi vapinda kana vabuda munzvimbo dzakatsaurwa.",
+      "imageAlt": "Geofencing ne location tracking interface",
+      "features": {
+        "gpsClockInOut": "GPS clock in/out",
+        "virtualBoundaries": "Virtual boundaries",
+        "realTimeAlerts": "Real-time alerts",
+        "automatedTimesheets": "Automated timesheets",
+        "complianceReady": "Compliance ready",
+        "teamManagement": "Team management"
+      }
+    },
+    "mobilemoney": {
+      "title": "Mobile Money Payments",
+      "description": "Gamuchira mabhadharo kubva chero kupi munyika. M-Pesa integration iri live muKenya, uye MTN Mobile Money, Airtel Money, Orange Money, GCash, Paytm, Pix, ne Mercado Pago zvirikuuya. Svika kumabhiriyoni evatengi vanofarira mobile money pane traditional banking.",
+      "imageAlt": "Mobile money payment options",
+      "available": "Nzira dzekubhadhara:",
+      "live": "Zviripo Zvino:",
+      "coming": "Zvirikuuya:"
+    },
+    "whatsapp": {
+      "title": "WhatsApp Business",
+      "description": "Shandura kutaurirana nevatengi ne WhatsApp Business integration. Gadzira uye manage product catalog yako, otomatiki tuma ma invoices ne receipts, ipa instant customer support, uye svika kuvatengi pa messaging platform yavakafarira.",
+      "imageAlt": "WhatsApp Business integration interface"
+    },
+    "languages": {
+      "title": "30+ Mitauro Inotsigirwa",
+      "description": "Svika kuvatengi uye manage bhizinesi rako nemutauro waunofarira. Kubva kuChirungu kusvika kuSwahili, kuSpanish kusvika kuMandarin, tinotsigira mitauro inopfuura 30 kuita kuti Dott iwane kuma businesses munyika yose.",
+      "imageAlt": "Multi-language interface demonstration",
+      "availableIn": "Inowanikwa mu:"
+    }
   },
   "builtForYou": {
     "title": "Yakagadzirirwa Iwe",

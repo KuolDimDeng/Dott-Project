@@ -17,7 +17,7 @@
       "insights": "Wglądy oparte na AI",
       "mobileMoney": "Płatności mobilne (M-Pesa)",
       "cardPayments": "Akceptuj płatności kartą na całym świecie",
-      "languages": "Obsługa ponad 20 języków",
+      "languages": "Obsługa ponad 30 języków",
       "mobilePhone": "Aplikacja mobilna w zestawie",
       "jobManagement": "Zarządzanie zadaniami i kosztami"
     }
@@ -118,36 +118,83 @@
     "uptimeDesc": "Zawsze dostępny"
   },
   "highlights": {
-    "bluetooth": "Integracja skanera Bluetooth",
-    "printBarcodes": "Drukuj niestandardowe kody kreskowe",
-    "lowStock": "Alerty niskich stanów",
-    "customLabel": "Drukowanie niestandardowych etykiet",
-    "mobileScanning": "Skanowanie mobilne",
-    "batchProcessing": "Przetwarzanie wsadowe",
-    "offlineMode": "Tryb offline",
-    "multiplePayments": "Wiele metod płatności",
-    "receiptCustom": "Personalizacja paragonów",
-    "recurringInvoices": "Faktury cykliczne",
-    "paymentReminders": "Przypomnienia o płatnościach",
-    "invoiceFactoring": "Faktoring faktur",
-    "vatGst": "Obsługa VAT/GST",
-    "taxReports": "Raporty podatkowe",
-    "eFilingReady": "Gotowy do e-deklaracji",
-    "customDashboards": "Niestandardowe pulpity",
-    "profitAnalysis": "Analiza zysków",
-    "cashFlowForecast": "Prognozowanie przepływów pieniężnych",
-    "mobileMoney": "Płatności mobilne",
-    "bankTransfers": "Przelewy bankowe",
-    "digitalWallets": "Portfele cyfrowe",
-    "customsDocuments": "Dokumenty celne",
-    "shippingIntegration": "Integracja wysyłki",
-    "tradeCompliance": "Zgodność handlowa",
-    "soc2Compliant": "Zgodny z SOC2",
-    "dataEncryption": "Szyfrowanie danych",
-    "gdprReady": "Gotowy na RODO",
-    "jobCosting": "Kosztorysowanie zadań w czasie rzeczywistym",
-    "mobileFieldApp": "Aplikacja mobilna dla pracowników terenowych",
-    "materialLaborTracking": "Śledzenie materiałów i pracy"
+    "eyebrow": "Kluczowe Korzyści",
+    "heading": "Dlaczego firmy wybierają Dott",
+    "subheading": "Zaawansowane funkcje, które wyróżniają nas od konkurencji i pomagają Twojej firmie rosnąć.",
+    "learnMore": "Dowiedz się więcej",
+    "features": {
+      "label": "Kluczowe funkcje:"
+    },
+    "mobile": {
+      "title": "Aplikacja Mobilna",
+      "description": "Uzyskaj dostęp do danych swojej firmy zawsze i wszędzie dzięki naszej potężnej aplikacji mobilnej. Zarządzaj zapasami, przetwarzaj sprzedaż i przeglądaj raporty w czasie rzeczywistym w podróży.",
+      "imageAlt": "Zrzut ekranu aplikacji mobilnej"
+    },
+    "pos": {
+      "title": "POS i Skanowanie Kodów Kreskowych",
+      "description": "Przekształć dowolne urządzenie w potężny system punktu sprzedaży. Skanuj kody kreskowe natychmiast, przetwarzaj sprzedaż szybko, śledź zapasy w czasie rzeczywistym i akceptuj wszystkie metody płatności, w tym gotówkę, karty i mobile money.",
+      "imageAlt": "System POS z funkcją skanowania kodów kreskowych",
+      "features": {
+        "quickCheckout": "Szybka kasa",
+        "barcodeScanning": "Skanowanie kodów kreskowych",
+        "allPaymentTypes": "Wszystkie typy płatności",
+        "inventoryTracking": "Śledzenie zapasów",
+        "offlineMode": "Tryb offline",
+        "mobileReady": "Gotowy na mobile"
+      }
+    },
+    "ai": {
+      "title": "Wglądy Oparte na AI",
+      "description": "Otrzymuj inteligentne rekomendacje i analizy predykcyjne oparte na danych Twojej firmy. Nasza AI pomaga przewidywać popyt, optymalizować zapasy i identyfikować możliwości wzrostu.",
+      "imageAlt": "Zrzut ekranu pulpitu analityki AI"
+    },
+    "jobs": {
+      "title": "Kompleksowe Zarządzanie Zleceniami",
+      "description": "Kompleksowe wyceny od oferty do ukończenia. Śledź materiały, robociznę i wydatki z analizą rentowności w czasie rzeczywistym. Idealne dla firm usługowych, wykonawców i operacji terenowych z designem mobile-first.",
+      "imageAlt": "Interfejs zarządzania i wyceny zleceń",
+      "features": {
+        "jobCosting": "Wycena zleceń w czasie rzeczywistym",
+        "mobileFieldApp": "Aplikacja mobilna dla pracowników terenowych",
+        "materialTracking": "Śledzenie materiałów",
+        "timeTracking": "Automatyczne śledzenie czasu",
+        "photoCapture": "Przechwytywanie zdjęć",
+        "digitalSignatures": "Podpisy cyfrowe",
+        "profitabilityAnalysis": "Analiza rentowności",
+        "offlineSupport": "Wsparcie offline"
+      }
+    },
+    "geofencing": {
+      "title": "Geofencing i Śledzenie Lokalizacji",
+      "description": "Zapewnij dokładne śledzenie czasu z wejściem/wyjściem opartym na GPS. Idealne dla zespołów terenowych, kierowców dostaw i pracowników zdalnych. Ustaw wirtualne granice dla miejsc pracy i otrzymuj alerty, gdy pracownicy wchodzą lub opuszczają wyznaczone obszary.",
+      "imageAlt": "Interfejs geofencing i śledzenia lokalizacji",
+      "features": {
+        "gpsClockInOut": "Wejście/wyjście GPS",
+        "virtualBoundaries": "Wirtualne granice",
+        "realTimeAlerts": "Alerty w czasie rzeczywistym",
+        "automatedTimesheets": "Zautomatyzowane karty czasu pracy",
+        "complianceReady": "Gotowy na zgodność",
+        "teamManagement": "Zarządzanie zespołem"
+      }
+    },
+    "mobilemoney": {
+      "title": "Płatności Mobile Money",
+      "description": "Akceptuj płatności z dowolnego miejsca na świecie. Integracja M-Pesa jest aktywna w Kenii, a MTN Mobile Money, Airtel Money, Orange Money, GCash, Paytm, Pix i Mercado Pago już wkrótce. Docieraj do miliardów klientów, którzy preferują mobile money od tradycyjnej bankowości.",
+      "imageAlt": "Opcje płatności mobile money",
+      "available": "Metody płatności:",
+      "live": "Teraz Dostępne:",
+      "coming": "Wkrótce:"
+    },
+    "whatsapp": {
+      "title": "WhatsApp Business",
+      "description": "Przekształć komunikację z klientami dzięki integracji WhatsApp Business. Twórz i zarządzaj katalogiem produktów, automatycznie wysyłaj faktury i paragony, zapewniaj natychmiastowe wsparcie klientów i docieraj do klientów na ich preferowanej platformie komunikacyjnej.",
+      "imageAlt": "Interfejs integracji WhatsApp Business"
+    },
+    "languages": {
+      "title": "30+ Obsługiwanych Języków",
+      "description": "Docieraj do klientów i zarządzaj firmą w preferowanym języku. Od angielskiego po suahili, od hiszpańskiego po mandaryński, obsługujemy ponad 30 języków, aby uczynić Dott dostępnym dla firm na całym świecie.",
+      "imageAlt": "Demonstracja wielojęzycznego interfejsu",
+      "availableIn": "Dostępne w:"
+    }
   },
   "footer": {
     "product": "Produkt",

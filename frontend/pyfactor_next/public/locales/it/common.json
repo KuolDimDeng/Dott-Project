@@ -17,7 +17,7 @@
       "insights": "Approfondimenti basati su AI",
       "mobileMoney": "Pagamenti mobile money (M-Pesa)",
       "cardPayments": "Accetta pagamenti con carta in tutto il mondo",
-      "languages": "Supporto per oltre 20 lingue",
+      "languages": "Supporto per oltre 30 lingue",
       "mobilePhone": "App mobile inclusa",
       "jobManagement": "Gestione lavori e costi"
     }
@@ -118,36 +118,83 @@
     "uptimeDesc": "Sempre disponibile"
   },
   "highlights": {
-    "bluetooth": "Integrazione scanner Bluetooth",
-    "printBarcodes": "Stampa codici a barre personalizzati",
-    "lowStock": "Avvisi scorte basse",
-    "customLabel": "Stampa etichette personalizzate",
-    "mobileScanning": "Scansione mobile",
-    "batchProcessing": "Elaborazione batch",
-    "offlineMode": "Modalità offline",
-    "multiplePayments": "Metodi di pagamento multipli",
-    "receiptCustom": "Personalizzazione ricevute",
-    "recurringInvoices": "Fatture ricorrenti",
-    "paymentReminders": "Promemoria pagamenti",
-    "invoiceFactoring": "Factoring fatture",
-    "vatGst": "Supporto IVA/GST",
-    "taxReports": "Report fiscali",
-    "eFilingReady": "Pronto per e-filing",
-    "customDashboards": "Dashboard personalizzate",
-    "profitAnalysis": "Analisi profitti",
-    "cashFlowForecast": "Previsioni flusso di cassa",
-    "mobileMoney": "Mobile money",
-    "bankTransfers": "Bonifici bancari",
-    "digitalWallets": "Portafogli digitali",
-    "customsDocuments": "Documenti doganali",
-    "shippingIntegration": "Integrazione spedizioni",
-    "tradeCompliance": "Conformità commerciale",
-    "soc2Compliant": "Conforme SOC2",
-    "dataEncryption": "Crittografia dati",
-    "gdprReady": "Pronto per GDPR",
-    "jobCosting": "Costi lavori in tempo reale",
-    "mobileFieldApp": "App mobile per operatori",
-    "materialLaborTracking": "Monitoraggio materiali e manodopera"
+    "eyebrow": "Vantaggi Chiave",
+    "heading": "Perché le aziende scelgono Dott",
+    "subheading": "Funzionalità avanzate che ci distinguono dalla concorrenza e aiutano la tua azienda a crescere.",
+    "learnMore": "Scopri di più",
+    "features": {
+      "label": "Caratteristiche principali:"
+    },
+    "mobile": {
+      "title": "Applicazione Mobile",
+      "description": "Accedi ai dati della tua azienda sempre e ovunque con la nostra potente app mobile. Gestisci inventario, elabora vendite e visualizza report in tempo reale ovunque tu sia.",
+      "imageAlt": "Screenshot dell'applicazione mobile"
+    },
+    "pos": {
+      "title": "POS e Scansione Codici a Barre",
+      "description": "Trasforma qualsiasi dispositivo in un potente sistema di punto vendita. Scansiona codici a barre istantaneamente, elabora vendite velocemente, monitora l'inventario in tempo reale e accetta tutti i metodi di pagamento inclusi contanti, carte e mobile money.",
+      "imageAlt": "Sistema POS con funzione di scansione codici a barre",
+      "features": {
+        "quickCheckout": "Checkout veloce",
+        "barcodeScanning": "Scansione codici a barre",
+        "allPaymentTypes": "Tutti i tipi di pagamento",
+        "inventoryTracking": "Monitoraggio inventario",
+        "offlineMode": "Modalità offline",
+        "mobileReady": "Pronto per mobile"
+      }
+    },
+    "ai": {
+      "title": "Approfondimenti Basati su AI",
+      "description": "Ottieni raccomandazioni intelligenti e analisi predittive basate sui dati della tua azienda. La nostra AI ti aiuta a prevedere la domanda, ottimizzare l'inventario e identificare opportunità di crescita.",
+      "imageAlt": "Screenshot del dashboard di analisi AI"
+    },
+    "jobs": {
+      "title": "Gestione Lavori Completa",
+      "description": "Calcolo costi end-to-end dal preventivo al completamento. Monitora materiali, manodopera e spese con analisi di redditività in tempo reale. Perfetto per aziende di servizi, appaltatori e operazioni sul campo con design mobile-first.",
+      "imageAlt": "Interfaccia di gestione e calcolo costi lavori",
+      "features": {
+        "jobCosting": "Calcolo costi lavori in tempo reale",
+        "mobileFieldApp": "App mobile per operatori",
+        "materialTracking": "Monitoraggio materiali",
+        "timeTracking": "Monitoraggio tempo automatico",
+        "photoCapture": "Cattura foto",
+        "digitalSignatures": "Firme digitali",
+        "profitabilityAnalysis": "Analisi redditività",
+        "offlineSupport": "Supporto offline"
+      }
+    },
+    "geofencing": {
+      "title": "Geofencing e Monitoraggio Posizione",
+      "description": "Garantisci il monitoraggio accurato del tempo con clock in/out basato su GPS. Perfetto per team sul campo, autisti delle consegne e lavoratori remoti. Imposta confini virtuali per i siti di lavoro e ricevi avvisi quando i dipendenti entrano o escono dalle aree designate.",
+      "imageAlt": "Interfaccia di geofencing e monitoraggio posizione",
+      "features": {
+        "gpsClockInOut": "Clock in/out GPS",
+        "virtualBoundaries": "Confini virtuali",
+        "realTimeAlerts": "Avvisi in tempo reale",
+        "automatedTimesheets": "Timesheet automatizzati",
+        "complianceReady": "Pronto per conformità",
+        "teamManagement": "Gestione team"
+      }
+    },
+    "mobilemoney": {
+      "title": "Pagamenti Mobile Money",
+      "description": "Accetta pagamenti da qualsiasi parte del mondo. L'integrazione M-Pesa è attiva in Kenya, con MTN Mobile Money, Airtel Money, Orange Money, GCash, Paytm, Pix e Mercado Pago in arrivo. Raggiungi miliardi di clienti che preferiscono il mobile money rispetto al banking tradizionale.",
+      "imageAlt": "Opzioni di pagamento mobile money",
+      "available": "Metodi di pagamento:",
+      "live": "Ora Disponibile:",
+      "coming": "Prossimamente:"
+    },
+    "whatsapp": {
+      "title": "WhatsApp Business",
+      "description": "Trasforma la comunicazione con i clienti con l'integrazione WhatsApp Business. Crea e gestisci il tuo catalogo prodotti, invia automaticamente fatture e ricevute, fornisci supporto clienti istantaneo e raggiungi i clienti sulla loro piattaforma di messaggistica preferita.",
+      "imageAlt": "Interfaccia di integrazione WhatsApp Business"
+    },
+    "languages": {
+      "title": "30+ Lingue Supportate",
+      "description": "Raggiungi i clienti e gestisci la tua azienda nella tua lingua preferita. Dall'inglese al swahili, dallo spagnolo al mandarino, supportiamo oltre 30 lingue per rendere Dott accessibile alle aziende di tutto il mondo.",
+      "imageAlt": "Dimostrazione interfaccia multilingue",
+      "availableIn": "Disponibile in:"
+    }
   },
   "footer": {
     "product": "Prodotto",
