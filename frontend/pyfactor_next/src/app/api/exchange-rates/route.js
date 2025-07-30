@@ -110,6 +110,53 @@ const countryCurrencyMap = {
   'TO': 'TOP', // Tongan Pa'anga
   'VU': 'VUV', // Vanuatu Vatu
   'SB': 'SBD', // Solomon Islands Dollar
+  // Additional currency mappings
+  'SS': 'SSP', // South Sudan Pound
+  'BJ': 'XOF', // Benin - West African CFA Franc
+  'BF': 'XOF', // Burkina Faso - West African CFA Franc
+  'BI': 'BIF', // Burundi Franc
+  'CV': 'CVE', // Cape Verde Escudo
+  'CF': 'XAF', // Central African Republic - CFA Franc
+  'TD': 'XAF', // Chad - CFA Franc
+  'KM': 'KMF', // Comoros Franc
+  'DJ': 'DJF', // Djibouti Franc
+  'GQ': 'XAF', // Equatorial Guinea - CFA Franc
+  'ER': 'ERN', // Eritrea Nakfa
+  'GM': 'GMD', // Gambia Dalasi
+  'GN': 'GNF', // Guinea Franc
+  'GW': 'XOF', // Guinea-Bissau - CFA Franc
+  'LS': 'LSL', // Lesotho Loti (also accepts ZAR)
+  'LR': 'LRD', // Liberia Dollar
+  'MG': 'MGA', // Madagascar Ariary
+  'ML': 'XOF', // Mali - West African CFA Franc
+  'MR': 'MRU', // Mauritania Ouguiya
+  'NE': 'XOF', // Niger - West African CFA Franc
+  'ST': 'STN', // São Tomé and Príncipe Dobra
+  'SL': 'SLL', // Sierra Leone Leone
+  'SO': 'SOS', // Somalia Shilling
+  'SZ': 'SZL', // Eswatini Lilangeni (also accepts ZAR)
+  'TG': 'XOF', // Togo - West African CFA Franc
+  'AM': 'AMD', // Armenian Dram
+  'AZ': 'AZN', // Azerbaijani Manat
+  'BT': 'BTN', // Bhutanese Ngultrum
+  'GE': 'GEL', // Georgian Lari
+  'IR': 'IRR', // Iranian Rial
+  'KZ': 'KZT', // Kazakhstani Tenge
+  'KG': 'KGS', // Kyrgyzstani Som
+  'MV': 'MVR', // Maldivian Rufiyaa
+  'MN': 'MNT', // Mongolian Tugrik
+  'TJ': 'TJS', // Tajikistani Somoni
+  'TL': 'USD', // Timor-Leste uses USD
+  'TM': 'TMT', // Turkmenistan Manat
+  'UZ': 'UZS', // Uzbekistani Som
+  'BZ': 'BZD', // Belize Dollar
+  'CU': 'CUP', // Cuban Peso
+  'GY': 'GYD', // Guyanese Dollar
+  'SR': 'SRD', // Surinamese Dollar
+  'BY': 'BYN', // Belarusian Ruble
+  'KI': 'AUD', // Kiribati uses Australian Dollar
+  'FM': 'USD', // Micronesia uses USD
+  'TV': 'AUD', // Tuvalu uses Australian Dollar
 };
 
 // Currency formatting preferences
@@ -192,6 +239,40 @@ const currencyFormats = {
   'TOP': { symbol: 'T$', decimals: 2 },
   'VUV': { symbol: 'Vt', decimals: 0 },
   'SBD': { symbol: '$', decimals: 2 },
+  // Additional currency formats
+  'SSP': { symbol: 'SSP', decimals: 2 },
+  'BIF': { symbol: 'FBu', decimals: 0 },
+  'CVE': { symbol: '$', decimals: 2 },
+  'KMF': { symbol: 'CF', decimals: 0 },
+  'DJF': { symbol: 'Fdj', decimals: 0 },
+  'ERN': { symbol: 'Nfk', decimals: 2 },
+  'GMD': { symbol: 'D', decimals: 2 },
+  'GNF': { symbol: 'FG', decimals: 0 },
+  'LSL': { symbol: 'L', decimals: 2 },
+  'LRD': { symbol: '$', decimals: 2 },
+  'MGA': { symbol: 'Ar', decimals: 0 },
+  'MRU': { symbol: 'UM', decimals: 2 },
+  'STN': { symbol: 'Db', decimals: 2 },
+  'SLL': { symbol: 'Le', decimals: 0 },
+  'SOS': { symbol: 'S', decimals: 0 },
+  'SZL': { symbol: 'E', decimals: 2 },
+  'AMD': { symbol: '֏', decimals: 0 },
+  'AZN': { symbol: '₼', decimals: 2 },
+  'BTN': { symbol: 'Nu.', decimals: 2 },
+  'GEL': { symbol: '₾', decimals: 2 },
+  'IRR': { symbol: '﷼', decimals: 0 },
+  'KZT': { symbol: '₸', decimals: 2 },
+  'KGS': { symbol: 'с', decimals: 2 },
+  'MVR': { symbol: '.ރ', decimals: 2 },
+  'MNT': { symbol: '₮', decimals: 0 },
+  'TJS': { symbol: 'ЅМ', decimals: 2 },
+  'TMT': { symbol: 'T', decimals: 2 },
+  'UZS': { symbol: 'soʻm', decimals: 0 },
+  'BZD': { symbol: 'BZ$', decimals: 2 },
+  'CUP': { symbol: '₱', decimals: 2 },
+  'GYD': { symbol: '$', decimals: 0 },
+  'SRD': { symbol: '$', decimals: 2 },
+  'BYN': { symbol: 'Br', decimals: 2 },
 };
 
 export async function GET(request) {
