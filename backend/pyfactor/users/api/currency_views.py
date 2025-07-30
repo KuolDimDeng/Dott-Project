@@ -21,29 +21,31 @@ logger.setLevel(logging.DEBUG)
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([])  # No authentication required for diagnostic
 def currency_diagnostic(request):
     """Diagnostic endpoint to check currency system health"""
     try:
         user = request.user
         diagnostics = {
             'user_info': {
-                'email': user.email,
-                'id': str(user.id),
-                'has_business_id': hasattr(user, 'business_id'),
-                'business_id': str(user.business_id) if hasattr(user, 'business_id') and user.business_id else None,
-                'has_tenant_id': hasattr(user, 'tenant_id'),
-                'tenant_id': str(user.tenant_id) if hasattr(user, 'tenant_id') and user.tenant_id else None,
-                'role': user.role if hasattr(user, 'role') else 'No role attribute',
+                'authenticated': user.is_authenticated if hasattr(user, 'is_authenticated') else False,
+                'email': getattr(user, 'email', 'No email') if user.is_authenticated else 'Not authenticated',
+                'id': str(user.id) if user.is_authenticated else 'No ID',
+                'has_business_id': hasattr(user, 'business_id') if user.is_authenticated else False,
+                'business_id': str(user.business_id) if user.is_authenticated and hasattr(user, 'business_id') and user.business_id else None,
+                'has_tenant_id': hasattr(user, 'tenant_id') if user.is_authenticated else False,
+                'tenant_id': str(user.tenant_id) if user.is_authenticated and hasattr(user, 'tenant_id') and user.tenant_id else None,
+                'role': getattr(user, 'role', 'No role attribute') if user.is_authenticated else 'Not authenticated',
             }
         }
         
-        # Check if we can get the business
+        # Check if we can get the business (only if authenticated)
         business_id = None
-        if hasattr(user, 'business_id') and user.business_id:
-            business_id = user.business_id
-        elif hasattr(user, 'tenant_id') and user.tenant_id:
-            business_id = user.tenant_id
+        if user.is_authenticated:
+            if hasattr(user, 'business_id') and user.business_id:
+                business_id = user.business_id
+            elif hasattr(user, 'tenant_id') and user.tenant_id:
+                business_id = user.tenant_id
         
         if business_id:
             try:
@@ -106,6 +108,7 @@ def currency_diagnostic(request):
 
 
 @api_view(['GET'])
+@permission_classes([])  # No authentication required for public test
 def test_auth_public(request):
     """Test endpoint without authentication to verify routing"""
     logger.info("[TEST AUTH PUBLIC] === REQUEST RECEIVED ===")
