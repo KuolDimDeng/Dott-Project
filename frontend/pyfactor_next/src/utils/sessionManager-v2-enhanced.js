@@ -80,11 +80,17 @@ class SessionManagerV2Enhanced {
         return cached;
       }
       
-      // Call the session-v2 API endpoint
+      // Call the session-v2 API endpoint with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
       const response = await fetch('/api/auth/session-v2', {
         method: 'GET',
         credentials: 'include', // Important: include cookies
-        cache: 'no-store'
+        cache: 'no-store',
+        signal: controller.signal
+      }).finally(() => {
+        clearTimeout(timeoutId);
       });
       
       if (!response.ok) {
@@ -112,7 +118,11 @@ class SessionManagerV2Enhanced {
       
       return { authenticated: false, user: null };
     } catch (error) {
-      console.error('[SessionManager] Error fetching session:', error);
+      if (error.name === 'AbortError') {
+        console.error('[SessionManager] Session request timed out after 10 seconds');
+      } else {
+        console.error('[SessionManager] Error fetching session:', error);
+      }
       throw error;
     }
   }
@@ -158,7 +168,7 @@ class SessionManagerV2Enhanced {
    * Backend API operations
    */
   async getFromDatabase(sessionId) {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://dott-api-y26w.onrender.com';
     
     const response = await fetch(`${apiUrl}/api/sessions/current/`, {
       headers: {

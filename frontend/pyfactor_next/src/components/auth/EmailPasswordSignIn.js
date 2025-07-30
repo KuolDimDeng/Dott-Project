@@ -340,7 +340,10 @@ export default function EmailPasswordSignIn() {
     try {
       console.log('[EmailPasswordSignIn] Attempting login via /api/auth/consolidated-login');
       
-      // Use consolidated login endpoint for atomic operation
+      // Use consolidated login endpoint for atomic operation with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout for login
+      
       const loginResponse = await fetch('/api/auth/consolidated-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -348,7 +351,10 @@ export default function EmailPasswordSignIn() {
         body: JSON.stringify({
           email,
           password
-        })
+        }),
+        signal: controller.signal
+      }).finally(() => {
+        clearTimeout(timeoutId);
       });
 
       console.log('[EmailPasswordSignIn] Login response status:', loginResponse.status);
@@ -595,7 +601,16 @@ export default function EmailPasswordSignIn() {
       setIsLoading(false);
     } catch (error) {
       logger.error('[EmailPasswordSignIn] Login error:', error);
-      showError(error.message || t('signin.errors.invalidCredentials'));
+      
+      // Handle timeout errors
+      if (error.name === 'AbortError') {
+        showError('The request timed out. Please check your internet connection and try again.');
+      } else if (error.message?.includes('NetworkError') || error.message?.includes('fetch')) {
+        showError('Unable to connect to the server. Please check your internet connection and try again.');
+      } else {
+        showError(error.message || t('signin.errors.invalidCredentials'));
+      }
+      
       setIsLoading(false);
     }
   };
