@@ -40,28 +40,28 @@ class MaterialViewSet(viewsets.ModelViewSet):
         logger.info(f"🔍 [MaterialViewSet] User business_id: {user_business_id}")
         logger.info(f"🔍 [MaterialViewSet] User authenticated: {self.request.user.is_authenticated}")
         
-        # Use all_objects to bypass automatic tenant filtering
-        queryset = Material.all_objects.all()
-        logger.info(f"🔍 [MaterialViewSet] Total materials in database (all_objects): {queryset.count()}")
-        
-        # Log all materials for debugging
-        for material in queryset[:10]:  # Show first 10
-            logger.info(f"🔍 [MaterialViewSet] Material in DB: {material.name} (ID: {material.id}, tenant_id: {material.tenant_id})")
-        
-        # Manual tenant filtering
-        if hasattr(self.request.user, 'business_id') and self.request.user.business_id:
-            tenant_filtered_queryset = queryset.filter(tenant_id=self.request.user.business_id)
-            logger.info(f"🔍 [MaterialViewSet] Filtering materials for tenant: {self.request.user.business_id}")
-            logger.info(f"🔍 [MaterialViewSet] Materials after tenant filter: {tenant_filtered_queryset.count()}")
-            
-            # Log filtered materials
-            for material in tenant_filtered_queryset:
-                logger.info(f"🔍 [MaterialViewSet] Filtered material: {material.name} (ID: {material.id})")
-            
-            queryset = tenant_filtered_queryset
+        # Use the tenant-aware manager which respects RLS context
+        # This is the preferred approach as it leverages the RLS policies
+        if current_tenant:
+            # Use the regular objects manager which applies tenant filtering
+            queryset = Material.objects.all()
+            logger.info(f"🔍 [MaterialViewSet] Using tenant-aware manager with RLS context: {current_tenant}")
+        elif hasattr(self.request.user, 'business_id') and self.request.user.business_id:
+            # Fallback: manually filter by business_id if no RLS context
+            queryset = Material.objects.filter(tenant_id=self.request.user.business_id)
+            logger.info(f"🔍 [MaterialViewSet] Using manual tenant filter: {self.request.user.business_id}")
         else:
-            logger.warning("🔍 [MaterialViewSet] No business_id found for user")
+            logger.warning("🔍 [MaterialViewSet] No tenant context available")
             return Material.objects.none()
+        
+        # Log queryset count
+        material_count = queryset.count()
+        logger.info(f"🔍 [MaterialViewSet] Materials found for tenant: {material_count}")
+        
+        # Debug: show first few materials
+        if material_count > 0:
+            for material in queryset[:3]:
+                logger.info(f"🔍 [MaterialViewSet] Material: {material.name} (ID: {material.id}, SKU: {material.sku})")
         
         # Apply filters from query parameters
         params = self.request.query_params
@@ -108,6 +108,14 @@ class MaterialViewSet(viewsets.ModelViewSet):
         queryset = queryset.select_related('supplier', 'location')
         
         logger.info(f"🔍 [MaterialViewSet] Final queryset count after all filters: {queryset.count()}")
+        
+        # Debug: show first few materials in queryset
+        try:
+            materials_sample = list(queryset[:3].values('id', 'name', 'sku', 'tenant_id'))
+            logger.info(f"🔍 [MaterialViewSet] Sample materials in queryset: {materials_sample}")
+        except Exception as e:
+            logger.info(f"🔍 [MaterialViewSet] Error getting sample materials: {e}")
+        
         logger.info(f"🔍 [MaterialViewSet] === GET_QUERYSET END ===")
         
         return queryset
@@ -124,7 +132,7 @@ class MaterialViewSet(viewsets.ModelViewSet):
         logger.info(f"🎯 [MaterialViewSet] Creating new material: {request.data.get('name')}")
         
         # Debug tenant context
-        from custom_auth.rls import get_current_tenant_id
+        from custom_auth.rls import get_current_tenant_id, set_current_tenant_id
         current_tenant = get_current_tenant_id()
         user_business_id = getattr(request.user, 'business_id', None)
         
@@ -132,6 +140,11 @@ class MaterialViewSet(viewsets.ModelViewSet):
         logger.info(f"🎯 [MaterialViewSet] User business_id: {user_business_id}")
         logger.info(f"🎯 [MaterialViewSet] User authenticated: {request.user.is_authenticated}")
         logger.info(f"🎯 [MaterialViewSet] User ID: {request.user.id if request.user.is_authenticated else 'None'}")
+        
+        # Ensure RLS context is set
+        if not current_tenant and user_business_id:
+            set_current_tenant_id(user_business_id)
+            logger.info(f"🎯 [MaterialViewSet] Set RLS context to user's business_id: {user_business_id}")
         
         # Auto-generate SKU if not provided
         if not request.data.get('sku'):
@@ -155,24 +168,9 @@ class MaterialViewSet(viewsets.ModelViewSet):
             created_material_id = response.data.get('id')
             logger.info(f"🎯 [MaterialViewSet] Material created successfully with ID: {created_material_id}")
             
-            # Check if material exists in database with tenant filter
-            try:
-                # Check using all_objects (bypasses tenant filtering)
-                material_all = Material.all_objects.filter(id=created_material_id).first()
-                if material_all:
-                    logger.info(f"🎯 [MaterialViewSet] Material found in all_objects: {material_all.name}, tenant_id: {material_all.tenant_id}")
-                else:
-                    logger.error(f"🎯 [MaterialViewSet] Material NOT found in all_objects!")
-                
-                # Check using tenant-aware objects
-                material_tenant = Material.objects.filter(id=created_material_id).first()
-                if material_tenant:
-                    logger.info(f"🎯 [MaterialViewSet] Material found in tenant objects: {material_tenant.name}")
-                else:
-                    logger.error(f"🎯 [MaterialViewSet] Material NOT found in tenant objects!")
-                    
-            except Exception as e:
-                logger.error(f"🎯 [MaterialViewSet] Error checking created material: {e}")
+            # Return the response immediately after successful creation
+            # The list view will use the proper tenant-aware queryset
+            return response
         else:
             logger.error(f"🎯 [MaterialViewSet] Material creation failed with status: {response.status_code}")
             logger.error(f"🎯 [MaterialViewSet] Response data: {response.data}")

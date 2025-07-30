@@ -20,7 +20,7 @@ class MaterialSerializer(serializers.ModelSerializer):
     class Meta:
         model = Material
         fields = [
-            'id', 'name', 'sku', 'description', 'material_type',
+            'id', 'tenant_id', 'name', 'sku', 'description', 'material_type',
             'quantity_in_stock', 'unit', 'custom_unit', 'display_unit',
             'reorder_level', 'reorder_quantity',
             'unit_cost', 'last_purchase_price', 'average_cost',
@@ -73,6 +73,58 @@ class MaterialSerializer(serializers.ModelSerializer):
             })
         
         return data
+    
+    def create(self, validated_data):
+        """Create material with explicit tenant assignment"""
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"🏗️ [MaterialSerializer.create] === SERIALIZER CREATE START ===")
+        logger.info(f"🏗️ [MaterialSerializer.create] Validated data: {validated_data}")
+        
+        # Get tenant from RLS context first (preferred)
+        from custom_auth.rls import get_current_tenant_id, set_current_tenant_id
+        tenant_id = get_current_tenant_id()
+        logger.info(f"🏗️ [MaterialSerializer.create] Tenant from RLS: {tenant_id}")
+        
+        # If no tenant from RLS, try to get from user
+        if not tenant_id:
+            request = self.context.get('request')
+            if request and hasattr(request, 'user') and request.user.is_authenticated:
+                tenant_id = getattr(request.user, 'business_id', None)
+                logger.info(f"🏗️ [MaterialSerializer.create] Tenant from user.business_id: {tenant_id}")
+                
+                # Set the RLS context if we have a tenant from user
+                if tenant_id:
+                    set_current_tenant_id(tenant_id)
+                    logger.info(f"🏗️ [MaterialSerializer.create] Set RLS context to: {tenant_id}")
+        
+        # Ensure we have a tenant_id
+        if not tenant_id:
+            logger.error(f"❌ [MaterialSerializer.create] No tenant_id found!")
+            raise serializers.ValidationError("Unable to determine tenant context for material creation")
+        
+        # The TenantAwareModel should automatically set tenant_id from RLS context
+        # But we'll also explicitly set it to be sure
+        if hasattr(tenant_id, 'hex'):
+            tenant_id = str(tenant_id)
+        validated_data['tenant_id'] = tenant_id
+        logger.info(f"🏗️ [MaterialSerializer.create] Set tenant_id in validated_data: {tenant_id}")
+        
+        # Create the material
+        logger.info(f"🏗️ [MaterialSerializer.create] Creating material with data: {validated_data}")
+        material = super().create(validated_data)
+        
+        logger.info(f"🏗️ [MaterialSerializer.create] Material created with ID: {material.id}")
+        logger.info(f"🏗️ [MaterialSerializer.create] Material tenant_id: {material.tenant_id}")
+        
+        # Verify the material can be found
+        verify_qs = Material.objects.filter(id=material.id)
+        logger.info(f"🏗️ [MaterialSerializer.create] Verification - Material found in tenant-aware queryset: {verify_qs.exists()}")
+        
+        logger.info(f"🏗️ [MaterialSerializer.create] === SERIALIZER CREATE END ===")
+        
+        return material
 
 
 class MaterialListSerializer(serializers.ModelSerializer):
