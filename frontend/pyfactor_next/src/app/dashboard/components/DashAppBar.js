@@ -203,9 +203,11 @@ const DashAppBar = ({
           const data = await response.json();
           if (data.logo_url && isMounted.current) {
             // Convert backend URL to full URL if needed
-            const fullUrl = data.logo_url.startsWith('http') 
+            // Support both http URLs and data: URLs (base64)
+            const fullUrl = (data.logo_url.startsWith('http') || data.logo_url.startsWith('data:'))
               ? data.logo_url 
               : `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}${data.logo_url}`;
+            console.log('[DashAppBar] Business logo loaded:', fullUrl.substring(0, 100) + '...');
             setBusinessLogoUrl(fullUrl);
           }
         }
@@ -218,6 +220,11 @@ const DashAppBar = ({
       loadBusinessLogo();
     }
   }, [session?.authenticated]);
+  
+  // Monitor businessLogoUrl changes
+  useEffect(() => {
+    console.log('[DashAppBar] businessLogoUrl state changed:', businessLogoUrl ? 'Set to URL' : 'null');
+  }, [businessLogoUrl]);
   
   // Create refs for the dropdown menu and button
   const userMenuRef = useRef(null);
@@ -1409,6 +1416,11 @@ const DashAppBar = ({
                         src={businessLogoUrl} 
                         alt="Business logo" 
                         className="h-5 w-5 object-contain"
+                        onError={(e) => {
+                          console.error('[DashAppBar] Logo image failed to load:', e);
+                          setBusinessLogoUrl(null);
+                        }}
+                        onLoad={() => console.log('[DashAppBar] Logo image loaded successfully')}
                       />
                     </div>
                   )}
@@ -1436,6 +1448,11 @@ const DashAppBar = ({
                               src={businessLogoUrl} 
                               alt="Business logo" 
                               className="h-3 w-3 object-contain"
+                              onError={(e) => {
+                                console.error('[DashAppBar] Mobile logo image failed to load:', e);
+                                setBusinessLogoUrl(null);
+                              }}
+                              onLoad={() => console.log('[DashAppBar] Mobile logo image loaded successfully')}
                             />
                           </div>
                         )}
