@@ -211,7 +211,9 @@
       "Bash(render logs:*)",
       "Bash(npm install:*)",
       "Bash(do sed -i '' 's/Welcome to Dott\\\\!/Welcome to Dott!/g' \"$file\")",
-      "Bash(PORT=3002 pnpm run dev)"
+      "Bash(PORT=3002 pnpm run dev)",
+      "Bash(./scripts/install-tdz-dependencies.sh:*)",
+      "Bash(kill:*)"
     ],
     "deny": []
   }

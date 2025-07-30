@@ -3,9 +3,9 @@ import "./globals.css";
 import Script from 'next/script';
 import SessionHeartbeat from '@/components/SessionHeartbeat';
 import ChunkErrorHandler from '@/components/ChunkErrorHandler';
+import TDZProtectionInitializer from '@/components/TDZProtectionInitializer';
 import Providers from '@/providers';
 import { headers } from 'next/headers';
-import '@/utils/tdzProtection'; // Initialize TDZ protection early
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -63,6 +63,9 @@ export default function RootLayout({ children }) {
         
         {/* Chunk Error Handler */}
         <ChunkErrorHandler />
+        
+        {/* TDZ Protection Initializer */}
+        <TDZProtectionInitializer />
         
         <Providers>
           {children}

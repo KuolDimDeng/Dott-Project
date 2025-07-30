@@ -22,24 +22,34 @@ class TDZDetectionPlugin {
         });
       });
 
-      // Add runtime code to catch TDZ errors
-      compilation.hooks.optimizeChunkAssets.tap('TDZDetectionPlugin', (chunks) => {
-        chunks.forEach(chunk => {
-          chunk.files.forEach(file => {
-            if (file.endsWith('.js')) {
-              let source = compilation.assets[file].source();
-              
-              // Add TDZ protection wrapper
-              const protectedSource = this.wrapWithTDZProtection(source);
-              
-              compilation.assets[file] = {
-                source: () => protectedSource,
-                size: () => protectedSource.length
-              };
+      // Add runtime code to catch TDZ errors using modern webpack API
+      compilation.hooks.processAssets.tap(
+        {
+          name: 'TDZDetectionPlugin',
+          stage: compilation.constructor.PROCESS_ASSETS_STAGE_ADDITIONS
+        },
+        (assets) => {
+          for (const [pathname, asset] of Object.entries(assets)) {
+            if (pathname.endsWith('.js')) {
+              try {
+                const source = asset.source();
+                if (typeof source === 'string') {
+                  // Add TDZ protection wrapper
+                  const protectedSource = this.wrapWithTDZProtection(source);
+                  
+                  // Use webpack's sources library for proper source handling
+                  const { RawSource } = require('webpack-sources');
+                  compilation.updateAsset(pathname, new RawSource(protectedSource));
+                }
+              } catch (error) {
+                if (this.options.verbose) {
+                  console.error(`[TDZDetectionPlugin] Error processing ${pathname}:`, error);
+                }
+              }
             }
-          });
-        });
-      });
+          }
+        }
+      );
     });
   }
 

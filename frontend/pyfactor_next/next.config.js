@@ -142,24 +142,8 @@ const nextConfig = {
       console.log('🔧 [Webpack] Client-side production build optimization enabled');
       console.log('🔧 [Webpack] Chunk splitting configuration active');
       
-      // Add TDZ Detection Plugin
-      const TDZDetectionPlugin = require('./webpack-plugins/TDZDetectionPlugin');
-      config.plugins.push(new TDZDetectionPlugin({
-        verbose: true,
-        autoFix: true,
-        warnOnly: false
-      }));
-      
-      // Add custom plugin to track module loading
-      config.plugins.push({
-        apply: (compiler) => {
-          compiler.hooks.compilation.tap('ModuleTracker', (compilation) => {
-            compilation.hooks.beforeModuleIds.tap('ModuleTracker', (modules) => {
-              console.log('🔧 [Webpack] Total modules:', modules.size);
-            });
-          });
-        }
-      });
+      // Skip TDZ Detection Plugin for now - causing compatibility issues
+      // Focus on conservative minification settings instead
     }
     
     // Optimize chunk splitting
@@ -241,38 +225,67 @@ const nextConfig = {
         config.optimization.minimizer = [];
       }
       
-      // Try ESBuild as an alternative minifier - it's more reliable with modern JS
-      const ESBuildMinifyPlugin = require('esbuild-loader').ESBuildMinifyPlugin;
+      // Use webpack's built-in TerserPlugin with very conservative settings
+      const TerserPlugin = require('terser-webpack-plugin');
       
-      // Clear existing minimizers
+      // Override the default minimizer with our conservative configuration
       config.optimization.minimizer = [
-        new ESBuildMinifyPlugin({
-          target: 'es2015',
-          css: true,
-          minify: true,
-          minifyWhitespace: true,
-          minifyIdentifiers: false, // Don't minify identifiers to avoid TDZ
-          minifySyntax: false, // Don't minify syntax to be safe
-          legalComments: 'none',
-          keepNames: true, // Keep function and class names
-          treeShaking: false, // Disable tree shaking to avoid TDZ issues
-          format: 'iife', // Wrap in IIFE to avoid global scope issues
-        })
+        new TerserPlugin({
+          parallel: true,
+          terserOptions: {
+            parse: {
+              ecma: 8,
+            },
+            compress: {
+              ecma: 5,
+              warnings: false,
+              comparisons: false,
+              inline: 2,
+              
+              // Disable ALL transformations that can cause TDZ
+              arrows: false,
+              collapse_vars: false,
+              computed_props: false,
+              hoist_funs: false,
+              hoist_props: false,
+              hoist_vars: false,
+              keep_classnames: true,
+              keep_fargs: true,
+              keep_fnames: true,
+              keep_infinity: true,
+              loops: false,
+              negate_iife: false,
+              properties: false,
+              reduce_funcs: false,
+              reduce_vars: false,
+              side_effects: false,
+              switches: false,
+              toplevel: false,
+              typeofs: false,
+              unused: false,
+              
+              // Only safe optimizations
+              dead_code: true,
+              drop_debugger: true,
+              conditionals: true,
+              evaluate: true,
+              booleans: true,
+              sequences: true,
+            },
+            mangle: {
+              safari10: true,
+              keep_classnames: true,
+              keep_fnames: true,
+            },
+            output: {
+              ecma: 5,
+              comments: false,
+              ascii_only: true,
+              safari10: true,
+            },
+          },
+        }),
       ];
-      
-      // Also update the module rules to use esbuild-loader
-      config.module.rules.push({
-        test: /\.(js|jsx)$/,
-        exclude: /node_modules/,
-        use: {
-          loader: 'esbuild-loader',
-          options: {
-            target: 'es2015',
-            keepNames: true,
-            format: 'iife'
-          }
-        }
-      });
     }
     
     return config;
