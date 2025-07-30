@@ -21,8 +21,8 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const queryString = searchParams.toString();
     
-    // Forward the request to Django backend (no trailing slash needed)
-    const response = await fetch(`${BACKEND_URL}/api/inventory/materials${queryString ? '?' + queryString : ''}`, {
+    // Forward the request to Django backend (use trailing slash)
+    const response = await fetch(`${BACKEND_URL}/api/inventory/materials/${queryString ? '?' + queryString : ''}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -77,8 +77,8 @@ export async function POST(request) {
     console.log(`🟠 [${proxyRequestId}] Body keys:`, Object.keys(body));
     console.log(`🟠 [${proxyRequestId}] Body JSON:`, JSON.stringify(body, null, 2));
     
-    // No trailing slash needed - APPEND_SLASH disabled in Django
-    const backendUrl = `${BACKEND_URL}/api/inventory/materials`;
+    // Use trailing slash to match Django's APPEND_SLASH behavior
+    const backendUrl = `${BACKEND_URL}/api/inventory/materials/`;
     console.log(`🟠 [${proxyRequestId}] Backend URL:`, backendUrl);
     console.log(`🟠 [${proxyRequestId}] Sending to backend...`);
     

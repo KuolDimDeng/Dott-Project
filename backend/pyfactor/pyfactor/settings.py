@@ -352,7 +352,7 @@ CORS_ALLOW_CREDENTIALS = True
 # Set to False to use the allowed origins list instead
 CORS_ORIGIN_ALLOW_ALL = False
 
-APPEND_SLASH = False  # Disable automatic slash appending - causes POST to GET redirects in APIs
+APPEND_SLASH = True  # Keep enabled for Django REST Framework routers
 
 CORS_ALLOW_METHODS = [
     'DELETE',
@@ -1174,7 +1174,7 @@ CACHE_CONTROL_MAX_AGE = {
 }
 
 # Cloudflare Page Rules compatibility
-APPEND_SLASH = False  # Disabled - causes API POST to GET redirects
+APPEND_SLASH = True  # Keep enabled for Django REST Framework routers
 PREPEND_WWW = False
 
 # Response headers for Cloudflare
