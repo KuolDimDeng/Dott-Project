@@ -209,6 +209,13 @@ class Material(AuditMixin, TenantAwareModel):
         return f"{self.name} ({self.sku})"
     
     def save(self, *args, **kwargs):
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"💾 [Material.save] === MATERIAL SAVE START ===")
+        logger.info(f"💾 [Material.save] Material: {self.name} (ID: {self.id})")
+        logger.info(f"💾 [Material.save] Current tenant_id: {self.tenant_id}")
+        
         # Auto-calculate billing price if markup is set
         if self.is_billable and self.markup_percentage > 0:
             markup_multiplier = 1 + (self.markup_percentage / 100)
@@ -217,8 +224,12 @@ class Material(AuditMixin, TenantAwareModel):
         # Ensure custom_unit is set if unit is 'custom'
         if self.unit == 'custom' and not self.custom_unit:
             self.unit = 'unit'  # Default to 'unit' if custom not specified
-            
+        
+        logger.info(f"💾 [Material.save] Calling super().save()")
         super().save(*args, **kwargs)
+        
+        logger.info(f"💾 [Material.save] After save - tenant_id: {self.tenant_id}")
+        logger.info(f"💾 [Material.save] === MATERIAL SAVE END ===")
     
     @property
     def display_unit(self):

@@ -105,26 +105,20 @@ const CurrencyPreferences = () => {
   const testPublic = async () => {
     console.log('🌐 [CurrencyPreferences] Testing public endpoint...');
     try {
-      // TEMPORARY: Call backend directly to bypass proxy issue - Force deploy
-      const BACKEND_URL = 'https://api.dottapps.com';
-      const response = await fetch(`${BACKEND_URL}/api/currency/test-public/`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      // Use the frontend proxy route
+      const response = await fetch('/api/currency/test-public');
       console.log('🌐 [CurrencyPreferences] Public test response status:', response.status);
       const data = await response.json();
       console.log('🌐 [CurrencyPreferences] Public test response data:', data);
       
       if (data.success) {
-        notifySuccess('Public test passed (direct): ' + data.message);
+        notifySuccess('Public test passed: ' + data.message);
       } else {
-        notifyError('Public test failed (direct): ' + (data.error || 'Unknown error'));
+        notifyError('Public test failed: ' + (data.error || 'Unknown error'));
       }
     } catch (error) {
       console.error('🌐 [CurrencyPreferences] Public test error:', error);
-      notifyError('Public test failed (direct): ' + error.message);
+      notifyError('Public test failed: ' + error.message);
     }
   };
   const [showConfirmModal, setShowConfirmModal] = useState(false);

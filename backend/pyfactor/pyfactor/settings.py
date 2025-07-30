@@ -1196,3 +1196,9 @@ if CLOUDFLARE_PROXY_ENABLED:
         'datefmt': '%Y-%m-%d %H:%M:%S',
     }
 # =====================================
+
+# RLS Public Paths - paths that don't require tenant context
+RLS_PUBLIC_PATHS = [
+    '/api/currency/test-public/',  # Public currency test endpoint
+    '/api/currency/list/',         # Public currency list endpoint (for initial setup)
+]

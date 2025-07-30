@@ -25,13 +25,30 @@ class TenantAwareModel(models.Model):
         """
         Override save to automatically set the tenant_id if not provided.
         """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"🏢 [TenantAwareModel.save] === TENANT AWARE SAVE START ===")
+        logger.info(f"🏢 [TenantAwareModel.save] Model: {self.__class__.__name__}")
+        logger.info(f"🏢 [TenantAwareModel.save] Current tenant_id: {self.tenant_id}")
+        
         if not self.tenant_id:
             # Import here to avoid circular imports
             from custom_auth.rls import get_current_tenant_id
             current_tenant = get_current_tenant_id()
+            logger.info(f"🏢 [TenantAwareModel.save] Retrieved current tenant from RLS: {current_tenant}")
+            
             if current_tenant:
                 self.tenant_id = current_tenant
+                logger.info(f"🏢 [TenantAwareModel.save] Set tenant_id to: {self.tenant_id}")
+            else:
+                logger.warning(f"🏢 [TenantAwareModel.save] No current tenant found - tenant_id remains None")
+        else:
+            logger.info(f"🏢 [TenantAwareModel.save] tenant_id already set: {self.tenant_id}")
+        
+        logger.info(f"🏢 [TenantAwareModel.save] Calling super().save()")
         super().save(*args, **kwargs)
+        logger.info(f"🏢 [TenantAwareModel.save] === TENANT AWARE SAVE END ===")
 
 
 class TenantAwareManager(models.Manager):

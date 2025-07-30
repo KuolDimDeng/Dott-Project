@@ -8,9 +8,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.utils import timezone
 from django.db import transaction
+from django.core.exceptions import ValidationError
 from users.models import Business, BusinessDetails, UserProfile
 from currency.currency_data import get_currency_list, get_currency_info
 from currency.exchange_rate_service import exchange_rate_service
+from currency.currency_validator import CurrencyValidator, CurrencyConversionValidator
 from decimal import Decimal
 import traceback
 
@@ -278,25 +280,28 @@ def get_currency_preferences(request):
             
             if currency_code:
                 try:
-                    currency_info = get_currency_info(currency_code)
-                    logger.info(f"[Currency API] Currency info found: {currency_info}")
+                    # Use validator for proper validation
+                    validated_currency = CurrencyValidator.validate_currency_update(user, currency_code)
+                    currency_info = get_currency_info(validated_currency)
+                    logger.info(f"[Currency API] Currency validated and info found: {currency_info}")
                     
-                    if not currency_info:
-                        logger.error(f"[Currency API] Invalid currency code: {currency_code}")
-                        return Response({
-                            'success': False,
-                            'error': f'Invalid currency code: {currency_code}'
-                        }, status=status.HTTP_400_BAD_REQUEST)
-                    
-                    business_details.preferred_currency_code = currency_code
+                    business_details.preferred_currency_code = validated_currency
                     business_details.preferred_currency_name = currency_info['name']
                     business_details.currency_updated_at = timezone.now()
-                    logger.info(f"[Currency API] Updated currency to {currency_code}")
-                except Exception as curr_error:
-                    logger.error(f"[Currency API] Currency validation error: {str(curr_error)}", exc_info=True)
+                    logger.info(f"[Currency API] Updated currency to {validated_currency}")
+                    
+                except ValidationError as val_error:
+                    logger.error(f"[Currency API] Currency validation error: {str(val_error)}", exc_info=True)
                     return Response({
                         'success': False,
-                        'error': f'Currency validation error: {str(curr_error)}',
+                        'error': str(val_error),
+                        'error_type': 'ValidationError'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as curr_error:
+                    logger.error(f"[Currency API] Currency update error: {str(curr_error)}", exc_info=True)
+                    return Response({
+                        'success': False,
+                        'error': f'Currency update error: {str(curr_error)}',
                         'error_type': type(curr_error).__name__
                     }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
@@ -499,15 +504,17 @@ def get_exchange_rate(request):
         to_currency = request.data.get('to_currency', 'USD')
         amount = request.data.get('amount', 1)
         
-        logger.info(f"[Exchange Rate API] Converting {amount} from {from_currency} to {to_currency}")
-        
-        # Convert amount to Decimal
+        # Validate request using validator
         try:
-            amount = Decimal(str(amount))
-        except:
+            from_currency, to_currency, amount = CurrencyValidator.validate_exchange_rate_request(
+                from_currency, to_currency, amount
+            )
+            logger.info(f"[Exchange Rate API] Validated: Converting {amount} from {from_currency} to {to_currency}")
+        except ValidationError as val_error:
+            logger.error(f"[Exchange Rate API] Validation error: {str(val_error)}")
             return Response({
                 'success': False,
-                'error': 'Invalid amount'
+                'error': str(val_error)
             }, status=status.HTTP_400_BAD_REQUEST)
         
         # Get exchange rate

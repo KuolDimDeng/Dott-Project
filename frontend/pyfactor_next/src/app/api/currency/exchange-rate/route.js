@@ -1,45 +1,42 @@
-import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { 
+  makeBackendRequest, 
+  parseResponse, 
+  createErrorResponse, 
+  createSuccessResponse 
+} from '@/utils/currencyProxyHelper';
 
 export async function POST(request) {
+  console.log('💱 [Exchange Rate] === POST REQUEST START ===');
+  
   try {
     const cookieStore = await cookies();
-    const sessionId = cookieStore.get('sid')?.value;
-    const sessionToken = cookieStore.get('session_token')?.value;
     const body = await request.json();
-
-    const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.dottapps.com';
     
-    // Try both session cookies
-    const cookieHeader = [];
-    if (sessionId) cookieHeader.push(`sid=${sessionId}`);
-    if (sessionToken) cookieHeader.push(`session_token=${sessionToken}`);
-    const cookieString = cookieHeader.join('; ');
-
-    const response = await fetch(`${BACKEND_URL}/api/currency/exchange-rate/`, {
+    console.log('💱 [Exchange Rate] Request body:', JSON.stringify(body, null, 2));
+    
+    // Make authenticated request
+    const response = await makeBackendRequest('/api/currency/exchange-rate/', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Cookie': cookieString,
-      },
       body: JSON.stringify(body),
-    });
-
-    const data = await response.json();
-
+    }, cookieStore);
+    
+    // Parse response
+    const data = await parseResponse(response);
+    
     if (!response.ok) {
-      return NextResponse.json(
-        { success: false, error: data.error || 'Failed to fetch exchange rate' },
-        { status: response.status }
+      console.error('💱 [Exchange Rate] Backend returned error:', data);
+      return createErrorResponse(
+        new Error(data.error || 'Failed to fetch exchange rate'),
+        response.status
       );
     }
-
-    return NextResponse.json(data);
+    
+    console.log('💱 [Exchange Rate] === POST REQUEST SUCCESS ===');
+    return createSuccessResponse(data);
+    
   } catch (error) {
-    console.error('Error fetching exchange rate:', error);
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    );
+    console.error('💱 [Exchange Rate] === POST REQUEST ERROR ===');
+    return createErrorResponse(error, error.status || 502);
   }
 }
