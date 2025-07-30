@@ -142,6 +142,14 @@ const nextConfig = {
       console.log('🔧 [Webpack] Client-side production build optimization enabled');
       console.log('🔧 [Webpack] Chunk splitting configuration active');
       
+      // Add TDZ Detection Plugin
+      const TDZDetectionPlugin = require('./webpack-plugins/TDZDetectionPlugin');
+      config.plugins.push(new TDZDetectionPlugin({
+        verbose: true,
+        autoFix: true,
+        warnOnly: false
+      }));
+      
       // Add custom plugin to track module loading
       config.plugins.push({
         apply: (compiler) => {
@@ -233,61 +241,38 @@ const nextConfig = {
         config.optimization.minimizer = [];
       }
       
-      // Configure the minimizer to prevent variable hoisting issues
-      const TerserPlugin = require('terser-webpack-plugin');
-      config.optimization.minimizer.push(
-        new TerserPlugin({
-          terserOptions: {
-            compress: {
-              // Disable ALL optimizations that can cause TDZ errors
-              arrows: false,
-              collapse_vars: false,
-              comparisons: false,
-              computed_props: false,
-              hoist_funs: false,
-              hoist_props: false,
-              hoist_vars: false,
-              inline: false,
-              loops: false,
-              negate_iife: false,
-              properties: false,
-              reduce_funcs: false,
-              reduce_vars: false,
-              switches: false,
-              toplevel: false,
-              typeofs: false,
-              booleans_as_integers: false,
-              if_return: false,
-              join_vars: false,
-              keep_classnames: true,
-              keep_fnames: true,
-              module: false,
-              passes: 1,
-              
-              // Keep these safe optimizations
-              booleans: true,
-              dead_code: true,
-              drop_console: false, // Keep console logs for debugging
-              drop_debugger: true,
-              evaluate: true,
-              sequences: true,
-              side_effects: true,
-              unused: true,
-            },
-            mangle: {
-              safari10: true,
-              // Don't mangle function names for better debugging
-              keep_fnames: true,
-            },
-            output: {
-              // Preserve formatting for better debugging
-              ascii_only: true,
-              comments: false,
-              safari10: true,
-            },
-          },
+      // Try ESBuild as an alternative minifier - it's more reliable with modern JS
+      const ESBuildMinifyPlugin = require('esbuild-loader').ESBuildMinifyPlugin;
+      
+      // Clear existing minimizers
+      config.optimization.minimizer = [
+        new ESBuildMinifyPlugin({
+          target: 'es2015',
+          css: true,
+          minify: true,
+          minifyWhitespace: true,
+          minifyIdentifiers: false, // Don't minify identifiers to avoid TDZ
+          minifySyntax: false, // Don't minify syntax to be safe
+          legalComments: 'none',
+          keepNames: true, // Keep function and class names
+          treeShaking: false, // Disable tree shaking to avoid TDZ issues
+          format: 'iife', // Wrap in IIFE to avoid global scope issues
         })
-      );
+      ];
+      
+      // Also update the module rules to use esbuild-loader
+      config.module.rules.push({
+        test: /\.(js|jsx)$/,
+        exclude: /node_modules/,
+        use: {
+          loader: 'esbuild-loader',
+          options: {
+            target: 'es2015',
+            keepNames: true,
+            format: 'iife'
+          }
+        }
+      });
     }
     
     return config;
@@ -373,7 +358,7 @@ const nextConfig = {
   },
   
   // Production optimizations
-  productionBrowserSourceMaps: false,
+  productionBrowserSourceMaps: true, // Enable source maps to debug TDZ errors
   compress: true,
   
   // Security headers and caching

@@ -5,6 +5,7 @@ import SessionHeartbeat from '@/components/SessionHeartbeat';
 import ChunkErrorHandler from '@/components/ChunkErrorHandler';
 import Providers from '@/providers';
 import { headers } from 'next/headers';
+import '@/utils/tdzProtection'; // Initialize TDZ protection early
 
 const inter = Inter({ subsets: ["latin"] });
 
