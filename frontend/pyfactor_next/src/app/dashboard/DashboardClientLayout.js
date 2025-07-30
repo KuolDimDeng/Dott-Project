@@ -16,7 +16,7 @@ import { fetchCurrentUserMenuPrivileges } from '@/utils/menuPrivileges';
 import { loadStripeScript } from '@/utils/stripeUtils';
 import { storeNormalizedRole } from '@/utils/userRoleUtils';
 import { I18nextProvider } from 'react-i18next';
-import i18nInstance from '@/i18n';
+import i18nInstance from '@/i18n-optimized';
 import { SessionTimeoutProvider } from '@/providers/SessionTimeoutProvider';
 import SessionTimeoutModal from '@/components/SessionTimeoutModal';
 

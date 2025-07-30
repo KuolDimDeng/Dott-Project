@@ -148,23 +148,54 @@ export function cleanupPDFTasks() {
   }
 }
 
-// Chart.js dynamic import wrapper
+// Chart.js dynamic import wrapper with auto-registration
 export const loadChartJs = async () => {
   try {
-    return await import('chart.js');
+    const [
+      { Chart },
+      { default: annotationPlugin },
+      { CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, BarElement, ArcElement }
+    ] = await Promise.all([
+      import('chart.js'),
+      import('chartjs-plugin-annotation'),
+      import('chart.js')
+    ]);
+    
+    // Register components
+    Chart.register(
+      CategoryScale,
+      LinearScale,
+      PointElement,
+      LineElement,
+      BarElement,
+      ArcElement,
+      Title,
+      Tooltip,
+      Legend,
+      annotationPlugin
+    );
+    
+    return { Chart };
   } catch (error) {
     console.error('Error loading Chart.js:', error);
     return null;
   }
 };
 
-// XLSX dynamic import wrapper
+// XLSX dynamic import wrapper with minimal bundle
 export const loadXlsx = async () => {
   try {
-    return await import('xlsx');
+    const XLSX = await import('xlsx/dist/xlsx.mini.min.js');
+    return XLSX;
   } catch (error) {
     console.error('Error loading XLSX:', error);
-    return null;
+    // Try full version as fallback
+    try {
+      return await import('xlsx');
+    } catch (fallbackError) {
+      console.error('Error loading XLSX fallback:', fallbackError);
+      return null;
+    }
   }
 };
 
@@ -221,6 +252,84 @@ export const loadDatepicker = async () => {
     return await import('react-datepicker');
   } catch (error) {
     console.error('Error loading React Datepicker:', error);
+    return null;
+  }
+};
+
+// React Hook Form dynamic import
+export const loadReactHookForm = async () => {
+  try {
+    const module = await import('react-hook-form');
+    return module;
+  } catch (error) {
+    console.error('Error loading React Hook Form:', error);
+    return null;
+  }
+};
+
+// Moment.js dynamic import (or day.js as lighter alternative)
+export const loadDateLibrary = async () => {
+  try {
+    // Try dayjs first (much smaller)
+    const dayjs = await import('dayjs');
+    return { dayjs: dayjs.default };
+  } catch (error) {
+    console.error('Error loading date library:', error);
+    return null;
+  }
+};
+
+// QR Code generator dynamic import
+export const loadQRCode = async () => {
+  try {
+    const QRCode = await import('qrcode');
+    return QRCode;
+  } catch (error) {
+    console.error('Error loading QR Code library:', error);
+    return null;
+  }
+};
+
+// Barcode generator dynamic import
+export const loadBarcode = async () => {
+  try {
+    const JsBarcode = await import('jsbarcode');
+    return JsBarcode.default;
+  } catch (error) {
+    console.error('Error loading barcode library:', error);
+    return null;
+  }
+};
+
+// File saver dynamic import
+export const loadFileSaver = async () => {
+  try {
+    const { saveAs } = await import('file-saver');
+    return { saveAs };
+  } catch (error) {
+    console.error('Error loading file-saver:', error);
+    return null;
+  }
+};
+
+// CSV parser dynamic import
+export const loadCSVParser = async () => {
+  try {
+    const Papa = await import('papaparse');
+    return Papa.default;
+  } catch (error) {
+    console.error('Error loading CSV parser:', error);
+    return null;
+  }
+};
+
+// Google Maps dynamic import
+export const loadGoogleMaps = async () => {
+  try {
+    const { Loader } = await import('@googlemaps/js-api-loader');
+    return { Loader };
+  } catch (error) {
+    console.error('Error loading Google Maps:', error);
     return null;
   }
 };
