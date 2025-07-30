@@ -78,7 +78,13 @@ export async function makeBackendRequest(endpoint, options = {}, cookies = null)
         return response;
       }
       
-      // For server errors, throw to trigger retry
+      // For server errors, log more details and throw to trigger retry
+      console.error(`[Currency Helper] Server error response:`, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries()),
+        url: response.url
+      });
       throw new Error(`Server error: ${response.status} ${response.statusText}`);
       
     } catch (error) {

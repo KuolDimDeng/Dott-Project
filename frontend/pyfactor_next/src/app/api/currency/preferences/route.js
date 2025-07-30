@@ -46,6 +46,9 @@ export async function PUT(request) {
     
     console.log('🚀 [Currency Preferences] Request body:', JSON.stringify(body, null, 2));
     
+    // Log request details
+    console.log('🚀 [Currency Preferences] Cookie store:', cookieStore.getAll().map(c => ({ name: c.name, value: c.value ? `${c.value.substring(0, 8)}...` : 'null' })));
+    
     // Make authenticated request
     const response = await makeBackendRequest('/api/currency/preferences/', {
       method: 'PUT',
@@ -55,6 +58,9 @@ export async function PUT(request) {
         'User-Agent': request.headers.get('user-agent') || '',
       }
     }, cookieStore);
+    
+    console.log('🚀 [Currency Preferences] Raw response status:', response.status);
+    console.log('🚀 [Currency Preferences] Raw response headers:', Object.fromEntries(response.headers.entries()));
     
     // Parse response
     const data = await parseResponse(response);

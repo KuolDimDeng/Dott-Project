@@ -197,12 +197,34 @@
     }
   },
   "footer": {
-    "product": "Prodotto",
-    "company": "Azienda",
-    "support": "Supporto",
-    "legal": "Legale",
-    "rights": "Tutti i diritti riservati.",
-    "tagline": "Rendere la gestione aziendale semplice ed efficiente per le aziende di tutto il mondo."
+    "home": "Home",
+    "features": "Funzionalità",
+    "pricing": "Prezzi",
+    "blog": "Blog",
+    "contact": "Contatti",
+    "inventory": "Gestione Inventario",
+    "accounting": "Contabilità",
+    "invoicing": "Fatturazione",
+    "payments": "Pagamenti",
+    "pos": "Punto Vendita",
+    "about": "Chi Siamo",
+    "careers": "Carriere",
+    "press": "Stampa",
+    "partners": "Partner",
+    "help": "Centro Assistenza",
+    "docs": "Documentazione",
+    "status": "Stato del Sistema",
+    "security": "Sicurezza",
+    "privacy": "Privacy Policy",
+    "terms": "Termini di Servizio",
+    "cookies": "Cookie Policy",
+    "footerHeading": "Footer",
+    "logoAlt": "Logo Dott",
+    "social": {
+      "facebook": "Facebook",
+      "twitter": "Twitter",
+      "linkedin": "LinkedIn"
+    }
   },
   "faq": {
     "eyebrow": "FAQ",
@@ -299,6 +321,70 @@
     "amazon": {
       "name": "Amazon Seller",
       "description": "Gestisci il tuo business Amazon"
+    }
+  },
+  "cookieBanner": {
+    "title": "Avviso sui Cookie",
+    "message": "Utilizziamo i cookie per migliorare la tua esperienza, analizzare l'utilizzo e fornire funzionalità essenziali. Continuando a utilizzare il nostro sito, acconsenti all'uso dei cookie.",
+    "learnMore": "Scopri di più",
+    "customize": "Personalizza",
+    "rejectAll": "Rifiuta Tutti",
+    "acceptAll": "Accetta Tutti",
+    "preferencesTitle": "Preferenze Cookie",
+    "alwaysOn": "Sempre Attivo",
+    "savePreferences": "Salva Preferenze",
+    "essential": {
+      "title": "Cookie Essenziali",
+      "description": "Richiesti per il funzionamento e la sicurezza di base del sito"
+    },
+    "functional": {
+      "title": "Cookie Funzionali",
+      "description": "Ricordano le tue preferenze e impostazioni"
+    },
+    "analytics": {
+      "title": "Cookie Analitici",
+      "description": "Ci aiutano a capire come utilizzi il nostro sito"
+    },
+    "marketing": {
+      "title": "Cookie di Marketing",
+      "description": "Utilizzati per mostrarti pubblicità pertinenti"
+    }
+  },
+  "contact": {
+    "eyebrow": "Contattaci",
+    "heading": "Mettiti in contatto",
+    "subheading": "Hai domande su Dott? Il nostro team è qui per aiutarti a trovare la soluzione perfetta per la tua azienda.",
+    "infoTitle": "Informazioni di Contatto",
+    "infoSubtitle": "Compila il modulo o contattaci direttamente utilizzando le informazioni sottostanti.",
+    "email": "Email",
+    "address": "Indirizzo",
+    "addressLine1": "800 N King Street",
+    "addressLine2": "Suite 304 #2797",
+    "addressLine3": "Wilmington, DE 19801",
+    "addressLine4": "Stati Uniti",
+    "submitting": "Invio del messaggio in corso...",
+    "success": "Grazie per averci contattato! Ti risponderemo presto.",
+    "error": "Impossibile inviare il messaggio. Riprova o inviaci un'email direttamente a support@dottapps.com.",
+    "error.name": "Il nome è obbligatorio",
+    "error.email.required": "L'email è obbligatoria",
+    "error.email.invalid": "Inserisci un indirizzo email valido",
+    "error.message": "Il messaggio è obbligatorio",
+    "form": {
+      "name": "Nome Completo",
+      "email": "Indirizzo Email",
+      "company": "Azienda",
+      "phone": "Numero di Telefono",
+      "message": "Messaggio",
+      "submit": "Invia Messaggio",
+      "sending": "Invio...",
+      "subject": {
+        "label": "In cosa possiamo aiutarti?",
+        "general": "Richiesta Generale",
+        "sales": "Domanda Commerciale",
+        "support": "Supporto Tecnico",
+        "demo": "Richiedi una Demo",
+        "partnership": "Opportunità di Partnership"
+      }
     }
   }
 }

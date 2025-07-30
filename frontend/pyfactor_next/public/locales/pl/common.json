@@ -197,12 +197,34 @@
     }
   },
   "footer": {
-    "product": "Produkt",
-    "company": "Firma",
-    "support": "Wsparcie",
-    "legal": "Prawne",
-    "rights": "Wszelkie prawa zastrzeżone.",
-    "tagline": "Sprawiamy, że zarządzanie biznesem jest proste i wydajne dla firm na całym świecie."
+    "home": "Strona główna",
+    "features": "Funkcje",
+    "pricing": "Cennik",
+    "blog": "Blog",
+    "contact": "Kontakt",
+    "inventory": "Zarządzanie magazynem",
+    "accounting": "Księgowość",
+    "invoicing": "Fakturowanie",
+    "payments": "Płatności",
+    "pos": "Punkt sprzedaży",
+    "about": "O nas",
+    "careers": "Kariera",
+    "press": "Prasa",
+    "partners": "Partnerzy",
+    "help": "Centrum pomocy",
+    "docs": "Dokumentacja",
+    "status": "Status systemu",
+    "security": "Bezpieczeństwo",
+    "privacy": "Polityka prywatności",
+    "terms": "Warunki usługi",
+    "cookies": "Polityka plików cookie",
+    "footerHeading": "Stopka",
+    "logoAlt": "Logo Dott",
+    "social": {
+      "facebook": "Facebook",
+      "twitter": "Twitter",
+      "linkedin": "LinkedIn"
+    }
   },
   "faq": {
     "eyebrow": "FAQ",
@@ -299,6 +321,70 @@
     "amazon": {
       "name": "Amazon Seller",
       "description": "Zarządzaj swoim biznesem Amazon"
+    }
+  },
+  "cookieBanner": {
+    "title": "Informacja o plikach cookie",
+    "message": "Używamy plików cookie, aby poprawić Twoje doświadczenie, analizować użytkowanie i zapewnić podstawową funkcjonalność. Kontynuując korzystanie z naszej strony, zgadzasz się na używanie plików cookie.",
+    "learnMore": "Dowiedz się więcej",
+    "customize": "Dostosuj",
+    "rejectAll": "Odrzuć wszystkie",
+    "acceptAll": "Zaakceptuj wszystkie",
+    "preferencesTitle": "Preferencje dotyczące plików cookie",
+    "alwaysOn": "Zawsze włączone",
+    "savePreferences": "Zapisz preferencje",
+    "essential": {
+      "title": "Niezbędne pliki cookie",
+      "description": "Wymagane do podstawowej funkcjonalności i bezpieczeństwa strony"
+    },
+    "functional": {
+      "title": "Funkcjonalne pliki cookie",
+      "description": "Zapamiętują Twoje preferencje i ustawienia"
+    },
+    "analytics": {
+      "title": "Analityczne pliki cookie",
+      "description": "Pomagają nam zrozumieć, jak korzystasz z naszej strony"
+    },
+    "marketing": {
+      "title": "Marketingowe pliki cookie",
+      "description": "Używane do wyświetlania odpowiednich reklam"
+    }
+  },
+  "contact": {
+    "eyebrow": "Skontaktuj się z nami",
+    "heading": "Skontaktuj się",
+    "subheading": "Masz pytania dotyczące Dott? Nasz zespół jest tutaj, aby pomóc Ci znaleźć idealne rozwiązanie dla Twojej firmy.",
+    "infoTitle": "Informacje kontaktowe",
+    "infoSubtitle": "Wypełnij formularz lub skontaktuj się z nami bezpośrednio, korzystając z poniższych informacji.",
+    "email": "Email",
+    "address": "Adres",
+    "addressLine1": "800 N King Street",
+    "addressLine2": "Suite 304 #2797",
+    "addressLine3": "Wilmington, DE 19801",
+    "addressLine4": "Stany Zjednoczone",
+    "submitting": "Wysyłanie wiadomości...",
+    "success": "Dziękujemy za kontakt! Wkrótce się odezwiemy.",
+    "error": "Nie udało się wysłać wiadomości. Spróbuj ponownie lub napisz bezpośrednio na support@dottapps.com.",
+    "error.name": "Imię jest wymagane",
+    "error.email.required": "Email jest wymagany",
+    "error.email.invalid": "Podaj prawidłowy adres email",
+    "error.message": "Wiadomość jest wymagana",
+    "form": {
+      "name": "Imię i nazwisko",
+      "email": "Adres email",
+      "company": "Firma",
+      "phone": "Numer telefonu",
+      "message": "Wiadomość",
+      "submit": "Wyślij wiadomość",
+      "sending": "Wysyłanie...",
+      "subject": {
+        "label": "W czym możemy pomóc?",
+        "general": "Zapytanie ogólne",
+        "sales": "Pytanie handlowe",
+        "support": "Wsparcie techniczne",
+        "demo": "Poproś o demo",
+        "partnership": "Możliwość partnerstwa"
+      }
     }
   }
 }

@@ -86,12 +86,34 @@
     }
   },
   "footer": {
-    "product": "Chigadzirwa",
-    "company": "Kambani",
-    "support": "Rutsigiro",
-    "legal": "Zvemutemo",
-    "rights": "Kodzero dzese dzakachengetedzwa.",
-    "tagline": "Kuita kuti kutungamira bhizinesi kuve nyore uye kunoshanda kumakambani pasi rose."
+    "home": "Kumba",
+    "features": "Zvimiro",
+    "pricing": "Mitengo",
+    "blog": "Blog",
+    "contact": "Bata",
+    "inventory": "Inventory Management",
+    "accounting": "Accounting",
+    "invoicing": "Invoicing",
+    "payments": "Zvibhadharo",
+    "pos": "Nzvimbo Yekutengesa",
+    "about": "Nezvedu",
+    "careers": "Mabasa",
+    "press": "Nhau",
+    "partners": "Vadyidzani",
+    "help": "Help Center",
+    "docs": "Zvinyorwa",
+    "status": "System Status",
+    "security": "Chengetedzo",
+    "privacy": "Privacy Policy",
+    "terms": "Mitemo Yesevhisi",
+    "cookies": "Cookie Policy",
+    "footerHeading": "Footer",
+    "logoAlt": "Dott Logo",
+    "social": {
+      "facebook": "Facebook",
+      "twitter": "Twitter",
+      "linkedin": "LinkedIn"
+    }
   },
   "faq": {
     "eyebrow": "FAQ",
@@ -299,6 +321,70 @@
     "amazon": {
       "name": "Amazon Seller",
       "description": "Tonga bhizinesi renyu reAmazon"
+    }
+  },
+  "cookieBanner": {
+    "title": "Chiziviso cheCookie",
+    "message": "Tinoshandisa makuki kuvandudza ruzivo rwako, kuongorora kushandiswa, uye kupa basa rakakosha. Nekuenderera mberi nekushandisa saiti yedu, unobvuma kushandiswa kwedu kwemakuki.",
+    "learnMore": "Dzidza zvakawanda",
+    "customize": "Gadzirisa",
+    "rejectAll": "Ramba Zvose",
+    "acceptAll": "Gamuchira Zvose",
+    "preferencesTitle": "Zvido zveCookie",
+    "alwaysOn": "Yakagara Yakabatidzwa",
+    "savePreferences": "Chengetedza Zvido",
+    "essential": {
+      "title": "Makuki Anodiwa",
+      "description": "Anodiwa kuti saiti ishande uye kuchengetedzeka"
+    },
+    "functional": {
+      "title": "Makuki Anoshanda",
+      "description": "Anoyeuka zvaunoda uye masetingi ako"
+    },
+    "analytics": {
+      "title": "Makuki eAnalytics",
+      "description": "Anotibatsira kunzwisisa mashandisiro aunomaitira saiti yedu"
+    },
+    "marketing": {
+      "title": "Makuki eMarketing",
+      "description": "Anoshandiswa kuratidza zviziviso zvakakodzera"
+    }
+  },
+  "contact": {
+    "eyebrow": "Batana Nesu",
+    "heading": "Bata",
+    "subheading": "Une mibvunzo nezve Dott? Timu yedu iri pano kukubatsira kuwana mhinduro yakakodzera yebhizinesi rako.",
+    "infoTitle": "Ruzivo Rwekubata",
+    "infoSubtitle": "Zadza fomu kana kubata nesu zvakananga uchishandisa ruzivo rwuri pasi.",
+    "email": "Email",
+    "address": "Kero",
+    "addressLine1": "800 N King Street",
+    "addressLine2": "Suite 304 #2797",
+    "addressLine3": "Wilmington, DE 19801",
+    "addressLine4": "United States",
+    "submitting": "Kutumira meseji yako...",
+    "success": "Maita zvekubata! Tichabata newe munguva pfupi.",
+    "error": "Takundikana kutumira meseji yako. Ndapota edza zvakare kana kutumira email zvakananga ku support@dottapps.com.",
+    "error.name": "Zita rinodiwa",
+    "error.email.required": "Email inodiwa",
+    "error.email.invalid": "Ndapota isa email address yakanaka",
+    "error.message": "Meseji inodiwa",
+    "form": {
+      "name": "Zita Rizere",
+      "email": "Email Address",
+      "company": "Kambani",
+      "phone": "Nhamba Yefoni",
+      "message": "Meseji",
+      "submit": "Tumira Meseji",
+      "sending": "Kutumira...",
+      "subject": {
+        "label": "Tingakubatsira sei?",
+        "general": "Mubvunzo Mukuru",
+        "sales": "Mubvunzo Wekutengesa",
+        "support": "Technical Support",
+        "demo": "Kumbira Demo",
+        "partnership": "Mukana Wekushandira Pamwe"
+      }
     }
   }
 }
