@@ -84,22 +84,18 @@ def upload_business_logo(request):
         logger.info(f"[upload_business_logo] Request method: {request.method}")
         logger.info(f"[upload_business_logo] Content length: {request.META.get('CONTENT_LENGTH', 'Unknown')}")
         
-        # Get user's business
-        user_profile = UserProfile.objects.get(user=request.user)
+        # Get user's business using select_related for better performance
+        user_profile = UserProfile.objects.select_related('business').get(user=request.user)
         
         logger.info(f"[upload_business_logo] User profile found: {user_profile}")
-        logger.info(f"[upload_business_logo] Business ID: {user_profile.business_id}")
         
-        # Get business_id - either from profile or user
-        business_id = user_profile.business_id
-        if not business_id and hasattr(request.user, 'business_id'):
-            business_id = request.user.business_id
-        if not business_id and hasattr(request.user, 'tenant_id'):
-            business_id = request.user.tenant_id
-            
-        if not business_id:
-            logger.error(f"[upload_business_logo] No business_id found for user {request.user}")
+        # Use the business relationship directly
+        business = user_profile.business
+        if not business:
+            logger.error(f"[upload_business_logo] No business found for user {request.user}")
             return Response({'error': 'No business associated with user'}, status=404)
+            
+        logger.info(f"[upload_business_logo] Business found: {business.id}")
         
         # Check if logo file is provided
         if 'logo' not in request.FILES:
@@ -121,9 +117,9 @@ def upload_business_logo(request):
         logo_file = resize_image_if_needed(logo_file)
         logger.info(f"[upload_business_logo] File resize completed")
         
-        # Get or create BusinessDetails using business_id directly
+        # Get or create BusinessDetails using business relationship
         business_details, created = BusinessDetails.objects.get_or_create(
-            business_id=business_id,
+            business=business,
             defaults={
                 'legal_structure': 'SOLE_PROPRIETORSHIP',
                 'country': 'US'
@@ -138,7 +134,7 @@ def upload_business_logo(request):
         business_details.logo = logo_file
         business_details.save()
         
-        logger.info(f"Business logo uploaded successfully for business_id {business_id}")
+        logger.info(f"Business logo uploaded successfully for business {business.id}")
         
         return Response({
             'success': True,
@@ -157,28 +153,22 @@ def upload_business_logo(request):
 def delete_business_logo(request):
     """Delete business logo"""
     try:
-        # Get user's business
-        user_profile = UserProfile.objects.get(user=request.user)
+        # Get user's business using select_related for better performance
+        user_profile = UserProfile.objects.select_related('business').get(user=request.user)
         
-        # Get business_id - either from profile or user
-        business_id = user_profile.business_id
-        if not business_id and hasattr(request.user, 'business_id'):
-            business_id = request.user.business_id
-        if not business_id and hasattr(request.user, 'tenant_id'):
-            business_id = request.user.tenant_id
-            
-        if not business_id:
+        business = user_profile.business
+        if not business:
             return Response({'error': 'No business associated with user'}, status=404)
         
         # Get BusinessDetails
         try:
-            business_details = BusinessDetails.objects.get(business_id=business_id)
+            business_details = BusinessDetails.objects.get(business=business)
             
             if business_details.logo:
                 business_details.logo.delete()
                 business_details.save()
                 
-                logger.info(f"Business logo deleted for business_id {business_id}")
+                logger.info(f"Business logo deleted for business {business.id}")
                 
                 return Response({
                     'success': True,
@@ -201,22 +191,16 @@ def delete_business_logo(request):
 def get_business_logo(request):
     """Get business logo URL"""
     try:
-        # Get user's business
-        user_profile = UserProfile.objects.get(user=request.user)
+        # Get user's business using select_related for better performance
+        user_profile = UserProfile.objects.select_related('business').get(user=request.user)
         
-        # Get business_id - either from profile or user
-        business_id = user_profile.business_id
-        if not business_id and hasattr(request.user, 'business_id'):
-            business_id = request.user.business_id
-        if not business_id and hasattr(request.user, 'tenant_id'):
-            business_id = request.user.tenant_id
-            
-        if not business_id:
+        business = user_profile.business
+        if not business:
             return Response({'error': 'No business associated with user'}, status=404)
         
         # Get BusinessDetails
         try:
-            business_details = BusinessDetails.objects.get(business_id=business_id)
+            business_details = BusinessDetails.objects.get(business=business)
             
             return Response({
                 'success': True,

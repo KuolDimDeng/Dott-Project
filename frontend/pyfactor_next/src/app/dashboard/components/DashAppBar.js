@@ -1403,14 +1403,16 @@ const DashAppBar = ({
               <div className="flex items-center">
                 {/* Business name - make it visible on all screen sizes and add fallback display */}
                 <div className="text-white flex items-center mr-3">
-                  <span className="font-semibold">{getDisplayBusinessName()}</span>
                   {businessLogoUrl && (
-                    <img 
-                      src={businessLogoUrl} 
-                      alt="Business logo" 
-                      className="h-6 w-6 ml-2 rounded object-contain bg-white/10 p-0.5"
-                    />
+                    <div className="h-6 w-6 mr-2 bg-white rounded flex items-center justify-center flex-shrink-0">
+                      <img 
+                        src={businessLogoUrl} 
+                        alt="Business logo" 
+                        className="h-5 w-5 object-contain"
+                      />
+                    </div>
                   )}
+                  <span className="font-semibold">{getDisplayBusinessName()}</span>
                   <span className="mx-2 h-4 w-px bg-white/30"></span>
                 </div>
                 
@@ -1428,14 +1430,16 @@ const DashAppBar = ({
                   <span className="whitespace-nowrap text-xs md:hidden mr-1 flex items-center">
                     {(businessName || fetchedBusinessName || auth0BusinessName) ? (
                       <>
-                        {getDisplayBusinessName()}
                         {businessLogoUrl && (
-                          <img 
-                            src={businessLogoUrl} 
-                            alt="Business logo" 
-                            className="h-4 w-4 ml-1 rounded object-contain bg-white/10 p-0.5 inline-block"
-                          />
+                          <div className="h-4 w-4 mr-1 bg-white rounded flex items-center justify-center flex-shrink-0">
+                            <img 
+                              src={businessLogoUrl} 
+                              alt="Business logo" 
+                              className="h-3 w-3 object-contain"
+                            />
+                          </div>
                         )}
+                        {getDisplayBusinessName()}
                         :
                       </>
                     ) : ''}

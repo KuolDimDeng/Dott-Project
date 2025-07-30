@@ -43,6 +43,8 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
   const [loading, setLoading] = useState(false);
   const [logoUrl, setLogoUrl] = useState(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadError, setUploadError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
   const fileInputRef = useRef(null);
   const [companyData, setCompanyData] = useState({
     businessName: '',
@@ -280,12 +282,10 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleLogoUpload = async (event) => {
-    console.log('[CompanyProfile] handleLogoUpload called with event:', event);
-    console.log('[CompanyProfile] Event target:', event.target);
-    console.log('[CompanyProfile] Files:', event.target.files);
+  const handleLogoUpload = async (event, isRetry = false) => {
+    console.log('[CompanyProfile] handleLogoUpload called with event:', event, 'isRetry:', isRetry);
     
-    const file = event.target.files?.[0];
+    const file = event.target?.files?.[0] || event; // Support direct file or event
     console.log('[CompanyProfile] Selected file:', file);
     
     if (!file) {
@@ -293,18 +293,23 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
       return;
     }
 
+    // Clear previous error
+    setUploadError(null);
+
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
-      console.log('[CompanyProfile] Invalid file type:', file.type);
-      safeNotifyError('Invalid file type. Please upload a JPG, PNG, GIF, or WebP image.');
+      const error = 'Invalid file type. Please upload a JPG, PNG, GIF, or WebP image.';
+      setUploadError(error);
+      safeNotifyError(error);
       return;
     }
 
     // Validate file size (5MB)
     if (file.size > 5 * 1024 * 1024) {
-      console.log('[CompanyProfile] File too large:', file.size);
-      safeNotifyError('File size exceeds 5MB limit.');
+      const error = 'File size exceeds 5MB limit.';
+      setUploadError(error);
+      safeNotifyError(error);
       return;
     }
 
@@ -321,15 +326,12 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
         lastModified: file.lastModified
       });
       
-      console.log('[CompanyProfile] Making fetch request to /api/business/logo/upload');
-      
       const response = await fetch('/api/business/logo/upload', {
         method: 'POST',
         body: formData,
       });
 
       console.log('[CompanyProfile] Upload response received, status:', response.status);
-      console.log('[CompanyProfile] Response headers:', Object.fromEntries(response.headers.entries()));
       
       let data;
       try {
@@ -337,34 +339,48 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
         console.log('[CompanyProfile] Upload response data:', data);
       } catch (jsonError) {
         console.error('[CompanyProfile] Failed to parse response as JSON:', jsonError);
-        // Don't try to read response body again after json() failed
         throw new Error('Invalid response format from server');
       }
       
       if (response.ok && data.success) {
         safeNotifySuccess('Logo uploaded successfully');
+        setRetryCount(0);
+        setUploadError(null);
         await loadBusinessLogo(); // Reload the logo
       } else {
+        const error = data.error || 'Failed to upload logo';
         console.error('[CompanyProfile] Upload failed with response:', data);
-        safeNotifyError(data.error || 'Failed to upload logo');
+        setUploadError(error);
+        safeNotifyError(error);
       }
     } catch (error) {
       console.error('[CompanyProfile] Exception during logo upload:', error);
-      console.error('[CompanyProfile] Error stack:', error.stack);
-      console.error('[CompanyProfile] Error type:', error.constructor.name);
       
-      // Check if it's a network error
+      let errorMessage = 'Failed to upload logo';
       if (error instanceof TypeError && error.message.includes('fetch')) {
-        safeNotifyError('Network error: Unable to connect to server');
+        errorMessage = 'Network error: Unable to connect to server';
       } else {
-        safeNotifyError('Failed to upload logo v2: ' + error.message);
+        errorMessage = error.message;
       }
+      
+      setUploadError(errorMessage);
+      safeNotifyError(errorMessage);
     } finally {
       setUploadingLogo(false);
-      // Reset file input
-      if (fileInputRef.current) {
+      // Reset file input only if not a retry
+      if (!isRetry && fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+    }
+  };
+
+  const handleRetryUpload = () => {
+    if (fileInputRef.current?.files?.[0]) {
+      setRetryCount(prev => prev + 1);
+      handleLogoUpload(fileInputRef.current.files[0], true);
+    } else {
+      // No file to retry, prompt for new file
+      fileInputRef.current?.click();
     }
   };
 
@@ -495,62 +511,132 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
           {/* Business Logo Section */}
           <div className="bg-white border border-gray-200 rounded-lg p-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Business Logo</h3>
-            <div className="flex items-start space-x-6">
-              <div className="flex-shrink-0">
+            
+            {/* Logo Upload Area */}
+            <div 
+              className={`border-2 border-dashed rounded-lg p-6 transition-colors ${
+                uploadingLogo 
+                  ? 'border-blue-300 bg-blue-50' 
+                  : uploadError
+                    ? 'border-red-300 bg-red-50'
+                    : logoUrl 
+                      ? 'border-green-300 bg-green-50' 
+                      : 'border-gray-300 hover:border-blue-400 cursor-pointer'
+              }`}
+              onClick={() => {
+                if (!uploadingLogo && !uploadError && canEdit) {
+                  fileInputRef.current?.click();
+                }
+              }}
+            >
+              <div className="text-center">
                 {logoUrl ? (
-                  <img 
-                    src={logoUrl} 
-                    alt="Business logo" 
-                    className="h-24 w-24 rounded-lg object-contain bg-gray-50 border border-gray-200"
-                  />
+                  <div className="flex flex-col items-center">
+                    <div className="h-20 w-20 bg-white rounded-lg border-2 border-gray-200 flex items-center justify-center mb-3 overflow-hidden">
+                      <img 
+                        src={logoUrl} 
+                        alt="Business logo" 
+                        className="h-18 w-18 object-contain"
+                      />
+                    </div>
+                    <CheckCircleIcon className="h-8 w-8 text-green-500 mb-2" />
+                    <p className="text-sm font-medium text-gray-900">Logo uploaded successfully</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      This logo appears before your business name in the dashboard header
+                    </p>
+                  </div>
                 ) : (
-                  <div className="h-24 w-24 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center">
-                    <PhotoIcon className="h-12 w-12 text-gray-400" />
+                  <div>
+                    {uploadingLogo ? (
+                      <div className="flex flex-col items-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                        <p className="text-sm font-medium text-blue-600">Uploading logo...</p>
+                        {retryCount > 0 && (
+                          <p className="text-xs text-gray-500 mt-1">Attempt {retryCount + 1}</p>
+                        )}
+                      </div>
+                    ) : uploadError ? (
+                      <div className="flex flex-col items-center">
+                        <ExclamationTriangleIcon className="h-12 w-12 text-red-500 mb-4" />
+                        <p className="text-sm font-medium text-red-600 mb-2">Upload failed</p>
+                        <p className="text-xs text-red-500 text-center mb-4 max-w-xs">
+                          {uploadError}
+                        </p>
+                        {canEdit && (
+                          <button
+                            onClick={handleRetryUpload}
+                            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                          >
+                            Try again
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <div>
+                        <PhotoIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                        <div className="mb-4">
+                          <p className="text-sm font-medium text-gray-900">
+                            {canEdit ? 'Click to upload your business logo' : 'No logo uploaded'}
+                          </p>
+                          {canEdit && (
+                            <p className="text-sm text-gray-500 mt-1">
+                              or drag and drop
+                            </p>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          PNG, JPG, GIF, WebP up to 5MB
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
-              <div className="flex-1">
-                <p className="text-sm text-gray-600 mb-3">
-                  Upload your business logo. Maximum file size: 5MB. Supported formats: JPG, PNG, GIF, WebP.
-                </p>
-                <div className="flex items-center space-x-3">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
-                    onChange={handleLogoUpload}
-                    className="hidden"
-                  />
-                  <button
-                    onClick={() => {
-                      console.log('[CompanyProfile] Upload button clicked');
-                      console.log('[CompanyProfile] fileInputRef.current:', fileInputRef.current);
-                      console.log('[CompanyProfile] uploadingLogo:', uploadingLogo);
-                      console.log('[CompanyProfile] canEdit:', canEdit);
-                      fileInputRef.current?.click();
-                    }}
-                    disabled={uploadingLogo || !canEdit}
-                    className="flex items-center px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <ArrowUpTrayIcon className="h-4 w-4 mr-2" />
-                    {uploadingLogo ? 'Uploading...' : 'Upload Logo'}
-                  </button>
-                  {logoUrl && (
-                    <button
-                      onClick={handleLogoDelete}
-                      disabled={uploadingLogo || !canEdit}
-                      className="flex items-center px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <TrashIcon className="h-4 w-4 mr-2" />
-                      Delete
-                    </button>
-                  )}
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  This logo will be displayed in your dashboard, invoices, emails, and WhatsApp messages.
-                </p>
-              </div>
+              
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                onChange={handleLogoUpload}
+                className="hidden"
+              />
             </div>
+
+            {/* Action Buttons */}
+            {logoUrl && canEdit && (
+              <div className="flex justify-center mt-4">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleLogoDelete();
+                  }}
+                  disabled={uploadingLogo}
+                  className="flex items-center px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <TrashIcon className="h-4 w-4 mr-2" />
+                  Remove Logo
+                </button>
+              </div>
+            )}
+
+            {/* Logo Preview in Header Context */}
+            {logoUrl && (
+              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm font-medium text-gray-900 mb-2">Preview in header:</p>
+                <div className="bg-blue-600 rounded-lg p-3 inline-flex items-center">
+                  <div className="h-6 w-6 mr-2 bg-white rounded flex items-center justify-center flex-shrink-0">
+                    <img 
+                      src={logoUrl} 
+                      alt="Business logo preview" 
+                      className="h-5 w-5 object-contain"
+                    />
+                  </div>
+                  <span className="text-white font-semibold text-sm">{companyData.businessName}</span>
+                  <span className="mx-2 h-4 w-px bg-white/30"></span>
+                  <span className="text-white text-xs">Professional</span>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
