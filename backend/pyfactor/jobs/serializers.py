@@ -139,15 +139,15 @@ class JobDetailSerializer(JobSerializer):
 
 class JobMaterialSerializer(serializers.ModelSerializer):
     """Serializer for JobMaterial model"""
-    supply_name = serializers.CharField(source='supply.name', read_only=True)
-    supply_unit = serializers.CharField(source='supply.unit', read_only=True)
+    material_name = serializers.CharField(source='material.name', read_only=True)
+    material_unit = serializers.CharField(source='material.display_unit', read_only=True)
     total_cost = serializers.SerializerMethodField()
     total_price = serializers.SerializerMethodField()
     
     class Meta:
         model = JobMaterial
         fields = [
-            'id', 'supply', 'supply_name', 'supply_unit', 'quantity',
+            'id', 'material', 'material_name', 'material_unit', 'quantity',
             'unit_cost', 'unit_price', 'markup_percentage', 'is_billable',
             'notes', 'used_date', 'total_cost', 'total_price',
             'created_at', 'updated_at'

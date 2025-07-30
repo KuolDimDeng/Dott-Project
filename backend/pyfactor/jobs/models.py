@@ -11,6 +11,7 @@ from custom_auth.models import TenantAwareModel, TenantManager
 from crm.models import Customer
 from hr.models import Employee
 from inventory.models import Product
+from inventory.models_materials import Material
 from users.models import User
 from finance.models import Account, FinanceTransaction
 
@@ -462,7 +463,7 @@ class Job(TenantAwareModel):
                 JobMaterial.objects.create(
                     tenant_id=self.tenant_id,
                     job=new_job,
-                    supply=material.supply,
+                    material=material.material,
                     quantity=material.quantity,
                     unit_cost=material.unit_cost,
                     unit_price=material.unit_price,
@@ -481,8 +482,7 @@ class JobMaterial(TenantAwareModel):
     """Track materials/supplies used in a job"""
     
     job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name='materials')
-    supply = models.ForeignKey(Product, on_delete=models.PROTECT, 
-                             limit_choices_to={'inventory_type': 'supply'})
+    material = models.ForeignKey('inventory.Material', on_delete=models.PROTECT)
     
     quantity = models.DecimalField(max_digits=10, decimal_places=2, 
                                  validators=[MinValueValidator(Decimal('0.01'))])
@@ -508,11 +508,11 @@ class JobMaterial(TenantAwareModel):
     class Meta:
         indexes = [
             models.Index(fields=['tenant_id', 'job']),
-            models.Index(fields=['tenant_id', 'supply']),
+            models.Index(fields=['tenant_id', 'material']),
         ]
         
     def __str__(self):
-        return f"{self.supply.name} - {self.quantity} units"
+        return f"{self.material.name} - {self.quantity} units"
     
     def save(self, *args, **kwargs):
         # Auto-calculate unit_price based on markup if not set
@@ -531,20 +531,20 @@ class JobMaterial(TenantAwareModel):
         super().save(*args, **kwargs)
         
         # After saving, update inventory for consumable materials
-        if self.supply.material_type == 'consumable':
+        if self.material.material_type == 'consumable':
             if is_new:
                 # New material usage - deplete inventory
-                self.supply.quantity -= int(self.quantity)
-                if self.supply.quantity < 0:
-                    self.supply.quantity = 0
-                self.supply.save(update_fields=['quantity'])
+                self.material.quantity_in_stock -= self.quantity
+                if self.material.quantity_in_stock < 0:
+                    self.material.quantity_in_stock = 0
+                self.material.save(update_fields=['quantity_in_stock'])
             elif old_quantity and old_quantity != self.quantity:
                 # Quantity changed - adjust inventory
                 quantity_diff = self.quantity - old_quantity
-                self.supply.quantity -= int(quantity_diff)
-                if self.supply.quantity < 0:
-                    self.supply.quantity = 0
-                self.supply.save(update_fields=['quantity'])
+                self.material.quantity_in_stock -= quantity_diff
+                if self.material.quantity_in_stock < 0:
+                    self.material.quantity_in_stock = 0
+                self.material.save(update_fields=['quantity_in_stock'])
     
     def get_total_cost(self):
         return self.quantity * self.unit_cost

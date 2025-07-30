@@ -1,5 +1,5 @@
 # CLAUDE.md - Dott Project Configuration
-*Last Updated: 2025-07-17*
+*Last Updated: 2025-07-30*
 
 ## Numbering System Guide
 - **Format**: `[MAJOR.MINOR.PATCH] - DATE - STATUS`
@@ -33,8 +33,8 @@
 - **IMPORTANT**: Do NOT use @auth0/nextjs-auth0 SDK
 - **Frontend Service**: dott-front (Render Docker, branch: main)
 - **Backend Service**: dott-api (api.dottapps.com, oregon region)
-- **Domains**: dottapps.com, www.dottapps.com
-- **Branch Structure**: staging → main (production)
+- **Domains**: dottapps.com, www.dottapps.com, app.dottapps.com
+- **Branch Structure**: main (production only, staging suspended)
 
 ### [2.0.0] - 2025-06-18 - CURRENT - Session Management V2
 - **Architecture**: Server-side sessions only (banking standard)
@@ -137,281 +137,141 @@
 - **Pattern**: Unique prefixes, input/output logging, error context
 - **Example**: `console.log('🎯 [Component] === START ===');`
 
-### [29.0.0] - 2025-07-09 - CURRENT - Tax Filing Service Pricing Update
-- **Purpose**: Competitive pricing for tax filing services with developing country discounts
-- **Sales Tax Pricing**:
-  - Full Service: $75/filing (quarterly), $300/year, $200 multi-state
-  - Self Service: $35/filing (quarterly), $140/year, $100 multi-state
-- **Payroll Tax Pricing**:
-  - Full Service: $125 (Form 941), $150 (Form 940), $450 complete package
-  - Self Service: $65 (Form 941), $85 (Form 940), $250 complete package
-- **Income Tax Pricing**:
-  - Full Service: $250 sole prop, $395 LLC/S-Corp, $595 C-Corp (+$75/state)
-  - Self Service: $125 sole prop, $195 LLC/S-Corp, $295 C-Corp (+$50/state)
-- **W-2/1099 Generation**: $2/form full service, $1/form self service (min $25/$15)
-- **Developing Country Discount**: 50% off all prices (same as subscription)
-- **Payment Methods**: Stripe (worldwide), M-Pesa (Kenya automatic detection)
-- **Implementation**:
-  - Frontend: Dynamic pricing with async calculation and visual discount display
-  - Backend: Updated payment integration with regional pricing support
-  - API: Automatic country detection and payment method selection
+### [29.0.0] - 2025-07-09 - CURRENT - Tax Filing Service Pricing
+- **Sales Tax**: Full $75/filing, Self $35/filing
+- **Payroll Tax**: Full $125-$450, Self $65-$250
+- **Income Tax**: Full $250-$595, Self $125-$295
+- **W-2/1099**: $2/form full service, $1/form self service
+- **Developing Country Discount**: 50% off all prices
+- **Payment Methods**: Stripe (worldwide), M-Pesa (Kenya)
 
-### [30.0.0] - 2025-07-09 - CURRENT - Subscription Regional Pricing & Payment Methods
-- **Purpose**: Implement regional pricing with local payment methods for developing countries
-- **Subscription Plans**:
-  - Basic: Free forever (1 user, 3GB storage)
-  - Professional: $15/mo ($7.50 developing countries)
-  - Enterprise: $45/mo ($22.50 developing countries)
+### [30.0.0] - 2025-07-09 - CURRENT - Subscription Regional Pricing
+- **Plans**: Basic (Free), Professional ($15/mo), Enterprise ($45/mo)
+- **Developing Countries**: 50% discount (128 countries)
 - **Billing Cycles**: Monthly, 6-month (17% off), Yearly (20% off)
-- **Regional Pricing**:
-  - 128 developing countries get automatic 50% discount
-  - Detected from country selected during onboarding
-  - No manual codes needed - automatic application
-- **Payment Methods by Country**:
-  - Kenya: Credit Card (USD) or M-Pesa (KES)
-  - Nigeria: Credit Card or Flutterwave
-  - Ghana/Uganda/Rwanda: Credit Card or MTN Mobile Money
-  - Tanzania: Credit Card or M-Pesa
-  - Others: Credit Card only
-- **Implementation**:
-  - Payment page detects country from onboarding data
-  - Shows appropriate payment methods
-  - Displays local currency with exchange rate
-  - M-Pesa integration for Kenya users
-- **Key Files**:
-  - `/src/app/onboarding/payment/page.js` - Payment page with regional support
-  - `/src/app/api/payments/mpesa/initiate/route.js` - M-Pesa payment API
-  - `/src/app/api/payment-methods/available/route.js` - Payment method detection
-  - `/docs/SUBSCRIPTION_PRICING.md` - Complete pricing documentation
+- **Payment Methods**: Credit Card, M-Pesa (Kenya), Flutterwave (Nigeria), MTN Mobile Money
+- **Key Files**: `/src/app/onboarding/payment/page.js`, `/docs/SUBSCRIPTION_PRICING.md`
 
 ### [31.0.0] - 2025-07-12 - CURRENT - Interactive User Cleanup Tool
-- **Purpose**: Safe, menu-driven interface for deleting users from production database
-- **Features**:
-  - Delete specific user by email with confirmation
-  - Delete ALL users with double confirmation (requires typing "DELETE ALL USERS")
-  - List all users with ID, email, and username
-  - Handles all 64 dependent tables in correct deletion order
+- **Features**: Delete user by email, delete all users, list users
 - **Location**: `/backend/pyfactor/scripts/interactive_user_cleanup.py`
-- **Usage**: `python interactive_user_cleanup.py` (requires DATABASE_URL)
-- **Safety**:
-  - Email validation and user existence check
-  - Confirmation prompts for all deletions
-  - Transaction-based with rollback on error
-  - Clear error messages and progress feedback
+- **Safety**: Confirmation prompts, transaction rollback, 64+ table handling
 - **Documentation**: `/backend/pyfactor/docs/INTERACTIVE_USER_CLEANUP.md`
 
-### [31.0.0] - 2025-07-12 - CURRENT - Employee API V2 Implementation
-- **Purpose**: Complete rewrite of employee API to fix serialization and async issues
-- **Problem**: Employee creation returned empty arrays, [object Promise] tenant IDs
+### [32.0.0] - 2025-07-12 - CURRENT - Employee API V2 Implementation
 - **Solution**: Clean V2 API with consistent response format
-- **Key Changes**:
-  - New `/api/hr/v2/employees` endpoints with proper serialization
-  - Fixed async/await in Next.js proxy routes (cookies() not awaited)
-  - Auto-format phone numbers to international format
-  - Fixed DateField default to return date() not datetime()
-  - Consistent response format: `{success: true, data: {...}, message: "..."}`
-- **Migration**: Updated all frontend hrApi calls to use v2 endpoints
-- **Cleanup**: Removed all old employee API files after v2 working
+- **Key Changes**: Fixed serialization, async/await, phone formatting
+- **Response Format**: `{success: true, data: {...}, message: "..."}`
+- **Migration**: All frontend calls updated to v2 endpoints
 
-### [32.0.0] - 2025-07-13 - CURRENT - User Cleanup Scripts & Transaction Atomic
-- **Purpose**: Handle orphaned users and prevent future occurrences
-- **Problem**: User creation failures left orphaned records with 64+ foreign key dependencies
-- **Solution**: Comprehensive cleanup script with transaction atomic
-- **Key Features**:
-  - `/backend/pyfactor/scripts/comprehensive_user_cleanup.py` - Auto-discovers ALL foreign keys
-  - `@transaction.atomic` on user creation prevents orphaned records
-  - Handles tables: smart_insights_credittransaction, smart_insights_usercredit, hr_employee, etc.
-  - Shows all 64+ dependencies before deletion
-- **Usage**: `python comprehensive_user_cleanup.py user@example.com`
-- **Prevention**: All user creation now wrapped in atomic transactions
-- **Documentation**: `/backend/pyfactor/docs/TROUBLESHOOTING.md` - User cleanup section
+### [33.0.0] - 2025-07-13 - CURRENT - User Cleanup Scripts & Transaction Atomic
+- **Scripts**: `comprehensive_user_cleanup.py` - handles all foreign keys
+- **Prevention**: @transaction.atomic on user creation
+- **Tables**: 64+ dependencies auto-discovered
+- **Documentation**: `/backend/pyfactor/docs/TROUBLESHOOTING.md`
 
-### [33.0.0] - 2025-07-14 - CURRENT - Stripe Connect SSN Storage
-- **Purpose**: PCI-compliant SSN storage for employees using Stripe Connect
+### [34.0.0] - 2025-07-14 - CURRENT - Stripe Connect SSN Storage
 - **Express Account**: acct_1RkYGFC77wwa4lUB (Dott LLC)
-- **Implementation**:
-  - SSNs stored as Customer records in Express account
-  - Only last 4 digits kept locally
-  - Secure hashing for references
-  - Automatic Stripe account cleanup on deletion
-- **Key Files**:
-  - `/backend/pyfactor/hr/stripe_ssn_service_express.py` - Express account integration
-  - `/backend/pyfactor/hr/stripe_config.py` - Stripe configuration
-  - `/backend/pyfactor/scripts/migrate_existing_ssns_to_stripe.py` - Migration script
-  - `/STRIPE_SSN_MIGRATION_GUIDE.md` - Step-by-step migration guide
+- **Implementation**: SSNs stored in Stripe, only last 4 kept locally
+- **Migration**: `/backend/pyfactor/scripts/migrate_existing_ssns_to_stripe.py`
+- **Documentation**: `/STRIPE_SSN_MIGRATION_GUIDE.md`
 
-### [34.0.0] - 2025-07-14 - CURRENT - Platform Fee Structure
-- **Purpose**: Revenue generation through transaction fees
-- **Fee Structure**:
-  - Invoice Payments: 2.9% + $0.60 (profit: $0.30/transaction)
-  - Vendor Payments: 2.9% + $0.60 (profit: $0.30/transaction)
-  - Payroll: 2.4% (configurable)
-  - Subscriptions: 2.5% (configurable)
-- **Implementation**:
-  - Automatic fee calculation on all payments
-  - Transparent fee display to users
-  - Uses Stripe application_fee_amount
-  - Complete fee tracking and analytics
-- **Key Files**:
-  - `/backend/pyfactor/payments/stripe_fees.py` - Fee calculation logic
-  - `/backend/pyfactor/payments/stripe_payment_service.py` - Payment processing
-  - `/backend/pyfactor/payments/api.py` - Payment API endpoints
-  - `/frontend/pyfactor_next/src/components/payments/InvoicePaymentModal.js` - Payment UI
-  - `/backend/pyfactor/PLATFORM_FEE_DOCUMENTATION.md` - Complete documentation
-- **Revenue Projections**:
-  - 100 transactions/month = $30
-  - 1,000 transactions/month = $300
-  - 10,000 transactions/month = $3,000
+### [35.0.0] - 2025-07-14 - CURRENT - Platform Fee Structure
+- **Invoice/Vendor Payments**: 2.9% + $0.60 (profit: $0.30/transaction)
+- **Payroll**: 2.4% (configurable)
+- **Subscriptions**: 2.5% (configurable)
+- **Revenue**: 1,000 transactions/month = $300
 
-### [35.0.0] - 2025-07-14 - CURRENT - WhatsApp Business API Integration
-- **Purpose**: Enable business owners to invite others via WhatsApp messages
-- **Meta App Details**:
-  - App ID: 1068741974830721
-  - Phone Number ID: 676188225586230
-  - WhatsApp Business Account ID: 1513500473389693
-  - Test Number: +1 555 190 5954 (90 days free messages)
-- **Features**:
-  - Send invitation messages via WhatsApp
-  - Support for both text and template messages
-  - Integration with "Invite a Business Owner" feature
-  - Future support for invoice notifications and payment confirmations
-- **Implementation**:
-  - Frontend proxy: `/src/app/api/invite/whatsapp/route.js`
-  - Backend service: `/backend/pyfactor/communications/whatsapp_service.py`
-  - API endpoints: `/backend/pyfactor/invitations/views.py`
-  - UI component: `/src/app/dashboard/components/invite/InviteAFriend.js`
-- **Environment Variables** (Add to Render Backend):
-  - `WHATSAPP_ACCESS_TOKEN`: Generated from Meta Business Platform (24hr expiry in dev)
-  - `WHATSAPP_PHONE_NUMBER_ID`: 676188225586230 (optional, defaults to this)
-- **Setup Steps**:
-  1. Generate access token in Meta Business Platform
-  2. Add environment variables to Render Backend
-  3. Test from "Invite a Business Owner" page
-- **Future Enhancements**:
-  - Invoice notification templates
-  - Payment confirmation messages
-  - Appointment reminders
-  - Marketing campaigns
+### [36.0.0] - 2025-07-14 - CURRENT - WhatsApp Business API Integration
+- **Phone Number ID**: 676188225586230
+- **Test Number**: +1 555 190 5954
+- **Features**: Invitations, future invoice notifications
+- **Environment**: WHATSAPP_ACCESS_TOKEN (24hr expiry in dev)
 
-### [36.0.0] - 2025-07-15 - CURRENT - Custom Password Reset Flow for Admin-Created Users
-- **Purpose**: Replace Auth0's confusing verification emails with branded password reset flow
-- **Problem**: Users received Auth0 welcome/verification emails instead of password reset
-- **Solution**: Custom password reset system with full Auth0 integration
-- **Implementation**:
-  - `PasswordResetToken` model with 24-hour expiry
-  - Custom email via Resend with branded template
-  - Frontend page at `/auth/set-password` for password setting
-  - Backend API updates password in Auth0 via Management API
-  - Marks users as `onboarding_completed` after password set
-- **Email Service**: Switched from SMTP to Resend (better deliverability)
-- **Security**: Cryptographically secure tokens, single-use, time-limited
-- **Key Files**:
-  - `/backend/pyfactor/custom_auth/models.py` - PasswordResetToken model
-  - `/backend/pyfactor/custom_auth/views/password_reset_views.py` - API endpoint
-  - `/frontend/pyfactor_next/src/app/auth/set-password/page.js` - Frontend page
-  - `/backend/pyfactor/custom_auth/views/rbac_views.py` - Email sending logic
-- **Documentation**: 
-  - `/backend/pyfactor/docs/CUSTOM_PASSWORD_RESET_FLOW.md`
-  - `/backend/pyfactor/docs/RESEND_SETUP.md`
-- **Environment**: `RESEND_API_KEY=re_gjPas9S7_3fVGrgpUKaazigEEa6o3MVkQ` configured in Render
+### [37.0.0] - 2025-07-15 - CURRENT - Custom Password Reset Flow
+- **Solution**: Custom branded flow replacing Auth0 verification emails
+- **Email Service**: Resend (replaced SMTP)
+- **Security**: 24-hour tokens, single-use, cryptographically secure
+- **Environment**: `RESEND_API_KEY=re_gjPas9S7_3fVGrgpUKaazigEEa6o3MVkQ`
 
-### [37.0.0] - 2025-07-17 - CURRENT - Complete Payroll Workflow System
-- **Purpose**: End-to-end payroll system from settings to final payment with industry-standard compliance
+### [38.0.0] - 2025-07-15 - CURRENT - WhatsApp Commerce Menu Settings
+- **Database**: `show_whatsapp_commerce` field in UserProfile
+- **API**: `/api/users/me/` GET/PATCH for preferences
+- **UI**: Settings → WhatsApp tab with country-based defaults
+- **Real-time**: Custom event for instant menu updates
+
+### [39.0.0] - 2025-07-17 - CURRENT - Complete Payroll Workflow System
+- **Workflow**: Settings → Timesheet → Approval → Processing → Pay Stubs
+- **Features**: 7-step wizard, geofencing, multi-country support
+- **Revenue**: 2.4% platform fee on all payroll
 - **Documentation**: `/backend/pyfactor/docs/PAYROLL_WORKFLOW_DOCUMENTATION.md`
-- **Complete Workflow**:
-  1. **Payroll Settings** (Settings → Payroll tab): Configure pay frequency, dates, overtime, notifications
-  2. **Timesheet Entry** (2-week period): Excel-style grid with multiple hour types and geofencing
-  3. **Supervisor Approval**: Manager reviews and approves employee timesheets
-  4. **HR Final Approval**: HR compliance review and final approval
-  5. **7-Step Payroll Processing**: Employee selection → calculation → payment → pay stubs
-  6. **Employee Access**: PWA-compatible pay stub viewing via Profile → Documents
-  7. **Compliance**: Automated reporting, audit trails, tax calculations
-- **Key Components**:
-  - `PayrollSettings.js` - Comprehensive payroll configuration
-  - `EnhancedTimesheet.js` - Pay period-aligned timesheet with navigation
-  - `SupervisorApprovals.js` - Approval workflow management
-  - `PayrollProcessingWizard.js` - 7-step payroll processing
-  - `PayStubViewer.js` - Employee pay stub access (PWA mobile compatible)
-  - `PayManagement.js` - HR pay management interface
-- **Backend Models**:
-  - `PayrollSettings`: Pay frequency, overtime, notifications configuration
-  - `Timesheet`: Weekly timesheet with status tracking (draft/submitted/approved/rejected/paid)
-  - `TimeEntry`: Daily entries (regular/overtime/sick/vacation/holiday/unpaid/other hours)
-  - `ClockEntry`: Clock in/out/break tracking with location data
-  - `PayStatement`: Generated pay stubs with PDF download
-  - `GeofenceZone`: Location-based zones for clock validation
-- **API Endpoints**:
-  - `/api/payroll/settings/` - Payroll configuration
-  - `/api/timesheets/` - Timesheet management
-  - `/api/timesheets/current_week/` - Current timesheet
-  - `/api/timesheets/{id}/submit/` - Submit for approval
-  - `/api/timesheets/{id}/approve/` - Approve/reject timesheet
-  - `/api/payroll/process/` - 7-step payroll processing
-  - `/api/paystubs/` - Pay stub access
-  - `/api/paystubs/{id}/download/` - PDF download
-- **Revenue Model**: 2.4% platform fee on all payroll transactions
-- **Security**: Row-Level Security (RLS), session-based auth, audit logging
-- **Mobile Support**: PWA-compatible timesheet entry and pay stub viewing
-- **Compliance**: Tax calculations, W-2 generation, record retention
-- **Setup Requirements**:
-  - Run migrations: `python manage.py makemigrations payroll timesheets && python manage.py migrate`
-  - Add Google Maps API key: `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`
-  - Configure Stripe for payment processing
-  - Set up geofence zones per business location
 
-### [38.0.0] - 2025-07-17 - CURRENT - Comprehensive Geofencing System
-- **Purpose**: Location-based employee time tracking with full legal compliance and privacy protection
+### [40.0.0] - 2025-07-17 - CURRENT - Comprehensive Geofencing System
+- **Compliance**: GDPR, CCPA compliant with employee consent
+- **Features**: Google Maps interface, 10-1000m radius, location types
+- **Privacy**: 90-day retention, encrypted storage, work-hours only
 - **Documentation**: `/backend/pyfactor/docs/GEOFENCING_SYSTEM_DOCUMENTATION.md`
-- **Admin Interface**: Settings → Geofencing (Admin/Owner only)
-- **Legal Compliance**:
-  - GDPR, CCPA, and local privacy law compliance
-  - Mandatory employee notification and explicit consent
-  - Comprehensive employer responsibility documentation
-  - Employee rights protection (opt-out, data access, deletion)
-  - 90-day automatic data retention with encrypted storage
-- **Geofence Setup**:
-  - Interactive Google Maps interface with click-to-place
-  - Adjustable radius (10-1000 meters) with visual feedback
-  - Location types: Office, Construction Site, Client Location, Delivery Zone, Field Location, Custom
-  - Configurable rules: Clock in/out requirements, auto clock-out, exit alerts
-- **Employee Experience**:
-  - Location consent modal with GDPR-compliant information
-  - Real-time geofence validation during clock in/out
-  - Status indicators (inside/outside work areas)
-  - Distance calculations from geofence centers
-  - PWA-compatible mobile interface
-- **Technical Implementation**:
-  - `GeofencingSettings.js` - Admin geofence management with Google Maps
-  - `EnhancedClockInOut.js` - Location-aware time tracking
-  - `LocationConsentModal` - GDPR-compliant consent collection
-  - `GeofenceStatus` - Real-time location validation indicators
-- **Backend Models**:
-  - `Geofence` - Location boundaries with enforcement rules
-  - `EmployeeLocationConsent` - Privacy consent tracking
-  - `GeofenceEvent` - Comprehensive audit logging
-  - `LocationLog` - Employee location history
-- **API Endpoints**:
-  - `/api/hr/geofences/` - Geofence CRUD operations
-  - `/api/hr/location-consents/check/me/` - Employee consent status
-  - `/api/hr/geofence-events/check/` - Real-time geofence validation
-  - `/api/hr/geofence-events/log_event/` - Event logging for compliance
-- **Privacy & Security**:
-  - AES-256 encryption for all location data
-  - Role-based access control with audit trails
-  - Work-hours only tracking with automatic deletion
-  - Granular consent controls and withdrawal options
-  - Complete GDPR compliance with data portability
-- **Mobile & PWA Support**:
-  - Native GPS integration with high-accuracy positioning
-  - Touch-friendly interface optimized for mobile
-  - Offline capability with background sync
-  - Battery-optimized location tracking
-  - Push notifications for location-based alerts
-- **Setup Requirements**:
-  - Google Maps API key: `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`
-  - Legal compliance review and employer training
-  - Employee notification and consent collection
-  - Geofence zone configuration per business location
+
+### [41.0.0] - 2025-07-20 - CURRENT - Session Cookie Persistence Fix
+- **Problem**: Cloudflare proxy doesn't forward Set-Cookie headers reliably
+- **Solution**: Client-side JavaScript cookie setting
+- **Key Learning**: Always test cookie persistence with Cloudflare
+- **Debug Tools**: `/api/auth/session-verify` endpoint
+
+### [42.0.0] - 2025-07-21 - CURRENT - Google Maps Geofencing Implementation
+- **API Key**: `AIzaSyCC7KgQRztJDsoaQa94zMO7F4Pa-4R73E0`
+- **Features**: Click to place, drag to move, resize radius
+- **Config**: `/src/config/maps.js` centralized configuration
+- **Documentation**: `/docs/GOOGLE_MAPS_GEOFENCING_SETUP.md`
+
+### [43.0.0] - 2025-07-22 - CURRENT - Local Docker Development Environment
+- **Stack**: PostgreSQL, Redis, Django, Next.js
+- **Frontend**: http://localhost:3000 with hot reload
+- **Commands**: `docker-compose -f docker-compose.local.yml up -d`
+- **Documentation**: `LOCAL_DEVELOPMENT_GUIDE.md`
+
+### [44.0.0] - 2025-07-23 - CURRENT - Branch Structure Standardization
+- **Production Branch**: main (replaced Dott_Main_Dev_Deploy)
+- **Staging**: Suspended to save costs (see [45.0.0])
+- **Deployment**: Direct to production via main branch
+- **Benefits**: Industry standard, cleaner workflow
+
+### [45.0.0] - 2025-07-24 - CURRENT - Staging Environment Suspension
+- **Status**: Suspended to save $57/month
+- **Development**: All work on main branch
+- **Reactivation**: At 10+ paying customers or $1000+ MRR
+- **Memory Fix**: NODE_OPTIONS=--max-old-space-size=4096
+
+### [46.0.0] - 2025-07-25 - CURRENT - User-Employee Architecture Standardization
+- **Pattern**: User (auth) → UserProfile (extended) → Employee (optional HR)
+- **Key Change**: Audit fields use User instead of Employee
+- **Helper Functions**: `/backend/pyfactor/hr/utils.py`
+- **Benefits**: Business owners can use features without Employee records
+
+### [47.0.0] - 2025-07-26 - CURRENT - Business Type-Based Feature Access
+- **Categories**: SERVICE (Jobs), RETAIL (POS), MIXED/OTHER (both)
+- **API**: `/api/users/business-features/` returns enabled features
+- **Legacy Users**: See both features (before 2025-07-26)
+- **Migration**: Add `simplified_business_type` field
+
+### [48.0.0] - 2025-07-26 - CURRENT - Session Timeout Security Feature
+- **Timeout**: 15 minutes of inactivity
+- **Warning**: 60-second countdown modal at 14 minutes
+- **Activity**: Mouse, keyboard, clicks, scrolls, API calls
+- **Security**: Clears all session data and redirects to signin
+
+### [49.0.0] - 2025-07-29 - CURRENT - App Subdomain Architecture
+- **Marketing**: dottapps.com, www.dottapps.com
+- **Application**: app.dottapps.com (Cloudflare proxied)
+- **API**: api.dottapps.com (DNS only - no proxy)
+- **Auth**: auth.dottapps.com (Auth0 custom domain)
+
+### [50.0.0] - 2025-07-29 - CURRENT - Multi-Currency Display
+- **Support**: 170+ currencies with real-time rates
+- **Settlement**: All payments in USD
+- **Caching**: 4 hours normal, 1 hour volatile currencies
+- **UI**: Settings → Business → Currency Preferences
+- **Documentation**: `/docs/MULTI_CURRENCY_FEATURE.md`
 
 ---
 
@@ -455,68 +315,6 @@
 
 ---
 
-### [42.0.0] - 2025-07-23 - CURRENT - Branch Structure Standardization
-- **Purpose**: Switched from Dott_Main_Dev_Deploy to industry-standard main branch
-- **Production Branch**: main (was Dott_Main_Dev_Deploy)
-- **Staging Branch**: staging
-- **Deployment Flow**: staging → main
-- **Deployment Scripts**:
-  - `./deploy-to-staging.sh` - Deploy current branch to staging
-  - `./deploy-to-production.sh` - Merge staging to main and deploy
-- **Render Services**: Both configured to auto-deploy from respective branches
-- **Benefits**: Cleaner workflow, industry standard, easier for new developers
-
-### [43.0.0] - 2025-07-24 - CURRENT - Staging Environment Suspension
-- **Purpose**: Temporarily suspend staging to focus on customer acquisition
-- **Status**: Staging services suspended in Render (saving $57/month)
-- **Development**: All work on main branch, deploy directly to production
-- **Rationale**: 0 users - infrastructure optimization is premature
-- **Reactivation Criteria**: 10+ paying customers or $1000+ MRR
-- **Documentation**: See STAGING_SUSPENSION_NOTICE.md
-- **Memory Fix**: NODE_OPTIONS set to 4GB in package.json and Dockerfile
-
-### [44.0.0] - 2025-07-25 - CURRENT - User-Employee Architecture Standardization
-- **Purpose**: Standardize User-Employee relationship following industry best practices
-- **Problem**: Geofence creation failed because created_by required Employee, but business owners don't have Employee records
-- **Architecture Pattern**:
-  - User model: Core authentication and authorization (all users have this)
-  - UserProfile: Extended user data (address, phone, preferences)
-  - Employee model: Optional HR-specific data (only employees have this)
-  - Business owners, admins, and external users only have User records
-- **Key Changes**:
-  - All audit fields (created_by, approved_by, etc.) now use User ForeignKey instead of Employee
-  - Employee.business_id is now a property that gets value from User relation
-  - Created UserRole enum with existing OWNER, ADMIN, USER values
-  - Added comprehensive helper functions in hr/utils.py
-- **Helper Functions** (in `/backend/pyfactor/hr/utils.py`):
-  - `get_employee_for_user(user)` - Get Employee or None
-  - `create_employee_for_user(user, **kwargs)` - Create Employee if needed
-  - `user_has_employee_profile(user)` - Check if user has Employee
-  - `get_user_display_name(user)` - Get name regardless of Employee status
-  - `is_user_employee(user)` - Check if user is employee (not owner)
-  - `get_user_role_display(user)` - Get human-readable role
-- **Models Updated**:
-  - Geofence.created_by: Employee → User
-  - EmployeeGeofence.assigned_by: Employee → User
-  - Timesheet.approved_by: Employee → User
-  - ClockEntry.adjusted_by: Employee → User
-  - TimeOffRequest.reviewed_by: Employee → User
-  - BonusPayment.approved_by: UUIDField → User
-- **Migrations Created**:
-  - hr/migrations/0003_change_geofence_created_by_to_user.py
-  - timesheets/migrations/0002_change_audit_fields_to_user.py
-  - payroll/migrations/0002_change_bonuspayment_approved_by_to_user.py
-- **Views Updated**: All views now use helper functions instead of direct user.employee access
-- **Benefits**:
-  - Business owners can now create geofences without Employee records
-  - Cleaner separation between authentication (User) and HR data (Employee)
-  - More flexible for future user types (customers, vendors, contractors)
-  - Consistent audit trail using User model
-- **Best Practices**:
-  - Use User for audit fields (created_by, modified_by)
-  - Use Employee only for HR-specific relationships
-  - Always handle cases where User has no Employee gracefully
-
 ## Quick Reference
 
 ### Fix Onboarding Issues
@@ -550,24 +348,6 @@ cd /Users/kuoldeng/projectx/backend/pyfactor
 python3 payments/test_platform_fees.py
 ```
 
-### Geofencing Setup (Admin)
-```bash
-# 1. Access Settings → Geofencing (Admin/Owner only)
-# 2. Accept legal compliance requirements
-# 3. Create geofence using Google Maps interface
-# 4. Configure location rules and requirements
-# 5. Assign employees to geofences
-```
-
-### Employee Location Consent
-```bash
-# Employee workflow:
-# 1. First clock in attempt triggers consent modal
-# 2. Review location data collection details
-# 3. Accept or decline location tracking
-# 4. Clock in/out with geofence validation
-```
-
 ### Environment Variables (Key)
 ```
 CLAUDE_API_KEY=sk-ant-api03-...
@@ -581,255 +361,5 @@ WHATSAPP_PHONE_NUMBER_ID=676188225586230
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSyCC7KgQRztJDsoaQa94zMO7F4Pa-4R73E0
 CURRENCY_API_KEY=cur_live_jE7Pw20yFxMkRhfGR8cmwEFHP8HB2JCQOUEOg0lc
 WISE_API_KEY=<optional-for-better-rates>
+RESEND_API_KEY=re_gjPas9S7_3fVGrgpUKaazigEEa6o3MVkQ
 ```
-
-### [36.0.0] - 2025-07-15 - CURRENT - WhatsApp Commerce Menu Settings
-- **Purpose**: Database-backed user preference for WhatsApp Commerce menu visibility
-- **Problem Solved**: Previous localStorage approach didn't sync across devices/browsers
-- **Database Changes**:
-  - Added `show_whatsapp_commerce` BooleanField to UserProfile model
-  - NULL = use country default, TRUE/FALSE = explicit user preference
-  - Method `get_whatsapp_commerce_preference()` returns effective setting
-- **API Implementation**:
-  - Extended `/api/users/me/` GET to include WhatsApp preferences
-  - Added PATCH method to `/api/users/me/` for updating preferences
-  - Returns both `show_whatsapp_commerce` (effective) and `whatsapp_commerce_explicit` (user setting)
-- **Frontend Implementation**:
-  - Settings → WhatsApp tab for all users
-  - Shows country status (Popular/New/Available) with explanation
-  - Toggle for menu visibility with real-time API updates
-  - Custom event `whatsappPreferenceChanged` for instant menu updates
-- **Logic Flow**:
-  - WhatsApp Business countries: Show by default, user can disable
-  - Non-WhatsApp Business countries: Hidden by default, user can enable
-  - listItems.js uses profile data instead of localStorage
-  - Real-time updates without page refresh
-- **Key Files**:
-  - `/backend/pyfactor/users/models.py` - Database field and logic
-  - `/backend/pyfactor/users/api/user_profile_views.py` - API endpoints
-  - `/src/app/Settings/components/sections/WhatsAppSettings.js` - Settings UI
-  - `/src/app/Settings/components/SettingsManagement.js` - Added WhatsApp tab
-  - `/src/app/dashboard/components/lists/listItems.js` - Menu conditional logic
-
-### [39.0.0] - 2025-07-20 - CURRENT - Session Cookie Persistence Fix (Cloudflare)
-- **Purpose**: Fix session cookies not persisting through Cloudflare proxy, causing authentication loops
-- **Problem**: 2-day debugging - cookies set with server-side headers weren't persisting
-- **Root Causes**:
-  - Cloudflare proxy doesn't reliably forward Set-Cookie headers
-  - Cookies with `sameSite: 'lax'` don't persist in cross-origin contexts
-  - Import errors ("t is not defined") masking authentication issues
-  - Incorrect `useSession` hook destructuring
-- **Solution**:
-  - Use client-side JavaScript to set cookies instead of server headers
-  - Set cookies with `sameSite: 'none'` and `secure` attributes
-  - Fix all import/export errors before debugging auth issues
-  - Create session-verify endpoint for debugging
-- **Implementation**:
-  - JavaScript cookie setting in `/src/app/api/auth/establish-session-form/route.js`
-  - Return HTML with script that sets cookies then redirects
-  - Keep session bridge pattern but use form submission
-  - Fix `useSession` destructuring: `{ session, user }` not `{ data }`
-- **Key Learning**: Cloudflare requires client-side cookie setting for reliability
-- **Debug Tools**:
-  - Check cookies: `document.cookie.split(';').map(c => c.trim())`
-  - Verify session: `/api/auth/session-verify` endpoint
-  - Add comprehensive logging throughout auth flow
-- **Prevention**: Always test cookie persistence in production with Cloudflare
-- **Documentation**: Added to `/frontend/pyfactor_next/docs/TROUBLESHOOTING.md`
-
-### [40.0.0] - 2025-07-21 - CURRENT - Google Maps Geofencing Implementation
-- **Purpose**: Enable location-based employee time tracking with interactive map interface
-- **Problem**: Geofencing creation wasn't working - map not displaying, save button non-functional
-- **Root Causes**:
-  - Environment variables not loading in client-side build
-  - React portal timing issues with map container
-  - Invalid Google Maps API key
-  - Missing error handling in save functionality
-- **Solution**:
-  - Created centralized maps config: `/src/config/maps.js`
-  - Simplified component removing portal pattern
-  - Added proper API key: `AIzaSyCC7KgQRztJDsoaQa94zMO7F4Pa-4R73E0`
-  - Enhanced save functionality with detailed error handling
-- **Features Added**:
-  - Click on map to place geofence circle
-  - Double-click to remove circle (map or circle)
-  - Drag to reposition, resize by dragging edge
-  - Real-time coordinate and radius display
-  - Loading states and error messages
-  - Disabled save until required fields filled
-- **Implementation**:
-  - `/src/app/Settings/components/sections/GeofencingSettingsSimple.js` - Main component
-  - `/src/config/maps.js` - Google Maps configuration
-  - `/src/app/api/hr/geofences/route.js` - API proxy route
-  - Backend ViewSet at `/backend/pyfactor/hr/views.py`
-- **User Experience**:
-  - Settings → Geofencing (Admin/Owner only)
-  - Accept legal compliance on first use
-  - Click "Add Geofence" to create new
-  - Click map to place, adjust radius, configure rules
-  - Save creates geofence in backend
-- **Documentation**: `/docs/GOOGLE_MAPS_GEOFENCING_SETUP.md`
-- **Key Learning**: Direct DOM manipulation more reliable than React portals for Google Maps
-
-### [41.0.0] - 2025-07-22 - CURRENT - Local Docker Development Environment
-- **Purpose**: Mirror production environment locally for faster development and testing
-- **Problem**: Needed to test changes locally before deploying to Render production
-- **Solution**: Complete Docker Compose setup replicating production stack
-- **Key Files Created**:
-  - `docker-compose.local.yml` - Full stack configuration (PostgreSQL, Redis, Django, Next.js)
-  - `frontend/pyfactor_next/Dockerfile.local` - Frontend container with hot reload
-  - `frontend/pyfactor_next/.dockerignore` - Exclude node_modules from build
-  - `.env.local.example` - Template for environment variables
-  - `scripts/setup-local-dev.sh` - Automated setup script
-  - `backend/pyfactor/scripts/seed_local_data.py` - Sample data creation
-  - `LOCAL_DEVELOPMENT_GUIDE.md` - Complete documentation
-- **Working Services**:
-  - Frontend: http://localhost:3000 ✅ (full landing page with hot reload)
-  - PostgreSQL: localhost:5432 ✅ (database ready)
-  - Redis: localhost:6379 ✅ (session storage ready)
-  - Backend: localhost:8000 🔧 (migration dependency issues)
-- **Key Benefits**:
-  - Instant frontend changes without waiting for deployments
-  - Test all 20 language translations locally
-  - Verify responsive design across devices
-  - Safe environment to break things
-  - Exact production parity (same versions, configs)
-- **Usage**:
-  - Start: `docker-compose -f docker-compose.local.yml up -d`
-  - View logs: `docker-compose -f docker-compose.local.yml logs -f`
-  - Stop: `docker-compose -f docker-compose.local.yml down`
-  - Frontend changes: Edit files in `/frontend/pyfactor_next/src/`
-- **Common Issues**:
-  - Backend migration error: `NodeNotFoundError` - needs migration dependency fix
-  - Docker build cache: Run `docker system prune -f` to clear
-  - Port conflicts: Change ports in docker-compose.local.yml
-- **Development Workflow**:
-  1. Make changes locally
-  2. Test at http://localhost:3000
-  3. When satisfied: `git push origin Dott_Main_Dev_Deploy`
-  4. Render auto-deploys to production
-- **Next Steps**: Fix Django migration dependencies for full backend functionality
-
-### [45.0.0] - 2025-07-26 - CURRENT - Business Type-Based Feature Access (Jobs/POS)
-- **Purpose**: Show Jobs or POS features based on business type selected during onboarding
-- **Problem**: All users see all features regardless of their business type
-- **Solution**: Simplified business types with feature-based menu filtering
-- **Business Categories**:
-  - SERVICE: Home Services, Construction, Cleaning, etc. → Shows Jobs only
-  - RETAIL: Retail Store, Restaurant, Grocery, etc. → Shows POS only
-  - MIXED: Salon/Spa, Medical, Fitness, etc. → Shows both Jobs and POS
-  - OTHER: Logistics, Finance, Real Estate, etc. → Shows both Jobs and POS
-- **Implementation**:
-  - Backend: `simplified_business_type` field in BusinessDetails model
-  - API: `/api/users/business-features/` returns enabled features array
-  - Frontend: SimplifiedBusinessInfoForm.jsx for onboarding
-  - Menu: Dynamic filtering in listItems.js based on features
-- **Legacy Users**: All users onboarded before 2025-07-26 see both features
-- **Key Files**:
-  - `/backend/pyfactor/users/business_categories.py` - Feature configuration
-  - `/backend/pyfactor/users/api/business_features_views.py` - API endpoint
-  - `/frontend/pyfactor_next/src/components/Onboarding/SimplifiedBusinessInfoForm.jsx` - Form
-  - `/frontend/pyfactor_next/src/app/utils/simplifiedBusinessData.js` - Frontend config
-  - `/frontend/pyfactor_next/src/app/dashboard/components/lists/listItems.js` - Menu filtering
-- **Migration**: Run `python manage.py migrate users` to add simplified_business_type field
-
-### [46.0.0] - 2025-07-26 - CURRENT - Session Timeout Security Feature
-- **Purpose**: Automatically sign out users after 15 minutes of inactivity for security
-- **Industry Standards**: 
-  - Banking: 5-10 minutes
-  - Healthcare: 10-15 minutes
-  - Business Apps: 15-30 minutes (we use 15 minutes)
-- **User Experience**:
-  - After 14 minutes of inactivity: 60-second warning modal appears
-  - Modal shows countdown timer "You'll be signed out in 00:59"
-  - At 10 seconds: Final countdown with pulsing red animation
-  - User can click "Back to Dott" to stay signed in
-  - On timeout: Session cleared, redirected to signin with message
-- **Activity Tracking**:
-  - Mouse movements, keyboard input, clicks, scrolls, touch events
-  - API calls automatically reset the timer
-  - Throttled to prevent performance issues
-- **Implementation**:
-  - `SessionTimeoutProvider`: Context for activity tracking and countdown
-  - `SessionTimeoutModal`: Warning modal with countdown display
-  - Integrated in DashboardClientLayout for all dashboard pages
-  - Auto-clears sensitive data from localStorage on timeout
-- **Security Features**:
-  - Clears all session cookies and tokens
-  - Removes cached API responses
-  - Logs timeout event for audit trail
-  - Shows reason on signin page after redirect
-- **Key Files**:
-  - `/src/providers/SessionTimeoutProvider.js` - Activity tracking logic
-  - `/src/components/SessionTimeoutModal.js` - Warning UI component
-  - `/src/app/dashboard/DashboardClientLayout.js` - Integration point
-  - `/src/components/auth/EmailPasswordSignIn.js` - Timeout message display
-
-### [47.0.0] - 2025-07-29 - CURRENT - App Subdomain Architecture
-- **Purpose**: Implement industry-standard subdomain structure for better security and scalability
-- **Problem Solved**: Mixed content (marketing/app) on same domain causes security and caching issues
-- **Architecture**:
-  - Marketing Site: `dottapps.com`, `www.dottapps.com` (Cloudflare proxied)
-  - Application: `app.dottapps.com` (Cloudflare proxied)
-  - API: `api.dottapps.com` (DNS only - no Cloudflare proxy)
-  - Auth: `auth.dottapps.com` (Auth0 custom domain)
-- **Benefits**:
-  - Cookie isolation between marketing and app
-  - Independent deployment and scaling
-  - Better caching strategies per subdomain
-  - Professional SaaS structure
-- **Technical Details**:
-  - Cross-subdomain cookies: `domain=.dottapps.com`
-  - Automatic routing in middleware
-  - CORS configured for all subdomains
-  - Session persistence across subdomains
-- **Important Configuration**:
-  - `api.dottapps.com` MUST remain "DNS only" in Cloudflare
-  - Render handles SSL for API directly
-  - Cloudflare proxy would break API functionality
-- **Key Files**:
-  - `/src/middleware.js` - Subdomain routing logic
-  - `/src/config/domains.js` - Domain configuration
-  - `/backend/pyfactor/settings.py` - CORS and cookie settings
-  - `/SUBDOMAIN_MIGRATION_GUIDE.md` - Complete setup guide
-
-### [48.0.0] - 2025-07-29 - CURRENT - Multi-Currency Display with USD Settlement
-- **Purpose**: Display invoices/quotes in 170+ local currencies while settling payments in USD
-- **Problem Solved**: Global businesses need familiar currency display without complex multi-currency accounting
-- **Core Features**:
-  - 170+ currency support with proper symbols and formatting
-  - Real-time exchange rates via CurrencyAPI (Wise API ready)
-  - Smart caching: 4 hours normal, 1 hour for volatile currencies
-  - User-controlled USD display toggles per document type
-  - All payments process in USD with clear conversion display
-- **User Interface**:
-  - Settings → Business → Currency Preferences
-  - Currency indicator in dashboard (next to language selector)
-  - Confirmation modal for currency changes
-  - Toggle options for USD display on invoices/quotes/reports
-- **Technical Implementation**:
-  - Backend: Exchange rate service with dual API support
-  - Frontend: Currency-aware components for all financial displays
-  - Email: Multi-currency templates with conversion context
-  - Payment: Enhanced flow with mandatory confirmation for non-USD
-- **Key Components**:
-  - `/backend/pyfactor/currency/exchange_rate_service.py` - Rate fetching and caching
-  - `/backend/pyfactor/currency/currency_data.py` - 170+ currency database
-  - `/src/components/CurrencyAwareInvoicePreview.js` - Multi-currency invoices
-  - `/src/components/payments/CurrencyAwareInvoicePaymentModal.js` - Payment flow
-  - `/src/utils/currencyFormatter.js` - Frontend formatting utilities
-- **Environment Variables**:
-  - `CURRENCY_API_KEY` - Required for CurrencyAPI fallback
-  - `WISE_API_KEY` - Optional for primary rate source
-- **Best Practices**:
-  - Always show USD at payment time regardless of display settings
-  - Handle rate failures gracefully with cached values
-  - Clear exchange rate disclosure in all communications
-  - Audit trail for all currency conversions
-- **Documentation**: `/docs/MULTI_CURRENCY_FEATURE.md`
-
-# important-instruction-reminders
-Do what has been asked; nothing more, nothing less.
-NEVER create files unless they're absolutely necessary for achieving your goal.
-ALWAYS prefer editing an existing file to creating a new one.
-NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.

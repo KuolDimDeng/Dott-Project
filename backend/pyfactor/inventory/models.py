@@ -245,7 +245,6 @@ class Product(AuditMixin, TenantAwareModel):
     """
     INVENTORY_TYPE_CHOICES = [
         ('product', 'Product for Sale'),
-        ('supply', 'Supply/Material'),
     ]
     
     MATERIAL_TYPE_CHOICES = [
@@ -315,8 +314,8 @@ class Product(AuditMixin, TenantAwareModel):
             # Count existing products for this tenant to generate sequence
             count = Product.objects.filter(tenant_id=self.tenant_id).count() + 1
             
-            # Generate SKU based on inventory type
-            prefix = "SUPP" if self.inventory_type == 'supply' else "PROD"
+            # Generate SKU for products
+            prefix = "PROD"
             self.sku = f"{prefix}-{year}-{count:04d}"
             
             # Ensure uniqueness (in case of race conditions)
@@ -553,11 +552,9 @@ class ServiceTypeFields(models.Model):
 class BillOfMaterials(TenantAwareModel):
     """Links products/services to their required materials"""
     product = models.ForeignKey('Product', on_delete=models.CASCADE, 
-                              related_name='bill_of_materials',
-                              limit_choices_to={'inventory_type': 'product'})
-    material = models.ForeignKey('Product', on_delete=models.CASCADE, 
-                               related_name='used_in_products',
-                               limit_choices_to={'inventory_type': 'supply'})
+                              related_name='bill_of_materials')
+    material = models.ForeignKey('inventory.Material', on_delete=models.CASCADE, 
+                               related_name='used_in_products')
     quantity_required = models.DecimalField(max_digits=10, decimal_places=2, 
                                           validators=[MinValueValidator(Decimal('0.01'))],
                                           help_text='Quantity of material needed per unit of product')
@@ -589,9 +586,8 @@ class ServiceMaterials(TenantAwareModel):
     """Links services to their required materials"""
     service = models.ForeignKey('Service', on_delete=models.CASCADE, 
                               related_name='service_materials')
-    material = models.ForeignKey('Product', on_delete=models.CASCADE, 
-                               related_name='used_in_services',
-                               limit_choices_to={'inventory_type': 'supply'})
+    material = models.ForeignKey('inventory.Material', on_delete=models.CASCADE, 
+                               related_name='used_in_services')
     quantity_required = models.DecimalField(max_digits=10, decimal_places=2, 
                                           validators=[MinValueValidator(Decimal('0.01'))],
                                           help_text='Typical quantity of material needed per service')

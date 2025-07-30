@@ -30,9 +30,9 @@ class JobAdmin(admin.ModelAdmin):
 
 @admin.register(JobMaterial)
 class JobMaterialAdmin(admin.ModelAdmin):
-    list_display = ['job', 'supply', 'quantity', 'unit_cost', 'unit_price', 'is_billable']
+    list_display = ['job', 'material', 'quantity', 'unit_cost', 'unit_price', 'is_billable']
     list_filter = ['is_billable', 'used_date']
-    search_fields = ['job__job_number', 'supply__name']
+    search_fields = ['job__job_number', 'material__name']
 
 @admin.register(JobLabor)
 class JobLaborAdmin(admin.ModelAdmin):

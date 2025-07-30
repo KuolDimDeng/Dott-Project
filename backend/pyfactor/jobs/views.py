@@ -1187,7 +1187,7 @@ class JobMaterialViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         job_id = self.kwargs.get('job_pk')
-        return JobMaterial.objects.filter(job_id=job_id).select_related('supply', 'added_by')
+        return JobMaterial.objects.filter(job_id=job_id).select_related('material', 'added_by')
     
     def perform_create(self, serializer):
         job_id = self.kwargs.get('job_pk')
