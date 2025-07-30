@@ -4,7 +4,7 @@ API views for currency preferences management
 import logging
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from django.utils import timezone
 from django.db import transaction
@@ -21,7 +21,7 @@ logger.setLevel(logging.DEBUG)
 
 
 @api_view(['GET'])
-@permission_classes([])  # No authentication required for diagnostic
+@permission_classes([AllowAny])  # No authentication required for diagnostic
 def currency_diagnostic(request):
     """Diagnostic endpoint to check currency system health"""
     try:
@@ -108,7 +108,7 @@ def currency_diagnostic(request):
 
 
 @api_view(['GET'])
-@permission_classes([])  # No authentication required for public test
+@permission_classes([AllowAny])  # No authentication required for public test
 def test_auth_public(request):
     """Test endpoint without authentication to verify routing"""
     logger.info("[TEST AUTH PUBLIC] === REQUEST RECEIVED ===")
