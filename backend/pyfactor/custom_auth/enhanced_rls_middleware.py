@@ -77,6 +77,8 @@ class EnhancedRowLevelSecurityMiddleware:
             '/api/notifications/admin/',  # Admin notification portal endpoints
             '/api/notifications/user/',   # User notification endpoints - authenticated but no tenant required
             '/api/test-sentry/',  # Sentry test endpoint - public for testing
+            '/api/users/api/currency/diagnostic/',  # Currency diagnostic endpoint
+            '/api/users/api/currency/test-public/',  # Currency test endpoint
             '/api/onboarding/api/pricing/',  # Public pricing endpoints for country-based pricing
             '/api/onboarding/api/debug/',  # Debug endpoints for testing
             '/api/payments/webhooks/paystack/',  # Paystack webhook doesn't have auth
