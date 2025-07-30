@@ -94,6 +94,26 @@ export const handleApiError = (error, options = {}) => {
 // Adding trailing slashes causes unnecessary 308 redirects that can corrupt POST request bodies
 
 /**
+ * Generate a cache key from endpoint and parameters
+ * @param {string} endpoint - API endpoint
+ * @param {Object} params - Query parameters
+ * @returns {string} - Cache key
+ */
+const generateCacheKey = (endpoint, params = {}) => {
+  if (!params || Object.keys(params).length === 0) {
+    return endpoint;
+  }
+  
+  // Sort parameters to ensure consistent cache keys
+  const sortedParams = Object.keys(params)
+    .sort()
+    .map(key => `${key}=${params[key]}`)
+    .join('&');
+  
+  return `${endpoint}?${sortedParams}`;
+};
+
+/**
  * Fetch data from an API endpoint with caching and tenant context
  * @param {string} endpoint - API endpoint
  * @param {Object} options - Request options
@@ -126,12 +146,13 @@ export const fetchData = async (endpoint, options = {}) => {
     
     // Get data from cache first if allowed
     if (useCache && !forceRefresh) {
-      const cachedData = dataCache.get(endpoint, params);
+      const cacheKey = generateCacheKey(endpoint, params);
+      const cachedData = dataCache.get(cacheKey);
       if (cachedData) {
-        logger.debug(`[ApiService] Cache hit for ${endpoint}`);
+        logger.debug(`[ApiService] Cache hit for ${cacheKey}`);
         return cachedData;
       }
-      logger.debug(`[ApiService] Cache miss for ${endpoint}`);
+      logger.debug(`[ApiService] Cache miss for ${cacheKey}`);
     }
     
     // Add tenant headers
@@ -154,7 +175,8 @@ export const fetchData = async (endpoint, options = {}) => {
     
     // Store in cache if caching is enabled
     if (useCache && response.data) {
-      dataCache.set(endpoint, params, response.data, cacheTTL);
+      const cacheKey = generateCacheKey(endpoint, params);
+      dataCache.set(cacheKey, response.data, cacheTTL);
     }
     
     return response.data;
