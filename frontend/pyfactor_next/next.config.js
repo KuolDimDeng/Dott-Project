@@ -176,6 +176,17 @@ const nextConfig = {
             minChunks: 2,
             priority: 20,
             reuseExistingChunk: true,
+            // Add enforcement to prevent circular dependencies
+            enforce: true,
+          },
+          hooks: {
+            // Separate chunk for hooks to prevent circular dependencies
+            name: 'hooks',
+            test: /[\\/]src[\\/]hooks[\\/]/,
+            chunks: 'all',
+            priority: 25,
+            reuseExistingChunk: true,
+            enforce: true,
           },
           shared: {
             name(module, chunks) {
@@ -191,8 +202,40 @@ const nextConfig = {
         },
       };
       
-      // Minimize bundle size
+      // Enable minification with proper configuration
       config.optimization.minimize = true;
+      config.optimization.minimizer = config.optimization.minimizer || [];
+      
+      // Configure Terser to handle temporal dead zone issues
+      const TerserPlugin = require('terser-webpack-plugin');
+      config.optimization.minimizer = [
+        new TerserPlugin({
+          terserOptions: {
+            parse: {
+              ecma: 8,
+            },
+            compress: {
+              ecma: 5,
+              warnings: false,
+              comparisons: false,
+              inline: 2,
+              // Prevent issues with const/let hoisting
+              toplevel: false,
+              keep_fnames: true,
+            },
+            mangle: {
+              safari10: true,
+              // Keep function names to prevent minification issues
+              keep_fnames: true,
+            },
+            output: {
+              ecma: 5,
+              comments: false,
+              ascii_only: true,
+            },
+          },
+        }),
+      ];
     }
     
     return config;

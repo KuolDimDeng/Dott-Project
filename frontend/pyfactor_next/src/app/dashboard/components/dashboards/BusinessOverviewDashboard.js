@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { useTranslation } from 'react-i18next';
 import DashboardSkeleton from '@/components/loading/DashboardSkeleton';
-import { useSession } from '@/hooks/useSession';
+import { useSession } from '@/hooks/useSession-v2';
 import { loadChartJs } from '@/utils/dynamic-imports';
 
 // Lazy load chart components
