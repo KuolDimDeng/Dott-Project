@@ -280,17 +280,39 @@ export const getMaterialById = async (id, options = {}) => {
  * @returns {Promise<Object>} Created material
  */
 export const createMaterial = async (materialData) => {
+  const serviceRequestId = `svc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  console.log(`🔵 [materialsService] === CREATE MATERIAL START ===`);
+  console.log(`🔵 [${serviceRequestId}] Request ID:`, serviceRequestId);
+  console.log(`🔵 [${serviceRequestId}] Timestamp:`, new Date().toISOString());
+  console.log(`🔵 [${serviceRequestId}] Material data:`, materialData);
+  console.log(`🔵 [${serviceRequestId}] Material data keys:`, Object.keys(materialData));
+  console.log(`🔵 [${serviceRequestId}] Material data JSON:`, JSON.stringify(materialData, null, 2));
+  
   try {
     logger.info('Creating material:', materialData);
+    
+    console.log(`🔵 [${serviceRequestId}] Calling postData with URL: /inventory/materials`);
+    console.log(`🔵 [${serviceRequestId}] Headers:`, getTenantHeaders());
     
     const response = await postData('/inventory/materials', materialData, {
       headers: getTenantHeaders()
     });
     
+    console.log(`🔵 [${serviceRequestId}] Response received:`, response);
+    console.log(`🔵 [${serviceRequestId}] Response type:`, typeof response);
+    console.log(`🔵 [${serviceRequestId}] Response keys:`, response ? Object.keys(response) : 'null');
+    console.log(`🔵 [${serviceRequestId}] Response JSON:`, JSON.stringify(response, null, 2));
+    
     logger.info('Material created successfully:', response);
+    console.log(`🔵 [${serviceRequestId}] === CREATE MATERIAL END ===`);
     return response;
   } catch (error) {
+    console.error(`🔵 [${serviceRequestId}] ❌ Failed to create material:`, error);
+    console.error(`🔵 [${serviceRequestId}] Error type:`, error.constructor.name);
+    console.error(`🔵 [${serviceRequestId}] Error message:`, error.message);
+    console.error(`🔵 [${serviceRequestId}] Error stack:`, error.stack);
     logger.error('Error creating material:', error);
+    console.log(`🔵 [${serviceRequestId}] === CREATE MATERIAL END (ERROR) ===`);
     throw error;
   }
 };

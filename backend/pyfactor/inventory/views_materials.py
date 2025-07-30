@@ -27,41 +27,60 @@ class MaterialViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """
-        Get materials filtered by tenant with optional query parameters
+        Get materials filtered by tenant with detailed logging
         """
-        logger.info(f"🔍 [MaterialViewSet] === GET_QUERYSET START ===")
+        list_request_id = f"list-{timezone.now().timestamp()}-{str(self.request.user.id)[:8] if hasattr(self.request.user, 'id') else 'anon'}"
+        logger.info(f"🔴 [MaterialViewSet] === GET_QUERYSET START ===")
+        logger.info(f"🔴 [{list_request_id}] List Request ID: {list_request_id}")
+        logger.info(f"🔴 [{list_request_id}] Timestamp: {timezone.now().isoformat()}")
+        logger.info(f"🔴 [{list_request_id}] Action: {self.action}")
+        logger.info(f"🔴 [{list_request_id}] Query params: {dict(self.request.query_params)}")
         
         # Debug tenant context
         from custom_auth.rls import get_current_tenant_id
         current_tenant = get_current_tenant_id()
         user_business_id = getattr(self.request.user, 'business_id', None)
         
-        logger.info(f"🔍 [MaterialViewSet] Current tenant from RLS: {current_tenant}")
-        logger.info(f"🔍 [MaterialViewSet] User business_id: {user_business_id}")
-        logger.info(f"🔍 [MaterialViewSet] User authenticated: {self.request.user.is_authenticated}")
+        logger.info(f"🔴 [{list_request_id}] Current tenant from RLS: {current_tenant}")
+        logger.info(f"🔴 [{list_request_id}] User email: {getattr(self.request.user, 'email', 'None')}")
+        logger.info(f"🔴 [{list_request_id}] User business_id: {user_business_id}")
+        logger.info(f"🔴 [{list_request_id}] User authenticated: {self.request.user.is_authenticated}")
+        
+        # Log what manager we'll use
+        logger.info(f"🔴 [{list_request_id}] Determining which manager to use...")
         
         # Use the tenant-aware manager which respects RLS context
         # This is the preferred approach as it leverages the RLS policies
         if current_tenant:
             # Use the regular objects manager which applies tenant filtering
+            logger.info(f"🔴 [{list_request_id}] ✅ Using tenant-aware Material.objects.all() with RLS context: {current_tenant}")
             queryset = Material.objects.all()
-            logger.info(f"🔍 [MaterialViewSet] Using tenant-aware manager with RLS context: {current_tenant}")
+            logger.info(f"🔴 [{list_request_id}] Initial queryset count: {queryset.count()}")
+            
+            # Log first few materials
+            materials_sample = list(queryset[:5])
+            for idx, mat in enumerate(materials_sample):
+                logger.info(f"🔴 [{list_request_id}] Material {idx+1}: {mat.name} (ID: {mat.id}, Tenant: {mat.tenant_id})")
         elif hasattr(self.request.user, 'business_id') and self.request.user.business_id:
             # Fallback: manually filter by business_id if no RLS context
+            logger.info(f"🔴 [{list_request_id}] ⚠️ No RLS context, using manual filter with business_id: {self.request.user.business_id}")
             queryset = Material.objects.filter(tenant_id=self.request.user.business_id)
-            logger.info(f"🔍 [MaterialViewSet] Using manual tenant filter: {self.request.user.business_id}")
+            logger.info(f"🔴 [{list_request_id}] Manual filter queryset count: {queryset.count()}")
         else:
-            logger.warning("🔍 [MaterialViewSet] No tenant context available")
+            logger.warning(f"🔴 [{list_request_id}] ❌ No tenant context available - returning empty queryset")
             return Material.objects.none()
         
-        # Log queryset count
+        # Log queryset count before filters
         material_count = queryset.count()
-        logger.info(f"🔍 [MaterialViewSet] Materials found for tenant: {material_count}")
+        logger.info(f"🔴 [{list_request_id}] Total materials found before filters: {material_count}")
         
-        # Debug: show first few materials
+        # Debug: show all materials with details
         if material_count > 0:
-            for material in queryset[:3]:
-                logger.info(f"🔍 [MaterialViewSet] Material: {material.name} (ID: {material.id}, SKU: {material.sku})")
+            logger.info(f"🔴 [{list_request_id}] Listing ALL {material_count} materials:")
+            for idx, material in enumerate(queryset):
+                logger.info(f"🔴 [{list_request_id}]   {idx+1}. {material.name} (ID: {material.id}, SKU: {material.sku}, Active: {material.is_active}, Tenant: {material.tenant_id})")
+        else:
+            logger.warning(f"🔴 [{list_request_id}] ⚠️ NO MATERIALS FOUND for this tenant!")
         
         # Apply filters from query parameters
         params = self.request.query_params
@@ -100,23 +119,42 @@ class MaterialViewSet(viewsets.ModelViewSet):
         if supplier_id:
             queryset = queryset.filter(supplier_id=supplier_id)
         
+        # Log applied filters
+        logger.info(f"🔴 [{list_request_id}] Applied filters:")
+        logger.info(f"🔴 [{list_request_id}]   - material_type: {params.get('material_type', 'None')}")
+        logger.info(f"🔴 [{list_request_id}]   - is_active: {params.get('is_active', 'None')}")
+        logger.info(f"🔴 [{list_request_id}]   - is_billable: {params.get('is_billable', 'None')}")
+        logger.info(f"🔴 [{list_request_id}]   - low_stock: {params.get('low_stock', 'None')}")
+        logger.info(f"🔴 [{list_request_id}]   - search: {params.get('search', 'None')}")
+        logger.info(f"🔴 [{list_request_id}]   - supplier: {params.get('supplier', 'None')}")
+        
         # Order by
         ordering = params.get('ordering', '-created_at')
         queryset = queryset.order_by(ordering)
+        logger.info(f"🔴 [{list_request_id}] Ordering by: {ordering}")
         
         # Optimize queries
         queryset = queryset.select_related('supplier', 'location')
         
-        logger.info(f"🔍 [MaterialViewSet] Final queryset count after all filters: {queryset.count()}")
+        # Final count and results
+        final_count = queryset.count()
+        logger.info(f"🔴 [{list_request_id}] Final queryset count after all filters: {final_count}")
         
-        # Debug: show first few materials in queryset
+        # Debug: show ALL final materials
         try:
-            materials_sample = list(queryset[:3].values('id', 'name', 'sku', 'tenant_id'))
-            logger.info(f"🔍 [MaterialViewSet] Sample materials in queryset: {materials_sample}")
+            if final_count > 0:
+                materials_list = list(queryset.values('id', 'name', 'sku', 'tenant_id', 'is_active'))
+                logger.info(f"🔴 [{list_request_id}] FINAL materials being returned ({final_count} total):")
+                for idx, mat in enumerate(materials_list):
+                    logger.info(f"🔴 [{list_request_id}]   {idx+1}. {mat['name']} (ID: {mat['id']}, SKU: {mat['sku']}, Active: {mat['is_active']})")
+            else:
+                logger.warning(f"🔴 [{list_request_id}] ⚠️ FINAL RESULT: Empty queryset being returned!")
+            logger.info(f"🔴 [{list_request_id}] Sample materials in queryset: {materials_list[:3] if final_count > 0 else []}")
         except Exception as e:
-            logger.info(f"🔍 [MaterialViewSet] Error getting sample materials: {e}")
+            logger.error(f"🔴 [{list_request_id}] Error getting sample materials: {e}")
         
-        logger.info(f"🔍 [MaterialViewSet] === GET_QUERYSET END ===")
+        logger.info(f"🔴 [{list_request_id}] === GET_QUERYSET END ===")
+        logger.info(f"🔴 [MaterialViewSet] === GET_QUERYSET END ===")
         
         return queryset
     
@@ -127,24 +165,33 @@ class MaterialViewSet(viewsets.ModelViewSet):
         return MaterialSerializer
     
     def create(self, request, *args, **kwargs):
-        """Create new material with tenant assignment"""
-        logger.info(f"🎯 [MaterialViewSet] === MATERIAL CREATION START ===")
-        logger.info(f"🎯 [MaterialViewSet] Creating new material: {request.data.get('name')}")
+        """Create new material with comprehensive logging"""
+        backend_request_id = f"backend-{timezone.now().timestamp()}-{str(request.user.id)[:8] if hasattr(request.user, 'id') else 'anon'}"
+        logger.info(f"🟢 [MaterialViewSet] === MATERIAL CREATION START ===")
+        logger.info(f"🟢 [{backend_request_id}] Request ID: {backend_request_id}")
+        logger.info(f"🟢 [{backend_request_id}] Timestamp: {timezone.now().isoformat()}")
+        logger.info(f"🟢 [{backend_request_id}] Material name: {request.data.get('name')}")
+        logger.info(f"🟢 [{backend_request_id}] Full request data: {request.data}")
+        logger.info(f"🟢 [{backend_request_id}] Request method: {request.method}")
+        logger.info(f"🟢 [{backend_request_id}] Request headers: {dict(request.headers)}")
         
         # Debug tenant context
         from custom_auth.rls import get_current_tenant_id, set_current_tenant_id
         current_tenant = get_current_tenant_id()
         user_business_id = getattr(request.user, 'business_id', None)
         
-        logger.info(f"🎯 [MaterialViewSet] Current tenant from RLS: {current_tenant}")
-        logger.info(f"🎯 [MaterialViewSet] User business_id: {user_business_id}")
-        logger.info(f"🎯 [MaterialViewSet] User authenticated: {request.user.is_authenticated}")
-        logger.info(f"🎯 [MaterialViewSet] User ID: {request.user.id if request.user.is_authenticated else 'None'}")
+        logger.info(f"🟢 [{backend_request_id}] Current tenant from RLS: {current_tenant}")
+        logger.info(f"🟢 [{backend_request_id}] User email: {getattr(request.user, 'email', 'None')}")
+        logger.info(f"🟢 [{backend_request_id}] User business_id: {user_business_id}")
+        logger.info(f"🟢 [{backend_request_id}] User authenticated: {request.user.is_authenticated}")
+        logger.info(f"🟢 [{backend_request_id}] User ID: {request.user.id if request.user.is_authenticated else 'None'}")
         
         # Ensure RLS context is set
         if not current_tenant and user_business_id:
             set_current_tenant_id(user_business_id)
-            logger.info(f"🎯 [MaterialViewSet] Set RLS context to user's business_id: {user_business_id}")
+            logger.info(f"🟢 [{backend_request_id}] Set RLS context to user's business_id: {user_business_id}")
+            current_tenant = get_current_tenant_id()
+            logger.info(f"🟢 [{backend_request_id}] RLS context after setting: {current_tenant}")
         
         # Auto-generate SKU if not provided
         if not request.data.get('sku'):
@@ -154,29 +201,54 @@ class MaterialViewSet(viewsets.ModelViewSet):
             timestamp = str(int(time.time()))[-6:]
             random_suffix = str(random.randint(100, 999))
             request.data['sku'] = f"{name_prefix}-{timestamp}-{random_suffix}"
-            logger.info(f"🎯 [MaterialViewSet] Auto-generated SKU: {request.data['sku']}")
+            logger.info(f"🟢 [{backend_request_id}] Auto-generated SKU: {request.data['sku']}")
         
         # Log request data
-        logger.info(f"🎯 [MaterialViewSet] Request data: {request.data}")
+        logger.info(f"🟢 [{backend_request_id}] Final request data before creation: {request.data}")
         
-        # Call parent create method
-        logger.info(f"🎯 [MaterialViewSet] Calling super().create()")
-        response = super().create(request, *args, **kwargs)
-        
-        # Debug the created material
-        if response.status_code == 201:
-            created_material_id = response.data.get('id')
-            logger.info(f"🎯 [MaterialViewSet] Material created successfully with ID: {created_material_id}")
+        try:
+            # Call parent create method
+            logger.info(f"🟢 [{backend_request_id}] Calling super().create()...")
+            response = super().create(request, *args, **kwargs)
             
-            # Return the response immediately after successful creation
-            # The list view will use the proper tenant-aware queryset
-            return response
-        else:
-            logger.error(f"🎯 [MaterialViewSet] Material creation failed with status: {response.status_code}")
-            logger.error(f"🎯 [MaterialViewSet] Response data: {response.data}")
-        
-        logger.info(f"🎯 [MaterialViewSet] === MATERIAL CREATION END ===")
-        return response
+            logger.info(f"🟢 [{backend_request_id}] Response status code: {response.status_code}")
+            logger.info(f"🟢 [{backend_request_id}] Response data: {response.data}")
+            
+            # Debug the created material
+            if response.status_code == 201:
+                created_material_id = response.data.get('id')
+                logger.info(f"🟢 [{backend_request_id}] ✅ Material created successfully with ID: {created_material_id}")
+                
+                # Verify it exists in the database
+                try:
+                    material = Material.objects.filter(id=created_material_id).first()
+                    if material:
+                        logger.info(f"🟢 [{backend_request_id}] ✅ Verified material in DB:")
+                        logger.info(f"🟢 [{backend_request_id}]   - Name: {material.name}")
+                        logger.info(f"🟢 [{backend_request_id}]   - SKU: {material.sku}")
+                        logger.info(f"🟢 [{backend_request_id}]   - Tenant ID: {material.tenant_id}")
+                        logger.info(f"🟢 [{backend_request_id}]   - Is Active: {material.is_active}")
+                    else:
+                        logger.error(f"🟢 [{backend_request_id}] ❌ Material NOT found in database!")
+                except Exception as e:
+                    logger.error(f"🟢 [{backend_request_id}] Error verifying material: {e}")
+                
+                logger.info(f"🟢 [{backend_request_id}] === MATERIAL CREATION END (SUCCESS) ===")
+                return response
+            else:
+                logger.error(f"🟢 [{backend_request_id}] ❌ Material creation failed with status: {response.status_code}")
+                logger.error(f"🟢 [{backend_request_id}] Error response: {response.data}")
+                logger.info(f"🟢 [{backend_request_id}] === MATERIAL CREATION END (FAILED) ===")
+                return response
+                
+        except Exception as e:
+            logger.error(f"🟢 [{backend_request_id}] ❌ Exception during material creation: {e}")
+            logger.error(f"🟢 [{backend_request_id}] Exception type: {type(e).__name__}")
+            logger.error(f"🟢 [{backend_request_id}] Exception args: {e.args}")
+            import traceback
+            logger.error(f"🟢 [{backend_request_id}] Traceback: {traceback.format_exc()}")
+            logger.info(f"🟢 [{backend_request_id}] === MATERIAL CREATION END (EXCEPTION) ===")
+            raise
     
     @action(detail=False, methods=['get'])
     def low_stock(self, request):

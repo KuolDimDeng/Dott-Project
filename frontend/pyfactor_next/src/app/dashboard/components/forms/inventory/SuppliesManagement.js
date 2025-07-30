@@ -186,8 +186,17 @@ const SuppliesManagement = () => {
 
   const handleSave = async () => {
     const { currentSupply } = state;
+    const requestId = `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
     console.log('🎯 [SuppliesManagement] === SAVE MATERIAL START ===');
+    console.log(`🔷 Request ID: ${requestId}`);
+    console.log('🔷 Timestamp:', new Date().toISOString());
+    console.log('🔷 User action: Save button clicked');
+    console.log('🔷 Form state:', {
+      isNewMaterial: !currentSupply.id,
+      materialId: currentSupply.id || 'NEW',
+      formData: currentSupply
+    });
     console.log('Material data:', currentSupply);
     
     if (!currentSupply.name.trim()) {
@@ -209,14 +218,17 @@ const SuppliesManagement = () => {
       
       let response;
       if (materialData.id) {
-        console.log('Updating existing material with ID:', materialData.id);
+        console.log(`🔷 [${requestId}] Updating existing material with ID:`, materialData.id);
         response = await materialsService.updateMaterial(materialData.id, materialData);
-        console.log('Update response:', response);
+        console.log(`🔷 [${requestId}] Update response:`, response);
         showSnackbar('Supply updated successfully', 'success');
       } else {
-        console.log('Creating new material');
+        console.log(`🔷 [${requestId}] Creating new material`);
+        console.log(`🔷 [${requestId}] Calling materialsService.createMaterial with:`, materialData);
         response = await materialsService.createMaterial(materialData);
-        console.log('Create response:', response);
+        console.log(`🔷 [${requestId}] Create response:`, response);
+        console.log(`🔷 [${requestId}] Response type:`, typeof response);
+        console.log(`🔷 [${requestId}] Response keys:`, response ? Object.keys(response) : 'null');
         showSnackbar('Supply created successfully', 'success');
       }
       
@@ -236,14 +248,18 @@ const SuppliesManagement = () => {
           is_billable: true,
         }
       }));
+      console.log(`🔷 [${requestId}] About to call fetchSupplies to refresh list...`);
       fetchSupplies();
     } catch (error) {
+      console.error(`🔷 [${requestId}] ❌ Save failed:`, error);
+      console.error(`🔷 [${requestId}] Error details:`, error.response?.data || error.message);
       console.error('❌ [SuppliesManagement] Save failed:', error);
       console.error('Error details:', error.response?.data || error.message);
       logger.error('Error saving supply:', error);
       showSnackbar('Failed to save supply: ' + (error.response?.data?.detail || error.message), 'error');
     }
     
+    console.log(`🔷 [${requestId}] === SAVE MATERIAL END ===`);
     console.log('🎯 [SuppliesManagement] === SAVE MATERIAL END ===');
   };
 
@@ -541,7 +557,17 @@ const SuppliesManagement = () => {
                 Cancel
               </button>
               <button
-                onClick={handleSave}
+                onClick={(e) => {
+                  console.log('🎯 [BUTTON] === ADD/UPDATE SUPPLY BUTTON CLICKED ===');
+                  console.log('🎯 [BUTTON] Event:', e);
+                  console.log('🎯 [BUTTON] Button text:', e.target.textContent);
+                  console.log('🎯 [BUTTON] Form validity:', {
+                    hasName: !!currentSupply.name,
+                    nameValue: currentSupply.name,
+                    isDisabled: !currentSupply.name
+                  });
+                  handleSave();
+                }}
                 disabled={!currentSupply.name}
                 className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
