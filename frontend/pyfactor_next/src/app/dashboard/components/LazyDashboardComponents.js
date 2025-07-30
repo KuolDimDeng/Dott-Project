@@ -163,6 +163,26 @@ export const BusinessOverviewDashboard = dynamic(
     return import('./dashboards/BusinessOverviewDashboard').then(module => {
       console.log('✅ [LazyDashboardComponents] BusinessOverviewDashboard loaded successfully');
       return module;
+    }).catch(err => {
+      console.error('❌ [LazyDashboardComponents] Failed to load BusinessOverviewDashboard:', err);
+      console.error('❌ [LazyDashboardComponents] Error message:', err.message);
+      console.error('❌ [LazyDashboardComponents] Error stack:', err.stack);
+      
+      // Check if it's a TDZ error
+      if (err.message && err.message.includes("can't access lexical declaration")) {
+        console.error('🚨 [LazyDashboardComponents] TDZ ERROR DETECTED!');
+        console.error('🚨 [LazyDashboardComponents] Variable name:', err.message.match(/'([^']+)'/)?.[1]);
+        
+        // Try loading the safe version as fallback
+        console.log('🔄 [LazyDashboardComponents] Attempting to load safe version...');
+        return import('./dashboards/BusinessOverviewDashboard-safe').then(safeModule => {
+          console.log('✅ [LazyDashboardComponents] Safe version loaded successfully');
+          return safeModule;
+        });
+      }
+      
+      // Re-throw for other errors
+      throw err;
     });
   },
   { 

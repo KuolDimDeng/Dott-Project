@@ -127,7 +127,6 @@ const nextConfig = {
   output: 'standalone',
   
   // Compiler optimizations for faster builds
-  swcMinify: true, // Use SWC for minification (more reliable than Terser)
   compiler: {
     // Remove console logs in production - but keep more for debugging
     removeConsole: false, // Temporarily disabled
