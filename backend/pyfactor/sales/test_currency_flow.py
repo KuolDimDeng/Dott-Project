@@ -17,7 +17,8 @@ import django
 from decimal import Decimal
 from datetime import datetime
 
-# Setup Django
+# Setup Django - we need to add the project directory to Python path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
 django.setup()
 
@@ -71,7 +72,7 @@ def test_currency_flow():
             print("❌ [CURRENCY-TEST] No customer found. Create a customer first.")
             return False
         
-        print(f"✅ [CURRENCY-TEST] Using customer: {customer.customerName}")
+        print(f"✅ [CURRENCY-TEST] Using customer: {customer.business_name}")
         
         # Step 4: Create a new invoice (should use new currency)
         invoice = Invoice.objects.create(

@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('sales', '0002_auto_20240101_0000'),  # Update this to your latest migration
+        ('sales', '0008_add_pos_models'),
     ]
 
     operations = [

@@ -228,7 +228,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
 
         try:
             customer = Customer.objects.using(database_name).get(pk=value)
-            logger.debug(f"Customer retrieved: {customer.id}: {customer.customerName}")
+            logger.debug(f"Customer retrieved: {customer.id}: {customer.business_name}")
             return customer
         except Customer.DoesNotExist:
             logger.error(f"Customer with id {value} does not exist in database {database_name}.")
@@ -749,7 +749,7 @@ class SalesOrderSerializer(serializers.ModelSerializer):
         
         try:
             customer = Customer.objects.using(database_name).get(pk=value)
-            logger.debug(f"Customer retrieved: {customer.id}: {customer.customerName}")
+            logger.debug(f"Customer retrieved: {customer.id}: {customer.business_name}")
             return customer
         except Customer.DoesNotExist:
             logger.error(f"Customer with id {value} does not exist in database {database_name}.")

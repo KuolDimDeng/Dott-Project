@@ -86,7 +86,7 @@ def reverse_migration(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('sales', '0003_add_currency_exchange_fields'),
+        ('sales', '0009_add_currency_exchange_fields'),
         ('users', '0001_initial'),  # Ensure BusinessDetails model is available
     ]
 
