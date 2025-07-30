@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { marked } from 'marked';
+import PrintButton from '../components/PrintButton';
 
 export const metadata = {
   title: 'Location Tracking Privacy Policy - Dott',
@@ -34,12 +35,7 @@ export default async function LocationTrackingPolicyPage() {
                   privacy@dottapps.com
                 </a>
               </p>
-              <button
-                onClick={() => window.print()}
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-              >
-                Print this policy
-              </button>
+              <PrintButton />
             </div>
           </div>
         </div>
