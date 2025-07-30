@@ -65,13 +65,13 @@ import { businessTypes, legalStructures } from '@/app/utils/businessData';
 import { useTranslation } from 'react-i18next';
 
 // Initialize global app cache if it doesn't exist
-if (typeof window !== 'undefined' && !appCache.getAll()) {
-  // Initialize app cache properly
-if (!appCache.getAll() || Object.keys(appCache.getAll()).length === 0) {
-  appCache.set('auth', {});
-  appCache.set('user', {});
-  appCache.set('tenant', {});
-}
+if (typeof window !== 'undefined') {
+  const cache = appCache.getAll();
+  if (!cache || Object.keys(cache).length === 0) {
+    appCache.set('auth', {});
+    appCache.set('user', {});
+    appCache.set('tenant', {});
+  }
 }
 
 const DashAppBar = ({

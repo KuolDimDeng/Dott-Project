@@ -127,9 +127,13 @@ const nextConfig = {
   output: 'standalone',
   
   // Compiler optimizations for faster builds
+  swcMinify: true, // Use SWC for minification (more reliable than Terser)
   compiler: {
     // Remove console logs in production - but keep more for debugging
     removeConsole: false, // Temporarily disabled
+    // SWC options for better minification
+    styledComponents: false,
+    emotion: false,
   },
   
   // Webpack optimization for bundle size
@@ -213,68 +217,9 @@ const nextConfig = {
       
       // Enable minification with proper configuration
       config.optimization.minimize = true;
-      config.optimization.minimizer = config.optimization.minimizer || [];
       
-      // Configure Terser to handle temporal dead zone issues
-      const TerserPlugin = require('terser-webpack-plugin');
-      config.optimization.minimizer = [
-        new TerserPlugin({
-          terserOptions: {
-            parse: {
-              ecma: 2020,
-            },
-            compress: {
-              ecma: 2015,
-              warnings: false,
-              comparisons: false,
-              inline: 1, // Reduce inline level to prevent hoisting issues
-              // Prevent issues with const/let hoisting
-              toplevel: false,
-              keep_fnames: true,
-              // Additional settings to prevent temporal dead zone
-              dead_code: true,
-              drop_console: false, // Keep console logs for debugging
-              drop_debugger: true,
-              pure_funcs: ['console.log'],
-              side_effects: false,
-              // Prevent variable reassignment that can cause TDZ
-              reduce_vars: false,
-              reduce_funcs: false,
-              // Keep variable declarations in original position
-              hoist_vars: false,
-              hoist_funs: false,
-              // Don't merge variable declarations
-              join_vars: false,
-              // Preserve original code structure
-              sequences: false,
-              conditionals: false,
-              if_return: false,
-              unused: false,
-            },
-            mangle: {
-              safari10: true,
-              // Keep all names to prevent minification issues
-              keep_fnames: true,
-              keep_classnames: true,
-              // Don't mangle variable names
-              toplevel: false,
-              // Reserve common variable names
-              reserved: ['$', '_', 'exports', 'require', 'module'],
-            },
-            output: {
-              ecma: 2015,
-              comments: false,
-              ascii_only: true,
-              // Preserve original formatting where possible
-              beautify: false,
-              semicolons: true,
-            },
-            // Keep variable names for debugging
-            keep_fnames: true,
-            keep_classnames: true,
-          },
-        }),
-      ];
+      // Use Next.js's default SWC minifier for better compatibility
+      // SWC is more reliable with modern JavaScript features and less prone to TDZ errors
     }
     
     return config;
