@@ -40,6 +40,8 @@ class RowLevelSecurityMiddleware:
             '/api/token/verify/',
             '/health/',
             '/favicon.ico',
+            '/api/users/api/currency/diagnostic/',
+            '/api/users/api/currency/test-public/',
         ]
         
         # Check if RLS functions exist
