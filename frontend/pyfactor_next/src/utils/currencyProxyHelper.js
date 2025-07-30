@@ -67,7 +67,7 @@ export async function makeBackendRequest(endpoint, options = {}, cookies = null)
       const response = await fetch(fullUrl, {
         ...options,
         headers,
-        signal: AbortSignal.timeout(10000), // 10 second timeout
+        signal: AbortSignal.timeout(30000), // 30 second timeout for slower operations
       });
       
       // Log response details
