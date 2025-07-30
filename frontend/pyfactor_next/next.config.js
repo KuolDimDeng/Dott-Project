@@ -188,6 +188,15 @@ const nextConfig = {
             reuseExistingChunk: true,
             enforce: true,
           },
+          dashboard: {
+            // Separate chunk for dashboard components
+            name: 'dashboard',
+            test: /[\\/]src[\\/]app[\\/]dashboard[\\/]/,
+            chunks: 'all',
+            priority: 24,
+            reuseExistingChunk: true,
+            enforce: true,
+          },
           shared: {
             name(module, chunks) {
               return require('crypto')
@@ -212,27 +221,57 @@ const nextConfig = {
         new TerserPlugin({
           terserOptions: {
             parse: {
-              ecma: 8,
+              ecma: 2020,
             },
             compress: {
-              ecma: 5,
+              ecma: 2015,
               warnings: false,
               comparisons: false,
-              inline: 2,
+              inline: 1, // Reduce inline level to prevent hoisting issues
               // Prevent issues with const/let hoisting
               toplevel: false,
               keep_fnames: true,
+              // Additional settings to prevent temporal dead zone
+              dead_code: true,
+              drop_console: false, // Keep console logs for debugging
+              drop_debugger: true,
+              pure_funcs: ['console.log'],
+              side_effects: false,
+              // Prevent variable reassignment that can cause TDZ
+              reduce_vars: false,
+              reduce_funcs: false,
+              // Keep variable declarations in original position
+              hoist_vars: false,
+              hoist_funs: false,
+              // Don't merge variable declarations
+              join_vars: false,
+              // Preserve original code structure
+              sequences: false,
+              conditionals: false,
+              if_return: false,
+              unused: false,
             },
             mangle: {
               safari10: true,
-              // Keep function names to prevent minification issues
+              // Keep all names to prevent minification issues
               keep_fnames: true,
+              keep_classnames: true,
+              // Don't mangle variable names
+              toplevel: false,
+              // Reserve common variable names
+              reserved: ['$', '_', 'exports', 'require', 'module'],
             },
             output: {
-              ecma: 5,
+              ecma: 2015,
               comments: false,
               ascii_only: true,
+              // Preserve original formatting where possible
+              beautify: false,
+              semicolons: true,
             },
+            // Keep variable names for debugging
+            keep_fnames: true,
+            keep_classnames: true,
           },
         }),
       ];
