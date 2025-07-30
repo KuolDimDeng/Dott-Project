@@ -26,7 +26,17 @@ const languages = [
   { code: 'yo', name: 'Yorùbá' },
   { code: 'am', name: 'አማርኛ' },
   { code: 'zu', name: 'isiZulu' },
-  { code: 'ko', name: '한국어' }
+  { code: 'ko', name: '한국어' },
+  { code: 'it', name: 'Italiano' },
+  { code: 'pl', name: 'Polski' },
+  { code: 'th', name: 'ไทย' },
+  { code: 'bn', name: 'বাংলা' },
+  { code: 'ur', name: 'اردو' },
+  { code: 'tl', name: 'Filipino' },
+  { code: 'uk', name: 'Українська' },
+  { code: 'fa', name: 'فارسی' },
+  { code: 'sn', name: 'chiShona' },
+  { code: 'ig', name: 'Igbo' }
 ];
 
 export default function DashboardLanguageSelector() {
