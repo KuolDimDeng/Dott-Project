@@ -58,18 +58,19 @@ const SuppliesManagement = () => {
     
     try {
       // Fetch materials (supplies)
-      console.log('Calling materialsService.getMaterials...');
+      console.log('🎯 [SuppliesManagement] Calling materialsService.getMaterials...');
       const response = await materialsService.getMaterials({
         is_active: true
       }, {
         timeout: 15000,
-        notify: false
+        notify: false,
+        useCache: false // Disable cache for debugging
       });
       
-      console.log('Materials response:', response);
+      console.log('🎯 [SuppliesManagement] Materials response:', response);
       const supplies = Array.isArray(response) ? response : (response.results || []);
-      console.log('Processed supplies:', supplies);
-      console.log('Number of supplies:', supplies.length);
+      console.log('🎯 [SuppliesManagement] Processed supplies:', supplies);
+      console.log('🎯 [SuppliesManagement] Number of supplies:', supplies.length);
       
       setState(prev => ({
         ...prev,
@@ -77,18 +78,50 @@ const SuppliesManagement = () => {
         isLoading: false,
         error: null
       }));
+      
+      console.log('🎯 [SuppliesManagement] Successfully loaded', supplies.length, 'supplies');
     } catch (error) {
       console.error('❌ [SuppliesManagement] Fetch failed:', error);
-      console.error('Error details:', error.response?.data || error.message);
+      console.error('❌ [SuppliesManagement] Error type:', error.constructor.name);
+      console.error('❌ [SuppliesManagement] Error message:', error.message);
+      console.error('❌ [SuppliesManagement] Error response:', error.response?.data);
+      console.error('❌ [SuppliesManagement] Error status:', error.response?.status);
+      
       logger.error('Error fetching supplies:', error);
+      
+      // Generate more specific error message based on error type
+      let errorMessage = 'Failed to load supplies and materials';
+      let errorDetails = '';
+      
+      if (error.message?.includes('timeout')) {
+        errorMessage = 'Request timed out while loading supplies';
+        errorDetails = 'The server is taking too long to respond. Please try again.';
+      } else if (error.response?.status === 401) {
+        errorMessage = 'Authentication failed';
+        errorDetails = 'Your session may have expired. Please refresh the page.';
+      } else if (error.response?.status === 403) {
+        errorMessage = 'Access denied';
+        errorDetails = 'You do not have permission to view supplies.';
+      } else if (error.response?.status === 404) {
+        errorMessage = 'Supplies endpoint not found';
+        errorDetails = 'The supplies API endpoint is not available.';
+      } else if (error.response?.status >= 500) {
+        errorMessage = 'Server error';
+        errorDetails = 'The server is experiencing issues. Please try again later.';
+      } else if (!error.response) {
+        errorMessage = 'Network error';
+        errorDetails = 'Unable to connect to the server. Please check your internet connection.';
+      } else {
+        errorDetails = error.response?.data?.detail || error.message || 'Unknown error occurred';
+      }
       
       setState(prev => ({
         ...prev,
         isLoading: false,
-        error: 'Failed to load supplies and materials',
+        error: `${errorMessage}${errorDetails ? ': ' + errorDetails : ''}`,
         supplies: []
       }));
-      showSnackbar('Failed to load supplies and materials', 'error');
+      showSnackbar(errorMessage, 'error');
     }
     
     console.log('🎯 [SuppliesManagement] === FETCH MATERIALS END ===');
@@ -285,6 +318,24 @@ const SuppliesManagement = () => {
               <RefreshIcon className="h-4 w-4" />
               Refresh
             </button>
+            {process.env.NODE_ENV === 'development' && (
+              <button
+                onClick={async () => {
+                  console.log('🔧 [DEBUG] Testing API connection manually...');
+                  try {
+                    await materialsService.debugApiStatus();
+                    showSnackbar('Debug info logged to console', 'info');
+                  } catch (error) {
+                    console.error('Debug test failed:', error);
+                    showSnackbar('Debug test failed - check console', 'error');
+                  }
+                }}
+                className="px-3 py-2 text-orange-700 bg-orange-100 rounded-md hover:bg-orange-200 transition-colors text-sm"
+                title="Debug API connection (development only)"
+              >
+                🔧 Debug
+              </button>
+            )}
             <button
               onClick={handleAddSupply}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"

@@ -134,7 +134,8 @@ export const fetchData = async (endpoint, options = {}) => {
     notify = true,
     skipAuthCheck = false,
     maxRetries = 2,
-    enableRetry = true
+    enableRetry = true,
+    rethrow = false  // Add rethrow option with default false for backward compatibility
   } = options;
   
   try {
@@ -184,7 +185,7 @@ export const fetchData = async (endpoint, options = {}) => {
     return handleApiError(error, {
       fallbackData,
       showNotification: showErrorNotification,
-      rethrow: false,
+      rethrow,  // Use the rethrow option from function parameters
       customMessage
     });
   }
