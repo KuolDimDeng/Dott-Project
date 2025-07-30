@@ -238,8 +238,59 @@ class InvoiceSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         items_data = validated_data.pop('items')
         database_name = self.context.get('database_name')
+        
+        # Get user from context
+        request = self.context.get('request')
+        user = request.user if request else None
+        
+        logger.info(f"[CURRENCY-INVOICE] Creating invoice for user: {user.email if user else 'Unknown'}")
+        
+        # Get business currency preference if not provided
+        if 'currency' not in validated_data or validated_data['currency'] == 'USD':
+            try:
+                from users.models import Business, BusinessDetails
+                from currency.exchange_rate_service import exchange_rate_service
+                
+                # Get user's business
+                if hasattr(user, 'business_id') and user.business_id:
+                    business_id = user.business_id
+                elif hasattr(user, 'tenant_id') and user.tenant_id:
+                    business_id = user.tenant_id
+                else:
+                    # Try to get from profile
+                    from users.models import UserProfile
+                    profile = UserProfile.objects.filter(user=user).first()
+                    business_id = profile.business_id if profile else None
+                
+                if business_id:
+                    business = Business.objects.get(id=business_id)
+                    business_details = BusinessDetails.objects.filter(business=business).first()
+                    
+                    if business_details and business_details.preferred_currency_code:
+                        validated_data['currency'] = business_details.preferred_currency_code
+                        logger.info(f"[CURRENCY-INVOICE] Set invoice currency to business preference: {business_details.preferred_currency_code}")
+                        
+                        # Get exchange rate if not USD
+                        if business_details.preferred_currency_code != 'USD':
+                            try:
+                                # Get exchange rate from business currency to USD
+                                rate = exchange_rate_service.get_exchange_rate(
+                                    business_details.preferred_currency_code, 
+                                    'USD'
+                                )
+                                if rate:
+                                    validated_data['exchange_rate'] = rate
+                                    validated_data['exchange_rate_date'] = timezone.now()
+                                    logger.info(f"[CURRENCY-INVOICE] Set exchange rate: {rate} for {business_details.preferred_currency_code} to USD")
+                            except Exception as e:
+                                logger.error(f"[CURRENCY-INVOICE] Error getting exchange rate: {str(e)}")
+            except Exception as e:
+                logger.error(f"[CURRENCY-INVOICE] Error getting business currency preference: {str(e)}")
+                # Default to USD if there's any error
+                validated_data['currency'] = 'USD'
 
         with db_transaction.atomic(using=database_name):
+            logger.info(f"[CURRENCY-INVOICE] Creating invoice with currency: {validated_data.get('currency', 'USD')}")
             invoice = Invoice.objects.using(database_name).create(**validated_data)
             total_amount = Decimal('0.00')
             total_cost = Decimal('0.00')
@@ -477,6 +528,58 @@ class EstimateSerializer(serializers.ModelSerializer):
 
         items_data = validated_data.pop('items', [])  # Extract items data
         logger.debug(f"Extracted items data: {items_data}")
+        
+        # Get user from context
+        request = self.context.get('request')
+        user = request.user if request else None
+        
+        logger.info(f"[CURRENCY-ESTIMATE] Creating estimate for user: {user.email if user else 'Unknown'}")
+        
+        # Get business currency preference if not provided
+        if 'currency' not in validated_data or validated_data['currency'] == 'USD':
+            try:
+                from users.models import Business, BusinessDetails
+                from currency.exchange_rate_service import exchange_rate_service
+                
+                # Get user's business
+                if hasattr(user, 'business_id') and user.business_id:
+                    business_id = user.business_id
+                elif hasattr(user, 'tenant_id') and user.tenant_id:
+                    business_id = user.tenant_id
+                else:
+                    # Try to get from profile
+                    from users.models import UserProfile
+                    profile = UserProfile.objects.filter(user=user).first()
+                    business_id = profile.business_id if profile else None
+                
+                if business_id:
+                    business = Business.objects.get(id=business_id)
+                    business_details = BusinessDetails.objects.filter(business=business).first()
+                    
+                    if business_details and business_details.preferred_currency_code:
+                        validated_data['currency'] = business_details.preferred_currency_code
+                        logger.info(f"[CURRENCY-ESTIMATE] Set estimate currency to business preference: {business_details.preferred_currency_code}")
+                        
+                        # Get exchange rate if not USD
+                        if business_details.preferred_currency_code != 'USD':
+                            try:
+                                # Get exchange rate from business currency to USD
+                                rate = exchange_rate_service.get_exchange_rate(
+                                    business_details.preferred_currency_code, 
+                                    'USD'
+                                )
+                                if rate:
+                                    validated_data['exchange_rate'] = rate
+                                    validated_data['exchange_rate_date'] = timezone.now()
+                                    logger.info(f"[CURRENCY-ESTIMATE] Set exchange rate: {rate} for {business_details.preferred_currency_code} to USD")
+                            except Exception as e:
+                                logger.error(f"[CURRENCY-ESTIMATE] Error getting exchange rate: {str(e)}")
+            except Exception as e:
+                logger.error(f"[CURRENCY-ESTIMATE] Error getting business currency preference: {str(e)}")
+                # Default to USD if there's any error
+                validated_data['currency'] = 'USD'
+        
+        logger.info(f"[CURRENCY-ESTIMATE] Creating estimate with currency: {validated_data.get('currency', 'USD')}")
         estimate = Estimate.objects.using(self.database_name).create(**validated_data)
         logger.debug(f"Created Estimate {estimate.estimate_num} with data: {validated_data}")
         

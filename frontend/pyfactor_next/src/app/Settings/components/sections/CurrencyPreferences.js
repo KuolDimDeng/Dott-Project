@@ -206,9 +206,11 @@ const CurrencyPreferences = () => {
       currencyCode = pendingCurrency?.code;
     }
     
-    console.log('🚀 [CurrencyPreferences] === UPDATE CURRENCY START ===');
-    console.log('🚀 [CurrencyPreferences] Currency code to update:', currencyCode);
-    console.log('🚀 [CurrencyPreferences] Current preferences:', preferences);
+    console.log('🚀 [CURRENCY-FRONTEND] === UPDATE CURRENCY START ===');
+    console.log('🚀 [CURRENCY-FRONTEND] Currency code to update:', currencyCode);
+    console.log('🚀 [CURRENCY-FRONTEND] Current preferences:', preferences);
+    console.log('🚀 [CURRENCY-FRONTEND] User action: Currency change requested');
+    console.log('🚀 [CURRENCY-FRONTEND] Timestamp:', new Date().toISOString());
     
     setLoading(true);
     try {
@@ -234,9 +236,13 @@ const CurrencyPreferences = () => {
       console.log('🚀 [CurrencyPreferences] Response data:', data);
       
       if (data.success) {
-        console.log('🚀 [CurrencyPreferences] Update successful!');
-        setPreferences(data.preferences);
-        notifySuccess(`Currency updated to ${data.preferences.currency_name}`);
+        console.log('🚀 [CURRENCY-FRONTEND] === UPDATE SUCCESSFUL ===');
+        console.log('🚀 [CURRENCY-FRONTEND] Backend response:', data);
+        console.log('🚀 [CURRENCY-FRONTEND] New currency set:', data.currency_code);
+        console.log('🚀 [CURRENCY-FRONTEND] All future invoices/quotes will use:', data.currency_code);
+        
+        setPreferences(data);
+        notifySuccess(`✅ Currency updated to ${data.currency_name}. All new invoices and quotes will use this currency.`);
         setShowConfirmModal(false);
         setPendingCurrency(null);
         setExchangeRateInfo(null);

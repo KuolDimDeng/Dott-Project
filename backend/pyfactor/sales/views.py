@@ -127,7 +127,7 @@ def create_invoice(request):
             # Log the start of the transaction
             logger.debug(f"[DYNAMIC-INVOICE-{request_id}] Started database transaction")
             
-            serializer = InvoiceSerializer(data=request.data, context={'database_name': database_name})
+            serializer = InvoiceSerializer(data=request.data, context={'database_name': database_name, 'request': request})
             if serializer.is_valid():
                 # Log that we're about to save the invoice, which may trigger table creation
                 logger.info(f"[DYNAMIC-INVOICE-{request_id}] Invoice data valid, creating invoice object")
@@ -232,7 +232,7 @@ def invoice_list(request):
         return Response(serializer.data)
 
     elif request.method == 'POST':
-        serializer = InvoiceSerializer(data=request.data, context={'database_name': database_name})
+        serializer = InvoiceSerializer(data=request.data, context={'database_name': database_name, 'request': request})
         if serializer.is_valid():
             invoice = serializer.save()
             return Response(InvoiceSerializer(invoice).data, status=status.HTTP_201_CREATED)
@@ -254,7 +254,7 @@ def invoice_detail(request, pk):
         return Response(serializer.data)
 
     elif request.method == 'PUT':
-        serializer = InvoiceSerializer(invoice, data=request.data, context={'database_name': database_name})
+        serializer = InvoiceSerializer(invoice, data=request.data, context={'database_name': database_name, 'request': request})
         if serializer.is_valid():
             updated_invoice = serializer.save()
             return Response(InvoiceSerializer(updated_invoice).data)
@@ -1289,7 +1289,7 @@ def create_estimate(request):
             data = request.data
             data['date'] = ensure_date(data.get('date', timezone.now()))
             data['valid_until'] = ensure_date(data.get('valid_until', default_due_datetime()))
-            estimate = create_estimate_with_transaction(data, database_name)
+            estimate = create_estimate_with_transaction(data, database_name, request)
             return Response(EstimateSerializer(estimate).data, status=status.HTTP_201_CREATED)
       
     except UserProfile.DoesNotExist:
@@ -1299,11 +1299,11 @@ def create_estimate(request):
         logger.exception(f"Unexpected error creating estimate: {e}")
         return Response({'error': 'Internal server error.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-def create_estimate_with_transaction(data, database_name):
+def create_estimate_with_transaction(data, database_name, request=None):
     logger.debug(f"Creating estimate with transaction in database: {database_name}")
     logger.debug(f"Data received: {data}")
 
-    estimate_serializer = EstimateSerializer(data=data, context={'database_name': database_name})
+    estimate_serializer = EstimateSerializer(data=data, context={'database_name': database_name, 'request': request})
     
     if estimate_serializer.is_valid(raise_exception=True):
         estimate = estimate_serializer.save()

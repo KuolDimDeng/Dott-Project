@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { formatCurrencyWithPreferences } from '@/utils/currencyFormatter';
 
-const CurrencyAwareInvoicePreview = ({ data, style = 'modern' }) => {
+const CurrencyAwareInvoicePreview = ({ data, style = 'modern', invoice }) => {
   const [currencyPreferences, setCurrencyPreferences] = useState(null);
   const [exchangeRates, setExchangeRates] = useState({});
   const [loading, setLoading] = useState(true);
@@ -20,6 +20,13 @@ const CurrencyAwareInvoicePreview = ({ data, style = 'modern' }) => {
     issueDate = new Date().toISOString().split('T')[0],
     dueDate,
   } = data || {};
+  
+  // IMPORTANT: Use invoice's stored currency if available (for compliance)
+  const invoiceCurrency = invoice?.currency || data?.currency || 'USD';
+  const invoiceExchangeRate = invoice?.exchange_rate || data?.exchange_rate || null;
+  
+  console.log('[CURRENCY-PREVIEW] Invoice currency:', invoiceCurrency);
+  console.log('[CURRENCY-PREVIEW] Invoice exchange rate:', invoiceExchangeRate);
 
   // Fallback to old props structure if not using data prop
   const userData = customer || data?.userData || {};
@@ -30,41 +37,52 @@ const CurrencyAwareInvoicePreview = ({ data, style = 'modern' }) => {
   const { first_name, last_name, business_name, address, city, state, zip_code, phone, email } =
     userData || {};
 
-  // Load currency preferences
+  // Load currency preferences for display options (show USD toggles)
   useEffect(() => {
     loadCurrencyPreferences();
   }, []);
 
-  // Load exchange rates when currency preferences change
+  // Load exchange rates when invoice currency is not USD
   useEffect(() => {
-    if (currencyPreferences && currencyPreferences.currency_code !== 'USD') {
+    if (invoiceCurrency && invoiceCurrency !== 'USD' && !invoiceExchangeRate) {
       loadExchangeRates();
+    } else {
+      setLoading(false);
     }
-  }, [currencyPreferences]);
+  }, [invoiceCurrency]);
 
   const loadCurrencyPreferences = async () => {
     try {
+      console.log('[CURRENCY-PREVIEW] Loading currency preferences for display options...');
       const response = await fetch('/api/currency/preferences');
       const data = await response.json();
       
       if (data.success) {
-        setCurrencyPreferences(data.preferences);
-      } else {
-        // Default to USD
+        // We use preferences only for display options (show USD toggles)
+        // NOT for the invoice currency itself
         setCurrencyPreferences({
-          currency_code: 'USD',
-          currency_name: 'US Dollar',
+          ...data.preferences,
+          // Override currency_code with invoice's currency for proper display
+          currency_code: invoiceCurrency,
+          currency_name: `${invoiceCurrency} (Invoice Currency)`,
+        });
+        console.log('[CURRENCY-PREVIEW] Loaded preferences, using invoice currency:', invoiceCurrency);
+      } else {
+        // Default display options
+        setCurrencyPreferences({
+          currency_code: invoiceCurrency,
+          currency_name: `${invoiceCurrency} (Invoice Currency)`,
           show_usd_on_invoices: false,
           show_usd_on_quotes: false,
           show_usd_on_reports: false,
         });
       }
     } catch (error) {
-      console.error('Error loading currency preferences:', error);
-      // Default to USD
+      console.error('[CURRENCY-PREVIEW] Error loading currency preferences:', error);
+      // Default display options
       setCurrencyPreferences({
-        currency_code: 'USD',
-        currency_name: 'US Dollar',
+        currency_code: invoiceCurrency,
+        currency_name: `${invoiceCurrency} (Invoice Currency)`,
         show_usd_on_invoices: false,
         show_usd_on_quotes: false,
         show_usd_on_reports: false,
@@ -95,7 +113,7 @@ const CurrencyAwareInvoicePreview = ({ data, style = 'modern' }) => {
             },
             body: JSON.stringify({
               from_currency: 'USD',
-              to_currency: currencyPreferences.currency_code,
+              to_currency: invoiceCurrency,
               amount: amount,
             }),
           });

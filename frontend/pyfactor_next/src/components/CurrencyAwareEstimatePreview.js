@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { formatCurrencyWithPreferences } from '@/utils/currencyFormatter';
 
-const CurrencyAwareEstimatePreview = ({ data, style = 'modern' }) => {
+const CurrencyAwareEstimatePreview = ({ data, style = 'modern', estimate }) => {
   const [currencyPreferences, setCurrencyPreferences] = useState(null);
   const [exchangeRates, setExchangeRates] = useState({});
   const [loading, setLoading] = useState(true);
@@ -20,6 +20,13 @@ const CurrencyAwareEstimatePreview = ({ data, style = 'modern' }) => {
     issueDate = new Date().toISOString().split('T')[0],
     validUntil,
   } = data || {};
+  
+  // IMPORTANT: Use estimate's stored currency if available (for compliance)
+  const estimateCurrency = estimate?.currency || data?.currency || 'USD';
+  const estimateExchangeRate = estimate?.exchange_rate || data?.exchange_rate || null;
+  
+  console.log('[CURRENCY-ESTIMATE-PREVIEW] Estimate currency:', estimateCurrency);
+  console.log('[CURRENCY-ESTIMATE-PREVIEW] Estimate exchange rate:', estimateExchangeRate);
 
   // Fallback to old props structure if not using data prop
   const userData = customer || data?.userData || {};
@@ -30,17 +37,19 @@ const CurrencyAwareEstimatePreview = ({ data, style = 'modern' }) => {
   const { first_name, last_name, business_name, address, city, state, zip_code, phone, email } =
     userData || {};
 
-  // Load currency preferences
+  // Load currency preferences for display options (show USD toggles)
   useEffect(() => {
     loadCurrencyPreferences();
   }, []);
 
-  // Load exchange rates when currency preferences change
+  // Load exchange rates when estimate currency is not USD
   useEffect(() => {
-    if (currencyPreferences && currencyPreferences.currency_code !== 'USD') {
+    if (estimateCurrency && estimateCurrency !== 'USD' && !estimateExchangeRate) {
       loadExchangeRates();
+    } else {
+      setLoading(false);
     }
-  }, [currencyPreferences]);
+  }, [estimateCurrency]);
 
   const loadCurrencyPreferences = async () => {
     try {

@@ -284,7 +284,12 @@ def get_currency_preferences(request):
             
             # Update currency if provided
             currency_code = request.data.get('currency_code')
-            logger.info(f"[Currency API] Currency code to update: {currency_code}")
+            logger.info(f"[Currency API] === CURRENCY UPDATE REQUEST ===")
+            logger.info(f"[Currency API] User: {user.email}")
+            logger.info(f"[Currency API] Business: {business.name}")
+            logger.info(f"[Currency API] Current currency: {business_details.preferred_currency_code}")
+            logger.info(f"[Currency API] New currency requested: {currency_code}")
+            logger.info(f"[Currency API] Request timestamp: {timezone.now()}")
             
             if currency_code:
                 try:
@@ -339,8 +344,17 @@ def get_currency_preferences(request):
             # Save changes
             try:
                 logger.info(f"[Currency API] About to save business details...")
+                logger.info(f"[Currency API] Final values before save:")
+                logger.info(f"[Currency API]   - preferred_currency_code: {business_details.preferred_currency_code}")
+                logger.info(f"[Currency API]   - preferred_currency_name: {business_details.preferred_currency_name}")
+                logger.info(f"[Currency API]   - show_usd_on_invoices: {business_details.show_usd_on_invoices}")
+                logger.info(f"[Currency API]   - show_usd_on_quotes: {business_details.show_usd_on_quotes}")
+                logger.info(f"[Currency API]   - show_usd_on_reports: {business_details.show_usd_on_reports}")
+                logger.info(f"[Currency API]   - currency_updated_at: {business_details.currency_updated_at}")
+                
                 business_details.save()
-                logger.info(f"[Currency API] Saved business details successfully")
+                logger.info(f"[Currency API] === SAVE SUCCESSFUL ===")
+                logger.info(f"[Currency API] Currency changed from {request.data.get('previous_currency', 'Unknown')} to {business_details.preferred_currency_code}")
             except Exception as save_error:
                 logger.error(f"[Currency API] Database save error: {str(save_error)}", exc_info=True)
                 return Response({

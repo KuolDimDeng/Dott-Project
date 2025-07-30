@@ -1458,45 +1458,64 @@ class JobDataViewSet(viewsets.ViewSet):
         logger.info(f"📦 [JobDataViewSet] [{request_id}] User authenticated: {request.user.is_authenticated}")
         
         try:
-            from inventory.models_materials import Material
-            from inventory.serializers_materials import MaterialListSerializer
-            from custom_auth.rls import get_current_tenant_id
-            
-            # Debug user and tenant context
-            logger.info(f"📦 [JobDataViewSet] [{request_id}] User tenant_id: {getattr(request.user, 'tenant_id', 'None')}")
-            logger.info(f"📦 [JobDataViewSet] [{request_id}] User business_id: {getattr(request.user, 'business_id', 'None')}")
-            
-            current_tenant = get_current_tenant_id()
-            logger.info(f"📦 [JobDataViewSet] [{request_id}] Current tenant context in DB: {current_tenant}")
-            
-            # Try direct query without tenant filtering to debug
             try:
-                # Query with all_objects to bypass tenant filtering
-                all_supplies = Material.all_objects.filter(is_active=True)
-                logger.info(f"📦 [JobDataViewSet] [{request_id}] Total materials in database (all tenants): {all_supplies.count()}")
+                # Try to use Material model (new approach)
+                from inventory.models_materials import Material
+                from inventory.serializers_materials import MaterialListSerializer
+                from custom_auth.rls import get_current_tenant_id
                 
-                # Log tenant_id for each supply
-                for idx, supply in enumerate(all_supplies[:5]):
-                    logger.info(f"📦 [JobDataViewSet] [{request_id}] Material {idx}: {supply.name} - tenant_id: {supply.tenant_id}")
-            except Exception as e:
-                logger.error(f"📦 [JobDataViewSet] [{request_id}] Error querying all_objects: {e}")
-            
-            # Query materials using tenant filtering
-            logger.info(f"📦 [JobDataViewSet] [{request_id}] Starting materials query...")
-            supplies = Material.objects.filter(
-                is_active=True
-            ).order_by('name')
-            
-            logger.info(f"📦 [JobDataViewSet] [{request_id}] Found {supplies.count()} materials")
-            
-            # Debug first few supplies if any
-            if supplies.exists():
-                for i, supply in enumerate(supplies[:3]):
-                    logger.info(f"📦 [JobDataViewSet] [{request_id}] Material {i}: {supply.name} - SKU: {supply.sku} - tenant_id: {supply.tenant_id}")
-            
-            logger.info(f"📦 [JobDataViewSet] [{request_id}] Serializing material data...")
-            serializer = MaterialListSerializer(supplies, many=True)
-            serialized_data = serializer.data
+                # Debug user and tenant context
+                logger.info(f"📦 [JobDataViewSet] [{request_id}] Using Material model")
+                logger.info(f"📦 [JobDataViewSet] [{request_id}] User tenant_id: {getattr(request.user, 'tenant_id', 'None')}")
+                logger.info(f"📦 [JobDataViewSet] [{request_id}] User business_id: {getattr(request.user, 'business_id', 'None')}")
+                
+                current_tenant = get_current_tenant_id()
+                logger.info(f"📦 [JobDataViewSet] [{request_id}] Current tenant context in DB: {current_tenant}")
+                
+                # Query materials using tenant filtering
+                logger.info(f"📦 [JobDataViewSet] [{request_id}] Starting materials query...")
+                supplies = Material.objects.filter(
+                    is_active=True
+                ).order_by('name')
+                
+                logger.info(f"📦 [JobDataViewSet] [{request_id}] Found {supplies.count()} materials")
+                
+                # Debug first few supplies if any
+                if supplies.exists():
+                    for i, supply in enumerate(supplies[:3]):
+                        logger.info(f"📦 [JobDataViewSet] [{request_id}] Material {i}: {supply.name} - SKU: {supply.sku} - tenant_id: {supply.tenant_id}")
+                
+                logger.info(f"📦 [JobDataViewSet] [{request_id}] Serializing material data...")
+                serializer = MaterialListSerializer(supplies, many=True)
+                serialized_data = serializer.data
+                
+            except Exception as material_error:
+                # Fallback to Product model (backward compatibility during migration)
+                logger.warning(f"📦 [JobDataViewSet] [{request_id}] Material model failed, falling back to Product model: {material_error}")
+                
+                from inventory.models import Product
+                from inventory.serializers import ProductSerializer
+                from custom_auth.rls import get_current_tenant_id
+                
+                # Debug user and tenant context
+                logger.info(f"📦 [JobDataViewSet] [{request_id}] Using Product model fallback")
+                logger.info(f"📦 [JobDataViewSet] [{request_id}] User tenant_id: {getattr(request.user, 'tenant_id', 'None')}")
+                logger.info(f"📦 [JobDataViewSet] [{request_id}] User business_id: {getattr(request.user, 'business_id', 'None')}")
+                
+                current_tenant = get_current_tenant_id()
+                logger.info(f"📦 [JobDataViewSet] [{request_id}] Current tenant context in DB: {current_tenant}")
+                
+                # Query products marked as supplies (if they still exist)
+                logger.info(f"📦 [JobDataViewSet] [{request_id}] Starting fallback products query...")
+                supplies = Product.objects.filter(
+                    is_active=True
+                ).order_by('name')
+                
+                logger.info(f"📦 [JobDataViewSet] [{request_id}] Found {supplies.count()} products")
+                
+                logger.info(f"📦 [JobDataViewSet] [{request_id}] Serializing product data...")
+                serializer = ProductSerializer(supplies, many=True)
+                serialized_data = serializer.data
             
             logger.info(f"📦 [JobDataViewSet] [{request_id}] Serialized data type: {type(serialized_data)}")
             logger.info(f"📦 [JobDataViewSet] [{request_id}] Serialized data count: {len(serialized_data)}")

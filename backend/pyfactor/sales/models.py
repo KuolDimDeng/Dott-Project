@@ -53,6 +53,20 @@ class Invoice(TenantAwareModel):
     discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     currency = models.CharField(max_length=3, default='USD')
     
+    # Exchange rate fields for compliance and historical accuracy
+    exchange_rate = models.DecimalField(
+        max_digits=12, decimal_places=6, null=True, blank=True,
+        help_text='Exchange rate to USD at creation time'
+    )
+    exchange_rate_date = models.DateTimeField(
+        null=True, blank=True,
+        help_text='When exchange rate was captured'
+    )
+    currency_locked = models.BooleanField(
+        default=False,
+        help_text='Currency is locked once invoice is sent or paid'
+    )
+    
     # Add tenant-aware manager
     objects = TenantManager()
     all_objects = models.Manager()
@@ -94,6 +108,25 @@ class Invoice(TenantAwareModel):
             while Invoice.objects.filter(tenant_id=self.tenant_id, invoice_num=self.invoice_num).exists():
                 random_suffix = ''.join(random.choices('0123456789', k=6))
                 self.invoice_num = f"{prefix}{random_suffix}"
+        
+        # Lock currency if invoice is sent or paid
+        if self.pk:  # Only for existing invoices
+            try:
+                old_invoice = Invoice.objects.get(pk=self.pk)
+                if old_invoice.currency_locked or old_invoice.status in ['sent', 'paid'] or old_invoice.is_paid:
+                    # Currency is immutable once sent or paid
+                    self.currency = old_invoice.currency
+                    self.exchange_rate = old_invoice.exchange_rate
+                    self.exchange_rate_date = old_invoice.exchange_rate_date
+                    self.currency_locked = True
+                    logger.warning(f"[CURRENCY-LOCK] Invoice {self.invoice_num} currency is locked. Cannot change from {old_invoice.currency}")
+            except Invoice.DoesNotExist:
+                pass
+        
+        # Auto-lock currency when status changes to sent or paid
+        if self.status in ['sent', 'paid'] or self.is_paid:
+            self.currency_locked = True
+            logger.info(f"[CURRENCY-LOCK] Locking currency for invoice {self.invoice_num} (status: {self.status}, is_paid: {self.is_paid})")
                 
         super().save(*args, **kwargs)
 
@@ -210,6 +243,21 @@ class Estimate(TenantAwareModel):
     discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     currency = models.CharField(max_length=3, default='USD')
     footer = models.TextField(blank=True)
+    
+    # Exchange rate fields for compliance and historical accuracy
+    exchange_rate = models.DecimalField(
+        max_digits=12, decimal_places=6, null=True, blank=True,
+        help_text='Exchange rate to USD at creation time'
+    )
+    exchange_rate_date = models.DateTimeField(
+        null=True, blank=True,
+        help_text='When exchange rate was captured'
+    )
+    currency_locked = models.BooleanField(
+        default=False,
+        help_text='Currency is locked once estimate is accepted'
+    )
+    
     # Additional fields to match SQL schema
     estimate_date = models.DateTimeField(default=timezone.now)
     expiry_date = models.DateTimeField(blank=True, null=True)
