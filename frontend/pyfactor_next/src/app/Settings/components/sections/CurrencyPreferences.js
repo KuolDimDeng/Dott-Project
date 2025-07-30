@@ -105,7 +105,7 @@ const CurrencyPreferences = () => {
   const testPublic = async () => {
     console.log('🌐 [CurrencyPreferences] Testing public endpoint...');
     try {
-      // TEMPORARY: Call backend directly to bypass proxy issue
+      // TEMPORARY: Call backend directly to bypass proxy issue - Force deploy
       const BACKEND_URL = 'https://api.dottapps.com';
       const response = await fetch(`${BACKEND_URL}/api/currency/test-public/`, {
         method: 'GET',
