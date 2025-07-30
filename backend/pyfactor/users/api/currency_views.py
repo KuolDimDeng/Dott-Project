@@ -176,6 +176,14 @@ def get_currency_preferences(request):
         logger.info(f"[Currency API] Request data: {request.data}")
         logger.info(f"[Currency API] Request body: {request.body}")
     
+    # Quick response for debugging
+    if request.method == 'GET' and request.GET.get('test') == '1':
+        return Response({
+            'success': True,
+            'message': 'Backend is working',
+            'timestamp': timezone.now().isoformat()
+        })
+    
     try:
         user = request.user
         logger.info(f"[Currency API] User ID: {user.id}, Email: {user.email}")
@@ -311,9 +319,9 @@ def get_currency_preferences(request):
             
             # Save changes
             try:
-                with transaction.atomic():
-                    business_details.save()
-                    logger.info(f"[Currency API] Saved business details successfully")
+                logger.info(f"[Currency API] About to save business details...")
+                business_details.save()
+                logger.info(f"[Currency API] Saved business details successfully")
             except Exception as save_error:
                 logger.error(f"[Currency API] Database save error: {str(save_error)}", exc_info=True)
                 return Response({
@@ -328,16 +336,12 @@ def get_currency_preferences(request):
         
         response_data = {
             'success': True,
-            'preferences': {
-                'currency_code': business_details.preferred_currency_code,
-                'currency_name': business_details.preferred_currency_name,
-                'currency_symbol': currency_info.get('symbol', '$'),
-                'decimal_places': currency_info.get('decimal_places', 2),
-                'show_usd_on_invoices': business_details.show_usd_on_invoices,
-                'show_usd_on_quotes': business_details.show_usd_on_quotes,
-                'show_usd_on_reports': business_details.show_usd_on_reports,
-                'last_updated': business_details.currency_updated_at
-            }
+            'currency_code': business_details.preferred_currency_code,
+            'currency_name': business_details.preferred_currency_name,
+            'currency_symbol': currency_info.get('symbol', '$') if currency_info else '$',
+            'show_usd_on_invoices': business_details.show_usd_on_invoices,
+            'show_usd_on_quotes': business_details.show_usd_on_quotes,
+            'show_usd_on_reports': business_details.show_usd_on_reports
         }
         
         logger.info(f"[Currency API] ========== RESPONSE SUCCESS ==========")
