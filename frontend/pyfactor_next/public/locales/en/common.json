@@ -111,9 +111,11 @@
     "heading": "Choose the Right Plan for Your Business",
     "subheading": "No hidden fees. No credit card required for Basic plan. Cancel anytime.",
     "discount": {
-      "title": "50% Off All Paid Plans!",
-      "subtitle": "Special pricing for businesses in {{country}} - Supporting local entrepreneurship"
+      "title": "Supporting {{country}} Businesses",
+      "subtitle": "50% discount for companies with local operations",
+      "tooltip": "This discount applies to businesses with primary operations in {{country}}"
     },
+    "disclaimer": "*Regional pricing based on business registration country",
     "billing": {
       "monthly": "Monthly",
       "sixMonths": "6 Months",

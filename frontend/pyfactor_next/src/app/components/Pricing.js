@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { getCurrentUserPricing } from '@/utils/currencyUtils';
 import { getCacheValue } from '@/utils/appCache';
 import { debugCacheState, forceRefreshCountryDetection } from '@/utils/cacheCleaner';
+import { getDevelopingCountryName } from '@/utils/developingCountries';
 import Link from 'next/link';
 
 // This will be moved inside the component to use translation keys
@@ -199,9 +200,9 @@ export default function Pricing() {
       name: t('pricing.plans.basic.name', 'Basic'),
       description: t('pricing.plans.basic.description', 'Perfect for getting started'),
       price: { 
-        monthly: 'FREE', 
-        '6month': 'FREE',
-        annual: 'FREE' 
+        monthly: t('free', 'FREE'), 
+        '6month': t('free', 'FREE'),
+        annual: t('free', 'FREE') 
       },
       savings: {
         '6month': '$0',
@@ -300,17 +301,29 @@ export default function Pricing() {
 
         {/* Developing Country Discount Banner */}
         {hasDiscount && (
-          <div className="mt-8 mb-8 bg-gradient-to-r from-green-600 to-emerald-600 text-white p-6 rounded-xl text-center shadow-lg">
+          <div className="mt-8 mb-8 bg-gradient-to-r from-green-600 to-emerald-600 text-white p-6 rounded-xl text-center shadow-lg relative">
             <div className="flex items-center justify-center mb-2">
               <svg className="h-8 w-8 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
               <span className="text-2xl font-bold">
-                {t('pricing.discount.title', '50% Off All Paid Plans!')}
+                {t('pricing.discount.title', 'Supporting {{country}} Businesses', { country: getDevelopingCountryName(userCountry) || userCountry })}
               </span>
+              {/* Info Icon with Tooltip */}
+              <div className="relative ml-2 inline-block group">
+                <svg className="h-5 w-5 cursor-help opacity-80 hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 text-sm bg-gray-900 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                  {t('pricing.discount.tooltip', 'This discount applies to businesses with primary operations in {{country}}', { country: getDevelopingCountryName(userCountry) || userCountry })}
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
+                    <div className="border-4 border-transparent border-t-gray-900"></div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <p className="text-lg opacity-90">
-              {t('pricing.discount.subtitle', 'Special pricing for businesses in {{country}} - Supporting local entrepreneurship', { country: userCountry })}
+            <p className="text-lg font-medium">
+              {t('pricing.discount.subtitle', '50% discount for companies with local operations')}
             </p>
           </div>
         )}
@@ -375,7 +388,7 @@ export default function Pricing() {
                 <div className="mt-8">
                   <div className="flex items-baseline">
                     <span className="text-5xl font-extrabold text-gray-900">
-                      {plan.name === 'Basic' ? 'FREE' : plan.price[billingPeriod]}
+                      {plan.price[billingPeriod]}
                     </span>
                     {plan.name !== 'Basic' && (
                       <span className="ml-2 text-xl text-gray-500">
@@ -446,6 +459,15 @@ export default function Pricing() {
             </div>
           ))}
         </div>
+
+        {/* Regional Pricing Disclaimer */}
+        {hasDiscount && (
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-600">
+              {t('pricing.disclaimer', '*Regional pricing based on business registration country')}
+            </p>
+          </div>
+        )}
 
         {/* Compare Plans Button */}
         <div className="mt-12 text-center">
