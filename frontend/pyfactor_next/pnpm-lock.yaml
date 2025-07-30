@@ -357,9 +357,6 @@ importers:
       babel-plugin-transform-remove-console:
         specifier: ^6.9.4
         version: 6.9.4
-      esbuild-loader:
-        specifier: ^4.3.0
-        version: 4.3.0(webpack@5.99.9)
       eslint:
         specifier: ^8
         version: 8.57.1
@@ -6386,18 +6383,6 @@ packages:
       is-date-object: 1.1.0
       is-symbol: 1.1.1
 
-  /esbuild-loader@4.3.0(webpack@5.99.9):
-    resolution: {integrity: sha512-D7HeJNdkDKKMarPQO/3dlJT6RwN2YJO7ENU6RPlpOz5YxSHnUNi2yvW41Bckvi1EVwctIaLzlb0ni5ag2GINYA==}
-    peerDependencies:
-      webpack: ^4.40.0 || ^5.0.0
-    dependencies:
-      esbuild: 0.25.2
-      get-tsconfig: 4.10.0
-      loader-utils: 2.0.4
-      webpack: 5.99.9(esbuild@0.25.2)
-      webpack-sources: 1.4.3
-    dev: true
-
   /esbuild-register@3.6.0(esbuild@0.25.2):
     resolution: {integrity: sha512-H2/S7Pm8a9CL1uhp9OvjwrBh5Pvx0H8qVOxNu8Wed9Y7qv56MPtq+GGM8RJpq6glYJn9Wspr8uw7l55uyinNeg==}
     peerDependencies:
@@ -9923,6 +9908,7 @@ packages:
 
   /source-list-map@2.0.1:
     resolution: {integrity: sha512-qnQ7gVMxGNxsiL4lEuJwe/To8UnK7fAnmbGEEH8RpLouuKbeEm0lhbQVFIrNSuB+G7tVrAlVsZgETT5nljf+Iw==}
+    dev: false
 
   /source-map-js@1.2.1:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
@@ -10776,6 +10762,7 @@ packages:
     dependencies:
       source-list-map: 2.0.1
       source-map: 0.6.1
+    dev: false
 
   /webpack-sources@3.2.3:
     resolution: {integrity: sha512-/DyMEOrDgLKKIG0fmvtz+4dUX/3Ghozwgm6iPp8KRhvn+eQf9+Q7GWxVNMk3+uCPWfdXYC4ExGBckIXdFEfH1w==}
