@@ -48,6 +48,68 @@ const countryCurrencyMap = {
   'PL': 'PLN', // Polish Zloty
   'AE': 'AED', // UAE Dirham
   'SA': 'SAR', // Saudi Riyal
+  // Additional developing countries
+  'ET': 'ETB', // Ethiopian Birr
+  'RW': 'RWF', // Rwandan Franc
+  'ZM': 'ZMW', // Zambian Kwacha
+  'ZW': 'ZWL', // Zimbabwean Dollar
+  'MW': 'MWK', // Malawian Kwacha
+  'MZ': 'MZN', // Mozambican Metical
+  'BW': 'BWP', // Botswana Pula
+  'NA': 'NAD', // Namibian Dollar
+  'SN': 'XOF', // Senegal - West African CFA Franc
+  'CI': 'XOF', // Côte d'Ivoire - West African CFA Franc
+  'CM': 'XAF', // Cameroon - Central African CFA Franc
+  'AO': 'AOA', // Angolan Kwanza
+  'GA': 'XAF', // Gabon - Central African CFA Franc
+  'CG': 'XAF', // Congo - Central African CFA Franc
+  'CD': 'CDF', // Democratic Republic of Congo - Congolese Franc
+  'SD': 'SDG', // Sudanese Pound
+  'TN': 'TND', // Tunisian Dinar
+  'DZ': 'DZD', // Algerian Dinar
+  'LY': 'LYD', // Libyan Dinar
+  'BD': 'BDT', // Bangladeshi Taka
+  'PK': 'PKR', // Pakistani Rupee
+  'MM': 'MMK', // Myanmar Kyat
+  'KH': 'KHR', // Cambodian Riel
+  'LA': 'LAK', // Lao Kip
+  'NP': 'NPR', // Nepalese Rupee
+  'LK': 'LKR', // Sri Lankan Rupee
+  'AF': 'AFN', // Afghan Afghani
+  'VE': 'VES', // Venezuelan Bolívar
+  'EC': 'USD', // Ecuador uses USD
+  'BO': 'BOB', // Bolivian Boliviano
+  'PY': 'PYG', // Paraguayan Guaraní
+  'UY': 'UYU', // Uruguayan Peso
+  'GT': 'GTQ', // Guatemalan Quetzal
+  'HN': 'HNL', // Honduran Lempira
+  'SV': 'USD', // El Salvador uses USD
+  'NI': 'NIO', // Nicaraguan Córdoba
+  'CR': 'CRC', // Costa Rican Colón
+  'PA': 'PAB', // Panamanian Balboa (pegged to USD)
+  'DO': 'DOP', // Dominican Peso
+  'HT': 'HTG', // Haitian Gourde
+  'JM': 'JMD', // Jamaican Dollar
+  'IQ': 'IQD', // Iraqi Dinar
+  'YE': 'YER', // Yemeni Rial
+  'SY': 'SYP', // Syrian Pound
+  'JO': 'JOD', // Jordanian Dinar
+  'LB': 'LBP', // Lebanese Pound
+  'PS': 'ILS', // Palestine uses Israeli Shekel
+  'UA': 'UAH', // Ukrainian Hryvnia
+  'MD': 'MDL', // Moldovan Leu
+  'AL': 'ALL', // Albanian Lek
+  'BA': 'BAM', // Bosnia and Herzegovina Convertible Mark
+  'RS': 'RSD', // Serbian Dinar
+  'ME': 'EUR', // Montenegro uses Euro
+  'MK': 'MKD', // Macedonian Denar
+  'XK': 'EUR', // Kosovo uses Euro
+  'PG': 'PGK', // Papua New Guinea Kina
+  'FJ': 'FJD', // Fijian Dollar
+  'WS': 'WST', // Samoan Tala
+  'TO': 'TOP', // Tongan Pa'anga
+  'VU': 'VUV', // Vanuatu Vatu
+  'SB': 'SBD', // Solomon Islands Dollar
 };
 
 // Currency formatting preferences
@@ -63,6 +125,73 @@ const currencyFormats = {
   'KRW': { symbol: '₩', decimals: 0 },
   'IDR': { symbol: 'Rp', decimals: 0 },
   'VND': { symbol: '₫', decimals: 0 },
+  // Additional currency formats
+  'BRL': { symbol: 'R$', decimals: 2 },
+  'MXN': { symbol: '$', decimals: 2 },
+  'ARS': { symbol: '$', decimals: 2 },
+  'COP': { symbol: '$', decimals: 0 },
+  'PEN': { symbol: 'S/', decimals: 2 },
+  'CLP': { symbol: '$', decimals: 0 },
+  'PHP': { symbol: '₱', decimals: 2 },
+  'THB': { symbol: '฿', decimals: 2 },
+  'MYR': { symbol: 'RM', decimals: 2 },
+  'EGP': { symbol: 'E£', decimals: 2 },
+  'MAD': { symbol: 'DH', decimals: 2 },
+  'TRY': { symbol: '₺', decimals: 2 },
+  'PKR': { symbol: '₨', decimals: 0 },
+  'BDT': { symbol: '৳', decimals: 2 },
+  'LKR': { symbol: 'Rs', decimals: 2 },
+  'NPR': { symbol: '₨', decimals: 2 },
+  'MMK': { symbol: 'K', decimals: 0 },
+  'KHR': { symbol: '៛', decimals: 0 },
+  'LAK': { symbol: '₭', decimals: 0 },
+  'AFN': { symbol: '؋', decimals: 2 },
+  'ETB': { symbol: 'Br', decimals: 2 },
+  'RWF': { symbol: 'FRw', decimals: 0 },
+  'ZMW': { symbol: 'K', decimals: 2 },
+  'ZWL': { symbol: '$', decimals: 2 },
+  'MWK': { symbol: 'MK', decimals: 2 },
+  'MZN': { symbol: 'MT', decimals: 2 },
+  'BWP': { symbol: 'P', decimals: 2 },
+  'NAD': { symbol: '$', decimals: 2 },
+  'XOF': { symbol: 'CFA', decimals: 0 },
+  'XAF': { symbol: 'FCFA', decimals: 0 },
+  'AOA': { symbol: 'Kz', decimals: 2 },
+  'CDF': { symbol: 'FC', decimals: 2 },
+  'SDG': { symbol: 'SDG', decimals: 2 },
+  'TND': { symbol: 'DT', decimals: 3 },
+  'DZD': { symbol: 'DA', decimals: 2 },
+  'LYD': { symbol: 'LD', decimals: 3 },
+  'VES': { symbol: 'Bs', decimals: 2 },
+  'BOB': { symbol: 'Bs', decimals: 2 },
+  'PYG': { symbol: '₲', decimals: 0 },
+  'UYU': { symbol: '$', decimals: 2 },
+  'GTQ': { symbol: 'Q', decimals: 2 },
+  'HNL': { symbol: 'L', decimals: 2 },
+  'NIO': { symbol: 'C$', decimals: 2 },
+  'CRC': { symbol: '₡', decimals: 0 },
+  'PAB': { symbol: 'B/.', decimals: 2 },
+  'DOP': { symbol: 'RD$', decimals: 2 },
+  'HTG': { symbol: 'G', decimals: 2 },
+  'JMD': { symbol: 'J$', decimals: 2 },
+  'IQD': { symbol: 'ID', decimals: 0 },
+  'YER': { symbol: '﷼', decimals: 0 },
+  'SYP': { symbol: '£S', decimals: 0 },
+  'JOD': { symbol: 'JD', decimals: 3 },
+  'LBP': { symbol: 'L£', decimals: 0 },
+  'ILS': { symbol: '₪', decimals: 2 },
+  'UAH': { symbol: '₴', decimals: 2 },
+  'MDL': { symbol: 'L', decimals: 2 },
+  'ALL': { symbol: 'L', decimals: 0 },
+  'BAM': { symbol: 'KM', decimals: 2 },
+  'RSD': { symbol: 'din', decimals: 0 },
+  'MKD': { symbol: 'ден', decimals: 2 },
+  'PGK': { symbol: 'K', decimals: 2 },
+  'FJD': { symbol: '$', decimals: 2 },
+  'WST': { symbol: 'T', decimals: 2 },
+  'TOP': { symbol: 'T$', decimals: 2 },
+  'VUV': { symbol: 'Vt', decimals: 0 },
+  'SBD': { symbol: '$', decimals: 2 },
 };
 
 export async function GET(request) {

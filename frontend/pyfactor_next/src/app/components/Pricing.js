@@ -25,7 +25,8 @@ function formatLocalPrice(usdPrice, exchangeRate) {
     ? Math.round(localPrice).toLocaleString()
     : localPrice.toFixed(decimals).toLocaleString();
   
-  return `${symbol}${formattedPrice}`;
+  // Return with both symbol and currency code
+  return `${symbol}${formattedPrice} ${exchangeRate.currency}`;
 }
 
 export default function Pricing() {
