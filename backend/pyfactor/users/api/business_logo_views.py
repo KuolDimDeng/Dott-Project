@@ -88,9 +88,9 @@ def upload_business_logo(request):
         logger.info(f"[upload_business_logo] Request method: {request.method}")
         logger.info(f"[upload_business_logo] Content length: {request.META.get('CONTENT_LENGTH', 'Unknown')}")
         
-        # Get user's business using select_related for better performance
+        # Get user's business
         try:
-            user_profile = UserProfile.objects.select_related('business').get(user=request.user)
+            user_profile = UserProfile.objects.get(user=request.user)
             logger.info(f"[upload_business_logo] User profile found: {user_profile}")
             logger.info(f"[upload_business_logo] User profile ID: {user_profile.id}")
             logger.info(f"[upload_business_logo] User profile business_id: {user_profile.business_id}")
@@ -180,8 +180,8 @@ def upload_business_logo(request):
 def delete_business_logo(request):
     """Delete business logo"""
     try:
-        # Get user's business using select_related for better performance
-        user_profile = UserProfile.objects.select_related('business').get(user=request.user)
+        # Get user's business
+        user_profile = UserProfile.objects.get(user=request.user)
         
         business = user_profile.business
         if not business:
@@ -222,8 +222,8 @@ def delete_business_logo(request):
 def get_business_logo(request):
     """Get business logo URL"""
     try:
-        # Get user's business using select_related for better performance
-        user_profile = UserProfile.objects.select_related('business').get(user=request.user)
+        # Get user's business
+        user_profile = UserProfile.objects.get(user=request.user)
         
         business = user_profile.business
         if not business:
