@@ -11,6 +11,17 @@ export const setupChunkErrorHandler = () => {
   window.addEventListener('unhandledrejection', (event) => {
     const error = event.reason;
     
+    // Check if it's a TDZ error
+    if (error && error.message && error.message.includes("can't access lexical declaration")) {
+      console.error('🚨 [ChunkErrorHandler] TDZ ERROR DETECTED!');
+      console.error('🚨 [ChunkErrorHandler] Error message:', error.message);
+      console.error('🚨 [ChunkErrorHandler] Variable name:', error.message.match(/'([^']+)'/)?.[1]);
+      console.error('🚨 [ChunkErrorHandler] Stack trace:', error.stack);
+      
+      // Don't reload for TDZ errors - we need to fix them
+      return;
+    }
+    
     // Check if it's a chunk loading error
     if (
       error &&
@@ -33,6 +44,15 @@ export const setupChunkErrorHandler = () => {
   window.addEventListener('error', (event) => {
     const error = event.error;
     const target = event.target;
+    
+    // Check for TDZ errors in regular error events
+    if (error && error.message && error.message.includes("can't access lexical declaration")) {
+      console.error('🚨 [ChunkErrorHandler] TDZ ERROR in error event!');
+      console.error('🚨 [ChunkErrorHandler] Error:', error);
+      console.error('🚨 [ChunkErrorHandler] Stack:', error.stack);
+      console.error('🚨 [ChunkErrorHandler] Source:', event.filename, 'Line:', event.lineno, 'Col:', event.colno);
+      return;
+    }
     
     // Handle script loading errors
     if (target && target.tagName === 'SCRIPT' && event.message.includes('Loading chunk')) {

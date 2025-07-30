@@ -31,10 +31,8 @@ export const viewport = {
 };
 
 export default function RootLayout({ children }) {
-  // Get the pathname from headers
-  const headersList = headers();
-  const pathname = headersList.get('x-pathname') || '';
-  const isAdminRoute = pathname.startsWith('/admin');
+  // Don't use headers for client-side logic to prevent hydration mismatch
+  // Admin routes will handle their own logic
 
   return (
     <html lang="en">
@@ -59,25 +57,18 @@ export default function RootLayout({ children }) {
         <link rel="apple-touch-startup-image" href="/static/images/splash-640x1136.png" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)" />
       </head>
       <body className={inter.className}>
-        {/* Admin routes bypass providers */}
-        {isAdminRoute ? (
-          children
-        ) : (
-          <>
-            {/* Session Heartbeat Component */}
-            <SessionHeartbeat interval={60000} />
-            
-            {/* Chunk Error Handler */}
-            <ChunkErrorHandler />
-            
-            <Providers>
-              {children}
-            </Providers>
-          </>
-        )}
+        {/* Session Heartbeat Component */}
+        <SessionHeartbeat interval={60000} />
         
-        {/* Crisp Chat Widget - only for non-admin routes */}
-        {!isAdminRoute && process.env.NEXT_PUBLIC_CRISP_WEBSITE_ID && (
+        {/* Chunk Error Handler */}
+        <ChunkErrorHandler />
+        
+        <Providers>
+          {children}
+        </Providers>
+        
+        {/* Crisp Chat Widget */}
+        {process.env.NEXT_PUBLIC_CRISP_WEBSITE_ID && (
           <Script
             id="crisp-chat"
             strategy="afterInteractive"

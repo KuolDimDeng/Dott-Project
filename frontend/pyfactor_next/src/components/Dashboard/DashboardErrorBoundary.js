@@ -19,14 +19,28 @@ class DashboardErrorBoundary extends React.Component {
     console.error('[DashboardErrorBoundary] Error info:', errorInfo);
     console.error('[DashboardErrorBoundary] Component stack:', errorInfo.componentStack);
     
-    // Log to Sentry
-    Sentry.captureException(error, {
-      contexts: {
-        react: {
-          componentStack: errorInfo.componentStack
+    // Extract more details for TDZ errors
+    if (error.message && error.message.includes("can't access lexical declaration")) {
+      console.error('[DashboardErrorBoundary] TDZ ERROR DETECTED!');
+      console.error('[DashboardErrorBoundary] Variable name:', error.message.match(/'([^']+)'/)?.[1]);
+      console.error('[DashboardErrorBoundary] Full stack trace:', error.stack);
+      
+      // Try to extract the chunk/module info
+      const stackLines = error.stack.split('\n');
+      const chunkInfo = stackLines.find(line => line.includes('.js:'));
+      console.error('[DashboardErrorBoundary] Chunk info:', chunkInfo);
+    }
+    
+    // Log to Sentry if available
+    if (typeof Sentry !== 'undefined') {
+      Sentry.captureException(error, {
+        contexts: {
+          react: {
+            componentStack: errorInfo.componentStack
+          }
         }
-      }
-    });
+      });
+    }
     
     this.setState({
       error,

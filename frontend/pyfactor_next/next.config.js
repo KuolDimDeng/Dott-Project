@@ -138,10 +138,21 @@ const nextConfig = {
   
   // Webpack optimization for bundle size
   webpack: (config, { isServer, dev }) => {
-    // Log webpack build info
+    // Add webpack plugin to track module initialization
     if (!isServer && !dev) {
       console.log('🔧 [Webpack] Client-side production build optimization enabled');
       console.log('🔧 [Webpack] Chunk splitting configuration active');
+      
+      // Add custom plugin to track module loading
+      config.plugins.push({
+        apply: (compiler) => {
+          compiler.hooks.compilation.tap('ModuleTracker', (compilation) => {
+            compilation.hooks.beforeModuleIds.tap('ModuleTracker', (modules) => {
+              console.log('🔧 [Webpack] Total modules:', modules.size);
+            });
+          });
+        }
+      });
     }
     
     // Optimize chunk splitting
@@ -389,7 +400,7 @@ const nextConfig = {
             value: [
               "default-src 'self'",
               // Scripts - still need unsafe-inline for Next.js
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://auth.dottapps.com https://dev-cbyy63jovi6zrcos.us.auth0.com https://js.stripe.com https://client.crisp.chat https://widget.crisp.chat https://cdn.plaid.com https://cdn.posthog.com https://app.posthog.com https://*.posthog.com https://maps.googleapis.com https://maps.gstatic.com",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://auth.dottapps.com https://dev-cbyy63jovi6zrcos.us.auth0.com https://js.stripe.com https://client.crisp.chat https://widget.crisp.chat https://cdn.plaid.com https://cdn.posthog.com https://app.posthog.com https://*.posthog.com https://maps.googleapis.com https://maps.gstatic.com https://static.cloudflareinsights.com",
               // Workers - needed for PostHog session recording
               "worker-src 'self' blob: https://app.posthog.com https://*.posthog.com",
               // Styles
