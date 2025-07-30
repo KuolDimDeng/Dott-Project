@@ -5,6 +5,8 @@ import DashboardSkeleton from '@/components/loading/DashboardSkeleton';
 import TableSkeleton from '@/components/loading/TableSkeleton';
 import FormSkeleton from '@/components/loading/FormSkeleton';
 
+console.log('🎯 [LazyDashboardComponents] Module loaded - all dashboard components will be lazy loaded');
+
 // HR Components
 export const EmployeeList = dynamic(
   () => import('./lists/EmployeeList'),
@@ -156,6 +158,18 @@ export const ReportsDashboard = dynamic(
 
 // Main Business Overview Dashboard
 export const BusinessOverviewDashboard = dynamic(
-  () => import('./dashboards/BusinessOverviewDashboard'),
-  { loading: () => <DashboardSkeleton />, ssr: false }
+  () => {
+    console.log('🎯 [LazyDashboardComponents] Loading BusinessOverviewDashboard component...');
+    return import('./dashboards/BusinessOverviewDashboard').then(module => {
+      console.log('✅ [LazyDashboardComponents] BusinessOverviewDashboard loaded successfully');
+      return module;
+    });
+  },
+  { 
+    loading: () => {
+      console.log('🎯 [LazyDashboardComponents] Showing DashboardSkeleton while loading...');
+      return <DashboardSkeleton />;
+    }, 
+    ssr: false 
+  }
 );

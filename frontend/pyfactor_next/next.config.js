@@ -133,7 +133,13 @@ const nextConfig = {
   },
   
   // Webpack optimization for bundle size
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, dev }) => {
+    // Log webpack build info
+    if (!isServer && !dev) {
+      console.log('🔧 [Webpack] Client-side production build optimization enabled');
+      console.log('🔧 [Webpack] Chunk splitting configuration active');
+    }
+    
     // Optimize chunk splitting
     if (!isServer) {
       config.optimization.splitChunks = {

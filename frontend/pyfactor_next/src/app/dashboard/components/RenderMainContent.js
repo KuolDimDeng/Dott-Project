@@ -40,17 +40,21 @@ console.log('[RenderMainContent] Preparing to load components');
 
 // Enhanced lazy load with retry
 const enhancedLazy = (importFn, componentName) => {
-  console.error(`[RenderMainContent] enhancedLazy called for ${componentName}`);
+  console.log(`🎯 [Lazy Loading] Creating lazy component for: ${componentName}`);
   return React.lazy(() => {
-    console.error(`[RenderMainContent] Lazy loading ${componentName}...`);
+    const startTime = performance.now();
+    console.log(`🎯 [Lazy Loading] Starting import for ${componentName}...`);
     return importFn()
       .then(module => {
-        console.error(`[RenderMainContent] Successfully loaded ${componentName}`);
+        const loadTime = performance.now() - startTime;
+        console.log(`✅ [Lazy Loading] Successfully loaded ${componentName} in ${loadTime.toFixed(2)}ms`);
+        console.log(`📦 [Lazy Loading] Module content for ${componentName}:`, module);
         return module;
       })
       .catch(err => {
-        console.error(`[RenderMainContent] Error loading ${componentName}:`, err);
-        console.error(`[RenderMainContent] Error stack:`, err.stack);
+        console.error(`❌ [Lazy Loading] Error loading ${componentName}:`, err);
+        console.error(`❌ [Lazy Loading] Error stack:`, err.stack);
+        console.error(`❌ [Lazy Loading] Import path that failed:`, importFn.toString());
         return {
           default: (props) => (
             <ErrorFallback 

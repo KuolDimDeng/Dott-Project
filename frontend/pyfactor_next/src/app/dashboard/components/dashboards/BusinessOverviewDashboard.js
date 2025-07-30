@@ -28,16 +28,23 @@ export default function BusinessOverviewDashboard() {
   const [error, setError] = useState(null);
   const [chartLibLoaded, setChartLibLoaded] = useState(false);
 
+  console.log('🏠 [BusinessOverviewDashboard] Component mounted');
+
   // Load Chart.js library when component mounts
   useEffect(() => {
+    console.log('🏠 [BusinessOverviewDashboard] useEffect - attempting to load Chart.js...');
     const loadChartLibrary = async () => {
       try {
+        console.log('🏠 [BusinessOverviewDashboard] Calling loadChartJs()...');
         const chartJs = await loadChartJs();
         if (chartJs) {
+          console.log('✅ [BusinessOverviewDashboard] Chart.js loaded successfully');
           setChartLibLoaded(true);
+        } else {
+          console.warn('⚠️ [BusinessOverviewDashboard] Chart.js loaded but returned null');
         }
       } catch (err) {
-        console.error('Failed to load Chart.js:', err);
+        console.error('❌ [BusinessOverviewDashboard] Failed to load Chart.js:', err);
       }
     };
     loadChartLibrary();

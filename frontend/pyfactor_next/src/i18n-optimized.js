@@ -45,9 +45,15 @@ const languageMetadata = {
 
 // Function to lazy load language resources
 const loadLanguageResources = async (language) => {
+  console.log(`🌐 [i18n-optimized] Checking if ${language} resources need loading...`);
+  
   if (languageMetadata[language]?.loaded) {
+    console.log(`🌐 [i18n-optimized] ${language} already loaded, skipping`);
     return; // Already loaded
   }
+
+  console.log(`🌐 [i18n-optimized] Starting lazy load for ${language}...`);
+  const startTime = performance.now();
 
   try {
     const namespaces = [
@@ -60,12 +66,15 @@ const loadLanguageResources = async (language) => {
     // Load all namespaces for the language in parallel
     const promises = namespaces.map(async (ns) => {
       try {
+        console.log(`🌐 [i18n-optimized] Loading ${ns} namespace for ${language}...`);
         const module = await import(`../public/locales/${language}/${ns}.json`);
         resources[ns] = module.default;
+        console.log(`✅ [i18n-optimized] Successfully loaded ${ns} for ${language}`);
       } catch (error) {
-        console.warn(`Failed to load ${ns} for ${language}:`, error);
+        console.warn(`⚠️ [i18n-optimized] Failed to load ${ns} for ${language}:`, error);
         // Use English as fallback
         resources[ns] = await import(`../public/locales/en/${ns}.json`).then(m => m.default);
+        console.log(`🔄 [i18n-optimized] Using English fallback for ${ns}`);
       }
     });
     
@@ -77,8 +86,10 @@ const loadLanguageResources = async (language) => {
     });
     
     languageMetadata[language].loaded = true;
+    const loadTime = performance.now() - startTime;
+    console.log(`✅ [i18n-optimized] Successfully loaded all ${language} resources in ${loadTime.toFixed(2)}ms`);
   } catch (error) {
-    console.error(`Failed to load language resources for ${language}:`, error);
+    console.error(`❌ [i18n-optimized] Failed to load language resources for ${language}:`, error);
   }
 };
 
@@ -121,6 +132,8 @@ const i18nInstance = i18next.createInstance({
 const initI18n = async () => {
   if (!isBrowser) return i18nInstance;
 
+  console.log('🌐 [i18n-optimized] Starting i18n initialization...');
+
   try {
     // Initialize i18next with plugins
     await i18nInstance
@@ -128,24 +141,36 @@ const initI18n = async () => {
       .use(initReactI18next)
       .init();
 
+    console.log('🌐 [i18n-optimized] i18next core initialized');
+
     // Get stored language preference
     const storedLanguage = localStorage.getItem('userLanguage') || 
                          appCache.getItem('userLanguage');
     
+    console.log(`🌐 [i18n-optimized] Stored language preference: ${storedLanguage}`);
+    console.log(`🌐 [i18n-optimized] Detected language: ${i18nInstance.language}`);
+    
     // Determine initial language
     let initialLanguage = storedLanguage || i18nInstance.language || 'en';
+    console.log(`🌐 [i18n-optimized] Initial language will be: ${initialLanguage}`);
     
     // If language is not English, load its resources
     if (initialLanguage !== 'en') {
+      console.log(`🌐 [i18n-optimized] Non-English language detected, loading ${initialLanguage} resources...`);
       await loadLanguageResources(initialLanguage);
+    } else {
+      console.log('🌐 [i18n-optimized] Using pre-loaded English resources');
     }
     
     // Change to the initial language
     await i18nInstance.changeLanguage(initialLanguage);
+    console.log(`🌐 [i18n-optimized] Language set to: ${initialLanguage}`);
     
     // Override changeLanguage to include lazy loading
     const originalChangeLanguage = i18nInstance.changeLanguage.bind(i18nInstance);
     i18nInstance.changeLanguage = async (language) => {
+      console.log(`🌐 [i18n-optimized] Language change requested to: ${language}`);
+      
       // Load resources if not already loaded
       await loadLanguageResources(language);
       
@@ -156,6 +181,7 @@ const initI18n = async () => {
       localStorage.setItem('userLanguage', language);
       appCache.setItem('userLanguage', language);
       setCacheValue('language', language);
+      console.log(`🌐 [i18n-optimized] Language preference saved: ${language}`);
       
       // Update document direction for RTL languages
       document.documentElement.dir = languageMetadata[language]?.rtl ? 'rtl' : 'ltr';
@@ -163,8 +189,9 @@ const initI18n = async () => {
       return result;
     };
     
+    console.log('✅ [i18n-optimized] i18n initialization complete');
   } catch (error) {
-    console.error('Error initializing i18n:', error);
+    console.error('❌ [i18n-optimized] Error initializing i18n:', error);
   }
 
   return i18nInstance;

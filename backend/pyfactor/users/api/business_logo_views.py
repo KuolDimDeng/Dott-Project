@@ -46,28 +46,45 @@ def convert_image_to_base64(file, max_width=800, max_height=800):
             file.seek(0)
         
         img = Image.open(file)
+        original_format = img.format or 'PNG'
         
-        # Convert RGBA to RGB if necessary (for PNG with transparency)
-        if img.mode in ('RGBA', 'LA'):
+        # For logos, we want to preserve transparency for PNG
+        # Only convert to RGB if it's not PNG/GIF with transparency
+        if img.mode in ('RGBA', 'LA', 'P') and original_format not in ['PNG', 'GIF']:
             background = Image.new('RGB', img.size, (255, 255, 255))
-            background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
+            if img.mode == 'P':
+                img = img.convert('RGBA')
+            background.paste(img, mask=img.split()[-1] if 'A' in img.mode else None)
             img = background
+            img_format = 'JPEG'
+        else:
+            # Keep original format for PNG/GIF to preserve transparency
+            img_format = original_format
         
-        # Check if resize is needed
+        # Check if resize is needed - use better algorithm for logos
         if img.width > max_width or img.height > max_height:
+            # Use LANCZOS for best quality downsampling
             img.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
         
-        # Save to BytesIO
+        # Save to BytesIO with appropriate settings
         output = io.BytesIO()
-        img_format = 'JPEG' if img.format == 'WEBP' else img.format or 'JPEG'
-        img.save(output, format=img_format, quality=85)
+        if img_format == 'PNG':
+            # PNG: Use best compression
+            img.save(output, format='PNG', optimize=True)
+        elif img_format == 'JPEG':
+            # JPEG: Higher quality for logos
+            img.save(output, format='JPEG', quality=95, optimize=True)
+        else:
+            # Other formats: Keep original
+            img.save(output, format=img_format)
+        
         output.seek(0)
         
         # Convert to base64
         encoded_string = base64.b64encode(output.read()).decode('utf-8')
         
         # Determine MIME type
-        mime_type = 'image/jpeg' if img_format == 'JPEG' else f'image/{img_format.lower()}'
+        mime_type = f'image/{img_format.lower()}'
         
         # Return data URL
         return f"data:{mime_type};base64,{encoded_string}"

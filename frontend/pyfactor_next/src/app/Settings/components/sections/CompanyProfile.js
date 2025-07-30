@@ -535,7 +535,7 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
                     <div className="h-20 w-20 bg-white rounded-lg border-2 border-gray-200 flex items-center justify-center mb-3 overflow-hidden">
                       <img 
                         src={logoUrl} 
-                        alt="Business logo" 
+                        alt="" 
                         className="h-18 w-18 object-contain"
                       />
                     </div>
@@ -627,7 +627,7 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
                   <div className="h-6 w-6 mr-2 bg-white rounded flex items-center justify-center flex-shrink-0">
                     <img 
                       src={logoUrl} 
-                      alt="Business logo preview" 
+                      alt="" 
                       className="h-5 w-5 object-contain"
                     />
                   </div>

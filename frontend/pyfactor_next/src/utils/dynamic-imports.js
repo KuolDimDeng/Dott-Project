@@ -150,7 +150,11 @@ export function cleanupPDFTasks() {
 
 // Chart.js dynamic import wrapper with auto-registration
 export const loadChartJs = async () => {
+  console.log('📊 [dynamic-imports] Starting Chart.js lazy load...');
+  const startTime = performance.now();
+  
   try {
+    console.log('📊 [dynamic-imports] Loading Chart.js modules...');
     const [
       { Chart },
       { default: annotationPlugin },
@@ -160,6 +164,8 @@ export const loadChartJs = async () => {
       import('chartjs-plugin-annotation'),
       import('chart.js')
     ]);
+    
+    console.log('📊 [dynamic-imports] Chart.js modules loaded, registering components...');
     
     // Register components
     Chart.register(
@@ -175,25 +181,37 @@ export const loadChartJs = async () => {
       annotationPlugin
     );
     
+    const loadTime = performance.now() - startTime;
+    console.log(`✅ [dynamic-imports] Chart.js loaded and registered in ${loadTime.toFixed(2)}ms`);
+    
     return { Chart };
   } catch (error) {
-    console.error('Error loading Chart.js:', error);
+    console.error('❌ [dynamic-imports] Error loading Chart.js:', error);
     return null;
   }
 };
 
 // XLSX dynamic import wrapper with minimal bundle
 export const loadXlsx = async () => {
+  console.log('📊 [dynamic-imports] Starting XLSX lazy load...');
+  const startTime = performance.now();
+  
   try {
+    console.log('📊 [dynamic-imports] Attempting to load minimal XLSX bundle...');
     const XLSX = await import('xlsx/dist/xlsx.mini.min.js');
+    const loadTime = performance.now() - startTime;
+    console.log(`✅ [dynamic-imports] XLSX mini loaded in ${loadTime.toFixed(2)}ms`);
     return XLSX;
   } catch (error) {
-    console.error('Error loading XLSX:', error);
+    console.warn('⚠️ [dynamic-imports] Failed to load XLSX mini, trying full version...', error);
     // Try full version as fallback
     try {
-      return await import('xlsx');
+      const XLSX = await import('xlsx');
+      const loadTime = performance.now() - startTime;
+      console.log(`✅ [dynamic-imports] XLSX full version loaded in ${loadTime.toFixed(2)}ms`);
+      return XLSX;
     } catch (fallbackError) {
-      console.error('Error loading XLSX fallback:', fallbackError);
+      console.error('❌ [dynamic-imports] Failed to load XLSX entirely:', fallbackError);
       return null;
     }
   }
