@@ -126,11 +126,11 @@ const nextConfig = {
   // Enable standalone output for Docker
   output: 'standalone',
   
-  // Compiler optimizations for faster builds
+  // Compiler optimizations using SWC
   compiler: {
     // Remove console logs in production - but keep more for debugging
     removeConsole: false, // Temporarily disabled
-    // SWC options for better minification
+    // SWC is the default minifier in Next.js 15
     styledComponents: false,
     emotion: false,
   },
