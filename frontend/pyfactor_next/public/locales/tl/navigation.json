@@ -97,5 +97,75 @@
     "billOfMaterials": "Bill of Materials",
     "services": "Mga Serbisyo",
     "jobs": "Mga Trabaho"
+  },
+  "invite": {
+    "title": "Imbitahan ang isang Business Owner",
+    "description1": "Kilala mo ba ang business owner na nais mapabuti ang kanilang operasyon? Ibahagi ang Dott sa kanila!",
+    "description2": "Tumutulong ang Dott sa mga negosyo na mag-automate ng scheduling, pamahalaan ang customer relationships, at hawakan ang mga bayad—lahat sa isang simpleng app. Ang inyong koneksyon ay makapag-save ng mga oras sa administrative work kada linggo.",
+    "formTitle": "Magpadala ng Imbitasyon",
+    "methodLabel": "Piliin ang paraan ng pag-imbita",
+    "emailButton": "Email",
+    "whatsappButton": "WhatsApp",
+    "emailLabel": "Email Address ng Business Owner",
+    "emailPlaceholder": "business@example.com",
+    "phoneLabel": "WhatsApp Number ng Business Owner",
+    "phonePlaceholder": "+63123456789",
+    "phoneHelperText": "Isama ang country code (hal. +63 para sa Pilipinas, +1 para sa US)",
+    "sendEmailButton": "Ipadala sa Email",
+    "sendWhatsappButton": "Ipadala sa WhatsApp",
+    "sendingText": "Pinapadala...",
+    "defaultSender": "Isang kasamahan",
+    "defaultUser": "Isang Dott User",
+    "whatsappMessage": "🚀 *In-imbitahan ka ni {{senderName}} na sumali sa Dott: Global Business Platform!*\n\nHello! Gusto ko nang personal na irekomenda ang Dott, isang business management platform na nag-transform sa paraan ng aking pag-ooperate.\n\nSinisilakbo ng Dott ang lahat ng kailangan mo:\n• Sales at customer management  \n• Inventory tracking at control\n• Professional invoicing at payments\n• Financial reporting at analytics\n• Team collaboration tools\n• AI Business insights at analytics\n• Geofencing at location tracking\n• Real-time business intelligence\n\nSimula nang gamitin ko ang Dott, nabawasan ko ng mga oras ang administrative work kada linggo habang nakakuha ng real-time insights sa performance ng aking business.\n\nMagsimula ng libre magpakailanman ngayon: https://dottapps.com\n\nPagmamahal,\n{{userName}}",
+    "emailMessage": "In-imbitahan ka ni {{senderName}} na sumali sa Dott: Global Business Platform!\n\nHello,\n\nGusto ko nang personal na irekomenda ang Dott, isang business management platform na nag-transform sa paraan ng aking pag-ooperate.\n\nSinisilakbo ng Dott ang lahat ng kailangan mo sa isang lugar:\n• Sales at customer management\n• Inventory tracking at control\n• Professional invoicing at payments\n• Financial reporting at analytics\n• Team collaboration tools\n• AI Business insights at analytics\n• Geofencing at location tracking\n• Real-time business intelligence\n\nSimula nang gamitin ko ang Dott, nabawasan ko ng mga oras ang administrative work kada linggo habang nakakuha ng real-time insights sa performance ng aking business. Nagbibigay ang platform ng enterprise-grade capabilities sa fraction ng traditional software costs.\n\nNaniniwala ako na magiging valuable ang Dott para sa inyong business operations at growth goals.\n\nMagsimula ng libre magpakailanman ngayon: https://dottapps.com\n\nPagmamahal,\n{{userName}}",
+    "emailValidationError": "Maglagay ng valid na email address.",
+    "phoneValidationError": "Maglagay ng valid na phone number.",
+    "successMessage": "Matagumpay na naipadala ang imbitasyon sa {{method}} kay {{recipient}}!",
+    "errorMessage": "Hindi naipadala ang imbitasyon. Subukan ulit.",
+    "networkError": "Network error. I-check ang inyong koneksyon at subukan ulit."
+  },
+  "status": {
+    "title": "Dott Status",
+    "subtitle": "Kasalukuyang system status at uptime monitoring",
+    "refresh": "I-refresh",
+    "refreshing": "Nire-refresh...",
+    "checking": "Sinusuri ang service status...",
+    "lastUpdated": "Huling nag-update",
+    "uptime": "uptime",
+    "duration": "90 araw",
+    "responseTime": "Response time",
+    "overall": {
+      "operational": "Lahat ng Sistema ay Gumagana",
+      "degraded": "May Mga Sistema na May Issues",
+      "outage": "Nadetect ang Service Outage",
+      "unknown": "Hindi Alam ang System Status"
+    },
+    "state": {
+      "operational": "Gumagana",
+      "degraded": "Degraded",
+      "outage": "Outage",
+      "unknown": "Hindi Alam"
+    },
+    "serviceStatus": {
+      "title": "Service Status",
+      "description": "Uptime sa nakaraang 90 araw. Monitoring ng lahat ng critical services."
+    },
+    "timeline": {
+      "past": "90 araw na nakaraan",
+      "today": "Ngayon"
+    },
+    "monitoring": {
+      "title": "Tungkol sa Aming Monitoring",
+      "checks": "Status checks na tumatakbo kada 5 minuto",
+      "response": "Response times na sinusukat mula sa maraming lokasyon",
+      "history": "Historical data na naka-store ng 90 araw",
+      "alerts": "Automatic alerts para sa service disruptions"
+    },
+    "help": {
+      "title": "Kailangan ng Tulong?",
+      "supportEmail": "Support Email",
+      "statusUpdates": "Status Updates",
+      "followUs": "I-follow kami para sa real-time updates sa service status"
+    }
   }
 }

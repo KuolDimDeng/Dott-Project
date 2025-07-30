@@ -97,5 +97,75 @@
     "billOfMaterials": "Bill of Materials",
     "services": "Masevhisi",
     "jobs": "Mabasa"
+  },
+  "invite": {
+    "title": "Kokera Muridzi weBhizinesi",
+    "description1": "Une muridzi webhizinesi wauziva anoda kuvandudza mashandiro avo? Govana Dott navo!",
+    "description2": "Dott inobatsira mabhizinesi kuita scheduling otomatiki, kubata hukama nevatengi, uye kubata mari—zvose mune imwe chete app iri nyore. Kubatana kwako kunogona kuchengetedza maawa ebasa redhministrative vhiki rega rega.",
+    "formTitle": "Tumira Kukoka",
+    "methodLabel": "Sarudza nzira yekukoka",
+    "emailButton": "Email",
+    "whatsappButton": "WhatsApp",
+    "emailLabel": "Email Address yeMuridzi weBhizinesi",
+    "emailPlaceholder": "business@example.com",
+    "phoneLabel": "WhatsApp Number yeMuridzi weBhizinesi",
+    "phonePlaceholder": "+263123456789",
+    "phoneHelperText": "Sanganisira country code (senge +263 yeZimbabwe, +1 yeUS)",
+    "sendEmailButton": "Tumira neEmail",
+    "sendWhatsappButton": "Tumira neWhatsApp",
+    "sendingText": "Kutumira...",
+    "defaultSender": "Mumwe mushandi",
+    "defaultUser": "Mumwe Dott User",
+    "whatsappMessage": "🚀 *{{senderName}} akakukoka kuti upinde muDott: Global Business Platform!*\n\nMhoro! Ndaida kukurudzira Dott, platform yekubata bhizinesi yakashandura nzira yandinoshandisa mashandiro angu.\n\nDott inounza zvose zvaunoda:\n• Sales nekubata vatengi  \n• Kutevera nekubata inventory\n• Professional invoicing nemari\n• Financial reporting neanalytics\n• Team collaboration tools\n• AI Business insights neanalytics\n• Geofencing nelocation tracking\n• Real-time business intelligence\n\nKubva pandatanga kushandisa Dott, ndakadzikisa basa readministrative nemaawa vhiki rega rega ndichiwana real-time insights pamusoro pekushanda kwebhizinesi rangu.\n\nTanga mahara nekusingaperi nhasi: https://dottapps.com\n\nNerudo,\n{{userName}}",
+    "emailMessage": "{{senderName}} akakukoka kuti upinde muDott: Global Business Platform!\n\nMhoro,\n\nNdaida kukurudzira Dott, platform yekubata bhizinesi yakashandura nzira yandinoshandisa mashandiro angu.\n\nDott inounza zvose zvaunoda munzvimbo imwe:\n• Sales nekubata vatengi\n• Kutevera nekubata inventory\n• Professional invoicing nemari\n• Financial reporting neanalytics\n• Team collaboration tools\n• AI Business insights neanalytics\n• Geofencing nelocation tracking\n• Real-time business intelligence\n\nKubva pandatanga kushandisa Dott, ndakadzikisa basa readministrative nemaawa vhiki rega rega ndichiwana real-time insights pamusoro pekushanda kwebhizinesi rangu. Platform iyi inopa enterprise-grade capabilities panguva shoma yemitengo yetraditional software.\n\nNdinotenda kuti Dott ichakosha zvikuru kumabasa ebhizinesi uye zvaunoda kukura.\n\nTanga mahara nekusingaperi nhasi: https://dottapps.com\n\nNerudo,\n{{userName}}",
+    "emailValidationError": "Ndapota isa email address yakanaka.",
+    "phoneValidationError": "Ndapota isa phone number yakanaka.",
+    "successMessage": "Kukoka kwakatumirwa zvakanaka ne{{method}} ku{{recipient}}!",
+    "errorMessage": "Kutumira kukoka kwakundikana. Edza zvakare.",
+    "networkError": "Network error. Ongorora kubatana kwako uye uyedze zvakare."
+  },
+  "status": {
+    "title": "Dott Status",
+    "subtitle": "System status yazvino uye uptime monitoring",
+    "refresh": "Refresh",
+    "refreshing": "Kurefresh...",
+    "checking": "Kuongorora service status...",
+    "lastUpdated": "Yakapedzisira kuupdate",
+    "uptime": "uptime",
+    "duration": "Mazuva makumi mapfumbamwe",
+    "responseTime": "Response time",
+    "overall": {
+      "operational": "Masystem Ose Ari Kushanda",
+      "degraded": "Mamwe Masystem Ane Matambudziko",
+      "outage": "Service Outage Yakaonekwa",
+      "unknown": "System Status Haizivicanwi"
+    },
+    "state": {
+      "operational": "Kushanda",
+      "degraded": "Degraded",
+      "outage": "Outage",
+      "unknown": "Haizivicanwi"
+    },
+    "serviceStatus": {
+      "title": "Service Status",
+      "description": "Uptime mumazuva makumi mapfumbamwe apfuura. Kutarisa masevhisi ose akakosha."
+    },
+    "timeline": {
+      "past": "Mazuva makumi mapfumbamwe apfuura",
+      "today": "Nhasi"
+    },
+    "monitoring": {
+      "title": "Nezve Monitoring Yedu",
+      "checks": "Status checks dzinomhanya chero maminitsi mashanu",
+      "response": "Response times dzinoyerwa kubva kunzvimbo dzakawanda",
+      "history": "Historical data yakachengetwa kwemazuva makumi mapfumbamwe",
+      "alerts": "Automatic alerts yeservice disruptions"
+    },
+    "help": {
+      "title": "Unoda Rubatsiro?",
+      "supportEmail": "Support Email",
+      "statusUpdates": "Status Updates",
+      "followUs": "Titevere kuti uwane real-time updates paservice status"
+    }
   }
 }
