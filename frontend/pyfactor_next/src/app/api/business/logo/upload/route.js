@@ -5,7 +5,7 @@ const BACKEND_URL = process.env.BACKEND_API_URL || 'https://api.dottapps.com';
 
 export async function POST(request) {
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sidCookie = cookieStore.get("sid");
     
     // Get all cookies for debugging
@@ -33,10 +33,11 @@ export async function POST(request) {
     // Get tenant ID from headers (following HR API pattern)
     const tenantId = request.headers.get('X-Tenant-ID');
     
-    // Build headers following working HR API pattern
+    // Build headers following working business-info API pattern
     const headers = {
       'Authorization': `Session ${sidCookie.value}`,
       'Cookie': `session_token=${sidCookie.value}`,
+      'Accept': 'application/json',
     };
     
     if (tenantId) {

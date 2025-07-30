@@ -5,7 +5,7 @@ const BACKEND_URL = process.env.BACKEND_API_URL || 'https://api.dottapps.com';
 
 export async function GET(request) {
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sidCookie = cookieStore.get("sid");
 
     // Check for session cookie (following HR API pattern)
@@ -19,10 +19,11 @@ export async function GET(request) {
     // Get tenant ID from headers (following HR API pattern)
     const tenantId = request.headers.get('X-Tenant-ID');
     
-    // Build headers following working HR API pattern
+    // Build headers following working business-info API pattern
     const headers = {
       'Authorization': `Session ${sidCookie.value}`,
       'Cookie': `session_token=${sidCookie.value}`,
+      'Accept': 'application/json',
     };
     
     if (tenantId) {
@@ -55,7 +56,7 @@ export async function GET(request) {
 
 export async function DELETE(request) {
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const sidCookie = cookieStore.get("sid");
 
     // Check for session cookie (following HR API pattern)
@@ -69,10 +70,11 @@ export async function DELETE(request) {
     // Get tenant ID from headers (following HR API pattern)
     const tenantId = request.headers.get('X-Tenant-ID');
     
-    // Build headers following working HR API pattern
+    // Build headers following working business-info API pattern
     const headers = {
       'Authorization': `Session ${sidCookie.value}`,
       'Cookie': `session_token=${sidCookie.value}`,
+      'Accept': 'application/json',
     };
     
     if (tenantId) {
