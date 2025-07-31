@@ -647,6 +647,45 @@ const CurrencyPreferences = () => {
             >
               Direct Backend Test
             </button>
+            <button
+              onClick={async () => {
+                try {
+                  const res = await fetch('/api/currency/backend-health');
+                  const data = await res.json();
+                  console.log('🏥 Backend health results:', data);
+                  const working = data.tests.filter(t => t.ok).length;
+                  const total = data.tests.length;
+                  if (working > 0) {
+                    notifySuccess(`Backend health: ${working}/${total} endpoints working`);
+                  } else {
+                    notifyError('All backend endpoints are unreachable');
+                  }
+                } catch (e) {
+                  notifyError('Health check error: ' + e.message);
+                }
+              }}
+              className="px-3 py-1 text-xs bg-yellow-500 text-white rounded hover:bg-yellow-600"
+            >
+              Backend Health
+            </button>
+            <button
+              onClick={() => {
+                // Log current cookies
+                console.log('🍪 Current cookies:', document.cookie);
+                // Parse cookies
+                const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+                  const [key, value] = cookie.trim().split('=');
+                  acc[key] = value;
+                  return acc;
+                }, {});
+                console.log('🍪 Parsed cookies:', cookies);
+                console.log('🍪 Session ID:', cookies.sid || cookies.session_token || 'NOT FOUND');
+                notifySuccess('Cookie info logged to console');
+              }}
+              className="px-3 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
+            >
+              Check Cookies
+            </button>
           </div>
         </div>
       )}

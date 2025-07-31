@@ -21,10 +21,18 @@ export async function GET() {
       fullValue: c.value // Temporarily log full value for debugging
     })));
     
-    // Make authenticated request
-    const response = await makeBackendRequest('/api/currency/preferences/', {
+    // Use Next.js rewrite path for backend
+    const rewritePath = '/api/backend/api/currency/preferences/';
+    console.log('📡 [Currency Preferences] Using rewrite path:', rewritePath);
+    
+    const response = await fetch(rewritePath, {
       method: 'GET',
-    }, cookieStore);
+      headers: {
+        'Accept': 'application/json',
+        'Cookie': request.headers.get('cookie') || '',
+      },
+      credentials: 'include'
+    });
     
     // Parse response
     const data = await parseResponse(response);
@@ -68,16 +76,23 @@ export async function PUT(request) {
     const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout
     
     try {
-      // Make authenticated request
-      const response = await makeBackendRequest('/api/currency/preferences/', {
+      // Option 1: Try using the Next.js rewrite path
+      const rewritePath = '/api/backend/api/currency/preferences/';
+      console.log('🚀 [Currency Preferences] Using rewrite path:', rewritePath);
+      
+      const response = await fetch(rewritePath, {
         method: 'PUT',
-        body: JSON.stringify(body),
         headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Cookie': request.headers.get('cookie') || '',
           'X-Forwarded-For': request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '',
           'User-Agent': request.headers.get('user-agent') || '',
         },
-        signal: controller.signal
-      }, cookieStore);
+        body: JSON.stringify(body),
+        signal: controller.signal,
+        credentials: 'include'
+      });
       
       clearTimeout(timeoutId);
       
