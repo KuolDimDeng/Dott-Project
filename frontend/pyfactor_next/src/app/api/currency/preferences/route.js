@@ -7,7 +7,7 @@ import {
   getBackendUrl
 } from '@/utils/currencyProxyHelper';
 
-export async function GET() {
+export async function GET(request) {
   console.log('📡 [Currency Preferences] === GET REQUEST START ===');
   
   try {
@@ -21,11 +21,20 @@ export async function GET() {
       fullValue: c.value // Temporarily log full value for debugging
     })));
     
-    // Use Next.js rewrite path for backend
+    // Construct the full URL for the request
+    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+    const host = request.headers.get('host') || 'localhost:3000';
+    const baseUrl = `${protocol}://${host}`;
     const rewritePath = '/api/backend/api/currency/preferences/';
-    console.log('📡 [Currency Preferences] Using rewrite path:', rewritePath);
+    const fullUrl = `${baseUrl}${rewritePath}`;
     
-    const response = await fetch(rewritePath, {
+    console.log('📡 [Currency Preferences] Using URL:', fullUrl);
+    console.log('📡 [Currency Preferences] Headers:', {
+      host: request.headers.get('host'),
+      cookie: request.headers.get('cookie') ? 'present' : 'missing'
+    });
+    
+    const response = await fetch(fullUrl, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',

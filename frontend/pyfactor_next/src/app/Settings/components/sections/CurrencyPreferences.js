@@ -126,6 +126,25 @@ const CurrencyPreferences = () => {
     }
   };
   
+  // Debug preferences endpoint
+  const debugPreferences = async () => {
+    console.log('🔍 [CurrencyPreferences] Running debug...');
+    try {
+      const response = await fetch('/api/currency/debug-preferences');
+      const data = await response.json();
+      console.log('🔍 [CurrencyPreferences] Debug response:', data);
+      
+      if (data.success) {
+        notifySuccess('Debug complete - check console for details');
+      } else {
+        notifyError('Debug failed: ' + (data.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('🔍 [CurrencyPreferences] Debug error:', error);
+      notifyError('Debug failed: ' + error.message);
+    }
+  };
+
   // Test public endpoint
   const testPublic = async () => {
     console.log('🌐 [CurrencyPreferences] Testing public endpoint...');
@@ -189,15 +208,59 @@ const CurrencyPreferences = () => {
 
   const loadPreferences = async () => {
     try {
-      const response = await fetch('/api/currency/preferences');
+      console.log('💰 [CurrencyPreferences] Loading preferences...');
+      
+      // Try the simple endpoint first
+      const response = await fetch('/api/currency/preferences-simple');
+      console.log('💰 [CurrencyPreferences] Response status:', response.status);
+      console.log('💰 [CurrencyPreferences] Response headers:', response.headers);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('💰 [CurrencyPreferences] Error response:', errorText);
+        
+        // If simple endpoint fails, try the original
+        console.log('💰 [CurrencyPreferences] Trying original endpoint...');
+        const fallbackResponse = await fetch('/api/currency/preferences');
+        if (fallbackResponse.ok) {
+          const fallbackData = await fallbackResponse.json();
+          if (fallbackData.success) {
+            setPreferences(fallbackData.preferences);
+            console.log('💰 [CurrencyPreferences] Preferences loaded via fallback:', fallbackData.preferences);
+            return;
+          }
+        }
+        
+        throw new Error(`HTTP ${response.status}: ${errorText.substring(0, 200)}`);
+      }
+      
       const data = await response.json();
+      console.log('💰 [CurrencyPreferences] Response data:', data);
       
       if (data.success) {
         setPreferences(data.preferences);
+        console.log('💰 [CurrencyPreferences] Preferences loaded successfully:', data.preferences);
+      } else {
+        throw new Error(data.error || 'Failed to load preferences');
       }
     } catch (error) {
-      console.error('Error loading currency preferences:', error);
-      notifyError('Failed to load currency preferences');
+      console.error('💰 [CurrencyPreferences] Error loading currency preferences:', error);
+      
+      // Set default preferences if loading fails
+      console.log('💰 [CurrencyPreferences] Setting default preferences...');
+      setPreferences({
+        currency_code: 'USD',
+        currency_name: 'US Dollar',
+        currency_symbol: '$',
+        show_usd_on_invoices: true,
+        show_usd_on_quotes: true,
+        show_usd_on_reports: false,
+      });
+      
+      // Don't show error notification on initial load
+      if (error.message && !error.message.includes('Failed to fetch')) {
+        notifyError('Using default currency settings');
+      }
     }
     setLoading(false);
   };
@@ -260,7 +323,7 @@ const CurrencyPreferences = () => {
       console.log('🚀 [CurrencyPreferences] Request body:', requestBody);
       console.log('🚀 [CurrencyPreferences] Making PUT request to /api/currency/preferences');
       
-      const response = await fetch('/api/currency/preferences', {
+      const response = await fetch('/api/currency/preferences-simple', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -339,7 +402,7 @@ const CurrencyPreferences = () => {
       console.log('🎯 [CurrencyPreferences] Request body:', requestBody);
       console.log('🎯 [CurrencyPreferences] Making PUT request to /api/currency/preferences');
       
-      const response = await fetch('/api/currency/preferences', {
+      const response = await fetch('/api/currency/preferences-simple', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -462,6 +525,12 @@ const CurrencyPreferences = () => {
             className="px-3 py-1 text-sm bg-blue-200 hover:bg-blue-300 rounded"
           >
             Test Public
+          </button>
+          <button
+            onClick={debugPreferences}
+            className="px-3 py-1 text-sm bg-yellow-200 hover:bg-yellow-300 rounded"
+          >
+            Debug Preferences
           </button>
           <button
             onClick={runDiagnostic}
