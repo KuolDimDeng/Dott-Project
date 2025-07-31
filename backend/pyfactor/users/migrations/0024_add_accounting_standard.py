@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0002_auto_20250731_0537'),  # Replace with your last migration
+        ('users', '0023_add_logo_data_field'),
     ]
 
     operations = [
