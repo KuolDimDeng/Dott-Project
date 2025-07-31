@@ -38,7 +38,7 @@ def validate_image_file(file):
         logger.error(f"Image validation error: {str(e)}")
         return False, "Invalid image file"
 
-def convert_image_to_base64(file, max_width=400, max_height=200):
+def convert_image_to_base64(file, max_width=800, max_height=200):
     """Convert image to base64 data URL"""
     try:
         # Reset file position to start

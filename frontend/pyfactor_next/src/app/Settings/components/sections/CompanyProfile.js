@@ -560,7 +560,7 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
                       This logo appears before your business name in the dashboard header
                     </p>
                     <p className="text-xs text-gray-400 mt-1">
-                      Tip: Use 200×100px or 2:1 aspect ratio for best results
+                      Tip: Use 400×100px or 4:1 aspect ratio for best results
                     </p>
                   </div>
                 ) : (
@@ -606,7 +606,7 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
                           PNG, JPG, GIF, WebP up to 5MB
                         </p>
                         <p className="text-xs text-gray-500 mt-1 font-medium">
-                          Recommended: 200×100px or 2:1 aspect ratio
+                          Recommended: 400×100px or 4:1 aspect ratio
                         </p>
                       </div>
                     )}
@@ -645,11 +645,11 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
               <div className="mt-6 p-4 bg-gray-50 rounded-lg">
                 <p className="text-sm font-medium text-gray-900 mb-2">Preview in header:</p>
                 <div className="bg-blue-600 rounded-lg p-3 inline-flex items-center">
-                  <div className="h-8 w-12 mr-2 bg-white rounded flex items-center justify-center flex-shrink-0">
+                  <div className="h-8 w-24 mr-2 bg-white rounded flex items-center justify-center flex-shrink-0">
                     <img 
                       src={logoUrl} 
                       alt="" 
-                      className="h-7 w-11 object-contain p-0.5"
+                      className="h-7 w-23 object-contain p-0.5"
                     />
                   </div>
                   <span className="text-white font-semibold text-sm">{companyData.businessName}</span>

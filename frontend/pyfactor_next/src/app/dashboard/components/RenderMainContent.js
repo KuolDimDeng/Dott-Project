@@ -304,7 +304,7 @@ const PerformanceManagement = enhancedLazy(() => import('./forms/PerformanceMana
 
 // Add lazy loading for Transport components
 const TransportDashboard = enhancedLazy(() => import('./transport/TransportDashboard.js'), 'Transport Dashboard');
-const TransportVehicleManagement = enhancedLazy(() => import('./transport/VehicleManagement.js'), 'Transport Vehicle Management');
+const TransportVehicleManagement = enhancedLazy(() => import('./transport/TransportVehicleManagement.js'), 'Transport Vehicle Management');
 
 // Add lazy loading for Jobs components
 const JobVehicleManagement = enhancedLazy(() => import('./jobs/VehicleManagement.js'), 'Job Vehicle Management');
