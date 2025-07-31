@@ -114,18 +114,9 @@ const FinancialManagement = () => {
 
         {/* Call to Action */}
         <div className="mt-12 text-center">
-          <p className="text-lg text-gray-600 mb-6">
+          <p className="text-lg text-gray-600">
             {t('financial.cta.text', 'Join thousands of businesses worldwide using our financial management tools')}
           </p>
-          <a
-            href="/auth/signup"
-            className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
-          >
-            {t('financial.cta.button', 'Start Free Trial')}
-            <svg className="ml-2 -mr-1 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </a>
         </div>
       </div>
     </section>
