@@ -30,7 +30,7 @@ const AccountingStandards = () => {
   const fetchAccountingStandards = async () => {
     console.log('📊 [AccountingStandards] Fetching current standards...');
     try {
-      const response = await fetch('/api/users/api/business/settings/');
+      const response = await fetch('/api/backend/users/api/business/settings/');
       const data = await response.json();
       
       if (data.success) {
@@ -48,7 +48,7 @@ const AccountingStandards = () => {
     
     setLoading(true);
     try {
-      const response = await fetch('/api/users/api/business/settings/', {
+      const response = await fetch('/api/backend/users/api/business/settings/', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -79,7 +79,7 @@ const AccountingStandards = () => {
     
     setLoading(true);
     try {
-      const response = await fetch('/api/users/api/business/settings/', {
+      const response = await fetch('/api/backend/users/api/business/settings/', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
