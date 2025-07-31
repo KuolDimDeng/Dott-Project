@@ -466,9 +466,9 @@ export default function TenantDashboard() {
     initializeDashboard();
   }, [tenantId, router, fromSignIn, searchParams]);
 
-  // If still initializing, show loader
+  // If still initializing, show loader (no message)
   if (isLoading) {
-    return <DashboardLoader message="Loading your dashboard..." />;
+    return <DashboardLoader />;
   }
 
   // If there was an authentication error, show error message

@@ -45,13 +45,13 @@ export function AuthWrapper({ children }) {
   // Show loading spinner while checking session
   if (loading) {
     console.log('🔧 [AuthWrapper] Showing loading spinner');
-    return <LoadingSpinner />;
+    return <LoadingSpinner fullscreen={true} message="" />;
   }
 
   // If not authenticated, don't render children (redirect will happen)
   if (!isAuthenticated) {
     console.log('🔧 [AuthWrapper] Not authenticated, rendering loading');
-    return <LoadingSpinner />;
+    return <LoadingSpinner fullscreen={true} message="" />;
   }
 
   console.log('🔧 [AuthWrapper] User authenticated, rendering children');

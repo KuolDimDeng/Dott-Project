@@ -70,8 +70,8 @@ export default function LoadingSpinner({
           </svg>
         </div>
         
-        {/* Message (if provided) */}
-        {message && (
+        {/* Message (if provided and not empty) */}
+        {message && message.trim() !== '' && (
           <div className={`mt-3 ${sizeClass.text} text-gray-700`}>
             {message}
           </div>
