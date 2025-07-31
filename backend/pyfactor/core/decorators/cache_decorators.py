@@ -7,7 +7,7 @@ from typing import Optional, Callable, Union
 from django.http import JsonResponse, HttpResponse
 from django.core.cache import cache
 from django.conf import settings
-from .cache_service import cache_service, CacheService
+from ..cache_service import cache_service, CacheService
 import logging
 
 logger = logging.getLogger(__name__)
