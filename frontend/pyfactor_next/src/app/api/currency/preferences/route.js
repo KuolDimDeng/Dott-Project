@@ -13,6 +13,14 @@ export async function GET() {
   try {
     const cookieStore = cookies();
     
+    // Debug session info
+    const allCookies = cookieStore.getAll();
+    console.log('📡 [Currency Preferences] All cookies:', allCookies.map(c => ({ 
+      name: c.name, 
+      value: c.value?.substring(0, 8) + '...',
+      fullValue: c.value // Temporarily log full value for debugging
+    })));
+    
     // Make authenticated request
     const response = await makeBackendRequest('/api/currency/preferences/', {
       method: 'GET',
@@ -118,7 +126,20 @@ export async function PUT(request) {
     
   } catch (error) {
     const elapsed = Date.now() - startTime;
-    console.error(`🚀 [Currency Preferences] === PUT REQUEST ERROR after ${elapsed}ms ===`, error);
+    console.error(`🚀 [Currency Preferences] === PUT REQUEST ERROR after ${elapsed}ms ===`);
+    console.error(`🚀 [Currency Preferences] Error details:`, {
+      name: error.name,
+      message: error.message,
+      stack: error.stack?.split('\n').slice(0, 5).join('\n'),
+      status: error.status,
+      cause: error.cause
+    });
+    
+    // Add more context to error message
+    if (error.message?.includes('HTML')) {
+      error.message = 'Backend API returned an error page. The currency service might be unavailable.';
+    }
+    
     return createErrorResponse(error, error.status || 502);
   }
 }

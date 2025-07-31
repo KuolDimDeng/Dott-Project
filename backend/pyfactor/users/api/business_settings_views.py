@@ -6,6 +6,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from django.utils import timezone
 from users.models import Business, BusinessDetails, UserProfile
 from users.accounting_standards import (
@@ -17,67 +18,77 @@ from users.accounting_standards import (
 
 logger = logging.getLogger(__name__)
 
-@api_view(['GET', 'PATCH'])
-@permission_classes([IsAuthenticated])
-def business_settings(request):
+class BusinessSettingsView(APIView):
     """Get or update business settings including accounting standard"""
-    logger.info(f"[business_settings] Method: {request.method}, Path: {request.path}")
-    logger.info(f"[business_settings] User: {request.user}, Auth: {request.user.is_authenticated}")
+    permission_classes = [IsAuthenticated]
     
-    try:
-        user = request.user
-        
-        # Get business_id
-        business_id = None
-        if hasattr(user, 'business_id') and user.business_id:
-            business_id = user.business_id
-        elif hasattr(user, 'tenant_id') and user.tenant_id:
-            business_id = user.tenant_id
-        else:
-            profile = UserProfile.objects.filter(user=user).first()
-            if profile and profile.business_id:
-                business_id = profile.business_id
-        
-        if not business_id:
-            return Response({
-                'success': False,
-                'error': 'No business associated with user'
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
-        business = Business.objects.get(id=business_id)
-        business_details, created = BusinessDetails.objects.get_or_create(business=business)
-        
-        if request.method == 'GET':
-            # Get accounting standard info
-            from accounting.services import AccountingStandardsService
-            country_code = str(business_details.country) if business_details.country else 'US'
-            current_standard = business_details.accounting_standard or get_default_accounting_standard(country_code)
+    def get(self, request):
+        """Get business settings"""
+        logger.info(f"[business_settings] GET request, Path: {request.path}")
+        logger.info(f"[business_settings] User: {request.user}, Auth: {request.user.is_authenticated}")
+        return self._handle_request(request, 'GET')
+    
+    def patch(self, request):
+        """Update business settings"""
+        logger.info(f"[business_settings] PATCH request, Path: {request.path}")
+        logger.info(f"[business_settings] User: {request.user}, Auth: {request.user.is_authenticated}")
+        return self._handle_request(request, 'PATCH')
+    
+    def _handle_request(self, request, method):
+        try:
+            user = request.user
             
-            # Get financial statement names
-            statement_format = AccountingStandardsService.get_financial_statement_format(business_id)
+            # Get business_id
+            business_id = None
+            if hasattr(user, 'business_id') and user.business_id:
+                business_id = user.business_id
+            elif hasattr(user, 'tenant_id') and user.tenant_id:
+                business_id = user.tenant_id
+            else:
+                profile = UserProfile.objects.filter(user=user).first()
+                if profile and profile.business_id:
+                    business_id = profile.business_id
             
-            return Response({
-                'success': True,
-                'accounting_standard': current_standard,
-                'accounting_standard_display': get_accounting_standard_display(current_standard, country_code),
-                'country': country_code,
-                'country_name': business_details.country.name if business_details.country else 'United States',
-                'allows_dual_standard': is_dual_standard_country(country_code),
-                'default_standard': get_default_accounting_standard(country_code),
-                'inventory_valuation_method': business_details.inventory_valuation_method or 'WEIGHTED_AVERAGE',
-                'financial_statement_names': {
-                    'balance_sheet': statement_format['balance_sheet_name'],
-                    'income_statement': statement_format['income_statement_name'],
-                    'equity_statement': statement_format['equity_statement_name']
-                },
-                'standard_info': ACCOUNTING_STANDARD_INFO.get(current_standard),
-                'business': {
-                    'name': business.name,
-                    'id': str(business.id)
-                }
-            })
+            if not business_id:
+                return Response({
+                    'success': False,
+                    'error': 'No business associated with user'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            business = Business.objects.get(id=business_id)
+            business_details, created = BusinessDetails.objects.get_or_create(business=business)
+            
+            if method == 'GET':
+                # Get accounting standard info
+                from accounting.services import AccountingStandardsService
+                country_code = str(business_details.country) if business_details.country else 'US'
+                current_standard = business_details.accounting_standard or get_default_accounting_standard(country_code)
+            
+                # Get financial statement names
+                statement_format = AccountingStandardsService.get_financial_statement_format(business_id)
+                
+                return Response({
+                    'success': True,
+                    'accounting_standard': current_standard,
+                    'accounting_standard_display': get_accounting_standard_display(current_standard, country_code),
+                    'country': country_code,
+                    'country_name': business_details.country.name if business_details.country else 'United States',
+                    'allows_dual_standard': is_dual_standard_country(country_code),
+                    'default_standard': get_default_accounting_standard(country_code),
+                    'inventory_valuation_method': business_details.inventory_valuation_method or 'WEIGHTED_AVERAGE',
+                    'financial_statement_names': {
+                        'balance_sheet': statement_format['balance_sheet_name'],
+                        'income_statement': statement_format['income_statement_name'],
+                        'equity_statement': statement_format['equity_statement_name']
+                    },
+                    'standard_info': ACCOUNTING_STANDARD_INFO.get(current_standard),
+                    'business': {
+                        'name': business.name,
+                        'id': str(business.id)
+                    }
+                })
         
-        elif request.method == 'PATCH':
+            elif method == 'PATCH':
             # Update accounting standard
             updated = False
             response_data = {'success': True}

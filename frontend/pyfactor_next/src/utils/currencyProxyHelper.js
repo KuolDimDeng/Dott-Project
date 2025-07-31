@@ -86,7 +86,22 @@ export async function makeBackendRequest(endpoint, options = {}, cookies = null)
       });
       
       // Log response details
-      console.log(`[Currency Helper] Response status: ${response.status} ${response.statusText}`);
+      console.log(`[Currency Helper] Response received:`, {
+        status: response.status,
+        statusText: response.statusText,
+        contentType: response.headers.get('content-type'),
+        contentLength: response.headers.get('content-length'),
+        url: response.url
+      });
+      
+      // Check if response is HTML (error page)
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('text/html')) {
+        console.error(`[Currency Helper] ⚠️ Backend returned HTML instead of JSON`);
+        const htmlPreview = await response.text();
+        console.error(`[Currency Helper] HTML preview (first 500 chars):`, htmlPreview.substring(0, 500));
+        throw new Error(`Backend returned HTML error page (status: ${response.status})`);
+      }
       
       // For successful responses or client errors, don't retry
       if (response.ok || (response.status >= 400 && response.status < 500)) {
@@ -147,24 +162,43 @@ export async function makeBackendRequest(endpoint, options = {}, cookies = null)
  * @returns {Promise<object>} - Parsed JSON data
  */
 export async function parseResponse(response) {
+  console.log('[Currency Helper] Parsing response...');
+  
+  // First check content type
+  const contentType = response.headers.get('content-type');
+  console.log('[Currency Helper] Response content-type:', contentType);
+  
   const responseText = await response.text();
+  console.log('[Currency Helper] Response text length:', responseText.length);
   
   // Check if response is empty
   if (!responseText || responseText.trim() === '') {
+    console.error('[Currency Helper] Empty response from backend');
     throw new Error('Empty response from backend');
   }
+  
+  // Log first 200 chars for debugging
+  console.log('[Currency Helper] Response preview:', responseText.substring(0, 200));
   
   // Try to parse as JSON
   try {
     const data = JSON.parse(responseText);
+    console.log('[Currency Helper] Successfully parsed JSON:', Object.keys(data));
     return data;
   } catch (parseError) {
-    console.error('[Currency Helper] JSON parse error:', parseError);
-    console.error('[Currency Helper] Response text:', responseText.substring(0, 500));
+    console.error('[Currency Helper] ❌ JSON parse error:', parseError);
+    console.error('[Currency Helper] Full response text:', responseText);
     
     // Check if it's an HTML error page
-    if (responseText.includes('<!DOCTYPE') || responseText.includes('<html')) {
-      throw new Error('Backend returned HTML error page instead of JSON');
+    if (responseText.includes('<!DOCTYPE') || responseText.includes('<html') || responseText.includes('<HTML')) {
+      console.error('[Currency Helper] ⚠️ Detected HTML response instead of JSON');
+      
+      // Try to extract error message from HTML
+      const titleMatch = responseText.match(/<title>([^<]+)<\/title>/i);
+      const h1Match = responseText.match(/<h1[^>]*>([^<]+)<\/h1>/i);
+      const errorMsg = titleMatch?.[1] || h1Match?.[1] || 'Unknown error';
+      
+      throw new Error(`Backend error: ${errorMsg} (HTML response)`);
     }
     
     throw new Error(`Invalid JSON response: ${parseError.message}`);

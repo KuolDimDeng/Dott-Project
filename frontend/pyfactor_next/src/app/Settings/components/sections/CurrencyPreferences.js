@@ -609,7 +609,7 @@ const CurrencyPreferences = () => {
       {process.env.NODE_ENV === 'development' && (
         <div className="mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
           <h4 className="text-sm font-medium text-gray-700 mb-2">Debug Tools</h4>
-          <div className="flex space-x-2">
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={testConnection}
               className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
@@ -627,6 +627,25 @@ const CurrencyPreferences = () => {
               className="px-3 py-1 text-xs bg-purple-500 text-white rounded hover:bg-purple-600"
             >
               Test Auth
+            </button>
+            <button
+              onClick={async () => {
+                try {
+                  const res = await fetch('/api/currency/direct-test');
+                  const data = await res.json();
+                  console.log('🔬 Direct test results:', data);
+                  if (data.success) {
+                    notifySuccess('Direct test complete - check console');
+                  } else {
+                    notifyError('Direct test failed: ' + data.error);
+                  }
+                } catch (e) {
+                  notifyError('Direct test error: ' + e.message);
+                }
+              }}
+              className="px-3 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600"
+            >
+              Direct Backend Test
             </button>
           </div>
         </div>
