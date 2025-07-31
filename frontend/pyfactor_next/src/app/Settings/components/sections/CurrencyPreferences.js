@@ -26,7 +26,7 @@ const CurrencyPreferences = () => {
   const runDiagnostic = async () => {
     console.log('🩺 [CurrencyPreferences] Running diagnostic...');
     try {
-      const response = await fetch('/api/currency/diagnostic');
+      const response = await fetch('/api/currency/diagnostic/');
       console.log('🩺 [CurrencyPreferences] Diagnostic response status:', response.status);
       console.log('🩺 [CurrencyPreferences] Diagnostic response headers:', response.headers);
       console.log('🩺 [CurrencyPreferences] Diagnostic response ok:', response.ok);
@@ -86,7 +86,7 @@ const CurrencyPreferences = () => {
   const testAuth = async () => {
     console.log('🧪 [CurrencyPreferences] Testing authentication...');
     try {
-      const response = await fetch('/api/currency/test-auth');
+      const response = await fetch('/api/currency/test-auth/');
       console.log('🧪 [CurrencyPreferences] Test auth response status:', response.status);
       const data = await response.json();
       console.log('🧪 [CurrencyPreferences] Test auth response data:', data);
@@ -130,7 +130,7 @@ const CurrencyPreferences = () => {
   const debugPreferences = async () => {
     console.log('🔍 [CurrencyPreferences] Running debug...');
     try {
-      const response = await fetch('/api/currency/debug-preferences');
+      const response = await fetch('/api/currency/debug-preferences/');
       const data = await response.json();
       console.log('🔍 [CurrencyPreferences] Debug response:', data);
       
@@ -150,7 +150,7 @@ const CurrencyPreferences = () => {
     console.log('🌐 [CurrencyPreferences] Testing public endpoint...');
     try {
       // Use the frontend proxy route
-      const response = await fetch('/api/currency/test-public');
+      const response = await fetch('/api/currency/test-public/');
       console.log('🌐 [CurrencyPreferences] Public test response status:', response.status);
       const data = await response.json();
       console.log('🌐 [CurrencyPreferences] Public test response data:', data);
@@ -176,7 +176,7 @@ const CurrencyPreferences = () => {
 
   const loadCurrencies = async () => {
     try {
-      const response = await fetch('/api/currency/list');
+      const response = await fetch('/api/currency/list/');
       const data = await response.json();
       
       if (data.success) {
@@ -210,8 +210,8 @@ const CurrencyPreferences = () => {
     try {
       console.log('💰 [CurrencyPreferences] Loading preferences...');
       
-      // Try the v3 endpoint first (handles redirects properly)
-      const response = await fetch('/api/currency/preferences-v3');
+      // Try the optimized endpoint first (fastest, handles errors gracefully)
+      const response = await fetch('/api/currency/preferences-optimized/');
       console.log('💰 [CurrencyPreferences] Response status:', response.status);
       console.log('💰 [CurrencyPreferences] Response headers:', response.headers);
       
@@ -221,7 +221,7 @@ const CurrencyPreferences = () => {
         
         // If simple endpoint fails, try the original
         console.log('💰 [CurrencyPreferences] Trying original endpoint...');
-        const fallbackResponse = await fetch('/api/currency/preferences');
+        const fallbackResponse = await fetch('/api/currency/preferences/');
         if (fallbackResponse.ok) {
           const fallbackData = await fallbackResponse.json();
           if (fallbackData.success) {
@@ -275,32 +275,33 @@ const CurrencyPreferences = () => {
       return;
     }
 
-    // Show confirmation modal for non-USD currencies
+    // Show confirmation modal immediately for better UX
     setPendingCurrency(selectedCurrency);
+    setShowConfirmModal(true);
+    setExchangeRateInfo(null); // Reset exchange rate info
     
-    // Get exchange rate info
-    try {
-      const response = await fetch('/api/currency/exchange-rate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from_currency: currencyCode,
-          to_currency: 'USD',
-          amount: 100,
-        }),
-      });
-      
-      const data = await response.json();
+    // Get exchange rate info in the background
+    fetch('/api/currency/exchange-rate/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from_currency: currencyCode,
+        to_currency: 'USD',
+        amount: 100,
+      }),
+    })
+    .then(response => response.json())
+    .then(data => {
       if (data.success) {
         setExchangeRateInfo(data.exchange_rate);
       }
-    } catch (error) {
+    })
+    .catch(error => {
       console.error('Error fetching exchange rate:', error);
-    }
-    
-    setShowConfirmModal(true);
+      // Don't block the modal for exchange rate errors
+    });
   };
 
   const updateCurrency = async (currencyCode) => {
@@ -323,7 +324,7 @@ const CurrencyPreferences = () => {
       console.log('🚀 [CurrencyPreferences] Request body:', requestBody);
       console.log('🚀 [CurrencyPreferences] Making PUT request to /api/currency/preferences');
       
-      const response = await fetch('/api/currency/preferences-v3', {
+      const response = await fetch('/api/currency/preferences-optimized/', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -402,7 +403,7 @@ const CurrencyPreferences = () => {
       console.log('🎯 [CurrencyPreferences] Request body:', requestBody);
       console.log('🎯 [CurrencyPreferences] Making PUT request to /api/currency/preferences');
       
-      const response = await fetch('/api/currency/preferences-v3', {
+      const response = await fetch('/api/currency/preferences-optimized/', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -468,17 +469,27 @@ const CurrencyPreferences = () => {
               </ul>
             </div>
 
-            {exchangeRateInfo && (
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="font-medium mb-2">Current Exchange Rate:</h4>
-                <p className="text-sm">
-                  {formatCurrency(100, pendingCurrency.code)} = {formatCurrency(exchangeRateInfo.converted_amount, 'USD')}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Rate from {exchangeRateInfo.source} • {new Date(exchangeRateInfo.timestamp).toLocaleString()}
-                </p>
-              </div>
-            )}
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h4 className="font-medium mb-2">Current Exchange Rate:</h4>
+              {exchangeRateInfo ? (
+                <>
+                  <p className="text-sm">
+                    {formatCurrency(100, pendingCurrency.code)} = {formatCurrency(exchangeRateInfo.converted_amount, 'USD')}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Rate from {exchangeRateInfo.source} • {new Date(exchangeRateInfo.timestamp).toLocaleString()}
+                  </p>
+                </>
+              ) : (
+                <div className="flex items-center text-sm text-gray-500">
+                  <svg className="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Loading exchange rate...
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex justify-end space-x-3">
