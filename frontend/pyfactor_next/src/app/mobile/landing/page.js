@@ -29,12 +29,38 @@ export default function MobileLandingPage() {
   const [exchangeRate, setExchangeRate] = useState(null);
   const [currencyInfo, setCurrencyInfo] = useState({ symbol: 'USD', decimals: 2 });
   const [billingPeriod, setBillingPeriod] = useState('monthly'); // 'monthly', '6month', 'annual'
+  
+  // Get country parameter from URL
+  const getCountryFromURL = () => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get('country');
+    }
+    return null;
+  };
 
   useEffect(() => {
     // Initialize country detection and language
     async function init() {
       try {
-        const { country, language, isDeveloping: isDevCountry } = await initializeCountryDetection();
+        // Check for country override in URL first
+        const countryOverride = getCountryFromURL();
+        let country, language, isDevCountry;
+        
+        if (countryOverride) {
+          console.log('💱 [Mobile Landing] Country override from URL:', countryOverride);
+          country = countryOverride.toUpperCase();
+          isDevCountry = isDevelopingCountry(country);
+          // Set language based on country (simplified logic)
+          language = country === 'KE' ? 'en' : 'en';
+        } else {
+          // Use auto-detection if no override
+          const detected = await initializeCountryDetection();
+          country = detected.country;
+          language = detected.language;
+          isDevCountry = detected.isDeveloping;
+        }
+        
         setSelectedCountry(country);
         setIsDeveloping(isDevCountry);
         
@@ -66,6 +92,13 @@ export default function MobileLandingPage() {
         } else {
           console.log('💱 [Mobile Pricing] Country is US, no exchange rate needed');
         }
+        
+        console.log('💱 [Mobile Landing] Final country state:', {
+          country,
+          isDeveloping: isDevCountry,
+          countryName: getDevelopingCountryName(country),
+          language
+        });
       } catch (error) {
         console.error('Error initializing country/language:', error);
       }
@@ -219,9 +252,22 @@ export default function MobileLandingPage() {
     return `${symbol}${formattedPrice} ${exchangeRate.currency}`;
   }
 
+  // Add debug info for country testing
+  const showDebugInfo = getCountryFromURL() !== null;
+  
   return (
     <I18nextProvider i18n={i18nInstance}>
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+      {/* Debug Info Banner */}
+      {showDebugInfo && (
+        <div className="bg-yellow-100 border-b border-yellow-300 p-2 text-center">
+          <p className="text-sm text-yellow-800">
+            🧪 Testing Mode: Country set to <strong>{selectedCountry}</strong> 
+            {isDeveloping && ` (50% discount applied)`}
+            {exchangeRate && ` • Currency: ${exchangeRate.currency}`}
+          </p>
+        </div>
+      )}
       {/* Smart App Banner */}
       <SmartAppBanner />
       
@@ -491,28 +537,6 @@ export default function MobileLandingPage() {
         )}
       </div>
 
-      {/* Testimonials */}
-      <div className="px-4 py-12 bg-white">
-        <h2 className="text-2xl font-bold text-center text-gray-900 mb-8">
-          Trusted by Businesses
-        </h2>
-        <div className="space-y-4 max-w-lg mx-auto">
-          <div className="bg-gray-50 rounded-xl p-6">
-            <p className="text-gray-700 italic mb-4">
-              "Dott transformed how I run my shop. I can track inventory and process M-Pesa payments even when the internet is down!"
-            </p>
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold">
-                JK
-              </div>
-              <div className="ml-3">
-                <p className="font-semibold text-gray-900">Jane Kamau</p>
-                <p className="text-sm text-gray-600">Shop Owner, Nairobi</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* CTA Section */}
       <div className="px-4 py-16 bg-gradient-to-t from-blue-600 to-blue-700 text-white text-center">
@@ -520,7 +544,7 @@ export default function MobileLandingPage() {
           Ready to Grow Your Business?
         </h2>
         <p className="text-lg text-blue-100 mb-8 max-w-sm mx-auto">
-          Join thousands of businesses already using Dott
+          Start managing your business better today
         </p>
         <Link
           href="/auth/mobile-signup"

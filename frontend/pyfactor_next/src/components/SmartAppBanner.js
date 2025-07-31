@@ -49,7 +49,7 @@ export default function SmartAppBanner() {
             className="h-12 w-12 rounded-xl"
           />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold truncate">Dott Business</p>
+            <p className="text-sm font-semibold truncate">Dott: Global Business Platform</p>
             <p className="text-xs text-gray-300">
               {isIOS ? 'Available on your home screen' : 'Install for quick access'}
             </p>
