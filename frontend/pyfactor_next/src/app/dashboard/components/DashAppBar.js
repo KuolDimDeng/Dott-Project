@@ -194,6 +194,10 @@ const DashAppBar = ({
     profileData: null
   });
 
+  // Track mounted state to prevent state updates after unmount
+  const [businessLogoUrl, setBusinessLogoUrl] = useState(null);
+  const isMounted = useRef(true);
+
   // Load business logo
   useEffect(() => {
     const loadBusinessLogo = async () => {
@@ -229,10 +233,6 @@ const DashAppBar = ({
   // Create refs for the dropdown menu and button
   const userMenuRef = useRef(null);
   const profileButtonRef = useRef(null);
-  
-  // Track mounted state to prevent state updates after unmount
-  const [businessLogoUrl, setBusinessLogoUrl] = useState(null);
-  const isMounted = useRef(true);
 
   // Initialize profile data with prop if available or null
   const [profileData, setProfileData] = useState(propProfileData || null);
