@@ -167,27 +167,31 @@ const initI18n = async () => {
     console.log(`🌐 [i18n-optimized] Language set to: ${initialLanguage}`);
     
     // Override changeLanguage to include lazy loading
-    const originalChangeLanguage = i18nInstance.changeLanguage.bind(i18nInstance);
-    i18nInstance.changeLanguage = async (language) => {
-      console.log(`🌐 [i18n-optimized] Language change requested to: ${language}`);
-      
-      // Load resources if not already loaded
-      await loadLanguageResources(language);
-      
-      // Change language
-      const result = await originalChangeLanguage(language);
-      
-      // Save preference
-      localStorage.setItem('userLanguage', language);
-      appCache.setItem('userLanguage', language);
-      setCacheValue('language', language);
-      console.log(`🌐 [i18n-optimized] Language preference saved: ${language}`);
-      
-      // Update document direction for RTL languages
-      document.documentElement.dir = languageMetadata[language]?.rtl ? 'rtl' : 'ltr';
-      
-      return result;
-    };
+    if (i18nInstance && typeof i18nInstance.changeLanguage === 'function') {
+      const originalChangeLanguage = i18nInstance.changeLanguage.bind(i18nInstance);
+      i18nInstance.changeLanguage = async (language) => {
+        console.log(`🌐 [i18n-optimized] Language change requested to: ${language}`);
+        
+        // Load resources if not already loaded
+        await loadLanguageResources(language);
+        
+        // Change language
+        const result = await originalChangeLanguage(language);
+        
+        // Save preference
+        localStorage.setItem('userLanguage', language);
+        appCache.setItem('userLanguage', language);
+        setCacheValue('language', language);
+        console.log(`🌐 [i18n-optimized] Language preference saved: ${language}`);
+        
+        // Update document direction for RTL languages
+        document.documentElement.dir = languageMetadata[language]?.rtl ? 'rtl' : 'ltr';
+        
+        return result;
+      };
+    } else {
+      console.error('🌐 [i18n-optimized] Warning: i18nInstance.changeLanguage is not a function');
+    }
     
     console.log('✅ [i18n-optimized] i18n initialization complete');
   } catch (error) {

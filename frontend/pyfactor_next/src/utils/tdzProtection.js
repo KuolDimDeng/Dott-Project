@@ -6,10 +6,16 @@
 export function initializeTDZProtection() {
   if (typeof window === 'undefined') return;
 
-  // Store original functions
-  const originalError = window.Error;
-  const originalEval = window.eval;
-  const originalFunction = window.Function;
+  // Store original functions with safety checks
+  const originalError = window.Error || Error;
+  const originalEval = window.eval || eval;
+  const originalFunction = window.Function || Function;
+  
+  // Safety check
+  if (!originalError || typeof originalError !== 'function') {
+    console.error('🚨 [TDZ Protection] Error constructor not found, skipping protection');
+    return;
+  }
 
   // Enhanced error handler
   window.Error = function TDZProtectedError(message, ...args) {
@@ -56,11 +62,24 @@ export function initializeTDZProtection() {
       }
     }
 
-    return originalError.call(this, message, ...args);
+    // Safely call the original Error constructor
+    try {
+      return originalError.call(this, message, ...args);
+    } catch (callError) {
+      console.error('🚨 [TDZ Protection] Error calling original Error constructor:', callError);
+      // Fallback: create a new error object
+      const error = Object.create(originalError.prototype);
+      error.message = message;
+      error.name = 'Error';
+      error.stack = (new originalError()).stack;
+      return error;
+    }
   };
 
   // Preserve prototype chain
   window.Error.prototype = originalError.prototype;
+  window.Error.captureStackTrace = originalError.captureStackTrace;
+  window.Error.stackTraceLimit = originalError.stackTraceLimit;
 
   // Wrap eval to catch TDZ errors
   window.eval = function tdzSafeEval(code) {
