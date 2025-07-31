@@ -15,7 +15,14 @@ from currency.exchange_rate_service import exchange_rate_service
 from currency.currency_validator import CurrencyValidator, CurrencyConversionValidator
 from decimal import Decimal
 import traceback
-from core.cache_service import cache_service
+# Conditionally import cache service to avoid failures
+try:
+    from core.cache_service import cache_service
+    CACHE_AVAILABLE = True
+except Exception as e:
+    logger.warning(f"Cache service not available: {str(e)}")
+    CACHE_AVAILABLE = False
+    cache_service = None
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -369,9 +376,13 @@ def get_currency_preferences(request):
                 logger.info(f"[Currency API] === SAVE SUCCESSFUL ===")
                 logger.info(f"[Currency API] Currency changed from {request.data.get('previous_currency', 'Unknown')} to {business_details.preferred_currency_code}")
                 
-                # Invalidate cache after update
-                cache_service.invalidate_business(str(business_id))
-                logger.info(f"[Currency API] Cache invalidated for business: {business_id}")
+                # Invalidate cache after update if available
+                if CACHE_AVAILABLE and cache_service:
+                    try:
+                        cache_service.invalidate_business(str(business_id))
+                        logger.info(f"[Currency API] Cache invalidated for business: {business_id}")
+                    except Exception as cache_error:
+                        logger.warning(f"[Currency API] Cache invalidation failed: {str(cache_error)}")
             except Exception as save_error:
                 logger.error(f"[Currency API] Database save error: {str(save_error)}", exc_info=True)
                 return Response({
@@ -380,12 +391,15 @@ def get_currency_preferences(request):
                     'error_type': type(save_error).__name__
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
-        # Check cache for GET requests
-        if request.method == 'GET':
-            cached_prefs = cache_service.get_currency_preferences(str(business_id))
-            if cached_prefs:
-                logger.info(f"[Currency API] Returning cached currency preferences")
-                return Response(cached_prefs)
+        # Check cache for GET requests if available
+        if request.method == 'GET' and CACHE_AVAILABLE and cache_service:
+            try:
+                cached_prefs = cache_service.get_currency_preferences(str(business_id))
+                if cached_prefs:
+                    logger.info(f"[Currency API] Returning cached currency preferences")
+                    return Response(cached_prefs)
+            except Exception as cache_error:
+                logger.warning(f"[Currency API] Cache read failed: {str(cache_error)}")
         
         # Get currency info for response
         try:
@@ -416,9 +430,12 @@ def get_currency_preferences(request):
             'allows_dual_standard': is_dual_standard_country(business_details.country)
         }
         
-        # Cache the response for GET requests
-        if request.method == 'GET':
-            cache_service.set_currency_preferences(str(business_id), response_data)
+        # Cache the response for GET requests if available
+        if request.method == 'GET' and CACHE_AVAILABLE and cache_service:
+            try:
+                cache_service.set_currency_preferences(str(business_id), response_data)
+            except Exception as cache_error:
+                logger.warning(f"[Currency API] Cache write failed: {str(cache_error)}")
         
         logger.info(f"[Currency API] ========== RESPONSE SUCCESS ==========")
         logger.info(f"[Currency API] Response data: {response_data}")
