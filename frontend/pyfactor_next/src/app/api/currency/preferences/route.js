@@ -10,7 +10,7 @@ export async function GET() {
   console.log('📡 [Currency Preferences] === GET REQUEST START ===');
   
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     
     // Make authenticated request
     const response = await makeBackendRequest('/api/currency/preferences/', {
@@ -42,7 +42,7 @@ export async function PUT(request) {
   const startTime = Date.now();
   
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const body = await request.json();
     
     console.log('🚀 [Currency Preferences] Request body:', JSON.stringify(body, null, 2));

@@ -136,15 +136,29 @@ const CurrencyPreferences = () => {
       const data = await response.json();
       
       if (data.success) {
-        setCurrencies(data.currencies);
+        // Sort currencies alphabetically by display name
+        const sortedCurrencies = data.currencies.sort((a, b) => 
+          a.display.localeCompare(b.display)
+        );
+        setCurrencies(sortedCurrencies);
       } else {
         // Fallback to local currency list
-        setCurrencies(getAllCurrencies());
+        const allCurrencies = getAllCurrencies();
+        // Sort alphabetically
+        const sortedCurrencies = allCurrencies.sort((a, b) => 
+          a.display.localeCompare(b.display)
+        );
+        setCurrencies(sortedCurrencies);
       }
     } catch (error) {
       console.error('Error loading currency list:', error);
       // Fallback to local currency list
-      setCurrencies(getAllCurrencies());
+      const allCurrencies = getAllCurrencies();
+      // Sort alphabetically
+      const sortedCurrencies = allCurrencies.sort((a, b) => 
+        a.display.localeCompare(b.display)
+      );
+      setCurrencies(sortedCurrencies);
     }
   };
 

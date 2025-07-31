@@ -225,6 +225,22 @@ const DashAppBar = ({
     }
   }, [session?.authenticated]);
   
+  // Listen for logo update events from settings page
+  useEffect(() => {
+    const handleLogoUpdate = (event) => {
+      console.log('[DashAppBar] Received businessLogoUpdated event:', event.detail);
+      if (event.detail?.logoUrl) {
+        setBusinessLogoUrl(event.detail.logoUrl);
+      }
+    };
+    
+    window.addEventListener('businessLogoUpdated', handleLogoUpdate);
+    
+    return () => {
+      window.removeEventListener('businessLogoUpdated', handleLogoUpdate);
+    };
+  }, []);
+  
   // Monitor businessLogoUrl changes
   useEffect(() => {
     console.log('[DashAppBar] businessLogoUrl state changed:', businessLogoUrl ? 'Set to URL' : 'null');
@@ -1411,11 +1427,11 @@ const DashAppBar = ({
                 {/* Business name - make it visible on all screen sizes and add fallback display */}
                 <div className="text-white flex items-center mr-3">
                   {businessLogoUrl && (
-                    <div className="h-6 w-6 mr-2 bg-white rounded flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    <div className="h-8 w-12 mr-2 bg-white rounded flex items-center justify-center flex-shrink-0 overflow-hidden">
                       <img 
                         src={businessLogoUrl} 
                         alt="" 
-                        className="h-5 w-5 object-contain"
+                        className="h-7 w-11 object-contain p-0.5"
                         onError={(e) => {
                           console.error('[DashAppBar] Logo image failed to load:', e);
                           setBusinessLogoUrl(null);
@@ -1443,11 +1459,11 @@ const DashAppBar = ({
                     {(businessName || fetchedBusinessName || auth0BusinessName) ? (
                       <>
                         {businessLogoUrl && (
-                          <div className="h-4 w-4 mr-1 bg-white rounded flex items-center justify-center flex-shrink-0 overflow-hidden">
+                          <div className="h-5 w-8 mr-1 bg-white rounded flex items-center justify-center flex-shrink-0 overflow-hidden">
                             <img 
                               src={businessLogoUrl} 
                               alt="" 
-                              className="h-3 w-3 object-contain"
+                              className="h-4 w-7 object-contain p-0.5"
                               onError={(e) => {
                                 console.error('[DashAppBar] Mobile logo image failed to load:', e);
                                 setBusinessLogoUrl(null);

@@ -10,7 +10,7 @@ export async function POST(request) {
   console.log('💱 [Exchange Rate] === POST REQUEST START ===');
   
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const body = await request.json();
     
     console.log('💱 [Exchange Rate] Request body:', JSON.stringify(body, null, 2));
