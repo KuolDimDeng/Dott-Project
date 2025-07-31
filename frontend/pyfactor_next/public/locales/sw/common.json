@@ -1409,8 +1409,7 @@
   },
   "mobileLanding": {
     "hero": {
-      "title": "Biashara Yako,",
-      "subtitle": "Mfukoni Mwako",
+      "title": "Dott: Global Business Platform",
       "description": "Jukwaa la usimamizi wa biashara lenye AI linalofanya kazi bila mtandao.",
       "cta": {
         "getStarted": "Anza Bure",
@@ -1466,5 +1465,14 @@
       "button": "Anza Bure",
       "terms": "Hakuna kadi ya mkopo inayohitajika • Ghairi wakati wowote"
     }
+  },
+  "smartBanner": {
+    "title": "Dott: Jukwaa la Biashara la Kimataifa",
+    "ios": "Inapatikana kwenye skrini yako ya nyumbani",
+    "android": "Sakinisha kwa ufikiaji wa haraka",
+    "tap": "Gusa",
+    "then": "kisha",
+    "addToHome": "Ongeza kwenye Skrini ya Nyumbani",
+    "install": "Sakinisha"
   }
 }

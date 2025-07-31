@@ -1503,8 +1503,7 @@
   },
   "mobileLanding": {
     "hero": {
-      "title": "Uw Bedrijf,",
-      "subtitle": "In Uw Zak",
+      "title": "Dott: Global Business Platform",
       "description": "AI-aangedreven bedrijfsbeheerplatform dat offline werkt.",
       "cta": {
         "getStarted": "Gratis Beginnen",
@@ -1560,5 +1559,14 @@
       "button": "Gratis Beginnen",
       "terms": "Geen creditcard vereist • Altijd opzegbaar"
     }
+  },
+  "smartBanner": {
+    "title": "Dott: Wereldwijd Bedrijfsplatform",
+    "ios": "Beschikbaar op je startscherm",
+    "android": "Installeer voor snelle toegang",
+    "tap": "Tik",
+    "then": "dan",
+    "addToHome": "Toevoegen aan startscherm",
+    "install": "Installeren"
   }
 }

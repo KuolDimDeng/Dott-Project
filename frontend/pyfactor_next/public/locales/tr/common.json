@@ -1633,8 +1633,7 @@
   },
   "mobileLanding": {
     "hero": {
-      "title": "İşletmeniz,",
-      "subtitle": "Cebinizde",
+      "title": "Dott: Global Business Platform",
       "description": "Çevrimdışı çalışan AI destekli işletme yönetim platformu.",
       "cta": {
         "getStarted": "Ücretsiz Başlayın",
@@ -1690,5 +1689,14 @@
       "button": "Ücretsiz Başlayın",
       "terms": "Kredi kartı gerekmez • İstediğiniz zaman iptal edin"
     }
+  },
+  "smartBanner": {
+    "title": "Dott: Küresel İş Platformu",
+    "ios": "Ana ekranınızda mevcut",
+    "android": "Hızlı erişim için yükleyin",
+    "tap": "Dokun",
+    "then": "sonra",
+    "addToHome": "Ana Ekrana Ekle",
+    "install": "Yükle"
   }
 }

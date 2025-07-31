@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import { useTranslation } from 'react-i18next';
 
 export default function SmartAppBanner() {
+  const { t } = useTranslation();
   const [showBanner, setShowBanner] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
@@ -49,27 +51,27 @@ export default function SmartAppBanner() {
             className="h-12 w-12 rounded-xl"
           />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold truncate">Dott: Global Business Platform</p>
+            <p className="text-sm font-semibold truncate">{t('smartBanner.title', 'Dott: Global Business Platform')}</p>
             <p className="text-xs text-gray-300">
-              {isIOS ? 'Available on your home screen' : 'Install for quick access'}
+              {isIOS ? t('smartBanner.ios', 'Available on your home screen') : t('smartBanner.android', 'Install for quick access')}
             </p>
           </div>
           <div className="flex-shrink-0">
             {isIOS ? (
               <div className="text-center">
-                <p className="text-xs text-gray-400 mb-1">Tap</p>
+                <p className="text-xs text-gray-400 mb-1">{t('smartBanner.tap', 'Tap')}</p>
                 <div className="flex items-center space-x-1">
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M3 7a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 13a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
                     <path d="M5 3a1 1 0 000 2h10a1 1 0 100-2H5z" />
                   </svg>
-                  <span className="text-xs">then</span>
-                  <span className="text-xs font-medium">Add to Home</span>
+                  <span className="text-xs">{t('smartBanner.then', 'then')}</span>
+                  <span className="text-xs font-medium">{t('smartBanner.addToHome', 'Add to Home')}</span>
                 </div>
               </div>
             ) : (
               <button className="bg-white text-gray-900 px-4 py-1.5 rounded-md text-sm font-medium hover:bg-gray-100">
-                Install
+                {t('smartBanner.install', 'Install')}
               </button>
             )}
           </div>

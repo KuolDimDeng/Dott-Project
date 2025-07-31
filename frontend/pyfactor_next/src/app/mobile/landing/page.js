@@ -8,6 +8,7 @@ import { initializeCountryDetection } from '@/services/countryDetectionService';
 import { isDevelopingCountry, getDevelopingCountryName } from '@/utils/developingCountries';
 import i18nInstance from '@/i18n';
 import SmartAppBanner from '@/components/SmartAppBanner';
+import MobileHeroSlideshow from '@/app/components/MobileHeroSlideshow';
 import {
   ChartBarIcon,
   CurrencyDollarIcon,
@@ -374,7 +375,7 @@ export default function MobileLandingPage() {
             className="h-24 w-24 mx-auto rounded-2xl shadow-lg mb-6"
           />
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            {t('mobileLanding.hero.title', 'Your Business,')}<br />{t('mobileLanding.hero.subtitle', 'In Your Pocket')}
+            {t('mobileLanding.hero.title', 'Dott: Global Business Platform')}
           </h1>
           <p className="text-lg text-gray-600 max-w-sm mx-auto">
             {t('mobileLanding.hero.description', 'AI-powered business management platform that works offline.')}
@@ -400,8 +401,13 @@ export default function MobileLandingPage() {
         </div>
       </div>
 
+      {/* Hero Slideshow */}
+      <div className="bg-white">
+        <MobileHeroSlideshow />
+      </div>
+
       {/* Features Grid */}
-      <div className="px-4 py-12 bg-white">
+      <div className="px-4 py-12 bg-gray-50">
         <h2 className="text-2xl font-bold text-center text-gray-900 mb-8">
           {t('mobileLanding.features.title', 'Everything You Need')}
         </h2>
@@ -417,7 +423,7 @@ export default function MobileLandingPage() {
       </div>
 
       {/* Benefits Section */}
-      <div className="px-4 py-12">
+      <div className="px-4 py-12 bg-white">
         <h2 className="text-2xl font-bold text-center text-gray-900 mb-8">
           {t('mobileLanding.benefits.title', 'Built for Your Success')}
         </h2>

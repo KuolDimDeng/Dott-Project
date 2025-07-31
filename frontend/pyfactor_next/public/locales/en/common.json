@@ -1653,8 +1653,7 @@
   },
   "mobileLanding": {
     "hero": {
-      "title": "Your Business,",
-      "subtitle": "In Your Pocket",
+      "title": "Dott: Global Business Platform",
       "description": "AI-powered business management platform that works offline.",
       "cta": {
         "getStarted": "Get Started For Free",
@@ -1710,5 +1709,14 @@
       "button": "Get Started Free",
       "terms": "No credit card required • Cancel anytime"
     }
+  },
+  "smartBanner": {
+    "title": "Dott: Global Business Platform",
+    "ios": "Available on your home screen",
+    "android": "Install for quick access",
+    "tap": "Tap",
+    "then": "then",
+    "addToHome": "Add to Home",
+    "install": "Install"
   }
 }

@@ -1516,8 +1516,7 @@
   },
   "mobileLanding": {
     "hero": {
-      "title": "Doanh Nghiệp Của Bạn,",
-      "subtitle": "Trong Túi Của Bạn",
+      "title": "Dott: Global Business Platform",
       "description": "Nền tảng quản lý doanh nghiệp được hỗ trợ bởi AI hoạt động ngoại tuyến.",
       "cta": {
         "getStarted": "Bắt Đầu Miễn Phí",
@@ -1573,5 +1572,14 @@
       "button": "Bắt Đầu Miễn Phí",
       "terms": "Không cần thẻ tín dụng • Hủy bất cứ lúc nào"
     }
+  },
+  "smartBanner": {
+    "title": "Dott: Nền Tảng Kinh Doanh Toàn Cầu",
+    "ios": "Có sẵn trên màn hình chính của bạn",
+    "android": "Cài đặt để truy cập nhanh",
+    "tap": "Nhấn",
+    "then": "sau đó",
+    "addToHome": "Thêm vào màn hình chính",
+    "install": "Cài đặt"
   }
 }

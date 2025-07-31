@@ -949,8 +949,7 @@
   },
   "mobileLanding": {
     "hero": {
-      "title": "የእርስዎ ንግድ፣",
-      "subtitle": "በኪስዎ ውስጥ",
+      "title": "Dott: Global Business Platform",
       "description": "ከመስመር ውጭ የሚሰራ በAI የተደገፈ የንግድ አስተዳደር መድረክ።",
       "cta": {
         "getStarted": "በነጻ ይጀምሩ",
@@ -1006,5 +1005,14 @@
       "button": "በነጻ ይጀምሩ",
       "terms": "ክሬዲት ካርድ አያስፈልግም • በማንኛውም ጊዜ ይሰርዙ"
     }
+  },
+  "smartBanner": {
+    "title": "Dott: ዓለም አቀፍ የንግድ መድረክ",
+    "ios": "በመነሻ ማያ ገጽዎ ላይ ይገኛል",
+    "android": "ለፈጣን መዳረሻ ይጫኑ",
+    "tap": "ይንኩ",
+    "then": "ከዚያ",
+    "addToHome": "ወደ መነሻ ያክሉ",
+    "install": "ጫን"
   }
 }

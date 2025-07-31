@@ -1644,8 +1644,7 @@
   },
   "mobileLanding": {
     "hero": {
-      "title": "您的业务，",
-      "subtitle": "尽在掌握",
+      "title": "Dott: Global Business Platform",
       "description": "AI驱动的业务管理平台，支持离线工作。",
       "cta": {
         "getStarted": "免费开始",
@@ -1701,5 +1700,14 @@
       "button": "免费开始",
       "terms": "无需信用卡 • 随时取消"
     }
+  },
+  "smartBanner": {
+    "title": "Dott：全球商业平台",
+    "ios": "可在您的主屏幕上使用",
+    "android": "安装以快速访问",
+    "tap": "点击",
+    "then": "然后",
+    "addToHome": "添加到主屏幕",
+    "install": "安装"
   }
 }

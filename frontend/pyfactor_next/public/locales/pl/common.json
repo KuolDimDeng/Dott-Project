@@ -389,8 +389,7 @@
   },
   "mobileLanding": {
     "hero": {
-      "title": "Twój Biznes,",
-      "subtitle": "W Twojej Kieszeni",
+      "title": "Dott: Global Business Platform",
       "description": "Platforma zarządzania biznesem napędzana AI, działająca offline.",
       "cta": {
         "getStarted": "Rozpocznij Za Darmo",
@@ -446,5 +445,14 @@
       "button": "Rozpocznij Za Darmo",
       "terms": "Nie wymaga karty kredytowej • Anuluj w dowolnym momencie"
     }
+  },
+  "smartBanner": {
+    "title": "Dott: Globalna Platforma Biznesowa",
+    "ios": "Dostępne na ekranie głównym",
+    "android": "Zainstaluj dla szybkiego dostępu",
+    "tap": "Stuknij",
+    "then": "następnie",
+    "addToHome": "Dodaj do ekranu głównego",
+    "install": "Zainstaluj"
   }
 }

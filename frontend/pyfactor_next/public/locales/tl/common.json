@@ -389,8 +389,7 @@
   },
   "mobileLanding": {
     "hero": {
-      "title": "Ang Iyong Negosyo,",
-      "subtitle": "Sa Iyong Bulsa",
+      "title": "Dott: Global Business Platform",
       "description": "Platform ng pangangasiwa ng negosyo na pinapatakbo ng AI na gumagana offline.",
       "cta": {
         "getStarted": "Magsimula Nang Libre",
@@ -446,5 +445,14 @@
       "button": "Magsimula Nang Libre",
       "terms": "Walang kailangang credit card • Kanselahin anumang oras"
     }
+  },
+  "smartBanner": {
+    "title": "Dott: Pandaigdigang Platform ng Negosyo",
+    "ios": "Available sa iyong home screen",
+    "android": "I-install para sa mabilis na access",
+    "tap": "I-tap",
+    "then": "pagkatapos",
+    "addToHome": "Idagdag sa Home",
+    "install": "I-install"
   }
 }

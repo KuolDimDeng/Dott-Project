@@ -389,8 +389,7 @@
   },
   "mobileLanding": {
     "hero": {
-      "title": "Azụmahịa Gị,",
-      "subtitle": "N'ime Akpa Gị",
+      "title": "Dott: Global Business Platform",
       "description": "Ikpo okwu nlekọta azụmahịa nke AI na-akwado nke na-arụ ọrụ na-enweghị ịntanetị.",
       "cta": {
         "getStarted": "Malite N'efu",
@@ -446,5 +445,14 @@
       "button": "Malite N'efu",
       "terms": "Kaadị kredit adịghị mkpa • Kagbuo oge ọ bụla"
     }
+  },
+  "smartBanner": {
+    "title": "Dott: Ikpo Azụmaahịa Ụwa",
+    "ios": "Dị na ihuenyo mbụ gị",
+    "android": "Tinye maka ịnweta ngwa ngwa",
+    "tap": "Kpatụ",
+    "then": "mgbe ahụ",
+    "addToHome": "Tinye na Ụlọ",
+    "install": "Tinye"
   }
 }

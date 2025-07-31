@@ -1174,8 +1174,7 @@
   },
   "mobileLanding": {
     "hero": {
-      "title": "Ibhizinisi Lakho,",
-      "subtitle": "Ephaketheni Lakho",
+      "title": "Dott: Global Business Platform",
       "description": "Ipulatifomu yokuphatha ibhizinisi esebenzisa i-AI esebenza ngaphandle kwe-inthanethi.",
       "cta": {
         "getStarted": "Qala Mahhala",
@@ -1231,5 +1230,14 @@
       "button": "Qala Mahhala",
       "terms": "Akudingeki ikhadi lesikweletu • Khansela noma nini"
     }
+  },
+  "smartBanner": {
+    "title": "Dott: Ipulatifomu Yebhizinisi Yomhlaba",
+    "ios": "Iyatholakala esikrinini sakho sasekhaya",
+    "android": "Faka ukuze ufinyelele ngokushesha",
+    "tap": "Thepha",
+    "then": "bese",
+    "addToHome": "Engeza Ekhaya",
+    "install": "Faka"
   }
 }

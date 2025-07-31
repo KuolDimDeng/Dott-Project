@@ -389,8 +389,7 @@
   },
   "mobileLanding": {
     "hero": {
-      "title": "Il Tuo Business,",
-      "subtitle": "Nella Tua Tasca",
+      "title": "Dott: Global Business Platform",
       "description": "Piattaforma di gestione aziendale alimentata da AI che funziona offline.",
       "cta": {
         "getStarted": "Inizia Gratis",
@@ -446,5 +445,14 @@
       "button": "Inizia Gratis",
       "terms": "Nessuna carta di credito richiesta • Cancella in qualsiasi momento"
     }
+  },
+  "smartBanner": {
+    "title": "Dott: Piattaforma Aziendale Globale",
+    "ios": "Disponibile sulla tua schermata iniziale",
+    "android": "Installa per un accesso rapido",
+    "tap": "Tocca",
+    "then": "poi",
+    "addToHome": "Aggiungi a Home",
+    "install": "Installa"
   }
 }

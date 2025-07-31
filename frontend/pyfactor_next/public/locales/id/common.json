@@ -1516,8 +1516,7 @@
   },
   "mobileLanding": {
     "hero": {
-      "title": "Bisnis Anda,",
-      "subtitle": "Di Saku Anda",
+      "title": "Dott: Global Business Platform",
       "description": "Platform manajemen bisnis bertenaga AI yang bekerja offline.",
       "cta": {
         "getStarted": "Mulai Gratis",
@@ -1573,5 +1572,14 @@
       "button": "Mulai Gratis",
       "terms": "Tidak perlu kartu kredit • Batalkan kapan saja"
     }
+  },
+  "smartBanner": {
+    "title": "Dott: Platform Bisnis Global",
+    "ios": "Tersedia di layar beranda Anda",
+    "android": "Instal untuk akses cepat",
+    "tap": "Ketuk",
+    "then": "lalu",
+    "addToHome": "Tambahkan ke Beranda",
+    "install": "Instal"
   }
 }

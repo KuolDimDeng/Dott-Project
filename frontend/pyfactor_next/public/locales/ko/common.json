@@ -960,8 +960,7 @@
   },
   "mobileLanding": {
     "hero": {
-      "title": "당신의 비즈니스를",
-      "subtitle": "주머니 속에",
+      "title": "Dott: Global Business Platform",
       "description": "오프라인에서도 작동하는 AI 기반 비즈니스 관리 플랫폼.",
       "cta": {
         "getStarted": "무료로 시작하기",
@@ -1017,5 +1016,14 @@
       "button": "무료로 시작하기",
       "terms": "신용카드 불필요 • 언제든지 취소 가능"
     }
+  },
+  "smartBanner": {
+    "title": "Dott: 글로벌 비즈니스 플랫폼",
+    "ios": "홈 화면에서 사용 가능",
+    "android": "빠른 액세스를 위해 설치",
+    "tap": "탭",
+    "then": "그런 다음",
+    "addToHome": "홈 화면에 추가",
+    "install": "설치"
   }
 }

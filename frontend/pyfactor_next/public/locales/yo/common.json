@@ -1315,8 +1315,7 @@
   },
   "mobileLanding": {
     "hero": {
-      "title": "Iṣowo Rẹ,",
-      "subtitle": "Ninu Apo Rẹ",
+      "title": "Dott: Global Business Platform",
       "description": "Pẹpẹ iṣakoso iṣowo ti AI ti n ṣiṣẹ laisi intanẹẹti.",
       "cta": {
         "getStarted": "Bẹrẹ Ọfẹ",
@@ -1372,5 +1371,14 @@
       "button": "Bẹrẹ Ọfẹ",
       "terms": "Ko nilo kaadi kirẹditi • Fagile nigbakugba"
     }
+  },
+  "smartBanner": {
+    "title": "Dott: Pépèle Iṣòwò Àgbáyé",
+    "ios": "Wa lori iboju ile rẹ",
+    "android": "Fi sori ẹrọ fun iraye si kiakia",
+    "tap": "Tẹ",
+    "then": "lẹhinna",
+    "addToHome": "Fi kun Ile",
+    "install": "Fi sori ẹrọ"
   }
 }

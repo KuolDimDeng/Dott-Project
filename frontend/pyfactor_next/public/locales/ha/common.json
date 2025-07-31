@@ -1247,8 +1247,7 @@
   },
   "mobileLanding": {
     "hero": {
-      "title": "Kasuwancin ku,",
-      "subtitle": "A Cikin Aljihunku",
+      "title": "Dott: Global Business Platform",
       "description": "Dandamali na sarrafa kasuwanci mai ƙarfin AI wanda ke aiki ba tare da intanet ba.",
       "cta": {
         "getStarted": "Fara Kyauta",
@@ -1304,5 +1303,14 @@
       "button": "Fara Kyauta",
       "terms": "Ba a buƙatar katin kiredit • Soke kowane lokaci"
     }
+  },
+  "smartBanner": {
+    "title": "Dott: Dandalin Kasuwanci na Duniya",
+    "ios": "Akwai a kan allo na gida",
+    "android": "Shigar don samun damar shiga da sauri",
+    "tap": "Danna",
+    "then": "sannan",
+    "addToHome": "Ƙara zuwa Gida",
+    "install": "Shigar"
   }
 }

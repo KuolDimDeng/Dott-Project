@@ -1643,8 +1643,7 @@
   },
   "mobileLanding": {
     "hero": {
-      "title": "Ihr Geschäft,",
-      "subtitle": "In Ihrer Tasche",
+      "title": "Dott: Global Business Platform",
       "description": "KI-gestützte Geschäftsverwaltungsplattform, die offline funktioniert.",
       "cta": {
         "getStarted": "Kostenlos Starten",
@@ -1700,5 +1699,14 @@
       "button": "Kostenlos Starten",
       "terms": "Keine Kreditkarte erforderlich • Jederzeit kündbar"
     }
+  },
+  "smartBanner": {
+    "title": "Dott: Globale Geschäftsplattform",
+    "ios": "Auf Ihrem Startbildschirm verfügbar",
+    "android": "Für schnellen Zugriff installieren",
+    "tap": "Tippen",
+    "then": "dann",
+    "addToHome": "Zum Startbildschirm",
+    "install": "Installieren"
   }
 }

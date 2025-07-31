@@ -389,8 +389,7 @@
   },
   "mobileLanding": {
     "hero": {
-      "title": "Bhizinesi Rako,",
-      "subtitle": "Muhomwe Yako",
+      "title": "Dott: Global Business Platform",
       "description": "Puratifomu yekutungamira bhizinesi ine AI inoshanda pasina internet.",
       "cta": {
         "getStarted": "Tanga Mahara",
@@ -446,5 +445,14 @@
       "button": "Tanga Mahara",
       "terms": "Hapana kadhi rekukwereta rinodiwa • Kanzura chero nguva"
     }
+  },
+  "smartBanner": {
+    "title": "Dott: Global Business Platform",
+    "ios": "Iripo pane yako yepamusha peji",
+    "android": "Isa kuti uwane nekukurumidza",
+    "tap": "Baya",
+    "then": "wobva",
+    "addToHome": "Wedzera kuMusha",
+    "install": "Isa"
   }
 }

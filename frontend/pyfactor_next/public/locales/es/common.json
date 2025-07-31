@@ -1581,8 +1581,7 @@
   },
   "mobileLanding": {
     "hero": {
-      "title": "Tu Negocio,",
-      "subtitle": "En Tu Bolsillo",
+      "title": "Dott: Global Business Platform",
       "description": "Plataforma de gestión empresarial impulsada por IA que funciona sin conexión.",
       "cta": {
         "getStarted": "Comienza Gratis",
@@ -1638,5 +1637,14 @@
       "button": "Comienza Gratis",
       "terms": "No se requiere tarjeta de crédito • Cancela cuando quieras"
     }
+  },
+  "smartBanner": {
+    "title": "Dott: Plataforma Empresarial Global",
+    "ios": "Disponible en tu pantalla de inicio",
+    "android": "Instalar para acceso rápido",
+    "tap": "Toca",
+    "then": "luego",
+    "addToHome": "Añadir a inicio",
+    "install": "Instalar"
   }
 }

@@ -1088,8 +1088,7 @@
   "termsOfService": {},
   "mobileLanding": {
     "hero": {
-      "title": "あなたのビジネスを",
-      "subtitle": "ポケットに",
+      "title": "Dott: Global Business Platform",
       "description": "オフラインでも動作するAI搭載ビジネス管理プラットフォーム。",
       "cta": {
         "getStarted": "無料で始める",
@@ -1145,5 +1144,14 @@
       "button": "無料で始める",
       "terms": "クレジットカード不要 • いつでもキャンセル可能"
     }
+  },
+  "smartBanner": {
+    "title": "Dott：グローバルビジネスプラットフォーム",
+    "ios": "ホーム画面で利用可能",
+    "android": "クイックアクセスのためにインストール",
+    "tap": "タップ",
+    "then": "次に",
+    "addToHome": "ホーム画面に追加",
+    "install": "インストール"
   }
 }

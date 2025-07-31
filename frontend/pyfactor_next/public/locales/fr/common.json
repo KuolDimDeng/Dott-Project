@@ -1643,8 +1643,7 @@
   },
   "mobileLanding": {
     "hero": {
-      "title": "Votre Entreprise,",
-      "subtitle": "Dans Votre Poche",
+      "title": "Dott: Global Business Platform",
       "description": "Plateforme de gestion d'entreprise alimentée par l'IA qui fonctionne hors ligne.",
       "cta": {
         "getStarted": "Commencer Gratuitement",
@@ -1700,5 +1699,14 @@
       "button": "Commencer Gratuitement",
       "terms": "Aucune carte de crédit requise • Annulez à tout moment"
     }
+  },
+  "smartBanner": {
+    "title": "Dott : Plateforme d'Affaires Mondiale",
+    "ios": "Disponible sur votre écran d'accueil",
+    "android": "Installer pour un accès rapide",
+    "tap": "Appuyez",
+    "then": "puis",
+    "addToHome": "Ajouter à l'accueil",
+    "install": "Installer"
   }
 }
