@@ -101,6 +101,31 @@ const CurrencyPreferences = () => {
     }
   };
   
+  // Test connection
+  const testConnection = async () => {
+    console.log('🔌 [CurrencyPreferences] Running connection test...');
+    try {
+      const response = await fetch('/api/currency/test-connection');
+      const data = await response.json();
+      console.log('🔌 [CurrencyPreferences] Connection test results:', data);
+      
+      if (data.success) {
+        const failedTests = data.tests.filter(t => !t.success);
+        if (failedTests.length > 0) {
+          console.error('🔌 [CurrencyPreferences] Some tests failed:', failedTests);
+          notifyError(`Connection issues detected: ${failedTests.map(t => t.test).join(', ')}`);
+        } else {
+          notifySuccess('Connection test passed - all systems operational');
+        }
+      } else {
+        notifyError('Connection test failed: ' + data.error);
+      }
+    } catch (error) {
+      console.error('🔌 [CurrencyPreferences] Connection test error:', error);
+      notifyError('Failed to run connection test');
+    }
+  };
+  
   // Test public endpoint
   const testPublic = async () => {
     console.log('🌐 [CurrencyPreferences] Testing public endpoint...');
@@ -280,7 +305,22 @@ const CurrencyPreferences = () => {
         stack: error.stack,
         type: error.constructor.name
       });
-      notifyError('Failed to update currency preferences');
+      
+      // Show more specific error message
+      let errorMessage = 'Failed to update currency preferences';
+      if (error.message?.includes('NetworkError') || error.message?.includes('Failed to fetch')) {
+        errorMessage = 'Network error: Unable to connect to server. Please check your connection and try again.';
+      } else if (error.message?.includes('timeout')) {
+        errorMessage = 'Request timed out. The server might be slow. Please try again.';
+      }
+      
+      notifyError(errorMessage);
+      
+      // Run connection test automatically on network error
+      if (error.message?.includes('NetworkError') || error.message?.includes('Failed to fetch')) {
+        console.log('🚀 [CurrencyPreferences] Running connection test due to network error...');
+        testConnection();
+      }
     }
     setLoading(false);
     console.log('🚀 [CurrencyPreferences] === UPDATE CURRENCY END ===');
@@ -564,6 +604,33 @@ const CurrencyPreferences = () => {
           </div>
         </div>
       </div>
+      
+      {/* Debug Tools - Only in development */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+          <h4 className="text-sm font-medium text-gray-700 mb-2">Debug Tools</h4>
+          <div className="flex space-x-2">
+            <button
+              onClick={testConnection}
+              className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              Test Connection
+            </button>
+            <button
+              onClick={runDiagnostic}
+              className="px-3 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600"
+            >
+              Run Diagnostic
+            </button>
+            <button
+              onClick={testAuth}
+              className="px-3 py-1 text-xs bg-purple-500 text-white rounded hover:bg-purple-600"
+            >
+              Test Auth
+            </button>
+          </div>
+        </div>
+      )}
 
       <ConfirmationModal />
     </div>

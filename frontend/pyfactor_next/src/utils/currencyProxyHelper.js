@@ -43,17 +43,23 @@ export async function makeBackendRequest(endpoint, options = {}, cookies = null)
     ...options.headers,
   };
   
-  // Add cookies if provided
+  // Add authentication if provided
   if (cookies) {
-    const cookieHeader = [];
-    const sessionId = cookies.get('sid')?.value;
-    const sessionToken = cookies.get('session_token')?.value;
+    const sessionId = cookies.get('sid')?.value || cookies.get('session_token')?.value;
     
-    if (sessionId) cookieHeader.push(`sid=${sessionId}`);
-    if (sessionToken) cookieHeader.push(`session_token=${sessionToken}`);
-    
-    if (cookieHeader.length > 0) {
+    if (sessionId) {
+      // Add Authorization header (primary method)
+      headers['Authorization'] = `Session ${sessionId}`;
+      
+      // Also add cookies as backup
+      const cookieHeader = [];
+      cookieHeader.push(`sid=${sessionId}`);
+      cookieHeader.push(`session_token=${sessionId}`);
       headers['Cookie'] = cookieHeader.join('; ');
+      
+      console.log(`[Currency Helper] Auth configured with session: ${sessionId.substring(0, 8)}...`);
+    } else {
+      console.warn('[Currency Helper] No session token found in cookies');
     }
   }
   
@@ -63,6 +69,15 @@ export async function makeBackendRequest(endpoint, options = {}, cookies = null)
   while (attempt < RETRY_CONFIG.maxRetries) {
     try {
       console.log(`[Currency Helper] Attempt ${attempt + 1}/${RETRY_CONFIG.maxRetries} - ${options.method || 'GET'} ${fullUrl}`);
+      
+      console.log(`[Currency Helper] Fetch options:`, {
+        method: options.method || 'GET',
+        headers: Object.keys(headers).reduce((acc, key) => {
+          acc[key] = key === 'Cookie' ? (headers[key]?.substring(0, 50) + '...') : headers[key];
+          return acc;
+        }, {}),
+        bodyLength: options.body?.length || 0
+      });
       
       const response = await fetch(fullUrl, {
         ...options,
@@ -89,7 +104,24 @@ export async function makeBackendRequest(endpoint, options = {}, cookies = null)
       
     } catch (error) {
       lastError = error;
-      console.error(`[Currency Helper] Request failed (attempt ${attempt + 1}):`, error.message);
+      console.error(`[Currency Helper] Request failed (attempt ${attempt + 1}):`, {
+        message: error.message,
+        name: error.name,
+        cause: error.cause,
+        systemError: error.code,
+        errno: error.errno,
+        syscall: error.syscall
+      });
+      
+      // Log more details for network errors
+      if (error.message?.includes('fetch') || error.name === 'TypeError') {
+        console.error(`[Currency Helper] Network error details:`, {
+          url: fullUrl,
+          method: options.method || 'GET',
+          backendUrl: getBackendUrl(),
+          error: error.toString()
+        });
+      }
       
       // Don't retry on client errors or abort
       if (error.name === 'AbortError' || (error.response && error.response.status >= 400 && error.response.status < 500)) {

@@ -3,7 +3,8 @@ import {
   makeBackendRequest, 
   parseResponse, 
   createErrorResponse, 
-  createSuccessResponse 
+  createSuccessResponse,
+  getBackendUrl
 } from '@/utils/currencyProxyHelper';
 
 export async function GET() {
@@ -47,6 +48,12 @@ export async function PUT(request) {
     
     console.log('🚀 [Currency Preferences] Request body:', JSON.stringify(body, null, 2));
     console.log('🚀 [Currency Preferences] Cookie store:', cookieStore.getAll().map(c => ({ name: c.name, value: c.value ? `${c.value.substring(0, 8)}...` : 'null' })));
+    console.log('🚀 [Currency Preferences] Backend URL:', getBackendUrl());
+    console.log('🚀 [Currency Preferences] Environment:', {
+      NODE_ENV: process.env.NODE_ENV,
+      BACKEND_URL: process.env.BACKEND_URL,
+      NEXT_PUBLIC_BACKEND_URL: process.env.NEXT_PUBLIC_BACKEND_URL
+    });
     
     // Create an AbortController with a longer timeout for PUT operations
     const controller = new AbortController();
@@ -88,10 +95,24 @@ export async function PUT(request) {
     } catch (fetchError) {
       clearTimeout(timeoutId);
       
+      console.error('🚀 [Currency Preferences] Fetch error details:', {
+        name: fetchError.name,
+        message: fetchError.message,
+        cause: fetchError.cause,
+        stack: fetchError.stack?.split('\n').slice(0, 5).join('\n')
+      });
+      
       if (fetchError.name === 'AbortError') {
         console.error('🚀 [Currency Preferences] Request timed out after 25 seconds');
         return createErrorResponse(new Error('Request timed out - please try again'), 504);
       }
+      
+      // Check for network errors
+      if (fetchError.message?.includes('NetworkError') || fetchError.message?.includes('Failed to fetch')) {
+        console.error('🚀 [Currency Preferences] Network error - backend might be unreachable');
+        return createErrorResponse(new Error('Network error - unable to reach backend service. Please try again.'), 503);
+      }
+      
       throw fetchError;
     }
     
