@@ -65,6 +65,18 @@ const SecurityIcon = () => (
   </svg>
 );
 
+const LanguageIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+  </svg>
+);
+
+const CurrencyIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
 export default function Features() {
   const { t, i18n } = useTranslation('common');
   const [renderKey, setRenderKey] = useState(0);
@@ -158,10 +170,16 @@ export default function Features() {
           highlights: [t('highlights.mobileMoney', 'Mobile money'), t('highlights.bankTransfers', 'Bank transfers'), t('highlights.digitalWallets', 'Digital wallets')]
         },
         {
-          title: t('feature.global', 'Import/Export Management'),
-          description: t('feature.global.description', 'Handle international trade documentation and compliance'),
-          icon: <GlobalIcon />,
-          highlights: [t('highlights.customsDocuments', 'Customs documents'), t('highlights.shippingIntegration', 'Shipping integration'), t('highlights.tradeCompliance', 'Trade compliance')]
+          title: t('feature.languages', 'Multi-Language Support'),
+          description: t('feature.languages.description', 'Full application support in 30+ languages for global teams'),
+          icon: <LanguageIcon />,
+          highlights: [t('highlights.autoDetection', 'Auto language detection'), t('highlights.rightToLeft', 'Right-to-left languages'), t('highlights.regionalFormat', 'Regional date/number formats')]
+        },
+        {
+          title: t('feature.currencies', 'Multi-Currency System'),
+          description: t('feature.currencies.description', 'Support for 170+ currencies with real-time exchange rates'),
+          icon: <CurrencyIcon />,
+          highlights: [t('highlights.realTimeRates', 'Real-time exchange rates'), t('highlights.cryptoCurrency', 'Cryptocurrency support'), t('highlights.currencyConversion', 'Automatic conversions')]
         },
         {
           title: t('feature.security', 'Enterprise Security'),
@@ -209,7 +227,8 @@ export default function Features() {
                   'Dual Accounting Standards': 'from-purple-500 to-pink-500',
                   'Financial Analytics': 'from-orange-500 to-red-500',
                   'Regional Payment Gateways': 'from-blue-500 to-cyan-500',
-                  'Import/Export Management': 'from-green-500 to-teal-500',
+                  'Multi-Language Support': 'from-green-500 to-teal-500',
+                  'Multi-Currency System': 'from-yellow-500 to-orange-500',
                   'Enterprise Security': 'from-purple-500 to-pink-500'
                 };
                 
