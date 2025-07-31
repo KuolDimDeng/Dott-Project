@@ -21,6 +21,9 @@ logger = logging.getLogger(__name__)
 @permission_classes([IsAuthenticated])
 def business_settings(request):
     """Get or update business settings including accounting standard"""
+    logger.info(f"[business_settings] Method: {request.method}, Path: {request.path}")
+    logger.info(f"[business_settings] User: {request.user}, Auth: {request.user.is_authenticated}")
+    
     try:
         user = request.user
         
