@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CheckIcon } from '@heroicons/react/24/solid';
 import { useTranslation } from 'react-i18next';
+import { isDevelopingCountry, getDevelopingCountryName } from '@/utils/developingCountries';
 
 // Helper function to format price in local currency
 function formatLocalPrice(usdPrice, exchangeRate) {
@@ -86,30 +87,33 @@ export default function GeoPricing() {
         console.error('💰 [GeoPricing] ❌ COUNTRY MISMATCH!');
         console.error('💰 [GeoPricing] Requested:', countryOverride, 'Got:', data.country_code);
         
-        // TEMPORARY FIX: If we requested Kenya but got US, apply Kenya pricing manually
-        if (countryOverride === 'KE' && data.country_code === 'US') {
-          console.warn('💰 [GeoPricing] Applying manual Kenya pricing override');
+        // FIX: If we requested a developing country but got US, apply correct pricing
+        if (isDevelopingCountry(countryOverride) && data.country_code === 'US') {
+          const countryName = getDevelopingCountryName(countryOverride) || countryOverride;
+          console.warn(`💰 [GeoPricing] Applying manual ${countryName} (${countryOverride}) pricing override`);
+          
+          // Apply 50% discount to all developing countries
           data = {
             ...data,
-            country_code: 'KE',
+            country_code: countryOverride,
             discount_percentage: 50,
-            currency: 'KES',
+            currency: 'USD', // Will be converted to local currency later
             pricing: {
               professional: {
-                monthly: 7.50,
-                six_month: 39.00,
-                yearly: 72.00,
-                monthly_display: '$7.50',
-                six_month_display: '$39.00',
-                yearly_display: '$72.00'
+                monthly: 17.50,      // 50% off $35
+                six_month: 87.50,    // 50% off $175
+                yearly: 168.00,      // 50% off $336
+                monthly_display: '$17.50',
+                six_month_display: '$87.50',
+                yearly_display: '$168.00'
               },
               enterprise: {
-                monthly: 22.50,
-                six_month: 117.00,
-                yearly: 216.00,
-                monthly_display: '$22.50',
-                six_month_display: '$117.00',
-                yearly_display: '$216.00'
+                monthly: 47.50,      // 50% off $95
+                six_month: 237.50,   // 50% off $475
+                yearly: 456.00,      // 50% off $912
+                monthly_display: '$47.50',
+                six_month_display: '$237.50',
+                yearly_display: '$456.00'
               }
             }
           };
@@ -263,15 +267,19 @@ export default function GeoPricing() {
         
         {/* Discount Banner */}
         {pricing && pricing.discount_percentage > 0 && (
-          <div className="mb-8 bg-gradient-to-r from-green-500 to-emerald-600 text-white p-6 rounded-xl shadow-lg text-center">
-            <h3 className="text-2xl font-bold mb-2">
-              🎉 {t('pricing.discount.title', '{{percentage}}% Off All Plans!', { percentage: pricing.discount_percentage })}
-            </h3>
-            <p className="text-xl">
-              {t('pricing.discount.subtitle', 'Special pricing for businesses in {{country}}', { country: pricing.country_code })}
-            </p>
-            <p className="text-sm mt-2 opacity-90">
-              {t('pricing.discount.support', 'Supporting local entrepreneurship with regional pricing')}
+          <div className="mb-8 bg-gradient-to-r from-green-600 to-emerald-600 text-white p-6 rounded-xl shadow-lg text-center relative">
+            <div className="flex items-center justify-center mb-2">
+              <svg className="h-8 w-8 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              <span className="text-2xl font-bold">
+                {t('pricing.discount.title', 'Supporting {{country}} Businesses', { 
+                  country: getDevelopingCountryName(pricing.country_code) || pricing.country_code 
+                })}
+              </span>
+            </div>
+            <p className="text-lg font-medium">
+              {t('pricing.discount.subtitle', '50% discount for companies with local operations')}
             </p>
           </div>
         )}

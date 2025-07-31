@@ -333,33 +333,70 @@ export async function GET(request) {
     }
 
     // Fallback to exchangerate-api.com
-    const fallbackUrl = `https://v6.exchangerate-api.com/v6/41fc0bfadd338697395e482f/latest/${baseCurrency}`;
-    console.log(`🌍 [ExchangeRate API] Calling fallback API: ${fallbackUrl}`);
-    
-    const response = await fetch(fallbackUrl);
-    console.log(`🌍 [ExchangeRate API] Fallback API response status: ${response.status}`);
-    
-    if (!response.ok) {
-      throw new Error(`Exchange rate API error: ${response.status}`);
+    try {
+      const fallbackUrl = `https://v6.exchangerate-api.com/v6/41fc0bfadd338697395e482f/latest/${baseCurrency}`;
+      console.log(`🌍 [ExchangeRate API] Calling exchangerate-api: ${fallbackUrl}`);
+      
+      const response = await fetch(fallbackUrl);
+      console.log(`🌍 [ExchangeRate API] Exchangerate-api response status: ${response.status}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log(`🌍 [ExchangeRate API] Exchangerate-api conversion rates available:`, Object.keys(data.conversion_rates || {}).length);
+        
+        const rate = data.conversion_rates[targetCurrency] || 1;
+        console.log(`🌍 [ExchangeRate API] Rate for ${targetCurrency}: ${rate}`);
+        
+        const result = {
+          success: true,
+          rate: rate,
+          currency: targetCurrency,
+          source: 'ExchangeRate-API',
+          format: currencyFormats[targetCurrency] || { symbol: targetCurrency, decimals: 2 },
+          disclaimer: 'Exchange rate is estimated and may vary. Actual rates depend on payment provider.'
+        };
+        
+        console.log('🌍 [ExchangeRate API] Returning exchangerate-api result:', result);
+        return NextResponse.json(result);
+      }
+    } catch (exchangeRateError) {
+      console.error('🌍 [ExchangeRate API] Exchangerate-api error:', exchangeRateError.message);
+      console.log('🌍 [ExchangeRate API] Falling back to currencyapi');
     }
-    
-    const data = await response.json();
-    console.log(`🌍 [ExchangeRate API] Fallback API conversion rates available:`, Object.keys(data.conversion_rates || {}).length);
-    
-    const rate = data.conversion_rates[targetCurrency] || 1;
-    console.log(`🌍 [ExchangeRate API] Rate for ${targetCurrency}: ${rate}`);
-    
-    const result = {
-      success: true,
-      rate: rate,
-      currency: targetCurrency,
-      source: 'ExchangeRate-API',
-      format: currencyFormats[targetCurrency] || { symbol: targetCurrency, decimals: 2 },
-      disclaimer: 'Exchange rate is estimated and may vary. Actual rates depend on payment provider.'
-    };
-    
-    console.log('🌍 [ExchangeRate API] Returning fallback result:', result);
-    return NextResponse.json(result);
+
+    // Fallback to currencyapi.com
+    try {
+      const currencyApiUrl = `https://api.currencyapi.com/v3/latest?apikey=cur_live_jE7Pw20yFxMkRhfGR8cmwEFHP8HB2JCQOUEOg0lc&base_currency=${baseCurrency}&currencies=${targetCurrency}`;
+      console.log(`🌍 [ExchangeRate API] Calling currencyapi: ${currencyApiUrl.replace(/apikey=[^&]+/, 'apikey=***')}`);
+      
+      const currencyResponse = await fetch(currencyApiUrl);
+      console.log(`🌍 [ExchangeRate API] Currencyapi response status: ${currencyResponse.status}`);
+      
+      if (currencyResponse.ok) {
+        const currencyData = await currencyResponse.json();
+        console.log('🌍 [ExchangeRate API] Currencyapi data:', currencyData);
+        
+        const rate = currencyData.data?.[targetCurrency]?.value || 1;
+        console.log(`🌍 [ExchangeRate API] Currencyapi rate for ${targetCurrency}: ${rate}`);
+        
+        const result = {
+          success: true,
+          rate: rate,
+          currency: targetCurrency,
+          source: 'CurrencyAPI',
+          format: currencyFormats[targetCurrency] || { symbol: targetCurrency, decimals: 2 },
+          disclaimer: 'Exchange rate is estimated and may vary. Actual rates depend on payment provider.'
+        };
+        
+        console.log('🌍 [ExchangeRate API] Returning currencyapi result:', result);
+        return NextResponse.json(result);
+      }
+    } catch (currencyApiError) {
+      console.error('🌍 [ExchangeRate API] Currencyapi error:', currencyApiError.message);
+    }
+
+    // If all APIs fail, return default
+    throw new Error('All exchange rate APIs failed');
     
   } catch (error) {
     console.error('🌍 [ExchangeRate API] Critical error:', error);
