@@ -79,15 +79,21 @@ class AccountingStandardsService:
     
     @staticmethod
     def get_financial_statement_format(business_id):
-        """Get required financial statement format"""
+        """Get financial statement format - both IFRS and GAAP allow common names"""
         standard = AccountingStandardsService.get_business_accounting_standard(business_id)
         if standard == 'IFRS':
             return {
-                'balance_sheet_name': 'Statement of Financial Position',
-                'income_statement_name': 'Statement of Comprehensive Income',
+                'balance_sheet_name': 'Balance Sheet',  # IFRS allows common names
+                'income_statement_name': 'Income Statement',
                 'equity_statement_name': 'Statement of Changes in Equity',
                 'cash_flow_categories': ['Operating', 'Investing', 'Financing'],
-                'extraordinary_items_allowed': False
+                'extraordinary_items_allowed': False,
+                'official_names': {
+                    'balance_sheet': 'Statement of Financial Position',
+                    'income_statement': 'Statement of Comprehensive Income',
+                    'equity_statement': 'Statement of Changes in Equity',
+                    'cash_flow': 'Statement of Cash Flows'
+                }
             }
         else:  # GAAP
             return {
@@ -95,7 +101,13 @@ class AccountingStandardsService:
                 'income_statement_name': 'Income Statement',
                 'equity_statement_name': 'Statement of Stockholders\' Equity',
                 'cash_flow_categories': ['Operating', 'Investing', 'Financing'],
-                'extraordinary_items_allowed': False  # No longer allowed under US GAAP
+                'extraordinary_items_allowed': False,  # No longer allowed under US GAAP
+                'official_names': {
+                    'balance_sheet': 'Balance Sheet',
+                    'income_statement': 'Income Statement',
+                    'equity_statement': 'Statement of Stockholders\' Equity',
+                    'cash_flow': 'Statement of Cash Flows'
+                }
             }
     
     @staticmethod

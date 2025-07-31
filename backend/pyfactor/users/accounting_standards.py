@@ -70,7 +70,8 @@ ACCOUNTING_STANDARD_INFO = {
             'Inventory: FIFO and weighted average only (no LIFO)',
             'Development costs: Can be capitalized if criteria met',
             'Asset revaluation: Allowed for property, plant & equipment',
-            'Component depreciation: Required'
+            'Component depreciation: Required',
+            'Statement names: Common names like "Balance Sheet" are permitted'
         ]
     },
     'GAAP': {
@@ -81,7 +82,8 @@ ACCOUNTING_STANDARD_INFO = {
             'Inventory: LIFO, FIFO, and weighted average allowed',
             'Development costs: Must be expensed (except software)',
             'Asset revaluation: Not allowed (historical cost only)',
-            'Component depreciation: Permitted but not required'
+            'Component depreciation: Permitted but not required',
+            'Statement names: Standard US naming conventions'
         ]
     }
 }
