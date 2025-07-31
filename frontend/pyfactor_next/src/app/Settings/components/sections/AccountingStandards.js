@@ -30,12 +30,23 @@ const AccountingStandards = () => {
   const fetchAccountingStandards = async () => {
     console.log('📊 [AccountingStandards] Fetching current standards...');
     try {
-      const response = await fetch('/api/backend/api/business/settings/');
+      const response = await fetch('/api/backend/api/business/settings/', {
+        credentials: 'include'
+      });
+      console.log('📊 [AccountingStandards] Fetch response status:', response.status);
+      
+      if (!response.ok) {
+        console.error('📊 [AccountingStandards] Failed to fetch settings:', response.status, response.statusText);
+        return;
+      }
+      
       const data = await response.json();
       
       if (data.success) {
         console.log('📊 [AccountingStandards] Current settings:', data);
         setStandardInfo(data);
+      } else {
+        console.error('📊 [AccountingStandards] Error in response:', data);
       }
     } catch (error) {
       console.error('📊 [AccountingStandards] Error fetching standards:', error);
@@ -53,18 +64,30 @@ const AccountingStandards = () => {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           accounting_standard: standard,
         }),
       });
 
-      const data = await response.json();
-      console.log('📊 [AccountingStandards] Response:', data);
+      console.log('📊 [AccountingStandards] Response status:', response.status);
+      console.log('📊 [AccountingStandards] Response headers:', response.headers);
       
-      if (data.success) {
+      let data;
+      try {
+        data = await response.json();
+        console.log('📊 [AccountingStandards] Response data:', data);
+      } catch (e) {
+        console.error('📊 [AccountingStandards] Failed to parse JSON:', e);
+        notifyError('Failed to update accounting standard - invalid response');
+        return;
+      }
+      
+      if (response.ok && data.success) {
         setStandardInfo(data);
         notifySuccess(`Accounting standard updated to ${data.accounting_standard_display}`);
       } else {
+        console.error('📊 [AccountingStandards] Error response:', data);
         notifyError(data.error || 'Failed to update accounting standard');
       }
     } catch (error) {
@@ -84,6 +107,7 @@ const AccountingStandards = () => {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           inventory_valuation_method: method,
         }),
