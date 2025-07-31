@@ -14,6 +14,8 @@ from users.accounting_standards import (
     is_dual_standard_country,
     ACCOUNTING_STANDARD_INFO
 )
+from core.decorators import cache_view, invalidate_on_change
+from core.cache_service import CacheService, cache_service
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +50,11 @@ def business_settings(request):
         business_details, created = BusinessDetails.objects.get_or_create(business=business)
         
         if request.method == 'GET':
+            # Try to get from cache first
+            cached_data = cache_service.get_business_details(business_id)
+            if cached_data:
+                return Response(cached_data)
+            
             # Get accounting standard info
             from accounting.services import AccountingStandardsService
             country_code = str(business_details.country) if business_details.country else 'US'
@@ -56,7 +63,7 @@ def business_settings(request):
             # Get financial statement names
             statement_format = AccountingStandardsService.get_financial_statement_format(business_id)
             
-            return Response({
+            response_data = {
                 'success': True,
                 'accounting_standard': current_standard,
                 'accounting_standard_display': get_accounting_standard_display(current_standard, country_code),
@@ -75,7 +82,12 @@ def business_settings(request):
                     'name': business.name,
                     'id': str(business.id)
                 }
-            })
+            }
+            
+            # Cache the response
+            cache_service.set_business_details(business_id, response_data)
+            
+            return Response(response_data)
         
         elif request.method == 'PATCH':
             # Update accounting standard
@@ -125,6 +137,9 @@ def business_settings(request):
             
             if updated:
                 business_details.save()
+                
+                # Invalidate cache after update
+                cache_service.invalidate_business(business_id)
                 
                 # Return full updated data
                 country_code = str(business_details.country) if business_details.country else 'US'

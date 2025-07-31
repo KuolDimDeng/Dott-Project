@@ -136,6 +136,9 @@ urlpatterns = [
     # Jobs API routes
     path('api/jobs/', include('jobs.urls')),
     
+    # Core monitoring and performance routes
+    path('api/core/', include('core.urls')),
+    
     # Main app routes
     path('', include('users.urls')),
     

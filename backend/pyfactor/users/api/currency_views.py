@@ -15,6 +15,7 @@ from currency.exchange_rate_service import exchange_rate_service
 from currency.currency_validator import CurrencyValidator, CurrencyConversionValidator
 from decimal import Decimal
 import traceback
+from core.cache_service import cache_service
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -367,6 +368,10 @@ def get_currency_preferences(request):
                 business_details.save()
                 logger.info(f"[Currency API] === SAVE SUCCESSFUL ===")
                 logger.info(f"[Currency API] Currency changed from {request.data.get('previous_currency', 'Unknown')} to {business_details.preferred_currency_code}")
+                
+                # Invalidate cache after update
+                cache_service.invalidate_business(str(business_id))
+                logger.info(f"[Currency API] Cache invalidated for business: {business_id}")
             except Exception as save_error:
                 logger.error(f"[Currency API] Database save error: {str(save_error)}", exc_info=True)
                 return Response({
@@ -374,6 +379,13 @@ def get_currency_preferences(request):
                     'error': f'Database save error: {str(save_error)}',
                     'error_type': type(save_error).__name__
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        # Check cache for GET requests
+        if request.method == 'GET':
+            cached_prefs = cache_service.get_currency_preferences(str(business_id))
+            if cached_prefs:
+                logger.info(f"[Currency API] Returning cached currency preferences")
+                return Response(cached_prefs)
         
         # Get currency info for response
         try:
@@ -403,6 +415,10 @@ def get_currency_preferences(request):
             ),
             'allows_dual_standard': is_dual_standard_country(business_details.country)
         }
+        
+        # Cache the response for GET requests
+        if request.method == 'GET':
+            cache_service.set_currency_preferences(str(business_id), response_data)
         
         logger.info(f"[Currency API] ========== RESPONSE SUCCESS ==========")
         logger.info(f"[Currency API] Response data: {response_data}")

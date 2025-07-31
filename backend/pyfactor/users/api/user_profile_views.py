@@ -16,6 +16,7 @@ from custom_auth.auth0_authentication import Auth0JWTAuthentication
 from core.authentication.session_token_auth import SessionTokenAuthentication
 from users.models import UserProfile
 from onboarding.models import OnboardingProgress
+from core.cache_service import cache_service
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +43,13 @@ class UserProfileMeView(APIView):
         try:
             logger.info(f"[UserProfileMeView] Getting profile for user: {request.user.email}")
             
+            # Check cache first
+            cached_profile = cache_service.get_user_profile(request.user.id)
+            if cached_profile:
+                logger.info(f"[UserProfileMeView] Returning cached profile")
+                cached_profile['request_id'] = request_id  # Add fresh request ID
+                return Response(cached_profile, status=status.HTTP_200_OK)
+            
             # Get user profile
             try:
                 profile = UserProfile.objects.get(user=request.user)
@@ -49,7 +57,7 @@ class UserProfileMeView(APIView):
             except UserProfile.DoesNotExist:
                 logger.warning(f"[UserProfileMeView] No user profile found for user {request.user.id}")
                 # Create basic response with user data only
-                return Response({
+                response_data = {
                     'id': request.user.id,
                     'email': request.user.email,
                     'first_name': request.user.first_name,
@@ -58,7 +66,8 @@ class UserProfileMeView(APIView):
                     'selected_plan': 'free',
                     'subscription_type': 'free',
                     'request_id': request_id
-                }, status=status.HTTP_200_OK)
+                }
+                return Response(response_data, status=status.HTTP_200_OK)
             
             # Get onboarding progress to get subscription plan
             subscription_plan = 'free'
@@ -115,7 +124,7 @@ class UserProfileMeView(APIView):
                 user_access = UserPageAccess.objects.filter(
                     user=request.user,
                     tenant=request.user.tenant
-                ).select_related('page')
+                ).select_related('page').prefetch_related('page__children')
                 for access in user_access:
                     page_permissions.append({
                         'path': access.page.path,
@@ -185,6 +194,11 @@ class UserProfileMeView(APIView):
                 })
             
             logger.info(f"[UserProfileMeView] Returning profile data with subscription_plan: {subscription_plan}")
+            
+            # Cache the profile data (excluding request_id for caching)
+            cache_data = response_data.copy()
+            cache_data.pop('request_id', None)
+            cache_service.set_user_profile(request.user.id, cache_data)
             
             return Response(response_data, status=status.HTTP_200_OK)
             
