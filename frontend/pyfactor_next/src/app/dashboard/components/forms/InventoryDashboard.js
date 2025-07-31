@@ -24,7 +24,7 @@ import {
   ClipboardText
 } from '@phosphor-icons/react';
 
-import StandardSpinner from '@/components/ui/StandardSpinner';
+import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 const InventoryDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState('month');
@@ -450,11 +450,7 @@ const InventoryDashboard = () => {
 
   // Wait for tenant ID to load
   if (!tenantId || isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <StandardSpinner size="large" />
-      </div>
-    );
+    return <CenteredSpinner size="large" minHeight="h-screen" />;
   }
 
   return (

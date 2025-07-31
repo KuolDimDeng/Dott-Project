@@ -20,6 +20,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { hrApi, payrollApi } from '@/utils/apiClient';
 import { logger } from '@/utils/logger';
+import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 
 // Tooltip component for field help
 const FieldTooltip = ({ text, position = 'top' }) => {
@@ -250,6 +251,11 @@ function BenefitsManagement({ onNavigate }) {
       </nav>
     </div>
   );
+
+  // Show loading spinner while data is loading
+  if (loading) {
+    return <CenteredSpinner size="large" text="Loading benefits..." showText={true} minHeight="h-screen" />;
+  }
 
   return (
     <div className="space-y-6">

@@ -2118,7 +2118,7 @@ function EmployeeManagement({ onNavigate }) {
   const renderEmployeeList = () => (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
       {loading ? (
-        <CenteredSpinner size="medium" />
+        <CenteredSpinner size="large" text="Loading employees..." showText={true} minHeight="h-96" />
       ) : filteredEmployees.length === 0 ? (
         <div className="text-center py-12">
           <UserGroupIcon className="h-12 w-12 text-gray-300 mx-auto mb-4" />

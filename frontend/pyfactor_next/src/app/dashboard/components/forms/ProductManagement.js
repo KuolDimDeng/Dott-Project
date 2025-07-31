@@ -2302,14 +2302,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
   const renderProductsList = () => {
     // Show loading state
     if (isLoading) {
-      return (
-        <div className="flex justify-center items-center h-64">
-          <div className="flex flex-col items-center">
-            <StandardSpinner size="large" />
-            <p className="mt-4 text-gray-600">Loading products...</p>
-          </div>
-        </div>
-      );
+      return <CenteredSpinner size="large" text="Loading products..." showText={true} minHeight="h-screen" />;
     }
     
     // Show fetch error message if there is one

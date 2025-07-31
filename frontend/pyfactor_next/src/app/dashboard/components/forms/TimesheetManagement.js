@@ -25,7 +25,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useSessionContext } from '@/providers/SessionProvider';
 import { logger } from '@/utils/logger';
-import StandardSpinner from '@/components/ui/StandardSpinner';
+import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 import timesheetApi from '@/utils/api/timesheetApi';
 import EnhancedTimesheet from '@/app/dashboard/components/forms/timesheet/EnhancedTimesheet';
 
@@ -501,11 +501,7 @@ function TimesheetManagement({ onNavigate }) {
   );
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <StandardSpinner size="large" />
-      </div>
-    );
+    return <CenteredSpinner size="large" text="Loading timesheets..." showText={true} minHeight="h-screen" />;
   }
 
   return (

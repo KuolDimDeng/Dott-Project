@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { logger } from '@/utils/logger';
 import { useSession } from '@/hooks/useSession-v2';
-import StandardSpinner from '@/components/ui/StandardSpinner';
+import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 
 export default function OnboardingCompletePage() {
   const router = useRouter();
@@ -158,24 +158,17 @@ export default function OnboardingCompletePage() {
     completePayment();
   }, [searchParams, router, session]);
 
+  if (status === 'processing') {
+    return <CenteredSpinner size="large" text="Processing Payment" showText={true} minHeight="h-screen" />;
+  }
+
+  if (status === 'redirecting') {
+    return <CenteredSpinner size="large" text="Almost Done! Redirecting to your dashboard..." showText={true} minHeight="h-screen" />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
-        {status === 'processing' && (
-          <>
-            <StandardSpinner size="large" className="mx-auto mb-4" />
-            <h2 className="text-2xl font-semibold text-gray-900 mb-2">Processing Payment</h2>
-            <p className="text-gray-600">{message}</p>
-          </>
-        )}
-        
-        {status === 'redirecting' && (
-          <>
-            <StandardSpinner size="large" className="mx-auto mb-4" />
-            <h2 className="text-2xl font-semibold text-gray-900 mb-2">Almost Done!</h2>
-            <p className="text-gray-600">{message}</p>
-          </>
-        )}
         
         {status === 'success' && (
           <>

@@ -22,7 +22,7 @@ import {
 import { hrApi } from '@/utils/apiClient';
 import { logger } from '@/utils/logger';
 import api from '@/utils/api';
-import StandardSpinner from '@/components/ui/StandardSpinner';
+import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 
 // Tooltip component for field help
 const FieldTooltip = ({ text, position = 'top' }) => {
@@ -897,6 +897,11 @@ function PayManagement({ onNavigate }) {
         return renderTable();
     }
   };
+
+  // Show loading spinner while data is loading
+  if (loading) {
+    return <CenteredSpinner size="large" text="Loading pay management..." showText={true} minHeight="h-screen" />;
+  }
 
   return (
     <div className="space-y-6">

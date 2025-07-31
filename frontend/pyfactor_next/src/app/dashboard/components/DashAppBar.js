@@ -1427,11 +1427,11 @@ const DashAppBar = ({
                 {/* Business name - make it visible on all screen sizes and add fallback display */}
                 <div className="text-white flex items-center mr-3">
                   {businessLogoUrl && (
-                    <div className="h-8 w-24 mr-2 bg-white rounded flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    <div className="h-8 w-18 mr-2 bg-white rounded flex items-center justify-center flex-shrink-0 overflow-hidden">
                       <img 
                         src={businessLogoUrl} 
                         alt="" 
-                        className="h-7 w-23 object-contain p-0.5"
+                        className="h-7 w-17 object-contain p-0.5"
                         onError={(e) => {
                           console.error('[DashAppBar] Logo image failed to load:', e);
                           setBusinessLogoUrl(null);
@@ -1459,11 +1459,11 @@ const DashAppBar = ({
                     {(businessName || fetchedBusinessName || auth0BusinessName) ? (
                       <>
                         {businessLogoUrl && (
-                          <div className="h-5 w-16 mr-1 bg-white rounded flex items-center justify-center flex-shrink-0 overflow-hidden">
+                          <div className="h-5 w-12 mr-1 bg-white rounded flex items-center justify-center flex-shrink-0 overflow-hidden">
                             <img 
                               src={businessLogoUrl} 
                               alt="" 
-                              className="h-4 w-15 object-contain p-0.5"
+                              className="h-4 w-11 object-contain p-0.5"
                               onError={(e) => {
                                 console.error('[DashAppBar] Mobile logo image failed to load:', e);
                                 setBusinessLogoUrl(null);

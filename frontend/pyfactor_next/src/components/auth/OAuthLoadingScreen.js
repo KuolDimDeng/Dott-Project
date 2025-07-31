@@ -1,6 +1,6 @@
 'use client';
 
-import StandardSpinner from '@/components/ui/StandardSpinner';
+import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 
 /**
  * Unified OAuth loading screen component
@@ -12,11 +12,12 @@ export default function OAuthLoadingScreen({
   showProgress = false
 }) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="text-center space-y-4 max-w-md">
-        <StandardSpinner size="large" />
-        <h2 className="text-xl font-semibold text-gray-900">Completing Authentication</h2>
-        <p className="text-gray-600">{status}</p>
+    <div className="min-h-screen bg-gray-50">
+      <CenteredSpinner size="large" minHeight="h-screen" />
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="text-center space-y-4 max-w-md mt-20">
+          <h2 className="text-xl font-semibold text-gray-900">Completing Authentication</h2>
+          <p className="text-gray-600">{status}</p>
         
         {error && (
           <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">

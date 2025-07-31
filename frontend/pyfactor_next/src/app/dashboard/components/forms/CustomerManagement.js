@@ -536,9 +536,7 @@ const CustomerManagement = () => {
   // Render customers table
   const renderCustomersTable = () => {
     if (isLoading) {
-      return (
-        <CenteredSpinner size="medium" text="Loading customers..." />
-      );
+      return <CenteredSpinner size="large" text="Loading customers..." showText={true} minHeight="h-screen" />;
     }
     
     if (!filteredCustomers || filteredCustomers.length === 0) {
