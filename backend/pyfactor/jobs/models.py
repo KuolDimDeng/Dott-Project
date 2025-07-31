@@ -16,8 +16,13 @@ from users.models import User
 from finance.models import Account, FinanceTransaction
 
 
-class Vehicle(TenantAwareModel):
+class Vehicle(models.Model):
     """Track vehicles/equipment for job assignments"""
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    # Tenant relationship for multi-tenancy
+    tenant = models.ForeignKey('users.BusinessDetails', on_delete=models.CASCADE)
     
     VEHICLE_TYPE_CHOICES = [
         ('car', 'Car'),
@@ -48,18 +53,18 @@ class Vehicle(TenantAwareModel):
     ]
     
     # Basic Information
-    registration_number = models.CharField(max_length=50, unique=True)
+    registration_number = models.CharField(max_length=50)
     vehicle_type = models.CharField(max_length=20, choices=VEHICLE_TYPE_CHOICES, default='van')
-    make = models.CharField(max_length=50)
-    model = models.CharField(max_length=50)
+    make = models.CharField(max_length=100)
+    model = models.CharField(max_length=100)
     year = models.IntegerField()
-    color = models.CharField(max_length=30, blank=True)
+    color = models.CharField(max_length=50, blank=True, null=True)
     
     # Technical Details
-    vin = models.CharField(max_length=17, blank=True, verbose_name='VIN Number')
+    vin = models.CharField(max_length=50, blank=True, null=True, verbose_name='VIN Number')
     fuel_type = models.CharField(max_length=20, choices=FUEL_TYPE_CHOICES, default='gasoline')
     mileage = models.IntegerField(default=0, help_text='Current mileage/odometer reading')
-    license_plate = models.CharField(max_length=20, blank=True)
+    license_plate = models.CharField(max_length=50, blank=True, null=True)
     
     # Status and Assignment
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
@@ -70,7 +75,7 @@ class Vehicle(TenantAwareModel):
     # Financial Information
     purchase_date = models.DateField(null=True, blank=True)
     purchase_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    insurance_policy = models.CharField(max_length=100, blank=True)
+    insurance_policy = models.CharField(max_length=100, blank=True, null=True)
     insurance_expiry = models.DateField(null=True, blank=True)
     
     # Maintenance
@@ -79,21 +84,23 @@ class Vehicle(TenantAwareModel):
     service_interval_miles = models.IntegerField(default=5000, help_text='Service interval in miles')
     
     # Additional Information
-    notes = models.TextField(blank=True)
-    photo = models.URLField(blank=True, help_text='URL to vehicle photo')
+    notes = models.TextField(blank=True, null=True)
+    photo = models.ImageField(upload_to='vehicles/', blank=True, null=True)
     
     # Tracking
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='vehicles_created')
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='vehicles_created')
+    updated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='vehicles_updated')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
-    objects = TenantManager()
-    
     class Meta:
-        indexes = [
-            models.Index(fields=['tenant_id', 'status']),
-            models.Index(fields=['tenant_id', 'is_available']),
-            models.Index(fields=['tenant_id', 'registration_number']),
+        db_table = 'jobs_vehicle'
+        ordering = ['registration_number']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['registration_number', 'tenant'],
+                name='unique_vehicle_registration_per_tenant'
+            )
         ]
         
     def __str__(self):
