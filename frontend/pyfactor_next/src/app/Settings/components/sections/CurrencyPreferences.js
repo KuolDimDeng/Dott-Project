@@ -210,8 +210,8 @@ const CurrencyPreferences = () => {
     try {
       console.log('💰 [CurrencyPreferences] Loading preferences...');
       
-      // Try the simple endpoint first
-      const response = await fetch('/api/currency/preferences-simple');
+      // Try the v3 endpoint first (handles redirects properly)
+      const response = await fetch('/api/currency/preferences-v3');
       console.log('💰 [CurrencyPreferences] Response status:', response.status);
       console.log('💰 [CurrencyPreferences] Response headers:', response.headers);
       
@@ -323,7 +323,7 @@ const CurrencyPreferences = () => {
       console.log('🚀 [CurrencyPreferences] Request body:', requestBody);
       console.log('🚀 [CurrencyPreferences] Making PUT request to /api/currency/preferences');
       
-      const response = await fetch('/api/currency/preferences-simple', {
+      const response = await fetch('/api/currency/preferences-v3', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -402,7 +402,7 @@ const CurrencyPreferences = () => {
       console.log('🎯 [CurrencyPreferences] Request body:', requestBody);
       console.log('🎯 [CurrencyPreferences] Making PUT request to /api/currency/preferences');
       
-      const response = await fetch('/api/currency/preferences-simple', {
+      const response = await fetch('/api/currency/preferences-v3', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

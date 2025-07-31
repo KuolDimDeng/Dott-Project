@@ -5,8 +5,14 @@ export async function GET(request) {
     // Get the cookie from the request
     const cookie = request.headers.get('cookie');
     
-    // Call the backend API directly
-    const backendResponse = await fetch(`${process.env.BACKEND_URL || 'https://api.dottapps.com'}/api/currency/preferences/`, {
+    // Call the backend API directly - ensure trailing slash
+    const backendUrl = process.env.BACKEND_URL || 'https://api.dottapps.com';
+    const endpoint = '/api/currency/preferences/'; // Django requires trailing slash
+    const fullUrl = `${backendUrl}${endpoint}`;
+    
+    console.log('[Currency API] Fetching from:', fullUrl);
+    
+    const backendResponse = await fetch(fullUrl, {
       headers: {
         'Cookie': cookie || '',
         'Accept': 'application/json',
@@ -54,7 +60,15 @@ export async function PUT(request) {
     const body = await request.json();
     const cookie = request.headers.get('cookie');
     
-    const backendResponse = await fetch(`${process.env.BACKEND_URL || 'https://api.dottapps.com'}/api/currency/preferences/`, {
+    // Ensure trailing slash for Django
+    const backendUrl = process.env.BACKEND_URL || 'https://api.dottapps.com';
+    const endpoint = '/api/currency/preferences/'; // Django requires trailing slash
+    const fullUrl = `${backendUrl}${endpoint}`;
+    
+    console.log('[Currency API] PUT to:', fullUrl);
+    console.log('[Currency API] PUT body:', body);
+    
+    const backendResponse = await fetch(fullUrl, {
       method: 'PUT',
       headers: {
         'Cookie': cookie || '',
