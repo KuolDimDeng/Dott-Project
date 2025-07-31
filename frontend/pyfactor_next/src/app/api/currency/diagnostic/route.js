@@ -10,7 +10,7 @@ export async function GET() {
   console.log('🩺 [Currency Diagnostic] === GET REQUEST START ===');
   
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     
     // Make authenticated request
     const response = await makeBackendRequest('/api/currency/diagnostic/', {

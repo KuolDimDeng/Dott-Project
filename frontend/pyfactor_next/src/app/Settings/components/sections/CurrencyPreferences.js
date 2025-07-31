@@ -246,8 +246,17 @@ const CurrencyPreferences = () => {
       console.log('🚀 [CurrencyPreferences] Response status:', response.status);
       console.log('🚀 [CurrencyPreferences] Response headers:', response.headers);
       
-      const data = await response.json();
-      console.log('🚀 [CurrencyPreferences] Response data:', data);
+      let data;
+      try {
+        data = await response.json();
+        console.log('🚀 [CurrencyPreferences] Response data:', data);
+      } catch (jsonError) {
+        console.error('🚀 [CurrencyPreferences] Failed to parse response as JSON:', jsonError);
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.status} ${response.statusText}`);
+        }
+        throw new Error('Invalid response format from server');
+      }
       
       if (data.success) {
         console.log('🚀 [CURRENCY-FRONTEND] === UPDATE SUCCESSFUL ===');
@@ -299,8 +308,18 @@ const CurrencyPreferences = () => {
       });
 
       console.log('🎯 [CurrencyPreferences] Response status:', response.status);
-      const data = await response.json();
-      console.log('🎯 [CurrencyPreferences] Response data:', data);
+      
+      let data;
+      try {
+        data = await response.json();
+        console.log('🎯 [CurrencyPreferences] Response data:', data);
+      } catch (jsonError) {
+        console.error('🎯 [CurrencyPreferences] Failed to parse response as JSON:', jsonError);
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.status} ${response.statusText}`);
+        }
+        throw new Error('Invalid response format from server');
+      }
       
       if (data.success) {
         console.log('🎯 [CurrencyPreferences] Toggle update successful!');

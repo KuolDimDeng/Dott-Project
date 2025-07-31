@@ -10,7 +10,7 @@ export async function GET() {
   console.log('🔐 [Test Auth Proxy] === GET REQUEST START ===');
   
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     
     // Make authenticated request
     const response = await makeBackendRequest('/api/currency/test-auth/', {

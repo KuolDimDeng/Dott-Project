@@ -10,7 +10,7 @@ export async function GET() {
   console.log('📋 [Currency List] === GET REQUEST START ===');
   
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     
     // Make request - currency list might be public or authenticated
     const response = await makeBackendRequest('/api/currency/list/', {
