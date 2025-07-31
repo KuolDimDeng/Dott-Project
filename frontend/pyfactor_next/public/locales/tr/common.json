@@ -1630,5 +1630,65 @@
       "country": "United States",
       "email": "Email: support@dottapps.com"
     }
+  },
+  "mobileLanding": {
+    "hero": {
+      "title": "İşletmeniz,",
+      "subtitle": "Cebinizde",
+      "description": "Çevrimdışı çalışan AI destekli işletme yönetim platformu.",
+      "cta": {
+        "getStarted": "Ücretsiz Başlayın",
+        "signIn": "Giriş Yap"
+      },
+      "noCreditCard": "Kredi kartı gerekmez",
+      "freePlan": "Sonsuza kadar ücretsiz plan"
+    },
+    "features": {
+      "title": "İhtiyacınız Olan Her Şey",
+      "pos": {
+        "title": "Satış Noktası",
+        "description": "Çevrimdışı bile anında satış işleyin"
+      },
+      "barcode": {
+        "title": "Barkod Tarayıcı",
+        "description": "Kameranızla ürünleri tarayın"
+      },
+      "invoicing": {
+        "title": "Hızlı Faturalama",
+        "description": "Hareket halindeyken fatura oluşturun ve gönderin"
+      },
+      "analytics": {
+        "title": "Gerçek Zamanlı Analizler",
+        "description": "İşletme performansınızı takip edin"
+      }
+    },
+    "benefits": {
+      "title": "Başarınız İçin Tasarlandı",
+      "offline": {
+        "title": "Çevrimdışı Çalışır",
+        "description": "İnternet olmadan satmaya devam edin"
+      },
+      "fast": {
+        "title": "Işık Hızında",
+        "description": "Anında yükleme, gecikme yok"
+      },
+      "mobile": {
+        "title": "Önce Mobil",
+        "description": "Telefonlar ve tabletler için tasarlandı"
+      },
+      "payments": {
+        "title": "Mobil Para",
+        "description": "M-Pesa, çevrimdışı mod, yerel destek"
+      }
+    },
+    "pricing": {
+      "title": "Basit, Şeffaf Fiyatlandırma"
+    },
+    "cta": {
+      "title": "İşletmenizi Büyütmeye Hazır mısınız?",
+      "subtitle": "Bugün işletmenizi daha iyi yönetmeye başlayın",
+      "button": "Ücretsiz Başlayın",
+      "terms": "Kredi kartı gerekmez • İstediğiniz zaman iptal edin"
+    }
   }
 }

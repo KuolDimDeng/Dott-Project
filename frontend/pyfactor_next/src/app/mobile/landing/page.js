@@ -29,6 +29,7 @@ export default function MobileLandingPage() {
   const [exchangeRate, setExchangeRate] = useState(null);
   const [currencyInfo, setCurrencyInfo] = useState({ symbol: 'USD', decimals: 2 });
   const [billingPeriod, setBillingPeriod] = useState('monthly'); // 'monthly', '6month', 'annual'
+  const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false);
   
   // Get country parameter from URL
   const getCountryFromURL = () => {
@@ -38,6 +39,40 @@ export default function MobileLandingPage() {
     }
     return null;
   };
+  
+  // Language data - all 30 supported languages
+  const supportedLanguages = [
+    { code: 'en', name: 'English', native: 'English' },
+    { code: 'es', name: 'Spanish', native: 'Español' },
+    { code: 'fr', name: 'French', native: 'Français' },
+    { code: 'de', name: 'German', native: 'Deutsch' },
+    { code: 'pt', name: 'Portuguese', native: 'Português' },
+    { code: 'nl', name: 'Dutch', native: 'Nederlands' },
+    { code: 'ru', name: 'Russian', native: 'Русский' },
+    { code: 'zh', name: 'Chinese', native: '中文' },
+    { code: 'ja', name: 'Japanese', native: '日本語' },
+    { code: 'ko', name: 'Korean', native: '한국어' },
+    { code: 'ar', name: 'Arabic', native: 'العربية' },
+    { code: 'hi', name: 'Hindi', native: 'हिन्दी' },
+    { code: 'id', name: 'Indonesian', native: 'Bahasa Indonesia' },
+    { code: 'vi', name: 'Vietnamese', native: 'Tiếng Việt' },
+    { code: 'tr', name: 'Turkish', native: 'Türkçe' },
+    { code: 'sw', name: 'Swahili', native: 'Kiswahili' },
+    { code: 'ha', name: 'Hausa', native: 'Hausa' },
+    { code: 'am', name: 'Amharic', native: 'አማርኛ' },
+    { code: 'yo', name: 'Yoruba', native: 'Yorùbá' },
+    { code: 'zu', name: 'Zulu', native: 'isiZulu' },
+    { code: 'it', name: 'Italian', native: 'Italiano' },
+    { code: 'pl', name: 'Polish', native: 'Polski' },
+    { code: 'th', name: 'Thai', native: 'ไทย' },
+    { code: 'bn', name: 'Bengali', native: 'বাংলা' },
+    { code: 'ur', name: 'Urdu', native: 'اردو' },
+    { code: 'tl', name: 'Tagalog', native: 'Filipino' },
+    { code: 'uk', name: 'Ukrainian', native: 'Українська' },
+    { code: 'fa', name: 'Persian', native: 'فارسی' },
+    { code: 'sn', name: 'Shona', native: 'chiShona' },
+    { code: 'ig', name: 'Igbo', native: 'Igbo' },
+  ];
 
   useEffect(() => {
     // Initialize country detection and language
@@ -105,53 +140,67 @@ export default function MobileLandingPage() {
     }
     init();
   }, []);
+  
+  // Close language menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (isLanguageMenuOpen && !event.target.closest('.language-selector')) {
+        setIsLanguageMenuOpen(false);
+      }
+    }
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isLanguageMenuOpen]);
 
   const features = [
     {
       icon: CurrencyDollarIcon,
-      title: 'Point of Sale',
-      description: 'Process sales instantly, even offline'
+      title: t('mobileLanding.features.pos.title', 'Point of Sale'),
+      description: t('mobileLanding.features.pos.description', 'Process sales instantly, even offline')
     },
     {
       icon: CameraIcon,
-      title: 'Barcode Scanner',
-      description: 'Scan products with your camera'
+      title: t('mobileLanding.features.barcode.title', 'Barcode Scanner'),
+      description: t('mobileLanding.features.barcode.description', 'Scan products with your camera')
     },
     {
       icon: DocumentTextIcon,
-      title: 'Quick Invoicing',
-      description: 'Create and send invoices on the go'
+      title: t('mobileLanding.features.invoicing.title', 'Quick Invoicing'),
+      description: t('mobileLanding.features.invoicing.description', 'Create and send invoices on the go')
     },
     {
       icon: ChartBarIcon,
-      title: 'Real-time Analytics',
-      description: 'Track your business performance'
+      title: t('mobileLanding.features.analytics.title', 'Real-time Analytics'),
+      description: t('mobileLanding.features.analytics.description', 'Track your business performance')
     }
   ];
 
   const benefits = [
     {
       icon: CloudArrowUpIcon,
-      title: 'Works Offline',
-      description: 'Continue selling without internet',
+      title: t('mobileLanding.benefits.offline.title', 'Works Offline'),
+      description: t('mobileLanding.benefits.offline.description', 'Continue selling without internet'),
       color: 'text-green-600 bg-green-100'
     },
     {
       icon: BoltIcon,
-      title: 'Lightning Fast',
-      description: 'Instant loading, no delays',
+      title: t('mobileLanding.benefits.fast.title', 'Lightning Fast'),
+      description: t('mobileLanding.benefits.fast.description', 'Instant loading, no delays'),
       color: 'text-purple-600 bg-purple-100'
     },
     {
       icon: DevicePhoneMobileIcon,
-      title: 'Mobile First',
-      description: 'Designed for phones & tablets',
+      title: t('mobileLanding.benefits.mobile.title', 'Mobile First'),
+      description: t('mobileLanding.benefits.mobile.description', 'Designed for phones & tablets'),
       color: 'text-blue-600 bg-blue-100'
     },
     {
       icon: GlobeAltIcon,
-      title: 'Mobile Money',
-      description: 'M-Pesa, offline mode, local support',
+      title: t('mobileLanding.benefits.payments.title', 'Mobile Money'),
+      description: t('mobileLanding.benefits.payments.description', 'M-Pesa, offline mode, local support'),
       color: 'text-orange-600 bg-orange-100'
     }
   ];
@@ -271,6 +320,51 @@ export default function MobileLandingPage() {
       {/* Smart App Banner */}
       <SmartAppBanner />
       
+      {/* Language Selector - Fixed Position */}
+      <div className="language-selector fixed top-20 right-4 z-40">
+        <button
+          onClick={() => setIsLanguageMenuOpen(!isLanguageMenuOpen)}
+          className="bg-white shadow-lg rounded-full p-3 flex items-center space-x-2 hover:shadow-xl transition-shadow"
+        >
+          <svg className="h-5 w-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+          </svg>
+          <span className="text-sm font-medium text-gray-700">
+            {supportedLanguages.find(lang => lang.code === i18nInstance.language)?.native || 'English'}
+          </span>
+          <svg className={`h-4 w-4 text-gray-700 transition-transform ${isLanguageMenuOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        
+        {/* Language Dropdown */}
+        {isLanguageMenuOpen && (
+          <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl py-2 max-h-96 overflow-y-auto">
+            <div className="px-3 pb-2 border-b">
+              <p className="text-xs text-gray-500">Select Language</p>
+            </div>
+            {supportedLanguages.map(language => (
+              <button
+                key={language.code}
+                className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors ${
+                  i18nInstance.language === language.code ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700'
+                }`}
+                onClick={async () => {
+                  await i18nInstance.changeLanguage(language.code);
+                  setIsLanguageMenuOpen(false);
+                  // Save preference
+                  localStorage.setItem('i18nextLng', language.code);
+                  localStorage.setItem('userManuallySelectedLanguage', 'true');
+                }}
+              >
+                <span className="font-medium">{language.native}</span>
+                <span className="text-xs text-gray-500 ml-2">({language.name})</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      
       {/* Hero Section */}
       <div className="px-4 pt-20 pb-12 text-center">
         <div className="mb-8">
@@ -280,10 +374,10 @@ export default function MobileLandingPage() {
             className="h-24 w-24 mx-auto rounded-2xl shadow-lg mb-6"
           />
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            {t('hero.title', 'Your Business,')}<br />{t('hero.subtitle', 'In Your Pocket')}
+            {t('mobileLanding.hero.title', 'Your Business,')}<br />{t('mobileLanding.hero.subtitle', 'In Your Pocket')}
           </h1>
           <p className="text-lg text-gray-600 max-w-sm mx-auto">
-            {t('hero.description', 'AI-powered business management platform that works offline.')}
+            {t('mobileLanding.hero.description', 'AI-powered business management platform that works offline.')}
           </p>
         </div>
 
@@ -292,16 +386,16 @@ export default function MobileLandingPage() {
             href="/auth/mobile-signup"
             className="block w-full bg-blue-600 text-white rounded-xl py-4 font-semibold text-lg hover:bg-blue-700 transition-colors"
           >
-            Get Started For Free
+            {t('mobileLanding.hero.cta.getStarted', 'Get Started For Free')}
           </Link>
           <Link
             href="/auth/mobile-login"
             className="block w-full bg-white text-blue-600 rounded-xl py-4 font-semibold text-lg border-2 border-blue-600 hover:bg-blue-50 transition-colors"
           >
-            Sign In
+            {t('mobileLanding.hero.cta.signIn', 'Sign In')}
           </Link>
           <p className="text-sm text-gray-500 mt-2">
-            No credit card required • Free forever plan
+            {t('mobileLanding.hero.noCreditCard', 'No credit card required')} • {t('mobileLanding.hero.freePlan', 'Free forever plan')}
           </p>
         </div>
       </div>
@@ -309,7 +403,7 @@ export default function MobileLandingPage() {
       {/* Features Grid */}
       <div className="px-4 py-12 bg-white">
         <h2 className="text-2xl font-bold text-center text-gray-900 mb-8">
-          Everything You Need
+          {t('mobileLanding.features.title', 'Everything You Need')}
         </h2>
         <div className="grid grid-cols-2 gap-4 max-w-lg mx-auto">
           {features.map((feature, index) => (
@@ -325,7 +419,7 @@ export default function MobileLandingPage() {
       {/* Benefits Section */}
       <div className="px-4 py-12">
         <h2 className="text-2xl font-bold text-center text-gray-900 mb-8">
-          Built for Your Success
+          {t('mobileLanding.benefits.title', 'Built for Your Success')}
         </h2>
         <div className="space-y-4 max-w-lg mx-auto">
           {benefits.map((benefit, index) => (
@@ -345,7 +439,7 @@ export default function MobileLandingPage() {
       {/* Pricing Section */}
       <div className="px-4 py-12 bg-gray-50">
         <h2 className="text-2xl font-bold text-center text-gray-900 mb-2">
-          {t('pricing.heading', 'Choose the Right Plan for Your Business')}
+          {t('mobileLanding.pricing.title', 'Simple, Transparent Pricing')}
         </h2>
         <p className="text-center text-gray-600 mb-4">
           {t('pricing.subheading', 'No hidden fees. No credit card required for Basic plan. Cancel anytime.')}
@@ -541,20 +635,20 @@ export default function MobileLandingPage() {
       {/* CTA Section */}
       <div className="px-4 py-16 bg-gradient-to-t from-blue-600 to-blue-700 text-white text-center">
         <h2 className="text-3xl font-bold mb-4">
-          Ready to Grow Your Business?
+          {t('mobileLanding.cta.title', 'Ready to Grow Your Business?')}
         </h2>
         <p className="text-lg text-blue-100 mb-8 max-w-sm mx-auto">
-          Start managing your business better today
+          {t('mobileLanding.cta.subtitle', 'Start managing your business better today')}
         </p>
         <Link
           href="/auth/mobile-signup"
           className="inline-flex items-center bg-white text-blue-600 rounded-xl px-8 py-4 font-semibold text-lg hover:bg-blue-50 transition-colors"
         >
-          Get Started Free
+          {t('mobileLanding.cta.button', 'Get Started Free')}
           <ArrowRightIcon className="ml-2 h-5 w-5" />
         </Link>
         <p className="mt-4 text-sm text-blue-200">
-          No credit card required • Cancel anytime
+          {t('mobileLanding.cta.terms', 'No credit card required • Cancel anytime')}
         </p>
       </div>
 

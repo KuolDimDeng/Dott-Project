@@ -386,5 +386,65 @@
         "partnership": "Opportunità di Partnership"
       }
     }
+  },
+  "mobileLanding": {
+    "hero": {
+      "title": "Il Tuo Business,",
+      "subtitle": "Nella Tua Tasca",
+      "description": "Piattaforma di gestione aziendale alimentata da AI che funziona offline.",
+      "cta": {
+        "getStarted": "Inizia Gratis",
+        "signIn": "Accedi"
+      },
+      "noCreditCard": "Nessuna carta di credito richiesta",
+      "freePlan": "Piano gratuito per sempre"
+    },
+    "features": {
+      "title": "Tutto Ciò di Cui Hai Bisogno",
+      "pos": {
+        "title": "Punto Vendita",
+        "description": "Elabora le vendite istantaneamente, anche offline"
+      },
+      "barcode": {
+        "title": "Scanner Codici a Barre",
+        "description": "Scansiona i prodotti con la tua fotocamera"
+      },
+      "invoicing": {
+        "title": "Fatturazione Veloce",
+        "description": "Crea e invia fatture in movimento"
+      },
+      "analytics": {
+        "title": "Analisi in Tempo Reale",
+        "description": "Monitora le prestazioni del tuo business"
+      }
+    },
+    "benefits": {
+      "title": "Costruito per il Tuo Successo",
+      "offline": {
+        "title": "Funziona Offline",
+        "description": "Continua a vendere senza internet"
+      },
+      "fast": {
+        "title": "Velocissimo",
+        "description": "Caricamento istantaneo, nessun ritardo"
+      },
+      "mobile": {
+        "title": "Mobile First",
+        "description": "Progettato per telefoni e tablet"
+      },
+      "payments": {
+        "title": "Denaro Mobile",
+        "description": "M-Pesa, modalità offline, supporto locale"
+      }
+    },
+    "pricing": {
+      "title": "Prezzi Semplici e Trasparenti"
+    },
+    "cta": {
+      "title": "Pronto a Far Crescere il Tuo Business?",
+      "subtitle": "Inizia a gestire meglio il tuo business oggi",
+      "button": "Inizia Gratis",
+      "terms": "Nessuna carta di credito richiesta • Cancella in qualsiasi momento"
+    }
   }
 }

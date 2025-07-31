@@ -1641,5 +1641,65 @@
       "country": "United States",
       "email": "Email: support@dottapps.com"
     }
+  },
+  "mobileLanding": {
+    "hero": {
+      "title": "您的业务，",
+      "subtitle": "尽在掌握",
+      "description": "AI驱动的业务管理平台，支持离线工作。",
+      "cta": {
+        "getStarted": "免费开始",
+        "signIn": "登录"
+      },
+      "noCreditCard": "无需信用卡",
+      "freePlan": "永久免费计划"
+    },
+    "features": {
+      "title": "您需要的一切",
+      "pos": {
+        "title": "销售点",
+        "description": "即时处理销售，即使离线"
+      },
+      "barcode": {
+        "title": "条码扫描器",
+        "description": "用相机扫描产品"
+      },
+      "invoicing": {
+        "title": "快速开票",
+        "description": "随时创建和发送发票"
+      },
+      "analytics": {
+        "title": "实时分析",
+        "description": "跟踪您的业务表现"
+      }
+    },
+    "benefits": {
+      "title": "为您的成功而建",
+      "offline": {
+        "title": "离线工作",
+        "description": "无需互联网继续销售"
+      },
+      "fast": {
+        "title": "闪电般快速",
+        "description": "即时加载，无延迟"
+      },
+      "mobile": {
+        "title": "移动优先",
+        "description": "专为手机和平板电脑设计"
+      },
+      "payments": {
+        "title": "移动支付",
+        "description": "M-Pesa，离线模式，本地支持"
+      }
+    },
+    "pricing": {
+      "title": "简单、透明的定价"
+    },
+    "cta": {
+      "title": "准备发展您的业务吗？",
+      "subtitle": "今天开始更好地管理您的业务",
+      "button": "免费开始",
+      "terms": "无需信用卡 • 随时取消"
+    }
   }
 }

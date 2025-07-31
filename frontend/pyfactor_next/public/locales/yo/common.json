@@ -1312,5 +1312,65 @@
       "country": "United States",
       "email": "Email: support@dottapps.com"
     }
+  },
+  "mobileLanding": {
+    "hero": {
+      "title": "Iṣowo Rẹ,",
+      "subtitle": "Ninu Apo Rẹ",
+      "description": "Pẹpẹ iṣakoso iṣowo ti AI ti n ṣiṣẹ laisi intanẹẹti.",
+      "cta": {
+        "getStarted": "Bẹrẹ Ọfẹ",
+        "signIn": "Wọle"
+      },
+      "noCreditCard": "Ko nilo kaadi kirẹditi",
+      "freePlan": "Eto ọfẹ lailai"
+    },
+    "features": {
+      "title": "Gbogbo Ohun Ti O Nilo",
+      "pos": {
+        "title": "Aaye Tita",
+        "description": "Ṣe awọn tita lẹsẹkẹsẹ, paapaa laisi intanẹẹti"
+      },
+      "barcode": {
+        "title": "Oluṣayẹwo Barcode",
+        "description": "Ṣayẹwo awọn ọja pẹlu kamẹra rẹ"
+      },
+      "invoicing": {
+        "title": "Ifiranṣẹ Iyara",
+        "description": "Ṣẹda ati firanṣẹ awọn ifiweranṣẹ lori irin-ajo"
+      },
+      "analytics": {
+        "title": "Itupalẹ Akoko Gidi",
+        "description": "Tọpa iṣẹ iṣowo rẹ"
+      }
+    },
+    "benefits": {
+      "title": "A Kọ Fun Aṣeyọri Rẹ",
+      "offline": {
+        "title": "N Ṣiṣẹ Laisi Intanẹẹti",
+        "description": "Tẹsiwaju lati ta laisi intanẹẹti"
+      },
+      "fast": {
+        "title": "Yara Pupọ",
+        "description": "Ikojọpọ lẹsẹkẹsẹ, ko si idaduro"
+      },
+      "mobile": {
+        "title": "Alagbeka Akọkọ",
+        "description": "A ṣe apẹrẹ fun awọn foonu ati tabulẹti"
+      },
+      "payments": {
+        "title": "Owo Alagbeka",
+        "description": "M-Pesa, ipo aisinipo, atilẹyin agbegbe"
+      }
+    },
+    "pricing": {
+      "title": "Idiyele Rọrun, Kedere"
+    },
+    "cta": {
+      "title": "Ṣetan Lati Dagba Iṣowo Rẹ?",
+      "subtitle": "Bẹrẹ lati ṣakoso iṣowo rẹ daradara loni",
+      "button": "Bẹrẹ Ọfẹ",
+      "terms": "Ko nilo kaadi kirẹditi • Fagile nigbakugba"
+    }
   }
 }

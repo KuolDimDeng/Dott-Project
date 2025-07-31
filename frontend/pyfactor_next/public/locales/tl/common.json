@@ -386,5 +386,65 @@
         "partnership": "Pagkakataon sa Partnership"
       }
     }
+  },
+  "mobileLanding": {
+    "hero": {
+      "title": "Ang Iyong Negosyo,",
+      "subtitle": "Sa Iyong Bulsa",
+      "description": "Platform ng pangangasiwa ng negosyo na pinapatakbo ng AI na gumagana offline.",
+      "cta": {
+        "getStarted": "Magsimula Nang Libre",
+        "signIn": "Mag-sign In"
+      },
+      "noCreditCard": "Walang kailangang credit card",
+      "freePlan": "Libreng plano magpakailanman"
+    },
+    "features": {
+      "title": "Lahat ng Kailangan Mo",
+      "pos": {
+        "title": "Punto ng Benta",
+        "description": "Iproseso ang mga benta kaagad, kahit offline"
+      },
+      "barcode": {
+        "title": "Barcode Scanner",
+        "description": "I-scan ang mga produkto gamit ang iyong camera"
+      },
+      "invoicing": {
+        "title": "Mabilis na Pag-invoice",
+        "description": "Gumawa at magpadala ng mga invoice habang naglalakbay"
+      },
+      "analytics": {
+        "title": "Real-time Analytics",
+        "description": "Subaybayan ang performance ng iyong negosyo"
+      }
+    },
+    "benefits": {
+      "title": "Ginawa Para sa Iyong Tagumpay",
+      "offline": {
+        "title": "Gumagana Offline",
+        "description": "Magpatuloy sa pagbebenta nang walang internet"
+      },
+      "fast": {
+        "title": "Napakabilis",
+        "description": "Instant loading, walang pagkaantala"
+      },
+      "mobile": {
+        "title": "Mobile First",
+        "description": "Dinisenyo para sa mga telepono at tablet"
+      },
+      "payments": {
+        "title": "Mobile Money",
+        "description": "M-Pesa, offline mode, lokal na suporta"
+      }
+    },
+    "pricing": {
+      "title": "Simple, Transparent na Presyo"
+    },
+    "cta": {
+      "title": "Handa na Bang Palaguin ang Iyong Negosyo?",
+      "subtitle": "Simulang pamahalaan nang mas mahusay ang iyong negosyo ngayon",
+      "button": "Magsimula Nang Libre",
+      "terms": "Walang kailangang credit card • Kanselahin anumang oras"
+    }
   }
 }

@@ -946,5 +946,65 @@
       "country": "United States",
       "email": "Email: support@dottapps.com"
     }
+  },
+  "mobileLanding": {
+    "hero": {
+      "title": "የእርስዎ ንግድ፣",
+      "subtitle": "በኪስዎ ውስጥ",
+      "description": "ከመስመር ውጭ የሚሰራ በAI የተደገፈ የንግድ አስተዳደር መድረክ።",
+      "cta": {
+        "getStarted": "በነጻ ይጀምሩ",
+        "signIn": "ግባ"
+      },
+      "noCreditCard": "ክሬዲት ካርድ አያስፈልግም",
+      "freePlan": "ለዘላለም ነጻ እቅድ"
+    },
+    "features": {
+      "title": "የሚያስፈልግዎት ሁሉ",
+      "pos": {
+        "title": "የሽያጭ ነጥብ",
+        "description": "ከመስመር ውጭ እንኳን ሽያጮችን ወዲያውኑ ያስኬዱ"
+      },
+      "barcode": {
+        "title": "ባርኮድ ስካነር",
+        "description": "ምርቶችን በካሜራዎ ይቃኙ"
+      },
+      "invoicing": {
+        "title": "ፈጣን ደረሰኝ",
+        "description": "በመንቀሳቀስ ላይ ደረሰኞችን ይፍጠሩ እና ይላኩ"
+      },
+      "analytics": {
+        "title": "የቅጽበት ትንታኔ",
+        "description": "የንግድዎን አፈጻጸም ይከታተሉ"
+      }
+    },
+    "benefits": {
+      "title": "ለስኬትዎ የተገነባ",
+      "offline": {
+        "title": "ከመስመር ውጭ ይሰራል",
+        "description": "ያለ ኢንተርኔት መሸጥዎን ይቀጥሉ"
+      },
+      "fast": {
+        "title": "በጣም ፈጣን",
+        "description": "ወዲያውኑ መጫን፣ ምንም መዘግየት የለም"
+      },
+      "mobile": {
+        "title": "ሞባይል መጀመሪያ",
+        "description": "ለስልኮች እና ታብሌቶች የተነደፈ"
+      },
+      "payments": {
+        "title": "የሞባይል ገንዘብ",
+        "description": "M-Pesa፣ ከመስመር ውጭ ሁነታ፣ የአካባቢ ድጋፍ"
+      }
+    },
+    "pricing": {
+      "title": "ቀላል፣ ግልጽ ዋጋ"
+    },
+    "cta": {
+      "title": "ንግድዎን ለማሳደግ ዝግጁ ነዎት?",
+      "subtitle": "ዛሬ ንግድዎን በተሻለ ሁኔታ ማስተዳደር ይጀምሩ",
+      "button": "በነጻ ይጀምሩ",
+      "terms": "ክሬዲት ካርድ አያስፈልግም • በማንኛውም ጊዜ ይሰርዙ"
+    }
   }
 }

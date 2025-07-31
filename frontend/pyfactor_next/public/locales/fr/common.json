@@ -1640,5 +1640,65 @@
       "country": "États-Unis",
       "email": "E-mail : support@dottapps.com"
     }
+  },
+  "mobileLanding": {
+    "hero": {
+      "title": "Votre Entreprise,",
+      "subtitle": "Dans Votre Poche",
+      "description": "Plateforme de gestion d'entreprise alimentée par l'IA qui fonctionne hors ligne.",
+      "cta": {
+        "getStarted": "Commencer Gratuitement",
+        "signIn": "Se Connecter"
+      },
+      "noCreditCard": "Aucune carte de crédit requise",
+      "freePlan": "Plan gratuit pour toujours"
+    },
+    "features": {
+      "title": "Tout Ce Dont Vous Avez Besoin",
+      "pos": {
+        "title": "Point de Vente",
+        "description": "Traitez les ventes instantanément, même hors ligne"
+      },
+      "barcode": {
+        "title": "Scanner de Codes-barres",
+        "description": "Scannez des produits avec votre caméra"
+      },
+      "invoicing": {
+        "title": "Facturation Rapide",
+        "description": "Créez et envoyez des factures en déplacement"
+      },
+      "analytics": {
+        "title": "Analyses en Temps Réel",
+        "description": "Suivez les performances de votre entreprise"
+      }
+    },
+    "benefits": {
+      "title": "Conçu pour Votre Succès",
+      "offline": {
+        "title": "Fonctionne Hors Ligne",
+        "description": "Continuez à vendre sans internet"
+      },
+      "fast": {
+        "title": "Ultra Rapide",
+        "description": "Chargement instantané, sans délai"
+      },
+      "mobile": {
+        "title": "Mobile First",
+        "description": "Conçu pour téléphones et tablettes"
+      },
+      "payments": {
+        "title": "Argent Mobile",
+        "description": "M-Pesa, mode hors ligne, support local"
+      }
+    },
+    "pricing": {
+      "title": "Tarification Simple et Transparente"
+    },
+    "cta": {
+      "title": "Prêt à Développer Votre Entreprise?",
+      "subtitle": "Commencez à mieux gérer votre entreprise aujourd'hui",
+      "button": "Commencer Gratuitement",
+      "terms": "Aucune carte de crédit requise • Annulez à tout moment"
+    }
   }
 }

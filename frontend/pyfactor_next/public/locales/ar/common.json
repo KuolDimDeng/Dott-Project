@@ -1390,5 +1390,65 @@
       "country": "United States",
       "email": "Email: support@dottapps.com"
     }
+  },
+  "mobileLanding": {
+    "hero": {
+      "title": "عملك،",
+      "subtitle": "في جيبك",
+      "description": "منصة إدارة الأعمال المدعومة بالذكاء الاصطناعي التي تعمل دون اتصال.",
+      "cta": {
+        "getStarted": "ابدأ مجاناً",
+        "signIn": "تسجيل الدخول"
+      },
+      "noCreditCard": "لا حاجة لبطاقة ائتمان",
+      "freePlan": "خطة مجانية للأبد"
+    },
+    "features": {
+      "title": "كل ما تحتاجه",
+      "pos": {
+        "title": "نقطة البيع",
+        "description": "معالجة المبيعات فوراً، حتى بدون اتصال"
+      },
+      "barcode": {
+        "title": "ماسح الباركود",
+        "description": "امسح المنتجات بكاميرتك"
+      },
+      "invoicing": {
+        "title": "فوترة سريعة",
+        "description": "أنشئ وأرسل الفواتير أثناء التنقل"
+      },
+      "analytics": {
+        "title": "تحليلات فورية",
+        "description": "تتبع أداء عملك"
+      }
+    },
+    "benefits": {
+      "title": "مصمم لنجاحك",
+      "offline": {
+        "title": "يعمل بدون اتصال",
+        "description": "استمر في البيع بدون إنترنت"
+      },
+      "fast": {
+        "title": "سريع للغاية",
+        "description": "تحميل فوري، بدون تأخير"
+      },
+      "mobile": {
+        "title": "الهاتف أولاً",
+        "description": "مصمم للهواتف والأجهزة اللوحية"
+      },
+      "payments": {
+        "title": "النقود المحمولة",
+        "description": "M-Pesa، وضع غير متصل، دعم محلي"
+      }
+    },
+    "pricing": {
+      "title": "أسعار بسيطة وشفافة"
+    },
+    "cta": {
+      "title": "مستعد لتنمية عملك؟",
+      "subtitle": "ابدأ في إدارة عملك بشكل أفضل اليوم",
+      "button": "ابدأ مجاناً",
+      "terms": "لا حاجة لبطاقة ائتمان • إلغاء في أي وقت"
+    }
   }
 }

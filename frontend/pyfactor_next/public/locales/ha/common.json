@@ -1244,5 +1244,65 @@
       "country": "United States",
       "email": "Email: support@dottapps.com"
     }
+  },
+  "mobileLanding": {
+    "hero": {
+      "title": "Kasuwancin ku,",
+      "subtitle": "A Cikin Aljihunku",
+      "description": "Dandamali na sarrafa kasuwanci mai ƙarfin AI wanda ke aiki ba tare da intanet ba.",
+      "cta": {
+        "getStarted": "Fara Kyauta",
+        "signIn": "Shiga"
+      },
+      "noCreditCard": "Ba a buƙatar katin kiredit",
+      "freePlan": "Shirin kyauta har abada"
+    },
+    "features": {
+      "title": "Duk Abin Da Kuke Buƙata",
+      "pos": {
+        "title": "Wurin Siyarwa",
+        "description": "Sarrafa tallace-tallace nan take, ko da ba tare da intanet"
+      },
+      "barcode": {
+        "title": "Mai Duba Barcode",
+        "description": "Duba kayayyaki da kyamarar ku"
+      },
+      "invoicing": {
+        "title": "Sauri Invoice",
+        "description": "Ƙirƙira da aika invoice yayin tafiya"
+      },
+      "analytics": {
+        "title": "Bincike na Lokaci-Gaskiya",
+        "description": "Bi diddigin aikin kasuwancin ku"
+      }
+    },
+    "benefits": {
+      "title": "An Gina Don Nasarar Ku",
+      "offline": {
+        "title": "Yana Aiki Ba Tare Da Intanet",
+        "description": "Ci gaba da siyarwa ba tare da intanet"
+      },
+      "fast": {
+        "title": "Sauri Kamar Walƙiya",
+        "description": "Lodawa nan take, babu jinkiri"
+      },
+      "mobile": {
+        "title": "Wayar Hannu Ta Farko",
+        "description": "An tsara don wayoyi da kwamfutoci"
+      },
+      "payments": {
+        "title": "Kuɗin Wayar Hannu",
+        "description": "M-Pesa, yanayin kashe, tallafin gida"
+      }
+    },
+    "pricing": {
+      "title": "Farashi Mai Sauƙi, Bayyananne"
+    },
+    "cta": {
+      "title": "Kuna Shirye Don Haɓaka Kasuwancin Ku?",
+      "subtitle": "Fara sarrafa kasuwancin ku da kyau yau",
+      "button": "Fara Kyauta",
+      "terms": "Ba a buƙatar katin kiredit • Soke kowane lokaci"
+    }
   }
 }

@@ -1171,5 +1171,65 @@
       "country": "United States",
       "email": "Email: support@dottapps.com"
     }
+  },
+  "mobileLanding": {
+    "hero": {
+      "title": "Ibhizinisi Lakho,",
+      "subtitle": "Ephaketheni Lakho",
+      "description": "Ipulatifomu yokuphatha ibhizinisi esebenzisa i-AI esebenza ngaphandle kwe-inthanethi.",
+      "cta": {
+        "getStarted": "Qala Mahhala",
+        "signIn": "Ngena"
+      },
+      "noCreditCard": "Akudingeki ikhadi lesikweletu",
+      "freePlan": "Uhlelo lwamahhala unomphela"
+    },
+    "features": {
+      "title": "Konke Okudingayo",
+      "pos": {
+        "title": "Indawo Yokuthengisa",
+        "description": "Sebenzisa ukuthengisa ngokushesha, ngisho nangaphandle kwe-inthanethi"
+      },
+      "barcode": {
+        "title": "Isikena Sebhakhodi",
+        "description": "Skena imikhiqizo ngekhamera yakho"
+      },
+      "invoicing": {
+        "title": "Ama-invoyisi Asheshayo",
+        "description": "Dala futhi uthumele ama-invoyisi usendleleni"
+      },
+      "analytics": {
+        "title": "Ukuhlaziya Kwesikhathi Sangempela",
+        "description": "Landelela ukusebenza kwebhizinisi lakho"
+      }
+    },
+    "benefits": {
+      "title": "Kwakhelwe Impumelelo Yakho",
+      "offline": {
+        "title": "Isebenza Ngaphandle Kwe-inthanethi",
+        "description": "Qhubeka nokuthengisa ngaphandle kwe-inthanethi"
+      },
+      "fast": {
+        "title": "Isheshe Kakhulu",
+        "description": "Ukulayisha ngokushesha, akukho ukulibala"
+      },
+      "mobile": {
+        "title": "Iselula Kuqala",
+        "description": "Yakhelwe amafoni namathebulethi"
+      },
+      "payments": {
+        "title": "Imali Yeselula",
+        "description": "M-Pesa, imodi engaxhunyiwe, ukwesekwa kwendawo"
+      }
+    },
+    "pricing": {
+      "title": "Amanani Alula, Asobala"
+    },
+    "cta": {
+      "title": "Ulungele Ukukhulisa Ibhizinisi Lakho?",
+      "subtitle": "Qala ukuphatha ibhizinisi lakho kangcono namuhla",
+      "button": "Qala Mahhala",
+      "terms": "Akudingeki ikhadi lesikweletu • Khansela noma nini"
+    }
   }
 }

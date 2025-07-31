@@ -1513,5 +1513,65 @@
       "country": "United States",
       "email": "Email: support@dottapps.com"
     }
+  },
+  "mobileLanding": {
+    "hero": {
+      "title": "Doanh Nghiệp Của Bạn,",
+      "subtitle": "Trong Túi Của Bạn",
+      "description": "Nền tảng quản lý doanh nghiệp được hỗ trợ bởi AI hoạt động ngoại tuyến.",
+      "cta": {
+        "getStarted": "Bắt Đầu Miễn Phí",
+        "signIn": "Đăng Nhập"
+      },
+      "noCreditCard": "Không cần thẻ tín dụng",
+      "freePlan": "Gói miễn phí vĩnh viễn"
+    },
+    "features": {
+      "title": "Mọi Thứ Bạn Cần",
+      "pos": {
+        "title": "Điểm Bán Hàng",
+        "description": "Xử lý bán hàng ngay lập tức, ngay cả khi ngoại tuyến"
+      },
+      "barcode": {
+        "title": "Máy Quét Mã Vạch",
+        "description": "Quét sản phẩm bằng máy ảnh của bạn"
+      },
+      "invoicing": {
+        "title": "Lập Hóa Đơn Nhanh",
+        "description": "Tạo và gửi hóa đơn khi di chuyển"
+      },
+      "analytics": {
+        "title": "Phân Tích Thời Gian Thực",
+        "description": "Theo dõi hiệu suất kinh doanh của bạn"
+      }
+    },
+    "benefits": {
+      "title": "Được Xây Dựng Cho Thành Công Của Bạn",
+      "offline": {
+        "title": "Hoạt Động Ngoại Tuyến",
+        "description": "Tiếp tục bán hàng không cần internet"
+      },
+      "fast": {
+        "title": "Cực Kỳ Nhanh",
+        "description": "Tải ngay lập tức, không chậm trễ"
+      },
+      "mobile": {
+        "title": "Ưu Tiên Di Động",
+        "description": "Thiết kế cho điện thoại & máy tính bảng"
+      },
+      "payments": {
+        "title": "Tiền Di Động",
+        "description": "M-Pesa, chế độ ngoại tuyến, hỗ trợ địa phương"
+      }
+    },
+    "pricing": {
+      "title": "Giá Đơn Giản, Minh Bạch"
+    },
+    "cta": {
+      "title": "Sẵn Sàng Phát Triển Doanh Nghiệp?",
+      "subtitle": "Bắt đầu quản lý doanh nghiệp tốt hơn ngay hôm nay",
+      "button": "Bắt Đầu Miễn Phí",
+      "terms": "Không cần thẻ tín dụng • Hủy bất cứ lúc nào"
+    }
   }
 }

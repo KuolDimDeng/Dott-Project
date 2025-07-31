@@ -1650,5 +1650,65 @@
       "country": "United States",
       "email": "Email: support@dottapps.com"
     }
+  },
+  "mobileLanding": {
+    "hero": {
+      "title": "Your Business,",
+      "subtitle": "In Your Pocket",
+      "description": "AI-powered business management platform that works offline.",
+      "cta": {
+        "getStarted": "Get Started For Free",
+        "signIn": "Sign In"
+      },
+      "noCreditCard": "No credit card required",
+      "freePlan": "Free forever plan"
+    },
+    "features": {
+      "title": "Everything You Need",
+      "pos": {
+        "title": "Point of Sale",
+        "description": "Process sales instantly, even offline"
+      },
+      "barcode": {
+        "title": "Barcode Scanner",
+        "description": "Scan products with your camera"
+      },
+      "invoicing": {
+        "title": "Quick Invoicing",
+        "description": "Create and send invoices on the go"
+      },
+      "analytics": {
+        "title": "Real-time Analytics",
+        "description": "Track your business performance"
+      }
+    },
+    "benefits": {
+      "title": "Built for Your Success",
+      "offline": {
+        "title": "Works Offline",
+        "description": "Continue selling without internet"
+      },
+      "fast": {
+        "title": "Lightning Fast",
+        "description": "Instant loading, no delays"
+      },
+      "mobile": {
+        "title": "Mobile First",
+        "description": "Designed for phones & tablets"
+      },
+      "payments": {
+        "title": "Mobile Money",
+        "description": "M-Pesa, offline mode, local support"
+      }
+    },
+    "pricing": {
+      "title": "Simple, Transparent Pricing"
+    },
+    "cta": {
+      "title": "Ready to Grow Your Business?",
+      "subtitle": "Start managing your business better today",
+      "button": "Get Started Free",
+      "terms": "No credit card required • Cancel anytime"
+    }
   }
 }

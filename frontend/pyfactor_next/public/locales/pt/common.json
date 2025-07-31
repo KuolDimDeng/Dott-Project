@@ -1640,5 +1640,65 @@
       "country": "United States",
       "email": "Email: support@dottapps.com"
     }
+  },
+  "mobileLanding": {
+    "hero": {
+      "title": "Seu Negócio,",
+      "subtitle": "No Seu Bolso",
+      "description": "Plataforma de gestão empresarial com IA que funciona offline.",
+      "cta": {
+        "getStarted": "Comece Gratuitamente",
+        "signIn": "Entrar"
+      },
+      "noCreditCard": "Não é necessário cartão de crédito",
+      "freePlan": "Plano gratuito para sempre"
+    },
+    "features": {
+      "title": "Tudo Que Você Precisa",
+      "pos": {
+        "title": "Ponto de Venda",
+        "description": "Processe vendas instantaneamente, mesmo offline"
+      },
+      "barcode": {
+        "title": "Scanner de Código de Barras",
+        "description": "Escaneie produtos com sua câmera"
+      },
+      "invoicing": {
+        "title": "Faturamento Rápido",
+        "description": "Crie e envie faturas em movimento"
+      },
+      "analytics": {
+        "title": "Análises em Tempo Real",
+        "description": "Acompanhe o desempenho do seu negócio"
+      }
+    },
+    "benefits": {
+      "title": "Feito para o Seu Sucesso",
+      "offline": {
+        "title": "Funciona Offline",
+        "description": "Continue vendendo sem internet"
+      },
+      "fast": {
+        "title": "Super Rápido",
+        "description": "Carregamento instantâneo, sem atrasos"
+      },
+      "mobile": {
+        "title": "Mobile First",
+        "description": "Projetado para telefones e tablets"
+      },
+      "payments": {
+        "title": "Dinheiro Móvel",
+        "description": "M-Pesa, modo offline, suporte local"
+      }
+    },
+    "pricing": {
+      "title": "Preços Simples e Transparentes"
+    },
+    "cta": {
+      "title": "Pronto para Crescer Seu Negócio?",
+      "subtitle": "Comece a gerenciar melhor seu negócio hoje",
+      "button": "Comece Grátis",
+      "terms": "Não é necessário cartão de crédito • Cancele a qualquer momento"
+    }
   }
 }

@@ -1085,5 +1085,65 @@
       "description": "Amazonビジネスを管理"
     }
   },
-  "termsOfService": {}
+  "termsOfService": {},
+  "mobileLanding": {
+    "hero": {
+      "title": "あなたのビジネスを",
+      "subtitle": "ポケットに",
+      "description": "オフラインでも動作するAI搭載ビジネス管理プラットフォーム。",
+      "cta": {
+        "getStarted": "無料で始める",
+        "signIn": "ログイン"
+      },
+      "noCreditCard": "クレジットカード不要",
+      "freePlan": "永久無料プラン"
+    },
+    "features": {
+      "title": "必要なものすべて",
+      "pos": {
+        "title": "POSシステム",
+        "description": "オフラインでも即座に販売処理"
+      },
+      "barcode": {
+        "title": "バーコードスキャナー",
+        "description": "カメラで商品をスキャン"
+      },
+      "invoicing": {
+        "title": "クイック請求書",
+        "description": "移動中でも請求書を作成・送信"
+      },
+      "analytics": {
+        "title": "リアルタイム分析",
+        "description": "ビジネスパフォーマンスを追跡"
+      }
+    },
+    "benefits": {
+      "title": "成功のために設計",
+      "offline": {
+        "title": "オフライン動作",
+        "description": "インターネットなしで販売継続"
+      },
+      "fast": {
+        "title": "超高速",
+        "description": "即座にロード、遅延なし"
+      },
+      "mobile": {
+        "title": "モバイルファースト",
+        "description": "スマホ・タブレット向け設計"
+      },
+      "payments": {
+        "title": "モバイルマネー",
+        "description": "M-Pesa、オフラインモード、ローカルサポート"
+      }
+    },
+    "pricing": {
+      "title": "シンプルで透明な価格設定"
+    },
+    "cta": {
+      "title": "ビジネスを成長させる準備はできましたか？",
+      "subtitle": "今日からビジネス管理を改善しましょう",
+      "button": "無料で始める",
+      "terms": "クレジットカード不要 • いつでもキャンセル可能"
+    }
+  }
 }

@@ -1513,5 +1513,65 @@
       "country": "United States",
       "email": "Email: support@dottapps.com"
     }
+  },
+  "mobileLanding": {
+    "hero": {
+      "title": "Bisnis Anda,",
+      "subtitle": "Di Saku Anda",
+      "description": "Platform manajemen bisnis bertenaga AI yang bekerja offline.",
+      "cta": {
+        "getStarted": "Mulai Gratis",
+        "signIn": "Masuk"
+      },
+      "noCreditCard": "Tidak perlu kartu kredit",
+      "freePlan": "Paket gratis selamanya"
+    },
+    "features": {
+      "title": "Semua Yang Anda Butuhkan",
+      "pos": {
+        "title": "Titik Penjualan",
+        "description": "Proses penjualan instan, bahkan offline"
+      },
+      "barcode": {
+        "title": "Pemindai Barcode",
+        "description": "Pindai produk dengan kamera Anda"
+      },
+      "invoicing": {
+        "title": "Faktur Cepat",
+        "description": "Buat dan kirim faktur saat bepergian"
+      },
+      "analytics": {
+        "title": "Analitik Real-time",
+        "description": "Lacak kinerja bisnis Anda"
+      }
+    },
+    "benefits": {
+      "title": "Dibangun untuk Kesuksesan Anda",
+      "offline": {
+        "title": "Bekerja Offline",
+        "description": "Lanjutkan penjualan tanpa internet"
+      },
+      "fast": {
+        "title": "Sangat Cepat",
+        "description": "Pemuatan instan, tanpa penundaan"
+      },
+      "mobile": {
+        "title": "Mobile First",
+        "description": "Dirancang untuk ponsel & tablet"
+      },
+      "payments": {
+        "title": "Uang Mobile",
+        "description": "M-Pesa, mode offline, dukungan lokal"
+      }
+    },
+    "pricing": {
+      "title": "Harga Sederhana dan Transparan"
+    },
+    "cta": {
+      "title": "Siap Mengembangkan Bisnis Anda?",
+      "subtitle": "Mulai kelola bisnis Anda lebih baik hari ini",
+      "button": "Mulai Gratis",
+      "terms": "Tidak perlu kartu kredit • Batalkan kapan saja"
+    }
   }
 }

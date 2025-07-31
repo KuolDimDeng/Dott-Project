@@ -1640,5 +1640,65 @@
       "country": "United States",
       "email": "Email: support@dottapps.com"
     }
+  },
+  "mobileLanding": {
+    "hero": {
+      "title": "Ihr Geschäft,",
+      "subtitle": "In Ihrer Tasche",
+      "description": "KI-gestützte Geschäftsverwaltungsplattform, die offline funktioniert.",
+      "cta": {
+        "getStarted": "Kostenlos Starten",
+        "signIn": "Anmelden"
+      },
+      "noCreditCard": "Keine Kreditkarte erforderlich",
+      "freePlan": "Für immer kostenloser Plan"
+    },
+    "features": {
+      "title": "Alles Was Sie Brauchen",
+      "pos": {
+        "title": "Kassensystem",
+        "description": "Verkäufe sofort verarbeiten, auch offline"
+      },
+      "barcode": {
+        "title": "Barcode-Scanner",
+        "description": "Produkte mit Ihrer Kamera scannen"
+      },
+      "invoicing": {
+        "title": "Schnelle Rechnungsstellung",
+        "description": "Rechnungen unterwegs erstellen und senden"
+      },
+      "analytics": {
+        "title": "Echtzeit-Analysen",
+        "description": "Verfolgen Sie Ihre Geschäftsleistung"
+      }
+    },
+    "benefits": {
+      "title": "Für Ihren Erfolg Entwickelt",
+      "offline": {
+        "title": "Funktioniert Offline",
+        "description": "Verkaufen Sie weiter ohne Internet"
+      },
+      "fast": {
+        "title": "Blitzschnell",
+        "description": "Sofortiges Laden, keine Verzögerungen"
+      },
+      "mobile": {
+        "title": "Mobile First",
+        "description": "Für Telefone und Tablets entwickelt"
+      },
+      "payments": {
+        "title": "Mobile Zahlungen",
+        "description": "M-Pesa, Offline-Modus, lokaler Support"
+      }
+    },
+    "pricing": {
+      "title": "Einfache, Transparente Preise"
+    },
+    "cta": {
+      "title": "Bereit, Ihr Geschäft zu Erweitern?",
+      "subtitle": "Beginnen Sie heute, Ihr Geschäft besser zu verwalten",
+      "button": "Kostenlos Starten",
+      "terms": "Keine Kreditkarte erforderlich • Jederzeit kündbar"
+    }
   }
 }

@@ -386,5 +386,65 @@
         "partnership": "Ohere Mmekọrịta"
       }
     }
+  },
+  "mobileLanding": {
+    "hero": {
+      "title": "Azụmahịa Gị,",
+      "subtitle": "N'ime Akpa Gị",
+      "description": "Ikpo okwu nlekọta azụmahịa nke AI na-akwado nke na-arụ ọrụ na-enweghị ịntanetị.",
+      "cta": {
+        "getStarted": "Malite N'efu",
+        "signIn": "Banye"
+      },
+      "noCreditCard": "Kaadị kredit adịghị mkpa",
+      "freePlan": "Atụmatụ efu ruo mgbe ebighị ebi"
+    },
+    "features": {
+      "title": "Ihe Niile Ị Chọrọ",
+      "pos": {
+        "title": "Ebe Ire Ahịa",
+        "description": "Hazie ahịa ozugbo, ọbụna na-enweghị ịntanetị"
+      },
+      "barcode": {
+        "title": "Nyocha Barcode",
+        "description": "Nyochaa ngwaahịa site na igwefoto gị"
+      },
+      "invoicing": {
+        "title": "Ịnye Akwụkwọ Ọnụ Ngwa Ngwa",
+        "description": "Mepụta ma ziga akwụkwọ ọnụ mgbe ị na-aga"
+      },
+      "analytics": {
+        "title": "Nyocha Oge Ozugbo",
+        "description": "Soro arụmọrụ azụmahịa gị"
+      }
+    },
+    "benefits": {
+      "title": "Ewuru Maka Ihe Ịga Nke Ọma Gị",
+      "offline": {
+        "title": "Ọ Na-arụ Ọrụ Na-enweghị Ịntanetị",
+        "description": "Gaa n'ihu na-ere ahịa na-enweghị ịntanetị"
+      },
+      "fast": {
+        "title": "Ọsọ Ọsọ",
+        "description": "Ntinye ozugbo, enweghị igbu oge"
+      },
+      "mobile": {
+        "title": "Ekwentị Mbụ",
+        "description": "Emebere maka ekwentị na mbadamba"
+      },
+      "payments": {
+        "title": "Ego Ekwentị",
+        "description": "M-Pesa, ọnọdụ na-enweghị ịntanetị, nkwado mpaghara"
+      }
+    },
+    "pricing": {
+      "title": "Ọnụahịa Dị Mfe, Doro Anya"
+    },
+    "cta": {
+      "title": "Ị Dị Njikere Ito Azụmahịa Gị?",
+      "subtitle": "Malite ijikwa azụmahịa gị nke ọma taa",
+      "button": "Malite N'efu",
+      "terms": "Kaadị kredit adịghị mkpa • Kagbuo oge ọ bụla"
+    }
   }
 }

@@ -386,5 +386,65 @@
         "partnership": "Możliwość partnerstwa"
       }
     }
+  },
+  "mobileLanding": {
+    "hero": {
+      "title": "Twój Biznes,",
+      "subtitle": "W Twojej Kieszeni",
+      "description": "Platforma zarządzania biznesem napędzana AI, działająca offline.",
+      "cta": {
+        "getStarted": "Rozpocznij Za Darmo",
+        "signIn": "Zaloguj się"
+      },
+      "noCreditCard": "Nie wymaga karty kredytowej",
+      "freePlan": "Plan darmowy na zawsze"
+    },
+    "features": {
+      "title": "Wszystko Czego Potrzebujesz",
+      "pos": {
+        "title": "Punkt Sprzedaży",
+        "description": "Przetwarzaj sprzedaż natychmiast, nawet offline"
+      },
+      "barcode": {
+        "title": "Skaner Kodów Kreskowych",
+        "description": "Skanuj produkty aparatem"
+      },
+      "invoicing": {
+        "title": "Szybkie Faktury",
+        "description": "Twórz i wysyłaj faktury w podróży"
+      },
+      "analytics": {
+        "title": "Analizy w Czasie Rzeczywistym",
+        "description": "Śledź wyniki swojego biznesu"
+      }
+    },
+    "benefits": {
+      "title": "Stworzony dla Twojego Sukcesu",
+      "offline": {
+        "title": "Działa Offline",
+        "description": "Kontynuuj sprzedaż bez internetu"
+      },
+      "fast": {
+        "title": "Błyskawicznie Szybki",
+        "description": "Natychmiastowe ładowanie, bez opóźnień"
+      },
+      "mobile": {
+        "title": "Mobile First",
+        "description": "Zaprojektowany dla telefonów i tabletów"
+      },
+      "payments": {
+        "title": "Płatności Mobilne",
+        "description": "M-Pesa, tryb offline, lokalne wsparcie"
+      }
+    },
+    "pricing": {
+      "title": "Proste, Przejrzyste Ceny"
+    },
+    "cta": {
+      "title": "Gotowy na Rozwój Twojego Biznesu?",
+      "subtitle": "Zacznij lepiej zarządzać swoim biznesem już dziś",
+      "button": "Rozpocznij Za Darmo",
+      "terms": "Nie wymaga karty kredytowej • Anuluj w dowolnym momencie"
+    }
   }
 }

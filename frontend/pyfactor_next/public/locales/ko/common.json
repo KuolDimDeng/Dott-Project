@@ -957,5 +957,65 @@
       "country": "United States",
       "email": "Email: support@dottapps.com"
     }
+  },
+  "mobileLanding": {
+    "hero": {
+      "title": "당신의 비즈니스를",
+      "subtitle": "주머니 속에",
+      "description": "오프라인에서도 작동하는 AI 기반 비즈니스 관리 플랫폼.",
+      "cta": {
+        "getStarted": "무료로 시작하기",
+        "signIn": "로그인"
+      },
+      "noCreditCard": "신용카드 불필요",
+      "freePlan": "영구 무료 플랜"
+    },
+    "features": {
+      "title": "필요한 모든 것",
+      "pos": {
+        "title": "판매 시점 관리",
+        "description": "오프라인에서도 즉시 판매 처리"
+      },
+      "barcode": {
+        "title": "바코드 스캐너",
+        "description": "카메라로 제품 스캔"
+      },
+      "invoicing": {
+        "title": "빠른 청구서 발행",
+        "description": "이동 중에도 청구서 생성 및 발송"
+      },
+      "analytics": {
+        "title": "실시간 분석",
+        "description": "비즈니스 성과 추적"
+      }
+    },
+    "benefits": {
+      "title": "성공을 위해 제작됨",
+      "offline": {
+        "title": "오프라인 작동",
+        "description": "인터넷 없이도 판매 지속"
+      },
+      "fast": {
+        "title": "초고속",
+        "description": "즉시 로딩, 지연 없음"
+      },
+      "mobile": {
+        "title": "모바일 우선",
+        "description": "휴대폰과 태블릿용으로 설계"
+      },
+      "payments": {
+        "title": "모바일 머니",
+        "description": "M-Pesa, 오프라인 모드, 로컬 지원"
+      }
+    },
+    "pricing": {
+      "title": "간단하고 투명한 가격"
+    },
+    "cta": {
+      "title": "비즈니스를 성장시킬 준비가 되셨나요?",
+      "subtitle": "오늘부터 비즈니스를 더 잘 관리하세요",
+      "button": "무료로 시작하기",
+      "terms": "신용카드 불필요 • 언제든지 취소 가능"
+    }
   }
 }

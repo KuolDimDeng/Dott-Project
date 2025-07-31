@@ -1406,5 +1406,65 @@
       "country": "United States",
       "email": "Email: support@dottapps.com"
     }
+  },
+  "mobileLanding": {
+    "hero": {
+      "title": "Biashara Yako,",
+      "subtitle": "Mfukoni Mwako",
+      "description": "Jukwaa la usimamizi wa biashara lenye AI linalofanya kazi bila mtandao.",
+      "cta": {
+        "getStarted": "Anza Bure",
+        "signIn": "Ingia"
+      },
+      "noCreditCard": "Hakuna kadi ya mkopo inayohitajika",
+      "freePlan": "Mpango wa bure milele"
+    },
+    "features": {
+      "title": "Kila Kitu Unachohitaji",
+      "pos": {
+        "title": "Mahali pa Kuuzia",
+        "description": "Shughulikia mauzo mara moja, hata bila mtandao"
+      },
+      "barcode": {
+        "title": "Skana ya Pau",
+        "description": "Skani bidhaa kwa kamera yako"
+      },
+      "invoicing": {
+        "title": "Kutoa Ankara Haraka",
+        "description": "Tengeneza na tuma ankara ukiwa safarini"
+      },
+      "analytics": {
+        "title": "Uchambuzi wa Wakati Halisi",
+        "description": "Fuatilia utendaji wa biashara yako"
+      }
+    },
+    "benefits": {
+      "title": "Imejengwa kwa Mafanikio Yako",
+      "offline": {
+        "title": "Inafanya Kazi Bila Mtandao",
+        "description": "Endelea kuuza bila intaneti"
+      },
+      "fast": {
+        "title": "Haraka Sana",
+        "description": "Inapakia mara moja, hakuna kuchelewa"
+      },
+      "mobile": {
+        "title": "Simu Kwanza",
+        "description": "Imeundwa kwa simu na tableti"
+      },
+      "payments": {
+        "title": "Pesa za Simu",
+        "description": "M-Pesa, hali ya nje ya mtandao, msaada wa kieneo"
+      }
+    },
+    "pricing": {
+      "title": "Bei Rahisi, Wazi"
+    },
+    "cta": {
+      "title": "Uko Tayari Kukuza Biashara Yako?",
+      "subtitle": "Anza kusimamia biashara yako vizuri zaidi leo",
+      "button": "Anza Bure",
+      "terms": "Hakuna kadi ya mkopo inayohitajika • Ghairi wakati wowote"
+    }
   }
 }

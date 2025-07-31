@@ -1578,5 +1578,65 @@
       "country": "Estados Unidos",
       "email": "Correo electrónico: support@dottapps.com"
     }
+  },
+  "mobileLanding": {
+    "hero": {
+      "title": "Tu Negocio,",
+      "subtitle": "En Tu Bolsillo",
+      "description": "Plataforma de gestión empresarial impulsada por IA que funciona sin conexión.",
+      "cta": {
+        "getStarted": "Comienza Gratis",
+        "signIn": "Iniciar Sesión"
+      },
+      "noCreditCard": "No se requiere tarjeta de crédito",
+      "freePlan": "Plan gratuito para siempre"
+    },
+    "features": {
+      "title": "Todo Lo Que Necesitas",
+      "pos": {
+        "title": "Punto de Venta",
+        "description": "Procesa ventas al instante, incluso sin conexión"
+      },
+      "barcode": {
+        "title": "Escáner de Códigos",
+        "description": "Escanea productos con tu cámara"
+      },
+      "invoicing": {
+        "title": "Facturación Rápida",
+        "description": "Crea y envía facturas sobre la marcha"
+      },
+      "analytics": {
+        "title": "Análisis en Tiempo Real",
+        "description": "Rastrea el rendimiento de tu negocio"
+      }
+    },
+    "benefits": {
+      "title": "Construido para Tu Éxito",
+      "offline": {
+        "title": "Funciona Sin Conexión",
+        "description": "Continúa vendiendo sin internet"
+      },
+      "fast": {
+        "title": "Ultrarrápido",
+        "description": "Carga instantánea, sin demoras"
+      },
+      "mobile": {
+        "title": "Móvil Primero",
+        "description": "Diseñado para teléfonos y tabletas"
+      },
+      "payments": {
+        "title": "Dinero Móvil",
+        "description": "M-Pesa, modo sin conexión, soporte local"
+      }
+    },
+    "pricing": {
+      "title": "Precios Simples y Transparentes"
+    },
+    "cta": {
+      "title": "¿Listo para Hacer Crecer Tu Negocio?",
+      "subtitle": "Comienza a gestionar mejor tu negocio hoy",
+      "button": "Comienza Gratis",
+      "terms": "No se requiere tarjeta de crédito • Cancela cuando quieras"
+    }
   }
 }

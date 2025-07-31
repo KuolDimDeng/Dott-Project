@@ -1500,5 +1500,65 @@
       "country": "United States",
       "email": "Email: support@dottapps.com"
     }
+  },
+  "mobileLanding": {
+    "hero": {
+      "title": "Uw Bedrijf,",
+      "subtitle": "In Uw Zak",
+      "description": "AI-aangedreven bedrijfsbeheerplatform dat offline werkt.",
+      "cta": {
+        "getStarted": "Gratis Beginnen",
+        "signIn": "Inloggen"
+      },
+      "noCreditCard": "Geen creditcard vereist",
+      "freePlan": "Voor altijd gratis plan"
+    },
+    "features": {
+      "title": "Alles Wat U Nodig Heeft",
+      "pos": {
+        "title": "Kassasysteem",
+        "description": "Verwerk verkopen direct, zelfs offline"
+      },
+      "barcode": {
+        "title": "Barcode Scanner",
+        "description": "Scan producten met uw camera"
+      },
+      "invoicing": {
+        "title": "Snelle Facturatie",
+        "description": "Maak en verstuur facturen onderweg"
+      },
+      "analytics": {
+        "title": "Real-time Analyses",
+        "description": "Volg uw bedrijfsprestaties"
+      }
+    },
+    "benefits": {
+      "title": "Gebouwd voor Uw Succes",
+      "offline": {
+        "title": "Werkt Offline",
+        "description": "Blijf verkopen zonder internet"
+      },
+      "fast": {
+        "title": "Bliksemsnel",
+        "description": "Direct laden, geen vertragingen"
+      },
+      "mobile": {
+        "title": "Mobile First",
+        "description": "Ontworpen voor telefoons en tablets"
+      },
+      "payments": {
+        "title": "Mobiel Geld",
+        "description": "M-Pesa, offline modus, lokale ondersteuning"
+      }
+    },
+    "pricing": {
+      "title": "Eenvoudige, Transparante Prijzen"
+    },
+    "cta": {
+      "title": "Klaar om Uw Bedrijf te Laten Groeien?",
+      "subtitle": "Begin vandaag met beter beheer van uw bedrijf",
+      "button": "Gratis Beginnen",
+      "terms": "Geen creditcard vereist • Altijd opzegbaar"
+    }
   }
 }

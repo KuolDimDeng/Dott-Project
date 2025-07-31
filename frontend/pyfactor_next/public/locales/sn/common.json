@@ -386,5 +386,65 @@
         "partnership": "Mukana Wekushandira Pamwe"
       }
     }
+  },
+  "mobileLanding": {
+    "hero": {
+      "title": "Bhizinesi Rako,",
+      "subtitle": "Muhomwe Yako",
+      "description": "Puratifomu yekutungamira bhizinesi ine AI inoshanda pasina internet.",
+      "cta": {
+        "getStarted": "Tanga Mahara",
+        "signIn": "Pinda"
+      },
+      "noCreditCard": "Hapana kadhi rekukwereta rinodiwa",
+      "freePlan": "Chirongwa chemahara nekusingaperi"
+    },
+    "features": {
+      "title": "Zvese Zvaunoda",
+      "pos": {
+        "title": "Nzvimbo Yekutengesa",
+        "description": "Ita kutengesa pakarepo, kunyange pasina internet"
+      },
+      "barcode": {
+        "title": "Barcode Scanner",
+        "description": "Tarisa zvigadzirwa nekamera yako"
+      },
+      "invoicing": {
+        "title": "Kukurumidza Invoice",
+        "description": "Gadzira uye tumira ma invoice uri munzira"
+      },
+      "analytics": {
+        "title": "Kuongorora Kwenguva Chaiyo",
+        "description": "Tevera kushanda kwebhizinesi rako"
+      }
+    },
+    "benefits": {
+      "title": "Yakavakirwa Budiriro Yako",
+      "offline": {
+        "title": "Inoshanda Pasina Internet",
+        "description": "Ramba uchitengesa pasina internet"
+      },
+      "fast": {
+        "title": "Inokurumidza Zvikuru",
+        "description": "Kurodha pakarepo, pasina kunonoka"
+      },
+      "mobile": {
+        "title": "Nharembozha Kutanga",
+        "description": "Yakagadzirirwa mafoni nematabhureti"
+      },
+      "payments": {
+        "title": "Mari Yenhare",
+        "description": "M-Pesa, mamiriro asina internet, rutsigiro rwenzvimbo"
+      }
+    },
+    "pricing": {
+      "title": "Mitengo Yakapfava, Yakajeka"
+    },
+    "cta": {
+      "title": "Wakagadzirira Kukura Bhizinesi Rako?",
+      "subtitle": "Tanga kutungamira bhizinesi rako zvirinani nhasi",
+      "button": "Tanga Mahara",
+      "terms": "Hapana kadhi rekukwereta rinodiwa • Kanzura chero nguva"
+    }
   }
 }
