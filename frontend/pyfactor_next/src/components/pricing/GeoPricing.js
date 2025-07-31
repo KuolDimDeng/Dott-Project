@@ -73,7 +73,7 @@ export default function GeoPricing() {
       console.log('💰 [GeoPricing] Country being sent:', countryOverride || 'none');
       
       const response = await fetch(apiUrl);
-      const data = await response.json();
+      let data = await response.json();
       
       console.log('💰 [GeoPricing] === API RESPONSE ===');
       console.log('💰 [GeoPricing] Full response:', data);
