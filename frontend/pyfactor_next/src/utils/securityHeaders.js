@@ -19,7 +19,7 @@ export function addSecurityHeaders(response, nonce = null) {
   // Content Security Policy - Strict mode for financial data with Cloudflare compatibility
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.auth0.com https://*.stripe.com https://*.googleapis.com https://*.gstatic.com https://*.google.com https://*.googletagmanager.com https://*.google-analytics.com https://client.crisp.chat https://*.crisp.chat https://app.posthog.com https://*.posthog.com https://cdn.plaid.com",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.auth0.com https://*.stripe.com https://*.googleapis.com https://*.gstatic.com https://*.google.com https://*.googletagmanager.com https://*.google-analytics.com https://client.crisp.chat https://*.crisp.chat https://app.posthog.com https://*.posthog.com https://cdn.plaid.com https://static.cloudflareinsights.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://client.crisp.chat",
     "font-src 'self' https://fonts.gstatic.com https://client.crisp.chat data:",
     "img-src 'self' data: blob: https: https://*.dottapps.com",
