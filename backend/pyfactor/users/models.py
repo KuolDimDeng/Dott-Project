@@ -258,6 +258,18 @@ class BusinessDetails(models.Model):
         help_text='Last time accounting standard was changed'
     )
     
+    # Inventory valuation method (depends on accounting standard)
+    inventory_valuation_method = models.CharField(
+        max_length=20,
+        choices=[
+            ('FIFO', 'First In, First Out (FIFO)'),
+            ('LIFO', 'Last In, First Out (LIFO)'),
+            ('WEIGHTED_AVERAGE', 'Weighted Average'),
+        ],
+        default='WEIGHTED_AVERAGE',
+        help_text='Inventory valuation method (LIFO only available for US GAAP)'
+    )
+    
     # Additional fields
     
     def save(self, *args, **kwargs):
@@ -272,6 +284,11 @@ class BusinessDetails(models.Model):
             from .accounting_standards import get_default_accounting_standard
             self.accounting_standard = get_default_accounting_standard(self.country)
             self.accounting_standard_updated_at = timezone.now()
+        
+        # Validate inventory valuation method
+        if self.accounting_standard == 'IFRS' and self.inventory_valuation_method == 'LIFO':
+            # LIFO is not allowed under IFRS, switch to weighted average
+            self.inventory_valuation_method = 'WEIGHTED_AVERAGE'
         
         super().save(*args, **kwargs)
     

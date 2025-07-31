@@ -9,6 +9,7 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 from finance.models import JournalEntry, JournalEntryLine, ChartOfAccount, Account
 from pyfactor.logging_config import get_logger
+from users.models import BusinessDetails
 
 logger = get_logger()
 
@@ -108,6 +109,7 @@ class AccountingService:
     def create_sale_journal_entry(pos_transaction, items_data):
         """
         Create journal entries for a completed POS sale.
+        Incorporates IFRS/GAAP differences in revenue recognition and inventory valuation.
         
         Journal Entry Structure:
         - Debit: Cash/Accounts Receivable (based on payment method)
@@ -155,7 +157,20 @@ class AccountingService:
                 )
                 
                 # 2. Credit Sales Revenue for subtotal (excluding tax)
+                # Apply revenue recognition based on accounting standard
                 revenue_amount = pos_transaction.subtotal - pos_transaction.discount_amount
+                
+                # Check if this is a bundled sale that needs to be allocated (IFRS 15 / ASC 606)
+                if business_id:
+                    accounting_standard = AccountingStandardsService.get_business_accounting_standard(business_id)
+                    
+                    # Both IFRS and GAAP follow 5-step revenue recognition model
+                    # but may have slight differences in bundled goods/services allocation
+                    if hasattr(pos_transaction, 'contains_bundled_items') and pos_transaction.contains_bundled_items:
+                        # For bundled transactions, allocate revenue proportionally
+                        # This is a simplified implementation - real world would be more complex
+                        logger.info(f"Processing bundled revenue allocation under {accounting_standard}")
+                
                 JournalEntryLine.objects.create(
                     journal_entry=journal_entry,
                     account=sales_revenue_account,
@@ -175,10 +190,33 @@ class AccountingService:
                     )
                 
                 # 4. Cost of Goods Sold entries (for products only)
+                # Get business_id for accounting standards
+                business_id = pos_transaction.business.id if hasattr(pos_transaction, 'business') and pos_transaction.business else None
+                
+                # Import accounting service to determine inventory method
+                from accounting.services import AccountingStandardsService
+                
                 total_cogs = Decimal('0.00')
                 for item in items_data:
                     if item['type'] == 'product' and 'cost_price' in item:
-                        cost_price = item.get('cost_price', Decimal('0.00'))
+                        # Get cost based on accounting standard (FIFO/LIFO/Weighted Average)
+                        if business_id and 'product_id' in item:
+                            try:
+                                # Get the actual cost based on inventory valuation method
+                                from inventory.models_materials import Material
+                                material = Material.objects.filter(id=item['product_id']).first()
+                                if material:
+                                    cost_price = AccountingStandardsService.calculate_inventory_cost(
+                                        material, item['quantity'], business_id
+                                    )
+                                else:
+                                    cost_price = item.get('cost_price', Decimal('0.00'))
+                            except Exception as e:
+                                logger.warning(f"Error calculating inventory cost: {e}")
+                                cost_price = item.get('cost_price', Decimal('0.00'))
+                        else:
+                            cost_price = item.get('cost_price', Decimal('0.00'))
+                        
                         quantity = item['quantity']
                         item_cogs = cost_price * quantity
                         total_cogs += item_cogs

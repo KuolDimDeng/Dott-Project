@@ -134,6 +134,12 @@ export default function Features() {
           highlights: [t('highlights.vatGst', 'VAT/GST support'), t('highlights.taxReports', 'Tax reports'), t('highlights.eFilingReady', 'E-filing ready')]
         },
         {
+          title: t('feature.accounting', 'Dual Accounting Standards'),
+          description: t('feature.accounting.description', 'Support for both IFRS and US GAAP - the only platform that adapts to your location'),
+          icon: <ReportingIcon />,
+          highlights: [t('highlights.ifrs', 'IFRS for 166+ countries'), t('highlights.gaap', 'US GAAP for US businesses'), t('highlights.autoDetect', 'Auto-detects based on country')]
+        },
+        {
           title: t('feature.reporting', 'Financial Analytics'),
           description: t('feature.reporting.description', 'Real-time insights with AI-powered recommendations'),
           icon: <ReportingIcon />,

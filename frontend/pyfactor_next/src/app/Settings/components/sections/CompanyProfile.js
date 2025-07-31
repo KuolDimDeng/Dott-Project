@@ -19,6 +19,7 @@ import {
 import { FieldTooltip } from '@/components/ui/FieldTooltip';
 import { logger } from '@/utils/logger';
 import CurrencyPreferences from './CurrencyPreferences';
+import AccountingStandards from './AccountingStandards';
 
 const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, notifyError }) => {
   console.log('[CompanyProfile] === COMPONENT RENDERED v2 ===');
@@ -1013,6 +1014,11 @@ const CompanyProfile = ({ user, profileData, isOwner, isAdmin, notifySuccess, no
           {/* Currency Preferences Section */}
           <div className="bg-white border border-gray-200 rounded-lg p-6">
             <CurrencyPreferences />
+          </div>
+
+          {/* Accounting Standards Section */}
+          <div className="mt-6">
+            <AccountingStandards />
           </div>
 
           {editMode && (

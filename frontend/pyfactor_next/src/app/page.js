@@ -10,6 +10,7 @@ import Hero from '@/app/components/Hero';
 import Features from '@/app/components/Features';
 import Highlights from '@/app/components/Highlights';
 import BuiltForYou from '@/app/components/BuiltForYou';
+import FinancialManagement from '@/app/components/FinancialManagement';
 import Integrations from '@/app/components/Integrations';
 // import Pricing from '@/app/components/Pricing';
 import GeoPricing from '@/components/pricing/GeoPricing';
@@ -117,6 +118,11 @@ export default function Home() {
       {/* Features Section - Light neutral background */}
       <div className="bg-gray-50">
         <Features />
+      </div>
+      
+      {/* Financial Management Section - White background */}
+      <div className="bg-white">
+        <FinancialManagement />
       </div>
       
       {/* Highlights Section - Soft purple background */}

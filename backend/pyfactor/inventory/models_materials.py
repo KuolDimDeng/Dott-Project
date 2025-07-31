@@ -248,33 +248,49 @@ class Material(AuditMixin, TenantAwareModel):
         """Check if material is below reorder level"""
         return self.quantity_in_stock <= self.reorder_level
     
-    def use_material(self, quantity, notes=None):
+    def use_material(self, quantity, notes=None, business_id=None):
         """
         Use material from stock and create a transaction record.
+        Uses appropriate inventory valuation method based on accounting standard.
         Returns True if successful, raises exception if insufficient stock.
         """
         if quantity > self.quantity_in_stock:
             raise ValueError(f"Insufficient stock. Available: {self.quantity_in_stock}, Requested: {quantity}")
         
+        # Calculate cost based on accounting standard
+        unit_cost = self.average_cost or self.unit_cost
+        if business_id:
+            try:
+                from accounting.services import AccountingStandardsService
+                unit_cost = AccountingStandardsService.calculate_inventory_cost(
+                    self, quantity, business_id
+                )
+            except Exception as e:
+                # Log error but continue with weighted average
+                print(f"Error calculating inventory cost: {e}")
+        
         self.quantity_in_stock -= quantity
         self.last_used_date = timezone.now()
         self.save()
         
-        # Create transaction record
+        # Create transaction record with calculated cost
         MaterialTransaction.objects.create(
             material=self,
             transaction_type='use',
             quantity=quantity,
+            unit_cost=unit_cost,
+            total_cost=quantity * unit_cost,
             notes=notes or f"Material used",
             balance_after=self.quantity_in_stock
         )
         
         return True
     
-    def add_stock(self, quantity, unit_cost=None, notes=None):
+    def add_stock(self, quantity, unit_cost=None, notes=None, business_id=None):
         """
         Add material to stock and create a transaction record.
         Optionally update unit cost and average cost.
+        Uses accounting standards service if business_id provided.
         """
         old_quantity = self.quantity_in_stock
         self.quantity_in_stock += quantity
@@ -293,6 +309,17 @@ class Material(AuditMixin, TenantAwareModel):
             
             # Update unit cost to latest purchase price
             self.unit_cost = unit_cost
+            
+            # Record purchase for FIFO/LIFO if business_id provided
+            if business_id:
+                try:
+                    from accounting.services import AccountingStandardsService
+                    AccountingStandardsService.record_inventory_purchase(
+                        self, quantity, unit_cost, business_id, reference=notes or ''
+                    )
+                except Exception as e:
+                    # Log error but continue
+                    print(f"Error recording inventory purchase: {e}")
         
         self.save()
         
@@ -302,6 +329,7 @@ class Material(AuditMixin, TenantAwareModel):
             transaction_type='purchase',
             quantity=quantity,
             unit_cost=unit_cost,
+            total_cost=quantity * unit_cost if unit_cost else None,
             notes=notes or f"Stock added",
             balance_after=self.quantity_in_stock
         )

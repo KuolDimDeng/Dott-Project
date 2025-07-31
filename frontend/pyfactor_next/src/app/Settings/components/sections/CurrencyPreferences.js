@@ -337,6 +337,7 @@ const CurrencyPreferences = () => {
     console.log('🎯 [CurrencyPreferences] === TOGGLE CHANGE END ===');
   };
 
+
   const ConfirmationModal = () => {
     if (!showConfirmModal || !pendingCurrency) return null;
 
