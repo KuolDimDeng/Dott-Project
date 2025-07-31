@@ -242,6 +242,22 @@ class BusinessDetails(models.Model):
         help_text='Show USD equivalent in parentheses on reports'
     )
     
+    # Accounting Standards
+    accounting_standard = models.CharField(
+        max_length=10,
+        choices=[
+            ('IFRS', 'IFRS (International)'),
+            ('GAAP', 'US GAAP'),
+        ],
+        default='IFRS',
+        help_text='Accounting standard used for financial reporting'
+    )
+    accounting_standard_updated_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Last time accounting standard was changed'
+    )
+    
     # Additional fields
     
     def save(self, *args, **kwargs):
@@ -250,6 +266,13 @@ class BusinessDetails(models.Model):
             # Import here to avoid circular import
             from .business_categories import get_simplified_business_type
             self.simplified_business_type = get_simplified_business_type(self.business_type)
+        
+        # Set default accounting standard based on country if not already set
+        if not self.accounting_standard and self.country:
+            from .accounting_standards import get_default_accounting_standard
+            self.accounting_standard = get_default_accounting_standard(self.country)
+            self.accounting_standard_updated_at = timezone.now()
+        
         super().save(*args, **kwargs)
     
     class Meta:

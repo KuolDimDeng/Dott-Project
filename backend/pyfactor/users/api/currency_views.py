@@ -75,6 +75,7 @@ def currency_diagnostic(request):
                             'show_usd_on_invoices': getattr(business_details, 'show_usd_on_invoices', 'MISSING'),
                             'show_usd_on_quotes': getattr(business_details, 'show_usd_on_quotes', 'MISSING'),
                             'show_usd_on_reports': getattr(business_details, 'show_usd_on_reports', 'MISSING'),
+                            'accounting_standard': getattr(business_details, 'accounting_standard', 'MISSING'),
                         }
                     }
                 except BusinessDetails.DoesNotExist:
@@ -344,6 +345,14 @@ def get_currency_preferences(request):
             if 'show_usd_on_reports' in request.data:
                 business_details.show_usd_on_reports = request.data['show_usd_on_reports']
             
+            # Update accounting standard if provided
+            if 'accounting_standard' in request.data:
+                new_standard = request.data['accounting_standard']
+                if new_standard in ['IFRS', 'GAAP']:
+                    business_details.accounting_standard = new_standard
+                    business_details.accounting_standard_updated_at = timezone.now()
+                    logger.info(f"[Currency API] Accounting standard updated to: {new_standard}")
+            
             # Save changes
             try:
                 logger.info(f"[Currency API] About to save business details...")
@@ -376,6 +385,9 @@ def get_currency_preferences(request):
         
         logger.info(f"[Currency API] Preparing response with currency: {business_details.preferred_currency_code}")
         
+        # Get accounting standard info
+        from users.accounting_standards import get_accounting_standard_display, is_dual_standard_country
+        
         response_data = {
             'success': True,
             'currency_code': business_details.preferred_currency_code,
@@ -383,7 +395,13 @@ def get_currency_preferences(request):
             'currency_symbol': currency_symbol,
             'show_usd_on_invoices': business_details.show_usd_on_invoices,
             'show_usd_on_quotes': business_details.show_usd_on_quotes,
-            'show_usd_on_reports': business_details.show_usd_on_reports
+            'show_usd_on_reports': business_details.show_usd_on_reports,
+            'accounting_standard': business_details.accounting_standard,
+            'accounting_standard_display': get_accounting_standard_display(
+                business_details.accounting_standard, 
+                business_details.country
+            ),
+            'allows_dual_standard': is_dual_standard_country(business_details.country)
         }
         
         logger.info(f"[Currency API] ========== RESPONSE SUCCESS ==========")

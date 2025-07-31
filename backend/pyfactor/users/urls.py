@@ -25,6 +25,7 @@ from .api.subscription_views import subscription_status
 from .api.subscription_status_views import subscription_status as grace_period_status, retry_payment
 from .api.business_logo_views import upload_business_logo, delete_business_logo, get_business_logo
 from .api.currency_views import get_currency_list_view, get_currency_preferences, get_exchange_rate, test_auth, test_auth_public, currency_diagnostic
+from .api.business_settings_views import business_settings, accounting_standards_info
 from rest_framework_simplejwt.views import TokenRefreshView
 
 # Create a router for the menu privileges API
@@ -67,6 +68,9 @@ urlpatterns = [
     path('api/currency/test-auth/', test_auth, name='test_auth'),
     path('api/currency/test-public/', test_auth_public, name='test_auth_public'),
     path('api/currency/diagnostic/', currency_diagnostic, name='currency_diagnostic'),
+    # Business settings and accounting standards
+    path('api/business/settings/', business_settings, name='business_settings'),
+    path('api/accounting/standards-info/', accounting_standards_info, name='accounting_standards_info'),
     # Include the router URLs
     path('api/', include(router.urls)),
 ]
