@@ -36,7 +36,7 @@ export default function RootLayout({ children }) {
   // Admin routes will handle their own logic
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         {/* Security headers for device fingerprinting */}
         <meta httpEquiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()" />
