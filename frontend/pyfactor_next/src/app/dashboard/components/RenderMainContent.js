@@ -304,7 +304,10 @@ const PerformanceManagement = enhancedLazy(() => import('./forms/PerformanceMana
 
 // Add lazy loading for Transport components
 const TransportDashboard = enhancedLazy(() => import('./transport/TransportDashboard.js'), 'Transport Dashboard');
-const VehicleManagement = enhancedLazy(() => import('./transport/VehicleManagement.js'), 'Vehicle Management');
+const TransportVehicleManagement = enhancedLazy(() => import('./transport/VehicleManagement.js'), 'Transport Vehicle Management');
+
+// Add lazy loading for Jobs components
+const JobVehicleManagement = enhancedLazy(() => import('./jobs/VehicleManagement.js'), 'Job Vehicle Management');
 
 // CRM Components
 const CRMDashboard = enhancedLazy(() => import('./crm/CRMDashboard'), 'CRM Dashboard');
@@ -1806,7 +1809,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
         return (
           <ContentWrapperWithKey>
             <SuspenseWithCleanup componentKey={`${componentKey}-vehicles`}>
-              <VehicleManagement />
+              <JobVehicleManagement />
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>
         );
@@ -2268,7 +2271,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
           <ContentWrapperWithKey>
             <SuspenseWithCleanup componentKey={transportComponentKey}>
               {view === 'transport-dashboard' && <TransportDashboard />}
-              {view === 'transport-equipment' && <VehicleManagement />}
+              {view === 'transport-equipment' && <TransportVehicleManagement />}
               {view === 'transport-loads' && <div>Loads Management Component Coming Soon</div>}
               {view === 'transport-routes' && <div>Routes Management Component Coming Soon</div>}
               {view === 'transport-expenses' && <div>Transport Expenses Component Coming Soon</div>}
