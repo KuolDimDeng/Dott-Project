@@ -2231,16 +2231,12 @@ const RenderMainContent = React.memo(function RenderMainContent({
               {selectedOption === 'Estimate' && <EstimateManagement newEstimate={true} />}
               {selectedOption === 'Customer' && <CustomerManagement />}
               {selectedOption === 'Vendor' && <VendorManagement newVendor={true} />}
-              {selectedOption === 'Sales' && <POSSystem isOpen={showCreateOptions && selectedOption === 'Sales'} onClose={() => {
-                // Clear the create options view to close the modal
-                if (handleSetView) handleSetView(null);
-                // This will trigger the parent to clear showCreateOptions
-                window.dispatchEvent(new CustomEvent('clearCreateOptions'));
-              }} onSaleCompleted={() => {
-                // Handle sale completion
-                if (handleSetView) handleSetView(null);
-                window.dispatchEvent(new CustomEvent('clearCreateOptions'));
-              }} />}
+              {selectedOption === 'Sales' && (
+                <div className="p-4 text-center">
+                  <p className="text-gray-500">POS System is loading...</p>
+                  {/* POS is handled by DashboardContent's showPOSSystem state */}
+                </div>
+              )}
               {selectedOption === 'Job' && <JobManagement />}
               {selectedOption === 'Product' && <ProductManagement />}
               {selectedOption === 'Service' && <ServiceManagement />}
