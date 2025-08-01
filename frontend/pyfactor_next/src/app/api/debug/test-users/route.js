@@ -10,7 +10,7 @@ export async function GET(request) {
     logger.info('[DebugTestUsers] Cookie header:', cookieHeader);
     
     // Test backend endpoint directly
-    const backendUrl = process.env.BACKEND_URL || 'https://dott-api-v1.onrender.com';
+    const backendUrl = process.env.BACKEND_URL || 'https://api.dottapps.com';
     const fullUrl = `${backendUrl}/auth/rbac/users?unlinked=true`;
     
     logger.info('[DebugTestUsers] Testing URL:', fullUrl);

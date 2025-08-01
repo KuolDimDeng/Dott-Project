@@ -68,7 +68,7 @@ def fix_authentication():
     
     # Ensure CSRF is properly configured
     settings.CSRF_TRUSTED_ORIGINS.extend([
-        'https://dott-api-y26w.onrender.com',
+        'https://api.dottapps.com',
         'https://*.onrender.com',
     ])
     

@@ -55,9 +55,8 @@ def patch_settings(settings_module):
     # 4. Ensure ALLOWED_HOSTS includes the Render domain
     if hasattr(settings_module, 'ALLOWED_HOSTS'):
         render_hosts = [
-            'dott-api-y26w.onrender.com',
-            '.onrender.com',
             'api.dottapps.com',
+            '.onrender.com',
             '.dottapps.com'
         ]
         for host in render_hosts:
@@ -68,7 +67,8 @@ def patch_settings(settings_module):
     # 5. Disable CSRF for API endpoints (temporary fix)
     if hasattr(settings_module, 'CSRF_TRUSTED_ORIGINS'):
         settings_module.CSRF_TRUSTED_ORIGINS.extend([
-            'https://dott-api-y26w.onrender.com',
+            'https://api.dottapps.com',
+            'https://*.dottapps.com',
             'https://*.onrender.com',
         ])
     

@@ -6,7 +6,6 @@ export async function GET() {
   const tests = [];
   const backends = [
     'https://api.dottapps.com',
-    'https://dott-api-y26w.onrender.com',
     process.env.BACKEND_URL,
     process.env.NEXT_PUBLIC_API_URL,
     process.env.NEXT_PUBLIC_BACKEND_URL
