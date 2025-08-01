@@ -334,31 +334,52 @@ const CurrencyPreferences = () => {
         throw new Error('Invalid response format from server');
       }
       
-      if (data.success || data.backend_error) {
-        console.log('🚀 [CURRENCY-FRONTEND] === UPDATE SUCCESSFUL ===');
-        console.log('🚀 [CURRENCY-FRONTEND] Backend response success:', data);
-        console.log('🚀 [CURRENCY-FRONTEND] Currency returned from backend:', {
-          code: data.currency_code,
-          name: data.currency_name,
-          symbol: data.currency_symbol
-        });
+      // Check if the request was successful
+      if (!response.ok || !data.success) {
+        // Backend returned an error
+        console.error('🚀 [CURRENCY-FRONTEND] === UPDATE FAILED ===');
+        console.error('🚀 [CURRENCY-FRONTEND] Error response:', data);
+        console.error('🚀 [CURRENCY-FRONTEND] Status code:', response.status);
         
-        // Get the currency info from pending selection
-        const selectedCurrency = pendingCurrency || currencies.find(c => c.code === currencyCode);
-        console.log('🚀 [CURRENCY-FRONTEND] Selected currency info:', selectedCurrency);
+        const errorMessage = data.error || `Server error: ${response.status}`;
         
-        // Update preferences with the response data or selected currency
-        const updatedPreferences = {
-          currency_code: data.currency_code || currencyCode,
-          currency_name: data.currency_name || selectedCurrency?.name || `${currencyCode} Currency`,
-          currency_symbol: data.currency_symbol || selectedCurrency?.symbol || '$',
-          show_usd_on_invoices: data.show_usd_on_invoices ?? preferences.show_usd_on_invoices,
-          show_usd_on_quotes: data.show_usd_on_quotes ?? preferences.show_usd_on_quotes,
-          show_usd_on_reports: data.show_usd_on_reports ?? preferences.show_usd_on_reports,
-        };
-        
-        console.log('🚀 [CURRENCY-FRONTEND] Updated preferences object:', updatedPreferences);
-        console.log('🚀 [CURRENCY-FRONTEND] === EXECUTION ORDER ===');
+        // Check for specific error types
+        if (data.status_code === 401 || response.status === 401) {
+          throw new Error('Authentication expired. Please refresh the page and try again.');
+        } else if (data.status_code === 403 || response.status === 403) {
+          throw new Error('You do not have permission to change currency settings.');
+        } else if (data.backend_url) {
+          throw new Error(`Backend error: ${errorMessage}`);
+        } else {
+          throw new Error(errorMessage);
+        }
+      }
+      
+      // Success case
+      console.log('🚀 [CURRENCY-FRONTEND] === UPDATE SUCCESSFUL ===');
+      console.log('🚀 [CURRENCY-FRONTEND] Backend response success:', data);
+      console.log('🚀 [CURRENCY-FRONTEND] Currency returned from backend:', {
+        code: data.currency_code,
+        name: data.currency_name,
+        symbol: data.currency_symbol
+      });
+      
+      // Get the currency info from pending selection
+      const selectedCurrency = pendingCurrency || currencies.find(c => c.code === currencyCode);
+      console.log('🚀 [CURRENCY-FRONTEND] Selected currency info:', selectedCurrency);
+      
+      // Update preferences with the response data or selected currency
+      const updatedPreferences = {
+        currency_code: data.currency_code || currencyCode,
+        currency_name: data.currency_name || selectedCurrency?.name || `${currencyCode} Currency`,
+        currency_symbol: data.currency_symbol || selectedCurrency?.symbol || '$',
+        show_usd_on_invoices: data.show_usd_on_invoices ?? preferences.show_usd_on_invoices,
+        show_usd_on_quotes: data.show_usd_on_quotes ?? preferences.show_usd_on_quotes,
+        show_usd_on_reports: data.show_usd_on_reports ?? preferences.show_usd_on_reports,
+      };
+      
+      console.log('🚀 [CURRENCY-FRONTEND] Updated preferences object:', updatedPreferences);
+      console.log('🚀 [CURRENCY-FRONTEND] === EXECUTION ORDER ===');
         
         // Order of operations as requested:
         // 1. Change Currency - Already done by user selection
@@ -382,10 +403,6 @@ const CurrencyPreferences = () => {
         // 5. App-wide Ready - Already done via context update
         console.log('🚀 [CURRENCY-FRONTEND] Step 5: Currency is now available app-wide:', updatedPreferences.currency_code);
         console.log('🚀 [CURRENCY-FRONTEND] Total time from request to completion:', Date.now() - requestStart, 'ms');
-      } else {
-        console.error('🚀 [CURRENCY-FRONTEND] Update failed:', data.error);
-        notifyError(data.error || 'Failed to update currency');
-      }
     } catch (error) {
       console.error('🚀 [CURRENCY-FRONTEND] Network error:', error);
       console.error('🚀 [CURRENCY-FRONTEND] Error details:', {

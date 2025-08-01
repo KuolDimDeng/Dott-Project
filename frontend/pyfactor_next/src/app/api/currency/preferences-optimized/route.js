@@ -191,25 +191,28 @@ export async function PUT(request) {
         const errorText = await backendResponse.text();
         console.error('🔄 [Currency API] Backend error response:', errorText.substring(0, 500));
         
-        // Get currency info from the comprehensive currency formatter
-        const currencyInfo = getCurrencyInfo(body.currency_code || 'USD');
+        // Parse error details if possible
+        let errorMessage = `Backend error: ${backendResponse.status}`;
+        let errorDetails = null;
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.error || errorData.message || errorMessage;
+          errorDetails = errorData;
+        } catch (e) {
+          // If not JSON, use the text
+          errorMessage = errorText.substring(0, 200) || errorMessage;
+        }
         
-        const response = {
-          success: true,
-          currency_code: body.currency_code || 'USD',
-          currency_name: body.currency_name || currencyInfo.name,
-          currency_symbol: currencyInfo.symbol,
-          show_usd_on_invoices: body.show_usd_on_invoices ?? true,
-          show_usd_on_quotes: body.show_usd_on_quotes ?? true,
-          show_usd_on_reports: body.show_usd_on_reports ?? false,
-          backend_error: true,
-          message: 'Currency preference updated locally'
-        };
-        
-        console.log('🔄 [Currency API] Returning fallback response:', response);
+        console.error('🔄 [Currency API] Returning error response - NOT masking with success');
         console.log('🔄 [Currency API] Total time:', Date.now() - requestStart, 'ms');
         
-        return NextResponse.json(response);
+        return NextResponse.json({
+          success: false,
+          error: errorMessage,
+          status_code: backendResponse.status,
+          details: errorDetails,
+          backend_url: fullUrl
+        }, { status: backendResponse.status });
       }
       
       const data = await backendResponse.json();
@@ -227,26 +230,19 @@ export async function PUT(request) {
       
     } catch (backendError) {
       console.error('🔄 [Currency API] Backend error:', backendError);
+      console.error('🔄 [Currency API] Error stack:', backendError.stack);
       
-      // Get currency info from the comprehensive currency formatter
-      const currencyInfo = getCurrencyInfo(body.currency_code || 'USD');
+      const errorMessage = backendError.message || 'Backend request failed';
       
-      const response = {
-        success: true,
-        currency_code: body.currency_code || 'USD',
-        currency_name: body.currency_name || currencyInfo.name,
-        currency_symbol: currencyInfo.symbol,
-        show_usd_on_invoices: body.show_usd_on_invoices ?? true,
-        show_usd_on_quotes: body.show_usd_on_quotes ?? true,
-        show_usd_on_reports: body.show_usd_on_reports ?? false,
-        backend_error: true,
-        message: 'Currency preference updated locally'
-      };
-      
-      console.log('🔄 [Currency API] Returning error fallback response:', response);
+      console.error('🔄 [Currency API] Returning error response - NOT masking with success');
       console.log('🔄 [Currency API] Total time:', Date.now() - requestStart, 'ms');
       
-      return NextResponse.json(response);
+      return NextResponse.json({
+        success: false,
+        error: errorMessage,
+        error_type: 'network_error',
+        backend_url: fullUrl
+      }, { status: 503 });
     }
     
   } catch (error) {
