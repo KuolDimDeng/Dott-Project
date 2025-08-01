@@ -74,8 +74,42 @@ export async function POST(request, { params }) {
     }
 
     const body = await request.json();
+    
+    // Get user's current currency preference for new job expenses
+    let userCurrency = 'USD'; // fallback
+    try {
+      logger.info('[Jobs Expenses API] Fetching user currency preference...');
+      const currencyResponse = await fetch(`${BACKEND_URL}/api/currency/preferences/`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': `sid=${sidCookie.value}`,
+        },
+      });
+      
+      if (currencyResponse.ok) {
+        const currencyData = await currencyResponse.json();
+        if (currencyData.success && currencyData.preferences?.currency_code) {
+          userCurrency = currencyData.preferences.currency_code;
+          logger.info('[Jobs Expenses API] Using user preferred currency:', userCurrency);
+        } else {
+          logger.warn('[Jobs Expenses API] Currency preference response missing currency_code:', currencyData);
+        }
+      } else {
+        logger.warn('[Jobs Expenses API] Failed to fetch currency preference, using USD default');
+      }
+    } catch (currencyError) {
+      logger.error('[Jobs Expenses API] Error fetching currency preference:', currencyError);
+    }
+    
+    // Add user's preferred currency to expense data if not already specified
+    const enhancedBody = {
+      ...body,
+      currency: body.currency || userCurrency
+    };
+    
     const backendUrl = `${BACKEND_URL}/api/jobs/${id}/expenses/`;
-    logger.info('[Jobs Expenses API] Creating expense:', { jobId: id, body });
+    logger.info('[Jobs Expenses API] Creating expense:', { jobId: id, body: enhancedBody });
 
     const response = await fetch(backendUrl, {
       method: 'POST',
@@ -84,7 +118,7 @@ export async function POST(request, { params }) {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify(enhancedBody)
     });
 
     const responseText = await response.text();

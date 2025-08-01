@@ -73,18 +73,54 @@ export const CurrencyProvider = ({ children }) => {
             setCurrency(defaultCurrency);
           }
         } else {
-          console.error('🔄 [CurrencyContext] Failed to load from database, using USD default');
-          // Use USD default, don't fall back to localStorage
-          const defaultCurrency = {
-            code: 'USD',
-            name: 'US Dollar',
-            symbol: '$'
-          };
-          setCurrency(defaultCurrency);
+          console.error('🔄 [CurrencyContext] Failed to load from database, trying localStorage fallback');
+          // Try localStorage fallback before defaulting to USD
+          try {
+            const localCurrency = localStorage.getItem('dott_currency');
+            if (localCurrency) {
+              const parsedCurrency = JSON.parse(localCurrency);
+              console.log('🔄 [CurrencyContext] Using localStorage fallback:', parsedCurrency);
+              setCurrency({
+                code: parsedCurrency.code || 'USD',
+                name: parsedCurrency.name || 'US Dollar',
+                symbol: parsedCurrency.symbol || '$'
+              });
+            } else {
+              console.log('🔄 [CurrencyContext] No localStorage fallback, using USD default');
+              setCurrency({
+                code: 'USD',
+                name: 'US Dollar',
+                symbol: '$'
+              });
+            }
+          } catch (localError) {
+            console.error('🔄 [CurrencyContext] localStorage fallback failed:', localError);
+            setCurrency({
+              code: 'USD',
+              name: 'US Dollar',
+              symbol: '$'
+            });
+          }
         }
       } catch (error) {
         console.error('🔄 [CurrencyContext] Error loading currency:', error);
-        // Keep USD default
+        // Try localStorage fallback before defaulting to USD
+        try {
+          const localCurrency = localStorage.getItem('dott_currency');
+          if (localCurrency) {
+            const parsedCurrency = JSON.parse(localCurrency);
+            console.log('🔄 [CurrencyContext] Using localStorage fallback after error:', parsedCurrency);
+            setCurrency({
+              code: parsedCurrency.code || 'USD',
+              name: parsedCurrency.name || 'US Dollar',
+              symbol: parsedCurrency.symbol || '$'
+            });
+          } else {
+            console.log('🔄 [CurrencyContext] No localStorage fallback, keeping USD default');
+          }
+        } catch (localError) {
+          console.error('🔄 [CurrencyContext] localStorage fallback failed after error:', localError);
+        }
       } finally {
         setIsLoading(false);
       }

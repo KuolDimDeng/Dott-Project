@@ -102,6 +102,33 @@ export async function POST(request) {
     const body = await request.json();
     logger.info('[Orders API] Creating order with data:', body);
     
+    // Get user's current currency preference for new orders
+    let userCurrency = 'USD'; // fallback
+    try {
+      logger.info('[Orders API] Fetching user currency preference...');
+      const currencyResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/currency/preferences/`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Session ${sidCookie.value}`,
+        },
+      });
+      
+      if (currencyResponse.ok) {
+        const currencyData = await currencyResponse.json();
+        if (currencyData.success && currencyData.preferences?.currency_code) {
+          userCurrency = currencyData.preferences.currency_code;
+          logger.info('[Orders API] Using user preferred currency:', userCurrency);
+        } else {
+          logger.warn('[Orders API] Currency preference response missing currency_code:', currencyData);
+        }
+      } else {
+        logger.warn('[Orders API] Failed to fetch currency preference, using USD default');
+      }
+    } catch (currencyError) {
+      logger.error('[Orders API] Error fetching currency preference:', currencyError);
+    }
+    
     // Transform frontend data to match backend expectations
     const backendData = {
       customer: body.customer_id,  // Backend expects 'customer' not 'customer_id'
@@ -113,6 +140,7 @@ export async function POST(request) {
       discount_percentage: body.discount_percentage || 0,
       shipping_cost: body.shipping_cost || 0,
       tax_rate: body.tax_rate || 0,
+      currency: body.currency || userCurrency, // Use user's preferred currency
       notes: body.notes || '',
       items: body.items?.map(item => ({
         item_type: item.type || 'product',

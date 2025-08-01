@@ -155,6 +155,40 @@ export async function POST(request) {
     const count = parseInt(numberResult.rows[0].count) + 1;
     const bill_number = `BILL-${String(count).padStart(8, '0')}`;
     
+    // Get user's current currency preference for new bills
+    let userCurrency = 'USD'; // fallback
+    try {
+      logger.info('[Bills API] Fetching user currency preference...');
+      // Bills API uses direct database access, so we need to get session from request
+      const cookieStore = request.headers.get('cookie');
+      const sidMatch = cookieStore?.match(/sid=([^;]+)/);
+      const sidValue = sidMatch?.[1];
+      
+      if (sidValue) {
+        const currencyResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/currency/preferences/`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Session ${sidValue}`,
+          },
+        });
+        
+        if (currencyResponse.ok) {
+          const currencyData = await currencyResponse.json();
+          if (currencyData.success && currencyData.preferences?.currency_code) {
+            userCurrency = currencyData.preferences.currency_code;
+            logger.info('[Bills API] Using user preferred currency:', userCurrency);
+          } else {
+            logger.warn('[Bills API] Currency preference response missing currency_code:', currencyData);
+          }
+        } else {
+          logger.warn('[Bills API] Failed to fetch currency preference, using USD default');
+        }
+      }
+    } catch (currencyError) {
+      logger.error('[Bills API] Error fetching currency preference:', currencyError);
+    }
+    
     // Insert bill
     const insertQuery = `
       INSERT INTO purchases_bill (
@@ -172,7 +206,7 @@ export async function POST(request) {
       data.bill_date,
       data.due_date,
       data.totalAmount,
-      data.currency || 'USD',
+      data.currency || userCurrency,
       data.poso_number || null,
       data.notes || null,
       data.is_paid || false

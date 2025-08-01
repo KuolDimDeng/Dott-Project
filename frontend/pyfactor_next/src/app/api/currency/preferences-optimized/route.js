@@ -100,21 +100,23 @@ export async function GET(request) {
       
     } catch (backendError) {
       console.error('[Currency Optimized] Backend error:', backendError);
-      
-      // Return sensible defaults on any backend error
-      return NextResponse.json({
-        success: true,
-        preferences: {
-          currency_code: 'USD',
-          currency_name: 'US Dollar',
-          currency_symbol: '$',
-          show_usd_on_invoices: true,
-          show_usd_on_quotes: true,
-          show_usd_on_reports: false,
-        },
-        fallback: true,
-        error: backendError.message
+      console.error('[Currency Optimized] Backend error details:', {
+        message: backendError.message,
+        stack: backendError.stack,
+        name: backendError.name
       });
+      
+      // Return error instead of defaults to help debug the issue
+      return NextResponse.json({
+        success: false,
+        error: `Backend error: ${backendError.message}`,
+        fallback: false,
+        debug: {
+          backendUrl: fullUrl,
+          hasSession: !!sessionId,
+          errorType: backendError.name
+        }
+      }, { status: 503 });
     }
     
   } catch (error) {

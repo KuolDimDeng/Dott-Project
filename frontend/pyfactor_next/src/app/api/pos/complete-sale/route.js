@@ -24,6 +24,33 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Sale must contain at least one item' }, { status: 400 });
     }
 
+    // Get user's current currency preference for POS sales
+    let userCurrency = 'USD'; // fallback
+    try {
+      logger.info('[POSProxy] Fetching user currency preference...');
+      const currencyResponse = await fetch(`${BACKEND_URL}/api/currency/preferences/`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Session ${sidCookie.value}`,
+        },
+      });
+      
+      if (currencyResponse.ok) {
+        const currencyData = await currencyResponse.json();
+        if (currencyData.success && currencyData.preferences?.currency_code) {
+          userCurrency = currencyData.preferences.currency_code;
+          logger.info('[POSProxy] Using user preferred currency:', userCurrency);
+        } else {
+          logger.warn('[POSProxy] Currency preference response missing currency_code:', currencyData);
+        }
+      } else {
+        logger.warn('[POSProxy] Failed to fetch currency preference, using USD default');
+      }
+    } catch (currencyError) {
+      logger.error('[POSProxy] Error fetching currency preference:', currencyError);
+    }
+
     // Prepare the sale data for backend
     const backendSaleData = {
       items: saleData.items.map(item => ({
@@ -45,6 +72,7 @@ export async function POST(request) {
       notes: saleData.notes || '',
       sale_date: saleData.date || new Date().toISOString().split('T')[0],
       status: 'completed',
+      currency: saleData.currency || userCurrency, // Use user's preferred currency
       // POS specific fields
       pos_sale: true,
       source: 'pos_system'
