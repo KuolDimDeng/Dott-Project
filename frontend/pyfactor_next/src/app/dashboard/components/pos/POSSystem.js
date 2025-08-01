@@ -953,7 +953,7 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
           afterEnter={() => console.log('🎯 [POSSystem] Backdrop afterEnter')}
         >
           <div 
-            className="absolute inset-0 bg-black bg-opacity-25" 
+            className="fixed inset-0 bg-black bg-opacity-25" 
             onClick={() => {
               console.log('🎯 [POSSystem] Backdrop clicked');
               onClose();
@@ -961,7 +961,7 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
           />
         </Transition.Child>
 
-        <div className="absolute inset-0 overflow-y-auto">
+        <div className="fixed inset-0 overflow-y-auto">
           {console.log('🎯 [POSSystem] Content container rendered')}
           <div className="flex min-h-full items-center justify-center p-4">
             <Transition.Child

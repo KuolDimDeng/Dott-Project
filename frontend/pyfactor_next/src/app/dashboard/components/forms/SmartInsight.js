@@ -556,10 +556,10 @@ export default function SmartInsight({ onNavigate }) {
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <div className="absolute inset-0 bg-black/30" />
+            <div className="fixed inset-0 bg-black/30" />
           </Transition.Child>
 
-          <div className="absolute inset-0 flex items-center justify-center p-4">
+          <div className="fixed inset-0 flex items-center justify-center p-4">
             <Transition.Child
               as={Fragment}
               enter="ease-out duration-300"
