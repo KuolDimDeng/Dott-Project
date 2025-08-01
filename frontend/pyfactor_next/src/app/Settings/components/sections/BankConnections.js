@@ -380,37 +380,14 @@ const BankConnections = () => {
               </button>
             </div>
             
-            <div className="space-y-4">
-              {/* Fallback UI while ConnectBank is loading or if it fails */}
-              <div className="p-6 bg-blue-50 rounded-lg text-center">
-                <BanknotesIcon className="mx-auto h-12 w-12 text-blue-600 mb-4" />
-                <h4 className="text-lg font-medium text-gray-900 mb-2">
-                  Connect with {shouldUseWise() ? 'Wise' : 'Plaid'}
-                </h4>
-                <p className="text-sm text-gray-600 mb-6">
-                  Securely connect your bank account to sync transactions and automate payments.
-                </p>
-                
-                <button
-                  onClick={() => {
-                    // For now, show a message that the feature is being loaded
-                    alert('Bank connection feature is loading. This will be available shortly.');
-                  }}
-                  className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-                >
-                  Continue with {shouldUseWise() ? 'Wise' : 'Plaid'}
-                </button>
-              </div>
-              
-              {/* Load the actual ConnectBank component */}
-              <ConnectBank
-                preferredProvider={shouldUseWise() ? { provider: 'wise' } : { provider: 'plaid' }}
-                businessCountry={businessCountry}
-                autoConnect={false}
-                onSuccess={handleBankConnected}
-                onClose={() => setShowConnectModal(false)}
-              />
-            </div>
+            {/* Load the actual ConnectBank component */}
+            <ConnectBank
+              preferredProvider={shouldUseWise() ? { provider: 'wise', name: 'Wise', description: 'International bank connections' } : { provider: 'plaid', name: 'Plaid', description: 'Secure bank connections for US & Europe' }}
+              businessCountry={businessCountry}
+              autoConnect={false}
+              onSuccess={handleBankConnected}
+              onClose={() => setShowConnectModal(false)}
+            />
           </div>
         </div>
       )}
