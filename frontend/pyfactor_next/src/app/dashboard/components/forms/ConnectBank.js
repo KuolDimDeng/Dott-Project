@@ -109,20 +109,25 @@ const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoCon
         payload.country_code = businessCountry;
       }
 
+      logger.info('🏦 [ConnectBank] Creating link token with payload:', payload);
       const response = await plaidApi.createLinkToken(payload);
+      logger.info('🏦 [ConnectBank] Link token response:', response);
 
-      if (response.data.link_token) {
+      if (response.data && response.data.link_token) {
+        logger.info('🏦 [ConnectBank] Link token received successfully');
         setLinkToken(response.data.link_token);
-      } else if (response.data.auth_url) {
+      } else if (response.data && response.data.auth_url) {
         // Handle non-Plaid providers that return an auth URL
+        logger.info('🏦 [ConnectBank] Redirecting to auth URL:', response.data.auth_url);
         window.location.href = response.data.auth_url;
       } else {
-        throw new Error('Invalid response from server');
+        logger.error('🏦 [ConnectBank] Invalid response structure:', response);
+        throw new Error(`Invalid response from server: ${JSON.stringify(response)}`);
       }
     } catch (err) {
-      logger.error('Error auto-connecting to bank:', err);
-      setError('Failed to initialize bank connection. Please try again.');
-      setSnackbar({ open: true, message: 'Failed to connect bank', severity: 'error' });
+      logger.error('🏦 [ConnectBank] Error auto-connecting to bank:', err);
+      setError(`Failed to initialize bank connection: ${err.message || 'Please try again.'}`);
+      setSnackbar({ open: true, message: `Failed to connect bank: ${err.message || 'Unknown error'}`, severity: 'error' });
     } finally {
       setLoading(false);
     }
@@ -146,20 +151,25 @@ const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoCon
         payload.country_code = businessCountry;
       }
 
+      logger.info('🏦 [ConnectBank] Creating link token with payload:', payload);
       const response = await plaidApi.createLinkToken(payload);
+      logger.info('🏦 [ConnectBank] Link token response:', response);
 
-      if (response.data.link_token) {
+      if (response.data && response.data.link_token) {
+        logger.info('🏦 [ConnectBank] Link token received successfully');
         setLinkToken(response.data.link_token);
-      } else if (response.data.auth_url) {
+      } else if (response.data && response.data.auth_url) {
         // Handle non-Plaid providers that return an auth URL
+        logger.info('🏦 [ConnectBank] Redirecting to auth URL:', response.data.auth_url);
         window.location.href = response.data.auth_url;
       } else {
-        throw new Error('Invalid response from server');
+        logger.error('🏦 [ConnectBank] Invalid response structure:', response);
+        throw new Error(`Invalid response from server: ${JSON.stringify(response)}`);
       }
     } catch (err) {
-      logger.error('Error creating link token:', err);
-      setError('Failed to initialize bank connection. Please try again.');
-      setSnackbar({ open: true, message: 'Failed to connect bank', severity: 'error' });
+      logger.error('🏦 [ConnectBank] Error creating link token:', err);
+      setError(`Failed to initialize bank connection: ${err.message || 'Please try again.'}`);
+      setSnackbar({ open: true, message: `Failed to connect bank: ${err.message || 'Unknown error'}`, severity: 'error' });
     } finally {
       setLoading(false);
     }
@@ -168,23 +178,33 @@ const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoCon
   const { open, ready } = usePlaidLink({
     token: linkToken,
     onSuccess: (public_token, metadata) => {
-      console.log('Bank connection successful');
+      console.log('🏦 [ConnectBank] Bank connection successful');
+      logger.info('🏦 [ConnectBank] Plaid Link success:', { public_token, metadata });
       exchangePublicToken(public_token);
     },
     onExit: (err, metadata) => {
-      console.log('Plaid Link exited', err, metadata);
+      console.log('🏦 [ConnectBank] Plaid Link exited', err, metadata);
+      logger.error('🏦 [ConnectBank] Plaid Link exit error:', err);
       if (err) {
-        setSnackbar({ open: true, message: 'Failed to connect bank', severity: 'error' });
+        setError(`Plaid connection failed: ${err.error_message || err.message || 'Unknown error'}`);
+        setSnackbar({ open: true, message: `Failed to connect bank: ${err.error_message || err.message || 'Unknown error'}`, severity: 'error' });
       }
     },
     onEvent: (eventName, metadata) => {
-      console.log('Plaid Link event', eventName, metadata);
+      console.log('🏦 [ConnectBank] Plaid Link event', eventName, metadata);
+      logger.debug('🏦 [ConnectBank] Plaid Link event:', { eventName, metadata });
     },
   });
 
   useEffect(() => {
+    logger.info('🏦 [ConnectBank] Plaid Link useEffect triggered:', { linkToken: !!linkToken, ready, linkTokenValue: linkToken });
+    
     if (linkToken && ready) {
+      logger.info('🏦 [ConnectBank] Opening Plaid Link with token');
       open();
+    } else if (linkToken === null) {
+      logger.error('🏦 [ConnectBank] Link token is null - cannot open Plaid Link');
+      setError('Unable to initialize Plaid connection - no link token received');
     }
   }, [linkToken, ready, open]);
 

@@ -60,6 +60,8 @@ bankingApiInstance.interceptors.response.use(
  */
 export const plaidApi = {
   createLinkToken: (payload = {}) => {
+    logger.info('🏦 [plaidApi] Creating link token with payload:', payload);
+    
     // Use frontend proxy to avoid CORS issues
     return fetch('/api/banking/link-token', {
       method: 'POST',
@@ -69,11 +71,22 @@ export const plaidApi = {
       credentials: 'include',
       body: JSON.stringify(payload)
     }).then(response => {
+      logger.info('🏦 [plaidApi] Link token response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        return response.text().then(errorText => {
+          logger.error('🏦 [plaidApi] Link token error response:', errorText);
+          throw new Error(`HTTP ${response.status}: ${errorText}`);
+        });
       }
       return response.json();
-    }).then(data => ({ data }));
+    }).then(data => {
+      logger.info('🏦 [plaidApi] Link token data received:', data);
+      return { data };
+    }).catch(error => {
+      logger.error('🏦 [plaidApi] Link token creation failed:', error);
+      throw error;
+    });
   },
   exchangeToken: (publicToken) => {
     return fetch('/api/banking/exchange-token', {
