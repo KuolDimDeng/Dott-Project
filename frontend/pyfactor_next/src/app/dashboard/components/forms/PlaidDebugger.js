@@ -1,20 +1,22 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import plaidManager from '@/utils/plaidManager';
 
 export const PlaidDebugger = () => {
   const [plaidStatus, setPlaidStatus] = useState({
     scriptLoaded: false,
     plaidAvailable: false,
     checkCount: 0,
-    error: null
+    error: null,
+    managerInitialized: false
   });
 
   useEffect(() => {
     let interval;
     let count = 0;
 
-    const checkPlaid = () => {
+    const checkPlaid = async () => {
       count++;
       
       // Check if script tag exists
@@ -24,17 +26,22 @@ export const PlaidDebugger = () => {
       // Check if window.Plaid exists
       const plaidAvailable = typeof window.Plaid !== 'undefined';
       
+      // Check PlaidManager status
+      const managerInitialized = plaidManager.isInitialized;
+      
       setPlaidStatus({
         scriptLoaded: !!plaidScript,
         plaidAvailable,
         checkCount: count,
         scriptSrc: plaidScript?.src,
         plaidType: plaidAvailable ? typeof window.Plaid : 'undefined',
-        plaidKeys: plaidAvailable ? Object.keys(window.Plaid) : []
+        plaidKeys: plaidAvailable ? Object.keys(window.Plaid) : [],
+        managerInitialized,
+        hasCreate: plaidAvailable && window.Plaid.create ? 'Yes' : 'No'
       });
 
       // Stop checking after 10 seconds
-      if (count > 100 || plaidAvailable) {
+      if (count > 100 || (plaidAvailable && managerInitialized)) {
         clearInterval(interval);
       }
     };
@@ -54,6 +61,8 @@ export const PlaidDebugger = () => {
       <div className="space-y-1">
         <div>Script Tag: {plaidStatus.scriptLoaded ? '✅' : '❌'}</div>
         <div>window.Plaid: {plaidStatus.plaidAvailable ? '✅' : '❌'}</div>
+        <div>Manager Ready: {plaidStatus.managerInitialized ? '✅' : '❌'}</div>
+        <div>Has create(): {plaidStatus.hasCreate}</div>
         <div>Check Count: {plaidStatus.checkCount}</div>
         {plaidStatus.scriptSrc && (
           <div className="text-xs break-all">Script: {plaidStatus.scriptSrc}</div>

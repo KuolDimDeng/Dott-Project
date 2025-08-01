@@ -2,9 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSession } from '@/hooks/useSession-v2';
-import { StandardSpinner } from '@/components/ui/StandardSpinner';
-import { PhosphorIcon } from '@phosphor-icons/react';
-import { Clock, CalendarCheck, CheckCircle, XCircle, AlertTriangle, User, Calendar } from '@phosphor-icons/react';
+import StandardSpinner from '@/components/ui/StandardSpinner';
+import { Clock, CalendarCheck, CheckCircle, XCircle, Warning, User, Calendar } from '@phosphor-icons/react';
 
 const SupervisorApprovals = () => {
   const { session, loading: sessionLoading } = useSession();
@@ -236,7 +235,7 @@ const SupervisorApprovals = () => {
       <div className="p-6 max-w-2xl mx-auto">
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <div className="flex items-center">
-            <AlertTriangle className="h-5 w-5 text-red-400 mr-2" />
+            <Warning className="h-5 w-5 text-red-400 mr-2" />
             <h3 className="text-sm font-medium text-red-800">Error Loading Approvals</h3>
           </div>
           <p className="mt-2 text-sm text-red-700">{error}</p>

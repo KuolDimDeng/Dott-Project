@@ -5,7 +5,7 @@ import { toast } from 'react-hot-toast';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { useSession } from '@/hooks/useSession-v2';
 import StandardSpinner, { CenteredSpinner } from '@/components/ui/StandardSpinner';
-import { DEVELOPING_COUNTRIES } from '@/services/countryDetectionService';
+import { isDevelopingCountry } from '@/services/countryDetectionService';
 import { 
   DocumentTextIcon,
   SparklesIcon,
@@ -289,7 +289,7 @@ export default function TaxFilingService({ onNavigate }) {
         const country = businessData.country || 'US';
         
         // Check if country is in developing countries list
-        const isDeveloping = DEVELOPING_COUNTRIES.includes(country);
+        const isDeveloping = isDevelopingCountry(country);
         
         return { country, isDeveloping, discount: isDeveloping ? 0.5 : 1.0 };
       }

@@ -342,6 +342,51 @@ export const put = (endpoint, data = {}, options = {}) => {
 };
 
 /**
+ * Delete data with DELETE method
+ * @param {string} endpoint - API endpoint
+ * @param {Object} options - Options for the request
+ * @returns {Promise<Object>} - Response data
+ */
+export const deleteData = async (endpoint, options = {}) => {
+  const {
+    headers = {},
+    showNotification = true,
+    fallbackData = null,
+    rethrow = false,
+    ...otherOptions
+  } = options;
+
+  try {
+    const tenantHeaders = await getRequestTenantHeaders();
+
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        ...tenantHeaders,
+        ...headers,
+      },
+      credentials: 'include',
+      cache: 'no-store',
+      ...otherOptions,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.message || errorData.error || `HTTP ${response.status}: ${response.statusText}`;
+      throw new Error(errorMessage);
+    }
+
+    const data = await response.json().catch(() => ({}));
+    return data;
+  } catch (error) {
+    handleApiError(error, { fallbackData, showNotification, rethrow });
+    if (rethrow) throw error;
+    return fallbackData;
+  }
+};
+
+/**
  * Verify tenant context exists and set it
  * @returns {Promise<boolean>} - Whether tenant context verification succeeded
  */

@@ -71,10 +71,16 @@ export default function RootLayout({ children }) {
           {children}
         </Providers>
         
-        {/* Plaid Link Script */}
+        {/* Plaid Link Script - Load early to prevent initialization errors */}
         <Script 
           src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"
-          strategy="afterInteractive"
+          strategy="beforeInteractive"
+          onLoad={() => {
+            console.log('🏦 [Layout] Plaid script loaded successfully');
+          }}
+          onError={(e) => {
+            console.error('🏦 [Layout] Failed to load Plaid script:', e);
+          }}
         />
         
         {/* Crisp Chat Widget */}

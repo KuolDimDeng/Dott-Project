@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession } from '@/providers/SessionProvider';
+import { useSession } from '@/hooks/useSession-v2';
 
 export default function TestOnboardingData() {
   const { user } = useSession();

@@ -1,50 +1,39 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ButtonSpinner } from '@/components/ui/StandardSpinner';
+import plaidManager from '@/utils/plaidManager';
 
 export const SimplePlaidButton = ({ linkToken, onSuccess, onExit }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const handlerRef = useRef(null);
+  const mountedRef = useRef(true);
 
   useEffect(() => {
+    mountedRef.current = true;
+    
     if (!linkToken) {
       setError('No link token provided');
       setLoading(false);
       return;
     }
 
-    let handler = null;
-    let mounted = true;
-
     const initializePlaid = async () => {
       try {
-        // Wait for Plaid script to load
-        let attempts = 0;
-        while (!window.Plaid && attempts < 50) { // 5 seconds timeout
-          await new Promise(resolve => setTimeout(resolve, 100));
-          attempts++;
-        }
-
-        if (!window.Plaid) {
-          throw new Error('Plaid SDK failed to load. Please check your internet connection.');
-        }
-
-        if (!mounted) return;
-
-        console.log('🏦 [SimplePlaid] Creating Plaid handler...');
+        console.log('🏦 [SimplePlaid] Initializing with token:', linkToken?.substring(0, 20) + '...');
         
-        handler = window.Plaid.create({
+        const config = {
           token: linkToken,
           onSuccess: (public_token, metadata) => {
             console.log('🏦 [SimplePlaid] Success:', public_token);
-            if (mounted && onSuccess) {
+            if (mountedRef.current && onSuccess) {
               onSuccess(public_token, metadata);
             }
           },
           onExit: (err, metadata) => {
             console.log('🏦 [SimplePlaid] Exit:', err);
-            if (mounted && onExit) {
+            if (mountedRef.current && onExit) {
               onExit(err, metadata);
             }
           },
@@ -53,20 +42,26 @@ export const SimplePlaidButton = ({ linkToken, onSuccess, onExit }) => {
           },
           onLoad: () => {
             console.log('🏦 [SimplePlaid] Plaid loaded');
-            if (mounted) {
+            if (mountedRef.current) {
               setLoading(false);
             }
           }
-        });
+        };
 
-        console.log('🏦 [SimplePlaid] Handler created, opening...');
+        // Use PlaidManager to create handler
+        const handler = await plaidManager.createHandler(config);
         
-        // Store handler on window for debugging
-        window.plaidHandler = handler;
+        if (mountedRef.current) {
+          handlerRef.current = handler;
+          setLoading(false);
+        } else {
+          // Component unmounted, destroy handler
+          handler.destroy();
+        }
         
       } catch (err) {
         console.error('🏦 [SimplePlaid] Error:', err);
-        if (mounted) {
+        if (mountedRef.current) {
           setError(err.message);
           setLoading(false);
         }
@@ -76,10 +71,10 @@ export const SimplePlaidButton = ({ linkToken, onSuccess, onExit }) => {
     initializePlaid();
 
     return () => {
-      mounted = false;
-      if (handler && handler.destroy) {
+      mountedRef.current = false;
+      if (handlerRef.current && handlerRef.current.destroy) {
         try {
-          handler.destroy();
+          handlerRef.current.destroy();
         } catch (e) {
           console.error('🏦 [SimplePlaid] Cleanup error:', e);
         }
@@ -89,10 +84,11 @@ export const SimplePlaidButton = ({ linkToken, onSuccess, onExit }) => {
 
   const handleClick = () => {
     console.log('🏦 [SimplePlaid] Button clicked');
-    if (window.plaidHandler) {
-      window.plaidHandler.open();
+    if (handlerRef.current) {
+      handlerRef.current.open();
     } else {
       console.error('🏦 [SimplePlaid] No handler available');
+      setError('Plaid is not ready. Please try again.');
     }
   };
 
