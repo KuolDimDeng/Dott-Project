@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Currency API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border-left: 4px solid #3B82F6;
+            background: #f8f9fa;
+        }
+        .result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background: #D1FAE5;
+            color: #065F46;
+        }
+        .error {
+            background: #FEE2E2;
+            color: #991B1B;
+        }
+        .info {
+            background: #DBEAFE;
+            color: #1E40AF;
+        }
+        button {
+            background: #3B82F6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #2563EB;
+        }
+        pre {
+            background: #1F2937;
+            color: #F3F4F6;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Currency API Test Suite</h1>
+        
+        <div class="test-section">
+            <h2>Test Controls</h2>
+            <button onclick="runAllTests()">Run All Tests</button>
+            <button onclick="clearResults()">Clear Results</button>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const resultsDiv = document.getElementById('results');
+        
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = message;
+            resultsDiv.appendChild(div);
+            console.log(message);
+        }
+
+        function clearResults() {
+            resultsDiv.innerHTML = '';
+        }
+
+        async function testGetPreferences() {
+            log('<h3>Test 1: GET Current Preferences</h3>');
+            
+            try {
+                const response = await fetch('/api/currency/preferences-optimized/', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                    },
+                    credentials: 'include'
+                });
+                
+                log(`Response Status: ${response.status}`, response.ok ? 'success' : 'error');
+                
+                const data = await response.json();
+                log(`Response: <pre>${JSON.stringify(data, null, 2)}</pre>`);
+                
+                if (data.success) {
+                    log(`✅ Current currency: ${data.preferences.currency_code}`, 'success');
+                    return data.preferences.currency_code;
+                } else {
+                    log(`❌ Error: ${data.error}`, 'error');
+                    return null;
+                }
+            } catch (error) {
+                log(`❌ Request failed: ${error.message}`, 'error');
+                return null;
+            }
+        }
+
+        async function testUpdateCurrency(newCurrency) {
+            log(`<h3>Test 2: Update Currency to ${newCurrency}</h3>`);
+            
+            try {
+                const response = await fetch('/api/currency/preferences-optimized/', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        currency_code: newCurrency
+                    })
+                });
+                
+                log(`Response Status: ${response.status}`, response.ok ? 'success' : 'error');
+                
+                const data = await response.json();
+                log(`Response: <pre>${JSON.stringify(data, null, 2)}</pre>`);
+                
+                if (data.success) {
+                    log(`✅ Currency updated successfully`, 'success');
+                    return true;
+                } else {
+                    log(`❌ Update failed: ${data.error}`, 'error');
+                    if (data.backend_url) {
+                        log(`Backend URL: ${data.backend_url}`, 'info');
+                    }
+                    return false;
+                }
+            } catch (error) {
+                log(`❌ Request failed: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        async function testPersistence(expectedCurrency) {
+            log('<h3>Test 3: Verify Persistence</h3>');
+            
+            // Wait a moment for any caching to settle
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            const currentCurrency = await testGetPreferences();
+            
+            if (currentCurrency === expectedCurrency) {
+                log(`✅ Currency persisted correctly: ${currentCurrency}`, 'success');
+                return true;
+            } else {
+                log(`❌ Currency did not persist. Expected: ${expectedCurrency}, Got: ${currentCurrency}`, 'error');
+                return false;
+            }
+        }
+
+        async function runAllTests() {
+            clearResults();
+            log('<h2>🚀 Starting Currency API Tests</h2>');
+            log(`Time: ${new Date().toISOString()}`, 'info');
+            
+            // Test 1: Get current preferences
+            const originalCurrency = await testGetPreferences();
+            
+            if (!originalCurrency) {
+                log('❌ Cannot proceed - failed to get current preferences', 'error');
+                return;
+            }
+            
+            // Test 2: Update to SSP
+            const testCurrency = originalCurrency === 'SSP' ? 'USD' : 'SSP';
+            log(`<br>Will change from ${originalCurrency} to ${testCurrency}`, 'info');
+            
+            const updateSuccess = await testUpdateCurrency(testCurrency);
+            
+            if (!updateSuccess) {
+                log('❌ Cannot proceed - update failed', 'error');
+                return;
+            }
+            
+            // Test 3: Verify persistence
+            await testPersistence(testCurrency);
+            
+            // Test 4: Clear browser cache and test again
+            log('<h3>Test 4: Clear Cache and Verify</h3>');
+            log('Clearing localStorage...', 'info');
+            localStorage.removeItem('dott_currency');
+            
+            const afterCacheClear = await testGetPreferences();
+            if (afterCacheClear === testCurrency) {
+                log(`✅ Currency still ${testCurrency} after cache clear - persistence working!`, 'success');
+            } else {
+                log(`❌ Currency reverted to ${afterCacheClear} after cache clear`, 'error');
+            }
+            
+            log('<h2>✅ All tests complete</h2>', 'success');
+        }
+
+        // Auto-run tests on load
+        window.addEventListener('load', () => {
+            log('Currency API Test Suite loaded. Click "Run All Tests" to begin.', 'info');
+        });
+    </script>
+</body>
+</html>
