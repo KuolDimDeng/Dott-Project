@@ -5,6 +5,7 @@ import { useSession } from '@/hooks/useSession-v2';
 import { useRouter, useSearchParams } from 'next/navigation';
 import EmployeeInfo from './components/EmployeeInfo';
 import TimesheetTab from './components/TimesheetTab';
+import SupervisorApprovals from '@/components/Timesheet/SupervisorApprovals';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -20,6 +21,7 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState('profile');
   const [employee, setEmployee] = useState(null);
   const [loadingEmployee, setLoadingEmployee] = useState(false);
+  const [isSupervisor, setIsSupervisor] = useState(false);
 
   // Handle tab parameter from URL
   useEffect(() => {
@@ -55,6 +57,9 @@ export default function ProfilePage() {
       if (response.ok) {
         const data = await response.json();
         setEmployee(data);
+        
+        // Check if this employee is a supervisor (has team members)
+        setIsSupervisor(data.is_supervisor || false);
       } else {
         toast.error(t('errors.loadEmployeeFailed'));
       }
@@ -96,7 +101,7 @@ export default function ProfilePage() {
       <h1 className="text-2xl font-bold mb-6">{t('title')}</h1>
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className={`grid w-full ${isSupervisor ? 'grid-cols-6' : 'grid-cols-5'}`}>
           <TabsTrigger value="profile" className="flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -121,6 +126,14 @@ export default function ProfilePage() {
             </svg>
             {t('tabs.timesheet')}
           </TabsTrigger>
+          {isSupervisor && (
+            <TabsTrigger value="approvals" className="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Approvals
+            </TabsTrigger>
+          )}
           <TabsTrigger value="legal" className="flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
@@ -195,6 +208,12 @@ export default function ProfilePage() {
         <TabsContent value="timesheet">
           <TimesheetTab employee={employee} session={session} />
         </TabsContent>
+        
+        {isSupervisor && (
+          <TabsContent value="approvals">
+            <SupervisorApprovals />
+          </TabsContent>
+        )}
         
         <TabsContent value="legal">
           <Card>
