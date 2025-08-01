@@ -15,11 +15,21 @@ const CurrencyDisplay = ({
 }) => {
   const { currency, isLoading } = useCurrency();
   
+  // Debug logging
+  console.log('💰 [CurrencyDisplay] === RENDER ===');
+  console.log('💰 [CurrencyDisplay] Currency from context:', currency);
+  console.log('💰 [CurrencyDisplay] Is loading:', isLoading);
+  console.log('💰 [CurrencyDisplay] Props:', { showName, showSymbol, className, fallback });
+  console.log('💰 [CurrencyDisplay] Timestamp:', new Date().toISOString());
+  console.log('💰 [CurrencyDisplay] Component location:', new Error().stack.split('\n')[3]); // Track where it's being rendered from
+  
   // Always show something, even while loading
   const displayCurrency = currency || { code: fallback, name: `${fallback} Currency`, symbol: '$' };
+  console.log('💰 [CurrencyDisplay] Display currency:', displayCurrency);
 
   // Don't wait for loading - show cached/default immediately
   if (!displayCurrency) {
+    console.log('💰 [CurrencyDisplay] No display currency, showing fallback:', fallback);
     return (
       <span className={className}>
         {fallback}
@@ -39,10 +49,13 @@ const CurrencyDisplay = ({
     // Show code if no symbol or name
     displayText.push(displayCurrency.code);
   }
+  
+  const finalText = displayText.join(' ') || displayCurrency.code || fallback;
+  console.log('💰 [CurrencyDisplay] Final display text:', finalText);
 
   return (
     <span className={className} title={`Business Currency: ${displayCurrency.name} (${displayCurrency.code})`}>
-      {displayText.join(' ') || displayCurrency.code || fallback}
+      {finalText}
     </span>
   );
 };

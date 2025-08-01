@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { getCurrencyInfo } from '@/utils/currencyFormatter';
 
 // Helper to ensure URL has trailing slash
 function ensureTrailingSlash(url) {
@@ -136,15 +137,19 @@ export async function GET(request) {
 }
 
 export async function PUT(request) {
+  const requestStart = Date.now();
   try {
     const body = await request.json();
     const cookieStore = cookies();
     const sessionId = cookieStore.get('sid')?.value || cookieStore.get('session_token')?.value;
     
-    console.log('[Currency Optimized] PUT request started');
-    console.log('[Currency Optimized] PUT body:', body);
+    console.log('🔄 [Currency API] === PUT REQUEST START ===');
+    console.log('🔄 [Currency API] Timestamp:', new Date().toISOString());
+    console.log('🔄 [Currency API] Request body:', body);
+    console.log('🔄 [Currency API] Session ID present:', !!sessionId);
     
     if (!sessionId) {
+      console.log('🔄 [Currency API] No session found, returning 401');
       return NextResponse.json(
         { success: false, error: 'Not authenticated' },
         { status: 401 }
@@ -156,6 +161,8 @@ export async function PUT(request) {
     const endpoint = ensureTrailingSlash('/api/currency/preferences');
     const fullUrl = ensureTrailingSlash(`${backendUrl}${endpoint}`);
     
+    console.log('🔄 [Currency API] Backend URL:', fullUrl);
+    
     const headers = {
       'Accept': 'application/json',
       'Content-Type': 'application/json',
@@ -165,60 +172,84 @@ export async function PUT(request) {
     };
     
     try {
+      console.log('🔄 [Currency API] Making backend request...');
+      const backendStart = Date.now();
+      
       const backendResponse = await directBackendCall(fullUrl, {
         method: 'PUT',
         headers,
         body: JSON.stringify(body),
       });
       
-      console.log('[Currency Optimized] PUT response status:', backendResponse.status);
+      const backendDuration = Date.now() - backendStart;
+      console.log('🔄 [Currency API] Backend response received in:', backendDuration, 'ms');
+      console.log('🔄 [Currency API] Backend response status:', backendResponse.status);
       
       if (!backendResponse.ok) {
         const errorText = await backendResponse.text();
-        console.error('[Currency Optimized] Backend error:', errorText.substring(0, 500));
+        console.error('🔄 [Currency API] Backend error response:', errorText.substring(0, 500));
         
-        // Return success with the requested currency even if backend fails
-        // This ensures UI updates immediately
-        return NextResponse.json({
+        // Get currency info from the comprehensive currency formatter
+        const currencyInfo = getCurrencyInfo(body.currency_code || 'USD');
+        
+        const response = {
           success: true,
           currency_code: body.currency_code || 'USD',
-          currency_name: body.currency_name || `${body.currency_code} Currency`,
-          currency_symbol: '$',
+          currency_name: body.currency_name || currencyInfo.name,
+          currency_symbol: currencyInfo.symbol,
           show_usd_on_invoices: body.show_usd_on_invoices ?? true,
           show_usd_on_quotes: body.show_usd_on_quotes ?? true,
           show_usd_on_reports: body.show_usd_on_reports ?? false,
           backend_error: true,
           message: 'Currency preference updated locally'
-        });
+        };
+        
+        console.log('🔄 [Currency API] Returning fallback response:', response);
+        console.log('🔄 [Currency API] Total time:', Date.now() - requestStart, 'ms');
+        
+        return NextResponse.json(response);
       }
       
       const data = await backendResponse.json();
-      console.log('[Currency Optimized] PUT response data:', data);
+      console.log('🔄 [Currency API] Backend success response:', data);
       
-      return NextResponse.json({
+      const response = {
         success: true,
         ...data
-      });
+      };
+      
+      console.log('🔄 [Currency API] Returning success response:', response);
+      console.log('🔄 [Currency API] Total time:', Date.now() - requestStart, 'ms');
+      
+      return NextResponse.json(response);
       
     } catch (backendError) {
-      console.error('[Currency Optimized] Backend PUT error:', backendError);
+      console.error('🔄 [Currency API] Backend error:', backendError);
       
-      // Return success with requested values even on backend error
-      return NextResponse.json({
+      // Get currency info from the comprehensive currency formatter
+      const currencyInfo = getCurrencyInfo(body.currency_code || 'USD');
+      
+      const response = {
         success: true,
         currency_code: body.currency_code || 'USD',
-        currency_name: body.currency_name || `${body.currency_code} Currency`,
-        currency_symbol: '$',
+        currency_name: body.currency_name || currencyInfo.name,
+        currency_symbol: currencyInfo.symbol,
         show_usd_on_invoices: body.show_usd_on_invoices ?? true,
         show_usd_on_quotes: body.show_usd_on_quotes ?? true,
         show_usd_on_reports: body.show_usd_on_reports ?? false,
         backend_error: true,
         message: 'Currency preference updated locally'
-      });
+      };
+      
+      console.log('🔄 [Currency API] Returning error fallback response:', response);
+      console.log('🔄 [Currency API] Total time:', Date.now() - requestStart, 'ms');
+      
+      return NextResponse.json(response);
     }
     
   } catch (error) {
-    console.error('[Currency Optimized] PUT error:', error);
+    console.error('🔄 [Currency API] Request error:', error);
+    console.log('🔄 [Currency API] Total time:', Date.now() - requestStart, 'ms');
     return NextResponse.json(
       { success: false, error: error.message },
       { status: 500 }

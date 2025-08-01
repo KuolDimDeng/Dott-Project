@@ -292,15 +292,18 @@ const CurrencyPreferences = () => {
     console.log('🚀 [CURRENCY-FRONTEND] Current preferences:', preferences);
     console.log('🚀 [CURRENCY-FRONTEND] User action: Currency change requested');
     console.log('🚀 [CURRENCY-FRONTEND] Timestamp:', new Date().toISOString());
+    console.log('🚀 [CURRENCY-FRONTEND] Modal state - Confirm clicked');
     
+    const requestStart = Date.now();
     setLoading(true);
     try {
       const requestBody = {
         currency_code: currencyCode,
       };
       
-      console.log('🚀 [CurrencyPreferences] Request body:', requestBody);
-      console.log('🚀 [CurrencyPreferences] Making PUT request to /api/currency/preferences');
+      console.log('🚀 [CURRENCY-FRONTEND] Request body:', requestBody);
+      console.log('🚀 [CURRENCY-FRONTEND] Making PUT request to /api/currency/preferences-optimized/');
+      console.log('🚀 [CURRENCY-FRONTEND] Request started at:', new Date().toISOString());
       
       const response = await fetch('/api/currency/preferences-optimized/', {
         method: 'PUT',
@@ -309,16 +312,22 @@ const CurrencyPreferences = () => {
         },
         body: JSON.stringify(requestBody),
       });
-
-      console.log('🚀 [CurrencyPreferences] Response status:', response.status);
-      console.log('🚀 [CurrencyPreferences] Response headers:', response.headers);
+      
+      const requestDuration = Date.now() - requestStart;
+      console.log('🚀 [CURRENCY-FRONTEND] Request completed in:', requestDuration, 'ms');
+      console.log('🚀 [CURRENCY-FRONTEND] Response status:', response.status);
+      console.log('🚀 [CURRENCY-FRONTEND] Response headers:', Object.fromEntries(response.headers.entries()));
       
       let data;
       try {
+        const jsonParseStart = Date.now();
         data = await response.json();
-        console.log('🚀 [CurrencyPreferences] Response data:', data);
+        console.log('🚀 [CURRENCY-FRONTEND] JSON parse took:', Date.now() - jsonParseStart, 'ms');
+        console.log('🚀 [CURRENCY-FRONTEND] Response data:', data);
       } catch (jsonError) {
-        console.error('🚀 [CurrencyPreferences] Failed to parse response as JSON:', jsonError);
+        console.error('🚀 [CURRENCY-FRONTEND] Failed to parse response as JSON:', jsonError);
+        const responseText = await response.text();
+        console.error('🚀 [CURRENCY-FRONTEND] Raw response text:', responseText);
         if (!response.ok) {
           throw new Error(`Server error: ${response.status} ${response.statusText}`);
         }
@@ -327,11 +336,16 @@ const CurrencyPreferences = () => {
       
       if (data.success || data.backend_error) {
         console.log('🚀 [CURRENCY-FRONTEND] === UPDATE SUCCESSFUL ===');
-        console.log('🚀 [CURRENCY-FRONTEND] Backend response:', data);
-        console.log('🚀 [CURRENCY-FRONTEND] New currency set:', data.currency_code || currencyCode);
+        console.log('🚀 [CURRENCY-FRONTEND] Backend response success:', data);
+        console.log('🚀 [CURRENCY-FRONTEND] Currency returned from backend:', {
+          code: data.currency_code,
+          name: data.currency_name,
+          symbol: data.currency_symbol
+        });
         
         // Get the currency info from pending selection
         const selectedCurrency = pendingCurrency || currencies.find(c => c.code === currencyCode);
+        console.log('🚀 [CURRENCY-FRONTEND] Selected currency info:', selectedCurrency);
         
         // Update preferences with the response data or selected currency
         const updatedPreferences = {
@@ -343,28 +357,38 @@ const CurrencyPreferences = () => {
           show_usd_on_reports: data.show_usd_on_reports ?? preferences.show_usd_on_reports,
         };
         
+        console.log('🚀 [CURRENCY-FRONTEND] Updated preferences object:', updatedPreferences);
+        console.log('🚀 [CURRENCY-FRONTEND] === EXECUTION ORDER ===');
+        
         // Order of operations as requested:
         // 1. Change Currency - Already done by user selection
+        console.log('🚀 [CURRENCY-FRONTEND] Step 1: Currency selected by user');
+        
         // 2. Instant Confirmation - Show success immediately
+        console.log('🚀 [CURRENCY-FRONTEND] Step 2: Closing modal and showing success');
         setShowConfirmModal(false);
         setPendingCurrency(null);
         notifySuccess(`✅ Currency changed to ${updatedPreferences.currency_name}!`);
         
         // 3. Header Update - Update global currency context for immediate UI update
+        console.log('🚀 [CURRENCY-FRONTEND] Step 3: Updating global currency context');
+        console.log('🚀 [CURRENCY-FRONTEND] Calling updateGlobalCurrency with:', updatedPreferences);
         updateGlobalCurrency(updatedPreferences);
         
         // 4. Database Save - Update local state (backend save already attempted)
+        console.log('🚀 [CURRENCY-FRONTEND] Step 4: Updating local state');
         setPreferences(updatedPreferences);
         
         // 5. App-wide Ready - Already done via context update
-        console.log('🚀 [CURRENCY-FRONTEND] Currency is now available app-wide:', updatedPreferences.currency_code);
+        console.log('🚀 [CURRENCY-FRONTEND] Step 5: Currency is now available app-wide:', updatedPreferences.currency_code);
+        console.log('🚀 [CURRENCY-FRONTEND] Total time from request to completion:', Date.now() - requestStart, 'ms');
       } else {
-        console.error('🚀 [CurrencyPreferences] Update failed:', data.error);
+        console.error('🚀 [CURRENCY-FRONTEND] Update failed:', data.error);
         notifyError(data.error || 'Failed to update currency');
       }
     } catch (error) {
-      console.error('🚀 [CurrencyPreferences] Network error:', error);
-      console.error('🚀 [CurrencyPreferences] Error details:', {
+      console.error('🚀 [CURRENCY-FRONTEND] Network error:', error);
+      console.error('🚀 [CURRENCY-FRONTEND] Error details:', {
         message: error.message,
         stack: error.stack,
         type: error.constructor.name
@@ -382,12 +406,13 @@ const CurrencyPreferences = () => {
       
       // Run connection test automatically on network error
       if (error.message?.includes('NetworkError') || error.message?.includes('Failed to fetch')) {
-        console.log('🚀 [CurrencyPreferences] Running connection test due to network error...');
+        console.log('🚀 [CURRENCY-FRONTEND] Running connection test due to network error...');
         testConnection();
       }
     }
     setLoading(false);
-    console.log('🚀 [CurrencyPreferences] === UPDATE CURRENCY END ===');
+    console.log('🚀 [CURRENCY-FRONTEND] === UPDATE CURRENCY END ===');
+    console.log('🚀 [CURRENCY-FRONTEND] Total execution time:', Date.now() - requestStart, 'ms');
   };
 
   const handleToggleChange = async (field, value) => {

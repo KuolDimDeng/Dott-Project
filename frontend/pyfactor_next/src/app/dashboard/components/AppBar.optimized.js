@@ -66,6 +66,20 @@ const [state, dispatch] = useReducer(reducer, initialState);
   // Create a ref for the dropdown menu and button
   const userMenuRef = useRef(null);
   const profileButtonRef = useRef(null);
+  
+  // Add currency update listener for debugging
+  useEffect(() => {
+    const handleCurrencyUpdate = (event) => {
+      console.log('📍 [AppBar] Currency update detected:', event.detail);
+      console.log('📍 [AppBar] Timestamp:', new Date().toISOString());
+    };
+    
+    window.addEventListener('currency-updated', handleCurrencyUpdate);
+    
+    return () => {
+      window.removeEventListener('currency-updated', handleCurrencyUpdate);
+    };
+  }, []);
 
   // Helper function to consistently generate initials from user data
   const generateInitialsFromNames = useCallback(
