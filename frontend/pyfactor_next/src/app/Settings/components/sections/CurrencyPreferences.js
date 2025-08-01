@@ -20,7 +20,7 @@ const CurrencyPreferences = () => {
     show_usd_on_quotes: true,
     show_usd_on_reports: false,
   });
-  const [exchangeRateInfo, setExchangeRateInfo] = useState(null);
+  // Removed exchangeRateInfo - not needed for currency selection
   
   // Run diagnostic
   const runDiagnostic = async () => {
@@ -275,33 +275,9 @@ const CurrencyPreferences = () => {
       return;
     }
 
-    // Show confirmation modal immediately for better UX
+    // Show confirmation modal immediately
     setPendingCurrency(selectedCurrency);
     setShowConfirmModal(true);
-    setExchangeRateInfo(null); // Reset exchange rate info
-    
-    // Get exchange rate info in the background
-    fetch('/api/currency/exchange-rate/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from_currency: currencyCode,
-        to_currency: 'USD',
-        amount: 100,
-      }),
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        setExchangeRateInfo(data.exchange_rate);
-      }
-    })
-    .catch(error => {
-      console.error('Error fetching exchange rate:', error);
-      // Don't block the modal for exchange rate errors
-    });
   };
 
   const updateCurrency = async (currencyCode) => {
@@ -469,26 +445,13 @@ const CurrencyPreferences = () => {
               </ul>
             </div>
 
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h4 className="font-medium mb-2">Current Exchange Rate:</h4>
-              {exchangeRateInfo ? (
-                <>
-                  <p className="text-sm">
-                    {formatCurrency(100, pendingCurrency.code)} = {formatCurrency(exchangeRateInfo.converted_amount, 'USD')}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Rate from {exchangeRateInfo.source} • {new Date(exchangeRateInfo.timestamp).toLocaleString()}
-                  </p>
-                </>
-              ) : (
-                <div className="flex items-center text-sm text-gray-500">
-                  <svg className="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Loading exchange rate...
-                </div>
-              )}
+            <div className="bg-green-50 rounded-lg p-4">
+              <h4 className="font-medium text-green-900 mb-2">
+                Currency Display Only
+              </h4>
+              <p className="text-sm text-green-800">
+                This only changes how amounts are displayed. All transactions and calculations will still use current exchange rates when needed.
+              </p>
             </div>
           </div>
 
@@ -497,7 +460,6 @@ const CurrencyPreferences = () => {
               onClick={() => {
                 setShowConfirmModal(false);
                 setPendingCurrency(null);
-                setExchangeRateInfo(null);
               }}
               className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
               disabled={loading}
