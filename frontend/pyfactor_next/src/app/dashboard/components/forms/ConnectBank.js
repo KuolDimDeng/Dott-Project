@@ -127,6 +127,7 @@ const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoCon
   };
 
   // Only initialize Plaid Link when we have a valid token
+  // Provide a default configuration to prevent null errors
   const plaidConfig = linkToken ? {
     token: linkToken,
     onSuccess: (public_token, metadata) => {
@@ -146,20 +147,24 @@ const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoCon
       console.log('🏦 [ConnectBank] Plaid Link event', eventName, metadata);
       logger.debug('🏦 [ConnectBank] Plaid Link event:', { eventName, metadata });
     },
-  } : null;
+  } : {
+    token: null, // Provide a default token to prevent null errors
+    onSuccess: () => {},
+    onExit: () => {},
+    onEvent: () => {},
+  };
 
   const { open, ready } = usePlaidLink(plaidConfig);
 
   useEffect(() => {
     logger.info('🏦 [ConnectBank] Plaid Link useEffect triggered:', { linkToken: !!linkToken, ready, linkTokenValue: linkToken });
     
-    if (linkToken && ready) {
+    // Only attempt to open Plaid Link if we have a valid token and ready is true
+    if (linkToken && ready && open) {
       logger.info('🏦 [ConnectBank] Opening Plaid Link with token');
       open();
-    } else if (linkToken === null) {
-      logger.error('🏦 [ConnectBank] Link token is null - cannot open Plaid Link');
-      setError('Unable to initialize Plaid connection - no link token received');
     }
+    // Don't show error for null token on initial load - user hasn't clicked connect yet
   }, [linkToken, ready, open]);
 
   const exchangePublicToken = async (public_token) => {
