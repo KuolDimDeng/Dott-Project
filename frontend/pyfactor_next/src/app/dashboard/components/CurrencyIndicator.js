@@ -1,40 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import { getCurrencyInfo } from '@/utils/currencyFormatter';
+import React, { useEffect } from 'react';
+import { useCurrency } from '@/context/CurrencyContext';
 
 const CurrencyIndicator = () => {
-  const [currencyData, setCurrencyData] = useState({
-    code: 'USD',
-    symbol: '$',
-    name: 'US Dollar'
-  });
-  const [loading, setLoading] = useState(true);
+  const { currency, isLoading } = useCurrency();
 
+  console.log('💰 [CurrencyIndicator] Rendering with currency:', currency);
+  console.log('💰 [CurrencyIndicator] Is loading:', isLoading);
+
+  // Listen for currency updates
   useEffect(() => {
-    loadCurrencyPreferences();
+    const handleCurrencyUpdate = (event) => {
+      console.log('💰 [CurrencyIndicator] Currency update event received:', event.detail);
+    };
+    
+    window.addEventListener('currency-updated', handleCurrencyUpdate);
+    
+    return () => {
+      window.removeEventListener('currency-updated', handleCurrencyUpdate);
+    };
   }, []);
 
-  const loadCurrencyPreferences = async () => {
-    try {
-      const response = await fetch('/api/currency/preferences');
-      const data = await response.json();
-      
-      if (data.success) {
-        const { currency_code, currency_name, currency_symbol } = data.preferences;
-        setCurrencyData({
-          code: currency_code,
-          symbol: currency_symbol,
-          name: currency_name
-        });
-      }
-    } catch (error) {
-      console.error('Error loading currency preferences:', error);
-      // Keep default USD
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
+  // Show loading state while currency loads from database
+  if (isLoading && !currency) {
     return (
       <div className="flex items-center text-white/70 text-base">
         <span>...</span>
@@ -42,12 +29,15 @@ const CurrencyIndicator = () => {
     );
   }
 
+  // Always show something, even if still loading
+  const displayCurrency = currency || { code: 'USD', name: 'US Dollar', symbol: '$' };
+
   return (
     <div 
       className="flex items-center text-white/90 text-base hover:text-white cursor-default"
-      title={`Business Currency: ${currencyData.name}`}
+      title={`Business Currency: ${displayCurrency.name}`}
     >
-      <span className="font-medium">{currencyData.code}</span>
+      <span className="font-medium">{displayCurrency.code}</span>
     </div>
   );
 };
