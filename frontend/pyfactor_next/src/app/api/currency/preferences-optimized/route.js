@@ -49,7 +49,8 @@ export async function GET(request) {
     }
     
     // Build backend URL with guaranteed trailing slash
-    const backendUrl = process.env.BACKEND_URL || 'https://api.dottapps.com';
+    // IMPORTANT: Always use api.dottapps.com for production
+    const backendUrl = 'https://api.dottapps.com';
     const endpoint = ensureTrailingSlash('/api/currency/preferences');
     const fullUrl = ensureTrailingSlash(`${backendUrl}${endpoint}`);
     
@@ -159,7 +160,8 @@ export async function PUT(request) {
     }
     
     // Build backend URL with guaranteed trailing slash
-    const backendUrl = process.env.BACKEND_URL || 'https://api.dottapps.com';
+    // IMPORTANT: Always use api.dottapps.com for production
+    const backendUrl = 'https://api.dottapps.com';
     const endpoint = ensureTrailingSlash('/api/currency/preferences');
     const fullUrl = ensureTrailingSlash(`${backendUrl}${endpoint}`);
     

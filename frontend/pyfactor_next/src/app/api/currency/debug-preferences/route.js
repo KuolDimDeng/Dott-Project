@@ -9,7 +9,8 @@ export async function GET(request) {
     console.log('🔍 [Currency Debug] Cookies:', request.headers.get('cookie'));
     
     // Try direct backend URL
-    const backendUrl = process.env.BACKEND_URL || 'https://api.dottapps.com';
+    // IMPORTANT: Always use api.dottapps.com for production
+    const backendUrl = 'https://api.dottapps.com';
     const fullUrl = `${backendUrl}/api/currency/preferences/`;
     
     console.log('🔍 [Currency Debug] Attempting to fetch from:', fullUrl);

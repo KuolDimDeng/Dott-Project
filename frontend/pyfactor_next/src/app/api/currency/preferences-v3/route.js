@@ -33,7 +33,8 @@ export async function GET(request) {
     const cookie = request.headers.get('cookie');
     
     // Build the backend URL with trailing slash
-    const backendUrl = process.env.BACKEND_URL || 'https://api.dottapps.com';
+    // IMPORTANT: Always use api.dottapps.com for production
+    const backendUrl = 'https://api.dottapps.com';
     const endpoint = '/api/currency/preferences/'; // Ensure trailing slash
     const fullUrl = `${backendUrl}${endpoint}`;
     
@@ -130,7 +131,8 @@ export async function PUT(request) {
     console.log('[Currency V3] PUT body:', body);
     
     // Build the backend URL with trailing slash
-    const backendUrl = process.env.BACKEND_URL || 'https://api.dottapps.com';
+    // IMPORTANT: Always use api.dottapps.com for production
+    const backendUrl = 'https://api.dottapps.com';
     const endpoint = '/api/currency/preferences/'; // Ensure trailing slash
     const fullUrl = `${backendUrl}${endpoint}`;
     
