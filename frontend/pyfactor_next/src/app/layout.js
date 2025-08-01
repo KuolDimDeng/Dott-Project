@@ -46,6 +46,10 @@ export default function RootLayout({ children }) {
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&display=swap" rel="stylesheet" />
         
+        {/* Plaid CDN preconnect for faster loading */}
+        <link rel="preconnect" href="https://cdn.plaid.com" />
+        <link rel="dns-prefetch" href="https://cdn.plaid.com" />
+        
         {/* iOS Splash Screens */}
         <link rel="apple-touch-startup-image" href="/static/images/splash-2048x2732.png" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)" />
         <link rel="apple-touch-startup-image" href="/static/images/splash-1668x2388.png" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2)" />

@@ -92,12 +92,75 @@ export const SimplePlaidButton = ({ linkToken, onSuccess, onExit }) => {
     }
   };
 
+  const handleRetry = async () => {
+    setError(null);
+    setLoading(true);
+    
+    try {
+      // Reset the plaid manager
+      plaidManager.reset();
+      
+      // Try to reload the script
+      await plaidManager.reloadScript();
+      
+      // Reinitialize
+      const config = {
+        token: linkToken,
+        onSuccess: (public_token, metadata) => {
+          console.log('🏦 [SimplePlaid] Success:', public_token);
+          if (mountedRef.current && onSuccess) {
+            onSuccess(public_token, metadata);
+          }
+        },
+        onExit: (err, metadata) => {
+          console.log('🏦 [SimplePlaid] Exit:', err);
+          if (mountedRef.current && onExit) {
+            onExit(err, metadata);
+          }
+        },
+        onEvent: (eventName, metadata) => {
+          console.log('🏦 [SimplePlaid] Event:', eventName);
+        },
+        onLoad: () => {
+          console.log('🏦 [SimplePlaid] Plaid loaded');
+          if (mountedRef.current) {
+            setLoading(false);
+          }
+        }
+      };
+
+      const handler = await plaidManager.createHandler(config);
+      
+      if (mountedRef.current) {
+        handlerRef.current = handler;
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error('🏦 [SimplePlaid] Retry failed:', err);
+      if (mountedRef.current) {
+        setError(err.message);
+        setLoading(false);
+      }
+    }
+  };
+
   if (error) {
     return (
       <div className="p-4 bg-red-50 text-red-800 rounded-md">
         <p className="font-medium">Unable to connect to Plaid</p>
         <p className="text-sm mt-1">{error}</p>
-        <p className="text-sm mt-2">Please try refreshing the page or contact support.</p>
+        <div className="mt-3 space-y-2">
+          <button
+            onClick={handleRetry}
+            className="w-full py-2 px-3 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={loading}
+          >
+            {loading ? 'Retrying...' : 'Retry Connection'}
+          </button>
+          <p className="text-xs text-red-600">
+            If the issue persists, please refresh the page or contact support.
+          </p>
+        </div>
       </div>
     );
   }
