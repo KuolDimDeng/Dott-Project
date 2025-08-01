@@ -6,7 +6,7 @@ import { CenteredSpinner, ButtonSpinner } from '@/components/ui/StandardSpinner'
 
 // Dynamically import Plaid hook to prevent errors when not needed
 const PlaidLinkComponent = dynamic(
-  () => import('./PlaidLinkComponent').then(mod => mod.PlaidLinkComponent),
+  () => import('./PlaidLinkComponent'),
   { 
     ssr: false,
     loading: () => <div className="text-center p-4">Loading Plaid...</div>
