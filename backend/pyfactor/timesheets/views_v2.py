@@ -73,8 +73,8 @@ class EmployeeTimesheetViewSet(viewsets.ModelViewSet):
                     'week_ending': week_end,
                     'supervisor': employee.supervisor,
                     'business_id': employee.business_id,
-                    'hourly_rate': employee.hourly_rate,
-                    'overtime_rate': employee.hourly_rate * Decimal('1.5') if employee.hourly_rate else None
+                    'hourly_rate': getattr(employee, 'wage_per_hour', None),
+                    'overtime_rate': employee.wage_per_hour * Decimal('1.5') if getattr(employee, 'wage_per_hour', None) else None
                 }
             )
             
@@ -476,8 +476,8 @@ class ClockEntryViewSet(viewsets.ModelViewSet):
                     'week_ending': week_start + timedelta(days=6),
                     'supervisor': employee.supervisor,
                     'business_id': employee.business_id,
-                    'hourly_rate': employee.hourly_rate,
-                    'overtime_rate': employee.hourly_rate * Decimal('1.5') if employee.hourly_rate else None
+                    'hourly_rate': getattr(employee, 'wage_per_hour', None),
+                    'overtime_rate': employee.wage_per_hour * Decimal('1.5') if getattr(employee, 'wage_per_hour', None) else None
                 }
             )
             

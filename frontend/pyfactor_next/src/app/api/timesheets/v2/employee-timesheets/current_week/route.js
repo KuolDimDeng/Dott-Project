@@ -19,21 +19,44 @@ export async function GET(request) {
 
     // Forward request to Django backend
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
-    const response = await fetch(`${backendUrl}/api/timesheets/v2/employee-timesheets/current_week/`, {
+    const fullUrl = `${backendUrl}/api/timesheets/v2/employee-timesheets/current_week/`;
+    
+    console.log('🕐 [API] Making request to:', fullUrl);
+    console.log('🕐 [API] Session ID:', sidCookie.value);
+    
+    const response = await fetch(fullUrl, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Session ${sidCookie.value}`,
+        'Accept': 'application/json',
       },
     });
 
     console.log('🕐 [API] Backend response status:', response.status);
 
+    // Handle different response statuses appropriately
     if (!response.ok) {
-      const errorData = await response.text();
-      console.error('🕐 [API] Backend error:', response.status, errorData);
+      let errorData;
+      let errorMessage;
+      
+      try {
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          errorData = await response.json();
+          errorMessage = errorData.error || errorData.detail || `Backend error: ${response.status}`;
+        } else {
+          errorMessage = await response.text();
+        }
+      } catch (e) {
+        errorMessage = `Backend error: ${response.status}`;
+      }
+      
+      console.error('🕐 [API] Backend error:', response.status, errorMessage);
+      
+      // Pass through the actual status code from backend
       return Response.json(
-        { error: `Backend error: ${response.status}` },
+        { error: errorMessage },
         { status: response.status }
       );
     }

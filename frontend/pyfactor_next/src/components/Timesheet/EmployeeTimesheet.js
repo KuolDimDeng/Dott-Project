@@ -45,16 +45,25 @@ const EmployeeTimesheet = () => {
       console.log('🕐 [EmployeeTimesheet] Timesheet API response status:', response.status);
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('🕐 [EmployeeTimesheet] API error:', errorText);
+        let errorMessage;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.detail || 'Unknown error';
+        } catch (e) {
+          errorMessage = await response.text();
+        }
+        
+        console.error('🕐 [EmployeeTimesheet] API error:', response.status, errorMessage);
         
         // Handle specific error cases
         if (response.status === 404) {
-          setError('Employee record not found. Please contact your administrator to set up your employee profile.');
+          setError('Employee record not found. As a business owner, you need to create an employee record for yourself to use timesheets. Please go to the Employees section to set this up.');
+        } else if (response.status === 401) {
+          setError('Your session has expired. Please sign in again.');
         } else if (response.status === 500) {
-          setError('Server error loading timesheet. This might be because you don\'t have an employee record set up yet.');
+          setError('Server error loading timesheet. Please try again later.');
         } else {
-          setError(`Failed to fetch timesheet: ${response.status}`);
+          setError(errorMessage || `Failed to fetch timesheet: ${response.status}`);
         }
         
         throw new Error(`Failed to fetch timesheet: ${response.status}`);
