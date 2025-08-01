@@ -52,7 +52,15 @@ const EmployeeTimesheet = () => {
       }
 
       const timesheetData = await response.json();
-      console.log('🕐 [EmployeeTimesheet] Received timesheet data:', timesheetData);
+      console.log('🕐 [EmployeeTimesheet] Received timesheet data:', {
+        id: timesheetData.id,
+        status: timesheetData.status,
+        weekStarting: timesheetData.week_starting,
+        weekEnding: timesheetData.week_ending,
+        totalHours: timesheetData.total_hours,
+        entriesCount: timesheetData.entries?.length,
+        canEdit: ['draft', 'rejected'].includes(timesheetData.status)
+      });
 
       setCurrentTimesheet(timesheetData);
       setTimeEntries(timesheetData.entries || []);
@@ -392,10 +400,31 @@ const EmployeeTimesheet = () => {
 
 // Timesheet Tab Component
 const TimesheetTab = ({ timesheet, entries, onUpdateEntry, onSave, onSubmit, saving }) => {
+  console.log('🕐 [TimesheetTab] Rendering with full timesheet:', timesheet);
+  console.log('🕐 [TimesheetTab] Summary:', {
+    timesheetId: timesheet?.id,
+    status: timesheet?.status,
+    entriesCount: entries?.length,
+    totalHours: timesheet?.total_hours,
+    entries: entries?.map(e => ({
+      date: e.date,
+      regularHours: e.regular_hours,
+      overtimeHours: e.overtime_hours
+    }))
+  });
+  
   if (!timesheet) return null;
 
   const canEdit = ['draft', 'rejected'].includes(timesheet.status);
   const canSubmit = timesheet.status === 'draft' && timesheet.total_hours > 0;
+  
+  console.log('🕐 [TimesheetTab] Edit permissions:', {
+    canEdit,
+    canSubmit,
+    status: timesheet.status,
+    statusIsDraft: timesheet.status === 'draft',
+    statusIsRejected: timesheet.status === 'rejected'
+  });
 
   return (
     <div className="space-y-6">
