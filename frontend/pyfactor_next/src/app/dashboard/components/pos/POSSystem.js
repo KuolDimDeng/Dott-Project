@@ -217,10 +217,57 @@ class POSErrorBoundary extends React.Component {
 const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
   const { t } = useTranslation('pos');
   
-  // Debug props
-  console.log('[POSSystem] Rendering with props:', { isOpen, onClose: !!onClose, onSaleCompleted: !!onSaleCompleted });
-  console.log('[POSSystem] Version: 2025-01-11 v4 - Fixed duplicate events with memoization');
+  // Debug props and rendering
+  console.log('🎯 [POSSystem] === RENDER START ===');
+  console.log('🎯 [POSSystem] Props received:', { 
+    isOpen, 
+    onClose: !!onClose, 
+    onSaleCompleted: !!onSaleCompleted,
+    typeofIsOpen: typeof isOpen,
+    isOpenValue: isOpen
+  });
+  console.log('🎯 [POSSystem] Component mounted at:', new Date().toISOString());
+  console.log('🎯 [POSSystem] Version: 2025-01-11 v5 - Enhanced debug logging');
+  
+  // Check if Dialog is available
+  console.log('🎯 [POSSystem] Dialog component available:', !!Dialog);
+  console.log('🎯 [POSSystem] Transition component available:', !!Transition);
 
+  // Track mount/unmount
+  useEffect(() => {
+    console.log('🎯 [POSSystem] Component mounted');
+    console.log('🎯 [POSSystem] Initial isOpen state:', isOpen);
+    
+    // Check DOM
+    const checkDOM = () => {
+      const dialogs = document.querySelectorAll('[role="dialog"]');
+      console.log('🎯 [POSSystem] Dialog elements in DOM:', dialogs.length);
+      dialogs.forEach((dialog, index) => {
+        console.log(`🎯 [POSSystem] Dialog ${index}:`, {
+          classList: dialog.className,
+          style: dialog.style.cssText,
+          offsetParent: !!dialog.offsetParent,
+          getBoundingClientRect: dialog.getBoundingClientRect(),
+          computedStyle: {
+            display: window.getComputedStyle(dialog).display,
+            visibility: window.getComputedStyle(dialog).visibility,
+            zIndex: window.getComputedStyle(dialog).zIndex,
+            position: window.getComputedStyle(dialog).position
+          }
+        });
+      });
+    };
+    
+    // Check DOM immediately and after a delay
+    checkDOM();
+    const timer = setTimeout(checkDOM, 500);
+    
+    return () => {
+      console.log('🎯 [POSSystem] Component unmounting');
+      clearTimeout(timer);
+    };
+  }, [isOpen]);
+  
   // Mock business info - in real app, this would come from settings/profile
   const businessInfo = {
     name: 'Your Business Name',
@@ -264,11 +311,15 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
   // Fetch products from database
   useEffect(() => {
     const fetchProducts = async () => {
-      if (!isOpen) return; // Don't fetch if POS is not open
+      console.log('🎯 [POSSystem] fetchProducts useEffect triggered, isOpen:', isOpen);
+      if (!isOpen) {
+        console.log('🎯 [POSSystem] Skipping product fetch - modal not open');
+        return;
+      }
       
       try {
         setProductsLoading(true);
-        console.log('[POSSystem] Fetching products from database...');
+        console.log('🎯 [POSSystem] Starting product fetch from database...');
         
         const response = await fetch('/api/inventory/products', {
           credentials: 'include',
@@ -852,8 +903,21 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
     onClose(); // Close the main POS dialog
   };
 
+  console.log('🎯 [POSSystem] About to render JSX, isOpen:', isOpen);
+  console.log('🎯 [POSSystem] Current state:', {
+    cartItems: cartItems.length,
+    productsLoading,
+    productsError,
+    showReceiptDialog,
+    showScanner
+  });
+  
+  // Add render tracking
+  const renderTime = Date.now();
+  
   return (
     <>
+      {console.log('🎯 [POSSystem] Rendering Receipt Dialog, showReceiptDialog:', showReceiptDialog)}
       {/* Receipt Dialog */}
       <ReceiptDialog
         isOpen={showReceiptDialog}
@@ -862,12 +926,22 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
         businessInfo={businessInfo}
       />
 
+      {console.log('🎯 [POSSystem] Rendering Main POS Dialog, isOpen:', isOpen)}
+      {console.log('🎯 [POSSystem] Transition.appear:', true, 'show:', isOpen)}
       {/* Main POS Dialog */}
     <Transition appear show={isOpen}>
-      <Dialog as="div" className="relative z-[9999]" onClose={() => {
-        console.log('[POSSystem] Dialog onClose triggered');
-        onClose();
-      }}>
+      <Dialog 
+        as="div" 
+        className="relative z-[9999]" 
+        onClose={() => {
+          console.log('🎯 [POSSystem] Dialog onClose callback triggered');
+          onClose();
+        }}
+        onBeforeEnter={() => console.log('🎯 [POSSystem] Dialog onBeforeEnter')}
+        onAfterEnter={() => console.log('🎯 [POSSystem] Dialog onAfterEnter')}
+        onBeforeLeave={() => console.log('🎯 [POSSystem] Dialog onBeforeLeave')}
+        onAfterLeave={() => console.log('🎯 [POSSystem] Dialog onAfterLeave')}
+      >
         <Transition.Child
           enter="ease-out duration-300"
           enterFrom="opacity-0"
@@ -875,11 +949,20 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
           leave="ease-in duration-200"
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
+          beforeEnter={() => console.log('🎯 [POSSystem] Backdrop beforeEnter')}
+          afterEnter={() => console.log('🎯 [POSSystem] Backdrop afterEnter')}
         >
-          <div className="absolute inset-0 bg-black bg-opacity-25" onClick={onClose} />
+          <div 
+            className="absolute inset-0 bg-black bg-opacity-25" 
+            onClick={() => {
+              console.log('🎯 [POSSystem] Backdrop clicked');
+              onClose();
+            }}
+          />
         </Transition.Child>
 
         <div className="absolute inset-0 overflow-y-auto">
+          {console.log('🎯 [POSSystem] Content container rendered')}
           <div className="flex min-h-full items-center justify-center p-4">
             <Transition.Child
               enter="ease-out duration-300"
@@ -888,6 +971,29 @@ const POSSystemContent = ({ isOpen, onClose, onSaleCompleted }) => {
               leave="ease-in duration-200"
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
+              beforeEnter={() => console.log('🎯 [POSSystem] Panel beforeEnter')}
+              afterEnter={() => {
+                console.log('🎯 [POSSystem] Panel afterEnter');
+                // Check final DOM state
+                setTimeout(() => {
+                  const panel = document.querySelector('.max-w-7xl');
+                  if (panel) {
+                    console.log('🎯 [POSSystem] Panel DOM check:', {
+                      exists: true,
+                      className: panel.className,
+                      offsetParent: !!panel.offsetParent,
+                      rect: panel.getBoundingClientRect(),
+                      computedStyle: {
+                        display: window.getComputedStyle(panel).display,
+                        visibility: window.getComputedStyle(panel).visibility,
+                        opacity: window.getComputedStyle(panel).opacity
+                      }
+                    });
+                  } else {
+                    console.log('🎯 [POSSystem] Panel DOM check: Panel not found!');
+                  }
+                }, 100);
+              }}
             >
               <Dialog.Panel className="w-full max-w-7xl transform overflow-hidden rounded-2xl bg-white shadow-xl transition-all">
                 {/* Header */}
@@ -1338,6 +1444,22 @@ const MemoizedPOSSystemContent = React.memo(POSSystemContent);
 
 // Wrap POSSystemContent with Error Boundary
 const POSSystem = (props) => {
+  console.log('🎯 [POSSystem Wrapper] === WRAPPER RENDER ===');
+  console.log('🎯 [POSSystem Wrapper] Props:', {
+    isOpen: props.isOpen,
+    onClose: !!props.onClose,
+    onSaleCompleted: !!props.onSaleCompleted,
+    allProps: Object.keys(props)
+  });
+  
+  // Add effect to track wrapper lifecycle
+  React.useEffect(() => {
+    console.log('🎯 [POSSystem Wrapper] Mounted with isOpen:', props.isOpen);
+    return () => {
+      console.log('🎯 [POSSystem Wrapper] Unmounting');
+    };
+  }, [props.isOpen]);
+  
   return (
     <POSErrorBoundary onClose={props.onClose}>
       <MemoizedPOSSystemContent {...props} />

@@ -312,6 +312,18 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   console.log('🔴 [DashboardContent] userData is undefined:', userData === undefined);
   console.log('🔴 [DashboardContent] userData keys:', userData ? Object.keys(userData) : 'userData is falsy');
   console.log('🔴 [DashboardContent] initialUserData:', initialUserData);
+  
+  // Track showPOSSystem state changes
+  useEffect(() => {
+    console.log('🎯 [DashboardContent] showPOSSystem state changed to:', showPOSSystem);
+    console.log('🎯 [DashboardContent] Full uiState:', {
+      showPOSSystem,
+      showCreateMenu,
+      showCreateOptions,
+      selectedOption,
+      view
+    });
+  }, [showPOSSystem]);
   console.log('🔴 [DashboardContent] Full uiState:', uiState);
   
   // Computed values - memoize these values
@@ -479,11 +491,18 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   }, [updateState]);
 
   const setShowPOSSystem = useCallback((value) => {
+    console.log('🎯 [DashboardContent] setShowPOSSystem called with:', value);
+    console.log('🎯 [DashboardContent] Current showPOSSystem state:', uiState.showPOSSystem);
     updateState(prev => {
-      if (value === prev.showPOSSystem) return prev;
+      console.log('🎯 [DashboardContent] Previous state showPOSSystem:', prev.showPOSSystem);
+      if (value === prev.showPOSSystem) {
+        console.log('🎯 [DashboardContent] No state change needed, value same as previous');
+        return prev;
+      }
+      console.log('🎯 [DashboardContent] Updating showPOSSystem to:', value);
       return { ...prev, showPOSSystem: value };
     });
-  }, [updateState]);
+  }, [updateState, uiState.showPOSSystem]);
 
   // Reset all view states for navigation
   const resetAllStates = useCallback(() => {
@@ -886,10 +905,13 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   }, [resetAllStates, updateState]);
 
   const handleShowCreateOptions = useCallback((option) => {
+    console.log('🎯 [DashboardContent] handleShowCreateOptions called with:', option);
     // Special handling for Sales option - directly open POS modal
     if (option === 'Sales') {
-      console.log('[DashboardContent] Opening POS System via handleShowCreateOptions');
+      console.log('🎯 [DashboardContent] Sales option detected - Opening POS System');
+      console.log('🎯 [DashboardContent] Before resetAllStates, showPOSSystem:', showPOSSystem);
       resetAllStates();
+      console.log('🎯 [DashboardContent] After resetAllStates, calling setShowPOSSystem(true)');
       setShowPOSSystem(true);
       return;
     }
@@ -951,7 +973,8 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
         navigationKey: navKey
       });
     } else if (option === 'Sales') {
-      console.log('[DashboardContent] Opening POS System');
+      console.log('🎯 [DashboardContent] Sales menu clicked - Opening POS System');
+      console.log('🎯 [DashboardContent] Current showPOSSystem state:', showPOSSystem);
       setShowPOSSystem(true);
     } else {
       console.log('[DashboardContent] Showing create options for:', option);
@@ -1680,10 +1703,15 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
       {dashboardContent}
       
       {/* POS System */}
+      {console.log('🎯 [DashboardContent] Rendering POS System component, showPOSSystem:', showPOSSystem)}
       <POSSystem
         isOpen={showPOSSystem}
-        onClose={() => setShowPOSSystem(false)}
+        onClose={() => {
+          console.log('🎯 [DashboardContent] POS onClose called');
+          setShowPOSSystem(false);
+        }}
         onSaleCompleted={(saleData) => {
+          console.log('🎯 [DashboardContent] Sale completed:', saleData);
           logger.info('[DashboardContent] Sale completed:', saleData);
           // Optionally refresh data or show confirmation
         }}
