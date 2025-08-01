@@ -213,7 +213,8 @@
       "Bash(do sed -i '' 's/Welcome to Dott\\\\!/Welcome to Dott!/g' \"$file\")",
       "Bash(PORT=3002 pnpm run dev)",
       "Bash(./scripts/install-tdz-dependencies.sh:*)",
-      "Bash(kill:*)"
+      "Bash(kill:*)",
+      "WebFetch(domain:plaid.com)"
     ],
     "deny": []
   }

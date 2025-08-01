@@ -4,6 +4,7 @@ import Script from 'next/script';
 import SessionHeartbeat from '@/components/SessionHeartbeat';
 import ChunkErrorHandler from '@/components/ChunkErrorHandler';
 import TDZProtectionInitializer from '@/components/TDZProtectionInitializer';
+import PlaidScriptLoader from '@/components/PlaidScriptLoader';
 import Providers from '@/providers';
 import { headers } from 'next/headers';
 
@@ -66,6 +67,9 @@ export default function RootLayout({ children }) {
         
         {/* TDZ Protection Initializer */}
         <TDZProtectionInitializer />
+        
+        {/* Plaid Script Loader */}
+        <PlaidScriptLoader />
         
         <Providers>
           {children}

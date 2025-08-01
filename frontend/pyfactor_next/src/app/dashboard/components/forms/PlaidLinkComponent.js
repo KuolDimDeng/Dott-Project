@@ -16,46 +16,98 @@ export const PlaidLinkComponent = ({ linkToken, onSuccess, onExit }) => {
 
     let handler = null;
     let destroyed = false;
+    let initialized = false;
 
     const loadPlaid = async () => {
       try {
+        // Check if already initialized (React StrictMode protection)
+        if (initialized) {
+          console.log('🏦 [PlaidLink] Already initialized, skipping');
+          return;
+        }
+
         // Wait for Plaid to be available
         let attempts = 0;
-        while (!window.Plaid && attempts < 20) {
+        while (!window.Plaid && attempts < 30) {
           await new Promise(resolve => setTimeout(resolve, 100));
           attempts++;
         }
 
         if (!window.Plaid) {
-          throw new Error('Plaid SDK failed to load');
+          throw new Error('Plaid SDK failed to load after 3 seconds');
         }
 
         if (destroyed) return;
 
-        // Create Plaid Link handler
-        handler = window.Plaid.create({
-          token: linkToken,
-          onSuccess: (public_token, metadata) => {
-            console.log('🏦 [PlaidLink] Success:', { public_token, metadata });
-            onSuccess(public_token, metadata);
-          },
-          onExit: (err, metadata) => {
-            console.log('🏦 [PlaidLink] Exit:', { err, metadata });
-            if (onExit) onExit(err, metadata);
-          },
-          onEvent: (eventName, metadata) => {
-            console.log('🏦 [PlaidLink] Event:', eventName, metadata);
-          },
-          onLoad: () => {
-            console.log('🏦 [PlaidLink] Loaded successfully');
-            setLoading(false);
-          }
-        });
+        // Add a small delay to ensure SDK is fully initialized
+        await new Promise(resolve => setTimeout(resolve, 100));
 
-        if (!destroyed) {
-          setPlaidHandler(handler);
-          // Auto-open when ready
-          handler.open();
+        console.log('🏦 [PlaidLink] Creating Plaid handler...');
+        
+        // Wrap in try-catch to handle SDK errors
+        try {
+          handler = window.Plaid.create({
+            token: linkToken,
+            onSuccess: (public_token, metadata) => {
+              console.log('🏦 [PlaidLink] Success:', { public_token, metadata });
+              if (!destroyed && onSuccess) {
+                onSuccess(public_token, metadata);
+              }
+            },
+            onExit: (err, metadata) => {
+              console.log('🏦 [PlaidLink] Exit:', { err, metadata });
+              if (!destroyed && onExit) {
+                onExit(err, metadata);
+              }
+            },
+            onEvent: (eventName, metadata) => {
+              console.log('🏦 [PlaidLink] Event:', eventName, metadata);
+            },
+            onLoad: () => {
+              console.log('🏦 [PlaidLink] Loaded successfully');
+              if (!destroyed) {
+                setLoading(false);
+              }
+            }
+          });
+
+          initialized = true;
+
+          if (!destroyed && handler) {
+            setPlaidHandler(handler);
+            // Don't auto-open in StrictMode - let user click
+            console.log('🏦 [PlaidLink] Handler ready, waiting for user interaction');
+          }
+        } catch (sdkError) {
+          console.error('🏦 [PlaidLink] SDK create error:', sdkError);
+          // Retry once after a delay
+          if (!destroyed) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+            if (!destroyed && window.Plaid) {
+              try {
+                handler = window.Plaid.create({
+                  token: linkToken,
+                  onSuccess: (public_token, metadata) => {
+                    if (!destroyed && onSuccess) {
+                      onSuccess(public_token, metadata);
+                    }
+                  },
+                  onExit: (err, metadata) => {
+                    if (!destroyed && onExit) {
+                      onExit(err, metadata);
+                    }
+                  }
+                });
+                initialized = true;
+                if (!destroyed) {
+                  setPlaidHandler(handler);
+                  setLoading(false);
+                }
+              } catch (retryError) {
+                throw retryError;
+              }
+            }
+          }
         }
       } catch (err) {
         console.error('🏦 [PlaidLink] Error loading Plaid:', err);
@@ -66,17 +118,23 @@ export const PlaidLinkComponent = ({ linkToken, onSuccess, onExit }) => {
       }
     };
 
-    loadPlaid();
+    // Delay initialization to avoid React StrictMode issues
+    const timeoutId = setTimeout(loadPlaid, 10);
 
     // Cleanup
     return () => {
       destroyed = true;
-      if (handler) {
-        handler.exit({ force: true });
-        handler.destroy();
+      clearTimeout(timeoutId);
+      if (handler && handler.destroy) {
+        try {
+          handler.exit({ force: true });
+          handler.destroy();
+        } catch (e) {
+          console.error('🏦 [PlaidLink] Cleanup error:', e);
+        }
       }
     };
-  }, [linkToken, onSuccess, onExit]);
+  }, [linkToken]); // Remove onSuccess and onExit from dependencies to avoid re-initialization
 
   const handleClick = () => {
     if (plaidHandler) {
