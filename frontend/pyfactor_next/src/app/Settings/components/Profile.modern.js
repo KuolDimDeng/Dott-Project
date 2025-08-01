@@ -45,8 +45,8 @@ import {
   BuildingLibraryIcon
 } from '@heroicons/react/24/outline';
 import PayStubViewer from '@/components/PayStubViewer';
-import InlineTimesheetManager from './timesheet/InlineTimesheetManager';
-import SupervisorApprovalInterface from './timesheet/SupervisorApprovalInterface';
+import EmployeeTimesheet from '@/components/Timesheet/EmployeeTimesheet';
+import SupervisorApprovals from '@/components/Timesheet/SupervisorApprovals';
 
 // Custom ShieldExclamationIcon component
 const ShieldExclamationIcon = ({ className }) => (
@@ -1495,20 +1495,33 @@ const Profile = ({ userData }) => {
 
   // New Timesheet Tab (available for ALL employees, not just hourly)
   const renderTimesheetTab = () => {
+    console.log('🕐 [Profile.modern] === TIMESHEET TAB RENDERED ===');
+    console.log('🕐 [Profile.modern] Employee data:', {
+      hasEmployeeData: !!employeeData,
+      employeeId: employeeData?.id,
+      email: employeeData?.email,
+      sessionData: {
+        hasSession: !!session,
+        userEmail: session?.user?.email,
+        employeeId: session?.employee?.id,
+        tenantId: session?.tenantId
+      }
+    });
+    
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
         <div className="mb-6">
           <h2 className="text-xl font-semibold text-gray-900 flex items-center">
             <ClockIcon className="w-6 h-6 mr-2 text-green-600" />
-            Timesheet
+            Comprehensive Timesheet Management
           </h2>
           <p className="text-gray-600 mt-1">
-            Track your time and manage attendance records
+            Track your time, submit time-off requests, and manage attendance records
           </p>
         </div>
 
-        {/* Inline Timesheet Manager - without approvals section */}
-        <InlineTimesheetManager />
+        {/* New Comprehensive Timesheet System */}
+        <EmployeeTimesheet employee={employeeData} session={session} />
       </div>
     );
   };
@@ -1545,7 +1558,7 @@ const Profile = ({ userData }) => {
         </div>
 
         {/* Supervisor Approval Interface */}
-        <SupervisorApprovalInterface />
+        <SupervisorApprovals />
       </div>
     );
   };
