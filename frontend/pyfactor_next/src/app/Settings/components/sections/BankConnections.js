@@ -14,6 +14,11 @@ const ConnectBank = dynamic(
     ssr: false
   }
 );
+
+const PlaidDebugger = dynamic(
+  () => import('@/app/dashboard/components/forms/PlaidDebugger'),
+  { ssr: false }
+);
 import { CenteredSpinner } from '@/components/ui/StandardSpinner';
 import { logger } from '@/utils/logger';
 
@@ -395,6 +400,9 @@ const BankConnections = () => {
       <div className="text-xs text-gray-500 text-center">
         Debug: Connected Accounts: {connectedAccounts.length} | Country: {businessCountry} | Provider: {shouldUseWise() ? 'Wise' : 'Plaid'}
       </div>
+      
+      {/* Temporary Plaid Debugger */}
+      <PlaidDebugger />
     </div>
   );
 };
