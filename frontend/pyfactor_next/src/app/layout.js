@@ -71,6 +71,12 @@ export default function RootLayout({ children }) {
           {children}
         </Providers>
         
+        {/* Plaid Link Script */}
+        <Script 
+          src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"
+          strategy="afterInteractive"
+        />
+        
         {/* Crisp Chat Widget */}
         {process.env.NEXT_PUBLIC_CRISP_WEBSITE_ID && (
           <Script

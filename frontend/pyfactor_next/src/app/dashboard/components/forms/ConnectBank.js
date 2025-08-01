@@ -4,14 +4,14 @@ import { plaidApi, bankAccountsApi } from '@/services/api/banking';
 import { logger } from '@/utils/logger';
 import { CenteredSpinner, ButtonSpinner } from '@/components/ui/StandardSpinner';
 
-// Temporarily disabled while rebuilding Plaid integration
-// const PlaidLinkComponent = dynamic(
-//   () => import('./PlaidLinkComponent'),
-//   { 
-//     ssr: false,
-//     loading: () => <div className="text-center p-4">Loading Plaid...</div>
-//   }
-// );
+// Dynamic import for Plaid to avoid SSR issues
+const PlaidLinkButton = dynamic(
+  () => import('./PlaidLinkButton'),
+  { 
+    ssr: false,
+    loading: () => <div className="text-center p-4">Loading Plaid...</div>
+  }
+);
 
 const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoConnect = false, onSuccess = null, onClose = null }) => {
   const [region, setRegion] = useState('');
@@ -237,10 +237,22 @@ const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoCon
                   </p>
                   
                   {linkToken ? (
-                    <div className="p-4 bg-yellow-50 text-yellow-800 rounded-md">
-                      <p className="font-medium">Plaid integration is being rebuilt</p>
-                      <p className="text-sm mt-1">Please check back shortly while we fix the integration.</p>
-                    </div>
+                    <PlaidLinkButton
+                      linkToken={linkToken}
+                      onSuccess={(public_token, metadata) => {
+                        console.log('🏦 [ConnectBank] Bank connection successful');
+                        logger.info('🏦 [ConnectBank] Plaid Link success:', { public_token, metadata });
+                        exchangePublicToken(public_token);
+                      }}
+                      onExit={(err, metadata) => {
+                        console.log('🏦 [ConnectBank] Plaid Link exited', err, metadata);
+                        logger.error('🏦 [ConnectBank] Plaid Link exit error:', err);
+                        if (err) {
+                          setError(`Plaid connection failed: ${err.error_message || err.message || 'Unknown error'}`);
+                          setSnackbar({ open: true, message: `Failed to connect bank: ${err.error_message || err.message || 'Unknown error'}`, severity: 'error' });
+                        }
+                      }}
+                    />
                   ) : (
                     <button
                       className={`w-full py-3 px-4 rounded-md font-medium ${

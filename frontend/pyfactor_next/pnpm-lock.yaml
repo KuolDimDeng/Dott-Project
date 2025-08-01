@@ -269,6 +269,9 @@ importers:
       react-leaflet:
         specifier: ^5.0.0
         version: 5.0.0(leaflet@1.9.4)(react-dom@18.3.1)(react@18.3.1)
+      react-plaid-link:
+        specifier: ^4.0.1
+        version: 4.0.1(react-dom@18.3.1)(react@18.3.1)
       react-select-country-list:
         specifier: ^2.2.3
         version: 2.2.3
@@ -9240,6 +9243,17 @@ packages:
 
   /react-lifecycles-compat@3.0.4:
     resolution: {integrity: sha512-fBASbA6LnOU9dOU2eW7aQ8xmYBSXUIWr+UmF9b1efZBazGNO+rcXT/icdKnYm2pTwcRylVUYwW7H1PHfLekVzA==}
+    dev: false
+
+  /react-plaid-link@4.0.1(react-dom@18.3.1)(react@18.3.1):
+    resolution: {integrity: sha512-EZQWPWMCqX4ssffU4nHW7P+yzvWStW5o6ThfzgcaTULmJzTSHY2vrI8a5l+Qx1sRtKDEOrFQlZKj03FY3dneng==}
+    peerDependencies:
+      react: '*'
+      react-dom: '*'
+    dependencies:
+      prop-types: 15.8.1
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
     dev: false
 
   /react-remove-scroll-bar@2.3.8(@types/react@19.1.0)(react@18.3.1):
